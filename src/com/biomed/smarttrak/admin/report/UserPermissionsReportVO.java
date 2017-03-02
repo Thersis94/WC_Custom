@@ -7,9 +7,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+//WC custom
 import com.biomed.smarttrak.util.SmarttrakTree;
-// WC custom
-import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.PermissionVO;
 import com.biomed.smarttrak.vo.UserVO;
 
@@ -41,7 +40,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 	private static final int MAX_DEPTH_LEVEL = 4;
 	private static final String COLUMN_NAME_SPACER = " - ";
 
-	private List<AccountPermissionsVO> accounts;
+	private List<AccountUsersVO> accounts;
 	private static final String REPORT_TITLE = "User Permissions Report";
 	private static final String ACCT_ID = "ACCT_ID";
 	private static final String ACCT_NM = "ACCT_NM";
@@ -85,7 +84,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object o) {
-		this.accounts =  (List<AccountPermissionsVO>) o;
+		this.accounts =  (List<AccountUsersVO>) o;
 	}
 	
 	/**
@@ -97,9 +96,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 			List<Map<String, Object>> rows) {
 				
 		// loop the account map
-		for (AccountPermissionsVO acct : accounts) {
-
-			AccountVO a = acct.getAccount();
+		for (AccountUsersVO acct : accounts) {
 
 			// user vals
 			Map<String,Object> row;
@@ -107,13 +104,13 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 			// loop account users
 			for (UserVO user : acct.getUsers()) {
 				row = new HashMap<>();
-				row.put(ACCT_ID, a.getAccountId());
-				row.put(ACCT_NM, a.getAccountName());
+				row.put(ACCT_ID, acct.getAccountId());
+				row.put(ACCT_NM, acct.getAccountName());
 				row.put(USER_ID, user.getUserId());
 				row.put(EMAIL,user.getEmailAddress());
 				row.put(FULL_NM, user.getFullName());
-				row.put(HAS_FD, checkFlag(a.getFdAuthFlg(),user.getFdAuthFlg()));
-				row.put(HAS_GA, checkFlag(a.getGaAuthFlg(),user.getGaAuthFlg()));
+				row.put(HAS_FD, checkFlag(acct.getFdAuthFlg(),user.getFdAuthFlg()));
+				row.put(HAS_GA, checkFlag(acct.getGaAuthFlg(),user.getGaAuthFlg()));
 				// loop hierarchy.
 				addPermissions(row, acct.getPermissions());
 				rows.add(row);

@@ -20,31 +20,16 @@ import com.biomed.smarttrak.vo.UserVO;
  @since Feb 28, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class AccountPermissionsVO {
+public class AccountUsersVO extends AccountVO {
 
-	private AccountVO account;
 	private List<UserVO> users;
 	private SmarttrakTree permissions;
 	
 	/**
 	* Constructor
 	*/
-	public AccountPermissionsVO() {
+	public AccountUsersVO() {
 		// contructor
-	}
-
-	/**
-	 * @return the account
-	 */
-	public AccountVO getAccount() {
-		return account;
-	}
-
-	/**
-	 * @param account the account to set
-	 */
-	public void setAccount(AccountVO account) {
-		this.account = account;
 	}
 
 	/**
