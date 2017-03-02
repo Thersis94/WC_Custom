@@ -12,6 +12,7 @@ import com.biomed.smarttrak.vo.InsightVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.parser.DirectoryParser;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
@@ -35,26 +36,19 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @since Feb 16, 2017
  ****************************************************************************/
 public class InsightAction extends AbstractTreeAction {
-	private static final String REQ_PARAM_1 = "reqParam_1";
+	private static final String REQ_PARAM_1 = DirectoryParser.PARAMETER_PREFIX + "1";
 
 	public void retrieve(ActionRequest req) throws ActionException {
-		//check to see if we are getting an insite or a solr list
-		
-		
-			
+		//check to see if we are getting an insight or a solr list
+	
 		if(req.hasParameter(REQ_PARAM_1)){
-			getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
-			
-			//TODO use the new acl security here
-			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-			
-			log.debug("#####################vo? " + (InsightVO)mod.getActionData());
-			InsightVO vo = (InsightVO)mod.getActionData();
-			
+			InsightVO vo = getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
+
+			//after the vo is build set the hierarchies and check authorization
 			vo.configureSolrHierarchies(loadSections());
+			SecurityController.getInstance(req).isUserAuthorized(vo, req);
 			
-			SecurityController.getInstance(req).isUserAuthorized((InsightVO)mod.getActionData(), req);
-			log.debug("############ past security check " + vo.getHierarchies() );
+			putModuleData(vo);
 			
 		}else{
 			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
@@ -126,9 +120,10 @@ public class InsightAction extends AbstractTreeAction {
 	
 	/**
 	 * @param checkVal
+	 * @return 
 	 */
 	@SuppressWarnings("unchecked")
-	protected void getInsightById(String insightId) {
+	protected InsightVO getInsightById(String insightId) {
 		log.debug("start get insight by id");
 		
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
@@ -137,9 +132,7 @@ public class InsightAction extends AbstractTreeAction {
 		sb.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
 		sb.append("from ").append(schema).append("biomedgps_insight a ");
 		sb.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		sb.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
-		sb.append("inner join ").append(schema).append("biomedgps_section c on b.section_id = c.section_id ");
-		sb.append("on a.insight_id=b.insight_id ");
+		sb.append("left outer join ").append(schema).append("biomedgps_insight_section b on a.insight_id=b.insight_id ");
 		sb.append("where a.insight_id = ? ");
 		
 		log.debug("sql: " + sb.toString() + "|" + insightId);
@@ -155,7 +148,7 @@ public class InsightAction extends AbstractTreeAction {
 		
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)insight, (String)getAttribute(Constants.ENCRYPT_KEY));
 		
-		putModuleData((InsightVO)insight.get(0));
+		return (InsightVO)insight.get(0);
 	}
 	
 	/**
