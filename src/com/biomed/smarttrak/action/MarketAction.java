@@ -103,7 +103,7 @@ public class MarketAction extends SBActionAdapter {
 	 * @param doc
 	 */
 	//TODO replace this method with javascript running at the browser; talk to Billy (libraries are already loaded and running at page-load)
-	private void buildUpdateMsg(SolrDocument doc) {
+	private void buildUpdateMsg(SolrDocument market) {
 		// Unpublished markets can be skipped
 		if (!"P".equals(market.get(SearchDocumentHandler.CONTENT_TYPE))) {
 			return;
