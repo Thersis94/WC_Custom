@@ -2,26 +2,29 @@ package com.biomed.smarttrak.action;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import com.biomed.smarttrak.security.SecurityController;
-import com.biomed.smarttrak.util.SmarttrakTree;
+import org.apache.solr.common.SolrDocument;
+
 import com.biomed.smarttrak.vo.MarketAttributeVO;
 import com.biomed.smarttrak.vo.MarketVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: MarketAction.java <p/>
@@ -97,32 +100,34 @@ public class MarketAction extends SBActionAdapter {
 
 	/**
 	 * Build the time since last updated message
-	 * @param market
+	 * @param doc
 	 */
 	//TODO replace this method with javascript running at the browser; talk to Billy (libraries are already loaded and running at page-load)
-	private void buildUpdateMsg(MarketVO market) {
+	private void buildUpdateMsg(SolrDocument doc) {
 		// Unpublished markets can be skipped
-		if (!"P".equals(market.getStatusNo())) {
+		if (!"P".equals(market.get(SearchDocumentHandler.CONTENT_TYPE))) {
 			return;
 		}
-		long diff = Convert.getCurrentTimestamp().getTime() - market.getUpdateDt().getTime();
+		Date d  = (Date)market.getFieldValue(SearchDocumentHandler.UPDATE_DATE);
+		
+		long diff = Convert.getCurrentTimestamp().getTime() - d.getTime();
 		long diffDays = diff / (1000 * 60 * 60 * 24);
 		long diffHours = diff / (1000 * 60 * 60);
 		if (diffDays > 365) {
 			int years = (int) (diffDays/365);
-			market.setUpdateMsg(years + " year(s) ago");
+			market.setField("updateMsg", years + " year(s) ago");
 		} else if (diffDays > 30) {
 			int months = (int) (diffDays/30);
-			market.setUpdateMsg(months + " month(s) ago");
+			market.setField("updateMsg", months + " month(s) ago");
 		} else if (diffDays > 7) {
 			int weeks = (int) (diffDays/7);
-			market.setUpdateMsg(weeks + " week(s) ago");
+			market.setField("updateMsg", weeks + " week(s) ago");
 		} else if (diffDays > 0) {
-			market.setUpdateMsg(diffDays + " day(s) ago");
+			market.setField("updateMsg", diffDays + " day(s) ago");
 		} else if (diffHours > 0) {
-			market.setUpdateMsg(diffHours + " hour(s) ago");
+			market.setField("updateMsg", diffHours + " hour(s) ago");
 		} else {
-			market.setUpdateMsg("less than an hour ago");
+			market.setField("updateMsg", "less than an hour ago");
 		}
 	}
 
