@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
@@ -192,7 +193,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		for(InsightXRVO uxr : sections) {
 			
 			if (uxr.getSectionId() == null){
-				uxr.setSectionId("");
+				uxr.setSectionId(InsightAction.ROOT_NODE_ID);
 			}
 			
 			Node n = t.findNode(uxr.getSectionId());

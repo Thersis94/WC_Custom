@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.biomed.smarttrak.admin.AbstractTreeAction;
+import com.biomed.smarttrak.security.SecurityController;
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
@@ -31,7 +34,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 16, 2017
  ****************************************************************************/
-public class InsightAction extends SBActionAdapter {
+public class InsightAction extends AbstractTreeAction {
 	private static final String REQ_PARAM_1 = "reqParam_1";
 
 	public void retrieve(ActionRequest req) throws ActionException {
@@ -41,6 +44,18 @@ public class InsightAction extends SBActionAdapter {
 			
 		if(req.hasParameter(REQ_PARAM_1)){
 			getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
+			
+			//TODO use the new acl security here
+			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+			
+			log.debug("#####################vo? " + (InsightVO)mod.getActionData());
+			InsightVO vo = (InsightVO)mod.getActionData();
+			
+			vo.configureSolrHierarchies(loadSections());
+			
+			SecurityController.getInstance(req).isUserAuthorized((InsightVO)mod.getActionData(), req);
+			log.debug("############ past security check " + vo.getHierarchies() );
+			
 		}else{
 			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -123,6 +138,7 @@ public class InsightAction extends SBActionAdapter {
 		sb.append("from ").append(schema).append("biomedgps_insight a ");
 		sb.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		sb.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
+		sb.append("inner join ").append(schema).append("biomedgps_section c on b.section_id = c.section_id ");
 		sb.append("on a.insight_id=b.insight_id ");
 		sb.append("where a.insight_id = ? ");
 		
@@ -137,10 +153,32 @@ public class InsightAction extends SBActionAdapter {
 		
 		log.debug("placed vo on mod data: " + (InsightVO)insight.get(0));
 		
-		
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)insight, (String)getAttribute(Constants.ENCRYPT_KEY));
 		
 		putModuleData((InsightVO)insight.get(0));
+	}
+	
+	/**
+	 * Load the Section Tree so that Hierarchies can be generated.
+	 * @param req
+	 * @throws ActionException
+	 */
+	public SmarttrakTree loadSections() {
+		//load the section hierarchy Tree from superclass
+		SmarttrakTree t = loadDefaultTree();
+
+		//Generate the Node Paths using Node Names.
+		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
+		return t;
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
+	 */
+	@Override
+	public String getCacheKey() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 

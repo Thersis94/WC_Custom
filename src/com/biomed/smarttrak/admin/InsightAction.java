@@ -39,7 +39,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  ****************************************************************************/
 public class InsightAction extends AbstractTreeAction {
 	protected static final String INSIGHT_ID = "insightsId"; //req param
-	public static final String ROOT_NODE_ID = "MASTER_ROOT";
+	public static final String ROOT_NODE_ID = AbstractTreeAction.MASTER_ROOT;
 
 	public InsightAction() {
 		super();
