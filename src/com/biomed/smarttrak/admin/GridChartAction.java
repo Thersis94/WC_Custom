@@ -150,9 +150,10 @@ public class GridChartAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> params = Arrays.asList(new Object[]{gridId});
 		List<?> data = db.executeSelect(sql.toString(), params, new GridVO(), null);
-		log.info("Data: " + data);
+		log.debug("Data: " + data);
+		
 		// Add the vo only.  Add a blank bean if nothing found
-		putModuleData(data.size() > 0 ? data.get(0) : new GridVO());
+		putModuleData(data.isEmpty() ? data.get(0) : new GridVO());
 	}
 	
 	/**
@@ -160,7 +161,8 @@ public class GridChartAction extends SBActionAdapter {
 	 * @param req
 	 */
 	public void retrieveList(ActionRequest req, String schema) {
-		List<GridVO> data = new ArrayList<>(); int count = 0;
+		List<GridVO> data = new ArrayList<>(); 
+		int count = 0;
 		String msg = ""; 
 		boolean error = false; 
 		

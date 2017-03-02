@@ -55,7 +55,7 @@ public class SMTChartOptions implements SMTChartOptionIntfc {
 	 * @see com.biomed.smarttrak.vo.grid.SMTChartOptionIntfc#addGridData(com.biomed.smarttrak.admin.vo.GridVO)
 	 */
 	public void addOptionsFromGridData(GridVO grid) {
-		
+		// Not needed right now.  We will oince we set default formatting
 	}
 	
 	/* (non-Javadoc)

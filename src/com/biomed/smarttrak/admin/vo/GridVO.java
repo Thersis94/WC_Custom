@@ -633,13 +633,13 @@ public class GridVO extends BeanDataVO {
 	protected void updateColumn(Map<String, String> column) {
 		// Get the data elements, make sure they are populated
 		String field = column.get("field");
-		String title = column.get("title");
+		String cTitle = column.get("title");
 		if (StringUtil.isEmpty(field)) return;
 
 		// Parse out the index from the field and store the data in the series array
-		String val = field.substring(field.lastIndexOf("_") + 1);
+		String val = field.substring(field.lastIndexOf('_') + 1);
 		int index = Convert.formatInteger(val) - 1;
-		if(index >= 0) series[index] = title;
+		if(index >= 0) series[index] = cTitle;
 	}
 	
 	/**
@@ -752,7 +752,7 @@ public class GridVO extends BeanDataVO {
 
 			column.put("class", "bs-header");
 			column.put("field", FIELD_LABEL + x);
-			column.put("fieldIndex", x+"");
+			column.put("fieldIndex", Integer.toString(x));
 			column.put("title", series[x-1]);
 			columns.add(column);
 		}

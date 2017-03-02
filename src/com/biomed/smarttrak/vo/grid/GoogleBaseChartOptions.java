@@ -83,14 +83,15 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 	 * @see com.biomed.smarttrak.vo.grid.SMTChartOptionIntfc#addGridData(com.biomed.smarttrak.admin.vo.GridVO)
 	 */
 	public void addOptionsFromGridData(GridVO grid) {
-		chart.put("title", grid.getTitle());
+		final String TITLE_LABEL = "title";
+		chart.put(TITLE_LABEL, grid.getTitle());
 		
 		Map<String, Object> vAxis = new LinkedHashMap<>();
-		vAxis.put("title", grid.getPrimaryYTitle());
+		vAxis.put(TITLE_LABEL, grid.getPrimaryYTitle());
 		chart.put("vAxis", vAxis);
 		
 		Map<String, Object> hAxis = new LinkedHashMap<>();
-		hAxis.put("title", grid.getPrimaryXTitle());
+		hAxis.put(TITLE_LABEL, grid.getPrimaryXTitle());
 		chart.put("hAxis", hAxis);
 	}
 	

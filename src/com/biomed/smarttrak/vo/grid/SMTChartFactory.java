@@ -37,7 +37,10 @@ public class SMTChartFactory {
 	 */
 	public static SMTGridIntfc getInstance(ProviderType prov, GridVO grid, ChartType type) {
 		
-		return new GoogleChartVO(grid, type);
+		SMTGridIntfc chart = null;
+		if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleChartVO(grid, type);
+		
+		return chart;
 	}
 	
 	

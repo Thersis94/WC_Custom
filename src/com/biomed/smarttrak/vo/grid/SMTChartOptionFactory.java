@@ -19,8 +19,8 @@ public class SMTChartOptionFactory {
 	 */
 	public enum ChartType {
 		AREA("Area Chart"), BAR("Bar Chart"), BUBBLE("Bubble Chart"), 
-		COLUMN("Column Chart"),	Combo("Combo Chart"), DONUT("Donut Chart"), 
-		Gauge("Guage Chart"), GEO("Geo Chart"),	LINE("Line Chart"), 
+		COLUMN("Column Chart"),	COMBO("Combo Chart"), DONUT("Donut Chart"), 
+		GAUGE("Guage Chart"), GEO("Geo Chart"),	LINE("Line Chart"), 
 		PIE("PIE Chart"), SCATTER("Scatter Chart"), TABLE("Table Grid"),
 		TRENDLINE("Trendline Chart"), NONE("None Selected");
 		
@@ -42,17 +42,19 @@ public class SMTChartOptionFactory {
 		switch(type) {
 			case DONUT:
 			case PIE:
-				chart = new GooglePieChartOptions();
+				if (ProviderType.GOOGLE.equals(prov)) chart = new GooglePieChartOptions();
 				break;
 			case BAR:
-				chart = new GoogleBarChartOptions();
+				if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleBarChartOptions();
 				break;
 			case COLUMN:
-				chart = new GoogleColumnChartOptions();
+				if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleColumnChartOptions();
 				break;
 			default:
-				chart = new SMTChartOptions();
+				break;
 		}
+		
+		if (chart == null) chart = new SMTChartOptions();
 		
 		return chart;
 	}

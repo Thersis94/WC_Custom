@@ -49,10 +49,6 @@ public class GridDisplayAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
-	public static void main(String[] args) {
-		System.out.println("Type: " + ChartType.valueOf(StringUtil.checkVal("")));
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)

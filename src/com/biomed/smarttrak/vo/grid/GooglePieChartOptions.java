@@ -47,7 +47,7 @@ public class GooglePieChartOptions extends GoogleBaseChartOptions {
 	 * @see com.biomed.smarttrak.vo.grid.GoogleBaseChartOptions#addOptionsFromGridData(com.biomed.smarttrak.admin.vo.GridVO)
 	 */
 	public void addOptionsFromGridData(GridVO grid) {
-		
+		// Not used for now.  Still formatting
 	}
 }
 
