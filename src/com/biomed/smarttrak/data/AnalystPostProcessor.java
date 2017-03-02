@@ -33,11 +33,11 @@ import com.smt.sitebuilder.util.MessageSender;
  ****************************************************************************/
 public class AnalystPostProcessor extends SBActionAdapter {
 
-	public static final String ZOHO_TICKET_EMAIL = "smarttrakAnalystZOHOEmail";
-	public static final String ASK_AN_ANALYST_MESSAGE_ID = "smarttrakAnalystMessageId";
-	public static final String ASK_AN_ANALYST_TYPE_ID = "smarttrakAnalystTypeId";
-	public static final String ASK_AN_ANALYST_REFERRER_URL_ID = "smarttrakAnalystReffererId";
-	public static final String SMARTTRAK_EMAIL = "smarttrakEmail";
+	public static final String ZOHO_TICKET_EMAIL_CFG = "smarttrakAnalystZOHOEmail";
+	public static final String ASK_AN_ANALYST_MESSAGE_ID_CFG = "smarttrakAnalystMessageId";
+	public static final String ASK_AN_ANALYST_TYPE_ID_CFG = "smarttrakAnalystTypeId";
+	public static final String ASK_AN_ANALYST_REFERRER_URL_ID_CFG = "smarttrakAnalystReffererId";
+	public static final String SMARTTRAK_EMAIL_CFG = "smarttrakEmail";
 	public AnalystPostProcessor() {
 		super();
 	}
@@ -47,7 +47,7 @@ public class AnalystPostProcessor extends SBActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		String contactType = req.getParameter((String)getAttribute(ASK_AN_ANALYST_TYPE_ID));
+		String contactType = req.getParameter((String)getAttribute(ASK_AN_ANALYST_TYPE_ID_CFG));
 
 		if("Analyst".equals(contactType)) {
 			//If is Analyst Request
@@ -71,9 +71,9 @@ public class AnalystPostProcessor extends SBActionAdapter {
 
 		try {
 			EmailMessageVO email = new EmailMessageVO();
-			email.addRecipient((String)getAttribute(ZOHO_TICKET_EMAIL));
-			email.setFrom((String)getAttribute(SMARTTRAK_EMAIL));
-			email.setTextBody(req.getParameter((String)getAttribute(ASK_AN_ANALYST_MESSAGE_ID)));
+			email.addRecipient((String)getAttribute(ZOHO_TICKET_EMAIL_CFG));
+			email.setFrom((String)getAttribute(SMARTTRAK_EMAIL_CFG));
+			email.setTextBody(req.getParameter((String)getAttribute(ASK_AN_ANALYST_MESSAGE_ID_CFG)));
 			
 			email.setSubject(subject.toString());
 
@@ -93,12 +93,12 @@ public class AnalystPostProcessor extends SBActionAdapter {
 
 		//Make the TicketVO
 		TicketVO t = new TicketVO();
-		t.setDescText(req.getParameter((String)getAttribute(ASK_AN_ANALYST_MESSAGE_ID)));
+		t.setDescText(req.getParameter((String)getAttribute(ASK_AN_ANALYST_MESSAGE_ID_CFG)));
 		t.setStatusCd(TicketVO.StatusCd.UNASSIGNED.getVal());
 		t.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
 		t.setReporterId(user.getProfileId());
 
-		t.setReferrerUrl(req.getParameter((String)getAttribute(ASK_AN_ANALYST_REFERRER_URL_ID)));
+		t.setReferrerUrl(req.getParameter((String)getAttribute(ASK_AN_ANALYST_REFERRER_URL_ID_CFG)));
 
 		//Build an Activity for Ticket Creation.
 		TicketActivityVO tav = new TicketActivityVO();
