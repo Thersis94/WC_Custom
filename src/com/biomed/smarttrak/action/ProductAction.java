@@ -67,7 +67,7 @@ public class ProductAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			retrieveProduct(req.getParameter("reqParam_1"));
-		} else if (req.hasParameter("searchData") || req.hasParameter("fq")){
+		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
 			retrieveProducts(req);
 		}
 	}
