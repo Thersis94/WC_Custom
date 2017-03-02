@@ -44,7 +44,7 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		//Get Params off the request.
 		String [] updateIds = req.getParameterValues("updateId");
 		String [] orderNos = req.getParameterValues("orderNo");
-		String [] visibleFlgs = req.getParameterValues("visibleFlg");
+		String [] emailFlgs = req.getParameterValues("emailFlg");
 
 		List<UpdatesVO> updates = new ArrayList<>();
 
@@ -53,7 +53,7 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 			UpdatesVO u = new UpdatesVO();
 			u.setUpdateId(updateIds[i]);
 			u.setOrderNo(Convert.formatInteger(orderNos[i]));
-			u.setVisibleFlg(Convert.formatInteger(visibleFlgs[i]));
+			u.setEmailFlg(Convert.formatInteger(emailFlgs[i]));
 			updates.add(u);
 		}
 
@@ -80,7 +80,7 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		try(PreparedStatement ps = dbConn.prepareStatement(getUpdatesBatchSql())) {
 			for(UpdatesVO u : updates) {
 				ps.setInt(1, u.getOrderNo());
-				ps.setInt(2, u.getVisibleFlg());
+				ps.setInt(2, u.getEmailFlg());
 				ps.setString(3, u.getUpdateId());
 				ps.addBatch();
 			}
@@ -97,7 +97,7 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 	private String getUpdatesBatchSql() {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("update ").append((String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_update set order_no = ?, visible_flg = ? where update_id = ?");
+		sql.append("biomedgps_update set order_no = ?, email_flg = ? where update_id = ?");
 		return sql.toString();
 	}
 
@@ -152,9 +152,9 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 			sql.append("b.section_id = ? and ");
 		}
 
-		//If we are on a public site, filter by visible Updates only.
+		//If we are on a public site, filter by Email Updates only.
 		if(!isAdmin) {
-			sql.append("a.visible_flg = 1 and ");
+			sql.append("a.email_flg = 1 and ");
 		}
 
 		//Filter by only results in the current week.

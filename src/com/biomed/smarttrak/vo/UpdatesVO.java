@@ -55,7 +55,7 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	private String titleTxt;
 	private int typeCd;
 	private int orderNo;
-	private int visibleFlg;
+	private int emailFlg;
 	private String messageTxt;
 	private String twitterTxt;
 	private String creatorProfileId;
@@ -102,7 +102,7 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		this.statusCd = req.getParameter("statusCd");
 		this.publishDt = Convert.formatDate(req.getParameter("publishDt"));
 		this.orderNo = Convert.formatInteger("orderNo");
-		this.visibleFlg = Convert.formatInteger("visibleFlg");
+		this.emailFlg = Convert.formatInteger("emailFlg");
 		if (req.hasParameter("sectionId")) {
 			String [] s = req.getParameterValues("sectionId");
 			for (String sec : s) {
@@ -269,9 +269,9 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		return updateDt;
 	}
 
-	@Column(name="visible_flg")
-	public int getVisibleFlg() {
-		return visibleFlg;
+	@Column(name="email_flg")
+	public int getEmailFlg() {
+		return emailFlg;
 	}
 	@Column(name="order_no")
 	public int getOrderNo() {
@@ -399,8 +399,8 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		this.orderNo = orderNo;
 	}
 
-	public void setVisibleFlg(int visibleFlg) {
-		this.visibleFlg = visibleFlg;
+	public void setEmailFlg(int emailFlg) {
+		this.emailFlg = emailFlg;
 	}
 
 	/**
