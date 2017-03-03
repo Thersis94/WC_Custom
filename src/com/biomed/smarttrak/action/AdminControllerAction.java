@@ -96,133 +96,140 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	/*
 	 * the master list of actions this Controller can execute
 	 */
-	protected final Map<String, Class<? extends ActionInterface>> actionMap = new HashMap<String, Class<? extends ActionInterface>>() {
-		private static final long serialVersionUID = -1416423839785531929L;
-		{
-			put("hierarchy", SectionHierarchyAction.class);
-			put("agap", GapAnalysisAdminAction.class);
-			put("fd", FinancialDashAction.class);
-			put("fdScenario", FinancialDashScenarioAction.class);
-			put("fdHierarchy", FinancialDashHierarchyAction.class);
-			put("productAdmin", ProductManagementAction.class);
-			put("companyAdmin", CompanyManagementAction.class);
-			put("accounts", AccountAction.class);
-			put("account-permissions", AccountPermissionAction.class);
-			put("users", AccountUserAction.class);
-			put("insights", InsightAction.class);
-			put("teams", TeamAction.class);
-			put("team-members", TeamMemberAction.class);
-			put("marketAdmin", MarketManagementAction.class);
-			put("updates", UpdatesAction.class);
-			put("list", ListAction.class);
-			put("reports", ReportFacadeAction.class);
-			put("support", SupportFacadeAction.class);
-			put("synonyms", SolrSynonymAction.class);
-			put("marketingCampaigns", CampaignInstanceAction.class);
-			put("marketingInstanceReport", InstanceReport.class);
-			put("uwr", UpdatesWeeklyReportAction.class); 
-			put("grid", GridChartAction.class);
-		}};
+	protected Map<String, Class<? extends ActionInterface>> actionMap;
 
-		public AdminControllerAction() {
-			super();
+	public AdminControllerAction() {
+		super();
+		buildActionMap();
+	}
+
+	public AdminControllerAction(ActionInitVO arg0) {
+		super(arg0);
+		buildActionMap();
+	}
+
+
+	/**
+	 * populates the action map when the object is initialized
+	 */
+	protected void buildActionMap() {
+		actionMap = new HashMap<>(35);
+		actionMap.put("hierarchy", SectionHierarchyAction.class);
+		actionMap.put("agap", GapAnalysisAdminAction.class);
+		actionMap.put("fd", FinancialDashAction.class);
+		actionMap.put("fdScenario", FinancialDashScenarioAction.class);
+		actionMap.put("fdHierarchy", FinancialDashHierarchyAction.class);
+		actionMap.put("productAdmin", ProductManagementAction.class);
+		actionMap.put("companyAdmin", CompanyManagementAction.class);
+		actionMap.put("accounts", AccountAction.class);
+		actionMap.put("account-permissions", AccountPermissionAction.class);
+		actionMap.put("users", AccountUserAction.class);
+		actionMap.put("insights", InsightAction.class);
+		actionMap.put("teams", TeamAction.class);
+		actionMap.put("team-members", TeamMemberAction.class);
+		actionMap.put("marketAdmin", MarketManagementAction.class);
+		actionMap.put("updates", UpdatesAction.class);
+		actionMap.put("list", ListAction.class);
+		actionMap.put("reports", ReportFacadeAction.class);
+		actionMap.put("support", SupportFacadeAction.class);
+		actionMap.put("synonyms", SolrSynonymAction.class);
+		actionMap.put("marketingCampaigns", CampaignInstanceAction.class);
+		actionMap.put("marketingInstanceReport", InstanceReport.class);
+		actionMap.put("uwr", UpdatesWeeklyReportAction.class); 
+		actionMap.put("grid", GridChartAction.class);
+	}
+
+
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		//pass to superclass for portlet registration (WC admintool)
+		//this method is not called from the front-end UI
+		super.retrieve(req);
+	}
+
+
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+		String actionType = req.getParameter(ACTION_TYPE);
+		String msg;
+		try {
+			ActionInterface action = loadAction(actionType);
+
+			//allow either deletes or saves (build) to be called directly from the controller
+			if (AdminConstants.REQ_DELETE.equals(req.getParameter("actionPerform"))) {
+				action.delete(req);
+			} else if(AdminConstants.REQ_COPY.equals(req.getParameter("actionPerform"))){
+				action.copy(req);
+			}else {
+				action.build(req);
+			}
+			msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+
+		} catch (ActionException ae) {
+			log.error("could not execute " + actionType, ae.getCause());
+			msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 		}
 
-		public AdminControllerAction(ActionInitVO arg0) {
-			super(arg0);
+		// Only proceed to redirect if it not a json request (?json=true)
+		if (Convert.formatBoolean(req.getParameter("json")))
+			return;
+
+		//setup the redirect.  Build a URL for 'this' page if a child action didn't build one of it's own.
+		//NOTE: the controller should (and does) control the redirect.  It also sets 'msg' properly if the child action pukes.
+		String redirUrl = (String)req.getAttribute(Constants.REDIRECT_URL);
+		if (StringUtil.isEmpty(redirUrl)) {
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			StringBuilder url = new StringBuilder(200);
+			url.append(page.getFullPath());
+			if (!StringUtil.isEmpty(actionType)) url.append("?actionType=").append(actionType);
+			redirUrl = url.toString();
 		}
+		sendRedirect(redirUrl, msg, req);
+	}
 
 
-		@Override
-		public void list(ActionRequest req) throws ActionException {
-			//pass to superclass for portlet registration (WC admintool)
-			//this method is not called from the front-end UI
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		if (req.hasParameter(ACTION_TYPE)) {
+			loadAction(req.getParameter(ACTION_TYPE)).retrieve(req);
+		} else {
+			//go to view, display the content from the WYSWIYG in /admintool
 			super.retrieve(req);
 		}
+	}
 
 
-		@Override
-		public void build(ActionRequest req) throws ActionException {
-			String actionType = req.getParameter(ACTION_TYPE);
-			String msg;
-			try {
-				ActionInterface action = loadAction(actionType);
+	/**
+	 * Based on passed cPage, instantiate the appropriate class and return.
+	 * @param cPage
+	 * @return
+	 * @throws ActionException
+	 */
+	protected ActionInterface loadAction(String actionType) throws ActionException {
+		Class<?> c = actionMap.get(actionType);
+		if (c == null) 
+			throw new ActionException("unknown action type:" + actionType);
 
-				//allow either deletes or saves (build) to be called directly from the controller
-				if (AdminConstants.REQ_DELETE.equals(req.getParameter("actionPerform"))) {
-					action.delete(req);
-				} else if(AdminConstants.REQ_COPY.equals(req.getParameter("actionPerform"))){
-					action.copy(req);
-				}else {
-					action.build(req);
-				}
-				msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-
-			} catch (ActionException ae) {
-				log.error("could not execute " + actionType, ae.getCause());
-				msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-			}
-
-			// Only proceed to redirect if it not a json request (?json=true)
-			if (Convert.formatBoolean(req.getParameter("json")))
-				return;
-
-			//setup the redirect.  Build a URL for 'this' page if a child action didn't build one of it's own.
-			//NOTE: the controller should (and does) control the redirect.  It also sets 'msg' properly if the child action pukes.
-			String redirUrl = (String)req.getAttribute(Constants.REDIRECT_URL);
-			if (StringUtil.isEmpty(redirUrl)) {
-				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-				StringBuilder url = new StringBuilder(200);
-				url.append(page.getFullPath());
-				if (!StringUtil.isEmpty(actionType)) url.append("?actionType=").append(actionType);
-				redirUrl = url.toString();
-			}
-			sendRedirect(redirUrl, msg, req);
+		//instantiate the action & return it - pass attributes & dbConn
+		try {
+			ActionInterface action = (ActionInterface) c.newInstance();
+			action.setDBConnection(dbConn);
+			action.setAttributes(getAttributes());
+			return action;
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new ActionException("Problem Instantiating type: " + actionType);
 		}
+	}
 
 
-		@Override
-		public void retrieve(ActionRequest req) throws ActionException {
-			if (req.hasParameter(ACTION_TYPE)) {
-				loadAction(req.getParameter(ACTION_TYPE)).retrieve(req);
-			} else {
-				//go to view, display the content from the WYSWIYG in /admintool
-				super.retrieve(req);
-			}
-		}
-
-
-		/**
-		 * Based on passed cPage, instantiate the appropriate class and return.
-		 * @param cPage
-		 * @return
-		 * @throws ActionException
-		 */
-		protected ActionInterface loadAction(String actionType) throws ActionException {
-			Class<?> c = actionMap.get(actionType);
-			if (c == null) 
-				throw new ActionException("unknown action type:" + actionType);
-
-			//instantiate the action & return it - pass attributes & dbConn
-			try {
-				ActionInterface action = (ActionInterface) c.newInstance();
-				action.setDBConnection(dbConn);
-				action.setAttributes(getAttributes());
-				return action;
-			} catch (InstantiationException | IllegalAccessException e) {
-				throw new ActionException("Problem Instantiating type: " + actionType);
-			}
-		}
-
-
-		/**
-		 * takes the pain out of passing Strings in and out of URLs/forms.  Typically these form values arrive HTML encoded.  
-		 * Use encodeURIComponent in your JS to compliment what this is doing server-side (at the client).
-		 * @param value
-		 * @return
-		 */
-		public static String urlEncode(String value) {
-			if (StringUtil.isEmpty(value)) return ""; //going in a URL, we don't want to return a null
-			return StringEncoder.urlEncode(StringEscapeUtils.unescapeHtml(value)).replace("+", "%20");
-		}
+	/**
+	 * takes the pain out of passing Strings in and out of URLs/forms.  Typically these form values arrive HTML encoded.  
+	 * Use encodeURIComponent in your JS to compliment what this is doing server-side (at the client).
+	 * @param value
+	 * @return
+	 */
+	public static String urlEncode(String value) {
+		if (StringUtil.isEmpty(value)) return ""; //going in a URL, we don't want to return a null
+		return StringEncoder.urlEncode(StringEscapeUtils.unescapeHtml(value)).replace("+", "%20");
+	}
 }
