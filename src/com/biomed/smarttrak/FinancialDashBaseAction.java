@@ -11,16 +11,19 @@ import java.util.Map;
 
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.FinancialDashVO.TableType;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.session.SMTSession;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -48,6 +51,8 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	public static final String QUARTER_2 = "Q2";
 	public static final String QUARTER_3 = "Q3";
 	public static final String QUARTER_4 = "Q4";
+	
+	private static final String MASTER_ROOT = "MASTER_ROOT";
 
 	public FinancialDashBaseAction() {
 		super();
@@ -70,14 +75,19 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		SMTSession ses = req.getSession();
 		user = (UserVO) ses.getAttribute(Constants.USER_DATA);
 		
-		FinancialDashVO dash = processRequestOptions(req);
+		// If section was not passed, set the default
+		if (!req.hasParameter("sectionId")) {
+			req.setParameter("sectionId", MASTER_ROOT);
+		}
+		
+		Tree sections = getHierarchy(req);
+		FinancialDashVO dash = new FinancialDashVO(req, sections);
 		
 		// Filter out financial data requests (i.e initial page load vs. json call).
 		// Financial data is only needed on a json call or report request.
 		// Default data/options are required for initial page load.
 		if (req.hasParameter("isJson") || req.hasParameter("isReport")) {
-			// Get the data for the table/chart/report
-			getFinancialData(dash);
+			getFinancialData(dash, sections);
 		}
 		
 		if (req.hasParameter("isReport")) {
@@ -85,40 +95,6 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		}
 		
 		this.putModuleData(dash);
-	}
-	
-	/**
-	 * Processes the request's options needed for generating the
-	 * requested table, chart, or report. Sets defaults where needed.
-	 * 
-	 * @param req
-	 * @return
-	 */
-	protected FinancialDashVO processRequestOptions(ActionRequest req) {
-		FinancialDashVO dash = new FinancialDashVO();
-		
-		// Get the paramters required to generate the requested table/chart/report
-		String displayType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
-		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), 2016); // TODO: How do I know which year to default to?
-		String tableType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
-		String[] countryTypes = req.getParameterValues("countryTypes[]") == null ? new String[]{FinancialDashVO.DEFAULT_COUNTRY_TYPE} : req.getParameterValues("countryTypes[]");
-		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"), "MASTER_ROOT");
-		boolean leafMode = Convert.formatBoolean(req.getParameter("leafMode"));
-		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
-		String companyId = StringUtil.checkVal(req.getParameter("companyId"));
-		
-		// Set the parameters so they can be used to generate the query/table
-		dash.setTableType(tableType);
-		dash.setColHeaders(displayType, calendarYear);
-		for(String countryType : countryTypes) {
-			dash.addCountryType(countryType);
-		}
-		dash.setSectionId(sectionId);
-		dash.setLeafMode(leafMode);
-		dash.setScenarioId(scenarioId);
-		dash.setCompanyId(companyId);
-		
-		return dash;
 	}
 	
 	/**
@@ -135,11 +111,31 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Gets the hierarchy for the requested level
+	 * 
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	@SuppressWarnings("unchecked")
+	protected Tree getHierarchy(ActionRequest req) throws ActionException {
+		SectionHierarchyAction sha = new SectionHierarchyAction(this.actionInit);
+		sha.setAttributes(this.attributes);
+		sha.setDBConnection(dbConn);
+		sha.retrieve(req);
+		
+		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		List<Node> sections = (List<Node>) mod.getActionData();
+		
+		return new Tree(sections, sections.get(0));
+	}
+	
+	/**
 	 * Gets the financial data to display in the table and charts
 	 * 
 	 * @param dash
 	 */
-	protected void getFinancialData(FinancialDashVO dash) {
+	protected void getFinancialData(FinancialDashVO dash, Tree sections) {
 		String sql = getFinancialDataSql(dash);
 		TableType tt = dash.getTableType();
 		int regionCnt = dash.getCountryTypes().size();
@@ -169,7 +165,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
 			
 			ResultSet rs = ps.executeQuery();
-			dash.setData(rs);
+			dash.setData(rs, sections);
 		} catch (SQLException sqle) {
 			log.error("Unable to get financial dashboard data", sqle);
 		}
@@ -206,7 +202,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			
 			// When viewing market data for a specific company, we always list/summarize 4 levels down in the heirarchy
 			int offset = 0;
-			if (!"".equals(dash.getCompanyId())) {
+			if (!StringUtil.isEmpty(dash.getCompanyId())) {
 				offset = 4;
 			}
 			

@@ -16,6 +16,7 @@ import com.biomed.smarttrak.FinancialDashVO.TableType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -47,7 +48,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * @param dash
 	 */
 	@Override
-	protected void getFinancialData(FinancialDashVO dash) {
+	protected void getFinancialData(FinancialDashVO dash, Tree sections) {
 		String sql = getFinancialDataSql(dash);
 		TableType tt = dash.getTableType();
 		DisplayType dt = dash.getColHeaders().getDisplayType();
@@ -88,7 +89,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
 			
 			ResultSet rs = ps.executeQuery();
-			dash.setData(rs);
+			dash.setData(rs, sections);
 		} catch (SQLException sqle) {
 			log.error("Unable to get financial dashboard data", sqle);
 		}
