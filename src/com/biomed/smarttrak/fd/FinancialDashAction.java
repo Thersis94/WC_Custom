@@ -22,13 +22,13 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 
 public class FinancialDashAction extends SBActionAdapter {
 	
-	private static final String FD = "fd";
+	private static final String FD = "FD";
 	
 	private enum FdActionType {
-		fd("com.biomed.smarttrak.fd.FinancialDashBaseAction"),
-		fdOverlay("com.biomed.smarttrak.fd.FinancialDashScenarioOverlayAction"),
-		fdHierarchy("com.biomed.smarttrak.admin.FinancialDashHierarchyAction"),
-		fdScenario("com.biomed.smarttrak.fd.FinancialDashScenarioAction");
+		FD("com.biomed.smarttrak.fd.FinancialDashBaseAction"),
+		FDOVERLAY("com.biomed.smarttrak.fd.FinancialDashScenarioOverlayAction"),
+		FDHIERARCHY("com.biomed.smarttrak.admin.FinancialDashHierarchyAction"),
+		FDSCENARIO("com.biomed.smarttrak.fd.FinancialDashScenarioAction");
 		
 		private String klass;
 		
@@ -77,12 +77,12 @@ public class FinancialDashAction extends SBActionAdapter {
 	 */
 	private ActionInterface getAction(ActionRequest req) throws ActionException {
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
-		String actionType = StringUtil.checkVal(req.getParameter("actionType"), FD);
+		String actionType = StringUtil.checkVal(req.getParameter("actionType"), FD).toUpperCase();
 		
 		// Determine the request type
 		FdActionType action;
 		if (scenarioId.length() > 0 && FD.equals(actionType)) {
-			action = FdActionType.fdOverlay;
+			action = FdActionType.FDOVERLAY;
 		} else {
 			action = FdActionType.valueOf(actionType);
 		}
