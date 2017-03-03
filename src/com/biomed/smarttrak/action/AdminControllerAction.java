@@ -15,6 +15,7 @@ import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
+import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
@@ -32,6 +33,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WC core
@@ -73,7 +75,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	public static final int DOC_ID_MIN_LEN = 15;  //used to determine if a pkId will be globally unique if fed to Solr as documentId, 
 
-	public static final String PUBLIC_401_PG = "/subscribe";
+	public static final String PUBLIC_401_PG = "/subscribe"; //where users get redirected when they're not authorized to view an asset
 
 
 	/*
@@ -119,6 +121,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			put("marketingCampaigns", CampaignInstanceAction.class);
 			put("marketingInstanceReport", InstanceReport.class);
 			put("uwr", UpdatesWeeklyReportAction.class); 
+			put("grid", GridChartAction.class);
 		}};
 
 		public AdminControllerAction() {
@@ -153,12 +156,16 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				}else {
 					action.build(req);
 				}
-				msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
+				msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 			} catch (ActionException ae) {
 				log.error("could not execute " + actionType, ae.getCause());
-				msg = (String) attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
+				msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 			}
+
+			// Only proceed to redirect if it not a json request (?json=true)
+			if (Convert.formatBoolean(req.getParameter("json")))
+				return;
 
 			//setup the redirect.  Build a URL for 'this' page if a child action didn't build one of it's own.
 			//NOTE: the controller should (and does) control the redirect.  It also sets 'msg' properly if the child action pukes.
