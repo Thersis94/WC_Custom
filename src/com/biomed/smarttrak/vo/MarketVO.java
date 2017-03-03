@@ -38,6 +38,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 	private String shortName;
 	private String aliasName;
 	private List<MarketAttributeVO> marketAttributes;
+	private List<MarketAttributeVO> graphs;
 	private List<GenericVO> sections;
 	private String updateMsg;
 	private Date updateDate;
@@ -47,6 +48,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 		super(BiomedMarketIndexer.INDEX_TYPE);
 		marketAttributes = new ArrayList<>();
 		sections = new ArrayList<>();
+		graphs = new ArrayList<>();
 	}
 
 
@@ -140,6 +142,21 @@ public class MarketVO extends SecureSolrDocumentVO {
 	public void addMarketAttribute(MarketAttributeVO attribute) {
 		marketAttributes.add(attribute);
 	}
+
+	public List<MarketAttributeVO> getGraphs() {
+		return graphs;
+	}
+
+
+	public void setGraphs(List<MarketAttributeVO> graphs) {
+		this.graphs = graphs;
+	}
+
+
+	public void addGraph(MarketAttributeVO graph) {
+		graphs.add(graph);
+	}
+
 
 	public List<GenericVO> getMarketSections() {
 		return sections;

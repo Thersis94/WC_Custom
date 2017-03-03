@@ -28,9 +28,11 @@ public class MarketAttributeVO {
 	private String attributeId;
 	private String marketId;
 	private String valueText;
+	private String value1Text;
 	private String attributeTypeCd;
 	private String attributeName;
 	private String marketName;
+	private String groupName;
 	private int orderNo;
 	
 	public MarketAttributeVO() {
@@ -48,6 +50,7 @@ public class MarketAttributeVO {
 		marketId = req.getParameter("marketId");
 		attributeId = req.getParameter("attributeId");
 		valueText = req.getParameter("valueText");
+		setValue1Text(req.getParameter("value1Text"));
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 	}
 
@@ -77,9 +80,35 @@ public class MarketAttributeVO {
 	public String getValueText() {
 		return valueText;
 	}
+	
+	public String getIcon() {
+		switch (valueText) {
+			case "PIE":
+				return "fa-pie-chart";
+			case "BAR":
+				return "fa-bar-chart";
+			case "COLUMN":
+				return "fa-line-chart";
+			default:
+				return "";
+		}
+	}
+	
 	public void setValueText(String valueText) {
 		this.valueText = valueText;
 	}
+	
+	@Column(name="value_1_txt")
+	public String getValue1Text() {
+		return value1Text;
+	}
+
+
+	public void setValue1Text(String value1Text) {
+		this.value1Text = value1Text;
+	}
+
+
 	@Column(name="type_cd", isReadOnly=true)
 	public String getAttributeTypeCd() {
 		return attributeTypeCd;
@@ -109,6 +138,17 @@ public class MarketAttributeVO {
 
 	public void setMarketName(String marketName) {
 		this.marketName = marketName;
+	}
+
+
+	@Column(name="group_nm", isReadOnly=true)
+	public String getGroupName() {
+		return groupName;
+	}
+
+
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
 	}
 
 
