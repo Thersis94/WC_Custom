@@ -39,7 +39,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  ****************************************************************************/
 public class InsightAction extends AbstractTreeAction {
 	protected static final String INSIGHT_ID = "insightsId"; //req param
-	public static final String ROOT_NODE_ID = "MASTER_ROOT";
+	public static final String ROOT_NODE_ID = AbstractTreeAction.MASTER_ROOT;
 
 	public InsightAction() {
 		super();
@@ -49,6 +49,11 @@ public class InsightAction extends AbstractTreeAction {
 		super(actionInit);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("insight retrieve called");
 		
@@ -76,6 +81,14 @@ public class InsightAction extends AbstractTreeAction {
 		putModuleData(insights);
 	}
 
+	/**
+	 * used to pull back a list of insights based on the codes and types.  
+	 * @param insightId
+	 * @param statusCd
+	 * @param typeCd
+	 * @param dateRange
+	 * @return
+	 */
 	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
