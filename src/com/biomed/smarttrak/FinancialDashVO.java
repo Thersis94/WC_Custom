@@ -130,28 +130,28 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setData(ActionRequest req, Tree sections) {
 		// Get the paramters off the request, set defaults where required
-		String displayType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
-		String tableType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
-		String[] countryTypes = req.getParameterValues("countryTypes[]") == null ? new String[]{FinancialDashVO.DEFAULT_COUNTRY_TYPE} : req.getParameterValues("countryTypes[]");
-		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"));
-		boolean leafMode = Convert.formatBoolean(req.getParameter("leafMode"));
-		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
-		String companyId = StringUtil.checkVal(req.getParameter("companyId"));
+		String dispType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
+		String tblType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
+		String[] ctryTypes = req.getParameterValues("countryTypes[]") == null ? new String[]{FinancialDashVO.DEFAULT_COUNTRY_TYPE} : req.getParameterValues("countryTypes[]");
+		String sectId = StringUtil.checkVal(req.getParameter("sectionId"));
+		boolean leafMd = Convert.formatBoolean(req.getParameter("leafMode"));
+		String scenId = StringUtil.checkVal(req.getParameter("scenarioId"));
+		String compId = StringUtil.checkVal(req.getParameter("companyId"));
 		
 		// Default year & quarter require knowledge of what was most recently published for the section being viewed
 		SectionVO section = (SectionVO) sections.getRootNode().getUserObject();
-		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), section.getFdPubYr());
+		Integer calYr = Convert.formatInteger(req.getParameter("calendarYear"), section.getFdPubYr());
 
 		// Set the parameters
-		setTableType(tableType);
-		setColHeaders(displayType, calendarYear);
-		for(String countryType : countryTypes) {
+		setTableType(tblType);
+		setColHeaders(dispType, calYr);
+		for(String countryType : ctryTypes) {
 			addCountryType(countryType);
 		}
-		setSectionId(sectionId);
-		setLeafMode(leafMode);
-		setScenarioId(scenarioId);
-		setCompanyId(companyId);
+		setSectionId(sectId);
+		setLeafMode(leafMd);
+		setScenarioId(scenId);
+		setCompanyId(compId);
 		setQuarter(section.getFdPubQtr());
 	}
 	
