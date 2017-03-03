@@ -1,4 +1,4 @@
-package com.biomed.smarttrak;
+package com.biomed.smarttrak.fd;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,15 +9,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
-import com.biomed.smarttrak.FinancialDashVO.TableType;
+import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
+import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.session.SMTSession;
@@ -52,8 +53,6 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	public static final String QUARTER_3 = "Q3";
 	public static final String QUARTER_4 = "Q4";
 	
-	private static final String MASTER_ROOT = "MASTER_ROOT";
-
 	public FinancialDashBaseAction() {
 		super();
 	}
@@ -77,10 +76,10 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		
 		// If section was not passed, set the default
 		if (!req.hasParameter("sectionId")) {
-			req.setParameter("sectionId", MASTER_ROOT);
+			req.setParameter("sectionId", AbstractTreeAction.MASTER_ROOT);
 		}
 		
-		Tree sections = getHierarchy(req);
+		SmarttrakTree sections = getHierarchy(req);
 		FinancialDashVO dash = new FinancialDashVO(req, sections);
 		
 		// Filter out financial data requests (i.e initial page load vs. json call).
@@ -118,7 +117,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	protected Tree getHierarchy(ActionRequest req) throws ActionException {
+	protected SmarttrakTree getHierarchy(ActionRequest req) throws ActionException {
 		SectionHierarchyAction sha = new SectionHierarchyAction(this.actionInit);
 		sha.setAttributes(this.attributes);
 		sha.setDBConnection(dbConn);
@@ -127,7 +126,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		List<Node> sections = (List<Node>) mod.getActionData();
 		
-		return new Tree(sections, sections.get(0));
+		return new SmarttrakTree(sections, sections.get(0));
 	}
 	
 	/**
@@ -135,7 +134,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * 
 	 * @param dash
 	 */
-	protected void getFinancialData(FinancialDashVO dash, Tree sections) {
+	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections) {
 		String sql = getFinancialDataSql(dash);
 		TableType tt = dash.getTableType();
 		int regionCnt = dash.getCountryTypes().size();

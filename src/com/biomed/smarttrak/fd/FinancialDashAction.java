@@ -1,4 +1,4 @@
-package com.biomed.smarttrak;
+package com.biomed.smarttrak.fd;
 
 import java.lang.reflect.Constructor;
 
@@ -25,10 +25,10 @@ public class FinancialDashAction extends SBActionAdapter {
 	private static final String FD = "fd";
 	
 	private enum FdActionType {
-		fd("com.biomed.smarttrak.FinancialDashBaseAction"),
-		fdOverlay("com.biomed.smarttrak.FinancialDashScenarioOverlayAction"),
+		fd("com.biomed.smarttrak.fd.FinancialDashBaseAction"),
+		fdOverlay("com.biomed.smarttrak.fd.FinancialDashScenarioOverlayAction"),
 		fdHierarchy("com.biomed.smarttrak.admin.FinancialDashHierarchyAction"),
-		fdScenario("com.biomed.smarttrak.FinancialDashScenarioAction");
+		fdScenario("com.biomed.smarttrak.fd.FinancialDashScenarioAction");
 		
 		private String klass;
 		

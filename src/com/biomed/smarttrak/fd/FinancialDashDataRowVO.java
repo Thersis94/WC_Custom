@@ -1,4 +1,4 @@
-package com.biomed.smarttrak;
+package com.biomed.smarttrak.fd;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
@@ -10,9 +10,9 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -221,7 +221,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * 
 	 * @param tree
 	 */
-	protected void setReporting(Tree tree) {
+	protected void setReporting(SmarttrakTree tree) {
 		Node parentNode = tree.getRootNode();
 		List<Node> childNodes = parentNode.getChildren();
 		

@@ -1,4 +1,4 @@
-package com.biomed.smarttrak;
+package com.biomed.smarttrak.fd;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -7,9 +7,9 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -89,12 +89,12 @@ public class FinancialDashVO extends SBModuleVO {
 		log = Logger.getLogger(getClass());
 	}
 
-	public FinancialDashVO(ResultSet rs, Tree sections) {
+	public FinancialDashVO(ResultSet rs, SmarttrakTree sections) {
 		this();
 		setData(rs, sections);
 	}
 	
-	public FinancialDashVO(ActionRequest req, Tree sections) {
+	public FinancialDashVO(ActionRequest req, SmarttrakTree sections) {
 		this();
 		setData(req, sections);
 	}
@@ -104,7 +104,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * 
 	 * @param rs
 	 */
-	public void setData(ResultSet rs, Tree sections) {
+	public void setData(ResultSet rs, SmarttrakTree sections) {
 		FinancialDashDataRowVO row;
 		
 		try {
@@ -128,7 +128,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param req
 	 * @param sections
 	 */
-	public void setData(ActionRequest req, Tree sections) {
+	public void setData(ActionRequest req, SmarttrakTree sections) {
 		// Get the paramters off the request, set defaults where required
 		String dispType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
 		String tblType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);

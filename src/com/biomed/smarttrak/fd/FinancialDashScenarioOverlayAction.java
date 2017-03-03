@@ -1,4 +1,4 @@
-package com.biomed.smarttrak;
+package com.biomed.smarttrak.fd;
 
 import java.lang.reflect.Method;
 import java.sql.PreparedStatement;
@@ -11,12 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
-import com.biomed.smarttrak.FinancialDashVO.TableType;
+import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
+import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -48,7 +48,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * @param dash
 	 */
 	@Override
-	protected void getFinancialData(FinancialDashVO dash, Tree sections) {
+	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections) {
 		String sql = getFinancialDataSql(dash);
 		TableType tt = dash.getTableType();
 		DisplayType dt = dash.getColHeaders().getDisplayType();
