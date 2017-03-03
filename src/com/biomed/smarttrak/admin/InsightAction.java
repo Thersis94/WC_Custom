@@ -17,8 +17,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
@@ -91,6 +89,7 @@ public class InsightAction extends AbstractTreeAction {
 	 * @param dateRange
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
@@ -103,21 +102,13 @@ public class InsightAction extends AbstractTreeAction {
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
-		
-		try {
-			StringEncrypter sc = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
-			
+
 			for (Object ob : insights){
 				InsightVO vo = (InsightVO)ob;
-				vo.setFirstName(sc.decrypt(vo.getFirstName()));
-				vo.setLastName(sc.decrypt(vo.getLastName()));
+				vo.setQsPath((String)getAttribute(Constants.QS_PATH));
 			}
-		} catch (EncryptionException e) {
-			log.error("could not un encrypt name ", e);
-		}
-		
-		
-		
+
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
 		
 		
 		return insights;
@@ -209,6 +200,9 @@ public class InsightAction extends AbstractTreeAction {
 				db.delete(u);
 				deleteFromSolr(u);
 			} else {
+				
+				u.setQsPath((String)getAttribute(Constants.QS_PATH));
+				
 				if (req.hasParameter("listSave")){
 					updateFeatureOrder(u);
 				}else {
