@@ -196,7 +196,6 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private ActionInterface loadAction(String actionType) throws ActionException {
-
 		//Check if ACTIONS contains a key for our actionType.
 		if(ACTIONS.containsKey(actionType)) {
 
@@ -222,7 +221,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		}
 	}
 
-  /**
+
+	/**
 	 * takes the pain out of passing Strings in and out of URLs/forms.  Typically these form values arrive HTML encoded.  
 	 * Use encodeURIComponent in your JS to compliment what this is doing server-side (at the client).
 	 * @param value
