@@ -5,6 +5,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.util.BiomedInsightIndexer;
+import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
@@ -111,7 +113,7 @@ public class InsightAction extends AbstractTreeAction {
 				vo.setLastName(sc.decrypt(vo.getLastName()));
 			}
 		} catch (EncryptionException e) {
-			log.error("could not un encrypt name ");
+			log.error("could not un encrypt name ", e);
 		}
 		
 		
@@ -205,6 +207,7 @@ public class InsightAction extends AbstractTreeAction {
 			if (isDelete) {
 				log.debug("deleting " + u);
 				db.delete(u);
+				deleteFromSolr(u);
 			} else {
 				if (req.hasParameter("listSave")){
 					updateFeatureOrder(u);
@@ -214,7 +217,7 @@ public class InsightAction extends AbstractTreeAction {
 				
 				//Add to Solr if published
 				if(InsightStatusCd.P.toString().equals(u.getStatusCd())) {
-					saveToSolr(u);
+					writeToSolr(u);
 				}
 			}
 		} catch (Exception e) {
@@ -222,6 +225,29 @@ public class InsightAction extends AbstractTreeAction {
 		}
 	}
 
+	/**
+	 * Save an InsightsVO to solr.
+	 * @param u
+	 */
+	protected void writeToSolr(InsightVO u) {
+		BiomedInsightIndexer bindx = BiomedInsightIndexer.makeInstance(getAttributes());
+		bindx.setDBConnection(dbConn);
+		bindx.addSingleItem(u.getInsightId());
+	}
+	
+	/**
+	 * Removes an Updates Record from Solr.
+	 * @param u
+	 */
+	protected void deleteFromSolr(InsightVO i) {
+		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
+			sau.removeDocument(i.getInsightId());
+		} catch (Exception e) {
+			log.error("Error Deleting from Solr.", e);
+		}
+		log.debug("removed document from solr");
+	}
+	
 	/**
 	 * uses db util to do a full update or insert on the passed vo
 	 * @param u 
@@ -276,19 +302,6 @@ public class InsightAction extends AbstractTreeAction {
 			}
 		}
 		
-	}
-
-	/**
-	 * Save an InsightVO to solr.
-	 * @param u
-	 */
-	protected void saveToSolr(InsightVO u) {
-		try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
-			sau.addDocument(u);
-		} catch (Exception e) {
-			log.error("Error Saving to Solr.", e);
-		}
-		log.debug("added document to solr");
 	}
 
 	/**
