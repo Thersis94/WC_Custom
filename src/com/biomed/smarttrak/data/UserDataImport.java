@@ -6,7 +6,6 @@ import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -14,8 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
+
+//SMTBaseLibs
 import com.siliconmtn.exception.DatabaseException;
-// SMTBaseLibs
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -47,20 +49,22 @@ import com.smt.sitebuilder.security.UserLogin;
  ****************************************************************************/
 public class UserDataImport extends ProfileImport {
 
-	private Map<String,String> regFieldMap;
+	// import env params
+	private static final String SOURCE_FILE_PATH="/data/SMT/accounts/SmartTRAK/smarttrak/user-import/test/smarttrak-TEST-2017-03-03.csv";
 	private static final String GEOCODE_CLASS="com.siliconmtn.gis.SMTGeocoder";
 	private static final String GEOCODE_URL="http://localhost:9000/websvc/geocoder";
+	// WC params
 	private static final String REGISTRATION_PAGE_URL = "http://smarttrak.siliconmtn.com/my-account";
-	private static final String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-user-import-TEST-2017-01-24.csv";
 	private static final String REG_PMID = "6d9674d8b7dc54077f0001019b2cb979";
 	private static final String REG_ACTION_ID = "ea884793b2ef163f7f0001011a253456";
+	// profile header vals
 	private static final String FIRST_NM = "FIRST_NM";
 	private static final String LAST_NM = "LAST_NM";
 	private static final String ZIP_CD = "ZIP_CD";
 	private static final String MAIN_PHONE_TXT = "MAIN_PHONE_TXT";
 	private static final String MOBILE_PHONE_TXT = "MOBILE_PHONE_TXT";
-	
-	
+	private Map<String,String> regFieldMap;
+
 	public UserDataImport() {
 		super();
 		regFieldMap = createRegFieldMap();
@@ -72,15 +76,14 @@ public class UserDataImport extends ProfileImport {
 	public static void main(String[] args) {        
         UserDataImport db = new UserDataImport();
 		try {
-			log.info("importFile=" + FILE_PATH);
-			List<Map<String,String>> data = db.parseFile(FILE_PATH);
+			log.info("importFile=" + SOURCE_FILE_PATH);
+			List<Map<String,String>> data = db.parseFile(SOURCE_FILE_PATH);
 			db.insertRecords(data);
 		} catch (Exception e) {
 			log.error("Error Processing ... " + e.getMessage());
 		}
 	}
-	
-	
+
 	/**
 	 * 
 	 * @param records
@@ -93,12 +96,12 @@ public class UserDataImport extends ProfileImport {
 		int successCnt = 0;
 		int failedCnt = 0;
 		int skipCnt = 0;
-		String currRecord;
+		String sourceId;
 		//Open DB Connection
 		Connection dbConn = getDBConnection(DESTINATION_AUTH[0], DESTINATION_AUTH[1], DESTINATION_DB_DRIVER, DESTINATION_DB_URL);
 		
 		List<String> profileIds = new ArrayList<>();
-		Map<String,String> profileIdMap = new HashMap<>();
+		List<UserVO> sourceUsers = new ArrayList<>();
 		Map<String, Object> config = new HashMap<>();
 		config.put(Constants.ENCRYPT_KEY, encKey);
 		config.put(Constants.GEOCODE_CLASS, GEOCODE_CLASS);
@@ -117,7 +120,7 @@ public class UserDataImport extends ProfileImport {
 			// populate user data vo
 			user = new SiteUserVO();
 			dataSet = (Map<String,Object>) iter.next();
-			currRecord = (String)dataSet.get("SMARTTRAK_ID");
+			sourceId = (String)dataSet.get("SMARTTRAK_ID");
 			
 			// clean up certain values before we use them.
 			sanitizeFieldData(dataSet);
@@ -126,7 +129,7 @@ public class UserDataImport extends ProfileImport {
 			// check email address
 			if (!StringUtil.isValidEmail(user.getEmailAddress())) {
 				user.setEmailAddress(null);
-				log.warn("Invalid email found, setting to null for source id|email: " + currRecord + "|" + user.getEmailAddress());
+				log.warn("Invalid email found, setting to null for source id|email: " + sourceId + "|" + user.getEmailAddress());
 			} else {
 				user.setValidEmailFlag(1);
 			}
@@ -154,14 +157,14 @@ public class UserDataImport extends ProfileImport {
 				checkForRole(dbConn, prm, user.getProfileId(), tmpField1, tmpField2);
 				
 			} catch(Exception ex) {
-				log.error("Error processing source ID " + currRecord + ", " + ex.getMessage());
+				log.error("Error processing source ID " + sourceId + ", " + ex.getMessage());
 			}
 			
 			//increment our counters
 			if (user.getProfileId() != null) {
 				successCnt++;
 				profileIds.add(user.getProfileId());
-				profileIdMap.put(currRecord, user.getProfileId());
+				sourceUsers.add(createSourceUser(dataSet,sourceId,user.getProfileId()));
 				try {
 					insertRegistrationRecords(dbConn, dataSet, user);
 				} catch (Exception e) {
@@ -179,10 +182,36 @@ public class UserDataImport extends ProfileImport {
 		this.closeConnection(dbConn);
 		
 		/* Output inserts for the source ID mapped to the WC profile ID found/created. */
-		Timestamp now = Convert.getCurrentTimestamp();
-		for (Map.Entry<String,String> entry : profileIdMap.entrySet()) {
-			log.info("insert into custom.biomedgps_user (user_id, profile_id, create_dt) values ('"+ entry.getKey() + "','" + entry.getValue() + "','" + now + "');");
+		for (UserVO sUser : sourceUsers) {
+			StringBuilder sql = new StringBuilder(200);
+			sql.append("insert into custom.biomedgps_user (user_id, profile_id, register_submittal_id, status_cd, expiration_dt, create_dt) values (");
+			sql.append("'").append(sUser.getUserId()).append("',");
+			sql.append("'").append(sUser.getProfileId()).append("',");
+			sql.append("'").append(sUser.getRegisterSubmittalId()).append("',");
+			sql.append("'").append(sUser.getStatusCode().toUpperCase()).append("',");
+			sql.append("'").append(Convert.formatDate(sUser.getExpirationDate(),Convert.DATE_TIME_DASH_PATTERN)).append("',");
+			sql.append("'").append(Convert.formatDate(sUser.getCreateDate(),Convert.DATE_TIME_DASH_PATTERN)).append("',");
+			sql.append(");");
+			log.info(sql.toString());
 		}
+	}
+	
+	/**
+	 * Creates a native UserVO and maps it to the user's WC profile ID.
+	 * @param record
+	 * @param sourceId
+	 * @param profileId
+	 * @return
+	 */
+	protected UserVO createSourceUser(Map<String,Object> record, String sourceId, String profileId) {
+		UserVO user = new UserVO();
+		user.setUserId(sourceId);
+		user.setProfileId(profileId);
+		user.setStatusCode(StringUtil.checkVal(record.get("STATUS"),null));
+		user.setCreateDate(Convert.formatDate(StringUtil.checkVal(record.get("DATE_JOINED"),null)));
+		user.setExpirationDate(Convert.formatDate(StringUtil.checkVal(record.get("DATE_EXPIRATION"),null)));
+		user.setPassword(StringUtil.checkVal("SMARTTRAK_PASSWORD_TXT",null));
+		return user;
 	}
 	
 	/**
@@ -284,7 +313,7 @@ public class UserDataImport extends ProfileImport {
 			}
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @param dbConn
@@ -295,13 +324,13 @@ public class UserDataImport extends ProfileImport {
 	protected void insertRegistrationRecords(Connection dbConn, Map<String,Object> record, SiteUserVO user) 
 			throws Exception {
 		if (user.getEmailAddress() == null) {
+			// insert reg records manually because lack of an email will cause another profile to be created by SubmittalAction
 			insertRegistrationRecordsManually(dbConn, record, user);
 		} else {
 			insertRegistrationRecordsViaForm(record);
 		}
-		
 	}
-	
+
 	/**
 	 * Used to insert registration records for profiles with no email address.  If we try to push these through the API, 
 	 * WC creates a new profile for this user in addition to creating the registration records.  This results in multiple
@@ -333,37 +362,28 @@ public class UserDataImport extends ProfileImport {
 		}
 
 		regSub = new StringBuilder(132);
-		regSub.append("insert into register_data (register_data_id, register_submittal_id, register_field_id, ");
-		regSub.append("value_txt, create_dt) values (?,?,?,?,?)");
+		regSub.append("insert into register_data (register_data_id, register_submittal_id, ");
+		regSub.append("register_field_id, value_txt, create_dt) values (?,?,?,?,?)");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(regSub.toString())) {
-			for (int recCnt = 1; recCnt < 4; recCnt++) {
-				idx = 1;
-				ps.setString(idx++, new UUIDGenerator().getUUID());
-				ps.setString(idx++, regSubId);
-				switch(recCnt) {
-					case 1:
-						ps.setString(idx++, "dd64d07fb37c2c067f0001012b4210ff");
-						ps.setString(idx++, (String)record.get("TITLE"));
-						break;
-					case 2:
-						ps.setString(idx++, "9b079506b37cc0de7f0001014b63ad3c");
-						ps.setString(idx++, (String)record.get("UPDATE_FREQ"));
-						break;
-					case 3:
-						ps.setString(idx++, "d5ed674eb37da7fd7f000101d875b114");
-						ps.setString(idx++, (String)record.get("UPDATE_FAVORITES_FREQ"));
-						break;
-					default:
-						throw new Exception();
-				}
-				ps.setTimestamp(idx++, Convert.getCurrentTimestamp());
+			
+			for (RegistrationMap mKey : RegistrationMap.values()) {
+				// check record val, only write reg records if have a value.
+				String recVal = (String)record.get(mKey.name());
+				if (StringUtil.isEmpty(recVal)) continue;
+				
+				idx = 0;
+				ps.setString(++idx, new UUIDGenerator().getUUID());
+				ps.setString(++idx, regSubId);
+				ps.setString(++idx, mKey.getFieldId());
+				ps.setString(++idx, recVal);
+				ps.setTimestamp(++idx, Convert.getCurrentTimestamp());
 				ps.addBatch();
+				
 			}
-			int[] recs = ps.executeBatch();
-			if (recs == null || recs.length < 3) {
-				log.warn("Warning: Number of registration records inserted is less than 3.");
-			}
+			
+			ps.executeBatch();
+
 		} catch (BatchUpdateException sqle) {
 			log.error("Error inserting registration submittal records manually, ", sqle.getNextException());
 			throw new Exception(sqle.getNextException().getMessage());
@@ -455,7 +475,7 @@ public class UserDataImport extends ProfileImport {
 	 * Created Map of column name to registration field name.
 	 * @return
 	 */
-	protected static final Map<String, String> createRegFieldMap() {
+	protected final Map<String, String> createRegFieldMap() {
 		Map<String, String> fieldMap = new TreeMap<>();
 		// profile fields
 		fieldMap.put("EMAIL_ADDRESS_TXT","reg_enc|EMAIL_ADDRESS_TXT|7f000001397b18842a834a598cdeafa");
@@ -470,10 +490,26 @@ public class UserDataImport extends ProfileImport {
 		fieldMap.put(MAIN_PHONE_TXT,"reg_enc|MAIN_PHONE_TXT|7f000001527b18842a834a598cdeafa");
 		fieldMap.put("COUNTRY_CD","pfl_COUNTRY_CD");
 		// non-profile fields
-		fieldMap.put("TITLE","reg_||dd64d07fb37c2c067f0001012b4210ff");
-		fieldMap.put("UPDATE_FREQ","reg_||9b079506b37cc0de7f0001014b63ad3c");
-		fieldMap.put("UPDATE_FAVORITES_FREQ","reg_||d5ed674eb37da7fd7f000101d875b114");
+		fieldMap.put(RegistrationMap.TITLE.name(), formatFieldId(RegistrationMap.TITLE.getFieldId()));
+		fieldMap.put(RegistrationMap.UPDATES.name(), formatFieldId(RegistrationMap.UPDATES.getFieldId()));
+		fieldMap.put(RegistrationMap.FAVORITEUPDATES.name(), formatFieldId(RegistrationMap.FAVORITEUPDATES.getFieldId()));
+		fieldMap.put(RegistrationMap.COMPANY.name(), formatFieldId(RegistrationMap.COMPANY.getFieldId()));
+		fieldMap.put(RegistrationMap.COMPANYURL.name(), formatFieldId(RegistrationMap.COMPANYURL.getFieldId()));
+		fieldMap.put(RegistrationMap.SOURCE.name(), formatFieldId(RegistrationMap.SOURCE.getFieldId()));
+		fieldMap.put(RegistrationMap.DEMODT.name(), formatFieldId(RegistrationMap.DEMODT.getFieldId()));
+		fieldMap.put(RegistrationMap.TRAININGDT.name(), formatFieldId(RegistrationMap.TRAININGDT.getFieldId()));
+		fieldMap.put(RegistrationMap.INITTRAININGDT.name(), formatFieldId(RegistrationMap.INITTRAININGDT.getFieldId()));
+		fieldMap.put(RegistrationMap.ADVTRAININGDT.name(), formatFieldId(RegistrationMap.ADVTRAININGDT.getFieldId()));
+		fieldMap.put(RegistrationMap.OTHERTRAININGDT.name(), formatFieldId(RegistrationMap.OTHERTRAININGDT.getFieldId()));
+		fieldMap.put(RegistrationMap.JOBCATEGORY.name(), formatFieldId(RegistrationMap.JOBCATEGORY.getFieldId()));
+		fieldMap.put(RegistrationMap.JOBLEVEL.name(), formatFieldId(RegistrationMap.JOBLEVEL.getFieldId()));
+		fieldMap.put(RegistrationMap.INDUSTRY.name(), formatFieldId(RegistrationMap.INDUSTRY.getFieldId()));
+		fieldMap.put(RegistrationMap.NOTES.name(), formatFieldId(RegistrationMap.NOTES.getFieldId()));
 		return fieldMap;
+	}
+	
+	protected String formatFieldId(String fieldId) {
+		return "reg_||" + fieldId;
 	}
 	
 	/**
