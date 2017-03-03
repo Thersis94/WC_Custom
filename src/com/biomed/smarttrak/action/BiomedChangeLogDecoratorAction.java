@@ -69,7 +69,7 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 		int dNo = -1;
 
 		//Neither is null, then check for equality.  No Update.
-		if(original != null && diff != null) {
+		if(original != null) {
 			dNo = original.getDiffText().compareTo(diff.getDiffText());
 		}
 
