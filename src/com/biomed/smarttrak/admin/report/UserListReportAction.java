@@ -61,18 +61,18 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	public List<AccountUsersVO> retrieveUserList(ActionRequest req) throws ActionException {
-		
+
 		StringEncrypter se = initStringEncrypter();
-		
+
 		// 1. retrieve account/users
 		List<AccountUsersVO> accounts = retrieveAccountUsers(se);
-		
+
 		// 2. retrieve profiles, profile addresses, phones
 		Map<String,Date> lastLogins = retrieveLastLogin(req, accounts);
-		
+
 		// 3. Merge data and return.
 		mergeData(accounts, lastLogins);
-		
+
 		return accounts;
 	}
 
@@ -316,7 +316,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 			// check address txt, decrypt if populated.
 			String tmp = StringUtil.checkVal(rs.getString("address_txt"));
 			if (! tmp.isEmpty()) user.setAddress(se.decrypt(tmp));
-			tmp = StringUtil.checkVal(rs.getString("phone_number_txt"));
+			tmp = StringUtil.checkVal(se.decrypt(rs.getString("phone_number_txt")));
 			if (! tmp.isEmpty()) {
 				if (PhoneVO.HOME_PHONE.equals(rs.getString("phone_type_cd"))) {
 					user.setMainPhone(tmp);

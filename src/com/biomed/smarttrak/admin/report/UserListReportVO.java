@@ -85,6 +85,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	private static final String LIST_DELIMITER = ",";
 	private static final String USER_FD_VAL = "FD";
 	private static final String LOGIN_DATE_NULL_VAL = "Never";
+	private static final String DEFAULT_COUNTRY = "US";
 	
 	/**
 	* Constructor
@@ -188,10 +189,16 @@ public class UserListReportVO extends AbstractSBReportVO {
 	 */
 	protected String formatPhoneNumber(PhoneNumberFormat pnf, String phone, String country) {
 		if (StringUtil.checkVal(phone).isEmpty()) return EMPTY_STRING;
-		pnf.setCountryCode(country);
+		// set the country based on the user's country code.
+		pnf.setCountryCode(StringUtil.isEmpty(country) ? DEFAULT_COUNTRY : country);
+		// if the country code that has been set is US, use dash formatting, else international formatting
+		if (DEFAULT_COUNTRY.equalsIgnoreCase(pnf.getCountryCode())) {
+			pnf.setFormatType(PhoneNumberFormat.DASH_FORMATTING);
+		} else {
+			pnf.setFormatType(PhoneNumberFormat.INTERNATIONAL_FORMAT);
+		}
 		pnf.setPhoneNumber(phone);
 		return pnf.getFormattedNumber();
-		
 	}
 	
 	/**
