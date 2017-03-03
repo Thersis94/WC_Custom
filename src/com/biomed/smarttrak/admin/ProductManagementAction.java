@@ -2,6 +2,7 @@ package com.biomed.smarttrak.admin;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -591,12 +592,56 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	/**
 	 * Get all attributes associated with the supplied product.
 	 * @param product
+	 * @throws ActionException 
 	 */
-	protected void addAttributes(ProductVO product) {
+	protected void addAttributes(ProductVO product) throws ActionException {
 		List<Object> results = getProductAttributes(product.getProductId());
+		Tree t = buildAttributeTree();
+		
 		for (Object o : results) {
-			product.addAttribute((ProductAttributeVO)o);
+			ProductAttributeVO p = (ProductAttributeVO)o;
+			Node n = t.findNode(p.getAttributeId());
+			String[] split = n.getFullPath().split(Tree.DEFAULT_DELIMITER);
+			if (split.length >= 2) {
+				p.setGroupName(split[1]);
+			}
+			product.addAttribute(p);
 		}
+	}
+	
+
+	/**
+	 * Create the full attribute tree in order to determine the full ancestry of each attribute
+	 * @return
+	 * @throws ActionException
+	 */
+	private Tree buildAttributeTree() throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT c.ATTRIBUTE_ID, c.PARENT_ID, c.ATTRIBUTE_NM, p.ATTRIBUTE_NM as PARENT_NM ");
+		sql.append("FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE c ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE p ");
+		sql.append("ON c.PARENT_ID = p.ATTRIBUTE_ID ");
+		log.debug(sql);
+		List<Node> attributes = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				Node n = new Node(rs.getString("ATTRIBUTE_ID"), rs.getString("PARENT_ID"));
+				if ("profile".equals(rs.getString("ATTRIBUTE_NM"))) {
+					n.setNodeName(rs.getString("PARENT_NM"));
+				} else {
+					n.setNodeName(rs.getString("ATTRIBUTE_NM"));
+				}
+				attributes.add(n);
+			}
+			
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		Tree t = new Tree(attributes);
+		t.buildNodePaths(t.getRootNode(), Tree.DEFAULT_DELIMITER, true);
+		return t;
 	}
 	
 	
