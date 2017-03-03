@@ -37,6 +37,11 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
 public class InsightAction extends AbstractTreeAction {
 	private static final String REQ_PARAM_1 = DirectoryParser.PARAMETER_PREFIX + "1";
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//check to see if we are getting an insight or a solr list
 	

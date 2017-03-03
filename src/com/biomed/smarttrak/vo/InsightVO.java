@@ -116,7 +116,6 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		super.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL);
 	}
 
-
 	public InsightVO(ResultSet rs) {
 		this();
 		setData(rs);
@@ -127,6 +126,10 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		setData(req);
 	}
 
+	/**
+	 * sets the vo off of the req object
+	 * @param req
+	 */
 	protected void setData(ActionRequest req) {
 		SMTSession ses = req.getSession();
 		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
@@ -170,6 +173,10 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		return sections;
 	}
 
+	/**
+	 * adds an insight section to the list
+	 * @param u
+	 */
 	@BeanSubElement()
 	public void addInsightXrVO(InsightXRVO u) {
 		if(u != null)
