@@ -714,14 +714,14 @@ public class GridVO extends BeanDataVO {
 			String[] values = detail.getValues();
 			
 			// Add the id and class as well as the label
-			row.put("class", "bs-data");
+			row.put("class", RowStyle.valueOf(detail.getDetailType()).getName());
 			row.put("id", detail.getGridDetailId());
 			row.put(FIELD_LABEL + 0, detail.getLabel());
 			
 			// Loop the values and add to container assumes "" for empty cell and null for unused column
 			for (int x = 1; x < 11; x++) {
-				if (values[x-1] != null) {
-					row.put(FIELD_LABEL + x,values[x-1]);
+				if (values[x-1] != null || x <= maxCols) {
+					row.put(FIELD_LABEL + x,StringUtil.checkVal(values[x-1]));
 					if (x > maxCols) maxCols = x;
 				}
 			}

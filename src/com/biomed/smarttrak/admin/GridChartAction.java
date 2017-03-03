@@ -145,12 +145,12 @@ public class GridChartAction extends SBActionAdapter {
 		sql.append("on a.grid_id = b.grid_id where a.grid_id = ? ");
 		if (display) sql.append("and grid_detail_type_cd = 'DATA' ");
 		sql.append("order by b.order_no");
-		log.info(sql);
+		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> params = Arrays.asList(new Object[]{gridId});
 		List<?> data = db.executeSelect(sql.toString(), params, new GridVO(), null);
-		log.info("Data: " + data);
+		log.debug("Data: " + data);
 		
 		// Add the vo only.  Add a blank bean if nothing found
 		putModuleData(data.isEmpty() ? new GridVO() : data.get(0));
