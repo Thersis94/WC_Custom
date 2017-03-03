@@ -15,7 +15,7 @@ import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
-import com.biomed.smarttrak.admin.InsightAction;
+import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
@@ -31,9 +31,11 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.support.SupportTicketFacadeAction;
 import com.smt.sitebuilder.action.solr.management.SolrSynonymAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -134,7 +136,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		super.retrieve(req);
 	}
 
-
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		String actionType = req.getParameter(ACTION_TYPE);
@@ -167,7 +172,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			if (!StringUtil.isEmpty(actionType)) url.append("?actionType=").append(actionType);
 			redirUrl = url.toString();
 		}
-		sendRedirect(redirUrl, msg, req);
+		
+		// Only redirect if it not a json request (?json=true)
+		boolean json = Convert.formatBoolean(req.getParameter("json"), false);
+		if (! json) sendRedirect(redirUrl, msg, req);
 	}
 
 
@@ -189,6 +197,71 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private ActionInterface loadAction(String actionType) throws ActionException {
+		ActionInterface action;
+		switch (StringUtil.checkVal(actionType)) {
+			case "hierarchy":
+				action = new SectionHierarchyAction();
+				break;
+			case "agap":
+				action = new GapAnalysisAdminAction();
+				break;
+			case "fd":
+				action = new FinancialDashAction();
+				break;
+			case "fdScenario":
+				action = new FinancialDashScenarioAction();
+				break;
+			case "productAdmin":
+				action = new ProductManagementAction();
+				break;
+			case "companyAdmin":
+				action = new CompanyManagementAction();
+				break;
+			case "accounts":
+				action = new AccountAction();
+				break;
+			case "account-permissions":
+				action = new AccountPermissionAction();
+				break;
+			case "users":
+				action = new AccountUserAction();
+				break;
+			case "insights":
+				action = new InsightAction();
+				break;
+			case "teams":
+				action = new TeamAction();
+				break;
+			case "team-members":
+				action = new TeamMemberAction();
+				break;
+			case "marketAdmin":
+				action = new MarketManagementAction();
+				break;
+			case "updates":
+				action = new UpdatesAction();
+				break;
+			case "list":
+				action = new ListAction();
+				break;
+			case "activityLog":
+				action = new UserActivityAction();
+				break;
+			case "reports":
+				action = new ReportFacadeAction();
+				break;
+			case "support":
+				action = new SupportTicketFacadeAction();
+				break;
+			case "synonyms":
+				action = new SolrSynonymAction();
+				break;
+			case "grid":
+				action = new GridChartAction();
+				break;
+			default:
+				throw new ActionException("unknown action type:" + actionType);
+		}
 
 		//Check if ACTIONS contains a key for our actionType.
 		if(ACTIONS.containsKey(actionType)) {
