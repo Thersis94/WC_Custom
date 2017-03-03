@@ -286,6 +286,7 @@ public class ProductExplorer extends SBActionAdapter {
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "usstatusnm_ss", null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "uspathnm_ss", null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "company_s", null, null));
+				qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.HIERARCHY, null, null));
 			}
 		}
 		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "classification_ss", null, null));
@@ -304,10 +305,10 @@ public class ProductExplorer extends SBActionAdapter {
 		selected.append("(");
 		for (String s : req.getParameterValues("selNodes")) {
 			if (selected.length() > 2) selected.append(" OR ");
-			selected.append("*").append(s);
+			selected.append(s.replace("~", "\\~")).append("*");
 		}
 		selected.append(")");
-		qData.addSolrField(new SolrFieldVO(FieldType.FILTER, "sectionid_ss", selected.toString(), BooleanType.AND));
+		qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.HIERARCHY, selected.toString(), BooleanType.AND));
 	}
 
 

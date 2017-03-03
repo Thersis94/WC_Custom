@@ -44,7 +44,7 @@ public class InsightAction extends SBActionAdapter {
 		}else{
 			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-
+			req.setParameter("pmid", mod.getPageModuleId());
 			//transform some incoming reqParams to where Solr expects to see them
 			transposeRequest(req);
 
@@ -61,7 +61,19 @@ public class InsightAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
+		log.debug("insights list called");		
 		super.retrieve(req);
+	
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void update(ActionRequest req) throws ActionException {
+		log.debug("insights update called");		
+		super.update(req);
 	}
 	
 	/**
