@@ -116,6 +116,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		actions.put("marketingInstanceReport", InstanceReport.class);
 		actions.put("uwr", UpdatesWeeklyReportAction.class);
 		actions.put("grid", GridChartAction.class);
+
 		ACTIONS = Collections.unmodifiableMap(actions);
 	}
 

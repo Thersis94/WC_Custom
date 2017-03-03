@@ -168,7 +168,7 @@ public class GridChartAction extends SBActionAdapter {
 		
 		try {
 			data = getGridList(req, schema);
-			log.info("Data Size: " + data.size());
+			log.debug("Data Size: " + data.size());
 			
 			// Get the count
 			count = getGridCount(req, schema);
@@ -234,8 +234,8 @@ public class GridChartAction extends SBActionAdapter {
 		sql.append("from ").append(schema).append("biomedgps_grid a ");
 		if (search.length() > 0) sql.append("where upper(title_nm) like ? or upper(subtitle_nm) like ? ");
 		sql.append("order by ").append(sort).append(" ").append(order);
-		sql.append(" limit ? offset ? ");
-		log.info(sql.toString());
+		sql.append(" limit ? offset ? ");		
+    log.debug(sql.toString());
 		
 		// Loop the data and store
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

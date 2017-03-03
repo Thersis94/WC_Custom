@@ -399,7 +399,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
 	public String getDocumentUrl() {
 		StringBuilder url = new StringBuilder(50);
-		url.append(AdminControllerAction.Section.INSIGHTS.getURLToken()).append("qs/").append(this.insightId);
+		url.append(AdminControllerAction.Section.INSIGHT.getURLToken()).append("qs/").append(this.insightId);
 		return url.toString();
 	}
 
