@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,11 +66,11 @@ public class UserListReportAction extends SimpleActionAdapter {
 		// 1. retrieve account/users
 		List<AccountUsersVO> accounts = retrieveAccountUsers(se);
 
-		// 2. retrieve profiles, profile addresses, phones
-		Map<String,Date> lastLogins = retrieveLastLogin(req, accounts);
+		// 2. retrieve login attributes
+		Map<String,Map<String,Object>> authAttributes = retrieveAuthAttributes(req, accounts);
 
 		// 3. Merge data and return.
-		mergeData(accounts, lastLogins);
+		mergeData(accounts, authAttributes);
 
 		return accounts;
 	}
@@ -103,27 +102,34 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * @param accounts
 	 * @return
 	 */
-	protected Map<String,Date> retrieveLastLogin(ActionRequest req, List<AccountUsersVO> accounts) {
-		
+	protected Map<String,Map<String,Object>> retrieveAuthAttributes(ActionRequest req, 
+			List<AccountUsersVO> accounts) {
+
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		String siteId = StringUtil.isEmpty(site.getAliasPathParentId()) ? site.getSiteId() : site.getAliasPathParentId();
 		// 1. build query
 		StringBuilder sql = buildLastLoginQuery();
 
 		// 2. build PS
-		Map<String,Date> lastLogins = new HashMap<>();
+		Map<String,Object> userAttribs;
+		Map<String,Map<String,Object>> attribMap = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, siteId);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				lastLogins.put(rs.getString("authentication_id"), rs.getDate("login_dt"));
+				userAttribs = new HashMap<>();
+				userAttribs.put(UserListReportVO.LAST_LOGIN_DT, rs.getDate("login_dt"));
+				userAttribs.put(UserListReportVO.OS,rs.getString("oper_sys_txt"));
+				userAttribs.put(UserListReportVO.BROWSER,rs.getString("browser_txt"));
+				userAttribs.put(UserListReportVO.DEVICE_TYPE,rs.getString("device_txt"));
+				attribMap.put(rs.getString("authentication_id"), userAttribs);
 			}
 
 		} catch (SQLException sqle) {
-			log.error("Error retrieving user last login dates, ",sqle);
+			log.error("Error retrieving user authentication log attributes, ",sqle);
 		}
 		
-		return lastLogins;
+		return attribMap;
 	}
 	
 	/**
@@ -131,13 +137,15 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * @param accounts
 	 * @param lastLogins
 	 */
-	protected void mergeData(List<AccountUsersVO> accounts, Map<String,Date> lastLogins) {
+	protected void mergeData(List<AccountUsersVO> accounts, Map<String,Map<String,Object>> authAttribs) {
 		for (AccountUsersVO account : accounts) {
 			List<UserVO> users = account.getUsers();
 			for (UserVO user : users) {
-				Date dt = lastLogins.get(user.getAuthenticationId());
-				if (dt == null) continue;
-				user.setLoginDate(dt);
+				Map<String,Object> userAttribs = authAttribs.get(user.getAuthenticationId());
+				if (userAttribs == null || userAttribs.isEmpty()) continue;
+				for (Map.Entry<String,Object> loginAttrib : userAttribs.entrySet()) {
+					user.addAttribute(loginAttrib.getKey(), loginAttrib.getValue());
+				}
 			}
 		}
 	}
@@ -147,9 +155,9 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected StringBuilder buildLastLoginQuery() {
-		StringBuilder sql = new StringBuilder(425);
-		sql.append("select authentication_id, login_dt from ( ");
-		sql.append("select distinct(al.authentication_id), login_dt, ");
+		StringBuilder sql = new StringBuilder(500);
+		sql.append("select authentication_id, oper_sys_txt, browser_txt, device_txt, login_dt from ( ");
+		sql.append("select distinct(al.authentication_id), oper_sys_txt, browser_txt, device_txt, login_dt, ");
 		sql.append("rank() over ( partition by al.authentication_id order by login_dt desc ) ");
 		sql.append("from custom.biomedgps_user us ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
@@ -157,20 +165,6 @@ public class UserListReportAction extends SimpleActionAdapter {
 		sql.append("where site_id = ? ) rank_filter where rank = 1 order by authentication_id ");
 		log.debug("last login retrieval SQL: " + sql.toString());
 		return sql;
-	}
-	
-	/**
-	 * Parses the last login query results.
-	 * @param rs
-	 * @return
-	 * @throws SQLException
-	 */
-	protected Map<String,Date> parseLastLogin(ResultSet rs) throws SQLException {
-		Map<String,Date> lastLogins = new HashMap<>();
-		while (rs.next()) {
-			lastLogins.put(rs.getString("authentication_id"), rs.getDate("login_dt"));
-		}
-		return lastLogins;
 	}
 
 	/**
