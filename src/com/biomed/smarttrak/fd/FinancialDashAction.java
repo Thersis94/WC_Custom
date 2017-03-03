@@ -1,6 +1,9 @@
 package com.biomed.smarttrak.fd;
 
 import java.lang.reflect.Constructor;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -22,23 +25,20 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 
 public class FinancialDashAction extends SBActionAdapter {
 	
-	private static final String FD = "FD";
+	private static final String FD = "fd";
 	
-	private enum FdActionType {
-		FD("com.biomed.smarttrak.fd.FinancialDashBaseAction"),
-		FDOVERLAY("com.biomed.smarttrak.fd.FinancialDashScenarioOverlayAction"),
-		FDHIERARCHY("com.biomed.smarttrak.admin.FinancialDashHierarchyAction"),
-		FDSCENARIO("com.biomed.smarttrak.fd.FinancialDashScenarioAction");
-		
-		private String klass;
-		
-		FdActionType(String klass) {
-			this.klass = klass;
-		}
-		
-		public String getKlass() {
-			return klass;
-		}
+	/**
+	 * Map of financial dash classes
+	 */
+	public static final Map<String, String> FD_ACTIONS;
+	static {
+		Map<String, String> fdActions = new HashMap<>();
+		fdActions.put("fd", "com.biomed.smarttrak.fd.FinancialDashBaseAction");
+		fdActions.put("fdOverlay", "com.biomed.smarttrak.fd.FinancialDashScenarioOverlayAction");
+		fdActions.put("fdHierarchy", "com.biomed.smarttrak.admin.FinancialDashHierarchyAction");
+		fdActions.put("fdScenario", "com.biomed.smarttrak.fd.FinancialDashScenarioAction");
+
+		FD_ACTIONS = Collections.unmodifiableMap(fdActions);
 	}
 	
 	public FinancialDashAction() {
@@ -77,22 +77,22 @@ public class FinancialDashAction extends SBActionAdapter {
 	 */
 	private ActionInterface getAction(ActionRequest req) throws ActionException {
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
-		String actionType = StringUtil.checkVal(req.getParameter("actionType"), FD).toUpperCase();
+		String actionType = StringUtil.checkVal(req.getParameter("actionType"), FD);
 		
 		// Determine the request type
-		FdActionType action;
+		String action;
 		if (scenarioId.length() > 0 && FD.equals(actionType)) {
-			action = FdActionType.FDOVERLAY;
+			action = FD_ACTIONS.get("fdOverlay");
 		} else {
-			action = FdActionType.valueOf(actionType);
+			action = FD_ACTIONS.get(actionType);
 		}
 		
-		log.debug("Starting FD Action: " + action.getKlass());
+		log.debug("Starting FD Action: " + action);
 
 		// Forward to the appropriate action
 		ActionInterface ai;
 		try {
-			Class<?> klass = Class.forName(action.getKlass());
+			Class<?> klass = Class.forName(action);
 			Constructor<?> constructor = klass.getConstructor(ActionInitVO.class);
 			ai = (ActionInterface) constructor.newInstance(this.actionInit);
 		} catch (Exception e) {
