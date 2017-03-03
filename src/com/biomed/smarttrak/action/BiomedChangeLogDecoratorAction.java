@@ -75,7 +75,7 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 
 		//If Not Equal, create a ChangeLog Record.
 		if(dNo != 0) {
-			new BiomedChangeLogUtil(dbConn).createChangeLog(req, original, diff);
+			new BiomedChangeLogUtil(dbConn, attributes).createChangeLog(req, original, diff);
 		}
 	}
 
