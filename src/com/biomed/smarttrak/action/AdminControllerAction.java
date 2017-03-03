@@ -92,51 +92,47 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		}
 	}
 
-
 	/*
 	 * the master list of actions this Controller can execute
 	 */
-	protected Map<String, Class<? extends ActionInterface>> actionMap;
+	protected static final Map<String, Class<? extends ActionInterface>> ACTIONS;
 
 	public AdminControllerAction() {
 		super();
-		buildActionMap();
 	}
 
 	public AdminControllerAction(ActionInitVO arg0) {
 		super(arg0);
-		buildActionMap();
 	}
 
-
 	/**
-	 * populates the action map when the object is initialized
+	 * populates the action map when the static constructor is called.  This will make our map live once in the JVM
 	 */
-	protected void buildActionMap() {
-		actionMap = new HashMap<>(35);
-		actionMap.put("hierarchy", SectionHierarchyAction.class);
-		actionMap.put("agap", GapAnalysisAdminAction.class);
-		actionMap.put("fd", FinancialDashAction.class);
-		actionMap.put("fdScenario", FinancialDashScenarioAction.class);
-		actionMap.put("fdHierarchy", FinancialDashHierarchyAction.class);
-		actionMap.put("productAdmin", ProductManagementAction.class);
-		actionMap.put("companyAdmin", CompanyManagementAction.class);
-		actionMap.put("accounts", AccountAction.class);
-		actionMap.put("account-permissions", AccountPermissionAction.class);
-		actionMap.put("users", AccountUserAction.class);
-		actionMap.put("insights", InsightAction.class);
-		actionMap.put("teams", TeamAction.class);
-		actionMap.put("team-members", TeamMemberAction.class);
-		actionMap.put("marketAdmin", MarketManagementAction.class);
-		actionMap.put("updates", UpdatesAction.class);
-		actionMap.put("list", ListAction.class);
-		actionMap.put("reports", ReportFacadeAction.class);
-		actionMap.put("support", SupportFacadeAction.class);
-		actionMap.put("synonyms", SolrSynonymAction.class);
-		actionMap.put("marketingCampaigns", CampaignInstanceAction.class);
-		actionMap.put("marketingInstanceReport", InstanceReport.class);
-		actionMap.put("uwr", UpdatesWeeklyReportAction.class); 
-		actionMap.put("grid", GridChartAction.class);
+	static {
+		ACTIONS = new HashMap<>(35);
+		ACTIONS.put("hierarchy", SectionHierarchyAction.class);
+		ACTIONS.put("agap", GapAnalysisAdminAction.class);
+		ACTIONS.put("fd", FinancialDashAction.class);
+		ACTIONS.put("fdScenario", FinancialDashScenarioAction.class);
+		ACTIONS.put("fdHierarchy", FinancialDashHierarchyAction.class);
+		ACTIONS.put("productAdmin", ProductManagementAction.class);
+		ACTIONS.put("companyAdmin", CompanyManagementAction.class);
+		ACTIONS.put("accounts", AccountAction.class);
+		ACTIONS.put("account-permissions", AccountPermissionAction.class);
+		ACTIONS.put("users", AccountUserAction.class);
+		ACTIONS.put("insights", InsightAction.class);
+		ACTIONS.put("teams", TeamAction.class);
+		ACTIONS.put("team-members", TeamMemberAction.class);
+		ACTIONS.put("marketAdmin", MarketManagementAction.class);
+		ACTIONS.put("updates", UpdatesAction.class);
+		ACTIONS.put("list", ListAction.class);
+		ACTIONS.put("reports", ReportFacadeAction.class);
+		ACTIONS.put("support", SupportFacadeAction.class);
+		ACTIONS.put("synonyms", SolrSynonymAction.class);
+		ACTIONS.put("marketingCampaigns", CampaignInstanceAction.class);
+		ACTIONS.put("marketingInstanceReport", InstanceReport.class);
+		ACTIONS.put("uwr", UpdatesWeeklyReportAction.class); 
+		ACTIONS.put("grid", GridChartAction.class);
 	}
 
 
@@ -206,7 +202,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	protected ActionInterface loadAction(String actionType) throws ActionException {
-		Class<?> c = actionMap.get(actionType);
+		Class<?> c = ACTIONS.get(actionType);
 		if (c == null) 
 			throw new ActionException("unknown action type:" + actionType);
 
