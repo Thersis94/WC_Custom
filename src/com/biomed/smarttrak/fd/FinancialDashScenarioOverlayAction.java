@@ -1,4 +1,4 @@
-package com.biomed.smarttrak;
+package com.biomed.smarttrak.fd;
 
 import java.lang.reflect.Method;
 import java.sql.PreparedStatement;
@@ -11,8 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
-import com.biomed.smarttrak.FinancialDashVO.TableType;
+import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
+import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -47,7 +48,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * @param dash
 	 */
 	@Override
-	protected void getFinancialData(FinancialDashVO dash) {
+	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections) {
 		String sql = getFinancialDataSql(dash);
 		TableType tt = dash.getTableType();
 		DisplayType dt = dash.getColHeaders().getDisplayType();
@@ -82,13 +83,13 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			for (int i = 0; i < regionCnt; i++) {
 				ps.setString(++idx, dash.getCountryTypes().get(i).name());
 			}
-			if (!"".equals(dash.getCompanyId())) {
+			if (!StringUtil.isEmpty(dash.getCompanyId())) {
 				ps.setString(++idx, dash.getCompanyId());
 			}
 			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
 			
 			ResultSet rs = ps.executeQuery();
-			dash.setData(rs);
+			dash.setData(rs, sections);
 		} catch (SQLException sqle) {
 			log.error("Unable to get financial dashboard data", sqle);
 		}

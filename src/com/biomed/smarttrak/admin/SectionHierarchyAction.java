@@ -95,15 +95,17 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		//If not found in cache Load data.
 		if(mod == null) {
 			t = loadTree(null);
+			
+			// Because the tree is cached, these only need to run once
+			// These will maintain their values in the cache
+			t.calculateTotalChildren(t.getRootNode());
+			t.buildNodePaths();
+			
 			super.writeToCache(t, "SMARTTRAK", "SECTION");
 		} else {
 			//Get the Tree off the actionData
 			t = (Tree) mod.getActionData();
 		}
-
-		t.calculateTotalChildren(t.getRootNode());
-
-		t.buildNodePaths();
 
 		//Place requested data on the request.
 		if(!StringUtil.isEmpty(sectionId)) {
