@@ -85,7 +85,7 @@ public class BiomedChangeLogUtil {
 		vo.setSyncStatus(SyncStatus.Approved);
 		vo.setApproveDt(new Date());
 		vo.setCreatorName(user.getFullName());
-		vo.setModuleType(ModuleType.SmarttrakBiomed);
+		vo.setModuleType(ModuleType.Portlet);
 		vo.setWcKeyId(wcKeyId);
 		vo.setOrigWcKeyId(origKeyId);
 
