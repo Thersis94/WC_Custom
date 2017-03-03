@@ -1,14 +1,18 @@
-package com.biomed.smarttrak;
+package com.biomed.smarttrak.fd;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.SectionVO;
+import com.siliconmtn.data.Node;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -34,6 +38,8 @@ public class FinancialDashDataRowVO implements Serializable {
 	private boolean inactiveFlg;
 	private int inactiveCnt; // internal value used to calculate overall inactivity
 	private Map<String, FinancialDashDataColumnVO> columns;
+	private int reportingQtr;
+	private int reportingYr;
 	
 	/**
 	 * Provides a logger
@@ -98,6 +104,20 @@ public class FinancialDashDataRowVO implements Serializable {
 	 */
 	public String getRegionCd() {
 		return regionCd;
+	}
+
+	/**
+	 * @return the reportingQtr
+	 */
+	public int getReportingQtr() {
+		return reportingQtr;
+	}
+
+	/**
+	 * @return the reportingYr
+	 */
+	public int getReportingYr() {
+		return reportingYr;
 	}
 
 	/**
@@ -182,6 +202,46 @@ public class FinancialDashDataRowVO implements Serializable {
 		this.regionCd = regionCd;
 	}
 
+	/**
+	 * @param reportingQtr the reportingQtr to set
+	 */
+	public void setReportingQtr(int reportingQtr) {
+		this.reportingQtr = reportingQtr;
+	}
+
+	/**
+	 * @param reportingYr the reportingYr to set
+	 */
+	public void setReportingYr(int reportingYr) {
+		this.reportingYr = reportingYr;
+	}
+
+	/**
+	 * Sets the reporting year/quarter based on other values in the tree
+	 * 
+	 * @param tree
+	 */
+	protected void setReporting(SmarttrakTree tree) {
+		Node parentNode = tree.getRootNode();
+		List<Node> childNodes = parentNode.getChildren();
+		
+		SectionVO parent = (SectionVO) parentNode.getUserObject();
+		int parentQtr = parent.getFdPubQtr();
+		int parentYr = parent.getFdPubYr();
+		
+		for (Node node : childNodes) {
+			SectionVO child = (SectionVO) node.getUserObject();
+			int childQtr = child.getFdPubQtr();
+			int childYr = child.getFdPubYr();
+			
+			if (childYr > parentYr || (childYr == parentYr && childQtr > parentQtr)) {
+				setReportingQtr(childQtr);
+				setReportingYr(childYr);
+				break;
+			}
+		}
+	}
+	
 	/**
 	 * @param inactiveFlg the inactiveFlg to set
 	 */

@@ -7,13 +7,13 @@ import java.util.Map;
 import org.apache.commons.lang.StringEscapeUtils;
 
 // WC custom
-import com.biomed.smarttrak.FinancialDashAction;
-import com.biomed.smarttrak.FinancialDashScenarioAction;
+import com.biomed.smarttrak.fd.FinancialDashAction;
+import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
+import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
-import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.InsightAction;

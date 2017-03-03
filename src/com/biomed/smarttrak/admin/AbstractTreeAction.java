@@ -33,7 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public abstract class AbstractTreeAction extends SBActionAdapter {
 
-	protected static final String MASTER_ROOT = "MASTER_ROOT"; //the root node of the master/primary hierarchy.
+	public static final String MASTER_ROOT = "MASTER_ROOT"; //the root node of the master/primary hierarchy.
 
 	public AbstractTreeAction() {
 		super();
