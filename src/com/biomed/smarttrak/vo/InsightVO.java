@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
@@ -115,7 +116,6 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		super.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL);
 	}
 
-
 	public InsightVO(ResultSet rs) {
 		this();
 		setData(rs);
@@ -126,6 +126,10 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		setData(req);
 	}
 
+	/**
+	 * sets the vo off of the req object
+	 * @param req
+	 */
 	protected void setData(ActionRequest req) {
 		SMTSession ses = req.getSession();
 		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
@@ -169,6 +173,10 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		return sections;
 	}
 
+	/**
+	 * adds an insight section to the list
+	 * @param u
+	 */
 	@BeanSubElement()
 	public void addInsightXrVO(InsightXRVO u) {
 		if(u != null)
@@ -192,7 +200,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		for(InsightXRVO uxr : sections) {
 			
 			if (uxr.getSectionId() == null){
-				uxr.setSectionId("");
+				uxr.setSectionId(InsightAction.ROOT_NODE_ID);
 			}
 			
 			Node n = t.findNode(uxr.getSectionId());
