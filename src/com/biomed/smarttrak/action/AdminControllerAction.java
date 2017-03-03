@@ -35,16 +35,14 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.support.SupportTicketFacadeAction;
+//WC Email Campaigns
+import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
+import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
 import com.smt.sitebuilder.action.solr.management.SolrSynonymAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
-
-//WC Email Campaigns
-import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
-import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
 /****************************************************************************
  * <b>Title</b>: AdminControllerAction.java
  * <b>Project</b>: WC_Custom
@@ -92,6 +90,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	public static final Map<String, Class<?>> ACTIONS;
 
 	//Instantiate the ACTIONS Map with actionType -> Class
+	
 	static {
 		Map<String, Class<?>> actions = new HashMap<>();
 		actions.put("hierarchy", SectionHierarchyAction.class);
@@ -116,7 +115,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		actions.put("marketingCampaigns", CampaignInstanceAction.class);
 		actions.put("marketingInstanceReport", InstanceReport.class);
 		actions.put("uwr", UpdatesWeeklyReportAction.class);
-
+		actions.put("grid", GridChartAction.class);
 		ACTIONS = Collections.unmodifiableMap(actions);
 	}
 
@@ -197,72 +196,6 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private ActionInterface loadAction(String actionType) throws ActionException {
-		ActionInterface action;
-		switch (StringUtil.checkVal(actionType)) {
-			case "hierarchy":
-				action = new SectionHierarchyAction();
-				break;
-			case "agap":
-				action = new GapAnalysisAdminAction();
-				break;
-			case "fd":
-				action = new FinancialDashAction();
-				break;
-			case "fdScenario":
-				action = new FinancialDashScenarioAction();
-				break;
-			case "productAdmin":
-				action = new ProductManagementAction();
-				break;
-			case "companyAdmin":
-				action = new CompanyManagementAction();
-				break;
-			case "accounts":
-				action = new AccountAction();
-				break;
-			case "account-permissions":
-				action = new AccountPermissionAction();
-				break;
-			case "users":
-				action = new AccountUserAction();
-				break;
-			case "insights":
-				action = new InsightAction();
-				break;
-			case "teams":
-				action = new TeamAction();
-				break;
-			case "team-members":
-				action = new TeamMemberAction();
-				break;
-			case "marketAdmin":
-				action = new MarketManagementAction();
-				break;
-			case "updates":
-				action = new UpdatesAction();
-				break;
-			case "list":
-				action = new ListAction();
-				break;
-			case "activityLog":
-				action = new UserActivityAction();
-				break;
-			case "reports":
-				action = new ReportFacadeAction();
-				break;
-			case "support":
-				action = new SupportTicketFacadeAction();
-				break;
-			case "synonyms":
-				action = new SolrSynonymAction();
-				break;
-			case "grid":
-				action = new GridChartAction();
-				break;
-			default:
-				throw new ActionException("unknown action type:" + actionType);
-		}
-
 		//Check if ACTIONS contains a key for our actionType.
 		if(ACTIONS.containsKey(actionType)) {
 
