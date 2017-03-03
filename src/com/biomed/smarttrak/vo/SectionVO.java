@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
@@ -32,6 +33,8 @@ public class SectionVO implements Serializable {
 	private String sectionNm;
 	private int orderNo;
 	private String solrTokenTxt;
+	private int fdPubYr;
+	private int fdPubQtr;
 	private Date createDt;
 	private Date updateDt;
 	private boolean isSelected;
@@ -55,11 +58,17 @@ public class SectionVO implements Serializable {
 	 * @param rs
 	 */
 	public void setData(ResultSet rs) throws SQLException {
-		setSectionId(rs.getString("SECTION_ID"));
-		setParentId(rs.getString("PARENT_ID"));
-		setSectionNm(rs.getString("SECTION_NM"));
-		setOrderNo(rs.getInt("ORDER_NO"));
-		setSolrTokenTxt(rs.getString("SOLR_TOKEN_TXT"));
+		DBUtil util = new DBUtil();
+		
+		setSectionId(util.getStringVal("SECTION_ID", rs));
+		setParentId(util.getStringVal("PARENT_ID", rs));
+		setSectionNm(util.getStringVal("SECTION_NM", rs));
+		setOrderNo(util.getIntVal("ORDER_NO", rs));
+		setSolrTokenTxt(util.getStringVal("SOLR_TOKEN_TXT", rs));
+		
+		// These values may not always be on a result set depending on where this is being set from
+		setFdPubYr(util.getIntVal("FD_PUB_YR", rs));
+		setFdPubQtr(util.getIntVal("FD_PUB_QTR", rs));
 	}
 
 	/**
@@ -114,6 +123,23 @@ public class SectionVO implements Serializable {
 	public String getSolrTokenTxt() {
 		return solrTokenTxt;
 	}
+	
+	/**
+	 * @return the fdPubYr
+	 */
+	@Column(name="FD_PUB_YR")
+	public int getFdPubYr() {
+		return fdPubYr;
+	}
+
+	/**
+	 * @return the fdPubQtr
+	 */
+	@Column(name="FD_PUB_QTR")
+	public int getFdPubQtr() {
+		return fdPubQtr;
+	}
+
 	/**
 	 * @return the createDt
 	 */
@@ -159,6 +185,21 @@ public class SectionVO implements Serializable {
 	public void setSolrTokenTxt(String solrTokenTxt) {
 		this.solrTokenTxt = solrTokenTxt;
 	}
+
+	/**
+	 * @param fdPubYr the fdPubYr to set
+	 */
+	public void setFdPubYr(int fdPubYr) {
+		this.fdPubYr = fdPubYr;
+	}
+
+	/**
+	 * @param fdPubQtr the fdPubQtr to set
+	 */
+	public void setFdPubQtr(int fdPubQtr) {
+		this.fdPubQtr = fdPubQtr;
+	}
+
 	/**
 	 * @param createDt the createDt to set.
 	 */

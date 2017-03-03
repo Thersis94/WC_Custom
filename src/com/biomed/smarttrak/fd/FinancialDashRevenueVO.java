@@ -1,4 +1,4 @@
-package com.biomed.smarttrak;
+package com.biomed.smarttrak.fd;
 
 import java.sql.ResultSet;
 import java.util.Date;
@@ -11,7 +11,7 @@ import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
- * <b>Title</b>: FinancialDashScenarioOverlayVO.java<p/>
+ * <b>Title</b>: FinancialDashRevenueVO.java<p/>
  * <b>Description: </b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2017<p/>
@@ -21,14 +21,14 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * @since Feb 8, 2017
  ****************************************************************************/
 
-@Table(name="biomedgps_fd_scenario_overlay")
-public class FinancialDashScenarioOverlayVO extends SBModuleVO {
+@Table(name="biomedgps_fd_revenue")
+public class FinancialDashRevenueVO extends SBModuleVO {
 	
 	private static final long serialVersionUID = 1L;
-	private String overlayId;
-	private String companyId;
-	private String scenarioId;
 	private String revenueId;
+	private String companyId;
+	private String sectionId;
+	private String regionCd;
 	private int yearNo;
 	private long q1No;
 	private long q2No;
@@ -37,23 +37,18 @@ public class FinancialDashScenarioOverlayVO extends SBModuleVO {
 	private Date createDt;
 	private Date updateDt;
 	
-	public FinancialDashScenarioOverlayVO() {
+	public FinancialDashRevenueVO() {
 		super();
 	}
 
-	public FinancialDashScenarioOverlayVO(ResultSet rs) {
+	public FinancialDashRevenueVO(ResultSet rs) {
 		this();
 		setData(rs);
 	}
 	
-	public FinancialDashScenarioOverlayVO(ActionRequest req) {
+	public FinancialDashRevenueVO(ActionRequest req) {
 		this();
 		setData(req);
-	}
-	
-	public FinancialDashScenarioOverlayVO(FinancialDashRevenueVO rvo) {
-		this();
-		setData(rvo);
 	}
 	
 	/**
@@ -63,10 +58,10 @@ public class FinancialDashScenarioOverlayVO extends SBModuleVO {
 	public void setData(ResultSet rs) {
 		DBUtil util = new DBUtil();
 		
-		this.setOverlayId(util.getStringVal("OVERLAY_ID", rs));
-		this.setCompanyId(util.getStringVal("COMPANY_ID", rs));
-		this.setScenarioId(util.getStringVal("SCENARIO_ID", rs));
 		this.setRevenueId(util.getStringVal("REVENUE_ID", rs));
+		this.setCompanyId(util.getStringVal("COMPANY_ID", rs));
+		this.setSectionId(util.getStringVal("SECTION_ID", rs));
+		this.setRegionCd(util.getStringVal("REGION_CD", rs));
 		this.setYearNo(util.getIntVal("YEAR_NO", rs));
 		this.setQ1No(util.getIntVal("Q1_NO", rs));
 		this.setQ2No(util.getIntVal("Q2_NO", rs));
@@ -82,38 +77,23 @@ public class FinancialDashScenarioOverlayVO extends SBModuleVO {
 	 * @param req
 	 */
 	public void setData(ActionRequest req) {
-		this.setOverlayId(req.getParameter("overlayId"));
-		this.setCompanyId(req.getParameter("companyId"));
-		this.setScenarioId(req.getParameter("scenarioId"));
 		this.setRevenueId(req.getParameter("revenueId"));
+		this.setCompanyId(req.getParameter("companyId"));
+		this.setSectionId(req.getParameter("sectionId"));
+		this.setRegionCd(req.getParameter("regionCd"));
 		this.setYearNo(Convert.formatInteger(req.getParameter("yearNo")));
 		this.setQ1No(Convert.formatInteger(req.getParameter("q1No")));
 		this.setQ2No(Convert.formatInteger(req.getParameter("q2No")));
 		this.setQ3No(Convert.formatInteger(req.getParameter("q3No")));
 		this.setQ4No(Convert.formatInteger(req.getParameter("q4No")));
 	}
-	
-	/**
-	 * Sets common data from a FinancialDashRevenueVO
-	 * 
-	 * @param rvo
-	 */
-	public void setData(FinancialDashRevenueVO rvo) {
-		this.setCompanyId(rvo.getCompanyId());
-		this.setRevenueId(rvo.getRevenueId());
-		this.setYearNo(rvo.getYearNo());
-		this.setQ1No(rvo.getQ1No());
-		this.setQ2No(rvo.getQ2No());
-		this.setQ3No(rvo.getQ3No());
-		this.setQ4No(rvo.getQ4No());
-	}
 
 	/**
-	 * @return the overlayId
+	 * @return the revenueId
 	 */
-	@Column(name="overlay_id", isPrimaryKey=true)
-	public String getOverlayId() {
-		return overlayId;
+	@Column(name="revenue_id", isPrimaryKey=true)
+	public String getRevenueId() {
+		return revenueId;
 	}
 
 	/**
@@ -125,19 +105,19 @@ public class FinancialDashScenarioOverlayVO extends SBModuleVO {
 	}
 
 	/**
-	 * @return the scenarioId
+	 * @return the sectionId
 	 */
-	@Column(name="scenario_id")
-	public String getScenarioId() {
-		return scenarioId;
+	@Column(name="section_id")
+	public String getSectionId() {
+		return sectionId;
 	}
 
 	/**
-	 * @return the revenueId
+	 * @return the regionCd
 	 */
-	@Column(name="revenue_id")
-	public String getRevenueId() {
-		return revenueId;
+	@Column(name="region_cd")
+	public String getRegionCd() {
+		return regionCd;
 	}
 
 	/**
@@ -197,10 +177,10 @@ public class FinancialDashScenarioOverlayVO extends SBModuleVO {
 	}
 
 	/**
-	 * @param overlayId the overlayId to set
+	 * @param revenueId the revenueId to set
 	 */
-	public void setOverlayId(String overlayId) {
-		this.overlayId = overlayId;
+	public void setRevenueId(String revenueId) {
+		this.revenueId = revenueId;
 	}
 
 	/**
@@ -211,17 +191,17 @@ public class FinancialDashScenarioOverlayVO extends SBModuleVO {
 	}
 
 	/**
-	 * @param scenarioId the scenarioId to set
+	 * @param sectionId the sectionId to set
 	 */
-	public void setScenarioId(String scenarioId) {
-		this.scenarioId = scenarioId;
+	public void setSectionId(String sectionId) {
+		this.sectionId = sectionId;
 	}
 
 	/**
-	 * @param revenueId the revenueId to set
+	 * @param regionCd the regionCd to set
 	 */
-	public void setRevenueId(String revenueId) {
-		this.revenueId = revenueId;
+	public void setRegionCd(String regionCd) {
+		this.regionCd = regionCd;
 	}
 
 	/**
