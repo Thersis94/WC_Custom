@@ -714,7 +714,11 @@ public class GridVO extends BeanDataVO {
 			String[] values = detail.getValues();
 			
 			// Add the id and class as well as the label
-			row.put("class", RowStyle.valueOf(detail.getDetailType()).getName());
+      if (! StringUtil.isEmpty(detail.getDetailType()))
+			  row.put("class", RowStyle.valueOf(detail.getDetailType()).getName());
+      else
+			  row.put("class", "bs-data");
+
 			row.put("id", detail.getGridDetailId());
 			row.put(FIELD_LABEL + 0, detail.getLabel());
 			

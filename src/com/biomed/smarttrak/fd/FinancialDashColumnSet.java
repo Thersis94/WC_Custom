@@ -1,4 +1,4 @@
-package com.biomed.smarttrak;
+package com.biomed.smarttrak.fd;
 
 import java.io.Serializable;
 import java.util.LinkedHashMap;
