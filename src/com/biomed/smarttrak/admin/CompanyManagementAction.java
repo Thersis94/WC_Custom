@@ -150,12 +150,12 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void retrieveSections(ActionRequest req) throws ActionException {
-		ContentHierarchyAction c = new ContentHierarchyAction();
+		SectionHierarchyAction c = new SectionHierarchyAction();
 		c.setActionInit(actionInit);
 		c.setAttributes(attributes);
 		c.setDBConnection(dbConn);
 		
-		List<Node> hierarchy = new Tree(c.getHierarchy(null)).preorderList();
+		List<Node> hierarchy = new Tree(c.getHierarchy()).preorderList();
 		List<String> activeNodes = getActiveSections(req.getParameter("companyId"));
 		
 		// Loop over all sections and set the leaf property to 
@@ -409,8 +409,9 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	/**
 	 * Get all attributes associated with the supplied company.
 	 * @param company
+	 * @throws ActionException 
 	 */
-	protected void addAttributes(CompanyVO company) {
+	protected void addAttributes(CompanyVO company) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
@@ -424,9 +425,52 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		
 		// DBProcessor returns a list of objects that need to be individually cast to attributes
 		List<Object> results = db.executeSelect(sql.toString(), params, new CompanyAttributeVO());
+		Tree t = buildAttributeTree();
+		
 		for (Object o : results) {
-			company.addAttribute((CompanyAttributeVO)o);
+			CompanyAttributeVO c = (CompanyAttributeVO)o;
+			Node n = t.findNode(c.getAttributeId());
+			String[] split = n.getFullPath().split(Tree.DEFAULT_DELIMITER);
+			if (split.length >= 2) {
+				c.setGroupName(split[1]);
+			}
+			company.addAttribute(c);
 		}
+	}
+	
+
+	/**
+	 * Create the full attribute tree in order to determine the full ancestry of each attribute
+	 * @return
+	 * @throws ActionException
+	 */
+	private Tree buildAttributeTree() throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT c.ATTRIBUTE_ID, c.PARENT_ID, c.ATTRIBUTE_NM, p.ATTRIBUTE_NM as PARENT_NM ");
+		sql.append("FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE c ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE p ");
+		sql.append("ON c.PARENT_ID = p.ATTRIBUTE_ID ");
+		log.debug(sql);
+		List<Node> attributes = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				Node n = new Node(rs.getString("ATTRIBUTE_ID"), rs.getString("PARENT_ID"));
+				if ("profile".equals(rs.getString("ATTRIBUTE_NM"))) {
+					n.setNodeName(rs.getString("PARENT_NM"));
+				} else {
+					n.setNodeName(rs.getString("ATTRIBUTE_NM"));
+				}
+				attributes.add(n);
+			}
+			
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		Tree t = new Tree(attributes);
+		t.buildNodePaths(t.getRootNode(), Tree.DEFAULT_DELIMITER, true);
+		return t;
 	}
 
 
@@ -437,8 +481,11 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 */
 	protected void addInvestors(CompanyVO company) throws ActionException {
 		StringBuilder sql = new StringBuilder(175);
-		sql.append("SELECT INVESTOR_COMPANY_ID FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_COMPANY_INVESTOR WHERE INVESTEE_COMPANY_ID = ? ");
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT i.INVESTOR_COMPANY_ID, c.COMPANY_NM FROM ").append(customDb).append("BIOMEDGPS_COMPANY_INVESTOR i ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("ON c.COMPANY_ID = i.INVESTOR_ID ");
+		sql.append("WHERE i.INVESTEE_COMPANY_ID = ? ");
 		log.debug(sql+"|"+company.getCompanyId());
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, company.getCompanyId());
@@ -446,7 +493,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
-				company.addInvestor(rs.getString("INVESTOR_COMPANY_ID"));
+				company.addInvestor(rs.getString("INVESTOR_COMPANY_ID"), rs.getString("COMPANY_NM"));
 			}
 		} catch (SQLException e) {
 			throw new ActionException(e);
@@ -685,7 +732,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		sql.append("INVESTEE_COMPANY_ID, CREATE_DT) ");
 		sql.append("VALUES(?,?,?,?)");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			for (String s : c.getInvestors()) {
+			for (String s : c.getInvestors().keySet()) {
 				int i = 1;
 				ps.setString(i++, new UUIDGenerator().getUUID());
 				ps.setString(i++, s);

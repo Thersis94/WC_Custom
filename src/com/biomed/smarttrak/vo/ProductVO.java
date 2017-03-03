@@ -2,7 +2,9 @@ package com.biomed.smarttrak.vo;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
@@ -30,6 +32,7 @@ public class ProductVO {
 	private String productId;
 	private String parentId;
 	private String companyId;
+	private String companyName;
 	private String productName;
 	private int orderNo;
 	private String metaKeyword;
@@ -44,11 +47,17 @@ public class ProductVO {
 	private List<ProductAttributeVO> attributes;
 	private List<GenericVO> sections;
 	private List<ProductAllianceVO> alliances;
+	private List<RegulationVO> regulations;
+	private Map<String, List<ProductAttributeVO>> details;
+	private Map<String, List<ProductVO>> relatedProducts;
 	
 	public ProductVO () {
 		attributes = new ArrayList<>();
 		sections = new ArrayList<>();
 		alliances = new ArrayList<>();
+		regulations = new ArrayList<>();
+		details = new HashMap<>();
+		relatedProducts = new HashMap<>();
 	}
 	
 	
@@ -97,6 +106,17 @@ public class ProductVO {
 	public void setCompanyId(String companyId) {
 		this.companyId = companyId;
 	}
+	@Column(name="company_nm", isReadOnly=true)
+	public String getCompanyName() {
+		return companyName;
+	}
+
+
+	public void setCompanyName(String companyName) {
+		this.companyName = companyName;
+	}
+
+
 	@Column(name="product_nm")
 	public String getProductName() {
 		return productName;
@@ -222,6 +242,50 @@ public class ProductVO {
 	
 	public void addAlliance(ProductAllianceVO alliance) {
 		this.alliances.add(alliance);
+	}
+
+
+	public List<RegulationVO> getRegulations() {
+		return regulations;
+	}
+
+
+	public void setRegulations(List<RegulationVO> regulations) {
+		this.regulations = regulations;
+	}
+	
+	public void addRegulation(RegulationVO regulation) {
+		this.regulations.add(regulation);
+	}
+
+
+	public Map<String, List<ProductAttributeVO>> getDetails() {
+		return details;
+	}
+
+
+	public void setDetails(Map<String, List<ProductAttributeVO>> details) {
+		this.details = details;
+	}
+	
+	public void addDetail(String key, ProductAttributeVO detail) {
+		if (!details.containsKey(key)) details.put(key, new ArrayList<ProductAttributeVO>());
+		details.get(key).add(detail);
+	}
+
+
+	public Map<String, List<ProductVO>> getRelatedProducts() {
+		return relatedProducts;
+	}
+
+
+	public void setRelatedProducts(Map<String, List<ProductVO>> relatedProducts) {
+		this.relatedProducts = relatedProducts;
+	}
+	
+	public void addRelatedProduct(String key, ProductVO product) {
+		if (!relatedProducts.containsKey(key)) relatedProducts.put(key, new ArrayList<ProductVO>());
+		relatedProducts.get(key).add(product);
 	}
 
 

@@ -6,6 +6,7 @@ import java.util.Date;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
  <p><b>Title</b>: TeamMemberVO.java</p>
@@ -19,7 +20,7 @@ import com.siliconmtn.db.orm.Table;
  <b>Changes:</b> 
  ***************************************************************************/
 @Table(name="BIOMEDGPS_USER_TEAM_XR")
-public class TeamMemberVO {
+public class TeamMemberVO implements HumanNameIntfc {
 	private String teamId;
 	private String userId;
 	private String userTeamXrId;

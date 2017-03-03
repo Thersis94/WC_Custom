@@ -1,6 +1,6 @@
 package com.biomed.smarttrak.security;
 
-// Java 7
+// Java 8
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.Map;
 
 //SMTBaseLibs
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -16,14 +17,15 @@ import com.siliconmtn.security.DjangoPasswordHasher;
 import com.siliconmtn.security.SHAEncrypt;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.user.LoginAction;
 import com.smt.sitebuilder.common.constants.Constants;
 
 //WebCrescendo libs
 import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.smt.sitebuilder.security.DBLoginModule;
 import com.smt.sitebuilder.security.UserLogin;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 
 //WC_Custom libs
 import com.biomed.smarttrak.vo.TeamVO;
@@ -99,29 +101,19 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * @return
 	 * @throws AuthenticationException
 	 */
-	public UserDataVO loadSmarttrakUser(UserDataVO user) {
-		log.debug("loadSmarttrakUser");
-		UserVO stUser = initializeSmarttrakUser(user);
+	public UserVO loadSmarttrakUser(UserDataVO userData) {
+		UserVO stUser = new UserVO();
+		stUser.setData(userData.getDataMap());
+		stUser.setAttributes(userData.getAttributes());
+		stUser.setAuthenticated(userData.isAuthenticated());
 		loadCustomData(stUser);
 
-		//TODO load ACLs
-
+		//if status is EU Reports, redirect them to the markets page
+		if ("M".equals(stUser.getStatusCode())) {
+			ActionRequest req = (ActionRequest) getAttribute(GlobalConfig.ACTION_REQUEST);
+			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.MARKET.getPageURL());
+		}
 		return stUser;
-	}
-
-
-	/**
-	 * Populates the SmartTRAK user object with WebCrescendo user data.
-	 * @param authrecord
-	 * @return
-	 */
-	protected UserVO initializeSmarttrakUser(UserDataVO userData) {
-		log.debug("initializeSmarttrakUser");
-		UserVO user = new UserVO();
-		user.setData(userData.getDataMap());
-		user.setAttributes(userData.getAttributes());
-		user.setAuthenticated(userData.isAuthenticated());
-		return user;
 	}
 
 
@@ -135,17 +127,18 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * @throws AuthenticationException
 	 */
 	private void loadCustomData(UserVO user) {
-		log.debug("loadCustomData");
 		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		// use profile ID as that is all we have at the moment.
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select u.user_id, u.account_id, u.register_submittal_id, ");
+		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, ");
+		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, ");
 		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
 		sql.append("inner join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
+		sql.append("inner join ").append(schema).append("biomedgps_account a on u.account_id=a.account_id ");
 		sql.append("where u.account_id=t.account_id and u.profile_id=? order by t.team_nm");
 		log.debug(sql + user.getProfileId());
 
@@ -158,6 +151,12 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					user.setUserId(rs.getString("user_id"));
 					user.setAccountId(rs.getString("account_id"));
 					user.setRegisterSubmittalId(rs.getString("register_submittal_id"));
+					user.setFdAuthFlg(rs.getInt("fd_auth_flg"));
+					user.setGaAuthFlg(rs.getInt("ga_auth_flg"));
+					user.setMktAuthFlg(rs.getInt("mkt_auth_flg"));
+					user.setAcctOwnerFlg(rs.getInt("acct_owner_flg"));
+					user.setExpirationDate(rs.getDate("expiration_dt")); //used by the role module to block access to the site
+					user.setStatusCode(rs.getString("status_cd"));
 					iter = 1;
 				}
 				user.addTeam(new TeamVO(rs));
@@ -222,36 +221,10 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
 		UserLogin ul = new UserLogin(dbConn, encKey);
 
-		String encPswd = encryptPassword(password);
 		try {
-			return ul.saveAuthRecord(authId, userName, encPswd, resetFlag, null); //ditch password history
+			return ul.modifyUser(authId, userName, password, resetFlag);
 		} catch (DatabaseException de) {
 			throw new InvalidDataException(de);
 		}
-	}
-
-
-	/**
-	 * takes the incoming plain-text password and runs it through the password hasher.  
-	 * Returns a String that looks like this:
-	 * <algorithm>$<iterations>$<salt>$<encPassword>
-	 * pbkdf2_sha256$10000$q1XDOcKaMm4B$jJ+tf5gAtOsgppIBnZmL1vw1SMmjKQ0cy771WKOLnpY=
-	 * @param password
-	 * @return
-	 */
-	protected String encryptPassword(String password) {
-		DjangoPasswordHasher hasher = new DjangoPasswordHasher();
-		String salt = RandomAlphaNumeric.generateRandom(12);
-		return hasher.encode(password, salt); //uses default # for iterations
-	}
-
-
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#resetPassword(java.lang.String, com.siliconmtn.security.UserDataVO)
-	 */
-	@Override
-	public boolean resetPassword(String pwd, UserDataVO user) {
-		// TODO Auto-generated method stub
-		return false;
 	}
 }
