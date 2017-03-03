@@ -5,7 +5,7 @@ package com.biomed.smarttrak.util;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.smt.sitebuilder.changelog.ChangeLogUtil;
+//import com.smt.sitebuilder.changelog.ChangeLogUtil;
 
 /****************************************************************************
  * <b>Title</b>: BiomedChangeLogUtil.java
@@ -22,11 +22,11 @@ import com.smt.sitebuilder.changelog.ChangeLogUtil;
 public class BiomedChangeLogUtil {
 
 	private SMTDBConnection dbConn;
-	private ChangeLogUtil clu;
+	//private ChangeLogUtil clu;
 
 	public BiomedChangeLogUtil(SMTDBConnection dbConn) {
 		this.dbConn = dbConn;
-		clu = new ChangeLogUtil(dbConn);
+		//clu = new ChangeLogUtil(dbConn);
 	}
 
 	public void createChangeLog(ActionRequest req) {
