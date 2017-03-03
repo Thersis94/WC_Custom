@@ -90,6 +90,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	public static final Map<String, Class<?>> ACTIONS;
 
 	//Instantiate the ACTIONS Map with actionType -> Class
+	
 	static {
 		Map<String, Class<?>> actions = new HashMap<>();
 		actions.put("hierarchy", SectionHierarchyAction.class);
@@ -115,7 +116,6 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		actions.put("marketingInstanceReport", InstanceReport.class);
 		actions.put("uwr", UpdatesWeeklyReportAction.class);
 		actions.put("grid", GridChartAction.class);
-
 		ACTIONS = Collections.unmodifiableMap(actions);
 	}
 
