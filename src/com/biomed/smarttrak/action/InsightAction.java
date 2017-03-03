@@ -174,7 +174,6 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	@Override
 	public String getCacheKey() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
