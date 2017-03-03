@@ -86,6 +86,7 @@ public class MarketAction extends SBActionAdapter {
 			db.getByPrimaryKey(market);
 			addAttributes(market);
 			addSections(market);
+			addGraphs(market);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
@@ -97,6 +98,30 @@ public class MarketAction extends SBActionAdapter {
 		putModuleData(market);
 	}
 
+
+	/**
+	 * Add associated graphs to the supplied market.
+	 */
+	private void addGraphs(MarketVO market) {
+		StringBuilder sql = new StringBuilder(150);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT xr.*, g.TITLE_NM as ATTRIBUTE_NM FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
+		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_GRID g ");
+		sql.append("ON g.GRID_ID = xr.VALUE_1_TXT ");
+		sql.append("WHERE MARKET_ID = ? and a.TYPE_CD = 'GRID' ");
+		sql.append("ORDER BY xr.ORDER_NO");
+		log.debug(sql+"|"+market.getMarketId());
+
+		List<Object> params = new ArrayList<>();
+		params.add(market.getMarketId());
+		DBProcessor db = new DBProcessor(dbConn);
+
+		List<Object> results = db.executeSelect(sql.toString(), params, new MarketAttributeVO());
+		for (Object o : results)
+			market.addGraph((MarketAttributeVO)o);
+	}
 
 	/**
 	 * Build the time since last updated message
@@ -132,7 +157,7 @@ public class MarketAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Get all attributes for the supplied market
+	 * Get all non grid attributes for the supplied market
 	 * @param market
 	 */
 	protected void addAttributes(MarketVO market) {
@@ -141,7 +166,7 @@ public class MarketAction extends SBActionAdapter {
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
-		sql.append("WHERE MARKET_ID = ? ");
+		sql.append("WHERE MARKET_ID = ? and a.TYPE_CD != 'GRID' ");
 		sql.append("ORDER BY xr.ORDER_NO");
 		log.debug(sql+"|"+market.getMarketId());
 

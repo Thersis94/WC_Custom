@@ -1,4 +1,4 @@
-package com.biomed.smarttrak;
+package com.biomed.smarttrak.fd;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -7,6 +7,11 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.SectionVO;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
@@ -32,6 +37,7 @@ public class FinancialDashVO extends SBModuleVO {
 	private boolean leafMode;
 	private String scenarioId;
 	private String companyId;
+	private int quarter;
 	
 	/**
 	 * Provides a logger
@@ -83,16 +89,22 @@ public class FinancialDashVO extends SBModuleVO {
 		log = Logger.getLogger(getClass());
 	}
 
-	public FinancialDashVO(ResultSet rs) {
+	public FinancialDashVO(ResultSet rs, SmarttrakTree sections) {
 		this();
-		setData(rs);
+		setData(rs, sections);
+	}
+	
+	public FinancialDashVO(ActionRequest req, SmarttrakTree sections) {
+		this();
+		setData(req, sections);
 	}
 	
 	/**
-	 * Sets data from a ResultSet
+	 * Sets applicable data coming from a ResultSet
+	 * 
 	 * @param rs
 	 */
-	public void setData(ResultSet rs) {
+	public void setData(ResultSet rs, SmarttrakTree sections) {
 		FinancialDashDataRowVO row;
 		
 		try {
@@ -100,12 +112,47 @@ public class FinancialDashVO extends SBModuleVO {
 				row = new FinancialDashDataRowVO(rs);
 
 				if (!row.isInactive()) {
+					row.setReporting(sections);
 					addRow(row);
 				}
 			}
 		} catch (SQLException sqle) {
 			log.error("Unable to set financial dashboard row data", sqle);
 		}
+	}
+	
+	/**
+	 * Processes the request's options needed for generating the
+	 * requested table, chart, or report. Sets defaults where needed.
+	 * 
+	 * @param req
+	 * @param sections
+	 */
+	public void setData(ActionRequest req, SmarttrakTree sections) {
+		// Get the paramters off the request, set defaults where required
+		String dispType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
+		String tblType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
+		String[] ctryTypes = req.getParameterValues("countryTypes[]") == null ? new String[]{FinancialDashVO.DEFAULT_COUNTRY_TYPE} : req.getParameterValues("countryTypes[]");
+		String sectId = StringUtil.checkVal(req.getParameter("sectionId"));
+		boolean leafMd = Convert.formatBoolean(req.getParameter("leafMode"));
+		String scenId = StringUtil.checkVal(req.getParameter("scenarioId"));
+		String compId = StringUtil.checkVal(req.getParameter("companyId"));
+		
+		// Default year & quarter require knowledge of what was most recently published for the section being viewed
+		SectionVO section = (SectionVO) sections.getRootNode().getUserObject();
+		Integer calYr = Convert.formatInteger(req.getParameter("calendarYear"), section.getFdPubYr());
+
+		// Set the parameters
+		setTableType(tblType);
+		setColHeaders(dispType, calYr);
+		for(String countryType : ctryTypes) {
+			addCountryType(countryType);
+		}
+		setSectionId(sectId);
+		setLeafMode(leafMd);
+		setScenarioId(scenId);
+		setCompanyId(compId);
+		setQuarter(section.getFdPubQtr());
 	}
 	
 	/**
@@ -181,6 +228,13 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public String getCompanyId() {
 		return companyId;
+	}
+
+	/**
+	 * @return the quarter
+	 */
+	public int getQuarter() {
+		return quarter;
 	}
 
 	/**
@@ -288,5 +342,12 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setCompanyId(String companyId) {
 		this.companyId = companyId;
+	}
+
+	/**
+	 * @param quarter the quarter to set
+	 */
+	public void setQuarter(int quarter) {
+		this.quarter = quarter;
 	}
 }

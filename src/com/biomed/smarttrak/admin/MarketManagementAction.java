@@ -14,6 +14,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -304,11 +305,56 @@ public class MarketManagementAction extends SimpleActionAdapter {
 	/**
 	 * Get all attributes associated with the supplied market.
 	 * @param market
+	 * @throws ActionException 
 	 */
-	protected void addAttributes(MarketVO market) {
+	protected void addAttributes(MarketVO market) throws ActionException {
 		List<Object> results = getMarketAttributes(market.getMarketId());
-		for (Object o : results)
-			market.addMarketAttribute((MarketAttributeVO)o);
+		Tree t = buildAttributeTree();
+		
+		for (Object o : results) {
+			MarketAttributeVO m = (MarketAttributeVO)o;
+			Node n = t.findNode(m.getAttributeId());
+			String[] split = n.getFullPath().split(Tree.DEFAULT_DELIMITER);
+			if (split.length >= 2) {
+				m.setGroupName(split[1]);
+			}
+			market.addMarketAttribute(m);
+		}
+	}
+	
+
+	/**
+	 * Create the full attribute tree in order to determine the full ancestry of each attribute
+	 * @return
+	 * @throws ActionException
+	 */
+	private Tree buildAttributeTree() throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT c.ATTRIBUTE_ID, c.PARENT_ID, c.ATTRIBUTE_NM, p.ATTRIBUTE_NM as PARENT_NM ");
+		sql.append("FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE c ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE p ");
+		sql.append("ON c.PARENT_ID = p.ATTRIBUTE_ID ");
+		log.debug(sql);
+		List<Node> attributes = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				Node n = new Node(rs.getString("ATTRIBUTE_ID"), rs.getString("PARENT_ID"));
+				if ("profile".equals(rs.getString("ATTRIBUTE_NM"))) {
+					n.setNodeName(rs.getString("PARENT_NM"));
+				} else {
+					n.setNodeName(rs.getString("ATTRIBUTE_NM"));
+				}
+				attributes.add(n);
+			}
+			
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		Tree t = new Tree(attributes);
+		t.buildNodePaths(t.getRootNode(), Tree.DEFAULT_DELIMITER, true);
+		return t;
 	}
 
 
@@ -398,9 +444,11 @@ public class MarketManagementAction extends SimpleActionAdapter {
 	protected List<Object> getMarketAttributes(String marketId) {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
+		sql.append("SELECT xr.*, a.*, g.TITLE_NM as GROUP_NM FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_GRID g ");
+		sql.append("ON g.GRID_ID = xr.VALUE_1_TXT ");
 		sql.append("WHERE MARKET_ID = ? ");
 		log.debug(sql+"|"+marketId);
 		List<Object> params = new ArrayList<>();
