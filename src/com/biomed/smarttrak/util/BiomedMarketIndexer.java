@@ -10,6 +10,7 @@ import java.util.Properties;
 
 import org.apache.solr.client.solrj.SolrClient;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.vo.MarketVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
@@ -92,6 +93,7 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 					}
 					market.addOrganization(ORG_ID);
 					market.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+					market.setDocumentUrl(AdminControllerAction.Section.MARKET.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString("MARKET_ID"));
 					currentMarket = rs.getString("MARKET_ID");
 				}
 				if (!StringUtil.isEmpty(rs.getString("SECTION_ID"))) {

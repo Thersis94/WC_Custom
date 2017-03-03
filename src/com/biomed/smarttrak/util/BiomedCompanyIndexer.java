@@ -10,6 +10,7 @@ import java.util.Properties;
 
 import org.apache.solr.client.solrj.SolrClient;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.util.StringUtil;
@@ -124,6 +125,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		company.setTitle(rs.getString("COMPANY_NM"));
 		company.setContentType(rs.getString("STATUS_NO"));
 		company.addAttribute("ticker", rs.getString("NAME_TXT"));
+		company.setDocumentUrl(AdminControllerAction.Section.COMPANY.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString("COMPANY_ID"));
 		
 		if (rs.getTimestamp("UPDATE_DT") != null) {
 			company.setUpdateDt(rs.getDate("UPDATE_DT"));
