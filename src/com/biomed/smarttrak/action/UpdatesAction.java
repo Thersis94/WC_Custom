@@ -13,6 +13,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -35,6 +36,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  ****************************************************************************/
 public class UpdatesAction extends SBActionAdapter {
 
+	public static final int RPP = 15;
 	public UpdatesAction() { 
 		super();
 	}
@@ -82,8 +84,17 @@ public class UpdatesAction extends SBActionAdapter {
 		SMTSession ses = req.getSession();
 		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
 
+		/*
+		 * Get the PageNo off the request.  Use this to filter the sql query down
+		 * to a manageable size.  Replace the Request with 0 as the Start value
+		 * so that Solr doesn't offset anything.
+		 */
+		int page = Convert.formatInteger(req.getParameter("page"));
+		int offset = RPP * page;
+		req.setParameter("page", "0");
+
 		List<String> docIds = new ArrayList<>();
-		try(PreparedStatement ps = dbConn.prepareStatement(getFavoriteUpdatesSql())) {
+		try(PreparedStatement ps = dbConn.prepareStatement(getFavoriteUpdatesSql(offset))) {
 			int i = 1;
 			ps.setString(i++, AdminControllerAction.Section.MARKET.toString());
 			ps.setString(i++, vo.getProfileId());
@@ -115,20 +126,23 @@ public class UpdatesAction extends SBActionAdapter {
 	 * Build sql query for Favorited Items in Updates.
 	 * @return
 	 */
-	protected String getFavoriteUpdatesSql() {
+	protected String getFavoriteUpdatesSql(int offset) {
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(500);
-		sql.append("select b.update_id from profile_favorite a ");
+		sql.append("select distinct *, row_number() OVER (ORDER BY publish_dt desc) as rnum from ( ");
+		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
 		sql.append("on a.rel_id = b.market_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append("union ");
-		sql.append("select b.update_id from profile_favorite a ");
+		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
 		sql.append("on a.rel_id = b.product_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append("union ");
-		sql.append("select b.update_id from profile_favorite a ");
+		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
 		sql.append("on a.rel_id = b.company_id and a.type_cd = ? and a.profile_id = ? ");
+		sql.append(") as update_id order by publish_dt desc limit ").append(RPP);
+		sql.append(" offset ").append(offset);
 		return sql.toString();
 	}
 
