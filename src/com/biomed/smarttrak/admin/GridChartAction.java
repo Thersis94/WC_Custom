@@ -150,10 +150,10 @@ public class GridChartAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> params = Arrays.asList(new Object[]{gridId});
 		List<?> data = db.executeSelect(sql.toString(), params, new GridVO(), null);
-		log.debug("Data: " + data);
+		log.info("Data: " + data);
 		
 		// Add the vo only.  Add a blank bean if nothing found
-		putModuleData(data.isEmpty() ? data.get(0) : new GridVO());
+		putModuleData(data.isEmpty() ? new GridVO() : data.get(0));
 	}
 	
 	/**
@@ -168,7 +168,7 @@ public class GridChartAction extends SBActionAdapter {
 		
 		try {
 			data = getGridList(req, schema);
-			log.debug("Data Size: " + data.size());
+			log.info("Data Size: " + data.size());
 			
 			// Get the count
 			count = getGridCount(req, schema);
@@ -235,7 +235,7 @@ public class GridChartAction extends SBActionAdapter {
 		if (search.length() > 0) sql.append("where upper(title_nm) like ? or upper(subtitle_nm) like ? ");
 		sql.append("order by ").append(sort).append(" ").append(order);
 		sql.append(" limit ? offset ? ");
-		log.debug(sql.toString());
+		log.info(sql.toString());
 		
 		// Loop the data and store
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

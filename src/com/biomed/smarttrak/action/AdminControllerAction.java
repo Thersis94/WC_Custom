@@ -116,6 +116,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		actions.put("marketingCampaigns", CampaignInstanceAction.class);
 		actions.put("marketingInstanceReport", InstanceReport.class);
 		actions.put("uwr", UpdatesWeeklyReportAction.class);
+		actions.put("grid", GridChartAction.class);
 
 		ACTIONS = Collections.unmodifiableMap(actions);
 	}
@@ -197,6 +198,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private ActionInterface loadAction(String actionType) throws ActionException {
+		/*
 		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
 			case "hierarchy":
@@ -262,7 +264,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			default:
 				throw new ActionException("unknown action type:" + actionType);
 		}
-
+		*/
 		//Check if ACTIONS contains a key for our actionType.
 		if(ACTIONS.containsKey(actionType)) {
 
