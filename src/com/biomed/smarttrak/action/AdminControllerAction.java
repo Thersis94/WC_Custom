@@ -1,9 +1,9 @@
 package com.biomed.smarttrak.action;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+//apache commons-lang jar
 import org.apache.commons.lang.StringEscapeUtils;
 
 // WC custom
@@ -16,6 +16,7 @@ import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.GridChartAction;
+import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
@@ -25,6 +26,7 @@ import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
+
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -33,16 +35,19 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-//WC Email Campaigns
-import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
-import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
 import com.smt.sitebuilder.action.solr.management.SolrSynonymAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
+
+//WC Email Campaigns
+import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
+import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
+
 /****************************************************************************
  * <b>Title</b>: AdminControllerAction.java
  * <b>Project</b>: WC_Custom
@@ -68,10 +73,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
 	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
 
-	public static final int DOC_ID_MIN_LEN = 15;
+	public static final int DOC_ID_MIN_LEN = 15;  //used to determine if a pkId will be globally unique if fed to Solr as documentId, 
 
-	public static final String PUBLIC_401_PG = "/subscribe";
-	
+	public static final String PUBLIC_401_PG = "/subscribe"; //where users get redirected when they're not authorized to view an asset
+
 
 	/*
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
@@ -87,37 +92,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		}
 	}
 
-	public static final Map<String, Class<?>> ACTIONS;
-
-	//Instantiate the ACTIONS Map with actionType -> Class
-	
-	static {
-		Map<String, Class<?>> actions = new HashMap<>();
-		actions.put("hierarchy", SectionHierarchyAction.class);
-		actions.put("agap", GapAnalysisAdminAction.class);
-		actions.put("fd", FinancialDashAction.class);
-		actions.put("fdScenario", FinancialDashScenarioAction.class);
-		actions.put("fdHierarchy", FinancialDashHierarchyAction.class);
-		actions.put("productAdmin", ProductManagementAction.class);
-		actions.put("companyAdmin", CompanyManagementAction.class);
-		actions.put("accounts", AccountAction.class);
-		actions.put("account-permissions", AccountPermissionAction.class);
-		actions.put("users", AccountUserAction.class);
-		actions.put("insights", InsightAction.class);
-		actions.put("teams", TeamAction.class);
-		actions.put("team-members", TeamMemberAction.class);
-		actions.put("marketAdmin", MarketManagementAction.class);
-		actions.put("updates", UpdatesAction.class);
-		actions.put("list", ListAction.class);
-		actions.put("reports", ReportFacadeAction.class);
-		actions.put("support", SupportFacadeAction.class);
-		actions.put("synonyms", SolrSynonymAction.class);
-		actions.put("marketingCampaigns", CampaignInstanceAction.class);
-		actions.put("marketingInstanceReport", InstanceReport.class);
-		actions.put("uwr", UpdatesWeeklyReportAction.class);
-		actions.put("grid", GridChartAction.class);
-		ACTIONS = Collections.unmodifiableMap(actions);
-	}
+	/*
+	 * the master list of actions this Controller can execute
+	 */
+	protected static final Map<String, Class<? extends ActionInterface>> ACTIONS;
 
 	public AdminControllerAction() {
 		super();
@@ -125,6 +103,36 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	public AdminControllerAction(ActionInitVO arg0) {
 		super(arg0);
+	}
+
+	/**
+	 * populates the action map when the static constructor is called.  This will make our map live once in the JVM
+	 */
+	static {
+		ACTIONS = new HashMap<>(35);
+		ACTIONS.put("hierarchy", SectionHierarchyAction.class);
+		ACTIONS.put("agap", GapAnalysisAdminAction.class);
+		ACTIONS.put("fd", FinancialDashAction.class);
+		ACTIONS.put("fdScenario", FinancialDashScenarioAction.class);
+		ACTIONS.put("fdHierarchy", FinancialDashHierarchyAction.class);
+		ACTIONS.put("productAdmin", ProductManagementAction.class);
+		ACTIONS.put("companyAdmin", CompanyManagementAction.class);
+		ACTIONS.put("accounts", AccountAction.class);
+		ACTIONS.put("account-permissions", AccountPermissionAction.class);
+		ACTIONS.put("users", AccountUserAction.class);
+		ACTIONS.put("insights", InsightAction.class);
+		ACTIONS.put("teams", TeamAction.class);
+		ACTIONS.put("team-members", TeamMemberAction.class);
+		ACTIONS.put("marketAdmin", MarketManagementAction.class);
+		ACTIONS.put("updates", UpdatesAction.class);
+		ACTIONS.put("list", ListAction.class);
+		ACTIONS.put("reports", ReportFacadeAction.class);
+		ACTIONS.put("support", SupportFacadeAction.class);
+		ACTIONS.put("synonyms", SolrSynonymAction.class);
+		ACTIONS.put("marketingCampaigns", CampaignInstanceAction.class);
+		ACTIONS.put("marketingInstanceReport", InstanceReport.class);
+		ACTIONS.put("uwr", UpdatesWeeklyReportAction.class); 
+		ACTIONS.put("grid", GridChartAction.class);
 	}
 
 
@@ -135,10 +143,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		super.retrieve(req);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
-	 */
+
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		String actionType = req.getParameter(ACTION_TYPE);
@@ -154,12 +159,16 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			}else {
 				action.build(req);
 			}
-			msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
+			msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 		} catch (ActionException ae) {
 			log.error("could not execute " + actionType, ae.getCause());
-			msg = (String) attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
+			msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 		}
+
+		// Only proceed to redirect if it not a json request (?json=true)
+		if (Convert.formatBoolean(req.getParameter("json")))
+			return;
 
 		//setup the redirect.  Build a URL for 'this' page if a child action didn't build one of it's own.
 		//NOTE: the controller should (and does) control the redirect.  It also sets 'msg' properly if the child action pukes.
@@ -171,10 +180,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			if (!StringUtil.isEmpty(actionType)) url.append("?actionType=").append(actionType);
 			redirUrl = url.toString();
 		}
-		
-		// Only redirect if it not a json request (?json=true)
-		boolean json = Convert.formatBoolean(req.getParameter("json"), false);
-		if (! json) sendRedirect(redirUrl, msg, req);
+		sendRedirect(redirUrl, msg, req);
 	}
 
 
@@ -195,29 +201,19 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private ActionInterface loadAction(String actionType) throws ActionException {
-		//Check if ACTIONS contains a key for our actionType.
-		if(ACTIONS.containsKey(actionType)) {
+	protected ActionInterface loadAction(String actionType) throws ActionException {
+		Class<?> c = ACTIONS.get(actionType);
+		if (c == null) 
+			throw new ActionException("unknown action type:" + actionType);
 
-			//Get the Class
-			Class<?> c = ACTIONS.get(actionType);
-			try {
-
-				/*
-				 * Instantiate an ActionInterface using the given Class and
-				 * set DBConnection and Attributes.
-				 */
-				ActionInterface action = (ActionInterface) c.newInstance();
-				action.setDBConnection(dbConn);
-				action.setAttributes(getAttributes());
-
-				//Return action we made.
-				return action;
-			} catch (InstantiationException | IllegalAccessException e) {
-				throw new ActionException("Problem Instantiating type: " + actionType);
-			}
-		} else {
-				throw new ActionException("unknown action type:" + actionType);
+		//instantiate the action & return it - pass attributes & dbConn
+		try {
+			ActionInterface action = (ActionInterface) c.newInstance();
+			action.setDBConnection(dbConn);
+			action.setAttributes(getAttributes());
+			return action;
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new ActionException("Problem Instantiating type: " + actionType);
 		}
 	}
 
