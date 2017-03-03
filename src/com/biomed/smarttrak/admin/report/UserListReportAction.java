@@ -66,11 +66,17 @@ public class UserListReportAction extends SimpleActionAdapter {
 		// 1. retrieve account/users
 		List<AccountUsersVO> accounts = retrieveAccountUsers(se);
 
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		String siteId = StringUtil.isEmpty(site.getAliasPathParentId()) ? site.getSiteId() : site.getAliasPathParentId();
+		
 		// 2. retrieve login attributes
-		Map<String,Map<String,Object>> authAttributes = retrieveAuthAttributes(req, accounts);
+		Map<String,Map<String,Object>> authAttributes = retrieveAuthAttributes(accounts, siteId);
 
-		// 3. Merge data and return.
-		mergeData(accounts, authAttributes);
+		// 3. retrieve pageviews counts
+		Map<String,Integer> userPageCounts = retrieveUserPageCounts(siteId);
+		
+		// 4. Merge data and return.
+		mergeData(accounts, authAttributes, userPageCounts);
 
 		return accounts;
 	}
@@ -102,11 +108,8 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * @param accounts
 	 * @return
 	 */
-	protected Map<String,Map<String,Object>> retrieveAuthAttributes(ActionRequest req, 
-			List<AccountUsersVO> accounts) {
-
-		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-		String siteId = StringUtil.isEmpty(site.getAliasPathParentId()) ? site.getSiteId() : site.getAliasPathParentId();
+	protected Map<String,Map<String,Object>> retrieveAuthAttributes(List<AccountUsersVO> accounts, String siteId) {
+		log.debug("retrieveAuthAttributes...");
 		// 1. build query
 		StringBuilder sql = buildLastLoginQuery();
 
@@ -131,17 +134,48 @@ public class UserListReportAction extends SimpleActionAdapter {
 		
 		return attribMap;
 	}
-	
+
+	/**
+	 * Retrieves a users cumulative total of page views.
+	 * @param siteId
+	 * @return
+	 */
+	protected Map<String,Integer> retrieveUserPageCounts(String siteId) {
+		log.debug("retrieveUserPageCounts...");
+		StringBuilder sql = buildUserPageCountsQuery();
+		Map<String,Integer> pageCounts = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, siteId);
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				pageCounts.put(rs.getString("profile_id"),Convert.formatInteger(rs.getInt("page_count")));
+			}
+
+		} catch (SQLException sqle) {
+			log.error("Error retrieving user page counts, ", sqle);
+		}
+
+		return pageCounts;
+	}
+
 	/**
 	 * Merges last login data with account users.
 	 * @param accounts
 	 * @param lastLogins
 	 */
-	protected void mergeData(List<AccountUsersVO> accounts, Map<String,Map<String,Object>> authAttribs) {
+	protected void mergeData(List<AccountUsersVO> accounts, 
+			Map<String,Map<String,Object>> authAttribs, Map<String,Integer> userPageCounts) {
+		log.debug("mergeData...");
+		Map<String,Object> userAttribs;
 		for (AccountUsersVO account : accounts) {
+
 			List<UserVO> users = account.getUsers();
 			for (UserVO user : users) {
-				Map<String,Object> userAttribs = authAttribs.get(user.getAuthenticationId());
+				// add page counts first
+				user.addAttribute(UserListReportVO.PAGEVIEWS, userPageCounts.get(user.getProfileId()));
+
+				// now add auth attributes if they exist.
+				userAttribs = authAttribs.get(user.getAuthenticationId());
 				if (userAttribs == null || userAttribs.isEmpty()) continue;
 				for (Map.Entry<String,Object> loginAttrib : userAttribs.entrySet()) {
 					user.addAttribute(loginAttrib.getKey(), loginAttrib.getValue());
@@ -149,7 +183,31 @@ public class UserListReportAction extends SimpleActionAdapter {
 			}
 		}
 	}
-	
+
+	/**
+	 * Builds the base accounts/users query.
+	 * @return
+	 */
+	protected StringBuilder buildAccountsUsersQuery() {
+		StringBuilder sql = new StringBuilder(650);
+		sql.append("select ac.account_id, ac.account_nm, ac.expiration_dt as acct_expiration_dt, ac.status_no, ");
+		sql.append("us.status_cd, us.expiration_dt, us.fd_auth_flg, us.create_dt, ");
+		sql.append("pf.profile_id, pf.authentication_id, pf.first_nm, pf.last_nm, pf.email_address_txt, ");
+		sql.append("pfa.address_txt, pfa.address2_txt, pfa.city_nm, pfa.state_cd, pfa.zip_cd, pfa.country_cd, ");
+		sql.append("ph.phone_number_txt, ph.phone_type_cd, ");
+		sql.append("rd.register_field_id, rd.value_txt ");
+		sql.append("from custom.biomedgps_account ac ");
+		sql.append("inner join custom.biomedgps_user us on ac.account_id = us.account_id ");
+		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
+		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
+		sql.append("left join phone_number ph on pf.profile_id = ph.profile_id ");
+		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
+		sql.append("inner join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
+		sql.append("order by ac.account_nm, us.profile_id, phone_type_cd");
+		log.debug("user retrieval SQL: " + sql.toString());
+		return sql;
+	}
+
 	/**
 	 * Builds the last logins query.
 	 * @return
@@ -168,26 +226,15 @@ public class UserListReportAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Builds the base accounts/users query.
+	 * Builds the user page count query.
 	 * @return
 	 */
-	protected StringBuilder buildAccountsUsersQuery() {
-		StringBuilder sql = new StringBuilder(650);
-		sql.append("select ac.account_id, ac.account_nm, ac.expiration_dt as acct_expiration_dt, ");
-		sql.append("us.status_cd, us.expiration_dt, us.fd_auth_flg, us.create_dt, ");
-		sql.append("pf.profile_id, pf.authentication_id, pf.first_nm, pf.last_nm, pf.email_address_txt, ");
-		sql.append("pfa.address_txt, pfa.address2_txt, pfa.city_nm, pfa.state_cd, pfa.zip_cd, pfa.country_cd, ");
-		sql.append("ph.phone_number_txt, ph.phone_type_cd, ");
-		sql.append("rd.register_field_id, rd.value_txt ");
-		sql.append("from custom.biomedgps_account ac ");
-		sql.append("inner join custom.biomedgps_user us on ac.account_id = us.account_id ");
-		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
-		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
-		sql.append("left join phone_number ph on pf.profile_id = ph.profile_id ");
-		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
-		sql.append("inner join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
-		sql.append("order by ac.account_nm, us.profile_id, phone_type_cd");
-		log.debug("user retrieval SQL: " + sql.toString());
+	protected StringBuilder buildUserPageCountsQuery() {
+		StringBuilder sql = new StringBuilder(115);
+		sql.append("select profile_id, count(profile_id) as page_count ");
+		sql.append("from pageview_user where site_id = ? ");
+		sql.append("group by profile_id");
+		log.debug("page count retrieval: " + sql.toString());
 		return sql;
 	}
 
@@ -276,6 +323,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 		account.setAccountId(rs.getString("account_id"));
 		account.setAccountName(rs.getString("account_nm"));
 		account.setExpirationDate(rs.getDate("acct_expiration_dt"));
+		account.setStatusNo(rs.getString("status_no"));
 		return account;
 	}
 	

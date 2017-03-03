@@ -43,6 +43,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	// account fields
 	private static final String ACCT_EXPIRE = "ACCT_EXPIRE";
 	private static final String ACCT_NM = "ACCT_NM";
+	private static final String ACCT_STATUS = "ACCT_STATUS";
 	
 	// profile fields
 	private static final String FIRST_NM = "FIRST_NM";
@@ -68,7 +69,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	protected static final String OS = "OS";
 	protected static final String BROWSER = "BROWSER";
 	protected static final String DEVICE_TYPE = "DEVICE_TYPE";
-
+	protected static final String PAGEVIEWS = "PAGEVIEWS";
 
 	private static final String EMPTY_STRING = "";
 	private static final String LIST_DELIMITER = ",";
@@ -133,6 +134,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row = new HashMap<>();
 				row.put(ACCT_NM, acct.getAccountName());
 				row.put(ACCT_EXPIRE, formatDate(acct.getExpirationDate(),false));
+				row.put(ACCT_STATUS, acct.getStatusName());
 				row.put(USER_EXPIRE, formatDate(user.getExpirationDate(),false));
 				row.put(RegistrationMap.COMPANY.name(),user.getCompany());
 				row.put(RegistrationMap.TITLE.name(),user.getTitle());
@@ -140,6 +142,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(LAST_NM,user.getLastName());
 				row.put(EMAIL,user.getEmailAddress());
 				row.put(LAST_LOGIN_DT, formatDate((Date)user.getAttribute(LAST_LOGIN_DT),true));
+				row.put(PAGEVIEWS, user.getAttribute(PAGEVIEWS));
 				row.put(MAIN_PHONE,formatPhoneNumber(pnf,user.getMainPhone(),user.getCountryCode()));
 				row.put(MOBILE_PHONE,formatPhoneNumber(pnf,user.getMobilePhone(),user.getCountryCode()));
 				row.put(ADDRESS1,user.getAddress());
@@ -156,6 +159,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(RegistrationMap.DIVISIONS.name(), formatUserDivisions(user.getDivisions()));
 				row.put(OS, user.getAttribute(OS));
 				row.put(BROWSER, user.getAttribute(BROWSER));
+				row.put(DEVICE_TYPE, user.getAttribute(DEVICE_TYPE));
 				row.put(HAS_FD, formatUserFDFlag(user.getFdAuthFlg()));
 				row.put(RegistrationMap.NOTES.name(), user.getNotes());
 				row.put(RegistrationMap.COMPANYURL.name(), user.getCompanyUrl());
@@ -235,6 +239,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put(ACCT_NM,"Account Name");
 		headerMap.put(ACCT_EXPIRE,"Account Expiration");
+		headerMap.put(ACCT_STATUS,"Is Active");
 		headerMap.put(USER_EXPIRE,"User Expiration");
 		headerMap.put(RegistrationMap.COMPANY.name(),"Company");
 		headerMap.put(RegistrationMap.TITLE.name(),"Title");
@@ -242,6 +247,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(LAST_NM,"Last");
 		headerMap.put(EMAIL,"Email Address");
 		headerMap.put(LAST_LOGIN_DT,"Last Login");
+		headerMap.put(PAGEVIEWS, "Hits");
 		headerMap.put(MAIN_PHONE,"Phone");
 		headerMap.put(MOBILE_PHONE,"Mobile Phone");
 		headerMap.put(ADDRESS1,"Address 1");
@@ -258,6 +264,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(RegistrationMap.DIVISIONS.name(),"Division");
 		headerMap.put(OS, OS);
 		headerMap.put(BROWSER, "Browser");
+		headerMap.put(DEVICE_TYPE, "Device Type");
 		headerMap.put(HAS_FD, USER_FD_VAL);
 		headerMap.put(RegistrationMap.NOTES.name(),"Notes");
 		headerMap.put(RegistrationMap.COMPANYURL.name(),"Company URL");
