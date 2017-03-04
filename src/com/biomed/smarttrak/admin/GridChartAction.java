@@ -145,7 +145,7 @@ public class GridChartAction extends SBActionAdapter {
 		sql.append("on a.grid_id = b.grid_id where a.grid_id = ? ");
 		if (display) sql.append("and grid_detail_type_cd = 'DATA' ");
 		sql.append("order by b.order_no");
-		log.info(sql);
+		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> params = Arrays.asList(new Object[]{gridId});
@@ -153,7 +153,7 @@ public class GridChartAction extends SBActionAdapter {
 		log.debug("Data: " + data);
 		
 		// Add the vo only.  Add a blank bean if nothing found
-		putModuleData(data.isEmpty() ? data.get(0) : new GridVO());
+		putModuleData(data.isEmpty() ? new GridVO() : data.get(0));
 	}
 	
 	/**
@@ -234,8 +234,8 @@ public class GridChartAction extends SBActionAdapter {
 		sql.append("from ").append(schema).append("biomedgps_grid a ");
 		if (search.length() > 0) sql.append("where upper(title_nm) like ? or upper(subtitle_nm) like ? ");
 		sql.append("order by ").append(sort).append(" ").append(order);
-		sql.append(" limit ? offset ? ");
-		log.debug(sql.toString());
+		sql.append(" limit ? offset ? ");		
+    log.debug(sql.toString());
 		
 		// Loop the data and store
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
