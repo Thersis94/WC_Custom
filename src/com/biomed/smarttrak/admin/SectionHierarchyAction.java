@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.admin;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.biomed.smarttrak.vo.SectionVO;
@@ -159,6 +160,54 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error(e);
 		}
+	}
+	
+	/**
+	 * For a given section in the hierarchy, updates the fd_pub_yr and fd_pub_qtr values only
+	 * 
+	 * @param sectionId
+	 * @param year
+	 * @param qtr
+	 */
+	public void updateFdPublish(String sectionId, int fdPubYr, int fdPubQtr) {
+		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		
+		// Setup the requirements for the db processor
+		String sql = getFdPublishSql();
+		List<String> fields = new ArrayList<>();
+		fields.addAll(Arrays.asList("FD_PUB_YR", "FD_PUB_QTR", "SECTION_ID"));
+		
+		// Add the values to the vo
+		SectionVO section = new SectionVO();
+		section.setSectionId(sectionId);
+		section.setFdPubQtr(fdPubQtr);
+		section.setFdPubYr(fdPubYr);
+		
+		// Update the values
+		try {
+			dbp.executeSqlUpdate(sql, section, fields);
+		} catch(Exception e) {
+			log.error(e);
+		}
+		
+		// Clear the cache so it gets refreshed with current values on the next request
+		this.clearCacheByKey(getCacheKey());
+	}
+	
+	/**
+	 * Returns the sql for updating the fd publish values
+	 * 
+	 * @return
+	 */
+	private String getFdPublishSql() {
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(300);
+		
+		sql.append("update ").append(custom).append("BIOMEDGPS_SECTION ");
+		sql.append("set ").append("FD_PUB_YR = ?, FD_PUB_QTR = ? ");
+		sql.append("where SECTION_ID = ? ");
+		
+		return sql.toString();
 	}
 
 	/* (non-Javadoc)
