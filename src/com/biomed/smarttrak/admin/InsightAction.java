@@ -201,8 +201,6 @@ public class InsightAction extends AbstractTreeAction {
 				deleteFromSolr(u);
 			} else {
 				
-				u.setQsPath((String)getAttribute(Constants.QS_PATH));
-				
 				if (req.hasParameter("listSave")){
 					updateFeatureOrder(u);
 				}else {

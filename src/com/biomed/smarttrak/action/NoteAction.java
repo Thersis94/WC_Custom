@@ -63,7 +63,7 @@ public class NoteAction extends SBActionAdapter {
 	private static final String NOTE_TYPE = "noteType";
 	private static final String NOTE_ENTITY_ID = "noteEntityId";
 	private static final String CUSTOM_SCHEMA = "custom.";
-	private static final String NOTES_DIRECTORY_PATH = "/note/";
+	private static final String NOTES_DIRECTORY_PATH = "note";
 
 	public NoteAction() {
 		super();
