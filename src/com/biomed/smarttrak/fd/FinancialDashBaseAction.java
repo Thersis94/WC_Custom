@@ -110,6 +110,20 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Returns a section hierarchy action
+	 * 
+	 * @param req
+	 * @return
+	 */
+	protected SectionHierarchyAction getHierarchyAction(ActionRequest req) {
+		SectionHierarchyAction sha = new SectionHierarchyAction(this.actionInit);
+		sha.setAttributes(this.attributes);
+		sha.setDBConnection(dbConn);
+		
+		return sha;
+	}
+	
+	/**
 	 * Gets the hierarchy for the requested level
 	 * 
 	 * @param req
@@ -118,15 +132,25 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected SmarttrakTree getHierarchy(ActionRequest req) throws ActionException {
-		SectionHierarchyAction sha = new SectionHierarchyAction(this.actionInit);
-		sha.setAttributes(this.attributes);
-		sha.setDBConnection(dbConn);
+		SectionHierarchyAction sha = getHierarchyAction(req);
 		sha.retrieve(req);
 		
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		List<Node> sections = (List<Node>) mod.getActionData();
 		
 		return new SmarttrakTree(sections, sections.get(0));
+	}
+	
+	/**
+	 * Gets the full hierarchy
+	 * 
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected SmarttrakTree getFullHierarchy(ActionRequest req) throws ActionException {
+		SectionHierarchyAction sha = getHierarchyAction(req);
+		return sha.loadTree(null);
 	}
 	
 	/**
