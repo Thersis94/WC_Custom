@@ -16,9 +16,7 @@ import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.GridChartAction;
-import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.admin.ListAction;
-import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.ReportFacadeAction;
@@ -121,7 +119,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("accounts", AccountAction.class);
 		ACTIONS.put("account-permissions", AccountPermissionAction.class);
 		ACTIONS.put("users", AccountUserAction.class);
-		ACTIONS.put("insights", InsightAction.class);
+		ACTIONS.put("insights", com.biomed.smarttrak.action.InsightAction.class);
 		ACTIONS.put("teams", TeamAction.class);
 		ACTIONS.put("team-members", TeamMemberAction.class);
 		ACTIONS.put("marketAdmin", MarketManagementAction.class);
