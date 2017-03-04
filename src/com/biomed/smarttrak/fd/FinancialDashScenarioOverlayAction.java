@@ -11,12 +11,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
 import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -283,6 +286,11 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		
 		updateAllScenarios(baseData, overlayData, sectionId, countryType, year);
 		updateBaseData(baseData, overlayData);
+		
+		// Handle option to set the section current to the specified value while publishing
+		if (req.hasParameter("currentQtr")) {
+			setCurrentQtr(req);
+		}
 	}
 	
 	/**
@@ -451,5 +459,76 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		} catch (Exception e) {
 			throw new ActionException("Couldn't save updated scenario data from overlay.", e);
 		}
+	}
+	
+	/**
+	 * Sets a section in the hierarchy current to the specified quarter. If all siblings are marked at
+	 * the same quarter, then the parent get's marked current as well. And this repeats up the tree until
+	 * either the top gets marked current, or a level is reached where not all nodes match.
+	 * 
+	 * @param req
+	 * @throws ActionException 
+	 */
+	protected void setCurrentQtr(ActionRequest req) throws ActionException {
+		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"));
+		int year = Convert.formatInteger(req.getParameter("currentYear"));
+		int qtr = Convert.formatInteger(req.getParameter("currentQtr"));
+		
+		log.debug("Setting Current Quarter: " + year + "-" + qtr);
+		
+		// Gets the tree info
+		SectionHierarchyAction sha = getHierarchyAction(req);
+		SmarttrakTree tree = getFullHierarchy(req);
+		Node currentNode = tree.findNode(sectionId);
+		String updateNodeId;
+		
+		// Assume equal at the beginning so we can enter the loop
+		boolean nodesEqual = true;
+		
+		// Break out of the loop when we reach the top of the tree,
+		// or when not all siblings are equal to the new values.
+		while (currentNode != null && nodesEqual) {
+			// Update current node
+			updateNodeId = currentNode.getNodeId();
+			sha.updateFdPublish(updateNodeId, year, qtr);
+			
+			// Get parent node
+			currentNode = tree.findNode(currentNode.getParentId());
+			
+			// Nothing left to process if null
+			if (currentNode == null)
+				continue;
+
+			// Get the parent node's children
+			List<Node> children = currentNode.getChildren();
+			
+			// Determine if parent node's children are equal to the new values
+			nodesEqual = childrenQtrEqual(children, qtr, year, updateNodeId);
+		}
+	}
+	
+	/**
+	 * Helper that determines whether current published quarters are all equal to what is being set
+	 * 
+	 * @param children
+	 * @param qtr
+	 * @param year
+	 * @param updateNodeId
+	 * @return
+	 */
+	private boolean childrenQtrEqual(List<Node> children, int qtr, int year, String updateNodeId) {
+		boolean nodesEqual = true;
+
+		for (Node child : children) {
+			SectionVO section = (SectionVO) child.getUserObject();
+
+			// If child is not equal to what we're updating (and not the node selected for update),
+			// then the nodes as a group are not equal.
+			if ((section.getFdPubQtr() != qtr || section.getFdPubYr() != year) && !updateNodeId.equals(child.getNodeId())) {
+				nodesEqual = false;
+			}
+		}
+		
+		return nodesEqual;
 	}
 }
