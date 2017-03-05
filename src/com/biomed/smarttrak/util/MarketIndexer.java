@@ -1,7 +1,6 @@
 package com.biomed.smarttrak.util;
 
 //Java 8
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,7 +25,6 @@ import com.biomed.smarttrak.vo.SectionVO;
 //WC
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
@@ -65,16 +63,25 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	@SuppressWarnings("resource")
 	@Override
 	public void addIndexItems(SolrClient server) {
-		SolrActionUtil solrUtil = new SmarttrakSolrUtil(server);
-		List<MarketVO> markets = retreiveMarkets(null);
+		pushMarkets(server, null);
+	}
 
-		// Loop over each form transaction and turn it into a SolrStoryVO for processing
-		for (MarketVO vo : markets) {
-			try {
-				solrUtil.addDocument(vo);
-			} catch (Exception e) {
-				log.error("could add to Solr", e);
-			}
+	@Override
+	public void addSingleItem(String id) {
+		pushMarkets(makeServer(), id);
+	}
+
+
+	/**
+	 * reused method for pushing all, or one, market over to Solr
+	 * @param server
+	 * @param pkId
+	 */
+	protected void pushMarkets(SolrClient server, String pkId) {
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+			util.addDocuments(retrieveMarkets(pkId));
+		} catch (Exception e) {
+			log.error("Failed to update market in Solr, passed pkid=" + pkId, e);
 		}
 	}
 
@@ -84,7 +91,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 * @param id
 	 * @return
 	 */
-	private List<MarketVO> retreiveMarkets(String id) {
+	private List<MarketVO> retrieveMarkets(String id) {
 		List<MarketVO> markets = new ArrayList<>();
 		SmarttrakTree hierarchies = createHierarchies();
 		String sql = buildRetrieveSql(id);
@@ -215,18 +222,4 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	public String getIndexType() {
 		return INDEX_TYPE;
 	}
-
-
-	@Override
-	public void addSingleItem(String id) {
-		List<MarketVO> market = retreiveMarkets(id);
-		try (SolrActionUtil util = new SolrActionUtil(makeServer())) {
-			for (MarketVO vo : market) {
-				util.addDocument(vo);
-			}
-		} catch (Exception e) {
-			log.error("Failed to update market with id: " + id, e);
-		}
-	}
-
 }
