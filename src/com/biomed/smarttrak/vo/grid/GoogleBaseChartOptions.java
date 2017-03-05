@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 
 /********************************************************************
@@ -118,6 +119,23 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 	@Override
 	public Map<String,Object> getCellOptions() {
 		return cell;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.vo.grid.SMTChartOptionIntfc#addRowOptions(com.biomed.smarttrak.admin.vo.GridDetailVO)
+	 */
+	@Override
+	public void addRowOptions(GridDetailVO detail) {
+		
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.vo.grid.SMTChartOptionIntfc#addCellOptions(com.biomed.smarttrak.admin.vo.GridDetailVO)
+	 */
+	@Override
+	public void addCellOptions(GridDetailVO detail) {
+		
 	}
 }
 

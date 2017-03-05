@@ -4,6 +4,7 @@ package com.biomed.smarttrak.vo.grid;
 import java.io.Serializable;
 import java.util.Map;
 
+import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 
 /********************************************************************
@@ -31,6 +32,19 @@ public interface SMTChartOptionIntfc extends Serializable {
 	 * @return Object containing config.  
 	 */
 	public Map<String,Object> getRowOptions();
+	
+	/**
+	 * Assigns options to each individual row
+	 * @param detail
+	 */
+	public void addRowOptions(GridDetailVO detail);
+	
+	
+	/**
+	 * Assigns options to each individual cell
+	 * @param detail
+	 */
+	public void addCellOptions(GridDetailVO detail);
 	
 	/**
 	 * Provides the configuration information for each cell.

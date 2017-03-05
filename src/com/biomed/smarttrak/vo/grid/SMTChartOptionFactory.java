@@ -50,6 +50,9 @@ public class SMTChartOptionFactory {
 			case COLUMN:
 				if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleColumnChartOptions();
 				break;
+			case TABLE:
+				if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleTableChartOptions();
+				break;
 			default:
 				break;
 		}

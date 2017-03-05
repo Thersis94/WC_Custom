@@ -701,6 +701,17 @@ public class GridVO extends BeanDataVO {
 	}
 	
 	/**
+	 * Returns the Map Structure for bootstrap tables
+	 * @return
+	 */
+	public Map<String, List<Map<String, String>>> getTableMap() {
+		Map<String, List<Map<String, String>>> tableData = new HashMap<>();
+		tableData.put(JSON_ROW_KEY, getRows());
+		tableData.put(JSON_COLUMN_KEY, getColumns());
+		return tableData;
+	}
+	
+	/**
 	 * Builds the row of data
 	 * @return
 	 */
@@ -770,6 +781,29 @@ public class GridVO extends BeanDataVO {
 	 */
 	public String[] getSeries() {
 		return series;
+	}
+	
+	/**
+	 * Returns the number of columns with populated data
+	 * @return
+	 */
+	public int getNumberColumns() {
+		int numCols = 0;
+		
+		// Count the series
+		for (int i = 0; i < series.length; i++) {
+			if (series[i] != null && i > numCols) numCols = i;
+		}
+		
+		// Count the details
+		for (int x = 0; x < details.size(); x++) {
+			GridDetailVO vo = details.get(x);
+			for (int i = 0; i < series.length; i++) {
+				if (vo.getValues()[i] != null && i > numCols) numCols = i;
+			}
+		}
+		
+		return numCols;
 	}
 
 }
