@@ -1,5 +1,8 @@
 package com.biomed.smarttrak.security;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 //JDK
 import java.util.Map;
 import java.sql.PreparedStatement;
@@ -16,8 +19,10 @@ import com.siliconmtn.util.StringUtil;
 // WebCrescendo 3.0
 import com.smt.sitebuilder.security.DBRoleModule;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.action.user.LoginAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 
 //WC Custom
 import com.biomed.smarttrak.admin.AccountAction;
@@ -37,6 +42,11 @@ import com.biomed.smarttrak.vo.UserVO;
  <b>Changes:</b> 
  ***************************************************************************/
 public class SmartTRAKRoleModule extends DBRoleModule {
+
+	/**
+	 * Smarttrak status levels not permitted to login.
+	 */
+	protected static final List<String> blockedStatuses = new ArrayList<>(Arrays.asList("U", "T", "I"));
 
 	public SmartTRAKRoleModule() {
 		super();
@@ -75,6 +85,13 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 
 		if (user.getExpirationDate() != null && user.getExpirationDate().before(Convert.getCurrentTimestamp()))
 			throw new AuthorizationException("account is expired");
+
+		//if status is EU Reports, redirect them to the markets page
+		if ("M".equals(user.getStatusCode())) {
+			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.MARKET.getPageURL());
+		} else if (blockedStatuses.contains(user.getStatusCode())) {
+			throw new AuthorizationException("user not authorized to login according to status");
+		}
 
 		req.setParameter(AccountAction.ACCOUNT_ID, user.getAccountId());
 

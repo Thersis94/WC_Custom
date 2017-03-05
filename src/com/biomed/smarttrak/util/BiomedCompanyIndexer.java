@@ -126,6 +126,8 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		company.setContentType(rs.getString("STATUS_NO"));
 		company.addAttribute("ticker", rs.getString("NAME_TXT"));
 		company.setDocumentUrl(AdminControllerAction.Section.COMPANY.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString("COMPANY_ID"));
+		company.addAttribute("productCount", rs.getInt("PRODUCT_NO"));
+		company.addAttribute("parentNm", rs.getString("PARENT_NM"));
 		
 		if (rs.getTimestamp("UPDATE_DT") != null) {
 			company.setUpdateDt(rs.getDate("UPDATE_DT"));
@@ -145,16 +147,22 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * @return
 	 */
 	private String buildRetrieveSql(String id) {
-		StringBuilder sql = new StringBuilder(275);
+		StringBuilder sql = new StringBuilder(1000);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT c.*, cs.SECTION_ID, s.SOLR_TOKEN_TXT, e.NAME_TXT FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_SECTION cs ");
-		sql.append("ON cs.COMPANY_ID = c.COMPANY_ID ");
+		sql.append("SELECT c.COMPANY_ID, cs.SECTION_ID, c.COMPANY_NM, c.STATUS_NO, e.NAME_TXT, ");
+		sql.append("c2.COMPANY_NM as PARENT_NM, COUNT(p.COMPANY_ID) as PRODUCT_NO, c.CREATE_DT, c.UPDATE_DT ");
+		sql.append("FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("ON p.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_STOCK_EXCHANGE e ");
 		sql.append("ON e.EXCHANGE_ID = c.EXCHANGE_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
-		sql.append("ON cs.SECTION_ID = s.SECTION_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_SECTION cs ");
+		sql.append("ON cs.COMPANY_ID = c.COMPANY_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c2 ");
+		sql.append("ON c2.COMPANY_ID = c.PARENT_ID ");
 		if (id != null) sql.append("WHERE c.COMPANY_ID = ? ");
+		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, cs.SECTION_ID, c.STATUS_NO, ");
+		sql.append("e.NAME_TXT, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT ");
 		return sql.toString();
 	}
 	
