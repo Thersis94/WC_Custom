@@ -60,47 +60,47 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		EventEntryVO event = sem.getEvents().get(0);
 		log.debug("printing PDF for "+ event.getEventTypeCd());
 		boolean isMitek = false;
-		
+
 		PersonVO adv = new PersonVO(); //if there isn't one yet, we'll need this VO
 		for (PersonVO p : sem.getPeople()) {
 			if (p.getRoleCode() != Role.ADV) continue;
 			adv = p;
 			break;
 		}
-		
+
 		// load the proper html-formated report
 		switch ( StringUtil.checkVal( event.getEventTypeCd() ).toUpperCase() ){
 		case "CPSEM":
 			rpt = new CPSEMReportVO();
 			break;
-			
+
 		case "CFSEM":
-//			rpt = new CFSEMReportVO();
-//			break;
-		
+			//			rpt = new CFSEMReportVO();
+			//			break;
+
 		case "CFSEM50":
 			rpt = new CFSEM50ReportVO();
 			break;
-			
-//		case "CFSEM25":
-//			rpt = new CFSEM25ReportVO();
-//			break;
-		
+
+			//		case "CFSEM25":
+			//			rpt = new CFSEM25ReportVO();
+			//			break;
+
 		case "MITEK-PEER": //Mitek P2P
 			isMitek = true;
 			rpt = new MitekPEERReportVO();
 			break;
-			
+
 		case "MITEK-ESEM": //Mitek Patient
 			isMitek = true;
 			rpt = new MitekESEMReportVO();
 			break;
-			
+
 		default:
 			rpt = new ESEMReportVO();
 			break;
 		}
-		
+
 		//run Freemarker replacements to populate the compliance form for this seminar
 		//if the signature is missing, print a bunch of spaces to make it look like a line capable of being signed.
 		//same for approval date
@@ -108,7 +108,7 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		if (admSig.length() == 0) admSig = "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;";
 		String apprDt = Convert.formatDate(adv.getApproveDate(), Convert.DATE_SLASH_PATTERN);
 		if (apprDt.length() == 0) apprDt =  "&nbsp; &nbsp; &nbsp; &nbsp;";
-		
+
 		Map<String, Object> data = new HashMap<String, Object>();
 		data.put("eventDate", Convert.formatDate(event.getStartDate(), Convert.DATE_LONG));
 		data.put("eventLocation", event.getEventName() + " " + event.getAddressText() + " " + event.getCityName() + ", " + event.getStateCode() + " " + event.getZipCode());
@@ -124,19 +124,19 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 			rep +=  p.getFullName();
 		}
 		data.put("repName", rep);
-		
-		StringBuffer buf = null;
+
+		String msg;
 		try {
-			buf = MessageParser.getParsedMessage(new String(rpt.generateReport()), data, event.getEventTypeCd());
+			msg = MessageParser.parseMessage(new String(rpt.generateReport()), data, event.getEventTypeCd());
 		} catch (ParseException e) {
 			log.error("could not generate PDF for Seminar", e);
-			buf = new StringBuffer("The compliance form could not be populated.  Please contact the site administrator for assistance");
+			msg = "The compliance form could not be populated.  Please contact the site administrator for assistance";
 		}
 
-		
+
 		//convert the html to a PDF, and return it
 		PDFReport pdf = new PDFReport("http://events.depuysynthes.com");
-		pdf.setData(buf.toString());
+		pdf.setData(msg);
 		return pdf.generateReport();
 	}
 }
