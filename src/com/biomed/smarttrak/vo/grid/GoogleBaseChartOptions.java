@@ -76,7 +76,10 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 		chart.put("tooltip", " {text: 'value'}");
 		chart.put("chartArea", chartArea);
 		chart.put("titleTextStyle", title);
-		chart.put("colors",  "['#3366cc','#dc3912','#ff9900','#109618','#990099','#0099c6','#8f8f8f','#e53ac3','#f96125','#316395']");
+	// TODO This code has been commented out as it was causing the graphs to fail
+	// once they hit the page. This is being left in here for now as this functionality
+	// will eventually be implemented - Eric Damschroder 3/4/2016
+	//	chart.put("colors",  "['#3366cc','#dc3912','#ff9900','#109618','#990099','#0099c6','#8f8f8f','#e53ac3','#f96125','#316395']");
 	}
 	
 	/*
