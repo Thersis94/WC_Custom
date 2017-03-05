@@ -19,6 +19,7 @@ import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
@@ -32,6 +33,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
 
@@ -226,7 +228,10 @@ public class AccountUserAction extends SBActionAdapter {
 		UserLogin ul = new UserLogin(dbConn, (String)getAttribute(Constants.ENCRYPT_KEY));
 		//save the record.  Flag it for password reset immediately.
 		try {
-			String authId = ul.modifyUser(null, user.getEmailAddress(), user.getPassword(), 1);
+			String authId = ul.checkAuth(user.getEmailAddress());
+			//if the user had an auth record already then don't change their password or flag them for reset
+			String pswd = StringUtil.isEmpty(authId) ? user.getPassword() : UserLogin.DUMMY_PSWD;
+			authId = ul.modifyUser(authId, user.getEmailAddress(), pswd, StringUtil.isEmpty(authId) ? 1 : 0);
 			user.setAuthenticationId(authId);
 		} catch (com.siliconmtn.exception.DatabaseException e) {
 			throw new ActionException(e);
@@ -293,25 +298,29 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void saveProfileRole(UserVO user, boolean isDelete) throws ActionException {
-		String siteId = AdminControllerAction.PUBLIC_SITE_ID;
-		String roleId = Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL);
-		int status = SecurityController.STATUS_ACTIVE;
 		ProfileRoleManager prm = new ProfileRoleManager();
+		SBUserRole role = new SBUserRole(AdminControllerAction.PUBLIC_SITE_ID);
+		role.setStatusId(SecurityController.STATUS_ACTIVE);
+		role.setProfileId(user.getProfileId());
 
 		try {
+			//find any existing role - will either be deleted or updated
+			role.setProfileRoleId(prm.checkRole(user.getProfileId(), role.getSiteId(), null, null, dbConn));
+			
 			if (isDelete) {
-				prm.removeRole(user.getAuthenticationId(), dbConn);
+				prm.removeRole(role.getProfileRoleId(), dbConn);
 				return;
+				
+			} else if (UserVO.Status.EUREPORTS.getCode().equals(user.getStatusCode())) {
+				role.setRoleId(AdminControllerAction.EUREPORT_ROLE_ID);
+			} else {
+				role.setRoleId(Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL));
 			}
-			//check for ANY existing role.  Only add if no roles currently exist.
-			String authId = prm.checkRole(user.getProfileId(), siteId, null, null, dbConn);
-			if (!StringUtil.isEmpty(authId))
-				return;
+			prm.addRole(role, dbConn);
 
-			prm.addRole(user.getProfileId(), siteId, roleId, status, dbConn);
 		} catch (com.siliconmtn.exception.DatabaseException e) {
 			throw new ActionException(e);
-		} 
+		}
 	}
 
 

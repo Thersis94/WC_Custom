@@ -1,11 +1,13 @@
 package com.biomed.smarttrak.admin;
 
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.util.MarketIndexer;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeTypeVO;
 import com.biomed.smarttrak.vo.MarketAttributeVO;
@@ -310,7 +312,7 @@ public class MarketManagementAction extends SimpleActionAdapter {
 	protected void addAttributes(MarketVO market) throws ActionException {
 		List<Object> results = getMarketAttributes(market.getMarketId());
 		Tree t = buildAttributeTree();
-		
+
 		for (Object o : results) {
 			MarketAttributeVO m = (MarketAttributeVO)o;
 			Node n = t.findNode(m.getAttributeId());
@@ -321,7 +323,7 @@ public class MarketManagementAction extends SimpleActionAdapter {
 			market.addMarketAttribute(m);
 		}
 	}
-	
+
 
 	/**
 	 * Create the full attribute tree in order to determine the full ancestry of each attribute
@@ -348,7 +350,7 @@ public class MarketManagementAction extends SimpleActionAdapter {
 				}
 				attributes.add(n);
 			}
-			
+
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
@@ -465,13 +467,16 @@ public class MarketManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void updateElement(ActionRequest req) throws ActionException {
+	protected String updateElement(ActionRequest req) throws ActionException {
 		ActionTarget action = ActionTarget.valueOf(req.getParameter(ACTION_TARGET));
 		DBProcessor db = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		String marketId = req.getParameter("marketId");
+
 		switch(action) {
 			case MARKET:
 				MarketVO c = new MarketVO(req);
 				saveMarket(c, db);
+				marketId = c.getMarketId();
 				break;
 			case MARKETATTRIBUTE:
 				MarketAttributeVO attr = new MarketAttributeVO(req);
@@ -485,6 +490,7 @@ public class MarketManagementAction extends SimpleActionAdapter {
 				saveSections(req);
 				break;
 		}
+		return marketId;
 	}
 
 
@@ -649,9 +655,10 @@ public class MarketManagementAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		String buildAction = req.getParameter("buildAction");
 		String msg = StringUtil.capitalizePhrase(buildAction) + " completed successfully.";
+		String marketId = null;
 		try {
 			if ("update".equals(buildAction)) {			
-				updateElement(req);
+				marketId = updateElement(req);
 			} else if ("delete".equals(buildAction)) {
 				deleteElement(req);
 			}
@@ -659,7 +666,32 @@ public class MarketManagementAction extends SimpleActionAdapter {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
 
+		//TODO capture and pass market status here
+		if (!StringUtil.isEmpty(marketId))
+			writeToSolr(marketId, "P");
+
 		redirectRequest(msg, buildAction, req);
+	}
+
+
+	/**
+	 * Save an UpdatesVO to solr.
+	 * @param u
+	 */
+	protected void writeToSolr(String marketId, String status) {
+		MarketIndexer idx = MarketIndexer.makeInstance(getAttributes());
+		idx.setDBConnection(dbConn);
+
+		//if status is archived or deleted, remove this market from Solr
+		if ("A".equals(status) || "D".equals(status)) {
+			try {
+				idx.purgeSingleItem(marketId);
+			} catch (IOException e) {
+				log.warn("could not delete market from solr " + marketId, e);
+			}
+		} else {
+			idx.addSingleItem(marketId);
+		}
 	}
 
 

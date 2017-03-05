@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.biomed.smarttrak.util.BiomedMarketIndexer;
+import com.biomed.smarttrak.util.MarketIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.GenericVO;
@@ -45,7 +45,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 	private String regionCode;
 
 	public MarketVO () {
-		super(BiomedMarketIndexer.INDEX_TYPE);
+		super(MarketIndexer.INDEX_TYPE);
 		marketAttributes = new ArrayList<>();
 		sections = new ArrayList<>();
 		graphs = new ArrayList<>();
@@ -100,7 +100,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
 	}
-	@SolrField(name=SearchDocumentHandler.CONTENT_TYPE)
+
 	@Column(name="status_no")
 	public String getStatusNo() {
 		return statusNo;
@@ -108,6 +108,9 @@ public class MarketVO extends SecureSolrDocumentVO {
 	public void setStatusNo(String statusNo) {
 		this.statusNo = statusNo;
 	}
+	
+
+	@SolrField(name=SearchDocumentHandler.META_KEYWORDS)
 	@Column(name="short_nm")
 	public String getShortName() {
 		return shortName;
@@ -220,6 +223,4 @@ public class MarketVO extends SecureSolrDocumentVO {
 	public void setRegionCode(String regionCode) {
 		this.regionCode = regionCode;
 	}
-
-
 }

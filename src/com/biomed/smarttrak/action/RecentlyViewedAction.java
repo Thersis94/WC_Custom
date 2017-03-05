@@ -15,7 +15,7 @@ import org.apache.solr.common.SolrDocument;
 // WC custom
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
-import com.biomed.smarttrak.util.BiomedMarketIndexer;
+import com.biomed.smarttrak.util.MarketIndexer;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 
 // SMTBaseLibs
@@ -270,7 +270,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		Section s = Section.valueOf(key);
 		switch(s) {
 			case MARKET:
-				return BiomedMarketIndexer.INDEX_TYPE;
+				return MarketIndexer.INDEX_TYPE;
 			case COMPANY:
 				return BiomedCompanyIndexer.INDEX_TYPE;
 			case PRODUCT:
