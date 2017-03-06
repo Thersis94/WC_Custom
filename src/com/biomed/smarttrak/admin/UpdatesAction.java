@@ -20,8 +20,6 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
-import com.smt.sitebuilder.changelog.ChangeLogIntfc;
-import com.smt.sitebuilder.changelog.ChangeLogUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -89,11 +87,15 @@ public class UpdatesAction extends AbstractTreeAction {
 		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
 
 		decryptNames(updates);
-//		if(req.hasParameter(UPDATE_ID) && updates.size() == 1) {
-//			ChangeLogUtil.setChangeLogSess(req, (ChangeLogIntfc) updates.get(0), UPDATE_TYPE_CD, true);
-//		} else if(req.hasParameter(UPDATE_ID)){
-//			ChangeLogUtil.cleanupChangeLog(req);
-//		}
+		/*
+		 * Using Retreival for ChangeLogs we don't need anything here.  If we 
+		 * need Session Storage, use the following.
+		 * if(req.hasParameter(UPDATE_ID) && updates.size() == 1) {
+		 * 	ChangeLogUtil.setChangeLogSess(req, (ChangeLogIntfc) updates.get(0), UPDATE_TYPE_CD, true);
+		 * } else if(req.hasParameter(UPDATE_ID)){
+		 * 	ChangeLogUtil.cleanupChangeLog(req);
+		 * }
+		 */
 		putModuleData(updates);
 	}
 
@@ -228,7 +230,12 @@ public class UpdatesAction extends AbstractTreeAction {
 				writeToSolr(u);
 			}
 
-			//ChangeLogUtil.setChangeLogSess(req, u, UPDATE_TYPE_CD, false);
+			/*
+			 * Ensure updateId is set so that we can retrieve for ChangeLog.
+			 * If we need Session Storage, the following will work as well.
+			 * ChangeLogUtil.setChangeLogSess(req, u, UPDATE_TYPE_CD, false);
+			 */
+			req.setParameter("updateId", u.getUpdateId());
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
