@@ -1,7 +1,6 @@
 package com.biomed.smarttrak.data;
 
 // Java 7
-import java.io.IOException;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,12 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+// WC custom
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 
 //SMTBaseLibs
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -50,11 +49,10 @@ import com.smt.sitebuilder.security.UserLogin;
 public class UserDataImport extends ProfileImport {
 
 	// import env params
-	private static final String SOURCE_FILE_PATH="/data/SMT/accounts/SmartTRAK/smarttrak/user-import/test/smarttrak-TEST-2017-03-03.csv";
+	private static final String SOURCE_FILE_PATH="/data/SMT/accounts/SmartTRAK/smarttrak/user-import/test/smarttrak-TEST-2017-03-05.csv";
 	private static final String GEOCODE_CLASS="com.siliconmtn.gis.SMTGeocoder";
 	private static final String GEOCODE_URL="http://localhost:9000/websvc/geocoder";
 	// WC params
-	private static final String REGISTRATION_PAGE_URL = "http://smarttrak.siliconmtn.com/my-account";
 	private static final String REG_PMID = "6d9674d8b7dc54077f0001019b2cb979";
 	private static final String REG_ACTION_ID = "ea884793b2ef163f7f0001011a253456";
 	// profile header vals
@@ -100,7 +98,6 @@ public class UserDataImport extends ProfileImport {
 		//Open DB Connection
 		Connection dbConn = getDBConnection(DESTINATION_AUTH[0], DESTINATION_AUTH[1], DESTINATION_DB_DRIVER, DESTINATION_DB_URL);
 		
-		List<String> profileIds = new ArrayList<>();
 		List<UserVO> sourceUsers = new ArrayList<>();
 		Map<String, Object> config = new HashMap<>();
 		config.put(Constants.ENCRYPT_KEY, encKey);
@@ -163,13 +160,14 @@ public class UserDataImport extends ProfileImport {
 			//increment our counters
 			if (user.getProfileId() != null) {
 				successCnt++;
-				profileIds.add(user.getProfileId());
-				sourceUsers.add(createSourceUser(dataSet,sourceId,user.getProfileId()));
 				try {
+					//insertRegistrationRecords(dbConn, dataSet, user);
 					insertRegistrationRecords(dbConn, dataSet, user);
 				} catch (Exception e) {
 					log.error("Error inserting registration records for this record: " + recordCnt);
 				}
+				// now create a native UserVO for generating the post-import inserts/updates.
+				sourceUsers.add(createSourceUser(dataSet,sourceId,user));
 			}
 		}
 		
@@ -183,34 +181,84 @@ public class UserDataImport extends ProfileImport {
 		
 		/* Output inserts for the source ID mapped to the WC profile ID found/created. */
 		for (UserVO sUser : sourceUsers) {
-			StringBuilder sql = new StringBuilder(200);
-			sql.append("insert into custom.biomedgps_user (user_id, profile_id, register_submittal_id, status_cd, expiration_dt, create_dt) values (");
-			sql.append("'").append(sUser.getUserId()).append("',");
-			sql.append("'").append(sUser.getProfileId()).append("',");
-			sql.append("'").append(sUser.getRegisterSubmittalId()).append("',");
-			sql.append("'").append(sUser.getStatusCode().toUpperCase()).append("',");
-			sql.append("'").append(Convert.formatDate(sUser.getExpirationDate(),Convert.DATE_TIME_DASH_PATTERN)).append("',");
-			sql.append("'").append(Convert.formatDate(sUser.getCreateDate(),Convert.DATE_TIME_DASH_PATTERN)).append("',");
-			sql.append(");");
-			log.info(sql.toString());
+			logUserInsertStatement(sUser);
+			logAuthUpdateStatement(sUser);
 		}
+	}
+	
+	/**
+	 * Writes the post-import user insert query to the log file for post-import execution
+	 * @param sUser
+	 * @return
+	 */
+	protected void logUserInsertStatement(UserVO sUser) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("insert into custom.biomedgps_user (user_id, profile_id, ");
+		if (sUser.getRegisterSubmittalId() != null) sql.append("register_submittal_id, ");
+		if (sUser.getExpirationDate() != null) sql.append("expiration_dt, ");
+		if (sUser.getCreateDate() != null) sql.append("create_dt, ");
+		sql.append("status_cd) values (");
+		
+		sql.append("'").append(sUser.getUserId()).append("',");
+		sql.append("'").append(sUser.getProfileId()).append("',");
+		if (sUser.getRegisterSubmittalId() != null) { 
+			sql.append("'");
+			sql.append(sUser.getRegisterSubmittalId());
+			sql.append("',");
+		}
+		if (sUser.getExpirationDate() != null) {
+			sql.append("'");
+			sql.append(Convert.formatDate(sUser.getExpirationDate(),Convert.DATE_TIME_DASH_PATTERN));
+			sql.append("',");
+		}
+		if (sUser.getCreateDate() != null) {
+			sql.append("'");
+			sql.append(Convert.formatDate(sUser.getCreateDate(),Convert.DATE_TIME_DASH_PATTERN));
+			sql.append("',");
+		}
+		sql.append("'").append(sUser.getStatusCode().toUpperCase()).append("'");
+		sql.append(");");
+		log.info(sql.toString());
+	}
+	
+	/**
+	 * Writes the auth record update statement to the log for post-import execution.
+	 * @param sUser
+	 */
+	protected void logAuthUpdateStatement(UserVO sUser) {
+		// if auth ID, update auth record with original BMG SmartTRAK pwd.
+		if (StringUtil.isEmpty(sUser.getAuthenticationId()) ||
+				StringUtil.isEmpty(sUser.getPassword())) return;
+		
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("update authentication set password_txt = '");
+		sql.append(sUser.getPassword());
+		sql.append("', password_history_txt = '");
+		sql.append(sUser.getPassword());
+		sql.append("' where authentication_id = '");
+		sql.append(sUser.getAuthenticationId());
+		sql.append("'");
+		log.info(sql.toString());
 	}
 	
 	/**
 	 * Creates a native UserVO and maps it to the user's WC profile ID.
 	 * @param record
 	 * @param sourceId
-	 * @param profileId
+	 * @param sUser
 	 * @return
 	 */
-	protected UserVO createSourceUser(Map<String,Object> record, String sourceId, String profileId) {
+	protected UserVO createSourceUser(Map<String,Object> record, 
+			String sourceId, SiteUserVO sUser) {
 		UserVO user = new UserVO();
 		user.setUserId(sourceId);
-		user.setProfileId(profileId);
+		user.setProfileId(sUser.getProfileId());
+		user.setAuthenticationId(sUser.getAuthenticationId());
+		user.setPassword(StringUtil.checkVal(record.get("SMARTTRAK_PASSWORD_TXT"),null));
 		user.setStatusCode(StringUtil.checkVal(record.get("STATUS"),null));
 		user.setCreateDate(Convert.formatDate(StringUtil.checkVal(record.get("DATE_JOINED"),null)));
 		user.setExpirationDate(Convert.formatDate(StringUtil.checkVal(record.get("DATE_EXPIRATION"),null)));
-		user.setPassword(StringUtil.checkVal("SMARTTRAK_PASSWORD_TXT",null));
+		user.setRegisterSubmittalId(sUser.getBarCodeId());
 		return user;
 	}
 	
@@ -315,23 +363,6 @@ public class UserDataImport extends ProfileImport {
 	}
 
 	/**
-	 * 
-	 * @param dbConn
-	 * @param record
-	 * @param user
-	 * @throws Exception
-	 */
-	protected void insertRegistrationRecords(Connection dbConn, Map<String,Object> record, SiteUserVO user) 
-			throws Exception {
-		if (user.getEmailAddress() == null) {
-			// insert reg records manually because lack of an email will cause another profile to be created by SubmittalAction
-			insertRegistrationRecordsManually(dbConn, record, user);
-		} else {
-			insertRegistrationRecordsViaForm(record);
-		}
-	}
-
-	/**
 	 * Used to insert registration records for profiles with no email address.  If we try to push these through the API, 
 	 * WC creates a new profile for this user in addition to creating the registration records.  This results in multiple
 	 * duplicated profiles.  Additionally, the API does not return the profile ID that was created so we don't have
@@ -341,7 +372,7 @@ public class UserDataImport extends ProfileImport {
 	 * @param user
 	 * @throws Exception
 	 */
-	protected void insertRegistrationRecordsManually(Connection dbConn, Map<String, Object> record, 
+	protected void insertRegistrationRecords(Connection dbConn, Map<String, Object> record, 
 			SiteUserVO user) throws Exception {
 		log.debug("insertRegistrationRecordsManually...");
 		StringBuilder regSub = new StringBuilder(122);
@@ -356,6 +387,9 @@ public class UserDataImport extends ProfileImport {
 			ps.setString(idx++, user.getProfileId());
 			ps.setTimestamp(idx++, Convert.getCurrentTimestamp());
 			ps.execute();
+			// set the register submittal ID on an unused user field so we can get it later.
+			user.setBarCodeId(regSubId);
+			log.debug("setting barcodeid to regsubid: " + regSubId);
 		} catch (SQLException sqle) {
 			log.error("Error inserting registration submittal records manually, ", sqle);
 			throw new Exception(sqle.getMessage());
@@ -383,43 +417,13 @@ public class UserDataImport extends ProfileImport {
 			}
 			
 			ps.executeBatch();
+			log.debug("inserted registration records for user: " + user.getProfileId());
 
 		} catch (BatchUpdateException sqle) {
 			log.error("Error inserting registration submittal records manually, ", sqle.getNextException());
 			throw new Exception(sqle.getNextException().getMessage());
 		}
 		
-	}
-	
-	/**
-	 * @param records
-	 * @throws Exception
-	 */
-	protected void insertRegistrationRecordsViaForm(Map<String, Object> record) throws Exception {
-		log.debug("insertRegistrationRecordsViaForm...");
-		int count=0;
-		int failCnt = 0;
-		
-		SMTHttpConnectionManager conn = null;
-		
-		try {
-			conn = new SMTHttpConnectionManager();
-			conn.retrieveDataViaPost(REGISTRATION_PAGE_URL, buildRegistrationParams(record));
-			log.info("retStatus= " + conn.getResponseCode());
-			if (conn.getResponseCode() == 200) { 
-				count++; 
-			} else { 
-				failCnt++; 
-			}
-		} catch (IOException ioe) {
-			log.error("Error: IOException during registration " + ioe.getMessage(), ioe);
-			throw new Exception();
-		} catch (Exception e) {
-			log.error("Error: Unexpected exception during registration: " + e.getMessage(), e);
-			throw new Exception();
-		}
-		
-		log.info("submitted " + count + " records with " + failCnt + " failures");
 	}
 	
 	/**
