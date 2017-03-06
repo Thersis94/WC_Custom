@@ -89,11 +89,11 @@ public class UpdatesAction extends AbstractTreeAction {
 		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
 
 		decryptNames(updates);
-		if(req.hasParameter(UPDATE_ID) && updates.size() == 1) {
-			ChangeLogUtil.setChangeLogOrig(req, (ChangeLogIntfc) updates.get(0), UPDATE_TYPE_CD);
-		} else if(req.hasParameter(UPDATE_ID)){
-			ChangeLogUtil.cleanupChangeLog(req);
-		}
+//		if(req.hasParameter(UPDATE_ID) && updates.size() == 1) {
+//			ChangeLogUtil.setChangeLogSess(req, (ChangeLogIntfc) updates.get(0), UPDATE_TYPE_CD, true);
+//		} else if(req.hasParameter(UPDATE_ID)){
+//			ChangeLogUtil.cleanupChangeLog(req);
+//		}
 		putModuleData(updates);
 	}
 
@@ -228,7 +228,7 @@ public class UpdatesAction extends AbstractTreeAction {
 				writeToSolr(u);
 			}
 
-			ChangeLogUtil.setChangeLogDiff(req, u, UPDATE_TYPE_CD);
+			//ChangeLogUtil.setChangeLogSess(req, u, UPDATE_TYPE_CD, false);
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
