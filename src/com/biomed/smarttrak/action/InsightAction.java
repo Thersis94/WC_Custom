@@ -199,8 +199,6 @@ public class InsightAction extends AbstractTreeAction {
 		List<Object>  insight = db.executeSelect(sb.toString(), params, new InsightVO());
 		log.debug("loaded " + insight.size() + " insight");
 		
-		//log.debug("placed vo on mod data: " + (InsightVO)insight.get(0) + "|"+(String)getAttribute(Constants.QS_PATH));
-		
 		for (Object vo : insight){
 			InsightVO ivo = (InsightVO)vo;
 			ivo.setQsPath((String)getAttribute(Constants.QS_PATH));
