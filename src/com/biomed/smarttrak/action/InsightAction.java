@@ -155,7 +155,7 @@ public class InsightAction extends AbstractTreeAction {
 			ivo.setQsPath((String)getAttribute(Constants.QS_PATH));
 		}
 		
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)insight, (String)getAttribute(Constants.ENCRYPT_KEY));
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insight, (String)getAttribute(Constants.ENCRYPT_KEY));
 		
 		return (InsightVO)insight.get(0);
 	}
