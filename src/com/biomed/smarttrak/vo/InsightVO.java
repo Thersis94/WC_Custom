@@ -58,6 +58,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	private String lastNm;
 	private String titleTxt;
 	private int typeCd;
+	private String qsPath;
 	private String abstractTxt;
 	private String bylineTxt;
 	private String contentTxt;
@@ -399,7 +400,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
 	public String getDocumentUrl() {
 		StringBuilder url = new StringBuilder(50);
-		url.append(AdminControllerAction.Section.INSIGHT.getURLToken()).append("qs/").append(this.insightId);
+		url.append(AdminControllerAction.Section.INSIGHT.getURLToken()).append(getQsPath()).append(getInsightId());
 		return url.toString();
 	}
 
@@ -546,6 +547,20 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	@Override
 	public String toString() {
 		return StringUtil.getToString(this);
+	}
+
+	/**
+	 * @return the qsPath
+	 */
+	public String getQsPath() {
+		return qsPath;
+	}
+
+	/**
+	 * @param qsPath the qsPath to set
+	 */
+	public void setQsPath(String qsPath) {
+		this.qsPath = qsPath;
 	}
 }
 
