@@ -55,7 +55,6 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		EXTRA("E","SmartTRAK Extra Seat"),
 		UPDATES("U","Updates Only"),
 		TEST("D","Temporary / Test"),
-		STAFF("S","Staff"),
 		INACTIVE("I","Inactive");
 
 		private String cd;

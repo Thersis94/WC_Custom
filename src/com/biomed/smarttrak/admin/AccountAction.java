@@ -86,7 +86,7 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	protected void loadManagerList(ActionRequest req, String schema) throws ActionException {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.profile_id as owner_profile_id, a.first_nm, a.last_nm from profile a ");
+		sql.append("select newid() as account_id, a.profile_id as owner_profile_id, a.first_nm, a.last_nm from profile a ");
 		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=?");
 		sql.append("and b.site_id=? and b.role_id=?");
 		log.debug(sql);
