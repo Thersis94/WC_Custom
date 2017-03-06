@@ -89,6 +89,8 @@ public class CoopAdsEmailer {
 			mail.addCC("stephanie.balsley@hmktgroup.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
+			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("lisav@metrosn.com");
 			mail.setSubject(label + " Ad #" + cnt + " declined for Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -175,6 +177,8 @@ public class CoopAdsEmailer {
 			if (! isCFSEM ){ //Additional recipients for DePuy Funded events
 				mail.addCC("Francisco.Gonzalez@umj3.com");
 				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("Marsha.Leo@umj3.com");
+				mail.addCC("Brianna.Victorio@umj3.com");
 				mail.addCC("lisav@metrosn.com");
 			}
 			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Options Confirmed - Seminar " + sem.getRSVPCodes());
@@ -351,6 +355,8 @@ public class CoopAdsEmailer {
 				mail.addCC("educationalseminars@dpyus.jnj.com");
 				mail.addCC("Francisco.Gonzalez@umj3.com");
 				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("Marsha.Leo@umj3.com");
+				mail.addCC("Brianna.Victorio@umj3.com");
 				mail.addCC("lisav@metrosn.com");
 			} else {
 				//CFSEM recipients
@@ -512,6 +518,8 @@ public class CoopAdsEmailer {
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
+			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("lisav@metrosn.com");
 			
 			mail.setSubject("Payment Received from Speaker for Seminar #" + sem.getRSVPCodes());
@@ -557,6 +565,8 @@ public class CoopAdsEmailer {
 			mail.addCC("stephanie.balsley@hmktgroup.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
+			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("lisav@metrosn.com");
 			mail.setTextBody(msg.toString());
 			
@@ -594,6 +604,8 @@ public class CoopAdsEmailer {
 			mail.addCC("stephanie.balsley@hmktgroup.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
+			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("lisav@metrosn.com");
 			
 			MessageSender sender = new MessageSender(attributes,dbConn);
