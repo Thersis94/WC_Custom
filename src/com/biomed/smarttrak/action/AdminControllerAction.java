@@ -119,7 +119,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("accounts", AccountAction.class);
 		ACTIONS.put("account-permissions", AccountPermissionAction.class);
 		ACTIONS.put("users", AccountUserAction.class);
-		ACTIONS.put("insights", com.biomed.smarttrak.action.InsightAction.class);
+		ACTIONS.put("insights", com.biomed.smarttrak.admin.InsightAction.class);
 		ACTIONS.put("teams", TeamAction.class);
 		ACTIONS.put("team-members", TeamMemberAction.class);
 		ACTIONS.put("marketAdmin", MarketManagementAction.class);
