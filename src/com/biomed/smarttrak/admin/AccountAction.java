@@ -51,6 +51,7 @@ public class AccountAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
@@ -69,7 +70,7 @@ public class AccountAction extends SBActionAdapter {
 		log.debug("loaded " + accounts.size() + " accounts");
 
 		//decrypt the owner profiles
-		decryptNames(accounts);
+		decryptNames((List<? extends HumanNameIntfc>)accounts);
 
 		//if this is the edit form, we need a list of BiomedGPS Staff for the "Manager" dropdown
 		if (accountId != null)
@@ -84,6 +85,7 @@ public class AccountAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unchecked")
 	protected void loadManagerList(ActionRequest req, String schema) throws ActionException {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select newid() as account_id, a.profile_id as owner_profile_id, a.first_nm, a.last_nm from profile a ");
@@ -101,7 +103,7 @@ public class AccountAction extends SBActionAdapter {
 		log.debug("loaded " + accounts.size() + " managers");
 
 		//decrypt the owner profiles
-		decryptNames(accounts);
+		decryptNames((List<? extends HumanNameIntfc>)accounts);
 		Collections.sort(accounts, new NameComparator());
 
 		req.setAttribute("managers", accounts);
@@ -113,7 +115,7 @@ public class AccountAction extends SBActionAdapter {
 	 * @param accounts
 	 */
 	@SuppressWarnings("unchecked")
-	protected void decryptNames(List<Object> data) {
+	protected void decryptNames(List<? extends HumanNameIntfc> data) {
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
