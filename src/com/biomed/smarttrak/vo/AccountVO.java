@@ -40,6 +40,7 @@ public class AccountVO implements HumanNameIntfc {
 	private int fdAuthFlg;
 	private int gaAuthFlg;
 	private int mktAuthFlg;
+	private int seatsNo;
 
 	/*
 	 * Account Type enum - not to be confused with status, which is Active or Inactive only.  (e.g. Inactive Staff account)
@@ -92,6 +93,7 @@ public class AccountVO implements HumanNameIntfc {
 		setFdAuthFlg(Convert.formatInteger(req.getParameter("fdAuthFlg")));
 		setGaAuthFlg(Convert.formatInteger(req.getParameter("gaAuthFlg")));
 		setMktAuthFlg(Convert.formatInteger(req.getParameter("mktAuthFlg")));
+		setSeatsNo(Convert.formatInteger(req.getParameter("seatsNo")));
 	}
 
 
@@ -381,5 +383,14 @@ public class AccountVO implements HumanNameIntfc {
 
 	public void setMktAuthFlg(int mktAuthFlg) {
 		this.mktAuthFlg = mktAuthFlg;
+	}
+
+	@Column(name="seats_no")
+	public int getSeatsNo() {
+		return seatsNo;
+	}
+
+	public void setSeatsNo(int seatsNo) {
+		this.seatsNo = seatsNo;
 	}
 }

@@ -108,7 +108,7 @@ public class InsightAction extends AbstractTreeAction {
 				vo.setQsPath((String)getAttribute(Constants.QS_PATH));
 			}
 
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
 		
 		
 		return insights;
@@ -148,7 +148,7 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void decryptNames(List<Object> data) {
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 
@@ -200,8 +200,6 @@ public class InsightAction extends AbstractTreeAction {
 				db.delete(u);
 				deleteFromSolr(u);
 			} else {
-				
-				u.setQsPath((String)getAttribute(Constants.QS_PATH));
 				
 				if (req.hasParameter("listSave")){
 					updateFeatureOrder(u);
