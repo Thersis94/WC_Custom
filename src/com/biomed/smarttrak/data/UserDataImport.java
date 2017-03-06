@@ -161,7 +161,6 @@ public class UserDataImport extends ProfileImport {
 			if (user.getProfileId() != null) {
 				successCnt++;
 				try {
-					//insertRegistrationRecords(dbConn, dataSet, user);
 					insertRegistrationRecords(dbConn, dataSet, user);
 				} catch (Exception e) {
 					log.error("Error inserting registration records for this record: " + recordCnt);
