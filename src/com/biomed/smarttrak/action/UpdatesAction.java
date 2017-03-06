@@ -141,8 +141,8 @@ public class UpdatesAction extends SBActionAdapter {
 		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
 		sql.append("on a.rel_id = b.company_id and a.type_cd = ? and a.profile_id = ? ");
-		sql.append(") as update_id order by publish_dt desc limit ").append(RPP);
-		sql.append(" offset ").append(offset);
+		sql.append(") as update_id order by publish_dt desc ");
+		sql.append("limit ").append(RPP).append(" offset ").append(offset);
 		return sql.toString();
 	}
 

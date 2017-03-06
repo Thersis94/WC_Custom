@@ -20,6 +20,8 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+import com.smt.sitebuilder.changelog.ChangeLogIntfc;
+import com.smt.sitebuilder.changelog.ChangeLogUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -39,6 +41,8 @@ public class UpdatesAction extends AbstractTreeAction {
 	public static final String UPDATE_ID = "updateId"; //req param
 	public static final String ROOT_NODE_ID = MASTER_ROOT;
 
+	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
+	public static final String UPDATE_TYPE_CD = "updates";
 	public enum UpdateType {
 		MARKET(12, "Market"),
 		REVENUES(15, "Revenues"),
@@ -85,6 +89,11 @@ public class UpdatesAction extends AbstractTreeAction {
 		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
 
 		decryptNames(updates);
+		if(req.hasParameter(UPDATE_ID) && updates.size() == 1) {
+			ChangeLogUtil.setChangeLogOrig(req, (ChangeLogIntfc) updates.get(0), UPDATE_TYPE_CD);
+		} else if(req.hasParameter(UPDATE_ID)){
+			ChangeLogUtil.cleanupChangeLog(req);
+		}
 		putModuleData(updates);
 	}
 
@@ -197,8 +206,15 @@ public class UpdatesAction extends AbstractTreeAction {
 
 		try {
 			if (isDelete) {
-				u.setUpdateId("pkId");
+				u.setUpdateId(req.getParameter("pkId"));
+
+				//Load the Record before deletion.
+				db.getByPrimaryKey(u);
+
+				//Delete the Record.
 				db.delete(u);
+
+				//Delete from Solr.
 				deleteFromSolr(u);
 			} else {
 				db.save(u);
@@ -211,6 +227,8 @@ public class UpdatesAction extends AbstractTreeAction {
 				//Save the Update Document to Solr
 				writeToSolr(u);
 			}
+
+			ChangeLogUtil.setChangeLogDiff(req, u, UPDATE_TYPE_CD);
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}

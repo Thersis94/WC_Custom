@@ -3,17 +3,12 @@
  */
 package com.biomed.smarttrak.action;
 
-import java.util.List;
-import java.util.Map;
-
-import com.biomed.smarttrak.util.BiomedChangeLogUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.changelog.ChangeLogIntfc;
-import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.changelog.ChangeLogUtil;
 
 /****************************************************************************
  * <b>Title</b>: BiomedChangeLogDecoratorAction.java
@@ -45,20 +40,14 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 
 	public void build(ActionRequest req) throws ActionException {
 
-		//Call Retrieve on the Record.
-		sai.retrieve(req);
-
-		//Get the Original Record.
-		ChangeLogIntfc original = getChangeLogItem(((ModuleVO)attributes.get(Constants.MODULE_DATA)).getActionData());
+		//Get the Original Record off Request via ChangeLogUtil.
+		 ChangeLogIntfc original = ChangeLogUtil.getChangeLog(req, true);
 
 		//Call Actual Build to update the Record.
 		sai.build(req);
 
-		//Call Retrieve second time to get the new Record.
-		sai.retrieve(req);
-
-		//Get the Diff Record.
-		ChangeLogIntfc diff = getChangeLogItem(((ModuleVO)attributes.get(Constants.MODULE_DATA)).getActionData());
+		//Get the Diff Record off Request via ChangeLogUtil.
+		ChangeLogIntfc diff = ChangeLogUtil.getChangeLog(req, false);
 
 		//Quick fail if diff is null.  Means we don't have a ChangeLogIntfc.
 		if(diff == null) {
@@ -75,31 +64,14 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 
 		//If Not Equal, create a ChangeLog Record.
 		if(dNo != 0) {
-			new BiomedChangeLogUtil(dbConn, attributes).createChangeLog(req, original, diff);
-		}
-	}
-
-	/**
-	 * Helper method that transposes various possible actionData types to the
-	 * proper ChangeLogIntfc type.
-	 * @param actionData
-	 * @return
-	 */
-	private ChangeLogIntfc getChangeLogItem(Object actionData) {
-		ChangeLogIntfc cli = null;
-		Object ele = actionData;
-		if(actionData instanceof List && !((List<?>) actionData).isEmpty()) {
-			ele = ((List<?>)actionData).get(0);
-		} else if(actionData instanceof Map && !((Map<?, ?>) actionData).isEmpty()) {
-			ele = ((Map<?, ?>)actionData).values().iterator().next();
+			log.debug("Diff Found.  Forwarding to ChangeLogUtil.");
+			new ChangeLogUtil(dbConn, attributes).createChangeLog(req);
 		}
 
-		//Assume we have a singular object now and attempt to cast to ChangeLogIntfc.
-		if(ele instanceof ChangeLogIntfc) {
-			cli = (ChangeLogIntfc) ele;
-		}
-
-		//retrun cli.
-		return cli;
+		/*
+		 * After we finish writing ChangeLog info.  Flush out the ChangeLog data
+		 * on Request.
+		 */
+		ChangeLogUtil.cleanupChangeLog(req);
 	}
 }
