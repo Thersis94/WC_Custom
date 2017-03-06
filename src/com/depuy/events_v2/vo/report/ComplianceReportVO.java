@@ -127,7 +127,7 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 
 		String msg;
 		try {
-			msg = MessageParser.parseMessage(new String(rpt.generateReport()), data, event.getEventTypeCd());
+			msg = MessageParser.parse(new String(rpt.generateReport()), data, event.getEventTypeCd());
 		} catch (ParseException e) {
 			log.error("could not generate PDF for Seminar", e);
 			msg = "The compliance form could not be populated.  Please contact the site administrator for assistance";
