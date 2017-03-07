@@ -39,6 +39,8 @@ public class UpdatesAction extends AbstractTreeAction {
 	public static final String UPDATE_ID = "updateId"; //req param
 	public static final String ROOT_NODE_ID = MASTER_ROOT;
 
+	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
+	public static final String UPDATE_TYPE_CD = "updates";
 	public enum UpdateType {
 		MARKET(12, "Market"),
 		REVENUES(15, "Revenues"),
@@ -85,6 +87,7 @@ public class UpdatesAction extends AbstractTreeAction {
 		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
 
 		decryptNames(updates);
+
 		putModuleData(updates);
 	}
 
@@ -197,8 +200,15 @@ public class UpdatesAction extends AbstractTreeAction {
 
 		try {
 			if (isDelete) {
-				u.setUpdateId("pkId");
+				u.setUpdateId(req.getParameter("pkId"));
+
+				//Load the Record before deletion.
+				db.getByPrimaryKey(u);
+
+				//Delete the Record.
 				db.delete(u);
+
+				//Delete from Solr.
 				deleteFromSolr(u);
 			} else {
 				db.save(u);
@@ -211,6 +221,8 @@ public class UpdatesAction extends AbstractTreeAction {
 				//Save the Update Document to Solr
 				writeToSolr(u);
 			}
+
+			req.setParameter(UPDATE_ID, u.getUpdateId());
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
