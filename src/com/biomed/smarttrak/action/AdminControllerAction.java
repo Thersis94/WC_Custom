@@ -159,7 +159,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			} else if(AdminConstants.REQ_COPY.equals(req.getParameter("actionPerform"))){
 				action.copy(req);
 			}else {
-				action.build(req);
+				new BiomedChangeLogDecoratorAction(action).build(req);
 			}
 			msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 
