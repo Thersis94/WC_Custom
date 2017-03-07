@@ -61,11 +61,11 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	public List<AccountUsersVO> retrieveUserList(ActionRequest req) throws ActionException {
+	public List<AccountUsersVO> retrieveAccountsList(ActionRequest req) throws ActionException {
 
 		StringEncrypter se = initStringEncrypter();
 		
-		SiteVO site = (SiteVO)req.getAttribute(Constants.USER_DATA);
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		String siteId = StringUtil.isEmpty(site.getAliasPathParentId()) ? site.getSiteId() : site.getAliasPathParentId();
 		
 		// 1. retrieve account/users
@@ -143,7 +143,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	 */
 	protected StringBuilder buildAccountsUsersQuery() {
 		StringBuilder sql = new StringBuilder(650);
-		sql.append("select ac.account_id, ac.account_nm, ac.create_dt, ac.expiration_dt, ");
+		sql.append("select ac.account_id, ac.account_nm, ac.create_dt, ac.expiration_dt, ac.status_no, ");
 		sql.append("us.user_id, us.profile_id, us.status_cd, ");
 		sql.append("pf.first_nm, pf.last_nm, pfr.role_id, ");
 		sql.append("rd.register_field_id, rd.value_txt ");
@@ -190,37 +190,37 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			currPid = rs.getString("profile_id");
 
 			if (! currAcctId.equals(prevAcctId)) {
-				// acct changed, capture 'previous' user and account
+
+				// acct changed
 				if (prevAcctId != null) {
-					// add user to division users list
-					divUsers.add(user);
-					// add division to account's division map
-					account.addDivision(prevDivId, divUsers);
-					// add acct to list.
+					// add division to account's map if necessary
+					processDivision(account,divUsers,user,prevDivId);
+					// add acct to accounts list.
 					accounts.add(account);
 				}
 
 				// init the division users list
 				divUsers = new ArrayList<>();
-				
-				// now create new account, and new user
+
+				// create new account
 				account = createBaseAccount(rs);
+				// create new user
 				user = createBaseUser(se,rs);
-				// update user status count
+				// update user status counter
 				account.countUserStatus(user.getStatusCode());
-				
+
 			} else {
 				// same account, check for user change
 				if (! currPid.equals(prevPid)) {
 					// user changed, add 'previous' user to division users list
 					divUsers.add(user);
 
-					// if division change, add division users to account.
+					// check for division change
 					divUsers = processDivisionChange(account,divUsers,currDivId,prevDivId);
 
-					// now create new user
+					// create new user
 					user = createBaseUser(se,rs);
-					//update user status count
+					// update user status counter
 					account.countUserStatus(user.getStatusCode());
 
 				}
@@ -228,7 +228,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 			// add registration data from row for this user.
 			user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
-			
+
 			prevAcctId = currAcctId;
 			prevDivId = currDivId;
 			prevPid = currPid;
@@ -237,16 +237,21 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 		// pick up the dangler
 		if (prevAcctId != null) {
-			if (prevPid != null) { 
-				if (prevDivId != null) {
-					divUsers.add(user);
-					account.addDivision(prevDivId,divUsers);
-					accounts.add(account);
-				}
-			}
+			processDivision(account,divUsers,user,prevDivId);
+			accounts.add(account);
 		}
 
 		return accounts;
+	}
+	
+	protected void processDivision(AccountUsersVO account, 	List<UserVO> divUsers, 
+			UserVO user, String prevDivId) {
+		if (prevDivId != null) {
+			// add user to division users list
+			divUsers.add(user);
+			// add division to account's division map
+			account.addDivision(prevDivId, divUsers);
+		}
 	}
 	
 	/**
@@ -277,7 +282,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		account.setAccountId(rs.getString("account_id"));
 		account.setAccountName(rs.getString("account_nm"));
 		account.setCreateDate(rs.getDate("create_dt"));
-		account.setExpirationDate(rs.getDate("acct_expiration_dt"));
+		account.setExpirationDate(rs.getDate("expiration_dt"));
 		account.setStatusNo(rs.getString("status_no"));
 		return account;
 	}
