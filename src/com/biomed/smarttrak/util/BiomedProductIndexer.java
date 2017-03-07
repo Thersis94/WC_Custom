@@ -25,7 +25,6 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
@@ -56,19 +55,34 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
-	@SuppressWarnings("resource")
 	@Override
 	public void addIndexItems(SolrClient server) {
-		SolrActionUtil solrUtil = new SolrActionUtil(server);
-		Map<String, SecureSolrDocumentVO> products = retreiveProducts(null);
-		
-		// Loop over each form transaction and turn it into a SolrStoryVO for processing
-		for (Entry<String, SecureSolrDocumentVO> entry : products.entrySet()) {
-			try {
-				solrUtil.addDocument(entry.getValue());
-			} catch (Exception e) {
-				log.error("could add to Solr", e);
-			}
+		pushProducts(server, null);
+	}
+	
+	
+	@Override
+	public void addSingleItem(String id) {
+		try (SolrClient server = super.makeServer()) {
+			pushProducts(server, id);
+		} catch (Exception e) {
+			log.error("Failed to update company with id: " + id, e);
+		}
+	}
+
+	
+	/**
+	 * Get products from the database and push them up to solr.
+	 * @param server
+	 * @param id
+	 */
+	@SuppressWarnings("resource")
+	protected void pushProducts (SolrClient server, String id) {
+		SolrActionUtil util = new SmarttrakSolrUtil(server);
+		try {
+			util.addDocuments(retreiveProducts(null).values());
+		} catch (Exception e) {
+			log.error("Failed to update product in Solr, passed pkid=" + id, e);
 		}
 	}
 	
@@ -100,14 +114,57 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			if (product != null) {
 				products.put(product.getDocumentId(), product);
 			}
+			buildDetails(products);
+			buildRegulatory(products);
+			buildAlliances(products);
+			buildContent(products, id);
 		} catch (SQLException e) {
 			log.error(e);
 		}
-		buildDetails(products);
-		buildRegulatory(products);
-		buildAlliances(products);
 		
 		return products;
+	}
+
+
+
+	/**
+	 * Get all html attributes that constitute content for a product and combine
+	 * them into a single contents field.
+	 * @param markets
+	 * @param id
+	 * @throws SQLException
+	 */
+	protected void buildContent(Map<String, SecureSolrDocumentVO> products, String id) throws SQLException {
+		StringBuilder sql = new StringBuilder(275);
+		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT x.PRODUCT_ID, x.VALUE_TXT FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
+		sql.append("on a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
+		sql.append("WHERE a.TYPE_CD = 'HTML' ");
+		if (!StringUtil.isEmpty(id)) sql.append("and x.PRODUCT_ID = ? ");
+		sql.append("ORDER BY x.PRODUCT_ID ");
+		log.info(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
+			
+			ResultSet rs = ps.executeQuery();
+			StringBuilder content = new StringBuilder();
+			String currentProduct = "";
+			while (rs.next()) {
+				if(!currentProduct.equals(rs.getString("PRODUCT_ID"))) {
+					if (content.length() > 0) {
+						products.get(currentProduct).setContents(content.toString());
+					}
+					content = new StringBuilder(1024);
+					currentProduct = rs.getString("PRODUCT_ID");
+				}
+				if (content.length() > 1) content.append("\n");
+				content.append(rs.getString("VALUE_TXT"));
+			}
+			if (content.length() > 0) {
+				products.get(currentProduct).setContents(content.toString());
+			}
+		}
 	}
 	
 
@@ -295,7 +352,6 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		SecureSolrDocumentVO product = new SecureSolrDocumentVO(INDEX_TYPE);
 		product.setDocumentId(rs.getString("PRODUCT_ID"));
 		product.setTitle(rs.getString("PRODUCT_NM"));
-		product.setContentType(rs.getString("STATUS_NO"));
 		product.addAttribute("company", rs.getString("COMPANY_NM"));
 		product.addAttribute("companyId", rs.getString("COMPANY_ID"));
 		product.addAttribute("alias", rs.getString("ALIAS_NM"));
@@ -307,7 +363,11 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			product.setUpdateDt(rs.getDate("CREATE_DT"));
 		}
 		product.addOrganization(ORG_ID);
-		product.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+		if ("E".equals(rs.getString("STATUS_NO"))) {
+			product.addRole(AdminControllerAction.STAFF_ROLE_LEVEL);
+		} else {
+			product.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.
+		}
 		
 		return product;
 	}
@@ -428,18 +488,5 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	@Override
 	public String getIndexType() {
 		return INDEX_TYPE;
-	}
-	
-	
-	@Override
-	public void addSingleItem(String id) {
-		Map<String, SecureSolrDocumentVO> company = retreiveProducts(id);
-		try (SolrActionUtil util = new SolrActionUtil(super.makeServer())) {
-			for (Entry<String, SecureSolrDocumentVO> entry : company.entrySet()) {
-				util.addDocument(entry.getValue());
-			}
-		} catch (Exception e) {
-			log.error("Failed to update company with id: " + id, e);
-		}
 	}
 }
