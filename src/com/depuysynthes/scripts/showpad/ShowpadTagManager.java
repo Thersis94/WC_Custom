@@ -133,12 +133,8 @@ public class ShowpadTagManager {
 			desiredTags.addAll(Arrays.asList(vo.getLanguageCode().split(DSMediaBinImporterV2.TOKENIZER)));
 		if (!StringUtil.isEmpty(vo.getLiteratureTypeTxt()))
 			desiredTags.addAll(Arrays.asList(vo.getLiteratureTypeTxt().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (!StringUtil.isEmpty(vo.getProdNm())) {
+		if (!StringUtil.isEmpty(vo.getProdNm()))
 			desiredTags.addAll(Arrays.asList(vo.getProdNm().split(DSMediaBinImporterV2.TOKENIZER)));
-			log.debug("tags from prodNm=" + Arrays.asList(vo.getProdNm().split(DSMediaBinImporterV2.TOKENIZER)));
-		} else {
-			log.debug("no prodNm for " + vo.getTrackingNoTxt() + " see!:" + vo.getProdNm());
-		}
 
 		//loop the tags the asset already has, removing them from the "need to add" list
 		if (assignedTags != null) {
