@@ -17,6 +17,7 @@ import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.changelog.ChangeLogIntfc;
 import com.smt.sitebuilder.changelog.ChangeLogUtil;
 import com.smt.sitebuilder.changelog.ChangeLogVO;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -49,6 +50,20 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	}
 
 	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		sai.retrieve(req);
+		/*
+		 * Using Retreival for ChangeLogs we don't need anything here.  If we 
+		 * need Session Storage, use the following.
+		 * if(req.hasParameter(UPDATE_ID) && updates.size() == 1) {
+		 * 	ChangeLogUtil.setChangeLogSess(req, (ChangeLogIntfc) updates.get(0), UPDATE_TYPE_CD, true);
+		 * } else if(req.hasParameter(UPDATE_ID)){
+		 * 	ChangeLogUtil.cleanupChangeLog(req);
+		 * }
+		 */
+	}
+
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 
 		//Attempt to get Original Data.
@@ -78,8 +93,8 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 		//If Not Equal, create a ChangeLog Record.
 		if(dNo != 0) {
 			log.debug("Diff Found.  Forwarding to ChangeLogUtil.");
-			ApprovalVO app = getApprovalRecord(req, diff, original);
-			String typeCd = (String)req.getSession().getAttribute(Constants.CHANGELOG_DIFF_TYPE_CD);
+			ApprovalVO app = buildApprovalRecord(req, diff, original);
+			String typeCd = (String)req.getSession().getAttribute(ChangeLogUtil.CHANGELOG_DIFF_TYPE_CD);
 			ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), typeCd, origTxt, diffTxt);
 			new ChangeLogUtil(dbConn, attributes).saveChangeLog(clv);
 		}
@@ -100,9 +115,14 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	 * @return
 	 * @throws ApprovalException 
 	 */
-	public ApprovalVO getApprovalRecord(ActionRequest req, ChangeLogIntfc diff, ChangeLogIntfc original) throws ActionException {
+	public ApprovalVO buildApprovalRecord(ActionRequest req, ChangeLogIntfc diff, ChangeLogIntfc original) throws ActionException {
 		//Build an approvalVO.
-		ApprovalVO app = new ApprovalVO(req, StringUtil.checkVal(MethodUtils.getPrimaryId(diff)), StringUtil.checkVal(MethodUtils.getPrimaryId(original)), ModuleType.Portlet, SyncStatus.Approved);
+		ApprovalVO app = new ApprovalVO(req,
+										StringUtil.checkVal(MethodUtils.getPrimaryId(diff)),
+										StringUtil.checkVal(MethodUtils.getPrimaryId(original)),
+										ModuleType.Portlet,
+										SyncStatus.Approved);
+
 		app.setItemName(diff.getItemName());
 		app.setItemDesc(diff.getItemDesc());
 
@@ -128,7 +148,7 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 		/*
 		 * Look for ChangeLog Data on Session.  Inexpensive operation.
 		 */
-		ChangeLogIntfc cli = ChangeLogUtil.getChangeLog(req, isOriginal);
+		ChangeLogIntfc cli = ChangeLogUtil.getChangeLogSessData(req, isOriginal);
 
 		/*
 		 * If cli is null, try getting via retrieve.  More expensive.
@@ -138,7 +158,7 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 			sai.retrieve(req);
 
 			//Look for Data on Module Data.
-			cli = ChangeLogUtil.getChangeLog(attributes);
+			cli = ChangeLogUtil.getChangeLog((ModuleVO)getAttribute(Constants.MODULE_DATA));
 		}
 
 		return cli;

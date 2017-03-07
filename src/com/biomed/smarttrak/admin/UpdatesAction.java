@@ -87,15 +87,7 @@ public class UpdatesAction extends AbstractTreeAction {
 		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
 
 		decryptNames(updates);
-		/*
-		 * Using Retreival for ChangeLogs we don't need anything here.  If we 
-		 * need Session Storage, use the following.
-		 * if(req.hasParameter(UPDATE_ID) && updates.size() == 1) {
-		 * 	ChangeLogUtil.setChangeLogSess(req, (ChangeLogIntfc) updates.get(0), UPDATE_TYPE_CD, true);
-		 * } else if(req.hasParameter(UPDATE_ID)){
-		 * 	ChangeLogUtil.cleanupChangeLog(req);
-		 * }
-		 */
+
 		putModuleData(updates);
 	}
 
@@ -230,12 +222,7 @@ public class UpdatesAction extends AbstractTreeAction {
 				writeToSolr(u);
 			}
 
-			/*
-			 * Ensure updateId is set so that we can retrieve for ChangeLog.
-			 * If we need Session Storage, the following will work as well.
-			 * ChangeLogUtil.setChangeLogSess(req, u, UPDATE_TYPE_CD, false);
-			 */
-			req.setParameter("updateId", u.getUpdateId());
+			req.setParameter(UPDATE_ID, u.getUpdateId());
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
