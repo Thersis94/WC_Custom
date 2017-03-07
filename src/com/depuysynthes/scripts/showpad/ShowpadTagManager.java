@@ -74,7 +74,7 @@ public class ShowpadTagManager {
 		int fetchSize = 1000;
 		for (int offset=0; true; offset += fetchSize) {
 			loadTags(fetchSize, offset);
-			
+
 			//if we've retrieve less than the maximum amount of tags, we're done.  If the #s are equal we need to iterate.
 			if (showpadTags.size() < (offset+fetchSize)) break;
 		}
@@ -133,9 +133,13 @@ public class ShowpadTagManager {
 			desiredTags.addAll(Arrays.asList(vo.getLanguageCode().split(DSMediaBinImporterV2.TOKENIZER)));
 		if (!StringUtil.isEmpty(vo.getLiteratureTypeTxt()))
 			desiredTags.addAll(Arrays.asList(vo.getLiteratureTypeTxt().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (!StringUtil.isEmpty(vo.getProdNm()))
-				desiredTags.addAll(Arrays.asList(vo.getProdNm().split(DSMediaBinImporterV2.TOKENIZER)));
-		
+		if (!StringUtil.isEmpty(vo.getProdNm())) {
+			desiredTags.addAll(Arrays.asList(vo.getProdNm().split(DSMediaBinImporterV2.TOKENIZER)));
+			log.debug("tags from prodNm=" + Arrays.asList(vo.getProdNm().split(DSMediaBinImporterV2.TOKENIZER)));
+		} else {
+			log.debug("no prodNm for " + vo.getTrackingNoTxt() + " see!:" + vo.getProdNm());
+		}
+
 		//loop the tags the asset already has, removing them from the "need to add" list
 		if (assignedTags != null) {
 			for (String tag : assignedTags.keySet())
@@ -144,7 +148,7 @@ public class ShowpadTagManager {
 
 		//add what's left on the "need to add" list as new tags; both to the Asset, and to Showpad if they're new
 		for (String tagNm : desiredTags) {
-			if (tagNm == null || tagNm.isEmpty()) continue;
+			if (StringUtil.isEmpty(tagNm)) continue;
 			log.info("asset needs tag " + tagNm);
 			if (showpadTags.get(tagNm) == null) {
 				//add it to the global list for the next iteration to leverage
@@ -249,7 +253,7 @@ public class ShowpadTagManager {
 		//put all the tags we want on the 'add' list, then we'll remove the ones that already exist
 		for (ShowpadTagVO tag : mbAsset.getTags())
 			tagsToAdd.put(tag.getName(), tag);
-		
+
 		//make a 'tagsToDelete' list by subtracting what we want (to add) from what we have
 		Map<String, ShowpadTagVO> tagsToDelete = new HashMap<>(assignedTags);
 		for (String tagNm : tagsToAdd.keySet()) {
@@ -266,7 +270,7 @@ public class ShowpadTagManager {
 		//remove from the 'add' list any tags we want to keep that are already tied to the asset.
 		for (ShowpadTagVO tVo : assignedTags.values())
 			tagsToAdd.remove(tVo.getName());
-		
+
 		//do the work
 		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", previous tags: " + assignedTags.keySet());
 		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", unlinking tags: " + tagsToDelete.keySet());
@@ -274,8 +278,8 @@ public class ShowpadTagManager {
 		unlinkAssetFromTags(showpadId, tagsToDelete.values());
 		linkAssetToTags(showpadId, tagsToAdd.values());
 	}
-	
-	
+
+
 	/**
 	 * iterates the list of tags, calling showpad to unlink each one from the given asset.
 	 * @param showpadAssetId
@@ -285,13 +289,13 @@ public class ShowpadTagManager {
 		for (ShowpadTagVO tag : tags) {
 			//if we don't know this tag by ID, get it from the Division's list.  It must exist at the Division level if it's bound to an Asset.
 			if (tag.getId() == null) tag = showpadTags.get(tag.getName());
-			
+
 			//unbind the tag from the asset
 			executeAssetTagXR(tag.getId(), showpadAssetId, "unlink");
 		}
 	}
-	
-	
+
+
 	/**
 	 * binds new tags to an asset, taking care to add these tags to the Divsion if they're not already there.
 	 * @param showpadAssetId
@@ -303,19 +307,19 @@ public class ShowpadTagManager {
 			//if we don't know this tag by ID, get it from the Division's list if it already exists there
 			if (tag.getId() == null && showpadTags.containsKey(tag.getName()))
 				tag = showpadTags.get(tag.getName());
-			
+
 			//if the tag is not there, it needs to be added to the Division before we can bind assets to it.
 			if (tag.getId() == null) {
 				tag = createTag(tag.getName(), SMT_PRODUCT_EXTERNALID);
 				showpadTags.put(tag.getName(), tag);
 			}
-			
+
 			//bind the tag to the asset
 			executeAssetTagXR(tag.getId(), showpadAssetId, "link");
 		}
 	}
-	
-	
+
+
 	/**
 	 * Executes the HTTP call for binding or unbinding tags from assets.
 	 * It's the same call both ways; Showpad figures out the rest.
@@ -330,15 +334,15 @@ public class ShowpadTagManager {
 			JSONObject metaResp = JSONObject.fromObject(resp).getJSONObject("meta");
 			if (!"200".equals(metaResp.getString("code")))
 				throw new IOException(metaResp.getString("description"));
-			
+
 			log.debug("asset-tag altered by executing: " + url);
 		} catch (IOException e) {
 			failures.add(e);
 			log.error("could not update tag binding to showpad asset", e);
 		}
 	}
-	
-	
+
+
 	public List<Exception> getFailures() {
 		return failures;
 	}

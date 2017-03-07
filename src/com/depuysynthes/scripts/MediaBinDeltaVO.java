@@ -39,6 +39,8 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	
 	//added for Showpad support; all the other fields are reuseable
 	private String showpadId;
+
+	private boolean fileChanged;
 	
 	
 	public enum State {
@@ -131,5 +133,16 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 
 	public void setProductUpdateDt(Date productUpdateDt) {
 		this.productUpdateDt = productUpdateDt;
+	}
+
+	/**
+	 * @param changed
+	 */
+	public void setFileChanged(boolean changed) {
+		this.fileChanged = changed;
+	}
+
+	public boolean isFileChanged() {
+		return fileChanged;
 	}
 }

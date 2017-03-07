@@ -619,6 +619,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			} else {
 				changed = true;
 			}
+			vo.setFileChanged(changed);
 			//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
 			conn.getInputStream().close();
 			conn.disconnect();
