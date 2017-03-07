@@ -140,11 +140,11 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
 			
 			ResultSet rs = ps.executeQuery();
-			StringBuilder content = null;
+			StringBuilder content = new StringBuilder();
 			String currentMarket = "";
 			while (rs.next()) {
 				if(!currentMarket.equals(rs.getString("COMPANY_ID"))) {
-					if (content != null) {
+					if (content.length() > 0) {
 						contentMap.put(currentMarket, content);
 					}
 					content = new StringBuilder(1024);
@@ -153,7 +153,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 				if (content.length() > 1) content.append("\n");
 				content.append(rs.getString("VALUE_TXT"));
 			}
-			if (content != null) {
+			if (content.length() > 0) {
 				contentMap.put(currentMarket, content);
 			}
 		}

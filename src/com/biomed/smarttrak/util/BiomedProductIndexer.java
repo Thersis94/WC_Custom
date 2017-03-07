@@ -148,11 +148,11 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
 			
 			ResultSet rs = ps.executeQuery();
-			StringBuilder content = null;
+			StringBuilder content = new StringBuilder();
 			String currentProduct = "";
 			while (rs.next()) {
 				if(!currentProduct.equals(rs.getString("PRODUCT_ID"))) {
-					if (content != null) {
+					if (content.length() > 0) {
 						products.get(currentProduct).setContents(content.toString());
 					}
 					content = new StringBuilder(1024);
