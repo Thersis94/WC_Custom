@@ -5,7 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -17,7 +19,6 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -46,19 +47,34 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
-	@SuppressWarnings("resource")
 	@Override
 	public void addIndexItems(SolrClient server) {
-		SolrActionUtil solrUtil = new SolrActionUtil(server);
-		List<SecureSolrDocumentVO> companies = retreiveCompanies(null);
-		
-		// Loop over each form transaction and turn it into a SolrStoryVO for processing
-		for (SecureSolrDocumentVO vo : companies) {
-			try {
-				solrUtil.addDocument(vo);
-			} catch (Exception e) {
-				log.error("could add to Solr", e);
-			}
+		pushCompanies(server, null);
+	}
+	
+	
+	@Override
+	public void addSingleItem(String id) {
+		try (SolrClient server = super.makeServer()) {
+			pushCompanies(server, id);
+		} catch (Exception e) {
+			log.error("Failed to update company with id: " + id, e);
+		}
+	}
+
+	
+	/**
+	 * Get companies from the database and push them up to solr.
+	 * @param server
+	 * @param id
+	 */
+	@SuppressWarnings("resource")
+	protected void pushCompanies (SolrClient server, String id) {
+		SolrActionUtil util = new SmarttrakSolrUtil(server);
+		try {
+			util.addDocuments(retreiveCompanies(null));
+		} catch (Exception e) {
+			log.error("Failed to update product in Solr, passed pkid=" + id, e);
 		}
 	}
 	
@@ -91,12 +107,66 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 				
 			}
 			if (company != null) companies.add(company);
+			
+			buildContent(companies, id);
 		} catch (SQLException e) {
 			log.error(e);
 		}
 		
 		return companies;
 	}
+
+
+	/**
+	 * Get all html attributes that constitute content for a company and combine
+	 * them into a single contents field.
+	 * @param companies
+	 * @param id
+	 * @throws SQLException
+	 */
+	protected void buildContent(List<SecureSolrDocumentVO> companies, String id) throws SQLException {
+		StringBuilder sql = new StringBuilder(275);
+		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT x.COMPANY_ID, x.VALUE_TXT FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR x ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
+		sql.append("on a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
+		sql.append("WHERE a.TYPE_NM = 'HTML' ");
+		if (!StringUtil.isEmpty(id)) sql.append("and x.COMPANY_ID = ? ");
+		sql.append("ORDER BY x.COMPANY_ID ");
+		
+		Map<String, StringBuilder> contentMap = new HashMap<>();
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
+			
+			ResultSet rs = ps.executeQuery();
+			StringBuilder content = null;
+			String currentMarket = "";
+			while (rs.next()) {
+				if(!currentMarket.equals(rs.getString("COMPANY_ID"))) {
+					if (content != null) {
+						contentMap.put(currentMarket, content);
+					}
+					content = new StringBuilder(1024);
+					currentMarket = rs.getString("COMPANY_ID");
+				}
+				if (content.length() > 1) content.append("\n");
+				content.append(rs.getString("VALUE_TXT"));
+			}
+			if (content != null) {
+				contentMap.put(currentMarket, content);
+			}
+		}
+		
+		for (SecureSolrDocumentVO company : companies) {
+			if (contentMap.get(company.getDocumentId()) == null) continue;
+			
+			company.setContents(contentMap.get(company.getDocumentId()).toString());
+		}
+		
+	}
+	
+	
 
 	/**
 	 * Add section id, name, and acl to document
@@ -135,7 +205,11 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			company.setUpdateDt(rs.getDate("CREATE_DT"));
 		}
 		company.addOrganization(ORG_ID);
-		company.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+		if ("E".equals(rs.getString("STATUS_NO"))) {
+			company.addRole(AdminControllerAction.STAFF_ROLE_LEVEL);
+		} else {
+			company.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.
+		}
 		
 		return company;
 	}
@@ -215,18 +289,5 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	@Override
 	public String getIndexType() {
 		return INDEX_TYPE;
-	}
-	
-	
-	@Override
-	public void addSingleItem(String id) {
-		List<SecureSolrDocumentVO> company = retreiveCompanies(id);
-		try (SolrActionUtil util = new SolrActionUtil(super.makeServer())) {
-			for (SecureSolrDocumentVO vo : company) {
-				util.addDocument(vo);
-			}
-		} catch (Exception e) {
-			log.error("Failed to update company with id: " + id, e);
-		}
 	}
 }

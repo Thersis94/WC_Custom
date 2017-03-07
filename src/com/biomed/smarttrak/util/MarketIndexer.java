@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -60,7 +61,6 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
-	@SuppressWarnings("resource")
 	@Override
 	public void addIndexItems(SolrClient server) {
 		pushMarkets(server, null);
@@ -77,8 +77,10 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 * @param server
 	 * @param pkId
 	 */
+	@SuppressWarnings("resource")
 	protected void pushMarkets(SolrClient server, String pkId) {
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+		SolrActionUtil util = new SmarttrakSolrUtil(server);
+		try {
 			util.addDocuments(retrieveMarkets(pkId));
 		} catch (Exception e) {
 			log.error("Failed to update market in Solr, passed pkid=" + pkId, e);
@@ -114,6 +116,8 @@ public class MarketIndexer  extends SMTAbstractIndex {
 			//add that final market to the list
 			if (market != null) 
 				markets.add(market);
+			
+			buildContent(markets, id);
 
 		} catch (SQLException e) {
 			log.error("could not load Market for Solr", e);
@@ -122,6 +126,55 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		return markets;
 	}
 
+
+	/**
+	 * Get all html attributes that constitute content for a market and combine
+	 * them into a single contents field.
+	 * @param markets
+	 * @param id
+	 * @throws SQLException
+	 */
+	protected void buildContent(List<MarketVO> markets, String id) throws SQLException {
+		StringBuilder sql = new StringBuilder(275);
+		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT x.MARKET_ID, x.VALUE_TXT FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR x ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
+		sql.append("on a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
+		sql.append("WHERE a.TYPE_CD = 'HTML' ");
+		if (!StringUtil.isEmpty(id)) sql.append("and x.MARKET_ID = ? ");
+		sql.append("ORDER BY x.MARKET_ID ");
+		
+		Map<String, StringBuilder> contentMap = new HashMap<>();
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
+			
+			ResultSet rs = ps.executeQuery();
+			StringBuilder content = null;
+			String currentMarket = "";
+			while (rs.next()) {
+				if(!currentMarket.equals(rs.getString("MARKET_ID"))) {
+					if (content != null) {
+						contentMap.put(currentMarket, content);
+					}
+					content = new StringBuilder(1024);
+					currentMarket = rs.getString("MARKET_ID");
+				}
+				if (content.length() > 1) content.append("\n");
+				content.append(rs.getString("VALUE_TXT"));
+			}
+			if (content != null) {
+				contentMap.put(currentMarket, content);
+			}
+		}
+		
+		for (MarketVO market : markets) {
+			if (contentMap.get(market.getMarketId()) == null) continue;
+			market.setContents(contentMap.get(market.getMarketId()).toString());
+		}
+		
+	}
+	
 
 	/**
 	 * creates the initial MarketVO using the ResultSet and some Smarttrak constants
@@ -151,18 +204,10 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	/**
 	 * Add section id, name, and acl to document
 	 */
-	@SuppressWarnings("unchecked")
 	protected void addSection(MarketVO market, Node n) throws SQLException {
 		SectionVO sec = (SectionVO)n.getUserObject();
 		market.addHierarchies(n.getFullPath());
 		market.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
-
-		//TODO do we even need this?
-		//		market.addSection(sec.getSectionNm());
-		//		if (!market.getAttributes().containsKey("sectionId"))
-		//			market.addAttribute("sectionId", new ArrayList<String>());
-		//
-		//		((List<String>)market.getAttribute("sectionId")).add(sec.getSectionId());
 	}
 
 
