@@ -200,12 +200,14 @@ public class AccountsReportAction extends SimpleActionAdapter {
 					accounts.add(account);
 				}
 
+				// init the division users list
+				divUsers = new ArrayList<>();
+				
 				// now create new account, and new user
 				account = createBaseAccount(rs);
 				user = createBaseUser(se,rs);
+				// update user status count
 				account.countUserStatus(user.getStatusCode());
-				
-				divUsers = new ArrayList<>();
 				
 			} else {
 				// same account, check for user change
@@ -218,6 +220,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 					// now create new user
 					user = createBaseUser(se,rs);
+					//update user status count
 					account.countUserStatus(user.getStatusCode());
 
 				}

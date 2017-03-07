@@ -14,11 +14,11 @@ import com.biomed.smarttrak.vo.UserVO.Status;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountPermissionsVO.java</p>
- <p><b>Description: </b></p>
+ <p><b>Description: </b>Value object primarily used for building reports.</p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
- @author groot
+ @author DBargerhuff
  @version 1.0
  @since Feb 28, 2017
  <b>Changes:</b> 
@@ -28,12 +28,14 @@ public class AccountUsersVO extends AccountVO {
 	private List<UserVO> users;
 	private Map<String,List<UserVO>> divisions;
 	private SmarttrakTree permissions;
+	
 	// counter for 'Added' seats
 	private int addedSeatsCnt;
 	// counter for 'Complementary' seats
 	private int compSeatsCnt;
 	// coutner for 'Updates-only' seats
 	private int updatesOnlyCnt;
+	
 	/**
 	* Constructor
 	*/
