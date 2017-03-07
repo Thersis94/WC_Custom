@@ -166,7 +166,10 @@ public class ShowpadDivisionUtil {
 		}
 
 		log.info("uploading file: " + props.get("downloadDir") + vo.getFileName());
-		File mbFile = new File(props.get("downloadDir") + vo.getFileName());
+		File mbFile = null;
+		if (vo.isFileChanged()) {
+			mbFile = new File(props.get("downloadDir") + vo.getFileName());
+		}
 		log.info("sending to showpad: " + vo.getDpySynMediaBinId());
 		JSONObject json = null;
 		try {

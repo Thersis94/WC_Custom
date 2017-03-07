@@ -106,10 +106,6 @@ public class ShowpadApiUtil {
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
 
-		FileType ft = new FileType();
-		FileContent fileContent = new FileContent(ft.getMimeType(f.getName()), f);
-		GenericUrl gUrl = new GenericUrl(url);
-
 		// Add parameters
 		MultipartContent content = new MultipartContent();
 		content.setMediaType(new HttpMediaType("multipart/form-data").setParameter("boundary", "__END_OF_PART__"));
@@ -119,17 +115,22 @@ public class ShowpadApiUtil {
 			content.addPart(part);
 		}
 		
-		// Add file
-		String fileName = (params.containsKey("name") ? params.get("name") : f.getName());
-		MultipartContent.Part part = new MultipartContent.Part(fileContent);
-		part.setHeaders(new HttpHeaders().set("Content-Disposition", String.format("form-data; name=\"file\"; filename=\"%s\"", fileName)));
-		content.addPart(part);
+		// Add file - if one was passed
+		if (f != null) {
+			FileType ft = new FileType();
+			FileContent fileContent = new FileContent(ft.getMimeType(f.getName()), f);
+			String fileName = (params.containsKey("name") ? params.get("name") : f.getName());
+			MultipartContent.Part part = new MultipartContent.Part(fileContent);
+			part.setHeaders(new HttpHeaders().set("Content-Disposition", String.format("form-data; name=\"file\"; filename=\"%s\"", fileName)));
+			content.addPart(part);
+		}
 
 		//add the Link header
 		HttpHeaders linkHeaders = new HttpHeaders();
 		if (linkHeader != null && linkHeader.length() > 0)
 			linkHeaders.set("Link", linkHeader);
 
+		GenericUrl gUrl = new GenericUrl(url);
 		HttpResponse resp = requestFactory.buildPostRequest(gUrl, content).setReadTimeout(WRITE_TIMEOUT).setHeaders(linkHeaders).execute();
 		if ("429".equals(resp.getStatusCode())) throw new QuotaException("rate limit exceeded");
 		return resp.parseAsString();
