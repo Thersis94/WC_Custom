@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import java.util.Map;
 
 //SMTBaseLibs
-import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -18,14 +17,12 @@ import com.siliconmtn.security.SHAEncrypt;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.user.LoginAction;
 import com.smt.sitebuilder.common.constants.Constants;
 
 //WebCrescendo libs
 import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.smt.sitebuilder.security.DBLoginModule;
 import com.smt.sitebuilder.security.UserLogin;
-import com.biomed.smarttrak.action.AdminControllerAction.Section;
 
 //WC_Custom libs
 import com.biomed.smarttrak.vo.TeamVO;
@@ -101,18 +98,12 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * @return
 	 * @throws AuthenticationException
 	 */
-	public UserVO loadSmarttrakUser(UserDataVO userData) {
+	public UserVO loadSmarttrakUser(UserDataVO userData) throws AuthenticationException {
 		UserVO stUser = new UserVO();
 		stUser.setData(userData.getDataMap());
 		stUser.setAttributes(userData.getAttributes());
 		stUser.setAuthenticated(userData.isAuthenticated());
 		loadCustomData(stUser);
-
-		//if status is EU Reports, redirect them to the markets page
-		if ("M".equals(stUser.getStatusCode())) {
-			ActionRequest req = (ActionRequest) getAttribute(GlobalConfig.ACTION_REQUEST);
-			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.MARKET.getPageURL());
-		}
 		return stUser;
 	}
 
@@ -137,9 +128,9 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
-		sql.append("inner join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
+		sql.append("left outer join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
 		sql.append("inner join ").append(schema).append("biomedgps_account a on u.account_id=a.account_id ");
-		sql.append("where u.account_id=t.account_id and u.profile_id=? order by t.team_nm");
+		sql.append("where u.profile_id=? order by t.team_nm");
 		log.debug(sql + user.getProfileId());
 
 		int iter = 0;

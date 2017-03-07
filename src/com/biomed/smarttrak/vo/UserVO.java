@@ -48,14 +48,14 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public enum Status {
 		COMPUPDATES("T","Comp Updates"),
 		ACTIVE("A","SmartTRAK User"),
-		REPORTS("M","EU Reports"),
+		EUREPORTS("M","EU Reports"),
 		EUPLUS("P","EU Plus"),
 		TRIAL("K","SmartTRAK Trial"),
 		COMPLIMENTART("C","SmartTRAK Complimentary"),
 		EXTRA("E","SmartTRAK Extra Seat"),
 		UPDATES("U","Updates Only"),
-		TEST("D","Temporary/ Test"),
-		STAFF("S","Staff");
+		TEST("D","Temporary / Test"),
+		INACTIVE("I","Inactive");
 
 		private String cd;
 		private String label;
@@ -95,10 +95,10 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		private boolean isArray;
 		private String fieldId;
 		private String reqParam;
-		private RegistrationMap(String registerFieldId, String reqParam) { 
+		private RegistrationMap(String registerFieldId, String reqParam) {
 			this(registerFieldId, reqParam, false);
 		}
-		private RegistrationMap(String registerFieldId, String reqParam, boolean isArray) { 
+		private RegistrationMap(String registerFieldId, String reqParam, boolean isArray) {
 			this.fieldId = registerFieldId;
 			this.reqParam = reqParam;
 			this.isArray = isArray;

@@ -66,11 +66,14 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
 	public static final String PUBLIC_SITE_ID = "BMG_SMARTTRAK_1";
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
+	public static final String EUREPORT_ROLE_ID = "6f5c869a9b0e9b640a001421bce81c9b";
 	public static final String REGISTRATION_GRP_ID = "ea884793b2ef163f7f0001011a253456";
 
 	// All logged-in users are Registered Users or Site Administrators.  
 	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
 	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
+	public static final int EUREPORT_ROLE_LEVEL = 5;
+	public static final int STAFF_ROLE_LEVEL = 90;
 
 	public static final int DOC_ID_MIN_LEN = 15;  //used to determine if a pkId will be globally unique if fed to Solr as documentId, 
 
@@ -156,7 +159,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			} else if(AdminConstants.REQ_COPY.equals(req.getParameter("actionPerform"))){
 				action.copy(req);
 			}else {
-				action.build(req);
+				new BiomedChangeLogDecoratorAction(action).build(req);
 			}
 			msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 

@@ -86,7 +86,7 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	protected void loadManagerList(ActionRequest req, String schema) throws ActionException {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.profile_id as owner_profile_id, a.first_nm, a.last_nm from profile a ");
+		sql.append("select newid() as account_id, a.profile_id as owner_profile_id, a.first_nm, a.last_nm from profile a ");
 		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=?");
 		sql.append("and b.site_id=? and b.role_id=?");
 		log.debug(sql);
@@ -114,7 +114,7 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void decryptNames(List<Object> data) {
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 
@@ -126,7 +126,7 @@ public class AccountAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, ");
 		sql.append("a.start_dt, a.expiration_dt, a.owner_profile_id, a.address_txt, ");
-		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, ");
+		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, a.seats_no, ");
 		sql.append("a.status_no, a.create_dt, a.update_dt, a.fd_auth_flg, a.ga_auth_flg, a.mkt_auth_flg, ");
 		sql.append("p.first_nm, p.last_nm from ").append(schema).append("biomedgps_account a ");
 		sql.append("left outer join profile p on a.owner_profile_id=p.profile_id ");		

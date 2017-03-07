@@ -80,7 +80,7 @@ public class TeamMemberAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void decryptNames(List<Object> data) {
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 
