@@ -191,7 +191,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 			if (n.getDepthLevel() != MAX_DEPTH_LEVEL) continue;
 			// Permissions are authoritative at level 4 so we use the level 4 perm
 			PermissionVO perm = (PermissionVO)n.getUserObject();
-			row.put(n.getNodeId(), perm.isSelected());
+			row.put(n.getNodeId(), perm.isBrowseAuth());
 		}
 	}
 	
