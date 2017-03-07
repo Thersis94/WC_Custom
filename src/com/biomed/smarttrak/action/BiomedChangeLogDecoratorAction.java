@@ -6,7 +6,7 @@ package com.biomed.smarttrak.action;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.MethodUtils;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.approval.ApprovalController;
@@ -102,7 +102,7 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	 */
 	public ApprovalVO getApprovalRecord(ActionRequest req, ChangeLogIntfc diff, ChangeLogIntfc original) throws ActionException {
 		//Build an approvalVO.
-		ApprovalVO app = ApprovalController.buildApprovalVO(req, StringUtil.checkVal(DBProcessor.getPrimaryId(diff)), StringUtil.checkVal(DBProcessor.getPrimaryId(original)), ModuleType.Portlet, SyncStatus.Approved);
+		ApprovalVO app = ApprovalController.buildApprovalVO(req, StringUtil.checkVal(MethodUtils.getPrimaryId(diff)), StringUtil.checkVal(MethodUtils.getPrimaryId(original)), ModuleType.Portlet, SyncStatus.Approved);
 		app.setItemName(diff.getItemName());
 		app.setItemDesc(diff.getItemDesc());
 
