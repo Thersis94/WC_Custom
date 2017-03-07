@@ -80,8 +80,8 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 			log.debug("Diff Found.  Forwarding to ChangeLogUtil.");
 			ApprovalVO app = getApprovalRecord(req, diff, original);
 			String typeCd = (String)req.getSession().getAttribute(Constants.CHANGELOG_DIFF_TYPE_CD);
-			ChangeLogVO clv = ChangeLogUtil.buildChangeLogVO(app.getWcSyncId(), typeCd, origTxt, diffTxt);
-			new ChangeLogUtil(dbConn, attributes).createChangeLog(app, clv);
+			ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), typeCd, origTxt, diffTxt);
+			new ChangeLogUtil(dbConn, attributes).saveChangeLog(clv);
 		}
 
 		/*
@@ -102,7 +102,7 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	 */
 	public ApprovalVO getApprovalRecord(ActionRequest req, ChangeLogIntfc diff, ChangeLogIntfc original) throws ActionException {
 		//Build an approvalVO.
-		ApprovalVO app = ApprovalController.buildApprovalVO(req, StringUtil.checkVal(MethodUtils.getPrimaryId(diff)), StringUtil.checkVal(MethodUtils.getPrimaryId(original)), ModuleType.Portlet, SyncStatus.Approved);
+		ApprovalVO app = new ApprovalVO(req, StringUtil.checkVal(MethodUtils.getPrimaryId(diff)), StringUtil.checkVal(MethodUtils.getPrimaryId(original)), ModuleType.Portlet, SyncStatus.Approved);
 		app.setItemName(diff.getItemName());
 		app.setItemDesc(diff.getItemDesc());
 
