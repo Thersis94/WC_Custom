@@ -161,7 +161,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 				if (content.length() > 1) content.append("\n");
 				content.append(rs.getString("VALUE_TXT"));
 			}
-			if (content != null) {
+			if (content.length() > 0) {
 				products.get(currentProduct).setContents(content.toString());
 			}
 		}
