@@ -106,7 +106,28 @@ public class CompanyAction extends SBActionAdapter {
 		}
 		super.putModuleData(company);
 	}
-
+	
+	/**
+	 * Returns data from the company record only.
+	 * 
+	 * @param companyId
+	 * @return
+	 * @throws ActionException 
+	 */
+	public CompanyVO getCompany(String companyId) throws ActionException {
+		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		
+		CompanyVO company = new CompanyVO();
+		company.setCompanyId(companyId);
+		
+		try {
+			dbp.getByPrimaryKey(company);
+		} catch (Exception e) {
+			throw new ActionException("Couldn't retrieve company record.", e);
+		}
+		
+		return company;
+	}
 
 	/**
 	 * Get all companies that have invested in the supplied company and add

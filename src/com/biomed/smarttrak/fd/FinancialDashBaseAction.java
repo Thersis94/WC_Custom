@@ -9,11 +9,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
 import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -93,6 +95,10 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			processReport(req, dash);
 		}
 		
+		if (!StringUtil.isEmpty(dash.getCompanyId())) {
+			dash.setCompanyName(getCompanyName(req, dash.getCompanyId()));
+		}
+		
 		this.putModuleData(dash);
 	}
 	
@@ -151,6 +157,23 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	protected SmarttrakTree getFullHierarchy(ActionRequest req) throws ActionException {
 		SectionHierarchyAction sha = getHierarchyAction(req);
 		return sha.loadTree(null);
+	}
+	
+	/**
+	 * Returns the company name for the company displayed on the dashboard
+	 * 
+	 * @param req
+	 * @param dash
+	 * @return
+	 * @throws ActionException
+	 */
+	protected String getCompanyName(ActionRequest req, String companyId) throws ActionException {
+		CompanyAction compAct = new CompanyAction(this.actionInit);
+		compAct.setAttributes(this.attributes);
+		compAct.setDBConnection(dbConn);
+		
+		CompanyVO company = compAct.getCompany(companyId);
+		return company.getCompanyName();
 	}
 	
 	/**
