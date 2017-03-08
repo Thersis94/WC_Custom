@@ -8,8 +8,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 // App Libs
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
@@ -41,7 +43,7 @@ import com.smt.sitebuilder.common.constants.ErrorCodes;
  * 	
  *******************************************************************/
 public class GridChartAction extends SBActionAdapter {
-	
+	// Maps the table field name to the db field name for sorting purposes
 	private Map<String, String> sortMapper;
 
 	/**
@@ -89,19 +91,31 @@ public class GridChartAction extends SBActionAdapter {
 		grid.setCreateDate(new Date());
 		grid.setUpdateDate(new Date());
 		
+		
 		String msg = "You have successfuly saved the grid data";
 		boolean error = false;
 		Map<String, String> columnMatch = new HashMap<>(grid.getDetails().size());
 		DBProcessor db = new DBProcessor(dbConn, getAttribute(Constants.CUSTOM_DB_SCHEMA) + "");
+		
+		// For the financial dashboard, find existing grid by name
+		if (StringUtil.isEmpty(grid.getGridId()) && "FINANCE_DASHBOARD".equalsIgnoreCase(grid.getGridType())) {
+			grid.setGridId(findGridIdByName(grid));
+		}
+		
 		try {
 			// Make sure the new grid id is assigned when creating a new grid
 			// otherwise use the existing
 			db.save(grid);
-			if (StringUtil.isEmpty(req.getParameter("gridId")))
-					grid.setGridId(db.getGeneratedPKId());
 			
-			log.info("Grid ID: " + grid.getGridId());
+			if (StringUtil.isEmpty(grid.getGridId())) {
+				grid.setGridId(db.getGeneratedPKId());
+				log.info("Grid ID: " + grid.getGridId());
+			}
 			
+			// Delete any rows that aren't being updated
+			this.deleteRows(grid);
+			
+			// Store the rows
 			for(GridDetailVO detail : grid.getDetails()) {
 				// If we are adding a new grid, the grid ID does not exist when parsed.  Add it
 				detail.setGridId(grid.getGridId());
@@ -131,6 +145,81 @@ public class GridChartAction extends SBActionAdapter {
 		response.put(GlobalConfig.ACTION_DATA_COUNT, columnMatch.size());
 		putModuleData(response, 0, false, msg, error);
 		
+	}
+	
+	/**
+	 * Deletes any rows not being updated
+	 * @param grid
+	 */
+	public void deleteRows(GridVO grid) {
+		// Build a collection of new ID's
+		Set<String> ids = new HashSet<>();
+		Set<String> delIds = new HashSet<>();
+		for(GridDetailVO detail : grid.getDetails()) {
+			ids.add(detail.getGridDetailId());
+		}
+		
+		// Build the delete sql
+		Object schema = getAttribute(Constants.CUSTOM_DB_SCHEMA);
+
+		// Build the SQL to retrieve the list of ids
+		StringBuilder lSql = new StringBuilder(128);
+		lSql.append("select grid_detail_id from ").append(schema).append("biomedgps_grid_detail ");
+		lSql.append("where grid_id = ? ");
+
+		try (PreparedStatement ps = dbConn.prepareStatement(lSql.toString())) {
+			ps.setString(1, grid.getGridId());
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				if (! ids.contains(rs.getString(1))) {
+					delIds.add(rs.getString(1));
+				}
+			}
+			
+			// Convert the set to a comma delimited string for delete
+			if (delIds.size() == 0) return;
+			
+			// Build the delete sql.  SInce the ids are built within the 
+			// Backend, no worries about SQL Injectio, so params are just set
+			String vals = StringUtil.getDelimitedList(delIds.toArray(new String[delIds.size()]), true, ",");
+			StringBuilder sql = new StringBuilder(128);
+			sql.append("delete from ").append(schema).append("biomedgps_grid_detail ");
+			sql.append("where grid_detail_id in (").append(vals).append(") ");
+			log.debug("Del SQL: " + sql);
+			
+			try (PreparedStatement ps1 = dbConn.prepareStatement(sql.toString())) {
+				ps1.executeUpdate();
+			}
+			
+		} catch (Exception e) {
+			log.error("Unable to delete unused rows", e);
+		}
+	}
+	
+	/**
+	 * Used mainly by the financial dashboard, checks for an existing grid by name
+	 * @param name
+	 * @param type
+	 * @return
+	 */
+	public String findGridIdByName(GridVO grid) {
+		Object schema = getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select grid_id from ").append(schema).append("biomedgps_grid ");
+		sql.append("where grid_type_cd = ? and title_nm = ? ");
+		log.debug("Find By Name SQL: " + sql + grid.getGridType() + "|" + grid.getTitle());
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, grid.getGridType());
+			ps.setString(2, grid.getTitle());
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) return rs.getString(1);
+			
+		} catch(SQLException sqle) {
+			log.error("Ubale to retrieve grid by name", sqle);
+		}
+		
+		return null;
 	}
 	
 	/**

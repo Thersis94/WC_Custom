@@ -91,6 +91,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		switch(type) {
 			case PIE:
 			case DONUT:
+			case GEO:
 			case TABLE:
 				processGridPie(grid);
 				break;
@@ -111,6 +112,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		// Get the row data that corresponds to the series
 		List<GridDetailVO> details = grid.getDetails();
 		
+		// Loop the rows and and the data
 		for(int i=0; i < details.size(); i++) {
 			GridDetailVO detail = details.get(i);
 			GoogleChartRowVO row = new GoogleChartRowVO();
@@ -126,7 +128,11 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 				if (StringUtil.isEmpty(value)) continue;
 				
 				cell = new GoogleChartCellVO();
-				cell.setValue(Convert.formatDouble(detail.getValues()[x]));
+				
+				// Round the decimal places
+				double mult = Math.pow(10.0, grid.getDecimalDisplay());
+				double roundVal = Math.round(Convert.formatDouble(detail.getValues()[x]) * mult) / mult;
+				cell.setValue(roundVal);
 				row.addCell(cell);
 				validRows.add(x);
 			}

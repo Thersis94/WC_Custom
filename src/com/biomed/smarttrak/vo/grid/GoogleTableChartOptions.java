@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.vo.grid;
 
+// JDK 1.8
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,9 +28,8 @@ public class GoogleTableChartOptions extends GoogleBaseChartOptions {
 	/**
 	 * 
 	 */
-	public GoogleTableChartOptions() {
-		super();
-		
+	public GoogleTableChartOptions(boolean full) {
+		super(full);
 		this.createChartOptions();
 	}
 	
@@ -37,7 +37,7 @@ public class GoogleTableChartOptions extends GoogleBaseChartOptions {
 	 * Creates the attributes for the pie chart
 	 */
 	protected void createChartOptions() {
-		//super.createChartOptions("labeled");
+		super.createChartOptions("top");
 		this.chart.put("allowHtml", true);
 		this.chart.put("sort", "disable");
 		this.chart.put("isStacked", true);
@@ -47,6 +47,7 @@ public class GoogleTableChartOptions extends GoogleBaseChartOptions {
 		cssClassNames.put("tableRow", "");
 		cssClassNames.put("oddTableRow", "");
 		cssClassNames.put("tableCell", "");
+		cssClassNames.put("selectedTableRow", "selectedTableRow");
 		
 		chart.put("cssClassNames", cssClassNames);
 	}

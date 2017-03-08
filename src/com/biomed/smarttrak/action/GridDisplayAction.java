@@ -63,22 +63,8 @@ public class GridDisplayAction extends SBActionAdapter {
 		// Parse the row and series data
 		GridVO grid = getGridData(gridId);
 		
-		// If the request is for a table
-		if (!ChartType.TABLE.equals(type)) {
-			
-			// return the bean for conversion to json
-			this.putModuleData(grid.getTableMap());
-
-		} else if (req.hasParameter("excel")){
-
-			buildExcelFile(req, grid);
-			
-		} else {
-			retrievChartData(req, grid, type);
-			
-			// return the bean for conversion to json
-			this.putModuleData(retrievChartData(req, grid, type));
-		}
+		if (req.hasParameter("excel")) buildExcelFile(req, grid);
+		else this.putModuleData(retrieveChartData(req, grid, type));
 	}
 	
 	/**
@@ -105,26 +91,23 @@ public class GridDisplayAction extends SBActionAdapter {
 	 * @param grid
 	 * @param type
 	 */
-	public SMTGridIntfc retrievChartData(ActionRequest req, GridVO grid, ChartType type) {
+	public SMTGridIntfc retrieveChartData(ActionRequest req, GridVO grid, ChartType type) {
 		ProviderType pt = ProviderType.valueOf(StringUtil.checkVal(req.getParameter("pt"), "GOOGLE").toUpperCase());
 		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type);
+		Boolean full = Convert.formatBoolean(req.getParameter("full"), false);
 		
 		// Get the chart options
-		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE);
+		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE, full);
 		options.addOptionsFromGridData(grid);
 		
 		// Add the chart specific options
 		gridData.addCustomValues(options.getChartOptions());
+		gridData.addCustomValue("width", "100%");
+		gridData.addCustomValue("height", "100%");
 		
-		// Associate the dynamic options
-		if(req.hasParameter("w"))
-			gridData.addCustomValue("width", Convert.formatInteger(req.getParameter("w"), 250));
-		
-		if(req.hasParameter("h"))
-			gridData.addCustomValue("height", Convert.formatInteger(req.getParameter("h"), 250));
-		
+		// Add configurable attributes
 		if(req.hasParameter("isStacked"))
-		gridData.addCustomValue("isStacked", Convert.formatBoolean(req.getParameter("isStacked"), false));
+			gridData.addCustomValue("isStacked", Convert.formatBoolean(req.getParameter("isStacked"), false));
 		
 		return gridData;
 	}

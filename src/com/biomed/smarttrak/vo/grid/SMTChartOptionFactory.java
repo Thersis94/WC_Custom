@@ -20,9 +20,8 @@ public class SMTChartOptionFactory {
 	public enum ChartType {
 		AREA("Area Chart"), BAR("Bar Chart"), BUBBLE("Bubble Chart"), 
 		COLUMN("Column Chart"),	COMBO("Combo Chart"), DONUT("Donut Chart"), 
-		GAUGE("Guage Chart"), GEO("Geo Chart"),	LINE("Line Chart"), 
-		PIE("PIE Chart"), SCATTER("Scatter Chart"), TABLE("Table Grid"),
-		TRENDLINE("Trendline Chart"), NONE("None Selected");
+		GEO("Geo Chart"), LINE("Line Chart"), PIE("PIE Chart"), 
+		SCATTER("Scatter Chart"), TABLE("Table Grid"), NONE("None Selected");
 		
 		// Assign the name (get and set)
 		private final String name;
@@ -36,23 +35,24 @@ public class SMTChartOptionFactory {
 	 * @param prov
 	 * @return
 	 */
-	public static SMTChartOptionIntfc getInstance(ChartType type, ProviderType prov) {
+	public static SMTChartOptionIntfc getInstance(ChartType type, ProviderType prov, boolean full) {
 		SMTChartOptionIntfc chart = null;
 		
 		switch(type) {
 			case DONUT:
 			case PIE:
-				if (ProviderType.GOOGLE.equals(prov)) chart = new GooglePieChartOptions();
+				if (ProviderType.GOOGLE.equals(prov)) chart = new GooglePieChartOptions(full);
 				break;
 			case BAR:
-				if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleBarChartOptions();
-				break;
 			case COLUMN:
-				if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleColumnChartOptions();
+				if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleColumnChartOptions(full);
 				break;
 			case TABLE:
-				if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleTableChartOptions();
+				if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleTableChartOptions(full);
 				break;
+			case LINE:
+			case AREA: 
+				if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleLineChartOptions(full);
 			default:
 				break;
 		}

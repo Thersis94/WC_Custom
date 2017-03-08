@@ -2,7 +2,7 @@ package com.biomed.smarttrak.vo.grid;
 
 
 /********************************************************************
- * <b>Title: </b>GooglePieChartOptions.java<br/>
+ * <b>Title: </b>GoogleColumnChartOptions.java<br/>
  * <b>Description: </b>Provides the options for google column charts<br/>
  * <b>Copyright: </b>Copyright (c) 2017<br/>
  * <b>Company: </b>Silicon Mountain Technologies
@@ -22,8 +22,8 @@ public class GoogleColumnChartOptions extends GoogleBaseChartOptions {
 	/**
 	 * 
 	 */
-	public GoogleColumnChartOptions() {
-		super();
+	public GoogleColumnChartOptions(boolean full) {
+		super(full);
 		
 		this.createChartOptions();
 	}

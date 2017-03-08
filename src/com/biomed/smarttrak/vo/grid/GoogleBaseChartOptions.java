@@ -6,6 +6,8 @@ import java.util.Map;
 
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /********************************************************************
  * <b>Title: </b>SMTChartOptions.java<br/>
@@ -39,12 +41,18 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 	 * Data source for cell options
 	 */
 	protected Map<String, Object> cell;
+	
+	/**
+	 * Parameter for distinguishing between a thumbnail and full view
+	 */
+	private boolean full = false;
 
 	/**
 	 * 
 	 */
-	public GoogleBaseChartOptions() {
+	public GoogleBaseChartOptions(boolean full) {
 		super();
+		this.full = full;
 		chart = new LinkedHashMap<>();
 		row = new LinkedHashMap<>();
 		cell = new LinkedHashMap<>();
@@ -55,19 +63,21 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 	 * @param position
 	 */
 	protected void createChartOptions(String position) {
+		// Turn off the legend if not full
+		if (! full) position = "none";
+		
+		// Set the legend font
 		Map<String, Object> text = new HashMap<>();
 		text.put("color", "blue");
-		text.put("fontSize", 24);
+		text.put("fontSize", 12);
 		
-		Map<String, Object> title = new HashMap<>();
-		text.put("color", "blue");
-		text.put("fontSize", 8);
-		
+		// Define the legend
 		Map<String, Object> legend = new HashMap<>();
-		legend.put("position", "top");
+		legend.put("position", position);
 		legend.put("textStyle", text);
 		legend.put("maxLines", 3);
 		
+		// Define the area for the actual chart
 		Map<String, Object> chartArea = new HashMap<>();
 		legend.put("top", 50);
 		legend.put("width", "96%");
@@ -76,8 +86,8 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 		chart.put("legend", legend); // none to hide
 		chart.put("tooltip", " {text: 'value'}");
 		chart.put("chartArea", chartArea);
-		chart.put("titleTextStyle", title);
-		chart.put("colors",  "['#3366cc','#dc3912','#ff9900','#109618','#990099','#0099c6','#8f8f8f','#e53ac3','#f96125','#316395']");
+		
+		chart.put("colors", new String[]{ "#3366cc","#dc3912","#ff9900","#109618","#990099","#0099c6","#8f8f8f","#e53ac3","#f96125","#316395" });
 	}
 	
 	/*
@@ -85,16 +95,32 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 	 * @see com.biomed.smarttrak.vo.grid.SMTChartOptionIntfc#addGridData(com.biomed.smarttrak.admin.vo.GridVO)
 	 */
 	public void addOptionsFromGridData(GridVO grid) {
-		final String TITLE_LABEL = "title";
-		chart.put(TITLE_LABEL, grid.getTitle());
+		// Set the font attributes
+		Map<String, Object> text = new HashMap<>();
+		text.put("color", "blue");
+		text.put("fontSize", 16);
 		
+		final String TITLE_LABEL = "title";
+		if (full) {
+			chart.put(TITLE_LABEL, grid.getTitle());
+			chart.put("titleTextStyle", text);
+		}
+
+		// Add vAxis Labels
 		Map<String, Object> vAxis = new LinkedHashMap<>();
 		vAxis.put(TITLE_LABEL, grid.getPrimaryYTitle());
+		vAxis.put("format", "short");
+		vAxis.put("gridlines", 6);
+		vAxis.put("scaleType", "linear");  // Also supports log
 		chart.put("vAxis", vAxis);
 		
-		Map<String, Object> hAxis = new LinkedHashMap<>();
-		hAxis.put(TITLE_LABEL, grid.getPrimaryXTitle());
-		chart.put("hAxis", hAxis);
+		if(full) {	
+			// Add the hAxis label with copyright
+			Map<String, Object> hAxis = new LinkedHashMap<>();
+			String label = String.format("\nCopyright© %s BioMedGPS, LLC", Convert.getCurrentYear());
+			hAxis.put(TITLE_LABEL, StringUtil.checkVal(grid.getPrimaryXTitle()) + label);
+			chart.put("hAxis", hAxis);
+		}
 	}
 	
 	/* (non-Javadoc)

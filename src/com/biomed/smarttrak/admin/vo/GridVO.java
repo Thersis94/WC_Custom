@@ -679,7 +679,11 @@ public class GridVO extends BeanDataVO {
 
 		String[] values = detail.getValues();
 		for(int i=0; i < 10; i++) {
-			values[i] = row.get("field_" + (i + 1)) + "";
+			
+			// nulls are being inserted as a tring "null" value.  Make sure to remove
+			String val = StringUtil.checkVal(row.get("field_" + (i + 1)));
+			if (val.length() == 0 || "null".equalsIgnoreCase(val)) val = null;
+			values[i] = val;
 		}
 		
 		// Add to the local collection
