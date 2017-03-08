@@ -52,7 +52,8 @@ public class UpdateIndexer extends SMTAbstractIndex {
 
 	@Override
 	public void addIndexItems(SolrClient server) throws SolrException {
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+		try {
+			SolrActionUtil util = new SmarttrakSolrUtil(server);
 			List<SolrDocumentVO> docs = getDocuments(null);
 			if (docs.isEmpty())
 				throw new Exception("No Documents found");
@@ -67,7 +68,8 @@ public class UpdateIndexer extends SMTAbstractIndex {
 	@Override
 	public void addSingleItem(String itemId) throws SolrException {
 		log.debug("adding single Update: " + itemId);
-		try (SolrActionUtil util = new SmarttrakSolrUtil(makeServer())) {
+		try {
+			SolrActionUtil util = new SmarttrakSolrUtil(makeServer());
 			List<SolrDocumentVO> docs = getDocuments(itemId);
 			if (docs.isEmpty())
 				throw new Exception("Update not found: " + itemId);
