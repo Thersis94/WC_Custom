@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.siliconmtn.action.ActionRequest;
@@ -394,6 +395,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	 * used for solr search makes one sing field out of all three fields
 	 * @return the content
 	 */
+	@Override
 	@SolrField(name=SearchDocumentHandler.CONTENTS)
 	public String getContents() {
 		StringBuilder contents = new StringBuilder(6000);
@@ -411,7 +413,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
 	public String getDocumentUrl() {
 		StringBuilder url = new StringBuilder(50);
-		url.append("/").append(AdminControllerAction.Section.INSIGHT.getURLToken()).append(getQsPath()).append(getInsightId());
+		url.append(Section.INSIGHT.getPageURL()).append(getQsPath()).append(getInsightId());
 		return url.toString();
 	}
 
