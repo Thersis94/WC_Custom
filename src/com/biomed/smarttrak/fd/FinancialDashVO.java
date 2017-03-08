@@ -37,6 +37,7 @@ public class FinancialDashVO extends SBModuleVO {
 	private boolean leafMode;
 	private String scenarioId;
 	private String companyId;
+	private String companyName;
 	private int publishedQtr;
 	private int publishedYear;
 	
@@ -233,6 +234,13 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
+	 * @return the companyName
+	 */
+	public String getCompanyName() {
+		return companyName;
+	}
+
+	/**
 	 * @return the publishedQtr
 	 */
 	public int getPublishedQtr() {
@@ -351,6 +359,13 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setCompanyId(String companyId) {
 		this.companyId = companyId;
+	}
+
+	/**
+	 * @param companyName the companyName to set
+	 */
+	public void setCompanyName(String companyName) {
+		this.companyName = companyName;
 	}
 
 	/**
