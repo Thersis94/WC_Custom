@@ -400,7 +400,6 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		contents.append(getSideContentTxt()).append(" ");
 		contents.append(getAbstractTxt()).append(" ");
 		contents.append(getContentTxt());
-		System.out.println("## count " + contents.length());
 		return contents.toString();
 	}
 
