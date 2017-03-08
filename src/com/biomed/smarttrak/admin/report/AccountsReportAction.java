@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 //WC custom
 import com.biomed.smarttrak.admin.AccountAction;
@@ -40,7 +42,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  <b>Changes:</b> 
  ***************************************************************************/
 public class AccountsReportAction extends SimpleActionAdapter {
-
+	
 	/**
 	* Constructor
 	*/
@@ -61,30 +63,44 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	public List<AccountUsersVO> retrieveAccountsList(ActionRequest req) throws ActionException {
+	public Map<String,Object> retrieveAccountsList(ActionRequest req) throws ActionException {
 
+		// 1. init the StringEncrypter or die trying.
 		StringEncrypter se = initStringEncrypter();
 		
+		// 2. retrieve the user registration field IDs that we need to use in the accounts/users query
+		List<String> regFields = initUserRegistrationFields();
+		
+		// 3. ...and we need the appropriate site ID.
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		String siteId = StringUtil.isEmpty(site.getAliasPathParentId()) ? site.getSiteId() : site.getAliasPathParentId();
 		
-		// 1. retrieve account/users
-		List<AccountUsersVO> accounts = retrieveAccountUsers(se,siteId);
+		// 4. retrieve account/users
+		List<AccountUsersVO> accounts = retrieveAccountUsers(se,regFields,siteId);
 
-		// 2. retrieve acct permissions
+		// 5. retrieve acct permissions for each account
 		retrieveAccountPermissions(req,accounts);
+		
+		// 6. retrieve registration field options map
+		Map<String,Map<String,String>> optionMap = retrieveRegistrationFieldOptions(regFields);
 
-		return accounts;
+		Map<String,Object> reportData = new HashMap<>();
+		reportData.put(AccountReportVO.KEY_ACCOUNTS, accounts);
+		reportData.put(AccountReportVO.KEY_FIELD_OPTIONS, optionMap);
+		
+		return reportData;
 	}
 
 	/**
 	 * Retrieves accounts and users.
 	 * @param se
+	 * @param siteId
 	 * @return
 	 */
-	protected List<AccountUsersVO> retrieveAccountUsers(StringEncrypter se, String siteId) {
+	protected List<AccountUsersVO> retrieveAccountUsers(StringEncrypter se, 
+			List<String> regFields, String siteId) {
 		// 1. build query
-		StringBuilder sql = buildAccountsUsersQuery();
+		StringBuilder sql = buildAccountsUsersQuery(regFields);
 
 		// 2. build PS
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -92,7 +108,9 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			ps.setString(++idx, Status.INACTIVE.getCode());
 			ps.setString(++idx, Status.INACTIVE.getCode());
 			ps.setString(++idx, siteId);
-			ps.setString(++idx, RegistrationMap.DIVISIONS.getFieldId());
+			for (int x = 0; x < regFields.size(); x++) {
+				ps.setString(++idx, regFields.get(x));
+			}
 			ResultSet rs = ps.executeQuery();
 			return parseAccountUsers(se,rs);
 
@@ -139,9 +157,10 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 	/**
 	 * Builds the base accounts/users query.
+	 * @param userRegFields
 	 * @return
 	 */
-	protected StringBuilder buildAccountsUsersQuery() {
+	protected StringBuilder buildAccountsUsersQuery(List<String> userRegFields) {
 		StringBuilder sql = new StringBuilder(650);
 		sql.append("select ac.account_id, ac.account_nm, ac.create_dt, ac.expiration_dt, ac.status_no, ");
 		sql.append("us.user_id, us.profile_id, us.status_cd, ");
@@ -154,8 +173,13 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		sql.append("inner join profile_role pfr on pf.profile_id = pfr.profile_id and pfr.site_id = ? ");
 		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
 		sql.append("left join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
-		sql.append("and rd.register_field_id = ? ");
-		sql.append("order by ac.account_id, us.profile_id, rd.value_txt");
+		sql.append("and rd.register_field_id in (");
+		for (int x=0; x < userRegFields.size(); x++) {
+			if (x > 0) sql.append(",");
+			sql.append("?");
+		}
+		sql.append(") ");
+		sql.append("order by ac.account_id, us.profile_id, rd.register_field_id");
 		log.debug("accounts users retrieval SQL: " + sql.toString());
 		return sql;
 	}
@@ -172,35 +196,27 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		
 		log.debug("parseAccountsUsers...");
 		String prevAcctId = null;
-		String prevDivId = null;
 		String prevPid = null;
 		String currAcctId;
-		String currDivId;
 		String currPid;
 
 		UserVO user = new UserVO();
-		List<UserVO> divUsers = new ArrayList<>();
 		AccountUsersVO account = new AccountUsersVO();
 		List<AccountUsersVO> accounts = new ArrayList<>();
 
 		while (rs.next()) {
 
 			currAcctId = rs.getString("account_id");
-			currDivId = rs.getString("value_txt");
 			currPid = rs.getString("profile_id");
 
 			if (! currAcctId.equals(prevAcctId)) {
-
 				// acct changed
 				if (prevAcctId != null) {
-					// add division to account's map if necessary
-					processDivision(account,divUsers,user,prevDivId);
+					// add 'previous' user
+					account.addUser(user);
 					// add acct to accounts list.
 					accounts.add(account);
 				}
-
-				// init the division users list
-				divUsers = new ArrayList<>();
 
 				// create new account
 				account = createBaseAccount(rs);
@@ -213,11 +229,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 				// same account, check for user change
 				if (! currPid.equals(prevPid)) {
 					// user changed, add 'previous' user to division users list
-					divUsers.add(user);
-
-					// check for division change
-					divUsers = processDivisionChange(account,divUsers,currDivId,prevDivId);
-
+					account.addUser(user);
 					// create new user
 					user = createBaseUser(se,rs);
 					// update user status counter
@@ -227,48 +239,66 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			}
 
 			// add registration data from row for this user.
-			user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
+			processUserRegistrationField(account, user,rs.getString("register_field_id"), rs.getString("value_txt"));
 
 			prevAcctId = currAcctId;
-			prevDivId = currDivId;
 			prevPid = currPid;
 
 		}
 
 		// pick up the dangler
 		if (prevAcctId != null) {
-			processDivision(account,divUsers,user,prevDivId);
+			account.addUser(user);
 			accounts.add(account);
 		}
 
 		return accounts;
 	}
-	
-	protected void processDivision(AccountUsersVO account, 	List<UserVO> divUsers, 
-			UserVO user, String prevDivId) {
-		if (prevDivId != null) {
-			// add user to division users list
-			divUsers.add(user);
-			// add division to account's division map
-			account.addDivision(prevDivId, divUsers);
+
+	/**
+	 * Processes the user's registration field for the given record.
+	 * @param acct
+	 * @param user
+	 * @param currFieldId
+	 * @param currFieldVal
+	 */
+	@SuppressWarnings("unchecked")
+	protected void processUserRegistrationField(AccountUsersVO acct, UserVO user, 
+			String currFieldId, String currFieldVal) {
+		// process reg field value
+		if (RegistrationMap.DIVISIONS.getFieldId().equals(currFieldVal)) {
+			// user can belong to more than one division, we use a List here.
+			List<String> divs;
+			if (user.getAttribute(currFieldVal) == null) {
+				divs = new ArrayList<>();
+			} else {
+				divs = (List<String>)user.getAttribute(currFieldId);
+			}
+			// add value to list, set/replace on user attrib map.
+			divs.add(currFieldVal);
+			user.addAttribute(currFieldId, divs);
+
+			// add to the account's division map
+			addUserToAccountDivisions(acct.getDivisions(),user, currFieldVal);
+			
+		} else {
+			user.addAttribute(currFieldId, currFieldVal);
 		}
 	}
 	
 	/**
-	 * Checks to see if the division changed.
-	 * @param account
-	 * @param divUsers
-	 * @param currDivId
-	 * @param prevDivId
-	 * @return
+	 * Adds the user to the List of UserVO for the given division.
+	 * @param divs
+	 * @param user
+	 * @param currDivVal
 	 */
-	protected List<UserVO> processDivisionChange(AccountUsersVO account, 
-			List<UserVO> divUsers, String currDivId, String prevDivId) {
-		if (! currDivId.equals(prevDivId)) {
-			account.addDivision(prevDivId, divUsers);
-			return new ArrayList<>();
+	protected void addUserToAccountDivisions(Map<String,List<UserVO>> divs, 
+			UserVO user, String currDivVal) {
+		// if the divs map doesn't have a map entry for the currDivVal, create one
+		if (divs.get(currDivVal) == null) {
+			divs.put(currDivVal, new ArrayList<>());
 		}
-		return divUsers;
+		divs.get(currDivVal).add(user);
 	}
 
 	/**
@@ -311,7 +341,104 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		
 		return user;
 	}
+	
+	/**
+	 * Retrieves a Map of registration field ID mapped to the corresponding options for that ID for each
+	 * registration field used by this report.
+	 * @param regFields
+	 * @return
+	 */
+	protected Map<String,Map<String,String>> retrieveRegistrationFieldOptions(List<String> regFields) {
+		StringBuilder sql = this.buildRegistrationFieldOptionQuery(regFields);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 
+			int idx = 0;
+			for (int x = 0; x < regFields.size(); x++) {
+				ps.setString(++idx, regFields.get(x));
+			}
+
+			ResultSet rs = ps.executeQuery();
+			return parseRegistrationFieldOptions(rs);
+
+		} catch (SQLException sqle) {
+			log.error("Error retrieving registration field options, ", sqle);
+			return new HashMap<>();
+		}
+	}
+
+	/**
+	 * Parses the Registration field options results set into a Map of registration field ID mapped
+	 * to a map of option key/value pairs.
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	protected Map<String,Map<String,String>> parseRegistrationFieldOptions(ResultSet rs) 
+			throws SQLException {
+		Map<String,String> fieldOptionsMap = new HashMap<>();
+		Map<String,Map<String,String>> optionsMap = new HashMap<>();
+		String prevFieldId = null;
+		String currFieldId;
+
+		while (rs.next()) {
+			currFieldId = rs.getString("register_field_id");
+			
+			if (! currFieldId.equals(prevFieldId)) {
+				// field change, add 'previous' field option map to overall map
+				if (prevFieldId != null) {
+					optionsMap.put(prevFieldId, fieldOptionsMap);
+				}
+
+				// init new field map and add current option to it.
+				fieldOptionsMap = new HashMap<>();
+				fieldOptionsMap.put(rs.getString("option_value_txt"), rs.getString("option_desc"));
+
+			} else {
+				// same field, different option.
+				fieldOptionsMap.put(rs.getString("option_value_txt"), rs.getString("option_desc"));
+			}
+			prevFieldId = currFieldId;
+		}
+		
+		// pick up the dangler.
+		if (prevFieldId != null) {
+			optionsMap.put(prevFieldId, fieldOptionsMap);
+		}
+		
+		return optionsMap;
+	}
+	
+	/**
+	 * Retrieves a Map of registration field option key/value pairs for the registration
+	 * fields used for this report.
+	 * @param regFields
+	 * @return
+	 */
+	protected StringBuilder buildRegistrationFieldOptionQuery(List<String> regFields) {
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("select register_field_id, option_desc, option_value_txt ");
+		sql.append("from register_field_option where register_field_id in (");
+		for (int x = 0; x < regFields.size(); x++) {
+			if (x > 0) sql.append(",");
+			sql.append("?");
+		}
+		sql.append(") order by register_field_id, order_no");
+		return sql;
+	}
+	
+	
+	/**
+	 * Returns a List of String containing the registration field IDs that are used by 
+	 * the query that retrieves accounts/users data.
+	 * @return
+	 */
+	protected List<String> initUserRegistrationFields() {
+		List<String> regFields = new ArrayList<>();
+		regFields.add(RegistrationMap.DIVISIONS.getFieldId());
+		regFields.add(RegistrationMap.JOBCATEGORY.getFieldId());
+		return regFields;
+	}
+	
 	/**
 	 * Instantiates a StringEncrypter.
 	 * @return

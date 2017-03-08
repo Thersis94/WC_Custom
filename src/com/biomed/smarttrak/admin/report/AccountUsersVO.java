@@ -25,7 +25,13 @@ import com.biomed.smarttrak.vo.UserVO.Status;
  ***************************************************************************/
 public class AccountUsersVO extends AccountVO {
 
+	/**
+	 * List of UserVO: The list of users belonging to this account.
+	 */
 	private List<UserVO> users;
+	/**
+	 * Map of List of UserVO: List of users grouped by division
+	 */
 	private Map<String,List<UserVO>> divisions;
 	private SmarttrakTree permissions;
 	
@@ -33,7 +39,7 @@ public class AccountUsersVO extends AccountVO {
 	private int addedSeatsCnt;
 	// counter for 'Complementary' seats
 	private int compSeatsCnt;
-	// coutner for 'Updates-only' seats
+	// counter for 'Updates-only' seats
 	private int updatesOnlyCnt;
 	
 	/**

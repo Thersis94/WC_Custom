@@ -10,12 +10,12 @@ import java.util.Map;
 //WC custom
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.UserVO;
-
+import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 //SMTBaseLibs
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.Convert;
-
+import com.siliconmtn.util.StringUtil;
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
@@ -37,8 +37,11 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	private static final long serialVersionUID = -4695811549286840882L;
 	private static final String REPORT_TITLE = "Account Report";
+	protected static final String KEY_ACCOUNTS = "accounts";
+	protected static final String KEY_FIELD_OPTIONS = "fieldOptions";
 	private static final String ROW = "ROW";
 	private List<AccountUsersVO> accounts;
+	private Map<String,Map<String,String>> fieldOptions;
 	
 	/**
 	* Constructor
@@ -50,6 +53,7 @@ public class AccountReportVO extends AbstractSBReportVO {
         isHeaderAttachment(Boolean.TRUE);
         setFileName(REPORT_TITLE+".xls");
         accounts = new ArrayList<>();
+        fieldOptions = new HashMap<>();
 	}
 	
 	/* (non-Javadoc)
@@ -76,7 +80,9 @@ public class AccountReportVO extends AbstractSBReportVO {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object o) {
-		this.accounts =  (List<AccountUsersVO>) o;
+		Map<String,Object> dataMap = (Map<String,Object>)o;
+		this.accounts = (List<AccountUsersVO>) dataMap.get(KEY_ACCOUNTS);
+		this.fieldOptions = (Map<String,Map<String,String>>) dataMap.get(KEY_FIELD_OPTIONS);
 	}
 	
 	/**
@@ -207,9 +213,11 @@ public class AccountReportVO extends AbstractSBReportVO {
 		
 	}
 
-	protected void addDivisions(List<Map<String,Object>> rows, AccountUsersVO acct) {
+	protected void addDivisions(List<Map<String,Object>> rows, AccountUsersVO acct, Map<String,String> divMap) {
+		String divName;
 		for (Map.Entry<String,List<UserVO>> division : acct.getDivisions().entrySet()) {
-			rows.add(addRow(ROW, division.getKey()));
+			divName = divMap.get(division.getKey());
+			rows.add(addRow(ROW, StringUtil.checkVal(divName)));
 			addDivisionUsers(rows,division.getValue());
 		}
 
@@ -226,7 +234,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 					sb.append(user.getStatusCode());
 					break;
 			}
-			rows.add(addRow(ROW,user.getFirstName()));
+			rows.add(addRow(ROW,sb.toString()));
 		}
 	}
 
