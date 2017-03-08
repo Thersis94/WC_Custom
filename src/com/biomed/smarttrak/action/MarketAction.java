@@ -9,21 +9,25 @@ import java.util.TreeMap;
 
 import org.apache.solr.common.SolrDocument;
 
+import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.security.SecurityController;
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeVO;
 import com.biomed.smarttrak.vo.MarketVO;
+import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
 /****************************************************************************
  * <b>Title</b>: MarketAction.java <p/>
@@ -38,7 +42,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @since Feb 15, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-public class MarketAction extends SBActionAdapter {
+public class MarketAction extends AbstractTreeAction {
 	private static final String DEFAULT_GROUP = "Other";
 
 	public MarketAction() {
@@ -160,12 +164,19 @@ public class MarketAction extends SBActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ON s.SECTION_ID = ms.SECTION_ID ");
 		sql.append("WHERE m.MARKET_ID = ? ");
 		log.debug(sql);
-
+		SmarttrakTree t = loadDefaultTree();
+		t.buildNodePaths();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, market.getMarketId());
 			ResultSet rs = ps.executeQuery();
-			while(rs.next())
+			while(rs.next()) {
 				market.addSection(new GenericVO(rs.getString("MARKET_SECTION_XR_ID"), rs.getString("SECTION_NM")));
+				Node n = t.findNode(rs.getString("SECTION_ID"));
+				if (n != null) {
+					SectionVO sec = (SectionVO) n.getUserObject();
+					market.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
+				}
+			}
 
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -223,5 +234,10 @@ public class MarketAction extends SBActionAdapter {
 			groups.put(groupName, new ArrayList<SolrDocument>());
 
 		groups.get(groupName).add(doc);
+	}
+
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 }
