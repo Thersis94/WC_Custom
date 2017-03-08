@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.siliconmtn.action.ActionRequest;
@@ -137,10 +138,8 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		if(vo != null) {
 			this.setCreatorProfileId(StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId()));
 		}
-		setInsightId(req.getParameter("insightsId"));
-
+		setInsightId(req.getParameter("insightId"));
 		if (StringUtil.isEmpty(insightId)) setInsightId(req.getParameter("pkId"));
-
 		setTitleTxt(req.getParameter("titleTxt"));
 		setTypeCd(Convert.formatInteger(req.getParameter("typeCd")));
 		setAbstractTxt(req.getParameter("abstractTxt"));
@@ -391,6 +390,20 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	public Date getUpdateDt() {
 		return updateDt;
 	}
+	
+	/**
+	 * used for solr search makes one sing field out of all three fields
+	 * @return the content
+	 */
+	@Override
+	@SolrField(name=SearchDocumentHandler.CONTENTS)
+	public String getContents() {
+		StringBuilder contents = new StringBuilder(6000);
+		contents.append(getSideContentTxt()).append(" ");
+		contents.append(getAbstractTxt()).append(" ");
+		contents.append(getContentTxt());
+		return contents.toString();
+	}
 
 
 	/**
@@ -400,7 +413,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
 	public String getDocumentUrl() {
 		StringBuilder url = new StringBuilder(50);
-		url.append(AdminControllerAction.Section.INSIGHT.getURLToken()).append(getQsPath()).append(getInsightId());
+		url.append(Section.INSIGHT.getPageURL()).append(getQsPath()).append(getInsightId());
 		return url.toString();
 	}
 

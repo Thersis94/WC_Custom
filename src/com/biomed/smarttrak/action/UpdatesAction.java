@@ -13,7 +13,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.session.SMTSession;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -36,7 +35,6 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  ****************************************************************************/
 public class UpdatesAction extends SBActionAdapter {
 
-	public static final int RPP = 15;
 	public UpdatesAction() { 
 		super();
 	}
@@ -83,17 +81,8 @@ public class UpdatesAction extends SBActionAdapter {
 		SMTSession ses = req.getSession();
 		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
 
-		/*
-		 * Get the PageNo off the request.  Use this to filter the sql query down
-		 * to a manageable size.  Replace the Request with 0 as the Start value
-		 * so that Solr doesn't offset anything.
-		 */
-		int page = Convert.formatInteger(req.getParameter("page"));
-		int offset = RPP * page;
-		req.setParameter("page", "0");
-
 		List<String> docIds = new ArrayList<>();
-		try(PreparedStatement ps = dbConn.prepareStatement(getFavoriteUpdatesSql(offset))) {
+		try(PreparedStatement ps = dbConn.prepareStatement(getFavoriteUpdatesSql())) {
 			int i = 1;
 			ps.setString(i++, AdminControllerAction.Section.MARKET.toString());
 			ps.setString(i++, vo.getProfileId());
@@ -125,7 +114,7 @@ public class UpdatesAction extends SBActionAdapter {
 	 * Build sql query for Favorited Items in Updates.
 	 * @return
 	 */
-	protected String getFavoriteUpdatesSql(int offset) {
+	protected String getFavoriteUpdatesSql() {
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(500);
 		sql.append("select distinct *, row_number() OVER (ORDER BY publish_dt desc) as rnum from ( ");
@@ -141,7 +130,6 @@ public class UpdatesAction extends SBActionAdapter {
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
 		sql.append("on a.rel_id = b.company_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append(") as update_id order by publish_dt desc ");
-		sql.append("limit ").append(RPP).append(" offset ").append(offset);
 		return sql.toString();
 	}
 
@@ -167,6 +155,11 @@ public class UpdatesAction extends SBActionAdapter {
 		if (fqs == null) fqs = new String[0];
 		List<String> data = new ArrayList<>(Arrays.asList(fqs));
 
+		//get the filter terms already on the request.  Add ours to the stack and put the String [] back on the request for Solr.
+		String [] fts = req.getParameterValues("ft");
+		if(fts == null) fts = new String [0];
+		List<String> terms = new ArrayList<>(Arrays.asList(fts));
+
 		//Add Sections Check.  Append a filter query for each section requested
 		if (req.hasParameter("hierarchyId")) {
 			for (String s : req.getParameterValues("hierarchyId"))
@@ -176,7 +169,7 @@ public class UpdatesAction extends SBActionAdapter {
 		//Add Favorites Filter if applicable.
 		if(docIds != null && !docIds.isEmpty()) {
 			for(String s : docIds) {
-				data.add(SearchDocumentHandler.DOCUMENT_ID + ":" + s);
+				terms.add(SearchDocumentHandler.DOCUMENT_ID + ":" + s);
 			}
 		}
 
@@ -191,5 +184,6 @@ public class UpdatesAction extends SBActionAdapter {
 
 		//put the new list of filter queries back on the request
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
+		req.setParameter("ft", terms.toArray(new String[terms.size()]), true);
 	}
 }
