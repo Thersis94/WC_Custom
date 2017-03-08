@@ -525,7 +525,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			
 			while(rs.next()) {
-				product.addSection(new GenericVO(rs.getString("PRODUCT_SECTION_XR_ID"), rs.getString("SECTION_NM")));
+				product.addProductSection(new GenericVO(rs.getString("PRODUCT_SECTION_XR_ID"), rs.getString("SECTION_NM")));
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -605,7 +605,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			if (split.length >= 2) {
 				p.setGroupName(split[1]);
 			}
-			product.addAttribute(p);
+			product.addProductAttribute(p);
 		}
 	}
 	
