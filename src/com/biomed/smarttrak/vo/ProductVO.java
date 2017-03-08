@@ -6,11 +6,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: ProductVO.java <p/>
@@ -27,7 +29,7 @@ import com.siliconmtn.util.Convert;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_PRODUCT")
-public class ProductVO {
+public class ProductVO extends SecureSolrDocumentVO {
 	
 	private String productId;
 	private String parentId;
@@ -44,16 +46,17 @@ public class ProductVO {
 	private String shortName;
 	private String aliasName;
 	private String productGroupId;
-	private List<ProductAttributeVO> attributes;
-	private List<GenericVO> sections;
+	private List<ProductAttributeVO> productAttributes;
+	private List<GenericVO> productSections;
 	private List<ProductAllianceVO> alliances;
 	private List<RegulationVO> regulations;
 	private Map<String, List<ProductAttributeVO>> details;
 	private Map<String, List<ProductVO>> relatedProducts;
 	
 	public ProductVO () {
-		attributes = new ArrayList<>();
-		sections = new ArrayList<>();
+		super(BiomedProductIndexer.INDEX_TYPE);
+		productAttributes = new ArrayList<>();
+		productSections = new ArrayList<>();
 		alliances = new ArrayList<>();
 		regulations = new ArrayList<>();
 		details = new HashMap<>();
@@ -62,7 +65,7 @@ public class ProductVO {
 	
 	
 	public ProductVO(ActionRequest req) {
-		super();
+		this();
 		setData(req);
 	}
 	
@@ -90,6 +93,7 @@ public class ProductVO {
 		return productId;
 	}
 	public void setProductId(String productId) {
+		super.setDocumentId(productId);
 		this.productId = productId;
 	}
 	@Column(name="parent_id")
@@ -204,30 +208,30 @@ public class ProductVO {
 	}
 	
 
-	public List<ProductAttributeVO> getAttributes() {
-		return attributes;
+	public List<ProductAttributeVO> getProductAttributes() {
+		return productAttributes;
 	}
 
 
-	public void setAttributes(List<ProductAttributeVO> attributes) {
-		this.attributes = attributes;
-	}
-	
-	public void addAttribute(ProductAttributeVO attribute) {
-		this.attributes.add(attribute);
-	}
-
-	public List<GenericVO> getSections() {
-		return sections;
-	}
-
-
-	public void setSections(List<GenericVO> sections) {
-		this.sections = sections;
+	public void setProductAttributes(List<ProductAttributeVO> attributes) {
+		this.productAttributes = attributes;
 	}
 	
-	public void addSection(GenericVO section) {
-		this.sections.add(section);
+	public void addProductAttribute(ProductAttributeVO attribute) {
+		this.productAttributes.add(attribute);
+	}
+
+	public List<GenericVO> getProductSections() {
+		return productSections;
+	}
+
+
+	public void setProductSections(List<GenericVO> sections) {
+		this.productSections = sections;
+	}
+	
+	public void addProductSection(GenericVO section) {
+		this.productSections.add(section);
 	}
 
 
