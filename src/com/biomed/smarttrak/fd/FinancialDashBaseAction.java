@@ -96,7 +96,8 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		}
 		
 		if (!StringUtil.isEmpty(dash.getCompanyId())) {
-			dash.setCompanyName(getCompanyName(req, dash.getCompanyId()));
+			String companyName = getCompanyName(req, dash.getCompanyId());
+			dash.setCompanyName(companyName);
 		}
 		
 		this.putModuleData(dash);
