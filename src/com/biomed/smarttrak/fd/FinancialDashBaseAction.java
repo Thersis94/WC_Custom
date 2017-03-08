@@ -95,6 +95,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			processReport(req, dash);
 		}
 		
+		// Gets the company name for page display
 		if (!StringUtil.isEmpty(dash.getCompanyId())) {
 			String companyName = getCompanyName(req, dash.getCompanyId());
 			dash.setCompanyName(companyName);
