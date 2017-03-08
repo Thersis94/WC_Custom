@@ -36,6 +36,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
@@ -251,6 +252,11 @@ public class ProductExplorer extends SBActionAdapter {
 	protected SolrResponseVO retrieveProducts(ActionRequest req) throws ActionException {
 		SolrActionVO qData = buildSolrAction(req);
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
+
+		SBUserRole roles = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		qData.setRoleLevel(roles.getRoleLevel());
+		qData.setRoleACL(roles.getAccessControlList());
+		qData.setAclTypeNo(10);
 
 		buildSearchParams(req, qData);
 		if (req.hasParameter("selNodes")) buildNodeParams(req, qData);
