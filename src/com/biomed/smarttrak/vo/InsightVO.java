@@ -389,6 +389,20 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	public Date getUpdateDt() {
 		return updateDt;
 	}
+	
+	/**
+	 * used for solr search makes one sing field out of all three fields
+	 * @return the content
+	 */
+	@SolrField(name=SearchDocumentHandler.CONTENTS)
+	public String getContents() {
+		StringBuilder contents = new StringBuilder(6000);
+		contents.append(getSideContentTxt()).append(" ");
+		contents.append(getAbstractTxt()).append(" ");
+		contents.append(getContentTxt());
+		System.out.println("## count " + contents.length());
+		return contents.toString();
+	}
 
 
 	/**
@@ -398,7 +412,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
 	public String getDocumentUrl() {
 		StringBuilder url = new StringBuilder(50);
-		url.append(AdminControllerAction.Section.INSIGHT.getURLToken()).append(getQsPath()).append(getInsightId());
+		url.append("/").append(AdminControllerAction.Section.INSIGHT.getURLToken()).append(getQsPath()).append(getInsightId());
 		return url.toString();
 	}
 
