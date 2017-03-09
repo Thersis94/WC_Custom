@@ -348,15 +348,11 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			FinancialDashRevenueVO baseRecord = baseData.get(entry.getKey());
 			FinancialDashScenarioOverlayVO overlayRecord = overlayData.get(entry.getKey());
 			
-			if (baseRecord == null) {
-				// TODO: There isn't enough data from a scenario overlay record to create a revenue record, do we create a
-				// new revenue record when a new overlay record is created?
-			} else {
-				baseRecord.setQ1No(overlayRecord.getQ1No());
-				baseRecord.setQ2No(overlayRecord.getQ2No());
-				baseRecord.setQ3No(overlayRecord.getQ3No());
-				baseRecord.setQ4No(overlayRecord.getQ4No());
-			}
+			// Update the corresponding base record with data from the overlay record
+			baseRecord.setQ1No(overlayRecord.getQ1No());
+			baseRecord.setQ2No(overlayRecord.getQ2No());
+			baseRecord.setQ3No(overlayRecord.getQ3No());
+			baseRecord.setQ4No(overlayRecord.getQ4No());
 			
 			try {
 				dbp.save(baseRecord);

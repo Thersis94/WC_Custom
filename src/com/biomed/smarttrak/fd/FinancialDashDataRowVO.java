@@ -320,6 +320,26 @@ public class FinancialDashDataRowVO implements Serializable {
 		
 		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
 		
+		try {
+			// Check for difference between a new record, and actual zero values
+			if (rs.wasNull() && yearIdx == 1) {
+				return;
+			}
+		} catch (SQLException sqle) {
+			log.error("Unable to calculate company inactivity.", sqle);
+		}
+		
+		checkInactive(qtr, yearIdx, dollarValue);
+	}
+	
+	/**
+	 * Checks for company inactivity for the passed quarter
+	 * 
+	 * @param qtr
+	 * @param yearIdx
+	 * @param dollarValue
+	 */
+	private void checkInactive(String qtr, int yearIdx, int dollarValue) {
 		switch (qtr) {
 			case FinancialDashBaseAction.QUARTER_1:
 			case FinancialDashBaseAction.QUARTER_2:
