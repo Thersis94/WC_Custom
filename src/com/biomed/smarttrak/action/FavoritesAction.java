@@ -109,7 +109,7 @@ public class FavoritesAction extends SBActionAdapter {
 		fav.setReferenceCode(collKey);
 		fav.setPageId(pkId);
 		fav.setRequestUri(req.getParameter(QuickLinksAction.PARAM_KEY_URI_TXT));
-		fav.setPageDisplayName(QuickLinksAction.PARAM_KEY_NAME);
+		fav.setPageDisplayName(req.getParameter(QuickLinksAction.PARAM_KEY_NAME));
 
 		ModuleVO mod = new ModuleVO();
 		String data = "failure";
