@@ -266,7 +266,7 @@ public class ProductExplorer extends SBActionAdapter {
 		SolrResponseVO vo = sqp.processQuery(qData);
 
 		if (!req.hasParameter("compare") && !req.hasParameter("textCompare"))
-		buildFilterList(req, vo);
+			buildFilterList(req, vo);
 		return vo;
 	}
 
