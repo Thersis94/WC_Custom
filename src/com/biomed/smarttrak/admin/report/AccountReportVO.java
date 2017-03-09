@@ -34,9 +34,6 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  ***************************************************************************/
 public class AccountReportVO extends AbstractSBReportVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -4695811549286840882L;
 	private static final String REPORT_TITLE = "Account Report";
 	protected static final String KEY_ACCOUNTS = "accounts";
@@ -119,7 +116,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
-	 * 
+	 * Adds the account row to the report
 	 * @param rows
 	 * @param acct
 	 */
@@ -146,7 +143,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * 
+	 * Adds the account starting/expiration date rows to the report
 	 * @param rows
 	 * @param acct
 	 */
@@ -163,7 +160,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * 
+	 * Adds the account segment rows to the report
 	 * @param rows
 	 * @param acct
 	 */
@@ -191,7 +188,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
-	 * 
+	 * Adds the level 3 segment name to the StringBuilder passed in as an argument.
+	 * Used by the method that builds the account segment rows
 	 * @param sb
 	 * @param rows
 	 */
@@ -200,7 +198,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
-	 * 
+	 * Adds the level 4 segment name to the StringBuilder passed as an argument.
+	 * Used by the method that builds the account segment rows.
 	 * @param sb
 	 * @param segName
 	 * @param cnt
@@ -212,7 +211,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
-	 * 
+	 * Adds the summary rows to the end of the report.
 	 * @param rows
 	 * @param totalAccounts
 	 * @param totalSubscribers
@@ -245,7 +244,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * 
+	 * Adds division rows to the report.
 	 * @param rows
 	 * @param acct
 	 * @param divMap
@@ -260,7 +259,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * 
+	 * Adds division users to the division that is being added to the report
 	 * @param rows
 	 * @param users
 	 */
@@ -275,7 +274,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
-	 * 
+	 * Adds user status code identifier for certain user status codes.
 	 * @param sb
 	 * @param statCd
 	 */
@@ -290,20 +289,16 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
-	 * 
+	 * Adds user job category for certain job categories
 	 * @param sb
 	 * @param jobCat
 	 */
 	protected void addUserJobCategory(StringBuilder sb, String jobCat) {
-		switch(jobCat) {
-			case "":
-				sb.append(" ");
-				break;
-		}
+		// TODO: pending business rules.
 	}
 
 	/**
-	 * 
+	 * Helper method for adding a row.
 	 * @param key
 	 * @param value
 	 * @return
