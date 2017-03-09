@@ -112,9 +112,9 @@ public class GridVO extends BeanDataVO {
 	private String secondaryYTitle;
 	private String primaryXTitle;
 	private String slug;
+	private String seriesLabel;
 	private boolean approved;
 	private int decimalDisplay;
-	private int roundDisplay;
 	private Date updateDate;
 	private Date createDate;
 	private int numberRows = 0;
@@ -264,11 +264,11 @@ public class GridVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the roundDisplay
+	 * @return the series label
 	 */
-	@Column(name="round_display_no")
-	public int getRoundDisplay() {
-		return roundDisplay;
+	@Column(name="series_label_txt")
+	public String getSeriesLabel() {
+		return seriesLabel;
 	}
 
 	/**
@@ -455,10 +455,10 @@ public class GridVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param roundDisplay the roundDisplay to set
+	 * @param seriesLabel the seriesLabel to set
 	 */
-	public void setRoundDisplay(int roundDisplay) {
-		this.roundDisplay = roundDisplay;
+	public void setSeriesLabel(String seriesLabel) {
+		this.seriesLabel = seriesLabel;
 	}
 
 	/**
@@ -639,7 +639,8 @@ public class GridVO extends BeanDataVO {
 		// Parse out the index from the field and store the data in the series array
 		String val = field.substring(field.lastIndexOf('_') + 1);
 		int index = Convert.formatInteger(val) - 1;
-		if(index >= 0) series[index] = cTitle;
+		if(index == -1) seriesLabel = cTitle;
+		else series[index] = cTitle;
 	}
 	
 	/**

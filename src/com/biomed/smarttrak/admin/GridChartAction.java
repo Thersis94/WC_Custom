@@ -91,7 +91,7 @@ public class GridChartAction extends SBActionAdapter {
 		grid.setCreateDate(new Date());
 		grid.setUpdateDate(new Date());
 		
-		
+		log.info(req.getParameter(GridVO.JSON_DATA_KEY));
 		String msg = "You have successfuly saved the grid data";
 		boolean error = false;
 		Map<String, String> columnMatch = new HashMap<>(grid.getDetails().size());

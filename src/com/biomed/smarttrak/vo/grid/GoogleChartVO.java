@@ -117,13 +117,16 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			GridDetailVO detail = details.get(i);
 			GoogleChartRowVO row = new GoogleChartRowVO();
 			
-			// Add the label cell data
-			GoogleChartCellVO cell = new GoogleChartCellVO();
-			cell.setValue(series[i]);
-			row.addCell(cell);
-			
 			String[] values = detail.getValues();
 			for (int x=0; x < values.length; x++) {
+				// Add the label cell data
+				GoogleChartCellVO cell = new GoogleChartCellVO();
+				
+				if (x == 0) {
+					cell.setValue(series[x]);
+					row.addCell(cell);
+				}
+				
 				String value = values[x];
 				if (StringUtil.isEmpty(value)) continue;
 				
