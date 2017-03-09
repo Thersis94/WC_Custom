@@ -349,6 +349,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			FinancialDashScenarioOverlayVO overlayRecord = overlayData.get(entry.getKey());
 			
 			// Update the corresponding base record with data from the overlay record
+			// Overlay records always tie back to an original base record
 			baseRecord.setQ1No(overlayRecord.getQ1No());
 			baseRecord.setQ2No(overlayRecord.getQ2No());
 			baseRecord.setQ3No(overlayRecord.getQ3No());
