@@ -84,7 +84,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
 	 */
 	public enum Section {
-		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("insights/");
+		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("insights/"), PRODUCT_EXPLOERER("explorer/");
 
 		private String path;
 		Section(String path) { this.path = path; }
