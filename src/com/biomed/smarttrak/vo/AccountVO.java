@@ -9,6 +9,7 @@ import com.siliconmtn.db.orm.Table;
 
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
@@ -78,7 +79,7 @@ public class AccountVO implements HumanNameIntfc {
 		this();
 		setAccountId(req.getParameter("accountId"));
 		setAccountName(req.getParameter("accountName"));
-		setCompanyId(req.getParameter("companyId"));
+		setCompanyId(StringUtil.checkVal(req.getParameter("companyId"), null)); //nullable foreign key
 		setTypeId(req.getParameter("typeId"));
 		setOwnerProfileId(req.getParameter("ownerProfileId"));
 		setStatusNo(req.getParameter("statusNo"));
