@@ -321,7 +321,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
 		
 		try {
-			// Check for difference between a new record, and actual zero values
+			// Check for difference between a new company record (with no previous years), and actual zero values
 			if (rs.wasNull() && yearIdx == 1) {
 				return;
 			}
