@@ -9,11 +9,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
 import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -93,6 +95,12 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			processReport(req, dash);
 		}
 		
+		// Gets the company name for page display
+		if (!StringUtil.isEmpty(dash.getCompanyId())) {
+			String companyName = getCompanyName(req, dash.getCompanyId());
+			dash.setCompanyName(companyName);
+		}
+		
 		this.putModuleData(dash);
 	}
 	
@@ -110,6 +118,20 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Returns a section hierarchy action
+	 * 
+	 * @param req
+	 * @return
+	 */
+	protected SectionHierarchyAction getHierarchyAction(ActionRequest req) {
+		SectionHierarchyAction sha = new SectionHierarchyAction(this.actionInit);
+		sha.setAttributes(this.attributes);
+		sha.setDBConnection(dbConn);
+		
+		return sha;
+	}
+	
+	/**
 	 * Gets the hierarchy for the requested level
 	 * 
 	 * @param req
@@ -118,15 +140,42 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected SmarttrakTree getHierarchy(ActionRequest req) throws ActionException {
-		SectionHierarchyAction sha = new SectionHierarchyAction(this.actionInit);
-		sha.setAttributes(this.attributes);
-		sha.setDBConnection(dbConn);
+		SectionHierarchyAction sha = getHierarchyAction(req);
 		sha.retrieve(req);
 		
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		List<Node> sections = (List<Node>) mod.getActionData();
 		
 		return new SmarttrakTree(sections, sections.get(0));
+	}
+	
+	/**
+	 * Gets the full hierarchy
+	 * 
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected SmarttrakTree getFullHierarchy(ActionRequest req) throws ActionException {
+		SectionHierarchyAction sha = getHierarchyAction(req);
+		return sha.loadTree(null);
+	}
+	
+	/**
+	 * Returns the company name for the company displayed on the dashboard
+	 * 
+	 * @param req
+	 * @param dash
+	 * @return
+	 * @throws ActionException
+	 */
+	protected String getCompanyName(ActionRequest req, String companyId) throws ActionException {
+		CompanyAction compAct = new CompanyAction(this.actionInit);
+		compAct.setAttributes(this.attributes);
+		compAct.setDBConnection(dbConn);
+		
+		CompanyVO company = compAct.getCompany(companyId);
+		return company.getCompanyName();
 	}
 	
 	/**

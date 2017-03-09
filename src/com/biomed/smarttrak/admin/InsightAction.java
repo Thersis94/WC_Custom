@@ -5,6 +5,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.util.BiomedInsightIndexer;
+import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
@@ -15,8 +17,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
@@ -89,6 +89,7 @@ public class InsightAction extends AbstractTreeAction {
 	 * @param dateRange
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
@@ -101,21 +102,13 @@ public class InsightAction extends AbstractTreeAction {
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
-		
-		try {
-			StringEncrypter sc = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
-			
+
 			for (Object ob : insights){
 				InsightVO vo = (InsightVO)ob;
-				vo.setFirstName(sc.decrypt(vo.getFirstName()));
-				vo.setLastName(sc.decrypt(vo.getLastName()));
+				vo.setQsPath((String)getAttribute(Constants.QS_PATH));
 			}
-		} catch (EncryptionException e) {
-			log.error("could not un encrypt name ");
-		}
-		
-		
-		
+
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
 		
 		
 		return insights;
@@ -155,7 +148,7 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void decryptNames(List<Object> data) {
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 
@@ -205,7 +198,9 @@ public class InsightAction extends AbstractTreeAction {
 			if (isDelete) {
 				log.debug("deleting " + u);
 				db.delete(u);
+				deleteFromSolr(u);
 			} else {
+				
 				if (req.hasParameter("listSave")){
 					updateFeatureOrder(u);
 				}else {
@@ -214,7 +209,7 @@ public class InsightAction extends AbstractTreeAction {
 				
 				//Add to Solr if published
 				if(InsightStatusCd.P.toString().equals(u.getStatusCd())) {
-					saveToSolr(u);
+					writeToSolr(u);
 				}
 			}
 		} catch (Exception e) {
@@ -222,6 +217,29 @@ public class InsightAction extends AbstractTreeAction {
 		}
 	}
 
+	/**
+	 * Save an InsightsVO to solr.
+	 * @param u
+	 */
+	protected void writeToSolr(InsightVO u) {
+		BiomedInsightIndexer bindx = BiomedInsightIndexer.makeInstance(getAttributes());
+		bindx.setDBConnection(dbConn);
+		bindx.addSingleItem(u.getInsightId());
+	}
+	
+	/**
+	 * Removes an Updates Record from Solr.
+	 * @param u
+	 */
+	protected void deleteFromSolr(InsightVO i) {
+		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
+			sau.removeDocument(i.getInsightId());
+		} catch (Exception e) {
+			log.error("Error Deleting from Solr.", e);
+		}
+		log.debug("removed document from solr");
+	}
+	
 	/**
 	 * uses db util to do a full update or insert on the passed vo
 	 * @param u 
@@ -276,19 +294,6 @@ public class InsightAction extends AbstractTreeAction {
 			}
 		}
 		
-	}
-
-	/**
-	 * Save an InsightVO to solr.
-	 * @param u
-	 */
-	protected void saveToSolr(InsightVO u) {
-		try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
-			sau.addDocument(u);
-		} catch (Exception e) {
-			log.error("Error Saving to Solr.", e);
-		}
-		log.debug("added document to solr");
 	}
 
 	/**

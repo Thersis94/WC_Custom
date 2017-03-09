@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.vo;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
@@ -20,6 +21,7 @@ import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
+import com.smt.sitebuilder.changelog.ChangeLogIntfc;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
@@ -36,7 +38,13 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  * @since Feb 14, 2017
  ****************************************************************************/
 @Table(name="biomedgps_update")
-public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
+public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc, ChangeLogIntfc, Serializable {
+
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 5149725371008749427L;
+
 
 	public enum UpdateStatusCd {
 		N("New"), 
@@ -470,5 +478,32 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 				}
 			}
 		}
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getDiffText()
+	 */
+	@Override
+	public String getDiffText() {
+		return messageTxt;
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getItemName()
+	 */
+	@Override
+	public String getItemName() {
+		return titleTxt;
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getItemDesc()
+	 */
+	@Override
+	public String getItemDesc() {
+		return "Modified Smarttrak Update Record.";
 	}
 }

@@ -41,7 +41,7 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 	 * Data source for cell options
 	 */
 	protected Map<String, Object> cell;
-	
+
 	/**
 	 * Parameter for distinguishing between a thumbnail and full view
 	 */

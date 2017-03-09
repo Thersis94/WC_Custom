@@ -4,19 +4,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import org.apache.solr.common.SolrDocument;
-
+import com.biomed.smarttrak.admin.AbstractTreeAction;
+import com.biomed.smarttrak.security.SecurityController;
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
 import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.ProductVO;
+import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -24,13 +25,10 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.util.Convert;
-import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
 /****************************************************************************
  * <b>Title</b>: CompanyAction.java <p/>
@@ -46,7 +44,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class CompanyAction extends SBActionAdapter {
+public class CompanyAction extends AbstractTreeAction {
 	
 	private static final String DEFAULT_GROUP = "Other";
 	
@@ -66,7 +64,9 @@ public class CompanyAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
-			retrieveCompany(req.getParameter("reqParam_1"));
+			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"));
+			SecurityController.getInstance(req).isUserAuthorized(vo, req);
+			putModuleData(vo);
 		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
 			retrieveCompanies(req);
 		}
@@ -78,7 +78,7 @@ public class CompanyAction extends SBActionAdapter {
 	 * @param companyId
 	 * @throws ActionException
 	 */
-	protected void retrieveCompany(String companyId) throws ActionException {
+	protected CompanyVO retrieveCompany(String companyId) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT c.*, parent.COMPANY_NM as PARENT_NM  FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
@@ -104,9 +104,30 @@ public class CompanyAction extends SBActionAdapter {
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		super.putModuleData(company);
+		return company;
 	}
-
+	
+	/**
+	 * Returns data from the company record only.
+	 * 
+	 * @param companyId
+	 * @return
+	 * @throws ActionException 
+	 */
+	public CompanyVO getCompany(String companyId) throws ActionException {
+		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		
+		CompanyVO company = new CompanyVO();
+		company.setCompanyId(companyId);
+		
+		try {
+			dbp.getByPrimaryKey(company);
+		} catch (Exception e) {
+			throw new ActionException("Couldn't retrieve company record.", e);
+		}
+		
+		return company;
+	}
 
 	/**
 	 * Get all companies that have invested in the supplied company and add
@@ -243,39 +264,6 @@ public class CompanyAction extends SBActionAdapter {
 		}
 	}
 	
-
-	/**
-	 * Build the last updated message for this company
-	 * @param doc
-	 * @return
-	 */
-	private String buildUpdateMsg(SolrDocument doc) {
-		// Unpublished companies can be skipped
-		if (!"P".equals(doc.get(SearchDocumentHandler.CONTENT_TYPE))) {
-			return "Unpublished";
-		}
-		Date d = (Date) doc.get(SearchDocumentHandler.UPDATE_DATE);
-		long diff = Convert.getCurrentTimestamp().getTime() -d.getTime();
-		long diffDays = diff / (1000 * 60 * 60 * 24);
-		long diffHours = diff / (1000 * 60 * 60);
-		if (diffDays > 365) {
-			int years = (int) (diffDays/365);
-			return years + " year(s) ago";
-		} else if (diffDays > 30) {
-			int months = (int) (diffDays/30);
-			return months + " month(s) ago";
-		} else if (diffDays > 7) {
-			int weeks = (int) (diffDays/7);
-			return weeks + " week(s) ago";
-		} else if (diffDays > 0) {
-			return diffDays + " day(s) ago";
-		} else if (diffHours > 0) {
-			return diffHours + " hour(s) ago";
-		} else {
-			return "less than an hour ago";
-		}
-	}
-
 	
 	/**
 	 * Add all attributes to the supplied company
@@ -305,7 +293,7 @@ public class CompanyAction extends SBActionAdapter {
 		
 		for (Entry<String, List<CompanyAttributeVO>> e : attrMap.entrySet()) {
 			for (CompanyAttributeVO attr : e.getValue()) {
-				company.addAttribute(attr);
+				company.addCompanyAttribute(attr);
 			}
 		}
 	}
@@ -326,13 +314,22 @@ public class CompanyAction extends SBActionAdapter {
 		sql.append("ON s.SECTION_ID = cs.SECTION_ID ");
 		sql.append("WHERE c.COMPANY_ID = ? ");
 		log.debug(sql);
+
+		SmarttrakTree t = loadDefaultTree();
+		t.buildNodePaths();
+		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, company.getCompanyId());
 			
 			ResultSet rs = ps.executeQuery();
 			
 			while(rs.next()) {
-				company.addSection(new GenericVO(rs.getString("COMPANY_SECTION_XR_ID"), rs.getString("SECTION_NM")));
+				company.addCompanySection(new GenericVO(rs.getString("COMPANY_SECTION_XR_ID"), rs.getString("SECTION_NM")));
+				Node n = t.findNode(rs.getString("SECTION_ID"));
+				if (n != null) {
+					SectionVO sec = (SectionVO) n.getUserObject();
+					company.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
+				}
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -356,14 +353,6 @@ public class CompanyAction extends SBActionAdapter {
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		sa.retrieve(req);
-
-		// Creatae the update messages for the responses
-	    	mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		SolrResponseVO vo = (SolrResponseVO) mod.getActionData();
-		for (SolrDocument doc : vo.getResultDocuments()) {
-			doc.setField("updateMsg", buildUpdateMsg(doc));
-		}
-		super.putModuleData(vo);
 	}
 
 
@@ -444,5 +433,10 @@ public class CompanyAction extends SBActionAdapter {
 				n.setNodeName(rs.getInt("DISPLAY_ORDER_NO") + "|" + rs.getString("ATTRIBUTE_NM"));
 			}
 		}
+	}
+
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 }

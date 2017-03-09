@@ -37,7 +37,9 @@ public class FinancialDashVO extends SBModuleVO {
 	private boolean leafMode;
 	private String scenarioId;
 	private String companyId;
-	private int quarter;
+	private String companyName;
+	private int publishedQtr;
+	private int publishedYear;
 	
 	/**
 	 * Provides a logger
@@ -152,7 +154,8 @@ public class FinancialDashVO extends SBModuleVO {
 		setLeafMode(leafMd);
 		setScenarioId(scenId);
 		setCompanyId(compId);
-		setQuarter(section.getFdPubQtr());
+		setPublishedQtr(section.getFdPubQtr());
+		setPublishedYear(section.getFdPubYr());
 	}
 	
 	/**
@@ -231,10 +234,24 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
-	 * @return the quarter
+	 * @return the companyName
 	 */
-	public int getQuarter() {
-		return quarter;
+	public String getCompanyName() {
+		return companyName;
+	}
+
+	/**
+	 * @return the publishedQtr
+	 */
+	public int getPublishedQtr() {
+		return publishedQtr;
+	}
+
+	/**
+	 * @return the publishedYear
+	 */
+	public int getPublishedYear() {
+		return publishedYear;
 	}
 
 	/**
@@ -345,9 +362,23 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
-	 * @param quarter the quarter to set
+	 * @param companyName the companyName to set
 	 */
-	public void setQuarter(int quarter) {
-		this.quarter = quarter;
+	public void setCompanyName(String companyName) {
+		this.companyName = companyName;
+	}
+
+	/**
+	 * @param publishedQtr the publishedQtr to set
+	 */
+	public void setPublishedQtr(int publishedQtr) {
+		this.publishedQtr = publishedQtr;
+	}
+
+	/**
+	 * @param publishedYear the publishedYear to set
+	 */
+	public void setPublishedYear(int publishedYear) {
+		this.publishedYear = publishedYear;
 	}
 }

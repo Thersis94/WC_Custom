@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+
 // Solr 5.5
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+
 
 //WC Custom
 import com.biomed.smarttrak.admin.UpdatesAction;
@@ -51,8 +53,10 @@ public class UpdateIndexer extends SMTAbstractIndex {
 
 
 	@Override
+	@SuppressWarnings("resource")
 	public void addIndexItems(SolrClient server) throws SolrException {
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+		try {
+			SolrActionUtil util = new SmarttrakSolrUtil(server);
 			List<SolrDocumentVO> docs = getDocuments(null);
 			if (docs.isEmpty())
 				throw new Exception("No Documents found");
@@ -67,7 +71,7 @@ public class UpdateIndexer extends SMTAbstractIndex {
 	@Override
 	public void addSingleItem(String itemId) throws SolrException {
 		log.debug("adding single Update: " + itemId);
-		try (SolrActionUtil util = new SmarttrakSolrUtil(makeServer())) {
+		try (SolrActionUtil util = new SmarttrakSolrUtil(makeServer())){
 			List<SolrDocumentVO> docs = getDocuments(itemId);
 			if (docs.isEmpty())
 				throw new Exception("Update not found: " + itemId);

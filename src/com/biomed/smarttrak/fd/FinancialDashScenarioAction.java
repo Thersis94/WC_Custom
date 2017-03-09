@@ -124,15 +124,19 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 			for (int i = 1; i <= teamsCount; i++) {
 				if (i == 1) {
 					sql.append("or team_id in (? ");
-				} else if (i < teamsCount) {
-					sql.append(",? ");
 				} else {
-					sql.append(",?) ");
+					sql.append(",? ");
+				}
+				
+				if (i == teamsCount) {
+					sql.append(") ");
 				}
 			}
 		}
 		
 		sql.append("order by scenario_nm ");
+		
+		log.debug("Scenario List sql: " + sql.toString());
 		
 		return sql.toString();
 	}

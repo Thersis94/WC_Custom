@@ -53,7 +53,6 @@ public class UpdatesAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if (!req.hasParameter("loadSolrUpdates")) return;
 
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -118,17 +117,19 @@ public class UpdatesAction extends SBActionAdapter {
 	protected String getFavoriteUpdatesSql() {
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(500);
-		sql.append("select b.update_id from profile_favorite a ");
+		sql.append("select distinct *, row_number() OVER (ORDER BY publish_dt desc) as rnum from ( ");
+		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
 		sql.append("on a.rel_id = b.market_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append("union ");
-		sql.append("select b.update_id from profile_favorite a ");
+		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
 		sql.append("on a.rel_id = b.product_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append("union ");
-		sql.append("select b.update_id from profile_favorite a ");
+		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
 		sql.append("on a.rel_id = b.company_id and a.type_cd = ? and a.profile_id = ? ");
+		sql.append(") as update_id order by publish_dt desc ");
 		return sql.toString();
 	}
 
@@ -154,6 +155,11 @@ public class UpdatesAction extends SBActionAdapter {
 		if (fqs == null) fqs = new String[0];
 		List<String> data = new ArrayList<>(Arrays.asList(fqs));
 
+		//get the filter terms already on the request.  Add ours to the stack and put the String [] back on the request for Solr.
+		String [] fts = req.getParameterValues("ft");
+		if(fts == null) fts = new String [0];
+		List<String> terms = new ArrayList<>(Arrays.asList(fts));
+
 		//Add Sections Check.  Append a filter query for each section requested
 		if (req.hasParameter("hierarchyId")) {
 			for (String s : req.getParameterValues("hierarchyId"))
@@ -163,7 +169,7 @@ public class UpdatesAction extends SBActionAdapter {
 		//Add Favorites Filter if applicable.
 		if(docIds != null && !docIds.isEmpty()) {
 			for(String s : docIds) {
-				data.add(SearchDocumentHandler.DOCUMENT_ID + ":" + s);
+				terms.add(SearchDocumentHandler.DOCUMENT_ID + ":" + s);
 			}
 		}
 
@@ -178,5 +184,6 @@ public class UpdatesAction extends SBActionAdapter {
 
 		//put the new list of filter queries back on the request
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
+		req.setParameter("ft", terms.toArray(new String[terms.size()]), true);
 	}
 }
