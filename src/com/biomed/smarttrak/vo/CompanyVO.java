@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import com.biomed.smarttrak.vo.NoteEntityInterface;
+import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
@@ -15,6 +15,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: CompanyVO.java <p/>
@@ -31,7 +32,7 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_COMPANY")
-public class CompanyVO  implements NoteEntityInterface {
+public class CompanyVO  extends SecureSolrDocumentVO {
 	private String companyId;
 	private String parentId;
 	private String parentName;
@@ -57,20 +58,21 @@ public class CompanyVO  implements NoteEntityInterface {
 	private Map<String, String> investors;
 	private List<LocationVO> locations;
 	private List<AllianceVO> alliances;
-	private List<CompanyAttributeVO> attributes;
+	private List<CompanyAttributeVO> companyAttributes;
 	private List<NoteVO> notes;
-	private List<GenericVO> sections;
+	private List<GenericVO> companySections;
 	private Map<String, List<ProductVO>> products;
 	private Date updateDate;
 	private String updateMsg;
 	
 	
 	public CompanyVO() {
+		super(BiomedCompanyIndexer.INDEX_TYPE);
 		investors = new HashMap<>();
 		locations = new ArrayList<>();
 		alliances = new ArrayList<>();
-		attributes = new ArrayList<>();
-		sections = new ArrayList<>();
+		companyAttributes = new ArrayList<>();
+		companySections = new ArrayList<>();
 		products = new TreeMap<>();
 	}
 	
@@ -112,6 +114,7 @@ public class CompanyVO  implements NoteEntityInterface {
 		return companyId;
 	}
 	public void setCompanyId(String companyId) {
+		super.setDocumentId(companyId);
 		this.companyId = companyId;
 	}
 	@Column(name="parent_id")
@@ -302,33 +305,28 @@ public class CompanyVO  implements NoteEntityInterface {
 		this.alliances.add(alliance);
 	}
 	
-	/*
-	 * (non-Javadoc)
-	 * @see com.bmg.admin.vo.NoteEntityInterface#getAttributes()
-	 */
-	@Override
-	public List<CompanyAttributeVO> getAttributes() {
-		return attributes;
+	public List<CompanyAttributeVO> getCompanyAttributes() {
+		return companyAttributes;
 	}
 
-	public void setAttributes(List<CompanyAttributeVO> attributes) {
-		this.attributes = attributes;
+	public void setCompanyAttributes(List<CompanyAttributeVO> attributes) {
+		this.companyAttributes = attributes;
 	}
 	
-	public void addAttribute(CompanyAttributeVO attribute) {
-		this.attributes.add(attribute);
+	public void addCompanyAttribute(CompanyAttributeVO attribute) {
+		this.companyAttributes.add(attribute);
 	}
 
-	public List<GenericVO> getSections() {
-		return sections;
+	public List<GenericVO> getCompanySections() {
+		return companySections;
 	}
 
-	public void setSections(List<GenericVO> sections) {
-		this.sections = sections;
+	public void setCompanySections(List<GenericVO> sections) {
+		this.companySections = sections;
 	}
 	
-	public void addSection(GenericVO section) {
-		this.sections.add(section);
+	public void addCompanySection(GenericVO section) {
+		this.companySections.add(section);
 	}
 	public Map<String, List<ProductVO>> getProducts() {
 		return products;
@@ -356,7 +354,6 @@ public class CompanyVO  implements NoteEntityInterface {
 	/* (non-Javadoc)
 	 * @see com.bmg.admin.vo.BiomedNoteInterface#setNotes(java.util.List)
 	 */
-	@Override
 	public void setNotes(List<NoteVO> notes) {
 		this.notes = notes;
 	}
@@ -367,11 +364,7 @@ public class CompanyVO  implements NoteEntityInterface {
 	public List<NoteVO> getNotes(){
 		return notes;
 	}
-
-	/* (non-Javadoc)
-	 * @see com.bmg.admin.vo.BiomedNoteInterface#getId()
-	 */
-	@Override
+	
 	public String getId() {
 		//each vo will return its own primary id.
 		return getCompanyId();

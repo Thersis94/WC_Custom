@@ -398,7 +398,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			
 			while(rs.next()) {
-				company.addSection(new GenericVO(rs.getString("COMPANY_SECTION_XR_ID"), rs.getString("SECTION_NM")));
+				company.addCompanySection(new GenericVO(rs.getString("COMPANY_SECTION_XR_ID"), rs.getString("SECTION_NM")));
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -434,7 +434,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 			if (split.length >= 2) {
 				c.setGroupName(split[1]);
 			}
-			company.addAttribute(c);
+			company.addCompanyAttribute(c);
 		}
 	}
 	
