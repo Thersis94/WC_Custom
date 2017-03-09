@@ -265,6 +265,7 @@ public class ProductExplorer extends SBActionAdapter {
 		
 		SolrResponseVO vo = sqp.processQuery(qData);
 
+		if (!req.hasParameter("compare") && !req.hasParameter("textCompare"))
 		buildFilterList(req, vo);
 		return vo;
 	}
@@ -444,7 +445,7 @@ public class ProductExplorer extends SBActionAdapter {
 	protected void exportResults(ActionRequest req) throws ActionException {
 		AbstractSBReportVO report = new ProductExplorerReportVO();
 		report.setData(retrieveProducts(req).getResultDocuments());
-		report.setFileName("Product Set " + Convert.getCurrentTimestamp());
+		report.setFileName("Product Set " + Convert.getCurrentTimestamp() + ".xls");
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 	}
@@ -465,7 +466,7 @@ public class ProductExplorer extends SBActionAdapter {
 			StringBuilder body = new StringBuilder(250);
 			body.append(user.getFullName()).append(" has shared a product set with you.</br>");
 			body.append("You can view the product set <a href='").append(buildUrl(req));
-			body.append(">here</a>.");
+			body.append("'>here</a>.");
 
 			msg.setHtmlBody(body.toString());
 			MessageSender ms = new MessageSender(attributes, dbConn);
