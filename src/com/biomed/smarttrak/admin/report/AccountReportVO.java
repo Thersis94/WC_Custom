@@ -11,11 +11,13 @@ import java.util.Map;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
+
 //SMTBaseLibs
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
@@ -25,7 +27,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
- @author groot
+ @author DBargerhuff
  @version 1.0
  @since Mar 7, 2017
  <b>Changes:</b> 
@@ -40,6 +42,9 @@ public class AccountReportVO extends AbstractSBReportVO {
 	protected static final String KEY_ACCOUNTS = "accounts";
 	protected static final String KEY_FIELD_OPTIONS = "fieldOptions";
 	private static final String ROW = "ROW";
+	private static final String USER_STATUS_C = "C"; // "Complimentary" seats
+	private static final String USER_STATUS_E = "E"; // "Added" seats
+	private static final String USER_STATUS_U = "U"; // "Updates only" seats
 	private List<AccountUsersVO> accounts;
 	private Map<String,Map<String,String>> fieldOptions;
 	
@@ -101,16 +106,23 @@ public class AccountReportVO extends AbstractSBReportVO {
 			addAccountRow(rows, acct);
 			addAccountDatesRows(rows,acct);
 			addAccountSegmentRows(rows,acct);
-			addDivisions(rows,acct);
+			addDivisions(rows,acct,fieldOptions.get(RegistrationMap.DIVISIONS.getFieldId()));
 			totalSubscribers += acct.getTotalUsers();
 			totalAdded += acct.getAddedCount();
 			totalComplementary += acct.getComplementaryCount();
+			// add blank separator row
+			rows.add(addRow(ROW,""));
 		}
 		
 		addSummaryRows(rows,activeAccounts,totalSubscribers,totalAdded,totalComplementary);
 		return rows;
 	}
 	
+	/**
+	 * 
+	 * @param rows
+	 * @param acct
+	 */
 	protected void addAccountRow(List<Map<String,Object>> rows, AccountUsersVO acct) {
 		StringBuilder sb = new StringBuilder(75);
 		sb.append(acct.getAccountName());
@@ -122,17 +134,22 @@ public class AccountReportVO extends AbstractSBReportVO {
 		if (acct.getAddedCount() > 0) {
 			sb.append(" ");
 			sb.append(acct.getAddedCount());
-			sb.append("A"); 
+			sb.append(USER_STATUS_E); 
 		}
 		if (acct.getComplementaryCount() > 0) {
 			sb.append(" ");
 			sb.append(acct.getComplementaryCount());
-			sb.append("C"); 
+			sb.append(USER_STATUS_C); 
 		}
 		rows.add(addRow(ROW, sb.toString()));
 		
 	}
 
+	/**
+	 * 
+	 * @param rows
+	 * @param acct
+	 */
 	protected void addAccountDatesRows(List<Map<String,Object>> rows, AccountUsersVO acct) {
 		StringBuilder sb = new StringBuilder(100);
 		sb.append("Start Date: ");
@@ -145,6 +162,11 @@ public class AccountReportVO extends AbstractSBReportVO {
 		rows.add(addRow(ROW,sb.toString()));
 	}
 
+	/**
+	 * 
+	 * @param rows
+	 * @param acct
+	 */
 	protected void addAccountSegmentRows(List<Map<String,Object>> rows, AccountUsersVO acct) {
 		SmarttrakTree tree = acct.getPermissions();
 		StringBuilder sb = null;
@@ -159,6 +181,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 					cnt = 1;
 					sb = new StringBuilder(100);
 					sb.append(seg.getNodeName());
+					break;
 				case 4:
 					appendSegment(sb,seg.getNodeName(),cnt);
 					cnt++;
@@ -167,8 +190,37 @@ public class AccountReportVO extends AbstractSBReportVO {
 		}
 	}
 	
+	/**
+	 * 
+	 * @param sb
+	 * @param rows
+	 */
+	protected void appendSegmentRow(StringBuilder sb, List<Map<String,Object>> rows) {
+		if (sb != null) rows.add(addRow(ROW,sb.toString()));
+	}
+	
+	/**
+	 * 
+	 * @param sb
+	 * @param segName
+	 * @param cnt
+	 */
+	protected void appendSegment(StringBuilder sb, String segName, int cnt) {
+		if (cnt == 1) sb.append(": ");
+		else sb.append(",");
+		sb.append(" ").append(segName);
+	}
+	
+	/**
+	 * 
+	 * @param rows
+	 * @param totalAccounts
+	 * @param totalSubscribers
+	 * @param totalAdded
+	 * @param totalComplimentary
+	 */
 	protected void addSummaryRows(List<Map<String,Object>> rows, int totalAccounts, 
-			int totalSubscribers, int totalAdded, int totalComplementary) {
+			int totalSubscribers, int totalAdded, int totalComplimentary) {
 		rows.add(addRow(ROW,"Account Summary"));
 		
 		StringBuilder sb = new StringBuilder(75);
@@ -187,32 +239,17 @@ public class AccountReportVO extends AbstractSBReportVO {
 		rows.add(addRow(ROW,sb.toString()));
 		
 		sb = new StringBuilder(75);
-		sb.append("Complementary Seats ");
-		sb.append(totalComplementary);
+		sb.append("Complimentary Seats ");
+		sb.append(totalComplimentary);
 		rows.add(addRow(ROW,sb.toString()));
 	}
-	
-	protected void appendSegmentRow(StringBuilder sb, List<Map<String,Object>> rows) {
-		if (sb != null) rows.add(addRow(ROW,sb.toString()));
-	}
-	
-	protected void appendSegment(StringBuilder sb, String segName, int cnt) {
-		if (cnt > 1) sb.append(",");
-		sb.append(" ").append(segName);
-	}
-	
-	protected StringBuilder checkSegment(List<Map<String,Object>> rows, StringBuilder sb,
-			String prevId,String currId,String segName) {
-		if (! currId.equals(prevId)) {
-			// changed parent
-			rows.add(addRow(ROW, sb.toString()));
-			return new StringBuilder(100);
-		} else {
-			return sb;
-		}
-		
-	}
 
+	/**
+	 * 
+	 * @param rows
+	 * @param acct
+	 * @param divMap
+	 */
 	protected void addDivisions(List<Map<String,Object>> rows, AccountUsersVO acct, Map<String,String> divMap) {
 		String divName;
 		for (Map.Entry<String,List<UserVO>> division : acct.getDivisions().entrySet()) {
@@ -220,24 +257,57 @@ public class AccountReportVO extends AbstractSBReportVO {
 			rows.add(addRow(ROW, StringUtil.checkVal(divName)));
 			addDivisionUsers(rows,division.getValue());
 		}
-
 	}
 
+	/**
+	 * 
+	 * @param rows
+	 * @param users
+	 */
 	protected void addDivisionUsers(List<Map<String,Object>> rows, List<UserVO> users) {
 		for (UserVO user : users) {
 			StringBuilder sb = new StringBuilder(50);
 			sb.append(user.getFullName());
-			switch (user.getStatusCode()) {
-				case "A":
-				case "C":
-				case "U":
-					sb.append(user.getStatusCode());
-					break;
-			}
+			addUserJobCategory(sb,user.getJobCategory());
+			addUserStatusCode(sb,user.getStatusCode());
 			rows.add(addRow(ROW,sb.toString()));
 		}
 	}
+	
+	/**
+	 * 
+	 * @param sb
+	 * @param statCd
+	 */
+	protected void addUserStatusCode(StringBuilder sb, String statCd) {
+		switch (statCd) {
+			case USER_STATUS_C:
+			case USER_STATUS_E:
+			case USER_STATUS_U:
+				sb.append(" ").append(statCd);
+				break;
+		}
+	}
+	
+	/**
+	 * 
+	 * @param sb
+	 * @param jobCat
+	 */
+	protected void addUserJobCategory(StringBuilder sb, String jobCat) {
+		switch(jobCat) {
+			case "":
+				sb.append(" ");
+				break;
+		}
+	}
 
+	/**
+	 * 
+	 * @param key
+	 * @param value
+	 * @return
+	 */
 	protected Map<String,Object> addRow(String key, Object value) {
 		Map<String,Object> row = new HashMap<>();
 		row.put(key, value);

@@ -127,6 +127,9 @@ public class AccountUsersVO extends AccountVO {
 			case COMPLIMENTARY:
 				compSeatsCnt++;
 				break;
+			case EXTRA:
+				addedSeatsCnt++;
+				break;
 			case UPDATES:
 				updatesOnlyCnt++;
 				break;

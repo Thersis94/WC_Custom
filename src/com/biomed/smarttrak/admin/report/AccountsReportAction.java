@@ -14,6 +14,7 @@ import java.util.Map;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.AccountVO.Type;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 import com.biomed.smarttrak.vo.UserVO.Status;
@@ -24,6 +25,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
+
 // WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -105,6 +107,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		// 2. build PS
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int idx = 0;
+			ps.setString(++idx, Type.FULL.getId());
 			ps.setString(++idx, Status.INACTIVE.getCode());
 			ps.setString(++idx, Status.INACTIVE.getCode());
 			ps.setString(++idx, siteId);
@@ -168,7 +171,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		sql.append("rd.register_field_id, rd.value_txt ");
 		sql.append("from custom.biomedgps_account ac ");
 		sql.append("inner join custom.biomedgps_user us on ac.account_id = us.account_id ");
-		sql.append("and ac.status_no != ? and us.status_cd != ? ");
+		sql.append("and ac.type_id = ? and ac.status_no != ? and us.status_cd != ? ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("inner join profile_role pfr on pf.profile_id = pfr.profile_id and pfr.site_id = ? ");
 		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
@@ -179,7 +182,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			sql.append("?");
 		}
 		sql.append(") ");
-		sql.append("order by ac.account_id, us.profile_id, rd.register_field_id");
+		sql.append("order by ac.account_nm, us.profile_id, rd.register_field_id");
 		log.debug("accounts users retrieval SQL: " + sql.toString());
 		return sql;
 	}
@@ -265,6 +268,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	@SuppressWarnings("unchecked")
 	protected void processUserRegistrationField(AccountUsersVO acct, UserVO user, 
 			String currFieldId, String currFieldVal) {
+		if (currFieldId == null || currFieldVal == null) return;
 		// process reg field value
 		if (RegistrationMap.DIVISIONS.getFieldId().equals(currFieldVal)) {
 			// user can belong to more than one division, we use a List here.
