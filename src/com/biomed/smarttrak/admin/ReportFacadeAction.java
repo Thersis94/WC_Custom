@@ -1,6 +1,8 @@
 package com.biomed.smarttrak.admin;
 
 //WC custom
+import com.biomed.smarttrak.admin.report.AccountReportVO;
+import com.biomed.smarttrak.admin.report.AccountsReportAction;
 import com.biomed.smarttrak.admin.report.UserActivityAction;
 import com.biomed.smarttrak.admin.report.UserActivityReportVO;
 import com.biomed.smarttrak.admin.report.UserListReportAction;
@@ -37,6 +39,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ReportFacadeAction extends SBActionAdapter {
 
 	public enum ReportType {
+		ACCOUNT_REPORT,
 		ACTIVITY_LOG,
 		USER_LIST,
 		USER_PERMISSIONS,
@@ -68,6 +71,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 		AbstractSBReportVO rpt = null;
 
 		switch (rType) {
+			case ACCOUNT_REPORT:
+				rpt = generateAccountReport(req);
+				break;
 			case ACTIVITY_LOG:
 				rpt = generateActivityLogReport(req);
 				break;
@@ -86,6 +92,23 @@ public class ReportFacadeAction extends SBActionAdapter {
 
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+	}
+	
+	/**
+	 * Generates the Account report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateAccountReport(ActionRequest req) 
+			throws ActionException {
+		log.debug("generateAccountReport...");
+		AccountsReportAction ara = new AccountsReportAction();
+		ara.setDBConnection(dbConn);
+		ara.setAttributes(getAttributes());
+		AbstractSBReportVO rpt = new AccountReportVO();
+		rpt.setData(ara.retrieveAccountsList(req));
+		return rpt;
 	}
 	
 	/**
