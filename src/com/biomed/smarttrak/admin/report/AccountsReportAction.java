@@ -164,13 +164,14 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected StringBuilder buildAccountsUsersQuery(List<String> userRegFields) {
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(650);
 		sql.append("select ac.account_id, ac.account_nm, ac.create_dt, ac.expiration_dt, ac.status_no, ");
 		sql.append("us.user_id, us.profile_id, us.status_cd, ");
 		sql.append("pf.first_nm, pf.last_nm, pfa.country_cd, pfr.role_id, ");
 		sql.append("rd.register_field_id, rd.value_txt ");
-		sql.append("from custom.biomedgps_account ac ");
-		sql.append("inner join custom.biomedgps_user us on ac.account_id = us.account_id ");
+		sql.append("from ").append(schema).append("biomedgps_account ac ");
+		sql.append("inner join ").append(schema).append("biomedgps_user us on ac.account_id = us.account_id ");
 		sql.append("and ac.type_id = ? and ac.status_no != ? and us.status_cd != ? ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
