@@ -27,6 +27,7 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
@@ -65,7 +66,13 @@ public class CompanyAction extends AbstractTreeAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"));
-			SecurityController.getInstance(req).isUserAuthorized(vo, req);
+			try {
+				SecurityController.getInstance(req).isUserAuthorized(vo, req);
+			} catch(Exception e) {
+				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+				sbUtil.manualRedirect(req,page.getFullPath());
+				return;
+			}
 			putModuleData(vo);
 		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
 			retrieveCompanies(req);

@@ -25,6 +25,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
@@ -72,7 +73,13 @@ public class MarketAction extends AbstractTreeAction {
 			MarketVO vo = retrieveFromDB(req.getParameter("reqParam_1"), req, true);
 
 			//verify user has access to this market
-			SecurityController.getInstance(req).isUserAuthorized(vo, req);
+			try {
+				SecurityController.getInstance(req).isUserAuthorized(vo, req);
+			} catch(Exception e) {
+				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+				sbUtil.manualRedirect(req,page.getFullPath());
+				return;
+			}
 			putModuleData(vo);
 
 		} else {
