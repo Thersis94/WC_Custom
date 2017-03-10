@@ -69,7 +69,7 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 		// Set the legend font
 		Map<String, Object> text = new HashMap<>();
 		text.put("color", "blue");
-		text.put("fontSize", 12);
+		text.put("fontSize", 8);
 		
 		// Define the legend
 		Map<String, Object> legend = new HashMap<>();
@@ -80,8 +80,8 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 		// Define the area for the actual chart
 		Map<String, Object> chartArea = new HashMap<>();
 		legend.put("top", 50);
-		legend.put("width", "96%");
-		legend.put("height", "98%");
+		legend.put("width", "100%");
+		legend.put("height", "100%");
 
 		chart.put("legend", legend); // none to hide
 		chart.put("tooltip", " {text: 'value'}");
@@ -108,7 +108,7 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 
 		// Add vAxis Labels
 		Map<String, Object> vAxis = new LinkedHashMap<>();
-		vAxis.put(TITLE_LABEL, grid.getPrimaryYTitle());
+		if (full) vAxis.put(TITLE_LABEL, grid.getPrimaryYTitle());
 		vAxis.put("format", "short");
 		vAxis.put("gridlines", 6);
 		vAxis.put("scaleType", "linear");  // Also supports log

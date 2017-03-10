@@ -24,6 +24,7 @@ import com.biomed.smarttrak.admin.vo.GridVO.RowStyle;
 
 // SMT Base Libs
 import com.siliconmtn.exception.ApplicationException;
+import com.siliconmtn.util.StringUtil;
 
 /********************************************************************
  * <b>Title: </b>GridExcelManager.java<br/>
@@ -56,7 +57,8 @@ public class GridExcelManager {
 	public byte[] getExcelFile(GridVO grid) throws ApplicationException {
 		byte[] data;
 		try (HSSFWorkbook workbook = new HSSFWorkbook()) {
-			HSSFSheet sheet = workbook.createSheet(grid.getTitle());
+			log.info("Title: " + StringUtil.removeNonAlphaNumeric(grid.getTitle(), false));
+			HSSFSheet sheet = workbook.createSheet(StringUtil.removeNonAlphaNumeric(grid.getTitle(), false));
 			
 			List<GridDetailVO> details = grid.getDetails();
 			String[] series = grid.getSeries();
@@ -134,6 +136,7 @@ public class GridExcelManager {
 	 * @return
 	 */
 	public HSSFCellStyle getRowStyle(HSSFWorkbook workbook, String type) {
+		if (StringUtil.isEmpty(type)) type = "DATA";
 		RowStyle rsType = RowStyle.valueOf(type);
 		HSSFCellStyle style = null;
 		switch(rsType) {
