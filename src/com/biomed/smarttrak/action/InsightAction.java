@@ -23,6 +23,7 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -62,6 +63,12 @@ public class InsightAction extends AbstractTreeAction {
 			
 			InsightVO vo = getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
 
+			if (vo == null ){
+				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+				sbUtil.manualRedirect(req, page.getFullPath());
+				return;
+			}
+			
 			//after the vo is build set the hierarchies and check authorization
 			vo.configureSolrHierarchies(loadSections());
 			SecurityController.getInstance(req).isUserAuthorized(vo, req);
@@ -205,8 +212,12 @@ public class InsightAction extends AbstractTreeAction {
 		}
 		
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insight, (String)getAttribute(Constants.ENCRYPT_KEY));
+		if (insight != null && !insight.isEmpty()){
+			return(InsightVO)insight.get(0);
+		}
+			return null;
 		
-		return (InsightVO)insight.get(0);
+				
 	}
 	
 	/**
