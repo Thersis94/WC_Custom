@@ -176,23 +176,25 @@ public class GridChartAction extends SBActionAdapter {
 				}
 			}
 			
-			// Convert the set to a comma delimited string for delete
-			if (delIds.size() == 0) return;
-			
-			// Build the delete sql.  SInce the ids are built within the 
-			// Backend, no worries about SQL Injectio, so params are just set
-			String vals = StringUtil.getDelimitedList(delIds.toArray(new String[delIds.size()]), true, ",");
-			StringBuilder sql = new StringBuilder(128);
-			sql.append("delete from ").append(schema).append("biomedgps_grid_detail ");
-			sql.append("where grid_detail_id in (").append(vals).append(") ");
-			log.debug("Del SQL: " + sql);
-			
-			try (PreparedStatement ps1 = dbConn.prepareStatement(sql.toString())) {
-				ps1.executeUpdate();
-			}
-			
 		} catch (Exception e) {
 			log.error("Unable to delete unused rows", e);
+		}
+
+		// Convert the set to a comma delimited string for delete
+		if (delIds.size() == 0) return;
+		
+		// Build the delete sql.  Since the ids are built within the 
+		// Backend, no worries about SQL Injection, so params are just set
+		String vals = StringUtil.getDelimitedList(delIds.toArray(new String[delIds.size()]), true, ",");
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("delete from ").append(schema).append("biomedgps_grid_detail ");
+		sql.append("where grid_detail_id in (").append(vals).append(") ");
+		log.debug("Del SQL: " + sql);
+		
+		try (PreparedStatement ps1 = dbConn.prepareStatement(sql.toString())) {
+			ps1.executeUpdate();
+		} catch(Exception e) {
+			log.error("");
 		}
 	}
 	
