@@ -11,18 +11,18 @@ import com.biomed.smarttrak.vo.CompanyAttributeTypeVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
 import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.LocationVO;
+import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: CompanyManagementAction.java <p/>
@@ -37,7 +37,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class CompanyManagementAction extends SimpleActionAdapter {
+public class CompanyManagementAction extends AbstractTreeAction {
 	
 	public static final String ACTION_TYPE = "actionTarget";
 	
@@ -245,10 +245,6 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 			n.setUserObject(attr);
 			orderedResults.add(n);
 		}
-
-		int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
-		int page = Convert.formatInteger(req.getParameter("page"), 0);
-		int end = orderedResults.size() < rpp*(page+1)? orderedResults.size() : rpp*(page+1);
 		
 		// If all attributes of a type is being requested set it as a request attribute since it is
 		// being used to supplement the attribute xr editing.
@@ -256,9 +252,9 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		if (req.hasParameter("attributeTypeName")) {
 			req.getSession().setAttribute("attributeList", new Tree(orderedResults).getPreorderList());
 		} else if (req.hasParameter("searchData")) {
-			super.putModuleData(orderedResults.subList(rpp*page, end), orderedResults.size(), false);
+			super.putModuleData(orderedResults, orderedResults.size(), false);
 		} else {
-			super.putModuleData(new Tree(orderedResults).getPreorderList().subList(rpp*page, end), orderedResults.size(), false);
+			super.putModuleData(new Tree(orderedResults).getPreorderList(), orderedResults.size(), false);
 		}
 	}
 
@@ -342,13 +338,10 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
 		log.debug(sql);
-		int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
-		int page = Convert.formatInteger(req.getParameter("page"), 0);
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> companies = db.executeSelect(sql.toString(), params, new CompanyVO());
-		int end = companies.size() < rpp*(page+1)? companies.size() : rpp*(page+1);
-		super.putModuleData(companies.subList(rpp*page, end), companies.size(), false);
+		super.putModuleData(companies, companies.size(), false);
 	}
 
 	
@@ -387,21 +380,43 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	protected void addSections(CompanyVO company) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT SECTION_NM, xr.COMPANY_SECTION_XR_ID FROM ").append(customDb).append("BIOMEDGPS_COMPANY_SECTION xr ");
+		sql.append("SELECT SECTION_NM, xr.COMPANY_SECTION_XR_ID, xr.SECTION_ID FROM ").append(customDb).append("BIOMEDGPS_COMPANY_SECTION xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
 		sql.append("ON s.SECTION_ID = xr.SECTION_ID ");
 		sql.append("WHERE COMPANY_ID = ? ");
 		
+		Tree t = loadDefaultTree();
+		t.buildNodePaths();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, company.getCompanyId());
 			
 			ResultSet rs = ps.executeQuery();
 			
 			while(rs.next()) {
-				company.addCompanySection(new GenericVO(rs.getString("COMPANY_SECTION_XR_ID"), rs.getString("SECTION_NM")));
+				SectionVO sec = new SectionVO(rs);
+				sec.setSectionId(rs.getString("COMPANY_SECTION_XR_ID"));
+				sec.setSectionNm(rs.getString("SECTION_NM"));
+				setGroupName(t.findNode(rs.getString("SECTION_ID")), sec);
+				company.addCompanySection(sec);
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * Set the group name based on the full path of the supplied node.
+	 * @param n
+	 * @param sec
+	 */
+	private void setGroupName(Node n, SectionVO sec) {
+		if (n == null) return;
+		String[] parts = n.getFullPath().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+		if (parts.length < 2) {
+			sec.setGroupNm(parts[0]);
+		} else {
+			sec.setGroupNm(parts[1]);
 		}
 	}
 
@@ -889,6 +904,12 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+	}
+
+
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 
 }

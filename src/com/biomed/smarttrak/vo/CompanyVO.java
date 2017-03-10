@@ -10,7 +10,6 @@ import java.util.TreeMap;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
@@ -60,7 +59,7 @@ public class CompanyVO  extends SecureSolrDocumentVO {
 	private List<AllianceVO> alliances;
 	private List<CompanyAttributeVO> companyAttributes;
 	private List<NoteVO> notes;
-	private List<GenericVO> companySections;
+	private List<SectionVO> companySections;
 	private Map<String, List<ProductVO>> products;
 	private Date updateDate;
 	private String updateMsg;
@@ -317,15 +316,15 @@ public class CompanyVO  extends SecureSolrDocumentVO {
 		this.companyAttributes.add(attribute);
 	}
 
-	public List<GenericVO> getCompanySections() {
+	public List<SectionVO> getCompanySections() {
 		return companySections;
 	}
 
-	public void setCompanySections(List<GenericVO> sections) {
+	public void setCompanySections(List<SectionVO> sections) {
 		this.companySections = sections;
 	}
 	
-	public void addCompanySection(GenericVO section) {
+	public void addCompanySection(SectionVO section) {
 		this.companySections.add(section);
 	}
 	public Map<String, List<ProductVO>> getProducts() {
