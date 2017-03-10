@@ -16,6 +16,7 @@ import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -75,8 +76,7 @@ public class SaveStateVO implements Serializable {
 		this.layoutNm = req.getParameter("layoutNm");
 		this.orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		this.saveData = StringEscapeUtils.unescapeHtml(req.getParameter("saveData"));
-		this.slugTxt = req.getParameter("slugTxt");
-
+		this.slugTxt = StringUtil.checkVal(req.getParameter("slugTxt"), new UUIDGenerator().getUUID().substring(0, 10));
 	}
 
 	/**
