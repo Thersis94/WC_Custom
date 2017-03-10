@@ -9,11 +9,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+// Log4j 1.2.17
 import org.apache.log4j.Logger;
 
+// App Libs
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
+import com.biomed.smarttrak.admin.vo.GridVO.RowStyle;
 import com.biomed.smarttrak.vo.grid.SMTChartOptionFactory.ChartType;
+
+// SMT Base Libs
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -68,7 +73,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	/**
 	 * 
 	 */
-	public GoogleChartVO() {
+	private GoogleChartVO() {
 		super();
 		cols = new ArrayList<>(10);
 		rows = new ArrayList<>(64);
@@ -86,6 +91,8 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		switch(type) {
 			case PIE:
 			case DONUT:
+			case GEO:
+			case TABLE:
 				processGridPie(grid);
 				break;
 			default:
@@ -104,22 +111,31 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		
 		// Get the row data that corresponds to the series
 		List<GridDetailVO> details = grid.getDetails();
+		
+		// Loop the rows and and the data
 		for(int i=0; i < details.size(); i++) {
 			GridDetailVO detail = details.get(i);
 			GoogleChartRowVO row = new GoogleChartRowVO();
 			
-			// Add the label cell data
-			GoogleChartCellVO cell = new GoogleChartCellVO();
-			cell.setValue(series[i]);
-			row.addCell(cell);
-			
 			String[] values = detail.getValues();
 			for (int x=0; x < values.length; x++) {
+				// Add the label cell data
+				GoogleChartCellVO cell = new GoogleChartCellVO();
+				
+				if (x == 0) {
+					cell.setValue(series[x]);
+					row.addCell(cell);
+				}
+				
 				String value = values[x];
 				if (StringUtil.isEmpty(value)) continue;
 				
 				cell = new GoogleChartCellVO();
-				cell.setValue(Convert.formatDouble(detail.getValues()[x]));
+				
+				// Round the decimal places
+				double mult = Math.pow(10.0, grid.getDecimalDisplay());
+				double roundVal = Math.round(Convert.formatDouble(detail.getValues()[x]) * mult) / mult;
+				cell.setValue(roundVal);
 				row.addCell(cell);
 				validRows.add(x);
 			}
@@ -155,7 +171,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	public void processGridPie(GridVO grid) {
 		String[] series = grid.getSeries();
 		Set<Integer> validRows = new HashSet<>();
-		
+
 		// Get the row data that corresponds to the series
 		for(GridDetailVO detail : grid.getDetails()) {
 			GoogleChartRowVO row = new GoogleChartRowVO();
@@ -163,15 +179,26 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			// Add the label cell data
 			GoogleChartCellVO cell = new GoogleChartCellVO();
 			cell.setValue(detail.getLabel());
+			if (!StringUtil.isEmpty(detail.getDetailType()))
+				cell.addCustomValue("className", RowStyle.valueOf(detail.getDetailType()).getName());
+			
 			row.addCell(cell);
 			
 			String[] values = detail.getValues();
 			for (int i=0; i < values.length; i++) {
 				String value = values[i];
-				if (StringUtil.isEmpty(value)) continue;
-				
 				cell = new GoogleChartCellVO();
-				cell.setValue(Convert.formatDouble(detail.getValues()[i]));
+				
+				if (StringUtil.isEmpty(value)) {
+					cell.setValue(null);
+				} else {
+					cell.setValue(Convert.formatDouble(detail.getValues()[i]));
+					cell.setFormat(detail.getValues()[i]);
+				}
+
+				if (!StringUtil.isEmpty(detail.getDetailType()))
+					cell.addCustomValue("className", RowStyle.valueOf(detail.getDetailType()).getName());
+				
 				row.addCell(cell);
 				validRows.add(i);
 			}
@@ -188,12 +215,12 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		addColumn(col);
 		
 		// Get the column data
-		for (int j: validRows) {
+		for (int j=0; j < grid.getNumberColumns() - 1; j++) {
 			col = new GoogleChartColumnVO();
 			col.setId("Column_" + ((char) val++));
 			col.setDataType(DataType.NUMBER.getName());
 			col.setLabel(series[j]);
-			
+
 			addColumn(col);
 		}
 	}

@@ -23,6 +23,7 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -50,7 +51,7 @@ public class InsightAction extends AbstractTreeAction {
 		
 		//setting pmid for solr action check
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));	
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		req.setParameter("pmid", mod.getPageModuleId());
 		
 		//making a new solr action
@@ -62,6 +63,12 @@ public class InsightAction extends AbstractTreeAction {
 			
 			InsightVO vo = getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
 
+			if (vo == null ){
+				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+				sbUtil.manualRedirect(req, page.getFullPath());
+				return;
+			}
+			
 			//after the vo is build set the hierarchies and check authorization
 			vo.configureSolrHierarchies(loadSections());
 			SecurityController.getInstance(req).isUserAuthorized(vo, req);
@@ -106,7 +113,7 @@ public class InsightAction extends AbstractTreeAction {
 		req.setParameter("rpp", "5");
 		req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
 		req.setParameter("sortDirection", ORDER.desc.toString(), true);
-				
+
 		String[] fqs = new String[0];
 		List<String> data = new ArrayList<>(Arrays.asList(fqs));
 		data.add(SearchDocumentHandler.MODULE_TYPE + ":" + vo.getTypeCd());
@@ -124,21 +131,18 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		log.debug("insights list called");		
+		log.debug("insights list called");
 		super.retrieve(req);
-	
 	}
-	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
-		log.debug("insights update called");		
+		log.debug("insights update called");
 		super.update(req);
 	}
-	
 	/**
 	 * transpose incoming request parameters into values Solr understands, so they get executed for us.
 	 * @param req
@@ -193,22 +197,25 @@ public class InsightAction extends AbstractTreeAction {
 		log.debug("sql: " + sb.toString() + "|" + insightId);
 		
 		List<Object> params = new ArrayList<>();
-		 params.add(insightId);
-
+		params.add(insightId);
+		
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  insight = db.executeSelect(sb.toString(), params, new InsightVO());
+		List<Object> insight = db.executeSelect(sb.toString(), params, new InsightVO());
 		log.debug("loaded " + insight.size() + " insight");
+		
+		if (insight == null || insight.isEmpty()) return null;
 		
 		for (Object vo : insight){
 			InsightVO ivo = (InsightVO)vo;
 			ivo.setQsPath((String)getAttribute(Constants.QS_PATH));
 		}
 		
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insight, (String)getAttribute(Constants.ENCRYPT_KEY));
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>) (List<?>) insight,
+				(String) getAttribute(Constants.ENCRYPT_KEY));
 		
-		return (InsightVO)insight.get(0);
+			return (InsightVO) insight.get(0);
 	}
-	
+
 	/**
 	 * Load the Section Tree so that Hierarchies can be generated.
 	 * @param req
@@ -223,13 +230,12 @@ public class InsightAction extends AbstractTreeAction {
 		return t;
 	}
 	
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
 	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
 	 */
 	@Override
 	public String getCacheKey() {
 		return null;
 	}
-
-
 }
