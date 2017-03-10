@@ -438,8 +438,10 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	 * @param insightId the insightId to set
 	 */
 	public void setInsightId(String insightId) {
-		super.setDocumentId("ins_"+insightId);
 		this.insightId = insightId;
+		
+		if( getInsightId().length() < AdminControllerAction.DOC_ID_MIN_LEN)
+		super.setDocumentId(Section.INSIGHT.name() + "_" +insightId);
 	}
 
 	/**
