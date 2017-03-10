@@ -51,7 +51,6 @@ public class AccountReportVO extends AbstractSBReportVO {
 	public AccountReportVO() {
         super();
         setContentType("application/vnd.ms-excel");
-        //setContentType("text/htm");
         isHeaderAttachment(Boolean.TRUE);
         setFileName(REPORT_TITLE+".xls");
         accounts = new ArrayList<>();
@@ -281,7 +280,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	protected void addUserIdentifier(StringBuilder sb, UserVO user) {
 		// TODO: pending business rules.
 		// look at country code first.
-		if (user.getCountryCode().equals("UK")) {
+		if ("UK".equals(user.getCountryCode())) {
 			sb.append(" [UK]");
 			return;
 		}
@@ -304,6 +303,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 			case 9:
 				sb.append(" [Ex]");
 				return;
+			default:
+				break;
 		}
 
 		if (jobLvl == 10) {
@@ -322,10 +323,14 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	protected void addUserStatusCode(StringBuilder sb, String statCd) {
 		switch (statCd) {
-			case USER_STATUS_C:
 			case USER_STATUS_E:
+				sb.append("A");
+				break;
+			case USER_STATUS_C:
 			case USER_STATUS_U:
 				sb.append(" ").append(statCd);
+				break;
+			default:
 				break;
 		}
 	}
