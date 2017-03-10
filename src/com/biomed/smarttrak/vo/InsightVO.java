@@ -198,13 +198,13 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	 */
 	public void configureSolrHierarchies(Tree t) {
 		for(InsightXRVO uxr : sections) {
-			
+
 			if (uxr.getSectionId() == null){
 				uxr.setSectionId(InsightAction.ROOT_NODE_ID);
 			}
-			
+
 			Node n = t.findNode(uxr.getSectionId());
-			
+
 			if(n != null && !StringUtil.isEmpty(n.getFullPath())) {
 				super.addHierarchies(n.getFullPath());
 				SectionVO sec = (SectionVO) n.getUserObject();
@@ -390,7 +390,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	public Date getUpdateDt() {
 		return updateDt;
 	}
-	
+
 	/**
 	 * used for solr search makes one sing field out of all three fields
 	 * @return the content
@@ -433,13 +433,19 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	public void setProfileImg(String profileImg) {
 		this.profileImg = profileImg;
 	}
-	
+
 	/**
 	 * @param insightId the insightId to set
 	 */
 	public void setInsightId(String insightId) {
-		super.setDocumentId("ins_"+insightId);
 		this.insightId = insightId;
+
+		if( getInsightId().length() < AdminControllerAction.DOC_ID_MIN_LEN){
+			super.setDocumentId(Section.INSIGHT.name() + "_" +insightId);
+		}else {
+			super.setDocumentId(insightId);
+		}
+
 	}
 
 	/**
