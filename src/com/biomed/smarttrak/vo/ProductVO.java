@@ -8,7 +8,6 @@ import java.util.Map;
 
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
@@ -47,7 +46,7 @@ public class ProductVO extends SecureSolrDocumentVO {
 	private String aliasName;
 	private String productGroupId;
 	private List<ProductAttributeVO> productAttributes;
-	private List<GenericVO> productSections;
+	private List<SectionVO> productSections;
 	private List<ProductAllianceVO> alliances;
 	private List<RegulationVO> regulations;
 	private Map<String, List<ProductAttributeVO>> details;
@@ -221,16 +220,16 @@ public class ProductVO extends SecureSolrDocumentVO {
 		this.productAttributes.add(attribute);
 	}
 
-	public List<GenericVO> getProductSections() {
+	public List<SectionVO> getProductSections() {
 		return productSections;
 	}
 
 
-	public void setProductSections(List<GenericVO> sections) {
+	public void setProductSections(List<SectionVO> sections) {
 		this.productSections = sections;
 	}
 	
-	public void addProductSection(GenericVO section) {
+	public void addProductSection(SectionVO section) {
 		this.productSections.add(section);
 	}
 

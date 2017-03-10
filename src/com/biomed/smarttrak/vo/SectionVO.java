@@ -38,6 +38,7 @@ public class SectionVO implements Serializable {
 	private Date createDt;
 	private Date updateDt;
 	private boolean isSelected;
+	private String groupNm;
 
 	public SectionVO() {
 		super();
@@ -219,5 +220,13 @@ public class SectionVO implements Serializable {
 
 	public void setSelected(boolean isSelected) {
 		this.isSelected = isSelected;
+	}
+
+	public String getGroupNm() {
+		return groupNm;
+	}
+
+	public void setGroupNm(String groupNm) {
+		this.groupNm = groupNm;
 	}
 }
