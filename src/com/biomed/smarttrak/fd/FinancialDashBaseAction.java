@@ -13,6 +13,7 @@ import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
+import com.biomed.smarttrak.fd.FinancialDashVO.CountryType;
 import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.CompanyVO;
@@ -388,13 +389,47 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * TODO: Not sure this is going to be needed any more. Data is published to the base from scenarios.
+	 * Adds one or more companies to the FD data for a given section/region/year
 	 * 
 	 * @param req
 	 * @throws ActionException 
 	 */
 	protected void updateData(ActionRequest req) throws ActionException {
-		log.debug("Update SmartTRAK Base Data");
+		log.debug("Add companies to FD base data");
+		
+		// Get applicable data off the request
+		FinancialDashRevenueVO revenueVO = new FinancialDashRevenueVO(req);
+		FinancialDashVO dashVO = new FinancialDashVO();
+		dashVO.addCountryType(StringUtil.checkVal(req.getParameter("regionCd")));
+		
+		// Get the values to iterate over... we need to add a record for every company selected,
+		// and also for every region. If WW was selected, we need to add a separate record for each region.
+		List<String> companyIds = Arrays.asList(req.getParameterValues("companyId[]"));
+		List<CountryType> countryTypes = dashVO.getCountryTypes();
+		
+		// Add the records
+		for (String companyId : companyIds) {
+			revenueVO.setCompanyId(companyId);
+			
+			for (CountryType countryType : countryTypes) {
+				revenueVO.setRegionCd(countryType.toString());
+				addRevenueRecord(revenueVO);
+			}
+		}
+	}
+	
+	/**
+	 * Adds a revenue record to the base data
+	 * 
+	 * @param revenueVO
+	 * @throws ActionException 
+	 */
+	protected void addRevenueRecord(FinancialDashRevenueVO revenueVO) throws ActionException {
+		try {
+			dbp.save(revenueVO);
+		} catch (Exception e) {
+			throw new ActionException("Couldn't save new financial dash revenue record.");
+		}
 	}
 	
 	/**
