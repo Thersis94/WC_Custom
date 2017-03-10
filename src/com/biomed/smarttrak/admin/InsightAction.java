@@ -58,6 +58,7 @@ public class InsightAction extends AbstractTreeAction {
 		log.debug("insight retrieve called");
 		//TODO work in progress
 		//gets the staff list
+		if (!req.hasParameter("loadAuthorList") && !req.hasParameter(INSIGHT_ID) ) return;
 		AccountAction aa = new AccountAction();
 		aa.setActionInit(actionInit);
 		aa.setAttributes(attributes);
