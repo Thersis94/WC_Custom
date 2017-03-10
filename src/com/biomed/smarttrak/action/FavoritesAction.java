@@ -62,29 +62,40 @@ public class FavoritesAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("FavoritesAction retrieve...");
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (role == null) throw new ActionException("Not logged in.");
+
 		ModuleVO mod;
-		// retrieve user favorites
-		ActionInterface ai = new MyFavoritesAction(actionInit);
-		ai.setAttributes(getAttributes());
-		ai.setDBConnection(dbConn);
-		try {
-			ai.retrieve(req);
-			mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
-		} catch (ActionException ae) {
+		Map<String, List<PageViewVO>> favs;
+
+		if (req.hasParameter(QuickLinksAction.PARAM_KEY_REFRESH_FAVORITES)) {
+			// retrieve favs from session.
 			mod = new ModuleVO();
-			mod.setErrorCondition(true);
-			mod.setError(ae);
+			favs = (Map<String, List<PageViewVO>>)req.getSession().getAttribute(MyFavoritesAction.MY_FAVORITES);
+			if (favs == null) favs = new HashMap<>();
+
+		} else {
+			// retrieve user favorites
+			ActionInterface ai = new MyFavoritesAction(actionInit);
+			ai.setAttributes(getAttributes());
+			ai.setDBConnection(dbConn);
+
+			try {
+				ai.retrieve(req);
+				mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
+			} catch (ActionException ae) {
+				mod = new ModuleVO();
+				mod.setErrorCondition(true);
+				mod.setError(ae);
+			}
+			favs = processUserFavorites(mod);
 		}
 
-		Map<String, List<PageViewVO>> favs = processUserFavorites(mod);
-
-		log.debug("FavoritesAction retrieve error condition | message: " + mod.getErrorCondition() + "|" + mod.getErrorMessage());
-		log.debug("favs size: " + favs.size());
+		log.debug("FavoritesAction retrieve, size|error condition|message: " + favs.size() + "|"  + mod.getErrorCondition() + "|" + mod.getErrorMessage());
 		this.putModuleData(favs, favs.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
 	}
 
@@ -109,7 +120,7 @@ public class FavoritesAction extends SBActionAdapter {
 		fav.setReferenceCode(collKey);
 		fav.setPageId(pkId);
 		fav.setRequestUri(req.getParameter(QuickLinksAction.PARAM_KEY_URI_TXT));
-		fav.setPageDisplayName(QuickLinksAction.PARAM_KEY_NAME);
+		fav.setPageDisplayName(req.getParameter(QuickLinksAction.PARAM_KEY_NAME));
 
 		ModuleVO mod = new ModuleVO();
 		String data = "failure";
