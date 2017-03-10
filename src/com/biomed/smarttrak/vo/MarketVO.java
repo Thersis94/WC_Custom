@@ -7,7 +7,6 @@ import java.util.List;
 import com.biomed.smarttrak.util.MarketIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
@@ -39,7 +38,8 @@ public class MarketVO extends SecureSolrDocumentVO {
 	private String aliasName;
 	private List<MarketAttributeVO> marketAttributes;
 	private List<MarketAttributeVO> graphs;
-	private List<GenericVO> sections;
+	private List<SectionVO> sections;
+	private SectionVO marketSection;
 	private String updateMsg;
 	private Date updateDate;
 	private String regionCode;
@@ -67,6 +67,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		statusNo = req.getParameter("statusNo");
 		setRegionCode(req.getParameter("regionCode"));
+		marketSection = new SectionVO(req);
 	}
 
 
@@ -161,16 +162,16 @@ public class MarketVO extends SecureSolrDocumentVO {
 	}
 
 
-	public List<GenericVO> getMarketSections() {
+	public List<SectionVO> getMarketSections() {
 		return sections;
 	}
 
 
-	public void setSections(List<GenericVO> sections) {
+	public void setSections(List<SectionVO> sections) {
 		this.sections = sections;
 	}
 
-	public void addSection(GenericVO section) {
+	public void addSection(SectionVO section) {
 		sections.add(section);
 	}
 
@@ -181,11 +182,21 @@ public class MarketVO extends SecureSolrDocumentVO {
 	@SolrField(name=SearchDocumentHandler.HIERARCHY)
 	public List<String>getSectionNames() {
 		List<String> nameList = new ArrayList<>();
-		for (GenericVO vo : sections) {
-			nameList.add((String)vo.getValue());
+		for (SectionVO vo : sections) {
+			nameList.add(vo.getSectionNm());
 		}
 		return nameList;
 	}
+
+	public SectionVO getMarketSection() {
+		return marketSection;
+	}
+
+
+	public void setMarketSection(SectionVO marketSection) {
+		this.marketSection = marketSection;
+	}
+
 
 	@Override
 	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
