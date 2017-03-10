@@ -4,6 +4,7 @@ package com.biomed.smarttrak.vo.grid;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.biomed.smarttrak.admin.vo.GridDetailVO;
 // App Libs
 import com.biomed.smarttrak.admin.vo.GridVO;
 
@@ -55,7 +56,7 @@ public class SMTChartOptions implements SMTChartOptionIntfc {
 	 * @see com.biomed.smarttrak.vo.grid.SMTChartOptionIntfc#addGridData(com.biomed.smarttrak.admin.vo.GridVO)
 	 */
 	public void addOptionsFromGridData(GridVO grid) {
-		// Not needed right now.  We will oince we set default formatting
+		// Not needed right now.  We will once we set default formatting
 	}
 	
 	/* (non-Javadoc)
@@ -80,6 +81,24 @@ public class SMTChartOptions implements SMTChartOptionIntfc {
 	@Override
 	public Map<String,Object> getCellOptions() {
 		return cell;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.vo.grid.SMTChartOptionIntfc#addRowOptions(com.biomed.smarttrak.admin.vo.GridDetailVO)
+	 */
+	@Override
+	public void addRowOptions(GridDetailVO detail) {
+		
+		// Not needed right now.  We will once we set default formatting
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.vo.grid.SMTChartOptionIntfc#addCellOptions(com.biomed.smarttrak.admin.vo.GridDetailVO)
+	 */
+	@Override
+	public void addCellOptions(GridDetailVO detail) {
+		// Not needed right now.  We will once we set default formatting
 	}
 }
 
