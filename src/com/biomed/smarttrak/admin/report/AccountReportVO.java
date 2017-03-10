@@ -352,5 +352,4 @@ public class AccountReportVO extends AbstractSBReportVO {
 		return headerMap;
 	}
 
-	
 }

@@ -243,7 +243,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			}
 
 			// add registration data from row for this user.
-			processUserRegistrationField(account, user,rs.getString("register_field_id"), rs.getString("value_txt"));
+			processUserRegistrationField(account, user,rs.getString("register_field_id"),rs.getString("value_txt"));
 
 			prevAcctId = currAcctId;
 			prevPid = currPid;
@@ -271,7 +271,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			String currFieldId, String currFieldVal) {
 		if (currFieldId == null || currFieldVal == null) return;
 		// process reg field value
-		if (RegistrationMap.DIVISIONS.getFieldId().equals(currFieldVal)) {
+		if (RegistrationMap.DIVISIONS.getFieldId().equals(currFieldId)) {
 			// user can belong to more than one division, we use a List here.
 			List<String> divs;
 			if (user.getAttribute(currFieldVal) == null) {
