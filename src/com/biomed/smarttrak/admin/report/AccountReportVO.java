@@ -39,9 +39,10 @@ public class AccountReportVO extends AbstractSBReportVO {
 	protected static final String KEY_ACCOUNTS = "accounts";
 	protected static final String KEY_FIELD_OPTIONS = "fieldOptions";
 	private static final String ROW = "ROW";
-	private static final String USER_STATUS_C = "C"; // "Complimentary" seats
-	private static final String USER_STATUS_E = "E"; // "Added" seats
-	private static final String USER_STATUS_U = "U"; // "Updates only" seats
+	private static final String USER_STATUS_A = UserVO.Status.ACTIVE.getCode();
+	private static final String USER_STATUS_C = UserVO.Status.COMPLIMENTARY.getCode();
+	private static final String USER_STATUS_E = UserVO.Status.EXTRA.getCode();
+	private static final String USER_STATUS_U = UserVO.Status.UPDATES.getCode();
 	private List<AccountUsersVO> accounts;
 	private Map<String,Map<String,String>> fieldOptions;
 	
@@ -324,16 +325,11 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param statCd
 	 */
 	protected void addUserStatusCode(StringBuilder sb, String statCd) {
-		switch (statCd) {
-			case USER_STATUS_E:
-				sb.append("A");
-				break;
-			case USER_STATUS_C:
-			case USER_STATUS_U:
-				sb.append(" ").append(statCd);
-				break;
-			default:
-				break;
+		if (statCd.equalsIgnoreCase(USER_STATUS_C) ||
+				statCd.equalsIgnoreCase(USER_STATUS_U)) {
+			sb.append(" ").append(statCd);
+		} else if (statCd.equalsIgnoreCase(USER_STATUS_E)) {
+			sb.append(" ").append(USER_STATUS_A);
 		}
 	}
 
