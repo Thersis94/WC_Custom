@@ -203,6 +203,8 @@ public class InsightAction extends AbstractTreeAction {
 		List<Object> insight = db.executeSelect(sb.toString(), params, new InsightVO());
 		log.debug("loaded " + insight.size() + " insight");
 		
+		if (insight == null || insight.isEmpty()) return null;
+		
 		for (Object vo : insight){
 			InsightVO ivo = (InsightVO)vo;
 			ivo.setQsPath((String)getAttribute(Constants.QS_PATH));
@@ -211,10 +213,7 @@ public class InsightAction extends AbstractTreeAction {
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>) (List<?>) insight,
 				(String) getAttribute(Constants.ENCRYPT_KEY));
 		
-		if (!insight.isEmpty()) {
 			return (InsightVO) insight.get(0);
-		}
-		return null;
 	}
 
 	/**

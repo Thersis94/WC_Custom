@@ -56,21 +56,25 @@ public class InsightAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("insight retrieve called");
-		//TODO work in progress
-		//gets the staff list
-		if (!req.hasParameter("loadAuthorList") && !req.hasParameter(INSIGHT_ID) ) return;
-		AccountAction aa = new AccountAction();
-		aa.setActionInit(actionInit);
-		aa.setAttributes(attributes);
-		aa.setDBConnection(dbConn);
-		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
 		
-		putModuleData(req.getAttribute("managers"));
+		if (req.hasParameter("loadAuthorList")) {
+			loadAuthors(req);
+		}
+		
+		if (req.hasParameter("loadData") || req.hasParameter(INSIGHT_ID) ) {
+			loadInsightsData(req);
+		}
+	}
+
+	/**
+	 * loads the insight data 
+	 * @param req
+	 */
+	private void loadInsightsData(ActionRequest req) {
+		log.debug("loaded data");
 		
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
-		if (!req.hasParameter("loadData") && !req.hasParameter(INSIGHT_ID) ) return;
-
 		String insightId = req.hasParameter(INSIGHT_ID) ? req.getParameter(INSIGHT_ID) : null;
 		String statusCd = req.getParameter("statusCd");
 		String typeCd = req.getParameter("typeCd");
@@ -80,6 +84,31 @@ public class InsightAction extends AbstractTreeAction {
 		decryptNames(insights);
 
 		putModuleData(insights);
+		
+	}
+
+	/**
+	 * loads a list of to the request.
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void loadAuthors(ActionRequest req) throws ActionException {
+		log.debug("loaded authors");
+		
+		AccountAction aa = new AccountAction();
+		aa.setActionInit(actionInit);
+		aa.setAttributes(attributes);
+		aa.setDBConnection(dbConn);
+		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
+
+		//if we are looking for only managers then place them on the mod data so the 
+		// table can find them.  if not they will be on the req attributes where other 
+		// forms are looking for them
+		if(!req.hasParameter("loadData")){
+			log.debug(" placed on req for model");
+			putModuleData(req.getAttribute("managers"));
+		}
+		
 	}
 
 	/**
@@ -104,14 +133,14 @@ public class InsightAction extends AbstractTreeAction {
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
 
-			for (Object ob : insights){
-				InsightVO vo = (InsightVO)ob;
-				vo.setQsPath((String)getAttribute(Constants.QS_PATH));
-			}
+		for (Object ob : insights){
+			InsightVO vo = (InsightVO)ob;
+			vo.setQsPath((String)getAttribute(Constants.QS_PATH));
+		}
 
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
-		
-		
+
+
 		return insights;
 	}
 
@@ -153,7 +182,7 @@ public class InsightAction extends AbstractTreeAction {
 	}
 
 
-	
+
 	/**
 	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
 	 * @param req
@@ -201,13 +230,13 @@ public class InsightAction extends AbstractTreeAction {
 				db.delete(u);
 				deleteFromSolr(u);
 			} else {
-				
+
 				if (req.hasParameter("listSave")){
 					updateFeatureOrder(u);
 				}else {
 					saveInsight(db, u);
 				}
-				
+
 				//Add to Solr if published
 				if(InsightStatusCd.P.toString().equals(u.getStatusCd())) {
 					writeToSolr(u);
@@ -227,7 +256,7 @@ public class InsightAction extends AbstractTreeAction {
 		bindx.setDBConnection(dbConn);
 		bindx.addSingleItem(u.getInsightId());
 	}
-	
+
 	/**
 	 * Removes an Updates Record from Solr.
 	 * @param u
@@ -240,7 +269,7 @@ public class InsightAction extends AbstractTreeAction {
 		}
 		log.debug("removed document from solr");
 	}
-	
+
 	/**
 	 * uses db util to do a full update or insert on the passed vo
 	 * @param u 
@@ -252,10 +281,10 @@ public class InsightAction extends AbstractTreeAction {
 		db.save(u);
 
 		setInsightIdOnInsert(u, db);
-		
+
 		//Save Insight Sections.
 		saveSections(u);
-		
+
 	}
 
 	/**
@@ -268,9 +297,9 @@ public class InsightAction extends AbstractTreeAction {
 		sb.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
 		sb.append("set FEATURED_FLG= ?, ORDER_NO = ? ");
 		sb.append("where insight_id = ? ");
-		
+
 		log.debug(" sql " + sb.toString() +"|"+ u.getFeaturedFlg() +"|"+u.getOrderNo()+"|"+u.getInsightId());
-		
+
 		try(PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
 			ps.setInt(1, u.getFeaturedFlg());
 			ps.setInt(2, u.getOrderNo());
@@ -287,14 +316,14 @@ public class InsightAction extends AbstractTreeAction {
 	 * @param u 
 	 */
 	private void setInsightIdOnInsert(InsightVO u, DBProcessor db) {
-		
+
 		if(StringUtil.isEmpty(u.getInsightId())) {
 			u.setInsightId(db.getGeneratedPKId());
 			for(InsightXRVO uxr : u.getInsightSections()) {
 				uxr.setInsightId(u.getInsightId());
 			}
 		}
-		
+
 	}
 
 	/**
@@ -334,7 +363,7 @@ public class InsightAction extends AbstractTreeAction {
 			throw new ActionException(e);
 		}
 	}
-	
+
 	/**
 	 * Load the Section Tree so that Hierarchies can be generated.
 	 * @param req
