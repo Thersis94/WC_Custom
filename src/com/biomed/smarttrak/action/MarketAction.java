@@ -72,13 +72,13 @@ public class MarketAction extends AbstractTreeAction {
 		if (req.hasParameter("reqParam_1")) {
 			MarketVO vo = retrieveFromDB(req.getParameter("reqParam_1"), req, true);
 
-			//verify user has access to this market
-			try {
-				SecurityController.getInstance(req).isUserAuthorized(vo, req);
-			} catch(Exception e) {
+			if (StringUtil.isEmpty(vo.getMarketName())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				sbUtil.manualRedirect(req,page.getFullPath());
-				return;
+			} else {
+				//verify user has access to this market
+				SecurityController.getInstance(req).isUserAuthorized(vo, req);
+				putModuleData(vo);
 			}
 			putModuleData(vo);
 

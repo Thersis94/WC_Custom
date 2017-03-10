@@ -66,12 +66,14 @@ public class ProductAction extends AbstractTreeAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			ProductVO vo = retrieveProduct(req.getParameter("reqParam_1"));
-			try {
-				SecurityController.getInstance(req).isUserAuthorized(vo, req);
-			} catch(Exception e) {
+
+			if (StringUtil.isEmpty(vo.getProductId())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				sbUtil.manualRedirect(req,page.getFullPath());
-				return;
+			} else {
+				//verify user has access to this market
+				SecurityController.getInstance(req).isUserAuthorized(vo, req);
+				putModuleData(vo);
 			}
 			putModuleData(vo);
 		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
@@ -91,7 +93,9 @@ public class ProductAction extends AbstractTreeAction {
 		List<Object> params = new ArrayList<>();
 		params.add(productId);
 		DBProcessor db = new DBProcessor(dbConn);
-		product = (ProductVO) db.executeSelect(sql.toString(), params, new ProductVO()).get(0);
+		List<Object> results = db.executeSelect(sql.toString(), params, new ProductVO());
+		if (results.isEmpty()) return new ProductVO();
+		product = (ProductVO) results.get(0);
 
 		// Get specifics on product details
 		addAttributes(product);
