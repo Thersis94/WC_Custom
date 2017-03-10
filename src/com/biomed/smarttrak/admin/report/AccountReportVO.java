@@ -182,6 +182,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 					appendSegment(sb,seg.getNodeName(),cnt);
 					cnt++;
 					break;
+				default:
+					break;
 			}
 		}
 	}
