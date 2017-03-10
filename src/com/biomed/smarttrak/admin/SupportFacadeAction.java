@@ -12,11 +12,12 @@ import com.smt.sitebuilder.action.support.SupportTicketFacadeAction;
 /****************************************************************************
  * <b>Title</b>: SupportFacadeAction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO
+ * <b>Description: </b> Support Facade Routing some functionality through custom
+ * Smarttrak Actions.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 1.0
  * @since Feb 24, 2017
  ****************************************************************************/

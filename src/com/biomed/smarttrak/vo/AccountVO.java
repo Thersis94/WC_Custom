@@ -30,6 +30,7 @@ public class AccountVO implements HumanNameIntfc {
 	private String accountName;
 	private String typeId;
 	private String ownerProfileId;
+	private String ownerEmailAddr;
 	private Location location;
 	private String statusNo;
 	private Date startDate;
@@ -224,6 +225,21 @@ public class AccountVO implements HumanNameIntfc {
 		this.ownerProfileId = ownerProfileId;
 	}
 
+	/**
+	 * @return the ownerEmailAddr
+	 */
+	@Column(name="owner_email_addr")
+	public String getOwnerEmailAddr() {
+		return ownerEmailAddr;
+	}
+
+	/**
+	 * @param ownerEmailAddr the ownerEmailAddr to set
+	 */
+	public void setOwnerEmailAddr(String ownerEmailAddr) {
+		this.ownerEmailAddr = ownerEmailAddr;
+	}
+	
 	/**
 	 * @return the location
 	 *NOTE no setter for location - we don't want outsiders to be able to nullify it, or our setter/getters around address will fail

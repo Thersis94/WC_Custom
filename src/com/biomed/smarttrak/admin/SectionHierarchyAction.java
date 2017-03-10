@@ -158,7 +158,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 				dbp.save(s);
 			}
 		} catch (InvalidDataException | DatabaseException e) {
-			log.error(e);
+			log.error("Couldn't update the Section", e);
 		}
 	}
 	
