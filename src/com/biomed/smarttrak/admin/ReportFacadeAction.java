@@ -3,6 +3,8 @@ package com.biomed.smarttrak.admin;
 //WC custom
 import com.biomed.smarttrak.admin.report.AccountReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
+import com.biomed.smarttrak.admin.report.CompanySegmentsReportAction;
+import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
 import com.biomed.smarttrak.admin.report.UserActivityAction;
 import com.biomed.smarttrak.admin.report.UserActivityReportVO;
 import com.biomed.smarttrak.admin.report.UserListReportAction;
@@ -41,6 +43,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 	public enum ReportType {
 		ACCOUNT_REPORT,
 		ACTIVITY_LOG,
+		COMPANY_SEGMENTS,
 		USER_LIST,
 		USER_PERMISSIONS,
 		UTILIZATION,
@@ -77,6 +80,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case ACTIVITY_LOG:
 				rpt = generateActivityLogReport(req);
 				break;
+			case COMPANY_SEGMENTS:
+				rpt = generateCompanySegmentsReport(req);
+				break;
 			case USER_LIST:
 				rpt = generateUserListReport(req);
 				break;
@@ -112,7 +118,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Generates the user utilization roll-up report.
+	 * Generates the activity log report report.
 	 * @param req
 	 * @return
 	 * @throws ActionException
@@ -128,6 +134,23 @@ public class ReportFacadeAction extends SBActionAdapter {
 		return rpt;
 	}
 	
+	/**
+	 * Generates the company segment report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateCompanySegmentsReport(ActionRequest req) 
+			throws ActionException {
+		log.debug("generateCompanySegmentsReport...");
+		CompanySegmentsReportAction csra = new CompanySegmentsReportAction(); 
+		csra.setDBConnection(dbConn);
+		csra.setAttributes(getAttributes());
+		AbstractSBReportVO rpt = new CompanySegmentsReportVO();
+		rpt.setData(csra.retrieveCompanySegments(req));
+		return rpt;
+	}
+
 	/**
 	 * Generates the user list report
 	 * @param req

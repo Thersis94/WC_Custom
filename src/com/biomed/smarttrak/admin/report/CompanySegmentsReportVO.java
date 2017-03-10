@@ -2,21 +2,16 @@ package com.biomed.smarttrak.admin.report;
 
 // Java 8
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.biomed.smarttrak.vo.CompanyVO;
 //WC custom
-import com.biomed.smarttrak.vo.UserVO;
-import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
+import com.biomed.smarttrak.vo.CompanyVO;
+import com.siliconmtn.data.GenericVO;
 //SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
-import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.PhoneNumberFormat;
-import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -29,18 +24,24 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  <p>Company: Silicon Mountain Technologies</p>
  @author DBargerhuff
  @version 1.0
- @since Mar 02, 2017
+ @since Mar 10, 2017
  <b>Changes:</b> 
  ***************************************************************************/
 public class CompanySegmentsReportVO extends AbstractSBReportVO {
 	
-	private List<CompanyVO> companies;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4394712706866499640L;
 	private static final String REPORT_TITLE = "Company Segments Export";
-	// company fields
 	private static final String CO_ID = "CO_ID";
 	private static final String CO_NM = "CO_NM";
-	protected static final String KEY_COMPANIES = "COMPANIES";
-	protected static final String KEY_SEGMENTS = "SEGMENTS";
+	protected static final String DATA_KEY_COMPANIES = "COMPANIES";
+	protected static final String DATA_KEY_SEGMENTS = "SEGMENTS";
+	protected static final String KEY_FALSE = "False";
+	protected static final String KEY_TRUE = "True";
+	private List<CompanyVO> companies;
+	private Map<String,String> segments;
 	
 	/**
 	* Constructor
@@ -51,6 +52,7 @@ public class CompanySegmentsReportVO extends AbstractSBReportVO {
         isHeaderAttachment(Boolean.TRUE);
         setFileName(REPORT_TITLE+".xls");
         companies = new ArrayList<>();
+        segments = new LinkedHashMap<>();
 	}
 
 	/* (non-Javadoc)
@@ -77,8 +79,8 @@ public class CompanySegmentsReportVO extends AbstractSBReportVO {
 	@Override
 	public void setData(Object o) {
 		Map<String,Object> dataMap = (Map<String,Object>)o;
-		companies = (List<CompanyVO>) dataMap.get(KEY_COMPANIES);
-		segment = (Map<String,String>) dataMap.get(KEY_SEGMENTS);
+		companies = (List<CompanyVO>) dataMap.get(DATA_KEY_COMPANIES);
+		segments = (Map<String,String>) dataMap.get(DATA_KEY_SEGMENTS);
 	}
 	
 	/**
@@ -88,114 +90,35 @@ public class CompanySegmentsReportVO extends AbstractSBReportVO {
 	 */
 	private List<Map<String, Object>> generateDataRows(
 			List<Map<String, Object>> rows) {
-		PhoneNumberFormat pnf = new PhoneNumberFormat();
-		
-		// loop the account map
-		for (AccountUsersVO acct : accounts) {
 
-			// user vals
-			Map<String,Object> row;
-			
-			// loop account users
-			for (UserVO user : acct.getUsers()) {
-				row = new HashMap<>();
-				row.put(ACCT_NM, acct.getAccountName());
-				row.put(ACCT_EXPIRE, formatDate(acct.getExpirationDate(),false));
-				row.put(ACCT_STATUS, acct.getStatusName());
-				row.put(USER_EXPIRE, formatDate(user.getExpirationDate(),false));
-				row.put(RegistrationMap.COMPANY.name(),user.getCompany());
-				row.put(RegistrationMap.TITLE.name(),user.getTitle());
-				row.put(FIRST_NM,user.getFirstName());
-				row.put(LAST_NM,user.getLastName());
-				row.put(EMAIL,user.getEmailAddress());
-				row.put(LAST_LOGIN_DT, formatDate((Date)user.getAttribute(LAST_LOGIN_DT),true));
-				row.put(PAGEVIEWS, user.getAttribute(PAGEVIEWS));
-				row.put(MAIN_PHONE,formatPhoneNumber(pnf,user.getMainPhone(),user.getCountryCode()));
-				row.put(MOBILE_PHONE,formatPhoneNumber(pnf,user.getMobilePhone(),user.getCountryCode()));
-				row.put(ADDRESS1,user.getAddress());
-				row.put(ADDRESS2,user.getAddress2());
-				row.put(CITY_NM,user.getCity());
-				row.put(STATE_CD,user.getState());
-				row.put(POSTAL_CD,user.getZipCode());
-				row.put(COUNTRY_CD,user.getCountryCode());
-				row.put(USER_STATUS, user.getStatusCode());
-				row.put(RegistrationMap.SOURCE.name(), user.getSource());
-				row.put(RegistrationMap.UPDATES.name(), StringUtil.capitalize(user.getUpdates()));
-				row.put(RegistrationMap.FAVORITEUPDATES.name(), StringUtil.capitalize(user.getFavoriteUpdates()));
-				row.put(DATE_JOINED, formatDate(user.getCreateDate(),false));
-				row.put(RegistrationMap.DIVISIONS.name(), formatUserDivisions(user.getDivisions()));
-				row.put(OS, user.getAttribute(OS));
-				row.put(BROWSER, user.getAttribute(BROWSER));
-				row.put(DEVICE_TYPE, user.getAttribute(DEVICE_TYPE));
-				row.put(HAS_FD, formatUserFDFlag(user.getFdAuthFlg()));
-				row.put(RegistrationMap.NOTES.name(), user.getNotes());
-				row.put(RegistrationMap.COMPANYURL.name(), user.getCompanyUrl());
-				row.put(RegistrationMap.JOBCATEGORY.name(), user.getJobCategory());
-				row.put(RegistrationMap.JOBLEVEL.name(), user.getJobLevel());
-				row.put(RegistrationMap.INDUSTRY.name(), user.getIndustry());
-				row.put(RegistrationMap.DEMODT.name(), user.getDemoDate());
-				row.put(RegistrationMap.TRAININGDT.name(), user.getTrainingDate());
-				rows.add(row);
+		Map<String,Object> row;
+		for (CompanyVO co : companies) {
+			row = new HashMap<>();
+			row.put(CO_ID, co.getCompanyId());
+			row.put(CO_NM, co.getCompanyName());
+
+			for (Map.Entry<String,String> seg : segments.entrySet()) {
+				row.put(seg.getKey(), hasSegment(co,seg.getKey()));
 			}
+			rows.add(row);
 		}
-		
+
 		return rows;
 	}
-	
-	/**
-	 * Formats a phone number based on the country
-	 * @param pnf
-	 * @param phone
-	 * @param country
-	 * @return
-	 */
-	protected String formatPhoneNumber(PhoneNumberFormat pnf, String phone, String country) {
-		if (StringUtil.checkVal(phone).isEmpty()) return EMPTY_STRING;
-		// set the country based on the user's country code.
-		pnf.setCountryCode(StringUtil.isEmpty(country) ? DEFAULT_COUNTRY : country);
-		// if the country code that has been set is US, use dash formatting, else international formatting
-		if (DEFAULT_COUNTRY.equalsIgnoreCase(pnf.getCountryCode())) {
-			pnf.setFormatType(PhoneNumberFormat.DASH_FORMATTING);
-		} else {
-			pnf.setFormatType(PhoneNumberFormat.INTERNATIONAL_FORMAT);
-		}
-		pnf.setPhoneNumber(phone);
-		return pnf.getFormattedNumber();
-	}
 
 	/**
-	 * Return formatted date.
-	 * @param date
-	 * @param isLoginDate
+	 * Determines if a company is associated with a segment (i.e. section).
+	 * @param company
+	 * @param segmentId
 	 * @return
 	 */
-	protected String formatDate(Date date, boolean isLoginDate) {
-		if (isLoginDate && date == null) {
-			return LOGIN_DATE_NULL_VAL;
+	protected String hasSegment(CompanyVO company, String segmentId) {
+		if (company.getCompanySections() == null || 
+				company.getCompanySections().isEmpty()) return KEY_FALSE;
+		for (GenericVO vo : company.getCompanySections()) {
+			if (segmentId.equals(vo.getKey())) return KEY_TRUE;
 		}
-		return Convert.formatDate(date,Convert.DATE_SLASH_ABBREV_PATTERN);
-	}
-	
-	/**
-	 * Parses user divisions list into a delimited String.
-	 * @param divisions
-	 * @return
-	 */
-	protected String formatUserDivisions(List<String> divisions) {
-		String divs = EMPTY_STRING;
-		if (divisions != null && ! divisions.isEmpty()) {
-			divs = StringUtil.getDelimitedList(divisions.toArray(new String[]{}), false, LIST_DELIMITER);
-		}
-		return divs;
-	}
-
-	/**
-	 * Formats the value displayed for the user's FD field.
-	 * @param fd
-	 * @return
-	 */
-	protected String formatUserFDFlag(int fd) {
-		return fd == 1 ? USER_FD_VAL : EMPTY_STRING;
+		return KEY_FALSE;
 	}
 
 	/**
@@ -204,42 +127,11 @@ public class CompanySegmentsReportVO extends AbstractSBReportVO {
 	 */
 	protected HashMap<String, String> getHeader() {
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
-		headerMap.put(ACCT_NM,"Account Name");
-		headerMap.put(ACCT_EXPIRE,"Account Expiration");
-		headerMap.put(ACCT_STATUS,"Is Active");
-		headerMap.put(USER_EXPIRE,"User Expiration");
-		headerMap.put(RegistrationMap.COMPANY.name(),"Company");
-		headerMap.put(RegistrationMap.TITLE.name(),"Title");
-		headerMap.put(FIRST_NM,"First");
-		headerMap.put(LAST_NM,"Last");
-		headerMap.put(EMAIL,"Email Address");
-		headerMap.put(LAST_LOGIN_DT,"Last Login");
-		headerMap.put(PAGEVIEWS, "Hits");
-		headerMap.put(MAIN_PHONE,"Phone");
-		headerMap.put(MOBILE_PHONE,"Mobile Phone");
-		headerMap.put(ADDRESS1,"Address 1");
-		headerMap.put(ADDRESS2,"Address 2");
-		headerMap.put(CITY_NM,"City");
-		headerMap.put(STATE_CD,"State");
-		headerMap.put(POSTAL_CD,"Zip Code");
-		headerMap.put(COUNTRY_CD,"Country");
-		headerMap.put(USER_STATUS,"Status");
-		headerMap.put(RegistrationMap.SOURCE.name(),"Source");
-		headerMap.put(RegistrationMap.UPDATES.name(),"General Notifications");
-		headerMap.put(RegistrationMap.FAVORITEUPDATES.name(),"Favorite Notifications");
-		headerMap.put(DATE_JOINED,"Date Joined");
-		headerMap.put(RegistrationMap.DIVISIONS.name(),"Division");
-		headerMap.put(OS, OS);
-		headerMap.put(BROWSER, "Browser");
-		headerMap.put(DEVICE_TYPE, "Device Type");
-		headerMap.put(HAS_FD, USER_FD_VAL);
-		headerMap.put(RegistrationMap.NOTES.name(),"Notes");
-		headerMap.put(RegistrationMap.COMPANYURL.name(),"Company URL");
-		headerMap.put(RegistrationMap.JOBCATEGORY.name(),"Job Category");
-		headerMap.put(RegistrationMap.JOBLEVEL.name(),"Job Level");
-		headerMap.put(RegistrationMap.INDUSTRY.name(),"Industry");
-		headerMap.put(RegistrationMap.DEMODT.name(),"Date Demoed");
-		headerMap.put(RegistrationMap.TRAININGDT.name(),"Date Trained");
+		headerMap.put(CO_ID,"Company ID");
+		headerMap.put(CO_NM,"Company Name");
+		for (Map.Entry<String,String> segment : segments.entrySet()) {
+			headerMap.put(segment.getKey(),segment.getValue());
+		}
 		return headerMap;
 	}
 
