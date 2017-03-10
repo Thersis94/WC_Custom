@@ -588,8 +588,6 @@ public class MarketManagementAction extends AbstractTreeAction {
 			}
 			ps.executeBatch();
 		} catch (SQLException e) {
-			log.error(e);
-			log.error(e.getNextException());
 			throw new ActionException(e);
 		}
 	}
