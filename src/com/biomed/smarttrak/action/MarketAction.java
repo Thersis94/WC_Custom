@@ -18,7 +18,6 @@ import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
@@ -177,7 +176,7 @@ public class MarketAction extends AbstractTreeAction {
 			ps.setString(1, market.getMarketId());
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				market.addSection(new GenericVO(rs.getString("MARKET_SECTION_XR_ID"), rs.getString("SECTION_NM")));
+				market.addSection(new SectionVO(rs));
 				Node n = t.findNode(rs.getString("SECTION_ID"));
 				if (n != null) {
 					SectionVO sec = (SectionVO) n.getUserObject();
