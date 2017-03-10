@@ -267,12 +267,54 @@ public class AccountReportVO extends AbstractSBReportVO {
 		for (UserVO user : users) {
 			StringBuilder sb = new StringBuilder(50);
 			sb.append(user.getFullName());
-			addUserJobCategory(sb,user.getJobCategory());
-			addUserStatusCode(sb,user.getStatusCode());
+			addUserIdentifier(sb,user);
 			rows.add(addRow(ROW,sb.toString()));
 		}
 	}
-	
+
+	/**
+	 * Adds user identifier for certain users based on country code or 
+	 * job category/job level or simply job level
+	 * @param sb
+	 * @param jobCat
+	 */
+	protected void addUserIdentifier(StringBuilder sb, UserVO user) {
+		// TODO: pending business rules.
+		// look at country code first.
+		if (user.getCountryCode().equals("UK")) {
+			sb.append(" [UK]");
+			return;
+		}
+
+		int jobCat = Convert.formatInteger(user.getJobCategory());
+		int jobLvl = Convert.formatInteger(user.getJobLevel());
+
+		switch(jobCat) {
+			case 2:
+				if (jobLvl == 10)
+					sb.append(" [PM]");
+				return;
+			case 5:
+				if (jobLvl == 4)
+					sb.append(" [SA]");
+				return;
+			case 8:
+				sb.append(" [BD]");
+				return;
+			case 9:
+				sb.append(" [Ex]");
+				return;
+		}
+
+		if (jobLvl == 10) {
+			sb.append(" [M]");
+			return;
+		}
+		
+		// if no other identifier was added, we look at status code.
+		addUserStatusCode(sb,user.getStatusCode());
+	}
+
 	/**
 	 * Adds user status code identifier for certain user status codes.
 	 * @param sb
@@ -286,15 +328,6 @@ public class AccountReportVO extends AbstractSBReportVO {
 				sb.append(" ").append(statCd);
 				break;
 		}
-	}
-	
-	/**
-	 * Adds user job category for certain job categories
-	 * @param sb
-	 * @param jobCat
-	 */
-	protected void addUserJobCategory(StringBuilder sb, String jobCat) {
-		// TODO: pending business rules.
 	}
 
 	/**
