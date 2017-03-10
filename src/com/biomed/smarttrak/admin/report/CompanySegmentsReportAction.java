@@ -132,7 +132,7 @@ public class CompanySegmentsReportAction extends SimpleActionAdapter {
 			}
 
 			// add the segment/section to the company
-			co.addCompanySection(formatCompanySegment(rs.getString("parent_id")));
+			co.addCompanySection(new GenericVO(rs.getString("parent_id"),null));
 
 			prevCoId = currCoId;
 		}
@@ -143,18 +143,6 @@ public class CompanySegmentsReportAction extends SimpleActionAdapter {
 		return companies;
 	}
 
-	/**
-	 * Builds a GenericVO and populates the key field with the 'parent' section ID.
-	 * The value field is unused.
-	 * @param segmentId
-	 * @return
-	 */
-	protected GenericVO formatCompanySegment(String segmentId) {
-		GenericVO gen = new GenericVO();
-		gen.setKey(segmentId);
-		return gen;
-	}
-	
 	/**
 	 * Retrieves a master list of segments.
 	 * @param schema
