@@ -25,8 +25,10 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
@@ -65,8 +67,13 @@ public class CompanyAction extends AbstractTreeAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"));
-			SecurityController.getInstance(req).isUserAuthorized(vo, req);
-			putModuleData(vo);
+			if (StringUtil.isEmpty(vo.getCompanyId())){
+				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+				sbUtil.manualRedirect(req,page.getFullPath());
+			} else {
+				SecurityController.getInstance(req).isUserAuthorized(vo, req);
+				putModuleData(vo);
+			}
 		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
 			retrieveCompanies(req);
 		}
@@ -92,7 +99,7 @@ public class CompanyAction extends AbstractTreeAction {
 		CompanyVO company;
 		try {
 			List<Object> results = db.executeSelect(sql.toString(), params, new CompanyVO());
-			if (results.isEmpty()) throw new ActionException("No company found with id " + companyId);
+			if (results.isEmpty()) return new CompanyVO();
 			
 			company = (CompanyVO) results.get(0);
 			addAttributes(company);
