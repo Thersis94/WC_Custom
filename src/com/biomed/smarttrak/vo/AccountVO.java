@@ -228,7 +228,7 @@ public class AccountVO implements HumanNameIntfc {
 	/**
 	 * @return the ownerEmailAddr
 	 */
-	@Column(name="owner_email_addr")
+	@Column(name="owner_email_addr", isReadOnly=true)
 	public String getOwnerEmailAddr() {
 		return ownerEmailAddr;
 	}

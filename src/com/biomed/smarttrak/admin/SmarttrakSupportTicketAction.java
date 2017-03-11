@@ -79,7 +79,7 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 		params.put("organizationId", orgId);
 
 		if(!StringUtil.isEmpty(req.getParameter("ticketId"))) {
-			params.put("ticketId", StringUtil.checkVal(req.getParameter("ticketId")));
+			params.put("ticketId", req.getParameter("ticketId"));
 		}
 
 		/*
@@ -87,7 +87,7 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 		 * they see to their own only.
 		 */
 		SmarttrakRoleVO r = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if(r.getRoleLevel() == AdminControllerAction.DEFAULT_ROLE_LEVEL) {
+		if(AdminControllerAction.DEFAULT_ROLE_LEVEL == r.getRoleLevel()) {
 			params.put("profileId", r.getProfileId());
 		}
 
