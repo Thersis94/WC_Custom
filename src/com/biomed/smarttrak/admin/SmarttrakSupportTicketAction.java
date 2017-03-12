@@ -9,12 +9,14 @@ import java.util.Map;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.util.BiomedSupportEmailUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.support.SupportTicketAction;
+import com.smt.sitebuilder.action.support.TicketVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -139,5 +141,14 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 		}
 
 		return u;
+	}
+
+	@Override
+	protected void sendEmail(TicketVO t, ChangeType type, String orgId) {
+		try {
+			new BiomedSupportEmailUtil(getDBConnection(), getAttributes()).sendEmail(t.getTicketId(), null, type);
+		} catch (Exception e) {
+			log.error("Problem Sending Email.", e);
+		}
 	}
 }
