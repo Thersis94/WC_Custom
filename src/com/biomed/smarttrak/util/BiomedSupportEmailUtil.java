@@ -45,15 +45,12 @@ public class BiomedSupportEmailUtil {
 	public static final String TICKET_ID = "ticketId";
 	public static final String TICKET_MSG = "ticketMsg";
 	public static final String EMAIL_TYPE = "emailType";
-	public static final String HELP_URL = "helpUrl";
-	public static final String SUPPORT_EMAIL = "supportEmail";
+	public static final String CFG_SUPPORT_URL = "smarttrakSupportUrl";
 
 	private Logger log;
 
 	private SMTDBConnection dbConn = null;
 	private Map<String, Object> attributes = null;
-	private String helpUrl;
-	private String supportEmail;
 
 	/**
 	 * Constructor takes Connection and attributes Map for building emails.
@@ -91,10 +88,10 @@ public class BiomedSupportEmailUtil {
 	protected String getTicketSql() {
 		StringBuilder sql = new StringBuilder(500);
 		sql.append("select a.*, b.first_nm as reporter_first_nm, ");
-		sql.append("b.last_nm as reporter_last_nm ");
-		sql.append("b.email_address_txt as reporter_email ");
-		sql.append("c.first_nm as assigned_first_nm ");
-		sql.append("c.last_nm as assigned_last_nm ");
+		sql.append("b.last_nm as reporter_last_nm, ");
+		sql.append("b.email_address_txt as reporter_email, ");
+		sql.append("c.first_nm as assigned_first_nm, ");
+		sql.append("c.last_nm as assigned_last_nm, ");
 		sql.append("c.email_address_txt as assigned_email ");
 		sql.append("from support_ticket a ");
 		sql.append("inner join profile b on a.reporter_id = b.profile_id ");
@@ -178,9 +175,10 @@ public class BiomedSupportEmailUtil {
 	 * @throws Exception
 	 */
 	protected void sendEmail(EmailMessageVO email) throws Exception {
-		MessageSender ms = new MessageSender(attributes, dbConn);
-		ms.sendMessage(email);
 		log.debug("Created Message: " + email);
+
+		MessageSender ms = new MessageSender(attributes, dbConn);
+	//	ms.sendMessage(email);
 	}
 
 	/**
@@ -191,7 +189,7 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected EmailMessageVO buildDefaultEmail(TicketVO t) throws InvalidDataException {
 		EmailMessageVO msg = new EmailMessageVO();
-		msg.setFrom(supportEmail);
+		msg.setFrom((String)attributes.get(Constants.CFG_DEFAULT_FROM_ADDRESS));
 		msg.addRecipient(t.getReporterEmail());
 
 		if(!StringUtil.isEmpty(t.getAssignedEmail())) {
@@ -208,7 +206,7 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected String buildTicketUrl(TicketVO t) {
 		StringBuilder sql = new StringBuilder(150);
-		sql.append(helpUrl);
+		sql.append((String)attributes.get(CFG_SUPPORT_URL));
 		sql.append(attributes.get(Constants.QS_PATH));
 		sql.append(t.getTicketId());
 		return sql.toString();
