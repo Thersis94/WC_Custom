@@ -18,6 +18,7 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.support.SupportTicketAction;
 import com.smt.sitebuilder.action.support.TicketVO;
+import com.smt.sitebuilder.admin.action.OrganizationAction;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -59,7 +60,7 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 		sql.append("left outer join profile c on a.assigned_id = c.profile_id ");
 		sql.append("where a.organization_id = ? ");
 
-		if(params.containsKey("ticketId")) {
+		if(params.containsKey(TICKET_ID)) {
 			sql.append("and a.ticket_id = ? ");
 		}
 	
@@ -79,13 +80,13 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 		if(StringUtil.isEmpty(orgId)) {
 			throw new ActionException("Missing OrgId on Request.");
 		}
-		params.put("organizationId", orgId);
+		params.put(OrganizationAction.ORGANIZATION_ID, orgId);
 
-		if(!StringUtil.isEmpty(req.getParameter("ticketId"))) {
-			params.put("ticketId", req.getParameter("ticketId"));
+		if(!StringUtil.isEmpty(req.getParameter(TICKET_ID))) {
+			params.put(TICKET_ID, req.getParameter(TICKET_ID));
 		} else if(req.hasParameter(DirectoryParser.PARAMETER_PREFIX + "1")) {
-			params.put("ticketId", req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
-			req.setParameter("ticketId", req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
+			params.put(TICKET_ID, req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
+			req.setParameter(TICKET_ID, req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
 		}
 
 		/*

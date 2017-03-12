@@ -8,6 +8,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.DirectoryParser;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.support.SupportTicketAction;
 import com.smt.sitebuilder.action.support.SupportTicketActivityAction;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -55,11 +56,11 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 		LinkedHashMap<String, Object> params = new LinkedHashMap<>();
 
 		//Check for TicketId
-		if(!StringUtil.isEmpty(req.getParameter("ticketId"))) {
-			params.put("ticketId", req.getParameter("ticketId"));
+		if(!StringUtil.isEmpty(req.getParameter(SupportTicketAction.TICKET_ID))) {
+			params.put(SupportTicketAction.TICKET_ID, req.getParameter(SupportTicketAction.TICKET_ID));
 		} else if(req.hasParameter(DirectoryParser.PARAMETER_PREFIX + "1")) {
-			params.put("ticketId", req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
-			req.setParameter("ticketId", req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
+			params.put(SupportTicketAction.TICKET_ID, req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
+			req.setParameter(SupportTicketAction.TICKET_ID, req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
 		} else {
 			throw new ActionException("Missing Ticket Id on request.");
 		}
@@ -71,8 +72,8 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 		}
 
 		//Check for ActivityId
-		if(!StringUtil.isEmpty(req.getParameter("activityId"))) {
-			params.put("activityId", req.getParameter("activityId"));
+		if(!StringUtil.isEmpty(req.getParameter(ACTIVITY_ID))) {
+			params.put(ACTIVITY_ID, req.getParameter(ACTIVITY_ID));
 		}
 
 		return params;
