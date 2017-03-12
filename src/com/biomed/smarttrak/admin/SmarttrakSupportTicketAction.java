@@ -13,6 +13,7 @@ import com.biomed.smarttrak.util.BiomedSupportEmailUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.parser.DirectoryParser;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.support.SupportTicketAction;
@@ -82,6 +83,9 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 
 		if(!StringUtil.isEmpty(req.getParameter("ticketId"))) {
 			params.put("ticketId", req.getParameter("ticketId"));
+		} else if(req.hasParameter(DirectoryParser.PARAMETER_PREFIX + "1")) {
+			params.put("ticketId", req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
+			req.setParameter("ticketId", req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
 		}
 
 		/*
@@ -89,7 +93,7 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 		 * they see to their own only.
 		 */
 		SmarttrakRoleVO r = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if(AdminControllerAction.DEFAULT_ROLE_LEVEL == r.getRoleLevel()) {
+		if(AdminControllerAction.DEFAULT_ROLE_LEVEL >= r.getRoleLevel()) {
 			params.put("profileId", r.getProfileId());
 		}
 
