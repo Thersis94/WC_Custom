@@ -76,11 +76,11 @@ public class BiomedSupportEmailUtil {
 	 * @param type
 	 * @throws Exception
 	 */
-	public void sendEmail(String ticketId, String ticketMsg, ChangeType type) throws Exception {
+	public void sendEmail(String ticketId, ChangeType type) throws Exception {
 
 		TicketVO t = loadTicket(ticketId);
 
-		buildEmail(t, type, ticketMsg);
+		buildEmail(t, type);
 	}
 
 	/**
@@ -145,20 +145,20 @@ public class BiomedSupportEmailUtil {
 	 * @param ticketMsg
 	 * @throws Exception 
 	 */
-	protected void buildEmail(TicketVO t, ChangeType type, String ticketMsg) throws Exception {
+	protected void buildEmail(TicketVO t, ChangeType type) throws Exception {
 		EmailMessageVO email = null;
 		switch(type) {
 			case ACTIVITY:
-				email = buildActivityEmail(t, ticketMsg);
+				email = buildActivityEmail(t);
 				break;
 			case ASSIGNMENT:
-				email = buildAssignedEmail(t, ticketMsg);
+				email = buildAssignedEmail(t);
 				break;
 			case STATUS:
-				email = buildStatusEmail(t, ticketMsg);
+				email = buildStatusEmail(t);
 				break;
 			case TICKET:
-				email = buildNewRequestEmail(t, ticketMsg);
+				email = buildNewRequestEmail(t);
 				break;
 			case ATTACHMENT:
 			default:
@@ -260,14 +260,14 @@ public class BiomedSupportEmailUtil {
 	 * @return
 	 * @throws Exception 
 	 */
-	protected EmailMessageVO buildNewRequestEmail(TicketVO t, String ticketMsg) throws Exception {
+	protected EmailMessageVO buildNewRequestEmail(TicketVO t) throws Exception {
 		EmailMessageVO msg = buildDefaultEmail(t);
 
 		//New Tickets get sent to All Admins.
 		msg.addRecipients(getAdminEmails());
 
 		//Add New Email Html.
-		msg.setHtmlBody(buildNewEmailBody(t, ticketMsg));
+		msg.setHtmlBody(buildNewEmailBody(t));
 
 		return msg;
 
@@ -280,7 +280,7 @@ public class BiomedSupportEmailUtil {
 	 * @param ticketMsg
 	 * @return
 	 */
-	protected String buildNewEmailBody(TicketVO t, String ticketMsg) {
+	protected String buildNewEmailBody(TicketVO t) {
 		StringBuilder text = new StringBuilder(1000);
 		text.append("<p>Thank you for creating a Direct Access request, we make ");
 		text.append("every effort to reply to Direct Access requests within 1 ");
@@ -288,7 +288,7 @@ public class BiomedSupportEmailUtil {
 		text.append("<a href='");
 		text.append(buildTicketUrl(t));
 		text.append("'>view the request here</a>.</p><p><b>Original Request</b>:</p><hr>");
-		text.append(ticketMsg).append("<br><hr>");
+		text.append(t.getDescText()).append("<br><hr>");
 
 		return text.toString();
 	}
@@ -302,9 +302,9 @@ public class BiomedSupportEmailUtil {
 	 * @return
 	 * @throws Exception 
 	 */
-	protected EmailMessageVO buildAssignedEmail(TicketVO t, String ticketMsg) throws Exception {
+	protected EmailMessageVO buildAssignedEmail(TicketVO t) throws Exception {
 		EmailMessageVO msg = buildDefaultEmail(t);
-		msg.setHtmlBody(buildAssignedEmailBody(t, ticketMsg));
+		msg.setHtmlBody(buildAssignedEmailBody(t));
 		return msg;
 	}
 
@@ -315,7 +315,7 @@ public class BiomedSupportEmailUtil {
 	 * @return
 	 * @throws Exception 
 	 */
-	protected String buildAssignedEmailBody(TicketVO t, String ticketMsg) throws Exception {
+	protected String buildAssignedEmailBody(TicketVO t) throws Exception {
 		UserDataVO user = ProfileManagerFactory.getInstance(attributes).getProfile(t.getReporterId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, AdminControllerAction.BIOMED_ORG_ID);
 		
 		//TODO - Need to get CompanyId for a User.  Probably need to Load similar to AccountUserAction.
@@ -346,7 +346,7 @@ public class BiomedSupportEmailUtil {
 		text.append("<br>Creation Time: ");
 		text.append(Convert.formatDate(t.getCreateDt(), Convert.DATE_TIME_DASH_PATTERN_12HR));
 		text.append("</p><p><b>Original Request</b>:</p><hr>");
-		text.append(ticketMsg);
+		text.append(t.getDescText());
 		text.append("<br><hr>");
 		return text.toString();
 	}
@@ -360,9 +360,9 @@ public class BiomedSupportEmailUtil {
 	 * @return
 	 * @throws InvalidDataException 
 	 */
-	protected EmailMessageVO buildStatusEmail(TicketVO t, String ticketMsg) throws InvalidDataException {
+	protected EmailMessageVO buildStatusEmail(TicketVO t) throws InvalidDataException {
 		EmailMessageVO msg = buildDefaultEmail(t);
-		msg.setHtmlBody(buildStatusEmailBody(t, ticketMsg));
+		msg.setHtmlBody(buildStatusEmailBody(t));
 		return msg;
 
 	}
@@ -373,7 +373,7 @@ public class BiomedSupportEmailUtil {
 	 * @param ticketMsg
 	 * @return
 	 */
-	protected String buildStatusEmailBody(TicketVO t, String ticketMsg) {
+	protected String buildStatusEmailBody(TicketVO t) {
 		StringBuilder text = new StringBuilder(1000);
 		text.append("<p><a href='");
 		//Replace Url
@@ -405,9 +405,8 @@ public class BiomedSupportEmailUtil {
 	 * @return
 	 * @throws InvalidDataException 
 	 */
-	protected EmailMessageVO buildActivityEmail(TicketVO t, String ticketMsg) throws InvalidDataException {
-		EmailMessageVO msg = buildDefaultEmail(t);
-		return msg;	
+	protected EmailMessageVO buildActivityEmail(TicketVO t) throws InvalidDataException {
+		return buildDefaultEmail(t);	
 	}
 
 	/**

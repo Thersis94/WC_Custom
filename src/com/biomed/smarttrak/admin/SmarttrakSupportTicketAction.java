@@ -146,7 +146,7 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 	@Override
 	protected void sendEmail(TicketVO t, ChangeType type, String orgId) {
 		try {
-			new BiomedSupportEmailUtil(getDBConnection(), getAttributes()).sendEmail(t.getTicketId(), null, type);
+			new BiomedSupportEmailUtil(getDBConnection(), getAttributes()).sendEmail(t.getTicketId(), type);
 		} catch (Exception e) {
 			log.error("Problem Sending Email.", e);
 		}
