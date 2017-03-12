@@ -3,8 +3,10 @@ package com.biomed.smarttrak.action;
 import java.util.HashMap;
 import java.util.Map;
 
+
 //apache commons-lang jar
 import org.apache.commons.lang.StringEscapeUtils;
+
 
 // WC custom
 import com.biomed.smarttrak.fd.FinancialDashAction;
@@ -17,6 +19,7 @@ import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.ListAction;
+import com.biomed.smarttrak.admin.ManageAuthorAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.ReportFacadeAction;
@@ -135,6 +138,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("marketingInstanceReport", InstanceReport.class);
 		ACTIONS.put("uwr", UpdatesWeeklyReportAction.class); 
 		ACTIONS.put("grid", GridChartAction.class);
+		ACTIONS.put("author", ManageAuthorAction.class);
 	}
 
 
@@ -148,6 +152,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.debug("################################ build!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		String actionType = req.getParameter(ACTION_TYPE);
 		String msg;
 		try {
@@ -188,6 +193,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		log.debug("################################ retrieve!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		if (req.hasParameter(ACTION_TYPE)) {
 			loadAction(req.getParameter(ACTION_TYPE)).retrieve(req);
 		} else {

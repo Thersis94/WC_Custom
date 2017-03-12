@@ -38,6 +38,7 @@ import com.smt.sitebuilder.security.SecurityController;
 public class AccountAction extends SBActionAdapter {
 
 	public static final String ACCOUNT_ID = "accountId"; //req param
+	public static final String MANAGERS = "managers";
 
 	public AccountAction() {
 		super();
@@ -104,7 +105,7 @@ public class AccountAction extends SBActionAdapter {
 		decryptNames(accounts);
 		Collections.sort(accounts, new NameComparator());
 
-		req.setAttribute("managers", accounts);
+		req.setAttribute(MANAGERS, accounts);
 	}
 
 

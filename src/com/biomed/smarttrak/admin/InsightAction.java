@@ -57,11 +57,8 @@ public class InsightAction extends AbstractTreeAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("insight retrieve called");
 		
-		if (req.hasParameter("loadAuthorList")) {
-			loadAuthors(req);
-		}
-		
 		if (req.hasParameter("loadData") || req.hasParameter(INSIGHT_ID) ) {
+			loadAuthors(req);
 			loadInsightsData(req);
 		}
 	}
@@ -101,14 +98,6 @@ public class InsightAction extends AbstractTreeAction {
 		aa.setDBConnection(dbConn);
 		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
 
-		//if we are looking for only managers then place them on the mod data so the 
-		// table can find them.  if not they will be on the req attributes where other 
-		// forms are looking for them
-		if(!req.hasParameter("loadData")){
-			log.debug(" placed on req for model");
-			putModuleData(req.getAttribute("managers"));
-		}
-		
 	}
 
 	/**
