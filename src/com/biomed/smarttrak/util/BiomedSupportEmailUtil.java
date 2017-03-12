@@ -178,7 +178,7 @@ public class BiomedSupportEmailUtil {
 		log.debug("Created Message: " + email);
 
 		MessageSender ms = new MessageSender(attributes, dbConn);
-	//	ms.sendMessage(email);
+		ms.sendMessage(email);
 	}
 
 	/**
@@ -285,8 +285,7 @@ public class BiomedSupportEmailUtil {
 		text.append("business day.To amend your request or add a screenshot or attachment ");
 		text.append("<a href='");
 		text.append(buildTicketUrl(t));
-		text.append("'>view the request here</a>.</p><p><b>Original Request</b>:</p><hr>");
-		text.append(t.getDescText()).append("<br><hr>");
+		text.append("'>view the request here</a>.</p>").append(addDescText(t));
 
 		return text.toString();
 	}
@@ -343,9 +342,7 @@ public class BiomedSupportEmailUtil {
 		text.append(pnf.getFormattedNumber());
 		text.append("<br>Creation Time: ");
 		text.append(Convert.formatDate(t.getCreateDt(), Convert.DATE_TIME_DASH_PATTERN_12HR));
-		text.append("</p><p><b>Original Request</b>:</p><hr>");
-		text.append(t.getDescText());
-		text.append("<br><hr>");
+		text.append("</p>").append(addDescText(t));
 		return text.toString();
 	}
 
@@ -385,11 +382,7 @@ public class BiomedSupportEmailUtil {
 
 		//Replace Assigned Name
 		text.append(t.getAssignedFirstNm()).append(" ").append(t.getAssignedLastNm());
-		text.append(".</p><p><b>Original Request</b>:</p><hr>");
-
-		//Replace ticketMsg
-		text.append(t.getDescText());
-		text.append("<br><hr>");
+		text.append(".</p>").append(addDescText(t));
 
 		return text.toString();
 	}
@@ -431,6 +424,22 @@ public class BiomedSupportEmailUtil {
 	}
 
 
+	/**
+	 * All emails have the same Desc Text Format at the bottom.
+	 * @param t
+	 * @return
+	 */
+	protected String addDescText(TicketVO t) {
+		StringBuilder text = new StringBuilder(1000);
+
+		text.append("<p><b>Original Request</b>:</p><hr>");
+
+		//Replace ticketMsg
+		text.append(t.getDescText());
+		text.append("<br><hr>");
+
+		return text.toString();
+	}
 	/**
 	 * Build the TicketActivity Email Notification. 
 	 * @param act

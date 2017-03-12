@@ -13,7 +13,8 @@ import com.smt.sitebuilder.changelog.ChangeLogVO;
 /****************************************************************************
  * <b>Title</b>: BiomedChangelogUtil.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO
+ * <b>Description: </b> Utility Class that Extends ChangeLogUtil with biomed
+ * specific information.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
