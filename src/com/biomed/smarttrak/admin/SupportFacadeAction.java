@@ -4,7 +4,6 @@
 package com.biomed.smarttrak.admin;
 
 import com.siliconmtn.action.ActionInterface;
-import com.smt.sitebuilder.action.support.SupportTicketActivityAction;
 import com.smt.sitebuilder.action.support.SupportTicketAttachmentAction;
 import com.smt.sitebuilder.action.support.SupportTicketFacadeAction;
 
@@ -32,7 +31,7 @@ public class SupportFacadeAction extends SupportTicketFacadeAction {
 
 		switch(actionType) {
 			case ACTIVITY:
-				a = new SupportTicketActivityAction(this.actionInit);
+				a = new SmarttrakSupportTicketActivityAction(this.actionInit);
 				break;
 			case ATTACHMENT:
 				a = new SupportTicketAttachmentAction(this.actionInit);

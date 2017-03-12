@@ -21,6 +21,7 @@ import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
+import com.smt.sitebuilder.action.support.TicketActivityVO;
 import com.smt.sitebuilder.action.support.TicketVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -430,5 +431,16 @@ public class BiomedSupportEmailUtil {
 			decryptTicket(t);
 		}	
 		return t;
+	}
+
+
+	/**
+	 * Build the TicketActivity Email Notification. 
+	 * @param act
+	 */
+	public void sendEmail(TicketActivityVO act) {
+		//Build Email
+
+		//Send Email
 	}
 }
