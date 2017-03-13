@@ -122,7 +122,8 @@ public class UpdatesAction extends AbstractTreeAction {
 	 */
 	private String formatHistoryRetrieveQuery(String updateId) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select b.wc_sync_id as update_id, a.diff_txt as message_txt, a.create_dt as publish_dt, c.first_nm, c.last_nm from change_log a ");
+		sql.append("select b.wc_sync_id as update_id, a.diff_txt as message_txt, ");
+		sql.append("a.create_dt as publish_dt, c.first_nm, c.last_nm from change_log a ");
 		sql.append("inner join wc_sync b on a.wc_sync_id = b.wc_sync_id ");
 		sql.append("inner join profile c on b.admin_profile_id = c.profile_id ");
 		sql.append("where b.wc_key_id = ? order by a.create_dt");
