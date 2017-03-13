@@ -98,10 +98,10 @@ public class SecurityController {
 			throws ActionNotAuthorizedException {
 		//use the same mechanisms solr is using to verify data access permissions.
 		String assetAcl = object.getACLPermissions();
-		String roleAcl = role.getAccessControlList();
-		log.debug("user ACL=" + roleAcl);
+		String[] roleAcl = role.getAuthorizedSections();
+		log.debug("user ACL=" + StringUtil.getToString(roleAcl));
 
-		if (StringUtil.isEmpty(roleAcl) || !AccessControlQuery.isAllowed(assetAcl, null, roleAcl.split(","))) {
+		if (roleAcl == null || roleAcl.length == 0 || !AccessControlQuery.isAllowed(assetAcl, null, roleAcl)) {
 			log.debug("user is not authorized.  Setting up redirect, then throwing exception");
 			StringBuilder url = new StringBuilder(150);
 			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());

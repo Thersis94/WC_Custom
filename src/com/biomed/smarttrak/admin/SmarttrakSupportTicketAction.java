@@ -3,13 +3,23 @@
  */
 package com.biomed.smarttrak.admin;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.util.BiomedSupportEmailUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.parser.DirectoryParser;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.support.SupportTicketAction;
+import com.smt.sitebuilder.action.support.TicketVO;
+import com.smt.sitebuilder.admin.action.OrganizationAction;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -32,6 +42,64 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 
 	public SmarttrakSupportTicketAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+
+	/**
+	 * @param ticketId
+	 * @param schema
+	 * @return
+	 */
+	@Override
+	public String formatRetrieveQuery(Map<String, Object> params) {
+		StringBuilder sql = new StringBuilder(500);
+		sql.append("select a.*, b.first_nm as reporter_first_nm, ");
+		sql.append("b.last_nm as reporter_last_nm, c.first_nm as assigned_first_nm, ");
+		sql.append("c.last_nm as assigned_last_nm ");
+		sql.append("from support_ticket a ");
+		sql.append("left outer join profile b on a.reporter_id = b.profile_id ");
+		sql.append("left outer join profile c on a.assigned_id = c.profile_id ");
+		sql.append("where a.organization_id = ? ");
+
+		if(params.containsKey(TICKET_ID)) {
+			sql.append("and a.ticket_id = ? ");
+		}
+	
+		if(params.containsKey("profileId")) {
+			sql.append("and b.profile_id = ? ");
+		}
+
+		sql.append("order by a.create_dt desc ");
+		return sql.toString();
+	}
+
+	@Override
+	protected LinkedHashMap<String, Object> getParams(ActionRequest req) throws ActionException {
+		LinkedHashMap<String, Object> params = new LinkedHashMap<>();
+		String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
+
+		if(StringUtil.isEmpty(orgId)) {
+			throw new ActionException("Missing OrgId on Request.");
+		}
+		params.put(OrganizationAction.ORGANIZATION_ID, orgId);
+
+		if(!StringUtil.isEmpty(req.getParameter(TICKET_ID))) {
+			params.put(TICKET_ID, req.getParameter(TICKET_ID));
+		} else if(req.hasParameter(DirectoryParser.PARAMETER_PREFIX + "1")) {
+			params.put(TICKET_ID, req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
+			req.setParameter(TICKET_ID, req.getParameter(DirectoryParser.PARAMETER_PREFIX + "1"));
+		}
+
+		/*
+		 * Check user Role.  If they are only a registered user, restrict tickets
+		 * they see to their own only.
+		 */
+		SmarttrakRoleVO r = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
+		if(AdminControllerAction.DEFAULT_ROLE_LEVEL >= r.getRoleLevel()) {
+			params.put("profileId", r.getProfileId());
+		}
+
+		return params;
+
 	}
 
 	/**
@@ -78,5 +146,14 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 		}
 
 		return u;
+	}
+
+	@Override
+	protected void sendEmail(TicketVO t, ChangeType type, String orgId) {
+		try {
+			new BiomedSupportEmailUtil(getDBConnection(), getAttributes()).sendEmail(t.getTicketId(), type);
+		} catch (Exception e) {
+			log.error("Problem Sending Email.", e);
+		}
 	}
 }

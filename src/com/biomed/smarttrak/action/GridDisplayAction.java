@@ -3,6 +3,7 @@ package com.biomed.smarttrak.action;
 // App Libs
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.vo.GridVO;
+import com.biomed.smarttrak.vo.grid.BiomedExcelReport;
 import com.biomed.smarttrak.vo.grid.SMTChartFactory;
 import com.biomed.smarttrak.vo.grid.SMTChartFactory.ProviderType;
 import com.biomed.smarttrak.vo.grid.SMTChartOptionFactory;
@@ -16,6 +17,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -60,23 +62,54 @@ public class GridDisplayAction extends SBActionAdapter {
 		
 		// Parse the row and series data
 		GridVO grid = getGridData(gridId);
+		
+		if (req.hasParameter("excel")) buildExcelFile(req, grid);
+		else this.putModuleData(retrieveChartData(req, grid, type));
+	}
+	
+	/**
+	 * Builds the excel file and sets it to be streamed
+	 * @param req
+	 * @param grid
+	 */
+	public void buildExcelFile(ActionRequest req, GridVO grid) {
+			// Add it the the Report
+			BiomedExcelReport rpt = new BiomedExcelReport();
+			rpt.setData(grid);
+			String fileName = StringUtil.removeNonAlphaNumeric(grid.getTitle(), false);
+			rpt.setFileName(fileName + ".xls");
+			
+			// Set the appropriate parameters to stream the file
+			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+
+	}
+	
+	/**
+	 * Retrieves the chart data
+	 * @param req
+	 * @param grid
+	 * @param type
+	 */
+	public SMTGridIntfc retrieveChartData(ActionRequest req, GridVO grid, ChartType type) {
 		ProviderType pt = ProviderType.valueOf(StringUtil.checkVal(req.getParameter("pt"), "GOOGLE").toUpperCase());
 		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type);
+		Boolean full = Convert.formatBoolean(req.getParameter("full"), false);
 		
 		// Get the chart options
-		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE);
+		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE, full);
 		options.addOptionsFromGridData(grid);
 		
 		// Add the chart specific options
 		gridData.addCustomValues(options.getChartOptions());
+		gridData.addCustomValue("width", "100%");
+		gridData.addCustomValue("height", "100%");
 		
-		// Associate the dynamic options
-		gridData.addCustomValue("width", Convert.formatInteger(req.getParameter("w"), 250));
-		gridData.addCustomValue("height", Convert.formatInteger(req.getParameter("h"), 250));
-		gridData.addCustomValue("isStacked", Convert.formatBoolean(req.getParameter("isStacked"), false));
+		// Add configurable attributes
+		if(req.hasParameter("isStacked"))
+			gridData.addCustomValue("isStacked", Convert.formatBoolean(req.getParameter("isStacked"), false));
 		
-		// return the bean for conversion to json
-		this.putModuleData(gridData);
+		return gridData;
 	}
 
 	/**

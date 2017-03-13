@@ -36,6 +36,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
@@ -252,6 +253,11 @@ public class ProductExplorer extends SBActionAdapter {
 		SolrActionVO qData = buildSolrAction(req);
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
 
+		SBUserRole roles = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		qData.setRoleLevel(roles.getRoleLevel());
+		qData.setRoleACL(roles.getAccessControlList());
+		qData.setAclTypeNo(10);
+
 		buildSearchParams(req, qData);
 		if (req.hasParameter("selNodes")) buildNodeParams(req, qData);
 
@@ -259,7 +265,8 @@ public class ProductExplorer extends SBActionAdapter {
 		
 		SolrResponseVO vo = sqp.processQuery(qData);
 
-		buildFilterList(req, vo);
+		if (!req.hasParameter("compare") && !req.hasParameter("textCompare"))
+			buildFilterList(req, vo);
 		return vo;
 	}
 
@@ -438,7 +445,7 @@ public class ProductExplorer extends SBActionAdapter {
 	protected void exportResults(ActionRequest req) throws ActionException {
 		AbstractSBReportVO report = new ProductExplorerReportVO();
 		report.setData(retrieveProducts(req).getResultDocuments());
-		report.setFileName("Product Set " + Convert.getCurrentTimestamp());
+		report.setFileName("Product Set " + Convert.getCurrentTimestamp() + ".xls");
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 	}
@@ -459,7 +466,7 @@ public class ProductExplorer extends SBActionAdapter {
 			StringBuilder body = new StringBuilder(250);
 			body.append(user.getFullName()).append(" has shared a product set with you.</br>");
 			body.append("You can view the product set <a href='").append(buildUrl(req));
-			body.append(">here</a>.");
+			body.append("'>here</a>.");
 
 			msg.setHtmlBody(body.toString());
 			MessageSender ms = new MessageSender(attributes, dbConn);

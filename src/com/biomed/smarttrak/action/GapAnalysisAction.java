@@ -109,7 +109,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 
 		log.debug(this.getProductListSql("usa".equalsIgnoreCase(regionId)));
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
-		List<Object>  data = db.executeSelect(getProductListSql("usa".equalsIgnoreCase(regionId)), params, new GapProductVO());
+		List<Object>  data = db.executeSelect(getProductListSql(regionId.startsWith("u")), params, new GapProductVO());
 		log.debug("loaded " + data.size() + " products");
 
 		return data;

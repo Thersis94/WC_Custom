@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.util;
 
 //Java 8
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,8 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+
 //Solr 5.5
 import org.apache.solr.client.solrj.SolrClient;
+
 
 // SMT base libs
 import com.siliconmtn.data.Node;
@@ -68,7 +71,11 @@ public class MarketIndexer  extends SMTAbstractIndex {
 
 	@Override
 	public void addSingleItem(String id) {
-		pushMarkets(makeServer(), id);
+		try (SolrClient server = makeServer()) {
+			pushMarkets(server, id);
+		} catch (IOException e) {
+			log.error("Failed to add document with id: " + id, e);
+		}
 	}
 
 

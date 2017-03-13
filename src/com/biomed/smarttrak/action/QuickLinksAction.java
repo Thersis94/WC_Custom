@@ -1,6 +1,6 @@
 package com.biomed.smarttrak.action;
 
-// Java 8
+//Java 8
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +24,7 @@ import com.smt.sitebuilder.util.PageViewVO;
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
- @author groot
+ @author DBargerhuff
  @version 1.0
  @since Feb 16, 2017
  <b>Changes:</b> 
@@ -42,6 +42,7 @@ public class QuickLinksAction extends SBActionAdapter {
 	public static final String PARAM_KEY_URI_TXT = "uriTxt";
 	public static final String PARAM_KEY_TYPE_CD = "typeCd";
 	public static final String PARAM_KEY_REL_ID = "relId";
+	public static final String PARAM_KEY_REFRESH_FAVORITES = "refreshFavorites";
 	public static final int MAX_LIST_SIZE = 3;
 
 	/**
@@ -64,9 +65,13 @@ public class QuickLinksAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SMTSession sess = (SMTSession)req.getSession();
-		if (sess.getAttribute(MyFavoritesAction.MY_FAVORITES) == null) {
+		
+		// load favorites if not on session
+		if (sess.getAttribute(MyFavoritesAction.MY_FAVORITES) == null ||
+				req.hasParameter(PARAM_KEY_REFRESH_FAVORITES)) {
 			loadFavorites(req);
 		}
+		// load recently viewed if not on session
 		if (sess.getAttribute(MY_RECENTLY_VIEWED) == null) {
 			loadRecentlyViewed(req);
 		}
@@ -92,18 +97,21 @@ public class QuickLinksAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void loadFavorites(ActionRequest req) throws ActionException {
-		log.debug("loadFavorites...");
+		log.debug("QuickLinksAction loadFavorites...");
 		// call FavoritesAction
 		ActionInterface ai = new FavoritesAction(actionInit);
 		ai.setAttributes(getAttributes());
 		ai.setDBConnection(dbConn);
 		ai.retrieve(req);
-		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
-		log.debug("favorites mod error condition: " + mod.getErrorCondition());
-		if (! mod.getErrorCondition()) {
-			SMTSession sess = req.getSession();
-			Map<String, List<PageViewVO>> fv = (Map<String, List<PageViewVO>>) mod.getActionData();
-			sess.setAttribute(MyFavoritesAction.MY_FAVORITES,fv);
+		
+		if (! req.hasParameter(PARAM_KEY_REFRESH_FAVORITES)) {
+			ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
+			log.debug("favorites mod error condition: " + mod.getErrorCondition());
+			if (! mod.getErrorCondition()) {
+				SMTSession sess = req.getSession();
+				Map<String, List<PageViewVO>> fv = (Map<String, List<PageViewVO>>) mod.getActionData();
+				sess.setAttribute(MyFavoritesAction.MY_FAVORITES,fv);
+			}
 		}
 	}
 

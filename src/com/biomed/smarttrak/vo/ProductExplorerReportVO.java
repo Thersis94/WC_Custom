@@ -124,6 +124,8 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 		List<StringBuilder> alliances = new ArrayList<>();
 		
 		// Create the first section of the alliance list
+		if (doc.getFieldValues("alliance_ss") == null) return ""; 
+		
 		for (Object o : doc.getFieldValues("alliance_ss")) {
 			StringBuilder s = new StringBuilder(50);
 			s.append(o).append(" -- ");

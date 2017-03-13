@@ -45,6 +45,8 @@ public class SmarttrakRoleVO extends SBUserRole {
 	 */
 	private List<PermissionVO> accountRoles;
 
+	private String[] authorizedSections;
+
 	/**
 	 * @param role
 	 */
@@ -80,7 +82,8 @@ public class SmarttrakRoleVO extends SBUserRole {
 			}
 		}
 
-		setAccessControlList(gen.getQueryACL(null, groups.toArray(new String[groups.size()])));
+		authorizedSections = groups.toArray(new String[groups.size()]);
+		setAccessControlList(gen.getQueryACL(null, authorizedSections));
 	}
 
 	/**
@@ -355,12 +358,16 @@ public class SmarttrakRoleVO extends SBUserRole {
 	public void setAccountOwner(int acctOwnerFlg) {
 		this.acctOwnerFlg = 1 == acctOwnerFlg;
 	}
-	
+
 	/**
 	 * you are or are-not an account owner.  This drives whether you see "My Teams" in the pulldown menu.
 	 * @return
 	 */
 	public boolean isAccountOwner() {
 		return acctOwnerFlg;
+	}
+
+	public String[] getAuthorizedSections() {
+		return authorizedSections;
 	}
 }

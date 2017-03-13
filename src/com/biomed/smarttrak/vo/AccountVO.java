@@ -9,6 +9,7 @@ import com.siliconmtn.db.orm.Table;
 
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
@@ -29,6 +30,7 @@ public class AccountVO implements HumanNameIntfc {
 	private String accountName;
 	private String typeId;
 	private String ownerProfileId;
+	private String ownerEmailAddr;
 	private Location location;
 	private String statusNo;
 	private Date startDate;
@@ -78,7 +80,7 @@ public class AccountVO implements HumanNameIntfc {
 		this();
 		setAccountId(req.getParameter("accountId"));
 		setAccountName(req.getParameter("accountName"));
-		setCompanyId(req.getParameter("companyId"));
+		setCompanyId(StringUtil.checkVal(req.getParameter("companyId"), null)); //nullable foreign key
 		setTypeId(req.getParameter("typeId"));
 		setOwnerProfileId(req.getParameter("ownerProfileId"));
 		setStatusNo(req.getParameter("statusNo"));
@@ -223,6 +225,21 @@ public class AccountVO implements HumanNameIntfc {
 		this.ownerProfileId = ownerProfileId;
 	}
 
+	/**
+	 * @return the ownerEmailAddr
+	 */
+	@Column(name="owner_email_addr", isReadOnly=true)
+	public String getOwnerEmailAddr() {
+		return ownerEmailAddr;
+	}
+
+	/**
+	 * @param ownerEmailAddr the ownerEmailAddr to set
+	 */
+	public void setOwnerEmailAddr(String ownerEmailAddr) {
+		this.ownerEmailAddr = ownerEmailAddr;
+	}
+	
 	/**
 	 * @return the location
 	 *NOTE no setter for location - we don't want outsiders to be able to nullify it, or our setter/getters around address will fail

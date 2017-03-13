@@ -14,6 +14,7 @@ import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
+import com.biomed.smarttrak.admin.EditorsDeskAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.ListAction;
@@ -84,7 +85,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
 	 */
 	public enum Section {
-		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("insights/");
+		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("insights/"), PRODUCT_EXPLOERER("explorer/");
 
 		private String path;
 		Section(String path) { this.path = path; }
@@ -135,6 +136,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("marketingInstanceReport", InstanceReport.class);
 		ACTIONS.put("uwr", UpdatesWeeklyReportAction.class); 
 		ACTIONS.put("grid", GridChartAction.class);
+		ACTIONS.put("editorsDesk", EditorsDeskAction.class);
 	}
 
 
