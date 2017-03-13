@@ -59,8 +59,8 @@ public class DSIRegistrationDataAction extends RegistrationDataAction {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.value_txt, a.data_enc_flg, b.register_submittal_id, ");
 		sql.append("b.profile_id, b.create_dt, c.register_field_id, c.html_type_id, ");
-		sql.append("r.role_nm, st.status_nm, '' as site_id, '' as site_nm, ");
-		sql.append("CURRENT_TIMESTAMP as role_expire_dt, CURRENT_TIMESTAMP as login_dt, ");
+		sql.append("r.role_nm, st.status_nm, s.site_id, s.site_nm, ");
+		sql.append("pr.role_expire_dt, max(al.login_dt) as login_dt, ");
 		sql.append("coalesce(p.update_dt, p.create_dt) as profile_update_dt ");
 		sql.append("from register_data a ");
 		sql.append("inner join register_submittal b on a.register_submittal_id=b.register_submittal_id ");
@@ -70,10 +70,15 @@ public class DSIRegistrationDataAction extends RegistrationDataAction {
 		sql.append("left outer join profile_role pr on p.profile_id=pr.profile_id and pr.site_id=b.site_id ");
 		sql.append("left outer join role r on pr.role_id=r.role_id ");
 		sql.append("left outer join status st on pr.status_id=st.status_id ");
+		sql.append("left outer join authentication_log al on  al.authentication_id=p.authentication_id and al.status_cd=1 and al.site_id=b.site_id ");
 		sql.append("where b.action_id=? ");
 		if (useDates) sql.append("and b.create_dt between ? and ? ");
 		if (regSubtlId != null) sql.append("and b.register_submittal_id=? ");
 		sql.append("and (b.robot_flg=0 or b.robot_flg is null) ");
+
+		sql.append("group by a.value_txt, a.data_enc_flg, b.register_submittal_id, ");
+		sql.append("b.profile_id, b.create_dt, c.register_field_id, c.html_type_id, r.role_nm, st.status_nm, s.site_id, s.site_nm, ");
+		sql.append("pr.role_expire_dt, coalesce(p.update_dt, p.create_dt)  ");
 
 		sql.append("order by b.create_dt");
 		if ("dateDesc".equals(req.getParameter("orderBy"))) sql.append(" desc");

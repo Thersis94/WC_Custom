@@ -66,7 +66,7 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 		Map<String, String> row;
 		for (RegistrationDataModuleVO rdm : cdc.getData()) {
 			row = new HashMap<>(50);
-			row.put("DATE", Convert.formatDate(rdm.getSubmittalDate(), "MMMM dd, yyyy"));
+			row.put("DATE", Convert.formatDate(rdm.getSubmittalDate(), Convert.DATE_FULL_MONTH));
 			row.put("TIME", Convert.formatDate(rdm.getSubmittalDate(), Convert.TIME_SHORT_PATTERN));
 			row.put("PROFILE", rdm.getProfileId());
 			row.put(DSIUserDataVO.RegField.DSI_TTLMS_ID.name(), StringUtil.checkVal(rdm.getExtData().get(DSIUserDataVO.RegField.DSI_TTLMS_ID.name())));
