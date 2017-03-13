@@ -28,17 +28,16 @@ import com.smt.sitebuilder.action.registration.RegistrationDataModuleVO;
  * @updates:
  ****************************************************************************/
 public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
-
 	private static final long serialVersionUID = 1L;
-	RegistrationDataContainer cdc = null;
-	
+	private RegistrationDataContainer cdc;
 
 	public DSIRegistrationDataActionVO() {
 		super();
 		setContentType("application/vnd.ms-excel");
 		isHeaderAttachment(Boolean.TRUE);
-		setFileName("Registration Report.xls");
+		setFileName("DSI Registration Report.xls");
 	}
+
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#generateReport()
@@ -46,34 +45,27 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 	@Override
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
-
 		ExcelReport rpt = new StandardExcelReport(this.getHeader());
-
-		List<Map<String, Object>> rows = new ArrayList<>();
-
+		List<Map<String, String>> rows = new ArrayList<>(cdc.getData().size()+10);
 		rows = generateDataRows(rows);
-
 		rpt.setData(rows);
-
 		return rpt.generateReport();
 	}
+
 
 	/**
 	 * generate data rows of report
 	 * @param rows
 	 * @return
 	 */
-	private List<Map<String, Object>> generateDataRows(
-			List<Map<String, Object>> rows) {
-
+	protected List<Map<String, String>> generateDataRows(List<Map<String, String>> rows) {
 		//profession and specialty are in the form as guids placed into strings for readablity
 		String profession = DSIUserDataVO.RegField.c0a80241b71c9d40a59dbd6f4b621260.name();
 		String Specialty = DSIUserDataVO.RegField.c0a80241b71d27b038342fcb3ab567a0.name();
-		
-		
-		for (RegistrationDataModuleVO rdm : cdc.getData()) {
-			Map<String, Object> row = new HashMap<>();
 
+		Map<String, String> row;
+		for (RegistrationDataModuleVO rdm : cdc.getData()) {
+			row = new HashMap<>(50);
 			row.put("DATE", Convert.formatDate(rdm.getSubmittalDate(), "MMMM dd, yyyy"));
 			row.put("TIME", Convert.formatDate(rdm.getSubmittalDate(), Convert.TIME_SHORT_PATTERN));
 			row.put("PROFILE", rdm.getProfileId());
@@ -86,7 +78,6 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 			row.put("DSI_DEGREE", StringUtil.checkVal(rdm.getExtData("DSI_DEGREE")));
 			row.put("EMAIL_ADDRESS", rdm.getEmailAddress());
 			row.put(DSIUserDataVO.RegField.DSI_COUNTRY.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_COUNTRY.name())));
-			
 			row.put(profession, StringUtil.checkVal(rdm.getExtData(profession)));
 			row.put(Specialty, StringUtil.checkVal(rdm.getExtData(Specialty)));
 			row.put(DSIUserDataVO.RegField.DSI_PGY.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_PGY.name())));
@@ -98,24 +89,21 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 			row.put(DSIUserDataVO.RegField.DSI_GRAD_DT.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_GRAD_DT.name())));
 			row.put("ALLOW_COMMUNICATION", Convert.formatInteger(rdm.getAllowCommunication()) == 1 ? "Yes":"No");
 			row.put(DSIUserDataVO.RegField.DSI_VERIFIED.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_VERIFIED.name())));
-	
 			rows.add(row);
 		}
-
 		return rows;
 	}
+
 
 	/**
 	 * generates the header row
 	 * @return
 	 */
-	private Map<String, String> getHeader() {
-		HashMap<String, String> headerMap = new LinkedHashMap<>();
-
+	protected Map<String, String> getHeader() {
+		HashMap<String, String> headerMap = new LinkedHashMap<>(50);
 		//profession and specialty are in the form as guids placed into strings for readablity
 		String profession = DSIUserDataVO.RegField.c0a80241b71c9d40a59dbd6f4b621260.name();
 		String Specialty = DSIUserDataVO.RegField.c0a80241b71d27b038342fcb3ab567a0.name();
-		
 		headerMap.put("DATE", "Date");
 		headerMap.put("TIME", "Time");
 		headerMap.put("PROFILE", "Profile ID");
@@ -140,9 +128,9 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 		headerMap.put(DSIUserDataVO.RegField.DSI_GRAD_DT.name(), cdc.getFields().get(DSIUserDataVO.RegField.DSI_GRAD_DT.name()));
 		headerMap.put("ALLOW_COMMUNICATION", "Allow Communication");
 		headerMap.put(DSIUserDataVO.RegField.DSI_VERIFIED.name(), cdc.getFields().get(DSIUserDataVO.RegField.DSI_VERIFIED.name()));
-
 		return headerMap;
 	}
+
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#setData(java.lang.Object)
@@ -150,8 +138,6 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 	@Override
 	public void setData(Object o) {
 		RegistrationDataContainer methodCdc = (RegistrationDataContainer ) o;
-		this.cdc = (RegistrationDataContainer ) methodCdc;
-
+		cdc = (RegistrationDataContainer ) methodCdc;
 	}
-
 }
