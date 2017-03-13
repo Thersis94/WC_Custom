@@ -8,14 +8,17 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.vo.AccountVO;
+import com.biomed.smarttrak.vo.UserVO;
+import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
-import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
@@ -23,8 +26,7 @@ import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
 import com.smt.sitebuilder.action.support.TicketVO;
-import com.smt.sitebuilder.action.user.ProfileManager;
-import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.MessageSender;
@@ -35,16 +37,13 @@ import com.smt.sitebuilder.util.MessageSender;
  * <b>Description: </b> Utility class for building Support Emails.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 1.0
  * @since Mar 10, 2017
  ****************************************************************************/
 public class BiomedSupportEmailUtil {
 
-	public static final String TICKET_ID = "ticketId";
-	public static final String TICKET_MSG = "ticketMsg";
-	public static final String EMAIL_TYPE = "emailType";
 	public static final String CFG_SUPPORT_URL = "smarttrakSupportUrl";
 
 	private Logger log;
@@ -73,11 +72,16 @@ public class BiomedSupportEmailUtil {
 	 * @param type
 	 * @throws Exception
 	 */
-	public void sendEmail(String ticketId, ChangeType type) throws Exception {
+	public void sendEmail(String ticketId, ChangeType type) throws ActionException {
 
 		TicketVO t = loadTicket(ticketId);
 
-		buildEmail(t, type);
+		try {
+			buildEmail(t, type);
+		} catch (InvalidDataException | EncryptionException e) {
+			throw new ActionException("There was a problem building Biomed support email.", e);
+		}
+		
 	}
 
 	/**
@@ -140,9 +144,12 @@ public class BiomedSupportEmailUtil {
 	 * @param t
 	 * @param type
 	 * @param ticketMsg
+	 * @throws InvalidDataException 
+	 * @throws ActionException 
+	 * @throws EncryptionException 
 	 * @throws Exception 
 	 */
-	protected void buildEmail(TicketVO t, ChangeType type) throws Exception {
+	protected void buildEmail(TicketVO t, ChangeType type) throws InvalidDataException, ActionException, EncryptionException {
 		EmailMessageVO email = null;
 		switch(type) {
 			case ACTIVITY:
@@ -174,7 +181,7 @@ public class BiomedSupportEmailUtil {
 	 * @param order
 	 * @throws Exception
 	 */
-	protected void sendEmail(EmailMessageVO email) throws Exception {
+	protected void sendEmail(EmailMessageVO email) {
 		log.debug("Created Message: " + email);
 
 		MessageSender ms = new MessageSender(attributes, dbConn);
@@ -215,9 +222,10 @@ public class BiomedSupportEmailUtil {
 	/**
 	 * Helper method attempts to retrieve all the Account Managers.
 	 * @return
+	 * @throws EncryptionException 
 	 * @throws Exception 
 	 */
-	protected String [] getAdminEmails() throws Exception {
+	protected String [] getAdminEmails() throws EncryptionException {
 		List<String> emails = new ArrayList<>();
 
 		StringBuilder sql = new StringBuilder(200);
@@ -256,9 +264,11 @@ public class BiomedSupportEmailUtil {
 	 * @param t
 	 * @param ticketMsg 
 	 * @return
+	 * @throws InvalidDataException 
+	 * @throws EncryptionException 
 	 * @throws Exception 
 	 */
-	protected EmailMessageVO buildNewRequestEmail(TicketVO t) throws Exception {
+	protected EmailMessageVO buildNewRequestEmail(TicketVO t) throws InvalidDataException, EncryptionException {
 		EmailMessageVO msg = buildDefaultEmail(t);
 
 		//New Tickets get sent to All Admins.
@@ -297,9 +307,11 @@ public class BiomedSupportEmailUtil {
 	 * @param t
 	 * @param ticketMsg 
 	 * @return
+	 * @throws InvalidDataException 
+	 * @throws ActionException 
 	 * @throws Exception 
 	 */
-	protected EmailMessageVO buildAssignedEmail(TicketVO t) throws Exception {
+	protected EmailMessageVO buildAssignedEmail(TicketVO t) throws InvalidDataException, ActionException {
 		EmailMessageVO msg = buildDefaultEmail(t);
 		msg.setHtmlBody(buildAssignedEmailBody(t));
 		return msg;
@@ -310,13 +322,12 @@ public class BiomedSupportEmailUtil {
 	 * @param t
 	 * @param ticketMsg
 	 * @return
+	 * @throws ActionException 
 	 * @throws Exception 
 	 */
-	protected String buildAssignedEmailBody(TicketVO t) throws Exception {
-		UserDataVO user = ProfileManagerFactory.getInstance(attributes).getProfile(t.getReporterId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, AdminControllerAction.BIOMED_ORG_ID);
-		
-		//TODO - Need to get CompanyId for a User.  Probably need to Load similar to AccountUserAction.
-		String companyId = (String)user.getAttributes().get("companyId");
+	protected String buildAssignedEmailBody(TicketVO t) throws ActionException {
+		UserVO user = getUserData(t);
+		String companyId = user.getCompany();
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
 		pnf.setCountryCode(user.getCountryCode());
 		pnf.setPhoneNumber(user.getMainPhone());
@@ -344,6 +355,23 @@ public class BiomedSupportEmailUtil {
 		text.append(Convert.formatDate(t.getCreateDt(), Convert.DATE_TIME_DASH_PATTERN_12HR));
 		text.append("</p>").append(addDescText(t));
 		return text.toString();
+	}
+
+
+	/**
+	 * @param t
+	 * @return
+	 * @throws ActionException 
+	 */
+	private UserVO getUserData(TicketVO t) throws ActionException {
+		ActionRequest req = new ActionRequest();
+		SiteVO s = new SiteVO();
+		s.setOrganizationId(AdminControllerAction.BIOMED_ORG_ID);
+		req.setAttribute(Constants.SITE_DATA, s);
+		AccountUserAction aua = new AccountUserAction();
+		aua.setDBConnection(dbConn);
+		aua.setAttributes(attributes);
+		return (UserVO) aua.loadAccountUsers(req, t.getReporterId()).get(0);
 	}
 
 

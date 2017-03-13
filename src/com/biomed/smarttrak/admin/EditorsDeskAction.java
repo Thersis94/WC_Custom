@@ -69,8 +69,7 @@ public class EditorsDeskAction extends SBActionAdapter {
 	 */
 	private String getApprovalUpdateSql() {
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("update WC_SYNC set disposition_by_id = ? where wc_sync_id in ");
-		sql.append("(select wc_sync_id from change_log where change_log_id = ?)");
+		sql.append("update WC_SYNC set disposition_by_id = ? where wc_sync_id = ?");
 		return sql.toString();
 	}
 }
