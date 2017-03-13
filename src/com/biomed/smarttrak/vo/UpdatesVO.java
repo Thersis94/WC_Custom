@@ -506,22 +506,4 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	public String getItemDesc() {
 		return "Modified Smarttrak Update Record.";
 	}
-	
-	/**
-	 * Return list of UpdatesXRVO elements
-	 * @return
-	 */
-	public List<UpdatesXRVO> getXRSections(){
-		return sections;
-	}
-	
-	/**
-	 * Adds an UpdateXRVO to collection
-	 * @param updateSection
-	 */
-	@BeanSubElement
-	public void addUpdateXRVO(UpdatesXRVO updateSection){
-		if(updateSection != null)
-			sections.add(updateSection);
-	}	
 }

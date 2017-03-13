@@ -169,19 +169,30 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		List<UpdatesVO> relatedUpdates = new ArrayList<>();
 		
 		for (UpdatesVO update : updates) {
-			//get list of sections for this update
-			List<UpdatesXRVO>updateSections = update.getXRSections();
-			
-			/*Attempt to find section within tree structure. If so the current 
-			 * update belongs to this tree.*/			
-			for (UpdatesXRVO updatesXRVO : updateSections) {						
-				if(updatesXRVO.getSectionId() != null){
-					Node node = tree.findNode(updatesXRVO.getSectionId());
-					if(node != null) relatedUpdates.add(update);
-				}
-			}			
+			associateUpdates(update, relatedUpdates, tree);
 		}
 		
 		return relatedUpdates;
+	}
+	
+	/**
+	 * Helper method, handles associating updates to their related sections
+	 * @param update
+	 * @param holder
+	 * @param tree
+	 */
+	private void associateUpdates(UpdatesVO update, List<UpdatesVO> holder,
+			Tree tree){
+		//get list of sections for this update
+		List<UpdatesXRVO>updateSections = update.getUpdateSections();
+		
+		/*Attempt to find section within tree structure. If so the current 
+		 * update belongs to this tree.*/			
+		for (UpdatesXRVO updatesXRVO : updateSections) {						
+			if(updatesXRVO.getSectionId() != null){
+				Node node = tree.findNode(updatesXRVO.getSectionId());
+				if(node != null) holder.add(update);
+			}
+		}			
 	}
 }
