@@ -78,19 +78,58 @@ public class UpdatesAction extends AbstractTreeAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
-		if (!req.hasParameter("loadData") && !req.hasParameter(UPDATE_ID) ) return;
-
+		if (!req.hasParameter("loadData") && !req.hasParameter("loadhistory") && !req.hasParameter(UPDATE_ID) ) return;
 		String updateId = req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null;
-		String statusCd = req.getParameter("statusCd");
-		String typeCd = req.getParameter("typeCd");
-		String dateRange = req.getParameter("dateRange");
-		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
 
-		decryptNames(updates);
+		List<Object> data;
+		if(req.hasParameter("loadHistory")) {
+			data = getHistory(req.getParameter("historyId"));
+		} else {
+			String statusCd = req.getParameter("statusCd");
+			String typeCd = req.getParameter("typeCd");
+			String dateRange = req.getParameter("dateRange");
+			data = getUpdates(updateId, statusCd, typeCd, dateRange);
+		}
 
-		putModuleData(updates);
+		decryptNames(data);
+
+		putModuleData(data);
 	}
 
+
+	/**
+	 * Retrieve list of Updates containing historical Revisions.
+	 * @param parameter
+	 * @return
+	 */
+	protected List<Object> getHistory(String updateId) {
+		String sql = formatHistoryRetrieveQuery(updateId);
+
+		List<Object> params = new ArrayList<>();
+		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
+
+		DBProcessor db = new DBProcessor(dbConn);
+		List<Object>  updates = db.executeSelect(sql, params, new UpdatesVO());
+		log.debug("loaded " + updates.size() + " updates");
+		return updates;
+	}
+
+	/**
+	 * Build History Sql Retrieval against ChangeLog Table.
+	 * @param updateId
+	 * @param schema
+	 * @return
+	 */
+	private String formatHistoryRetrieveQuery(String updateId) {
+		StringBuilder sql = new StringBuilder(400);
+		sql.append("select b.wc_sync_id as update_id, a.diff_txt as message_txt, a.create_dt as publish_dt, c.first_nm, c.last_nm from change_log a ");
+		sql.append("inner join wc_sync b on a.wc_sync_id = b.wc_sync_id ");
+		sql.append("inner join profile c on b.admin_profile_id = c.profile_id ");
+		sql.append("where b.wc_key_id = ? order by a.create_dt");
+
+		log.debug(sql);
+		return sql.toString();
+	}
 
 	/**
 	 * Retrieve all the updates
