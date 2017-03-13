@@ -295,7 +295,7 @@ public class BiomedSupportEmailUtil {
 		text.append("business day.To amend your request or add a screenshot or attachment ");
 		text.append("<a href='");
 		text.append(buildTicketUrl(t));
-		text.append("'>view the request here</a>.</p>").append(addDescText(t));
+		text.append("'>view the request here</a>.</p>").append(addDescText(t.getDescText()));
 
 		return text.toString();
 	}
@@ -353,7 +353,7 @@ public class BiomedSupportEmailUtil {
 		text.append(pnf.getFormattedNumber());
 		text.append("<br>Creation Time: ");
 		text.append(Convert.formatDate(t.getCreateDt(), Convert.DATE_TIME_DASH_PATTERN_12HR));
-		text.append("</p>").append(addDescText(t));
+		text.append("</p>").append(addDescText(t.getDescText()));
 		return text.toString();
 	}
 
@@ -363,7 +363,7 @@ public class BiomedSupportEmailUtil {
 	 * @return
 	 * @throws ActionException 
 	 */
-	private UserVO getUserData(TicketVO t) throws ActionException {
+	protected UserVO getUserData(TicketVO t) throws ActionException {
 		ActionRequest req = new ActionRequest();
 		SiteVO s = new SiteVO();
 		s.setOrganizationId(AdminControllerAction.BIOMED_ORG_ID);
@@ -410,7 +410,7 @@ public class BiomedSupportEmailUtil {
 
 		//Replace Assigned Name
 		text.append(t.getAssignedFirstNm()).append(" ").append(t.getAssignedLastNm());
-		text.append(".</p>").append(addDescText(t));
+		text.append(".</p>").append(addDescText(t.getDescText()));
 
 		return text.toString();
 	}
@@ -425,8 +425,29 @@ public class BiomedSupportEmailUtil {
 	 * @throws InvalidDataException 
 	 */
 	protected EmailMessageVO buildActivityEmail(TicketVO t) throws InvalidDataException {
-		return buildDefaultEmail(t);	
+		EmailMessageVO email = buildDefaultEmail(t);
+		email.setHtmlBody(buildActivityEmailBody(t));
+		return email;
 	}
+
+	/**
+	 * Helper method builds Activity Email Body.
+	 * @param t
+	 * @return
+	 */
+	protected String buildActivityEmailBody(TicketVO t) {
+		StringBuilder text = new StringBuilder(1000);
+		text.append("<p><a href='");
+		//Replace Url
+		text.append(buildTicketUrl(t));
+		text.append("'>Direct Access request (#");
+		//Replace Ticket Number
+		text.append(t.getTicketId());
+		text.append(")</a> has been updated.</p>").append(addDescText(t.getActivities().get(0).getDescText()));
+
+		return text.toString();
+	}
+
 
 	/**
 	 * Load Ticket Info.  This has email Address information in it that we need
@@ -457,13 +478,13 @@ public class BiomedSupportEmailUtil {
 	 * @param t
 	 * @return
 	 */
-	protected String addDescText(TicketVO t) {
+	protected String addDescText(String descText) {
 		StringBuilder text = new StringBuilder(1000);
 
 		text.append("<p><b>Original Request</b>:</p><hr>");
 
 		//Replace ticketMsg
-		text.append(t.getDescText());
+		text.append(descText);
 		text.append("<br><hr>");
 
 		return text.toString();
@@ -471,10 +492,15 @@ public class BiomedSupportEmailUtil {
 	/**
 	 * Build the TicketActivity Email Notification. 
 	 * @param act
+	 * @throws ActionException 
 	 */
-	public void sendEmail(TicketActivityVO act) {
-		//Build Email
-
-		//Send Email
+	public void sendEmail(TicketActivityVO act) throws ActionException {
+		TicketVO t = loadTicket(act.getTicketId());
+		t.addActivity(act);
+		try {
+			buildEmail(t, ChangeType.ACTIVITY);
+		} catch (InvalidDataException | EncryptionException e) {
+			throw new ActionException("There was a problem building Biomed support email.", e);
+		}
 	}
 }

@@ -3,6 +3,7 @@ package com.biomed.smarttrak.admin;
 import java.util.LinkedHashMap;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.util.BiomedSupportEmailUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -42,13 +43,11 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 	 */
 	@Override
 	protected void sendEmailToCustomer(TicketActivityVO act) {
-		/*
-		 * TODO - Need to Get email to customer and add to BiomedSupportEmailUtil.
-		 * and remove call to super.
-		 */
-		super.sendEmailToCustomer(act);
-		
-		//new BiomedSupportEmailUtil(getDBConnection(), getAttributes()).sendEmail(act);
+		try {
+			new BiomedSupportEmailUtil(getDBConnection(), getAttributes()).sendEmail(act);
+		} catch (ActionException e) {
+			log.error("There was a problem Sending Support Activity Email", e);
+		}
 	}
 
 	@Override
