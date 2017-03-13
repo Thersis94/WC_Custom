@@ -63,7 +63,7 @@ import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
  ****************************************************************************/
 public class AdminControllerAction extends SimpleActionAdapter {
 
-	protected static final String ACTION_TYPE = "actionType"; //reqParam this class executes around
+	public static final String ACTION_TYPE = "actionType"; //reqParam this class executes around
 
 	// application constants  - these could be moved to sb_config if subject to change
 	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
