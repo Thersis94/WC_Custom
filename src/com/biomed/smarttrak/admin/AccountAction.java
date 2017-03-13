@@ -81,6 +81,7 @@ public class AccountAction extends SBActionAdapter {
 
 	/**
 	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
+	 * TODO - This appears to be returning duplicate Users.  Can see behavior under Manage/Support "Assigned To" Select list.
 	 * @param req
 	 * @throws ActionException
 	 */

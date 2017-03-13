@@ -3,6 +3,7 @@
  */
 package com.biomed.smarttrak.data;
 
+import com.biomed.smarttrak.util.BiomedSupportEmailUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -13,6 +14,7 @@ import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.contact.SubmittalAction;
+import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
 import com.smt.sitebuilder.action.support.TicketVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -121,8 +123,13 @@ public class AnalystPostProcessor extends SBActionAdapter {
 
 			//Save the TicketActivityVO
 			db.save(tav);
+
+			//Send Email.
+			new BiomedSupportEmailUtil(dbConn, attributes).sendEmail(t.getTicketId(), ChangeType.TICKET);
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Problem Submitting Data", e);
+		} catch (Exception e) {
+			log.error("Problem Sending Email", e);
 		}
 	}
 }
