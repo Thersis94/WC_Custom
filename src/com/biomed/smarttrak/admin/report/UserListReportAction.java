@@ -288,13 +288,11 @@ public class UserListReportAction extends SimpleActionAdapter {
 				} else {
 					// same user, check to see if phone type changed.
 					checkUserPhoneType(se,user,rs.getString("phone_number_txt"),prevPhoneCd,currPhoneCd);
-
-				}	
-
-				// add registration record
-				user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
-
+				}
 			}
+			
+			// add registration record for the current user.
+			user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
 
 			prevAcctId = currAcctId;
 			prevPid = currPid;

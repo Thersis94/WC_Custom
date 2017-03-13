@@ -11,7 +11,7 @@ package com.biomed.smarttrak.vo.grid;
  * Last Updated:
  * 	
  *******************************************************************/
-public class GoogleBarChartOptions extends GoogleBaseChartOptions {
+public class GoogleLineChartOptions extends GoogleBaseChartOptions {
 
 	/**
 	 * 
@@ -21,8 +21,8 @@ public class GoogleBarChartOptions extends GoogleBaseChartOptions {
 	/**
 	 * 
 	 */
-	public GoogleBarChartOptions() {
-		super();
+	public GoogleLineChartOptions(boolean full) {
+		super(full);
 		
 		this.createChartOptions();
 	}

@@ -11,18 +11,18 @@ import com.biomed.smarttrak.vo.ProductAttributeTypeVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
 import com.biomed.smarttrak.vo.ProductVO;
 import com.biomed.smarttrak.vo.RegulationVO;
+import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: ProductManagementAction.java <p/>
@@ -37,7 +37,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class ProductManagementAction extends SimpleActionAdapter {
+public class ProductManagementAction extends AbstractTreeAction {
 	
 	public static final String ACTION_TARGET = "actionTarget";
 	
@@ -109,6 +109,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_PATH p ");
 		sql.append("ON p.PATH_ID = r.PATH_ID ");
 		sql.append("WHERE r.PRODUCT_ID = ? ");
+		params.add(req.getParameter("productId"));
 		if (req.hasParameter("regulatoryId")) {
 			sql.append("and r.REGULATORY_ID = ? ");
 			params.add(req.getParameter("regulatoryId"));
@@ -514,21 +515,43 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	protected void addSections(ProductVO product) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT SECTION_NM, xr.PRODUCT_SECTION_XR_ID FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION xr ");
+		sql.append("SELECT SECTION_NM, xr.PRODUCT_SECTION_XR_ID, xr.SECTION_ID FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
 		sql.append("ON s.SECTION_ID = xr.SECTION_ID ");
 		sql.append("WHERE PRODUCT_ID = ? ");
-		
+
+		Tree t = loadDefaultTree();
+		t.buildNodePaths();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, product.getProductId());
 			
 			ResultSet rs = ps.executeQuery();
 			
 			while(rs.next()) {
-				product.addProductSection(new GenericVO(rs.getString("PRODUCT_SECTION_XR_ID"), rs.getString("SECTION_NM")));
+				SectionVO sec = new SectionVO(rs);
+				sec.setSectionId(rs.getString("PRODUCT_SECTION_XR_ID"));
+				sec.setSectionNm(rs.getString("SECTION_NM"));
+				setGroupName(t.findNode(rs.getString("SECTION_ID")), sec);
+				product.addProductSection(sec);
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * Set the group name based on the full path of the supplied node.
+	 * @param n
+	 * @param sec
+	 */
+	private void setGroupName(Node n, SectionVO sec) {
+		if (n == null) return;
+		String[] parts = n.getFullPath().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+		if (parts.length < 2) {
+			sec.setGroupNm(parts[0]);
+		} else {
+			sec.setGroupNm(parts[1]);
 		}
 	}
 	
@@ -1020,5 +1043,11 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+	}
+
+
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 }

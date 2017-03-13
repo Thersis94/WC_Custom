@@ -12,16 +12,15 @@ import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeTypeVO;
 import com.biomed.smarttrak.vo.MarketAttributeVO;
 import com.biomed.smarttrak.vo.MarketVO;
+import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -35,9 +34,14 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @author Eric Damschroder
  * @version 1.0
  * @since Feb 8, 2017<p/>
- * <b>Changes: </b>
+ * <b>Changes: 
+ * Due to changes in how markets deal with sections the default operation now 
+ * uses only a single section per market. Old code that permits multiple
+ * sections per market has be left alone should it ever be needed
+ * - Eric Damschroder 3/10/2017
+ * </b>
  ****************************************************************************/
-public class MarketManagementAction extends SimpleActionAdapter {
+public class MarketManagementAction extends AbstractTreeAction {
 
 	public static final String ACTION_TARGET = "actionTarget";
 
@@ -118,6 +122,8 @@ public class MarketManagementAction extends SimpleActionAdapter {
 	private void retrieveMarket(ActionRequest req) throws ActionException {
 		if (req.hasParameter("marketId") && ! req.hasParameter("add")) {
 			retrieveMarket(req.getParameter("marketId"));
+
+			req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
 		} else if (!req.hasParameter("add")) {
 			retrieveMarkets(req);
 		}
@@ -186,10 +192,6 @@ public class MarketManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void setAttributeData(List<Node> orderedResults, ActionRequest req) {
-		int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
-		int page = Convert.formatInteger(req.getParameter("page"), 0);
-		int end = orderedResults.size() < rpp*(page+1)? orderedResults.size() : rpp*(page+1);
-
 		// If all attributes of a type is being requested set it as a request attribute since it is
 		// being used to supplement the attribute xr editing.
 		// Search data should not be turned into a tree after a search as requisite nodes may be missing
@@ -207,9 +209,9 @@ public class MarketManagementAction extends SimpleActionAdapter {
 			}
 
 		} else if (req.hasParameter("searchData")) {
-			putModuleData(orderedResults.subList(rpp*page, end), orderedResults.size(), false);
+			putModuleData(orderedResults, orderedResults.size(), false);
 		} else {
-			putModuleData(new SmarttrakTree(orderedResults).getPreorderList().subList(rpp*page, end), orderedResults.size(), false);
+			putModuleData(new SmarttrakTree(orderedResults).getPreorderList(), orderedResults.size(), false);
 		}
 	}
 
@@ -270,13 +272,10 @@ public class MarketManagementAction extends SimpleActionAdapter {
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
 		log.debug(sql);
-		int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
-		int page = Convert.formatInteger(req.getParameter("page"), 0);
 
 		DBProcessor db = new DBProcessor(dbConn, customDb);
 		List<Object> markets = db.executeSelect(sql.toString(), params, new MarketVO());
-		int end = markets.size() < rpp*(page+1)? markets.size() : rpp*(page+1);
-		putModuleData(markets.subList(rpp*page, end), markets.size(), false);
+		putModuleData(markets, markets.size(), false);
 	}
 
 
@@ -361,23 +360,26 @@ public class MarketManagementAction extends SimpleActionAdapter {
 
 
 	/**
-	 * Get all the sections that are associated with the supplied market
+	 * Markets are identified by a single section and do not support multiples
 	 * @param market
 	 * @throws ActionException
 	 */
 	protected void addSections(MarketVO market) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT SECTION_NM, xr.MARKET_SECTION_XR_ID FROM ").append(customDb).append("BIOMEDGPS_MARKET_SECTION xr ");
+		sql.append("SELECT SECTION_NM, xr.MARKET_SECTION_XR_ID, xr.SECTION_ID FROM ").append(customDb).append("BIOMEDGPS_MARKET_SECTION xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
 		sql.append("ON s.SECTION_ID = xr.SECTION_ID ");
-		sql.append("WHERE MARKET_ID = ? ");
+		sql.append("WHERE MARKET_ID = ? limit 1 ");
 
+		Tree t = loadDefaultTree();
+		t.buildNodePaths();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, market.getMarketId());
 			ResultSet rs = ps.executeQuery();
-			while(rs.next())
-				market.addSection(new GenericVO(rs.getString("MARKET_SECTION_XR_ID"), rs.getString("SECTION_NM")));
+			while(rs.next()) {
+				market.setMarketSection(new SectionVO(rs));
+			}
 
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -477,6 +479,10 @@ public class MarketManagementAction extends SimpleActionAdapter {
 				MarketVO c = new MarketVO(req);
 				saveMarket(c, db);
 				marketId = c.getMarketId();
+				// Market save also includes the single section associated
+				// with this market
+				req.setParameter("marketId", marketId);
+				saveSections(req);
 				break;
 			case MARKETATTRIBUTE:
 				MarketAttributeVO attr = new MarketAttributeVO(req);
@@ -571,7 +577,7 @@ public class MarketManagementAction extends SimpleActionAdapter {
 		sql.append("BIOMEDGPS_MARKET_SECTION (MARKET_SECTION_XR_ID, SECTION_ID, ");
 		sql.append("MARKET_ID, CREATE_DT) ");
 		sql.append("VALUES(?,?,?,?) ");
-
+		log.debug(sql+"|"+req.getParameter("sectionId")+"|"+req.getParameter("marketId"));
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (String sectionId : req.getParameterValues("sectionId")) {
 				ps.setString(1, new UUIDGenerator().getUUID());
@@ -722,5 +728,11 @@ public class MarketManagementAction extends SimpleActionAdapter {
 
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+	}
+
+
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 }

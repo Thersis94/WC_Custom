@@ -112,9 +112,9 @@ public class GridVO extends BeanDataVO {
 	private String secondaryYTitle;
 	private String primaryXTitle;
 	private String slug;
+	private String seriesLabel;
 	private boolean approved;
 	private int decimalDisplay;
-	private int roundDisplay;
 	private Date updateDate;
 	private Date createDate;
 	private int numberRows = 0;
@@ -264,11 +264,11 @@ public class GridVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the roundDisplay
+	 * @return the series label
 	 */
-	@Column(name="round_display_no")
-	public int getRoundDisplay() {
-		return roundDisplay;
+	@Column(name="series_label_txt")
+	public String getSeriesLabel() {
+		return seriesLabel;
 	}
 
 	/**
@@ -455,10 +455,10 @@ public class GridVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param roundDisplay the roundDisplay to set
+	 * @param seriesLabel the seriesLabel to set
 	 */
-	public void setRoundDisplay(int roundDisplay) {
-		this.roundDisplay = roundDisplay;
+	public void setSeriesLabel(String seriesLabel) {
+		this.seriesLabel = seriesLabel;
 	}
 
 	/**
@@ -639,7 +639,8 @@ public class GridVO extends BeanDataVO {
 		// Parse out the index from the field and store the data in the series array
 		String val = field.substring(field.lastIndexOf('_') + 1);
 		int index = Convert.formatInteger(val) - 1;
-		if(index >= 0) series[index] = cTitle;
+		if(index == -1) seriesLabel = cTitle;
+		else series[index] = cTitle;
 	}
 	
 	/**
@@ -679,7 +680,11 @@ public class GridVO extends BeanDataVO {
 
 		String[] values = detail.getValues();
 		for(int i=0; i < 10; i++) {
-			values[i] = row.get("field_" + (i + 1)) + "";
+			
+			// nulls are being inserted as a tring "null" value.  Make sure to remove
+			String val = StringUtil.checkVal(row.get("field_" + (i + 1)));
+			if (val.length() == 0 || "null".equalsIgnoreCase(val)) val = null;
+			values[i] = val;
 		}
 		
 		// Add to the local collection
@@ -698,6 +703,17 @@ public class GridVO extends BeanDataVO {
 		tableData.put(JSON_COLUMN_KEY, getColumns());
 
 		return g.toJson(g.toJson(tableData));
+	}
+	
+	/**
+	 * Returns the Map Structure for bootstrap tables
+	 * @return
+	 */
+	public Map<String, List<Map<String, String>>> getTableMap() {
+		Map<String, List<Map<String, String>>> tableData = new HashMap<>();
+		tableData.put(JSON_ROW_KEY, getRows());
+		tableData.put(JSON_COLUMN_KEY, getColumns());
+		return tableData;
 	}
 	
 	/**
@@ -770,6 +786,29 @@ public class GridVO extends BeanDataVO {
 	 */
 	public String[] getSeries() {
 		return series;
+	}
+	
+	/**
+	 * Returns the number of columns with populated data
+	 * @return
+	 */
+	public int getNumberColumns() {
+		int numCols = 0;
+		
+		// Count the series
+		for (int i = 0; i < series.length; i++) {
+			if (series[i] != null && i > numCols) numCols = i;
+		}
+		
+		// Count the details
+		for (int x = 0; x < details.size(); x++) {
+			GridDetailVO vo = details.get(x);
+			for (int i = 0; i < series.length; i++) {
+				if (vo.getValues()[i] != null && i > numCols) numCols = i;
+			}
+		}
+		
+		return numCols;
 	}
 
 }

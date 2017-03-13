@@ -20,13 +20,16 @@ public class GooglePieChartOptions extends GoogleBaseChartOptions {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	
+	
+	private boolean full;
 
 	/**
 	 * 
 	 */
-	public GooglePieChartOptions() {
-		super();
-		
+	public GooglePieChartOptions(boolean full) {
+		super(true);
+		this.full = full;
 		this.createChartOptions();
 	}
 	
@@ -38,7 +41,7 @@ public class GooglePieChartOptions extends GoogleBaseChartOptions {
 
 		chart.put("pieHole", .4);
 		chart.put("sliceVisibilityThreshold", .05);
-		chart.put("pieSliceText", "value");
+		chart.put("pieSliceText", "percentage");
 		//chart.put("is3D", true);
 	}
 	
@@ -47,7 +50,7 @@ public class GooglePieChartOptions extends GoogleBaseChartOptions {
 	 * @see com.biomed.smarttrak.vo.grid.GoogleBaseChartOptions#addOptionsFromGridData(com.biomed.smarttrak.admin.vo.GridVO)
 	 */
 	public void addOptionsFromGridData(GridVO grid) {
-		// Not used for now.  Still formatting
+		if(full) super.addOptionsFromGridData(grid);
 	}
 }
 

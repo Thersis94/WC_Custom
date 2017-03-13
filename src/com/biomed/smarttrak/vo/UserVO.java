@@ -51,7 +51,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		EUREPORTS("M","EU Reports"),
 		EUPLUS("P","EU Plus"),
 		TRIAL("K","SmartTRAK Trial"),
-		COMPLIMENTART("C","SmartTRAK Complimentary"),
+		COMPLIMENTARY("C","SmartTRAK Complimentary"),
 		EXTRA("E","SmartTRAK Extra Seat"),
 		UPDATES("U","Updates Only"),
 		TEST("D","Temporary / Test"),
