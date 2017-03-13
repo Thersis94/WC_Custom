@@ -188,9 +188,7 @@ public class AuditLogAction extends SBActionAdapter {
 		
 		// Get the audit records
 		DBProcessor dbp = new DBProcessor(dbConn, custom);
-		List<Object> data = dbp.executeSelect(sql, params, new AuditLogVO());
-		
-		return data;
+		return dbp.executeSelect(sql, params, new AuditLogVO());
 	}
 	
 	/**
