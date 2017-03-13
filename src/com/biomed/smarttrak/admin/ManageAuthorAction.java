@@ -58,20 +58,14 @@ public class ManageAuthorAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("manage author action retrieve called");
 
-		if(req.hasParameter("requestType")){
-			//TODO major concern about this not going to the right method, why am i not getting req build.
-			log.debug(" request type is: " + req.getParameter("requestType"));
-			if("reqBuild".equals(req.getParameter("requestType")))
-				this.build(req);
-		}
-
-		if (req.hasParameter(LOAD_AUTHOR_LIST)) {
+		if (!req.hasParameter(LOAD_AUTHOR_LIST)) return;
+			
 			loadAuthors(req);
 			List<AccountVO> managers = (List<AccountVO>) req.getAttribute(AccountAction.MANAGERS);
 			List<UserVO> users = processManagers(managers);
 			new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)users, (String)getAttribute(Constants.ENCRYPT_KEY));
 			putModuleData(users);
-		}
+		
 	}
 
 	/**

@@ -152,7 +152,6 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("################################ build!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		String actionType = req.getParameter(ACTION_TYPE);
 		String msg;
 		try {
@@ -193,7 +192,6 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("################################ retrieve!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		if (req.hasParameter(ACTION_TYPE)) {
 			loadAction(req.getParameter(ACTION_TYPE)).retrieve(req);
 		} else {
