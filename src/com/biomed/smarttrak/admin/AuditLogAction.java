@@ -1,8 +1,11 @@
 package com.biomed.smarttrak.admin;
 
-// JDK 1.8
+//JDK 1.8
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,9 +34,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  * Last Updated:
  * 	
  *******************************************************************/
-public class ProfileAuditAction extends SBActionAdapter {
+public class AuditLogAction extends SBActionAdapter {
 	
-	// Ensures what is passed in, either maps to something known, or else we will use a default
+	// Ensures that what is passed in, will either map to something known, or else we will use a default
 	private Map<String, String> sortFields;
 	private Map<String, String> sortOrders;
 	
@@ -41,12 +44,12 @@ public class ProfileAuditAction extends SBActionAdapter {
 	 * N = "Not Started", P = "In Progress", D = "Company Done",
 	 * F = "Company and Products Done", C = "Canceled"
 	 */
-	private enum AuditStatus {N, P, D, F, C}
+	public enum AuditStatus {N, P, D, F, C}
 	
 	/**
 	 * Set the list of fields that can be sorted on
 	 */
-	public ProfileAuditAction() {
+	public AuditLogAction() {
 		super();
 		sortFields = new HashMap<>();
 		sortFields.put("companyNm", "company_nm");
@@ -65,7 +68,7 @@ public class ProfileAuditAction extends SBActionAdapter {
 	/**
 	 * @param actionInit
 	 */
-	public ProfileAuditAction(ActionInitVO actionInit) {
+	public AuditLogAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 
@@ -78,7 +81,7 @@ public class ProfileAuditAction extends SBActionAdapter {
 		String custom = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
 		if (req.hasParameter("json")) {
-			getData(req, custom);
+			getAuditData(req, custom);
 		} else {
 			getManagers(req, custom);
 		}
@@ -90,6 +93,28 @@ public class ProfileAuditAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.debug("Adding/Updating Audit Log Record");
+		
+		AuditLogVO auditLogRecord = new AuditLogVO(req);
+		
+		if (!req.hasParameter("auditLogId")) {
+			// When adding a new record, set the required defaults
+			auditLogRecord.setStatusCd(AuditStatus.N);
+			auditLogRecord.setAuditorProfileId("");
+			
+		} else if (AuditStatus.F == auditLogRecord.getStatusCd()) {
+			// If setting to the completed state, track the date
+			auditLogRecord.setCompleteDt(new Date());
+		}
+		
+		// Save the new or updated record
+		String custom = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		DBProcessor dbp = new DBProcessor(dbConn, custom);
+		try {
+			dbp.save(auditLogRecord);
+		} catch (Exception e) {
+			throw new ActionException("Couldn't save audit log record.", e);
+		}
 	}
 	
 	/**
@@ -112,15 +137,18 @@ public class ProfileAuditAction extends SBActionAdapter {
 	 * @param req
 	 * @param custom
 	 */
-	public void getData(ActionRequest req, String custom) {
+	public void getAuditData(ActionRequest req, String custom) {
+		log.debug("Getting Audit Log Records");
+		
 		List<Object> data = new ArrayList<>();
 		int recordCount = 0;
 		
 		try {
+			// Get the data
 			data = getAuditLogRecords(req, custom);
 			
-			// Gets the count for the pagination
-			//recordCount = getAuditLogRecordCount(req, custom);
+			// Get the count for the pagination
+			recordCount = getAuditLogRecordCount(req, custom);
 			
 		} catch(Exception e) {
 			log.error("Unable to get audit log records.", e);
@@ -159,7 +187,7 @@ public class ProfileAuditAction extends SBActionAdapter {
 		params.add(start);
 		
 		// Get the audit records
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, custom);
 		List<Object> data = dbp.executeSelect(sql, params, new AuditLogVO());
 		
 		return data;
@@ -175,12 +203,18 @@ public class ProfileAuditAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected String getAuditLogSql(String custom, boolean searchFlg, String sortField, String order) {
-		StringBuilder sql = new StringBuilder(200);
+		StringBuilder sql = new StringBuilder(600);
 		
 		sql.append("select c.company_nm, c.company_id, c.status_no, c.update_dt as company_update_dt, coalesce(al.audit_log_id, newid()) as audit_log_id, ");
 		sql.append("al.auditor_profile_id, al.status_cd, al.start_dt, al.complete_dt, al.update_dt ");
 		sql.append("from ").append(custom).append("biomedgps_company c ");
-		sql.append("left join ").append(custom).append("biomedgps_audit_log al on c.company_id = al.company_id ");
+		
+		// This join ensures we only get the most recent record from the log 
+		sql.append("left join (select company_id, max(start_dt) as max_start_dt ");
+		sql.append("from ").append(custom).append("biomedgps_audit_log group by company_id) alm on c.company_id = alm.company_id ");
+		
+		// Get the entirety of the data associated to the most recent audit log record 
+		sql.append("left join ").append(custom).append("biomedgps_audit_log al on alm.company_id = al.company_id and alm.max_start_dt = al.start_dt ");
 		
 		if (searchFlg)
 			sql.append("where upper(company_nm) like ? ");
@@ -202,8 +236,30 @@ public class ProfileAuditAction extends SBActionAdapter {
 	 * @throws SQLException
 	 */
 	protected int getAuditLogRecordCount(ActionRequest req, String custom) throws SQLException {
-		int count = 0;
-		return count;
+		int recordCount = 0;
+		
+		// Search is the only thing that could change the overall number of results
+		String searchTerm = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
+		boolean searchFlg = searchTerm.length() > 0;
+		
+		// Since the main query uses left joins, we are only concerned about companies
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select count(*) from ").append(custom).append("biomedgps_company ");
+		
+		if (searchFlg)
+			sql.append("where upper(company_nm) like ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (searchFlg) {
+				ps.setString(1, "%" + searchTerm + "%");
+			}
+			
+			ResultSet rs = ps.executeQuery();
+			rs.next();
+			recordCount = rs.getInt(1);
+		}
+		
+		return recordCount;
 	}
 
 }

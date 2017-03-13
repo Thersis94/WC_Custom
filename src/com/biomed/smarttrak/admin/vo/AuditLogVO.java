@@ -3,10 +3,12 @@ package com.biomed.smarttrak.admin.vo;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import com.biomed.smarttrak.admin.AuditLogAction.AuditStatus;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
@@ -27,7 +29,7 @@ public class AuditLogVO extends SBModuleVO {
 	private String auditLogId;
 	private String companyId;
 	private String auditorProfileId;
-	private String statusCd;
+	private AuditStatus statusCd;
 	private Date startDt;
 	private Date completeDt;
 	private Date updateDt;
@@ -59,7 +61,7 @@ public class AuditLogVO extends SBModuleVO {
 		setAuditLogId(util.getStringVal("AUDIT_LOG_ID", rs));
 		setCompanyId(util.getStringVal("COMPANY_ID", rs));
 		setAuditorProfileId(util.getStringVal("AUDITOR_PROFILE_ID", rs));
-		setStatusCd(util.getStringVal("STATUS_CD", rs));
+		setStatusCdTxt(util.getStringVal("STATUS_CD", rs));
 		setStartDt(util.getDateVal("START_DT", rs));
 		setCompleteDt(util.getDateVal("COMPLETE_DT", rs));
 		setUpdateDt(util.getDateVal("UPDATE_DT", rs));
@@ -77,7 +79,7 @@ public class AuditLogVO extends SBModuleVO {
 		setAuditLogId(req.getParameter("auditLogId"));
 		setCompanyId(req.getParameter("companyId"));
 		setAuditorProfileId(req.getParameter("auditorProfileId"));
-		setStatusCd(req.getParameter("statusCd"));
+		setStatusCdTxt(req.getParameter("statusCd"));
 	}
 
 	/**
@@ -107,9 +109,16 @@ public class AuditLogVO extends SBModuleVO {
 	/**
 	 * @return the statusCd
 	 */
-	@Column(name="status_cd")
-	public String getStatusCd() {
+	public AuditStatus getStatusCd() {
 		return statusCd;
+	}
+
+	/**
+	 * @return the statusCd
+	 */
+	@Column(name="status_cd")
+	public String getStatusCdTxt() {
+		return (statusCd != null) ? statusCd.toString() : null;
 	}
 
 	/**
@@ -131,7 +140,7 @@ public class AuditLogVO extends SBModuleVO {
 	/**
 	 * @return the updateDt
 	 */
-	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
+	@Column(name="update_dt", isAutoGen=true)
 	public Date getUpdateDt() {
 		return updateDt;
 	}
@@ -184,8 +193,16 @@ public class AuditLogVO extends SBModuleVO {
 	/**
 	 * @param statusCd the statusCd to set
 	 */
-	public void setStatusCd(String statusCd) {
+	public void setStatusCd(AuditStatus statusCd) {
 		this.statusCd = statusCd;
+	}
+
+	/**
+	 * @param statusCd the statusCd to set
+	 */
+	public void setStatusCdTxt(String statusCd) {
+		if (!StringUtil.isEmpty(statusCd))
+			setStatusCd(AuditStatus.valueOf(statusCd));
 	}
 
 	/**
