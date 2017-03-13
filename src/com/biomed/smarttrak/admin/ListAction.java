@@ -5,12 +5,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.admin.action.DirectUrlManagerAction;
 import com.smt.sitebuilder.common.constants.Constants;
+
+import opennlp.tools.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ListAction.java
@@ -24,15 +28,46 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class ListAction extends SBActionAdapter {
+public class ListAction extends DirectUrlManagerAction {
 
 	public enum ListType { COMPANY, PRODUCT, MARKET, ACCOUNT }
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String listType = req.getParameter("ajaxListType");
-		List<GenericVO> vals = getList(listType);
-		putModuleData(vals, vals.size(), false);
+		if(req.hasParameter("ajaxListType")) {
+			String listType = req.getParameter("ajaxListType");
+			List<GenericVO> vals = getList(listType, false);
+			putModuleData(vals, vals.size(), false);
+		} else {
+			super.list(req);
+		}
+	}
+
+
+	/**
+	 * Helper method that loads all the Direct Urls available.
+	 * 
+	 * @param orgId
+	 * @return 
+	 * @return
+	 * @throws ActionException 
+	 */
+	@Override
+	protected Map<String, List<GenericVO>> getUrls(ActionRequest req) throws ActionException {
+
+		//Call Super to load any lists from core.
+		Map<String, List<GenericVO>> urlMap = super.getUrls(req);
+
+		//Get Companies
+		urlMap.put(ListType.COMPANY.name(), getList(ListType.COMPANY.name(), true));
+
+		//Get Markets
+		urlMap.put(ListType.MARKET.name(), getList(ListType.MARKET.name(), true));
+
+		//Get Products
+		urlMap.put(ListType.PRODUCT.name(), getList(ListType.PRODUCT.name(), true));
+
+		return urlMap;
 	}
 
 
@@ -42,17 +77,21 @@ public class ListAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected List<GenericVO> getList(String listType) throws ActionException {
+	protected List<GenericVO> getList(String listType, boolean asUrl) throws ActionException {
 		String sql;
+		String url = null;
 		switch(ListType.valueOf(listType)) {
 			case COMPANY:
 				sql = getCompanySql();
+				url = Section.COMPANY.getPageURL() + getAttribute(Constants.QS_PATH);
 				break;
 			case MARKET:
 				sql = getMarketSql();
+				url = Section.MARKET.getPageURL() + getAttribute(Constants.QS_PATH);
 				break;
 			case PRODUCT:
 				sql = getProductSql();
+				url = Section.MARKET.getPageURL() + getAttribute(Constants.QS_PATH);
 				break;
 			case ACCOUNT:
 				sql = getAccountSql();
@@ -64,8 +103,14 @@ public class ListAction extends SBActionAdapter {
 		List<GenericVO> vals = new ArrayList<>(2000);
 		try(PreparedStatement ps = dbConn.prepareCall(sql)) {
 			ResultSet rs = ps.executeQuery();
-			while(rs.next())
-				vals.add(new GenericVO(rs.getString("id"), rs.getString("val")));
+			StringBuilder val = null;
+			while(rs.next()) {
+				val = new StringBuilder(rs.getString("val"));
+				if(asUrl && !StringUtil.isEmpty(url)) {
+					val.insert(0, url);
+				}
+				vals.add(new GenericVO(rs.getString("id"), val.toString()));
+			}
 
 		} catch (SQLException sqle) {
 			log.error("could not load select list options", sqle);
