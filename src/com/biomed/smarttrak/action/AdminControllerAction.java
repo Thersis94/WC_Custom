@@ -16,6 +16,7 @@ import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
+import com.biomed.smarttrak.admin.EditorsDeskAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.ListAction;
@@ -139,6 +140,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("uwr", UpdatesWeeklyReportAction.class); 
 		ACTIONS.put("grid", GridChartAction.class);
 		ACTIONS.put("author", ManageAuthorAction.class);
+		ACTIONS.put("editorsDesk", EditorsDeskAction.class);
 	}
 
 

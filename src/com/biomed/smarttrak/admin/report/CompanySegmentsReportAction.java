@@ -13,11 +13,11 @@ import java.util.Map;
 //WC custom
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.vo.CompanyVO;
+import com.biomed.smarttrak.vo.SectionVO;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 
 // WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -132,7 +132,7 @@ public class CompanySegmentsReportAction extends SimpleActionAdapter {
 			}
 
 			// add the segment/section to the company
-			co.addCompanySection(new GenericVO(rs.getString("parent_id"),null));
+			co.addCompanySection(new SectionVO(rs));
 
 			prevCoId = currCoId;
 		}

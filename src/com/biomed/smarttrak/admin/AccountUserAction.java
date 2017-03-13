@@ -93,7 +93,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected List<Object> loadAccountUsers(ActionRequest req, String profileId) throws ActionException {
+	public List<Object> loadAccountUsers(ActionRequest req, String profileId) throws ActionException {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
 		String userId = req.hasParameter(USER_ID) ? req.getParameter(USER_ID) : null;
