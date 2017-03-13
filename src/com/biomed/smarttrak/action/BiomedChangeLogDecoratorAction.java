@@ -95,7 +95,7 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 			log.debug("Diff Found.  Forwarding to ChangeLogUtil.");
 			ApprovalVO app = buildApprovalRecord(req, diff, original);
 			String typeCd = (String)req.getSession().getAttribute(ChangeLogUtil.CHANGELOG_DIFF_TYPE_CD);
-			ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), typeCd, origTxt, diffTxt);
+			ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), origTxt, diffTxt, typeCd);
 			new ChangeLogUtil(dbConn, attributes).saveChangeLog(clv);
 		}
 
