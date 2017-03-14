@@ -23,6 +23,7 @@ import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.ManageAuthorAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
+import com.biomed.smarttrak.admin.AuditLogAction;
 import com.biomed.smarttrak.admin.ReportFacadeAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.SupportFacadeAction;
@@ -121,6 +122,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("fd", FinancialDashAction.class);
 		ACTIONS.put("fdScenario", FinancialDashScenarioAction.class);
 		ACTIONS.put("fdHierarchy", FinancialDashHierarchyAction.class);
+		ACTIONS.put("audit", AuditLogAction.class);
 		ACTIONS.put("productAdmin", ProductManagementAction.class);
 		ACTIONS.put("companyAdmin", CompanyManagementAction.class);
 		ACTIONS.put("accounts", AccountAction.class);
