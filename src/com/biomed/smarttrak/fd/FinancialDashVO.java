@@ -3,6 +3,9 @@ package com.biomed.smarttrak.fd;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -40,6 +43,8 @@ public class FinancialDashVO extends SBModuleVO {
 	private String companyName;
 	private int publishedQtr;
 	private int publishedYear;
+	private int currentQtr;
+	private int currentYear;
 	
 	/**
 	 * Provides a logger
@@ -114,7 +119,7 @@ public class FinancialDashVO extends SBModuleVO {
 				row = new FinancialDashDataRowVO(rs);
 
 				if (!row.isInactive()) {
-					row.setReporting(sections);
+					row.setReportingPending(sections, currentQtr, currentYear);
 					addRow(row);
 				}
 			}
@@ -140,10 +145,9 @@ public class FinancialDashVO extends SBModuleVO {
 		String scenId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String compId = StringUtil.checkVal(req.getParameter("companyId"));
 		
-		// Default year & quarter require knowledge of what was most recently published for the section being viewed
-		SectionVO section = (SectionVO) sections.getRootNode().getUserObject();
-		Integer calYr = Convert.formatInteger(req.getParameter("calendarYear"), section.getFdPubYr());
-
+		setCurrentQtrYear();
+		Integer calYr = Convert.formatInteger(req.getParameter("calendarYear"), getCurrentYear());
+		
 		// Set the parameters
 		setTableType(tblType);
 		setColHeaders(dispType, calYr);
@@ -154,6 +158,9 @@ public class FinancialDashVO extends SBModuleVO {
 		setLeafMode(leafMd);
 		setScenarioId(scenId);
 		setCompanyId(compId);
+		
+		// Get the year/quarter of what was most recently published for the section being viewed
+		SectionVO section = (SectionVO) sections.getRootNode().getUserObject();
 		setPublishedQtr(section.getFdPubQtr());
 		setPublishedYear(section.getFdPubYr());
 	}
@@ -252,6 +259,20 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public int getPublishedYear() {
 		return publishedYear;
+	}
+
+	/**
+	 * @return the currentQtr
+	 */
+	public int getCurrentQtr() {
+		return currentQtr;
+	}
+
+	/**
+	 * @return the currentYear
+	 */
+	public int getCurrentYear() {
+		return currentYear;
 	}
 
 	/**
@@ -380,5 +401,35 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setPublishedYear(int publishedYear) {
 		this.publishedYear = publishedYear;
+	}
+
+	/**
+	 * Sets both the current quarter and the current year for the financial dashboard
+	 * Current quarter/year is defined as: 3 months in the past
+	 */
+	public void setCurrentQtrYear() {
+		Date currentDate = Convert.formatDate(new Date(), Calendar.MONTH, -3);
+
+		Calendar calendar = new GregorianCalendar();
+		calendar.setTime(currentDate);
+		
+		// Set the "current" quarter/year
+		int month = calendar.get(Calendar.MONTH);
+		setCurrentQtr(month/3 + 1);
+		setCurrentYear(calendar.get(Calendar.YEAR));
+	}
+	
+	/**
+	 * @param currentQtr the currentQtr to set
+	 */
+	public void setCurrentQtr(int currentQtr) {
+		this.currentQtr = currentQtr;
+	}
+
+	/**
+	 * @param currentYear the currentYear to set
+	 */
+	public void setCurrentYear(int currentYear) {
+		this.currentYear = currentYear;
 	}
 }
