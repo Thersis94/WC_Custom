@@ -339,6 +339,8 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		user.setProfileId(rs.getString("profile_id"));
 		user.setStatusCode(rs.getString("status_cd"));
 		user.setCountryCode(rs.getString("country_cd"));
+		// use barcode ID field to store user's role ID for the report view
+		user.setBarCodeId(rs.getString("role_id"));
 		// decrypt encrypted fields and set.
 		try {
 			user.setFirstName(se.decrypt(rs.getString("first_nm")));
@@ -346,7 +348,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		} catch (Exception e) {
 			log.warn("Warning: Unable to decrypt profile fields for profile ID " + user.getProfileId());
 		}
-		
+
 		return user;
 	}
 	

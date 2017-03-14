@@ -25,6 +25,7 @@ import com.siliconmtn.util.StringUtil;
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
@@ -72,10 +73,11 @@ public class ReportFacadeAction extends SBActionAdapter {
 
 		ReportType rType = checkReportType(req.getParameter("reportType"));
 		AbstractSBReportVO rpt = null;
-
+		boolean doRedirect = true;
 		switch (rType) {
 			case ACCOUNT_REPORT:
 				rpt = generateAccountReport(req);
+				doRedirect = false;
 				break;
 			case ACTIVITY_LOG:
 				rpt = generateActivityLogReport(req);
@@ -96,7 +98,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 				break;
 		}
 
-		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, doRedirect);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 	}
 	
@@ -112,7 +114,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 		AccountsReportAction ara = new AccountsReportAction();
 		ara.setDBConnection(dbConn);
 		ara.setAttributes(getAttributes());
-		AbstractSBReportVO rpt = new AccountReportVO();
+		AccountReportVO rpt = new AccountReportVO();
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		rpt.setSite(site);
 		rpt.setData(ara.retrieveAccountsList(req));
 		return rpt;
 	}

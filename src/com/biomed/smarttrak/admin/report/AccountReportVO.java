@@ -3,7 +3,6 @@ package com.biomed.smarttrak.admin.report;
 // Java 8
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,12 +15,13 @@ import com.biomed.smarttrak.vo.UserVO.Status;
 
 //SMTBaseLibs
 import com.siliconmtn.data.Node;
-import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
+import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.security.SecurityController;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountReportVO.java</p>
@@ -40,18 +40,33 @@ public class AccountReportVO extends AbstractSBReportVO {
 	private static final String REPORT_TITLE = "Account Report";
 	protected static final String KEY_ACCOUNTS = "accounts";
 	protected static final String KEY_FIELD_OPTIONS = "fieldOptions";
-	private static final String ROW = "ROW";
+
+	// CSS style constants
+	private static final String CSS_ACCT_REPORT_WRAPPER = "acctReportWrapper";
+	private static final String CSS_ACCT_ITEM_WRAPPER = "acctItem";
+	private static final String CSS_ACCT_HEADER = "acctHeader";
+	private static final String CSS_ACCT_DATE = "acctDate";
+	private static final String CSS_ACCT_SEGMENT = "acctSegment";
+	private static final String CSS_DIVISION_WRAPPER = "divisionWrapper";
+	private static final String CSS_DIVISION_NAME = "divisionName";
+	private static final String CSS_DIVISION_USER = "divisionUser";
+	private static final String CSS_DIVISION_SUPER_USER = "superUser";
+	private static final String CSS_ACCT_SUMMARY_HEADER = "acctSummaryHeader";
+	private static final String CSS_ACCT_SUMMARY_ITEM = "acctSummaryItem";
+	private static final String CSS_USER_STATUS_CD = "userStatusCode";
+
 	private List<AccountUsersVO> accounts;
 	private Map<String,Map<String,String>> fieldOptions;
+	private SiteVO site;
 	
 	/**
 	* Constructor
 	*/
 	public AccountReportVO() {
         super();
-        setContentType("application/vnd.ms-excel");
-        isHeaderAttachment(Boolean.TRUE);
-        setFileName(REPORT_TITLE+".xls");
+        setContentType("text/html");
+        isHeaderAttachment(Boolean.FALSE);
+        setFileName(REPORT_TITLE);
         accounts = new ArrayList<>();
         fieldOptions = new HashMap<>();
 	}
@@ -62,18 +77,31 @@ public class AccountReportVO extends AbstractSBReportVO {
 	@Override
 	public byte[] generateReport() {
 		log.debug("generateReport...");
-
-		ExcelReport rpt = new ExcelReport(getHeader());
-		rpt.setTitleCell(REPORT_TITLE);
-		
-		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
-		
-		rows = generateDataRows(rows);
-
-		rpt.setData(rows);
-		return rpt.generateReport();
+		return generateReportAsString().getBytes();
 	}
 
+	/**
+	 * Generates the report and returns it as a String.  Used to render the report
+	 * in HTML in a JSTL view.
+	 * @return
+	 */
+	public String generateReportAsString() {
+		log.debug("generateReportAsString...");
+		return buildReport().toString();
+	}
+
+	/**
+	 * Builds the report.
+	 * @return
+	 */
+	protected StringBuilder buildReport() {
+		StringBuilder rows = new StringBuilder(accounts.size() * 1200);
+		getHeader(rows);
+		generateBody(rows);
+		getFooter(rows);
+		return rows;
+	}
+	
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#setData(java.lang.Object)
 	 */
@@ -86,40 +114,46 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
-	 * this method is used to generate the data rows of the excel sheet.
-	 * @param rows
-	 * @return
+	 * this method is used to generate the data rows of the  sheet.
+	 * @param sb
 	 */
-	private List<Map<String, Object>> generateDataRows(
-			List<Map<String, Object>> rows) {
+	private void generateBody(StringBuilder sb) {
 		// loop accounts and process
 		int activeAccounts = accounts.size();
 		int totalSubscribers = 0;
 		int totalAdded = 0;
 		int totalComplementary = 0;
+
+		sb.append("<body>");
+		startDiv(sb, CSS_ACCT_REPORT_WRAPPER);
+
+		// build the report body
 		for (AccountUsersVO acct : accounts) {
-			addAccountRow(rows, acct);
-			addAccountDatesRows(rows,acct);
-			addAccountSegmentRows(rows,acct);
-			addDivisions(rows,acct,fieldOptions.get(RegistrationMap.DIVISIONS.getFieldId()));
+			startDiv(sb,CSS_ACCT_ITEM_WRAPPER);
+			addAccountRow(sb,acct);
+			addAccountDatesRows(sb,acct);
+			addAccountSegmentRows(sb,acct);
+			addDivisions(sb,acct,fieldOptions.get(RegistrationMap.DIVISIONS.getFieldId()));
+			closeDiv(sb);
 			totalSubscribers += acct.getTotalUsers();
 			totalAdded += acct.getAddedCount();
 			totalComplementary += acct.getComplementaryCount();
-			// add blank separator row
-			rows.add(addRow(ROW,""));
 		}
-		
-		addSummaryRows(rows,activeAccounts,totalSubscribers,totalAdded,totalComplementary);
-		return rows;
+		addSummaryRows(sb,activeAccounts,totalSubscribers,totalAdded,totalComplementary);
+
+		// close the report wrapper
+		closeDiv(sb);
+		sb.append("</body>");
+
 	}
-	
+
 	/**
 	 * Adds the account row to the report
-	 * @param rows
+	 * @param sb
 	 * @param acct
 	 */
-	protected void addAccountRow(List<Map<String,Object>> rows, AccountUsersVO acct) {
-		StringBuilder sb = new StringBuilder(75);
+	protected void addAccountRow(StringBuilder sb, AccountUsersVO acct) {
+		startDiv(sb,CSS_ACCT_HEADER);
 		sb.append(acct.getAccountName().toUpperCase());
 		int totUsers = acct.getTotalUsers() - 
 				(acct.getAddedCount() + 
@@ -129,40 +163,42 @@ public class AccountReportVO extends AbstractSBReportVO {
 		if (acct.getAddedCount() > 0) {
 			sb.append(" ");
 			sb.append(acct.getAddedCount());
-			sb.append(UserVO.Status.EXTRA.getCode()); 
+			sb.append(UserVO.Status.ACTIVE.getCode()); 
 		}
 		if (acct.getComplementaryCount() > 0) {
 			sb.append(" ");
 			sb.append(acct.getComplementaryCount());
 			sb.append(UserVO.Status.COMPLIMENTARY.getCode()); 
 		}
-		rows.add(addRow(ROW, sb.toString()));
+		closeDiv(sb);
 		
 	}
 
 	/**
 	 * Adds the account starting/expiration date rows to the report
-	 * @param rows
+	 * @param sb
 	 * @param acct
 	 */
-	protected void addAccountDatesRows(List<Map<String,Object>> rows, AccountUsersVO acct) {
-		StringBuilder sb = new StringBuilder(100);
-		sb.append("Start Date: ");
-		sb.append(Convert.formatDate(acct.getCreateDate(),Convert.DATE_LONG));
-		rows.add(addRow(ROW,sb.toString()));
+	protected void addAccountDatesRows(StringBuilder sb, AccountUsersVO acct) {
+		startDiv(sb,CSS_ACCT_DATE);
+		sb.append("Start Date:");
+		appendSpace(sb);
+		sb.append(Convert.formatDate(acct.getCreateDate(),Convert.DATE_SHORT_MONTH));
+		closeDiv(sb);
 		
-		sb = new StringBuilder(100);
-		sb.append("Expiration Date: ");
-		sb.append(Convert.formatDate(acct.getExpirationDate(),Convert.DATE_LONG));
-		rows.add(addRow(ROW,sb.toString()));
+		startDiv(sb,CSS_ACCT_DATE);
+		sb.append("Expiration Date:");
+		appendSpace(sb);
+		sb.append(Convert.formatDate(acct.getExpirationDate(),Convert.DATE_SHORT_MONTH));
+		closeDiv(sb);
 	}
 
 	/**
 	 * Adds the account segment rows to the report
-	 * @param rows
+	 * @param sb
 	 * @param acct
 	 */
-	protected void addAccountSegmentRows(List<Map<String,Object>> rows, AccountUsersVO acct) {
+	protected void addAccountSegmentRows(StringBuilder sb, AccountUsersVO acct) {
 		SmarttrakTree tree = acct.getPermissions();
 		String lvl3 = null;
 		StringBuilder lvl4 = null;
@@ -174,8 +210,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 			if (level < 3 || level > 4) continue;
 			switch (level) {
 				case 3:
-					appendSegmentRow(lvl3,lvl4,rows);
-					lvl3 = seg.getNodeName().toUpperCase();
+					appendSegmentRow(sb,lvl3,lvl4);
+					lvl3 = seg.getNodeName().toUpperCase() + ":";
 					lvl4 = new StringBuilder(100);
 					cnt = 1;
 					break;
@@ -194,86 +230,107 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * Adds the level 3 segment name to the StringBuilder passed in as an argument.
 	 * Used by the method that builds the account segment rows
 	 * @param sb
-	 * @param rows
+	 * @param parent
+	 * @param children
 	 */
-	protected void appendSegmentRow(String parent, StringBuilder children, List<Map<String,Object>> rows) {
-		if (parent != null && children.length() > 0) rows.add(addRow(ROW,parent + children.toString()));
+	protected void appendSegmentRow(StringBuilder sb, String parent, StringBuilder children) {
+		if (parent != null && children.length() > 0) {
+			startDiv(sb,null);
+			startSpan(sb,CSS_ACCT_SEGMENT);
+			sb.append(parent);
+			closeSpan(sb);
+			sb.append(children);
+			closeDiv(sb);
+		}
 	}
 	
 	/**
 	 * Adds the level 4 segment name to the StringBuilder passed as an argument.
 	 * Used by the method that builds the account segment rows.
+	 * @param perms
 	 * @param sb
 	 * @param segName
 	 * @param cnt
 	 */
 	protected void appendSegment(PermissionVO perms, StringBuilder sb, String segName, int cnt) {
 		if (perms.isBrowseAuth()) {
-			if (cnt == 1) sb.append(": ");
-			else sb.append(",");
-			sb.append(" ").append(segName);
+			if (cnt > 1) sb.append(",");
+			appendSpace(sb);
+			sb.append(segName);
 		}
 	}
 	
 	/**
 	 * Adds the summary rows to the end of the report.
-	 * @param rows
+	 * @param sb
 	 * @param totalAccounts
 	 * @param totalSubscribers
 	 * @param totalAdded
 	 * @param totalComplimentary
 	 */
-	protected void addSummaryRows(List<Map<String,Object>> rows, int totalAccounts, 
+	protected void addSummaryRows(StringBuilder sb, int totalAccounts, 
 			int totalSubscribers, int totalAdded, int totalComplimentary) {
-		rows.add(addRow(ROW,"Account Summary"));
-		
-		StringBuilder sb = new StringBuilder(75);
+
+		startDiv(sb,CSS_ACCT_SUMMARY_HEADER);
+		sb.append("Account Summary ");
+		closeDiv(sb);
+
+		startDiv(sb,CSS_ACCT_SUMMARY_ITEM);
 		sb.append("Active Accounts ");
 		sb.append(totalAccounts);
-		rows.add(addRow(ROW,sb.toString()));
-		
-		sb = new StringBuilder(75);
+		closeDiv(sb);
+
+		startDiv(sb,CSS_ACCT_SUMMARY_ITEM);
 		sb.append("Subscribers ");
 		sb.append(totalSubscribers);
-		rows.add(addRow(ROW,sb.toString()));
-		
-		sb = new StringBuilder(75);
+		closeDiv(sb);
+
+		startDiv(sb,CSS_ACCT_SUMMARY_ITEM);
 		sb.append("Added Seats ");
 		sb.append(totalAdded);
-		rows.add(addRow(ROW,sb.toString()));
-		
-		sb = new StringBuilder(75);
+		closeDiv(sb);
+
+		startDiv(sb,CSS_ACCT_SUMMARY_ITEM);
 		sb.append("Complimentary Seats ");
 		sb.append(totalComplimentary);
-		rows.add(addRow(ROW,sb.toString()));
+		closeDiv(sb);
 	}
 
 	/**
 	 * Adds division rows to the report.
-	 * @param rows
+	 * @param sb
 	 * @param acct
 	 * @param divMap
 	 */
-	protected void addDivisions(List<Map<String,Object>> rows, AccountUsersVO acct, Map<String,String> divMap) {
+	protected void addDivisions(StringBuilder sb, 
+			AccountUsersVO acct, Map<String,String> divMap) {
 		String divName;
 		for (Map.Entry<String,List<UserVO>> division : acct.getDivisions().entrySet()) {
 			divName = divMap.get(division.getKey());
-			rows.add(addRow(ROW, StringUtil.checkVal(divName)));
-			addDivisionUsers(rows,division.getValue());
+			startDiv(sb,CSS_DIVISION_WRAPPER);
+			startSpan(sb,CSS_DIVISION_NAME);
+			sb.append(StringUtil.checkVal(divName));
+			closeSpan(sb);
+			closeDiv(sb);
+			addDivisionUsers(sb,division.getValue());
 		}
 	}
 
 	/**
 	 * Adds division users to the division that is being added to the report
-	 * @param rows
+	 * @param sb
 	 * @param users
 	 */
-	protected void addDivisionUsers(List<Map<String,Object>> rows, List<UserVO> users) {
+	protected void addDivisionUsers(StringBuilder sb, List<UserVO> users) {
 		for (UserVO user : users) {
-			StringBuilder sb = new StringBuilder(50);
+			if (user.getBarCodeId().equals(SecurityController.ADMIN_ROLE_LEVEL)) {
+				startDiv(sb,CSS_DIVISION_SUPER_USER);
+			} else {
+				startDiv(sb,CSS_DIVISION_USER);
+			}
 			sb.append(user.getFullName());
 			addUserIdentifier(sb,user);
-			rows.add(addRow(ROW,sb.toString()));
+			closeDiv(sb);
 		}
 	}
 
@@ -281,7 +338,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * Adds user identifier for certain users based on country code or 
 	 * job category/job level or simply job level and/or user status code
 	 * @param sb
-	 * @param jobCat
+	 * @param user
 	 */
 	protected void addUserIdentifier(StringBuilder sb, UserVO user) {
 		// look at country code first.
@@ -327,33 +384,99 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	protected void addUserStatusCode(StringBuilder sb, String statCd) {
 		if (statCd.equalsIgnoreCase(Status.COMPLIMENTARY.getCode()) ||
-				statCd.equalsIgnoreCase(Status.UPDATES.getCode())) {
-			sb.append(" ").append(statCd);
-		} else if (statCd.equalsIgnoreCase(Status.EXTRA.getCode())) {
-			sb.append(" ").append(Status.ACTIVE.getCode());
+				statCd.equalsIgnoreCase(Status.UPDATES.getCode()) ||
+				statCd.equalsIgnoreCase(Status.EXTRA.getCode())) {
+
+			startSpan(sb,CSS_USER_STATUS_CD);
+			appendSpace(sb);
+
+			if (statCd.equalsIgnoreCase(Status.EXTRA.getCode())) {
+				sb.append(Status.ACTIVE.getCode());
+			} else {
+				sb.append(statCd);
+			}
+
+			closeSpan(sb);
 		}
 	}
 
 	/**
-	 * Helper method for adding a row.
-	 * @param key
-	 * @param value
-	 * @return
+	 * builds the header map for the  report
+	 * @param sb
 	 */
-	protected Map<String,Object> addRow(String key, Object value) {
-		Map<String,Object> row = new HashMap<>();
-		row.put(key, value);
-		return row;
+	protected void getHeader(StringBuilder sb) {
+		sb.append("<!DOCTYPE html>");
+		sb.append("<head>");
+		sb.append("<meta http-equiv=\"content-type\" content=\"text/html;charset=UTF-8\">");
+		sb.append("<title>").append(REPORT_TITLE).append("</title>");
+		sb.append("<link href=\"").append(site.getFullSiteAlias()).append("/binary/themes/");
+		sb.append(site.getTheme().getPageLocationName()).append("/scripts/modules_admin.css\" type='text/css' rel='stylesheet' />");
+		sb.append("</head>");
+	}
+
+	/**
+	 * 
+	 * @param sb
+	 */
+	protected void getFooter(StringBuilder sb) {
+		sb.append("</html>");
+	}
+
+	/**
+	 * 
+	 * @param sb
+	 * @param classNm
+	 */
+	protected void startDiv(StringBuilder sb, String classNm) {
+		sb.append("<div");
+		if (! StringUtil.isEmpty(classNm)) {
+			sb.append(" class=\"");
+			sb.append(classNm);
+			sb.append("\"");
+		}
+		sb.append(">");
+	}
+
+	/**
+	 * 
+	 * @param sb
+	 */
+	protected void closeDiv(StringBuilder sb) {
+		sb.append("</div>");
+	}
+
+	/**
+	 * Starts a span with the given CSS class if the class name is not null.
+	 * @param sb
+	 * @param classNm
+	 */
+	protected void startSpan(StringBuilder sb, String classNm) {
+		sb.append("<span");
+		if (! StringUtil.isEmpty(classNm)) {
+			sb.append(" class=\"");
+			sb.append(classNm);
+			sb.append("\"");
+		}
+		sb.append(">");
 	}
 	
 	/**
-	 * builds the header map for the excel report
-	 * @return
+	 * 
+	 * @param sb
 	 */
-	protected HashMap<String, String> getHeader() {
-		HashMap<String, String> headerMap = new LinkedHashMap<>();
-		headerMap.put(ROW,"");
-		return headerMap;
+	protected void closeSpan(StringBuilder sb) {
+		sb.append("</span>");
+	}
+
+	protected void appendSpace(StringBuilder sb) {
+		sb.append("&nbsp;");
+	}
+
+	/**
+	 * @param site the site to set
+	 */
+	public void setSite(SiteVO site) {
+		this.site = site;
 	}
 
 }

@@ -63,7 +63,7 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 		rpt.setTitleCell(REPORT_TITLE);
 
 		List<Map<String, Object>> rows = new ArrayList<>(activity.size());
-		rows = generateDataRows(rows);
+		generateDataRows(rows);
 
 		rpt.setData(rows);
 		return rpt.generateReport();
@@ -83,7 +83,7 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 	 * @param rows
 	 * @return
 	 */
-	private List<Map<String, Object>> generateDataRows(List<Map<String, Object>> rows) {
+	private void generateDataRows(List<Map<String, Object>> rows) {
 		// loop the account map
 		Map<String,Object> row;
 		for (Map.Entry<String, UserActivityVO> users : activity.entrySet()) {
@@ -102,7 +102,7 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 			// add blank separator row.
 			addBlankRow(rows);
 		}
-		return rows;
+
 	}
 	
 	/**

@@ -72,7 +72,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 		rpt.setTitleCell(REPORT_TITLE);
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
-		rows = generateDataRows(rows);
+		generateDataRows(rows);
 
 		rpt.setData(rows);
 		return rpt.generateReport();
@@ -92,8 +92,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 	 * @param rows
 	 * @return
 	 */
-	private List<Map<String, Object>> generateDataRows(
-			List<Map<String, Object>> rows) {
+	private void generateDataRows(List<Map<String, Object>> rows) {
 				
 		// loop the account map
 		for (AccountUsersVO acct : accounts) {
@@ -116,8 +115,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 				rows.add(row);
 			}
 		}
-		
-		return rows;
+
 	}
 
 	/**
