@@ -10,7 +10,6 @@ import java.util.Set;
 
 //wc_custom libs
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
-import com.biomed.smarttrak.vo.SectionVO;
 import com.biomed.smarttrak.vo.UpdatesVO;
 import com.biomed.smarttrak.vo.UpdatesXRVO;
 
@@ -20,7 +19,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -69,33 +67,6 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		Map<List<Node>, List<UpdatesVO>> data = buildUpdatesHierarchy(req, treeCollection);
 		
 		putModuleData(data);
-	}
-	
-	
-	/**
-	 * Retrieves the listing of sections that are direct children of root
-	 * @return
-	 */
-	protected List<SectionVO> fetchSubRootList(){
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from ");
-		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_section a ");
-		sql.append("where parent_id = ? ");
-		sql.append("order by parent_id, order_no, section_nm");
-		
-		List<Object> vals = new ArrayList<>();
-		vals.add("MASTER_ROOT"); //get direct children sections
-		
-		//retrieve data from db processor
-		DBProcessor db = new DBProcessor(dbConn);
-		List<Object> data = db.executeSelect(sql.toString(), vals, new SectionVO());
-		
-		//cast back into SectionVO's
-		List<SectionVO> rootSections = new ArrayList<>();
-		for (Object object : data) {
-			rootSections.add( (SectionVO) object);
-		}
-		return rootSections;
 	}
 	
 	/**
@@ -213,7 +184,7 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		/*Attempt to find section within tree structure. If so the current 
 		 * update belongs to this tree.*/			
 		for (UpdatesXRVO updatesXRVO : updateSections) {						
-			if(updatesXRVO.getSectionId() != null){
+			if(updatesXRVO != null && updatesXRVO.getSectionId() != null){
 				Node node = tree.findNode(updatesXRVO.getSectionId());
 				if(node != null) holder.add(update);
 			}
