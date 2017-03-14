@@ -53,7 +53,6 @@ public class SupportReportVO extends AbstractSBReportVO {
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#generateReport()
-	 * TODO - COMPLETE METHOD BODY
 	 */
 	@Override
 	public byte[] generateReport() {
@@ -61,8 +60,7 @@ public class SupportReportVO extends AbstractSBReportVO {
 
 		CSVReport rpt = new CSVReport(getHeader());
 
-		List<Map<String, Object>> rows = new ArrayList<>(tickets.size());
-		rows = generateDataRows();
+		List<Map<String, Object>> rows = generateDataRows();
 
 		rpt.setData(rows);
 		return rpt.generateReport();

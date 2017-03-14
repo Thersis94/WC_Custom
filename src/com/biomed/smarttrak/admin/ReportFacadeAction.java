@@ -95,6 +95,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 				break;
 			case SUPPORT:
 				rpt = generateSupportReport(req);
+				break;
 			default:
 				break;
 		}
