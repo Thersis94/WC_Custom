@@ -93,6 +93,30 @@ public class ShowpadDivisionUtil {
 		//get a list of tags already at Showpad, so when we save the assets these are preloaded
 		tagMgr = new ShowpadTagManager(showpadApiUrl, divisionId, divisionUrl, showpadUtil);
 	}
+	
+	/**
+	 * construct a new DivisionUtil based on the given arguments - and an override for the static asset Tag.
+	 * These Divisions mirror those in Showpad and are loaded from the script's config file
+	 * @param props
+	 * @param divisionId
+	 * @param divisionNm
+	 * @param util
+	 * @throws QuotaException
+	 */
+	public ShowpadDivisionUtil(Properties props, String divisionId, 
+			String divisionNm, ShowpadApiUtil util, Connection conn, String sourceTag) throws QuotaException {
+		this.props = props;
+		this.divisionId = divisionId;
+		this.divisionNm = divisionNm;
+		this.showpadApiUrl = (String)props.get("showpadApiUrl");
+		this.divisionUrl = showpadApiUrl + "/divisions/" + divisionId;
+		this.showpadUtil = util;
+		this.dbConn = conn;
+
+		//get a list of tags already at Showpad, so when we save the assets these are preloaded
+		tagMgr = new ShowpadTagManager(showpadApiUrl, divisionId, divisionUrl, showpadUtil);
+		tagMgr.setSourceConstant(sourceTag);
+	}
 
 
 
@@ -165,10 +189,10 @@ public class ShowpadDivisionUtil {
 			log.warn("asset not found on Showpad: " + vo.getDpySynMediaBinId());
 		}
 
-		log.info("uploading file: " + props.get("downloadDir") + vo.getFileName());
+		log.info("uploading file: " + vo.getFileName());
 		File mbFile = null;
 		if (vo.isFileChanged()) {
-			mbFile = new File(props.get("downloadDir") + vo.getFileName());
+			mbFile = new File(vo.getFileName());
 		}
 		log.info("sending to showpad: " + vo.getDpySynMediaBinId());
 		JSONObject json = null;

@@ -112,7 +112,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 * If we try to add a tag to an asset without using it's ID, and it already existing in the system, it will fail.
 	 * @throws QuotaException 
 	 */
-	private void loadShowpadDivisionList() throws QuotaException {
+	protected void loadShowpadDivisionList() throws QuotaException {
 		String[] divs = props.getProperty("showpadDivisions").split(",");
 		for (String d : divs) {
 			String[] div = d.split("=");

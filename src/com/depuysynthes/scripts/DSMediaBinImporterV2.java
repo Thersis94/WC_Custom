@@ -116,7 +116,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		loadDBConnection(props);
 		loadLanguages();
 
-		if (args.length > 0 && Convert.formatInteger(args[0]) == 2) type = 2;
+		if (args.length > 0 && Convert.formatInteger(args[0]) > 0) type = Convert.formatInteger(args[0]);
 		importFile = props.getProperty("importFile" + type);
 
 		if (type == 2) limeLightUrl = MediaBinLinkAction.INT_BASE_URL;
@@ -159,7 +159,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			masterRecords = loadManifest();
 
 			//turn the List of loose data into a set of VOs - business rules get applied here.
-			Map<String, MediaBinDeltaVO> newRecords = parseData(looseData, type);
+			Map<String, MediaBinDeltaVO> newRecords = parseData(looseData);
 
 			//merge the data to determine where the deltas are
 			//after this step each record will be tagged 'insert','update','delete', or 'ignore'
@@ -263,7 +263,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * consumes the masterRecords list and pushes the qualifying records into Solr
 	 * @param masterRecords
 	 */
-	private void syncWithSolr(Map<String, MediaBinDeltaVO> masterRecords) {
+	protected void syncWithSolr(Map<String, MediaBinDeltaVO> masterRecords) {
 		// initialize the connection to the solr server
 		String baseUrl = props.getProperty(Constants.SOLR_BASE_URL);
 		String collection = props.getProperty(Constants.SOLR_COLLECTION_NAME);
@@ -508,7 +508,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param vo
 	 * @param fileNm
 	 */
-	private void downloadFiles(Map<String, MediaBinDeltaVO> masterRecords) {
+	protected void downloadFiles(Map<String, MediaBinDeltaVO> masterRecords) {
 		String dropboxFolder = (String) props.get("downloadDir");
 		boolean fileExists = true; //true - we don't check the file system by default
 		
@@ -517,16 +517,16 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			String fileUrl = StringUtil.replace(vo.getAssetNm(), " ","%20");
 			fileUrl = StringUtil.replace(fileUrl, "#","%23");
 			vo.setLimeLightUrl(limeLightUrl + fileUrl);
-			vo.setFileName(StringUtil.replace((type == 1 ? "US" : "EMEA") + "/" + vo.getAssetNm(), "/", File.separator));
+			vo.setFileName(dropboxFolder + StringUtil.replace((type == 1 ? "US" : "EMEA") + "/" + vo.getAssetNm(), "/", File.separator));
 
 			//check for files on disk. If we have the file we need then that's good enough. - use in development to get around extensive http calls on repeated trial runs.
 			if (Convert.formatBoolean(props.getProperty("honorExistingFiles"))) {
-				fileExists = new File(dropboxFolder + vo.getFileName()).exists();
+				fileExists = new File(vo.getFileName()).exists();
 				if (fileExists) continue;
 			}
 			
 			if (!fileExists || fileOnLLChanged(vo))
-				downloadFile(dropboxFolder, vo);
+				downloadFile(vo);
 		}
 	}
 	
@@ -537,7 +537,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param vo
 	 * @param fileNm
 	 */
-	private void downloadFile(String dropboxFolder, MediaBinDeltaVO vo) {
+	protected void downloadFile(MediaBinDeltaVO vo) {
 		log.info("retrieving " + vo.getLimeLightUrl());
 		try {
 			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
@@ -550,7 +550,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				throw new IOException();
 
 			//write the file to our repository
-			String fullPath = dropboxFolder + vo.getFileName(); 
+			String fullPath = vo.getFileName(); 
 			String parentDir = fullPath.substring(0, fullPath.lastIndexOf(File.separator));
 			File dir = new File(parentDir);
 			if (!dir.exists()) dir.mkdirs();
@@ -662,7 +662,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param String importFile file path
 	 * @throws Exception
 	 */
-	public List<Map<String, String>> loadFile(String path) throws IOException {
+	protected List<Map<String, String>> loadFile(String path) throws IOException {
 		log.info("starting file parser");
 
 		// Set the importFile so we can access it for the success email
@@ -671,17 +671,30 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		URL url = new URL(importFile);
 		BufferedReader buffer = new BufferedReader(new InputStreamReader(url.openStream(), "UTF-16"));
 		
+		return parseFile(buffer);
+	}
+	
+	
+	/**
+	 * separates parsing the file from obtaining it (above).
+	 * @param buffer
+	 * @return
+	 * @throws IOException
+	 */
+	protected List<Map<String, String>> parseFile(BufferedReader buffer) throws IOException {
 		//possibly create a Writer object to store the EXP file onto persistent disk, for archiving.
 		BufferedWriter writer = makeArchiveWriter();
 		
 		// first row contains column names; must match UserDataVO mappings
 		String line = StringUtil.checkVal(buffer.readLine());
+		log.debug(line);
 		String tokens[] = new String[0];
 		if (line != null) tokens = line.split(DELIMITER, -1);
 		String[] columns = new String[tokens.length];
 		for (int i = 0; i < tokens.length; i++) {
 			columns[i] = tokens[i];
 		}
+		log.debug(columns.length);
 		
 		//write the header line to disk
 		writer.write(line);
@@ -757,7 +770,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param data
 	 * @return
 	 */
-	public Map<String, MediaBinDeltaVO> parseData(List<Map<String,String>> data, int type) {
+	public Map<String, MediaBinDeltaVO> parseData(List<Map<String,String>> data) {
 		List<String> acceptedAssets = new ArrayList<String>();
 		acceptedAssets.addAll(java.util.Arrays.asList(MediaBinAdminAction.VIDEO_ASSETS));
 		acceptedAssets.addAll(java.util.Arrays.asList(MediaBinAdminAction.PDF_ASSETS));
@@ -771,9 +784,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		for (Map<String, String> row : data) {
 			try {
 				// Make sure the files are for one of our websites, and in the File Types we're authorized to use.
-				if (StringUtil.checkVal(row.get("Distribution Channel")).length() == 0 ||
-						!acceptedAssets.contains(row.get("Asset Type").toLowerCase()) ||
-						!StringUtil.stringContainsItem(row.get("Distribution Channel"), requiredOpCo)) {
+				if (!isOpcoAuthorized(row.get("Distribution Channel"), requiredOpCo) ||
+						!acceptedAssets.contains(row.get("Asset Type").toLowerCase())) {
 
 					if (DEBUG_MODE) { //if we're in debug mode, report why we're skipping this record.
 						String reason = " || ";
@@ -885,6 +897,17 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		dataCounts.put("exp-eligible", records.size());
 		log.info(records.size() + " total VOs created from EXP data");
 		return records;
+	}
+
+
+	/**
+	 * determines if the assets is visible to our operating companies
+	 * @param distChannel
+	 * @param allowedOpCoNames
+	 * @return
+	 */
+	protected boolean isOpcoAuthorized(String distChannel, String[] allowedOpCoNames) {
+		return !StringUtil.stringContainsItem(distChannel, allowedOpCoNames);
 	}
 
 
@@ -1137,7 +1160,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			EmailMessageVO msg = new EmailMessageVO(); 
 			msg.addRecipients(props.getProperty("adminEmail" + type).split(","));
 			String subjectBase = StringUtil.checkVal(props.getProperty("emailSubject"), "SMT MediaBin Import -"); //allow the config file to override the default subject
-			msg.setSubject(subjectBase + ((type == 1) ? " US" : " EMEA"));
+			String opCo = type == 1 ? " US" : " EMEA";
+			if (3 == type) opCo = " EMEA Private Assets";
+			msg.setSubject(subjectBase + opCo);
 			msg.setFrom("appsupport@siliconmtn.com");
 
 			StringBuilder html= new StringBuilder(1000);
