@@ -5,6 +5,8 @@ import com.biomed.smarttrak.admin.report.AccountReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
+import com.biomed.smarttrak.admin.report.SupportReportAction;
+import com.biomed.smarttrak.admin.report.SupportReportVO;
 import com.biomed.smarttrak.admin.report.UserActivityAction;
 import com.biomed.smarttrak.admin.report.UserActivityReportVO;
 import com.biomed.smarttrak.admin.report.UserListReportAction;
@@ -15,13 +17,11 @@ import com.biomed.smarttrak.admin.report.UserUtilizationDailyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationMonthlyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction.UtilizationReportType;
-
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
-
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -47,6 +47,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		USER_LIST,
 		USER_PERMISSIONS,
 		UTILIZATION,
+		SUPPORT
 	}
 	
 	/**
@@ -92,6 +93,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case UTILIZATION:
 				rpt = generateUserUtilizationReport(req);
 				break;
+			case SUPPORT:
+				rpt = generateSupportReport(req);
 			default:
 				break;
 		}
@@ -221,6 +224,22 @@ public class ReportFacadeAction extends SBActionAdapter {
 		
 		rpt.addAttributes(UserUtilizationReportAction.ATTRIB_REPORT_SUFFIX, urt.getReportSuffix());
 		rpt.setData(uu.retrieveUserUtilization(req));
+		return rpt;
+	}
+
+	/**
+	 * Method calls out to get support report data and then builds a report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateSupportReport(ActionRequest req) throws ActionException {
+		SupportReportAction sra = new SupportReportAction();
+		sra.setDBConnection(dbConn);
+		sra.setAttributes(getAttributes());
+
+		AbstractSBReportVO rpt = new SupportReportVO();
+		rpt.setData(sra.retrieveSupportData(req));
 		return rpt;
 	}
 	
