@@ -438,14 +438,16 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	 * @param insightId the insightId to set
 	 */
 	public void setInsightId(String insightId) {
+		//if the Id is null return so the save method knows to make a new guid
+		if (insightId == null) return;
+		
 		this.insightId = insightId;
-
+		
 		if( getInsightId().length() < AdminControllerAction.DOC_ID_MIN_LEN){
 			super.setDocumentId(Section.INSIGHT.name() + "_" +insightId);
 		}else {
 			super.setDocumentId(insightId);
 		}
-
 	}
 
 	/**
@@ -559,7 +561,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		}
 		return null;
 	}
-	/*
+	/*	
 	 * (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
