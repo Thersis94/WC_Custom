@@ -92,28 +92,28 @@ public class SectionVO implements Serializable {
 	/**
 	 * @return the sectionId
 	 */
-	@Column(name="section_id", isPrimaryKey=true)
+	@Column(name="SECTION_ID", isPrimaryKey=true)
 	public String getSectionId() {
 		return sectionId;
 	}
 	/**
 	 * @return the parentId
 	 */
-	@Column(name="parent_id")
+	@Column(name="PARENT_ID")
 	public String getParentId() {
 		return parentId;
 	}
 	/**
 	 * @return the sectionNm
 	 */
-	@Column(name="section_nm")
+	@Column(name="SECTION_NM")
 	public String getSectionNm() {
 		return sectionNm;
 	}
 	/**
 	 * @return the orderNo
 	 */
-	@Column(name="order_no")
+	@Column(name="ORDER_NO")
 	public int getOrderNo() {
 		return orderNo;
 	}
@@ -121,7 +121,7 @@ public class SectionVO implements Serializable {
 	 * @return the solrTokenTxt
 	 * This gets generated once, at insertion time, and never changes again.  Used for enforcing permissions
 	 */
-	@Column(name="solr_token_txt", isInsertOnly=true)
+	@Column(name="SOLR_TOKEN_TXT", isInsertOnly=true)
 	public String getSolrTokenTxt() {
 		return solrTokenTxt;
 	}
@@ -129,7 +129,7 @@ public class SectionVO implements Serializable {
 	/**
 	 * @return the fdPubYr
 	 */
-	@Column(name="fd_pub_yr")
+	@Column(name="FD_PUB_YR")
 	public int getFdPubYr() {
 		return fdPubYr;
 	}
@@ -137,7 +137,7 @@ public class SectionVO implements Serializable {
 	/**
 	 * @return the fdPubQtr
 	 */
-	@Column(name="fd_pub_qtr")
+	@Column(name="FD_PUB_QTR")
 	public int getFdPubQtr() {
 		return fdPubQtr;
 	}
@@ -145,14 +145,14 @@ public class SectionVO implements Serializable {
 	/**
 	 * @return the createDt
 	 */
-	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
+	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDt() {
 		return createDt;
 	}
 	/**
 	 * @return the updateDt
 	 */
-	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
+	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDt;
 	}

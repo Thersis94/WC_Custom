@@ -21,6 +21,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -59,13 +60,10 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	 */
 	public void retrieve(ActionRequest req) throws ActionException{
 		log.debug("Retrieving updates section hierarchy listing...");
-		
-		//Retrieve root level sections. 
-		List<SectionVO> rootSections = fetchSubRootList();
-		
+	
 		/*Create separate trees structures for all of the 
 		*root level sections. This will create our groupings. */
-		Map<String, Tree> treeCollection = retrieveTreeCollection(rootSections);
+		Map<String, Tree> treeCollection = retrieveTreeCollection();
 		
 		//Add the updates to appropriate groupings
 		Map<List<Node>, List<UpdatesVO>> data = buildUpdatesHierarchy(req, treeCollection);
@@ -103,19 +101,45 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	/**
 	 * Retrieves a tree collection of nodes based on the sub-root sections. Each
 	 * tree contains each sub-root section's hierarchy.
-	 * @param roots
 	 * @return
 	 */
-	protected Map<String, Tree> retrieveTreeCollection(List<SectionVO> roots){
+	protected Map<String, Tree> retrieveTreeCollection(){
 		Map<String, Tree> collection = new LinkedHashMap<>();
 		
-		//set the sectionId to specify the root node for each of our tree structures
-		for (SectionVO root : roots) {
-			//add to collection
-			collection.put(root.getSectionId(), loadTree(root.getSectionId()));
-		}
+		//load the tree once
+		Tree t = loadDefaultTree();
 		
+		//get only the list of nodes from the tree which are direct children of root
+		List<Node> nodes = t.preorderList();
+		for (Node node : nodes) {
+			//get each sub-root section as it's own tree structure
+			if(node.getParentId().equals(MASTER_ROOT)){
+				Tree sectionTree = generateSubTree(t, node);
+				collection.put(node.getNodeId(), sectionTree);
+			}	
+		}
 		return collection;
+	}
+	
+	/**
+	 * Returns a sub-tree of the original tree passed with the nodeToCheck set
+	 * as the root node, if that node is found within the tree.
+	 * @param originalTree
+	 * @param nodeToCheck
+	 * @return
+	 */
+	protected Tree generateSubTree(Tree originalTree, Node nodeToCheck){
+		if(nodeToCheck == null) return originalTree; //nothing to do, return
+		List<Node> allNodes = originalTree.preorderList();
+		Tree sectionTree = new Tree(allNodes);
+		
+		//find the requested root node and prune the tree
+		if (!StringUtil.isEmpty(nodeToCheck.getNodeId())) {
+			Node n = originalTree.findNode(nodeToCheck.getNodeId());
+			if (n != null)
+				sectionTree.setRootNode(n);
+		}
+		return sectionTree;
 	}
 	
 	/**
