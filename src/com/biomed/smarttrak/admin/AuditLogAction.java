@@ -41,10 +41,22 @@ public class AuditLogAction extends SBActionAdapter {
 	private Map<String, String> sortOrders;
 	
 	/**
-	 * N = "Not Started", P = "In Progress", D = "Company Done",
-	 * F = "Company and Products Done", C = "Canceled"
+	 * Audit statuses
 	 */
-	public enum AuditStatus {N, P, D, F, C}
+	public enum AuditStatus {
+		N("Not Started"), P("In Progress"), D("Company Done"),
+		F("Company and Products Done"), C("Canceled");
+		
+		private String title;
+		
+		AuditStatus(String title) {
+			this.title = title;
+		}
+		
+		public String getTitle() {
+			return title;
+		}
+	}
 	
 	/**
 	 * Set the list of fields that can be sorted on

@@ -45,6 +45,23 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, ATTRIBUTE, SECTION
 	}
 	
+	/**
+	 * Company statuses
+	 */
+	public enum CompanyStatus {
+		E("Edit"), P("Published"), A("Archived"), D("Delete");
+		
+		private String title;
+		
+		CompanyStatus(String title) {
+			this.title = title;
+		}
+		
+		public String getTitle() {
+			return title;
+		}
+	}
+	
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
