@@ -5,6 +5,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -65,6 +66,7 @@ public class SupportReportAction extends SimpleActionAdapter {
 		String sql = formatDBQuery(startDt, endDt);
 
 		List<Object> params = new ArrayList<>();
+		params.add(AdminControllerAction.BIOMED_ORG_ID);
 		if(startDt != null) {
 			params.add(startDt);
 		}
@@ -114,7 +116,7 @@ public class SupportReportAction extends SimpleActionAdapter {
 		sql.append("left outer join profile d on a.reporter_id = d.profile_id ");
 		sql.append("left outer join custom.biomedgps_user u on d.profile_id = u.profile_id ");
 		sql.append("left outer join custom.biomedgps_account ac on u.account_id = ac.account_id ");
-		sql.append("where 1=1 ");
+		sql.append("where organization_id = ? ");
 
 		if(startDt != null) {
 			sql.append("and a.create_dt > ? ");
