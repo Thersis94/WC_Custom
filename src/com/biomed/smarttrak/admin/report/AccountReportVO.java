@@ -9,8 +9,10 @@ import java.util.Map;
 
 //WC custom
 import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.PermissionVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
+import com.biomed.smarttrak.vo.UserVO.Status;
 
 //SMTBaseLibs
 import com.siliconmtn.data.Node;
@@ -39,10 +41,6 @@ public class AccountReportVO extends AbstractSBReportVO {
 	protected static final String KEY_ACCOUNTS = "accounts";
 	protected static final String KEY_FIELD_OPTIONS = "fieldOptions";
 	private static final String ROW = "ROW";
-	private static final String USER_STATUS_A = UserVO.Status.ACTIVE.getCode();
-	private static final String USER_STATUS_C = UserVO.Status.COMPLIMENTARY.getCode();
-	private static final String USER_STATUS_E = UserVO.Status.EXTRA.getCode();
-	private static final String USER_STATUS_U = UserVO.Status.UPDATES.getCode();
 	private List<AccountUsersVO> accounts;
 	private Map<String,Map<String,String>> fieldOptions;
 	
@@ -122,7 +120,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	protected void addAccountRow(List<Map<String,Object>> rows, AccountUsersVO acct) {
 		StringBuilder sb = new StringBuilder(75);
-		sb.append(acct.getAccountName());
+		sb.append(acct.getAccountName().toUpperCase());
 		int totUsers = acct.getTotalUsers() - 
 				(acct.getAddedCount() + 
 						acct.getComplementaryCount() + 
@@ -131,12 +129,12 @@ public class AccountReportVO extends AbstractSBReportVO {
 		if (acct.getAddedCount() > 0) {
 			sb.append(" ");
 			sb.append(acct.getAddedCount());
-			sb.append(USER_STATUS_E); 
+			sb.append(UserVO.Status.EXTRA.getCode()); 
 		}
 		if (acct.getComplementaryCount() > 0) {
 			sb.append(" ");
 			sb.append(acct.getComplementaryCount());
-			sb.append(USER_STATUS_C); 
+			sb.append(UserVO.Status.COMPLIMENTARY.getCode()); 
 		}
 		rows.add(addRow(ROW, sb.toString()));
 		
@@ -166,21 +164,24 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	protected void addAccountSegmentRows(List<Map<String,Object>> rows, AccountUsersVO acct) {
 		SmarttrakTree tree = acct.getPermissions();
-		StringBuilder sb = null;
+		String lvl3 = null;
+		StringBuilder lvl4 = null;
 		int level;
 		int cnt = 0;
+		
 		for (Node seg : tree.getPreorderList()) {
 			level = seg.getDepthLevel();
 			if (level < 3 || level > 4) continue;
 			switch (level) {
 				case 3:
-					appendSegmentRow(sb,rows);
+					appendSegmentRow(lvl3,lvl4,rows);
+					lvl3 = seg.getNodeName().toUpperCase();
+					lvl4 = new StringBuilder(100);
 					cnt = 1;
-					sb = new StringBuilder(100);
-					sb.append(seg.getNodeName());
 					break;
 				case 4:
-					appendSegment(sb,seg.getNodeName(),cnt);
+					PermissionVO perms = (PermissionVO)seg.getUserObject();
+					appendSegment(perms,lvl4,seg.getNodeName(),cnt);
 					cnt++;
 					break;
 				default:
@@ -195,8 +196,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param sb
 	 * @param rows
 	 */
-	protected void appendSegmentRow(StringBuilder sb, List<Map<String,Object>> rows) {
-		if (sb != null) rows.add(addRow(ROW,sb.toString()));
+	protected void appendSegmentRow(String parent, StringBuilder children, List<Map<String,Object>> rows) {
+		if (parent != null && children.length() > 0) rows.add(addRow(ROW,parent + children.toString()));
 	}
 	
 	/**
@@ -206,10 +207,12 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param segName
 	 * @param cnt
 	 */
-	protected void appendSegment(StringBuilder sb, String segName, int cnt) {
-		if (cnt == 1) sb.append(": ");
-		else sb.append(",");
-		sb.append(" ").append(segName);
+	protected void appendSegment(PermissionVO perms, StringBuilder sb, String segName, int cnt) {
+		if (perms.isBrowseAuth()) {
+			if (cnt == 1) sb.append(": ");
+			else sb.append(",");
+			sb.append(" ").append(segName);
+		}
 	}
 	
 	/**
@@ -276,46 +279,44 @@ public class AccountReportVO extends AbstractSBReportVO {
 
 	/**
 	 * Adds user identifier for certain users based on country code or 
-	 * job category/job level or simply job level
+	 * job category/job level or simply job level and/or user status code
 	 * @param sb
 	 * @param jobCat
 	 */
 	protected void addUserIdentifier(StringBuilder sb, UserVO user) {
-		// TODO: pending business rules.
 		// look at country code first.
+		String suffix = null;
 		if ("UK".equals(user.getCountryCode())) {
-			sb.append(" [UK]");
-			return;
-		}
+			suffix = " [UK]";
+		} else {
+			// not UK, so look at job category/level
+			int jobCat = Convert.formatInteger(user.getJobCategory());
+			int jobLvl = Convert.formatInteger(user.getJobLevel());
 
-		int jobCat = Convert.formatInteger(user.getJobCategory());
-		int jobLvl = Convert.formatInteger(user.getJobLevel());
-
-		switch(jobCat) {
-			case 2:
-				if (jobLvl == 10)
-					sb.append(" [PM]");
-				return;
-			case 5:
-				if (jobLvl == 4)
-					sb.append(" [SA]");
-				return;
-			case 8:
-				sb.append(" [BD]");
-				return;
-			case 9:
-				sb.append(" [Ex]");
-				return;
-			default:
-				break;
+			switch(jobCat) {
+				case 2:
+					if (jobLvl == 10) suffix = " [PM]";
+					break;
+				case 5:
+					if (jobLvl == 4) suffix = " [SA]";
+					break;
+				case 8:
+					suffix = " [BD]";
+					break;
+				case 9:
+					suffix = " [Ex]";
+					break;
+				default:
+					break;
+			}
+			// if we haven't already added a suffix, check job level exclusively
+			if (suffix == null && 
+					jobLvl == 10) suffix = " [M]";
 		}
-
-		if (jobLvl == 10) {
-			sb.append(" [M]");
-			return;
-		}
+		// add suffix if we calculated one
+		if (suffix != null) sb.append(suffix);
 		
-		// if no other identifier was added, we look at status code.
+		// now append status code if appropriate.
 		addUserStatusCode(sb,user.getStatusCode());
 	}
 
@@ -325,11 +326,11 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param statCd
 	 */
 	protected void addUserStatusCode(StringBuilder sb, String statCd) {
-		if (statCd.equalsIgnoreCase(USER_STATUS_C) ||
-				statCd.equalsIgnoreCase(USER_STATUS_U)) {
+		if (statCd.equalsIgnoreCase(Status.COMPLIMENTARY.getCode()) ||
+				statCd.equalsIgnoreCase(Status.UPDATES.getCode())) {
 			sb.append(" ").append(statCd);
-		} else if (statCd.equalsIgnoreCase(USER_STATUS_E)) {
-			sb.append(" ").append(USER_STATUS_A);
+		} else if (statCd.equalsIgnoreCase(Status.EXTRA.getCode())) {
+			sb.append(" ").append(Status.ACTIVE.getCode());
 		}
 	}
 
