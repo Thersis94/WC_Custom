@@ -139,11 +139,25 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	public static String formatRetrieveQuery(String insightId, String statusCd, String typeCd, String dateRange, String schema) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select a.*, p.first_nm, p.last_nm, p.profile_img, b.section_id ");
+		sql.append("select ");
+				
+		if (!StringUtil.isEmpty(insightId)){
+			sql.append("a.*");
+		}else{
+			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt");
+		}
+				
+		sql.append(", p.first_nm, p.last_nm, p.profile_img ");
+		
+		
+		if (!StringUtil.isEmpty(insightId))sql.append(", b.section_id ");
 		sql.append("from ").append(schema).append("biomedgps_insight a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
-		sql.append("on a.insight_id=b.insight_id where 1=1 ");
+		if (!StringUtil.isEmpty(insightId)){
+			sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
+			sql.append("on a.insight_id=b.insight_id ");
+		}
+		sql.append("where 1=1 ");
 		if (!StringUtil.isEmpty(insightId)) sql.append("and a.insight_id=? ");
 		if (!StringUtil.isEmpty(statusCd)) sql.append("and a.status_cd=? ");
 		if (!StringUtil.isEmpty(typeCd)) sql.append("and a.type_cd=? ");
