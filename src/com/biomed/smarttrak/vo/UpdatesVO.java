@@ -17,6 +17,7 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.html.tool.RegexParser;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -505,5 +506,15 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	@Override
 	public String getItemDesc() {
 		return "Modified Smarttrak Update Record.";
+	}
+	
+	/**
+	 * Utility method for strip HTML out, and getting the pure text value. Made
+	 * public and static for use with FreeMarker engine.
+	 * @param s
+	 * @return
+	 */
+	public static String stripHtml(String s) {
+		return RegexParser.regexReplace(RegexParser.Patterns.STRIP_ALL_HTML, s, "");
 	}
 }

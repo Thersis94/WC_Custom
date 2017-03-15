@@ -19,7 +19,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -45,7 +44,7 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	}
 	
 	/**
-	 * Initializies class with ActionInitVO
+	 * Initializes class with ActionInitVO
 	 * @param init
 	 */
 	public UpdatesSectionHierarchyAction(ActionInitVO init){
@@ -64,7 +63,7 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		Map<String, Tree> treeCollection = retrieveTreeCollection();
 		
 		//Add the updates to appropriate groupings
-		Map<List<Node>, List<UpdatesVO>> data = buildUpdatesHierarchy(req, treeCollection);
+		Map<String, Map<String, List<UpdatesVO>>> data = buildUpdatesHierarchy(req, treeCollection);
 		
 		putModuleData(data);
 	}
@@ -80,37 +79,12 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		//load the tree once
 		Tree t = loadDefaultTree();
 		
-		//get only the list of nodes from the tree which are direct children of root
-		List<Node> nodes = t.preorderList();
-		for (Node node : nodes) {
-			//get each sub-root section as it's own tree structure
-			if(node.getParentId().equals(MASTER_ROOT)){
-				Tree sectionTree = generateSubTree(t, node);
-				collection.put(node.getNodeId(), sectionTree);
-			}	
+		for (Node node : t.getRootNode().getChildren()) {
+			Tree sectionTree = new Tree(node.getChildren());
+			sectionTree.setRootNode(node);
+			collection.put(node.getNodeId(), sectionTree);
 		}
 		return collection;
-	}
-	
-	/**
-	 * Returns a sub-tree of the original tree passed with the nodeToCheck set
-	 * as the root node, if that node is found within the tree.
-	 * @param originalTree
-	 * @param nodeToCheck
-	 * @return
-	 */
-	protected Tree generateSubTree(Tree originalTree, Node nodeToCheck){
-		if(nodeToCheck == null) return originalTree; //nothing to do, return
-		List<Node> allNodes = originalTree.preorderList();
-		Tree sectionTree = new Tree(allNodes);
-		
-		//find the requested root node and prune the tree
-		if (!StringUtil.isEmpty(nodeToCheck.getNodeId())) {
-			Node n = originalTree.findNode(nodeToCheck.getNodeId());
-			if (n != null)
-				sectionTree.setRootNode(n);
-		}
-		return sectionTree;
 	}
 	
 	/**
@@ -122,9 +96,9 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	protected Map<List<Node>, List<UpdatesVO>> buildUpdatesHierarchy(ActionRequest req, 
+	protected Map<String, Map<String, List<UpdatesVO>>> buildUpdatesHierarchy(ActionRequest req, 
 			Map<String, Tree> treeCollection) throws ActionException{
-		Map<List<Node>, List<UpdatesVO>> updatesHierarchyMap = new LinkedHashMap<>();
+		Map<String, Map<String, List<UpdatesVO>>> updatesHierarchyMap = new LinkedHashMap<>();
 		
 		//retrieve the list of daily/weekly updates
 		UpdatesWeeklyReportAction uwr = new UpdatesWeeklyReportAction();
@@ -137,18 +111,24 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		
 		//iterate through each section tree hierarchy and add the corresponding update(s)
 		Set<Entry<String, Tree>> treeSet = treeCollection.entrySet();
-		for (Entry<String, Tree> entry : treeSet) {			
+		for (Entry<String, Tree> entry : treeSet) {		
 			Tree t = entry.getValue();
+			int maxDepthLvl = 3;
+			String rootSectionId = t.getRootNode().getNodeName();
 			
-			//locate the related updates
-			List<UpdatesVO> relatedUpdates = locateSectionUpdates(updates, t);
-			
-			//get the current section's list of nodes from tree
-			List<Node> subRootSection = t.preorderList(true);
-			
-			//add this tree, with updates, to the final collection
-			updatesHierarchyMap.put(subRootSection, relatedUpdates);
+			//Build the mapping for top-level sections, sub-sections, and updates
+			List<Node> nodes = t.preorderList();	
+			Map<String, List<UpdatesVO>> subSectionMap = new LinkedHashMap<>();
+			for (Node node : nodes) {
+				if(node.getDepthLevel() == maxDepthLvl){					
+					//locate the related updates and add to map
+					subSectionMap.put(node.getNodeName(), locateSectionUpdates(updates, node));
+				}		
+			}
+			//add root section id, with sub-section/updates, to the final collection
+			updatesHierarchyMap.put(rootSectionId, subSectionMap);
 		}
+		
 		return updatesHierarchyMap;
 	}
 	
@@ -156,15 +136,15 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	 * Helper method that returns a list of related updates for a specific section 
 	 * hierarchy
 	 * @param updateSections
-	 * @param t
+	 * @param node
 	 * @param update
 	 * @return
 	 */
-	private List<UpdatesVO> locateSectionUpdates(List<UpdatesVO> updates, Tree tree){
+	private List<UpdatesVO> locateSectionUpdates(List<UpdatesVO> updates, Node node){
 		List<UpdatesVO> relatedUpdates = new ArrayList<>();
 		
 		for (UpdatesVO update : updates) {
-			associateUpdates(update, relatedUpdates, tree);
+			associateUpdates(update, relatedUpdates, node);
 		}
 		
 		return relatedUpdates;
@@ -174,19 +154,19 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	 * Helper method, handles associating updates to their related sections
 	 * @param update
 	 * @param holder
-	 * @param tree
+	 * @param nodeToMatch
 	 */
 	private void associateUpdates(UpdatesVO update, List<UpdatesVO> holder,
-			Tree tree){
+			Node nodeToMatch){		
 		//get list of sections for this update
 		List<UpdatesXRVO>updateSections = update.getUpdateSections();
 		
-		/*Attempt to find section within tree structure. If so the current 
-		 * update belongs to this tree.*/			
+		/*Attempt to match section to the current update. If so the current 
+		 * update belongs to this section.*/			
 		for (UpdatesXRVO updatesXRVO : updateSections) {						
-			if(updatesXRVO != null && updatesXRVO.getSectionId() != null){
-				Node node = tree.findNode(updatesXRVO.getSectionId());
-				if(node != null) holder.add(update);
+			if(updatesXRVO.getSectionId() != null 
+					&& nodeToMatch.getNodeId().equals(updatesXRVO.getSectionId())){
+				holder.add(update);			
 			}
 		}			
 	}
