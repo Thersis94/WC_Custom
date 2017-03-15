@@ -171,7 +171,8 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		sql.append("pf.first_nm, pf.last_nm, pfa.country_cd, pfr.role_id, ");
 		sql.append("rd.register_field_id, rd.value_txt ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
-		sql.append("inner join ").append(schema).append("biomedgps_user us on ac.account_id = us.account_id ");
+		sql.append("inner join ").append(schema).append("biomedgps_user us ");
+		sql.append("on ac.account_id = us.account_id ");
 		sql.append("and ac.type_id = ? and ac.status_no != ? and us.status_cd != ? ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
@@ -338,6 +339,8 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		user.setProfileId(rs.getString("profile_id"));
 		user.setStatusCode(rs.getString("status_cd"));
 		user.setCountryCode(rs.getString("country_cd"));
+		// use barcode ID field to store user's role ID for the report view
+		user.setBarCodeId(rs.getString("role_id"));
 		// decrypt encrypted fields and set.
 		try {
 			user.setFirstName(se.decrypt(rs.getString("first_nm")));
@@ -345,7 +348,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		} catch (Exception e) {
 			log.warn("Warning: Unable to decrypt profile fields for profile ID " + user.getProfileId());
 		}
-		
+
 		return user;
 	}
 	

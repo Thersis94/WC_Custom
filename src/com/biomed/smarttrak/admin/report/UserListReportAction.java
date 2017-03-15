@@ -62,15 +62,16 @@ public class UserListReportAction extends SimpleActionAdapter {
 	public List<AccountUsersVO> retrieveUserList(ActionRequest req) throws ActionException {
 
 		StringEncrypter se = initStringEncrypter();
-
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		
 		// 1. retrieve account/users
-		List<AccountUsersVO> accounts = retrieveAccountUsers(se);
+		List<AccountUsersVO> accounts = retrieveAccountUsers(se,schema);
 
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		String siteId = StringUtil.isEmpty(site.getAliasPathParentId()) ? site.getSiteId() : site.getAliasPathParentId();
 		
 		// 2. retrieve login attributes
-		Map<String,Map<String,Object>> authAttributes = retrieveAuthAttributes(accounts, siteId);
+		Map<String,Map<String,Object>> authAttributes = retrieveAuthAttributes(accounts, schema, siteId);
 
 		// 3. retrieve pageviews counts
 		Map<String,Integer> userPageCounts = retrieveUserPageCounts(siteId);
@@ -86,9 +87,9 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * @param se
 	 * @return
 	 */
-	protected List<AccountUsersVO> retrieveAccountUsers(StringEncrypter se) {
+	protected List<AccountUsersVO> retrieveAccountUsers(StringEncrypter se,String schema) {
 		// 1. build query
-		StringBuilder sql = buildAccountsUsersQuery();
+		StringBuilder sql = buildAccountsUsersQuery(schema);
 
 		// 2. build PS
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -108,10 +109,10 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * @param accounts
 	 * @return
 	 */
-	protected Map<String,Map<String,Object>> retrieveAuthAttributes(List<AccountUsersVO> accounts, String siteId) {
+	protected Map<String,Map<String,Object>> retrieveAuthAttributes(List<AccountUsersVO> accounts, String schema, String siteId) {
 		log.debug("retrieveAuthAttributes...");
 		// 1. build query
-		StringBuilder sql = buildLastLoginQuery();
+		StringBuilder sql = buildLastLoginQuery(schema);
 
 		// 2. build PS
 		Map<String,Object> userAttribs;
@@ -188,7 +189,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * Builds the base accounts/users query.
 	 * @return
 	 */
-	protected StringBuilder buildAccountsUsersQuery() {
+	protected StringBuilder buildAccountsUsersQuery(String schema) {
 		StringBuilder sql = new StringBuilder(650);
 		sql.append("select ac.account_id, ac.account_nm, ac.expiration_dt as acct_expiration_dt, ac.status_no, ");
 		sql.append("us.status_cd, us.expiration_dt, us.fd_auth_flg, us.create_dt, ");
@@ -196,8 +197,9 @@ public class UserListReportAction extends SimpleActionAdapter {
 		sql.append("pfa.address_txt, pfa.address2_txt, pfa.city_nm, pfa.state_cd, pfa.zip_cd, pfa.country_cd, ");
 		sql.append("ph.phone_number_txt, ph.phone_type_cd, ");
 		sql.append("rd.register_field_id, rd.value_txt ");
-		sql.append("from custom.biomedgps_account ac ");
-		sql.append("inner join custom.biomedgps_user us on ac.account_id = us.account_id ");
+		sql.append("from ").append(schema).append("biomedgps_account ac ");
+		sql.append("inner join ").append(schema).append("biomedgps_user us ");
+		sql.append("on ac.account_id = us.account_id ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
 		sql.append("left join phone_number ph on pf.profile_id = ph.profile_id ");
@@ -212,12 +214,12 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * Builds the last logins query.
 	 * @return
 	 */
-	protected StringBuilder buildLastLoginQuery() {
+	protected StringBuilder buildLastLoginQuery(String schema) {
 		StringBuilder sql = new StringBuilder(500);
 		sql.append("select authentication_id, oper_sys_txt, browser_txt, device_txt, login_dt from ( ");
 		sql.append("select distinct(al.authentication_id), oper_sys_txt, browser_txt, device_txt, login_dt, ");
 		sql.append("rank() over ( partition by al.authentication_id order by login_dt desc ) ");
-		sql.append("from custom.biomedgps_user us ");
+		sql.append("from ").append(schema).append("biomedgps_user us ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("inner join authentication_log al on pf.authentication_id = al.authentication_id ");
 		sql.append("where site_id = ? ) rank_filter where rank = 1 order by authentication_id ");
