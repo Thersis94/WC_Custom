@@ -10,8 +10,8 @@ import java.util.Set;
 
 //wc_custom libs
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
-import com.biomed.smarttrak.vo.UpdatesVO;
-import com.biomed.smarttrak.vo.UpdatesXRVO;
+import com.biomed.smarttrak.vo.UpdateVO;
+import com.biomed.smarttrak.vo.UpdateXRVO;
 
 //smt base libs
 import com.siliconmtn.action.ActionException;
@@ -44,6 +44,7 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	public UpdatesSectionHierarchyAction(){
 		super();
 	}
+	
 	/**
 	 * Initializes class with ActionInitVO
 	 * @param init
@@ -64,10 +65,11 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		Map<String, Tree> treeCollection = retrieveTreeCollection();
 		
 		//Add the updates to appropriate groupings
-		Map<String, Map<String, List<UpdatesVO>>> data = buildUpdatesHierarchy(req, treeCollection);
+		Map<String, Map<String, List<UpdateVO>>> data = buildUpdatesHierarchy(req, treeCollection);
 		
 		putModuleData(data);
 	}
+	
 	/**
 	 * Retrieves a tree collection of nodes based on the sub-root sections. Each
 	 * tree contains each sub-root section's hierarchy.
@@ -86,6 +88,7 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		}
 		return collection;
 	}
+	
 	/**
 	 * Builds a proper collection of updates with their corresponding section(s)
 	 * that they belong to.
@@ -95,9 +98,9 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	protected Map<String, Map<String, List<UpdatesVO>>> buildUpdatesHierarchy(ActionRequest req, 
+	protected Map<String, Map<String, List<UpdateVO>>> buildUpdatesHierarchy(ActionRequest req, 
 			Map<String, Tree> treeCollection) throws ActionException{
-		Map<String, Map<String, List<UpdatesVO>>> updatesHierarchyMap = new LinkedHashMap<>();
+		Map<String, Map<String, List<UpdateVO>>> updatesHierarchyMap = new LinkedHashMap<>();
 		
 		//retrieve the list of daily/weekly updates
 		UpdatesWeeklyReportAction uwr = new UpdatesWeeklyReportAction();
@@ -105,29 +108,30 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		uwr.setDBConnection(dbConn);
 		uwr.retrieve(req);
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		List<UpdatesVO> updates = (List<UpdatesVO>) mod.getActionData();
+		List<UpdateVO> updates = (List<UpdateVO>) mod.getActionData();
 		log.debug("Number of updates retrieved: " + updates.size());
 		
 		//iterate through each section tree hierarchy and add the corresponding update(s)
 		Set<Entry<String, Tree>> treeSet = treeCollection.entrySet();
-		for (Entry<String, Tree> entry : treeSet) {		
+		for (Entry<String, Tree> entry : treeSet) {
 			Tree t = entry.getValue();
 			String rootSectionId = t.getRootNode().getNodeName();
 			
 			//Build the mapping for top-level sections, sub-sections, and updates
-			List<Node> nodes = t.preorderList();	
-			Map<String, List<UpdatesVO>> subSectionMap = new LinkedHashMap<>();
+			List<Node> nodes = t.preorderList();
+			Map<String, List<UpdateVO>> subSectionMap = new LinkedHashMap<>();
 			for (Node node : nodes) {
-				if(SECTION_XR_DEPTH == node.getDepthLevel() ){					
+				if(SECTION_XR_DEPTH == node.getDepthLevel() ){		
 					//locate the related updates and add to map
 					subSectionMap.put(node.getNodeName(), locateSectionUpdates(updates, node));
-				}		
+				}
 			}
 			//add root section id, with sub-section/updates, to the final collection
 			updatesHierarchyMap.put(rootSectionId, subSectionMap);
 		}
 		return updatesHierarchyMap;
 	}
+	
 	/***
 	 * Helper method that returns a list of related updates for a specific section 
 	 * hierarchy
@@ -136,32 +140,33 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	 * @param update
 	 * @return
 	 */
-	private List<UpdatesVO> locateSectionUpdates(List<UpdatesVO> updates, Node node){
-		List<UpdatesVO> relatedUpdates = new ArrayList<>();
+	private List<UpdateVO> locateSectionUpdates(List<UpdateVO> updates, Node node){
+		List<UpdateVO> relatedUpdates = new ArrayList<>();
 		
-		for (UpdatesVO update : updates) {
+		for (UpdateVO update : updates) {
 			associateUpdates(update, relatedUpdates, node);
 		}
 		return relatedUpdates;
 	}
+	
 	/**
 	 * Helper method, handles associating updates to their related sections
 	 * @param update
 	 * @param holder
 	 * @param nodeToMatch
 	 */
-	private void associateUpdates(UpdatesVO update, List<UpdatesVO> holder,
-			Node nodeToMatch){		
+	private void associateUpdates(UpdateVO update, List<UpdateVO> holder,
+			Node nodeToMatch){
 		//get list of sections for this update
-		List<UpdatesXRVO>updateSections = update.getUpdateSections();
+		List<UpdateXRVO>updateSections = update.getUpdateSections();
 		
 		/*Attempt to match section to the current update. If so the current 
 		 * update belongs to this section.*/			
-		for (UpdatesXRVO updatesXRVO : updateSections) {						
-			if(updatesXRVO.getSectionId() != null 
+		for (UpdateXRVO updatesXRVO : updateSections) {
+			if(updatesXRVO.getSectionId() != null
 					&& nodeToMatch.getNodeId().equals(updatesXRVO.getSectionId())){
-				holder.add(update);			
+				holder.add(update);
 			}
-		}			
+		}
 	}
 }

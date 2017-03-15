@@ -8,8 +8,8 @@ import java.util.List;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
-import com.biomed.smarttrak.vo.UpdatesVO;
-import com.biomed.smarttrak.vo.UpdatesXRVO;
+import com.biomed.smarttrak.vo.UpdateVO;
+import com.biomed.smarttrak.vo.UpdateXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -109,7 +109,7 @@ public class UpdatesAction extends AbstractTreeAction {
 		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
 
 		DBProcessor db = new DBProcessor(dbConn);
-		List<Object>  updates = db.executeSelect(sql, params, new UpdatesVO());
+		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
@@ -150,7 +150,7 @@ public class UpdatesAction extends AbstractTreeAction {
 		if (!StringUtil.isEmpty(typeCd)) params.add(Convert.formatInteger(typeCd));
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  updates = db.executeSelect(sql, params, new UpdatesVO());
+		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
@@ -236,7 +236,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	 */
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		UpdatesVO u = new UpdatesVO(req);
+		UpdateVO u = new UpdateVO(req);
 
 		try {
 			if (isDelete) {
@@ -275,13 +275,13 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * @param u
 	 * @param generatedPKId
 	 */
-	protected void fixPkids(UpdatesVO u, String generatedPKId) {
+	protected void fixPkids(UpdateVO u, String generatedPKId) {
 		//Set the UpdateId on UpdatesXRVOs
 		if (StringUtil.isEmpty(u.getUpdateId())) {
 			//Ensure proper UpdateId and Publish Dt are set.
 			u.setUpdateId(generatedPKId);
 
-			for (UpdatesXRVO uxr : u.getUpdateSections())
+			for (UpdateXRVO uxr : u.getUpdateSections())
 				uxr.setUpdateId(u.getUpdateId());
 		}
 	}
@@ -291,7 +291,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * Removes an Updates Record from Solr.
 	 * @param u
 	 */
-	protected void deleteFromSolr(UpdatesVO u) {
+	protected void deleteFromSolr(UpdateVO u) {
 		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
 			sau.removeDocument(u.getUpdateId());
 		} catch (Exception e) {
@@ -305,7 +305,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * Save an UpdatesVO to solr.
 	 * @param u
 	 */
-	protected void writeToSolr(UpdatesVO u) {
+	protected void writeToSolr(UpdateVO u) {
 		UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
 		idx.setDBConnection(dbConn);
 		idx.addSingleItem(u.getUpdateId());
@@ -319,13 +319,13 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	protected void saveSections(UpdatesVO u) throws ActionException, InvalidDataException, DatabaseException {
+	protected void saveSections(UpdateVO u) throws ActionException, InvalidDataException, DatabaseException {
 		//Delete old Update Section XRs
 		deleteSections(u.getUpdateId());
 
 		//Save new Sections.
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		for(UpdatesXRVO uxr : u.getUpdateSections())
+		for(UpdateXRVO uxr : u.getUpdateSections())
 			db.save(uxr);
 	}
 

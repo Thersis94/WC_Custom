@@ -28,7 +28,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
- * <b>Title</b>: UpdatesVO.java
+ * <b>Title</b>: UpdateVO.java
  * <b>Project</b>: WC_Custom
  * <b>Description: </b> VO for managing Biomed Updates.
  * <b>Copyright:</b> Copyright (c) 2017
@@ -39,7 +39,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  * @since Feb 14, 2017
  ****************************************************************************/
 @Table(name="biomedgps_update")
-public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc, ChangeLogIntfc, Serializable {
+public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, ChangeLogIntfc, Serializable {
 
 	/**
 	 *
@@ -74,9 +74,9 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
-	private List<UpdatesXRVO> sections;
+	private List<UpdateXRVO> sections;
 
-	public UpdatesVO() {
+	public UpdateVO() {
 		super(UpdateIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
@@ -84,12 +84,12 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	}
 
 
-	public UpdatesVO(ResultSet rs) {
+	public UpdateVO(ResultSet rs) {
 		this();
 		setData(rs);
 	}
 
-	public UpdatesVO(ActionRequest req) {
+	public UpdateVO(ActionRequest req) {
 		this();
 		setData(req);
 	}
@@ -115,7 +115,7 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 		if (req.hasParameter("sectionId")) {
 			String [] s = req.getParameterValues("sectionId");
 			for (String sec : s) {
-				sections.add(new UpdatesXRVO(updateId, sec));
+				sections.add(new UpdateXRVO(updateId, sec));
 			}
 		}
 	}
@@ -289,12 +289,12 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	/**
 	 * @return the sections
 	 */
-	public List<UpdatesXRVO> getUpdateSections() {
+	public List<UpdateXRVO> getUpdateSections() {
 		return sections;
 	}
 
 	@BeanSubElement()
-	public void addUpdateXrVO(UpdatesXRVO u) {
+	public void addUpdateXrVO(UpdateXRVO u) {
 		if (u == null || u.getUpdateSectionXrId() == null) return;
 		sections.add(u);
 	}
@@ -400,7 +400,7 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	/**
 	 * @param sections the sections to set.
 	 */
-	public void setSections(List<UpdatesXRVO> sections) {
+	public void setSections(List<UpdateXRVO> sections) {
 		this.sections = sections;
 	}
 
@@ -469,7 +469,7 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	 */
 	public void configureSolrHierarchies(SmarttrakTree t) {
 		//loop through the selected sections, and add them to the Solr record as 1) hierarchy. 2) ACL.
-		for (UpdatesXRVO uxr : sections) {
+		for (UpdateXRVO uxr : sections) {
 			if(uxr.getSectionId() != null) {
 				Node n = t.findNode(uxr.getSectionId());
 				if (n != null && !StringUtil.isEmpty(n.getFullPath())) {
@@ -507,14 +507,5 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	public String getItemDesc() {
 		return "Modified Smarttrak Update Record.";
 	}
-	
-	/**
-	 * Utility method for strip HTML out, and getting the pure text value. Made
-	 * public and static for use with FreeMarker engine.
-	 * @param s
-	 * @return
-	 */
-	public static String stripHtml(String s) {
-		return RegexParser.regexReplace(RegexParser.Patterns.STRIP_ALL_HTML, s, "");
-	}
+
 }
