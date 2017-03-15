@@ -44,8 +44,6 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 		super(args);
 		type = 3; //private assets.  always.
 		publicAssetIds = loadPublicAssets();
-		
-		debugMode = true;
 	}
 
 	/**
