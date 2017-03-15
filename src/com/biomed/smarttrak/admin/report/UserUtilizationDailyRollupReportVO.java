@@ -67,7 +67,7 @@ public class UserUtilizationDailyRollupReportVO extends AbstractSBReportVO {
 		rpt.setTitleCell(buildReportTitle());
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
-		rows = generateDataRows(rows);
+		generateDataRows(rows);
 
 		rpt.setData(rows);
 		return rpt.generateReport();
@@ -104,8 +104,7 @@ public class UserUtilizationDailyRollupReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private List<Map<String, Object>> generateDataRows(
-			List<Map<String, Object>> rows) {
+	private void generateDataRows(List<Map<String, Object>> rows) {
 				
 		// loop the account map
 		for (Map.Entry<AccountVO, List<UserVO>> acct : accounts.entrySet()) {
@@ -132,7 +131,7 @@ public class UserUtilizationDailyRollupReportVO extends AbstractSBReportVO {
 				}
 			}
 		}
-		return rows;
+
 	}
 
 	/**

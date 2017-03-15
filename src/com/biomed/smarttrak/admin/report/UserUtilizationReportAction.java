@@ -189,7 +189,8 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		log.debug("retrieveAccountsUsers...");
 		Map<String,String> fieldMap = buildRegistrationFieldMap();
 		String[] profileIds = userPageCounts.keySet().toArray(new String[]{});
-		StringBuilder sql = buildAccountsQuery(profileIds.length, fieldMap.size());
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = buildAccountsQuery(schema, profileIds.length, fieldMap.size());
 		log.debug("accounts SQL: " + sql.toString());
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -435,15 +436,16 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @param numFields
 	 * @return
 	 */
-	protected StringBuilder buildAccountsQuery(int numProfileIds, int numFields) {
+	protected StringBuilder buildAccountsQuery(String schema, int numProfileIds, int numFields) {
 		StringBuilder sql = new StringBuilder(925);
 		sql.append("select ac.account_id, ac.account_nm, ");
 		sql.append("us.profile_id, us.user_id, ");
 		sql.append("pf.first_nm, pf.last_nm, pf.email_address_txt, ");
 		sql.append("ph.phone_number_txt, ");
 		sql.append("rd.register_field_id, rd.value_txt ");
-		sql.append("from custom.biomedgps_account ac ");
-		sql.append("inner join custom.biomedgps_user us on ac.account_id = us.account_id ");
+		sql.append("from ").append(schema).append("biomedgps_account ac ");
+		sql.append("inner join ").append(schema).append("biomedgps_user us ");
+		sql.append("on ac.account_id = us.account_id ");
 		sql.append("and ac.status_no != ? and us.status_cd != ? ");
 		sql.append("and us.profile_id in (");
 		for (int i = 0; i < numProfileIds; i++) {
