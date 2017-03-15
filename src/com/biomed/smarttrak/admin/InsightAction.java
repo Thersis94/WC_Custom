@@ -169,7 +169,7 @@ public class InsightAction extends AbstractTreeAction {
 			}
 		}
 
-		sql.append("order by a.create_dt");
+		sql.append("order by a.publish_dt desc");
 
 		log.debug(sql);
 		return sql.toString();

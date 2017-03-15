@@ -1,9 +1,6 @@
 package com.biomed.smarttrak.admin;
 
 //java 8
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 //WC_Customs
@@ -14,6 +11,7 @@ import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
@@ -21,7 +19,8 @@ import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 //WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.user.SBProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -59,13 +58,17 @@ public class ManageAuthorAction extends SimpleActionAdapter {
 		log.debug("manage author action retrieve called");
 
 		if (!req.hasParameter(LOAD_AUTHOR_LIST)) return;
-			
-			loadAuthors(req);
-			List<AccountVO> managers = (List<AccountVO>) req.getAttribute(AccountAction.MANAGERS);
+
+		loadAuthors(req);
+		List<AccountVO> managers = (List<AccountVO>) req.getAttribute(AccountAction.MANAGERS);
+
+		try {
 			List<UserVO> users = processManagers(managers);
 			new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)users, (String)getAttribute(Constants.ENCRYPT_KEY));
 			putModuleData(users);
-		
+		} catch (DatabaseException e) {
+			log.error("failed to load all managers as users", e);
+		}
 	}
 
 	/**
@@ -73,50 +76,23 @@ public class ManageAuthorAction extends SimpleActionAdapter {
 	 * @param managers
 	 * @return
 	 * @throws ActionException 
+	 * @throws DatabaseException 
 	 */
-	private List<UserVO> processManagers(List<AccountVO> managers) throws ActionException {
+	private List<UserVO> processManagers(List<AccountVO> managers) throws ActionException, DatabaseException {
 
 		List<UserVO> users = new ArrayList<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(getUserSql(managers))) {
-			int x = 1;
-			for (AccountVO manager : managers){
-				ps.setString(x++, manager.getOwnerProfileId());
+
+		for (AccountVO manager : managers){
+			UserVO uvo = new UserVO();
+			uvo.setProfileId(manager.getOwnerProfileId());
+			if (!users.contains(uvo)){
+				users.add(uvo);
 			}
-			ResultSet rs = ps.executeQuery();
-			while(rs.next()) {
-				UserVO vo = new UserVO();
-				vo.setProfileId(rs.getString("profile_id"));
-				vo.setFirstName(rs.getString("first_nm"));
-				vo.setLastName(rs.getString("last_nm"));
-				vo.setProfileImage(rs.getString("profile_img"));
-				users.add(vo);
-			}
-		} catch (SQLException sqle) {
-			throw new ActionException("could not save account ACLs", sqle);
 		}
-		log.debug("loaded " + users.size() + " users");
+
+		ProfileManager sbpm =  ProfileManagerFactory.getInstance(getAttributes());
+		sbpm.populateRecords(dbConn, users);
 		return users;
-	}
-
-	/**
-	 * sets up the sql to pull back a profile for each user in the managers list
-	 * @param managers 
-	 * @return
-	 */
-	private String getUserSql(List<AccountVO> managers) {
-		StringBuilder sql = new StringBuilder(199);
-		sql.append("select profile_img, profile_id, last_nm, first_nm from profile where profile_id in ");
-
-		sql.append("( ?");
-
-		for (int i=1; i< managers.size(); i++){
-			sql.append(", ?");
-		}
-
-		sql.append(" ) ");
-
-		log.debug("sql " + sql);
-		return sql.toString();
 	}
 
 	/*
@@ -140,14 +116,13 @@ public class ManageAuthorAction extends SimpleActionAdapter {
 		UserDataVO uvo = new UserDataVO(req);
 
 		if(profileImg == null || uvo.getProfileId() == null) return;
-		SBProfileManager sbpm = new SBProfileManager(attributes);
+		ProfileManager sbpm =  ProfileManagerFactory.getInstance(getAttributes());
 
 		try {
 			sbpm.updateProfileImage(uvo,profileImg,dbConn);
 		} catch(Exception ide) {
 			log.error("Error updating profile Image: " + ide.getMessage());
 		}
-		
 	}
 
 	/**
@@ -165,7 +140,6 @@ public class ManageAuthorAction extends SimpleActionAdapter {
 		if (!StringUtil.isEmpty(loadAuthorList) && !StringUtil.isEmpty(actionType)) url.append("&loadAuthorList=").append(loadAuthorList);
 
 		return url.toString();
-		
 	}
 
 	/**
@@ -181,7 +155,5 @@ public class ManageAuthorAction extends SimpleActionAdapter {
 		aa.setAttributes(attributes);
 		aa.setDBConnection(dbConn);
 		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
-
 	}
-
 }
