@@ -90,7 +90,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	/**
 	 * debug mode runs individual insert queries instead of a batch query, to be able to track row failures.
 	 */
-	private boolean DEBUG_MODE = false; 
+	protected boolean debugMode = false; 
 
 	// Get the type (Intl (2) or US(1))
 	protected int type = 1;
@@ -143,7 +143,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		log.info("Starting Importer for " + importFile);
 
 		if (args.length > 1)
-			DEBUG_MODE = Convert.formatBoolean(args[1]);
+			debugMode = Convert.formatBoolean(args[1]);
 
 		Map<String, MediaBinDeltaVO> masterRecords = null;
 		try {
@@ -687,14 +687,12 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		
 		// first row contains column names; must match UserDataVO mappings
 		String line = StringUtil.checkVal(buffer.readLine());
-		log.debug(line);
 		String tokens[] = new String[0];
 		if (line != null) tokens = line.split(DELIMITER, -1);
 		String[] columns = new String[tokens.length];
 		for (int i = 0; i < tokens.length; i++) {
 			columns[i] = tokens[i];
 		}
-		log.debug(columns.length);
 		
 		//write the header line to disk
 		writer.write(line);
@@ -702,7 +700,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 		String rowStr = null;
 		Map<String, String> entry = null;
-		List<Map<String, String>> data = new ArrayList<Map<String, String>>();
+		List<Map<String, String>> data = new ArrayList<>();
 		// Map<String,Integer> colSizes = new HashMap<String,Integer>();
 
 		// execution in this loop WILL throw NoSuchElementException.
@@ -771,7 +769,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @return
 	 */
 	public Map<String, MediaBinDeltaVO> parseData(List<Map<String,String>> data) {
-		List<String> acceptedAssets = new ArrayList<String>();
+		List<String> acceptedAssets = new ArrayList<>();
 		acceptedAssets.addAll(java.util.Arrays.asList(MediaBinAdminAction.VIDEO_ASSETS));
 		acceptedAssets.addAll(java.util.Arrays.asList(MediaBinAdminAction.PDF_ASSETS));
 
@@ -783,26 +781,6 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		MediaBinDeltaVO vo;
 		for (Map<String, String> row : data) {
 			try {
-				// Make sure the files are for one of our websites, and in the File Types we're authorized to use.
-				if (!isOpcoAuthorized(row.get("Distribution Channel"), requiredOpCo) ||
-						!acceptedAssets.contains(row.get("Asset Type").toLowerCase())) {
-
-					if (DEBUG_MODE) { //if we're in debug mode, report why we're skipping this record.
-						String reason = " || ";
-						if (StringUtil.isEmpty(row.get("Distribution Channel"))) {
-							reason += "No dist channel";
-						} else if (!acceptedAssets.contains(row.get("Asset Type").toLowerCase())) {
-							reason += "wrong asset type: " + row.get("Asset Type");
-						} else {
-							reason += "unauthorized opCo: " + row.get("Distribution Channel");
-						}
-						log.info("skipping asset " + row.get("Asset Name") + reason);
-					}
-					continue;
-				}
-
-				vo = new MediaBinDeltaVO();
-
 				// load the tracking number, support eCopy and MediaBin file layouts
 				tn = StringUtil.checkVal(row.get("Tracking Number"));
 				if (tn.isEmpty()) {
@@ -821,6 +799,26 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 					tn  = loadLegacyTrackingNumberFromFileName(row);
 					pkId = tn;
 				}
+				
+				// Make sure the files are for one of our websites, and in the File Types we're authorized to use.
+				if (!isOpcoAuthorized(row.get("Distribution Channel"), requiredOpCo, tn) ||
+						!acceptedAssets.contains(row.get("Asset Type").toLowerCase())) {
+
+					if (debugMode) { //if we're in debug mode, report why we're skipping this record.
+						String reason = " || ";
+						if (StringUtil.isEmpty(row.get("Distribution Channel"))) {
+							reason += "No dist channel";
+						} else if (!acceptedAssets.contains(row.get("Asset Type").toLowerCase())) {
+							reason += "wrong asset type: " + row.get("Asset Type");
+						} else {
+							reason += "unauthorized opCo: " + row.get("Distribution Channel");
+						}
+						log.info("skipping asset " + row.get("Asset Name") + reason);
+					}
+					continue;
+				}
+
+				vo = new MediaBinDeltaVO();
 
 				//still no tracking number, this asset is invalid!
 				if (tn.isEmpty())
@@ -906,7 +904,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param allowedOpCoNames
 	 * @return
 	 */
-	protected boolean isOpcoAuthorized(String distChannel, String[] allowedOpCoNames) {
+	protected boolean isOpcoAuthorized(String distChannel, String[] allowedOpCoNames, String tn) {
+		//tn is not used here, but is in subclasses
 		return !StringUtil.stringContainsItem(distChannel, allowedOpCoNames);
 	}
 
@@ -1174,7 +1173,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			html.append("Updated: ").append(dataCounts.get("updated")).append("<br/>");
 			html.append("Deleted: ").append(dataCounts.get("deleted")).append("<br/><br/>");
 			html.append("DB Total: ").append(dataCounts.get("total")).append("<br/>");
-			html.append("Solr Total: ").append(dataCounts.get("solr")).append("<br/>");
+			if (dataCounts.containsKey("solr")) 
+				html.append("Solr Total: ").append(dataCounts.get("solr")).append("<br/>");
 			
 			long timeSpent = System.nanoTime()-startNano;
 			double millis = timeSpent/1000000;

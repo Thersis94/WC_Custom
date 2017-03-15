@@ -4,9 +4,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.depuysynthes.scripts.showpad.QuotaException;
@@ -14,6 +19,7 @@ import com.depuysynthes.scripts.showpad.ShowpadDivisionUtil;
 import com.depuysynthes.scripts.showpad.ShowpadMediaBinDecorator;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: DSPrivateAssetsImporter.java<p/>
@@ -27,6 +33,9 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 
+	protected static final String INTERNAL_TAG = "internal";
+	private Set<String> publicAssetIds;
+
 	/**
 	 * @param args
 	 * @throws IOException 
@@ -34,6 +43,9 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 	public DSPrivateAssetsImporter(String[] args) throws IOException {
 		super(args);
 		type = 3; //private assets.  always.
+		publicAssetIds = loadPublicAssets();
+		
+		debugMode = true;
 	}
 
 	/**
@@ -45,7 +57,7 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 		DSPrivateAssetsImporter dmb = new DSPrivateAssetsImporter(args);
 		dmb.run();
 	}
-	
+
 	/*
 	 * passes the "internal" tag to the overloaded default constructor, to replace the "mediabin" tag that would otherwise
 	 * get attached to every asset.
@@ -57,12 +69,32 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 		String[] divs = props.getProperty("showpadDivisions").split(",");
 		for (String d : divs) {
 			String[] div = d.split("=");
-			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi, dbConn, "internal"));
+			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi, dbConn, INTERNAL_TAG));
 			log.debug("created division " + div[0] + " with id " + div[1]);
 		}
 		log.info("loaded " + divisions.size() + " showpad divisions");
 	}
-	
+
+
+	/**
+	 * builds a list of public-facing EMEA assets.  When we check for opCo authorization, we'll also block any
+	 * that are already public assets...they can't be both public and private.
+	 */
+	protected Set<String> loadPublicAssets() {
+		Set<String> data = new HashSet<>();
+		String sql = "select tracking_no_txt from " + props.get(Constants.CUSTOM_DB_SCHEMA) + "DPY_SYN_MEDIABIN where import_file_cd=2";
+		log.debug(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
+				data.add(rs.getString(1));
+		} catch (SQLException sqle) {
+			log.error("could not load public asset tracking#s", sqle);
+		}
+		log.debug("public assets to block: " + data.size());
+		return data;
+	}
+
 
 	/*
 	 * (non-Javadoc)
@@ -76,13 +108,21 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 
 
 	/*
-	 * Straight business rules for private assets.  If the asset has no distChannel, or the distChannel is "INT Mobile" (exclusively) 
+	 * Straight business rules for private assets.  If the asset has no distChannel, or the distChannel is "INT Mobile" (exclusively)
+	 * Also returns false if the asset is already deemed a public asset. 
 	 * (non-Javadoc)
 	 * @see com.depuysynthes.scripts.DSMediaBinImporterV2#isOpcoAuthorized(java.lang.String, java.lang.String[])
 	 */
 	@Override
-	protected boolean isOpcoAuthorized(String distChannel, String[] allowedOpCoNames) {
-		return StringUtil.isEmpty(distChannel) || "INT Mobile".equals(distChannel);
+	protected boolean isOpcoAuthorized(String distChannel, String[] allowedOpCoNames, String tn) {
+		boolean isAuth =  StringUtil.isEmpty(distChannel) || "INT Mobile".equals(distChannel);
+		
+		if (isAuth && publicAssetIds.contains(tn)) {
+			log.debug("blocked - public asset");
+			return false;
+		} else {
+			return isAuth;
+		}
 	}
 
 
