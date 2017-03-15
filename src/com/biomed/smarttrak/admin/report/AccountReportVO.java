@@ -25,7 +25,7 @@ import com.smt.sitebuilder.security.SecurityController;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountReportVO.java</p>
- <p><b>Description: </b></p>
+ <p><b>Description: </b>Creates the account(s) report as HTML.</p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
@@ -406,7 +406,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * builds the header map for the  report
+	 * builds the header map for the report
 	 * @param sb
 	 */
 	protected void getHeader(StringBuilder sb) {
@@ -420,7 +420,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * 
+	 * Adds a closing html tag.
 	 * @param sb
 	 */
 	protected void getFooter(StringBuilder sb) {
@@ -428,7 +428,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * 
+	 * Adds a starting div tag with a class attribute of classNm if
+	 * classNm is not empty or null.
 	 * @param sb
 	 * @param classNm
 	 */
@@ -443,7 +444,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * 
+	 * Adds a closing div tag
 	 * @param sb
 	 */
 	protected void closeDiv(StringBuilder sb) {
@@ -451,7 +452,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * Starts a span with the given CSS class if the class name is not null.
+	 * Adds a starting span tag with a class attribute of classNm if
+	 * classNm is not empty or null.
 	 * @param sb
 	 * @param classNm
 	 */
@@ -466,13 +468,17 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
-	 * 
+	 * Adds a closing span tag
 	 * @param sb
 	 */
 	protected void closeSpan(StringBuilder sb) {
 		sb.append("</span>");
 	}
 
+	/**
+	 * Adds a non-breaking space
+	 * @param sb
+	 */
 	protected void appendSpace(StringBuilder sb) {
 		sb.append("&nbsp;");
 	}
