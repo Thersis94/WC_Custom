@@ -386,7 +386,7 @@ public class ShowpadDivisionUtil {
 
 		log.info("need to delete " + localShowpadIds.size() + " showpad records from local SQL database:");
 		for (String s : localShowpadIds)
-			System.err.println("'" + s + "',"); //intentional use here; log redirection so we can copy/paste w/o the log4J garb.
+			log.fatal("'" + s + "',"); //intentional use here; log redirection so we can copy/paste w/o the log4J garb.
 
 		log.info("loaded " + showpadAssets.size() + " showpad assets");
 	}

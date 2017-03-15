@@ -35,7 +35,7 @@ public class ShowpadTagManager {
 
 	protected static Logger log = Logger.getLogger(ShowpadTagManager.class);
 	private String sourceConstant = "mediabin"; //for all mediabin assets.  Gets replaced with "internal" for private assets
-	
+
 	/**
 	 * a Constant put into the 'externalId' field to "tag the tags" that are product related.
 	 */
@@ -54,7 +54,7 @@ public class ShowpadTagManager {
 	protected List <Exception> failures = new ArrayList<>();
 
 	/**
-	 * 
+	 * default constructor - this class requires arguments in order to function properly
 	 */
 	public ShowpadTagManager(String apiUrl, String divisionId, String divisionUrl, ShowpadApiUtil util) throws QuotaException {
 		this.showpadApiUrl = apiUrl;
@@ -71,14 +71,14 @@ public class ShowpadTagManager {
 	 * If we try to add a tag to an asset without using it's ID, and it already existing in the system, it will fail.
 	 * @throws QuotaException 
 	 */
-	private void loadDivisionTagList() throws QuotaException {
+	protected void loadDivisionTagList() throws QuotaException {
 		int fetchSize = 1000;
-		for (int offset=0; true; offset += fetchSize) {
+		int offset=0;
+		do {
 			loadTags(fetchSize, offset);
-
+			offset += fetchSize;
 			//if we've retrieve less than the maximum amount of tags, we're done.  If the #s are equal we need to iterate.
-			if (showpadTags.size() < (offset+fetchSize)) break;
-		}
+		} while (showpadTags.size() == offset);
 	}
 
 
@@ -88,7 +88,7 @@ public class ShowpadTagManager {
 	 * @param offset
 	 * @throws QuotaException
 	 */
-	private void loadTags(int limit, int offset) throws QuotaException {
+	protected void loadTags(int limit, int offset) throws QuotaException {
 		String tagUrl = divisionUrl + "/tags.json?limit=" + limit + "&fields=id,name,externalId&offset=" + offset;
 		log.debug(tagUrl);
 		try {
@@ -124,18 +124,7 @@ public class ShowpadTagManager {
 	public void addTags(MediaBinDeltaVO vo, StringBuilder header) throws QuotaException, InvalidDataException {
 		Map<String,ShowpadTagVO> assignedTags = null;
 		if (vo.getShowpadId() != null) assignedTags = loadAssetTags(vo.getShowpadId(), null, true); //suppress404 because the asset may be new
-		Set<String> desiredTags = new HashSet<>();
-		desiredTags.add(sourceConstant); //a static tag for all assets, identifies their source
-
-		//assign the tags this asset SHOULD have, attempt to backfill those from the known list of tags already in Showpad
-		FileType ft = new FileType(vo.getFileNm());
-		desiredTags.add(ft.getFileExtension());
-		if (!StringUtil.isEmpty(vo.getLanguageCode()))
-			desiredTags.addAll(Arrays.asList(vo.getLanguageCode().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (!StringUtil.isEmpty(vo.getLiteratureTypeTxt()))
-			desiredTags.addAll(Arrays.asList(vo.getLiteratureTypeTxt().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (!StringUtil.isEmpty(vo.getProdNm()))
-			desiredTags.addAll(Arrays.asList(vo.getProdNm().split(DSMediaBinImporterV2.TOKENIZER)));
+		Set<String> desiredTags = getDesiredTags(vo);
 
 		//loop the tags the asset already has, removing them from the "need to add" list
 		if (assignedTags != null) {
@@ -143,7 +132,7 @@ public class ShowpadTagManager {
 				desiredTags.remove(tag);
 		}
 
-		//add what's left on the "need to add" list as new tags; both to the Asset, and to Showpad if they're new
+		//add what's left on the "need to add" list as new tags; both to the Asset, and to the Division in Showpad if they don't already exist
 		for (String tagNm : desiredTags) {
 			if (StringUtil.isEmpty(tagNm)) continue;
 			log.info("asset needs tag " + tagNm);
@@ -159,13 +148,36 @@ public class ShowpadTagManager {
 
 
 	/**
+	 * configures a set of tags we put on every mediabin asset - based on business rules
+	 * @param vo
+	 * @return
+	 */
+	protected Set<String> getDesiredTags(MediaBinDeltaVO vo) {
+		Set<String> desiredTags = new HashSet<>();
+		desiredTags.add(sourceConstant); //a static tag for all assets, identifying their source/origin
+
+		//assign the tags this asset SHOULD have, attempt to backfill those from the known list of tags already in Showpad
+		FileType ft = new FileType(vo.getFileNm());
+		desiredTags.add(ft.getFileExtension());
+		if (!StringUtil.isEmpty(vo.getLanguageCode()))
+			desiredTags.addAll(Arrays.asList(vo.getLanguageCode().split(DSMediaBinImporterV2.TOKENIZER)));
+		if (!StringUtil.isEmpty(vo.getLiteratureTypeTxt()))
+			desiredTags.addAll(Arrays.asList(vo.getLiteratureTypeTxt().split(DSMediaBinImporterV2.TOKENIZER)));
+		if (!StringUtil.isEmpty(vo.getProdNm()))
+			desiredTags.addAll(Arrays.asList(vo.getProdNm().split(DSMediaBinImporterV2.TOKENIZER)));
+
+		return desiredTags;
+	}
+
+
+	/**
 	 * returns a list of tags already attached to this asset
 	 * @param showpadId
 	 * @return
 	 * @throws QuotaException 
 	 * @throws InvalidDataException 
 	 */
-	private Map<String, ShowpadTagVO> loadAssetTags(String showpadId, String externalId, boolean suppress404) 
+	protected Map<String, ShowpadTagVO> loadAssetTags(String showpadId, String externalId, boolean suppress404) 
 			throws QuotaException, InvalidDataException {
 		Map<String,ShowpadTagVO> tags = new HashMap<>();
 		String tagUrl = showpadApiUrl + "/assets/" + showpadId + "/tags.json?limit=1000&suppress_response_codes=true&fields=id,name,externalId";
@@ -282,7 +294,7 @@ public class ShowpadTagManager {
 	 * @param showpadAssetId
 	 * @param tags
 	 */
-	private void unlinkAssetFromTags(String showpadAssetId, Collection<ShowpadTagVO> tags) throws QuotaException {
+	protected void unlinkAssetFromTags(String showpadAssetId, Collection<ShowpadTagVO> tags) throws QuotaException {
 		for (ShowpadTagVO tag : tags) {
 			//if we don't know this tag by ID, get it from the Division's list.  It must exist at the Division level if it's bound to an Asset.
 			if (tag.getId() == null) tag = showpadTags.get(tag.getName());
@@ -299,7 +311,7 @@ public class ShowpadTagManager {
 	 * @param tags
 	 * @throws QuotaException
 	 */
-	private void linkAssetToTags(String showpadAssetId, Collection<ShowpadTagVO> tags) throws QuotaException {
+	protected void linkAssetToTags(String showpadAssetId, Collection<ShowpadTagVO> tags) throws QuotaException {
 		for (ShowpadTagVO tag : tags) {
 			//if we don't know this tag by ID, get it from the Division's list if it already exists there
 			if (tag.getId() == null && showpadTags.containsKey(tag.getName()))
@@ -324,7 +336,7 @@ public class ShowpadTagManager {
 	 * @param showpadAssetId
 	 * @throws QuotaException
 	 */
-	private void executeAssetTagXR(String tagId, String showpadAssetId, String method) throws QuotaException {
+	protected void executeAssetTagXR(String tagId, String showpadAssetId, String method) throws QuotaException {
 		String url = showpadApiUrl + "/tags/" + tagId + "/assets/" + showpadAssetId + ".json?suppress_response_codes=true&method=" + method;
 		try {
 			String resp = showpadUtil.executeGet(url);
