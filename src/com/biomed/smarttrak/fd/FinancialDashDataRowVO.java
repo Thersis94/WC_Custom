@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -38,8 +37,6 @@ public class FinancialDashDataRowVO implements Serializable {
 	private boolean inactiveFlg;
 	private int inactiveCnt; // internal value used to calculate overall inactivity
 	private Map<String, FinancialDashDataColumnVO> columns;
-	private int reportingQtr;
-	private int reportingYr;
 	
 	/**
 	 * Provides a logger
@@ -104,20 +101,6 @@ public class FinancialDashDataRowVO implements Serializable {
 	 */
 	public String getRegionCd() {
 		return regionCd;
-	}
-
-	/**
-	 * @return the reportingQtr
-	 */
-	public int getReportingQtr() {
-		return reportingQtr;
-	}
-
-	/**
-	 * @return the reportingYr
-	 */
-	public int getReportingYr() {
-		return reportingYr;
 	}
 
 	/**
@@ -201,45 +184,41 @@ public class FinancialDashDataRowVO implements Serializable {
 	public void setRegionCd(String regionCd) {
 		this.regionCd = regionCd;
 	}
-
+	
 	/**
-	 * @param reportingQtr the reportingQtr to set
-	 */
-	public void setReportingQtr(int reportingQtr) {
-		this.reportingQtr = reportingQtr;
-	}
-
-	/**
-	 * @param reportingYr the reportingYr to set
-	 */
-	public void setReportingYr(int reportingYr) {
-		this.reportingYr = reportingYr;
-	}
-
-	/**
-	 * Sets the reporting year/quarter based on other values in the tree
+	 * Per the defined business rules:
+	 * For the current quarter, if any revenue data exists, then the term "Reporting" is displayed.
+	 * If there is no revenue for the current quarter, then the term "Pending" is displayed.
+	 * However, if the section is marked as published for the current quarter, then the dollar value (or lack thereof) shows up.
 	 * 
 	 * @param tree
 	 */
-	protected void setReporting(SmarttrakTree tree) {
-		Node parentNode = tree.getRootNode();
-		List<Node> childNodes = parentNode.getChildren();
+	protected void setReportingPending(SmarttrakTree tree, int currentQtr, int currentYear) {
+		Node node = tree.findNode(primaryKey);
 		
-		SectionVO parent = (SectionVO) parentNode.getUserObject();
-		int parentQtr = parent.getFdPubQtr();
-		int parentYr = parent.getFdPubYr();
-		
-		for (Node node : childNodes) {
-			SectionVO child = (SectionVO) node.getUserObject();
-			int childQtr = child.getFdPubQtr();
-			int childYr = child.getFdPubYr();
+		// If node isn't found, this is a company row, and the value will be displayed
+		if (node != null) {
+			SectionVO section = (SectionVO) node.getUserObject();
 			
-			if (childYr > parentYr || (childYr == parentYr && childQtr > parentQtr)) {
-				setReportingQtr(childQtr);
-				setReportingYr(childYr);
-				break;
-			}
+			// If the current year/qtr don't match the published year/qtr then we will mark the column reporting/pending.
+			if (currentQtr != section.getFdPubQtr() || currentYear != section.getFdPubYr())
+				markColumnReportingPending(currentQtr, currentYear);
 		}
+	}
+	
+	/**
+	 * Marks the column associated to the current qtr/year as reporting or pending
+	 * 
+	 * @param currentQtr
+	 * @param currentYear
+	 */
+	protected void markColumnReportingPending(int currentQtr, int currentYear) {
+		// Find the column in the map that matches the current year/qtr
+		FinancialDashDataColumnVO currentCol = columns.get(FinancialDashBaseAction.QUARTER + currentQtr + "-" + currentYear);
+		
+		// May be null here if we are currently viewing a different time period
+		if (currentCol != null)
+			currentCol.setValueDisplay();
 	}
 	
 	/**
