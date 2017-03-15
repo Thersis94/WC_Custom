@@ -35,6 +35,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
+	/*Specifies how deep down the section hierarchy tree we intend to traverse*/
+	protected static final int SECTION_XR_DEPTH = 3;
 	
 	/**
 	 * No arg-constructor for initialization
@@ -42,7 +44,6 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	public UpdatesSectionHierarchyAction(){
 		super();
 	}
-	
 	/**
 	 * Initializes class with ActionInitVO
 	 * @param init
@@ -67,7 +68,6 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		
 		putModuleData(data);
 	}
-	
 	/**
 	 * Retrieves a tree collection of nodes based on the sub-root sections. Each
 	 * tree contains each sub-root section's hierarchy.
@@ -86,7 +86,6 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		}
 		return collection;
 	}
-	
 	/**
 	 * Builds a proper collection of updates with their corresponding section(s)
 	 * that they belong to.
@@ -113,14 +112,13 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		Set<Entry<String, Tree>> treeSet = treeCollection.entrySet();
 		for (Entry<String, Tree> entry : treeSet) {		
 			Tree t = entry.getValue();
-			int maxDepthLvl = 3;
 			String rootSectionId = t.getRootNode().getNodeName();
 			
 			//Build the mapping for top-level sections, sub-sections, and updates
 			List<Node> nodes = t.preorderList();	
 			Map<String, List<UpdatesVO>> subSectionMap = new LinkedHashMap<>();
 			for (Node node : nodes) {
-				if(node.getDepthLevel() == maxDepthLvl){					
+				if(SECTION_XR_DEPTH == node.getDepthLevel() ){					
 					//locate the related updates and add to map
 					subSectionMap.put(node.getNodeName(), locateSectionUpdates(updates, node));
 				}		
@@ -128,10 +126,8 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 			//add root section id, with sub-section/updates, to the final collection
 			updatesHierarchyMap.put(rootSectionId, subSectionMap);
 		}
-		
 		return updatesHierarchyMap;
 	}
-	
 	/***
 	 * Helper method that returns a list of related updates for a specific section 
 	 * hierarchy
@@ -146,10 +142,8 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		for (UpdatesVO update : updates) {
 			associateUpdates(update, relatedUpdates, node);
 		}
-		
 		return relatedUpdates;
 	}
-	
 	/**
 	 * Helper method, handles associating updates to their related sections
 	 * @param update
