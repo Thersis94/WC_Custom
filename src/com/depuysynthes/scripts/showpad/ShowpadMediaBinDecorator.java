@@ -15,7 +15,6 @@ import java.util.Set;
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
-import com.siliconmtn.io.FileType;
 import com.siliconmtn.security.OAuth2TokenViaCLI;
 import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
 import com.siliconmtn.util.Convert;
@@ -35,7 +34,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 	protected ShowpadApiUtil showpadApi;
 	protected List<ShowpadDivisionUtil> divisions = new ArrayList<>();
-	private boolean deduplicate = false; //override via args[1];
+	private boolean deduplicate = false; //override via args[1]
 
 	/**
 	 * @param args
@@ -84,24 +83,22 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//used only for de-duplication, which is more crisis-cleanup than something we do regularly.
 		if (deduplicate) {
 			Map<String, MediaBinDeltaVO> records = loadManifest();
-			Set<String> assetNames = new HashSet<>(records.size());
 			Set<String> localShowpadIds = new HashSet<>(records.size());
-			
+
 			for (MediaBinDeltaVO vo : records.values()) {
-				assetNames.add(ShowpadDivisionUtil.makeShowpadAssetName(vo, new FileType(vo.getFileNm())));
 				if (vo.getShowpadId() != null) localShowpadIds.add(vo.getShowpadId());
 			}
-			
+
 			try {
 				for (ShowpadDivisionUtil util : divisions)
-					util.cleanupShowpadDups(assetNames, localShowpadIds);
+					util.cleanupShowpadDups(localShowpadIds);
 			} catch (QuotaException qe) {
 				log.error(qe);
 			}
 			log.info("deuplication complete");
 			return;
 		}
-		
+
 		super.run();
 	}
 
@@ -280,7 +277,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	@Override
 	protected void countDBRecords() {
 		super.countDBRecords();
-		
+
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select count(*), division_id, case when asset_id='FAILED_PROCESSING' then 1 else 0 end as status from ");
 		sql.append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_showpad ");
@@ -330,7 +327,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 					log.warn(failures.get(i).getMessage());
 				}
 			}
-			
+
 			html.append("<hr/>\r\n");
 		}
 	}

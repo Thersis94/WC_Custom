@@ -33,11 +33,11 @@ import com.siliconmtn.security.OAuth2Token;
 public class ShowpadApiUtil {
 
 	private OAuth2Token oauthUtil;
-	private final int READ_TIMEOUT = 60000; //1 minute
-	private final int WRITE_TIMEOUT = 120000; //2 minutes
+	private static final int READ_TIMEOUT = 60000; //1 minute
+	private static final int WRITE_TIMEOUT = 120000; //2 minutes
 
 	private static int requestCount = 0;
-	private static final int API_LIMIT = 49900; //stay below the 50k ceiling
+	private static final int API_LIMIT = 100000; //stay below the 100k ceiling
 
 	/**
 	 * This class requires an OAUTH token in order to function
@@ -67,9 +67,9 @@ public class ShowpadApiUtil {
 		checkRequestCount();
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
-		
+
 		HttpResponse resp = requestFactory.buildGetRequest(url).setReadTimeout(READ_TIMEOUT).execute();
-		if ("429".equals(resp.getStatusCode())) throw new QuotaException("rate limit exceeded");
+		checkRateLimit(resp.getStatusCode());
 		return resp;
 	}
 
@@ -86,9 +86,9 @@ public class ShowpadApiUtil {
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
 		HttpContent content = new UrlEncodedContent(params);
-		
+
 		HttpResponse resp = requestFactory.buildPostRequest(new GenericUrl(url), content).setReadTimeout(WRITE_TIMEOUT).execute();
-		if ("429".equals(resp.getStatusCode())) throw new QuotaException("rate limit exceeded");
+		checkRateLimit(resp.getStatusCode());
 		return resp.parseAsString();
 	}
 
@@ -109,17 +109,17 @@ public class ShowpadApiUtil {
 		// Add parameters
 		MultipartContent content = new MultipartContent();
 		content.setMediaType(new HttpMediaType("multipart/form-data").setParameter("boundary", "__END_OF_PART__"));
-		for (String k : params.keySet()) {
-			MultipartContent.Part part = new MultipartContent.Part(new ByteArrayContent(null, params.get(k).getBytes()));
-			part.setHeaders(new HttpHeaders().set("Content-Disposition", String.format("form-data; name=\"%s\"", k)));
+		for (Map.Entry<String, String> entry : params.entrySet()) {
+			MultipartContent.Part part = new MultipartContent.Part(new ByteArrayContent(null, entry.getValue().getBytes()));
+			part.setHeaders(new HttpHeaders().set("Content-Disposition", String.format("form-data; name=\"%s\"", entry.getKey())));
 			content.addPart(part);
 		}
-		
+
 		// Add file - if one was passed
 		if (f != null) {
 			FileType ft = new FileType();
 			FileContent fileContent = new FileContent(ft.getMimeType(f.getName()), f);
-			String fileName = (params.containsKey("name") ? params.get("name") : f.getName());
+			String fileName = params.containsKey("name") ? params.get("name") : f.getName();
 			MultipartContent.Part part = new MultipartContent.Part(fileContent);
 			part.setHeaders(new HttpHeaders().set("Content-Disposition", String.format("form-data; name=\"file\"; filename=\"%s\"", fileName)));
 			content.addPart(part);
@@ -132,7 +132,7 @@ public class ShowpadApiUtil {
 
 		GenericUrl gUrl = new GenericUrl(url);
 		HttpResponse resp = requestFactory.buildPostRequest(gUrl, content).setReadTimeout(WRITE_TIMEOUT).setHeaders(linkHeaders).execute();
-		if ("429".equals(resp.getStatusCode())) throw new QuotaException("rate limit exceeded");
+		checkRateLimit(resp.getStatusCode());
 		return resp.parseAsString();
 	}
 
@@ -158,20 +158,35 @@ public class ShowpadApiUtil {
 		checkRequestCount();
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
-		
+
 		HttpResponse resp = requestFactory.buildDeleteRequest(url).setReadTimeout(WRITE_TIMEOUT).execute();
-		if ("429".equals(resp.getStatusCode())) throw new QuotaException("rate limit exceeded");
+		checkRateLimit(resp.getStatusCode());
 		return resp;
 	}
-	
-	
+
+
+	/**
+	 * tests the response code for a 429, which is a rate limit exceeded.  If we catch this we need to throw a 
+	 * quota exception.
+	 * Note: I believe Showpad removed rate limiting...this code may no longer be necessary. -JM- 03.15.2017
+	 * @param respStatusCode
+	 * @throws QuotaException
+	 */
+	protected static void checkRateLimit(int respStatusCode) throws QuotaException {
+		if (429 == respStatusCode) {
+			if (requestCount < API_LIMIT) requestCount = API_LIMIT; //push us over the limit
+			throw new QuotaException("rate limit exceeded");
+		}
+	}
+
+
 	/**
 	 * increment a static counter and then test to see if we've hit the Showpad-defined 
 	 * glass ceiling on API requests in a 24hr period. 
 	 * @throws QuotaException
 	 */
-	private void checkRequestCount() throws QuotaException {
+	protected static void checkRequestCount() throws QuotaException {
 		++requestCount;
-		if (requestCount >= API_LIMIT) throw new QuotaException("showpad API limit reached, too many requests: " + requestCount);
+		if (requestCount > API_LIMIT) throw new QuotaException("showpad API limit reached, too many requests: " + requestCount);
 	}
 }
