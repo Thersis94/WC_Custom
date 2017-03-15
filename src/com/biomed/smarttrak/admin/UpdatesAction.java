@@ -103,7 +103,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * @return
 	 */
 	protected List<Object> getHistory(String updateId) {
-		String sql = formatHistoryRetrieveQuery(updateId);
+		String sql = formatHistoryRetrieveQuery();
 
 		List<Object> params = new ArrayList<>();
 		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
@@ -116,11 +116,10 @@ public class UpdatesAction extends AbstractTreeAction {
 
 	/**
 	 * Build History Sql Retrieval against ChangeLog Table.
-	 * @param updateId
 	 * @param schema
 	 * @return
 	 */
-	private String formatHistoryRetrieveQuery(String updateId) {
+	private String formatHistoryRetrieveQuery() {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select b.wc_sync_id as update_id, a.diff_txt as message_txt, ");
 		sql.append("a.create_dt as publish_dt, c.first_nm, c.last_nm from change_log a ");
