@@ -197,11 +197,13 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			p.addAttribute("alliance", new ArrayList<String>());
 			p.addAttribute("allyId", new ArrayList<String>());
 			p.addAttribute("allianceId", new ArrayList<String>());
+			p.addAttribute("allySearch", new ArrayList<String>());
 			for (ProductAllianceVO alliance : entry.getValue()) {
 				((List<String>)p.getAttribute("ally")).add(alliance.getAllyName());
 				((List<String>)p.getAttribute("alliance")).add(alliance.getAllianceTypeName());
 				((List<String>)p.getAttribute("allyId")).add(alliance.getAllyId());
 				((List<String>)p.getAttribute("allianceId")).add(alliance.getAllianceTypeId());
+				((List<String>)p.getAttribute("allySearch")).add(alliance.getAllyName().toLowerCase());
 			}
 		}
 	}
@@ -352,10 +354,14 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		SecureSolrDocumentVO product = new SecureSolrDocumentVO(INDEX_TYPE);
 		product.setDocumentId(rs.getString("PRODUCT_ID"));
 		product.setTitle(rs.getString("PRODUCT_NM"));
-		product.addAttribute("company", rs.getString("COMPANY_NM"));
+		if (rs.getString("COMPANY_NM") != null) {
+			product.addAttribute("company", rs.getString("COMPANY_NM"));
+			product.addAttribute("companySearch", rs.getString("COMPANY_NM").toLowerCase());
+		}
 		product.addAttribute("companyId", rs.getString("COMPANY_ID"));
 		product.addAttribute("alias", rs.getString("ALIAS_NM"));
 		product.setDocumentUrl(AdminControllerAction.Section.PRODUCT.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString("PRODUCT_ID"));
+		product.addAttribute("ownership", rs.getString("HOLDING_TXT"));
 		
 		if (rs.getTimestamp("UPDATE_DT") != null) {
 			product.setUpdateDt(rs.getDate("UPDATE_DT"));
@@ -427,7 +433,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	private String buildRetrieveSql(String id) {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT p.*, s.SECTION_ID, s.SECTION_NM, s.SOLR_TOKEN_TXT, c.COMPANY_NM FROM ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("SELECT p.*, s.SECTION_ID, s.SECTION_NM, s.SOLR_TOKEN_TXT, c.COMPANY_NM, c.HOLDING_TXT FROM ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION ps ");
 		sql.append("ON ps.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
