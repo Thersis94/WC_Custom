@@ -789,7 +789,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 					if (DEBUG_MODE) { //if we're in debug mode, report why we're skipping this record.
 						String reason = " || ";
-						if (row.get("Distribution Channel") == null || row.get("Distribution Channel").length() == 0) {
+						if (StringUtil.isEmpty(row.get("Distribution Channel"))) {
 							reason += "No dist channel";
 						} else if (!acceptedAssets.contains(row.get("Asset Type").toLowerCase())) {
 							reason += "wrong asset type: " + row.get("Asset Type");
@@ -805,7 +805,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 				// load the tracking number, support eCopy and MediaBin file layouts
 				tn = StringUtil.checkVal(row.get("Tracking Number"));
-				if (tn.length() > 0) {
+				if (tn.isEmpty()) {
 					pkId = tn;
 					if (type == 1) pkId = StringUtil.checkVal(row.get("Business Unit ID")) + pkId; //US assets get business unit as part of pKey.
 
@@ -817,13 +817,13 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 				//for INTL, use the file name as a tracking number (final fallback).
 				//NOTE: once eCopy launch this becomes unreachable code.  All assets will have one of the two above.
-				if (type == 2 && tn.length() == 0) {
+				if ((type == 2 || type == 3) && tn.isEmpty()) {
 					tn  = loadLegacyTrackingNumberFromFileName(row);
 					pkId = tn;
 				}
 
 				//still no tracking number, this asset is invalid!
-				if (tn.length() == 0)
+				if (tn.isEmpty())
 					throw new Exception("Tracking number missing for " + row.get("Name"));
 
 				vo.setTrackingNoTxt(tn);
@@ -1146,7 +1146,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			retVal = retVal.replaceAll(TOKENIZER, ", ");
 		}
 
-		if (retVal.length() == 0) return null;
+		if (retVal.isEmpty()) return null;
 		return retVal;
 	}
 

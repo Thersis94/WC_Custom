@@ -34,7 +34,7 @@ import com.siliconmtn.util.StringUtil;
 public class ShowpadTagManager {
 
 	protected static Logger log = Logger.getLogger(ShowpadTagManager.class);
-	private String sourceConstant = "mediabin"; //for all mediabin assets.  Gets replaced with "internal" for private assets
+	private String sourceConstant; //for all mediabin assets.  Gets replaced with "internal" for private assets
 
 	/**
 	 * a Constant put into the 'externalId' field to "tag the tags" that are product related.
@@ -154,7 +154,9 @@ public class ShowpadTagManager {
 	 */
 	protected Set<String> getDesiredTags(MediaBinDeltaVO vo) {
 		Set<String> desiredTags = new HashSet<>();
-		desiredTags.add(sourceConstant); //a static tag for all assets, identifying their source/origin
+		desiredTags.add("mediabin");
+		if (!StringUtil.isEmpty(sourceConstant))
+			desiredTags.add(sourceConstant); //an additional static tag for private assets.  This could be turned into a String[] if need be.
 
 		//assign the tags this asset SHOULD have, attempt to backfill those from the known list of tags already in Showpad
 		FileType ft = new FileType(vo.getFileNm());

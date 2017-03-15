@@ -44,7 +44,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		super(args);
 
 		//setup the oAuth util now that the config file has been loaded
-		Map<Config, String> config = new HashMap<Config, String>();
+		Map<Config, String> config = new HashMap<>();
 		config.put(Config.USER_ID, props.getProperty("showpadAcctName"));
 		config.put(Config.API_KEY, props.getProperty("showpadApiKey"));
 		config.put(Config.API_SECRET, props.getProperty("showpadApiSecret"));
