@@ -50,6 +50,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	
 	public static final String CALENDAR_YEAR = "CY";
 	public static final String YEAR_TO_DATE = "YTD";
+	public static final String QUARTER = "Q";
 	
 	public static final String QUARTER_1 = "Q1";
 	public static final String QUARTER_2 = "Q2";

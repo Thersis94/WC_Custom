@@ -100,7 +100,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 		if (vo != null) {
 			this.creatorProfileId = StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId());
 		}
-		setUpdateId(req.getParameter("updateId"));
+		setUpdateId(StringUtil.checkVal(req.getParameter("updateId")));
 		this.marketId = StringUtil.checkVal(req.getParameter("marketId"), null);
 		this.productId = StringUtil.checkVal(req.getParameter("productId"), null);
 		this.companyId = StringUtil.checkVal(req.getParameter("companyId"), null);
