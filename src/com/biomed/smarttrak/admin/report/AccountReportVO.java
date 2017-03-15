@@ -37,7 +37,7 @@ import com.smt.sitebuilder.security.SecurityController;
 public class AccountReportVO extends AbstractSBReportVO {
 
 	private static final long serialVersionUID = -4695811549286840882L;
-	private static final String REPORT_TITLE = "Account Report";
+	private static final String REPORT_TITLE = "Accounts Report";
 	protected static final String KEY_ACCOUNTS = "accounts";
 	protected static final String KEY_FIELD_OPTIONS = "fieldOptions";
 
@@ -342,39 +342,44 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	protected void addUserIdentifier(StringBuilder sb, UserVO user) {
 		// look at country code first.
-		String suffix = null;
 		if ("UK".equals(user.getCountryCode())) {
-			suffix = " [UK]";
+			sb.append(" [UK]");
 		} else {
 			// not UK, so look at job category/level
-			int jobCat = Convert.formatInteger(user.getJobCategory());
-			int jobLvl = Convert.formatInteger(user.getJobLevel());
-
-			switch(jobCat) {
-				case 2:
-					if (jobLvl == 10) suffix = " [PM]";
-					break;
-				case 5:
-					if (jobLvl == 4) suffix = " [SA]";
-					break;
-				case 8:
-					suffix = " [BD]";
-					break;
-				case 9:
-					suffix = " [Ex]";
-					break;
-				default:
-					break;
-			}
-			// if we haven't already added a suffix, check job level exclusively
-			if (suffix == null && 
-					jobLvl == 10) suffix = " [M]";
+			findSuffix(sb,Convert.formatInteger(user.getJobCategory()),
+					Convert.formatInteger(user.getJobLevel()));
 		}
-		// add suffix if we calculated one
-		if (suffix != null) sb.append(suffix);
-		
+
 		// now append status code if appropriate.
 		addUserStatusCode(sb,user.getStatusCode());
+	}
+
+	/**
+	 * Check job category and job level in order to determine
+	 * suffix.  Returns null if no suffix could be determined.
+	 * @param sb
+	 * @param jobCat
+	 * @param jobLvl
+	 */
+	protected void findSuffix(StringBuilder sb, int jobCat, int jobLvl) {
+		switch(jobCat) {
+			case 2:
+				if (jobLvl == 10) sb.append(" [PM]");
+				return;
+			case 5:
+				if (jobLvl == 4) sb.append(" [SA]");
+				return;
+			case 8:
+				sb.append(" [BD]");
+				return;
+			case 9:
+				sb.append(" [Ex]");
+				return;
+			default:
+				break;
+		}
+		// if we haven't already added a suffix, check job level exclusively
+		if (jobLvl == 10) sb.append(" [M]");
 	}
 
 	/**
