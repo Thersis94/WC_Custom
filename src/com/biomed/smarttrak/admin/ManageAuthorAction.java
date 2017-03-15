@@ -78,7 +78,7 @@ public class ManageAuthorAction extends SimpleActionAdapter {
 	 * @throws ActionException 
 	 * @throws DatabaseException 
 	 */
-	private List<UserVO> processManagers(List<AccountVO> managers) throws ActionException, DatabaseException {
+	private List<UserVO> processManagers(List<AccountVO> managers) throws DatabaseException {
 
 		List<UserVO> users = new ArrayList<>();
 
