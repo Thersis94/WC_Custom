@@ -47,12 +47,10 @@ public class SupportReportAction extends SimpleActionAdapter {
 	}
 
 	public List<TicketVO> retrieveSupportData(ActionRequest req) throws ActionException {
-		Calendar c = Calendar.getInstance();
-		c.add(Calendar.MONTH, -1);
-		
+
 		Date startDt = Convert.formatDate(req.getParameter("startDt"));
 		if(startDt == null) {
-			startDt = c.getTime();
+			startDt = Convert.formatDate(new Date(), Calendar.MONTH, -1);
 		}
 		Date endDt = Convert.formatDate(req.getParameter("endDt"));
 		return getTickets(startDt, endDt);
