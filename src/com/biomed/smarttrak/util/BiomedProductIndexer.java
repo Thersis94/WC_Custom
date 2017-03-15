@@ -354,9 +354,10 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		SecureSolrDocumentVO product = new SecureSolrDocumentVO(INDEX_TYPE);
 		product.setDocumentId(rs.getString("PRODUCT_ID"));
 		product.setTitle(rs.getString("PRODUCT_NM"));
-		if (rs.getString("COMPANY_NM") != null) {
-			product.addAttribute("company", rs.getString("COMPANY_NM"));
-			product.addAttribute("companySearch", rs.getString("COMPANY_NM").toLowerCase());
+		String name = rs.getString("company_nm");
+		if (name != null) {
+			product.addAttribute("company", name);
+			product.addAttribute("companySearch", name.toLowerCase());
 		}
 		product.addAttribute("companyId", rs.getString("COMPANY_ID"));
 		product.addAttribute("alias", rs.getString("ALIAS_NM"));
