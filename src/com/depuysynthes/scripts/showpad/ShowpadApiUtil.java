@@ -182,7 +182,17 @@ public class ShowpadApiUtil {
 
 		//when the minute changes, set the counter for the NEW minute to zero, then begin incrementing it again
 		if (currentMinute != lastMinute) {
-			minuteTotals[currentMinute].set(0);
+			//flush all minutes between the last run and now...we may have been off doing non-Showpad things for 15mins.
+			int diff = currentMinute-lastMinute;
+			if (diff < 0) diff = 60 - Math.abs(diff); //think 9:10 - 8:55 
+			for (int x=diff; x > 0; x--) {
+				int idx = currentMinute-x;
+				if (idx < 0) idx = 60-idx; //reset to the top of the hour
+				minuteTotals[idx].set(0); //remember currentMinute was 5mins ago...add forward from there
+				log.debug("reset count on minute " + idx  + " to " + minuteTotals[idx].get());
+			}
+			
+			
 			lastMinute = currentMinute;
 		}
 		int count = minuteTotals[currentMinute].getAndIncrement();
@@ -194,14 +204,12 @@ public class ShowpadApiUtil {
 		log.debug("QuotaTotal | minute: " + count + " hour: " + total);
 
 		//we need to lock and pause the thread, until Showpad releases some quota to us
+		//NOTE: if the script is running really fast you may burn through the quota in <1hr.  We may go through several 
+		//sleep cylces before the counts begin to come down.  This is proper behavior.
 		if (total >= API_1HR_LIMIT) {
 			log.info("Sleeping for 5 minutes, 60min Showpad quota reached");
 			try {
 				Thread.sleep(5*60*1000); //sleep 5mins
-				//reset the counter for the 5mins we just slept back to zero.
-				for (int x=0; x < 5; x++)
-					minuteTotals[currentMinute+x].set(0); //remember currentMinute was 5mins ago...add forward from there
-
 			} catch (Exception e) {
 				log.fatal("could not sleep thread", e);
 			}
