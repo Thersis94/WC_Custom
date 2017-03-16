@@ -783,7 +783,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			try {
 				// load the tracking number, support eCopy and MediaBin file layouts
 				tn = StringUtil.checkVal(row.get("Tracking Number"));
-				if (tn.isEmpty()) {
+				if (!tn.isEmpty()) {
 					pkId = tn;
 					if (type == 1) pkId = StringUtil.checkVal(row.get("Business Unit ID")) + pkId; //US assets get business unit as part of pKey.
 
