@@ -73,7 +73,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 		rpt.setTitleCell(REPORT_TITLE);
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
-		rows = generateDataRows(rows);
+		generateDataRows(rows);
 
 		rpt.setData(rows);
 		return rpt.generateReport();
@@ -95,7 +95,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private List<Map<String, Object>> generateDataRows(
+	private void generateDataRows(
 			List<Map<String, Object>> rows) {
 
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
@@ -142,7 +142,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 			// acct footer row(s)
 			addAccountFooter(rows, a.getAccountName(), acctTotals);
 		}
-		return rows;
+
 	}
 	
 	/**

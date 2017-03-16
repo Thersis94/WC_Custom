@@ -99,7 +99,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 		rpt.setTitleCell(REPORT_TITLE);
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
-		rows = generateDataRows(rows);
+		generateDataRows(rows);
 
 		rpt.setData(rows);
 		return rpt.generateReport();
@@ -119,8 +119,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	 * @param rows
 	 * @return
 	 */
-	private List<Map<String, Object>> generateDataRows(
-			List<Map<String, Object>> rows) {
+	private void generateDataRows(List<Map<String, Object>> rows) {
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
 		
 		// loop the account map
@@ -171,8 +170,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 				rows.add(row);
 			}
 		}
-		
-		return rows;
+
 	}
 	
 	/**
