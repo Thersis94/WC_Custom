@@ -1,14 +1,11 @@
 package com.biomed.smarttrak.vo;
 
-import java.util.Collection;
 import java.util.List;
-
-import com.siliconmtn.data.Node;
 
 /****************************************************************************
  * <b>Title</b>: GapColumnVO.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO
+ * <b>Description: </b> Manages Table Cell Data for Gap Analysis.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
