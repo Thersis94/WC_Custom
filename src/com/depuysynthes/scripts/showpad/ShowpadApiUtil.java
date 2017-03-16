@@ -2,7 +2,11 @@ package com.depuysynthes.scripts.showpad;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.log4j.Logger;
 
 import com.google.api.client.auth.oauth2.BearerToken;
 import com.google.api.client.auth.oauth2.Credential;
@@ -32,12 +36,16 @@ import com.siliconmtn.security.OAuth2Token;
  ****************************************************************************/
 public class ShowpadApiUtil {
 
+	protected static Logger log = Logger.getLogger(ShowpadApiUtil.class);
+
 	private OAuth2Token oauthUtil;
 	private static final int READ_TIMEOUT = 60000; //1 minute
 	private static final int WRITE_TIMEOUT = 120000; //2 minutes
 
-	private static int requestCount = 0;
-	private static final int API_LIMIT = 100000; //stay below the 100k ceiling
+	private static final int API_1HR_LIMIT = 9900; //stay below the 10k ceiling.  Leave a buffer of 100, because they may not count as precisely as us.
+
+	protected static int lastMinute = 0;
+	protected static AtomicInteger[] minuteTotals = new AtomicInteger[60];
 
 	/**
 	 * This class requires an OAUTH token in order to function
@@ -53,7 +61,7 @@ public class ShowpadApiUtil {
 	 * @return
 	 * @throws IOException
 	 */
-	public String executeGet(String url) throws IOException, QuotaException {
+	public String executeGet(String url) throws IOException {
 		return executeGet(new GenericUrl(url)).parseAsString();
 	}
 
@@ -63,13 +71,12 @@ public class ShowpadApiUtil {
 	 * @return
 	 * @throws IOException
 	 */
-	public HttpResponse executeGet(GenericUrl url) throws IOException, QuotaException {
+	public HttpResponse executeGet(GenericUrl url) throws IOException {
 		checkRequestCount();
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
 
 		HttpResponse resp = requestFactory.buildGetRequest(url).setReadTimeout(READ_TIMEOUT).execute();
-		checkRateLimit(resp.getStatusCode());
 		return resp;
 	}
 
@@ -81,14 +88,13 @@ public class ShowpadApiUtil {
 	 * @return
 	 * @throws IOException
 	 */
-	public String executePost(String url, Map<String,String> params) throws IOException, QuotaException {
+	public String executePost(String url, Map<String,String> params) throws IOException {
 		checkRequestCount();
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
 		HttpContent content = new UrlEncodedContent(params);
 
 		HttpResponse resp = requestFactory.buildPostRequest(new GenericUrl(url), content).setReadTimeout(WRITE_TIMEOUT).execute();
-		checkRateLimit(resp.getStatusCode());
 		return resp.parseAsString();
 	}
 
@@ -101,7 +107,7 @@ public class ShowpadApiUtil {
 	 * @return
 	 * @throws IOException
 	 */
-	public String executePostFile(String url, Map<String, String> params, File f, String linkHeader) throws IOException, QuotaException {
+	public String executePostFile(String url, Map<String, String> params, File f, String linkHeader) throws IOException {
 		checkRequestCount();
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
@@ -132,7 +138,6 @@ public class ShowpadApiUtil {
 
 		GenericUrl gUrl = new GenericUrl(url);
 		HttpResponse resp = requestFactory.buildPostRequest(gUrl, content).setReadTimeout(WRITE_TIMEOUT).setHeaders(linkHeaders).execute();
-		checkRateLimit(resp.getStatusCode());
 		return resp.parseAsString();
 	}
 
@@ -143,7 +148,7 @@ public class ShowpadApiUtil {
 	 * @return
 	 * @throws IOException
 	 */
-	public String executeDelete(String url) throws IOException, QuotaException {
+	public String executeDelete(String url) throws IOException {
 		return executeDelete(new GenericUrl(url)).parseAsString();
 	}
 
@@ -154,29 +159,13 @@ public class ShowpadApiUtil {
 	 * @return
 	 * @throws IOException
 	 */
-	public HttpResponse executeDelete(GenericUrl url) throws IOException, QuotaException {
+	public HttpResponse executeDelete(GenericUrl url) throws IOException {
 		checkRequestCount();
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
 
 		HttpResponse resp = requestFactory.buildDeleteRequest(url).setReadTimeout(WRITE_TIMEOUT).execute();
-		checkRateLimit(resp.getStatusCode());
 		return resp;
-	}
-
-
-	/**
-	 * tests the response code for a 429, which is a rate limit exceeded.  If we catch this we need to throw a 
-	 * quota exception.
-	 * Note: I believe Showpad removed rate limiting...this code may no longer be necessary. -JM- 03.15.2017
-	 * @param respStatusCode
-	 * @throws QuotaException
-	 */
-	protected static void checkRateLimit(int respStatusCode) throws QuotaException {
-		if (429 == respStatusCode) {
-			if (requestCount < API_LIMIT) requestCount = API_LIMIT; //push us over the limit
-			throw new QuotaException("rate limit exceeded");
-		}
 	}
 
 
@@ -185,8 +174,34 @@ public class ShowpadApiUtil {
 	 * glass ceiling on API requests in a 24hr period. 
 	 * @throws QuotaException
 	 */
-	protected static void checkRequestCount() throws QuotaException {
-		++requestCount;
-		if (requestCount > API_LIMIT) throw new QuotaException("showpad API limit reached, too many requests: " + requestCount);
+	protected static synchronized void checkRequestCount() {
+		int currentMinute = Calendar.getInstance().get(Calendar.MINUTE);
+
+		//when the minute changes, set the counter for the NEW minute to zero, then begin incrementing it again
+		if (currentMinute != lastMinute) {
+			minuteTotals[currentMinute].set(0);
+			lastMinute = currentMinute;
+		}
+		int count = minuteTotals[currentMinute].getAndIncrement();
+
+		int total = 0;
+		for (int x=minuteTotals.length; x > 0; x--)
+			total += minuteTotals[x-1].get();
+
+		log.debug("QuotaTotal | minute: " + count + " hour: " + total);
+
+		//we need to lock and pause the thread, until Showpad releases some quota to us
+		if (total >= API_1HR_LIMIT) {
+			log.info("Sleeping for 5 minutes, 60min Showpad quota reached");
+			try {
+				Thread.sleep(5*60*1000); //sleep 5mins
+				//reset the counter for the 5mins we just slept back to zero.
+				for (int x=0; x < 5; x++)
+					minuteTotals[currentMinute+x].set(0); //remember currentMinute was 5mins ago...add forward from there
+
+			} catch (Exception e) {
+				log.fatal("could not sleep thread", e);
+			}
+		}
 	}
 }
