@@ -38,7 +38,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @since Feb 14, 2017
  ****************************************************************************/
 public class InsightAction extends AbstractTreeAction {
-	protected static final String INSIGHT_ID = "insightsId"; //req param
+	protected static final String INSIGHT_ID = "insightId"; //req param
 	public static final String ROOT_NODE_ID = AbstractTreeAction.MASTER_ROOT;
 
 	public InsightAction() {
@@ -245,6 +245,7 @@ public class InsightAction extends AbstractTreeAction {
 					writeToSolr(u);
 				}
 			}
+			req.setParameter(INSIGHT_ID, u.getInsightId());
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}

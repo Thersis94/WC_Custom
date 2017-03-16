@@ -21,6 +21,7 @@ import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
+import com.smt.sitebuilder.changelog.ChangeLogIntfc;
 //WebCrescendo
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -39,7 +40,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  * @updates:
  ****************************************************************************/
 @Table(name="biomedgps_insight")
-public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
+public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, ChangeLogIntfc {
 
 	public enum InsightStatusCd {
 		P("Published"), D("Deleted"), E("Edit");
@@ -573,5 +574,28 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	public void setQsPath(String qsPath) {
 		this.qsPath = qsPath;
 	}
-}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getDiffText()
+	 */
+	@Override
+	public String getDiffText() {
+		return getContentTxt();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getItemName()
+	 */
+	@Override
+	public String getItemName() {
+		return getTitleTxt();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getItemDesc()
+	 */
+	@Override
+	public String getItemDesc() {
+		return this.getAbstractTxt();
+	}
+}

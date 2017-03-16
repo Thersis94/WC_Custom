@@ -3,16 +3,19 @@
  */
 package com.biomed.smarttrak.admin;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.biomed.smarttrak.util.BiomedChangeLogUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -38,30 +41,36 @@ public class EditorsDeskAction extends SBActionAdapter {
 	}
 
 	public void retrieve(ActionRequest req) throws ActionException {
-		List<Object> changeLogs = new BiomedChangeLogUtil(dbConn, attributes).loadRecords(null, null, req.getParameter("organizationId"), true);
+		List<Object> changeLogs = new BiomedChangeLogUtil(dbConn, attributes).loadRecords(null, req.getParameter("changeLogId"), req.getParameter("organizationId"), true);
 
 		putModuleData(changeLogs);
 	}
 
 	public void build(ActionRequest req) throws ActionException {
-		String clId = req.getParameter("changeLogId");
+		String wcSyncId = req.getParameter("wcSyncId");
 		String profileId = ((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA)).getProfileId();
 
-		updateApprovalStatus(clId, profileId);
+		try {
+			updateApprovalStatus(wcSyncId, profileId);
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Problem updating Approval Record.", e);
+		}
 	}
 
 	/**
 	 * @param clId
 	 * @param profileId
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
 	 */
-	private void updateApprovalStatus(String clId, String profileId) {
-		try(PreparedStatement ps = dbConn.prepareStatement(getApprovalUpdateSql())) {
-			ps.setString(1, profileId);
-			ps.setString(2, clId);
-			ps.executeUpdate();
-		} catch (SQLException e) {
-			log.error("Problem updating ChangeLog Approval Record.", e);
-		}
+	private void updateApprovalStatus(String wcSyncId, String profileId) throws InvalidDataException, DatabaseException {
+		List<String> fields = new ArrayList<>();
+		fields.add("disposition_by_id");
+		fields.add("wc_sync_id");
+		ApprovalVO app = new ApprovalVO();
+		app.setWcSyncId(wcSyncId);
+		app.setApproverId(profileId);
+		new DBProcessor(dbConn).executeSqlUpdate(getApprovalUpdateSql(), app, fields);
 	}
 
 	/**
