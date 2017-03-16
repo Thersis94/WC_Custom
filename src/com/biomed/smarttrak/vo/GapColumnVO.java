@@ -9,7 +9,7 @@ import java.util.List;
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 1.0
  * @since Mar 15, 2017
  ****************************************************************************/
@@ -21,12 +21,6 @@ public class GapColumnVO {
 	private boolean altCol;
 	private int rowSpan = 1;
 	private int colSpan = 1;
-
-	/**
-	 * 
-	 */
-	public GapColumnVO() {
-	}
 
 	/**
 	 * @param altCol

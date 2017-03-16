@@ -145,7 +145,7 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	 * @param parameter
 	 * @return
 	 */
-	private EditPath getEditPath(String actionType) {
+	protected EditPath getEditPath(String actionType) {
 		for(EditPath e : EditPath.values()) {
 			if(e.getActionType().equals(actionType)) {
 				return e;
