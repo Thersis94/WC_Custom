@@ -353,9 +353,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 		//fire the adds & updates to Solr the same way the offline indexer does
 		if (adds.size() > 0) {
-			String dropboxFolder = (String) props.get("downloadDir");
 			MediaBinSolrIndex idx = new MediaBinSolrIndex();
-			idx.indexFiles(adds, server, dropboxFolder);
+			idx.indexFiles(adds, server, "");
 		}
 		
 		//commit the changes using a softCommit
