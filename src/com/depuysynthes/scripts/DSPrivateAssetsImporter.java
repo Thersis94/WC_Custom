@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
-import com.depuysynthes.scripts.showpad.QuotaException;
 import com.depuysynthes.scripts.showpad.ShowpadDivisionUtil;
 import com.depuysynthes.scripts.showpad.ShowpadMediaBinDecorator;
 import com.siliconmtn.util.Convert;
@@ -63,7 +62,7 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 	 * @see com.depuysynthes.scripts.showpad.ShowpadMediaBinDecorator#loadShowpadDivisionList()
 	 */
 	@Override
-	protected void loadShowpadDivisionList() throws QuotaException {
+	protected void loadShowpadDivisionList() {
 		String[] divs = props.getProperty("showpadDivisions").split(",");
 		for (String d : divs) {
 			String[] div = d.split("=");

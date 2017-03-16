@@ -80,8 +80,7 @@ public class ShowpadDivisionUtil {
 	 * @param util
 	 * @throws QuotaException
 	 */
-	public ShowpadDivisionUtil(Properties props, String divisionId, String divisionNm, ShowpadApiUtil util, 
-			Connection conn) throws QuotaException {
+	public ShowpadDivisionUtil(Properties props, String divisionId, String divisionNm, ShowpadApiUtil util, Connection conn) {
 		this.props = props;
 		this.divisionId = divisionId;
 		this.divisionNm = divisionNm;
@@ -105,7 +104,7 @@ public class ShowpadDivisionUtil {
 	 * @throws QuotaException
 	 */
 	public ShowpadDivisionUtil(Properties props, String divisionId, String divisionNm, ShowpadApiUtil util, 
-			Connection conn, String sourceTag) throws QuotaException {
+			Connection conn, String sourceTag) {
 		this(props, divisionId, divisionNm, util, conn);
 		tagMgr.setSourceConstant(sourceTag);
 	}
@@ -120,7 +119,7 @@ public class ShowpadDivisionUtil {
 	 * @param vo
 	 * @throws QuotaException
 	 */
-	public void pushAsset(MediaBinDeltaVO vo) throws QuotaException {
+	public void pushAsset(MediaBinDeltaVO vo) {
 		vo.setShowpadId(divisionAssets.get(vo.getDpySynMediaBinId()));
 		String postUrl;
 		FileType fType = new FileType(vo.getFileNm());
@@ -173,8 +172,7 @@ public class ShowpadDivisionUtil {
 	 * @param vo
 	 * @throws QuotaException
 	 */
-	protected void pushToShowpad(boolean isUpdate, String postUrl, String title, FileType fType, MediaBinDeltaVO vo) 
-			throws QuotaException {
+	protected void pushToShowpad(boolean isUpdate, String postUrl, String title, FileType fType, MediaBinDeltaVO vo) {
 		Map<String, String> params = new HashMap<>();
 		log.info("url=" + postUrl);
 		params.put("name", title);
@@ -327,7 +325,7 @@ public class ShowpadDivisionUtil {
 	 * @param vo
 	 * @throws QuotaException 
 	 */
-	public void deleteAsset(MediaBinDeltaVO vo) throws QuotaException {
+	public void deleteAsset(MediaBinDeltaVO vo) {
 		String pkId = divisionAssets.get(vo.getDpySynMediaBinId());
 		if (pkId == null || pkId.isEmpty()) return; //nothing to delete
 
@@ -350,7 +348,7 @@ public class ShowpadDivisionUtil {
 	 * maintaining a list of 'good' assets to keep
 	 * @throws QuotaException 
 	 */ 
-	protected void cleanupShowpadDups(Set<String> localShowpadIds) throws QuotaException {
+	protected void cleanupShowpadDups(Set<String> localShowpadIds) {
 		Map<String, String> showpadAssets = new HashMap<>(5000);
 
 		//NOTE: THIS WILL INCLUDE SHOWPAD ASSETS IN THE TRASH! 
@@ -402,7 +400,7 @@ public class ShowpadDivisionUtil {
 	 * @param masterRecords
 	 * @throws QuotaException 
 	 */
-	public void processTicketQueue() throws QuotaException {
+	public void processTicketQueue() {
 		//continue processing the queue until it's empty; meaning Showpad has processed all our assets
 		int count = insertTicketQueue.size();
 		int runCount = 0;
@@ -435,7 +433,7 @@ public class ShowpadDivisionUtil {
 	 * @return
 	 * @throws QuotaException
 	 */
-	private Set<String> testForCompletion() throws QuotaException {
+	private Set<String> testForCompletion() {
 		Set<String> removes = new HashSet<>();
 		for (Map.Entry<String,String> row : insertTicketQueue.entrySet()) {
 			String assetId;
@@ -468,7 +466,7 @@ public class ShowpadDivisionUtil {
 	 * @return
 	 * @throws QuotaException 
 	 */
-	private String getAssetIdFromTicket(String ticketId) throws InvalidDataException, QuotaException {
+	private String getAssetIdFromTicket(String ticketId) throws InvalidDataException {
 		String ticketUrl = showpadApiUrl + "/tickets/" + ticketId + ".json?fields=status,asset";
 		try {
 			String resp = showpadUtil.executeGet(ticketUrl);
@@ -508,7 +506,7 @@ public class ShowpadDivisionUtil {
 	 * @return
 	 * @throws QuotaException 
 	 */
-	private String findShowpadId(String fileName) throws QuotaException {
+	private String findShowpadId(String fileName) {
 		String showpadId = null;
 		//encode the file Name as a URL parameter, since this is a GET request
 		String findUrl = divisionUrl + "/assets.json?fields=id&id=" + divisionId + "&limit=100&name=" + StringEncoder.urlEncode(fileName);
@@ -546,12 +544,25 @@ public class ShowpadDivisionUtil {
 	 * @param fType
 	 * @return
 	 */
-	protected static String makeShowpadAssetName(MediaBinDeltaVO vo, FileType fType ) {
+	protected String makeShowpadAssetName(MediaBinDeltaVO vo, FileType fType ) {
+		//legacy method
 		String title = StringUtil.checkVal(vo.getTitleTxt(), vo.getFileNm());
 		title += " - " + vo.getTrackingNoTxt() + "." + fType.getFileExtension();
 		title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
 		title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
 		return title;
+		//new method - holding until bad data is fixed
+//		String trackingNo = StringUtil.removeNonAlphaNumeric(vo.getTrackingNoTxt());
+//		String title = vo.getTitleTxt();
+//		if (StringUtil.isEmpty(title)) {
+//			title = StringUtil.checkVal(vo.getFileNm());
+//			if (title.length() > 0 && title.lastIndexOf(".") > -1)
+//				title = title.substring(0, title.lastIndexOf(".")); //remove the existing file extension
+//		}
+//
+//		title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
+//		title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
+//		return title + " - " + trackingNo + "." + fType.getFileExtension(); 
 	}
 
 

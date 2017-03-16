@@ -73,11 +73,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	@Override
 	public void run() {
 		//load the divisions
-		try {
-			loadShowpadDivisionList();
-		} catch (QuotaException qe) {
-			log.error(qe);
-		}
+		loadShowpadDivisionList();
 
 		//used only for de-duplication, which is more crisis-cleanup than something we do regularly.
 		if (deduplicate) {
@@ -88,12 +84,9 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				if (vo.getShowpadId() != null) localShowpadIds.add(vo.getShowpadId());
 			}
 
-			try {
-				for (ShowpadDivisionUtil util : divisions)
-					util.cleanupShowpadDups(localShowpadIds);
-			} catch (QuotaException qe) {
-				log.error(qe);
-			}
+			for (ShowpadDivisionUtil util : divisions)
+				util.cleanupShowpadDups(localShowpadIds);
+			
 			log.info("deuplication complete");
 			return;
 		}
@@ -108,7 +101,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 * If we try to add a tag to an asset without using it's ID, and it already existing in the system, it will fail.
 	 * @throws QuotaException 
 	 */
-	protected void loadShowpadDivisionList() throws QuotaException {
+	protected void loadShowpadDivisionList() {
 		String[] divs = props.getProperty("showpadDivisions").split(",");
 		for (String d : divs) {
 			String[] div = d.split("=");
@@ -185,22 +178,14 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			if (s == State.Failed || s == State.Delete)
 				continue;
 
-			try {
-				loopFileThroughDivisions(vo);
-			} catch (QuotaException e) {
-				return; //we can't continue if the quota has been reached.
-			}
+			loopFileThroughDivisions(vo);
+			
 			log.info("completed: " + vo.getFileNm());
 		}
 
 		//process the ticket queue for each division
-		try {
-			for (ShowpadDivisionUtil util : divisions)
-				util.processTicketQueue();
-		} catch (QuotaException qe) {
-			failures.add(qe);
-			log.error("could not process showpad queue, quota limit reached", qe);
-		}
+		for (ShowpadDivisionUtil util : divisions)
+			util.processTicketQueue();
 
 		//save the newly created records to our database for each division
 		for (ShowpadDivisionUtil util : divisions)
@@ -213,16 +198,9 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 * @param vo
 	 * @throws QuotaException
 	 */
-	protected void loopFileThroughDivisions(MediaBinDeltaVO vo) throws QuotaException {
+	protected void loopFileThroughDivisions(MediaBinDeltaVO vo) {
 		for (ShowpadDivisionUtil util : divisions) {
-			try {
-				util.pushAsset(vo);					
-			} catch (QuotaException qe) {
-				String msg = makeMessage(vo, "Could not push file to showpad: " + qe.getMessage());
-				failures.add(new Exception(msg));
-				log.error("could not push to showpad, quota reached", qe);
-				throw qe;
-			}
+			util.pushAsset(vo);	
 		}
 	}
 
@@ -273,19 +251,12 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			if (vo.getRecordState() != State.Delete)  continue;
 
-			try {
-				//push deletions to Showpad
-				for (ShowpadDivisionUtil util : divisions)
-					util.deleteAsset(vo);
+			//push deletions to Showpad
+			for (ShowpadDivisionUtil util : divisions)
+				util.deleteAsset(vo);
 
-				//if success, delete it from the DB as well
-				data.add(vo.getDpySynMediaBinId());
-
-			} catch (QuotaException qe) {
-				String msg = makeMessage(vo, "Could not delete asset from showpad: " + qe.getMessage());
-				failures.add(new Exception(msg));
-				log.error("could not delete from showpad", qe);
-			}
+			//if success, delete it from the DB as well
+			data.add(vo.getDpySynMediaBinId());
 		}
 		return data;
 	}

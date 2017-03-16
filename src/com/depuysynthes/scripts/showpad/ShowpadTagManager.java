@@ -56,7 +56,7 @@ public class ShowpadTagManager {
 	/**
 	 * default constructor - this class requires arguments in order to function properly
 	 */
-	public ShowpadTagManager(String apiUrl, String divisionId, String divisionUrl, ShowpadApiUtil util) throws QuotaException {
+	public ShowpadTagManager(String apiUrl, String divisionId, String divisionUrl, ShowpadApiUtil util) {
 		this.showpadApiUrl = apiUrl;
 		this.divisionId = divisionId;
 		this.divisionUrl = divisionUrl;
@@ -71,7 +71,7 @@ public class ShowpadTagManager {
 	 * If we try to add a tag to an asset without using it's ID, and it already existing in the system, it will fail.
 	 * @throws QuotaException 
 	 */
-	protected void loadDivisionTagList() throws QuotaException {
+	protected void loadDivisionTagList() {
 		int fetchSize = 1000;
 		int offset=0;
 		do {
@@ -88,7 +88,7 @@ public class ShowpadTagManager {
 	 * @param offset
 	 * @throws QuotaException
 	 */
-	protected void loadTags(int limit, int offset) throws QuotaException {
+	protected void loadTags(int limit, int offset) {
 		String tagUrl = divisionUrl + "/tags.json?limit=" + limit + "&fields=id,name,externalId&offset=" + offset;
 		log.debug(tagUrl);
 		try {
@@ -121,7 +121,7 @@ public class ShowpadTagManager {
 	 * @param vo
 	 * @throws QuotaException 
 	 */
-	public void addTags(MediaBinDeltaVO vo, StringBuilder header) throws QuotaException, InvalidDataException {
+	public void addTags(MediaBinDeltaVO vo, StringBuilder header) throws InvalidDataException {
 		Map<String,ShowpadTagVO> assignedTags = null;
 		if (vo.getShowpadId() != null) assignedTags = loadAssetTags(vo.getShowpadId(), null, true); //suppress404 because the asset may be new
 		Set<String> desiredTags = getDesiredTags(vo);
@@ -180,7 +180,7 @@ public class ShowpadTagManager {
 	 * @throws InvalidDataException 
 	 */
 	protected Map<String, ShowpadTagVO> loadAssetTags(String showpadId, String externalId, boolean suppress404) 
-			throws QuotaException, InvalidDataException {
+			throws InvalidDataException {
 		Map<String,ShowpadTagVO> tags = new HashMap<>();
 		String tagUrl = showpadApiUrl + "/assets/" + showpadId + "/tags.json?limit=1000&suppress_response_codes=true&fields=id,name,externalId";
 		if (externalId != null) tagUrl += "&externalId=" + externalId; //filters to only tags on this asset with this externalId
@@ -217,7 +217,7 @@ public class ShowpadTagManager {
 	 * @param tagId
 	 * @throws QuotaException 
 	 */
-	protected ShowpadTagVO createTag(String tagNm, String externalId) throws QuotaException {
+	protected ShowpadTagVO createTag(String tagNm, String externalId) {
 		String tagUrl = divisionUrl + "/tags.json";
 		ShowpadTagVO tag = new ShowpadTagVO(null, tagNm, divisionId, externalId);
 
@@ -253,7 +253,7 @@ public class ShowpadTagManager {
 	 * @param mbAsset
 	 * @throws QuotaException
 	 */
-	public void updateProductTags(MediaBinDeltaVO mbAsset) throws QuotaException, InvalidDataException {
+	public void updateProductTags(MediaBinDeltaVO mbAsset) throws InvalidDataException {
 		String showpadId = mbAsset.getShowpadId();
 		if (StringUtil.isEmpty(showpadId)) 
 			throw new InvalidDataException("Asset not found in Showpad: " + mbAsset.getTrackingNoTxt());
@@ -296,7 +296,7 @@ public class ShowpadTagManager {
 	 * @param showpadAssetId
 	 * @param tags
 	 */
-	protected void unlinkAssetFromTags(String showpadAssetId, Collection<ShowpadTagVO> tags) throws QuotaException {
+	protected void unlinkAssetFromTags(String showpadAssetId, Collection<ShowpadTagVO> tags) {
 		for (ShowpadTagVO tag : tags) {
 			//if we don't know this tag by ID, get it from the Division's list.  It must exist at the Division level if it's bound to an Asset.
 			if (tag.getId() == null) tag = showpadTags.get(tag.getName());
@@ -313,7 +313,7 @@ public class ShowpadTagManager {
 	 * @param tags
 	 * @throws QuotaException
 	 */
-	protected void linkAssetToTags(String showpadAssetId, Collection<ShowpadTagVO> tags) throws QuotaException {
+	protected void linkAssetToTags(String showpadAssetId, Collection<ShowpadTagVO> tags) {
 		for (ShowpadTagVO tag : tags) {
 			//if we don't know this tag by ID, get it from the Division's list if it already exists there
 			if (tag.getId() == null && showpadTags.containsKey(tag.getName()))
@@ -338,7 +338,7 @@ public class ShowpadTagManager {
 	 * @param showpadAssetId
 	 * @throws QuotaException
 	 */
-	protected void executeAssetTagXR(String tagId, String showpadAssetId, String method) throws QuotaException {
+	protected void executeAssetTagXR(String tagId, String showpadAssetId, String method) {
 		String url = showpadApiUrl + "/tags/" + tagId + "/assets/" + showpadAssetId + ".json?suppress_response_codes=true&method=" + method;
 		try {
 			String resp = showpadUtil.executeGet(url);
