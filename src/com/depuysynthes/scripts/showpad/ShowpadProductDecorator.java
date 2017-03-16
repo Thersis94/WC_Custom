@@ -160,12 +160,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 
 		//now that all products have attached their tags to the mediabin 
 		//assets, iterate through them and push to Showpad.
-		try {
-			pushTagsToShowpad(masterRecords);
-		} catch (QuotaException qe) {
-			failures.add(qe);
-			log.error(qe);
-		}
+		pushTagsToShowpad(masterRecords);
 
 		//parse the product list for SOUS products containing no MediaBin assets
 		findEmptyProducts(masterRecords);
@@ -265,7 +260,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param masterRecords
 	 * @throws QuotaException 
 	 */
-	protected void pushTagsToShowpad(Map<String, MediaBinDeltaVO> masterRecords) throws QuotaException {
+	protected void pushTagsToShowpad(Map<String, MediaBinDeltaVO> masterRecords) {
 		Calendar cal = Calendar.getInstance();
 		//consider a product change within 24hrs something we need to pay attention to.
 		//set the config value to reflect the frequency of the script execution.  e.g. if we run once a week threshold should be -7.
