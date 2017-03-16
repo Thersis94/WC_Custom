@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+
+
 //wc_custom libs
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.vo.UpdateVO;
@@ -34,7 +36,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Mar 9, 2017
  ****************************************************************************/
 
-public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
+public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	/*Specifies how deep down the section hierarchy tree we intend to traverse*/
 	protected static final int SECTION_XR_DEPTH = 3;
 	
@@ -51,6 +53,17 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	 */
 	public UpdatesSectionHierarchyAction(ActionInitVO init){
 		super(init);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.SectionHierarchyAction#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		//pass to superclass for portlet registration (WC admintool)
+		log.debug("****fdfLogging from the other time space");
+		super.retrieve(req);
 	}
 	
 	/*
@@ -168,5 +181,14 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 				holder.add(update);
 			}
 		}
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
+	 */
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 }
