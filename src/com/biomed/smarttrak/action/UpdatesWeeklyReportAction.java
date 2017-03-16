@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.biomed.smarttrak.vo.UpdatesVO;
+import com.biomed.smarttrak.vo.UpdateVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -46,11 +46,11 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		String [] orderNos = req.getParameterValues("orderNo");
 		String [] emailFlgs = req.getParameterValues("emailFlg");
 
-		List<UpdatesVO> updates = new ArrayList<>();
+		List<UpdateVO> updates = new ArrayList<>();
 
 		//Build Update VOs
 		for(int i = 0; i < updateIds.length; i++) {
-			UpdatesVO u = new UpdatesVO();
+			UpdateVO u = new UpdateVO();
 			u.setUpdateId(updateIds[i]);
 			u.setOrderNo(Convert.formatInteger(orderNos[i]));
 			u.setEmailFlg(Convert.formatInteger(emailFlgs[i]));
@@ -76,9 +76,9 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 	 * Batch update Updates that are modified in Weekly Report.
 	 * @param updates
 	 */
-	public void processUpdates(List<UpdatesVO> updates) {
+	public void processUpdates(List<UpdateVO> updates) {
 		try(PreparedStatement ps = dbConn.prepareStatement(getUpdatesBatchSql())) {
-			for(UpdatesVO u : updates) {
+			for(UpdateVO u : updates) {
 				ps.setInt(1, u.getOrderNo());
 				ps.setInt(2, u.getEmailFlg());
 				ps.setString(3, u.getUpdateId());
@@ -128,7 +128,7 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		if (!StringUtil.isEmpty(sectionId)) params.add(sectionId);
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  updates = db.executeSelect(sql, params, new UpdatesVO());
+		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
