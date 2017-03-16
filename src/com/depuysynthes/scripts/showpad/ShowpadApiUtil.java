@@ -53,6 +53,9 @@ public class ShowpadApiUtil {
 	 */
 	public ShowpadApiUtil(OAuth2Token oauthUtil) {
 		this.oauthUtil = oauthUtil;
+		//init the counter array objects
+		for (int x=0; x < 60; x++)
+			minuteTotals[x] = new AtomicInteger();
 	}
 
 	/**
