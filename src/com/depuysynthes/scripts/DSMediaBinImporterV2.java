@@ -726,7 +726,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				if (value.startsWith("\"") && value.endsWith("\""))
 					value = value.substring(1, value.length() - 1);
 
-				if (value.equals("null")) value = null;
+				if (value.equalsIgnoreCase("null")) value = null;
 
 				entry.put(columns[x], value);
 			}
@@ -905,7 +905,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 */
 	protected boolean isOpcoAuthorized(String distChannel, String[] allowedOpCoNames, String tn) {
 		//tn is not used here, but is in subclasses
-		return !StringUtil.stringContainsItem(distChannel, allowedOpCoNames);
+		return StringUtil.stringContainsItem(distChannel, allowedOpCoNames);
 	}
 
 
