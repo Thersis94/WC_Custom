@@ -341,14 +341,9 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param user
 	 */
 	protected void addUserIdentifier(StringBuilder sb, UserVO user) {
-		// look at country code first.
-		if ("UK".equals(user.getCountryCode())) {
-			sb.append(" [UK]");
-		} else {
-			// not UK, so look at job category/level
-			findSuffix(sb,Convert.formatInteger(user.getJobCategory()),
+		// look at job category/level
+		findSuffix(sb,Convert.formatInteger(user.getJobCategory()),
 					Convert.formatInteger(user.getJobLevel()));
-		}
 
 		// now append status code if appropriate.
 		addUserStatusCode(sb,user.getStatusCode());
@@ -375,6 +370,15 @@ public class AccountReportVO extends AbstractSBReportVO {
 			case 9:
 				sb.append(" [Ex]");
 				return;
+			case 10:
+				sb.append(" [NA]");
+				return;
+			case 11:
+				sb.append(" [UK]");
+				break;
+			case 15:
+				sb.append(" [RA]");
+				return;
 			default:
 				break;
 		}
@@ -390,7 +394,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 	protected void addUserStatusCode(StringBuilder sb, String statCd) {
 		if (statCd.equalsIgnoreCase(Status.COMPLIMENTARY.getCode()) ||
 				statCd.equalsIgnoreCase(Status.UPDATES.getCode()) ||
-				statCd.equalsIgnoreCase(Status.EXTRA.getCode())) {
+				statCd.equalsIgnoreCase(Status.EXTRA.getCode()) ||
+				statCd.equalsIgnoreCase(Status.TRIAL.getCode())) {
 
 			startSpan(sb,CSS_USER_STATUS_CD);
 			appendSpace(sb);
