@@ -38,7 +38,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @since Feb 14, 2017
  ****************************************************************************/
 public class InsightAction extends AbstractTreeAction {
-	protected static final String INSIGHT_ID = "insightsId"; //req param
+	protected static final String INSIGHT_ID = "insightId"; //req param
 	public static final String ROOT_NODE_ID = AbstractTreeAction.MASTER_ROOT;
 
 	public InsightAction() {
@@ -57,11 +57,8 @@ public class InsightAction extends AbstractTreeAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("insight retrieve called");
 		
-		if (req.hasParameter("loadAuthorList")) {
-			loadAuthors(req);
-		}
-		
 		if (req.hasParameter("loadData") || req.hasParameter(INSIGHT_ID) ) {
+			loadAuthors(req);
 			loadInsightsData(req);
 		}
 	}
@@ -101,14 +98,6 @@ public class InsightAction extends AbstractTreeAction {
 		aa.setDBConnection(dbConn);
 		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
 
-		//if we are looking for only managers then place them on the mod data so the 
-		// table can find them.  if not they will be on the req attributes where other 
-		// forms are looking for them
-		if(!req.hasParameter("loadData")){
-			log.debug(" placed on req for model");
-			putModuleData(req.getAttribute("managers"));
-		}
-		
 	}
 
 	/**
@@ -150,11 +139,25 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	public static String formatRetrieveQuery(String insightId, String statusCd, String typeCd, String dateRange, String schema) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select a.*, p.first_nm, p.last_nm, p.profile_img, b.section_id ");
+		sql.append("select ");
+				
+		if (!StringUtil.isEmpty(insightId)){
+			sql.append("a.*");
+		}else{
+			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt");
+		}
+				
+		sql.append(", p.first_nm, p.last_nm, p.profile_img ");
+		
+		
+		if (!StringUtil.isEmpty(insightId))sql.append(", b.section_id ");
 		sql.append("from ").append(schema).append("biomedgps_insight a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
-		sql.append("on a.insight_id=b.insight_id where 1=1 ");
+		if (!StringUtil.isEmpty(insightId)){
+			sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
+			sql.append("on a.insight_id=b.insight_id ");
+		}
+		sql.append("where 1=1 ");
 		if (!StringUtil.isEmpty(insightId)) sql.append("and a.insight_id=? ");
 		if (!StringUtil.isEmpty(statusCd)) sql.append("and a.status_cd=? ");
 		if (!StringUtil.isEmpty(typeCd)) sql.append("and a.type_cd=? ");
@@ -166,7 +169,7 @@ public class InsightAction extends AbstractTreeAction {
 			}
 		}
 
-		sql.append("order by a.create_dt");
+		sql.append("order by a.publish_dt desc");
 
 		log.debug(sql);
 		return sql.toString();
@@ -242,6 +245,7 @@ public class InsightAction extends AbstractTreeAction {
 					writeToSolr(u);
 				}
 			}
+			req.setParameter(INSIGHT_ID, u.getInsightId());
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}

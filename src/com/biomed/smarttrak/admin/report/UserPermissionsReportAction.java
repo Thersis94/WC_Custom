@@ -224,13 +224,15 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected StringBuilder buildAccountsAndUsersQuery() {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(350);
 		sql.append("select ac.account_id, ac.account_nm, ac.fd_auth_flg as acct_fd_auth_flg, ");
 		sql.append("ac.ga_auth_flg as acct_ga_auth_flg, ");
 		sql.append("us.profile_id, us.user_id, us.fd_auth_flg, us.ga_auth_flg, ");
 		sql.append("pf.first_nm, pf.last_nm, pf.email_address_txt ");
-		sql.append("from custom.biomedgps_account ac ");
-		sql.append("inner join custom.biomedgps_user us on ac.account_id = us.account_id ");
+		sql.append("from ").append(schema).append("biomedgps_account ac ");
+		sql.append("inner join ").append(schema).append("biomedgps_user us ");
+		sql.append("on ac.account_id = us.account_id ");
 		sql.append("and ac.status_no != ? and us.status_cd != ? ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("order by account_nm, profile_id");

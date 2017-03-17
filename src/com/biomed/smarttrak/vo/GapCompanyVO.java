@@ -4,9 +4,13 @@
 package com.biomed.smarttrak.vo;
 
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.siliconmtn.data.Node;
 import com.siliconmtn.db.DBUtil;
 
 /****************************************************************************
@@ -16,7 +20,7 @@ import com.siliconmtn.db.DBUtil;
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 1.0
  * @since Feb 6, 2017
  ****************************************************************************/
@@ -43,6 +47,7 @@ public class GapCompanyVO {
 	}
 
 	private Map<String, StatusVal> regulations;
+	private List<GapCellVO> cells;
 	private String companyName;
 	private String shortCompanyName;
 	private String companyId;
@@ -251,6 +256,54 @@ public class GapCompanyVO {
 	 * @return
 	 */
 	public StatusVal getRegulation(String colRegId) {
-		return regulations.get(colRegId);
+		StatusVal s = regulations.get(colRegId);
+		if(s == null && US.equals(colRegId.split("-")[1])) {
+			s = StatusVal.USG;
+		} else if(s == null && OUS.equals(colRegId.split("-")[1])) {
+			s = StatusVal.OUSG;
+		}
+		return s;
+	}
+
+	/**
+	 * Build Cell Data and Store on the Company Row.
+	 * @param columns
+	 */
+	public void buildCellData(Collection<Node> columns) {
+		cells = new ArrayList<>();
+		for(Node col : columns) {
+			StatusVal usReg = this.getRegulation(col.getNodeId() + "-US");
+			StatusVal ousReg = this.getRegulation(col.getNodeId() + "-OUS");
+
+			cells.add(new GapCellVO(usReg, ousReg));
+		}
+	}
+
+	/**
+	 * @return the cells
+	 */
+	public List<GapCellVO> getCells() {
+		return cells;
+	}
+
+	/**
+	 * @param regulations the regulations to set.
+	 */
+	public void setRegulations(Map<String, StatusVal> regulations) {
+		this.regulations = regulations;
+	}
+
+	/**
+	 * @param cells the cells to set.
+	 */
+	public void setCells(List<GapCellVO> cells) {
+		this.cells = cells;
+	}
+
+	/**
+	 * @param portfolioNo the portfolioNo to set.
+	 */
+	public void setPortfolioNo(int portfolioNo) {
+		this.portfolioNo = portfolioNo;
 	}
 }
