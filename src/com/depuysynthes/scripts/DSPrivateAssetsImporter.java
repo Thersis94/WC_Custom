@@ -121,6 +121,15 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 			return isAuth;
 		}
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.depuysynthes.scripts.DSMediaBinImporterV2#isAssetTypeAuthorized(java.lang.String, java.util.List)
+	 */
+	@Override
+	protected boolean isAssetTypeAuthorized(String assetType, List<String> allowedTypes) {
+		return true; //allow all file types for private assets
+	}
 
 
 	/*
