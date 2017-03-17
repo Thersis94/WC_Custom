@@ -270,6 +270,8 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			sql.append("END as ROW_NM, ");
 		}
 		
+		sql.append("r.YEAR_NO, ");
+		
 		return sql;
 	}
 	
@@ -283,7 +285,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(500);
 		DisplayType dt = dash.getColHeaders().getDisplayType();
 		
-		sql.append("r.YEAR_NO, sum(r.Q1_NO) as Q1_0, sum(r.Q2_NO) as Q2_0, sum(r.Q3_NO) as Q3_0, sum(r.Q4_NO) as Q4_0, ");
+		sql.append("sum(r.Q1_NO) as Q1_0, sum(r.Q2_NO) as Q2_0, sum(r.Q3_NO) as Q3_0, sum(r.Q4_NO) as Q4_0, ");
 		sql.append("sum(r2.Q1_NO) as Q1_1, sum(r2.Q2_NO) as Q2_1, sum(r2.Q3_NO) as Q3_1, sum(r2.Q4_NO) as Q4_1 "); // Needed for all column display types to get percent change from prior year
 		
 		// Columns needed only for specific display types

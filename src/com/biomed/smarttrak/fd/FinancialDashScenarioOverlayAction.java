@@ -37,6 +37,11 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction {
 	
+	/**
+	 * Column prefix used for base data 
+	 */
+	public static final String BASE_PREFIX = "REV_";
+	
 	public FinancialDashScenarioOverlayAction() {
 		super();
 	}
@@ -99,18 +104,23 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	}
 	
 	/**
-	 * Gets the select part of the query specific to the Scenario Overlay data.
+	 * Gets the select part of the query specific to Scenario Overlay data.
+	 * This gets both the overlay data for display, and the base data to check for deltas.
 	 * 
 	 * @param dash
 	 * @return
 	 */
 	@Override
 	protected StringBuilder getSelectSql(FinancialDashVO dash) {
-		StringBuilder sql = new StringBuilder(700);
+		StringBuilder sql = new StringBuilder(1200);
 		DisplayType dt = dash.getColHeaders().getDisplayType();
 		
+		// Gets the sql for selecting the base data in addition to the overlay data
+		String superSelect = super.getSelectSql(dash).toString();
+		sql.append(StringUtil.replace(superSelect, "as Q", "as " + BASE_PREFIX + "Q")).append(", ");
+		
 		// Usinig coalesce here to "prefer" the overlay data over the standard data where applicable
-		sql.append("r.YEAR_NO, sum(coalesce(o.Q1_NO, r.Q1_NO)) as Q1_0, sum(coalesce(o.Q2_NO, r.Q2_NO)) as Q2_0, sum(coalesce(o.Q3_NO, r.Q3_NO)) as Q3_0, sum(coalesce(o.Q4_NO, r.Q4_NO)) as Q4_0, ");
+		sql.append("sum(coalesce(o.Q1_NO, r.Q1_NO)) as Q1_0, sum(coalesce(o.Q2_NO, r.Q2_NO)) as Q2_0, sum(coalesce(o.Q3_NO, r.Q3_NO)) as Q3_0, sum(coalesce(o.Q4_NO, r.Q4_NO)) as Q4_0, ");
 		sql.append("sum(coalesce(o2.Q1_NO, r2.Q1_NO)) as Q1_1, sum(coalesce(o2.Q2_NO, r2.Q2_NO)) as Q2_1, sum(coalesce(o2.Q3_NO, r2.Q3_NO)) as Q3_1, sum(coalesce(o2.Q4_NO, r2.Q4_NO)) as Q4_1 "); // Needed for all column display types to get percent change from prior year
 		
 		// Columns needed only for specific display types
