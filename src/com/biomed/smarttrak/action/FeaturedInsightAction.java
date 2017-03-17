@@ -1,17 +1,19 @@
 package com.biomed.smarttrak.action;
-
+//Java 8
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
+//app libs 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrDocument;
-
+//Wc_custom
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
+//baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+//Webcrescendo
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -42,44 +44,63 @@ public class FeaturedInsightAction extends InsightAction {
 		//setting pmid for solr action check
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		
+
 		//get the users roles
 		Set<String> userRoles = getUsersRoles(req);
 
 		//build the solr action
 		executeSolrRequest(req);
-		
+
 		//after solr retreive get the solr documents 
 		SolrResponseVO solVo = (SolrResponseVO)mod.getActionData();
 		mod.setAttribute("solarRes",solVo );
-		
-		log.debug("number of responses" + solVo.getTotalResponses());
+
+		log.debug("Total uncheck number of responses" + solVo.getTotalResponses());
 		//get each document permissions and split them
 		List<SolrDocument> authorizedFeatures = new ArrayList<>();
-		
+
 		for (SolrDocument solDoc : solVo.getResultDocuments()){
-			log.debug("Document permissions " + solDoc.getFieldValue(ACL));
-			String docPermissions = (String) solDoc.getFieldValue(ACL);
-			String[] docP = docPermissions.split(" ");
-			//compare them to the set
-			for (String item : Arrays.asList(docP)){
-				//TODO move this to its own method authorize Feature
-				int count = StringUtils.countMatches(item, "~");
-				if (count == 1){
-					log.debug("## " + item.replace(ACL_GRANTED_DELIMITER, ""));
-					if (userRoles.contains(item.replace(ACL_GRANTED_DELIMITER, ""))){
-						log.debug("!!!!!!!!!!!!!!!!!! ALLOW IT add it and break");
-						authorizedFeatures.add(solDoc);
-						break;
-					}
-				}
-			}
-			log.debug("_________ end doc");
+			checkDocumentForAuthorization(solDoc, userRoles, authorizedFeatures);
 		}
-		//write the authorized insights over the total results.  
+		//change out results sets
+		transposeResults(solVo, authorizedFeatures);
+
+	}
+
+	/**
+	 * @param authorizedFeatures 
+	 * @param solVo 
+	 */
+	private void transposeResults(SolrResponseVO solVo, List<SolrDocument> authorizedFeatures) {
+		//replace un-filtered insights with the authorized insights  
 		log.debug("number of authorized insights " + authorizedFeatures.size());
+
+		solVo.setResultDocuments(authorizedFeatures, 1 , authorizedFeatures.size() );
+
 		//place insight vo data on req.
 		putModuleData(solVo);
+	}
+
+	/**
+	 * 
+	 * @param authorizedFeatures 
+	 * @param userRoles 
+	 * @param solDoc 
+	 */
+	private void checkDocumentForAuthorization(SolrDocument solDoc, Set<String> userRoles, List<SolrDocument> authorizedFeatures) {
+		log.debug("Document permissions " + solDoc.getFieldValue(ACL));
+		String docPermissions = (String) solDoc.getFieldValue(ACL);
+		String[] docP = docPermissions.split(" ");
+		//compare them to the set
+		for (String item : Arrays.asList(docP)){
+			int count = StringUtils.countMatches(item, "~");
+			if (count == 1){
+				if (userRoles.contains(item.replace(ACL_GRANTED_DELIMITER, ""))){
+					authorizedFeatures.add(solDoc);
+					break;
+				}
+			}
+		}	
 	}
 
 	/**
