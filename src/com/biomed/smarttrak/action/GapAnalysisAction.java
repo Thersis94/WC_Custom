@@ -15,6 +15,7 @@ import java.util.Map;
 import org.apache.commons.lang.ArrayUtils;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.admin.report.GapAnalysisReportVO;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
 import com.biomed.smarttrak.vo.GapCompanyVO;
 import com.biomed.smarttrak.vo.GapProductVO;
@@ -32,7 +33,10 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+
+import net.sf.json.JSONObject;
 
 /****************************************************************************
  * <b>Title</b>: GapAnalysisAction.java
@@ -76,7 +80,24 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			//Get Table Body Data based on columns in the GTV.
 			loadGapTableData(gtv);
 
-			super.putModuleData(gtv);
+			//forward to Report if parameter present.
+			if(req.hasParameter("buildReport")) {
+
+				//Set State on the GapTableVO.
+				gtv.setState(JSONObject.fromObject(req.getParameter("state")));
+
+				//Build Report
+				GapAnalysisReportVO rpt = new GapAnalysisReportVO();
+				rpt.setData(gtv);
+				rpt.setSite((SiteVO)req.getAttribute(Constants.SITE_DATA));
+
+				//Set Report on Attributes Map.
+				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+				req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+			} else {
+				super.putModuleData(gtv);
+			}
+
 		} else if(req.hasParameter("getProducts")) {
 			String regionId = req.getParameter("regionId");
 			String companyId = req.getParameter("companyId");

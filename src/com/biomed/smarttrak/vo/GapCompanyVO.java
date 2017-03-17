@@ -275,7 +275,7 @@ public class GapCompanyVO {
 			StatusVal usReg = this.getRegulation(col.getNodeId() + "-US");
 			StatusVal ousReg = this.getRegulation(col.getNodeId() + "-OUS");
 
-			cells.add(new GapCellVO(usReg, ousReg));
+			cells.add(new GapCellVO(usReg, ousReg, col.getNodeId()));
 		}
 	}
 
