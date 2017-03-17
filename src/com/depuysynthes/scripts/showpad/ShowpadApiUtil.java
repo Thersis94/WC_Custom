@@ -185,12 +185,12 @@ public class ShowpadApiUtil {
 			//flush all minutes between the last run and now...we may have been off doing non-Showpad things for 15mins.
 			int diff = currentMinute-lastMinute;
 			if (diff < 0) diff = 60 - Math.abs(diff); //think 9:10 - 8:55 
-			for (int x=diff; x > 0; x--) {
-				int idx = currentMinute-x;
-				if (idx < 0) idx = 60-Math.abs(idx); //reset to the top of the hour
-				minuteTotals[idx].set(0); //remember currentMinute was 5mins ago...add forward from there
-				log.debug("reset count on minute " + idx  + " to " + minuteTotals[idx].get());
-			}
+//			for (int x=diff; x > 0; x--) {
+//				int idx = currentMinute-x;
+//				if (idx < 0) idx = 60-Math.abs(idx); //reset to the top of the hour
+//				minuteTotals[idx].set(0); //remember currentMinute was 5mins ago...add forward from there
+//				log.debug("reset count on minute " + idx  + " to " + minuteTotals[idx].get());
+//			}
 			lastMinute = currentMinute;
 			//reflect on current status - can be removed after debugging
 			for (int y=minuteTotals.length; y > 0; y--) {
