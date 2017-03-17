@@ -178,7 +178,7 @@ public class ShowpadApiUtil {
 	 * @throws QuotaException
 	 */
 	protected static synchronized void checkRequestCount() {
-		int currentMinute = Calendar.getInstance().get(Calendar.MINUTE);
+		final int currentMinute = Calendar.getInstance().get(Calendar.MINUTE);
 
 		//when the minute changes, set the counter for the NEW minute to zero, then begin incrementing it again
 		if (currentMinute != lastMinute) {
@@ -191,8 +191,6 @@ public class ShowpadApiUtil {
 				minuteTotals[idx].set(0); //remember currentMinute was 5mins ago...add forward from there
 				log.debug("reset count on minute " + idx  + " to " + minuteTotals[idx].get());
 			}
-			
-			
 			lastMinute = currentMinute;
 		}
 		int count = minuteTotals[currentMinute].getAndIncrement();
