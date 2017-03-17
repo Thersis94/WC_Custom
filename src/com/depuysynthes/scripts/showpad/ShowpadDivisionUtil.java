@@ -195,7 +195,7 @@ public class ShowpadDivisionUtil {
 
 		log.info("uploading file: " + vo.getFileName());
 		File mbFile = null;
-		if (vo.isFileChanged()) {
+		if (vo.isFileChanged() || StringUtil.isEmpty(vo.getShowpadId())) {
 			mbFile = new File(vo.getFileName());
 		}
 		log.info("sending to showpad: " + vo.getDpySynMediaBinId());

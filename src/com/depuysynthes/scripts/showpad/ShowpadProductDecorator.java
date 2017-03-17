@@ -289,7 +289,6 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 					continue;
 				}
 
-
 				log.info("************************ Starting Asset *******************************");
 				log.info("showpadId=" + mbAsset.getShowpadId() + " mbId=" + mbAsset.getDpySynMediaBinId());
 				log.info("asset tags (" + mbAsset.getTags().size() + ") " + mbAsset.getTags());

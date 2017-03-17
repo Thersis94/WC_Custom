@@ -801,13 +801,13 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				
 				// Make sure the files are for one of our websites, and in the File Types we're authorized to use.
 				if (!isOpcoAuthorized(row.get("Distribution Channel"), requiredOpCo, tn) ||
-						!acceptedAssets.contains(row.get("Asset Type").toLowerCase())) {
+						!isAssetTypeAuthorized(row.get("Asset Type"), acceptedAssets)) {
 
 					if (debugMode) { //if we're in debug mode, report why we're skipping this record.
 						String reason = " || ";
 						if (StringUtil.isEmpty(row.get("Distribution Channel"))) {
 							reason += "No dist channel";
-						} else if (!acceptedAssets.contains(row.get("Asset Type").toLowerCase())) {
+						} else if (!isAssetTypeAuthorized(row.get("Asset Type"), acceptedAssets)) {
 							reason += "wrong asset type: " + row.get("Asset Type");
 						} else {
 							reason += "unauthorized opCo: " + row.get("Distribution Channel");
@@ -906,6 +906,16 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	protected boolean isOpcoAuthorized(String distChannel, String[] allowedOpCoNames, String tn) {
 		//tn is not used here, but is in subclasses
 		return StringUtil.stringContainsItem(distChannel, allowedOpCoNames);
+	}
+	
+	/**
+	 * determines if the asset's file type is visible to our operating companies
+	 * @param distChannel
+	 * @param allowedOpCoNames
+	 * @return
+	 */
+	protected boolean isAssetTypeAuthorized(String assetType, List<String> allowedTypes) {
+		return assetType != null && allowedTypes.contains(assetType.toLowerCase());
 	}
 
 

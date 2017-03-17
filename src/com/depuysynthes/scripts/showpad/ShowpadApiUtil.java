@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.apache.log4j.Logger;
 
@@ -45,7 +45,7 @@ public class ShowpadApiUtil {
 	private static final int API_1HR_LIMIT = 9900; //stay below the 10k ceiling.  Leave a buffer of 100, because they may not count as precisely as us.
 
 	protected static int lastMinute = 0;
-	protected static AtomicInteger[] minuteTotals = new AtomicInteger[60];
+	protected static AtomicIntegerArray minuteTotals = new AtomicIntegerArray(60);
 
 	/**
 	 * This class requires an OAUTH token in order to function
@@ -53,9 +53,6 @@ public class ShowpadApiUtil {
 	 */
 	public ShowpadApiUtil(OAuth2Token oauthUtil) {
 		this.oauthUtil = oauthUtil;
-		//init the counter array objects
-		for (int x=0; x < 60; x++)
-			minuteTotals[x] = new AtomicInteger();
 	}
 
 	/**
@@ -182,27 +179,19 @@ public class ShowpadApiUtil {
 
 		//when the minute changes, set the counter for the NEW minute to zero, then begin incrementing it again
 		if (currentMinute != lastMinute) {
-			//flush all minutes between the last run and now...we may have been off doing non-Showpad things for 15mins.
-			int diff = currentMinute-lastMinute;
-			if (diff < 0) diff = 60 - Math.abs(diff); //think 9:10 - 8:55 
-//			for (int x=diff; x > 0; x--) {
-//				int idx = currentMinute-x;
-//				if (idx < 0) idx = 60-Math.abs(idx); //reset to the top of the hour
-//				minuteTotals[idx].set(0); //remember currentMinute was 5mins ago...add forward from there
-//				log.debug("reset count on minute " + idx  + " to " + minuteTotals[idx].get());
-//			}
-			lastMinute = currentMinute;
-			//reflect on current status - can be removed after debugging
-			for (int y=minuteTotals.length; y > 0; y--) {
-				log.debug("minute: " + y + " = " + minuteTotals[y-1].get());
-			}
-		}
-		int count = minuteTotals[currentMinute].getAndIncrement();
+			//set the NEW minute back to zero, from an hour ago.
+			minuteTotals.set(currentMinute, 0);
 
-		int total = 0;
-		for (int z=minuteTotals.length; z > 0; z--) {
-			total += minuteTotals[z-1].get();
+			//flush all minutes between the last run and now...we may have been off doing non-Showpad things for 10mins.
+			flushNPriorMinutes(currentMinute, lastMinute);
+
+			lastMinute = currentMinute;
 		}
+
+		int count = minuteTotals.incrementAndGet(currentMinute);
+		int total = 0;
+		for (int x=minuteTotals.length(); x > 0; x--)
+			total += minuteTotals.get(x-1);
 
 		log.debug("QuotaTotal | minute: " + count + " hour: " + total);
 
@@ -216,6 +205,27 @@ public class ShowpadApiUtil {
 			} catch (Exception e) {
 				log.fatal("could not sleep thread", e);
 			}
+		}
+	}
+
+
+	/**
+	 * if there has been a multi-minute lapse since the counter incremented, go back through those
+	 * minutes and reset them all to zero, because no activity was recorded during that time.
+	 * @param currentMinute
+	 * @param lastMinute
+	 */
+	private static void flushNPriorMinutes(int currentMinute, int lastMinute) {
+		int diff = currentMinute-lastMinute;
+		if (diff < 0) diff = 60 - Math.abs(diff); //think 9:10 - 8:55 
+		if (diff < 2) return; //0=no change, 1=naturally resetting, no time jump
+
+		//remember currentMinute was 5mins ago...roll forward from there
+		for (int x=diff; x > 0; x--) {
+			int idx = currentMinute-x;
+			if (idx < 0) idx = 60-Math.abs(idx); //reset to the top of the hour
+			minuteTotals.set(idx, 0);
+			log.debug("reset count on minute " + idx  + " to " + minuteTotals.get(idx));
 		}
 	}
 }
