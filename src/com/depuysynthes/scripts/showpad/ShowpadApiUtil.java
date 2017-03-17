@@ -42,7 +42,7 @@ public class ShowpadApiUtil {
 	private static final int READ_TIMEOUT = 60000; //1 minute
 	private static final int WRITE_TIMEOUT = 120000; //2 minutes
 
-	private static final int API_1HR_LIMIT = 9900; //stay below the 10k ceiling.  Leave a buffer of 100, because they may not count as precisely as us.
+	private static final int API_1HR_LIMIT = 4900; //stay below the 5k ceiling.  Leave a buffer of 100, because they may not count as precisely as us.
 
 	protected static int lastMinute = 0;
 	protected static AtomicIntegerArray minuteTotals = new AtomicIntegerArray(60);
@@ -77,6 +77,7 @@ public class ShowpadApiUtil {
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
 
 		HttpResponse resp = requestFactory.buildGetRequest(url).setReadTimeout(READ_TIMEOUT).execute();
+		checkResponseForQuota(resp);
 		return resp;
 	}
 
@@ -95,6 +96,7 @@ public class ShowpadApiUtil {
 		HttpContent content = new UrlEncodedContent(params);
 
 		HttpResponse resp = requestFactory.buildPostRequest(new GenericUrl(url), content).setReadTimeout(WRITE_TIMEOUT).execute();
+		checkResponseForQuota(resp);
 		return resp.parseAsString();
 	}
 
@@ -138,6 +140,7 @@ public class ShowpadApiUtil {
 
 		GenericUrl gUrl = new GenericUrl(url);
 		HttpResponse resp = requestFactory.buildPostRequest(gUrl, content).setReadTimeout(WRITE_TIMEOUT).setHeaders(linkHeaders).execute();
+		checkResponseForQuota(resp);
 		return resp.parseAsString();
 	}
 
@@ -165,9 +168,21 @@ public class ShowpadApiUtil {
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
 
 		HttpResponse resp = requestFactory.buildDeleteRequest(url).setReadTimeout(WRITE_TIMEOUT).execute();
+		checkResponseForQuota(resp);
 		return resp;
 	}
 
+
+	/**
+	 * inspect the response code for 429, which is their QuotaLimitException.  We need to pause the script when that occurs.
+	 * @param resp
+	 */
+	private void checkResponseForQuota(HttpResponse resp) {
+		if (resp == null || 429 != resp.getStatusCode()) return;
+		//if we get a 429, bad things are going on.  Showpad things we're over our limit even though our internal counter says otherwise.
+		//Let's just sleep for 30mins and let that angry orge named Showpad cool down.
+		sleepThread(30*60*1000);
+	}
 
 	/**
 	 * increment a static counter and then test to see if we've hit the Showpad-defined 
@@ -198,16 +213,22 @@ public class ShowpadApiUtil {
 		//we need to lock and pause the thread, until Showpad releases some quota to us
 		//NOTE: if the script is running really fast you may burn through the quota in <1hr.  We may go through several 
 		//sleep cylces before the counts begin to come down.  This is proper behavior.
-		if (total >= API_1HR_LIMIT) {
-			log.info("Sleeping for 5 minutes, 60min Showpad quota reached");
-			try {
-				Thread.sleep(5*60*1000); //sleep 5mins
-			} catch (Exception e) {
-				log.fatal("could not sleep thread", e);
-			}
-		}
+		if (total >= API_1HR_LIMIT)
+			sleepThread(5*60*1000);
 	}
 
+
+	/**
+	 * @param i
+	 */
+	private static void sleepThread(int milliseconds) {
+		log.info("Sleeping for " + milliseconds/60000 + " minutes, 60min Showpad quota reached");
+		try {
+			Thread.sleep(milliseconds);
+		} catch (Exception e) {
+			log.fatal("could not sleep thread", e);
+		}
+	}
 
 	/**
 	 * if there has been a multi-minute lapse since the counter incremented, go back through those

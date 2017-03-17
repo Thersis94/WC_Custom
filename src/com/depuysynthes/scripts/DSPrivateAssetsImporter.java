@@ -115,7 +115,7 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 		boolean isAuth =  StringUtil.isEmpty(distChannel) || "INT Mobile".equals(distChannel);
 		
 		if (isAuth && publicAssetIds.contains(tn)) {
-			log.debug("blocked - public asset");
+			log.debug("blocked - public asset " + tn);
 			return false;
 		} else {
 			return isAuth;
