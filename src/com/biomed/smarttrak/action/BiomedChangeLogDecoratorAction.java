@@ -99,46 +99,64 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 
-		//Attempt to get Original Data.
-		ChangeLogIntfc original = getChangeLogIntfc(req, true);
-
-		//Call Actual Build to update the Record.
-		sai.build(req);
-
-		//Attempt to get Differential Data.
-		ChangeLogIntfc diff = getChangeLogIntfc(req, false);
-
-		//Quick fail if diff is null.  Means we don't have a ChangeLogIntfc.
-		if(diff == null) {
-			return;
-		}
-
-		//Default to Non-Zero Diff value.
-		int dNo = -1;
-		String origTxt = null, diffTxt = diff.getDiffText();
-
-		//Neither is null, then check for equality.  No Update.
-		if(original != null) {
-			origTxt = original.getDiffText();
-			dNo = diffTxt.compareTo(origTxt);
-		}
-
-		//If Not Equal, create a ChangeLog Record.
-		if(dNo != 0) {
-			log.debug("Diff Found.  Forwarding to ChangeLogUtil.");
-
-			EditPath e = getEditPath(req.getParameter("actionType"));
-			ApprovalVO app = buildApprovalRecord(req, diff, original, e);
-			String typeCd = (String)req.getSession().getAttribute(ChangeLogUtil.CHANGELOG_DIFF_TYPE_CD);
-			ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), origTxt, diffTxt, typeCd);
-			new ChangeLogUtil(dbConn, attributes).saveChangeLog(clv);
+		//Check if ActionType is configured for Change Logs.
+		boolean useChangeLog = false;
+		for(EditPath e : EditPath.values()) {
+			if(e.getActionType().equals(req.getParameter("actionType"))) {
+				useChangeLog = true;
+				break;
+			}
 		}
 
 		/*
-		 * After we finish writing ChangeLog info.  Flush out the ChangeLog data
-		 * on Request.
+		 * If Code is ChangeLoggable, go through ChangeLogAPI, else call build.
+		 * Problems were arising in Data Actions (FD/Grids) where retrieve was
+		 * polluting Build Return Data.
 		 */
-		ChangeLogUtil.cleanupChangeLog(req);
+		if(useChangeLog) {
+			//Attempt to get Original Data.
+			ChangeLogIntfc original = getChangeLogIntfc(req, true);
+
+			//Call Actual Build to update the Record.
+			sai.build(req);
+
+			//Attempt to get Differential Data.
+			ChangeLogIntfc diff = getChangeLogIntfc(req, false);
+
+			//Quick fail if diff is null.  Means we don't have a ChangeLogIntfc.
+			if(diff == null) {
+				return;
+			}
+
+			//Default to Non-Zero Diff value.
+			int dNo = -1;
+			String origTxt = null, diffTxt = diff.getDiffText();
+
+			//Neither is null, then check for equality.  No Update.
+			if(original != null) {
+				origTxt = original.getDiffText();
+				dNo = diffTxt.compareTo(origTxt);
+			}
+
+			//If Not Equal, create a ChangeLog Record.
+			if(dNo != 0) {
+				log.debug("Diff Found.  Forwarding to ChangeLogUtil.");
+
+				EditPath e = getEditPath(req.getParameter("actionType"));
+				ApprovalVO app = buildApprovalRecord(req, diff, original, e);
+				String typeCd = (String)req.getSession().getAttribute(ChangeLogUtil.CHANGELOG_DIFF_TYPE_CD);
+				ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), origTxt, diffTxt, typeCd);
+				new ChangeLogUtil(dbConn, attributes).saveChangeLog(clv);
+			}
+
+			/*
+			 * After we finish writing ChangeLog info.  Flush out the ChangeLog data
+			 * on Request.
+			 */
+			ChangeLogUtil.cleanupChangeLog(req);
+		} else {
+			sai.build(req);
+		}
 	}
 
 	/**
