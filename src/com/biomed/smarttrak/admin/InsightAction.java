@@ -153,24 +153,26 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	private static String formatRetrieveQuery(String insightId, String statusCd, String typeCd, String dateRange, String schema, boolean idByPass) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select ");
-				
-		if (!StringUtil.isEmpty(insightId) || idByPass){
-			sql.append("a.*");
-		}else{
-			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt, a.featured_flg, a.order_no");
-		}
-				
-		sql.append(", p.first_nm, p.last_nm, p.profile_img ");
 		
+		generateSelectSectionOfQuery(sql, insightId, schema, idByPass);
+
+		generateJoinSectionOfQuery(sql, insightId, schema, idByPass);
 		
-		if (!StringUtil.isEmpty(insightId)|| idByPass)sql.append(", b.section_id ");
-		sql.append("from ").append(schema).append("biomedgps_insight a ");
-		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		if (!StringUtil.isEmpty(insightId) || idByPass){
-			sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
-			sql.append("on a.insight_id=b.insight_id ");
-		}
+		generateWhereClauseOfQuery(sql,insightId,statusCd, typeCd,dateRange );
+
+		log.debug(sql);
+		return sql.toString();
+	}
+
+	/**
+	 * generates the where clause of the query based on supplied params
+	 * @param sql
+	 * @param insightId
+	 * @param statusCd
+	 * @param typeCd
+	 * @param dateRange
+	 */
+	private static void generateWhereClauseOfQuery(StringBuilder sql, String insightId, String statusCd, String typeCd, String dateRange) {
 		sql.append("where 1=1 ");
 		if (!StringUtil.isEmpty(insightId)) sql.append("and a.insight_id=? ");
 		if (!StringUtil.isEmpty(statusCd)) sql.append("and a.status_cd=? ");
@@ -182,11 +184,46 @@ public class InsightAction extends AbstractTreeAction {
 				sql.append("and a.create_Dt < CURRENT_DATE - INTERVAL '6 months' ");
 			}
 		}
-
 		sql.append("order by a.publish_dt desc");
+		
+	}
 
-		log.debug(sql);
-		return sql.toString();
+	/**
+	 * updates string builder with the join section of the query based on supplied params
+	 * @param sql
+	 * @param insightId
+	 * @param schema
+	 * @param idByPass
+	 */
+	private static void generateJoinSectionOfQuery(StringBuilder sql, String insightId, String schema, boolean idByPass) {
+		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
+		if (!StringUtil.isEmpty(insightId) || idByPass){
+			sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
+			sql.append("on a.insight_id=b.insight_id ");
+		}
+	}
+
+	/**
+	 * updates the string builder with the select section of the query based on supplied params
+	 * @param sql
+	 * @param idByPass 
+	 * @param schema 
+	 * @param insightId 
+	 */
+	private static void generateSelectSectionOfQuery(StringBuilder sql, String insightId, String schema, boolean idByPass) {
+		sql.append("select ");
+		if (!StringUtil.isEmpty(insightId) || idByPass){
+			sql.append("a.*");
+		}else{
+			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt, a.featured_flg, a.order_no");
+		}
+				
+		sql.append(", p.first_nm, p.last_nm, p.profile_img ");
+		
+		
+		if (!StringUtil.isEmpty(insightId)|| idByPass)sql.append(", b.section_id ");
+		sql.append("from ").append(schema).append("biomedgps_insight a ");
+		
 	}
 
 	/**
