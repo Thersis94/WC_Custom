@@ -194,7 +194,7 @@ public class ShowpadApiUtil {
 			lastMinute = currentMinute;
 			//reflect on current status - can be removed after debugging
 			for (int y=minuteTotals.length; y > 0; y--) {
-				log.debug("minute: " + y + " = " + minuteTotals[y].get());
+				log.debug("minute: " + y + " = " + minuteTotals[y-1].get());
 			}
 		}
 		int count = minuteTotals[currentMinute].getAndIncrement();
