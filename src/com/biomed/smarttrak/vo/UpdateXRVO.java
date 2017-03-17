@@ -9,7 +9,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
 /****************************************************************************
- * <b>Title</b>: UpdatesXRVO.java
+ * <b>Title</b>: UpdateXRVO.java
  * <b>Project</b>: WC_Custom
  * <b>Description: </b> VO for managing udpate xr data.
  * <b>Copyright:</b> Copyright (c) 2017
@@ -20,21 +20,21 @@ import com.siliconmtn.db.orm.Table;
  * @since Feb 15, 2017
  ****************************************************************************/
 @Table(name="biomedgps_update_section")
-public class UpdatesXRVO {
+public class UpdateXRVO {
 
 	private String updateSectionXrId;
 	private String sectionId;
 	private String updateId;
 	private Date createDt;
 
-	public UpdatesXRVO() {
+	public UpdateXRVO() {
 		super();
 	}
 
 	/**
 	 * @param req
 	 */
-	public UpdatesXRVO(String updateId, String sectionId) {
+	public UpdateXRVO(String updateId, String sectionId) {
 		this.updateId = updateId;
 		this.sectionId = sectionId;
 	}

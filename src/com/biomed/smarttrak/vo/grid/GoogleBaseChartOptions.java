@@ -1,11 +1,15 @@
 package com.biomed.smarttrak.vo.grid;
 
+// JDK 1.8
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+// App Libs
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
+
+// SMT Base Libs
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -21,7 +25,22 @@ import com.siliconmtn.util.StringUtil;
  * 	
  *******************************************************************/
 public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
-
+	
+	/**
+	 * Defines the default font size for the legend text
+	 */
+	public static final int DEFAULT_LEGEND_FONT_SIZE = 8;
+	
+	/**
+	 * Defines the font size for the full image legend text
+	 */
+	public static final int FULL_LEGEND_FONT_SIZE = 16;
+	
+	/**
+	 * Defines the font size for the title text
+	 */
+	public static final int TITLE_FONT_SIZE = 20;
+	
 	/**
 	 * 
 	 */
@@ -64,12 +83,16 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 	 */
 	protected void createChartOptions(String position) {
 		// Turn off the legend if not full
-		if (! full) position = "none";
+		int fontSize = FULL_LEGEND_FONT_SIZE;
+		if (! full) {
+			position = "none";
+			fontSize = DEFAULT_LEGEND_FONT_SIZE;
+		}
 		
 		// Set the legend font
 		Map<String, Object> text = new HashMap<>();
-		text.put("color", "blue");
-		text.put("fontSize", 8);
+		text.put("color", "black");
+		text.put("fontSize", fontSize);
 		
 		// Define the legend
 		Map<String, Object> legend = new HashMap<>();
@@ -98,7 +121,7 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 		// Set the font attributes
 		Map<String, Object> text = new HashMap<>();
 		text.put("color", "blue");
-		text.put("fontSize", 16);
+		text.put("fontSize", TITLE_FONT_SIZE);
 		
 		final String TITLE_LABEL = "title";
 		if (full) {

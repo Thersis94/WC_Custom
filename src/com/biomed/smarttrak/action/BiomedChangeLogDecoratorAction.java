@@ -3,6 +3,7 @@
  */
 package com.biomed.smarttrak.action;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
@@ -34,6 +35,38 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 
+	/**
+	 * EditPath manages ActionType, PKId Name and Public Url path for ChangeLog
+	 * Elements.
+	 */
+	public enum EditPath {
+			MARKET("marketAdmin", "marketId", Section.MARKET.getURLToken()),
+			PRODUCT("productAdmin", "productId", Section.PRODUCT.getURLToken()),
+			COMPANY("companyAdmin", "companyId", Section.COMPANY.getURLToken()),
+			INSIGHT("insights", "insightId", Section.INSIGHT.getURLToken()),
+			UPDATE("updates", "updateId", "");
+		private String actionType;
+		private String publicUrl;
+		private String pkIdName;
+
+		EditPath(String actionType, String pkIdName, String publicUrl){
+			this.actionType = actionType;
+			this.pkIdName = pkIdName;
+			this.publicUrl = publicUrl;
+		}
+
+		public String getActionType() {
+			return actionType;
+		}
+
+		public String getPkIdName() {
+			return pkIdName;
+		}
+
+		public String getPublicUrl() {
+			return publicUrl;
+		}
+	}
 	/**
 	 * Member variable for the class to be decorated.  Usually the action being 
 	 * called from the Module Controller
@@ -93,7 +126,9 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 		//If Not Equal, create a ChangeLog Record.
 		if(dNo != 0) {
 			log.debug("Diff Found.  Forwarding to ChangeLogUtil.");
-			ApprovalVO app = buildApprovalRecord(req, diff, original);
+
+			EditPath e = getEditPath(req.getParameter("actionType"));
+			ApprovalVO app = buildApprovalRecord(req, diff, original, e);
 			String typeCd = (String)req.getSession().getAttribute(ChangeLogUtil.CHANGELOG_DIFF_TYPE_CD);
 			ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), origTxt, diffTxt, typeCd);
 			new ChangeLogUtil(dbConn, attributes).saveChangeLog(clv);
@@ -107,6 +142,20 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	}
 
 	/**
+	 * @param parameter
+	 * @return
+	 */
+	protected EditPath getEditPath(String actionType) {
+		for(EditPath e : EditPath.values()) {
+			if(e.getActionType().equals(actionType)) {
+				return e;
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Call out to ApprovalController and request an ApprovalVO.  Set additional
 	 * data on it 
 	 * @param req
@@ -115,16 +164,16 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	 * @return
 	 * @throws ApprovalException 
 	 */
-	public ApprovalVO buildApprovalRecord(ActionRequest req, ChangeLogIntfc diff, ChangeLogIntfc original) throws ActionException {
+	public ApprovalVO buildApprovalRecord(ActionRequest req, ChangeLogIntfc diff, ChangeLogIntfc original, EditPath e) throws ActionException {
 		//Build an approvalVO.
 		ApprovalVO app = new ApprovalVO(req,
 										StringUtil.checkVal(MethodUtils.getPrimaryId(diff)),
 										StringUtil.checkVal(MethodUtils.getPrimaryId(original)),
 										ModuleType.Portlet,
 										SyncStatus.Approved);
-
 		app.setItemName(diff.getItemName());
 		app.setItemDesc(diff.getItemDesc());
+		app.setRequestTypeId(e.name());
 
 		try {
 

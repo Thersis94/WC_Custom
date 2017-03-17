@@ -230,16 +230,6 @@ update custom.biomedgps_grid_detail set value_4_txt = null where length(value_4_
 update custom.biomedgps_grid_detail set value_3_txt = null where length(value_3_txt) = 0 or value_3_txt = 'null';
 update custom.biomedgps_grid_detail set value_2_txt = null where length(value_2_txt) = 0 or value_2_txt = 'null';
 update custom.biomedgps_grid_detail set value_1_txt = null where length(value_1_txt) = 0 or value_1_txt = 'null';
-update custom.biomedgps_grid set series_10_nm = null where length(series_10_nm) = 0 or series_10_nm = 'null';
-update custom.biomedgps_grid set series_9_nm = null where length(series_9_nm) = 0 or series_9_nm = 'null';
-update custom.biomedgps_grid set series_8_nm = null where length(series_8_nm) = 0 or series_8_nm = 'null';
-update custom.biomedgps_grid set series_7_nm = null where length(series_7_nm) = 0 or series_7_nm = 'null';
-update custom.biomedgps_grid set series_6_nm = null where length(series_6_nm) = 0 or series_6_nm = 'null';
-update custom.biomedgps_grid set series_5_nm = null where length(series_5_nm) = 0 or series_5_nm = 'null';
-update custom.biomedgps_grid set series_4_nm = null where length(series_4_nm) = 0 or series_4_nm = 'null';
-update custom.biomedgps_grid set series_3_nm = null where length(series_3_nm) = 0 or series_3_nm = 'null';
-update custom.biomedgps_grid set series_2_nm = null where length(series_2_nm) = 0 or series_2_nm = 'null';
-update custom.biomedgps_grid set series_1_nm = null where length(series_1_nm) = 0 or series_1_nm = 'null';
 
 /** Add the modules and actions for the grid display amid 
 insert into core.MODULE_TYPE (MODULE_TYPE_ID, ORGANIZATION_ID, MODULE_TYPE_NM, CLASS_NM, INDEXER_CLASS_NM, 

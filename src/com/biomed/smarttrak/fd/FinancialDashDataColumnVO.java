@@ -19,6 +19,21 @@ public class FinancialDashDataColumnVO implements Serializable {
 	private String colId;
 	private int dollarValue;
 	private Double pctDiff;
+	private ValueDisplayType valueDisplay;
+	
+	public enum ValueDisplayType {
+		REPORTING("Reporting"), PENDING("Pending");
+		
+		private String title;
+		
+		ValueDisplayType(String title) {
+			this.title = title;
+		}
+		
+		public String getTitle() {
+			return title;
+		}
+	}
 	
 	public FinancialDashDataColumnVO() {
 		super();
@@ -74,5 +89,31 @@ public class FinancialDashDataColumnVO implements Serializable {
 	 */
 	public void setPctDiff(Double pctDiff) {
 		this.pctDiff = pctDiff;
+	}
+
+	/**
+	 * @return the valueDisplay
+	 */
+	public ValueDisplayType getValueDisplay() {
+		return valueDisplay;
+	}
+	
+	/**
+	 * @param valueDisplay the valueDisplay to set
+	 */
+	public void setValueDisplay(ValueDisplayType valueDisplay) {
+		this.valueDisplay = valueDisplay;
+	}
+	
+	/**
+	 * Sets the value display type based on the current data in the bean.
+	 * Per business rules, greater than zero is reporting, otherwise pending.
+	 */
+	public void setValueDisplay() {
+		if (getDollarValue() > 0) {
+			setValueDisplay(ValueDisplayType.REPORTING);
+		} else {
+			setValueDisplay(ValueDisplayType.PENDING);
+		}
 	}
 }
