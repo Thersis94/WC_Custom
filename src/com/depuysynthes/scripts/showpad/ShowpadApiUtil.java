@@ -192,12 +192,17 @@ public class ShowpadApiUtil {
 				log.debug("reset count on minute " + idx  + " to " + minuteTotals[idx].get());
 			}
 			lastMinute = currentMinute;
+			//reflect on current status - can be removed after debugging
+			for (int y=minuteTotals.length; y > 0; y--) {
+				log.debug("minute: " + y + " = " + minuteTotals[y].get());
+			}
 		}
 		int count = minuteTotals[currentMinute].getAndIncrement();
 
 		int total = 0;
-		for (int x=minuteTotals.length; x > 0; x--)
-			total += minuteTotals[x-1].get();
+		for (int z=minuteTotals.length; z > 0; z--) {
+			total += minuteTotals[z-1].get();
+		}
 
 		log.debug("QuotaTotal | minute: " + count + " hour: " + total);
 
