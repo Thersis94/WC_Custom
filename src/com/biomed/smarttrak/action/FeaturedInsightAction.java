@@ -32,8 +32,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @updates:
  ****************************************************************************/
 public class FeaturedInsightAction extends InsightAction {
-	protected final static String ACL = "acl";
-	protected final static String ACL_GRANTED_DELIMITER = "+g:";
+	protected static final String ACL = "acl";
+	protected static final String ACL_GRANTED_DELIMITER = "+g:";
 
 	/*
 	 * (non-Javadoc)
@@ -75,7 +75,7 @@ public class FeaturedInsightAction extends InsightAction {
 		//replace un-filtered insights with the authorized insights  
 		log.debug("number of authorized insights " + authorizedFeatures.size());
 
-		solVo.setResultDocuments(authorizedFeatures, 1 , authorizedFeatures.size() );
+		solVo.setResultDocuments(authorizedFeatures, 1 , authorizedFeatures.size()+1 );
 
 		//place insight vo data on req.
 		putModuleData(solVo);
@@ -94,14 +94,12 @@ public class FeaturedInsightAction extends InsightAction {
 		//compare them to the set
 		for (String item : Arrays.asList(docP)){
 			int count = StringUtils.countMatches(item, "~");
-			if (count == 1){
-				if (userRoles.contains(item.replace(ACL_GRANTED_DELIMITER, ""))){
-					authorizedFeatures.add(solDoc);
-					break;
-				}
+			if (count == 1 && userRoles.contains(item.replace(ACL_GRANTED_DELIMITER, ""))){
+				authorizedFeatures.add(solDoc);
+				break;
 			}
-		}	
-	}
+		}
+	}	
 
 	/**
 	 * generates the solr action associated with the this widget and executes solr retrieve
