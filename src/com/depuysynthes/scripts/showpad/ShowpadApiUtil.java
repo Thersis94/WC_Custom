@@ -42,7 +42,7 @@ public class ShowpadApiUtil {
 	private static final int READ_TIMEOUT = 60000; //1 minute
 	private static final int WRITE_TIMEOUT = 120000; //2 minutes
 
-	private static final int API_1HR_LIMIT = 4900; //stay below the 5k ceiling.  Leave a buffer of 100, because they may not count as precisely as us.
+	private static final int API_1HR_LIMIT = 3500; //stay below the 5k ceiling.  Leave a buffer of 100, because they may not count as precisely as us.
 
 	protected static int lastMinute = 0;
 	protected static AtomicIntegerArray minuteTotals = new AtomicIntegerArray(60);
