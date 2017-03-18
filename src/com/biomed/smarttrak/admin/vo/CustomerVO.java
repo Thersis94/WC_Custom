@@ -77,9 +77,9 @@ public class CustomerVO {
 	}
 	
 	public CustomerVO() {
-		deals = new ArrayList<DealVO>();
-		notes = new ArrayList<DataFeedNoteVO>();
-		reminders = new ArrayList<ReminderVO>();
+		deals = new ArrayList<>();
+		notes = new ArrayList<>();
+		reminders = new ArrayList<>();
 	}
 	
 	public CustomerVO(ActionRequest req) {
@@ -202,31 +202,52 @@ public class CustomerVO {
 
 	@Column(name="tms_customer_id", isInsertOnly=true)
 	public String getTMSId(){return CRMAction.TMSID;}
-	public void setTMSId(String tmsid){}
+	public void setTMSId(String tmsid) {
+		// This method exists solely for dbproccessor. 
+		//Since the set value is always empty it doesn't need to save anything
+	}
 	
 	@Column(name="attempt_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getAttemptDt(){return null;}
-	public void setAttemptDt(Date d){}
+	public void setAttemptDt(Date d) {
+		// This method exists solely for dbproccessor. 
+		//Since the set value is always empty it doesn't need to save anything
+	}
 	
 	@Column(name="result_cd", isInsertOnly=true)
 	public String getResultCd(){return CRMAction.RESULT_CD;}
-	public void setResultCd(String resultCd){}
+	public void setResultCd(String resultCd) {
+		// This method exists solely for dbproccessor. 
+		//Since the set value is always empty it doesn't need to save anything
+	}
 	
 	@Column(name="call_source_cd", isInsertOnly=true)
 	public String getCallSourceCd(){return CRMAction.CALL_SOURCE_ID;}
-	public void setCallSourceCd(String callSourceCd){}
+	public void setCallSourceCd(String callSourceCd) {
+		// This method exists solely for dbproccessor. 
+		//Since the set value is always empty it doesn't need to save anything
+	}
 	
 	@Column(name="product_cd", isInsertOnly=true)
 	public String getProductCd(){return CRMAction.PRODUCT_CD;}
-	public void setProductCd(String productId){}
+	public void setProductCd(String productId) {
+		// This method exists solely for dbproccessor. 
+		//Since the set value is always empty it doesn't need to save anything
+	}
 	
 	@Column(name="selection_cd", isInsertOnly=true)
 	public String getSelectionCd(){return CRMAction.SELECTION_CD;}
-	public void setSelectionCd(String selectionCd){}
+	public void setSelectionCd(String selectionCd) {
+		// This method exists solely for dbproccessor. 
+		//Since the set value is always empty it doesn't need to save anything
+	}
 	
 	@Column(name="lead_type_id", isInsertOnly=true)
 	public int getLeadTypeId(){return CRMAction.LEAD_TYPE_ID;}
-	public void setLeadTypeId(int leadTypeId){}
+	public void setLeadTypeId(int leadTypeId) {
+		// This method exists solely for dbproccessor. 
+		//Since the set value is always empty it doesn't need to save anything
+	}
 	
 	@Column(name="profile_id", isInsertOnly=true)
 	public String getProfileId() {return profile.getProfileId();}
