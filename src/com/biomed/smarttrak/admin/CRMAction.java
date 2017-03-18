@@ -74,7 +74,8 @@ public class CRMAction extends SBActionAdapter {
 				updateElement(req);
 			}
 		} catch(Exception e) {
-			throw new ActionException(e);
+			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator about this issue.";
+			log.error(e);
 		}
 		redirectRequest(msg, buildAction, req.getParameter("customerId"), req);
 	}
