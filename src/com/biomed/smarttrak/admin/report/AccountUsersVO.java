@@ -10,10 +10,9 @@ import java.util.Map;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UserVO;
-import com.biomed.smarttrak.vo.UserVO.Status;
 
 /*****************************************************************************
- <p><b>Title</b>: AccountPermissionsVO.java</p>
+ <p><b>Title</b>: AccountUsersVO.java</p>
  <p><b>Description: </b>Value object primarily used for building reports.</p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
@@ -117,24 +116,12 @@ public class AccountUsersVO extends AccountVO {
 	 * @param statusCode
 	 */
 	public void countUserStatus(String statusCode) {
-		Status status;
-		try {
-			status = Status.valueOf(statusCode);
-		} catch (Exception e) {
-			return;
-		}
-		switch(status) {
-			case COMPLIMENTARY:
-				compSeatsCnt++;
-				break;
-			case EXTRA:
-				addedSeatsCnt++;
-				break;
-			case UPDATES:
-				updatesOnlyCnt++;
-				break;
-			default:
-				break;
+		if (statusCode.equals(UserVO.Status.COMPLIMENTARY.getCode())) {
+			compSeatsCnt++;
+		} else if (statusCode.equals(UserVO.Status.EXTRA.getCode())) {
+			addedSeatsCnt++;
+		} else if (statusCode.equals(UserVO.Status.UPDATES.getCode())) {
+			updatesOnlyCnt++;
 		}
 	}
 	

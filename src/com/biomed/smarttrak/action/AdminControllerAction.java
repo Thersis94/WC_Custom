@@ -3,10 +3,8 @@ package com.biomed.smarttrak.action;
 import java.util.HashMap;
 import java.util.Map;
 
-
 //apache commons-lang jar
 import org.apache.commons.lang.StringEscapeUtils;
-
 
 // WC custom
 import com.biomed.smarttrak.fd.FinancialDashAction;
@@ -17,11 +15,14 @@ import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
+import com.biomed.smarttrak.admin.EditorsDeskAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.ListAction;
+import com.biomed.smarttrak.admin.ManageAuthorAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
+import com.biomed.smarttrak.admin.AuditLogAction;
 import com.biomed.smarttrak.admin.ReportFacadeAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.SupportFacadeAction;
@@ -63,7 +64,7 @@ import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
  ****************************************************************************/
 public class AdminControllerAction extends SimpleActionAdapter {
 
-	protected static final String ACTION_TYPE = "actionType"; //reqParam this class executes around
+	public static final String ACTION_TYPE = "actionType"; //reqParam this class executes around
 
 	// application constants  - these could be moved to sb_config if subject to change
 	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
@@ -119,6 +120,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("agap", GapAnalysisAdminAction.class);
 		ACTIONS.put("fd", FinancialDashAction.class);
 		ACTIONS.put("fdScenario", FinancialDashScenarioAction.class);
+		ACTIONS.put("audit", AuditLogAction.class);
 		ACTIONS.put("fdHierarchy", FinancialDashHierarchyAction.class);
 		ACTIONS.put("productAdmin", ProductManagementAction.class);
 		ACTIONS.put("companyAdmin", CompanyManagementAction.class);
@@ -138,6 +140,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("marketingInstanceReport", InstanceReport.class);
 		ACTIONS.put("uwr", UpdatesWeeklyReportAction.class); 
 		ACTIONS.put("grid", GridChartAction.class);
+		ACTIONS.put("author", ManageAuthorAction.class);
+		ACTIONS.put("editorsDesk", EditorsDeskAction.class);
 		ACTIONS.put("crm", CRMAction.class);
 	}
 

@@ -9,7 +9,8 @@ import java.util.Map;
 
 //WC custom
 import com.biomed.smarttrak.vo.CompanyVO;
-import com.siliconmtn.data.GenericVO;
+import com.biomed.smarttrak.vo.SectionVO;
+
 //SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
 
@@ -66,7 +67,7 @@ public class CompanySegmentsReportVO extends AbstractSBReportVO {
 		rpt.setTitleCell(REPORT_TITLE);
 
 		List<Map<String, Object>> rows = new ArrayList<>(companies.size() * 5);
-		rows = generateDataRows(rows);
+		generateDataRows(rows);
 
 		rpt.setData(rows);
 		return rpt.generateReport();
@@ -88,8 +89,7 @@ public class CompanySegmentsReportVO extends AbstractSBReportVO {
 	 * @param rows
 	 * @return
 	 */
-	private List<Map<String, Object>> generateDataRows(
-			List<Map<String, Object>> rows) {
+	private void generateDataRows(List<Map<String, Object>> rows) {
 
 		Map<String,Object> row;
 		for (CompanyVO co : companies) {
@@ -103,7 +103,6 @@ public class CompanySegmentsReportVO extends AbstractSBReportVO {
 			rows.add(row);
 		}
 
-		return rows;
 	}
 
 	/**
@@ -115,8 +114,8 @@ public class CompanySegmentsReportVO extends AbstractSBReportVO {
 	protected String hasSegment(CompanyVO company, String segmentId) {
 		if (company.getCompanySections() == null || 
 				company.getCompanySections().isEmpty()) return KEY_FALSE;
-		for (GenericVO vo : company.getCompanySections()) {
-			if (segmentId.equals(vo.getKey())) return KEY_TRUE;
+		for (SectionVO vo : company.getCompanySections()) {
+			if (segmentId.equals(vo.getParentId())) return KEY_TRUE;
 		}
 		return KEY_FALSE;
 	}

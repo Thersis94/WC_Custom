@@ -8,8 +8,8 @@ import java.util.List;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
-import com.biomed.smarttrak.vo.UpdatesVO;
-import com.biomed.smarttrak.vo.UpdatesXRVO;
+import com.biomed.smarttrak.vo.UpdateVO;
+import com.biomed.smarttrak.vo.UpdateXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -78,19 +78,58 @@ public class UpdatesAction extends AbstractTreeAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
-		if (!req.hasParameter("loadData") && !req.hasParameter(UPDATE_ID) ) return;
-
+		if (!req.hasParameter("loadData") && !req.hasParameter("loadhistory") && !req.hasParameter(UPDATE_ID) ) return;
 		String updateId = req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null;
-		String statusCd = req.getParameter("statusCd");
-		String typeCd = req.getParameter("typeCd");
-		String dateRange = req.getParameter("dateRange");
-		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
 
-		decryptNames(updates);
+		List<Object> data;
+		if(req.hasParameter("loadHistory")) {
+			data = getHistory(req.getParameter("historyId"));
+		} else {
+			String statusCd = req.getParameter("statusCd");
+			String typeCd = req.getParameter("typeCd");
+			String dateRange = req.getParameter("dateRange");
+			data = getUpdates(updateId, statusCd, typeCd, dateRange);
+		}
 
-		putModuleData(updates);
+		decryptNames(data);
+
+		putModuleData(data);
 	}
 
+
+	/**
+	 * Retrieve list of Updates containing historical Revisions.
+	 * @param parameter
+	 * @return
+	 */
+	protected List<Object> getHistory(String updateId) {
+		String sql = formatHistoryRetrieveQuery();
+
+		List<Object> params = new ArrayList<>();
+		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
+
+		DBProcessor db = new DBProcessor(dbConn);
+		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
+		log.debug("loaded " + updates.size() + " updates");
+		return updates;
+	}
+
+	/**
+	 * Build History Sql Retrieval against ChangeLog Table.
+	 * @param schema
+	 * @return
+	 */
+	private String formatHistoryRetrieveQuery() {
+		StringBuilder sql = new StringBuilder(400);
+		sql.append("select b.wc_sync_id as update_id, a.diff_txt as message_txt, ");
+		sql.append("a.create_dt as publish_dt, c.first_nm, c.last_nm from change_log a ");
+		sql.append("inner join wc_sync b on a.wc_sync_id = b.wc_sync_id ");
+		sql.append("inner join profile c on b.admin_profile_id = c.profile_id ");
+		sql.append("where b.wc_key_id = ? order by a.create_dt");
+
+		log.debug(sql);
+		return sql.toString();
+	}
 
 	/**
 	 * Retrieve all the updates
@@ -110,7 +149,7 @@ public class UpdatesAction extends AbstractTreeAction {
 		if (!StringUtil.isEmpty(typeCd)) params.add(Convert.formatInteger(typeCd));
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  updates = db.executeSelect(sql, params, new UpdatesVO());
+		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
@@ -196,7 +235,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	 */
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		UpdatesVO u = new UpdatesVO(req);
+		UpdateVO u = new UpdateVO(req);
 
 		try {
 			if (isDelete) {
@@ -235,13 +274,13 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * @param u
 	 * @param generatedPKId
 	 */
-	protected void fixPkids(UpdatesVO u, String generatedPKId) {
+	protected void fixPkids(UpdateVO u, String generatedPKId) {
 		//Set the UpdateId on UpdatesXRVOs
 		if (StringUtil.isEmpty(u.getUpdateId())) {
 			//Ensure proper UpdateId and Publish Dt are set.
 			u.setUpdateId(generatedPKId);
 
-			for (UpdatesXRVO uxr : u.getUpdateSections())
+			for (UpdateXRVO uxr : u.getUpdateSections())
 				uxr.setUpdateId(u.getUpdateId());
 		}
 	}
@@ -251,7 +290,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * Removes an Updates Record from Solr.
 	 * @param u
 	 */
-	protected void deleteFromSolr(UpdatesVO u) {
+	protected void deleteFromSolr(UpdateVO u) {
 		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
 			sau.removeDocument(u.getUpdateId());
 		} catch (Exception e) {
@@ -265,7 +304,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * Save an UpdatesVO to solr.
 	 * @param u
 	 */
-	protected void writeToSolr(UpdatesVO u) {
+	protected void writeToSolr(UpdateVO u) {
 		UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
 		idx.setDBConnection(dbConn);
 		idx.addSingleItem(u.getUpdateId());
@@ -279,13 +318,13 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	protected void saveSections(UpdatesVO u) throws ActionException, InvalidDataException, DatabaseException {
+	protected void saveSections(UpdateVO u) throws ActionException, InvalidDataException, DatabaseException {
 		//Delete old Update Section XRs
 		deleteSections(u.getUpdateId());
 
 		//Save new Sections.
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		for(UpdatesXRVO uxr : u.getUpdateSections())
+		for(UpdateXRVO uxr : u.getUpdateSections())
 			db.save(uxr);
 	}
 

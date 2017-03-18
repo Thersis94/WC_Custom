@@ -3,6 +3,7 @@
  */
 package com.biomed.smarttrak.action;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
@@ -35,6 +36,38 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 
 	/**
+	 * EditPath manages ActionType, PKId Name and Public Url path for ChangeLog
+	 * Elements.
+	 */
+	public enum EditPath {
+			MARKET("marketAdmin", "marketId", Section.MARKET.getURLToken()),
+			PRODUCT("productAdmin", "productId", Section.PRODUCT.getURLToken()),
+			COMPANY("companyAdmin", "companyId", Section.COMPANY.getURLToken()),
+			INSIGHT("insights", "insightId", Section.INSIGHT.getURLToken()),
+			UPDATE("updates", "updateId", "");
+		private String actionType;
+		private String publicUrl;
+		private String pkIdName;
+
+		EditPath(String actionType, String pkIdName, String publicUrl){
+			this.actionType = actionType;
+			this.pkIdName = pkIdName;
+			this.publicUrl = publicUrl;
+		}
+
+		public String getActionType() {
+			return actionType;
+		}
+
+		public String getPkIdName() {
+			return pkIdName;
+		}
+
+		public String getPublicUrl() {
+			return publicUrl;
+		}
+	}
+	/**
 	 * Member variable for the class to be decorated.  Usually the action being 
 	 * called from the Module Controller
 	 */
@@ -66,44 +99,78 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 
-		//Attempt to get Original Data.
-		ChangeLogIntfc original = getChangeLogIntfc(req, true);
-
-		//Call Actual Build to update the Record.
-		sai.build(req);
-
-		//Attempt to get Differential Data.
-		ChangeLogIntfc diff = getChangeLogIntfc(req, false);
-
-		//Quick fail if diff is null.  Means we don't have a ChangeLogIntfc.
-		if(diff == null) {
-			return;
-		}
-
-		//Default to Non-Zero Diff value.
-		int dNo = -1;
-		String origTxt = null, diffTxt = diff.getDiffText();
-
-		//Neither is null, then check for equality.  No Update.
-		if(original != null) {
-			origTxt = original.getDiffText();
-			dNo = diffTxt.compareTo(origTxt);
-		}
-
-		//If Not Equal, create a ChangeLog Record.
-		if(dNo != 0) {
-			log.debug("Diff Found.  Forwarding to ChangeLogUtil.");
-			ApprovalVO app = buildApprovalRecord(req, diff, original);
-			String typeCd = (String)req.getSession().getAttribute(ChangeLogUtil.CHANGELOG_DIFF_TYPE_CD);
-			ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), typeCd, origTxt, diffTxt);
-			new ChangeLogUtil(dbConn, attributes).saveChangeLog(clv);
+		//Check if ActionType is configured for Change Logs.
+		boolean useChangeLog = false;
+		for(EditPath e : EditPath.values()) {
+			if(e.getActionType().equals(req.getParameter("actionType"))) {
+				useChangeLog = true;
+				break;
+			}
 		}
 
 		/*
-		 * After we finish writing ChangeLog info.  Flush out the ChangeLog data
-		 * on Request.
+		 * If Code is ChangeLoggable, go through ChangeLogAPI, else call build.
+		 * Problems were arising in Data Actions (FD/Grids) where retrieve was
+		 * polluting Build Return Data.
 		 */
-		ChangeLogUtil.cleanupChangeLog(req);
+		if(useChangeLog) {
+			//Attempt to get Original Data.
+			ChangeLogIntfc original = getChangeLogIntfc(req, true);
+
+			//Call Actual Build to update the Record.
+			sai.build(req);
+
+			//Attempt to get Differential Data.
+			ChangeLogIntfc diff = getChangeLogIntfc(req, false);
+
+			//Quick fail if diff is null.  Means we don't have a ChangeLogIntfc.
+			if(diff == null) {
+				return;
+			}
+
+			//Default to Non-Zero Diff value.
+			int dNo = -1;
+			String origTxt = null, diffTxt = diff.getDiffText();
+
+			//Neither is null, then check for equality.  No Update.
+			if(original != null) {
+				origTxt = original.getDiffText();
+				dNo = diffTxt.compareTo(origTxt);
+			}
+
+			//If Not Equal, create a ChangeLog Record.
+			if(dNo != 0) {
+				log.debug("Diff Found.  Forwarding to ChangeLogUtil.");
+
+				EditPath e = getEditPath(req.getParameter("actionType"));
+				ApprovalVO app = buildApprovalRecord(req, diff, original, e);
+				String typeCd = (String)req.getSession().getAttribute(ChangeLogUtil.CHANGELOG_DIFF_TYPE_CD);
+				ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), origTxt, diffTxt, typeCd);
+				new ChangeLogUtil(dbConn, attributes).saveChangeLog(clv);
+			}
+
+			/*
+			 * After we finish writing ChangeLog info.  Flush out the ChangeLog data
+			 * on Request.
+			 */
+			ChangeLogUtil.cleanupChangeLog(req);
+		} else {
+			sai.build(req);
+		}
+	}
+
+	/**
+	 * @param parameter
+	 * @return
+	 */
+	protected EditPath getEditPath(String actionType) {
+		for(EditPath e : EditPath.values()) {
+			if(e.getActionType().equals(actionType)) {
+				return e;
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -115,16 +182,16 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	 * @return
 	 * @throws ApprovalException 
 	 */
-	public ApprovalVO buildApprovalRecord(ActionRequest req, ChangeLogIntfc diff, ChangeLogIntfc original) throws ActionException {
+	public ApprovalVO buildApprovalRecord(ActionRequest req, ChangeLogIntfc diff, ChangeLogIntfc original, EditPath e) throws ActionException {
 		//Build an approvalVO.
 		ApprovalVO app = new ApprovalVO(req,
 										StringUtil.checkVal(MethodUtils.getPrimaryId(diff)),
 										StringUtil.checkVal(MethodUtils.getPrimaryId(original)),
 										ModuleType.Portlet,
 										SyncStatus.Approved);
-
 		app.setItemName(diff.getItemName());
 		app.setItemDesc(diff.getItemDesc());
+		app.setRequestTypeId(e.name());
 
 		try {
 

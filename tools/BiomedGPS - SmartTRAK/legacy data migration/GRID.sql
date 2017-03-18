@@ -1,3 +1,5 @@
+
+
 delete from custom.biomedgps_market_attribute_xr where market_attribute_id like 'MARKET%';
 delete from custom.biomedgps_market_attribute where attribute_id = 'GRID';
 drop table if exists custom.BIOMEDGPS_GRID_DETAIL;
@@ -143,10 +145,10 @@ SELECT id, 'CHART_' + trim(to_char(chart_id, '9999')), label, sort_order, last_u
 value3, value4, value5, value6, value7, value8, value9, value10, last_update
 from biomedgps.charts_series;
 
-/* Add an attribute to the market attribute table */
+/* Add an attribute to the market attribute table 
 insert into custom.biomedgps_market_attribute (attribute_id, attribute_nm, active_flg, type_cd, create_dt) 
 values
-('GRID', 'Grids and Charts', 1, 'GRID', now());
+('GRID', 'Grids and Charts', 1, 'GRID', now());*/
 
 /* Add column to martket attribues xr
 alter table custom.biomedgps_market_attribute_xr add column VALUE_1_TXT varchar(256); */
@@ -247,4 +249,8 @@ insert into core.sb_action (action_id, organization_id, module_type_id, action_n
 ('7675rhfhrht','BMG_SMARTTRAK','GRID_DISPLAY_ACTION','Placeholder for Grids', now());
 
 insert into core.ajax_module (ajax_module_id, ajax_nm, site_id, action_id, status_cd, create_dt, module_display_id)
-values ('fc9f4ae9822a3eae0a001a75863fb4a8', 'gridChart','BMG_SMARTTRAK_2','7675rhfhrht',1,now(),'38bf8c228210c7690a001a75495bc032'); */
+values ('fc9f4ae9822a3eae0a001a75863fb4a8', 'gridChart','BMG_SMARTTRAK_2','7675rhfhrht',1,now(),'38bf8c228210c7690a001a75495bc032'); 
+
+--need to create permissions for above ajax module - tied to /manage site.
+
+**/

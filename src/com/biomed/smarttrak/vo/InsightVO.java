@@ -1,14 +1,15 @@
 package com.biomed.smarttrak.vo;
-
+//java 8
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
+//WC_Custom
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
+//SMTBase libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.Node;
@@ -20,10 +21,11 @@ import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
+import com.smt.sitebuilder.changelog.ChangeLogIntfc;
+//WebCrescendo
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
-
 
 /****************************************************************************
  * <b>Title</b>: InsightVO.java <p/>
@@ -38,19 +40,17 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  * @updates:
  ****************************************************************************/
 @Table(name="biomedgps_insight")
-public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
+public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, ChangeLogIntfc {
 
-
-	public enum InsightStatusCd {P("Published"), D("Deleted"), E("Edit");
-
-	private String statusName;
-	InsightStatusCd(String statusName) {
-		this.statusName = statusName;
-	}
-
-	public String getStatusName() {
-		return statusName;
-	}
+	public enum InsightStatusCd {
+		P("Published"), D("Deleted"), E("Edit");
+		private String statusName;
+		InsightStatusCd(String statusName) {
+			this.statusName = statusName;
+		}
+		public String getStatusName() {
+			return statusName;
+		}
 	}
 
 	private String insightId;
@@ -72,6 +72,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
+	private List<InsightXRVO> sections;
 
 	public enum InsightType {
 		CLINICAL(12, "Clinical"),
@@ -92,12 +93,10 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 
 		private int val;
 		private String text;
-
 		InsightType(int val, String text) {
 			this.val = val;
 			this.text = text;
 		}
-
 		public int getVal() {
 			return this.val;
 		}
@@ -105,8 +104,6 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 			return this.text;
 		}
 	}
-
-	private List<InsightXRVO> sections;
 
 	/**
 	 * @param solrIndex
@@ -198,20 +195,16 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	 */
 	public void configureSolrHierarchies(Tree t) {
 		for(InsightXRVO uxr : sections) {
-
 			if (uxr.getSectionId() == null){
 				uxr.setSectionId(InsightAction.ROOT_NODE_ID);
 			}
-
 			Node n = t.findNode(uxr.getSectionId());
-
 			if(n != null && !StringUtil.isEmpty(n.getFullPath())) {
 				super.addHierarchies(n.getFullPath());
 				SectionVO sec = (SectionVO) n.getUserObject();
 				super.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 			}
 		}
-
 	}
 
 	/* (non-Javadoc)
@@ -293,9 +286,9 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		InsightType t = getInsightType();
 		if(t != null){
 			return t.getText();
-		}
-		else
+		}else{
 			return "";
+		}
 	}
 
 	/**
@@ -426,7 +419,6 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		return profileImg;
 	}
 
-
 	/**
 	 * @param authorImageTxt the authorImageTxt to set
 	 */
@@ -438,14 +430,16 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	 * @param insightId the insightId to set
 	 */
 	public void setInsightId(String insightId) {
+		//if the Id is null return so the save method knows to make a new guid
+		if (StringUtil.isEmpty(insightId)) return;
+
 		this.insightId = insightId;
 
-		if( getInsightId().length() < AdminControllerAction.DOC_ID_MIN_LEN){
+		if(getInsightId().length() < AdminControllerAction.DOC_ID_MIN_LEN){
 			super.setDocumentId(Section.INSIGHT.name() + "_" +insightId);
 		}else {
 			super.setDocumentId(insightId);
 		}
-
 	}
 
 	/**
@@ -551,7 +545,6 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	 * @return
 	 */
 	public InsightType getInsightType() {
-
 		for(InsightType type : InsightType.values()){
 			if (type.getVal() == typeCd){
 				return type;
@@ -559,7 +552,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		}
 		return null;
 	}
-	/*
+	/*	
 	 * (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
@@ -581,5 +574,28 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	public void setQsPath(String qsPath) {
 		this.qsPath = qsPath;
 	}
-}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getDiffText()
+	 */
+	@Override
+	public String getDiffText() {
+		return getContentTxt();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getItemName()
+	 */
+	@Override
+	public String getItemName() {
+		return getTitleTxt();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getItemDesc()
+	 */
+	@Override
+	public String getItemDesc() {
+		return this.getAbstractTxt();
+	}
+}

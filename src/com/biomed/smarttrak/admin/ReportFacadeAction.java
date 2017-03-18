@@ -5,6 +5,8 @@ import com.biomed.smarttrak.admin.report.AccountReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
+import com.biomed.smarttrak.admin.report.SupportReportAction;
+import com.biomed.smarttrak.admin.report.SupportReportVO;
 import com.biomed.smarttrak.admin.report.UserActivityAction;
 import com.biomed.smarttrak.admin.report.UserActivityReportVO;
 import com.biomed.smarttrak.admin.report.UserListReportAction;
@@ -15,16 +17,15 @@ import com.biomed.smarttrak.admin.report.UserUtilizationDailyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationMonthlyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction.UtilizationReportType;
-
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
-
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
@@ -47,6 +48,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		USER_LIST,
 		USER_PERMISSIONS,
 		UTILIZATION,
+		SUPPORT
 	}
 	
 	/**
@@ -72,10 +74,11 @@ public class ReportFacadeAction extends SBActionAdapter {
 
 		ReportType rType = checkReportType(req.getParameter("reportType"));
 		AbstractSBReportVO rpt = null;
-
+		boolean doRedirect = true;
 		switch (rType) {
 			case ACCOUNT_REPORT:
 				rpt = generateAccountReport(req);
+				doRedirect = false;
 				break;
 			case ACTIVITY_LOG:
 				rpt = generateActivityLogReport(req);
@@ -92,11 +95,14 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case UTILIZATION:
 				rpt = generateUserUtilizationReport(req);
 				break;
+			case SUPPORT:
+				rpt = generateSupportReport(req);
+				break;
 			default:
 				break;
 		}
 
-		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, doRedirect);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 	}
 	
@@ -112,7 +118,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 		AccountsReportAction ara = new AccountsReportAction();
 		ara.setDBConnection(dbConn);
 		ara.setAttributes(getAttributes());
-		AbstractSBReportVO rpt = new AccountReportVO();
+		AccountReportVO rpt = new AccountReportVO();
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		rpt.setSite(site);
 		rpt.setData(ara.retrieveAccountsList(req));
 		return rpt;
 	}
@@ -221,6 +229,22 @@ public class ReportFacadeAction extends SBActionAdapter {
 		
 		rpt.addAttributes(UserUtilizationReportAction.ATTRIB_REPORT_SUFFIX, urt.getReportSuffix());
 		rpt.setData(uu.retrieveUserUtilization(req));
+		return rpt;
+	}
+
+	/**
+	 * Method calls out to get support report data and then builds a report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateSupportReport(ActionRequest req) throws ActionException {
+		SupportReportAction sra = new SupportReportAction();
+		sra.setDBConnection(dbConn);
+		sra.setAttributes(getAttributes());
+
+		AbstractSBReportVO rpt = new SupportReportVO();
+		rpt.setData(sra.retrieveSupportData(req));
 		return rpt;
 	}
 	
