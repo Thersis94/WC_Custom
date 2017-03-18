@@ -74,7 +74,7 @@ public class CRMAction extends SBActionAdapter {
 				updateElement(req);
 			}
 		} catch(Exception e) {
-			
+			throw new ActionException(e);
 		}
 		redirectRequest(msg, buildAction, req.getParameter("customerId"), req);
 	}
@@ -168,7 +168,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param customer
 	 * @throws ActionException
 	 */
-	private void saveCustomer(CustomerVO customer, ActionRequest req) throws ActionException {
+	protected void saveCustomer(CustomerVO customer, ActionRequest req) throws ActionException {
 		saveProfileInformation(customer);
 		saveCustomerInformation(customer, req);
 		saveMapInformation(customer);
@@ -180,7 +180,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param customer
 	 * @throws ActionException
 	 */
-	private void saveProfileInformation(CustomerVO customer) throws ActionException {
+	protected void saveProfileInformation(CustomerVO customer) throws ActionException {
 		try {
 			UserDataVO profile = customer.getProfile();
 			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
@@ -207,7 +207,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param customer
 	 * @throws ActionException
 	 */
-	private void saveCustomerInformation(CustomerVO customer, ActionRequest req) throws ActionException {
+	protected void saveCustomerInformation(CustomerVO customer, ActionRequest req) throws ActionException {
 		saveTransaction(customer);
 		customer.setCustomerId(new UUIDGenerator().getUUID());
 		req.setParameter("customerId", customer.getCustomerId());
@@ -226,7 +226,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param customer
 	 * @throws ActionException
 	 */
-	private void saveTransaction(CustomerVO customer) throws ActionException {
+	protected void saveTransaction(CustomerVO customer) throws ActionException {
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.DATA_FEED_SCHEMA));
 		sql.append("TRANSACTIONS(TRANSACTION_ID, SOURCE_ID,TRANSACTION_DT, CREATE_DT) VALUES(?,?,?,?)");
@@ -251,7 +251,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param customer
 	 * @throws ActionException
 	 */
-	private void saveMapInformation(CustomerVO customer) throws ActionException {
+	protected void saveMapInformation(CustomerVO customer) throws ActionException {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.DATA_FEED_SCHEMA));
 		sql.append("CUSTOMER_RESPONSE (QUESTION_MAP_ID, CUSTOMER_ID, RESPONSE_TXT, CREATE_DT)");
@@ -280,7 +280,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void saveNote(ActionRequest req) throws ActionException {
+	protected void saveNote(ActionRequest req) throws ActionException {
 		DataFeedNoteVO note = new DataFeedNoteVO(req);
 		DBProcessor db = new DBProcessor(dbConn, (String)attributes.get(Constants.DATA_FEED_SCHEMA));
 		try {
@@ -297,7 +297,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void saveReminder(ActionRequest req) throws ActionException {
+	protected void saveReminder(ActionRequest req) throws ActionException {
 		getCustomerInfo(req.getParameter("customerId"), false);
 		ModuleVO mod = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
 		CustomerVO customer = (CustomerVO)mod.getActionData();
@@ -332,7 +332,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param deal
 	 * @throws ActionException
 	 */
-	private void saveDeal(ActionRequest req) throws ActionException {
+	protected void saveDeal(ActionRequest req) throws ActionException {
 		getCustomerInfo(req.getParameter("customerId"), false);
 		ModuleVO mod = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
 		CustomerVO customer = (CustomerVO)mod.getActionData();
@@ -432,7 +432,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param deal
 	 * @throws ActionException
 	 */
-	private void decodeFields(DealVO deal) throws ActionException {
+	protected void decodeFields(DealVO deal) throws ActionException {
 		UserDataVO owner = deal.getOwner();
 		UserDataVO contact = deal.getContact();
 
@@ -549,7 +549,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param phoneNumber
 	 * @throws ActionException
 	 */
-	private void decodeFields(UserDataVO profile, String phoneNumber) throws ActionException {
+	protected void decodeFields(UserDataVO profile, String phoneNumber) throws ActionException {
 		try {
 			StringEncrypter se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
 			profile.setFirstName(se.decrypt(profile.getFirstName()));
@@ -568,7 +568,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param customerId
 	 * @return
 	 */
-	private String buildCustomerSql(String customerId) {
+	protected String buildCustomerSql(String customerId) {
 		StringBuilder sql = new StringBuilder(700);
 		String datafeedDb = (String) attributes.get(Constants.DATA_FEED_SCHEMA);
 		sql.append("SELECT * FROM ").append(datafeedDb).append("CUSTOMER c ");
@@ -592,7 +592,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param profileId
 	 * @throws ActionException
 	 */
-	private void populateCustomer(CustomerVO customer, boolean fullLoad) throws ActionException {
+	protected void populateCustomer(CustomerVO customer, boolean fullLoad) throws ActionException {
 		addCustomerInfo(customer);
 		putModuleData(customer);
 	}
@@ -617,7 +617,7 @@ public class CRMAction extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, customer.getCustomerId());
 			
-			ResultSet rs = ps.executeQuery();;
+			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 				customer.setField(rs);
 			}
@@ -676,7 +676,7 @@ public class CRMAction extends SBActionAdapter {
 	 * @param note
 	 * @throws ActionException
 	 */
-	private void decodeFields(DataFeedNoteVO note) throws ActionException {
+	protected void decodeFields(DataFeedNoteVO note) throws ActionException {
 
 		UserDataVO author = note.getAuthor();
 
