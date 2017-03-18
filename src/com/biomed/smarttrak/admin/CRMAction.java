@@ -647,7 +647,7 @@ public class CRMAction extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, customer.getProfileId());
 			
-			ResultSet rs = ps.executeQuery();;
+			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 				DataFeedNoteVO note = new DataFeedNoteVO();
 				db.executePopulate(note, rs);
