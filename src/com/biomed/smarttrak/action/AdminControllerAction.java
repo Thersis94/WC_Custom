@@ -3,12 +3,15 @@ package com.biomed.smarttrak.action;
 import java.util.HashMap;
 import java.util.Map;
 
+
 //apache commons-lang jar
 import org.apache.commons.lang.StringEscapeUtils;
+
 
 // WC custom
 import com.biomed.smarttrak.fd.FinancialDashAction;
 import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
+import com.biomed.smarttrak.admin.CRMAction;
 import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
@@ -135,6 +138,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("marketingInstanceReport", InstanceReport.class);
 		ACTIONS.put("uwr", UpdatesWeeklyReportAction.class); 
 		ACTIONS.put("grid", GridChartAction.class);
+		ACTIONS.put("crm", CRMAction.class);
 	}
 
 
