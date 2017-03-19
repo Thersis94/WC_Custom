@@ -242,7 +242,7 @@ public class ShowpadApiUtil {
 		if (diff < 2) return; //0=no change, 1=naturally resetting, no time jump
 
 		//remember currentMinute was 5mins ago...roll forward from there
-		for (int x=diff; x > 0; x--) {
+		for (int x=diff-1; x > 0; x--) {
 			int idx = currentMinute-x;
 			if (idx < 0) idx = 60-Math.abs(idx); //reset to the top of the hour
 			minuteTotals.set(idx, 0);
