@@ -261,7 +261,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 	 */
 	protected void retrieveProduct(ActionRequest req) throws ActionException {
 		if (req.hasParameter("productId") && ! req.hasParameter("add")) {
-			retrieveProduct(req.getParameter("productId"));
+			retrieveProduct(req.getParameter("productId"), req);
 		} else if (!req.hasParameter("add")) {
 			retrieveProducts(req);
 		}
@@ -407,13 +407,16 @@ public class ProductManagementAction extends AbstractTreeAction {
 		List<Object> params = new ArrayList<>();
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("select * ").append("FROM ").append(customDb).append("BIOMEDGPS_product ");
+		sql.append("select * ").append("FROM ").append(customDb).append("BIOMEDGPS_product p ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
 		
 		// If the request has search terms on it add them here
 		if (req.hasParameter("searchData")) {
 			sql.append("WHERE lower(PRODUCT_NM) like ?");
-			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
+			params.add("%" + req.getParameter("searchData").toLowerCase() + "% ");
 		}
+		sql.append("ORDER BY PRODUCT_NM");
 		log.debug(sql);
 		int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
 		int page = Convert.formatInteger(req.getParameter("page"), 0);
@@ -430,7 +433,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 	 * @param productId
 	 * @throws ActionException
 	 */
-	protected void retrieveProduct(String productId) throws ActionException {
+	protected void retrieveProduct(String productId, ActionRequest req) throws ActionException {
 		ProductVO product;
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_PRODUCT ");
@@ -446,6 +449,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 		addSections(product);
 		addAlliances(product);
 		addRegulations(product);
+		req.getSession().setAttribute("productName", product.getProductName());
 		
 		super.putModuleData(product);
 	}
