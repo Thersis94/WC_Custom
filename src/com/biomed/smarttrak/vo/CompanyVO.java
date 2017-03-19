@@ -338,7 +338,11 @@ public class CompanyVO  extends SecureSolrDocumentVO {
 	public void addProduct(String group, ProductVO product) {
 		if (!this.products.keySet().contains(group))
 			this.products.put(group, new ArrayList<ProductVO>());
-		this.products.get(group).add(product);
+		
+		// If this product is already in this group skip it.
+		if (products.get(group).contains(product)) return;
+		
+		products.get(group).add(product);
 	}
 
 	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
