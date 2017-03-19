@@ -105,7 +105,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 */
 	protected void companyRetrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("companyId") && ! req.hasParameter("add")) {
-			retrieveCompany(req.getParameter("companyId"));
+			retrieveCompany(req.getParameter("companyId"), req);
 		} else if (!req.hasParameter("add")) {
 			retrieveCompanies(req);
 		}
@@ -354,11 +354,16 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			sql.append("WHERE lower(COMPANY_NM) like ?");
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
+		sql.append("ORDER BY COMPANY_NM ");
 		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> companies = db.executeSelect(sql.toString(), params, new CompanyVO());
-		super.putModuleData(companies, companies.size(), false);
+		int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
+		int page = Convert.formatInteger(req.getParameter("page"), 0);
+		
+		int end = companies.size() < rpp*(page+1)? companies.size() : rpp*(page+1);
+		super.putModuleData(companies.subList(rpp*page, end), companies.size(), false);
 	}
 
 	
@@ -367,7 +372,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 * @param companyId
 	 * @throws ActionException
 	 */
-	protected void retrieveCompany(String companyId) throws ActionException {
+	protected void retrieveCompany(String companyId, ActionRequest req) throws ActionException {
 		CompanyVO company;
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY ");
@@ -384,6 +389,8 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		addAlliances(company);
 		addAttributes(company);
 		addSections(company);
+		
+		req.getSession().setAttribute("companyName", company.getCompanyName());
 		
 		super.putModuleData(company);
 	}
@@ -568,6 +575,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = cax.REL_COMPANY_ID ");
 		sql.append("WHERE cax.COMPANY_ID = ? ");
+		sql.append("ORDER BY c.COMPANY_NM ");
 		
 		List<Object> params = new ArrayList<>();
 		params.add(company.getCompanyId());
