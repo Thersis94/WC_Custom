@@ -179,7 +179,7 @@ public class GridChartAction extends SBActionAdapter {
 		}
 
 		// Convert the set to a comma delimited string for delete
-		if (delIds.size() == 0) return;
+		if (delIds.isEmpty()) return;
 		
 		// Build the delete sql.  Since the ids are built within the 
 		// Backend, no worries about SQL Injection, so params are just set

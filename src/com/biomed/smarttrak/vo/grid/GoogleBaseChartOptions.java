@@ -185,7 +185,7 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 	 */
 	@Override
 	public void addRowOptions(GridDetailVO detail) {
-		
+		// Not needed, supported for future applications
 	}
 	
 	/*
@@ -194,7 +194,7 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 	 */
 	@Override
 	public void addCellOptions(GridDetailVO detail) {
-		
+		// Not needed, supported for future applications
 	}
 }
 
