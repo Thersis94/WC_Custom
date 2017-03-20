@@ -245,7 +245,13 @@ public class GapTableVO implements Serializable {
 	/**
 	 * Apply Filtering and Sorting on the Companies Data to reflect State Object.
 	 */
-	public void applyState() {
+	protected void applyState() {
+
+		//Quick Fail if state is null;
+		if(state == null) {
+			return;
+		}
+
 		//Filter Companies by Selected.
 		filterCompanies();
 
@@ -257,23 +263,12 @@ public class GapTableVO implements Serializable {
 	 * Sort Companies according to Sort Method and Direction that was submitted
 	 * in the State Data.
 	 */
-	public void sortCompanies() {
+	private void sortCompanies() {
+
 		List<Map.Entry<String, GapCompanyVO>> list = new LinkedList<>(companies.entrySet());
 
-		Collections.sort(list, new Comparator<Map.Entry<String, GapCompanyVO>>() {
-
-			@Override
-			public int compare(Map.Entry<String, GapCompanyVO> o1, Map.Entry<String, GapCompanyVO> o2) {
-
-				int order = state.getInt("SORT_DIR");
-				//Sort by Name or Portfolio.
-				if(state != null && SortMethod.PORTFOLIO.getMethodName().equals(state.getString("ACTIVE_SORT"))) {
-					return (Integer.valueOf(o1.getValue().getPortfolioNo())).compareTo(Integer.valueOf(o2.getValue().getPortfolioNo())) * order;
-				} else {
-					return (o1.getValue().getCompanyName()).compareTo(o2.getValue().getCompanyName()) * order;
-				}
-		    }
-		});
+		//Sort the Companies.
+		Collections.sort(list, new CompanyComparator());
 
         companies = new LinkedHashMap<>();
         for (Map.Entry<String, GapCompanyVO> entry : list) {
@@ -285,7 +280,8 @@ public class GapTableVO implements Serializable {
 	 * Perform Filtering on the Companies Map like we would on front end so that
 	 * Report matches screen user Exported.
 	 */
-	public void filterCompanies() {
+	private void filterCompanies() {
+
 		//Create Temporary Map of comanies data.
 		Map<String, GapCompanyVO> tComp = companies;
 
@@ -360,7 +356,7 @@ public class GapTableVO implements Serializable {
 	 * @param columnId
 	 * @return
 	 */
-	public Map<String, GapCompanyVO> filterRows(Map<String, GapCompanyVO> tComp, String columnId) {
+	private Map<String, GapCompanyVO> filterRows(Map<String, GapCompanyVO> tComp, String columnId) {
 		Map<String, GapCompanyVO> newCompanies = new HashMap<>();
 		for(Entry<String, GapCompanyVO> e : tComp.entrySet()) {
 			GapCompanyVO c = e.getValue();
@@ -381,5 +377,34 @@ public class GapTableVO implements Serializable {
 	 */
 	public JSONObject getState() {
 		return this.state;
+	}
+
+	/**
+	 * **************************************************************************
+	 * <b>Title</b>: GapTableVO.java
+	 * <b>Project</b>: WC_Custom
+	 * <b>Description: </b> Inner Comparator for Sorting Companies based on State.
+	 * <b>Copyright:</b> Copyright (c) 2017
+	 * <b>Company:</b> Silicon Mountain Technologies
+	 * 
+	 * @author Billy Larsen
+	 * @version 1.0
+	 * @since Mar 20, 2017
+	 ***************************************************************************
+	 */
+	private class CompanyComparator implements Comparator<Map.Entry<String, GapCompanyVO>> {
+
+		@Override
+		public int compare(Map.Entry<String, GapCompanyVO> o1, Map.Entry<String, GapCompanyVO> o2) {
+
+			int order = state.getInt("SORT_DIR");
+
+			//Sort by Name or Portfolio.
+			if(SortMethod.PORTFOLIO.getMethodName().equals(state.getString("ACTIVE_SORT"))) {
+				return (Integer.valueOf(o1.getValue().getPortfolioNo())).compareTo(Integer.valueOf(o2.getValue().getPortfolioNo())) * order;
+			} else {
+				return (o1.getValue().getCompanyName()).compareTo(o2.getValue().getCompanyName()) * order;
+			}
+	    }
 	}
 }
