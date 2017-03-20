@@ -19,6 +19,7 @@ public class GapColumnVO {
 	private String name;
 	private String id;
 	private boolean altCol;
+	private boolean selected;
 	private int rowSpan = 1;
 	private int colSpan = 1;
 
@@ -138,5 +139,19 @@ public class GapColumnVO {
 	 */
 	public void setColSpan(int colSpan) {
 		this.colSpan = colSpan;
+	}
+
+	/**
+	 * @param selected set if selected.
+	 */
+	public void setSelected(boolean selected) {
+		this.selected = selected;
+	}
+
+	/**
+	 * @return is selected
+	 */
+	public boolean isSelected() {
+		return this.selected;
 	}
 }
