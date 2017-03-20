@@ -46,16 +46,30 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	DBProcessor dbp;
 	UserVO user;
 
+	/**
+	 * Maximum number of years to query data
+	 */
 	public static final int MAX_DATA_YEARS = 4;
 	
+	/**
+	 * Column prefixes
+	 */
 	public static final String CALENDAR_YEAR = "CY";
 	public static final String YEAR_TO_DATE = "YTD";
 	public static final String QUARTER = "Q";
 	
+	/**
+	 * Quarter prefixes for columns
+	 */
 	public static final String QUARTER_1 = "Q1";
 	public static final String QUARTER_2 = "Q2";
 	public static final String QUARTER_3 = "Q3";
 	public static final String QUARTER_4 = "Q4";
+	
+	/**
+	 * Number of times section_id appears in the MARKET version of the query
+	 */
+	public static final int MARKET_QUERY_SECTION_CNT = 14;
 	
 	public FinancialDashBaseAction() {
 		super();
@@ -226,8 +240,8 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		TableType tt = dash.getTableType();
 		
 		int sectionCnt = 0;
-		if (tt == TableType.MARKET) {
-			sectionCnt = 14;
+		if (TableType.MARKET == tt) {
+			sectionCnt = MARKET_QUERY_SECTION_CNT;
 		}
 		
 		return sectionCnt;

@@ -100,9 +100,9 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		DisplayType dt = dash.getColHeaders().getDisplayType();
 		
 		int scenarioJoins = 2;
-		if (dt == DisplayType.YOY || dt == DisplayType.SIXQTR) {
+		if (DisplayType.YOY == dt || DisplayType.SIXQTR == dt) {
 			scenarioJoins = 3;
-		} else if (dt == DisplayType.FOURYR) {
+		} else if (DisplayType.FOURYR == dt) {
 			scenarioJoins = 5;
 		}
 		
