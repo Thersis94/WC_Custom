@@ -549,8 +549,8 @@ public class ShowpadDivisionUtil {
 		String title = vo.getTitleTxt();
 		if (StringUtil.isEmpty(title)) {
 			title = StringUtil.checkVal(vo.getFileNm());
-			if (!title.isEmpty() && title.lastIndexOf(".") > -1)
-				title = title.substring(0, title.lastIndexOf(".")); //remove the existing file extension
+			if (!title.isEmpty() && title.lastIndexOf('.') > -1)
+				title = title.substring(0, title.lastIndexOf('.')); //remove the existing file extension
 		}
 
 		title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
