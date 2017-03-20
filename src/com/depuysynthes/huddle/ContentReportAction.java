@@ -33,35 +33,41 @@ import com.smt.sitebuilder.security.SecurityController;
  * @since Jan 25, 2016
  ****************************************************************************/
 public class ContentReportAction extends SBActionAdapter {
-	
-	private final int MAX_SOLR_DOCUMENTS = 5000;
-	private final String reportName = "Huddle_Content_Report.xlsx";
-	
+
 	public ContentReportAction() {
-		
+		super();
 	}
-	
-	public ContentReportAction(ActionInitVO actionInit){
-		this.actionInit = actionInit;
+
+	public ContentReportAction(ActionInitVO actionInit) {
+		super(actionInit);
 	}
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		AbstractSBReportVO report = new ContentReportVO();
 		report.setData(getSolrDocuments(req.getParameter("organizationId")));
-		report.setFileName(reportName);
+		report.setFileName("Huddle Content Report.xls");
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 	}
 
-	
+
 	/**
 	 * Get all the products from solr
 	 * @return
 	 */
-	private List<SolrDocument> getSolrDocuments(String organizationId) {
-		
-		SolrQueryProcessor sqp = new SolrQueryProcessor(getAttributes(), getAttribute(Constants.SOLR_COLLECTION_NAME).toString());
+	protected List<SolrDocument> getSolrDocuments(String organizationId) {
+		SolrQueryProcessor sqp = new SolrQueryProcessor(getAttributes());
 		SolrActionVO qData = new SolrActionVO();
+		qData.setFieldSort(SearchDocumentHandler.TITLE_LCASE);
+		qData.setSortDirection(ORDER.asc);
+		qData.setNumberResponses(5000);
+		qData.setRoleLevel(SecurityController.PUBLIC_REGISTERED_LEVEL);
+		qData.setOrganizationId(organizationId);
 
 		SolrFieldVO field = new SolrFieldVO();
 		field.setBooleanType(BooleanType.AND);
@@ -69,32 +75,21 @@ public class ContentReportAction extends SBActionAdapter {
 		field.setFieldCode(SearchDocumentHandler.INDEX_TYPE);
 		field.setValue(HuddleUtils.IndexType.PRODUCT.toString());
 		qData.addSolrField(field);
-		
-		qData.setFieldSort(SearchDocumentHandler.TITLE_LCASE);
-		qData.setSortDirection(ORDER.desc);
-
-		qData.setNumberResponses(MAX_SOLR_DOCUMENTS);
-		qData.setStartLocation(0);
-		qData.setRoleLevel(SecurityController.PUBLIC_REGISTERED_LEVEL);
-		qData.setRoleLevel(SecurityController.PUBLIC_ROLE_LEVEL);
-		qData.setOrganizationId(organizationId);
 		SolrResponseVO resp = sqp.processQuery(qData);
-		
+
 		// If there are still products in solr go back to get whatever is left
-		if (resp.getTotalResponses() > resp.getResultDocuments().size()) {
-			List<SolrDocument> docs = new ArrayList<>();
-			docs.addAll(resp.getResultDocuments());
-			int start = 1;
-			
-			// Keep iterating over pages until all products have been retrieved.
-			while (resp.getTotalResponses() > docs.size()) {
-				qData.setStartLocation(start++);
-				resp = sqp.processQuery(qData);
-				docs.addAll(resp.getResultDocuments());
-			}
-			return docs;
-		} else {
+		if (resp.getTotalResponses() <= resp.getResultDocuments().size())
 			return resp.getResultDocuments();
-		}
+
+		//compile a new list - we need to go back to Solr for more results
+		// Keep iterating until all the products have been retrieved.
+		List<SolrDocument> docs = new ArrayList<>(resp.getResultDocuments());
+		do {
+			qData.setStartLocation(docs.size());
+			resp = sqp.processQuery(qData);
+			docs.addAll(resp.getResultDocuments());
+		} while (resp.getTotalResponses() > docs.size());
+
+		return docs;
 	}
 }
