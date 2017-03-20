@@ -21,7 +21,6 @@ import com.siliconmtn.util.StringUtil;
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.common.SiteVO;
-import com.smt.sitebuilder.security.SecurityController;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountReportVO.java</p>
@@ -40,6 +39,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	private static final String REPORT_TITLE = "Accounts Report";
 	protected static final String KEY_ACCOUNTS = "accounts";
 	protected static final String KEY_FIELD_OPTIONS = "fieldOptions";
+	private static final int ACCT_OWNER_FLAG_TRUE = 1;
 
 	// CSS style constants
 	private static final String CSS_ACCT_REPORT_WRAPPER = "acctReportWrapper";
@@ -50,7 +50,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	private static final String CSS_DIVISION_WRAPPER = "divisionWrapper";
 	private static final String CSS_DIVISION_NAME = "divisionName";
 	private static final String CSS_DIVISION_USER = "divisionUser";
-	private static final String CSS_DIVISION_SUPER_USER = "superUser";
+	private static final String CSS_DIVISION_ACCT_OWNER = "acctOwner";
 	private static final String CSS_ACCT_SUMMARY_HEADER = "acctSummaryHeader";
 	private static final String CSS_ACCT_SUMMARY_ITEM = "acctSummaryItem";
 	private static final String CSS_USER_STATUS_CD = "userStatusCode";
@@ -323,8 +323,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	protected void addDivisionUsers(StringBuilder sb, List<UserVO> users) {
 		for (UserVO user : users) {
-			if (user.getBarCodeId().equals(SecurityController.ADMIN_ROLE_LEVEL)) {
-				startDiv(sb,CSS_DIVISION_SUPER_USER);
+			if (user.getAcctOwnerFlg() == ACCT_OWNER_FLAG_TRUE) {
+				startDiv(sb,CSS_DIVISION_ACCT_OWNER);
 			} else {
 				startDiv(sb,CSS_DIVISION_USER);
 			}

@@ -24,6 +24,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
@@ -167,8 +168,8 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(650);
 		sql.append("select ac.account_id, ac.account_nm, ac.create_dt, ac.expiration_dt, ac.status_no, ");
-		sql.append("us.user_id, us.profile_id, us.status_cd, ");
-		sql.append("pf.first_nm, pf.last_nm, pfa.country_cd, pfr.role_id, ");
+		sql.append("us.user_id, us.profile_id, us.status_cd, us.acct_owner_flg, ");
+		sql.append("pf.first_nm, pf.last_nm, pfa.country_cd, ");
 		sql.append("rd.register_field_id, rd.value_txt ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us ");
@@ -176,7 +177,6 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		sql.append("and ac.type_id = ? and ac.status_no != ? and us.status_cd != ? ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
-		sql.append("inner join profile_role pfr on pf.profile_id = pfr.profile_id and pfr.site_id = ? ");
 		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
 		sql.append("left join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
 		sql.append("and rd.register_field_id in (");
@@ -338,9 +338,8 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		user.setAccountId(rs.getString("account_id"));
 		user.setProfileId(rs.getString("profile_id"));
 		user.setStatusCode(rs.getString("status_cd"));
+		user.setAcctOwnerFlg(Convert.formatInteger(rs.getString("acct_owner_flg")));
 		user.setCountryCode(rs.getString("country_cd"));
-		// use barcode ID field to store user's role ID for the report view
-		user.setBarCodeId(rs.getString("role_id"));
 		// decrypt encrypted fields and set.
 		try {
 			user.setFirstName(se.decrypt(rs.getString("first_nm")));
