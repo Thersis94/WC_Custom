@@ -193,9 +193,9 @@ public class ShowpadDivisionUtil {
 			log.warn("asset not found on Showpad: " + vo.getDpySynMediaBinId());
 		}
 
-		log.info("uploading file: " + vo.getFileName());
 		File mbFile = null;
 		if (vo.isFileChanged() || StringUtil.isEmpty(vo.getShowpadId())) {
+			log.info("uploading file: " + vo.getFileName());
 			mbFile = new File(vo.getFileName());
 		}
 		log.info("sending to showpad: " + vo.getDpySynMediaBinId());
