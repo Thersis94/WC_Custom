@@ -5,6 +5,8 @@ import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.siliconmtn.util.StringUtil;
+
 /********************************************************************
  * <b>Title: </b>GoogleChartCellVO.java<br/>
  * <b>Description: </b>Data element for a single cell of data in Google Charts<br/>
@@ -48,6 +50,15 @@ public class GoogleChartCellVO implements Serializable, SMTGridCellIntfc {
 		p = new LinkedHashMap<>(16);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this, false, 0, ", ");
+	}
+	
 	/**
 	 * @return the v
 	 */
