@@ -91,7 +91,7 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 		ia.setAttribute(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		ia.setAttribute(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
 		ia.setAttribute(Constants.ENCRYPT_KEY, config.getProperty(Constants.ENCRYPT_KEY));
-		List<Object> list = ia.getInsights(documentId, null, null, null);
+		List<Object> list = ia.getInsights(documentId, null, null, null, true);
 
 		//Load the Section Tree and set all the Hierarchies.
 		SmarttrakTree t = ia.loadSections();

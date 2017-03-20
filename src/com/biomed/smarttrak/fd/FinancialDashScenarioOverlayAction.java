@@ -13,7 +13,6 @@ import java.util.Map.Entry;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
-import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
@@ -37,6 +36,11 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction {
 	
+	/**
+	 * Column prefix used for base data 
+	 */
+	public static final String BASE_PREFIX = "REV_";
+	
 	public FinancialDashScenarioOverlayAction() {
 		super();
 	}
@@ -53,21 +57,9 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	@Override
 	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections) {
 		String sql = getFinancialDataSql(dash);
-		TableType tt = dash.getTableType();
-		DisplayType dt = dash.getColHeaders().getDisplayType();
 		int regionCnt = dash.getCountryTypes().size();
-		
-		int sectionCnt = 0;
-		if (tt == TableType.MARKET) {
-			sectionCnt = 14;
-		}
-		
-		int scenarioJoins = 2;
-		if (dt == DisplayType.YOY || dt == DisplayType.SIXQTR) {
-			scenarioJoins = 3;
-		} else if (dt == DisplayType.FOURYR) {
-			scenarioJoins = 5;
-		}
+		int sectionCnt = getQuerySectionCnt(dash);
+		int scenarioJoins = getQueryOverlayJoinCnt(dash);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int idx = 0;
@@ -99,18 +91,42 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	}
 	
 	/**
-	 * Gets the select part of the query specific to the Scenario Overlay data.
+	 * Helper to return the count of revenue/overlay joins in the query
+	 * 
+	 * @param dash
+	 * @return
+	 */
+	protected int getQueryOverlayJoinCnt(FinancialDashVO dash) {
+		DisplayType dt = dash.getColHeaders().getDisplayType();
+		
+		int scenarioJoins = 2;
+		if (DisplayType.YOY == dt || DisplayType.SIXQTR == dt) {
+			scenarioJoins = 3;
+		} else if (DisplayType.FOURYR == dt) {
+			scenarioJoins = 5;
+		}
+		
+		return scenarioJoins;
+	}
+	
+	/**
+	 * Gets the select part of the query specific to Scenario Overlay data.
+	 * This gets both the overlay data for display, and the base data to check for deltas.
 	 * 
 	 * @param dash
 	 * @return
 	 */
 	@Override
 	protected StringBuilder getSelectSql(FinancialDashVO dash) {
-		StringBuilder sql = new StringBuilder(700);
+		StringBuilder sql = new StringBuilder(1200);
 		DisplayType dt = dash.getColHeaders().getDisplayType();
 		
+		// Gets the sql for selecting the base data in addition to the overlay data
+		String superSelect = super.getSelectSql(dash).toString();
+		sql.append(StringUtil.replace(superSelect, "as Q", "as " + BASE_PREFIX + "Q")).append(", ");
+		
 		// Usinig coalesce here to "prefer" the overlay data over the standard data where applicable
-		sql.append("r.YEAR_NO, sum(coalesce(o.Q1_NO, r.Q1_NO)) as Q1_0, sum(coalesce(o.Q2_NO, r.Q2_NO)) as Q2_0, sum(coalesce(o.Q3_NO, r.Q3_NO)) as Q3_0, sum(coalesce(o.Q4_NO, r.Q4_NO)) as Q4_0, ");
+		sql.append("sum(coalesce(o.Q1_NO, r.Q1_NO)) as Q1_0, sum(coalesce(o.Q2_NO, r.Q2_NO)) as Q2_0, sum(coalesce(o.Q3_NO, r.Q3_NO)) as Q3_0, sum(coalesce(o.Q4_NO, r.Q4_NO)) as Q4_0, ");
 		sql.append("sum(coalesce(o2.Q1_NO, r2.Q1_NO)) as Q1_1, sum(coalesce(o2.Q2_NO, r2.Q2_NO)) as Q2_1, sum(coalesce(o2.Q3_NO, r2.Q3_NO)) as Q3_1, sum(coalesce(o2.Q4_NO, r2.Q4_NO)) as Q4_1 "); // Needed for all column display types to get percent change from prior year
 		
 		// Columns needed only for specific display types

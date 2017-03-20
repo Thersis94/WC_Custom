@@ -20,6 +20,7 @@ public class FinancialDashDataColumnVO implements Serializable {
 	private int dollarValue;
 	private Double pctDiff;
 	private ValueDisplayType valueDisplay;
+	private boolean delta;
 	
 	public enum ValueDisplayType {
 		REPORTING("Reporting"), PENDING("Pending");
@@ -115,5 +116,19 @@ public class FinancialDashDataColumnVO implements Serializable {
 		} else {
 			setValueDisplay(ValueDisplayType.PENDING);
 		}
+	}
+
+	/**
+	 * @return the delta
+	 */
+	public boolean isDelta() {
+		return delta;
+	}
+
+	/**
+	 * @param delta the delta to set
+	 */
+	public void setDelta(boolean delta) {
+		this.delta = delta;
 	}
 }
