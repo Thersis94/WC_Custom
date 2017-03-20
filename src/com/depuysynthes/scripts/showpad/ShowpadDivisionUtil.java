@@ -545,24 +545,17 @@ public class ShowpadDivisionUtil {
 	 * @return
 	 */
 	protected String makeShowpadAssetName(MediaBinDeltaVO vo, FileType fType ) {
-		//legacy method
-		String title = StringUtil.checkVal(vo.getTitleTxt(), vo.getFileNm());
-		title += " - " + vo.getTrackingNoTxt() + "." + fType.getFileExtension();
-		title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
+		String trackingNo = StringUtil.removeNonAlphaNumeric(vo.getTrackingNoTxt());
+		String title = vo.getTitleTxt();
+		if (StringUtil.isEmpty(title)) {
+			title = StringUtil.checkVal(vo.getFileNm());
+			if (!title.isEmpty() && title.lastIndexOf('.') > -1)
+				title = title.substring(0, title.lastIndexOf('.')); //remove the existing file extension
+		}
+
 		title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
-		return title;
-		//new method - holding until bad data is fixed
-//		String trackingNo = StringUtil.removeNonAlphaNumeric(vo.getTrackingNoTxt());
-//		String title = vo.getTitleTxt();
-//		if (StringUtil.isEmpty(title)) {
-//			title = StringUtil.checkVal(vo.getFileNm());
-//			if (title.length() > 0 && title.lastIndexOf(".") > -1)
-//				title = title.substring(0, title.lastIndexOf(".")); //remove the existing file extension
-//		}
-//
-//		title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
-//		title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
-//		return title + " - " + trackingNo + "." + fType.getFileExtension(); 
+		title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
+		return title + " - " + trackingNo + "." + fType.getFileExtension(); 
 	}
 
 
