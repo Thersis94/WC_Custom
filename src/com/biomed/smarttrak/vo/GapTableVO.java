@@ -223,10 +223,11 @@ public class GapTableVO implements Serializable {
 	}
 
 	/**
+	 * Process Child Nodes of parents.
 	 * @param p
 	 * @return
 	 */
-	private Map<? extends String, ? extends Node> getChildrenNodes(Node p) {
+	private Map<String, Node> getChildrenNodes(Node p) {
 		Map<String, Node> cols = new LinkedHashMap<>();
 		for(Node c : p.getChildren()) {
 			if(c.isLeaf()) {
@@ -285,10 +286,10 @@ public class GapTableVO implements Serializable {
 		//Sort the Companies.
 		Collections.sort(list, new CompanyComparator());
 
-        companies = new LinkedHashMap<>();
-        for (Map.Entry<String, GapCompanyVO> entry : list) {
-            companies.put(entry.getKey(), entry.getValue());
-        }
+		companies = new LinkedHashMap<>();
+		for (Map.Entry<String, GapCompanyVO> entry : list) {
+			companies.put(entry.getKey(), entry.getValue());
+		}
 	}
 
 	/**
