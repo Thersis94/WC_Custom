@@ -29,7 +29,7 @@ public class GoogleTableChartOptions extends GoogleBaseChartOptions {
 	 * 
 	 */
 	public GoogleTableChartOptions(boolean full) {
-		super(full);
+		super(true);
 		this.createChartOptions();
 	}
 	
@@ -41,6 +41,7 @@ public class GoogleTableChartOptions extends GoogleBaseChartOptions {
 		this.chart.put("allowHtml", true);
 		this.chart.put("sort", "disable");
 		this.chart.put("isStacked", true);
+		this.chart.put("chartArea", "");
 		
 		Map<String, String> cssClassNames = new HashMap<>();
 		cssClassNames.put("tableCell", "");
@@ -58,7 +59,7 @@ public class GoogleTableChartOptions extends GoogleBaseChartOptions {
 	 */
 	@Override
 	public void addRowOptions(GridDetailVO detail) {
-		
+		// Not implemented
 	}
 	
 	/*
@@ -67,7 +68,7 @@ public class GoogleTableChartOptions extends GoogleBaseChartOptions {
 	 */
 	@Override
 	public void addCellOptions(GridDetailVO detail) {
-		//cell.put("className", "bs-data");
+		// Not implemented
 	}
 }
 
