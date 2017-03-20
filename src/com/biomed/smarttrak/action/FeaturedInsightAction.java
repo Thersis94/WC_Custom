@@ -35,7 +35,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  ****************************************************************************/
 public class FeaturedInsightAction extends InsightAction {
 
-	protected static final String aclGrantedDelimiter = "" + AccessControlQuery.GRANT + AccessControlQuery.GROUP + AccessControlQuery.ACL_DELIMITER;
+	protected static final String ACL_GRANTED_DELIMITER = "" + AccessControlQuery.GRANT + AccessControlQuery.GROUP + AccessControlQuery.ACL_DELIMITER;
 	
 	/*
 	 * (non-Javadoc)
@@ -97,7 +97,7 @@ public class FeaturedInsightAction extends InsightAction {
 		//compare them to the set
 		for (String item : Arrays.asList(docP)){
 			int count = StringUtils.countMatches(item, SearchDocumentHandler.HIERARCHY_DELIMITER);
-			if (count == 1 && userRoles.contains(item.replace(aclGrantedDelimiter, ""))){
+			if (count == 1 && userRoles.contains(item.replace(ACL_GRANTED_DELIMITER, ""))){
 				authorizedFeatures.add(solDoc);
 				break;
 			}
