@@ -263,7 +263,7 @@ public class GapTableVO implements Serializable {
 	 */
 	protected void applyState() {
 
-		//Quick Fail if state is null;
+		//Quick Fail if state is null
 		if(state == null) {
 			return;
 		}
