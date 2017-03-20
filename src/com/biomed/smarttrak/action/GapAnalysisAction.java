@@ -268,7 +268,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @param nIter
 	 * @return
 	 */
-	protected Collection<? extends Node> filterChildNodes(ListIterator<Node> nIter) {
+	protected Collection<Node> filterChildNodes(ListIterator<Node> nIter) {
 		List<Node> filteredNodes = new ArrayList<>();
 		while(nIter.hasNext()) {
 			Node n = nIter.next();
