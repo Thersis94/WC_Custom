@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -256,19 +257,31 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		for(Node g : nodes) {
 			for(Node p : g.getChildren()) {
 				ListIterator<Node> nIter = p.getChildren().listIterator();
-				while(nIter.hasNext()) {
-					Node n = nIter.next();
-					for(int i = 0; i < selNodes.length; i++) {
-						if(n.getNodeId().equals(selNodes[i]) && n.getNumberChildren() > 0) {  
-							filteredNodes.add(n);
-							nIter.remove();
-							selNodes = (String[]) ArrayUtils.remove(selNodes, i);
-							break;
-						}
-					}
+				filteredNodes.addAll(filterChildNodes(nIter));
+			}
+		}
+		return filteredNodes;
+	}
+
+	/**
+	 * Helper method that filters childNodes out by selected Nodes.
+	 * @param nIter
+	 * @return
+	 */
+	protected Collection<? extends Node> filterChildNodes(ListIterator<Node> nIter) {
+		List<Node> filteredNodes = new ArrayList<>();
+		while(nIter.hasNext()) {
+			Node n = nIter.next();
+			for(int i = 0; i < selNodes.length; i++) {
+				if(n.getNodeId().equals(selNodes[i]) && n.getNumberChildren() > 0) {
+					filteredNodes.add(n);
+					nIter.remove();
+					selNodes = (String[]) ArrayUtils.remove(selNodes, i);
+					break;
 				}
 			}
 		}
+
 		return filteredNodes;
 	}
 
@@ -331,7 +344,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 					companies.put(c.getCompanyId(), c);
 				}
 
-				c.addRegulation(rs.getString("ga_column_id"), rs.getInt("status_id"), rs.getInt("region_Id"));
+				c.addRegulation(rs.getString("ga_column_id"), rs.getString("status_txt"), rs.getInt("region_Id"));
 			}
 		} catch (SQLException e) {
 			log.error("Problem Retrieving Gap Table Data", e);
@@ -350,7 +363,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		StringBuilder sql = new StringBuilder(850);
 
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("select distinct c.ga_column_id, g.short_nm_txt, g.company_nm, g.company_id, r.status_id, r.region_id ");
+		sql.append("select distinct c.ga_column_id, g.short_nm_txt, g.company_nm, g.company_id, s.status_txt, r.region_id ");
 		sql.append("from ").append(custom).append("biomedgps_section a ");
 		sql.append("inner join ").append(custom).append("biomedgps_section b ");
 		sql.append("on a.section_id = b.parent_id ");
@@ -364,6 +377,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		sql.append("on e.product_id = f.product_id ");
 		sql.append("inner join ").append(custom).append("biomedgps_product_regulatory r ");
 		sql.append("on f.product_id = r.product_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_regulatory_status s ");
+		sql.append("on r.status_id = s.status_id ");
 		sql.append("inner join ").append(custom).append("biomedgps_company g ");
 		sql.append("on f.company_id = g.company_id ");
 		sql.append("where c.ga_column_id in ( ");
