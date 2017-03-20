@@ -87,7 +87,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 				gtv.setState(JSONObject.fromObject(req.getParameter("state")));
 
 				//Build Report
-				GapAnalysisReportVO rpt = new GapAnalysisReportVO();
+				GapAnalysisReportVO rpt = new GapAnalysisReportVO((String) attributes.get(Constants.QS_PATH));
 				rpt.setData(gtv);
 				rpt.setSite((SiteVO)req.getAttribute(Constants.SITE_DATA));
 

@@ -261,6 +261,8 @@ public class GapTableVO implements Serializable {
 		List<Map.Entry<String, GapCompanyVO>> list = new LinkedList<>(companies.entrySet());
 
 		Collections.sort(list, new Comparator<Map.Entry<String, GapCompanyVO>>() {
+
+			@Override
 			public int compare(Map.Entry<String, GapCompanyVO> o1, Map.Entry<String, GapCompanyVO> o2) {
 
 				int order = state.getInt("SORT_DIR");
@@ -273,7 +275,7 @@ public class GapTableVO implements Serializable {
 		    }
 		});
 
-        companies = new LinkedHashMap<String, GapCompanyVO>();
+        companies = new LinkedHashMap<>();
         for (Map.Entry<String, GapCompanyVO> entry : list) {
             companies.put(entry.getKey(), entry.getValue());
         }

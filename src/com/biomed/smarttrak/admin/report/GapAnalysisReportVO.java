@@ -4,6 +4,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.vo.GapCellVO;
 import com.biomed.smarttrak.vo.GapColumnVO;
 import com.biomed.smarttrak.vo.GapCompanyVO;
@@ -34,8 +35,10 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	private GapTableVO table;
 	private SiteVO site;
 	private StringEncoder se;
+	private String qs;
 
-	public GapAnalysisReportVO() {
+	public GapAnalysisReportVO(String qs) {
+		this.qs = qs;
 		se = new StringEncoder();
 	}
 
@@ -104,8 +107,8 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 				GapCompanyVO comp = c.getValue();
 				if(comp.getPortfolioNo() > 0) {
 					StringBuilder url = new StringBuilder();
-					url.append(site.getFullSiteAlias()).append("/companies/qs/");
-					url.append(comp.getCompanyId());
+					url.append(site.getFullSiteAlias()).append(Section.COMPANY.getPageURL());
+					url.append(qs).append(comp.getCompanyId());
 
 					doc.append("<tr>");
 					doc.append("<th class=\"fix\">");
@@ -132,7 +135,7 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	 */
 	private void generateHeadersTable(StringBuilder doc) {
 		doc.append("<thead>");
-		buildScaffolding(doc, true);
+		buildScaffolding(doc);
 		buildParentRow(doc, true);
 		buildParentRow(doc, false);
 		buildChildRow(doc);
@@ -191,7 +194,7 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	 * Build the Scaffolding Row of Columns for Column Sizing.
 	 * @param doc
 	 */
-	private void buildScaffolding(StringBuilder doc, boolean isHeader) {
+	private void buildScaffolding(StringBuilder doc) {
 		doc.append("<tr class=\"scaffolding\"><th class='fix'></th>");
 		int s = table.getScaffolding();
 		for(int i = 0; i < s; i++) {
