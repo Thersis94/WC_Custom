@@ -5,11 +5,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 //app libs 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrDocument;
-
 //Wc_custom
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 //baselibs
@@ -21,6 +19,7 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: FeaturedInsightAction.java <p/>
@@ -36,6 +35,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class FeaturedInsightAction extends InsightAction {
 
+	protected static final String aclGrantedDelimiter = "" + AccessControlQuery.GRANT + AccessControlQuery.GROUP + AccessControlQuery.ACL_DELIMITER;
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -90,15 +91,12 @@ public class FeaturedInsightAction extends InsightAction {
 	 * @param solDoc 
 	 */
 	private void checkDocumentForAuthorization(SolrDocument solDoc, Set<String> userRoles, List<SolrDocument> authorizedFeatures) {
-		log.debug("Document permissions " + solDoc.getFieldValue(AccessControlQuery.ACL));
-
-		String aclGrantedDelimiter = "" + AccessControlQuery.GRANT + AccessControlQuery.GROUP + AccessControlQuery.ACL_DELIMITER;
-		
-		String docPermissions = (String) solDoc.getFieldValue(AccessControlQuery.ACL);
+		log.debug("Document permissions " + solDoc.getFieldValue(SearchDocumentHandler.ACL));
+		String docPermissions = (String) solDoc.getFieldValue(SearchDocumentHandler.ACL);
 		String[] docP = docPermissions.split(" ");
 		//compare them to the set
 		for (String item : Arrays.asList(docP)){
-			int count = StringUtils.countMatches(item, "~");
+			int count = StringUtils.countMatches(item, SearchDocumentHandler.HIERARCHY_DELIMITER);
 			if (count == 1 && userRoles.contains(item.replace(aclGrantedDelimiter, ""))){
 				authorizedFeatures.add(solDoc);
 				break;
@@ -135,7 +133,7 @@ public class FeaturedInsightAction extends InsightAction {
 		//find all the two level ones and put in them in a set
 		Set<String> secondLevel = new HashSet<>();
 		for (String item : Arrays.asList(roleAcl)){
-			int count = StringUtils.countMatches(item, "~");
+			int count = StringUtils.countMatches(item, SearchDocumentHandler.HIERARCHY_DELIMITER);
 			if (count == 1){
 				secondLevel.add(item);
 			}
