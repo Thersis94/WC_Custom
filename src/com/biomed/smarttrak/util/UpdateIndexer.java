@@ -15,7 +15,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 //WC Custom
 import com.biomed.smarttrak.admin.UpdatesAction;
-import com.biomed.smarttrak.vo.UpdatesVO;
+import com.biomed.smarttrak.vo.UpdateVO;
 
 // SMT base libs
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -108,7 +108,7 @@ public class UpdateIndexer extends SMTAbstractIndex {
 
 		//attach the section tree to each Update retrieved.  This will internally bind 'selected sections'
 		for(Object obj : list) {
-			UpdatesVO vo = (UpdatesVO) obj;
+			UpdateVO vo = (UpdateVO) obj;
 			vo.configureSolrHierarchies(tree);
 		}
 

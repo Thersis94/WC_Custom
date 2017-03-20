@@ -46,16 +46,30 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	DBProcessor dbp;
 	UserVO user;
 
+	/**
+	 * Maximum number of years to query data
+	 */
 	public static final int MAX_DATA_YEARS = 4;
 	
+	/**
+	 * Column prefixes
+	 */
 	public static final String CALENDAR_YEAR = "CY";
 	public static final String YEAR_TO_DATE = "YTD";
 	public static final String QUARTER = "Q";
 	
+	/**
+	 * Quarter prefixes for columns
+	 */
 	public static final String QUARTER_1 = "Q1";
 	public static final String QUARTER_2 = "Q2";
 	public static final String QUARTER_3 = "Q3";
 	public static final String QUARTER_4 = "Q4";
+	
+	/**
+	 * Number of times section_id appears in the MARKET version of the query
+	 */
+	public static final int MARKET_QUERY_SECTION_CNT = 14;
 	
 	public FinancialDashBaseAction() {
 		super();
@@ -187,13 +201,8 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 */
 	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections) {
 		String sql = getFinancialDataSql(dash);
-		TableType tt = dash.getTableType();
 		int regionCnt = dash.getCountryTypes().size();
-		
-		int sectionCnt = 0;
-		if (tt == TableType.MARKET) {
-			sectionCnt = 14;
-		}
+		int sectionCnt = getQuerySectionCnt(dash);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int idx = 0;
@@ -209,7 +218,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			for (int i = 0; i < regionCnt; i++) {
 				ps.setString(++idx, dash.getCountryTypes().get(i).name());
 			}
-			if (!"".equals(dash.getCompanyId())) {
+			if (!StringUtil.isEmpty(dash.getCompanyId())) {
 				ps.setString(++idx, dash.getCompanyId());
 			}
 			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
@@ -219,6 +228,23 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("Unable to get financial dashboard data", sqle);
 		}
+	}
+	
+	/**
+	 * Helper to return the count of section id in the query
+	 * 
+	 * @param dash
+	 * @return
+	 */
+	protected int getQuerySectionCnt(FinancialDashVO dash) {
+		TableType tt = dash.getTableType();
+		
+		int sectionCnt = 0;
+		if (TableType.MARKET == tt) {
+			sectionCnt = MARKET_QUERY_SECTION_CNT;
+		}
+		
+		return sectionCnt;
 	}
 	
 	/**
@@ -270,6 +296,8 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			sql.append("END as ROW_NM, ");
 		}
 		
+		sql.append("r.YEAR_NO, ");
+		
 		return sql;
 	}
 	
@@ -283,7 +311,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(500);
 		DisplayType dt = dash.getColHeaders().getDisplayType();
 		
-		sql.append("r.YEAR_NO, sum(r.Q1_NO) as Q1_0, sum(r.Q2_NO) as Q2_0, sum(r.Q3_NO) as Q3_0, sum(r.Q4_NO) as Q4_0, ");
+		sql.append("sum(r.Q1_NO) as Q1_0, sum(r.Q2_NO) as Q2_0, sum(r.Q3_NO) as Q3_0, sum(r.Q4_NO) as Q4_0, ");
 		sql.append("sum(r2.Q1_NO) as Q1_1, sum(r2.Q2_NO) as Q2_1, sum(r2.Q3_NO) as Q3_1, sum(r2.Q4_NO) as Q4_1 "); // Needed for all column display types to get percent change from prior year
 		
 		// Columns needed only for specific display types
