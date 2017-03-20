@@ -207,15 +207,30 @@ public class GapTableVO implements Serializable {
 
 		for(Node g : headers) {
 			for(Node p : g.getChildren()) {
+
+				/*
+				 * If Parent is a leaf, add it to the column Map and continue.
+				 * Else add all Children Nodes.
+				 */
 				if(p.isLeaf()) {
 					cols.put(p.getNodeId(), p);
-				} else {
-					for(Node c : p.getChildren()) {
-						if(c.isLeaf()) {
-							cols.put(c.getNodeId(), c);
-						}
-					}
+					continue;
 				}
+				cols.putAll(getChildrenNodes(p));
+			}
+		}
+		return cols;
+	}
+
+	/**
+	 * @param p
+	 * @return
+	 */
+	private Map<? extends String, ? extends Node> getChildrenNodes(Node p) {
+		Map<String, Node> cols = new LinkedHashMap<>();
+		for(Node c : p.getChildren()) {
+			if(c.isLeaf()) {
+				cols.put(c.getNodeId(), c);
 			}
 		}
 		return cols;
