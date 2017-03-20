@@ -187,13 +187,8 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 */
 	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections) {
 		String sql = getFinancialDataSql(dash);
-		TableType tt = dash.getTableType();
 		int regionCnt = dash.getCountryTypes().size();
-		
-		int sectionCnt = 0;
-		if (tt == TableType.MARKET) {
-			sectionCnt = 14;
-		}
+		int sectionCnt = getQuerySectionCnt(dash);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int idx = 0;
@@ -209,7 +204,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			for (int i = 0; i < regionCnt; i++) {
 				ps.setString(++idx, dash.getCountryTypes().get(i).name());
 			}
-			if (!"".equals(dash.getCompanyId())) {
+			if (!StringUtil.isEmpty(dash.getCompanyId())) {
 				ps.setString(++idx, dash.getCompanyId());
 			}
 			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
@@ -219,6 +214,23 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("Unable to get financial dashboard data", sqle);
 		}
+	}
+	
+	/**
+	 * Helper to return the count of section id in the query
+	 * 
+	 * @param dash
+	 * @return
+	 */
+	protected int getQuerySectionCnt(FinancialDashVO dash) {
+		TableType tt = dash.getTableType();
+		
+		int sectionCnt = 0;
+		if (tt == TableType.MARKET) {
+			sectionCnt = 14;
+		}
+		
+		return sectionCnt;
 	}
 	
 	/**

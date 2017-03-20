@@ -394,7 +394,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param key
 	 * @param dollarValue
 	 */
-	private void incrementTotal(Map<Integer, Integer> totals, int key, int dollarValue) {
+	protected void incrementTotal(Map<Integer, Integer> totals, int key, int dollarValue) {
 		if (totals.get(key) == null) {
 			totals.put(key, 0);
 		}

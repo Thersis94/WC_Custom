@@ -13,7 +13,6 @@ import java.util.Map.Entry;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
-import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
@@ -58,21 +57,9 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	@Override
 	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections) {
 		String sql = getFinancialDataSql(dash);
-		TableType tt = dash.getTableType();
-		DisplayType dt = dash.getColHeaders().getDisplayType();
 		int regionCnt = dash.getCountryTypes().size();
-		
-		int sectionCnt = 0;
-		if (tt == TableType.MARKET) {
-			sectionCnt = 14;
-		}
-		
-		int scenarioJoins = 2;
-		if (dt == DisplayType.YOY || dt == DisplayType.SIXQTR) {
-			scenarioJoins = 3;
-		} else if (dt == DisplayType.FOURYR) {
-			scenarioJoins = 5;
-		}
+		int sectionCnt = getQuerySectionCnt(dash);
+		int scenarioJoins = getQueryOverlayJoinCnt(dash);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int idx = 0;
@@ -101,6 +88,25 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		} catch (SQLException sqle) {
 			log.error("Unable to get financial dashboard data", sqle);
 		}
+	}
+	
+	/**
+	 * Helper to return the count of revenue/overlay joins in the query
+	 * 
+	 * @param dash
+	 * @return
+	 */
+	protected int getQueryOverlayJoinCnt(FinancialDashVO dash) {
+		DisplayType dt = dash.getColHeaders().getDisplayType();
+		
+		int scenarioJoins = 2;
+		if (dt == DisplayType.YOY || dt == DisplayType.SIXQTR) {
+			scenarioJoins = 3;
+		} else if (dt == DisplayType.FOURYR) {
+			scenarioJoins = 5;
+		}
+		
+		return scenarioJoins;
 	}
 	
 	/**
