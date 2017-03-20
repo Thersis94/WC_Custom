@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.siliconmtn.util.StringUtil;
+
 /********************************************************************
  * <b>Title: </b>GoogleChartRowVO.java<br/>
  * <b>Description: </b>Container holding a collection of cells<br/>
@@ -34,6 +36,15 @@ public class GoogleChartRowVO implements Serializable, SMTGridRowIntfc {
 		super();
 		
 		c = new ArrayList<>(8);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this, false, 0, ", ");
 	}
 
 	/**

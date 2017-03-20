@@ -77,6 +77,15 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 		cell = new LinkedHashMap<>();
 	}
 	
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this, false, 0, ", ");
+	}
+	
 	/**
 	 * Creates the main attributes shared across most charts
 	 * @param position
@@ -99,13 +108,13 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 		legend.put("position", position);
 		legend.put("textStyle", text);
 		legend.put("maxLines", 3);
+		legend.put("top", 50);
 		
 		// Define the area for the actual chart
 		Map<String, Object> chartArea = new HashMap<>();
-		legend.put("top", 50);
-		legend.put("width", "100%");
-		legend.put("height", "100%");
-
+		chartArea.put("width", "85%");
+		chartArea.put("height", "70%");
+		
 		chart.put("legend", legend); // none to hide
 		chart.put("tooltip", " {text: 'value'}");
 		chart.put("chartArea", chartArea);

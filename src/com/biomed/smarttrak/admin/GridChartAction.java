@@ -231,7 +231,7 @@ public class GridChartAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(164);
 		sql.append("select * from ").append(schema).append("biomedgps_grid a ");
 		sql.append("inner join ").append(schema).append("biomedgps_grid_detail b ");
-		sql.append("on a.grid_id = b.grid_id where a.grid_id = ? or a.slug_txt = ? ");
+		sql.append("on a.grid_id = b.grid_id where (a.grid_id = ? or a.slug_txt = ?) ");
 		if (display) sql.append("and grid_detail_type_cd = 'DATA' ");
 		sql.append("order by b.order_no");
 		log.debug(sql);
@@ -324,7 +324,7 @@ public class GridChartAction extends SBActionAdapter {
 		if (search.length() > 0) sql.append("where upper(title_nm) like ? or upper(subtitle_nm) like ? ");
 		sql.append("order by ").append(sort).append(" ").append(order);
 		sql.append(" limit ? offset ? ");		
-    log.debug(sql.toString());
+		log.debug(sql.toString());
 		
 		// Loop the data and store
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

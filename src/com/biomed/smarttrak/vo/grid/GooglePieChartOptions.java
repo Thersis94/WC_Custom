@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.vo.grid;
 
+import java.util.HashMap;
 // JDK 1.8
 import java.util.Map;
 
@@ -46,6 +47,11 @@ public class GooglePieChartOptions extends GoogleBaseChartOptions {
 		chart.put("pieHole", .4);
 		chart.put("sliceVisibilityThreshold", .05);
 		chart.put("pieSliceText", "percentage");
+		
+		Map<String, Object> chartArea = new HashMap<>();
+		chartArea.put("width", "85%");
+		chartArea.put("height", full ? "90%" : "100%");
+		chart.put("chartArea", chartArea);
 		
 		if (! full) {
 	 		Map<String, Object> legend = (Map<String, Object>) chart.get("legend");
