@@ -41,6 +41,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	 */
 	private static final long serialVersionUID = 1L;
 	protected static final Logger log = Logger.getLogger(GoogleChartVO.class);
+	private static final String COLUMN_NAME = "Column_";
 	
 	/**
 	 * Allowed datatypes for a column field
@@ -114,8 +115,6 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		
 		// Loop the rows and and the data
 		for(int i=0; i < 10; i++) {
-			
-			//GridDetailVO detail = details.get(i);
 			GoogleChartRowVO row = new GoogleChartRowVO();
 			
 			// Add the label cell data
@@ -123,7 +122,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			cell.setValue(series[i]);
 			row.addCell(cell);
 			
-			//String[] values = detail.getValues();
+			// Loop the rows
 			for (int x=0; x < details.size(); x++) {
 				GridDetailVO detail = details.get(x);
 				if (StringUtil.isEmpty(detail.getValues()[i])) continue;
@@ -144,7 +143,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		// Get the column labels first
 		int val = (int) 'A';
 		GoogleChartColumnVO col = new GoogleChartColumnVO();
-		col.setId("Column_" + ((char) val++));
+		col.setId(COLUMN_NAME + ((char) val++));
 		col.setDataType(DataType.STRING.getName());
 		col.setLabel(StringUtil.checkVal(grid.getSeriesLabel()));
 		addColumn(col);
@@ -154,7 +153,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			GridDetailVO detail = details.get(i);
 			if (detail == null) continue;
 			col = new GoogleChartColumnVO();
-			col.setId("Column_" + ((char) val++));
+			col.setId(COLUMN_NAME + ((char) val++));
 			col.setDataType(DataType.NUMBER.getName());
 			col.setLabel(detail.getLabel());
 			
@@ -210,7 +209,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		// Get the column labels first
 		int val = (int) 'A';
 		GoogleChartColumnVO col = new GoogleChartColumnVO();
-		col.setId("Column_" + ((char) val++));
+		col.setId(COLUMN_NAME + ((char) val++));
 		col.setDataType(DataType.STRING.getName());
 		col.setLabel("");
 		addColumn(col);
@@ -218,7 +217,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		// Get the column data
 		for (int j=0; j < validRows.size(); j++) {
 			col = new GoogleChartColumnVO();
-			col.setId("Column_" + ((char) val++));
+			col.setId(COLUMN_NAME + ((char) val++));
 			col.setDataType(DataType.NUMBER.getName());
 			col.setLabel(series[j]);
 

@@ -90,8 +90,9 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 	 * Creates the main attributes shared across most charts
 	 * @param position
 	 */
-	protected void createChartOptions(String position) {
+	protected void createChartOptions(String pos) {
 		// Turn off the legend if not full
+		String position = pos;
 		int fontSize = FULL_LEGEND_FONT_SIZE;
 		if (! full) {
 			position = "none";

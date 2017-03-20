@@ -98,7 +98,8 @@ public class GridDisplayAction extends SBActionAdapter {
 		// Get the chart options
 		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE, full);
 		options.addOptionsFromGridData(grid);
-		log.info("options: " + options);
+		log.debug("options: " + options);
+		
 		// Add the chart specific options
 		gridData.addCustomValues(options.getChartOptions());
 		gridData.addCustomValue("width", "100%");
