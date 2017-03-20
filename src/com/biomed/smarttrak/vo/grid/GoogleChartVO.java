@@ -17,6 +17,8 @@ import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 import com.biomed.smarttrak.admin.vo.GridVO.RowStyle;
 import com.biomed.smarttrak.vo.grid.SMTChartOptionFactory.ChartType;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 // SMT Base Libs
 import com.siliconmtn.util.Convert;
@@ -59,26 +61,30 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	/**
 	 * Collection of column objects for the charts
 	 */
-	private List<SMTGridColumnIntfc> cols;
+	@SerializedName("cols")
+	private List<SMTGridColumnIntfc> columns;
 	
 	/**
 	 * Collection of Row Objects
 	 */
+	@SerializedName("rows")
 	private List<SMTGridRowIntfc> rows;
 	
 	/**
 	 * Chart options, styles and Javascript elements
 	 */
-	private Map<String, Object> p;
+	@SerializedName("p")
+	@Expose
+	private final Map<String, Object> options;
 
 	/**
 	 * 
 	 */
 	private GoogleChartVO() {
 		super();
-		cols = new ArrayList<>(10);
+		columns = new ArrayList<>(10);
 		rows = new ArrayList<>(64);
-		p = new LinkedHashMap<>(32);
+		options = new LinkedHashMap<>(32);
 	}
 	
 	/**
@@ -230,7 +236,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	 * @param column
 	 */
 	public void addColumn(SMTGridColumnIntfc column) {
-		cols.add(column);
+		columns.add(column);
 	}
 	
 	/**
@@ -242,10 +248,10 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	}
 	
 	/**
-	 * @param p the p to set
+	 * @param options the p to set
 	 */
 	public void addCustomValue(String key, Object value) {
-		this.p.put(key, value);
+		this.options.put(key, value);
 	}
 
 	/*
@@ -254,14 +260,14 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	 */
 	public void addCustomValues(Map<String, Object> values) {
 		if (values == null) return;
-		this.p.putAll(values);
+		this.options.putAll(values);
 	}
 	
 	/**
 	 * @return the cols
 	 */
 	public List<SMTGridColumnIntfc> getCols() {
-		return cols;
+		return columns;
 	}
 
 	/**
@@ -275,7 +281,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	 * @return the p
 	 */
 	public Map<String, Object> getCustomValue() {
-		return p;
+		return options;
 	}
 
 }
