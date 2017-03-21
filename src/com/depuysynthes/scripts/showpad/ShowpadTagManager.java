@@ -124,16 +124,17 @@ public class ShowpadTagManager {
 	public void addTags(MediaBinDeltaVO vo, StringBuilder header) throws InvalidDataException {
 		Map<String,ShowpadTagVO> assignedTags = null;
 		if (vo.getShowpadId() != null) assignedTags = loadAssetTags(vo.getShowpadId(), null, true); //suppress404 because the asset may be new
-		Set<String> desiredTags = getDesiredTags(vo);
+		Set<String> tagsToAdd = getDesiredTags(vo);
+		Set<String> desiredTags = new HashSet<>(tagsToAdd); //preserve this list for deletions
 
 		//loop the tags the asset already has, removing them from the "need to add" list
 		if (assignedTags != null) {
 			for (String tag : assignedTags.keySet())
-				desiredTags.remove(tag);
+				tagsToAdd.remove(tag);
 		}
 
 		//add what's left on the "need to add" list as new tags; both to the Asset, and to the Division in Showpad if they don't already exist
-		for (String tagNm : desiredTags) {
+		for (String tagNm : tagsToAdd) {
 			if (StringUtil.isEmpty(tagNm)) continue;
 			log.info("asset needs tag " + tagNm);
 			ShowpadTagVO tagVo = showpadTags.get(tagNm);
@@ -183,7 +184,6 @@ public class ShowpadTagManager {
 			}
 		}
 		unlinkAssetFromTags(vo.getShowpadId(), tags);
-
 	}
 
 
