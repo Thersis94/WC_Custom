@@ -342,49 +342,59 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	protected void addUserIdentifier(StringBuilder sb, UserVO user) {
 		// look at job category/level
-		findSuffix(sb,Convert.formatInteger(user.getJobCategory()),
+		String sfx = findSuffix(Convert.formatInteger(user.getJobCategory()),
 					Convert.formatInteger(user.getJobLevel()));
+
+		if (sfx != null) {
+			sb.append(" [").append(sfx).append("]");
+		}
 
 		// now append status code if appropriate.
 		addUserStatusCode(sb,user.getStatusCode());
 	}
 
 	/**
-	 * Check job category and job level in order to determine
-	 * suffix.  Returns null if no suffix could be determined.
-	 * @param sb
-	 * @param jobCat
-	 * @param jobLvl
+	 * Checks job category and job level to determine suffix.
+	 * @param cat
+	 * @param lvl
+	 * @return
 	 */
-	protected void findSuffix(StringBuilder sb, int jobCat, int jobLvl) {
+	private String findSuffix(int cat, int lvl) {
 		String sfx = null;
-		switch(jobCat) {
-			case 2:
-				if (jobLvl == 10) sfx = "PM";
-				break;
-			case 5:
-				if (jobLvl == 4) sfx = "SA";
-				break;
-			case 8:
-				sfx = "BD";
-				break;
-			case 9:
-				sfx = "Ex";
-				break;
-			case 10:
-				sfx = "NA";
-				break;
-			case 11:
-				sfx = "UK";
-				break;
-			case 15:
-				sfx = "RA";
-			default:
-				break;
+		// first, check for match against both vals
+		if (cat == 2 && lvl == 10) {
+			sfx =  "PM";
+		} else if (cat == 5 && lvl == 4) {
+			sfx =  "SA";
 		}
-		// if we haven't already added a suffix, check job level exclusively
-		if (jobLvl == 10) sfx = "M";
-		if (sfx != null) sb.append(" [").append(sfx).append("]");
+
+		// if no match, consider job category
+		if (sfx == null) {
+			sfx = findSuffixViaJobCategory(cat);
+			// if still no match, consider job level only.
+			if (sfx == null && lvl == 10) {
+				sfx = "M";
+			}
+		}
+		return sfx;
+	}
+
+	/**
+	 * Determine suffix using job category only.
+	 * @param cat
+	 * @return
+	 */
+	protected String findSuffixViaJobCategory(int cat) {
+		String sfx = null;
+		switch(cat) {
+			case 8: sfx =  "BD"; break;
+			case 9: sfx =  "Ex"; break;
+			case 10: sfx =  "NA"; break;
+			case 11: sfx =  "UK"; break;
+			case 15: sfx =  "RA";	 break;
+			default: break;
+		}
+		return sfx;
 	}
 
 	/**
