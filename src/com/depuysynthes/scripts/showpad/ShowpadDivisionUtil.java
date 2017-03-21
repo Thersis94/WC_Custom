@@ -123,7 +123,7 @@ public class ShowpadDivisionUtil {
 		vo.setShowpadId(divisionAssets.get(vo.getDpySynMediaBinId()));
 		String postUrl;
 		FileType fType = new FileType(vo.getFileNm());
-		String title = makeShowpadAssetName(vo, fType);
+		String title = makeShowpadAssetName(vo);
 		boolean isUpdate = !StringUtil.isEmpty(vo.getShowpadId()); 
 
 		//this asset can be ignored if we have it saved and there is no state change
@@ -140,7 +140,8 @@ public class ShowpadDivisionUtil {
 
 		} else {
 			//check if this file is already in Showpad before treating it as new
-			vo.setShowpadId(findShowpadId(title));
+			//showpad puts file extension on for us when we add assets, but we need to use it when searching by name
+			vo.setShowpadId(findShowpadId(title + fType.getFileExtension()));
 
 			if (!StringUtil.isEmpty(vo.getShowpadId())) {
 				//if the file is already there, and doesn't need updating, simply move on.
@@ -544,7 +545,7 @@ public class ShowpadDivisionUtil {
 	 * @param fType
 	 * @return
 	 */
-	protected String makeShowpadAssetName(MediaBinDeltaVO vo, FileType fType ) {
+	protected String makeShowpadAssetName(MediaBinDeltaVO vo) {
 		String trackingNo = StringUtil.removeNonAlphaNumeric(vo.getTrackingNoTxt());
 		String title = vo.getTitleTxt();
 		if (StringUtil.isEmpty(title)) {
@@ -555,7 +556,7 @@ public class ShowpadDivisionUtil {
 
 		title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
 		title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
-		return title + " - " + trackingNo + "." + fType.getFileExtension(); 
+		return title + " - " + trackingNo; 
 	}
 
 
