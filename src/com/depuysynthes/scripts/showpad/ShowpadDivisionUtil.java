@@ -141,7 +141,7 @@ public class ShowpadDivisionUtil {
 		} else {
 			//check if this file is already in Showpad before treating it as new
 			//showpad puts file extension on for us when we add assets, but we need to use it when searching by name
-			vo.setShowpadId(findShowpadId(title + fType.getFileExtension()));
+			vo.setShowpadId(findShowpadId(title + "." + fType.getFileExtension()));
 
 			if (!StringUtil.isEmpty(vo.getShowpadId())) {
 				//if the file is already there, and doesn't need updating, simply move on.
