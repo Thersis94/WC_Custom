@@ -359,7 +359,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param lvl
 	 * @return
 	 */
-	private String findSuffix(int cat, int lvl) {
+	protected String findSuffix(int cat, int lvl) {
 		String sfx = null;
 		// first, check for match against both vals
 		if (cat == 2 && lvl == 10) {
