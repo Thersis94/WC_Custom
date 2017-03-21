@@ -357,33 +357,34 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param jobLvl
 	 */
 	protected void findSuffix(StringBuilder sb, int jobCat, int jobLvl) {
+		String sfx = null;
 		switch(jobCat) {
 			case 2:
-				if (jobLvl == 10) sb.append(" [PM]");
-				return;
+				if (jobLvl == 10) sfx = "PM";
+				break;
 			case 5:
-				if (jobLvl == 4) sb.append(" [SA]");
-				return;
+				if (jobLvl == 4) sfx = "SA";
+				break;
 			case 8:
-				sb.append(" [BD]");
-				return;
+				sfx = "BD";
+				break;
 			case 9:
-				sb.append(" [Ex]");
-				return;
+				sfx = "Ex";
+				break;
 			case 10:
-				sb.append(" [NA]");
-				return;
+				sfx = "NA";
+				break;
 			case 11:
-				sb.append(" [UK]");
-				return;
+				sfx = "UK";
+				break;
 			case 15:
-				sb.append(" [RA]");
-				return;
+				sfx = "RA";
 			default:
 				break;
 		}
 		// if we haven't already added a suffix, check job level exclusively
-		if (jobLvl == 10) sb.append(" [M]");
+		if (jobLvl == 10) sfx = "M";
+		if (sfx != null) sb.append(" [").append(sfx).append("]");
 	}
 
 	/**

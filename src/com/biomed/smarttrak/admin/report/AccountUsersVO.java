@@ -117,9 +117,9 @@ public class AccountUsersVO extends AccountVO {
 	 */
 	public int getTotalDivisionUsers() {
 		int tot = 0;
-		for (Map.Entry<String, List<UserVO>> users : divisions.entrySet()) {
-			if (users.getValue() != null) {
-				tot += users.getValue().size();
+		for (Map.Entry<String, List<UserVO>> divUsers : divisions.entrySet()) {
+			if (divUsers.getValue() != null) {
+				tot += divUsers.getValue().size();
 			}
 		}
 		return tot;
