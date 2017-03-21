@@ -74,6 +74,7 @@ public class GridChartAction extends SBActionAdapter {
 		// Get the DB Schema
 		String schema = getAttribute(Constants.CUSTOM_DB_SCHEMA) + "";
 		String gridId = req.getParameter("gridId");
+		
 		if (StringUtil.isEmpty(gridId)) {
 			retrieveList(req, schema);
 		} else if (! "ADD".equalsIgnoreCase(gridId)){
@@ -310,7 +311,7 @@ public class GridChartAction extends SBActionAdapter {
 	public List<GridVO> getGridList(ActionRequest req, String schema) throws SQLException {
 		// Get the navigation info
 		int start = Convert.formatInteger(req.getParameter("offset"),0);
-		int rpp = Convert.formatInteger(req.getParameter("limit"),10);
+		int rpp = (Convert.formatInteger(req.getParameter("limit")) == 0) ? 10 : Convert.formatInteger(req.getParameter("limit"));
 		String sort = StringUtil.checkVal(sortMapper.get(req.getParameter("sort")), "title_nm");
 		String order = StringUtil.checkVal(req.getParameter("order"), "asc");
 		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
