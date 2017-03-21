@@ -151,6 +151,18 @@ public class ShowpadTagManager {
 			header.append("<").append(tagVo.getId()).append(">; rel=\"Tag\"");
 		}
 
+		deleteUnwantedMBTags(vo, assignedTags, desiredTags);
+	}
+
+
+	/**
+	 * delete unwanted MEDIABIN tags from the asset.  There won't be any tags if this is an "add" scenario.
+	 * @param vo
+	 * @param assignedTags
+	 * @param desiredTags
+	 */
+	protected void deleteUnwantedMBTags(MediaBinDeltaVO vo, Map<String, ShowpadTagVO> assignedTags,
+			Set<String> desiredTags) {
 		//if the asset had no existing tags, we're done.  There aren't any we need to worry about removing
 		if (assignedTags == null || assignedTags.isEmpty()) return;
 
@@ -171,6 +183,7 @@ public class ShowpadTagManager {
 			}
 		}
 		unlinkAssetFromTags(vo.getShowpadId(), tags);
+
 	}
 
 
