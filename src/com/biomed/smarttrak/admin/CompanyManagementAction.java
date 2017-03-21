@@ -1,11 +1,14 @@
 package com.biomed.smarttrak.admin;
 
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
+import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeTypeVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
@@ -350,17 +353,17 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		sql.append("on c.COMPANY_ID = ci.investee_company_id ");
 		
 		// If the request has search terms on it add them here
-		if (req.hasParameter("searchData")) {
+		if (req.hasParameter("search")) {
 			sql.append("WHERE lower(COMPANY_NM) like ?");
-			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
+			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
 		sql.append("ORDER BY COMPANY_NM ");
 		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> companies = db.executeSelect(sql.toString(), params, new CompanyVO());
-		int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
-		int page = Convert.formatInteger(req.getParameter("page"), 0);
+		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
+		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
 		
 		int end = companies.size() < rpp*(page+1)? companies.size() : rpp*(page+1);
 		super.putModuleData(companies.subList(rpp*page, end), companies.size(), false);
@@ -891,9 +894,65 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		} catch (Exception e) {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
-		
+		String companyId = req.getParameter("companyId");
+		if (!StringUtil.isEmpty(companyId)) {
+			String status = req.getParameter("statusNo");
+			if (StringUtil.isEmpty(status))
+				status = findStatus(companyId);
+			updateSolr(companyId, status);
+		}
+
 		redirectRequest(msg, buildAction, req);
+	}
+
+
+	/**
+	 * Get the status of the supplied company.
+	 * @param marketId
+	 * @return
+	 * @throws ActionException
+	 */
+	protected String findStatus(String companyId) throws ActionException {
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("SELECT STATUS_NO from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_COMPANY WHERE COMPANY_ID = ? ");
 		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, companyId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				return rs.getString("STATUS_NO");
+			}
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		// If we didn't find a market with this id the action was a delete and solr needs to recognize that
+		return "D";
+	}
+
+
+	/**
+	 * Push the updates to solr
+	 * @param req
+	 * @param buildAction
+	 * @throws ActionException
+	 */
+	protected void updateSolr(String companyId, String status) throws ActionException {
+		Properties props = new Properties();
+		props.putAll(getAttributes());
+		BiomedCompanyIndexer indexer = new BiomedCompanyIndexer(props);
+		indexer.setDBConnection(dbConn);
+		try {
+			if ("D".equals(status) || "A".equals(status)) {
+				indexer.purgeSingleItem(companyId, false);
+			} else {
+				indexer.addSingleItem(companyId);
+			}
+		} catch (IOException e) {
+			throw new ActionException(e);
+		}
 	}
 
 

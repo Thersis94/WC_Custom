@@ -686,11 +686,42 @@ public class MarketManagementAction extends AbstractTreeAction {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
 
-		//TODO capture and pass market status here
-		if (!StringUtil.isEmpty(marketId))
-			writeToSolr(marketId, "P");
+		if (!StringUtil.isEmpty(marketId)) {
+			String status = req.getParameter("statusNo");
+			if (StringUtil.isEmpty(status))
+				status = findStatus(marketId);
+			writeToSolr(marketId, status);
+		}
 
 		redirectRequest(msg, buildAction, req);
+	}
+
+
+	/**
+	 * Get the status of the supplied market.
+	 * @param marketId
+	 * @return
+	 * @throws ActionException
+	 */
+	private String findStatus(String marketId) throws ActionException {
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("SELECT STATUS_NO from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_MARKET WHERE MARKET_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, marketId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				return rs.getString("STATUS_NO");
+			}
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+
+		// If we didn't find a market with this id the action was a delete as solr needs to recognize that
+		return "D";
 	}
 
 

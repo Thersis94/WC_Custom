@@ -1,11 +1,14 @@
 package com.biomed.smarttrak.admin;
 
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
+import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeTypeVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
@@ -297,9 +300,9 @@ public class ProductManagementAction extends AbstractTreeAction {
 		StringBuilder sql = new StringBuilder(100);
 		List<Object> params = new ArrayList<>();
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_PRODUCT_ATTRIBUTE ");
-		if (req.hasParameter("searchData")) {
+		if (req.hasParameter("search")) {
 			sql.append("WHERE lower(ATTRIBUTE_NM) like ? ");
-			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
+			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
 		if (req.hasParameter("attributeTypeCd")) {
 			sql.append("WHERE TYPE_CD = ? ");
@@ -329,8 +332,8 @@ public class ProductManagementAction extends AbstractTreeAction {
 	private void storeAttributeData(ActionRequest req,
 			List<Node> orderedResults) {
 
-		int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
-		int page = Convert.formatInteger(req.getParameter("page"), 0);
+		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
+		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
 		int end = orderedResults.size() < rpp*(page+1)? orderedResults.size() : rpp*(page+1);
 		
 		// If all attributes of a type is being requested set it as a request attribute since it is
@@ -352,7 +355,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 				req.getSession().setAttribute("attributeList", t.preorderList());
 			}
 
-		} else if (req.hasParameter("searchData")) {
+		} else if (req.hasParameter("search")) {
 			super.putModuleData(orderedResults.subList(rpp*page, end), orderedResults.size(), false);
 		} else {
 			super.putModuleData(new Tree(orderedResults).getPreorderList().subList(rpp*page, end), orderedResults.size(), false);
@@ -412,14 +415,14 @@ public class ProductManagementAction extends AbstractTreeAction {
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
 		
 		// If the request has search terms on it add them here
-		if (req.hasParameter("searchData")) {
+		if (req.hasParameter("search")) {
 			sql.append("WHERE lower(PRODUCT_NM) like ?");
-			params.add("%" + req.getParameter("searchData").toLowerCase() + "% ");
+			params.add("%" + req.getParameter("search").toLowerCase() + "% ");
 		}
 		sql.append("ORDER BY PRODUCT_NM");
 		log.debug(sql);
-		int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
-		int page = Convert.formatInteger(req.getParameter("page"), 0);
+		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
+		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> products = db.executeSelect(sql.toString(), params, new ProductVO());
@@ -1015,8 +1018,68 @@ public class ProductManagementAction extends AbstractTreeAction {
 		} catch (Exception e) {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
-		
+
+		String productId = req.getParameter("productId");
+		if (!StringUtil.isEmpty(productId)) {
+			String status = req.getParameter("statusNo");
+			if (StringUtil.isEmpty(status))
+				status = findStatus(productId);
+			updateSolr(productId, status);
+		}
+
 		redirectRequest(msg, buildAction, req);
+	}
+
+
+	/**
+	 * Get the status of the supplied company.
+	 * @param marketId
+	 * @return
+	 * @throws ActionException
+	 */
+	protected String findStatus(String productId) throws ActionException {
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("SELECT STATUS_NO from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_PRODUCT WHERE PRODUCT_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, productId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				return rs.getString("STATUS_NO");
+			}
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+
+		// If we didn't find a market with this id the action was a delete and solr needs to recognize that
+		return "D";
+	}
+
+
+
+	/**
+	 * Push the updates to solr
+	 * @param req
+	 * @param buildAction
+	 * @throws ActionException
+	 */
+	protected void updateSolr(String productId, String status) throws ActionException {
+		Properties props = new Properties();
+		props.putAll(getAttributes());
+		BiomedProductIndexer indexer = new BiomedProductIndexer(props);
+		indexer.setDBConnection(dbConn);
+		try {
+			if ("D".equals(status) || "A".equals(status)) {
+				indexer.purgeSingleItem(productId, false);
+			} else {
+				indexer.addSingleItem(productId);
+			}
+		} catch (IOException e) {
+			throw new ActionException(e);
+		}
 	}
 
 
