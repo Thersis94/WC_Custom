@@ -135,7 +135,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 			addAccountSegmentRows(sb,acct);
 			addDivisions(sb,acct,fieldOptions.get(RegistrationMap.DIVISIONS.getFieldId()));
 			closeDiv(sb);
-			totalSubscribers += acct.getTotalUsers();
+			totalSubscribers += acct.getTotalDivisionUsers();
 			totalAdded += acct.getAddedCount();
 			totalComplementary += acct.getComplementaryCount();
 		}
@@ -155,7 +155,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	protected void addAccountRow(StringBuilder sb, AccountUsersVO acct) {
 		startDiv(sb,CSS_ACCT_HEADER);
 		sb.append(acct.getAccountName().toUpperCase());
-		int totUsers = acct.getTotalUsers() - 
+		int totUsers = acct.getTotalDivisionUsers() - 
 				(acct.getAddedCount() + 
 						acct.getComplementaryCount() + 
 						acct.getUpdatesOnlyCount());
@@ -375,7 +375,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 				return;
 			case 11:
 				sb.append(" [UK]");
-				break;
+				return;
 			case 15:
 				sb.append(" [RA]");
 				return;
@@ -395,7 +395,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 		if (statCd.equalsIgnoreCase(Status.COMPLIMENTARY.getCode()) ||
 				statCd.equalsIgnoreCase(Status.UPDATES.getCode()) ||
 				statCd.equalsIgnoreCase(Status.EXTRA.getCode()) ||
-				statCd.equalsIgnoreCase(Status.TRIAL.getCode())) {
+				statCd.equalsIgnoreCase(Status.COMPUPDATES.getCode())) {
 
 			startSpan(sb,CSS_USER_STATUS_CD);
 			appendSpace(sb);

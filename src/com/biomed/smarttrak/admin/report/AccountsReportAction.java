@@ -111,7 +111,6 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			ps.setString(++idx, Type.FULL.getId());
 			ps.setString(++idx, Status.INACTIVE.getCode());
 			ps.setString(++idx, Status.INACTIVE.getCode());
-			ps.setString(++idx, siteId);
 			for (int x = 0; x < regFields.size(); x++) {
 				ps.setString(++idx, regFields.get(x));
 			}
@@ -218,8 +217,6 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			if (! currAcctId.equals(prevAcctId)) {
 				// acct changed
 				if (prevAcctId != null) {
-					// add 'previous' user
-					account.addUser(user);
 					// add acct to accounts list.
 					accounts.add(account);
 				}
@@ -228,19 +225,12 @@ public class AccountsReportAction extends SimpleActionAdapter {
 				account = createBaseAccount(rs);
 				// create new user
 				user = createBaseUser(se,rs);
-				// update user status counter
-				account.countUserStatus(user.getStatusCode());
 
 			} else {
 				// same account, check for user change
 				if (! currPid.equals(prevPid)) {
-					// user changed, add 'previous' user to division users list
-					account.addUser(user);
-					// create new user
+					// user changed, create new user
 					user = createBaseUser(se,rs);
-					// update user status counter
-					account.countUserStatus(user.getStatusCode());
-
 				}
 			}
 
@@ -254,7 +244,6 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 		// pick up the dangler
 		if (prevAcctId != null) {
-			account.addUser(user);
 			accounts.add(account);
 		}
 
@@ -271,13 +260,18 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	@SuppressWarnings("unchecked")
 	protected void processUserRegistrationField(AccountUsersVO acct, UserVO user, 
 			String currFieldId, String currFieldVal) {
-		if (currFieldId == null || currFieldVal == null) return;
+		if (StringUtil.isEmpty(currFieldId) || StringUtil.isEmpty(currFieldVal)) return;
 		// process reg field value
 		if (RegistrationMap.DIVISIONS.getFieldId().equals(currFieldId)) {
 			// user can belong to more than one division, we use a List here.
 			List<String> divs;
 			if (user.getAttribute(currFieldVal) == null) {
 				divs = new ArrayList<>();
+				/* We only count users who have a division association.  Since
+				 * a user can belong to more than one division, we only want to 
+				 * count the user one time we do it here after we init the
+				 * user's division membership List.. */
+				acct.countUserStatus(user.getStatusCode());
 			} else {
 				divs = (List<String>)user.getAttribute(currFieldId);
 			}
@@ -287,7 +281,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 			// add to the account's division map
 			addUserToAccountDivisions(acct.getDivisions(),user, currFieldVal);
-			
+
 		} else {
 			user.addAttribute(currFieldId, currFieldVal);
 		}
