@@ -217,11 +217,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 					break;
 				case 4:
 					PermissionVO perms = (PermissionVO)seg.getUserObject();
-					// append segment only if there are permissions to view it.
-					if (perms.isBrowseAuth()) {
-						appendSegment(lvl4,seg.getNodeName(),cnt);
-						cnt++;
-					}
+					appendSegment(lvl4,seg.getNodeName(),perms.isBrowseAuth(),cnt);
+					if (perms.isBrowseAuth()) cnt++;
 					break;
 				default:
 					break;
@@ -252,12 +249,15 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * Used by the method that builds the account segment rows.
 	 * @param sb
 	 * @param segName
+	 * @param addSegment
 	 * @param cnt
 	 */
-	protected void appendSegment(StringBuilder sb, String segName, int cnt) {
-		if (cnt > 1) sb.append(",");
-		appendSpace(sb);
-		sb.append(segName);
+	protected void appendSegment(StringBuilder sb, String segName, boolean addSegment, int cnt) {
+		if (addSegment) {
+			if (cnt > 1) sb.append(",");
+			appendSpace(sb);
+			sb.append(segName);
+		}
 	}
 	
 	/**
