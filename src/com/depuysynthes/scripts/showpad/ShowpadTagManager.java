@@ -136,14 +136,72 @@ public class ShowpadTagManager {
 		for (String tagNm : desiredTags) {
 			if (StringUtil.isEmpty(tagNm)) continue;
 			log.info("asset needs tag " + tagNm);
-			if (showpadTags.get(tagNm) == null) {
+			ShowpadTagVO tagVo = showpadTags.get(tagNm);
+			if (tagVo == null) {
 				//add it to the global list for the next iteration to leverage
-				showpadTags.put(tagNm, createTag(tagNm, SMT_MEDIABIN_EXTERNALID));
+				tagVo = createTag(tagNm, SMT_MEDIABIN_EXTERNALID);
+				showpadTags.put(tagNm, tagVo);
+			} else if (!SMT_MEDIABIN_EXTERNALID.equals(tagVo.getExternalId())) {
+				//fire an update at this tag (to showpad) to take ownership of it (make it a Mediabin tag!)
+				tagVo.setExternalId(SMT_MEDIABIN_EXTERNALID);
+				saveTagExternalId(tagVo);
 			}
 
 			if (header.length() > 0) header.append(",");
-			header.append("<").append(showpadTags.get(tagNm).getId()).append(">; rel=\"Tag\"");
+			header.append("<").append(tagVo.getId()).append(">; rel=\"Tag\"");
 		}
+
+		deleteUnwantedMBTags(vo, assignedTags, desiredTags);
+	}
+
+
+	/**
+	 * delete unwanted MEDIABIN tags from the asset.  There won't be any tags if this is an "add" scenario.
+	 * @param vo
+	 * @param assignedTags
+	 * @param desiredTags
+	 */
+	protected void deleteUnwantedMBTags(MediaBinDeltaVO vo, Map<String, ShowpadTagVO> assignedTags,
+			Set<String> desiredTags) {
+		//if the asset had no existing tags, we're done.  There aren't any we need to worry about removing
+		if (assignedTags == null || assignedTags.isEmpty()) return;
+
+		//fire some tag deletions to this existing asset
+		//make a 'tagsToDelete' list by subtracting what we want (to add) from what we have
+		Map<String, ShowpadTagVO> tagsToDelete = new HashMap<>(assignedTags);
+
+		//don't delete any we want
+		for (String tagNm : desiredTags)
+			tagsToDelete.remove(tagNm);
+
+		//loop through the tags we want to delete and first check that they're ours.  We can't delete tags that aren't ours.
+		List<ShowpadTagVO> tags = new ArrayList<>(tagsToDelete.size());
+		for (ShowpadTagVO tagVo : tagsToDelete.values()) {
+			if (SMT_MEDIABIN_EXTERNALID.equals(tagVo.getExternalId())) {
+				tags.add(tagVo);
+				log.debug("unlinking mediabin tag: " + tagVo.getName());
+			}
+		}
+		unlinkAssetFromTags(vo.getShowpadId(), tags);
+
+	}
+
+
+	/**
+	 * updates a Tag in showpad to set the externalId value on it
+	 * @param tagVo
+	 */
+	protected void saveTagExternalId(ShowpadTagVO tagVo) {
+		String url = showpadApiUrl + "/tags/" + tagVo.getId() + ".json";
+		Map<String, String> params = new HashMap<>();
+		params.put("externalId", tagVo.getExternalId());
+		try {
+			showpadUtil.executePost(url, params);
+			log.debug("updated tag " + tagVo.getId());
+		} catch (IOException e) {
+			log.error("could not update tag with id=" + tagVo.getId(), e);
+		}
+
 	}
 
 
@@ -274,7 +332,7 @@ public class ShowpadTagManager {
 		for (ShowpadTagVO tag : assignedTags.values()) {
 			//do not delete any that aren't smt-product tags; meaning they 
 			//were created by someone else or something else and are not ours to delete.
-			if (tag.getExternalId() == null || !SMT_PRODUCT_EXTERNALID.equals(tag.getExternalId()))
+			if (!SMT_PRODUCT_EXTERNALID.equals(tag.getExternalId()))
 				tagsToDelete.remove(tag.getName());
 		}
 
