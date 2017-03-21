@@ -129,8 +129,11 @@ public class ShowpadTagManager {
 
 		//loop the tags the asset already has, removing them from the "need to add" list
 		if (assignedTags != null) {
-			for (String tag : assignedTags.keySet())
+			for (String tag : assignedTags.keySet()) {
 				tagsToAdd.remove(tag);
+				//this line can be removed after a few runs in production, ~03.31.2017.  We only need it to clean up the legacy data
+				checkExternalId(showpadTags.get(tag));
+			}
 		}
 
 		//add what's left on the "need to add" list as new tags; both to the Asset, and to the Division in Showpad if they don't already exist
@@ -142,10 +145,8 @@ public class ShowpadTagManager {
 				//add it to the global list for the next iteration to leverage
 				tagVo = createTag(tagNm, SMT_MEDIABIN_EXTERNALID);
 				showpadTags.put(tagNm, tagVo);
-			} else if (!SMT_MEDIABIN_EXTERNALID.equals(tagVo.getExternalId())) {
-				//fire an update at this tag (to showpad) to take ownership of it (make it a Mediabin tag!)
-				tagVo.setExternalId(SMT_MEDIABIN_EXTERNALID);
-				saveTagExternalId(tagVo);
+			} else {
+				checkExternalId(tagVo);
 			}
 
 			if (header.length() > 0) header.append(",");
@@ -153,6 +154,20 @@ public class ShowpadTagManager {
 		}
 
 		deleteUnwantedMBTags(vo, assignedTags, desiredTags);
+	}
+
+
+	/**
+	 * Tests the tag to ensure it has the proper externalId - sets it in Showpad if not
+	 * @param showpadTagVO
+	 */
+	protected void checkExternalId(ShowpadTagVO tagVo) {
+		if (tagVo == null || SMT_MEDIABIN_EXTERNALID.equals(tagVo.getExternalId()))
+			return;
+
+		//fire an update at this tag (to showpad) to take ownership of it (make it a Mediabin tag!)
+		tagVo.setExternalId(SMT_MEDIABIN_EXTERNALID);
+		saveTagExternalId(tagVo);
 	}
 
 
