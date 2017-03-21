@@ -76,7 +76,8 @@ public class InsightAction extends AbstractTreeAction {
 		String statusCd = req.getParameter("statusCd");
 		String typeCd = req.getParameter("typeCd");
 		String dateRange = req.getParameter("dateRange");
-		List<Object> insights = getInsights(insightId, statusCd, typeCd, dateRange);
+		boolean idBypass = false;
+		List<Object> insights = getInsights(insightId, statusCd, typeCd, dateRange, idBypass);
 
 		decryptNames(insights);
 
@@ -99,9 +100,23 @@ public class InsightAction extends AbstractTreeAction {
 		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
 
 	}
+	
+	/**
+	 * used to pull back a list of insights based on the codes and types. sets a id bypass to true
+	 * and will return all the insight data for each insight in the list, if you do not require 
+	 * text fields
+	 * @param insightId
+	 * @param statusCd
+	 * @param typeCd
+	 * @param dateRange
+	 * @return
+	 */
+	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
+		return getInsights (insightId, statusCd, typeCd, dateRange, false);
+	}
 
 	/**
-	 * used to pull back a list of insights based on the codes and types.  
+	 *  used to pull back a list of insights based on the codes and types.
 	 * @param insightId
 	 * @param statusCd
 	 * @param typeCd
@@ -109,10 +124,10 @@ public class InsightAction extends AbstractTreeAction {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
+	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange, boolean idByPass) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatRetrieveQuery(insightId, statusCd, typeCd, dateRange, schema);
+		String sql = formatRetrieveQuery(insightId, statusCd, typeCd, dateRange, schema, idByPass);
 
 		List<Object> params = new ArrayList<>();
 		if (!StringUtil.isEmpty(insightId)) params.add(insightId);
@@ -129,7 +144,6 @@ public class InsightAction extends AbstractTreeAction {
 
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
 
-
 		return insights;
 	}
 
@@ -137,26 +151,28 @@ public class InsightAction extends AbstractTreeAction {
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	public static String formatRetrieveQuery(String insightId, String statusCd, String typeCd, String dateRange, String schema) {
+	private static String formatRetrieveQuery(String insightId, String statusCd, String typeCd, String dateRange, String schema, boolean idByPass) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select ");
-				
-		if (!StringUtil.isEmpty(insightId)){
-			sql.append("a.*");
-		}else{
-			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt");
-		}
-				
-		sql.append(", p.first_nm, p.last_nm, p.profile_img ");
 		
+		generateSelectSectionOfQuery(sql, insightId, schema, idByPass);
+
+		generateJoinSectionOfQuery(sql, insightId, schema, idByPass);
 		
-		if (!StringUtil.isEmpty(insightId))sql.append(", b.section_id ");
-		sql.append("from ").append(schema).append("biomedgps_insight a ");
-		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		if (!StringUtil.isEmpty(insightId)){
-			sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
-			sql.append("on a.insight_id=b.insight_id ");
-		}
+		generateWhereClauseOfQuery(sql,insightId,statusCd, typeCd,dateRange );
+
+		log.debug(sql);
+		return sql.toString();
+	}
+
+	/**
+	 * generates the where clause of the query based on supplied params
+	 * @param sql
+	 * @param insightId
+	 * @param statusCd
+	 * @param typeCd
+	 * @param dateRange
+	 */
+	private static void generateWhereClauseOfQuery(StringBuilder sql, String insightId, String statusCd, String typeCd, String dateRange) {
 		sql.append("where 1=1 ");
 		if (!StringUtil.isEmpty(insightId)) sql.append("and a.insight_id=? ");
 		if (!StringUtil.isEmpty(statusCd)) sql.append("and a.status_cd=? ");
@@ -168,11 +184,46 @@ public class InsightAction extends AbstractTreeAction {
 				sql.append("and a.create_Dt < CURRENT_DATE - INTERVAL '6 months' ");
 			}
 		}
-
 		sql.append("order by a.publish_dt desc");
+		
+	}
 
-		log.debug(sql);
-		return sql.toString();
+	/**
+	 * updates string builder with the join section of the query based on supplied params
+	 * @param sql
+	 * @param insightId
+	 * @param schema
+	 * @param idByPass
+	 */
+	private static void generateJoinSectionOfQuery(StringBuilder sql, String insightId, String schema, boolean idByPass) {
+		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
+		if (!StringUtil.isEmpty(insightId) || idByPass){
+			sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
+			sql.append("on a.insight_id=b.insight_id ");
+		}
+	}
+
+	/**
+	 * updates the string builder with the select section of the query based on supplied params
+	 * @param sql
+	 * @param idByPass 
+	 * @param schema 
+	 * @param insightId 
+	 */
+	private static void generateSelectSectionOfQuery(StringBuilder sql, String insightId, String schema, boolean idByPass) {
+		sql.append("select ");
+		if (!StringUtil.isEmpty(insightId) || idByPass){
+			sql.append("a.*");
+		}else{
+			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt, a.featured_flg, a.order_no");
+		}
+				
+		sql.append(", p.first_nm, p.last_nm, p.profile_img ");
+		
+		
+		if (!StringUtil.isEmpty(insightId)|| idByPass)sql.append(", b.section_id ");
+		sql.append("from ").append(schema).append("biomedgps_insight a ");
+		
 	}
 
 	/**
@@ -205,6 +256,7 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.debug("insights action build called");
 		saveRecord(req, false);
 	}
 
@@ -297,6 +349,7 @@ public class InsightAction extends AbstractTreeAction {
 	 * @throws ActionException 
 	 */
 	private void updateFeatureOrder(InsightVO u) throws ActionException {
+		log.debug("update featured ordered no");
 		StringBuilder sb = new StringBuilder(50);
 		sb.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
 		sb.append("set FEATURED_FLG= ?, ORDER_NO = ? ");
