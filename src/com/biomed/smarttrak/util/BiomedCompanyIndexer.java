@@ -72,7 +72,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	protected void pushCompanies (SolrClient server, String id) {
 		SolrActionUtil util = new SmarttrakSolrUtil(server);
 		try {
-			util.addDocuments(retreiveCompanies(null));
+			util.addDocuments(retreiveCompanies(id));
 		} catch (Exception e) {
 			log.error("Failed to update product in Solr, passed pkid=" + id, e);
 		}
@@ -237,6 +237,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		if (id != null) sql.append("WHERE c.COMPANY_ID = ? ");
 		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, cs.SECTION_ID, c.STATUS_NO, ");
 		sql.append("e.NAME_TXT, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT ");
+		log.debug(sql);
 		return sql.toString();
 	}
 	
