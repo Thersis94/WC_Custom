@@ -597,17 +597,32 @@ public class ShowpadDivisionUtil {
 	 * @return
 	 */
 	protected String makeShowpadAssetName(MediaBinDeltaVO vo) {
-		String trackingNo = StringUtil.removeNonAlphaNumeric(vo.getTrackingNoTxt());
+		StringBuilder name = new StringBuilder(100);
+		//start with title
 		String title = vo.getTitleTxt();
-		if (StringUtil.isEmpty(title)) {
-			title = StringUtil.checkVal(vo.getFileNm());
-			if (!title.isEmpty() && title.lastIndexOf('.') > -1)
-				title = title.substring(0, title.lastIndexOf('.')); //remove the existing file extension
+		if (!StringUtil.isEmpty(title)) {
+			title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes, which look like directory structures
+			title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
+			name.append(title).append(" - ");
+		}
+		
+		//add file name - modified with business rules
+		String fileNm = vo.getFileNm();
+		if (!StringUtil.isEmpty(fileNm)) {
+			//remove the existing file extension
+			if (fileNm.lastIndexOf('.') > -1)
+				fileNm = fileNm.substring(0, fileNm.lastIndexOf('.'));
+			//remove all non-alphanumerics
+			fileNm = StringUtil.removeNonAlphaNumeric(fileNm);
+			//remove LR, low, high keywords
+			fileNm = fileNm.replaceAll("LR", "");
+			fileNm = fileNm.replaceAll("low", "");
+			fileNm = fileNm.replaceAll("high", "");
+			name.append(fileNm);
 		}
 
-		title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
-		title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
-		return title + " - " + trackingNo; 
+		log.debug("title: " + name);
+		return name.toString(); 
 	}
 
 
