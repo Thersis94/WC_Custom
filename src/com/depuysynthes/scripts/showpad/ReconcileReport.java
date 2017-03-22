@@ -75,6 +75,16 @@ public class ReconcileReport extends ShowpadMediaBinDecorator {
 				if (!localAssets.containsKey(entry.getKey()))
 					showpadAssets.add(entry.getValue());
 			}
+
+			log.info("*************************************");
+			log.info("SMT extras: " + smtAssets.size());
+			for (MediaBinDeltaVO vo : smtAssets) 
+				log.info(vo.getDpySynMediaBinId() + " : " + vo.getShowpadId() + " " + vo.getTitleTxt());
+
+			log.info("*************************************");
+			log.info("Showpad extras: " + showpadAssets.size());
+			for (MediaBinDeltaVO vo : showpadAssets) 
+				log.info(vo.getDpySynMediaBinId() + " : " + vo.getShowpadId() + " " + vo.getTitleTxt());
 		}
 	}
 
@@ -109,10 +119,4 @@ public class ReconcileReport extends ShowpadMediaBinDecorator {
 		log.debug("loaded " + data.size() + " records from the database");
 		return data;
 	}
-
-
-
-
-
-
 }
