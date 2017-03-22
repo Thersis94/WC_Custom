@@ -89,7 +89,7 @@ public class InsightAction extends AbstractTreeAction {
 	private void loadInsightsData(ActionRequest req) {
 		log.debug("loaded data");
 		
-		EnumMap<Fields, String> insightParamsMap = new EnumMap<Fields,String>(Fields.class);
+		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
 		
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
@@ -143,7 +143,7 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
 		
-		EnumMap<Fields, String> insightParamsMap = new EnumMap<Fields,String>(Fields.class);
+		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
 		if (!StringUtil.isEmpty(insightId)) insightParamsMap.put(Fields.INSIGHT_ID, insightId );
 		if (!StringUtil.isEmpty(statusCd)) insightParamsMap.put(Fields.STATUS_CD, statusCd);
 		if (!StringUtil.isEmpty(typeCd)) insightParamsMap.put(Fields.TYPE_CD, typeCd);
@@ -167,7 +167,7 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange, boolean idBypass) {
 		
-		EnumMap<Fields, String> insightParamsMap = new EnumMap<Fields,String>(Fields.class);
+		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
 		if (!StringUtil.isEmpty(insightId)) insightParamsMap.put(Fields.INSIGHT_ID, insightId );
 		if (!StringUtil.isEmpty(statusCd)) insightParamsMap.put(Fields.STATUS_CD, statusCd);
 		if (!StringUtil.isEmpty(typeCd)) insightParamsMap.put(Fields.TYPE_CD, typeCd);
