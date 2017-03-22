@@ -207,15 +207,26 @@ public class GapCompanyVO {
 			try {
 				tStatus = StatusClass.valueOf(statusTxt).getStatusVal(rKey);
 			} catch(Exception e) {
-				if(US.equals(rKey)) {
-					tStatus = StatusVal.USG;
-				} else {
-					tStatus = StatusVal.OUSG;
-				}
+				tStatus = getGapStatus(rKey);
 			}
+		} else {
+			tStatus = getGapStatus(rKey);
 		}
 
 		return tStatus;
+	}
+
+	/**
+	 * Helper method that gets a Gap Status for the given Region.
+	 * @param rKey
+	 * @return
+	 */
+	public StatusVal getGapStatus(String rKey) {
+		if(US.equals(rKey)) {
+			return StatusVal.USG;
+		} else {
+			return StatusVal.OUSG;
+		}
 	}
 
 	/**
