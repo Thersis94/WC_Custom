@@ -540,6 +540,57 @@ public class ShowpadDivisionUtil {
 
 
 	/**
+	 * loads all the assets for this Division - used by the ReconcileReport
+	 * @return
+	 */
+	protected Map<String, MediaBinDeltaVO> getAllAssets() {
+		Map<String, MediaBinDeltaVO> assets = new HashMap<>(8000);
+
+		int fetchSize = 1000;
+		int offset=0;
+		do {
+			loadAssets(fetchSize, offset, assets);
+			offset += fetchSize;
+			//if we've retrieve less than the maximum amount of tags, we're done.  If the #s are equal we need to iterate.
+		} while (assets.size() == offset);
+
+		log.info("loaded " + assets.size() + " showpad assets");
+		return assets;
+	}
+
+
+	/**
+	 * loads a list of tags for the given division.  Takes into consideration the range limit (1000) and offset (for repeated calls).
+	 * @param limit
+	 * @param offset
+	 * @throws QuotaException
+	 */
+	protected void loadAssets(int limit, int offset, Map<String, MediaBinDeltaVO> assets) {
+		String tagUrl = divisionUrl + "/assets.json?limit=" + limit + "&fields=id,name&offset=" + offset;
+		log.debug(tagUrl);
+		try {
+			String resp = showpadUtil.executeGet(tagUrl);
+			JSONObject json = JSONObject.fromObject(resp);
+			log.info(json);
+			JSONObject metaResp = json.getJSONObject("meta");
+			if (!"200".equals(metaResp.getString("code")))
+				throw new IOException(metaResp.getString("message"));
+
+			JSONObject response = json.getJSONObject("response");
+			JSONArray items = response.getJSONArray("items");
+			for (int x=0; x < items.size(); x++) {
+				MediaBinDeltaVO vo = new MediaBinDeltaVO(items.getJSONObject(x));
+				assets.put(vo.getShowpadId(), vo);
+			}
+
+		} catch (IOException | NullPointerException ioe) {
+			failures.add(ioe);
+			log.error("could not load showpad tags", ioe);
+		}
+	}
+
+
+	/**
 	 * escapes special chars that Showpad is sensitive to seeing in asset names
 	 * @param vo
 	 * @param fType
