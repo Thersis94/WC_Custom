@@ -94,7 +94,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 
 		private int val;
 		private String text;
-		InsightType(int val, String texintt) {
+		InsightType(int val, String text) {
 			this.val = val;
 			this.text = text;
 		}
