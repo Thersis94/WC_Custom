@@ -343,7 +343,12 @@ public class CRMAction extends SBActionAdapter {
 	}
 	
 	
-	private void updateReminder(String reminderId) throws ActionException {
+	/**
+	 * Update the supplied reminder
+	 * @param reminderId
+	 * @throws ActionException
+	 */
+	protected void updateReminder(String reminderId) throws ActionException {
 		ReminderUtil util = new ReminderUtil((String)attributes.get(Constants.DATA_FEED_SCHEMA), dbConn);
 		util.closeReminder(reminderId);
 	}
