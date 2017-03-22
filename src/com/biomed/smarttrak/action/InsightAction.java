@@ -203,7 +203,7 @@ public class InsightAction extends AbstractTreeAction {
 		List<Object> insight = db.executeSelect(sb.toString(), params, new InsightVO());
 		log.debug("loaded " + insight.size() + " insight");
 		
-		if (insight == null || insight.isEmpty()) return null;
+		if (insight.isEmpty()) return null;
 		
 		for (Object vo : insight){
 			InsightVO ivo = (InsightVO)vo;

@@ -21,7 +21,6 @@ import com.siliconmtn.util.StringUtil;
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.common.SiteVO;
-import com.smt.sitebuilder.security.SecurityController;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountReportVO.java</p>
@@ -40,6 +39,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	private static final String REPORT_TITLE = "Accounts Report";
 	protected static final String KEY_ACCOUNTS = "accounts";
 	protected static final String KEY_FIELD_OPTIONS = "fieldOptions";
+	private static final int ACCT_OWNER_FLAG_TRUE = 1;
 
 	// CSS style constants
 	private static final String CSS_ACCT_REPORT_WRAPPER = "acctReportWrapper";
@@ -50,7 +50,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	private static final String CSS_DIVISION_WRAPPER = "divisionWrapper";
 	private static final String CSS_DIVISION_NAME = "divisionName";
 	private static final String CSS_DIVISION_USER = "divisionUser";
-	private static final String CSS_DIVISION_SUPER_USER = "superUser";
+	private static final String CSS_DIVISION_ACCT_OWNER = "acctOwner";
 	private static final String CSS_ACCT_SUMMARY_HEADER = "acctSummaryHeader";
 	private static final String CSS_ACCT_SUMMARY_ITEM = "acctSummaryItem";
 	private static final String CSS_USER_STATUS_CD = "userStatusCode";
@@ -135,7 +135,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 			addAccountSegmentRows(sb,acct);
 			addDivisions(sb,acct,fieldOptions.get(RegistrationMap.DIVISIONS.getFieldId()));
 			closeDiv(sb);
-			totalSubscribers += acct.getTotalUsers();
+			totalSubscribers += acct.getTotalDivisionUsers();
 			totalAdded += acct.getAddedCount();
 			totalComplementary += acct.getComplementaryCount();
 		}
@@ -155,7 +155,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	protected void addAccountRow(StringBuilder sb, AccountUsersVO acct) {
 		startDiv(sb,CSS_ACCT_HEADER);
 		sb.append(acct.getAccountName().toUpperCase());
-		int totUsers = acct.getTotalUsers() - 
+		int totUsers = acct.getTotalDivisionUsers() - 
 				(acct.getAddedCount() + 
 						acct.getComplementaryCount() + 
 						acct.getUpdatesOnlyCount());
@@ -217,8 +217,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 					break;
 				case 4:
 					PermissionVO perms = (PermissionVO)seg.getUserObject();
-					appendSegment(perms,lvl4,seg.getNodeName(),cnt);
-					cnt++;
+					appendSegment(lvl4,seg.getNodeName(),perms.isBrowseAuth(),cnt);
+					if (perms.isBrowseAuth()) cnt++;
 					break;
 				default:
 					break;
@@ -247,13 +247,13 @@ public class AccountReportVO extends AbstractSBReportVO {
 	/**
 	 * Adds the level 4 segment name to the StringBuilder passed as an argument.
 	 * Used by the method that builds the account segment rows.
-	 * @param perms
 	 * @param sb
 	 * @param segName
+	 * @param addSegment
 	 * @param cnt
 	 */
-	protected void appendSegment(PermissionVO perms, StringBuilder sb, String segName, int cnt) {
-		if (perms.isBrowseAuth()) {
+	protected void appendSegment(StringBuilder sb, String segName, boolean addSegment, int cnt) {
+		if (addSegment) {
 			if (cnt > 1) sb.append(",");
 			appendSpace(sb);
 			sb.append(segName);
@@ -323,8 +323,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	protected void addDivisionUsers(StringBuilder sb, List<UserVO> users) {
 		for (UserVO user : users) {
-			if (user.getBarCodeId().equals(SecurityController.ADMIN_ROLE_LEVEL)) {
-				startDiv(sb,CSS_DIVISION_SUPER_USER);
+			if (user.getAcctOwnerFlg() == ACCT_OWNER_FLAG_TRUE) {
+				startDiv(sb,CSS_DIVISION_ACCT_OWNER);
 			} else {
 				startDiv(sb,CSS_DIVISION_USER);
 			}
@@ -341,13 +341,12 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param user
 	 */
 	protected void addUserIdentifier(StringBuilder sb, UserVO user) {
-		// look at country code first.
-		if ("UK".equals(user.getCountryCode())) {
-			sb.append(" [UK]");
-		} else {
-			// not UK, so look at job category/level
-			findSuffix(sb,Convert.formatInteger(user.getJobCategory()),
+		// look at job category/level
+		String sfx = findSuffix(Convert.formatInteger(user.getJobCategory()),
 					Convert.formatInteger(user.getJobLevel()));
+
+		if (sfx != null) {
+			sb.append(" [").append(sfx).append("]");
 		}
 
 		// now append status code if appropriate.
@@ -355,31 +354,47 @@ public class AccountReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * Check job category and job level in order to determine
-	 * suffix.  Returns null if no suffix could be determined.
-	 * @param sb
-	 * @param jobCat
-	 * @param jobLvl
+	 * Checks job category and job level to determine suffix.
+	 * @param cat
+	 * @param lvl
+	 * @return
 	 */
-	protected void findSuffix(StringBuilder sb, int jobCat, int jobLvl) {
-		switch(jobCat) {
-			case 2:
-				if (jobLvl == 10) sb.append(" [PM]");
-				return;
-			case 5:
-				if (jobLvl == 4) sb.append(" [SA]");
-				return;
-			case 8:
-				sb.append(" [BD]");
-				return;
-			case 9:
-				sb.append(" [Ex]");
-				return;
-			default:
-				break;
+	protected String findSuffix(int cat, int lvl) {
+		String sfx = null;
+		// first, check for match against both vals
+		if (cat == 2 && lvl == 10) {
+			sfx =  "PM";
+		} else if (cat == 5 && lvl == 4) {
+			sfx =  "SA";
 		}
-		// if we haven't already added a suffix, check job level exclusively
-		if (jobLvl == 10) sb.append(" [M]");
+
+		// if no match, consider job category
+		if (sfx == null) {
+			sfx = findSuffixViaJobCategory(cat);
+			// if still no match, consider job level only.
+			if (sfx == null && lvl == 10) {
+				sfx = "M";
+			}
+		}
+		return sfx;
+	}
+
+	/**
+	 * Determine suffix using job category only.
+	 * @param cat
+	 * @return
+	 */
+	protected String findSuffixViaJobCategory(int cat) {
+		String sfx = null;
+		switch(cat) {
+			case 8: sfx =  "BD"; break;
+			case 9: sfx =  "Ex"; break;
+			case 10: sfx =  "NA"; break;
+			case 11: sfx =  "UK"; break;
+			case 15: sfx =  "RA";	 break;
+			default: break;
+		}
+		return sfx;
 	}
 
 	/**
@@ -390,7 +405,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 	protected void addUserStatusCode(StringBuilder sb, String statCd) {
 		if (statCd.equalsIgnoreCase(Status.COMPLIMENTARY.getCode()) ||
 				statCd.equalsIgnoreCase(Status.UPDATES.getCode()) ||
-				statCd.equalsIgnoreCase(Status.EXTRA.getCode())) {
+				statCd.equalsIgnoreCase(Status.EXTRA.getCode()) ||
+				statCd.equalsIgnoreCase(Status.COMPUPDATES.getCode())) {
 
 			startSpan(sb,CSS_USER_STATUS_CD);
 			appendSpace(sb);
