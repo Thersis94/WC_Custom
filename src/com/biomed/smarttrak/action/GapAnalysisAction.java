@@ -18,6 +18,7 @@ import org.apache.commons.lang.ArrayUtils;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.report.GapAnalysisReportVO;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
+import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.GapCompanyVO;
 import com.biomed.smarttrak.vo.GapProductVO;
 import com.biomed.smarttrak.vo.GapTableVO;
@@ -55,7 +56,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 
 	public static final String GAP_ROOT_ID = "GAP_ANALYSIS_ROOT";
 	public static final String GAP_CACHE_KEY = "GAP_ANALYSIS_TREE_CACHE_KEY";
-	private String [] selNodes;
+	private String[] selNodes;
+
 	public GapAnalysisAction() {
 		super();
 	}
@@ -69,6 +71,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SecurityController.isGaAuth(req);
+		
 		if(req.hasParameter("selNodes")) {
 
 			//Instantiate GapTableVO to Store Data.
