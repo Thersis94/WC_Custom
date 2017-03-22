@@ -202,18 +202,14 @@ public class GapCompanyVO {
 	 * @return
 	 */
 	public StatusVal getStatus(String statusTxt, String rKey) {
-		StatusVal tStatus = null;
 		if(!StringUtil.isEmpty(statusTxt)) {
 			try {
-				tStatus = StatusClass.valueOf(statusTxt).getStatusVal(rKey);
+				return StatusClass.valueOf(statusTxt).getStatusVal(rKey);
 			} catch(Exception e) {
-				tStatus = getGapStatus(rKey);
+				return getGapStatus(rKey);
 			}
-		} else {
-			tStatus = getGapStatus(rKey);
 		}
-
-		return tStatus;
+		return getGapStatus(rKey);
 	}
 
 	/**
