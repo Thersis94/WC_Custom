@@ -9,6 +9,8 @@ import com.depuysynthes.action.MediaBinAssetVO;
 import com.depuysynthes.scripts.showpad.ShowpadTagVO;
 import com.siliconmtn.db.DBUtil;
 
+import net.sf.json.JSONObject;
+
 /****************************************************************************
  * <b>Title</b>: MediaBinDeltaVO.java<p/>
  * <b>Description: extends a stock mediabin record with some additional fields that 
@@ -29,6 +31,7 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	private String eCopyTrackingNo;
 	private String limeLightUrl;
 	private String fileName;
+	private String divisionId;
 	
 	/*
 	 * used by ShowpadProductDecorator to pass-along the update date of the product to affiliated assets.
@@ -54,9 +57,13 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	
 	public MediaBinDeltaVO(ResultSet rs) {
 		super(rs);
-		DBUtil db = new DBUtil();
-		setShowpadId(db.getStringVal("DPY_SYN_SHOWPAD_ID", rs));
-		db = null;
+		setShowpadId(new DBUtil().getStringVal("ASSET_ID", rs));
+	}
+	
+	public MediaBinDeltaVO(JSONObject json) {
+		this();
+		setShowpadId(json.getString("id"));
+		setTitleTxt(json.getString("name"));
 	}
 
 	public State getRecordState() {
@@ -145,4 +152,13 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	public boolean isFileChanged() {
 		return fileChanged;
 	}
+
+	public String getDivisionId() {
+		return divisionId;
+	}
+
+	public void setDivisionId(String divisionId) {
+		this.divisionId = divisionId;
+	}
+
 }

@@ -540,23 +540,89 @@ public class ShowpadDivisionUtil {
 
 
 	/**
+	 * loads all the assets for this Division - used by the ReconcileReport
+	 * @return
+	 */
+	protected Map<String, MediaBinDeltaVO> getAllAssets() {
+		Map<String, MediaBinDeltaVO> assets = new HashMap<>(8000);
+
+		int fetchSize = 1000;
+		int offset=0;
+		do {
+			loadAssets(fetchSize, offset, assets);
+			offset += fetchSize;
+			//if we've retrieve less than the maximum amount of tags, we're done.  If the #s are equal we need to iterate.
+		} while (assets.size() == offset);
+
+		log.info("loaded " + assets.size() + " showpad assets");
+		return assets;
+	}
+
+
+	/**
+	 * loads a list of tags for the given division.  Takes into consideration the range limit (1000) and offset (for repeated calls).
+	 * @param limit
+	 * @param offset
+	 * @throws QuotaException
+	 */
+	protected void loadAssets(int limit, int offset, Map<String, MediaBinDeltaVO> assets) {
+		String tagUrl = divisionUrl + "/assets.json?limit=" + limit + "&fields=id,name&offset=" + offset;
+		log.debug(tagUrl);
+		try {
+			String resp = showpadUtil.executeGet(tagUrl);
+			JSONObject json = JSONObject.fromObject(resp);
+			log.info(json);
+			JSONObject metaResp = json.getJSONObject("meta");
+			if (!"200".equals(metaResp.getString("code")))
+				throw new IOException(metaResp.getString("message"));
+
+			JSONObject response = json.getJSONObject("response");
+			JSONArray items = response.getJSONArray("items");
+			for (int x=0; x < items.size(); x++) {
+				MediaBinDeltaVO vo = new MediaBinDeltaVO(items.getJSONObject(x));
+				assets.put(vo.getShowpadId(), vo);
+			}
+
+		} catch (IOException | NullPointerException ioe) {
+			failures.add(ioe);
+			log.error("could not load showpad tags", ioe);
+		}
+	}
+
+
+	/**
 	 * escapes special chars that Showpad is sensitive to seeing in asset names
 	 * @param vo
 	 * @param fType
 	 * @return
 	 */
 	protected String makeShowpadAssetName(MediaBinDeltaVO vo) {
-		String trackingNo = StringUtil.removeNonAlphaNumeric(vo.getTrackingNoTxt());
+		StringBuilder name = new StringBuilder(100);
+		//start with title
 		String title = vo.getTitleTxt();
-		if (StringUtil.isEmpty(title)) {
-			title = StringUtil.checkVal(vo.getFileNm());
-			if (!title.isEmpty() && title.lastIndexOf('.') > -1)
-				title = title.substring(0, title.lastIndexOf('.')); //remove the existing file extension
+		if (!StringUtil.isEmpty(title)) {
+			title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes, which look like directory structures
+			title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
+			name.append(title).append(" - ");
+		}
+		
+		//add file name - modified with business rules
+		String fileNm = vo.getFileNm();
+		if (!StringUtil.isEmpty(fileNm)) {
+			//remove the existing file extension
+			if (fileNm.lastIndexOf('.') > -1)
+				fileNm = fileNm.substring(0, fileNm.lastIndexOf('.'));
+			//remove all non-alphanumerics
+			fileNm = StringUtil.removeNonAlphaNumeric(fileNm);
+			//remove LR, low, high keywords
+			fileNm = fileNm.replaceAll("LR", "");
+			fileNm = fileNm.replaceAll("low", "");
+			fileNm = fileNm.replaceAll("high", "");
+			name.append(fileNm);
 		}
 
-		title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
-		title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
-		return title + " - " + trackingNo; 
+		log.debug("title: " + name);
+		return name.toString(); 
 	}
 
 
