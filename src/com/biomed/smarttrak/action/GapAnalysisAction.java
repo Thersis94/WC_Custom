@@ -104,7 +104,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			String companyId = req.getParameter("companyId");
 			String columnId = req.getParameter("columnId");
 			super.putModuleData(getProductList(regionId, companyId, columnId));
-		} else {
+		} else if(req.hasParameter("getState")) {
 
 			SMTSession ses = req.getSession();
 			UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
