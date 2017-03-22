@@ -48,7 +48,13 @@ public class ListAction extends DirectUrlManagerAction {
 		//If a type is passed, attempt to retrieve URLs related to that type.
 		if(req.hasParameter("type")) {
 			// Get Map of Urls to Return and place on request.
-			this.putModuleData(getUrls(req));
+			Map<String, List<GenericVO>> urls = getUrls(req);
+
+			/*
+			 * Put data on request in proper location.
+			 * If amid is present then this isn't an admintool call.
+			 */
+			this.putModuleData(urls, urls.size(), !req.hasParameter("amid"));
 		}
 	}
 
