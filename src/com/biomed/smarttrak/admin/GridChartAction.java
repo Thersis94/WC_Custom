@@ -74,6 +74,7 @@ public class GridChartAction extends SBActionAdapter {
 		// Get the DB Schema
 		String schema = getAttribute(Constants.CUSTOM_DB_SCHEMA) + "";
 		String gridId = req.getParameter("gridId");
+		
 		if (StringUtil.isEmpty(gridId)) {
 			retrieveList(req, schema);
 		} else if (! "ADD".equalsIgnoreCase(gridId)){
@@ -91,7 +92,7 @@ public class GridChartAction extends SBActionAdapter {
 		grid.setCreateDate(new Date());
 		grid.setUpdateDate(new Date());
 		
-		log.info(req.getParameter(GridVO.JSON_DATA_KEY));
+		log.debug(req.getParameter(GridVO.JSON_DATA_KEY));
 		String msg = "You have successfuly saved the grid data";
 		boolean error = false;
 		Map<String, String> columnMatch = new HashMap<>(grid.getDetails().size());
@@ -107,10 +108,8 @@ public class GridChartAction extends SBActionAdapter {
 			// otherwise use the existing
 			db.save(grid);
 			
-			if (StringUtil.isEmpty(grid.getGridId())) {
-				grid.setGridId(db.getGeneratedPKId());
-				log.info("Grid ID: " + grid.getGridId());
-			}
+			if (StringUtil.isEmpty(grid.getGridId())) grid.setGridId(db.getGeneratedPKId());
+			log.debug("Grid ID: " + grid.getGridId());
 			
 			// Delete any rows that aren't being updated
 			this.deleteRows(grid);
@@ -181,7 +180,7 @@ public class GridChartAction extends SBActionAdapter {
 		}
 
 		// Convert the set to a comma delimited string for delete
-		if (delIds.size() == 0) return;
+		if (delIds.isEmpty()) return;
 		
 		// Build the delete sql.  Since the ids are built within the 
 		// Backend, no worries about SQL Injection, so params are just set
@@ -233,13 +232,13 @@ public class GridChartAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(164);
 		sql.append("select * from ").append(schema).append("biomedgps_grid a ");
 		sql.append("inner join ").append(schema).append("biomedgps_grid_detail b ");
-		sql.append("on a.grid_id = b.grid_id where a.grid_id = ? ");
+		sql.append("on a.grid_id = b.grid_id where (a.grid_id = ? or a.slug_txt = ?) ");
 		if (display) sql.append("and grid_detail_type_cd = 'DATA' ");
 		sql.append("order by b.order_no");
 		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
-		List<Object> params = Arrays.asList(new Object[]{gridId});
+		List<Object> params = Arrays.asList(new Object[]{gridId, gridId});
 		List<?> data = db.executeSelect(sql.toString(), params, new GridVO(), null);
 		log.debug("Data: " + data);
 		
@@ -312,7 +311,7 @@ public class GridChartAction extends SBActionAdapter {
 	public List<GridVO> getGridList(ActionRequest req, String schema) throws SQLException {
 		// Get the navigation info
 		int start = Convert.formatInteger(req.getParameter("offset"),0);
-		int rpp = Convert.formatInteger(req.getParameter("limit"),10);
+		int rpp = (Convert.formatInteger(req.getParameter("limit")) == 0) ? 10 : Convert.formatInteger(req.getParameter("limit"));
 		String sort = StringUtil.checkVal(sortMapper.get(req.getParameter("sort")), "title_nm");
 		String order = StringUtil.checkVal(req.getParameter("order"), "asc");
 		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
@@ -326,7 +325,7 @@ public class GridChartAction extends SBActionAdapter {
 		if (search.length() > 0) sql.append("where upper(title_nm) like ? or upper(subtitle_nm) like ? ");
 		sql.append("order by ").append(sort).append(" ").append(order);
 		sql.append(" limit ? offset ? ");		
-    log.debug(sql.toString());
+		log.debug(sql.toString());
 		
 		// Loop the data and store
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

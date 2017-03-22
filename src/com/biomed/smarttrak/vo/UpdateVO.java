@@ -70,6 +70,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	private String firstNm;
 	private String lastNm;
 	private String statusCd;
+	private String historyId;
 	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
@@ -507,4 +508,16 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 		return "Modified Smarttrak Update Record.";
 	}
 
+	public void setHistory(String historyId) {
+		this.historyId = StringUtil.checkVal(historyId);
+	}
+
+	@Column(name="wc_sync_id", isReadOnly=true)
+	public String getHistory() {
+		return historyId;
+	}
+
+	public boolean getHasHistory() {
+		return !StringUtil.isEmpty(historyId);
+	}
 }

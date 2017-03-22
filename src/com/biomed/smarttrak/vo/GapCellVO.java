@@ -17,14 +17,16 @@ public class GapCellVO {
 
 	private StatusVal usReg;
 	private StatusVal ousReg;
+	private String columnId;
 
 	/**
 	 * @param usReg
 	 * @param ousReg
 	 */
-	public GapCellVO(StatusVal usReg, StatusVal ousReg) {
+	public GapCellVO(StatusVal usReg, StatusVal ousReg, String columnId) {
 		this.usReg = usReg;
 		this.ousReg = ousReg;
+		this.columnId = columnId;
 	}
 
 	/**
@@ -61,5 +63,16 @@ public class GapCellVO {
 	 */
 	public int getScore() {
 		return usReg.getScore() + ousReg.getScore();
+	}
+
+	/**
+	 * @return
+	 */
+	public String getColumnId() {
+		return columnId;
+	}
+
+	public void setColumnId(String columnId) {
+		this.columnId = columnId;
 	}
 }
