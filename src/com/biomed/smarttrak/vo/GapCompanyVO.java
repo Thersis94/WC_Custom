@@ -12,6 +12,7 @@ import java.util.Map;
 
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: GapCompanyVO.java
@@ -29,6 +30,30 @@ public class GapCompanyVO {
 	//Region Codes
 	public static final String US = "US";
 	public static final String OUS = "OUS";
+
+	public enum StatusClass {
+		APPROVED(StatusVal.USA, StatusVal.OUSA),
+		DISCONTINUED(StatusVal.USD, StatusVal.OUSD),
+		IN_DEVELOPMENT(StatusVal.USID, StatusVal.OUSID),
+		NO_PRODUCT(StatusVal.USG, StatusVal.OUSG);
+
+		private StatusVal us;
+		private StatusVal intl;
+		StatusClass(StatusVal us, StatusVal intl) {
+			this.us = us;
+			this.intl = intl;
+		}
+
+		public StatusVal getStatusVal(String region) {
+			if(US.contentEquals(region)) {
+				return us;
+			} else if(OUS.equals(region)) {
+				return intl;
+			} else {
+				return null;
+			}
+		}
+	}
 
 	//Status Codes
 	public enum StatusVal { USA(10), OUSA(10), USID(5), OUSID(5), USD(2), OUSD(2), USG(0), OUSG(0);
@@ -151,7 +176,7 @@ public class GapCompanyVO {
 	 * @param statusId
 	 * @param regionId
 	 */
-	public void addRegulation(String columnId, int statusId, int regionId) {
+	public void addRegulation(String columnId, String statusTxt, int regionId) {
 
 		//Generate a Region based Column Key.
 		String rKey = regionId == 1 ? US : OUS;
@@ -161,7 +186,7 @@ public class GapCompanyVO {
 		StatusVal status = regulations.get(regKey);
 
 		//Retrieve Status
-		StatusVal tStatus = getStatus(statusId, rKey);
+		StatusVal tStatus = getStatus(statusTxt, rKey);
 
 		//If this is a better status, update.
 		if(status == null || tStatus.getScore() > status.getScore()) {
@@ -176,75 +201,18 @@ public class GapCompanyVO {
 	 * @param rKey
 	 * @return
 	 */
-	public StatusVal getStatus(int statusId, String rKey) {
-		StatusVal tStatus;
-		switch(statusId) {
-
-			//Discontinued Status.
-			case 10:
-			case 21:
-			case 26:
-			case 42:
-				if(US.equals(rKey)) {
-					tStatus = StatusVal.USD;
-				} else {
-					tStatus = StatusVal.OUSD;
-				}
-				break;
-
-			//Approved Status.
-			case 9:
-			case 12:
-			case 13:
-			case 14:
-			case 43:
-				if(US.equals(rKey)) {
-					tStatus = StatusVal.USA;
-				} else {
-					tStatus = StatusVal.OUSA;
-				}
-				break;
-
-			//In Development Status
-			case 5:
-			case 6:
-			case 7:
-			case 8:
-			case 11:
-			case 15:
-			case 17:
-			case 18:
-			case 22:
-			case 23:
-			case 24:
-			case 25:
-			case 27:
-			case 28:
-			case 29:
-			case 30:
-			case 31:
-			case 32:
-			case 33:
-			case 34:
-			case 35:
-			case 36:
-			case 37:
-			case 40:
-				if(US.equals(rKey)) {
-					tStatus = StatusVal.USID;
-				} else {
-					tStatus = StatusVal.OUSID;
-				}
-				break;
-
-			//Default Gap Status.
-			default:
+	public StatusVal getStatus(String statusTxt, String rKey) {
+		StatusVal tStatus = null;
+		if(!StringUtil.isEmpty(statusTxt)) {
+			try {
+				tStatus = StatusClass.valueOf(statusTxt).getStatusVal(rKey);
+			} catch(Exception e) {
 				if(US.equals(rKey)) {
 					tStatus = StatusVal.USG;
 				} else {
 					tStatus = StatusVal.OUSG;
 				}
-				break;
+			}
 		}
 
 		return tStatus;
@@ -275,7 +243,7 @@ public class GapCompanyVO {
 			StatusVal usReg = this.getRegulation(col.getNodeId() + "-US");
 			StatusVal ousReg = this.getRegulation(col.getNodeId() + "-OUS");
 
-			cells.add(new GapCellVO(usReg, ousReg));
+			cells.add(new GapCellVO(usReg, ousReg, col.getNodeId()));
 		}
 	}
 
