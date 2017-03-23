@@ -138,7 +138,7 @@ public class InsightAction extends AbstractTreeAction {
 
 		List<Object> insights = db.executeSelect(sql, params, new InsightVO());
 
-		if (insights != null && insights.size() > 0){
+		if (insights != null && !insights.isEmpty()){
 			InsightVO ivo = (InsightVO) insights.get(0);
 			return ivo.getCountNumber();
 		} else {
