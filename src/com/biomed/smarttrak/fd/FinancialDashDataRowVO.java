@@ -280,7 +280,34 @@ public class FinancialDashDataRowVO implements Serializable {
 		// Subtracting the year index from the most recent year in the query,
 		// gives the year for that column. One row in the returned data could
 		// represent data from more than one year.
-		this.addColumn(qtr + "-" + (maxYear - yearIdx), dollarValue, pctChange);
+		String columnId = qtr + "-" + (maxYear - yearIdx);
+		addColumn(columnId, dollarValue, pctChange);
+		
+		// Checks for potential delta between overlay and base data 
+		checkOverlayDelta(columnId, qtr, yearIdx, rs);
+	}
+	
+	/**
+	 * Checks for deltas between base and scenario overlay data.
+	 * 
+	 * @param id
+	 * @param qtr
+	 * @param yearIdx
+	 * @param rs
+	 */
+	protected void checkOverlayDelta(String id, String qtr, int yearIdx, ResultSet rs) {
+		try {
+			int baseValue = rs.getInt(FinancialDashScenarioOverlayAction.BASE_PREFIX + qtr + "_" + yearIdx);
+			int overlayValue = rs.getInt(qtr + "_" + yearIdx);
+			
+			FinancialDashDataColumnVO currentCol = columns.get(id);
+			if (baseValue != overlayValue)
+				currentCol.setDelta(true);
+			
+		} catch (Exception e) {
+			// base value not found in the result set
+			// intentionally buried... if we make it here, then we aren't looking at a scenario, there is no delta
+		}
 	}
 	
 	/**
@@ -367,7 +394,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param key
 	 * @param dollarValue
 	 */
-	private void incrementTotal(Map<Integer, Integer> totals, int key, int dollarValue) {
+	protected void incrementTotal(Map<Integer, Integer> totals, int key, int dollarValue) {
 		if (totals.get(key) == null) {
 			totals.put(key, 0);
 		}

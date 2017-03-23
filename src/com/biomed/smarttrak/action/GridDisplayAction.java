@@ -76,13 +76,12 @@ public class GridDisplayAction extends SBActionAdapter {
 			// Add it the the Report
 			BiomedExcelReport rpt = new BiomedExcelReport();
 			rpt.setData(grid);
-			String fileName = StringUtil.removeNonAlphaNumeric(grid.getTitle(), false);
+			String fileName = StringUtil.removeNonAlphaNumeric(grid.getTitle(), true);
 			rpt.setFileName(fileName + ".xls");
 			
 			// Set the appropriate parameters to stream the file
 			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
-
 	}
 	
 	/**
@@ -99,6 +98,7 @@ public class GridDisplayAction extends SBActionAdapter {
 		// Get the chart options
 		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE, full);
 		options.addOptionsFromGridData(grid);
+		log.debug("options: " + options);
 		
 		// Add the chart specific options
 		gridData.addCustomValues(options.getChartOptions());
@@ -121,10 +121,11 @@ public class GridDisplayAction extends SBActionAdapter {
 		GridChartAction gca = new GridChartAction(actionInit);
 		gca.setAttributes(getAttributes());
 		gca.setDBConnection(getDBConnection());
-		gca.retrieveData(gridId, attributes.get(Constants.CUSTOM_DB_SCHEMA) + "", false);
-		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA); 
-		return (GridVO) mod.getActionData();
 		
+		gca.retrieveData(gridId, attributes.get(Constants.CUSTOM_DB_SCHEMA) + "", false);
+		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		
+		return (GridVO) mod.getActionData();
 	}
 
 }

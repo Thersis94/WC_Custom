@@ -1,9 +1,12 @@
 package com.biomed.smarttrak.admin;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
@@ -37,6 +40,14 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  ****************************************************************************/
 public class UpdatesAction extends AbstractTreeAction {
 	public static final String UPDATE_ID = "updateId"; //req param
+	public static final String SORT = "sort"; //req param
+	public static final String ORDER = "order"; //req param
+	public static final String DATE_RANGE = "dateRange"; //req param
+	public static final String STATUS_CD = "statusCd"; //req param
+	public static final String TYPE_CD = "typeCd"; //req param
+	public static final String SEARCH = "search"; //req param
+
+
 	public static final String ROOT_NODE_ID = MASTER_ROOT;
 
 	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
@@ -68,34 +79,161 @@ public class UpdatesAction extends AbstractTreeAction {
 		}
 	}
 
+	// Maps the table field name to the db field name for sorting purposes
+	private Map<String, String> sortMapper;
+
 	public UpdatesAction() {
 		super();
+		buildSortMapper();
 	}
+
 	public UpdatesAction(ActionInitVO actionInit) {
 		super(actionInit);
+		buildSortMapper();
 	}
 
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
 		if (!req.hasParameter("loadData") && !req.hasParameter("loadhistory") && !req.hasParameter(UPDATE_ID) ) return;
-		String updateId = req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null;
+		int count = 0;
 
 		List<Object> data;
 		if(req.hasParameter("loadHistory")) {
 			data = getHistory(req.getParameter("historyId"));
 		} else {
-			String statusCd = req.getParameter("statusCd");
-			String typeCd = req.getParameter("typeCd");
-			String dateRange = req.getParameter("dateRange");
-			data = getUpdates(updateId, statusCd, typeCd, dateRange);
+
+			//Get the Filtered Updates according to Request.
+			data = getFilteredUpdates(req);
+
+			// Get the count
+			count = getUpdateCount(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		}
 
 		decryptNames(data);
 
-		putModuleData(data);
+		if(count > 0) {
+			putModuleData(data, count, false);
+		} else {
+			putModuleData(data);
+		}
 	}
 
+	/**
+	 * Helper method that returns list of Updates filtered by ActionRequest
+	 * parameters.
+	 * @param req
+	 * @return
+	 */
+	private List<Object> getFilteredUpdates(ActionRequest req) {
+		//Get Relevant Params off Request.
+		int start = Convert.formatInteger(req.getParameter("offset"),0);
+		int rpp = Convert.formatInteger(req.getParameter("limit"),10);
+		Map<String, String> reqParams = getReqParams(req);
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+
+		String sql = formatRetrieveQuery(reqParams, schema, req.hasParameter("loadData"));
+
+		List<Object> params = new ArrayList<>();
+		if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) params.add(reqParams.get(UPDATE_ID));
+		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) params.add(reqParams.get(STATUS_CD));
+		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) params.add(Convert.formatInteger((String)reqParams.get(TYPE_CD)));
+		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) params.add(reqParams.get(SEARCH));
+		params.add(rpp);
+		params.add(start);
+
+		DBProcessor db = new DBProcessor(dbConn, schema);
+		return db.executeSelect(sql, params, new UpdateVO());
+	}
+
+	/**
+	 * Helper method that extracts Params off the Request.
+	 * @param req
+	 * @return
+	 */
+	private Map<String, String> getReqParams(ActionRequest req) {
+		Map<String, String> reqParams = new HashMap<>();
+
+		reqParams.put(UPDATE_ID, req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null);
+		reqParams.put(SORT, StringUtil.checkVal(sortMapper.get(req.getParameter(SORT)), "publish_dt"));
+		reqParams.put(ORDER, StringUtil.checkVal(req.getParameter(ORDER), "asc"));
+		reqParams.put(SEARCH, StringUtil.checkVal(req.getParameter(SEARCH)).toUpperCase());
+		reqParams.put(STATUS_CD, req.getParameter(STATUS_CD));
+		reqParams.put(TYPE_CD, req.getParameter(TYPE_CD));
+		reqParams.put(DATE_RANGE, req.getParameter(DATE_RANGE));
+		return reqParams;
+	}
+
+	/**
+	* Retrieve all the updates
+	* @param updateId
+	* @param statusCd
+	* @param typeCd
+	* @param dateRange
+	* @return
+	*/
+	public List<Object> getAllUpdates(String updateId) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String sql = formatRetrieveAllQuery(schema, updateId);
+
+		List<Object> params = new ArrayList<>();
+		if(!StringUtil.isEmpty(updateId)) params.add(updateId);
+
+		DBProcessor db = new DBProcessor(dbConn, schema);
+		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
+		log.debug("loaded " + updates.size() + " updates");
+		return updates;
+	}
+
+	/**
+	 * Generates Query for getting all records/single record.  Used by Solr Indexer.
+	 * @param updateId
+	 * @param schema
+	 * @return
+	 */
+	public static String formatRetrieveAllQuery(String schema, String updateId) {
+		StringBuilder sql = new StringBuilder(400);
+		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id, b.update_section_xr_id ");
+		sql.append("from ").append(schema).append("biomedgps_update a ");
+		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
+		sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
+		sql.append("on a.update_id=b.update_id ");
+		if(!StringUtil.isEmpty(updateId)) {
+			sql.append("where a.update_id = ? ");
+		}
+		sql.append("order by a.create_dt");
+
+		log.debug(sql);
+		return sql.toString();
+	}
+
+	/**
+	 * Retrieves total number of update records in db.
+	 * @param req
+	 * @param schema
+	 * @return
+	 */
+	protected int getUpdateCount(ActionRequest req, String schema) {
+		int count = 0;
+		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
+
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select count(*) from ").append(schema).append("biomedgps_update ");
+		if (search.length() > 0) sql.append("where upper(title_txt) like ? ");
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (search.length() > 0) {
+				ps.setString(1, "%" + search + "%");
+			}
+
+			ResultSet rs = ps.executeQuery();
+			rs.next();
+			count = rs.getInt(1);
+		} catch (SQLException e) {
+			log.error(e);
+		}
+		return count;
+	}
 
 	/**
 	 * Retrieve list of Updates containing historical Revisions.
@@ -131,44 +269,37 @@ public class UpdatesAction extends AbstractTreeAction {
 		return sql.toString();
 	}
 
-	/**
-	 * Retrieve all the updates
-	 * @param updateId
-	 * @param statusCd
-	 * @param typeCd
-	 * @param dateRange
-	 * @return
-	 */
-	public List<Object> getUpdates(String updateId, String statusCd, String typeCd, String dateRange) {
-		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatRetrieveQuery(updateId, statusCd, typeCd, dateRange, schema);
-
-		List<Object> params = new ArrayList<>();
-		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
-		if (!StringUtil.isEmpty(statusCd)) params.add(statusCd);
-		if (!StringUtil.isEmpty(typeCd)) params.add(Convert.formatInteger(typeCd));
-
-		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
-		log.debug("loaded " + updates.size() + " updates");
-		return updates;
-	}
-
 
 	/**
-	 * Formats the account retrieval query.
+	 * Formats the Update retrieval query.
 	 * @return
 	 */
-	public static String formatRetrieveQuery(String updateId, String statusCd, String typeCd, String dateRange, String schema) {
+	public static String formatRetrieveQuery(Map<String, String> reqParams, String schema, boolean isList) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id, b.update_section_xr_id ");
+		sql.append("select a.*, p.first_nm, p.last_nm, ");
+
+		if(isList) {
+			sql.append("s.wc_sync_id ");
+		} else {
+			sql.append("b.section_id, b.update_section_xr_id ");
+		}
+
 		sql.append("from ").append(schema).append("biomedgps_update a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
-		sql.append("on a.update_id=b.update_id where 1=1 ");
-		if (!StringUtil.isEmpty(updateId)) sql.append("and a.update_id=? ");
-		if (!StringUtil.isEmpty(statusCd)) sql.append("and a.status_cd=? ");
-		if (!StringUtil.isEmpty(typeCd)) sql.append("and a.type_cd=? ");
+		if(isList) {
+			sql.append("left outer join (select wc_sync_id, wc_key_id, row_number() ");
+			sql.append("over (partition by wc_key_id order by create_dt) as rn from wc_sync) s ");
+			sql.append("on s.wc_key_id = a.update_id and s.rn = 1 ");
+		} else {
+			sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
+			sql.append("on a.update_id=b.update_id ");
+		}
+		sql.append("where 1=1 ");
+		if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) sql.append("and a.update_id=? ");
+		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) sql.append("and a.status_cd=? ");
+		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) sql.append("and a.type_cd=? ");
+		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) sql.append("and upper(a.title_txt) like ? ");
+		String dateRange = reqParams.get(DATE_RANGE);
 		if (!StringUtil.isEmpty(dateRange)) {
 			if ("1".equals(dateRange)) {
 				sql.append("and a.create_dt > CURRENT_DATE - INTERVAL '6 months' ");
@@ -176,7 +307,8 @@ public class UpdatesAction extends AbstractTreeAction {
 				sql.append("and a.create_dt < CURRENT_DATE - INTERVAL '6 months' ");
 			}
 		}
-		sql.append("order by a.create_dt");
+		sql.append("order by ").append(reqParams.get(SORT)).append(" ").append(reqParams.get(ORDER));
+		sql.append(" limit ? offset ? ");
 
 		log.debug(sql);
 		return sql.toString();
@@ -347,6 +479,17 @@ public class UpdatesAction extends AbstractTreeAction {
 		}
 	}
 
+	/**
+	 * Convert Bootstrap Table Column Names to db names. 
+	 * @return
+	 */
+	private void buildSortMapper() {
+		sortMapper = new HashMap<>();
+		sortMapper.put("titleTxt", "title_txt");
+		sortMapper.put("publishDt", "publish_dt");
+		sortMapper.put("typeNm", "type_cd");
+		sortMapper.put("statusNm", "status_cd");
+	}
 
 	@Override
 	public String getCacheKey() {

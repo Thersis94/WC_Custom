@@ -3,8 +3,10 @@ package com.biomed.smarttrak.action;
 import java.util.HashMap;
 import java.util.Map;
 
+
 //apache commons-lang jar
 import org.apache.commons.lang.StringEscapeUtils;
+
 
 // WC custom
 import com.biomed.smarttrak.fd.FinancialDashAction;
@@ -136,6 +138,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("support", SupportFacadeAction.class);
 		ACTIONS.put("synonyms", SolrSynonymAction.class);
 		ACTIONS.put("marketingCampaigns", CampaignInstanceAction.class);
+		ACTIONS.put("crm", CRMAction.class);
 		ACTIONS.put("marketingInstanceReport", InstanceReport.class);
 		ACTIONS.put("uwr", UpdatesWeeklyReportAction.class); 
 		ACTIONS.put("grid", GridChartAction.class);

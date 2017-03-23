@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 //WC Custom
 import com.biomed.smarttrak.vo.PermissionVO;
 import com.siliconmtn.data.Node;
@@ -144,6 +145,15 @@ public class SmarttrakRoleVO extends SBUserRole {
 	 */
 	void setMktAuthorized(int userAuth, int acctAuth) {
 		this.isMktAuth = userAuth == 1 || acctAuth == 1;
+	}
+	
+	
+	/**
+	 * decides whether the 'tools' dropdown menu should visible at all.
+	 * @return
+	 */
+	public boolean isToolsAuthorized() {
+		return getRoleLevel() > AdminControllerAction.EUREPORT_ROLE_LEVEL || isFdAuth || isGaAuth;
 	}
 
 

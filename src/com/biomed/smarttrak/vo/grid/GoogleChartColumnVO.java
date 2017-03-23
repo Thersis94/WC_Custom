@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.biomed.smarttrak.vo.grid.GoogleChartVO.DataType;
+import com.siliconmtn.util.StringUtil;
 
 /********************************************************************
  * <b>Title: </b>GoogleColumn.java<br/>
@@ -51,6 +52,15 @@ public class GoogleChartColumnVO implements Serializable, SMTGridColumnIntfc {
 		super();
 		
 		p = new LinkedHashMap<>(16);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this, false, 0, ", ");
 	}
 
 	/**
