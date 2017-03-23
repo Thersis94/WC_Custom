@@ -47,7 +47,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 	public static final String DETAILS_ID = "DETAILS_ROOT";
 	
 	private enum ActionTarget {
-		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, SECTION, 
+		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, 
 		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION
 	}
 
@@ -76,9 +76,6 @@ public class ProductManagementAction extends AbstractTreeAction {
 				break;
 			case ATTRIBUTE:
 				attributeRetrieve(req);
-				break;
-			case SECTION:
-				retrieveSections(req);
 				break;
 			case ATTRIBUTELIST:
 				super.putModuleData(getProductAttributes(req.getParameter("productId")));
@@ -447,13 +444,12 @@ public class ProductManagementAction extends AbstractTreeAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		product = (ProductVO) db.executeSelect(sql.toString(), params, new ProductVO()).get(0);
 
-		// Get specifics on product details
-		addAttributes(product);
-		addSections(product);
-		addAlliances(product);
-		addRegulations(product);
-		req.getSession().setAttribute("productName", product.getProductName());
+		Tree t = loadDefaultTree();
 		
+		req.getSession().setAttribute("hierarchyTree", t.preorderList());
+		req.getSession().setAttribute("productName", product.getProductName());
+
+		getActiveSections(product);
 		super.putModuleData(product);
 	}
 	
@@ -561,33 +557,6 @@ public class ProductManagementAction extends AbstractTreeAction {
 			sec.setGroupNm(parts[1]);
 		}
 	}
-	
-	
-	/**
-	 * Get all sections available to companies and mark the active sections
-	 * @param req
-	 * @throws ActionException
-	 */
-	protected void retrieveSections(ActionRequest req) throws ActionException {
-		SectionHierarchyAction c = new SectionHierarchyAction();
-		c.setActionInit(actionInit);
-		c.setAttributes(attributes);
-		c.setDBConnection(dbConn);
-		
-		List<Node> hierarchy = new Tree(c.getHierarchy()).preorderList();
-		List<String> activeNodes = getActiveSections(req.getParameter("productId"));
-		
-		// Loop over all sections and set the leaf property to 
-		// signify it being in use by the current product.
-		for (Node n : hierarchy) {
-			if (activeNodes.contains(n.getNodeId())) {
-				n.setLeaf(true);
-			} else {
-				n.setLeaf(false);
-			}
-		}
-		super.putModuleData(hierarchy);
-	}
 
 
 	/**
@@ -596,19 +565,19 @@ public class ProductManagementAction extends AbstractTreeAction {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected List<String> getActiveSections(String productId) throws ActionException {
+	protected List<String> getActiveSections(ProductVO product) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("SELECT SECTION_ID FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_PRODUCT_SECTION WHERE PRODUCT_ID = ? ");
 		
 		List<String> activeSections = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, productId);
+			ps.setString(1, product.getProductId());
 			
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
-				activeSections.add(rs.getString("SECTION_ID"));
+				product.addProductSection(new SectionVO(rs));
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -713,6 +682,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 			case PRODUCT:
 				ProductVO c = new ProductVO(req);
 				saveProduct(c, db);
+				saveSections(req);
 				break;
 			case PRODUCTATTRIBUTE:
 				ProductAttributeVO attr = new ProductAttributeVO(req);
@@ -721,9 +691,6 @@ public class ProductManagementAction extends AbstractTreeAction {
 			case ATTRIBUTE:
 				ProductAttributeTypeVO t = new ProductAttributeTypeVO(req);
 				saveAttributeType(t, db, Convert.formatBoolean(req.getParameter("insert")));
-				break;
-			case SECTION:
-				saveSections(req);
 				break;
 			case ALLIANCE:
 				ProductAllianceVO a = new ProductAllianceVO(req);
@@ -955,9 +922,6 @@ public class ProductManagementAction extends AbstractTreeAction {
 			case ATTRIBUTE:
 				ProductAttributeTypeVO t = new ProductAttributeTypeVO(req);
 				db.delete(t);
-				break;
-			case SECTION:
-				deleteSection(false, req.getParameter("sectionId"));
 				break;
 			case ALLIANCE:
 				ProductAllianceVO a = new ProductAllianceVO(req);

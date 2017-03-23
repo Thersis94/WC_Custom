@@ -290,6 +290,14 @@ public class ProductVO extends SecureSolrDocumentVO {
 		if (!relatedProducts.containsKey(key)) relatedProducts.put(key, new ArrayList<ProductVO>());
 		relatedProducts.get(key).add(product);
 	}
+	
+	public String getAllSections() {
+		StringBuilder sections = new StringBuilder(200);
+		for (SectionVO section : productSections) {
+			sections.append(section.getSectionId()).append("|");
+		}
+		return sections.toString();
+	}
 
 
 	// These functions exists only to give the DBProcessor a hook to autogenerate dates on

@@ -380,5 +380,13 @@ public class CompanyVO  extends SecureSolrDocumentVO {
 	public void setUpdateMsg(String updateMsg) {
 		this.updateMsg = updateMsg;
 	}
+	
+	public String getAllSections() {
+		StringBuilder sections = new StringBuilder(200);
+		for (SectionVO section : companySections) {
+			sections.append(section.getSectionId()).append("|");
+		}
+		return sections.toString();
+	}
 
 }

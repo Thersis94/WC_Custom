@@ -25,7 +25,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: CompanyManagementAction.java <p/>
@@ -45,7 +44,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	public static final String ACTION_TYPE = "actionTarget";
 	
 	private enum ActionType {
-		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, ATTRIBUTE, SECTION
+		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, ATTRIBUTE
 	}
 	
 	/**
@@ -87,9 +86,6 @@ public class CompanyManagementAction extends AbstractTreeAction {
 				break;
 			case LOCATION:
 				locationRetrieve(req);
-				break;
-			case SECTION:
-				retrieveSections(req);
 				break;
 			case COMPANY:
 				companyRetrieve(req);
@@ -162,33 +158,6 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		if (req.hasParameter("allianceId"))
 			retrieveAlliance(req.getParameter("allianceId"));
 	}
-	
-	
-	/**
-	 * Get all sections available to companies and mark the active sections
-	 * @param req
-	 * @throws ActionException
-	 */
-	protected void retrieveSections(ActionRequest req) throws ActionException {
-		SectionHierarchyAction c = new SectionHierarchyAction();
-		c.setActionInit(actionInit);
-		c.setAttributes(attributes);
-		c.setDBConnection(dbConn);
-		
-		List<Node> hierarchy = new Tree(c.getHierarchy()).preorderList();
-		List<String> activeNodes = getActiveSections(req.getParameter("companyId"));
-		
-		// Loop over all sections and set the leaf property to 
-		// signify it being in use by the current company.
-		for (Node n : hierarchy) {
-			if (activeNodes.contains(n.getNodeId())) {
-				n.setLeaf(true);
-			} else {
-				n.setLeaf(false);
-			}
-		}
-		super.putModuleData(hierarchy);
-	}
 
 
 	/**
@@ -197,19 +166,19 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected List<String> getActiveSections(String companyId) throws ActionException {
+	protected List<String> getActiveSections(CompanyVO company) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("SELECT SECTION_ID FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_COMPANY_SECTION WHERE COMPANY_ID = ? ");
 		
 		List<String> activeSections = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, companyId);
+			ps.setString(1, company.getCompanyId());
 			
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
-				activeSections.add(rs.getString("SECTION_ID"));
+				company.addCompanySection(new SectionVO(rs));
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -385,66 +354,14 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		params.add(companyId);
 		DBProcessor db = new DBProcessor(dbConn);
 		company = (CompanyVO) db.executeSelect(sql.toString(), params, new CompanyVO()).get(0);
-
-		// Get specifics on company details
-		addInvestors(company);
-		addLocations(company);
-		addAlliances(company);
-		addAttributes(company);
-		addSections(company);
-		
-		req.getSession().setAttribute("companyName", company.getCompanyName());
-		
-		super.putModuleData(company);
-	}
-	
-	
-	/**
-	 * Get all the sections that are associated with the supplied company
-	 * @param company
-	 * @throws ActionException
-	 */
-	protected void addSections(CompanyVO company) throws ActionException {
-		StringBuilder sql = new StringBuilder(275);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT SECTION_NM, xr.COMPANY_SECTION_XR_ID, xr.SECTION_ID FROM ").append(customDb).append("BIOMEDGPS_COMPANY_SECTION xr ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
-		sql.append("ON s.SECTION_ID = xr.SECTION_ID ");
-		sql.append("WHERE COMPANY_ID = ? ");
 		
 		Tree t = loadDefaultTree();
-		t.buildNodePaths();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, company.getCompanyId());
-			
-			ResultSet rs = ps.executeQuery();
-			
-			while(rs.next()) {
-				SectionVO sec = new SectionVO(rs);
-				sec.setSectionId(rs.getString("COMPANY_SECTION_XR_ID"));
-				sec.setSectionNm(rs.getString("SECTION_NM"));
-				setGroupName(t.findNode(rs.getString("SECTION_ID")), sec);
-				company.addCompanySection(sec);
-			}
-		} catch (Exception e) {
-			throw new ActionException(e);
-		}
-	}
+		
+		req.getSession().setAttribute("hierarchyTree", t.preorderList());
+		req.getSession().setAttribute("companyName", company.getCompanyName());
 
-
-	/**
-	 * Set the group name based on the full path of the supplied node.
-	 * @param n
-	 * @param sec
-	 */
-	private void setGroupName(Node n, SectionVO sec) {
-		if (n == null) return;
-		String[] parts = n.getFullPath().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
-		if (parts.length < 2) {
-			sec.setGroupNm(parts[0]);
-		} else {
-			sec.setGroupNm(parts[1]);
-		}
+		getActiveSections(company);
+		super.putModuleData(company);
 	}
 
 
@@ -604,6 +521,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			case COMPANY:
 				CompanyVO c = new CompanyVO(req);
 				saveCompany(c, db);
+				saveSections(req);
 				break;
 			case LOCATION:
 				LocationVO l = new LocationVO(req);
@@ -620,9 +538,6 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			case ATTRIBUTE:
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
 				saveAttributeType(t, db, Convert.formatBoolean(req.getParameter("insert")));
-				break;
-			case SECTION:
-				saveSections(req);
 				break;
 		}
 	}
@@ -841,9 +756,6 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			case ATTRIBUTE:
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
 				db.delete(t);
-				break;
-			case SECTION:
-				deleteSection(false, req.getParameter("sectionId"));
 				break;
 		}
 		} catch (Exception e) {
