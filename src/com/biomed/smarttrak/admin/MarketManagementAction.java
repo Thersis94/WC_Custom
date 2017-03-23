@@ -488,13 +488,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 
 		switch(action) {
 			case MARKET:
-				MarketVO c = new MarketVO(req);
-				saveMarket(c, db);
-				marketId = c.getMarketId();
-				// Market save also includes the single section associated
-				// with this market
-				req.setParameter("marketId", marketId);
-				saveSections(req);
+				completeMarketSave(marketId, req, db);
 				break;
 			case MARKETATTRIBUTE:
 			case MARKETGRAPH:
@@ -510,6 +504,24 @@ public class MarketManagementAction extends AbstractTreeAction {
 				break;
 		}
 		return marketId;
+	}
+
+
+	/**
+	 * Do a complete market save
+	 * @param marketId
+	 * @param req
+	 * @param db
+	 * @throws ActionException
+	 */
+	protected void completeMarketSave(String marketId, ActionRequest req, DBProcessor db) throws ActionException {
+		MarketVO c = new MarketVO(req);
+		saveMarket(c, db);
+		marketId = c.getMarketId();
+		// Market save also includes the single section associated
+		// with this market
+		req.setParameter("marketId", marketId);
+		saveSections(req);
 	}
 
 

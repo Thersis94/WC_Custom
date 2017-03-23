@@ -345,7 +345,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	private int getCompanyCount(String searchData) throws ActionException {
+	protected int getCompanyCount(String searchData) throws ActionException {
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select count(*) FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");

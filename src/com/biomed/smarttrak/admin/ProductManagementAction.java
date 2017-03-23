@@ -432,7 +432,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	private int getProductCount(String searchData) throws ActionException {
+	protected int getProductCount(String searchData) throws ActionException {
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select COUNT(*) ").append("FROM ").append(customDb).append("BIOMEDGPS_product p ");
