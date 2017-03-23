@@ -7,7 +7,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 //WC_Custom
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
@@ -285,12 +284,6 @@ public class InsightAction extends AbstractTreeAction {
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.RPP)));
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.START)));
 		}
-
-
-		for( Entry<Fields, String> entry :insightParamsMap.entrySet() ){
-			log.debug("param key: " + entry.getKey().name() + " value: " + entry.getValue());
-		}
-
 		return params;
 	}
 
