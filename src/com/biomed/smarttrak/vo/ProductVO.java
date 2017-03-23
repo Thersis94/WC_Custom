@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.vo;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -307,7 +308,12 @@ public class ProductVO extends SecureSolrDocumentVO {
 	public Date getCreateDate() {return null;}
 	
 
-	
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 		if (obj == null)
 			return false;
