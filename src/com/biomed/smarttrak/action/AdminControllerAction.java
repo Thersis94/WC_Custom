@@ -11,6 +11,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 // WC custom
 import com.biomed.smarttrak.fd.FinancialDashAction;
 import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
+import com.biomed.smarttrak.admin.CRMAction;
 import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
@@ -121,8 +122,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("agap", GapAnalysisAdminAction.class);
 		ACTIONS.put("fd", FinancialDashAction.class);
 		ACTIONS.put("fdScenario", FinancialDashScenarioAction.class);
-		ACTIONS.put("fdHierarchy", FinancialDashHierarchyAction.class);
 		ACTIONS.put("audit", AuditLogAction.class);
+		ACTIONS.put("fdHierarchy", FinancialDashHierarchyAction.class);
 		ACTIONS.put("productAdmin", ProductManagementAction.class);
 		ACTIONS.put("companyAdmin", CompanyManagementAction.class);
 		ACTIONS.put("accounts", AccountAction.class);
@@ -138,6 +139,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("support", SupportFacadeAction.class);
 		ACTIONS.put("synonyms", SolrSynonymAction.class);
 		ACTIONS.put("marketingCampaigns", CampaignInstanceAction.class);
+		ACTIONS.put("crm", CRMAction.class);
 		ACTIONS.put("marketingInstanceReport", InstanceReport.class);
 		ACTIONS.put("uwr", UpdatesWeeklyReportAction.class); 
 		ACTIONS.put("grid", GridChartAction.class);
