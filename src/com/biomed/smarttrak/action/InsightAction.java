@@ -111,7 +111,7 @@ public class InsightAction extends AbstractTreeAction {
 	private void overrideSolrRequest(SolrAction sa, InsightVO vo, ActionRequest req) throws ActionException {
 		//use the set up the custom query to get back top five of the same type.  
 		req.setParameter("rpp", "5");
-		req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
+		req.setParameter("fieldSort", "publish_dt", true);
 		req.setParameter("sortDirection", ORDER.desc.toString(), true);
 
 		String[] fqs = new String[0];
