@@ -50,6 +50,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	
 	public static final String STATUS_NO_INACTIVE = "I";
 	public static final String ATTRIB_REPORT_SUFFIX = "reportSuffix";
+	private static final int DEFAULT_START_DATE_OFFSET = -14;
 	private Map<Integer,String> monthKeyMap;
 	
 	public enum UtilizationReportType {
@@ -99,6 +100,9 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		// determine utilization report type and craft start date from the type.
 		UtilizationReportType urt = parseReportType(req.getParameter("utilizationReportType"));
 		String dateStart = buildReportStartDate(urt);
+		
+		//String dateStart = formatReportDate(req.getParameter("dateStart"), true);
+		//String dateEnd = formatReportDate(req.getParameter("dateEnd"), false);
 		
 		// 1. get user pageviews for the given start date.
 		List<PageViewVO> pageViews = retrieveBasePageViews(siteId,dateStart);
@@ -160,6 +164,36 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			cal.set(Calendar.DAY_OF_MONTH, 1);
 		}
 		return Convert.formatDate(cal.getTime(),Convert.DATE_DASH_PATTERN);
+	}
+	
+	/**
+	 * Checks the String date valued passed in.  If the String is null or empty, a null 
+	 * value is returned, otherwise the value of the String date is returned.
+	 * @param date
+	 * @param isStartDate
+	 * @return
+	 */
+	protected String formatReportDate(String date, boolean isStartDate) {
+		/* If date is null, then if isStartDate, format 'today' as start date, otherwise format 'today' as end date.
+		 * If date is not null, if isStartDate, format as start date, otherwise format 'today' as end date.
+		 */
+		String tmpDate = StringUtil.checkVal(date,null);
+		if (tmpDate == null) {
+			Calendar cal = GregorianCalendar.getInstance();
+			tmpDate = cal.getTime().toString();
+		}
+		if (isStartDate) {
+			
+		} else {
+			
+		}
+		if (tmpDate == null && isStartDate) {
+			Calendar cal = GregorianCalendar.getInstance();
+			cal.add(Calendar.DAY_OF_YEAR, DEFAULT_START_DATE_OFFSET);
+			tmpDate = Convert.formatDate(cal.getTime(),Convert.DATE_TIME_DASH_PATTERN);
+		}
+		
+		return tmpDate;
 	}
 	
 	/**
