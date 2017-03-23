@@ -141,7 +141,6 @@ public class GapTableVO implements Serializable {
 	 * @return
 	 */
 	private void buildHeaderCols() {
-
 		List<GapColumnVO> gParent = new ArrayList<>();
 		List<GapColumnVO> parent = new ArrayList<>();
 		List<GapColumnVO> child = new ArrayList<>();
@@ -154,13 +153,14 @@ public class GapTableVO implements Serializable {
 			List<GapColumnVO> primChild = new ArrayList<>();
 			List<GapColumnVO> altChild = new ArrayList<>();
 			List<Node> pNodes = g.getChildren();
+
 			boolean hasGrandKids = false;
 
 			if(pNodes != null && !pNodes.isEmpty()) {
 				for(int j = 0; j < pNodes.size(); j++) {
 					Node p = pNodes.get(j);
 					List<Node> cNodes = p.getChildren();
-					
+
 					if(cNodes != null && !cNodes.isEmpty()) {
 						for(int k = 0; k < cNodes.size(); k++) {
 							Node c = cNodes.get(k);
@@ -169,7 +169,7 @@ public class GapTableVO implements Serializable {
 							numKids++;
 							hasGrandKids = true;
 						}
-						parent.add(new GapColumnVO(altCol, null, p.getNodeName(), cNodes.size()));
+						primParent.add(new GapColumnVO(altCol, null, p.getNodeName(), cNodes.size()));
 					} else {
 						numKids++;
 						primParent.add(new GapColumnVO(altCol, null, null));
