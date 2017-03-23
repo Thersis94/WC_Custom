@@ -1,11 +1,14 @@
 package com.biomed.smarttrak.admin;
 
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
+import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeTypeVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
@@ -22,7 +25,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: CompanyManagementAction.java <p/>
@@ -38,11 +40,12 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  ****************************************************************************/
 
 public class CompanyManagementAction extends AbstractTreeAction {
-	
+
 	public static final String ACTION_TYPE = "actionTarget";
+	public static final String COMPANY_ID = "companyId";
 	
 	private enum ActionType {
-		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, ATTRIBUTE, SECTION
+		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, ATTRIBUTE
 	}
 	
 	/**
@@ -85,9 +88,6 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			case LOCATION:
 				locationRetrieve(req);
 				break;
-			case SECTION:
-				retrieveSections(req);
-				break;
 			case COMPANY:
 				companyRetrieve(req);
 				break;
@@ -104,8 +104,8 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 * @throws ActionException
 	 */
 	protected void companyRetrieve(ActionRequest req) throws ActionException {
-		if (req.hasParameter("companyId") && ! req.hasParameter("add")) {
-			retrieveCompany(req.getParameter("companyId"));
+		if (req.hasParameter(COMPANY_ID) && ! req.hasParameter("add")) {
+			retrieveCompany(req.getParameter(COMPANY_ID), req);
 		} else if (!req.hasParameter("add")) {
 			retrieveCompanies(req);
 		}
@@ -159,33 +159,6 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		if (req.hasParameter("allianceId"))
 			retrieveAlliance(req.getParameter("allianceId"));
 	}
-	
-	
-	/**
-	 * Get all sections available to companies and mark the active sections
-	 * @param req
-	 * @throws ActionException
-	 */
-	protected void retrieveSections(ActionRequest req) throws ActionException {
-		SectionHierarchyAction c = new SectionHierarchyAction();
-		c.setActionInit(actionInit);
-		c.setAttributes(attributes);
-		c.setDBConnection(dbConn);
-		
-		List<Node> hierarchy = new Tree(c.getHierarchy()).preorderList();
-		List<String> activeNodes = getActiveSections(req.getParameter("companyId"));
-		
-		// Loop over all sections and set the leaf property to 
-		// signify it being in use by the current company.
-		for (Node n : hierarchy) {
-			if (activeNodes.contains(n.getNodeId())) {
-				n.setLeaf(true);
-			} else {
-				n.setLeaf(false);
-			}
-		}
-		super.putModuleData(hierarchy);
-	}
 
 
 	/**
@@ -194,19 +167,19 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected List<String> getActiveSections(String companyId) throws ActionException {
+	protected List<String> getActiveSections(CompanyVO company) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("SELECT SECTION_ID FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_COMPANY_SECTION WHERE COMPANY_ID = ? ");
 		
 		List<String> activeSections = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, companyId);
+			ps.setString(1, company.getCompanyId());
 			
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
-				activeSections.add(rs.getString("SECTION_ID"));
+				company.addCompanySection(new SectionVO(rs));
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -343,31 +316,63 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	protected void retrieveCompanies(ActionRequest req) throws ActionException {
 		List<Object> params = new ArrayList<>();
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select c.*, CASE WHEN (ci.investee_company_id  is null) THEN 0 ELSE 1 end as INVESTED_FLG ");
+		StringBuilder sql = new StringBuilder(400);
+		sql.append("select c.COMPANY_NM, c.COMPANY_ID, CASE WHEN (ci.investee_company_id  is null) THEN 0 ELSE 1 end as INVESTED_FLG ");
 		sql.append("FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("left join ").append(customDb).append("biomedgps_company_investor ci ");
 		sql.append("on c.COMPANY_ID = ci.investee_company_id ");
 		
 		// If the request has search terms on it add them here
-		if (req.hasParameter("searchData")) {
+		if (req.hasParameter("search")) {
 			sql.append("WHERE lower(COMPANY_NM) like ?");
-			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
+			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
+		sql.append("group by c.COMPANY_NM, c.COMPANY_ID, INVESTED_FLG ");
+		sql.append("ORDER BY COMPANY_NM LIMIT ? OFFSET ? ");
+		params.add(Convert.formatInteger(req.getParameter("limit")));
+		params.add(Convert.formatInteger(req.getParameter("offset")));
 		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> companies = db.executeSelect(sql.toString(), params, new CompanyVO());
-		super.putModuleData(companies, companies.size(), false);
+		
+		super.putModuleData(companies, getCompanyCount(req.getParameter("search")), false);
 	}
 
 	
+	/**
+	 * Get a count of how many companies are in the database
+	 * @return
+	 * @throws ActionException 
+	 */
+	protected int getCompanyCount(String searchData) throws ActionException {
+		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select count(*) FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		// If the request has search terms on it add them here
+		if (!StringUtil.isEmpty(searchData)) {
+			sql.append("WHERE lower(COMPANY_NM) like ?");
+		}
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (!StringUtil.isEmpty(searchData)) ps.setString(1, "%" + searchData.toLowerCase() + "%");
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				return rs.getInt(1);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		
+		return 0;
+	}
+
+
 	/**
 	 * Get all information related to the supplied company.
 	 * @param companyId
 	 * @throws ActionException
 	 */
-	protected void retrieveCompany(String companyId) throws ActionException {
+	protected void retrieveCompany(String companyId, ActionRequest req) throws ActionException {
 		CompanyVO company;
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY ");
@@ -377,64 +382,14 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		params.add(companyId);
 		DBProcessor db = new DBProcessor(dbConn);
 		company = (CompanyVO) db.executeSelect(sql.toString(), params, new CompanyVO()).get(0);
-
-		// Get specifics on company details
-		addInvestors(company);
-		addLocations(company);
-		addAlliances(company);
-		addAttributes(company);
-		addSections(company);
-		
-		super.putModuleData(company);
-	}
-	
-	
-	/**
-	 * Get all the sections that are associated with the supplied company
-	 * @param company
-	 * @throws ActionException
-	 */
-	protected void addSections(CompanyVO company) throws ActionException {
-		StringBuilder sql = new StringBuilder(275);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT SECTION_NM, xr.COMPANY_SECTION_XR_ID, xr.SECTION_ID FROM ").append(customDb).append("BIOMEDGPS_COMPANY_SECTION xr ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
-		sql.append("ON s.SECTION_ID = xr.SECTION_ID ");
-		sql.append("WHERE COMPANY_ID = ? ");
 		
 		Tree t = loadDefaultTree();
-		t.buildNodePaths();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, company.getCompanyId());
-			
-			ResultSet rs = ps.executeQuery();
-			
-			while(rs.next()) {
-				SectionVO sec = new SectionVO(rs);
-				sec.setSectionId(rs.getString("COMPANY_SECTION_XR_ID"));
-				sec.setSectionNm(rs.getString("SECTION_NM"));
-				setGroupName(t.findNode(rs.getString("SECTION_ID")), sec);
-				company.addCompanySection(sec);
-			}
-		} catch (Exception e) {
-			throw new ActionException(e);
-		}
-	}
+		
+		req.getSession().setAttribute("hierarchyTree", t.preorderList());
+		req.getSession().setAttribute("companyName", company.getCompanyName());
 
-
-	/**
-	 * Set the group name based on the full path of the supplied node.
-	 * @param n
-	 * @param sec
-	 */
-	private void setGroupName(Node n, SectionVO sec) {
-		if (n == null) return;
-		String[] parts = n.getFullPath().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
-		if (parts.length < 2) {
-			sec.setGroupNm(parts[0]);
-		} else {
-			sec.setGroupNm(parts[1]);
-		}
+		getActiveSections(company);
+		super.putModuleData(company);
 	}
 
 
@@ -568,6 +523,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = cax.REL_COMPANY_ID ");
 		sql.append("WHERE cax.COMPANY_ID = ? ");
+		sql.append("ORDER BY c.COMPANY_NM ");
 		
 		List<Object> params = new ArrayList<>();
 		params.add(company.getCompanyId());
@@ -593,6 +549,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			case COMPANY:
 				CompanyVO c = new CompanyVO(req);
 				saveCompany(c, db);
+				saveSections(req);
 				break;
 			case LOCATION:
 				LocationVO l = new LocationVO(req);
@@ -610,9 +567,6 @@ public class CompanyManagementAction extends AbstractTreeAction {
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
 				saveAttributeType(t, db, Convert.formatBoolean(req.getParameter("insert")));
 				break;
-			case SECTION:
-				saveSections(req);
-				break;
 		}
 	}
 
@@ -625,14 +579,14 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	protected void saveSections(ActionRequest req) throws ActionException {
 		// Delete all sections currently assigned to this company before adding
 		// what is on the request object.
-		deleteSection(true, req.getParameter("companyId"));
+		deleteSection(true, req.getParameter(COMPANY_ID));
 		
 		StringBuilder sql = new StringBuilder(225);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_COMPANY_SECTION (COMPANY_SECTION_XR_ID, SECTION_ID, ");
 		sql.append("COMPANY_ID, CREATE_DT) ");
 		sql.append("VALUES(?,?,?,?) ");
-		String companyId = req.getParameter("companyId");
+		String companyId = req.getParameter(COMPANY_ID);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (String sectionId : req.getParameterValues("sectionId")) {
 				ps.setString(1, new UUIDGenerator().getUUID());
@@ -831,9 +785,6 @@ public class CompanyManagementAction extends AbstractTreeAction {
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
 				db.delete(t);
 				break;
-			case SECTION:
-				deleteSection(false, req.getParameter("sectionId"));
-				break;
 		}
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -883,9 +834,65 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		} catch (Exception e) {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
-		
+		String companyId = req.getParameter(COMPANY_ID);
+		if (!StringUtil.isEmpty(companyId)) {
+			String status = req.getParameter("statusNo");
+			if (StringUtil.isEmpty(status))
+				status = findStatus(companyId);
+			updateSolr(companyId, status);
+		}
+
 		redirectRequest(msg, buildAction, req);
+	}
+
+
+	/**
+	 * Get the status of the supplied company.
+	 * @param marketId
+	 * @return
+	 * @throws ActionException
+	 */
+	protected String findStatus(String companyId) throws ActionException {
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("SELECT STATUS_NO from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_COMPANY WHERE COMPANY_ID = ? ");
 		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, companyId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				return rs.getString("STATUS_NO");
+			}
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		// If we didn't find a market with this id the action was a delete and solr needs to recognize that
+		return "D";
+	}
+
+
+	/**
+	 * Push the updates to solr
+	 * @param req
+	 * @param buildAction
+	 * @throws ActionException
+	 */
+	protected void updateSolr(String companyId, String status) throws ActionException {
+		Properties props = new Properties();
+		props.putAll(getAttributes());
+		BiomedCompanyIndexer indexer = new BiomedCompanyIndexer(props);
+		indexer.setDBConnection(dbConn);
+		try {
+			if ("D".equals(status) || "A".equals(status)) {
+				indexer.purgeSingleItem(companyId, false);
+			} else {
+				indexer.addSingleItem(companyId);
+			}
+		} catch (IOException e) {
+			throw new ActionException(e);
+		}
 	}
 
 
@@ -909,7 +916,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		//if a company is being deleted do not redirect the user to a company page
 		if (!"delete".equals(buildAction) || 
 				ActionType.valueOf(req.getParameter(ACTION_TYPE)) != ActionType.COMPANY) {
-			url.append("&companyId=").append(req.getParameter("companyId"));
+			url.append("&companyId=").append(req.getParameter(COMPANY_ID));
 		}
 		
 		if (req.hasParameter("edit")) {

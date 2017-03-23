@@ -72,7 +72,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	protected void pushCompanies (SolrClient server, String id) {
 		SolrActionUtil util = new SmarttrakSolrUtil(server);
 		try {
-			util.addDocuments(retreiveCompanies(null));
+			util.addDocuments(retreiveCompanies(id));
 		} catch (Exception e) {
 			log.error("Failed to update product in Solr, passed pkid=" + id, e);
 		}
@@ -97,7 +97,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			SecureSolrDocumentVO company = null;
 			while (rs.next()) {
 				if (!currentCompany.equals(rs.getString("COMPANY_ID"))) {
-					if (company != null) companies.add(company);
+					addCompany(companies, company);
 					company = buildSolrDocument(rs);
 					currentCompany = rs.getString("COMPANY_ID");
 				}
@@ -106,7 +106,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 				}
 				
 			}
-			if (company != null) companies.add(company);
+			addCompany(companies, company);
 			
 			buildContent(companies, id);
 		} catch (SQLException e) {
@@ -116,6 +116,17 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		return companies;
 	}
 
+
+	/**
+	 * Check to see if the supplied company is viable and if so add it.
+	 * @param companies
+	 * @param company
+	 */
+	protected void addCompany(List<SecureSolrDocumentVO> companies,
+			SecureSolrDocumentVO company) {
+		if (company != null) 
+			companies.add(company);
+	}
 
 	/**
 	 * Get all html attributes that constitute content for a company and combine
@@ -144,18 +155,14 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			String currentMarket = "";
 			while (rs.next()) {
 				if(!currentMarket.equals(rs.getString("COMPANY_ID"))) {
-					if (content.length() > 0) {
-						contentMap.put(currentMarket, content);
-					}
+					addContent(currentMarket, content, contentMap);
 					content = new StringBuilder(1024);
 					currentMarket = rs.getString("COMPANY_ID");
 				}
 				if (content.length() > 1) content.append("\n");
 				content.append(rs.getString("VALUE_TXT"));
 			}
-			if (content.length() > 0) {
-				contentMap.put(currentMarket, content);
-			}
+			addContent(currentMarket, content, contentMap);
 		}
 		
 		for (SecureSolrDocumentVO company : companies) {
@@ -167,6 +174,18 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	}
 	
 	
+	/**
+	 * Ensure content is viable and if so add it to the map
+	 * @param currentMarket
+	 * @param content
+	 * @param contentMap
+	 */
+	protected void addContent(String currentMarket, StringBuilder content,
+			Map<String, StringBuilder> contentMap) {
+		if (content.length() > 0) {
+			contentMap.put(currentMarket, content);
+		}
+	}
 
 	/**
 	 * Add section id, name, and acl to document
@@ -237,6 +256,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		if (id != null) sql.append("WHERE c.COMPANY_ID = ? ");
 		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, cs.SECTION_ID, c.STATUS_NO, ");
 		sql.append("e.NAME_TXT, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT ");
+		log.debug(sql);
 		return sql.toString();
 	}
 	
