@@ -17,7 +17,6 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.UUIDGenerator;
 import com.smt.crm.CustomerLoadUtil;
 import com.smt.crm.DealUtil;
 import com.smt.crm.NoteUtil;
