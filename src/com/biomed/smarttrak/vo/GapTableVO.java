@@ -146,55 +146,80 @@ public class GapTableVO implements Serializable {
 		List<GapColumnVO> child = new ArrayList<>();
 		scaffolding = 0;
 		for(int i = 0; i < headers.size(); i++) {
-			Node g = headers.get(i);
-			boolean altCol = i % 2 != 0;
-			int numKids = 0;
-			List<GapColumnVO> primParent = new ArrayList<>();
-			List<GapColumnVO> primChild = new ArrayList<>();
-			List<GapColumnVO> altChild = new ArrayList<>();
-			List<Node> pNodes = g.getChildren();
-
-			boolean hasGrandKids = false;
-
-			if(pNodes != null && !pNodes.isEmpty()) {
-				for(int j = 0; j < pNodes.size(); j++) {
-					Node p = pNodes.get(j);
-					List<Node> cNodes = p.getChildren();
-
-					if(cNodes != null && !cNodes.isEmpty()) {
-						for(int k = 0; k < cNodes.size(); k++) {
-							Node c = cNodes.get(k);
-							primChild.add(new GapColumnVO(altCol, c.getNodeId(), c.getNodeName()));
-							altChild.add(new GapColumnVO(altCol, p.getNodeId(), p.getNodeName()));
-							numKids++;
-							hasGrandKids = true;
-						}
-						primParent.add(new GapColumnVO(altCol, null, p.getNodeName(), cNodes.size()));
-					} else {
-						numKids++;
-						primParent.add(new GapColumnVO(altCol, null, null));
-						primChild.add(new GapColumnVO(altCol, p.getNodeId(), p.getNodeName()));
-						altChild.add(new GapColumnVO(altCol, p.getNodeId(), p.getNodeName()));
-					}
-				}
-			}
-
-			scaffolding += numKids;
-
-			if(hasGrandKids) {
-				gParent.add(new GapColumnVO(altCol, null, g.getNodeName(), numKids));
-				parent.addAll(primParent);
-				child.addAll(primChild);
-			} else {
-				gParent.add(new GapColumnVO(altCol, null, g.getNodeName(), numKids, 2));
-				child.addAll(altChild);
-			}
+			buildHeaderGroup(headers.get(i), (i % 2 != 0), gParent, parent, child);
 		}
 
 		headerCols = new HashMap<>(); 
 		headerCols.put(ColumnKey.GPARENT.name(), gParent);
 		headerCols.put(ColumnKey.PARENT.name(), parent);
 		headerCols.put(ColumnKey.CHILD.name(), child);
+	}
+
+	/**
+	 * Builds a Header Group for a GrandParent Level Section.
+	 * @param g
+	 * @param child 
+	 * @param parent 
+	 * @param gParent 
+	 */
+	private void buildHeaderGroup(Node g, boolean altCol, List<GapColumnVO> gParent, List<GapColumnVO> parent, List<GapColumnVO> child) {
+		int numKids = 0;
+		List<GapColumnVO> primParent = new ArrayList<>();
+		List<GapColumnVO> primChild = new ArrayList<>();
+		List<GapColumnVO> altChild = new ArrayList<>();
+		List<Node> pNodes = g.getChildren();
+
+		boolean hasGrandKids = false;
+
+		if(pNodes != null && !pNodes.isEmpty()) {
+			for(int j = 0; j < pNodes.size(); j++) {
+				Node p = pNodes.get(j);
+				List<Node> cNodes = p.getChildren();
+
+				if(cNodes != null && !cNodes.isEmpty()) {
+					numKids += buildChildrenColumns(cNodes, p, altCol, primChild, altChild);
+					hasGrandKids = true;
+					primParent.add(new GapColumnVO(altCol, null, p.getNodeName(), cNodes.size()));
+				} else {
+					numKids++;
+					primParent.add(new GapColumnVO(altCol, null, null));
+					primChild.add(new GapColumnVO(altCol, p.getNodeId(), p.getNodeName()));
+					altChild.add(new GapColumnVO(altCol, p.getNodeId(), p.getNodeName()));
+				}
+			}
+		}
+
+		scaffolding += numKids;
+
+		if(hasGrandKids) {
+			gParent.add(new GapColumnVO(altCol, null, g.getNodeName(), numKids));
+			parent.addAll(primParent);
+			child.addAll(primChild);
+		} else {
+			gParent.add(new GapColumnVO(altCol, null, g.getNodeName(), numKids, 2));
+			child.addAll(altChild);
+		}
+	}
+
+	/**
+	 * Builds Column Rows for Child Level Columns.
+	 * @param altChild 
+	 * @param primChild 
+	 * @param altCol 
+	 * @param p 
+	 * @param cNodes 
+	 * 
+	 */
+	private int buildChildrenColumns(List<Node> cNodes, Node p, boolean altCol, List<GapColumnVO> primChild, List<GapColumnVO> altChild) {
+		int numKids = 0;
+		for(int k = 0; k < cNodes.size(); k++) {
+			Node c = cNodes.get(k);
+			primChild.add(new GapColumnVO(altCol, c.getNodeId(), c.getNodeName()));
+			altChild.add(new GapColumnVO(altCol, p.getNodeId(), p.getNodeName()));
+			numKids++;
+		}
+
+		return numKids;
 	}
 
 	/**
