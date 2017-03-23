@@ -76,7 +76,7 @@ public class BiomedCRMCustomerVO extends CustomerVO {
 			}
 		}
 
-		public static Map<String, Integer> buildQuestionMap() {
+		public static Map<String, Integer> getQuestionMap() {
 			Map<String, Integer> map = new HashMap<>();
 			for (CustomerField c : CustomerField.values()) {
 				map.put(c.getMapId(), Convert.formatInteger(c.getMapId()));

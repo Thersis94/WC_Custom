@@ -277,7 +277,7 @@ public class CRMAction extends SBActionAdapter {
 	 */
 	protected void saveMapInformation(BiomedCRMCustomerVO customer) throws ActionException {
 		customer.buildResponseList();
-		ResponseDB db = new ResponseDB(BiomedCRMCustomerVO.CustomerField.buildQuestionMap());
+		ResponseDB db = new ResponseDB(BiomedCRMCustomerVO.CustomerField.getQuestionMap());
 		try {
 			db.store(dbConn, customer, (String)attributes.get(Constants.DATA_FEED_SCHEMA), new ArrayList<ErrorModule>());
 		} catch (DatabaseException e) {
