@@ -40,8 +40,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class CompanyManagementAction extends AbstractTreeAction {
-	
+
 	public static final String ACTION_TYPE = "actionTarget";
+	public static final String COMPANY_ID = "companyId";
 	
 	private enum ActionType {
 		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, ATTRIBUTE
@@ -103,8 +104,8 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 * @throws ActionException
 	 */
 	protected void companyRetrieve(ActionRequest req) throws ActionException {
-		if (req.hasParameter("companyId") && ! req.hasParameter("add")) {
-			retrieveCompany(req.getParameter("companyId"), req);
+		if (req.hasParameter(COMPANY_ID) && ! req.hasParameter("add")) {
+			retrieveCompany(req.getParameter(COMPANY_ID), req);
 		} else if (!req.hasParameter("add")) {
 			retrieveCompanies(req);
 		}
@@ -315,8 +316,8 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	protected void retrieveCompanies(ActionRequest req) throws ActionException {
 		List<Object> params = new ArrayList<>();
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select c.*, CASE WHEN (ci.investee_company_id  is null) THEN 0 ELSE 1 end as INVESTED_FLG ");
+		StringBuilder sql = new StringBuilder(400);
+		sql.append("select c.COMPANY_NM, c.COMPANY_ID, CASE WHEN (ci.investee_company_id  is null) THEN 0 ELSE 1 end as INVESTED_FLG ");
 		sql.append("FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("left join ").append(customDb).append("biomedgps_company_investor ci ");
 		sql.append("on c.COMPANY_ID = ci.investee_company_id ");
@@ -326,19 +327,46 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			sql.append("WHERE lower(COMPANY_NM) like ?");
 			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
-		sql.append("ORDER BY COMPANY_NM ");
+		sql.append("group by c.COMPANY_NM, c.COMPANY_ID, INVESTED_FLG ");
+		sql.append("ORDER BY COMPANY_NM LIMIT ? OFFSET ? ");
+		params.add(Convert.formatInteger(req.getParameter("limit")));
+		params.add(Convert.formatInteger(req.getParameter("offset")));
 		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> companies = db.executeSelect(sql.toString(), params, new CompanyVO());
-		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
-		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
 		
-		int end = companies.size() < rpp*(page+1)? companies.size() : rpp*(page+1);
-		super.putModuleData(companies.subList(rpp*page, end), companies.size(), false);
+		super.putModuleData(companies, getCompanyCount(req.getParameter("search")), false);
 	}
 
 	
+	/**
+	 * Get a count of how many companies are in the database
+	 * @return
+	 * @throws ActionException 
+	 */
+	private int getCompanyCount(String searchData) throws ActionException {
+		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select count(*) FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		// If the request has search terms on it add them here
+		if (!StringUtil.isEmpty(searchData)) {
+			sql.append("WHERE lower(COMPANY_NM) like ?");
+		}
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (!StringUtil.isEmpty(searchData)) ps.setString(1, "%" + searchData.toLowerCase() + "%");
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				return rs.getInt(1);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		
+		return 0;
+	}
+
+
 	/**
 	 * Get all information related to the supplied company.
 	 * @param companyId
@@ -551,14 +579,14 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	protected void saveSections(ActionRequest req) throws ActionException {
 		// Delete all sections currently assigned to this company before adding
 		// what is on the request object.
-		deleteSection(true, req.getParameter("companyId"));
+		deleteSection(true, req.getParameter(COMPANY_ID));
 		
 		StringBuilder sql = new StringBuilder(225);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_COMPANY_SECTION (COMPANY_SECTION_XR_ID, SECTION_ID, ");
 		sql.append("COMPANY_ID, CREATE_DT) ");
 		sql.append("VALUES(?,?,?,?) ");
-		String companyId = req.getParameter("companyId");
+		String companyId = req.getParameter(COMPANY_ID);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (String sectionId : req.getParameterValues("sectionId")) {
 				ps.setString(1, new UUIDGenerator().getUUID());
@@ -806,7 +834,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		} catch (Exception e) {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
-		String companyId = req.getParameter("companyId");
+		String companyId = req.getParameter(COMPANY_ID);
 		if (!StringUtil.isEmpty(companyId)) {
 			String status = req.getParameter("statusNo");
 			if (StringUtil.isEmpty(status))
@@ -888,7 +916,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		//if a company is being deleted do not redirect the user to a company page
 		if (!"delete".equals(buildAction) || 
 				ActionType.valueOf(req.getParameter(ACTION_TYPE)) != ActionType.COMPANY) {
-			url.append("&companyId=").append(req.getParameter("companyId"));
+			url.append("&companyId=").append(req.getParameter(COMPANY_ID));
 		}
 		
 		if (req.hasParameter("edit")) {

@@ -416,15 +416,41 @@ public class ProductManagementAction extends AbstractTreeAction {
 			sql.append("WHERE lower(PRODUCT_NM) like ?");
 			params.add("%" + req.getParameter("search").toLowerCase() + "% ");
 		}
-		sql.append("ORDER BY PRODUCT_NM");
+		sql.append("ORDER BY PRODUCT_NM LIMIT ? OFFSET ? ");
+		params.add(Convert.formatInteger(req.getParameter("limit")));
+		params.add(Convert.formatInteger(req.getParameter("offset")));
 		log.debug(sql);
-		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
-		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> products = db.executeSelect(sql.toString(), params, new ProductVO());
-		int end = products.size() < rpp*(page+1)? products.size() : rpp*(page+1);
-		super.putModuleData(products.subList(rpp*page, end), products.size(), false);
+		super.putModuleData(products, getProductCount(req.getParameter("searchData")), false);
+	}
+
+	
+	/**
+	 * Get a count of how many products are in the database
+	 * @return
+	 * @throws ActionException 
+	 */
+	private int getProductCount(String searchData) throws ActionException {
+		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select COUNT(*) ").append("FROM ").append(customDb).append("BIOMEDGPS_product p ");
+		// If the request has search terms on it add them here
+		if (!StringUtil.isEmpty(searchData)) {
+			sql.append("WHERE lower(PRODUCT_NM) like ?");
+		}
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (!StringUtil.isEmpty(searchData)) ps.setString(1, "%" + searchData.toLowerCase() + "%");
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				return rs.getInt(1);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		
+		return 0;
 	}
 
 	
