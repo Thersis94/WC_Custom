@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.biomed.smarttrak.action.SectionIdAction;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -62,8 +61,6 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 			dbp.delete(s);
 
 			this.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
-			// Clear the hierarchy for the piggybacking action here as well.
-			this.clearCacheByKey(SectionIdAction.ID_HIERARCHY_CACHE_KEY);
 
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error(e);
@@ -82,8 +79,6 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		updateSectionVO(actionPerform, s);
 
 		this.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
-		// Clear the hierarchy for the piggybacking action here as well.
-		this.clearCacheByKey(SectionIdAction.ID_HIERARCHY_CACHE_KEY);
 	}
 
 	/* (non-Javadoc)
@@ -100,7 +95,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 
 		//If not found in cache Load data.
 		if(mod == null) {
-			t = loadTree("MASTER_ROOT");
+			t = loadTree(null);
 			
 			// Because the tree is cached, these only need to run once
 			// These will maintain their values in the cache
@@ -197,8 +192,6 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		
 		// Clear the cache so it gets refreshed with current values on the next request
 		this.clearCacheByKey(getCacheKey());
-		// Clear the hierarchy for the piggybacking action here as well.
-		this.clearCacheByKey(SectionIdAction.ID_HIERARCHY_CACHE_KEY);
 	}
 	
 	/**
