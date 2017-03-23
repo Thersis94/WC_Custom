@@ -360,14 +360,15 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	}
 
 	/**
+	 * return the date for java and sets up a solr field as publish date string
 	 * @return the publishDt
 	 */
-	@SolrField(name="publishDt_s")
+	@SolrField(name="publish_dt")
 	@Column(name="publish_dt")
 	public Date getPublishDt() {
 		return publishDt;
 	}
-
+	
 	/**
 	 * @return the createDt
 	 */
