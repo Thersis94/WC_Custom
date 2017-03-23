@@ -111,4 +111,30 @@ public class SecurityController {
 
 		log.debug("user is authorized");
 	}
+
+
+	/**
+	 * tests the user's role object to see if they should have access to this tool.
+	 * called from FinancialDashAction
+	 * @param req
+	 * @throws ActionNotAuthorizedException 
+	 */
+	public static void isFdAuth(ActionRequest req) throws ActionNotAuthorizedException {
+		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
+		if (!role.isFdAuthorized())
+			throw new ActionNotAuthorizedException("not authorized");
+	}
+
+
+	/**
+	 * tests the user's role object to see if they should have access to this tool.
+	 * called from GapAnalysisAction
+	 * @param req
+	 * @throws ActionNotAuthorizedException 
+	 */
+	public static void isGaAuth(ActionRequest req) throws ActionNotAuthorizedException {
+		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
+		if (!role.isGaAuthorized())
+			throw new ActionNotAuthorizedException("not authorized");
+	}
 }
