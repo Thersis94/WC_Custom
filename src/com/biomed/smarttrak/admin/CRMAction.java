@@ -241,7 +241,6 @@ public class CRMAction extends SBActionAdapter {
 	protected void saveCustomerInformation(BiomedCRMCustomerVO customer, boolean fullSave) throws ActionException {
 		if (fullSave) {
 			saveTransaction(customer);
-			customer.setCustomerId(new UUIDGenerator().getUUID());
 		}
 
 		if (customer.getLeadTypeId() == 0) customer.setLeadTypeId(BiomedCRMCustomerVO.LEAD_TYPE_ID);
@@ -249,11 +248,8 @@ public class CRMAction extends SBActionAdapter {
 		
 		DBProcessor db = new DBProcessor(dbConn, (String)attributes.get(Constants.DATA_FEED_SCHEMA));
 		try {
-			if (fullSave) {
-				db.insert(customer);
-			} else {
-				db.update(customer);
-			}
+			db.save(customer);
+			customer.setCustomerId(db.getGeneratedPKId());
 		} catch (Exception e) {
 
 			throw new ActionException(e);
