@@ -321,9 +321,13 @@ public class ProductVO extends SecureSolrDocumentVO {
 		ProductVO p = (ProductVO) obj;
 
 		// Check to see if the core data for these products are equivalent
+		if ((productId == null && p.getProductId() != null) || (productId != null && p.getProductId() == null)) return false;
 		if ((productId != null && p.getProductId() != null) && !productId.equals(p.getProductId())) return false;
+		if ((parentId == null && p.getParentId() != null) || (parentId != null && p.getParentId() == null)) return false;
 		if ((parentId != null && p.getParentId() != null) && parentId.equals(p.getParentId())) return false;
+		if ((companyId == null && p.getCompanyId() != null) || (companyId != null && p.getCompanyId() == null)) return false;
 		if ((companyId != null && p.getCompanyId() != null) && !companyId.equals(p.getCompanyId())) return false;
+		if ((companyName == null && p.getCompanyName() != null) || (companyName != null && p.getCompanyName() == null)) return false;
 		if ((companyName != null && p.getCompanyName() != null) && !companyName.equals(p.getCompanyName())) return false;
 
 		// In all situations where equivalency is used for product VOs only
