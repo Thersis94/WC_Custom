@@ -65,6 +65,7 @@ public class BiomedCRMCustomerVO extends CustomerVO {
 		}
 		
 		public static CustomerField getForDb(String mapId) {
+			if (StringUtil.isEmpty(mapId)) return null;
 			switch (mapId) {
 			case "7": return CustomerField.COMPANY;
 			case "8": return CustomerField.PROSPECT;
@@ -73,6 +74,14 @@ public class BiomedCRMCustomerVO extends CustomerVO {
 			case "11": return CustomerField.EXPIRATION;
 			default: return null;
 			}
+		}
+
+		public static Map<String, Integer> buildQuestionMap() {
+			Map<String, Integer> map = new HashMap<>();
+			for (CustomerField c : CustomerField.values()) {
+				map.put(c.getMapId(), Convert.formatInteger(c.getMapId()));
+			}
+			return map;
 		}
 	}
 	
@@ -215,6 +224,7 @@ public class BiomedCRMCustomerVO extends CustomerVO {
 	 * @throws SQLException 
 	 */
 	public void setField(ResponseVO resp) {
+		if (resp == null) return;
 		CustomerField field = CustomerField.getForDb(resp.getQuestionId());
 		if (field == null) return;
 
@@ -301,13 +311,5 @@ public class BiomedCRMCustomerVO extends CustomerVO {
 		newCustomer.setNotes(customer.getNotes());
 		
 		return newCustomer;
-	}
-
-	public static Map<String, Integer> buildQuestionMap() {
-		Map<String, Integer> map = new HashMap<>();
-		for (CustomerField c : CustomerField.values()) {
-			map.put(c.getMapId(), Convert.formatInteger(c.getMapId()));
-		}
-		return map;
 	}
 }

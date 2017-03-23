@@ -18,12 +18,12 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-import com.smt.NoteUtil;
-import com.smt.ReminderUtil;
 import com.smt.crm.CustomerLoadUtil;
 import com.smt.crm.DealUtil;
-import com.smt.data.DataFeedNoteVO;
-import com.smt.data.ReminderVO;
+import com.smt.crm.NoteUtil;
+import com.smt.crm.ReminderUtil;
+import com.smt.crm.vo.DataFeedNoteVO;
+import com.smt.crm.vo.ReminderVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -45,6 +45,9 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class CRMAction extends SBActionAdapter {
 
+	public static final String CUSTOMER_ID = "customerId";
+	public static final String ACTION_TARGET = "actionTarget";
+
 	public enum ActionType {
 		CUSTOMER, NOTE, REMINDER, DEAL
 	}
@@ -56,28 +59,29 @@ public class CRMAction extends SBActionAdapter {
 		String msg = StringUtil.capitalizePhrase(buildAction) + " completed successfully.";
 		try {
 			ActionType type;
-			if (req.hasParameter("actionTarget")) {
-				type = ActionType.valueOf(req.getParameter("actionTarget"));
+			if (req.hasParameter(ACTION_TARGET)) {
+				type = ActionType.valueOf(req.getParameter(ACTION_TARGET));
 			} else {
 				type = ActionType.CUSTOMER;
 			}
 			if (req.hasParameter("alter")) {
-				alterElement(req.getParameter("customerId"), req);
+				alterElement(req.getParameter(CUSTOMER_ID), req);
 			} else if ("update".equals(buildAction)) {
 				updateElement(type, req);
 			}
 		} catch(Exception e) {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator about this issue.";
 		}
-		redirectRequest(msg, buildAction, req.getParameter("customerId"), req);
+		redirectRequest(msg, buildAction, req.getParameter(CUSTOMER_ID), req);
 	}
 
 	
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if ("customer".equals(req.getParameter("type"))) {
+		String type = req.getParameter("type");
+		if ("customer".equals(type)) {
 			CustomerLoadUtil util = new CustomerLoadUtil((String)attributes.get(Constants.DATA_FEED_SCHEMA), dbConn, attributes);
-			List<CustomerVO> customers = util.getCustomers(req.getParameter("customerId"));
+			List<CustomerVO> customers = util.getCustomers(req.getParameter(CUSTOMER_ID));
 			List<BiomedCRMCustomerVO> translatedCustomers = new ArrayList<>();
 			for (CustomerVO customer: customers) {
 				BiomedCRMCustomerVO trans = BiomedCRMCustomerVO.cast(customer);
@@ -86,7 +90,7 @@ public class CRMAction extends SBActionAdapter {
 			}  
 			    
 			putModuleData(translatedCustomers);
-		} else if ("deals".equals(req.getParameter("type"))) {
+		} else if ("deals".equals(type)) {
 			DealUtil util = new DealUtil((String)attributes.get(Constants.DATA_FEED_SCHEMA), dbConn, attributes);
 			List<CustomerVO> deals = util.getDeals(req.getParameter("profileId"));
 			List<BiomedCRMCustomerVO> translatedDeals = new ArrayList<>();
@@ -96,18 +100,18 @@ public class CRMAction extends SBActionAdapter {
 				translatedDeals.add(trans);
 			}
 			putModuleData(translatedDeals);
-		} else if ("notes".equals(req.getParameter("type"))) {
+		} else if ("notes".equals(type)) {
 			BiomedCRMCustomerVO cust = new BiomedCRMCustomerVO(req);
 			addNotes(cust);
 			putModuleData(cust);
-		} else if ("reminders".equals(req.getParameter("type"))) {
+		} else if ("reminders".equals(type)) {
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			BiomedCRMCustomerVO cust = new BiomedCRMCustomerVO(req);
 			addReminders(cust, StringUtil.checkVal(user.getProfileId()));
 			putModuleData(cust);
-		} else if (!req.hasParameter("add") && req.hasParameter("customerId")) {
+		} else if (!req.hasParameter("add") && req.hasParameter(CUSTOMER_ID)) {
 			CustomerLoadUtil util = new CustomerLoadUtil((String)attributes.get(Constants.DATA_FEED_SCHEMA), dbConn, attributes);
-			BiomedCRMCustomerVO customer = BiomedCRMCustomerVO.cast(util.getCustomers(req.getParameter("customerId")).get(0));
+			BiomedCRMCustomerVO customer = BiomedCRMCustomerVO.cast(util.getCustomers(req.getParameter(CUSTOMER_ID)).get(0));
 			customer.buildFromResponses();
 			putModuleData(customer);
 		} 
@@ -124,7 +128,7 @@ public class CRMAction extends SBActionAdapter {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		// Redirect the user to the appropriate page
 		StringBuilder url = new StringBuilder(128);
-		url.append(page.getFullPath()).append("?actionType=crm&").append("msg=").append(msg);
+		url.append(page.getFullPath()).append("?actionType=crm&msg=").append(msg);
 
 		// Only add a tab parameter if one was provided.
 		if (req.hasParameter("tab")) {
@@ -132,7 +136,7 @@ public class CRMAction extends SBActionAdapter {
 		}
 		//if a market is being deleted do not redirect the user to a market page
 		if (!"delete".equals(buildAction) || 
-				ActionType.valueOf(req.getParameter("actionTarget")) != ActionType.CUSTOMER) {
+				ActionType.valueOf(req.getParameter(ACTION_TARGET)) != ActionType.CUSTOMER) {
 			url.append("&customerId=").append(customerId);
 		}
 
@@ -170,10 +174,10 @@ public class CRMAction extends SBActionAdapter {
 				saveNote(new DataFeedNoteVO(req));
 				break;
 			case REMINDER:
-				saveReminder(req.getParameter("customerId"), new ReminderVO(req));
+				saveReminder(req.getParameter(CUSTOMER_ID), new ReminderVO(req));
 				break;
 			case DEAL:
-				saveDeal(req.getParameter("customerId"), req);
+				saveDeal(req.getParameter(CUSTOMER_ID), req);
 				break;
 		}
 	}
@@ -278,7 +282,7 @@ public class CRMAction extends SBActionAdapter {
 	 */
 	protected void saveMapInformation(BiomedCRMCustomerVO customer) throws ActionException {
 		customer.buildResponseList();
-		ResponseDB db = new ResponseDB(BiomedCRMCustomerVO.buildQuestionMap());
+		ResponseDB db = new ResponseDB(BiomedCRMCustomerVO.CustomerField.buildQuestionMap());
 		try {
 			db.store(dbConn, customer, (String)attributes.get(Constants.DATA_FEED_SCHEMA), new ArrayList<ErrorModule>());
 		} catch (DatabaseException e) {
@@ -327,18 +331,20 @@ public class CRMAction extends SBActionAdapter {
 	public void alterElement(String customerId, ActionRequest req) throws ActionException {
 
 		ActionType type;
-		if (req.hasParameter("actionTarget")) {
-			type = ActionType.valueOf(req.getParameter("actionTarget"));
+		if (req.hasParameter(ACTION_TARGET)) {
+			type = ActionType.valueOf(req.getParameter(ACTION_TARGET));
 		} else {
 			type = ActionType.CUSTOMER;
 		}
 		switch (type) {
-			case DEAL: updateDeal(customerId, req);
-			break;
+			case DEAL: 
+				updateDeal(customerId, req);
+				break;
 			case REMINDER:
 				updateReminder(req.getParameter("reminderId"));
 				break;
-			default:break;
+			default:
+				break;
 		}
 	}
 	
