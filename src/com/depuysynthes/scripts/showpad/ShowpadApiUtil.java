@@ -97,7 +97,7 @@ public class ShowpadApiUtil {
 
 		HttpResponse resp = requestFactory.buildPostRequest(new GenericUrl(url), content).setReadTimeout(WRITE_TIMEOUT).execute();
 		checkResponseForQuota(resp);
-		return resp.parseAsString();
+		return resp != null ? resp.parseAsString() : "";
 	}
 
 
@@ -141,7 +141,7 @@ public class ShowpadApiUtil {
 		GenericUrl gUrl = new GenericUrl(url);
 		HttpResponse resp = requestFactory.buildPostRequest(gUrl, content).setReadTimeout(WRITE_TIMEOUT).setHeaders(linkHeaders).execute();
 		checkResponseForQuota(resp);
-		return resp.parseAsString();
+		return resp != null ? resp.parseAsString() : "";
 	}
 
 
