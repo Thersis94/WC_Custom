@@ -146,7 +146,7 @@ public class GapTableVO implements Serializable {
 		List<GapColumnVO> child = new ArrayList<>();
 		scaffolding = 0;
 		for(int i = 0; i < headers.size(); i++) {
-			buildHeaderGroup(headers.get(i), (i % 2 != 0), gParent, parent, child);
+			buildHeaderGroup(headers.get(i), i % 2 != 0, gParent, parent, child);
 		}
 
 		headerCols = new HashMap<>(); 
