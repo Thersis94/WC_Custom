@@ -195,10 +195,9 @@ public class ShowpadDivisionUtil {
 		}
 
 		File mbFile = null;
-		if (vo.isFileChanged() || StringUtil.isEmpty(vo.getShowpadId())) {
-			log.info("uploading file: " + vo.getFileName());
+		if (vo.isFileChanged() || StringUtil.isEmpty(vo.getShowpadId()))
 			mbFile = new File(vo.getFileName());
-		}
+
 		log.info("sending to showpad: " + vo.getDpySynMediaBinId());
 		JSONObject json = null;
 		try {

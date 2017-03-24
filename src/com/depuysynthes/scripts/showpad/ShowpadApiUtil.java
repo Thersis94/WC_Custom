@@ -97,7 +97,7 @@ public class ShowpadApiUtil {
 
 		HttpResponse resp = requestFactory.buildPostRequest(new GenericUrl(url), content).setReadTimeout(WRITE_TIMEOUT).execute();
 		checkResponseForQuota(resp);
-		return resp.parseAsString();
+		return resp != null ? resp.parseAsString() : "";
 	}
 
 
@@ -127,21 +127,21 @@ public class ShowpadApiUtil {
 		if (f != null) {
 			FileType ft = new FileType();
 			FileContent fileContent = new FileContent(ft.getMimeType(f.getName()), f);
-			String fileName = params.containsKey("name") ? params.get("name") : f.getName();
 			MultipartContent.Part part = new MultipartContent.Part(fileContent);
-			part.setHeaders(new HttpHeaders().set("Content-Disposition", String.format("form-data; name=\"file\"; filename=\"%s\"", fileName)));
+			part.setHeaders(new HttpHeaders().set("Content-Disposition", String.format("form-data; name=\"file\"; filename=\"%s\"", f.getName())));
+			log.debug("uploading file named " + f.getName() + " size=" + f.length());
 			content.addPart(part);
 		}
 
 		//add the Link header
 		HttpHeaders linkHeaders = new HttpHeaders();
-		if (linkHeader != null && linkHeader.length() > 0)
+		if (linkHeader != null && !linkHeader.isEmpty())
 			linkHeaders.set("Link", linkHeader);
 
 		GenericUrl gUrl = new GenericUrl(url);
 		HttpResponse resp = requestFactory.buildPostRequest(gUrl, content).setReadTimeout(WRITE_TIMEOUT).setHeaders(linkHeaders).execute();
 		checkResponseForQuota(resp);
-		return resp.parseAsString();
+		return resp != null ? resp.parseAsString() : "";
 	}
 
 
