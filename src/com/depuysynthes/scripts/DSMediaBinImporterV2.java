@@ -520,8 +520,15 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 			//check for files on disk. If we have the file we need then that's good enough. - use in development to get around extensive http calls on repeated trial runs.
 			if (Convert.formatBoolean(props.getProperty("honorExistingFiles"))) {
-				fileExists = new File(vo.getFileName()).exists();
-				if (fileExists) continue;
+				File f = new File(vo.getFileName());
+				fileExists = f.exists();
+				if (fileExists) {
+					//if we're going to honor existing files, then we need to at least look at file size to gauge whether the file is changed or not.
+					//this is a factor when we reprocess across Divisions...we don't need to make 5k http calls, but we may have files to upload
+					long oldSz = !StringUtil.isEmpty(vo.getChecksum()) ? Convert.formatLong(vo.getChecksum().split("\\|\\|")[1]) : 0;
+					vo.setFileChanged(oldSz != f.length());
+					continue;
+				}
 			}
 			
 			if (!fileExists || fileOnLLChanged(vo))
@@ -618,7 +625,6 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			} else {
 				changed = true;
 			}
-			vo.setFileChanged(changed);
 			//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
 			conn.getInputStream().close();
 			conn.disconnect();
@@ -629,6 +635,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			//as a failure (properly)
 			changed = true;
 		}
+		vo.setFileChanged(changed);
 		return changed;
 	}
 
