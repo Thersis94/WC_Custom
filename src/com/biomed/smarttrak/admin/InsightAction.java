@@ -7,6 +7,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 //WC_Custom
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
@@ -345,7 +346,7 @@ public class InsightAction extends AbstractTreeAction {
 		}else if(Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS))){
 			//when solr indexes, index only published insights
 			sql.append("and a.status_cd = 'P' ");
-		}else {
+		}else if(StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) && StringUtil.isEmpty(insightParamsMap.get(Fields.STATUS_CD)) ){
 			sql.append("and a.status_cd != 'D' ");
 		}
 
@@ -455,26 +456,29 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		InsightVO u = new InsightVO(req);
+		InsightVO ivo = new InsightVO(req);
 		try {
 			if (isDelete) {
-				log.debug("deleting " + u);
-				db.delete(u);
-				deleteFromSolr(u);
+				//Insights are not deleted from the DB deleted is a status change
+				//    However they are to be removed and deleted from solr so the public can no longer see them. -rjr
+				log.debug("deleting " + ivo);
+				ivo.setStatusCd(InsightVO.InsightStatusCd.D.name());
+				updateStatus(db, ivo);
+				deleteFromSolr(ivo);
 			} else {
 
 				if (req.hasParameter("listSave")){
-					updateFeatureOrder(u);
+					updateFeatureOrder(ivo, db);
 				}else {
-					saveInsight(db, u);
+					saveInsight(db, ivo);
 				}
 
 				//Add to Solr if published
-				if(InsightStatusCd.P.toString().equals(u.getStatusCd())) {
-					writeToSolr(u);
+				if(InsightStatusCd.P.toString().equals(ivo.getStatusCd())) {
+					writeToSolr(ivo);
 				}
 			}
-			req.setParameter(INSIGHT_ID, u.getInsightId());
+			req.setParameter(INSIGHT_ID, ivo.getInsightId());
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
@@ -484,19 +488,19 @@ public class InsightAction extends AbstractTreeAction {
 	 * Save an InsightsVO to solr.
 	 * @param u
 	 */
-	protected void writeToSolr(InsightVO u) {
+	protected void writeToSolr(InsightVO ivo) {
 		BiomedInsightIndexer bindx = BiomedInsightIndexer.makeInstance(getAttributes());
 		bindx.setDBConnection(dbConn);
-		bindx.addSingleItem(u.getInsightId());
+		bindx.addSingleItem(ivo.getInsightId());
 	}
 
 	/**
 	 * Removes an Updates Record from Solr.
 	 * @param u
 	 */
-	protected void deleteFromSolr(InsightVO i) {
+	protected void deleteFromSolr(InsightVO ivo) {
 		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
-			sau.removeDocument(i.getInsightId());
+			sau.removeDocument(ivo.getInsightId());
 		} catch (Exception e) {
 			log.error("Error Deleting from Solr.", e);
 		}
@@ -510,36 +514,60 @@ public class InsightAction extends AbstractTreeAction {
 	 * @throws Exception 
 	 * 
 	 */
-	private void saveInsight(DBProcessor db, InsightVO u) throws Exception {
-		db.save(u);
+	private void saveInsight(DBProcessor db, InsightVO ivo) throws Exception {
+		db.save(ivo);
 
-		setInsightIdOnInsert(u, db);
+		setInsightIdOnInsert(ivo, db);
 
 		//Save Insight Sections.
-		saveSections(u);
+		saveSections(ivo);
 
+	}
+
+	private void updateStatus(DBProcessor db, InsightVO ivo) throws ActionException {
+		log.debug("updating status code on insight");
+		StringBuilder sql = new StringBuilder(50);
+		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
+		sql.append("set STATUS_CD = ? ");
+		sql.append("where INSIGHT_ID = ? ");
+
+		log.debug(" sql " + sql.toString() +"|"+ ivo.getStatusCd() +"|"+ivo.getInsightId());
+
+		List<String> fields = new ArrayList<>();
+		fields.add("STATUS_CD");
+		fields.add("INSIGHT_ID");
+
+		try {
+			db.executeSqlUpdate(sql.toString(), ivo, fields);
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
 	}
 
 	/**
 	 * does a quick update issued from the list view.
+	 * @param db 
 	 * @param u
 	 * @throws ActionException 
 	 */
-	private void updateFeatureOrder(InsightVO u) throws ActionException {
+	private void updateFeatureOrder(InsightVO ivo, DBProcessor db) throws ActionException {
 		log.debug("update featured ordered no");
 		StringBuilder sb = new StringBuilder(50);
 		sb.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
 		sb.append("set FEATURED_FLG= ?, ORDER_NO = ? ");
-		sb.append("where insight_id = ? ");
+		sb.append("where INSIGHT_ID = ? ");
 
-		log.debug(" sql " + sb.toString() +"|"+ u.getFeaturedFlg() +"|"+u.getOrderNo()+"|"+u.getInsightId());
 
-		try(PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
-			ps.setInt(1, u.getFeaturedFlg());
-			ps.setInt(2, u.getOrderNo());
-			ps.setString(3,u.getInsightId());
-			ps.executeUpdate();
-		} catch (SQLException e) {
+		log.debug(" sql " + sb.toString() +"|"+ StringUtil.checkVal(ivo.getFeaturedFlg()) +"|"+StringUtil.checkVal(ivo.getOrderNo()+"|"+ivo.getInsightId()));
+
+		List<String> fields = new ArrayList<>();
+		fields.add("FEATURED_FLG");
+		fields.add("ORDER_NO");
+		fields.add("INSIGHT_ID");
+
+		try {
+			db.executeSqlUpdate(sb.toString(), ivo, fields);
+		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 	}
@@ -549,12 +577,12 @@ public class InsightAction extends AbstractTreeAction {
 	 * @param db 
 	 * @param u 
 	 */
-	private void setInsightIdOnInsert(InsightVO u, DBProcessor db) {
+	private void setInsightIdOnInsert(InsightVO ivo, DBProcessor db) {
 
-		if(StringUtil.isEmpty(u.getInsightId())) {
-			u.setInsightId(db.getGeneratedPKId());
-			for(InsightXRVO uxr : u.getInsightSections()) {
-				uxr.setInsightId(u.getInsightId());
+		if(StringUtil.isEmpty(ivo.getInsightId())) {
+			ivo.setInsightId(db.getGeneratedPKId());
+			for(InsightXRVO uxr : ivo.getInsightSections()) {
+				uxr.setInsightId(ivo.getInsightId());
 			}
 		}
 
@@ -567,15 +595,15 @@ public class InsightAction extends AbstractTreeAction {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	protected void saveSections(InsightVO u) throws Exception {
+	protected void saveSections(InsightVO ivo) throws Exception {
 
 		//Delete old Insight Section XRs
-		deleteSections(u.getInsightId());
+		deleteSections(ivo.getInsightId());
 
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 
 		//Save new Sections.
-		for(InsightXRVO uxr : u.getInsightSections()) {
+		for(InsightXRVO uxr : ivo.getInsightSections()) {
 			db.save(uxr);
 		}
 	}
