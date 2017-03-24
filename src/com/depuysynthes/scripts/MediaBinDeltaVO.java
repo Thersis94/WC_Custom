@@ -57,6 +57,7 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	
 	public MediaBinDeltaVO(ResultSet rs) {
 		super(rs);
+		tags = new ArrayList<>();
 		setShowpadId(new DBUtil().getStringVal("ASSET_ID", rs));
 	}
 	
