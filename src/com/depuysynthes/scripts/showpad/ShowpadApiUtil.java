@@ -39,7 +39,7 @@ public class ShowpadApiUtil {
 	protected static Logger log = Logger.getLogger(ShowpadApiUtil.class);
 
 	private OAuth2Token oauthUtil;
-	private static final int READ_TIMEOUT = 60000; //1 minute
+	private static final int READ_TIMEOUT = 120000; //2 minutes
 	private static final int WRITE_TIMEOUT = 120000; //2 minutes
 
 	private static final int API_1HR_LIMIT = 3500; //stay below the 5k ceiling.  Leave a buffer of 100, because they may not count as precisely as us.
