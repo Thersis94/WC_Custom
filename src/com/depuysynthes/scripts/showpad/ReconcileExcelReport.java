@@ -30,7 +30,7 @@ public class ReconcileExcelReport extends MultisheetExcelReport {
 
 	private static final long serialVersionUID = 2628876805719396453L;
 
-	private Map<String, GenericVO> data;
+	private Map<String, GenericVO> rawData;
 	private StringBuilder summary;
 
 	public ReconcileExcelReport(Object data) {
@@ -51,11 +51,11 @@ public class ReconcileExcelReport extends MultisheetExcelReport {
 		String dt = Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_DASH_PATTERN);
 		summary.append("<h1>Showpad Reconcile Report &mdash; ").append(dt).append("</h1>");
 		int total = 0;
-		int mbTotal = 0;
+		int mbTotal;
 
 		GenericVO vo;
 		Collection<Map<String, Object>> records;
-		for (Map.Entry<String, GenericVO> entry : data.entrySet()) {
+		for (Map.Entry<String, GenericVO> entry : rawData.entrySet()) {
 			vo = entry.getValue();
 			records = makeAssetMapMB(vo.getKey());
 			mbTotal = records.size();
@@ -176,7 +176,7 @@ public class ReconcileExcelReport extends MultisheetExcelReport {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object data) {
-		this.data = (Map<String, GenericVO>) data;
+		this.rawData = (Map<String, GenericVO>) data;
 	}
 
 
