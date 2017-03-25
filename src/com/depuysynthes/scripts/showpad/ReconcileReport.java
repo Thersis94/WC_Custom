@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.depuysynthes.scripts.MediaBinDeltaVO;
+import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.io.mail.EmailMessageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -57,6 +59,8 @@ public class ReconcileReport extends ShowpadMediaBinDecorator {
 		//load the divisions
 		loadShowpadDivisionList();
 
+		Map<String, GenericVO> data = new HashMap<>(); //divisionName, GenericVO<repo, assetList>
+
 		for (ShowpadDivisionUtil util : divisions) {
 
 			// get the list of assets from the database.  loads all assets for all divisions across both importCodes
@@ -76,15 +80,34 @@ public class ReconcileReport extends ShowpadMediaBinDecorator {
 					showpadAssets.add(entry.getValue());
 			}
 
-			log.info("*************************************");
-			log.info("SMT extras: " + smtAssets.size());
-			for (MediaBinDeltaVO vo : smtAssets) 
-				log.info(vo.getDpySynMediaBinId() + " : " + vo.getShowpadId() + " " + vo.getTitleTxt());
+			//add the colated lists as a generic VO to the Map we'll send to the report
+			log.debug(util.getDivisionNm() + ": smtExtras=" + smtAssets.size() + " showpadExtras=" + showpadAssets.size());
+			data.put(util.getDivisionNm(), new GenericVO(smtAssets, showpadAssets));
+		}
 
-			log.info("*************************************");
-			log.info("Showpad extras: " + showpadAssets.size());
-			for (MediaBinDeltaVO vo : showpadAssets) 
-				log.info(vo.getDpySynMediaBinId() + " : " + vo.getShowpadId() + " " + vo.getTitleTxt());
+		//format the data into an excel report
+		ReconcileExcelReport rpt = new ReconcileExcelReport(data);
+
+		//email the report to the admins
+		sendEmail(rpt);
+	}
+
+
+	private void sendEmail(ReconcileExcelReport rpt) {
+		EmailMessageVO eml = new EmailMessageVO();
+		try {
+			eml.setFrom("appsupport@siliconmtn.com");
+			eml.addRecipients(props.getProperty("reconcileReportEmail"));
+			eml.setSubject(props.getProperty("reconcileReportEmailSubj"));
+			byte[] rptBytes = rpt.generateReport();
+			if (rptBytes.length > 0)
+				eml.addAttachment(rpt.getFileName(), rptBytes);
+
+			eml.setHtmlBody(rpt.getEmailSummary());
+			super.sendEmail(eml);
+
+		} catch (Exception e) {
+			log.error("could not send report email", e);
 		}
 	}
 
@@ -94,7 +117,7 @@ public class ReconcileReport extends ShowpadMediaBinDecorator {
 	 * @return
 	 */
 	protected Map<String, MediaBinDeltaVO> loadDivisionFromDB(String divisionId) {
-		Map<String, MediaBinDeltaVO> data = new HashMap<>(6000);
+		Map<String, MediaBinDeltaVO> data = new HashMap<>(8000);
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select * from ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("dpy_syn_mediabin a ");
@@ -108,7 +131,6 @@ public class ReconcileReport extends ShowpadMediaBinDecorator {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				MediaBinDeltaVO vo = new MediaBinDeltaVO(rs);
-				vo.setDivisionId(rs.getString("division_id"));
 				data.put(vo.getShowpadId(), vo);
 			}
 
