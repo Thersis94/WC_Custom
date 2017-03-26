@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -91,7 +92,7 @@ public class ReconcileExcelReport extends MultisheetExcelReport {
 	 * @return
 	 */
 	private Map<String, String> buildHeaderMapMB() {
-		Map<String, String> hdr = new HashMap<>();
+		Map<String, String> hdr = new LinkedHashMap<>();
 		hdr.put("PRIMARY_KEY", "SMT Unique ID");
 		hdr.put("TRACKING_NO", "Tracking No.");
 		hdr.put("TITLE", "Title");
@@ -121,7 +122,7 @@ public class ReconcileExcelReport extends MultisheetExcelReport {
 			row.put("PRIMARY_KEY", vo.getDpySynMediaBinId());
 			row.put("TRACKING_NO", vo.getTrackingNoTxt());
 			row.put("TITLE", vo.getTitleTxt());
-			row.put("FILE_NM", vo.getFileName());
+			row.put("FILE_NM", vo.getFileNm());
 			row.put("SHOWPAD_ID",  StringUtil.checkVal(vo.getShowpadId()));
 			row.put("PRIVATE",  3 == vo.getImportFileCd() ? "Y" : "");
 			data.add(row);
@@ -136,7 +137,7 @@ public class ReconcileExcelReport extends MultisheetExcelReport {
 	 * @return
 	 */
 	private Map<String, String> buildHeaderMapSP() {
-		Map<String, String> hdr = new HashMap<>();
+		Map<String, String> hdr = new LinkedHashMap<>();
 		hdr.put("PRIMARY_KEY", "Showpad ID");
 		hdr.put("TITLE", "Asset Name");
 
