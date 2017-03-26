@@ -160,7 +160,7 @@ public class ReconcileExcelReport extends MultisheetExcelReport {
 		Map<String, Object> row;
 		for (MediaBinDeltaVO vo : assets) {
 			row = new HashMap<>();
-			row.put("PRIMARY_KEY", vo.getDpySynMediaBinId());
+			row.put("PRIMARY_KEY", vo.getShowpadId());
 			row.put("TITLE", vo.getTitleTxt());
 			data.add(row);
 		}
