@@ -16,12 +16,13 @@ import com.biomed.smarttrak.admin.report.UserPermissionsReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationDailyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationMonthlyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
-import com.biomed.smarttrak.admin.report.UserUtilizationReportAction.UtilizationReportType;
+
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
+
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -47,7 +48,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 		COMPANY_SEGMENTS,
 		USER_LIST,
 		USER_PERMISSIONS,
-		UTILIZATION,
+		USAGE_ROLLUP_DAILY,
+		USAGE_ROLLUP_MONTHLY,
 		SUPPORT
 	}
 	
@@ -92,8 +94,11 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case USER_PERMISSIONS:
 				rpt = generateUserPermissionsReport(req);
 				break;
-			case UTILIZATION:
-				rpt = generateUserUtilizationReport(req);
+			case USAGE_ROLLUP_DAILY:
+				rpt = generateUserUtilizationReport(req,true);
+				break;
+			case USAGE_ROLLUP_MONTHLY:
+				rpt = generateUserUtilizationReport(req,false);
 				break;
 			case SUPPORT:
 				rpt = generateSupportReport(req);
@@ -198,36 +203,24 @@ public class ReportFacadeAction extends SBActionAdapter {
 	/**
 	 * Generates the user utilization roll-up report.
 	 * @param req
+	 * @param isDaily
 	 * @return
 	 * @throws ActionException
 	 */
-	protected AbstractSBReportVO generateUserUtilizationReport(ActionRequest req) 
-			throws ActionException {
+	protected AbstractSBReportVO generateUserUtilizationReport(ActionRequest req, 
+			boolean isDaily) throws ActionException {
 		UserUtilizationReportAction uu = new UserUtilizationReportAction();
 		uu.setDBConnection(dbConn);
 		uu.setAttributes(getAttributes());
-		
-		String uReportType = StringUtil.checkVal(req.getParameter("utilizationReportType")).toUpperCase();
-		UtilizationReportType urt = null;
-		try {
-			urt = UtilizationReportType.valueOf(uReportType);
-		} catch (Exception e) {
-			urt = UtilizationReportType.DAYS_365;
-		}
-		
+		req.setParameter("isDaily", Boolean.valueOf(isDaily).toString());
+
 		AbstractSBReportVO rpt;
-		
-		switch(urt){
-			case DAYS_14:
-			case DAYS_90:
-				rpt = new UserUtilizationDailyRollupReportVO();
-				break;
-			default:
-				rpt = new UserUtilizationMonthlyRollupReportVO();
-				break;
+		if (isDaily) {
+			rpt = new UserUtilizationDailyRollupReportVO();
+		} else {
+			rpt = new UserUtilizationMonthlyRollupReportVO();
 		}
-		
-		rpt.addAttributes(UserUtilizationReportAction.ATTRIB_REPORT_SUFFIX, urt.getReportSuffix());
+
 		rpt.setData(uu.retrieveUserUtilization(req));
 		return rpt;
 	}

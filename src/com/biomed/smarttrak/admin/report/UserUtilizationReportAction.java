@@ -52,21 +52,8 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	public static final String ATTRIB_REPORT_SUFFIX = "reportSuffix";
 	private static final int DEFAULT_START_DATE_OFFSET = -14;
 	private Map<Integer,String> monthKeyMap;
-	
-	public enum UtilizationReportType {
-		DAYS_14(-14, "14-Day"),
-		DAYS_90(-90, "90-Day"),
-		DAYS_365(-365, "12-Months");
-		
-		private int startDateOffset;
-		private String reportSuffix;
-		UtilizationReportType(int startDateOffset,String reportSuffix) { 
-			this.startDateOffset = startDateOffset;
-			this.reportSuffix = reportSuffix;
-		}
-		public int getStartDateOffset() { return startDateOffset; }
-		public String getReportSuffix() { return reportSuffix; }
-	}
+	private String dateStart;
+	private String dateEnd;
 		
 	/**
 	* Constructor
@@ -98,8 +85,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		String siteId = site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId();
 		
 		// determine utilization report type and craft start date from the type.
-		UtilizationReportType urt = parseReportType(req.getParameter("utilizationReportType"));
-		String dateStart = buildReportStartDate(urt);
+		String dateStart = buildReportStartDate(req.getParameter("dateStart");
 		
 		//String dateStart = formatReportDate(req.getParameter("dateStart"), true);
 		//String dateEnd = formatReportDate(req.getParameter("dateEnd"), false);
