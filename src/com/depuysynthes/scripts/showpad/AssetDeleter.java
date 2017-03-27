@@ -74,7 +74,7 @@ public class AssetDeleter extends CommandLineUtil {
 			String url = baseUrl + assetId.trim() + ".json";
 			try {
 				showpadApi.executeDelete(url);
-				log.debug("deleted asset " + assetIds);
+				log.debug("deleted asset " + assetId);
 			} catch (IOException e) {
 				log.error("could not delete asset with id=" + assetId, e);
 			}

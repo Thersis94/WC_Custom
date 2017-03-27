@@ -34,6 +34,7 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 
 	protected static final String INTERNAL_TAG = "internal";
 	private Set<String> publicAssetIds;
+	private Set<String> blockedPublicAssets;
 
 	/**
 	 * @param args
@@ -43,6 +44,7 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 		super(args);
 		type = 3; //private assets.  always.
 		publicAssetIds = loadPublicAssets();
+		blockedPublicAssets = new HashSet<>();
 	}
 
 	/**
@@ -113,15 +115,16 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 	@Override
 	protected boolean isOpcoAuthorized(String distChannel, String[] allowedOpCoNames, String tn) {
 		boolean isAuth =  StringUtil.isEmpty(distChannel) || "INT Mobile".equals(distChannel);
-		
+
 		if (isAuth && publicAssetIds.contains(tn)) {
 			log.debug("blocked - public asset " + tn);
+			blockedPublicAssets.add(tn);
 			return false;
 		} else {
 			return isAuth;
 		}
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.depuysynthes.scripts.DSMediaBinImporterV2#isAssetTypeAuthorized(java.lang.String, java.util.List)
@@ -179,5 +182,24 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 	@Override
 	protected void syncWithSolr(Map<String, MediaBinDeltaVO> masterRecords) {
 		//this does nothing for internal assets
+	}
+
+
+	/**
+	 * @param html
+	 */
+	@Override
+	protected void addSupplementalDetails(StringBuilder msg) {
+		super.addSupplementalDetails(msg);
+		if (blockedPublicAssets.isEmpty()) return;
+		msg.append("\r\n<h4>Public Assets in File - Not Imported</h4>");
+		msg.append("<table border='1' width='95%' align='center'><thead><tr>");
+		msg.append("<th>Tracking Number</th>");
+		msg.append("</tr></thead><tbody>");
+
+		for (String tn : blockedPublicAssets) {
+			msg.append("<tr><td nowrap>").append(tn).append("</td></tr>\r\n");
+		}
+		msg.append("</tbody></table>\r\n");
 	}
 }
