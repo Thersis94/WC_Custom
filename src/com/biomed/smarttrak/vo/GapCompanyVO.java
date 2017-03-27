@@ -202,20 +202,27 @@ public class GapCompanyVO {
 	 * @return
 	 */
 	public StatusVal getStatus(String statusTxt, String rKey) {
-		StatusVal tStatus = null;
 		if(!StringUtil.isEmpty(statusTxt)) {
 			try {
-				tStatus = StatusClass.valueOf(statusTxt).getStatusVal(rKey);
+				return StatusClass.valueOf(statusTxt).getStatusVal(rKey);
 			} catch(Exception e) {
-				if(US.equals(rKey)) {
-					tStatus = StatusVal.USG;
-				} else {
-					tStatus = StatusVal.OUSG;
-				}
+				return getGapStatus(rKey);
 			}
 		}
+		return getGapStatus(rKey);
+	}
 
-		return tStatus;
+	/**
+	 * Helper method that gets a Gap Status for the given Region.
+	 * @param rKey
+	 * @return
+	 */
+	public StatusVal getGapStatus(String rKey) {
+		if(US.equals(rKey)) {
+			return StatusVal.USG;
+		} else {
+			return StatusVal.OUSG;
+		}
 	}
 
 	/**

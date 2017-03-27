@@ -43,6 +43,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 	private String updateMsg;
 	private Date updateDate;
 	private String regionCode;
+	private String regionName;
 
 	public MarketVO () {
 		super(MarketIndexer.INDEX_TYPE);
@@ -233,5 +234,15 @@ public class MarketVO extends SecureSolrDocumentVO {
 
 	public void setRegionCode(String regionCode) {
 		this.regionCode = regionCode;
+	}
+
+	@Column(name="country_nm", isReadOnly=true)
+	public String getRegionName() {
+		return regionName;
+	}
+
+
+	public void setRegionName(String regionName) {
+		this.regionName = regionName;
 	}
 }

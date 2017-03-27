@@ -31,7 +31,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class FinancialDashScenarioAction extends SBActionAdapter {
 
-	public static final String PRIVATE = "private";
+	public static final String PRIVATE = "";
 	
 	/**
 	 * P = Private, T = Team, L = Locked;
@@ -154,7 +154,7 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
 		svo.setUserId(uvo.getUserId());
 		
-		if (svo.getTeamId().equals(PRIVATE)) {
+		if (PRIVATE.equals(svo.getTeamId())) {
 			svo.setTeamId(null);
 			svo.setStatusFlg(StatusLevel.P.toString());
 		} else {

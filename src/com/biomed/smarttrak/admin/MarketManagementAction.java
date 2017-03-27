@@ -44,9 +44,10 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class MarketManagementAction extends AbstractTreeAction {
 
 	public static final String ACTION_TARGET = "actionTarget";
+	public static final String GRAPH_ID = "GRID";
 
 	private enum ActionTarget {
-		MARKET, MARKETATTRIBUTE, ATTRIBUTE, SECTION
+		MARKET, MARKETATTRIBUTE, ATTRIBUTE, SECTION, MARKETGRAPH
 	}
 
 	/*
@@ -77,6 +78,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 				retrieveMarket(req);
 				break;
 			case MARKETATTRIBUTE:
+			case MARKETGRAPH:
 				retireveMarketAttributes(req);
 				break;
 			case ATTRIBUTE:
@@ -121,7 +123,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 	 */
 	private void retrieveMarket(ActionRequest req) throws ActionException {
 		if (req.hasParameter("marketId") && ! req.hasParameter("add")) {
-			retrieveMarket(req.getParameter("marketId"));
+			retrieveSingleMarket(req);
 
 			req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
 		} else if (!req.hasParameter("add")) {
@@ -171,7 +173,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 		}
 		sql.append("ORDER BY ORDER_NO ");
 		log.debug(sql);
-
+		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> results = db.executeSelect(sql.toString(), params, new MarketAttributeTypeVO());
 
@@ -264,13 +266,15 @@ public class MarketManagementAction extends AbstractTreeAction {
 		List<Object> params = new ArrayList<>();
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("select * FROM ").append(customDb).append("BIOMEDGPS_MARKET ");
+		sql.append("select * FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
+		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = m.REGION_CD ");
 
 		// If the request has search terms on it add them here
 		if (req.hasParameter("searchData")) {
 			sql.append("WHERE lower(MARKET_NM) like ?");
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
+		sql.append("ORDER BY MARKET_NM ");
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(dbConn, customDb);
@@ -284,20 +288,21 @@ public class MarketManagementAction extends AbstractTreeAction {
 	 * @param marketId
 	 * @throws ActionException
 	 */
-	protected void retrieveMarket(String marketId) throws ActionException {
+	protected void retrieveSingleMarket(ActionRequest req) throws ActionException {
 		MarketVO market;
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT * FROM ").append(schema).append("BIOMEDGPS_MARKET ");
+		sql.append("SELECT * FROM ").append(schema).append("BIOMEDGPS_MARKET m ");
 		sql.append("WHERE MARKET_ID = ? ");
-
 		List<Object> params = new ArrayList<>();
-		params.add(marketId);
+		params.add(req.getParameter("marketId"));
+		
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		market = (MarketVO) db.executeSelect(sql.toString(), params, new MarketVO()).get(0);
-
+		req.getSession().setAttribute("marketName", market.getMarketName());
+		
 		// Get specifics on market details
-		addAttributes(market);
+		addAttributes(market, Convert.formatBoolean(req.getParameter("graphs")));
 		addSections(market);
 		putModuleData(market);
 	}
@@ -308,8 +313,8 @@ public class MarketManagementAction extends AbstractTreeAction {
 	 * @param market
 	 * @throws ActionException 
 	 */
-	protected void addAttributes(MarketVO market) throws ActionException {
-		List<Object> results = getMarketAttributes(market.getMarketId());
+	protected void addAttributes(MarketVO market, boolean loadGraphs) throws ActionException {
+		List<Object> results = getMarketAttributes(market.getMarketId(), loadGraphs);
 		Tree t = buildAttributeTree();
 
 		for (Object o : results) {
@@ -445,7 +450,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 	 * @param marketId
 	 * @return
 	 */
-	protected List<Object> getMarketAttributes(String marketId) {
+	protected List<Object> getMarketAttributes(String marketId, boolean loadGraphs) {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT xr.*, a.*, g.TITLE_NM as GROUP_NM FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
@@ -453,10 +458,17 @@ public class MarketManagementAction extends AbstractTreeAction {
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_GRID g ");
 		sql.append("ON g.GRID_ID = xr.VALUE_1_TXT ");
-		sql.append("WHERE MARKET_ID = ? ");
+		sql.append("WHERE MARKET_ID = ? and ");
+		if (loadGraphs) {
+			sql.append("a.TYPE_CD = ? ");
+		} else {
+			sql.append("a.TYPE_CD != ? ");
+		}
+		
 		log.debug(sql+"|"+marketId);
 		List<Object> params = new ArrayList<>();
 		params.add(marketId);
+		params.add(GRAPH_ID);
 
 		// DBProcessor returns a list of objects that need to be individually cast to attributes
 		DBProcessor db = new DBProcessor(dbConn, customDb);
@@ -476,15 +488,10 @@ public class MarketManagementAction extends AbstractTreeAction {
 
 		switch(action) {
 			case MARKET:
-				MarketVO c = new MarketVO(req);
-				saveMarket(c, db);
-				marketId = c.getMarketId();
-				// Market save also includes the single section associated
-				// with this market
-				req.setParameter("marketId", marketId);
-				saveSections(req);
+				completeMarketSave(marketId, req, db);
 				break;
 			case MARKETATTRIBUTE:
+			case MARKETGRAPH:
 				MarketAttributeVO attr = new MarketAttributeVO(req);
 				saveAttribute(attr, db);
 				break;
@@ -497,6 +504,24 @@ public class MarketManagementAction extends AbstractTreeAction {
 				break;
 		}
 		return marketId;
+	}
+
+
+	/**
+	 * Do a complete market save
+	 * @param marketId
+	 * @param req
+	 * @param db
+	 * @throws ActionException
+	 */
+	protected void completeMarketSave(String marketId, ActionRequest req, DBProcessor db) throws ActionException {
+		MarketVO c = new MarketVO(req);
+		saveMarket(c, db);
+		marketId = c.getMarketId();
+		// Market save also includes the single section associated
+		// with this market
+		req.setParameter("marketId", marketId);
+		saveSections(req);
 	}
 
 
@@ -608,6 +633,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 					db.delete(c);
 					break;
 				case MARKETATTRIBUTE:
+				case MARKETGRAPH:
 					MarketAttributeVO attr = new MarketAttributeVO(req);
 					db.delete(attr);
 					break;
@@ -672,11 +698,42 @@ public class MarketManagementAction extends AbstractTreeAction {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
 
-		//TODO capture and pass market status here
-		if (!StringUtil.isEmpty(marketId))
-			writeToSolr(marketId, "P");
+		if (!StringUtil.isEmpty(marketId)) {
+			String status = req.getParameter("statusNo");
+			if (StringUtil.isEmpty(status))
+				status = findStatus(marketId);
+			writeToSolr(marketId, status);
+		}
 
 		redirectRequest(msg, buildAction, req);
+	}
+
+
+	/**
+	 * Get the status of the supplied market.
+	 * @param marketId
+	 * @return
+	 * @throws ActionException
+	 */
+	private String findStatus(String marketId) throws ActionException {
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("SELECT STATUS_NO from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_MARKET WHERE MARKET_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, marketId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				return rs.getString("STATUS_NO");
+			}
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+
+		// If we didn't find a market with this id the action was a delete as solr needs to recognize that
+		return "D";
 	}
 
 

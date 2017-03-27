@@ -72,6 +72,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
+	private long countNumber = 0;
 	private List<InsightXRVO> sections;
 
 	public enum InsightType {
@@ -359,14 +360,15 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	}
 
 	/**
+	 * return the date for java and sets up a solr field as publish date string
 	 * @return the publishDt
 	 */
-	@SolrField(name="publishDt_s")
+	@SolrField(name="publish_dt")
 	@Column(name="publish_dt")
 	public Date getPublishDt() {
 		return publishDt;
 	}
-
+	
 	/**
 	 * @return the createDt
 	 */
@@ -598,4 +600,21 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	public String getItemDesc() {
 		return this.getAbstractTxt();
 	}
+	
+	/**
+	 * @return count number
+	 */
+	@Column(name="count_no", isReadOnly=true)
+	public long getCountNumber() {
+		return countNumber;
+	}
+
+	/**
+	 * @param countNumber the countNumber to set
+	 */
+	public void setCountNumber(long countNumber) {
+		this.countNumber = countNumber;
+	}
+	
+	
 }
