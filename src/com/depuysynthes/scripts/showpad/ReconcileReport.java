@@ -12,9 +12,8 @@ import java.util.Map;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.io.mail.EmailMessageVO;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
-
-import opennlp.tools.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ReconcileReport.java<p/>
