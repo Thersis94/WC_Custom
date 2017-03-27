@@ -14,6 +14,8 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
+import opennlp.tools.util.StringUtil;
+
 /****************************************************************************
  * <b>Title</b>: ReconcileReport.java<p/>
  * <b>Description</b>: Generates CSV output containing assets in Showpad 
@@ -93,7 +95,11 @@ public class ReconcileReport extends ShowpadMediaBinDecorator {
 	}
 
 
-	private void sendEmail(ReconcileExcelReport rpt) {
+	/**
+	 * send the email summary, with the attachment, to the desired contacts
+	 * @param rpt
+	 */
+	protected void sendEmail(ReconcileExcelReport rpt) {
 		EmailMessageVO eml = new EmailMessageVO();
 		try {
 			eml.setFrom("appsupport@siliconmtn.com");
@@ -131,7 +137,12 @@ public class ReconcileReport extends ShowpadMediaBinDecorator {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				MediaBinDeltaVO vo = new MediaBinDeltaVO(rs);
-				data.put(vo.getShowpadId(), vo);
+				String pkId = vo.getShowpadId();
+				//cannot have multiple records with the same primary key
+				if (StringUtil.isEmpty(pkId) || ShowpadDivisionUtil.FAILED_PROCESSING.equals(pkId))
+					pkId = vo.getDpySynMediaBinId();
+
+				data.put(pkId, vo);
 			}
 
 		} catch (SQLException sqle) {
