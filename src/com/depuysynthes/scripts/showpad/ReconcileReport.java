@@ -95,7 +95,7 @@ public class ReconcileReport extends ShowpadMediaBinDecorator {
 
 
 	/**
-	 * send the email summary, with the attachment, to the desired contacts
+	 * Send the email summary (w/attachment) to the desired contacts
 	 * @param rpt
 	 */
 	protected void sendEmail(ReconcileExcelReport rpt) {
@@ -126,9 +126,9 @@ public class ReconcileReport extends ShowpadMediaBinDecorator {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select * from ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("dpy_syn_mediabin a ");
-		sql.append("inner join ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("dpy_syn_showpad b on a.dpy_syn_mediabin_id=b.dpy_syn_mediabin_id ");
-		sql.append("where b.division_id=?");
+		sql.append("left join ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("dpy_syn_showpad b on a.dpy_syn_mediabin_id=b.dpy_syn_mediabin_id and b.division_id=? ");
+		sql.append("where a.import_file_cd > 1");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
