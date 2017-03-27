@@ -343,10 +343,7 @@ public class InsightAction extends AbstractTreeAction {
 
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.STATUS_CD))){
 			sql.append("and a.status_cd=? ");
-		}else if(Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS))){
-			//when solr indexes, index only published insights
-			sql.append("and a.status_cd = 'P' ");
-		}else if(StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) && StringUtil.isEmpty(insightParamsMap.get(Fields.STATUS_CD)) ){
+		}else if(StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID))){
 			sql.append("and a.status_cd != 'D' ");
 		}
 
