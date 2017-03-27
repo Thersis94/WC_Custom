@@ -38,6 +38,7 @@ public class FinancialDashAction extends SBActionAdapter {
 		fdActions.put("fdOverlay", "com.biomed.smarttrak.fd.FinancialDashScenarioOverlayAction");
 		fdActions.put("fdHierarchy", "com.biomed.smarttrak.admin.FinancialDashHierarchyAction");
 		fdActions.put("fdScenario", "com.biomed.smarttrak.fd.FinancialDashScenarioAction");
+		fdActions.put("fdFootnote", "com.biomed.smarttrak.fd.FinancialDashFootnoteAction");
 
 		FD_ACTIONS = Collections.unmodifiableMap(fdActions);
 	}
