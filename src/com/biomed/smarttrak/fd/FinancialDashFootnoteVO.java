@@ -1,10 +1,8 @@
 package com.biomed.smarttrak.fd;
 
-import java.sql.ResultSet;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
@@ -39,14 +37,6 @@ public class FinancialDashFootnoteVO extends SBModuleVO {
 	}
 
 	/**
-	 * @param rs
-	 */
-	public FinancialDashFootnoteVO(ResultSet rs) {
-		super(rs);
-		setData(rs);
-	}
-	
-	/**
 	 * @param req
 	 */
 	public FinancialDashFootnoteVO(ActionRequest req) {
@@ -54,23 +44,6 @@ public class FinancialDashFootnoteVO extends SBModuleVO {
 		setData(req);
 	}
 	
-	/**
-	 * Sets data from a ResultSet
-	 * @param rs
-	 */
-	public void setData(ResultSet rs) {
-		DBUtil util = new DBUtil();
-		
-		setFootnoteId(util.getStringVal("FOOTNOTE_ID", rs));
-		setRegionCd(util.getStringVal("REGION_CD", rs));
-		setSectionId(util.getStringVal("SECTION_ID", rs));
-		setCompanyId(util.getStringVal("COMPANY_ID", rs));
-		setFootnoteTxt(util.getStringVal("FOOTNOTE_TXT", rs));
-		setExpirationDt(util.getDateVal("EXPIRATION_DT", rs));
-		setCreateDt(util.getDateVal("CREATE_DT", rs));
-		setUpdateDt(util.getDateVal("UPDATE_DT", rs));
-	}
-
 	/**
 	 * Sets data from the ActionRequest
 	 * 
