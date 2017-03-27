@@ -1,12 +1,12 @@
 package com.biomed.smarttrak.fd;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
-import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
  * <b>Title</b>: FinancialDashFootnoteVO.java<p/>
@@ -20,7 +20,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
  ****************************************************************************/
 
 @Table(name="biomedgps_fd_revenue_footnote")
-public class FinancialDashFootnoteVO extends SBModuleVO {
+public class FinancialDashFootnoteVO implements Serializable {
 
 	private static final long serialVersionUID = -8861767513761326537L;
 	private String footnoteId;

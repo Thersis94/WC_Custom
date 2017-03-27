@@ -38,8 +38,6 @@ public class FinancialDashFootnoteAdminAction extends FinancialDashFootnoteActio
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		super.build(req);
-		
 		FinancialDashFootnoteVO fvo = new FinancialDashFootnoteVO(req);
 		DBProcessor dbp = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		

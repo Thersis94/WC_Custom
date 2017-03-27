@@ -41,8 +41,6 @@ public class FinancialDashFootnoteAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		super.retrieve(req);
-
 		FinancialDashFootnoteVO fvo = new FinancialDashFootnoteVO(req);
 		TableType tableType = TableType.valueOf(req.getParameter("tableType"));
 		
@@ -83,7 +81,8 @@ public class FinancialDashFootnoteAction extends SBActionAdapter {
 	 */
 	protected String getFootnoteSql(FinancialDashFootnoteVO fvo, TableType tableType, String custom) {
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select * from ").append(custom).append("biomedgps_fd_revenue_footnote rf ");
+		sql.append("select footnote_id, region_cd, footnote_txt, expiration_dt, section_id, company_id ");
+		sql.append("from ").append(custom).append("biomedgps_fd_revenue_footnote rf ");
 		sql.append("where region_cd = ? and (expiration_dt > getdate() or expiration_dt is null) ");
 		
 		// Company View - select all for given company_id
