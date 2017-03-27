@@ -1,6 +1,6 @@
 package com.biomed.smarttrak.admin;
 
-//Java 7
+//Java 8
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -14,6 +14,8 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
@@ -36,7 +38,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
-
+import com.smt.sitebuilder.security.WCUtil;
 //WC_Custom
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
@@ -72,6 +74,12 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		//if loginAs was passed, log-out the admin and log-in the desired user.  Login occurs after redirect, we're just doing the prep
+		if (req.hasParameter("loginAs")) {
+			loginAsUser(req);
+			return;
+		}
+
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
 		if (!req.hasParameter("loadData") && !req.hasParameter(USER_ID)) return;
@@ -81,6 +89,29 @@ public class AccountUserAction extends SBActionAdapter {
 		//do this last, because loading the registration actions will collide with ModuleVO.actionData
 		putModuleData(users);
 	}
+
+
+	/**
+	 * Flushes the users session, then logs them in as the passed profileId, then redirects to the homepage
+	 * @param req
+	 */
+	protected void loginAsUser(ActionRequest req) {
+		try {
+			WCUtil.logout(req.getSession());
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
+			StringEncrypter se = new StringEncrypter(encKey);
+			String encProfileId = StringEncoder.urlEncode(se.encrypt(req.getParameter("loginAs")));
+
+			SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), getAttributes());
+			sc.loadUserFromCookie(encProfileId, encKey, dbConn, req, site);
+
+			sendRedirect("/","", req);
+		} catch (Exception e) {
+			log.error("could not prepare for automatic user login", e);
+		}
+	}
+
 
 	/**
 	 * loads the list of users tied to this account.
@@ -306,11 +337,11 @@ public class AccountUserAction extends SBActionAdapter {
 		try {
 			//find any existing role - will either be deleted or updated
 			role.setProfileRoleId(prm.checkRole(user.getProfileId(), role.getSiteId(), null, null, dbConn));
-			
+
 			if (isDelete) {
 				prm.removeRole(role.getProfileRoleId(), dbConn);
 				return;
-				
+
 			} else if (UserVO.Status.EUREPORTS.getCode().equals(user.getStatusCode())) {
 				role.setRoleId(AdminControllerAction.EUREPORT_ROLE_ID);
 			} else {

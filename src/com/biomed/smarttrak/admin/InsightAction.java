@@ -1,16 +1,21 @@
 package com.biomed.smarttrak.admin;
-
+//java 8
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+//WC_Custom
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
 import com.biomed.smarttrak.vo.InsightXRVO;
+//SMT baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -21,6 +26,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+//WebCrescendo
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -40,10 +46,24 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
 public class InsightAction extends AbstractTreeAction {
 	protected static final String INSIGHT_ID = "insightId"; //req param
 	public static final String ROOT_NODE_ID = AbstractTreeAction.MASTER_ROOT;
+	private Map<String, String> sortMapper;
+
+	protected enum Fields {
+		INSIGHT_ID, STATUS_CD, TYPE_CD, DATE_RANGE, START, RPP, SORT, ORDER,
+		SEARCH, ID_BYPASS;
+	}
 
 	public InsightAction() {
 		super();
+		sortMapper = new HashMap<>();
+		sortMapper.put("titleTxt", "title_txt");
+		sortMapper.put("Published", "publish_dt");
+		sortMapper.put("insightType", "type_cd");
+		sortMapper.put("featuredFlg", "featured_flg");
+		sortMapper.put("orderNo", "order_no");
 	}
+
+
 
 	public InsightAction(ActionInitVO actionInit) {
 		super(actionInit);
@@ -56,7 +76,7 @@ public class InsightAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("insight retrieve called");
-		
+
 		if (req.hasParameter("loadData") || req.hasParameter(INSIGHT_ID) ) {
 			loadAuthors(req);
 			loadInsightsData(req);
@@ -69,20 +89,88 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	private void loadInsightsData(ActionRequest req) {
 		log.debug("loaded data");
-		
+
+		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
+
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
-		String insightId = req.hasParameter(INSIGHT_ID) ? req.getParameter(INSIGHT_ID) : null;
-		String statusCd = req.getParameter("statusCd");
-		String typeCd = req.getParameter("typeCd");
-		String dateRange = req.getParameter("dateRange");
-		boolean idBypass = false;
-		List<Object> insights = getInsights(insightId, statusCd, typeCd, dateRange, idBypass);
+		if (req.hasParameter(INSIGHT_ID)) insightParamsMap.put(Fields.INSIGHT_ID, req.getParameter(INSIGHT_ID) );
+		if (req.hasParameter("statusCd")) insightParamsMap.put(Fields.STATUS_CD, req.getParameter("statusCd"));
+		if (req.hasParameter("typeCd")) insightParamsMap.put(Fields.TYPE_CD, req.getParameter("typeCd"));
+		if (req.hasParameter("dateRange")) insightParamsMap.put(Fields.DATE_RANGE, req.getParameter("dateRange"));
+		insightParamsMap.put(Fields.START, req.getParameter("offset", "0"));
+		insightParamsMap.put(Fields.RPP, req.getParameter("limit","10"));
+		insightParamsMap.put(Fields.SORT, StringUtil.checkVal(sortMapper.get(req.getParameter("sort")), "publish_dt"));
+		insightParamsMap.put(Fields.ORDER, StringUtil.checkVal(req.getParameter("order"), "desc"));
+		insightParamsMap.put(Fields.SEARCH, StringUtil.checkVal(req.getParameter("search")).toUpperCase());
+		insightParamsMap.put(Fields.ID_BYPASS, "false");
+
+		List<Object> insights;
+
+		insights = getInsights(insightParamsMap);
 
 		decryptNames(insights);
 
-		putModuleData(insights);
-		
+		Long count = getCount(insightParamsMap);
+
+		log.debug(" total count is: " + count);
+		putModuleData(insights, count.intValue(), false);
+
+	}
+
+	/**
+	 * @param insightParamsMap
+	 * @return
+	 */
+	private long getCount(EnumMap<Fields, String> insightParamsMap) {
+		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
+		String sql = formatCountQuery(insightParamsMap, schema);
+
+		//remove the sort and order fields so the total rows count is accurate
+		insightParamsMap.remove(Fields.RPP);
+		insightParamsMap.remove(Fields.START);
+		insightParamsMap.remove(Fields.SORT);
+		insightParamsMap.remove(Fields.ORDER);
+
+		List<Object> params = loadSqlParams(insightParamsMap);
+
+		DBProcessor db = new DBProcessor(dbConn, schema);
+
+		List<Object> insights = db.executeSelect(sql, params, new InsightVO());
+
+		if (!insights.isEmpty()){
+			InsightVO ivo = (InsightVO) insights.get(0);
+			return ivo.getCountNumber();
+		} else {
+			return 0;
+		}
+	}
+
+	/**
+	 * @param insightParamsMap
+	 * @param schema
+	 * @return
+	 */
+	private String formatCountQuery(EnumMap<Fields, String> insightParamsMap, String schema) {
+
+		StringBuilder sql = new StringBuilder(400);
+
+		generateSelectCountQuery(sql, schema);
+
+		generateJoinSectionOfQuery(sql, schema, insightParamsMap);
+
+		generateWhereClauseOfQuery(sql, insightParamsMap );
+
+		return sql.toString();
+	}
+
+	/**
+	 * @param sql
+	 * @param schema
+	 * @param insightParamsMap
+	 */
+	private void generateSelectCountQuery(StringBuilder sql, String schema) {
+		sql.append("select count(*) as count_no from ").append(schema).append("biomedgps_insight a ");
 	}
 
 	/**
@@ -92,7 +180,7 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	private void loadAuthors(ActionRequest req) throws ActionException {
 		log.debug("loaded authors");
-		
+
 		AccountAction aa = new AccountAction();
 		aa.setActionInit(actionInit);
 		aa.setAttributes(attributes);
@@ -100,7 +188,7 @@ public class InsightAction extends AbstractTreeAction {
 		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
 
 	}
-	
+
 	/**
 	 * used to pull back a list of insights based on the codes and types. sets a id bypass to true
 	 * and will return all the insight data for each insight in the list, if you do not require 
@@ -112,7 +200,42 @@ public class InsightAction extends AbstractTreeAction {
 	 * @return
 	 */
 	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
-		return getInsights (insightId, statusCd, typeCd, dateRange, false);
+
+		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
+		if (!StringUtil.isEmpty(insightId)) insightParamsMap.put(Fields.INSIGHT_ID, insightId );
+		if (!StringUtil.isEmpty(statusCd)) insightParamsMap.put(Fields.STATUS_CD, statusCd);
+		if (!StringUtil.isEmpty(typeCd)) insightParamsMap.put(Fields.TYPE_CD, typeCd);
+		if (!StringUtil.isEmpty(dateRange)) insightParamsMap.put(Fields.DATE_RANGE, dateRange);
+		insightParamsMap.put(Fields.ID_BYPASS, "false");
+
+		insightParamsMap.put(Fields.SORT, StringUtil.checkVal("publish_dt"));
+		insightParamsMap.put(Fields.ORDER, StringUtil.checkVal( "desc"));
+
+		return getInsights (insightParamsMap);
+	}
+	/**
+	 * used to pull back a list of insights based on the codes and types. sets a id bypass to true
+	 * and will return all the insight data for each insight in the list, if you do not require 
+	 * text fields
+	 * @param insightId
+	 * @param statusCd
+	 * @param typeCd
+	 * @param dateRange
+	 * @return
+	 */
+	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange, boolean idBypass) {
+
+		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
+		if (!StringUtil.isEmpty(insightId)) insightParamsMap.put(Fields.INSIGHT_ID, insightId );
+		if (!StringUtil.isEmpty(statusCd)) insightParamsMap.put(Fields.STATUS_CD, statusCd);
+		if (!StringUtil.isEmpty(typeCd)) insightParamsMap.put(Fields.TYPE_CD, typeCd);
+		if (!StringUtil.isEmpty(dateRange)) insightParamsMap.put(Fields.DATE_RANGE, dateRange);
+		insightParamsMap.put(Fields.ID_BYPASS, StringUtil.checkVal(idBypass));
+
+		insightParamsMap.put(Fields.SORT, StringUtil.checkVal("publish_dt"));
+		insightParamsMap.put(Fields.ORDER, StringUtil.checkVal("desc"));
+
+		return getInsights (insightParamsMap);
 	}
 
 	/**
@@ -124,15 +247,12 @@ public class InsightAction extends AbstractTreeAction {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange, boolean idByPass) {
+	public List<Object> getInsights(Map<Fields, String> insightParamsMap) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatRetrieveQuery(insightId, statusCd, typeCd, dateRange, schema, idByPass);
+		String sql = formatRetrieveQuery(insightParamsMap, schema);
 
-		List<Object> params = new ArrayList<>();
-		if (!StringUtil.isEmpty(insightId)) params.add(insightId);
-		if (!StringUtil.isEmpty(statusCd)) params.add(statusCd);
-		if (!StringUtil.isEmpty(typeCd)) params.add(Convert.formatInteger(typeCd));
+		List<Object> params = loadSqlParams(insightParamsMap);
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
@@ -148,20 +268,62 @@ public class InsightAction extends AbstractTreeAction {
 	}
 
 	/**
-	 * Formats the account retrieval query.
+	 * @param insightParamsMap 
 	 * @return
 	 */
-	private static String formatRetrieveQuery(String insightId, String statusCd, String typeCd, String dateRange, String schema, boolean idByPass) {
-		StringBuilder sql = new StringBuilder(400);
-		
-		generateSelectSectionOfQuery(sql, insightId, schema, idByPass);
+	private List<Object> loadSqlParams(Map<Fields, String> insightParamsMap) {
+		List<Object> params = new ArrayList<>();
 
-		generateJoinSectionOfQuery(sql, insightId, schema, idByPass);
-		
-		generateWhereClauseOfQuery(sql,insightId,statusCd, typeCd,dateRange );
+		if (insightParamsMap.containsKey(Fields.INSIGHT_ID)) params.add(insightParamsMap.get(Fields.INSIGHT_ID));
+		if (insightParamsMap.containsKey(Fields.STATUS_CD)) params.add(insightParamsMap.get(Fields.STATUS_CD));
+		if (insightParamsMap.containsKey(Fields.TYPE_CD)) params.add(Convert.formatInteger(insightParamsMap.get(Fields.TYPE_CD)));
+
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.SEARCH)))
+			params.add(StringUtil.checkVal("%"+insightParamsMap.get(Fields.SEARCH)+"%"));
+
+		if (insightParamsMap.containsKey(Fields.RPP) && insightParamsMap.containsKey(Fields.START)){
+			params.add(Convert.formatInteger(insightParamsMap.get(Fields.RPP)));
+			params.add(Convert.formatInteger(insightParamsMap.get(Fields.START)));
+		}
+		return params;
+	}
+
+
+
+	/**
+	 * Formats the account retrieval query.
+	 * @param schema 
+	 * @return
+	 */
+	private static String formatRetrieveQuery(Map<Fields, String> insightParamsMap, String schema) {
+
+		StringBuilder sql = new StringBuilder(400);
+
+		generateSelectSectionOfQuery(sql, schema, insightParamsMap);
+
+		generateJoinSectionOfQuery(sql, schema, insightParamsMap);
+
+		generateWhereClauseOfQuery(sql, insightParamsMap );
+
+		generatePaginationClauseOfQuery(sql, insightParamsMap);
 
 		log.debug(sql);
 		return sql.toString();
+	}
+
+	/**
+	 * generates the order by and limit and offset for the query used for bootstrap table
+	 * @param sql
+	 * @param insightParamsMap
+	 */
+	private static void generatePaginationClauseOfQuery(StringBuilder sql,
+			Map<Fields, String> insightParamsMap) {
+
+		sql.append("order by ").append(insightParamsMap.get(Fields.SORT)).append(" ").append(insightParamsMap.get(Fields.ORDER));
+
+		if (insightParamsMap.containsKey(Fields.RPP) && insightParamsMap.containsKey(Fields.START)){
+			sql.append(" limit ? offset ? ");
+		}
 	}
 
 	/**
@@ -171,33 +333,47 @@ public class InsightAction extends AbstractTreeAction {
 	 * @param statusCd
 	 * @param typeCd
 	 * @param dateRange
+	 * @param idByPass 
 	 */
-	private static void generateWhereClauseOfQuery(StringBuilder sql, String insightId, String statusCd, String typeCd, String dateRange) {
+	private static void generateWhereClauseOfQuery(StringBuilder sql, Map<Fields, String> insightParamsMap) {
 		sql.append("where 1=1 ");
-		if (!StringUtil.isEmpty(insightId)) sql.append("and a.insight_id=? ");
-		if (!StringUtil.isEmpty(statusCd)) sql.append("and a.status_cd=? ");
-		if (!StringUtil.isEmpty(typeCd)) sql.append("and a.type_cd=? ");
-		if (!StringUtil.isEmpty(dateRange)) {
-			if("1".equals(dateRange)) {
+
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID))) 
+			sql.append("and a.insight_id=? ");
+
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.STATUS_CD))){
+			sql.append("and a.status_cd=? ");
+		}else if(StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID))){
+			sql.append("and a.status_cd != 'D' ");
+		}
+
+		if ( !StringUtil.isEmpty(insightParamsMap.get(Fields.TYPE_CD)))
+			sql.append("and a.type_cd=? ");
+
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.DATE_RANGE))) {
+			if("1".equals(insightParamsMap.get(Fields.DATE_RANGE))) {
 				sql.append("and a.create_Dt > CURRENT_DATE - INTERVAL '6 months' ");
-			} else if ("2".equals(dateRange)) {
+			} else if ("2".equals(insightParamsMap.get(Fields.DATE_RANGE))) {
 				sql.append("and a.create_Dt < CURRENT_DATE - INTERVAL '6 months' ");
 			}
 		}
-		sql.append("order by a.publish_dt desc");
-		
+
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.SEARCH)))
+			sql.append("and upper(title_txt) like ? "); 
 	}
 
 	/**
 	 * updates string builder with the join section of the query based on supplied params
 	 * @param sql
+	 * @param schema 
 	 * @param insightId
 	 * @param schema
 	 * @param idByPass
 	 */
-	private static void generateJoinSectionOfQuery(StringBuilder sql, String insightId, String schema, boolean idByPass) {
+	private static void generateJoinSectionOfQuery(StringBuilder sql, String schema, Map<Fields, String> insightParamsMap) {
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		if (!StringUtil.isEmpty(insightId) || idByPass){
+
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS))){
 			sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
 			sql.append("on a.insight_id=b.insight_id ");
 		}
@@ -206,24 +382,25 @@ public class InsightAction extends AbstractTreeAction {
 	/**
 	 * updates the string builder with the select section of the query based on supplied params
 	 * @param sql
+	 * @param schema 
 	 * @param idByPass 
 	 * @param schema 
 	 * @param insightId 
 	 */
-	private static void generateSelectSectionOfQuery(StringBuilder sql, String insightId, String schema, boolean idByPass) {
+	private static void generateSelectSectionOfQuery(StringBuilder sql, String schema, Map<Fields, String> insightParamsMap) {
 		sql.append("select ");
-		if (!StringUtil.isEmpty(insightId) || idByPass){
-			sql.append("a.*");
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS))){
+			sql.append("a.* ");
 		}else{
-			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt, a.featured_flg, a.order_no");
+			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt, a.featured_flg, a.order_no ");
 		}
-				
+
 		sql.append(", p.first_nm, p.last_nm, p.profile_img ");
-		
-		
-		if (!StringUtil.isEmpty(insightId)|| idByPass)sql.append(", b.section_id ");
+
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS)))
+			sql.append(", b.section_id ");
+
 		sql.append("from ").append(schema).append("biomedgps_insight a ");
-		
 	}
 
 	/**
@@ -234,8 +411,6 @@ public class InsightAction extends AbstractTreeAction {
 	protected void decryptNames(List<Object> data) {
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
-
-
 
 	/**
 	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
@@ -278,26 +453,29 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		InsightVO u = new InsightVO(req);
+		InsightVO ivo = new InsightVO(req);
 		try {
 			if (isDelete) {
-				log.debug("deleting " + u);
-				db.delete(u);
-				deleteFromSolr(u);
+				//Insights are not deleted from the DB deleted is a status change
+				//    However they are to be removed and deleted from solr so the public can no longer see them. -rjr
+				log.debug("deleting " + ivo);
+				ivo.setStatusCd(InsightVO.InsightStatusCd.D.name());
+				updateStatus(db, ivo);
+				deleteFromSolr(ivo);
 			} else {
 
 				if (req.hasParameter("listSave")){
-					updateFeatureOrder(u);
+					updateFeatureOrder(ivo, db);
 				}else {
-					saveInsight(db, u);
+					saveInsight(db, ivo);
 				}
 
 				//Add to Solr if published
-				if(InsightStatusCd.P.toString().equals(u.getStatusCd())) {
-					writeToSolr(u);
+				if(InsightStatusCd.P.toString().equals(ivo.getStatusCd())) {
+					writeToSolr(ivo);
 				}
 			}
-			req.setParameter(INSIGHT_ID, u.getInsightId());
+			req.setParameter(INSIGHT_ID, ivo.getInsightId());
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
@@ -307,19 +485,19 @@ public class InsightAction extends AbstractTreeAction {
 	 * Save an InsightsVO to solr.
 	 * @param u
 	 */
-	protected void writeToSolr(InsightVO u) {
+	protected void writeToSolr(InsightVO ivo) {
 		BiomedInsightIndexer bindx = BiomedInsightIndexer.makeInstance(getAttributes());
 		bindx.setDBConnection(dbConn);
-		bindx.addSingleItem(u.getInsightId());
+		bindx.addSingleItem(ivo.getInsightId());
 	}
 
 	/**
 	 * Removes an Updates Record from Solr.
 	 * @param u
 	 */
-	protected void deleteFromSolr(InsightVO i) {
+	protected void deleteFromSolr(InsightVO ivo) {
 		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
-			sau.removeDocument(i.getInsightId());
+			sau.removeDocument(ivo.getInsightId());
 		} catch (Exception e) {
 			log.error("Error Deleting from Solr.", e);
 		}
@@ -333,36 +511,60 @@ public class InsightAction extends AbstractTreeAction {
 	 * @throws Exception 
 	 * 
 	 */
-	private void saveInsight(DBProcessor db, InsightVO u) throws Exception {
-		db.save(u);
+	private void saveInsight(DBProcessor db, InsightVO ivo) throws Exception {
+		db.save(ivo);
 
-		setInsightIdOnInsert(u, db);
+		setInsightIdOnInsert(ivo, db);
 
 		//Save Insight Sections.
-		saveSections(u);
+		saveSections(ivo);
 
+	}
+
+	private void updateStatus(DBProcessor db, InsightVO ivo) throws ActionException {
+		log.debug("updating status code on insight");
+		StringBuilder sql = new StringBuilder(50);
+		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
+		sql.append("set STATUS_CD = ? ");
+		sql.append("where INSIGHT_ID = ? ");
+
+		log.debug(" sql " + sql.toString() +"|"+ ivo.getStatusCd() +"|"+ivo.getInsightId());
+
+		List<String> fields = new ArrayList<>();
+		fields.add("STATUS_CD");
+		fields.add("INSIGHT_ID");
+
+		try {
+			db.executeSqlUpdate(sql.toString(), ivo, fields);
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
 	}
 
 	/**
 	 * does a quick update issued from the list view.
+	 * @param db 
 	 * @param u
 	 * @throws ActionException 
 	 */
-	private void updateFeatureOrder(InsightVO u) throws ActionException {
+	private void updateFeatureOrder(InsightVO ivo, DBProcessor db) throws ActionException {
 		log.debug("update featured ordered no");
 		StringBuilder sb = new StringBuilder(50);
 		sb.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
 		sb.append("set FEATURED_FLG= ?, ORDER_NO = ? ");
-		sb.append("where insight_id = ? ");
+		sb.append("where INSIGHT_ID = ? ");
 
-		log.debug(" sql " + sb.toString() +"|"+ u.getFeaturedFlg() +"|"+u.getOrderNo()+"|"+u.getInsightId());
 
-		try(PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
-			ps.setInt(1, u.getFeaturedFlg());
-			ps.setInt(2, u.getOrderNo());
-			ps.setString(3,u.getInsightId());
-			ps.executeUpdate();
-		} catch (SQLException e) {
+		log.debug(" sql " + sb.toString() +"|"+ StringUtil.checkVal(ivo.getFeaturedFlg()) +"|"+StringUtil.checkVal(ivo.getOrderNo()+"|"+ivo.getInsightId()));
+
+		List<String> fields = new ArrayList<>();
+		fields.add("FEATURED_FLG");
+		fields.add("ORDER_NO");
+		fields.add("INSIGHT_ID");
+
+		try {
+			db.executeSqlUpdate(sb.toString(), ivo, fields);
+		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 	}
@@ -372,12 +574,12 @@ public class InsightAction extends AbstractTreeAction {
 	 * @param db 
 	 * @param u 
 	 */
-	private void setInsightIdOnInsert(InsightVO u, DBProcessor db) {
+	private void setInsightIdOnInsert(InsightVO ivo, DBProcessor db) {
 
-		if(StringUtil.isEmpty(u.getInsightId())) {
-			u.setInsightId(db.getGeneratedPKId());
-			for(InsightXRVO uxr : u.getInsightSections()) {
-				uxr.setInsightId(u.getInsightId());
+		if(StringUtil.isEmpty(ivo.getInsightId())) {
+			ivo.setInsightId(db.getGeneratedPKId());
+			for(InsightXRVO uxr : ivo.getInsightSections()) {
+				uxr.setInsightId(ivo.getInsightId());
 			}
 		}
 
@@ -390,15 +592,15 @@ public class InsightAction extends AbstractTreeAction {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	protected void saveSections(InsightVO u) throws Exception {
+	protected void saveSections(InsightVO ivo) throws Exception {
 
 		//Delete old Insight Section XRs
-		deleteSections(u.getInsightId());
+		deleteSections(ivo.getInsightId());
 
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 
 		//Save new Sections.
-		for(InsightXRVO uxr : u.getInsightSections()) {
+		for(InsightXRVO uxr : ivo.getInsightSections()) {
 			db.save(uxr);
 		}
 	}

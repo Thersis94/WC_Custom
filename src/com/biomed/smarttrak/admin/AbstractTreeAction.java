@@ -119,6 +119,7 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 				Node n = new Node(segment.getSectionId(), segment.getParentId());
 				n.setNodeName(segment.getSectionNm());
 				n.setUserObject(segment);
+				n.setOrderNo(segment.getOrderNo());
 				data.put(n.getNodeId(), n);
 			}
 		} catch (SQLException sqle) {
@@ -199,7 +200,7 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 			SectionVO p2 = (SectionVO) o2.getUserObject();
 			if (p1 == null || p2 == null) return 0;
 
-			return p1.getOrderNo() - p2.getOrderNo();
+			return Integer.compare(p1.getOrderNo(), p2.getOrderNo());
 		}
 	}
 }

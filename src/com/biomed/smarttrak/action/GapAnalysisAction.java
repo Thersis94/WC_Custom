@@ -18,6 +18,7 @@ import org.apache.commons.lang.ArrayUtils;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.report.GapAnalysisReportVO;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
+import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.GapCompanyVO;
 import com.biomed.smarttrak.vo.GapProductVO;
 import com.biomed.smarttrak.vo.GapTableVO;
@@ -27,6 +28,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.data.OrderedTree;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
@@ -55,7 +57,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 
 	public static final String GAP_ROOT_ID = "GAP_ANALYSIS_ROOT";
 	public static final String GAP_CACHE_KEY = "GAP_ANALYSIS_TREE_CACHE_KEY";
-	private String [] selNodes;
+	private String[] selNodes;
+
 	public GapAnalysisAction() {
 		super();
 	}
@@ -69,6 +72,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SecurityController.isGaAuth(req);
+		
 		if(req.hasParameter("selNodes")) {
 
 			//Instantiate GapTableVO to Store Data.
@@ -104,7 +109,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			String companyId = req.getParameter("companyId");
 			String columnId = req.getParameter("columnId");
 			super.putModuleData(getProductList(regionId, companyId, columnId));
-		} else {
+		} else if(req.hasParameter("getState")) {
 
 			SMTSession ses = req.getSession();
 			UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
@@ -237,7 +242,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		nodes.addAll(getColumns());
 
 		//Build a tree and sort nodes so children are set properly.
-		Tree t = new Tree(nodes);
+		Tree t = new OrderedTree(nodes);
 
 		//Filter down to the Gap Node and retrieve it's children.
 		Node n = t.findNode(GAP_ROOT_ID);
@@ -299,6 +304,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 				Node n = new Node(gap.getGaColumnId(), gap.getSectionId());
 				n.setNodeName(gap.getButtonTxt());
 				n.setUserObject(gap);
+				n.setOrderNo(gap.getOrderNo());
 				nodes.add(n);
 			}
 		} catch (SQLException e) {
@@ -390,6 +396,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		}
 		sql.append(") order by g.company_nm");
 
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 

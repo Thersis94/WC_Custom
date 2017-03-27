@@ -318,7 +318,7 @@ public class ProductExplorer extends SBActionAdapter {
 			selected.append(s.replace("~", "\\~").replace(" ", "\\ ")).append("*");
 		}
 		selected.append(")");
-		qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.HIERARCHY, selected.toString(), BooleanType.AND));
+		qData.addSolrField(new SolrFieldVO(FieldType.FILTER, "sectionid_ss", selected.toString(), BooleanType.AND));
 	}
 
 
