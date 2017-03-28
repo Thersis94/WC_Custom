@@ -32,6 +32,7 @@ public class LocationVO {
 	private String stateCode;
 	private String zipCode;
 	private String countryCode;
+	private String countryName;
 	private String phoneText;
 	private String altPhoneText;
 	private int primaryLocFlg;
@@ -123,6 +124,15 @@ public class LocationVO {
 	public void setCountryCode(String countryCode) {
 		this.countryCode = countryCode;
 	}
+	@Column(name="country_nm", isReadOnly=true)
+	public String getCountryName() {
+		return countryName;
+	}
+
+	public void setCountryName(String countryName) {
+		this.countryName = countryName;
+	}
+
 	@Column(name="phone_txt")
 	public String getPhoneText() {
 		return phoneText;
