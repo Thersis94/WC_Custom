@@ -12,6 +12,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 
 // WC custom
 import com.biomed.smarttrak.fd.FinancialDashAction;
+import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.CRMAction;
 import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
@@ -124,6 +125,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("agap", GapAnalysisAdminAction.class);
 		ACTIONS.put("fd", FinancialDashAction.class);
 		ACTIONS.put("fdScenario", FinancialDashScenarioAction.class);
+		ACTIONS.put("fdFootnote", FinancialDashFootnoteAdminAction.class);
 		ACTIONS.put("audit", AuditLogAction.class);
 		ACTIONS.put("fdHierarchy", FinancialDashHierarchyAction.class);
 		ACTIONS.put("productAdmin", ProductManagementAction.class);
