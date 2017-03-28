@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -60,7 +61,6 @@ public class ListAction extends DirectUrlManagerAction {
 
 	/**
 	 * Helper method that loads all the Direct Urls available.
-	 * 
 	 * @param orgId
 	 * @return 
 	 * @return
@@ -70,21 +70,33 @@ public class ListAction extends DirectUrlManagerAction {
 	protected Map<String, List<GenericVO>> getUrls(ActionRequest req) throws ActionException {
 
 		//Call Super to load any lists from core.
-		Map<String, List<GenericVO>> urlMap = super.getUrls(req);
+		Map<String, List<GenericVO>> urlMap = new HashMap<>();
 
-		//Get Companies
-		if(ListType.COMPANY.name().equals(req.getParameter("type"))) {
-			urlMap.put(ListType.COMPANY.name(), getList(ListType.COMPANY.name(), true));
-		}
+		String type = req.getParameter("type");
 
-		//Get Markets
-		if(ListType.MARKET.name().equals(req.getParameter("type"))) {
-			urlMap.put(ListType.MARKET.name(), getList(ListType.MARKET.name(), true));
-		}
+		if("ALL".equals(type)) {
+			urlMap.put("PAGE", getPageUrls(req));
+			urlMap.put("COMPANY", getList(ListType.COMPANY.name(), true));
+			urlMap.put("MARKET", getList(ListType.MARKET.name(), true));
+			urlMap.put("PRODUCT", getList(ListType.PRODUCT.name(), true));
+		} else {
+			//Call Super to load any lists from core.
+			urlMap = super.getUrls(req);
 
-		//Get Products
-		if(ListType.PRODUCT.name().equals(req.getParameter("type"))) {
-			urlMap.put(ListType.PRODUCT.name(), getList(ListType.PRODUCT.name(), true));
+			//Get Companies
+			if(ListType.COMPANY.name().equals(type)) {
+				urlMap.put(ListType.COMPANY.name(), getList(ListType.COMPANY.name(), true));
+			}
+
+			//Get Markets
+			if(ListType.MARKET.name().equals(type)) {
+				urlMap.put(ListType.MARKET.name(), getList(ListType.MARKET.name(), true));
+			}
+
+			//Get Products
+			if(ListType.PRODUCT.name().equals(type)) {
+				urlMap.put(ListType.PRODUCT.name(), getList(ListType.PRODUCT.name(), true));
+			}
 		}
 
 		return urlMap;
