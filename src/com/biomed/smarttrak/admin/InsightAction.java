@@ -461,7 +461,7 @@ public class InsightAction extends AbstractTreeAction {
 				log.debug("deleting " + ivo);
 				ivo.setStatusCd(InsightVO.InsightStatusCd.D.name());
 				updateStatus(db, ivo);
-				deleteFromSolr(ivo);
+
 			} else {
 
 				if (req.hasParameter("listSave")){
@@ -474,6 +474,12 @@ public class InsightAction extends AbstractTreeAction {
 				if(InsightStatusCd.P.toString().equals(ivo.getStatusCd())) {
 					writeToSolr(ivo);
 				}
+				
+				if(InsightStatusCd.D.toString().equals(ivo.getStatusCd())){
+					log.debug("######### writing to solar ");
+					deleteFromSolr(ivo);
+				}
+				
 			}
 			req.setParameter(INSIGHT_ID, ivo.getInsightId());
 		} catch (Exception e) {
@@ -497,7 +503,7 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	protected void deleteFromSolr(InsightVO ivo) {
 		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
-			sau.removeDocument(ivo.getInsightId());
+			sau.removeDocument(ivo.getDocumentId());
 		} catch (Exception e) {
 			log.error("Error Deleting from Solr.", e);
 		}
@@ -525,14 +531,14 @@ public class InsightAction extends AbstractTreeAction {
 		log.debug("updating status code on insight");
 		StringBuilder sql = new StringBuilder(50);
 		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
-		sql.append("set STATUS_CD = ? ");
-		sql.append("where INSIGHT_ID = ? ");
+		sql.append("set status_cd = ? ");
+		sql.append("where insight_id = ? ");
 
 		log.debug(" sql " + sql.toString() +"|"+ ivo.getStatusCd() +"|"+ivo.getInsightId());
 
 		List<String> fields = new ArrayList<>();
-		fields.add("STATUS_CD");
-		fields.add("INSIGHT_ID");
+		fields.add("status_cd");
+		fields.add("insight_id");
 
 		try {
 			db.executeSqlUpdate(sql.toString(), ivo, fields);
@@ -551,19 +557,20 @@ public class InsightAction extends AbstractTreeAction {
 		log.debug("update featured ordered no");
 		StringBuilder sb = new StringBuilder(50);
 		sb.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
-		sb.append("set FEATURED_FLG= ?, ORDER_NO = ? ");
-		sb.append("where INSIGHT_ID = ? ");
+		sb.append("set featured_flg= ?, order_no = ? ");
+		sb.append("where insight_id = ? ");
 
 
 		log.debug(" sql " + sb.toString() +"|"+ StringUtil.checkVal(ivo.getFeaturedFlg()) +"|"+StringUtil.checkVal(ivo.getOrderNo()+"|"+ivo.getInsightId()));
 
 		List<String> fields = new ArrayList<>();
-		fields.add("FEATURED_FLG");
-		fields.add("ORDER_NO");
-		fields.add("INSIGHT_ID");
+		fields.add("featured_flg");
+		fields.add("order_no");
+		fields.add("insight_id");
 
 		try {
-			db.executeSqlUpdate(sb.toString(), ivo, fields);
+			int x = db.executeSqlUpdate(sb.toString(), ivo, fields);
+			log.debug("rows updated " + x );
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
