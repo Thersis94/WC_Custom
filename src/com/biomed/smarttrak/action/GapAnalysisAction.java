@@ -28,6 +28,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.data.OrderedTree;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
@@ -241,7 +242,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		nodes.addAll(getColumns());
 
 		//Build a tree and sort nodes so children are set properly.
-		Tree t = new Tree(nodes);
+		Tree t = new OrderedTree(nodes);
 
 		//Filter down to the Gap Node and retrieve it's children.
 		Node n = t.findNode(GAP_ROOT_ID);
@@ -303,6 +304,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 				Node n = new Node(gap.getGaColumnId(), gap.getSectionId());
 				n.setNodeName(gap.getButtonTxt());
 				n.setUserObject(gap);
+				n.setOrderNo(gap.getOrderNo());
 				nodes.add(n);
 			}
 		} catch (SQLException e) {
@@ -394,6 +396,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		}
 		sql.append(") order by g.company_nm");
 
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 
