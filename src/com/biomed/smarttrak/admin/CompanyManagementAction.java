@@ -77,7 +77,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		} else {
 			type = ActionType.COMPANY;
 		}
-		
+		log.debug(type);
 		switch (type) {
 			case ATTRIBUTE:
 				attributeRetrieve(req);
@@ -389,6 +389,15 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		req.getSession().setAttribute("companyName", company.getCompanyName());
 
+		addInvestors(company);
+		
+		if ("location".equals(req.getParameter("jsonType")))
+			addLocations(company);
+		if ("alliance".equals(req.getParameter("jsonType")))
+			addAlliances(company);
+		if ("attribute".equals(req.getParameter("jsonType")))
+			addAttributes(company);
+		
 		getActiveSections(company);
 		super.putModuleData(company);
 	}
