@@ -77,7 +77,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		} else {
 			type = ActionType.COMPANY;
 		}
-		log.debug(type);
+		
 		switch (type) {
 			case ATTRIBUTE:
 				attributeRetrieve(req);
