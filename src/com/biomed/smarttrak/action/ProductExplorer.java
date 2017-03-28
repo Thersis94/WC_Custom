@@ -66,6 +66,8 @@ public class ProductExplorer extends SBActionAdapter {
 	 */
 	private enum SearchField {
 		PRODUCT(true, SearchDocumentHandler.TITLE, "Product Name"),
+		STATE(true, SearchDocumentHandler.STATE, "State"),
+		COUNTRY(false, SearchDocumentHandler.COUNTRY, "Country"),
 		COMPANY(true, "companysearch_s", "Company Name"),
 		SEGMENT(false, SearchDocumentHandler.SECTION, "Segment"),
 		MARKET(false, "target_market_ss", "Target Market"),
@@ -297,6 +299,7 @@ public class ProductExplorer extends SBActionAdapter {
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "company_s", null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "ownership_s", null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.HIERARCHY, null, null));
+				qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.COUNTRY, null, null));
 			}
 		}
 		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "classification_ss", null, null));
