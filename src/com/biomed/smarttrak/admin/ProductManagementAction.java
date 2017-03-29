@@ -475,6 +475,13 @@ public class ProductManagementAction extends AbstractTreeAction {
 		req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		req.getSession().setAttribute("productName", product.getProductName());
 
+		if ("alliance".equals(req.getParameter("jsonType")))
+			addAlliances(product);
+		if ("attribute".equals(req.getParameter("jsonType")))
+			addAttributes(product);
+		if ("regulation".equals(req.getParameter("jsonType")))
+			addRegulations(product);
+		
 		getActiveSections(product);
 		super.putModuleData(product);
 	}
