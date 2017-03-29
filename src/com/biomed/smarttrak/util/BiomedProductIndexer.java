@@ -422,6 +422,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 				p.addAttribute(parent.getNodeName(), new ArrayList<String>());
 				p.addAttribute(parent.getNodeName() + "Ids", new ArrayList<String>());
 			}
+			log.info("Adding " + child.getNodeName() + " to " + p.getDocumentId());
 			((List<String>)p.getAttribute(parent.getNodeName())).add(child.getNodeName());
 			((List<String>)p.getAttribute(parent.getNodeName()+"Ids")).add(child.getNodeId());
 			
@@ -472,10 +473,11 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		StringBuilder sql = new StringBuilder(125);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
-		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
 		sql.append("ON a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
 		if (id != null) sql.append("WHERE x.PRODUCT_ID = ? ");
 		sql.append("ORDER BY a.ATTRIBUTE_ID ");
+		
 		List<Node> nodes = new ArrayList<>();
 		DBProcessor db = new DBProcessor(dbConn);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
