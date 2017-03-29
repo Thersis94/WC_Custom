@@ -49,6 +49,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 public class CompanyAction extends AbstractTreeAction {
 	
 	private static final String DEFAULT_GROUP = "Other";
+	private static final int PRODUCT_PATH_LENGTH = 2;
 	
 	public CompanyAction() {
 		super();
@@ -210,12 +211,12 @@ public class CompanyAction extends AbstractTreeAction {
 		
 		// Markets using attributes too high up in the tree do not have enough
 		// information to be sorted properly and are placed in the extras group.
-		if (path.length < 2) {
+		if (path.length < PRODUCT_PATH_LENGTH) {
 			company.addProduct(path[path.length-1], prod);
 			return;
 		}
 		
-		company.addProduct(path[1], prod);
+		company.addProduct(path[PRODUCT_PATH_LENGTH-1], prod);
 	}
 	
 	
