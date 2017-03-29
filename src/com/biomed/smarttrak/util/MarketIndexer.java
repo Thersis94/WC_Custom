@@ -55,9 +55,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	}
 
 	public static MarketIndexer makeInstance(Map<String, Object> attributes) {
-		Properties props = new Properties();
-		props.putAll(attributes);
-		return new MarketIndexer(props);
+		return new MarketIndexer(makeProperties(attributes));
 	}
 
 

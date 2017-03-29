@@ -7,7 +7,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 //WC_Custom
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
@@ -62,8 +61,6 @@ public class InsightAction extends AbstractTreeAction {
 		sortMapper.put("featuredFlg", "featured_flg");
 		sortMapper.put("orderNo", "order_no");
 	}
-
-
 
 	public InsightAction(ActionInitVO actionInit) {
 		super(actionInit);
@@ -186,7 +183,6 @@ public class InsightAction extends AbstractTreeAction {
 		aa.setAttributes(attributes);
 		aa.setDBConnection(dbConn);
 		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
-
 	}
 
 	/**
@@ -213,6 +209,7 @@ public class InsightAction extends AbstractTreeAction {
 
 		return getInsights (insightParamsMap);
 	}
+	
 	/**
 	 * used to pull back a list of insights based on the codes and types. sets a id bypass to true
 	 * and will return all the insight data for each insight in the list, if you do not require 
@@ -287,8 +284,6 @@ public class InsightAction extends AbstractTreeAction {
 		}
 		return params;
 	}
-
-
 
 	/**
 	 * Formats the account retrieval query.
@@ -460,24 +455,56 @@ public class InsightAction extends AbstractTreeAction {
 				//    However they are to be removed and deleted from solr so the public can no longer see them. -rjr
 				log.debug("deleting " + ivo);
 				ivo.setStatusCd(InsightVO.InsightStatusCd.D.name());
+
 				updateStatus(db, ivo);
-				deleteFromSolr(ivo);
+
+				publishChangeToSolr(ivo);
+
 			} else {
 
 				if (req.hasParameter("listSave")){
 					updateFeatureOrder(ivo, db);
+					//fill the vo up with the rest of the data so there is something to push to solr
+					ivo = loadInsight(ivo);
 				}else {
 					saveInsight(db, ivo);
 				}
-
-				//Add to Solr if published
-				if(InsightStatusCd.P.toString().equals(ivo.getStatusCd())) {
-					writeToSolr(ivo);
-				}
+				
+				publishChangeToSolr(ivo);
 			}
 			req.setParameter(INSIGHT_ID, ivo.getInsightId());
 		} catch (Exception e) {
 			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * fills an insight vo by id if possible
+	 * @param ivo
+	 * @return 
+	 */
+	private InsightVO loadInsight(InsightVO ivo) {
+		List<Object> insights = getInsights(ivo.getInsightId(), null, null, null);
+		if(!insights.isEmpty()) ivo = (InsightVO) insights.get(0);
+		
+		return ivo;
+	}
+	
+	/**
+	 * write to or removes from solr based on status code
+	 * @param ivo
+	 */
+	private void publishChangeToSolr(InsightVO ivo) {
+		log.debug("saving status chagne in solr");
+		//Add to Solr if published
+
+		if(InsightStatusCd.P.toString().equals(ivo.getStatusCd())) {
+			writeToSolr(ivo);
+		}
+
+		if(InsightStatusCd.D.toString().equals(ivo.getStatusCd())){
+			log.debug("writing to solar ");
+			deleteFromSolr(ivo);
 		}
 	}
 
@@ -497,7 +524,7 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	protected void deleteFromSolr(InsightVO ivo) {
 		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
-			sau.removeDocument(ivo.getInsightId());
+			sau.removeDocument(ivo.getDocumentId());
 		} catch (Exception e) {
 			log.error("Error Deleting from Solr.", e);
 		}
@@ -525,14 +552,14 @@ public class InsightAction extends AbstractTreeAction {
 		log.debug("updating status code on insight");
 		StringBuilder sql = new StringBuilder(50);
 		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
-		sql.append("set STATUS_CD = ? ");
-		sql.append("where INSIGHT_ID = ? ");
+		sql.append("set status_cd = ? ");
+		sql.append("where insight_id = ? ");
 
 		log.debug(" sql " + sql.toString() +"|"+ ivo.getStatusCd() +"|"+ivo.getInsightId());
 
 		List<String> fields = new ArrayList<>();
-		fields.add("STATUS_CD");
-		fields.add("INSIGHT_ID");
+		fields.add("status_cd");
+		fields.add("insight_id");
 
 		try {
 			db.executeSqlUpdate(sql.toString(), ivo, fields);
@@ -551,19 +578,19 @@ public class InsightAction extends AbstractTreeAction {
 		log.debug("update featured ordered no");
 		StringBuilder sb = new StringBuilder(50);
 		sb.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
-		sb.append("set FEATURED_FLG= ?, ORDER_NO = ? ");
-		sb.append("where INSIGHT_ID = ? ");
-
+		sb.append("set featured_flg= ?, order_no = ? ");
+		sb.append("where insight_id = ? ");
 
 		log.debug(" sql " + sb.toString() +"|"+ StringUtil.checkVal(ivo.getFeaturedFlg()) +"|"+StringUtil.checkVal(ivo.getOrderNo()+"|"+ivo.getInsightId()));
 
 		List<String> fields = new ArrayList<>();
-		fields.add("FEATURED_FLG");
-		fields.add("ORDER_NO");
-		fields.add("INSIGHT_ID");
+		fields.add("featured_flg");
+		fields.add("order_no");
+		fields.add("insight_id");
 
 		try {
-			db.executeSqlUpdate(sb.toString(), ivo, fields);
+			int x = db.executeSqlUpdate(sb.toString(), ivo, fields);
+			log.debug("rows updated " + x );
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
