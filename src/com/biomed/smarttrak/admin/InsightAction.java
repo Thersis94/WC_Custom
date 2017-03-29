@@ -62,8 +62,6 @@ public class InsightAction extends AbstractTreeAction {
 		sortMapper.put("orderNo", "order_no");
 	}
 
-
-
 	public InsightAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
@@ -185,7 +183,6 @@ public class InsightAction extends AbstractTreeAction {
 		aa.setAttributes(attributes);
 		aa.setDBConnection(dbConn);
 		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
-
 	}
 
 	/**
@@ -212,6 +209,7 @@ public class InsightAction extends AbstractTreeAction {
 
 		return getInsights (insightParamsMap);
 	}
+	
 	/**
 	 * used to pull back a list of insights based on the codes and types. sets a id bypass to true
 	 * and will return all the insight data for each insight in the list, if you do not require 
@@ -286,8 +284,6 @@ public class InsightAction extends AbstractTreeAction {
 		}
 		return params;
 	}
-
-
 
 	/**
 	 * Formats the account retrieval query.
@@ -584,7 +580,6 @@ public class InsightAction extends AbstractTreeAction {
 		sb.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
 		sb.append("set featured_flg= ?, order_no = ? ");
 		sb.append("where insight_id = ? ");
-
 
 		log.debug(" sql " + sb.toString() +"|"+ StringUtil.checkVal(ivo.getFeaturedFlg()) +"|"+StringUtil.checkVal(ivo.getOrderNo()+"|"+ivo.getInsightId()));
 
