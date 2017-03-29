@@ -33,6 +33,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	private String name;
 	private String primaryKey;
 	private String companyId;
+	private String sectionId;
 	private String regionCd;
 	private boolean inactiveFlg;
 	private int inactiveCnt; // internal value used to calculate overall inactivity
@@ -63,8 +64,12 @@ public class FinancialDashDataRowVO implements Serializable {
 		
 		setName(util.getStringVal("ROW_NM", rs));
 		setPrimaryKey(util.getStringVal("ROW_ID", rs));
+		
+		// These only come from the edit version of the query
 		setCompanyId(util.getStringVal("COMPANY_ID", rs));
+		setSectionId(util.getStringVal("SECT_ID", rs));
 		setRegionCd(util.getStringVal("REGION_CD", rs));
+		
 		setColumns(util, rs);
 	}
 
@@ -94,6 +99,13 @@ public class FinancialDashDataRowVO implements Serializable {
 	 */
 	public String getCompanyId() {
 		return companyId;
+	}
+
+	/**
+	 * @return the sectionId
+	 */
+	public String getSectionId() {
+		return sectionId;
 	}
 
 	/**
@@ -176,6 +188,13 @@ public class FinancialDashDataRowVO implements Serializable {
 	 */
 	public void setCompanyId(String companyId) {
 		this.companyId = companyId;
+	}
+
+	/**
+	 * @param sectionId the sectionId to set
+	 */
+	public void setSectionId(String sectionId) {
+		this.sectionId = sectionId;
 	}
 
 	/**
