@@ -743,7 +743,6 @@ public class GridVO extends BeanDataVO {
 			for (int x = 1; x < 11; x++) {
 				if (values[x-1] != null || x <= maxCols) {
 					row.put(FIELD_LABEL + x,StringUtil.checkVal(values[x-1]));
-					if (x > maxCols) maxCols = x;
 				}
 			}
 			

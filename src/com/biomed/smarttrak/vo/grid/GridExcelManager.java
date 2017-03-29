@@ -153,6 +153,9 @@ public class GridExcelManager {
 			case TOTAL:
 				style = getTotalStyle(workbook);
 				break;
+			default:
+				style = getDataStyle(workbook);
+				break;
 		}
 		
 		return style;
