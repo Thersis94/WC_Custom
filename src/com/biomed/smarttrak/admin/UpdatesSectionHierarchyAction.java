@@ -62,7 +62,6 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		//pass to superclass for portlet registration (WC admintool)
-		log.debug("****fdfLogging from the other time space");
 		super.retrieve(req);
 	}
 	
@@ -78,7 +77,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		Map<String, Tree> treeCollection = retrieveTreeCollection();
 		
 		//Add the updates to appropriate groupings
-		Map<String, Map<String, List<UpdateVO>>> data = buildUpdatesHierarchy(req, treeCollection);
+		Map<String, Map<String, List<UpdateVO>>> data = buildUpdatesHierarchy(req, treeCollection);		
 		
 		putModuleData(data);
 	}
@@ -136,7 +135,8 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			for (Node node : nodes) {
 				if(SECTION_XR_DEPTH == node.getDepthLevel() ){		
 					//locate the related updates and add to map
-					subSectionMap.put(node.getNodeName(), locateSectionUpdates(updates, node));
+					List<UpdateVO> holder = locateSectionUpdates(updates, node);
+					if(holder.size() != 0) subSectionMap.put(node.getNodeName(), holder);
 				}
 			}
 			//add root section id, with sub-section/updates, to the final collection
