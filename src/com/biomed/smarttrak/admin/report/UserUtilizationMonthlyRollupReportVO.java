@@ -3,6 +3,8 @@ package com.biomed.smarttrak.admin.report;
 // Java 8
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,6 +17,7 @@ import com.biomed.smarttrak.vo.UserVO;
 
 // SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
 
@@ -35,15 +38,16 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 
 	private Map<AccountVO, List<UserVO>> accounts;
+	private Date dateStart;
+	private Date dateEnd;
 	private List<String> monthHeaders;
-	private static final String REPORT_TITLE = "Utilization Report";
+	private static final String REPORT_TITLE = "Utilization Report - Monthly Rollup";
 	private static final String NAME = "NAME";
 	private static final String TITLE = "TITLE";
 	private static final String EMAIL = "EMAIL_ADDRESS";
 	private static final String PHONE = "PHONE";
 	private static final String UPDATES = "UPDATES";
 	private static final String TOTAL = "TOTAL";
-	private static final int HEADER_MONTHS_SIZE = 12;
 
 	/**
 	 * 
@@ -81,17 +85,22 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 
 	/**
 	 * Builds the report title.
-	 * @param title
-	 * @param suffix
 	 * @return
 	 */
 	protected String buildReportTitle() {
-		String suffix = StringUtil.checkVal(attributes.get(UserUtilizationReportAction.ATTRIB_REPORT_SUFFIX));
 		StringBuilder sb = new StringBuilder(40);
 		sb.append(REPORT_TITLE);
-		if (! StringUtil.isEmpty(suffix)) {
-			sb.append(" (").append(suffix).append(")");
+		
+		if (dateStart != null) {
+			sb.append(" (");
+			sb.append(Convert.formatDate(dateStart,Convert.DATE_SLASH_MONTH_PATTERN));
+			if (dateEnd != null) {
+				sb.append(" - ");
+				sb.append(Convert.formatDate(dateEnd,Convert.DATE_SLASH_MONTH_PATTERN));
+			}
+			sb.append(")");
 		}
+		
 		return sb.toString();
 	}
 
@@ -101,7 +110,10 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object o) {
-		this.accounts =  (Map<AccountVO,List<UserVO>>) o;
+		Map<String,Object> reportData = (Map<String,Object>) o;
+		this.accounts =  (Map<AccountVO, List<UserVO>>)reportData.get(UserUtilizationReportAction.KEY_REPORT_DATA);
+		dateStart = (Date)reportData.get(UserUtilizationReportAction.KEY_DATE_START);
+		dateEnd = (Date)reportData.get(UserUtilizationReportAction.KEY_DATE_END);
 		formatMonthHeaders();
 	}
 	
@@ -111,8 +123,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private void generateDataRows(
-			List<Map<String, Object>> rows) {
+	private void generateDataRows(List<Map<String, Object>> rows) {
 
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
 		pnf.setFormatType(PhoneNumberFormat.DASH_FORMATTING);
@@ -124,7 +135,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 			AccountVO a = acct.getKey();
 
 			// add acct header row(s)
-			addAccountHeader(rows,a.getAccountName(),monthHeaders);
+			addAccountHeader(rows,a.getAccountName());
 
 			// user vals
 			Map<String,Object> row;
@@ -165,8 +176,8 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	 * Manages the monthly page view totals for an account.
 	 * @param acctTotals
 	 * @param currRow
-	 * @param currIdx
-	 * @param currPageCount
+	 * @param counts
+	 * @param monthKey
 	 * @return
 	 */
 	protected int manageTotals(Map<String,Integer>acctTotals, 
@@ -184,7 +195,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	/**
 	 * Updates the page view totals for an account.
 	 * @param acctTotals
-	 * @param index
+	 * @param monthKey
 	 * @param countVal
 	 */
 	protected void updateAccountTotal(Map<String,Integer> acctTotals, String monthKey, int countVal) {
@@ -199,10 +210,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	 * Formats the account's header row.
 	 * @param rows
 	 * @param acctNm
-	 * @param monthHeaders
 	 */
 	protected void addAccountHeader(List<Map<String,Object>> rows, 
-			String acctNm, List<String> monthHeaders) {
+			String acctNm) {
 		
 		// add account name row.
 		Map<String,Object> row = new HashMap<>();
@@ -220,9 +230,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 
 	/**
 	 * Builds the account's footer row.
+	 * @param rows
 	 * @param acctNm
 	 * @param acctTotals
-	 * @return
 	 */
 	protected void addAccountFooter(List<Map<String,Object>> rows, String acctNm, 
 			Map<String,Integer> acctTotals) {
@@ -260,22 +270,92 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * Formats the month headers for the past 12 months inclusive. Header
+	 * Formats the month headers based on the starting month. Header
 	 * format is 'MMM YY' (e.g. Dec 16, Jan 17, etc.). The headers are added
 	 * to the List in proper data order (e.g. Dec 16, Jan 17, Feb 17, etc.).
-	 * @return
 	 */
 	protected void formatMonthHeaders() {
+		Calendar cal = GregorianCalendar.getInstance();
 		Locale loc = Locale.US;
-		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.MONTH, 1 - HEADER_MONTHS_SIZE);
-		for (int idx = 0; idx < HEADER_MONTHS_SIZE; idx++) {
-			monthHeaders.add(cal.getDisplayName(Calendar.MONTH, Calendar.SHORT, loc) + 
-					" " + cal.get(Calendar.YEAR)%100);
-			cal.add(Calendar.MONTH, 1);
+		// get map of month display names for use in building month headers.
+		Map<Integer,String> monthNames = formatMonthNames(cal,loc);
+
+		// calc vals to use
+		cal.setTime(dateStart);		
+		int startDateYr = cal.get(Calendar.YEAR)%100;
+		int startDateMth = cal.get(Calendar.MONTH);
+
+		cal.setTime(dateEnd);
+		int endDateYr = cal.get(Calendar.YEAR)%100;
+		int endDateMth = cal.get(Calendar.MONTH);
+
+		// create the month headers for the report based on start/end dates.
+		addMonthHeaders(monthNames,startDateMth, endDateMth, startDateYr,endDateYr);
+
+	}
+
+	/**
+	 * Uses a Calendar instance to get the display names of the months of the year in 
+	 * 'short' form (e.g. Jan, Feb, etc.) and returns them in a map useful to us.
+	 * @param cal
+	 * @param loc
+	 * @return
+	 */
+	protected Map<Integer,String> formatMonthNames(Calendar cal, Locale loc) {
+		Map<Integer,String> displayMonths = new HashMap<>();
+		Map<String,Integer> calMonths = cal.getDisplayNames(Calendar.MONTH, Calendar.SHORT, loc);
+		for (Map.Entry<String,Integer> calMonth : calMonths.entrySet()) {
+			displayMonths.put(calMonth.getValue(),calMonth.getKey());
+		}
+		return displayMonths;
+	}
+
+	/**
+	 * Adds month header values to the month headers List.  The values
+	 * are formatted to correspond to the keys (e.g. Jan 17, Feb 17, etc.)
+	 * used to map a user's pageview count to a given month of a given year.
+	 * @param monthNames
+	 * @param minMonth
+	 * @param maxMonth
+	 * @param startYr
+	 * @param endYr
+	 */
+	protected void addMonthHeaders(Map<Integer,String> monthNames, 
+			int startDateMonth, int endDateMonth, int startYr, int endYr) {
+
+		int minMonth = 0;
+		int maxMonth = 0;
+		
+		for (int yr = startYr; yr <= endYr; yr++) {
+
+			if (yr == startYr) {
+				// use start date's starting month
+				minMonth = startDateMonth;
+				// determine end month to use
+				if (startYr == endYr) {
+					maxMonth = endDateMonth;
+				} else {
+					maxMonth = Calendar.DECEMBER;
+				}
+			} else if (yr == endYr) {
+				// for the end yr, use Jan through the end date's month.
+				minMonth = Calendar.JANUARY;
+				maxMonth = endDateMonth;
+			} else {
+				// for all other years, use all the months in the year
+				minMonth = Calendar.JANUARY;
+				maxMonth = Calendar.DECEMBER;
+			}
+		
+			for (int mth = minMonth; mth <= maxMonth; mth++) {
+				monthHeaders.add(monthNames.get(mth) + " " + yr);
+				log.debug("monthHeader: " + monthNames.get(mth) + " " + yr);
+			}
+			
+			
 		}
 	}
-	
+
 	/**
 	 * builds the header map for the excel report
 	 * @return
