@@ -199,7 +199,6 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 				
 				if (StringUtil.isEmpty(value)) {
 					cell.setValue(null);
-					//continue;
 				} else {
 					cell.setValue(Convert.formatDouble(detail.getValues()[i]));
 					cell.setFormat(detail.getValues()[i]);
