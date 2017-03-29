@@ -1,5 +1,8 @@
 package com.biomed.smarttrak.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -47,16 +50,25 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		super.retrieve(req);
-
 		// Get the data necessary to trim down the tree to only the nodes
 		// applicable for the user's subscription/permissions. 
 		SmarttrakTree tree = getTree(req);
-		List<String> sectionIds = getPermittedSectionIds(req);
+		List<String> dataSectionIds = getDataSectionIds();
+		List<String> permSectionIds = getPermittedSectionIds(req);
 		String rootId = req.getParameter("sectionId");
 		
+		// Trim the tree down to only the nodes actually used in the FD data
+		List<Node> dataSections = cleanTree(tree, dataSectionIds, rootId, true);
+		
+		// Reset for a second pass to trim based on the user's subscriptions
+		Node node = new Node();
+		node.addChild(dataSections.get(0));
+		dataSections = new ArrayList<>();
+		dataSections.add(node);
+		tree = new SmarttrakTree(dataSections, dataSections.get(0));
+
 		// Trim the tree down to only nodes with a direct relation to the permitted ids.
-		List<Node> sections = cleanTree(tree, sectionIds, rootId);
+		List<Node> sections = cleanTree(tree, permSectionIds, rootId, false);
 		
 		this.putModuleData(sections);
 	}
@@ -76,6 +88,34 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 		tree.calculateTotalChildren(tree.getRootNode());
 		
 		return tree;
+	}
+	
+	/**
+	 * Gets a list of sections with available data to prevent users
+	 * from navigating to empty data sets.
+	 * 
+	 * @return
+	 */
+	protected List<String> getDataSectionIds() {
+		List<String> sectionIds = new ArrayList<>();
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select section_id ");
+		sql.append("from ").append(custom).append("biomedgps_fd_revenue ");
+		sql.append("group by section_id");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) {
+				sectionIds.add(rs.getString("section_id"));
+			}
+		} catch (SQLException sqle) {
+			log.error("Unable to get list of available fd sections", sqle);
+		}
+		
+		return sectionIds;
 	}
 	
 	/**
@@ -110,9 +150,12 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 	 * @param rootId
 	 * @return
 	 */
-	protected List<Node> cleanTree(SmarttrakTree tree, List<String> sectionIds, String rootId) {
+	protected List<Node> cleanTree(SmarttrakTree tree, List<String> sectionIds, String rootId, boolean buildPaths) {
 		Set<String> parentNodeIds = new HashSet<>();
-		tree.buildNodePaths(tree.getRootNode(), "/", false);
+		
+		if (buildPaths) {
+			tree.buildNodePaths(tree.getRootNode(), "/", false);
+		}
 
 		// Get the list of parent node ids to keep
 		for (String sectionId : sectionIds) {
