@@ -469,11 +469,11 @@ public class InsightAction extends AbstractTreeAction {
 				if (req.hasParameter("listSave")){
 					updateFeatureOrder(ivo, db);
 					//fill the vo up with the rest of the data so there is something to push to solr
-					loadInsight(ivo);
+					ivo = loadInsight(ivo);
 				}else {
 					saveInsight(db, ivo);
 				}
-
+				
 				publishChangeToSolr(ivo);
 			}
 			req.setParameter(INSIGHT_ID, ivo.getInsightId());
@@ -485,15 +485,15 @@ public class InsightAction extends AbstractTreeAction {
 	/**
 	 * fills an insight vo by id if possible
 	 * @param ivo
+	 * @return 
 	 */
-	private void loadInsight(InsightVO ivo) {
+	private InsightVO loadInsight(InsightVO ivo) {
 		List<Object> insights = getInsights(ivo.getInsightId(), null, null, null);
 		if(!insights.isEmpty()) ivo = (InsightVO) insights.get(0);
 		
+		return ivo;
 	}
-
-
-
+	
 	/**
 	 * write to or removes from solr based on status code
 	 * @param ivo
