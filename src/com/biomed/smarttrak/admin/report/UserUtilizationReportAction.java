@@ -49,23 +49,15 @@ import com.smt.sitebuilder.util.PageViewVO;
 public class UserUtilizationReportAction extends SimpleActionAdapter {
 	
 	public static final String STATUS_NO_INACTIVE = "I";
-	public static final String ATTRIB_REPORT_SUFFIX = "reportSuffix";
-	private Map<Integer,String> monthKeyMap;
-	
-	public enum UtilizationReportType {
-		DAYS_14(-14, "14-Day"),
-		DAYS_90(-90, "90-Day"),
-		DAYS_365(-365, "12-Months");
-		
-		private int startDateOffset;
-		private String reportSuffix;
-		UtilizationReportType(int startDateOffset,String reportSuffix) { 
-			this.startDateOffset = startDateOffset;
-			this.reportSuffix = reportSuffix;
-		}
-		public int getStartDateOffset() { return startDateOffset; }
-		public String getReportSuffix() { return reportSuffix; }
-	}
+	public static final String KEY_DATE_START = "dateStart";
+	public static final String KEY_DATE_END = "dateEnd";
+	public static final String KEY_REPORT_DATA = "reportData";
+	public static final String PARAM_IS_DAILY = "isDaily";
+	private Map<String,String> monthKeyMap;
+	private String dateStart;
+	private String dateEnd;
+	private Date reportDateStart;
+	private Date reportDateEnd;
 		
 	/**
 	* Constructor
@@ -90,25 +82,25 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	public Map<AccountVO, List<UserVO>> retrieveUserUtilization(ActionRequest req) throws ActionException {
+	public Map<String,Object> retrieveUserUtilization(ActionRequest req) throws ActionException {
 
 		StringEncrypter se = initStringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		String siteId = site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId();
-		
-		// determine utilization report type and craft start date from the type.
-		UtilizationReportType urt = parseReportType(req.getParameter("utilizationReportType"));
-		String dateStart = buildReportStartDate(urt);
-		
-		// 1. get user pageviews for the given start date.
-		List<PageViewVO> pageViews = retrieveBasePageViews(siteId,dateStart);
-		log.debug("raw pageViews size: " + pageViews.size());
-		
-		// 2. parse the pageviews into a map of page counts for each user
-		Map<String,Map<String,Integer>> pageCounts = parsePageCounts(pageViews,urt);
 
-		// 3. if we retrieved nothing, return emptiness.
-		if (pageCounts.size() == 0) return new HashMap<>();
+		boolean isDaily = Convert.formatBoolean(req.getParameter(PARAM_IS_DAILY));
+		dateStart = formatReportDate(req.getParameter("dateStart"), true, isDaily);
+		dateEnd = formatReportDate(req.getParameter("dateEnd"), false, isDaily);
+
+		// 1. get user pageviews for the given start date.
+		List<PageViewVO> pageViews = retrieveBasePageViews(siteId);
+		log.debug("raw pageViews size: " + pageViews.size());
+
+		// 2. parse the pageviews into a map of page counts for each user
+		Map<String,Map<String,Integer>> pageCounts = parsePageCounts(pageViews,isDaily);
+
+		// 3. if we retrieved nothing, return a proper report data map
+		if (pageCounts.size() == 0) return formatReportDataMap(new HashMap<>());
 
 		// 4. get accounts and account users data for the profile IDs for which we found page views.
 		Map<AccountVO, List<UserVO>> accounts = retrieveAccountsUsers(se, pageCounts, siteId);
@@ -117,49 +109,87 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		// 5. merge accounts data and user page counts
 		mergeData(accounts, pageCounts);
 
-		return accounts;
+		return formatReportDataMap(accounts);
+	}
+	
+	/**
+	 * Formats the report data map.
+	 * @param accounts
+	 * @return
+	 */
+	protected Map<String,Object> formatReportDataMap(Map<AccountVO,List<UserVO>> accounts) {
+		Map<String,Object> reportData = new HashMap<>();
+		reportData.put(KEY_DATE_START, reportDateStart);
+		reportData.put(KEY_DATE_END, reportDateEnd);
+		reportData.put(KEY_REPORT_DATA, accounts);
+		return reportData;
+	}
 
-	}
-	
 	/**
-	 * Parses the utilization report type parameter into a UtilizationReportType enum.
-	 * @param reportTypeParam
+	 * Checks the String date valued passed in.  If the String is null or empty, a null 
+	 * value is returned, otherwise the value of the String date is returned.
+	 * @param date
+	 * @param isStartDate
+	 * @param isDailyRollup
 	 * @return
 	 */
-	protected UtilizationReportType parseReportType(String reportTypeParam) {
-		UtilizationReportType urt;
-		// determine enum to use.
-		try {
-			urt = UtilizationReportType.valueOf(StringUtil.checkVal(reportTypeParam).toUpperCase());
-		} catch (Exception e) {
-			urt = UtilizationReportType.DAYS_365;
+	protected String formatReportDate(String date, boolean isStartDate, boolean isDailyRollup) {
+		// make sure we have a date to work with.
+		String strDate = StringUtil.checkVal(date);
+		if (strDate.isEmpty()) {
+			Calendar cal = GregorianCalendar.getInstance();
+			// make sure String representation of date is uniform with what comes from datepicker
+			strDate = Convert.formatDate(cal.getTime());
 		}
-		return urt;
+		// convert to a date with a uniform format before formatting for query
+		Date tmpDate = Convert.formatDate(Convert.DATE_SLASH_PATTERN,strDate);
+		if (isDailyRollup) {
+			tmpDate = formatDailyRollupDate(tmpDate,isStartDate);
+		} else {
+			tmpDate = formatMonthlyRollupDate(tmpDate,isStartDate);
+		}
+		
+		// return the date as a String in date/time dash pattern
+		return Convert.formatDate(tmpDate,Convert.DATE_TIME_DASH_PATTERN); 
 	}
 	
 	/**
-	 * Builds the report start date based on the value of the start date offset of the UtilizationReportType 
-	 * enum passed in.  The start date is calculated as 'today' minus the number of days specified
-	 * by the start date offset.
-	 * 
-	 * If the start date offset is 365 days (i.e. monthly rollup), the start date is calculated as
-	 * the first day of the month following 'today minus 365 days'.  For example if today is 
-	 * Feb 14, 2017, the start date is calculated as Mar 01, 2016.  The monthly rollup then returns data
-	 * for Mar 01, 2016 thru Feb 14, 2017.
-	 * @param urt
+	 * Formats a date for the daily rollup report.
+	 * @param theDate
+	 * @param isStartDate
 	 * @return
 	 */
-	protected String buildReportStartDate(UtilizationReportType urt) {
-		// build start date from enum.
-		Calendar cal = GregorianCalendar.getInstance();
-		cal.add(Calendar.DAY_OF_YEAR, urt.getStartDateOffset());
-		/* if rollup for past year, add 1 to month value, 
-		 * set day of month to first day. */
-		if (urt.equals(UtilizationReportType.DAYS_365)) {
-			cal.add(Calendar.MONTH, 1);
+	protected Date formatDailyRollupDate(Date theDate, boolean isStartDate) {
+		if (isStartDate) {
+			reportDateStart = theDate;
+			return Convert.formatStartDate(theDate);
+		}
+		/* not start date, so return the date formatted as the end date.
+		 * We capture the end date before we format it as an end date
+		 * so that we preserve the original for the report.*/
+		reportDateEnd = theDate;
+		return Convert.formatEndDate(theDate);
+	}
+	
+	/**
+	 * Formats a date for the monthly rollup report.
+	 * @param theDate
+	 * @param isStartDate
+	 * @return
+	 */
+	protected Date formatMonthlyRollupDate(Date theDate, boolean isStartDate) {
+		if (isStartDate) {
+			reportDateStart = theDate;
+			/* Set the start date to be the 1st day of the start date's month. We want the
+			 * data for the entire month. */
+			Calendar cal = GregorianCalendar.getInstance();
+			cal.setTime(theDate);
 			cal.set(Calendar.DAY_OF_MONTH, 1);
+			return cal.getTime();
 		}
-		return Convert.formatDate(cal.getTime(),Convert.DATE_DASH_PATTERN);
+		// Not start date so return the date untouched.
+		reportDateEnd = theDate;
+		return theDate;
 	}
 	
 	/**
@@ -169,11 +199,10 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected List<PageViewVO> retrieveBasePageViews(String siteId, 
-			String dateStart) throws ActionException {
+	protected List<PageViewVO> retrieveBasePageViews(String siteId) throws ActionException {
 		log.debug("retrieveBasePageViews...");
 		PageViewRetriever pvr = new PageViewRetriever(dbConn);
-		return pvr.retrievePageViewsRollup(siteId, dateStart);		
+		return pvr.retrievePageViewsRollup(siteId,dateStart,dateEnd);
 	}
 	
 	/**
@@ -233,94 +262,68 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Parses the page count results into a Map of profile IDs that are mapped 
-	 * to another map representing the month or day (key = String) and page count for that 
-	 * unit of time (value = Integer).  The unit is determined by the UtilizationReportType enum
-	 * passed in. 
+	 * Parses the page count results into a Map of profile IDs.  Each profile ID is mapped 
+	 * to a Map<String,Integer> representing the user's page count for that unit of time (month or day).
+	 * passed in.
 	 * @param pageViews
-	 * @param urt
+	 * @param isDaily
 	 * @return
 	 */
 	protected Map<String, Map<String,Integer>> parsePageCounts(List<PageViewVO> pageViews, 
-			UtilizationReportType urt) {
-		String prevId = null;
+			boolean isDaily) {
 		String currId;
-
-		String prevKey = null;
 		String currKey;
-		int pageCnt = 0;
 
-		// Map of month number to pageviews
-		Map<String,Integer> userCounts =  new LinkedHashMap<>();
 		// Map of profileId to Map of Month, pageCount
-		Map< String, Map<String,Integer> > pageCounts = new HashMap<>();
+		Map< String, Map<String,Integer>> pageCounts = new HashMap<>();
 		Calendar cal = Calendar.getInstance();
 
 		for (PageViewVO page : pageViews) {
 			currId = page.getProfileId();
-			currKey = buildUnitKey(urt, cal, page.getVisitDate());
-
-			if (! currId.equalsIgnoreCase(prevId)) {
-				// changed users or first time through.
-				if (prevId != null) {
-					// put month count on map
-					userCounts.put(prevKey, pageCnt);
-					
-					// put list on map of user|user's months
-					pageCounts.put(prevId, userCounts);
-				}
-
-				// init userMonths map
-				userCounts = new LinkedHashMap<>();
-				
-				// init current month's view count.
-				pageCnt = 1;
-				
-			} else {
-				// process record for current user
-				if (! currKey.equalsIgnoreCase(prevKey)) {
-					// month changed, put previous month page count on map
-					userCounts.put(prevKey, pageCnt);
-					
-					// reset monthCnt to 1.
-					pageCnt = 1;
-					
-				} else {
-					// incr this month's count
-					pageCnt++;
-				}
-
-			}
-			// capture previous vals for comparison
-			prevId = currId;
-			prevKey = currKey;
+			currKey = buildUnitKey(isDaily, cal, page.getVisitDate());
+			addPageCount(pageCounts,currId,currKey);
 		}
 
-		// If we processed records, pick up the last record.
-		if (prevId != null) {
-			userCounts.put(prevKey, pageCnt);
-			pageCounts.put(prevId, userCounts);
-		}
-		log.debug("monthly pageCounts map size: " + pageCounts.size());
+		log.debug("pageCounts map size: " + pageCounts.size());
 		return pageCounts;
 	}
-
+	
 	/**
-	 * Builds the count map key from the given date depending upon the UtilizationReportType
-	 * enum passed in.  If this is a monthly rollup, the 
-	 * @param urt
+	 * Adds the page count to the user's page count map.  If the user doesn't exist on
+	 * the pageCounts map, the user is added.  If a map entry for the given unit key doesn't
+	 * exist, it is created.
+	 * @param pageCounts
+	 * @param profileId
+	 * @param countKey
+	 */
+	protected void addPageCount(Map<String,Map<String,Integer>> pageCounts, 
+			String profileId, String countKey) {
+		if (pageCounts.get(profileId) == null) {
+			pageCounts.put(profileId, new HashMap<>());
+		}
+		
+		Map<String,Integer> unitCount = pageCounts.get(profileId);
+		if (unitCount.get(countKey) == null) {
+			unitCount.put(countKey, 1);
+		} else {
+			unitCount.put(countKey, unitCount.get(countKey) + 1);
+		}
+	}
+	
+	/**
+	 * Builds the count map key from the given date depending upon the type of report.
+	 * @param isDailyRollup
 	 * @param cal
 	 * @param date
 	 * @return
 	 */
-	protected String buildUnitKey(UtilizationReportType urt, Calendar cal, Date date) {
-		switch(urt) {
-			case DAYS_14:
-			case DAYS_90:
-				return Convert.formatDate(date,Convert.DATE_SLASH_PATTERN);
-			default:
-				return formatMonthlyUnitKey(cal,date);
+	protected String buildUnitKey(boolean isDailyRollup, Calendar cal, Date date) {
+		if (isDailyRollup) {
+			// return String representing the date in slash pattern (e.g. 10/27/16)
+			return Convert.formatDate(date,Convert.DATE_SLASH_PATTERN);
 		}
+		// return String representing the date as 'month year' (e.g. Oct 16)
+		return formatMonthlyUnitKey(cal,date);
 	}
 
 	/**
@@ -331,13 +334,11 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 */
 	protected String formatMonthlyUnitKey(Calendar cal, Date date) {
 		cal.setTime(date);
-		int monthVal = cal.get(Calendar.MONTH);
-		if (monthKeyMap.get(monthVal) != null) {
-			return monthKeyMap.get(monthVal);
+		String unitKey = cal.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US) + " " + (cal.get(Calendar.YEAR)%100);
+		if (monthKeyMap.get(unitKey) != null) {
+			return monthKeyMap.get(unitKey);
 		} else {
-			String unitKey = cal.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US);
-			unitKey += " " + (cal.get(Calendar.YEAR)%100);
-			monthKeyMap.put(monthVal,unitKey);
+			monthKeyMap.put(unitKey,unitKey);
 			return unitKey;
 		}
 	}

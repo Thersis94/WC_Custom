@@ -14,6 +14,7 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
 import com.biomed.smarttrak.vo.RegulationVO;
@@ -111,6 +112,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			}
 			addProduct(product, products);
 			buildDetails(products, id);
+			buildLocationInformation(products);
 			buildRegulatory(products, id);
 			buildAlliances(products, id);
 			buildContent(products, id);
@@ -122,6 +124,50 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	}
 
 
+	/**
+	 * Get the state and country for the company that owns each product
+	 * and assign that information to the solr document.
+	 * @param products
+	 */
+	protected void buildLocationInformation(
+			Map<String, SecureSolrDocumentVO> products) {
+		Map<String, LocationVO> locationMap = retrieveLocations();
+		
+		for (Entry<String, SecureSolrDocumentVO> product : products.entrySet()) {
+			String companyId = (String)product.getValue().getAttributes().get("companyId");
+			LocationVO loc = locationMap.get(companyId);
+			if (loc == null) continue;
+			product.getValue().setState(loc.getStateCode());
+			product.getValue().setCountry(loc.getCountryName());
+		}
+		
+	}
+
+	
+	/**
+	 * Get a collection of all companies and thier primary locations
+	 * @return
+	 */
+	protected Map<String, LocationVO> retrieveLocations() {
+		StringBuilder sql = new StringBuilder(150);
+		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
+		List<Object> params = new ArrayList<>();
+		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_LOCATION l ");
+		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = l.COUNTRY_CD ");
+		sql.append("ORDER BY COMPANY_ID, PRIMARY_LOCN_FLG DESC ");
+		DBProcessor db = new DBProcessor(dbConn);
+		
+		List<Object> results = db.executeSelect(sql.toString(), params, new LocationVO());
+		Map<String, LocationVO> locations = new HashMap<>();
+		for (Object o : results) {
+			LocationVO vo = (LocationVO) o;
+			// The first location for each company is it's primary location, others can be ignored.
+			if (!locations.containsKey(vo.getCompanyId()))
+				locations.put(vo.getCompanyId(), vo);
+		}
+		
+		return locations;
+	}
 
 	/**
 	 * Check if product is viable and add it if so.
@@ -376,6 +422,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 				p.addAttribute(parent.getNodeName(), new ArrayList<String>());
 				p.addAttribute(parent.getNodeName() + "Ids", new ArrayList<String>());
 			}
+			log.info("Adding " + child.getNodeName() + " to " + p.getDocumentId());
 			((List<String>)p.getAttribute(parent.getNodeName())).add(child.getNodeName());
 			((List<String>)p.getAttribute(parent.getNodeName()+"Ids")).add(child.getNodeId());
 			
@@ -426,10 +473,11 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		StringBuilder sql = new StringBuilder(125);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
-		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
 		sql.append("ON a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
 		if (id != null) sql.append("WHERE x.PRODUCT_ID = ? ");
 		sql.append("ORDER BY a.ATTRIBUTE_ID ");
+		
 		List<Node> nodes = new ArrayList<>();
 		DBProcessor db = new DBProcessor(dbConn);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

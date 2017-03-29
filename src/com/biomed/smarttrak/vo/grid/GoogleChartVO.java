@@ -136,8 +136,11 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 				
 				// Round the decimal places
 				double mult = Math.pow(10.0, grid.getDecimalDisplay());
-				double roundVal = Math.round(Convert.formatDouble(detail.getValues()[i]) * mult) / mult;
+				double val = Convert.formatDouble(detail.getValues()[i], 0, true);
+				
+				double roundVal = Math.round(val * mult) / mult;
 				cell.setValue(roundVal);
+				cell.setFormat(detail.getValues()[i]);
 				row.addCell(cell);
 				validRows.add(i);
 				
@@ -173,7 +176,6 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	 */
 	public void processGridPie(GridVO grid) {
 		String[] series = grid.getSeries();
-		Set<Integer> validRows = new HashSet<>();
 
 		// Get the row data that corresponds to the series
 		for(GridDetailVO detail : grid.getDetails()) {
@@ -190,13 +192,13 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			row.addCell(cell);
 			
 			String[] values = detail.getValues();
-			for (int i=0; i < values.length; i++) {
+			// loop based on data in columns.  Since first row is label, loop one less row
+			for (int i=0; i < grid.getNumberColumns(); i++) {
 				String value = values[i];
 				cell = new GoogleChartCellVO();
 				
 				if (StringUtil.isEmpty(value)) {
 					cell.setValue(null);
-					continue;
 				} else {
 					cell.setValue(Convert.formatDouble(detail.getValues()[i]));
 					cell.setFormat(detail.getValues()[i]);
@@ -206,7 +208,6 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 					cell.addCustomValue("className", RowStyle.valueOf(detail.getDetailType()).getName());
 				
 				row.addCell(cell);
-				validRows.add(i);
 			}
 			
 			addRow(row);
@@ -221,7 +222,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		addColumn(col);
 		
 		// Get the column data
-		for (int j=0; j < validRows.size(); j++) {
+		for (int j=0; j < grid.getNumberColumns(); j++) {
 			col = new GoogleChartColumnVO();
 			col.setId(COLUMN_NAME + ((char) val++));
 			col.setDataType(DataType.NUMBER.getName());

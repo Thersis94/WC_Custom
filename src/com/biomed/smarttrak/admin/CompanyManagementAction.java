@@ -317,7 +317,8 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		List<Object> params = new ArrayList<>();
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select c.COMPANY_NM, c.COMPANY_ID, CASE WHEN (ci.investee_company_id  is null) THEN 0 ELSE 1 end as INVESTED_FLG ");
+		sql.append("select c.COMPANY_NM, c.COMPANY_ID, c.COMPLETION_SCORE_NO, c.STATUS_NO, ");
+		sql.append("CASE WHEN (ci.investee_company_id  is null) THEN 0 ELSE 1 end as INVESTED_FLG ");
 		sql.append("FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("left join ").append(customDb).append("biomedgps_company_investor ci ");
 		sql.append("on c.COMPANY_ID = ci.investee_company_id ");
@@ -388,6 +389,15 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		req.getSession().setAttribute("companyName", company.getCompanyName());
 
+		addInvestors(company);
+		
+		if ("location".equals(req.getParameter("jsonType")))
+			addLocations(company);
+		if ("alliance".equals(req.getParameter("jsonType")))
+			addAlliances(company);
+		if ("attribute".equals(req.getParameter("jsonType")))
+			addAttributes(company);
+		
 		getActiveSections(company);
 		super.putModuleData(company);
 	}

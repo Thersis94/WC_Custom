@@ -38,9 +38,7 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 	}
 	
 	public static BiomedInsightIndexer makeInstance(Map<String, Object> attributes) {
-		Properties props = new Properties();
-		props.putAll(attributes);
-		return new BiomedInsightIndexer(props);
+		return new BiomedInsightIndexer(makeProperties(attributes));
 	}
 
 	@Override
@@ -59,6 +57,9 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 	@Override
 	public void addSingleItem(String itemId) throws SolrException {
 		log.debug("Adding single insight: " + itemId);
+		
+		
+		
 		try (SolrActionUtil util = new SolrActionUtil(makeServer())) {
 			List<SolrDocumentVO> docs = getDocuments(itemId);
 			if (docs.isEmpty()) 

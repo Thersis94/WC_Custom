@@ -2,6 +2,7 @@ package com.biomed.smarttrak.admin.report;
 
 // Java 8
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,7 +14,7 @@ import com.biomed.smarttrak.vo.UserVO;
 
 // SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
-import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.Convert;
 
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -32,7 +33,9 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 public class UserUtilizationDailyRollupReportVO extends AbstractSBReportVO {
 
 	private Map<AccountVO, List<UserVO>> accounts;
-	private static final String REPORT_TITLE = "Usage Report";
+	private Date dateStart;
+	private Date dateEnd;
+	private static final String REPORT_TITLE = "Usage Report - Daily Rollup";
 	private static final String ACCT_NM = "ACCT_NM";
 	private static final String FIRST_NM = "FIRST_NM";
 	private static final String LAST_NM = "LAST_NM";
@@ -80,12 +83,19 @@ public class UserUtilizationDailyRollupReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	protected String buildReportTitle() {
-		String suffix = StringUtil.checkVal(attributes.get(UserUtilizationReportAction.ATTRIB_REPORT_SUFFIX));
 		StringBuilder sb = new StringBuilder(40);
 		sb.append(REPORT_TITLE);
-		if (! StringUtil.isEmpty(suffix)) {
-			sb.append(" (").append(suffix).append(")");
+		
+		if (dateStart != null) {
+			sb.append(" (");
+			sb.append(Convert.formatDate(dateStart,Convert.DATE_SHORT_MONTH));
+			if (dateEnd != null) {
+				sb.append(" - ");
+				sb.append(Convert.formatDate(dateEnd,Convert.DATE_SHORT_MONTH));
+			}
+			sb.append(")");
 		}
+		
 		return sb.toString();
 	}
 
@@ -95,7 +105,10 @@ public class UserUtilizationDailyRollupReportVO extends AbstractSBReportVO {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object o) {
-		this.accounts =  (Map<AccountVO,List<UserVO>>) o;
+		Map<String,Object> reportData = (Map<String,Object>) o;
+		this.accounts =  (Map<AccountVO, List<UserVO>>)reportData.get(UserUtilizationReportAction.KEY_REPORT_DATA);
+		dateStart = (Date)reportData.get(UserUtilizationReportAction.KEY_DATE_START);
+		dateEnd = (Date)reportData.get(UserUtilizationReportAction.KEY_DATE_END);
 	}
 	
 	/**
