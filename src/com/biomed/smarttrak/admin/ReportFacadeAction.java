@@ -212,7 +212,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		UserUtilizationReportAction uu = new UserUtilizationReportAction();
 		uu.setDBConnection(dbConn);
 		uu.setAttributes(getAttributes());
-		req.setParameter("isDaily", Boolean.valueOf(isDaily).toString());
+		req.setParameter(UserUtilizationReportAction.PARAM_IS_DAILY, Boolean.valueOf(isDaily).toString());
 
 		AbstractSBReportVO rpt;
 		if (isDaily) {
