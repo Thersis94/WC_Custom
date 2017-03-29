@@ -7,7 +7,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 //WC_Custom
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
@@ -460,30 +459,45 @@ public class InsightAction extends AbstractTreeAction {
 				//    However they are to be removed and deleted from solr so the public can no longer see them. -rjr
 				log.debug("deleting " + ivo);
 				ivo.setStatusCd(InsightVO.InsightStatusCd.D.name());
+
 				updateStatus(db, ivo);
+
+				publishChangeToSolr(ivo);
 
 			} else {
 
 				if (req.hasParameter("listSave")){
 					updateFeatureOrder(ivo, db);
+					//fill the vo up with the rest of the data so there is something to push to solr
+					List<Object> insights = getInsights(ivo.getInsightId(), null, null, null);
+					if(!insights.isEmpty()) ivo = (InsightVO) insights.get(0);
 				}else {
 					saveInsight(db, ivo);
 				}
 
-				//Add to Solr if published
-				if(InsightStatusCd.P.toString().equals(ivo.getStatusCd())) {
-					writeToSolr(ivo);
-				}
-				
-				if(InsightStatusCd.D.toString().equals(ivo.getStatusCd())){
-					log.debug("######### writing to solar ");
-					deleteFromSolr(ivo);
-				}
-				
+				publishChangeToSolr(ivo);
 			}
 			req.setParameter(INSIGHT_ID, ivo.getInsightId());
 		} catch (Exception e) {
 			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * write to or removes from solr based on status code
+	 * @param ivo
+	 */
+	private void publishChangeToSolr(InsightVO ivo) {
+		log.debug("saving status chagne in solr");
+		//Add to Solr if published
+
+		if(InsightStatusCd.P.toString().equals(ivo.getStatusCd())) {
+			writeToSolr(ivo);
+		}
+
+		if(InsightStatusCd.D.toString().equals(ivo.getStatusCd())){
+			log.debug("writing to solar ");
+			deleteFromSolr(ivo);
 		}
 	}
 
