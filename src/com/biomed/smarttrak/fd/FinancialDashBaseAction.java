@@ -268,12 +268,12 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @param dash
 	 * @return
 	 */
-	private StringBuilder getCommonSelectSql(FinancialDashVO dash) {
+	protected StringBuilder getCommonSelectSql(FinancialDashVO dash) {
 		StringBuilder sql = new StringBuilder(700);
 		TableType tt = dash.getTableType();
 		
-		if (tt == TableType.COMPANY) {
-			sql.append("select ").append(dash.getLeafMode() ? "r.REVENUE_ID " : "r.COMPANY_ID ").append("as ROW_ID, c.COMPANY_NM as ROW_NM, r.COMPANY_ID, r.REGION_CD, ");
+		if (TableType.COMPANY == tt) {
+			sql.append("select ").append("r.COMPANY_ID as ROW_ID, c.COMPANY_NM as ROW_NM, ");
 		} else { // TableType.MARKET
 			
 			// When viewing market data for a specific company, we always list/summarize 4 levels down in the heirarchy
@@ -359,7 +359,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @param dash
 	 * @return
 	 */
-	private StringBuilder getCommonEndSql(FinancialDashVO dash) {
+	protected StringBuilder getCommonEndSql(FinancialDashVO dash) {
 		StringBuilder sql = new StringBuilder(700);
 		
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -395,15 +395,19 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		}
 		sql.append(") ");
 		
-		if (!"".equals(dash.getCompanyId())) {
+		if (!StringUtil.isEmpty(dash.getCompanyId())) {
 			sql.append("and r.COMPANY_ID = ? ");
 		}
 		
 		sql.append("and r.YEAR_NO = ? ");
 		
 		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
-		if (tt == TableType.COMPANY) {
-			sql.append(", r.COMPANY_ID, r.REGION_CD ");
+		if (dash.getEditMode()) {
+			if (TableType.COMPANY == tt) {
+				sql.append(", r.COMPANY_ID, r.REGION_CD ");
+			} else {
+				sql.append(", SECT_ID, r.REGION_CD ");
+			}
 		}
 		
 		sql.append("order by ROW_NM ");

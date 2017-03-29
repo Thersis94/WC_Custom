@@ -37,7 +37,7 @@ public class FinancialDashVO extends SBModuleVO {
 	private FinancialDashColumnSet colHeaders;
 	private List<FinancialDashDataRowVO> rows;
 	private String sectionId;
-	private boolean leafMode;
+	private boolean editMode;
 	private String scenarioId;
 	private String companyId;
 	private String companyName;
@@ -141,7 +141,7 @@ public class FinancialDashVO extends SBModuleVO {
 		String tblType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
 		String[] ctryTypes = req.getParameterValues("countryTypes[]") == null ? new String[]{FinancialDashVO.DEFAULT_COUNTRY_TYPE} : req.getParameterValues("countryTypes[]");
 		String sectId = StringUtil.checkVal(req.getParameter("sectionId"));
-		boolean leafMd = Convert.formatBoolean(req.getParameter("leafMode"));
+		boolean edit = Convert.formatBoolean(req.getParameter("editMode"));
 		String scenId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String compId = StringUtil.checkVal(req.getParameter("companyId"));
 		
@@ -155,7 +155,7 @@ public class FinancialDashVO extends SBModuleVO {
 			addCountryType(countryType);
 		}
 		setSectionId(sectId);
-		setLeafMode(leafMd);
+		setEditMode(edit);
 		setScenarioId(scenId);
 		setCompanyId(compId);
 		
@@ -220,10 +220,10 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
-	 * @return the leafMode
+	 * @return the editMode
 	 */
-	public boolean getLeafMode() {
-		return leafMode;
+	public boolean getEditMode() {
+		return editMode;
 	}
 
 	/**
@@ -362,10 +362,10 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 	
 	/**
-	 * @param leafMode the leafMode to set
+	 * @param editMode the editMode to set
 	 */
-	public void setLeafMode(boolean leafMode) {
-		this.leafMode = leafMode;
+	public void setEditMode(boolean editMode) {
+		this.editMode = editMode;
 	}
 
 	/**
