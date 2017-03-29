@@ -210,12 +210,12 @@ public class CompanyAction extends AbstractTreeAction {
 		
 		// Markets using attributes too high up in the tree do not have enough
 		// information to be sorted properly and are placed in the extras group.
-		if (path.length < 3) {
+		if (path.length < 2) {
 			company.addProduct(path[path.length-1], prod);
 			return;
 		}
 		
-		company.addProduct(path[2], prod);
+		company.addProduct(path[1], prod);
 	}
 	
 	
