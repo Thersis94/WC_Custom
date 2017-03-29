@@ -64,7 +64,7 @@ public class GridExcelManager {
 			String[] series = grid.getSeries();
 			
 			int numberCols = grid.getNumberColumns();
-			
+			log.info("Number of columns: " + numberCols);
 			// Create the columns first
 			int ctr = 0;
 			Row row = sheet.createRow(ctr++);
@@ -72,7 +72,7 @@ public class GridExcelManager {
 			cell.setCellValue("");
 			cell.setCellStyle(getHeaderStyle(workbook));
 
-			for (int i=0; i < (numberCols - 1); i++) {
+			for (int i=0; i < (numberCols); i++) {
 				cell = row.createCell(i+1);
 				cell.setCellValue(series[i]);
 				cell.setCellStyle(getHeaderStyle(workbook));
@@ -84,7 +84,7 @@ public class GridExcelManager {
 				cell = row.createCell(0);
 				cell.setCellValue(detail.getLabel());
 				cell.setCellStyle(getRowStyle(workbook, detail.getDetailType()));
-				for (int i=0; i < (numberCols - 1); i++) {
+				for (int i=0; i < (numberCols); i++) {
 					cell = row.createCell(i + 1);
 					cell.setCellValue(detail.getValues()[i]);
 					cell.setCellStyle(getRowStyle(workbook, detail.getDetailType()));
