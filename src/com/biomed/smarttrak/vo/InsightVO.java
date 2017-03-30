@@ -21,6 +21,7 @@ import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
+import com.smt.sitebuilder.changelog.ChangeLogIntfc;
 //WebCrescendo
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -39,10 +40,10 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  * @updates:
  ****************************************************************************/
 @Table(name="biomedgps_insight")
-public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
+public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, ChangeLogIntfc {
 
 	public enum InsightStatusCd {
-		P("Published"), D("Deleted"), E("Edit");
+		P("Published"), D("Deleted"), E("Edited");
 		private String statusName;
 		InsightStatusCd(String statusName) {
 			this.statusName = statusName;
@@ -71,6 +72,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
+	private long countNumber = 0;
 	private List<InsightXRVO> sections;
 
 	public enum InsightType {
@@ -88,7 +90,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 		SMARTTRAK_VIDEO_TIPS(15, "SmartTRAK Video Tips"),
 		STARTUP_SPOTLIGHT(2, "Start-up Spotlight"),
 		UC_VIEWPOINT(3, "U.C. Viewpoints"),
-		UNCATIGORIZED(6, "Uncatigorized");
+		UNCATIGORIZED(6, "Uncategorized");
 
 		private int val;
 		private String text;
@@ -358,14 +360,15 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	}
 
 	/**
+	 * return the date for java and sets up a solr field as publish date string
 	 * @return the publishDt
 	 */
-	@SolrField(name="publishDt_s")
+	@SolrField(name="publish_dt")
 	@Column(name="publish_dt")
 	public Date getPublishDt() {
 		return publishDt;
 	}
-
+	
 	/**
 	 * @return the createDt
 	 */
@@ -573,5 +576,45 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	public void setQsPath(String qsPath) {
 		this.qsPath = qsPath;
 	}
-}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getDiffText()
+	 */
+	@Override
+	public String getDiffText() {
+		return getContentTxt();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getItemName()
+	 */
+	@Override
+	public String getItemName() {
+		return getTitleTxt();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.changelog.ChangeLogIntfc#getItemDesc()
+	 */
+	@Override
+	public String getItemDesc() {
+		return this.getAbstractTxt();
+	}
+	
+	/**
+	 * @return count number
+	 */
+	@Column(name="count_no", isReadOnly=true)
+	public long getCountNumber() {
+		return countNumber;
+	}
+
+	/**
+	 * @param countNumber the countNumber to set
+	 */
+	public void setCountNumber(long countNumber) {
+		this.countNumber = countNumber;
+	}
+	
+	
+}

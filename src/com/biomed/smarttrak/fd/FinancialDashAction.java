@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.biomed.smarttrak.security.SecurityController;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
@@ -37,6 +38,7 @@ public class FinancialDashAction extends SBActionAdapter {
 		fdActions.put("fdOverlay", "com.biomed.smarttrak.fd.FinancialDashScenarioOverlayAction");
 		fdActions.put("fdHierarchy", "com.biomed.smarttrak.admin.FinancialDashHierarchyAction");
 		fdActions.put("fdScenario", "com.biomed.smarttrak.fd.FinancialDashScenarioAction");
+		fdActions.put("fdFootnote", "com.biomed.smarttrak.fd.FinancialDashFootnoteAction");
 
 		FD_ACTIONS = Collections.unmodifiableMap(fdActions);
 	}
@@ -51,6 +53,8 @@ public class FinancialDashAction extends SBActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SecurityController.isFdAuth(req);
+		
 		super.retrieve(req);
 		
 		ActionInterface ai = getAction(req);

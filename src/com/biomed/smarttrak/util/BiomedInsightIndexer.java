@@ -38,9 +38,7 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 	}
 	
 	public static BiomedInsightIndexer makeInstance(Map<String, Object> attributes) {
-		Properties props = new Properties();
-		props.putAll(attributes);
-		return new BiomedInsightIndexer(props);
+		return new BiomedInsightIndexer(makeProperties(attributes));
 	}
 
 	@Override
@@ -59,6 +57,9 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 	@Override
 	public void addSingleItem(String itemId) throws SolrException {
 		log.debug("Adding single insight: " + itemId);
+		
+		
+		
 		try (SolrActionUtil util = new SolrActionUtil(makeServer())) {
 			List<SolrDocumentVO> docs = getDocuments(itemId);
 			if (docs.isEmpty()) 
@@ -91,7 +92,7 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 		ia.setAttribute(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		ia.setAttribute(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
 		ia.setAttribute(Constants.ENCRYPT_KEY, config.getProperty(Constants.ENCRYPT_KEY));
-		List<Object> list = ia.getInsights(documentId, null, null, null);
+		List<Object> list = ia.getInsights(documentId, InsightVO.InsightStatusCd.P.name(), null, null, true);
 
 		//Load the Section Tree and set all the Hierarchies.
 		SmarttrakTree t = ia.loadSections();

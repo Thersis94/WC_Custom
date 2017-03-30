@@ -4,7 +4,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.biomed.smarttrak.vo.TeamVO;
 import com.biomed.smarttrak.vo.UserVO;
@@ -29,7 +31,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class FinancialDashScenarioAction extends SBActionAdapter {
 
-	public static final String PRIVATE = "private";
+	public static final String PRIVATE = "";
 	
 	/**
 	 * P = Private, T = Team, L = Locked;
@@ -152,21 +154,27 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
 		svo.setUserId(uvo.getUserId());
 		
-		if (svo.getTeamId().equals(PRIVATE)) {
+		if (PRIVATE.equals(svo.getTeamId())) {
 			svo.setTeamId(null);
 			svo.setStatusFlg(StatusLevel.P.toString());
 		} else {
 			svo.setStatusFlg(StatusLevel.T.toString());
 		}
 		
+		String newId = null;
 		try {
 			if (req.hasParameter("isDelete")) {
 				dbp.delete(svo);
 			} else {
 				dbp.save(svo);
+				newId = dbp.getGeneratedPKId();
 			}
 		} catch (Exception e) {
 			throw new ActionException("Couldn't update/create scenario record.", e);
 		}
+		
+		Map<String, Object> response = new HashMap<>();
+		response.put("scenarioId", newId);
+		putModuleData(response, 0, false);
 	}
 }

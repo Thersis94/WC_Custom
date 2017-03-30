@@ -118,6 +118,7 @@ public class GridVO extends BeanDataVO {
 	private Date updateDate;
 	private Date createDate;
 	private int numberRows = 0;
+	private int numberColumns = 0;
 	private int maxCols;
 	
 	// Data containers
@@ -742,7 +743,6 @@ public class GridVO extends BeanDataVO {
 			for (int x = 1; x < 11; x++) {
 				if (values[x-1] != null || x <= maxCols) {
 					row.put(FIELD_LABEL + x,StringUtil.checkVal(values[x-1]));
-					if (x > maxCols) maxCols = x;
 				}
 			}
 			
@@ -793,22 +793,33 @@ public class GridVO extends BeanDataVO {
 	 * @return
 	 */
 	public int getNumberColumns() {
+		if (numberColumns == 0) numberColumns = calculateNumberColumns();
+		
+		return numberColumns;
+	}
+	
+	/**
+	 * Calculates the number of columns with populated data
+	 * @return
+	 */
+	private int calculateNumberColumns() {
 		int numCols = 0;
 		
 		// Count the series
 		for (int i = 0; i < series.length; i++) {
-			if (series[i] != null && i > numCols) numCols = i;
+			if (! StringUtil.isEmpty(series[i]) && i > numCols) numCols = i;
 		}
 		
 		// Count the details
 		for (int x = 0; x < details.size(); x++) {
 			GridDetailVO vo = details.get(x);
+
 			for (int i = 0; i < series.length; i++) {
-				if (vo.getValues()[i] != null && i > numCols) numCols = i;
+				if (!StringUtil.isEmpty(vo.getValues()[i]) && i >= numCols) numCols = i;
 			}
 		}
 		
-		return numCols;
+		return ++numCols;
 	}
 
 }

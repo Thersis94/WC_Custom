@@ -290,6 +290,14 @@ public class ProductVO extends SecureSolrDocumentVO {
 		if (!relatedProducts.containsKey(key)) relatedProducts.put(key, new ArrayList<ProductVO>());
 		relatedProducts.get(key).add(product);
 	}
+	
+	public String getAllSections() {
+		StringBuilder sections = new StringBuilder(200);
+		for (SectionVO section : productSections) {
+			sections.append(section.getSectionId()).append("|");
+		}
+		return sections.toString();
+	}
 
 
 	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
@@ -297,6 +305,41 @@ public class ProductVO extends SecureSolrDocumentVO {
 	public Date getUpdateDate() {return null;}
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
+	
 
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+
+		if (this == obj)
+			return true;
+
+		if (this.getClass() != obj.getClass())
+			return false;
+
+		ProductVO p = (ProductVO) obj;
+
+		// Check to see if the core data for these products are equivalent
+		if ((productId == null && p.getProductId() != null) || (productId != null && p.getProductId() == null)) return false;
+		if ((productId != null && p.getProductId() != null) && !productId.equals(p.getProductId())) return false;
+		if ((parentId == null && p.getParentId() != null) || (parentId != null && p.getParentId() == null)) return false;
+		if ((parentId != null && p.getParentId() != null) && parentId.equals(p.getParentId())) return false;
+		if ((companyId == null && p.getCompanyId() != null) || (companyId != null && p.getCompanyId() == null)) return false;
+		if ((companyId != null && p.getCompanyId() != null) && !companyId.equals(p.getCompanyId())) return false;
+		if ((companyName == null && p.getCompanyName() != null) || (companyName != null && p.getCompanyName() == null)) return false;
+		if ((companyName != null && p.getCompanyName() != null) && !companyName.equals(p.getCompanyName())) return false;
+
+		// In all situations where equivalency is used for product VOs only
+		// the core data is used. Therefore if it reaches here the two
+		// products are equal or close enough that using either one for its
+		// intended purpose will get the same results.
+		return true;
+	}
 	
 }

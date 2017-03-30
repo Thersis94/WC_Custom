@@ -24,6 +24,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
@@ -110,7 +111,6 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			ps.setString(++idx, Type.FULL.getId());
 			ps.setString(++idx, Status.INACTIVE.getCode());
 			ps.setString(++idx, Status.INACTIVE.getCode());
-			ps.setString(++idx, siteId);
 			for (int x = 0; x < regFields.size(); x++) {
 				ps.setString(++idx, regFields.get(x));
 			}
@@ -167,8 +167,8 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(650);
 		sql.append("select ac.account_id, ac.account_nm, ac.create_dt, ac.expiration_dt, ac.status_no, ");
-		sql.append("us.user_id, us.profile_id, us.status_cd, ");
-		sql.append("pf.first_nm, pf.last_nm, pfa.country_cd, pfr.role_id, ");
+		sql.append("us.user_id, us.profile_id, us.status_cd, us.acct_owner_flg, ");
+		sql.append("pf.first_nm, pf.last_nm, pfa.country_cd, ");
 		sql.append("rd.register_field_id, rd.value_txt ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us ");
@@ -176,7 +176,6 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		sql.append("and ac.type_id = ? and ac.status_no != ? and us.status_cd != ? ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
-		sql.append("inner join profile_role pfr on pf.profile_id = pfr.profile_id and pfr.site_id = ? ");
 		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
 		sql.append("left join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
 		sql.append("and rd.register_field_id in (");
@@ -218,8 +217,6 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			if (! currAcctId.equals(prevAcctId)) {
 				// acct changed
 				if (prevAcctId != null) {
-					// add 'previous' user
-					account.addUser(user);
 					// add acct to accounts list.
 					accounts.add(account);
 				}
@@ -228,19 +225,12 @@ public class AccountsReportAction extends SimpleActionAdapter {
 				account = createBaseAccount(rs);
 				// create new user
 				user = createBaseUser(se,rs);
-				// update user status counter
-				account.countUserStatus(user.getStatusCode());
 
 			} else {
 				// same account, check for user change
 				if (! currPid.equals(prevPid)) {
-					// user changed, add 'previous' user to division users list
-					account.addUser(user);
-					// create new user
+					// user changed, create new user
 					user = createBaseUser(se,rs);
-					// update user status counter
-					account.countUserStatus(user.getStatusCode());
-
 				}
 			}
 
@@ -254,7 +244,6 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 		// pick up the dangler
 		if (prevAcctId != null) {
-			account.addUser(user);
 			accounts.add(account);
 		}
 
@@ -271,13 +260,18 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	@SuppressWarnings("unchecked")
 	protected void processUserRegistrationField(AccountUsersVO acct, UserVO user, 
 			String currFieldId, String currFieldVal) {
-		if (currFieldId == null || currFieldVal == null) return;
+		if (StringUtil.isEmpty(currFieldId) || StringUtil.isEmpty(currFieldVal)) return;
 		// process reg field value
 		if (RegistrationMap.DIVISIONS.getFieldId().equals(currFieldId)) {
 			// user can belong to more than one division, we use a List here.
 			List<String> divs;
 			if (user.getAttribute(currFieldVal) == null) {
 				divs = new ArrayList<>();
+				/* We only count users who have a division association.  Since
+				 * a user can belong to more than one division, we only want to 
+				 * count the user one time we do it here after we init the
+				 * user's division membership List.. */
+				acct.countUserStatus(user.getStatusCode());
 			} else {
 				divs = (List<String>)user.getAttribute(currFieldId);
 			}
@@ -287,7 +281,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 			// add to the account's division map
 			addUserToAccountDivisions(acct.getDivisions(),user, currFieldVal);
-			
+
 		} else {
 			user.addAttribute(currFieldId, currFieldVal);
 		}
@@ -338,9 +332,8 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		user.setAccountId(rs.getString("account_id"));
 		user.setProfileId(rs.getString("profile_id"));
 		user.setStatusCode(rs.getString("status_cd"));
+		user.setAcctOwnerFlg(Convert.formatInteger(rs.getString("acct_owner_flg")));
 		user.setCountryCode(rs.getString("country_cd"));
-		// use barcode ID field to store user's role ID for the report view
-		user.setBarCodeId(rs.getString("role_id"));
 		// decrypt encrypted fields and set.
 		try {
 			user.setFirstName(se.decrypt(rs.getString("first_nm")));

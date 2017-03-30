@@ -4,10 +4,15 @@
 package com.biomed.smarttrak.vo;
 
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.siliconmtn.data.Node;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: GapCompanyVO.java
@@ -16,7 +21,7 @@ import com.siliconmtn.db.DBUtil;
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 1.0
  * @since Feb 6, 2017
  ****************************************************************************/
@@ -25,6 +30,30 @@ public class GapCompanyVO {
 	//Region Codes
 	public static final String US = "US";
 	public static final String OUS = "OUS";
+
+	public enum StatusClass {
+		APPROVED(StatusVal.USA, StatusVal.OUSA),
+		DISCONTINUED(StatusVal.USD, StatusVal.OUSD),
+		IN_DEVELOPMENT(StatusVal.USID, StatusVal.OUSID),
+		NO_PRODUCT(StatusVal.USG, StatusVal.OUSG);
+
+		private StatusVal us;
+		private StatusVal intl;
+		StatusClass(StatusVal us, StatusVal intl) {
+			this.us = us;
+			this.intl = intl;
+		}
+
+		public StatusVal getStatusVal(String region) {
+			if(US.contentEquals(region)) {
+				return us;
+			} else if(OUS.equals(region)) {
+				return intl;
+			} else {
+				return null;
+			}
+		}
+	}
 
 	//Status Codes
 	public enum StatusVal { USA(10), OUSA(10), USID(5), OUSID(5), USD(2), OUSD(2), USG(0), OUSG(0);
@@ -43,6 +72,7 @@ public class GapCompanyVO {
 	}
 
 	private Map<String, StatusVal> regulations;
+	private List<GapCellVO> cells;
 	private String companyName;
 	private String shortCompanyName;
 	private String companyId;
@@ -146,7 +176,7 @@ public class GapCompanyVO {
 	 * @param statusId
 	 * @param regionId
 	 */
-	public void addRegulation(String columnId, int statusId, int regionId) {
+	public void addRegulation(String columnId, String statusTxt, int regionId) {
 
 		//Generate a Region based Column Key.
 		String rKey = regionId == 1 ? US : OUS;
@@ -156,7 +186,7 @@ public class GapCompanyVO {
 		StatusVal status = regulations.get(regKey);
 
 		//Retrieve Status
-		StatusVal tStatus = getStatus(statusId, rKey);
+		StatusVal tStatus = getStatus(statusTxt, rKey);
 
 		//If this is a better status, update.
 		if(status == null || tStatus.getScore() > status.getScore()) {
@@ -171,78 +201,28 @@ public class GapCompanyVO {
 	 * @param rKey
 	 * @return
 	 */
-	public StatusVal getStatus(int statusId, String rKey) {
-		StatusVal tStatus;
-		switch(statusId) {
-
-			//Discontinued Status.
-			case 10:
-			case 21:
-			case 26:
-			case 42:
-				if(US.equals(rKey)) {
-					tStatus = StatusVal.USD;
-				} else {
-					tStatus = StatusVal.OUSD;
-				}
-				break;
-
-			//Approved Status.
-			case 9:
-			case 12:
-			case 13:
-			case 14:
-			case 43:
-				if(US.equals(rKey)) {
-					tStatus = StatusVal.USA;
-				} else {
-					tStatus = StatusVal.OUSA;
-				}
-				break;
-
-			//In Development Status
-			case 5:
-			case 6:
-			case 7:
-			case 8:
-			case 11:
-			case 15:
-			case 17:
-			case 18:
-			case 22:
-			case 23:
-			case 24:
-			case 25:
-			case 27:
-			case 28:
-			case 29:
-			case 30:
-			case 31:
-			case 32:
-			case 33:
-			case 34:
-			case 35:
-			case 36:
-			case 37:
-			case 40:
-				if(US.equals(rKey)) {
-					tStatus = StatusVal.USID;
-				} else {
-					tStatus = StatusVal.OUSID;
-				}
-				break;
-
-			//Default Gap Status.
-			default:
-				if(US.equals(rKey)) {
-					tStatus = StatusVal.USG;
-				} else {
-					tStatus = StatusVal.OUSG;
-				}
-				break;
+	public StatusVal getStatus(String statusTxt, String rKey) {
+		if(!StringUtil.isEmpty(statusTxt)) {
+			try {
+				return StatusClass.valueOf(statusTxt).getStatusVal(rKey);
+			} catch(Exception e) {
+				return getGapStatus(rKey);
+			}
 		}
+		return getGapStatus(rKey);
+	}
 
-		return tStatus;
+	/**
+	 * Helper method that gets a Gap Status for the given Region.
+	 * @param rKey
+	 * @return
+	 */
+	public StatusVal getGapStatus(String rKey) {
+		if(US.equals(rKey)) {
+			return StatusVal.USG;
+		} else {
+			return StatusVal.OUSG;
+		}
 	}
 
 	/**
@@ -251,6 +231,54 @@ public class GapCompanyVO {
 	 * @return
 	 */
 	public StatusVal getRegulation(String colRegId) {
-		return regulations.get(colRegId);
+		StatusVal s = regulations.get(colRegId);
+		if(s == null && US.equals(colRegId.split("-")[1])) {
+			s = StatusVal.USG;
+		} else if(s == null && OUS.equals(colRegId.split("-")[1])) {
+			s = StatusVal.OUSG;
+		}
+		return s;
+	}
+
+	/**
+	 * Build Cell Data and Store on the Company Row.
+	 * @param columns
+	 */
+	public void buildCellData(Collection<Node> columns) {
+		cells = new ArrayList<>();
+		for(Node col : columns) {
+			StatusVal usReg = this.getRegulation(col.getNodeId() + "-US");
+			StatusVal ousReg = this.getRegulation(col.getNodeId() + "-OUS");
+
+			cells.add(new GapCellVO(usReg, ousReg, col.getNodeId()));
+		}
+	}
+
+	/**
+	 * @return the cells
+	 */
+	public List<GapCellVO> getCells() {
+		return cells;
+	}
+
+	/**
+	 * @param regulations the regulations to set.
+	 */
+	public void setRegulations(Map<String, StatusVal> regulations) {
+		this.regulations = regulations;
+	}
+
+	/**
+	 * @param cells the cells to set.
+	 */
+	public void setCells(List<GapCellVO> cells) {
+		this.cells = cells;
+	}
+
+	/**
+	 * @param portfolioNo the portfolioNo to set.
+	 */
+	public void setPortfolioNo(int portfolioNo) {
+		this.portfolioNo = portfolioNo;
 	}
 }

@@ -46,9 +46,7 @@ public class UpdateIndexer extends SMTAbstractIndex {
 	}
 
 	public static UpdateIndexer makeInstance(Map<String, Object> attributes) {
-		Properties props = new Properties();
-		props.putAll(attributes);
-		return new UpdateIndexer(props);
+		return new UpdateIndexer(makeProperties(attributes));
 	}
 
 
@@ -101,7 +99,7 @@ public class UpdateIndexer extends SMTAbstractIndex {
 		ua.setDBConnection(new SMTDBConnection(dbConn));
 		ua.setAttribute(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		ua.setAttribute(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
-		List<Object> list = ua.getUpdates(documentId, null, null, null);
+		List<Object> list = ua.getAllUpdates(documentId);
 
 		//Load the Section Tree and set all the Hierarchies.
 		SmarttrakTree tree = ua.loadSections();

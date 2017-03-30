@@ -29,6 +29,7 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
 /****************************************************************************
@@ -48,6 +49,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 public class CompanyAction extends AbstractTreeAction {
 	
 	private static final String DEFAULT_GROUP = "Other";
+	private static final int PRODUCT_PATH_LENGTH = 2;
 	
 	public CompanyAction() {
 		super();
@@ -172,18 +174,14 @@ public class CompanyAction extends AbstractTreeAction {
 		StringBuilder sql = new StringBuilder(400);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
-		sql.append("SELECT p.PRODUCT_NM, p.PRODUCT_ID, xr.ATTRIBUTE_ID FROM ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
-		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
-		sql.append("ON c.COMPANY_ID = p.COMPANY_ID and c.COMPANY_ID = ? ");
-		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
-		sql.append("on p.PRODUCT_ID = xr.PRODUCT_ID and xr.PRODUCT_ATTRIBUTE_ID = ( SELECT PRODUCT_ATTRIBUTE_ID ");
-		sql.append("FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
-		sql.append("ON a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
-		sql.append("WHERE x.PRODUCT_ID = p.PRODUCT_ID and a.TYPE_CD = 'HTML' limit 1 ) ");
+		sql.append("SELECT p.PRODUCT_NM, p.PRODUCT_ID, s.SECTION_ID FROM ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION s ");
+		sql.append("on p.PRODUCT_ID = s.PRODUCT_ID ");
+		sql.append("WHERE p.COMPANY_ID = ? ");
 		log.debug(sql+"|"+company.getCompanyId());
-		
-		Tree t = buildAttributeTree("PRODUCT");
+
+		SmarttrakTree t = loadDefaultTree();
+		t.buildNodePaths();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, company.getCompanyId());
 			ResultSet rs = ps.executeQuery();
@@ -192,7 +190,7 @@ public class CompanyAction extends AbstractTreeAction {
 				ProductVO p = new ProductVO();
 				p.setProductId(rs.getString("PRODUCT_ID"));
 				p.setProductName(rs.getString("PRODUCT_NM"));
-				addToProductMap(company, t, p, rs.getString("ATTRIBUTE_ID"));
+				addToProductMap(company, t, p, rs.getString("SECTION_ID"));
 			}
 		} catch (SQLException e) {
 			throw new ActionException(e);
@@ -204,23 +202,21 @@ public class CompanyAction extends AbstractTreeAction {
 	/**
 	 * Group the products according to thier groups.
 	 * @param company
-	 * @param attributeTree
+	 * @param sectionTree
 	 * @param prod
-	 * @param attrId
+	 * @param sectionId
 	 */
-	private void addToProductMap(CompanyVO company, Tree attributeTree, ProductVO prod, String attrId) {
-		String[] path = attributeTree.findNode(attrId).getFullPath().split("/");
+	private void addToProductMap(CompanyVO company, Tree sectionTree, ProductVO prod, String sectionId) {
+		String[] path = sectionTree.findNode(sectionId).getFullPath().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
 		
 		// Markets using attributes too high up in the tree do not have enough
 		// information to be sorted properly and are placed in the extras group.
-		if (path.length < 2) {
-			company.addProduct(DEFAULT_GROUP, prod);
+		if (path.length < PRODUCT_PATH_LENGTH) {
+			company.addProduct(path[path.length-1], prod);
 			return;
 		}
 		
-		Node n = attributeTree.findNode(path[1]);
-
-		company.addProduct(n.getNodeName(), prod);
+		company.addProduct(path[PRODUCT_PATH_LENGTH-1], prod);
 	}
 	
 	

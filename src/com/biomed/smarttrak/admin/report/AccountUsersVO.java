@@ -110,6 +110,20 @@ public class AccountUsersVO extends AccountVO {
 	public int getTotalUsers() {
 		return users == null ? 0 : users.size();
 	}
+	
+	/**
+	 * Returns a sum of the users who are members of divisions
+	 * @return
+	 */
+	public int getTotalDivisionUsers() {
+		int tot = 0;
+		for (Map.Entry<String, List<UserVO>> divUsers : divisions.entrySet()) {
+			if (divUsers.getValue() != null) {
+				tot += divUsers.getValue().size();
+			}
+		}
+		return tot;
+	}
 
 	/**
 	 * Increments the count for certain user status values.

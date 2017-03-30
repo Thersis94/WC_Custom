@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -11,10 +12,9 @@ import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.admin.action.DirectUrlManagerAction;
 import com.smt.sitebuilder.common.constants.Constants;
-
-import opennlp.tools.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ListAction.java
@@ -39,14 +39,28 @@ public class ListAction extends DirectUrlManagerAction {
 			List<GenericVO> vals = getList(listType, false);
 			putModuleData(vals, vals.size(), false);
 		} else {
-			super.list(req);
+			list(req);
 		}
 	}
 
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+
+		//If a type is passed, attempt to retrieve URLs related to that type.
+		if(req.hasParameter("type")) {
+			// Get Map of Urls to Return and place on request.
+			Map<String, List<GenericVO>> urls = getUrls(req);
+
+			/*
+			 * Put data on request in proper location.
+			 * If amid is present then this isn't an admintool call.
+			 */
+			this.putModuleData(urls, urls.size(), !req.hasParameter("amid"));
+		}
+	}
 
 	/**
 	 * Helper method that loads all the Direct Urls available.
-	 * 
 	 * @param orgId
 	 * @return 
 	 * @return
@@ -56,16 +70,34 @@ public class ListAction extends DirectUrlManagerAction {
 	protected Map<String, List<GenericVO>> getUrls(ActionRequest req) throws ActionException {
 
 		//Call Super to load any lists from core.
-		Map<String, List<GenericVO>> urlMap = super.getUrls(req);
+		Map<String, List<GenericVO>> urlMap = new HashMap<>();
 
-		//Get Companies
-		urlMap.put(ListType.COMPANY.name(), getList(ListType.COMPANY.name(), true));
+		String type = req.getParameter("type");
 
-		//Get Markets
-		urlMap.put(ListType.MARKET.name(), getList(ListType.MARKET.name(), true));
+		if("ALL".equals(type)) {
+			urlMap.put("PAGE", getPageUrls(req));
+			urlMap.put("COMPANY", getList(ListType.COMPANY.name(), true));
+			urlMap.put("MARKET", getList(ListType.MARKET.name(), true));
+			urlMap.put("PRODUCT", getList(ListType.PRODUCT.name(), true));
+		} else {
+			//Call Super to load any lists from core.
+			urlMap = super.getUrls(req);
 
-		//Get Products
-		urlMap.put(ListType.PRODUCT.name(), getList(ListType.PRODUCT.name(), true));
+			//Get Companies
+			if(ListType.COMPANY.name().equals(type)) {
+				urlMap.put(ListType.COMPANY.name(), getList(ListType.COMPANY.name(), true));
+			}
+
+			//Get Markets
+			if(ListType.MARKET.name().equals(type)) {
+				urlMap.put(ListType.MARKET.name(), getList(ListType.MARKET.name(), true));
+			}
+
+			//Get Products
+			if(ListType.PRODUCT.name().equals(type)) {
+				urlMap.put(ListType.PRODUCT.name(), getList(ListType.PRODUCT.name(), true));
+			}
+		}
 
 		return urlMap;
 	}
@@ -91,7 +123,7 @@ public class ListAction extends DirectUrlManagerAction {
 				break;
 			case PRODUCT:
 				sql = getProductSql();
-				url = Section.MARKET.getPageURL() + getAttribute(Constants.QS_PATH);
+				url = Section.PRODUCT.getPageURL() + getAttribute(Constants.QS_PATH);
 				break;
 			case ACCOUNT:
 				sql = getAccountSql();
@@ -105,11 +137,11 @@ public class ListAction extends DirectUrlManagerAction {
 			ResultSet rs = ps.executeQuery();
 			StringBuilder val = null;
 			while(rs.next()) {
-				val = new StringBuilder(rs.getString("val"));
+				val = new StringBuilder(rs.getString("id"));
 				if(asUrl && !StringUtil.isEmpty(url)) {
 					val.insert(0, url);
 				}
-				vals.add(new GenericVO(rs.getString("id"), val.toString()));
+				vals.add(new GenericVO(val.toString(), rs.getString("val")));
 			}
 
 		} catch (SQLException sqle) {

@@ -38,11 +38,11 @@ public class BiomedChangeLogUtil extends ChangeLogUtil {
 	 * @param changeLogId
 	 * @return
 	 */
-	public List<Object> loadRecords(String appOrigId, String changeLogId, String orgId, boolean hideReviewed) {
+	public List<Object> loadRecords(String wcOrigKeyId, String changeLogId, String orgId, boolean hideReviewed) {
 
-		String sql = formatSqlQuery(appOrigId, changeLogId, orgId, hideReviewed);
+		String sql = formatSqlQuery(wcOrigKeyId, changeLogId, orgId, hideReviewed);
 		List<Object> params = new ArrayList<>();
-		if(!StringUtil.isEmpty(appOrigId)) params.add(appOrigId);
+		if(!StringUtil.isEmpty(wcOrigKeyId)) params.add(wcOrigKeyId);
 		if(!StringUtil.isEmpty(changeLogId)) params.add(changeLogId);
 		if(!StringUtil.isEmpty(orgId)) params.add(orgId);
 
@@ -60,10 +60,10 @@ public class BiomedChangeLogUtil extends ChangeLogUtil {
 	 * @param orgId
 	 * @return
 	 */
-	protected String formatSqlQuery(String appOrigId, String changeLogId, String orgId, boolean hideReviewed) {
+	protected String formatSqlQuery(String wcOrigKeyId, String changeLogId, String orgId, boolean hideReviewed) {
 		StringBuilder sql = new StringBuilder();
-		sql.append("select a.*, b.*, c.first_nm as creator_first_nm, c.last_nm as creator_last_nm, ");
-		sql.append("d.first_nm as disposition_first_nm, d.last_nm as disposition_last_nm ");
+		sql.append("select a.*, b.*, d.first_nm as creator_first_nm, d.last_nm as creator_last_nm, ");
+		sql.append("c.first_nm as disposition_first_nm, c.last_nm as disposition_last_nm ");
 		sql.append("from change_log a inner join wc_sync b on ");
 		sql.append("a.wc_sync_id = b.wc_sync_id ");
 		sql.append("left outer join profile c on b.disposition_by_id = c.profile_id ");
@@ -71,7 +71,7 @@ public class BiomedChangeLogUtil extends ChangeLogUtil {
 		sql.append("where 1 = 1 ");
 
 		if(hideReviewed) sql.append("and b.disposition_by_id is null ");
-		if(!StringUtil.isEmpty(appOrigId)) sql.append("and b.wc_orig_key_id = ? ");
+		if(!StringUtil.isEmpty(wcOrigKeyId)) sql.append("and b.wc_orig_key_id = ? ");
 		if(!StringUtil.isEmpty(changeLogId)) sql.append("and a.change_log_id = ? ");
 		if(!StringUtil.isEmpty(orgId)) sql.append("and b.organization_id = ? ");
 
