@@ -149,11 +149,7 @@ public class FinancialDashFootnoteVO implements Serializable {
 	 * @param companyId the companyId to set
 	 */
 	public void setCompanyId(String companyId) {
-		if (StringUtil.isEmpty(companyId)) {
-			companyId = null;
-		}
-		
-		this.companyId = companyId;
+		this.companyId = StringUtil.checkVal(companyId, null);
 	}
 
 	/**
