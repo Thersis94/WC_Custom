@@ -262,6 +262,16 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 		return publishDt;
 	}
 
+	@SolrField(name="publishDtNoTime_s")
+	public String getPublishDtNoTime() {
+		return Convert.formatDate(publishDt, Convert.DATE_DASH_PATTERN);
+	}
+
+	@SolrField(name="publishTime_s")
+	public String getPublishTime() {
+		return Convert.formatDate(publishDt, Convert.TIME_LONG_PATTERN);
+	}
+
 	/**
 	 * @return the createDt
 	 */
@@ -282,6 +292,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	public int getEmailFlg() {
 		return emailFlg;
 	}
+	@SolrField(name="order_i")
 	@Column(name="order_no")
 	public int getOrderNo() {
 		return orderNo;

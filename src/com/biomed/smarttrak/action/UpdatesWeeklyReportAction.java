@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.util.UpdateIndexer;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -60,12 +61,27 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		//Save Changes.
 		processUpdates(updates);
 
+		//Update Solr with Changes.
+		updateSolr(updates);
+
 		//Build Message.
 		StringBuilder msg = new StringBuilder(50);
 		msg.append(updates.size()).append(" records saved successfully.");
 
 		//Return Message on request.
 		this.putModuleData(msg.toString());
+	}
+
+	/**
+	 * Helper method ensures that Order Number is submitted to Solr.
+	 * @param updates
+	 */
+	protected void updateSolr(List<UpdateVO> updates) {
+		UpdateIndexer ui = UpdateIndexer.makeInstance(attributes);
+		ui.setDBConnection(getDBConnection());
+		for(UpdateVO u : updates) {
+			ui.addSingleItem(u.getUpdateId());
+		}
 	}
 
 	public void list(ActionRequest req) throws ActionException {
