@@ -184,7 +184,13 @@ public class UpdatesAction extends SBActionAdapter {
 
 		//Custom Filtering for when looking at an Email View.
 		if(req.hasParameter("isEmail")) {
-			req.setParameter("sortField", "moduleType asc, publishDtNoTime_s desc, order_i desc, publishTime_s ");
+
+			//Set fmid from ModuleVO
+			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			req.setParameter("fmid", mod.getPageModuleId());
+
+			//Set Custom Sort Field and Direction.
+			req.setParameter("sortField", "moduleType asc, publishDtNoTime_s desc, order_i asc, publishTime_s ");
 			req.setParameter("sortDirection", "desc");
 		}
 
