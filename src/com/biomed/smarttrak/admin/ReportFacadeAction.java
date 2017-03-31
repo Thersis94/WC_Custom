@@ -1,5 +1,7 @@
 package com.biomed.smarttrak.admin;
 
+import javax.servlet.http.HttpServletResponse;
+
 //WC custom
 import com.biomed.smarttrak.admin.report.AccountReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
@@ -21,6 +23,8 @@ import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
@@ -109,6 +113,10 @@ public class ReportFacadeAction extends SBActionAdapter {
 
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, doRedirect);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+		
+		//delete the 'waiting' cookie on the response, so the loading icon disappears
+		HttpServletResponse resp = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
+		CookieUtil.add(resp, "reportLoadingCookie", "", "/", 0);
 	}
 	
 	/**

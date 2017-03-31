@@ -41,6 +41,8 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private int gaAuthFlg;
 	private int mktAuthFlg;
 	private int acctOwnerFlg;
+	private String loginOperSys;
+	private String loginBrowser;
 
 	/**
 	 * Smarttrak status dropdowns - stored in the DB using code, label displayed on user mgmt screens.
@@ -55,7 +57,8 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		EXTRA("E","SmartTRAK Extra Seat"),
 		UPDATES("U","Updates Only"),
 		TEST("D","Temporary / Test"),
-		INACTIVE("I","Inactive");
+		INACTIVE("I","Inactive"),
+		STAFF("S","Staff");
 
 		private String cd;
 		private String label;
@@ -384,5 +387,23 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 
 	public void setAcctOwnerFlg(int acctOwnerFlg) {
 		this.acctOwnerFlg = acctOwnerFlg;
+	}
+
+	@Column(name="oper_sys_txt", isReadOnly=true)
+	public String getLoginOperSys() {
+		return loginOperSys;
+	}
+
+	public void setLoginOperSys(String loginOperSys) {
+		this.loginOperSys = loginOperSys;
+	}
+
+	@Column(name="browser_txt", isReadOnly=true)
+	public String getLoginBrowser() {
+		return loginBrowser;
+	}
+
+	public void setLoginBrowser(String loginBrowser) {
+		this.loginBrowser = loginBrowser;
 	}
 }
