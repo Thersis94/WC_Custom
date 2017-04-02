@@ -32,6 +32,7 @@ public class CompanyAttributeVO implements NoteInterface  {
 	private String valueText;
 	private String titleText;
 	private String attributeName;
+	private String altText;
 	private String groupName;
 	private List<NoteVO> notes;
 	
@@ -54,6 +55,7 @@ public class CompanyAttributeVO implements NoteInterface  {
 		attributeId = req.getParameter("attributeId");
 		valueText = req.getParameter("valueText");
 		titleText = req.getParameter("titleText");
+		altText = req.getParameter("altText");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 	}
 
@@ -153,6 +155,17 @@ public class CompanyAttributeVO implements NoteInterface  {
 	@Override
 	public List<NoteVO> getNotes() {
 		return this.notes;
+	}
+
+
+	@Column(name="alt_title_txt")
+	public String getAltText() {
+		return altText;
+	}
+
+
+	public void setAltText(String altText) {
+		this.altText = altText;
 	}
 
 
