@@ -8,6 +8,8 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 
+import com.siliconmtn.util.StringUtil;
+
 /****************************************************************************
  * <b>Title</b>: FinancialDashFootnoteVO.java<p/>
  * <b>Description: Bean for financial dashboard footnotes.</b> 
@@ -147,7 +149,7 @@ public class FinancialDashFootnoteVO implements Serializable {
 	 * @param companyId the companyId to set
 	 */
 	public void setCompanyId(String companyId) {
-		this.companyId = companyId;
+		this.companyId = StringUtil.checkVal(companyId, null);
 	}
 
 	/**

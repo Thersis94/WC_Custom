@@ -182,6 +182,18 @@ public class UpdatesAction extends SBActionAdapter {
 		if (req.hasParameter("typeId"))
 			data.add(SearchDocumentHandler.MODULE_TYPE + ":" + req.getParameter("typeId"));
 
+		//Custom Filtering for when looking at an Email View.
+		if(req.hasParameter("isEmail")) {
+
+			//Set fmid from ModuleVO
+			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			req.setParameter("fmid", mod.getPageModuleId());
+
+			//Set Custom Sort Field and Direction.
+			req.setParameter("sortField", "moduleType asc, publishDtNoTime_s desc, order_i asc, publishTime_s ");
+			req.setParameter("sortDirection", "desc");
+		}
+
 		//put the new list of filter queries back on the request
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 		req.setParameter("ft", terms.toArray(new String[terms.size()]), true);

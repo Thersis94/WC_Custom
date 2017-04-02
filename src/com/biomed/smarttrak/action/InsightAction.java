@@ -165,7 +165,7 @@ public class InsightAction extends AbstractTreeAction {
 		//Get a Date Range String.
 		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
 		if (!StringUtil.isEmpty(dates))
-			data.add(SearchDocumentHandler.UPDATE_DATE + ":" + dates);
+			data.add("publish_dt:" + dates);
 
 		//Add a ModuleType filter if typeId was passed
 		if (req.hasParameter("typeId"))

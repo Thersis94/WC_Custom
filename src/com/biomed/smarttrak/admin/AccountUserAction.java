@@ -254,14 +254,17 @@ public class AccountUserAction extends SBActionAdapter {
 	 * puts authenticationId onto the userVo for storage in the profile table.
 	 * @param user
 	 */
-	protected void createAuthRecord(UserVO user) throws ActionException {
-		user.setPassword(RandomAlphaNumeric.generateRandom(8));
+	protected void saveAuthRecord(UserVO user) throws ActionException {
+		//create a random password if this is a new account and a password was not provided - this is for security reasons
+		if (StringUtil.isEmpty(user.getPassword()) && StringUtil.isEmpty(user.getAuthenticationId()))
+			user.setPassword(RandomAlphaNumeric.generateRandom(8));
+		
 		UserLogin ul = new UserLogin(dbConn, (String)getAttribute(Constants.ENCRYPT_KEY));
 		//save the record.  Flag it for password reset immediately.
 		try {
 			String authId = ul.checkAuth(user.getEmailAddress());
 			//if the user had an auth record already then don't change their password or flag them for reset
-			String pswd = StringUtil.isEmpty(authId) ? user.getPassword() : UserLogin.DUMMY_PSWD;
+			String pswd = !StringUtil.isEmpty(user.getPassword()) ? user.getPassword() : UserLogin.DUMMY_PSWD;
 			authId = ul.modifyUser(authId, user.getEmailAddress(), pswd, StringUtil.isEmpty(authId) ? 1 : 0);
 			user.setAuthenticationId(authId);
 		} catch (com.siliconmtn.exception.DatabaseException e) {
@@ -278,7 +281,7 @@ public class AccountUserAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, u.acct_owner_flg, ");
 		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, cast(max(al.login_dt) as date) as login_dt, ");
-		sql.append("u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg ");
+		sql.append("al.oper_sys_txt, al.browser_txt, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join profile p on u.profile_id=p.profile_id ");
 		sql.append("left outer join authentication_log al on p.authentication_id=al.authentication_id and al.site_id=? and al.status_cd=1 ");
@@ -289,7 +292,7 @@ public class AccountUserAction extends SBActionAdapter {
 			sql.append("where p.profile_id=? ");
 		}
 		sql.append("group by u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, ");
-		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt ");
+		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, al.oper_sys_txt, al.browser_txt ");
 
 		log.debug(sql);
 		return sql.toString();
@@ -303,9 +306,8 @@ public class AccountUserAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		UserVO user = new UserVO(req);
 
-		//create an auth record before saving profile data, if this is a new user
-		if (StringUtil.isEmpty(user.getAuthenticationId()))
-			createAuthRecord(user);
+		//save auth
+		saveAuthRecord(user);
 
 		//save their WC profile
 		callProfileManager(user, req, true);
@@ -344,6 +346,8 @@ public class AccountUserAction extends SBActionAdapter {
 
 			} else if (UserVO.Status.EUREPORTS.getCode().equals(user.getStatusCode())) {
 				role.setRoleId(AdminControllerAction.EUREPORT_ROLE_ID);
+			} else if (UserVO.Status.STAFF.getCode().equals(user.getStatusCode())) {
+				role.setRoleId(AdminControllerAction.STAFF_ROLE_ID);
 			} else {
 				role.setRoleId(Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL));
 			}
