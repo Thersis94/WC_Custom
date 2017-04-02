@@ -7,6 +7,8 @@ import com.biomed.smarttrak.admin.report.AccountReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
+import com.biomed.smarttrak.admin.report.LinkReportAction;
+import com.biomed.smarttrak.admin.report.LinkReportVO;
 import com.biomed.smarttrak.admin.report.SupportReportAction;
 import com.biomed.smarttrak.admin.report.SupportReportVO;
 import com.biomed.smarttrak.admin.report.UserActivityAction;
@@ -54,19 +56,20 @@ public class ReportFacadeAction extends SBActionAdapter {
 		USER_PERMISSIONS,
 		USAGE_ROLLUP_DAILY,
 		USAGE_ROLLUP_MONTHLY,
-		SUPPORT
+		SUPPORT,
+		LINK;
 	}
-	
+
 	/**
-	* Constructor
-	*/
+	 * Constructor
+	 */
 	public ReportFacadeAction() {
 		super();
 	}
 
 	/**
-	* Constructor
-	*/
+	 * Constructor
+	 */
 	public ReportFacadeAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
@@ -107,18 +110,40 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case SUPPORT:
 				rpt = generateSupportReport(req);
 				break;
+			case LINK:
+				rpt = generateLinkReport(req);
+				break;
 			default:
 				break;
 		}
 
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, doRedirect);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
-		
+
 		//delete the 'waiting' cookie on the response, so the loading icon disappears
 		HttpServletResponse resp = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
 		CookieUtil.add(resp, "reportLoadingCookie", "", "/", 0);
 	}
-	
+
+
+	/**
+	 * Generates the Account report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateLinkReport(ActionRequest req) 
+			throws ActionException {
+		log.debug("generating Link Report...");
+		LinkReportAction ara = new LinkReportAction();
+		ara.setDBConnection(getDBConnection());
+		ara.setAttributes(getAttributes());
+		LinkReportVO rpt = new LinkReportVO();
+		rpt.setData(ara.retrieveData(req));
+		return rpt;
+	}
+
+
 	/**
 	 * Generates the Account report.
 	 * @param req
@@ -137,7 +162,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		rpt.setData(ara.retrieveAccountsList(req));
 		return rpt;
 	}
-	
+
 	/**
 	 * Generates the activity log report report.
 	 * @param req
@@ -154,7 +179,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		rpt.setData(uaa.retrieveUserActivity(req));
 		return rpt;
 	}
-	
+
 	/**
 	 * Generates the company segment report.
 	 * @param req
@@ -183,13 +208,13 @@ public class ReportFacadeAction extends SBActionAdapter {
 		UserListReportAction ul = new UserListReportAction();
 		ul.setDBConnection(dbConn);
 		ul.setAttributes(getAttributes());
-		
+
 		AbstractSBReportVO rpt = new UserListReportVO();
 		rpt.setData(ul.retrieveUserList(req));
 		return rpt;
-		
+
 	}
-	
+
 	/**
 	 * Generates the user permissions report
 	 * @param req
@@ -201,13 +226,13 @@ public class ReportFacadeAction extends SBActionAdapter {
 		UserPermissionsReportAction upra = new UserPermissionsReportAction();
 		upra.setDBConnection(dbConn);
 		upra.setAttributes(getAttributes());
-		
+
 		AbstractSBReportVO rpt = new UserPermissionsReportVO();
 		rpt.setData(upra.retrieveUserPermissions(req));
 		return rpt;
 
 	}
-	
+
 	/**
 	 * Generates the user utilization roll-up report.
 	 * @param req
@@ -248,7 +273,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		rpt.setData(sra.retrieveSupportData(req));
 		return rpt;
 	}
-	
+
 	/**
 	 * Converts a String to the equivalent ReportType.
 	 * @param reportType
@@ -262,6 +287,4 @@ public class ReportFacadeAction extends SBActionAdapter {
 			throw new ActionException("Unknown report type, " + reportType);
 		}
 	}
-	
-	
 }
