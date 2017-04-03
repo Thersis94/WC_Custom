@@ -315,7 +315,7 @@ public class GridChartAction extends SBActionAdapter {
 		String sort = StringUtil.checkVal(sortMapper.get(req.getParameter("sort")), "title_nm");
 		String order = StringUtil.checkVal(req.getParameter("order"), "asc");
 		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
-		if ("update_dt".toLowerCase().equals(sort.toLowerCase())){
+		if ("update_dt".equalsIgnoreCase(sort)){
 			sort = "coalesce(update_dt, create_dt)";
 		}
 		
