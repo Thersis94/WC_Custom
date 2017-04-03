@@ -46,6 +46,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
  ****************************************************************************/
 public class MarketAction extends AbstractTreeAction {
 	private static final String DEFAULT_GROUP = "Other";
+	private static final String DEFAULT_SUBGROUP = "Misc";
 
 	public MarketAction() {
 		super();
@@ -250,16 +251,16 @@ public class MarketAction extends AbstractTreeAction {
 	 * @param res
 	 */
 	protected void orderMarkets(SolrResponseVO res) {
-		Map<String, List<SolrDocument>> groups = new TreeMap<>();
+		Map<String, Map<String, List<SolrDocument>>> groups = new TreeMap<>();
 		for (SolrDocument doc : res.getResultDocuments()) {
 			//use level 3 of the hierarchy as group name, or a default "Other" otherwise
 			String[] hierarchy = StringUtil.checkVal(doc.get(SearchDocumentHandler.HIERARCHY)).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
 			String section = hierarchy.length < 3 ? DEFAULT_GROUP : hierarchy[2];
-			addMarket(doc, groups, section);
+			String subgroup = hierarchy.length < 4? DEFAULT_SUBGROUP : hierarchy[3];
+			addMarket(doc, groups, section, subgroup);
 		}
 		putModuleData(groups);
 	}
-
 
 	/**
 	 * Add the current market to the supplied group.
@@ -267,12 +268,19 @@ public class MarketAction extends AbstractTreeAction {
 	 * @param groups
 	 * @param groupName
 	 */
-	protected void addMarket(SolrDocument doc, Map<String, List<SolrDocument>> groups, String groupName) {
+	protected void addMarket(SolrDocument doc, Map<String, Map<String, List<SolrDocument>>> groups, String groupName, String subgroup) {
 		//create the group if it doesn't exist yet
-		if (!groups.containsKey(groupName))
-			groups.put(groupName, new ArrayList<SolrDocument>());
-
-		groups.get(groupName).add(doc);
+		if (!groups.containsKey(groupName)) {
+			groups.put(groupName, new HashMap<String, List<SolrDocument>>());
+		}
+		
+		// Get the group and check if the subgroup exists
+		Map<String, List<SolrDocument>> group = groups.get(groupName);
+		if (!group.containsKey(subgroup)) {
+			group.put(subgroup, new ArrayList<SolrDocument>());
+		}
+		
+		group.get(subgroup).add(doc);
 	}
 
 	@Override
