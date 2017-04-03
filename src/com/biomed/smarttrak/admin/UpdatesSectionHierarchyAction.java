@@ -131,18 +131,30 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			
 			//Build the mapping for top-level sections, sub-sections, and updates
 			List<Node> nodes = t.preorderList();
-			Map<String, List<UpdateVO>> subSectionMap = new LinkedHashMap<>();
-			for (Node node : nodes) {
-				if(SECTION_XR_DEPTH == node.getDepthLevel() ){		
-					//locate the related updates and add to map
-					List<UpdateVO> holder = locateSectionUpdates(updates, node);
-					if(holder.size() != 0) subSectionMap.put(node.getNodeName(), holder);
-				}
-			}
+			
 			//add root section id, with sub-section/updates, to the final collection
-			updatesHierarchyMap.put(rootSectionId, subSectionMap);
+			updatesHierarchyMap.put(rootSectionId, getSubSectionUpdates(nodes, updates));
 		}
 		return updatesHierarchyMap;
+	}
+	
+	/**
+	 * Returns a mapping of a sub section with it's associated updates.
+	 * @param nodes
+	 * @param updates
+	 * @return
+	 */
+	protected Map<String, List<UpdateVO>> getSubSectionUpdates(List<Node> nodes, List<UpdateVO> updates){
+		Map<String, List<UpdateVO>> subSectionMap = new LinkedHashMap<>();
+		for (Node node : nodes) {
+			if(SECTION_XR_DEPTH == node.getDepthLevel() ){		
+				//locate the related updates and add to map
+				List<UpdateVO> holder = locateSectionUpdates(updates, node);
+				if(!holder.isEmpty()) subSectionMap.put(node.getNodeName(), holder);
+			}
+		}
+		
+		return subSectionMap;
 	}
 	
 	/***
