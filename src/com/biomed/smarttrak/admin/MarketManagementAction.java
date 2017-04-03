@@ -596,6 +596,9 @@ public class MarketManagementAction extends AbstractTreeAction {
 		// what is on the request object.
 		String marketId = req.getParameter("marketId");
 		deleteSection(true, marketId);
+		
+		// If nothing is there to add return now.
+		if (!req.hasParameter("sectionId")) return;
 
 		StringBuilder sql = new StringBuilder(225);
 		sql.append("INSERT INTO ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -675,6 +678,12 @@ public class MarketManagementAction extends AbstractTreeAction {
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
+	}
+	
+	
+	@Override
+	public void delete(ActionRequest req) throws ActionException {
+		deleteElement(req);
 	}
 
 

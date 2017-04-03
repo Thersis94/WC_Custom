@@ -98,6 +98,12 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	}
 	
 	
+	@Override
+	public void delete(ActionRequest req) throws ActionException {
+		deleteElement(req);
+	}
+	
+	
 	/**
 	 * Determine how to retrieve company information and do so.
 	 * @param req
@@ -601,6 +607,9 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		// Delete all sections currently assigned to this company before adding
 		// what is on the request object.
 		deleteSection(true, req.getParameter(COMPANY_ID));
+		
+		// Return if there is nothing to add.
+		if (!req.hasParameter("sectionId")) return;
 		
 		StringBuilder sql = new StringBuilder(225);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
