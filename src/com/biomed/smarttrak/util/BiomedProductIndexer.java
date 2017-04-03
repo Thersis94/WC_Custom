@@ -267,7 +267,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 				((List<String>)p.getAttribute("alliance")).add(alliance.getAllianceTypeName());
 				((List<String>)p.getAttribute("allyId")).add(alliance.getAllyId());
 				((List<String>)p.getAttribute("allianceId")).add(alliance.getAllianceTypeId());
-				((List<String>)p.getAttribute("allySearch")).add(alliance.getAllyName().toLowerCase());
+				((List<String>)p.getAttribute("allySearch")).add(alliance.getAllyName().toLowerCase() + " " + alliance.getAllianceTypeName().toLowerCase());
 			}
 		}
 	}
@@ -422,7 +422,6 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 				p.addAttribute(parent.getNodeName(), new ArrayList<String>());
 				p.addAttribute(parent.getNodeName() + "Ids", new ArrayList<String>());
 			}
-			log.info("Adding " + child.getNodeName() + " to " + p.getDocumentId());
 			((List<String>)p.getAttribute(parent.getNodeName())).add(child.getNodeName());
 			((List<String>)p.getAttribute(parent.getNodeName()+"Ids")).add(child.getNodeId());
 			

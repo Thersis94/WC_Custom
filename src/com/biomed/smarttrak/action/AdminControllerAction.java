@@ -102,6 +102,24 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			return "/" + getURLToken().substring(0, getURLToken().length());
 		}
 	}
+	
+	public enum LinkType {
+		GOOGLE("Google Finance"),HOMEPAGE("Homepage"),PRESS("Press Releases"),BIO("Biography"),LINKEDIN("LinkedIn&reg;"),
+		PRODUCT("Product Page"),ARTICLE("Article Link"),EARNINGS("Earnings Call Transcripts"),BROCHUE("Product Brochure"),
+		REPORT("Annual Report"),INVESTOR("Investor Page"),BLOG("Blog"),TWITTER("Twitter"),FACECBOOK("Facebook"),
+		KEY("Key Management"),SURGICAL("Surgical Technique");
+		
+		private String name;
+		
+		LinkType(String name) {
+			this.name = name;
+		}
+		
+		public String getName() {
+			return name;
+		}
+	}
+	
 
 	/*
 	 * the master list of actions this Controller can execute
