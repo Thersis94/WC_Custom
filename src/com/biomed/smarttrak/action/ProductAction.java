@@ -238,6 +238,14 @@ public class ProductAction extends AbstractTreeAction {
 	 * @param product
 	 */
 	protected void addToAttributeMap(Map<String, List<ProductAttributeVO>> attrMap, Tree attributeTree, ProductAttributeVO attr, ProductVO product) {
+		
+		if ("LINK".equals(attr.getAttributeTypeCd()) ||
+				"ATTACH".equals(attr.getAttributeTypeCd())) {
+			addLink(attrMap, attr);
+			return;
+		}
+		
+		
 		Node n = attributeTree.findNode(attr.getAttributeId());
 		
 		String[] path = n.getFullPath().split("/");
@@ -262,6 +270,18 @@ public class ProductAction extends AbstractTreeAction {
 			attrMap.get(path[1]).add(attr);
 		}
 		
+	}
+	
+
+	/**
+	 * Add the link to the proper list, including specialized lists for attatchments
+	 * @param attrMap
+	 * @param attr
+	 */
+	private void addLink(Map<String, List<ProductAttributeVO>> attrMap,
+			ProductAttributeVO attr) {
+		if (attrMap.get(attr.getAttributeId()) == null) attrMap.put(attr.getAttributeId(), new ArrayList<ProductAttributeVO>());
+		attrMap.get(attr.getAttributeId()).add(attr);
 	}
 	
 	
@@ -314,7 +334,11 @@ public class ProductAction extends AbstractTreeAction {
 			
 			while(rs.next()) {
 				product.addProductSection(new SectionVO(rs));
-				Node n = t.findNode(rs.getString("SECTION_ID"));
+				Node n = null;
+				
+				if (!StringUtil.isEmpty(rs.getString("SECTION_ID"))) 
+					n = t.findNode(rs.getString("SECTION_ID"));
+				
 				if (n != null) {
 					SectionVO sec = (SectionVO) n.getUserObject();
 					product.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());

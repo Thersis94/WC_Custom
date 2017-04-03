@@ -30,6 +30,7 @@ public class ProductAttributeVO {
 	private String productId;
 	private String valueText;
 	private String titleText;
+	private String altText;
 	private String attributeTypeCd;
 	private String groupName;
 	private int orderNo;
@@ -50,6 +51,7 @@ public class ProductAttributeVO {
 		attributeId = req.getParameter("attributeId");
 		valueText = req.getParameter("valueText");
 		titleText = req.getParameter("titleText");
+		altText = req.getParameter("altText");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 	}
 
@@ -100,6 +102,18 @@ public class ProductAttributeVO {
 	public void setTitleText(String titleText) {
 		this.titleText = titleText;
 	}
+	
+	@Column(name="alt_title_txt")
+	public String getAltText() {
+		return altText;
+	}
+
+
+	public void setAltText(String altText) {
+		this.altText = altText;
+	}
+
+
 	@Column(name="type_cd", isReadOnly=true)
 	public String getAttributeTypeCd() {
 		return attributeTypeCd;

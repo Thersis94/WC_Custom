@@ -27,6 +27,7 @@ public class MarketAttributeVO {
 	private String marketAttributeId;
 	private String attributeId;
 	private String marketId;
+	private String titleText;
 	private String valueText;
 	private String value1Text;
 	private String attributeTypeCd;
@@ -48,6 +49,7 @@ public class MarketAttributeVO {
 	public void setData(ActionRequest req) {
 		marketAttributeId = req.getParameter("marketAttributeId");
 		marketId = req.getParameter("marketId");
+		titleText = req.getParameter("titleText");
 		attributeId = req.getParameter("attributeId");
 		valueText = req.getParameter("valueText");
 		setValue1Text(req.getParameter("value1Text"));
@@ -69,6 +71,17 @@ public class MarketAttributeVO {
 	public void setMarketId(String marketId) {
 		this.marketId = marketId;
 	}
+	@Column(name="title_txt")
+	public String getTitleText() {
+		return titleText;
+	}
+
+
+	public void setTitleText(String titleText) {
+		this.titleText = titleText;
+	}
+
+
 	@Column(name="attribute_id")
 	public String getAttributeId() {
 		return attributeId;

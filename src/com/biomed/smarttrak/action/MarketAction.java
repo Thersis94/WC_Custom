@@ -3,8 +3,10 @@ package com.biomed.smarttrak.action;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import org.apache.solr.common.SolrDocument;
@@ -152,8 +154,35 @@ public class MarketAction extends AbstractTreeAction {
 		DBProcessor db = new DBProcessor(dbConn);
 
 		List<Object> results = db.executeSelect(sql.toString(), params, new MarketAttributeVO());
-		for (Object o : results)
-			market.addMarketAttribute((MarketAttributeVO)o);
+		Map<String, List<MarketAttributeVO>> attrMap = new HashMap<>();
+		for (Object o : results) {
+			MarketAttributeVO attr = (MarketAttributeVO)o;
+
+			if ("LINK".equals(attr.getAttributeTypeCd()) ||
+					"ATTACH".equals(attr.getAttributeTypeCd())) {
+				// Links need to be specailly sorted in order to display properly
+				addLink(attrMap, attr);
+			} else {
+				market.addMarketAttribute(attr);
+			}
+		}
+		
+		for (Entry<String, List<MarketAttributeVO>> entry : attrMap.entrySet()) {
+			for (MarketAttributeVO m : entry.getValue())
+				market.addMarketAttribute(m);
+		}
+	}
+	
+
+	/**
+	 * Add the link to the proper list, including specialized lists for attatchments
+	 * @param attrMap
+	 * @param attr
+	 */
+	private void addLink(Map<String, List<MarketAttributeVO>> attrMap,
+		MarketAttributeVO attr) {
+		if (attrMap.get(attr.getAttributeId()) == null) attrMap.put(attr.getAttributeId(), new ArrayList<MarketAttributeVO>());
+		attrMap.get(attr.getAttributeId()).add(attr);
 	}
 
 
@@ -177,7 +206,11 @@ public class MarketAction extends AbstractTreeAction {
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 				market.addSection(new SectionVO(rs));
-				Node n = t.findNode(rs.getString("SECTION_ID"));
+				Node n = null;
+				
+				if (!StringUtil.isEmpty(rs.getString("SECTION_ID"))) 
+					n = t.findNode(rs.getString("SECTION_ID"));
+				
 				if (n != null) {
 					SectionVO sec = (SectionVO) n.getUserObject();
 					market.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
