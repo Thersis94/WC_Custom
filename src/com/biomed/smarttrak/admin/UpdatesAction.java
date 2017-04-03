@@ -138,7 +138,7 @@ public class UpdatesAction extends AbstractTreeAction {
 		if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) params.add(reqParams.get(UPDATE_ID));
 		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) params.add(reqParams.get(STATUS_CD));
 		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) params.add(Convert.formatInteger((String)reqParams.get(TYPE_CD)));
-		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) params.add(reqParams.get(SEARCH));
+		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) params.add("%" + reqParams.get(SEARCH).toLowerCase() + "%");
 		params.add(rpp);
 		params.add(start);
 
@@ -298,7 +298,7 @@ public class UpdatesAction extends AbstractTreeAction {
 		if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) sql.append("and a.update_id=? ");
 		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) sql.append("and a.status_cd=? ");
 		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) sql.append("and a.type_cd=? ");
-		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) sql.append("and upper(a.title_txt) like ? ");
+		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) sql.append("and lower(a.title_txt) like ? ");
 		String dateRange = reqParams.get(DATE_RANGE);
 		if (!StringUtil.isEmpty(dateRange)) {
 			if ("1".equals(dateRange)) {
