@@ -15,6 +15,7 @@ import com.biomed.smarttrak.vo.LinkVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -75,10 +76,9 @@ public class LinkReportAction extends SimpleActionAdapter {
 		sql.append("select url_txt, status_no, check_dt, ");
 		sql.append("coalesce(company_id,product_id,insight_id,update_id,market_id) as id, ");
 		sql.append("case when company_id is not null then 'COMPANY' when product_id is not null then 'PRODUCT' ");
-		sql.append("case when insight_id is not null then 'INSIGHT' ");
-		sql.append("when market_id is not null then 'MARKET' else 'UPDATE' end as section ");
+		sql.append("when insight_id is not null then 'INSIGHT' when market_id is not null then 'MARKET' else 'UPDATE' end as section ");
 		sql.append("from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_link ");
-		sql.append("where status_no=404 order by check_dt desc");
+		sql.append("where status_no=404 order by section, id");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -108,23 +108,27 @@ public class LinkReportAction extends SimpleActionAdapter {
 		String actionType;
 		if (Section.COMPANY.name().equals(vo.getSection())) {
 			sec = Section.COMPANY.getPageURL();
-			actionType="companyManagement&companyId=";
+			actionType="companyAdmin&companyId=";
 		} else if (Section.PRODUCT.name().equals(vo.getSection())) {
 			sec = Section.PRODUCT.getPageURL();
-			actionType="productManage&productId=";
+			actionType="productAdmin&productId=";
 		} else if (Section.INSIGHT.name().equals(vo.getSection())) {
 			sec = Section.INSIGHT.getPageURL();
 			actionType="insights&insightId=";
 		} else if (Section.MARKET.name().equals(vo.getSection())) {
 			sec = Section.MARKET.getPageURL();
-			actionType="marketManagement&marketId=";
+			actionType="marketAdmin&marketId=";
 		} else {
 			//updates - they don't have a page - just link to the homepage /qs/<id>
 			sec = "";
-			actionType="updates&updatesId=";
+			actionType="updates&updateId=";
 		}
 
-		vo.setHtml(new StringBuilder(100).append(fqdn).append("/").append(sec).append(qsPath).append(vo.getObjectId()).toString());
+		//add FQDN to relative (presumed local) URLs
+		if (!StringUtil.isEmpty(vo.getUrl()) && vo.getUrl().startsWith("/")) 
+			vo.setUrl(fqdn + vo.getUrl());
+		
+		vo.setPublicUrl(new StringBuilder(100).append(fqdn).append("/").append(sec).append(qsPath).append(vo.getObjectId()).toString());
 		vo.setAdminUrl(new StringBuilder(100).append(fqdn).append("/manage?actionType=").append(actionType).append(vo.getObjectId()).toString());
 	}
 }

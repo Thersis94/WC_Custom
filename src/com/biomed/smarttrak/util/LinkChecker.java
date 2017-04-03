@@ -1,8 +1,8 @@
 package com.biomed.smarttrak.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.SocketException;
 import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -38,8 +38,8 @@ import com.siliconmtn.util.UUIDGenerator;
 public class LinkChecker extends CommandLineUtil {
 
 	static final String HREF_EXP = "<a([^<>]*)href=(\"|')(\\S*)(\"|')([^<>]*)>"; 
-	static final int HTTP_CONN_TIMEOUT = 15000;
-	static final int HTTP_READ_TIMEOUT = 15000;
+	static final int HTTP_CONN_TIMEOUT = 10000;
+	static final int HTTP_READ_TIMEOUT = 10000;
 
 	//section & url constants
 	private static final String PRODUCTS = "products";
@@ -78,6 +78,8 @@ public class LinkChecker extends CommandLineUtil {
 	List<String> recentlyChecked;
 	StringEncoder encoder;
 	List<String> getDomains; //known domains that don't support HTTP HEAD requests - set in config file
+	boolean onlyBroken;
+	String mockUserAgent;
 
 	//email reporting metrics
 	long startTime;
@@ -102,9 +104,12 @@ public class LinkChecker extends CommandLineUtil {
 		validUpdateIds = new ArrayList<>(5000);
 		recentlyChecked = new ArrayList<>(15000);
 		encoder = new StringEncoder();
-		getDomains = Arrays.asList( ((String)props.get("getDomains")).split(","));
+		getDomains = Arrays.asList(props.getProperty("getDomains").split(","));
 		linksFailed = new ArrayList<>(10000);
 		startTime = System.currentTimeMillis();
+		onlyBroken = Convert.formatBoolean(props.getProperty("checkAllBroken"));
+		mockUserAgent = StringUtil.checkVal(props.getProperty("mockUserAgent"));
+		System.setProperty("http.agent", "");
 	}
 
 
@@ -124,14 +129,20 @@ public class LinkChecker extends CommandLineUtil {
 	 */
 	@Override
 	public void run() {
-		String days = (String) props.getProperty("runInterval");
+		String days = props.getProperty("runInterval");
 		//populate our lookup tables for companies, markets, insights, and products. ..so we're not http-spamming our own site!
 		populateLookup("select market_id from custom.biomedgps_market where status_no in ('P','E')", validMarketIds);
 		populateLookup("select product_id from custom.biomedgps_product where status_no in ('P','E')", validProductIds);
 		populateLookup("select company_id from custom.biomedgps_company where status_no in ('P','A')", validCompanyIds);
 		populateLookup("select insight_id from custom.biomedgps_insight where status_cd in ('P','E')", validInsightIds);
 		populateLookup("select update_id from custom.biomedgps_update", validUpdateIds);
-		populateLookup("select url_txt from custom.biomedgps_link where check_dt > (CURRENT_DATE - interval '"+days+" days')", recentlyChecked);
+		
+		if (onlyBroken) {
+			//consider everything NOT a 404 as valid, and we won't check them
+			populateLookup("select url_txt from custom.biomedgps_link where status_no != 404", recentlyChecked);
+		} else {
+			populateLookup("select url_txt from custom.biomedgps_link where check_dt > (CURRENT_DATE - interval '"+days+" days')", recentlyChecked);
+		}
 
 		deleteArchives(days);
 		
@@ -291,7 +302,7 @@ public class LinkChecker extends CommandLineUtil {
 			return;
 		}
 
-		String thecusPath = (String) props.getProperty("sBinaryPath");
+		String thecusPath = props.getProperty("sBinaryPath");
 		String relaPath = relaUrl.replaceAll("(?i)/(secBinary|media)/","/"); //remove protocol & domain
 		if (!relaPath.startsWith("/org/"))
 			relaPath = "/org/BMG_SMARTTRAK" + relaPath;
@@ -328,23 +339,24 @@ public class LinkChecker extends CommandLineUtil {
 	 * @param vo
 	 * @param url
 	 */
-	protected void httpHeadTest(LinkVO vo, URL url) throws Exception {
+	protected void httpHeadTest(LinkVO vo, URL url) throws IOException {
 		log.debug("HEAD " + vo.getUrl());
 		try {
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("HEAD");
 			conn.setConnectTimeout(HTTP_CONN_TIMEOUT);
 			conn.setReadTimeout(HTTP_READ_TIMEOUT);
-			conn.addRequestProperty("User-Agent", "SMT Link Checker");
+			conn.addRequestProperty("User-Agent", mockUserAgent);
 			conn.connect();
 			vo.setOutcome(conn.getResponseCode());
 
 			//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
 			conn.getInputStream().close();
 			conn.disconnect();
-		} catch (SocketException se) {
-			log.fatal("ADD TO GET LIST " + url.getHost());
+		} catch (Exception se) {
 			httpGetTest(vo,url);
+			//if the above line succeeds, we know this domain does not support HEAD requests
+			log.fatal("ADD TO GET LIST " + url.getHost());
 		}
 	}
 
@@ -353,13 +365,13 @@ public class LinkChecker extends CommandLineUtil {
 	 * try a GET instead of HEAD
 	 * @param vo
 	 */
-	protected void httpGetTest(LinkVO vo, URL url) throws Exception {
+	protected void httpGetTest(LinkVO vo, URL url) throws IOException {
 		log.debug("GET " + vo.getUrl());
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		conn.setRequestMethod("GET");
 		conn.setConnectTimeout(HTTP_CONN_TIMEOUT);
 		conn.setReadTimeout(HTTP_READ_TIMEOUT);
-		conn.addRequestProperty("User-Agent", "SMT Link Checker");
+		conn.addRequestProperty("User-Agent", mockUserAgent);
 		conn.connect();
 		vo.setOutcome(conn.getResponseCode());
 
@@ -376,7 +388,12 @@ public class LinkChecker extends CommandLineUtil {
 	 * @param t
 	 */
 	protected void deleteArchives(String days) {
-		String sql = "delete from custom.biomedgps_link where check_dt < (CURRENT_DATE - interval '"+days+" days')";
+		String sql;
+		if (onlyBroken) {
+			sql = "delete from custom.biomedgps_link where status_no=404";
+		} else {
+			sql = "delete from custom.biomedgps_link where check_dt < (CURRENT_DATE - interval '"+days+" days')";
+		}
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int cnt = ps.executeUpdate();
@@ -461,7 +478,7 @@ public class LinkChecker extends CommandLineUtil {
 	 * @param msg
 	 */
 	protected void addBrokenLinkTable(StringBuilder msg) {
-		String baseDomain = (String) props.getProperty("baseDomain");
+		String baseDomain = props.getProperty("baseDomain");
 		//add a table of failed links
 		msg.append("<h4>Broken Links (").append(linksFailed.size()).append(")</h4>\n");
 		msg.append("<table border='1' width='95%' align='center'><thead><tr>");
