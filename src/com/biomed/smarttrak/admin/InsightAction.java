@@ -523,7 +523,7 @@ public class InsightAction extends AbstractTreeAction {
 	 * @param u
 	 */
 	protected void deleteFromSolr(InsightVO ivo) {
-		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
+		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes(), false)) {
 			sau.removeDocument(ivo.getDocumentId());
 		} catch (Exception e) {
 			log.error("Error Deleting from Solr.", e);
