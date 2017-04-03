@@ -20,6 +20,8 @@ public class LinkVO {
 	private String html;
 	private Date lastChecked;
 	private int outcome;
+	private String adminUrl;
+	private String publicUrl;
 
 	public LinkVO(String section, String id, String html) {
 		this.setSection(section);
@@ -37,6 +39,10 @@ public class LinkVO {
 		return html;
 	}
 
+	public void setHtml(String html) {
+		this.html = html;
+	}
+
 	public int getOutcome() {
 		return this.outcome;
 	}
@@ -44,6 +50,10 @@ public class LinkVO {
 	public void setOutcome(int i) {
 		this.outcome = i;
 		this.setLastChecked(Calendar.getInstance().getTime());
+	}
+
+	public void setOutcomeNo(int i) {
+		this.outcome = i;
 	}
 
 	public String getUrl() {
@@ -76,5 +86,21 @@ public class LinkVO {
 
 	public void setLastChecked(Date lastChecked) {
 		this.lastChecked = lastChecked;
+	}
+
+	public String getAdminUrl() {
+		return adminUrl;
+	}
+
+	public void setAdminUrl(String adminUrl) {
+		this.adminUrl = adminUrl;
+	}
+
+	public String getPublicUrl() {
+		return publicUrl;
+	}
+
+	public void setPublicUrl(String publicUrl) {
+		this.publicUrl = publicUrl;
 	}
 }
