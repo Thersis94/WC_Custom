@@ -58,6 +58,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	private String dateEnd;
 	private Date reportDateStart;
 	private Date reportDateEnd;
+	private Map<String,String> monthNames;
 		
 	/**
 	* Constructor
@@ -65,6 +66,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	public UserUtilizationReportAction() {
 		super();
 		monthKeyMap = new HashMap<>();
+		monthNames = formatMonthNames();
 	}
 
 	/**
@@ -73,6 +75,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	public UserUtilizationReportAction(ActionInitVO arg0) {
 		super(arg0);
 		monthKeyMap = new HashMap<>();
+		monthNames = formatMonthNames();
 	}
 
 	/**
@@ -93,14 +96,15 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		dateEnd = formatReportDate(req.getParameter("dateEnd"), false, isDaily);
 
 		// 1. get user pageviews for the given start date.
-		List<PageViewVO> pageViews = retrieveBasePageViews(siteId);
+		List<PageViewVO> pageViews = retrieveBasePageViews(siteId,isDaily);
 		log.debug("raw pageViews size: " + pageViews.size());
 
 		// 2. parse the pageviews into a map of page counts for each user
 		Map<String,Map<String,Integer>> pageCounts = parsePageCounts(pageViews,isDaily);
 
 		// 3. if we retrieved nothing, return a proper report data map
-		if (pageCounts.size() == 0) return formatReportDataMap(new HashMap<>());
+		if (pageCounts.size() == 0) 
+			return formatReportDataMap(new HashMap<>());
 
 		// 4. get accounts and account users data for the profile IDs for which we found page views.
 		Map<AccountVO, List<UserVO>> accounts = retrieveAccountsUsers(se, pageCounts, siteId);
@@ -199,10 +203,11 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected List<PageViewVO> retrieveBasePageViews(String siteId) throws ActionException {
+	protected List<PageViewVO> retrieveBasePageViews(String siteId,
+			boolean isDaily) throws ActionException {
 		log.debug("retrieveBasePageViews...");
 		PageViewRetriever pvr = new PageViewRetriever(dbConn);
-		return pvr.retrievePageViewsRollup(siteId,dateStart,dateEnd);
+		return pvr.retrievePageViewsRollup(siteId,dateStart,dateEnd,isDaily);
 	}
 	
 	/**
@@ -272,16 +277,15 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	protected Map<String, Map<String,Integer>> parsePageCounts(List<PageViewVO> pageViews, 
 			boolean isDaily) {
 		String currId;
-		String currKey;
+		String currDateKey;
 
 		// Map of profileId to Map of Month, pageCount
 		Map< String, Map<String,Integer>> pageCounts = new HashMap<>();
-		Calendar cal = Calendar.getInstance();
 
 		for (PageViewVO page : pageViews) {
 			currId = page.getProfileId();
-			currKey = buildUnitKey(isDaily, cal, page.getVisitDate());
-			addPageCount(pageCounts,currId,currKey);
+			currDateKey = buildDateKey(page.getReferenceCode(),isDaily);
+			addPageCount(pageCounts,currId,currDateKey,page.getResponseCode());
 		}
 
 		log.debug("pageCounts map size: " + pageCounts.size());
@@ -289,56 +293,52 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * Adds the page count to the user's page count map.  If the user doesn't exist on
-	 * the pageCounts map, the user is added.  If a map entry for the given unit key doesn't
-	 * exist, it is created.
+	 * Adds the rolled up page count to the user's page count map.  If the user doesn't exist on
+	 * the pageCounts map, the user is added.
 	 * @param pageCounts
 	 * @param profileId
-	 * @param countKey
+	 * @param dateKey
+	 * @param rolledUpPageCount
 	 */
 	protected void addPageCount(Map<String,Map<String,Integer>> pageCounts, 
-			String profileId, String countKey) {
+			String profileId, String dateKey, Integer rolledUpPageCount) {
+		// if user doesn't exist on main map, add.
 		if (pageCounts.get(profileId) == null) {
-			pageCounts.put(profileId, new HashMap<>());
+			pageCounts.put(profileId, new LinkedHashMap<>());
 		}
-		
-		Map<String,Integer> unitCount = pageCounts.get(profileId);
-		if (unitCount.get(countKey) == null) {
-			unitCount.put(countKey, 1);
-		} else {
-			unitCount.put(countKey, unitCount.get(countKey) + 1);
-		}
+		// put the count for this date on user's count map
+		pageCounts.get(profileId).put(dateKey, rolledUpPageCount);
 	}
 	
 	/**
-	 * Builds the count map key from the given date depending upon the type of report.
+	 * Builds the page count date key from the given String depending upon the type of report.
+	 * @param refCode
 	 * @param isDailyRollup
-	 * @param cal
-	 * @param date
 	 * @return
 	 */
-	protected String buildUnitKey(boolean isDailyRollup, Calendar cal, Date date) {
+	protected String buildDateKey(String refCode,boolean isDailyRollup) {
 		if (isDailyRollup) {
 			// return String representing the date in slash pattern (e.g. 10/27/16)
-			return Convert.formatDate(date,Convert.DATE_SLASH_PATTERN);
+			return refCode;
 		}
 		// return String representing the date as 'month year' (e.g. Oct 16)
-		return formatMonthlyUnitKey(cal,date);
+		return formatMonthlyDateKey(refCode);
 	}
 
 	/**
-	 * Formats the unit key used for the user's monthly page counts map.
-	 * @param cal
-	 * @param date
+	 * Formats the page count date key used for the user's monthly page counts map.
+	 * @param refCode
 	 * @return
 	 */
-	protected String formatMonthlyUnitKey(Calendar cal, Date date) {
-		cal.setTime(date);
-		String unitKey = cal.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US) + " " + (cal.get(Calendar.YEAR)%100);
+	protected String formatMonthlyDateKey(String refCode) {
+		// split refCode into month (index 0) and year (index 1)
+		String[] keyParts = refCode.split(PageViewRetriever.ROLLUP_DATE_DELIMITER);
+		String unitKey = monthNames.get(keyParts[0]) + " " + keyParts[1].substring(keyParts[1].length() - 2);
 		if (monthKeyMap.get(unitKey) != null) {
 			return monthKeyMap.get(unitKey);
 		} else {
 			monthKeyMap.put(unitKey,unitKey);
+			log.debug("added unitkey: " + unitKey);
 			return unitKey;
 		}
 	}
@@ -367,6 +367,9 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 
 			currAcct = rs.getString("account_id");
 			currPid = rs.getString("profile_id");
+			
+			if (currPid == null) 
+				continue;
 
 			if (! currAcct.equalsIgnoreCase(prevAcct)) {
 				// first time through or changed accounts
@@ -380,15 +383,17 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 				acct.setAccountName(rs.getString("account_nm"));
 				
 				// init user list for this acct.
-				users = new ArrayList<>();
+				users = formatUsersList(users,true);
 				
 				// init new user.
 				user = formatNextUser(se,rs,currPid);
 				
 			} else {
 				// ensure non-null objects.
-				if (users == null) users = new ArrayList<>();
-				if (user == null) user = formatNextUser(se,rs,currPid);
+				users = formatUsersList(users,false);
+
+				if (user == null) 
+					user = formatNextUser(se,rs,currPid);
 				
 				// check for user change
 				if (! currPid.equalsIgnoreCase(prevPid)) {
@@ -408,6 +413,12 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		}
 		log.debug("accounts map size: " + accounts.size());
 		return accounts;
+	}
+	
+	protected List<UserVO> formatUsersList(List<UserVO> users, boolean returnNewList) {
+		if (users == null || returnNewList) 
+			return new ArrayList<>();
+		return users;
 	}
 		
 	/**
@@ -450,7 +461,9 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		sql.append("and ac.status_no != ? and us.status_cd != ? ");
 		sql.append("and us.profile_id in (");
 		for (int i = 0; i < numProfileIds; i++) {
-			if (i > 0) sql.append(",");
+			if (i > 0) 
+				sql.append(",");
+			
 			sql.append("?");
 		}
 		sql.append(")");
@@ -462,7 +475,9 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		sql.append("inner join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
 		sql.append("and rd.register_field_id in (");
 		for (int i = 0; i < numFields; i++) {
-			if (i > 0) sql.append(",");
+			if (i > 0) 
+				sql.append(",");
+			
 			sql.append("?");
 		}
 		sql.append(") ");
@@ -479,6 +494,25 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		fieldMap.put(RegistrationMap.TITLE.getFieldId(), "Title");
 		fieldMap.put(RegistrationMap.UPDATES.getFieldId(), "Updates");
 		return fieldMap;
+	}
+
+	/**
+	 * Uses a Calendar instance to get the display names of the months of the year in 
+	 * 'short' form (e.g. Jan, Feb, etc.) and returns them in a map useful to us.
+	 * @param cal
+	 * @param loc
+	 * @return
+	 */
+	protected Map<String,String> formatMonthNames() {
+		Calendar cal = GregorianCalendar.getInstance();
+		Map<String,String> displayMonths = new HashMap<>();
+		Map<String,Integer> calMonths = cal.getDisplayNames(Calendar.MONTH, Calendar.SHORT, Locale.US);
+		Integer monthVal;
+		for (Map.Entry<String,Integer> calMonth : calMonths.entrySet()) {
+			monthVal = calMonth.getValue() + 1; // Calendar months are zero-based, compensate here.
+			displayMonths.put(monthVal.toString(),calMonth.getKey());
+		}
+		return displayMonths;
 	}
 	
 	/**
