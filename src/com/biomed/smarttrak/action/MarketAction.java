@@ -21,6 +21,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -251,36 +252,61 @@ public class MarketAction extends AbstractTreeAction {
 	 * @param res
 	 */
 	protected void orderMarkets(SolrResponseVO res) {
-		Map<String, Map<String, List<SolrDocument>>> groups = new TreeMap<>();
+		List<Node> markets = new ArrayList<>();
 		for (SolrDocument doc : res.getResultDocuments()) {
+			Node n = new Node((String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID), (String) doc.getFieldValue("parentId_s"));
+			log.debug(n.getNodeId()+"|"+n.getParentId());
+			n.setUserObject(doc);
+			markets.add(n);
+		}
+		
+		Tree t = new Tree(markets);
+		
+		putModuleData(prepDocuments(t));
+	}
+	
+
+	/**
+	 * Prepare the values that are used to check the proper sorting for the document
+	 * and add it to the proper position
+	 * @param doc
+	 * @param isChild
+	 * @param groups
+	 */
+	private Object prepDocuments(Tree t) {
+		Map<String, Map<String, List<Node>>> groups = new TreeMap<>();
+		
+		for (Node n : t.getRootNode().getChildren()) {
 			//use level 3 of the hierarchy as group name, or a default "Other" otherwise
-			String[] hierarchy = StringUtil.checkVal(doc.get(SearchDocumentHandler.HIERARCHY)).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+			String[] hierarchy = StringUtil.checkVal(((SolrDocument)n.getUserObject()).get(SearchDocumentHandler.HIERARCHY)).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
 			String section = hierarchy.length < 3 ? DEFAULT_GROUP : hierarchy[2];
 			String subgroup = hierarchy.length < 4? DEFAULT_SUBGROUP : hierarchy[3];
-			addMarket(doc, groups, section, subgroup);
+			addMarket(n, groups, section, subgroup);
 		}
-		putModuleData(groups);
+		
+		return groups;
 	}
-
+	
+	
 	/**
 	 * Add the current market to the supplied group.
 	 * @param doc
 	 * @param groups
 	 * @param groupName
 	 */
-	protected void addMarket(SolrDocument doc, Map<String, Map<String, List<SolrDocument>>> groups, String groupName, String subgroup) {
+	protected void addMarket(Node n, Map<String, Map<String, List<Node>>> groups, String groupName, String subgroup) {
 		//create the group if it doesn't exist yet
 		if (!groups.containsKey(groupName)) {
-			groups.put(groupName, new HashMap<String, List<SolrDocument>>());
+			groups.put(groupName, new HashMap<String, List<Node>>());
 		}
 		
 		// Get the group and check if the subgroup exists
-		Map<String, List<SolrDocument>> group = groups.get(groupName);
+		Map<String, List<Node>> group = groups.get(groupName);
 		if (!group.containsKey(subgroup)) {
-			group.put(subgroup, new ArrayList<SolrDocument>());
+			group.put(subgroup, new ArrayList<Node>());
 		}
 		
-		group.get(subgroup).add(doc);
+		group.get(subgroup).add(n);
 	}
 
 	@Override
