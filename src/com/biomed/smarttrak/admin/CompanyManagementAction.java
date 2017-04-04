@@ -114,6 +114,10 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			retrieveCompany(req.getParameter(COMPANY_ID), req);
 		} else if (!req.hasParameter("add")) {
 			retrieveCompanies(req);
+		} else if (req.getSession().getAttribute("hierarchyTree") == null){
+			// This is a form for a new market make sure that the hierarchy tree is present 
+			Tree t = loadDefaultTree();
+			req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		}
 	}
 	

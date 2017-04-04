@@ -270,6 +270,10 @@ public class ProductManagementAction extends AbstractTreeAction {
 			retrieveProduct(req.getParameter("productId"), req);
 		} else if (!req.hasParameter("add")) {
 			retrieveProducts(req);
+		} else if (req.getSession().getAttribute("hierarchyTree") == null){
+			// This is a form for a new market make sure that the hierarchy tree is present 
+			Tree t = loadDefaultTree();
+			req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		}
 	}
 
