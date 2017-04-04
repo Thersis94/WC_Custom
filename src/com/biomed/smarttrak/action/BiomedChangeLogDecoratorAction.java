@@ -144,8 +144,7 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 
 				EditPath e = getEditPath(req.getParameter("actionType"));
 				ApprovalVO app = buildApprovalRecord(req, diff, original, e);
-				String typeCd = (String)req.getSession().getAttribute(ChangeLogUtil.CHANGELOG_DIFF_TYPE_CD);
-				ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), origTxt, diffTxt, typeCd);
+				ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), origTxt, diffTxt, e.name());
 				new ChangeLogUtil(dbConn, attributes).saveChangeLog(clv);
 			}
 
