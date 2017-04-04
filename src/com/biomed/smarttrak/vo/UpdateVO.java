@@ -110,8 +110,8 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 		this.twitterTxt = req.getParameter("twitterTxt");
 		this.statusCd = req.getParameter("statusCd");
 		this.publishDt = Convert.formatDate(req.getParameter("publishDt"));
-		this.orderNo = Convert.formatInteger("orderNo");
-		this.emailFlg = Convert.formatInteger("emailFlg");
+		this.orderNo = Convert.formatInteger(req.getParameter("orderNo"));
+		this.emailFlg = Convert.formatInteger(req.getParameter("emailFlg"), 1);
 		if (req.hasParameter("sectionId")) {
 			String [] s = req.getParameterValues("sectionId");
 			for (String sec : s) {
