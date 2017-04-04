@@ -43,7 +43,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, ChangeLogIntfc {
 
 	public enum InsightStatusCd {
-		P("Published"), D("Deleted"), E("Edit");
+		P("Published"), D("Deleted"), E("Edited");
 		private String statusName;
 		InsightStatusCd(String statusName) {
 			this.statusName = statusName;
@@ -90,7 +90,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 		SMARTTRAK_VIDEO_TIPS(15, "SmartTRAK Video Tips"),
 		STARTUP_SPOTLIGHT(2, "Start-up Spotlight"),
 		UC_VIEWPOINT(3, "U.C. Viewpoints"),
-		UNCATIGORIZED(6, "Uncatigorized");
+		UNCATIGORIZED(6, "Uncategorized");
 
 		private int val;
 		private String text;

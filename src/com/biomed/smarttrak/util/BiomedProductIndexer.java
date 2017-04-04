@@ -267,7 +267,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 				((List<String>)p.getAttribute("alliance")).add(alliance.getAllianceTypeName());
 				((List<String>)p.getAttribute("allyId")).add(alliance.getAllyId());
 				((List<String>)p.getAttribute("allianceId")).add(alliance.getAllianceTypeId());
-				((List<String>)p.getAttribute("allySearch")).add(alliance.getAllyName().toLowerCase());
+				((List<String>)p.getAttribute("allySearch")).add(alliance.getAllyName().toLowerCase() + " " + alliance.getAllianceTypeName().toLowerCase());
 			}
 		}
 	}
@@ -472,10 +472,11 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		StringBuilder sql = new StringBuilder(125);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
-		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
 		sql.append("ON a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
 		if (id != null) sql.append("WHERE x.PRODUCT_ID = ? ");
 		sql.append("ORDER BY a.ATTRIBUTE_ID ");
+		
 		List<Node> nodes = new ArrayList<>();
 		DBProcessor db = new DBProcessor(dbConn);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

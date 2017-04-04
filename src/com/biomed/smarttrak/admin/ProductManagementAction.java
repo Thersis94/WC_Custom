@@ -416,9 +416,13 @@ public class ProductManagementAction extends AbstractTreeAction {
 			sql.append("WHERE lower(PRODUCT_NM) like ?");
 			params.add("%" + req.getParameter("search").toLowerCase() + "% ");
 		}
-		sql.append("ORDER BY PRODUCT_NM LIMIT ? OFFSET ? ");
-		params.add(Convert.formatInteger(req.getParameter("limit")));
-		params.add(Convert.formatInteger(req.getParameter("offset")));
+		sql.append("ORDER BY PRODUCT_NM ");
+		int limit  = Convert.formatInteger(req.getParameter("limit"));
+		if (limit != 0) {
+			sql.append("LIMIT ? OFFSET ? ");
+			params.add(Convert.formatInteger(req.getParameter("limit")));
+			params.add(Convert.formatInteger(req.getParameter("offset")));
+		}
 		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
@@ -475,6 +479,13 @@ public class ProductManagementAction extends AbstractTreeAction {
 		req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		req.getSession().setAttribute("productName", product.getProductName());
 
+		if ("alliance".equals(req.getParameter("jsonType")))
+			addAlliances(product);
+		if ("attribute".equals(req.getParameter("jsonType")))
+			addAttributes(product);
+		if ("regulation".equals(req.getParameter("jsonType")))
+			addRegulations(product);
+		
 		getActiveSections(product);
 		super.putModuleData(product);
 	}

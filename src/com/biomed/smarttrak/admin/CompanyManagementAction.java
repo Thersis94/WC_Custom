@@ -317,20 +317,29 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		List<Object> params = new ArrayList<>();
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select c.COMPANY_NM, c.COMPANY_ID, CASE WHEN (ci.investee_company_id  is null) THEN 0 ELSE 1 end as INVESTED_FLG ");
+		sql.append("select c.COMPANY_NM, c.COMPANY_ID, c.COMPLETION_SCORE_NO, c.STATUS_NO, ");
+		sql.append("CASE WHEN (ci.investee_company_id  is null) THEN 0 ELSE 1 end as INVESTED_FLG ");
 		sql.append("FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("left join ").append(customDb).append("biomedgps_company_investor ci ");
-		sql.append("on c.COMPANY_ID = ci.investee_company_id ");
+		sql.append("on c.COMPANY_ID = ci.investee_company_id WHERE 1=1 ");
+		
+		if (!req.hasParameter("inactive")) {
+			sql.append("and STATUS_NO = '").append(CompanyStatus.P.toString()).append("' ");
+		}
 		
 		// If the request has search terms on it add them here
 		if (req.hasParameter("search")) {
-			sql.append("WHERE lower(COMPANY_NM) like ?");
+			sql.append("and lower(COMPANY_NM) like ?");
 			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
 		sql.append("group by c.COMPANY_NM, c.COMPANY_ID, INVESTED_FLG ");
-		sql.append("ORDER BY COMPANY_NM LIMIT ? OFFSET ? ");
-		params.add(Convert.formatInteger(req.getParameter("limit")));
-		params.add(Convert.formatInteger(req.getParameter("offset")));
+		sql.append("ORDER BY COMPANY_NM ");
+		int limit  = Convert.formatInteger(req.getParameter("limit"));
+		if (limit != 0) {
+			sql.append("LIMIT ? OFFSET ? ");
+			params.add(Convert.formatInteger(req.getParameter("limit")));
+			params.add(Convert.formatInteger(req.getParameter("offset")));
+		}
 		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
@@ -388,6 +397,15 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		req.getSession().setAttribute("companyName", company.getCompanyName());
 
+		addInvestors(company);
+		
+		if ("location".equals(req.getParameter("jsonType")))
+			addLocations(company);
+		if ("alliance".equals(req.getParameter("jsonType")))
+			addAlliances(company);
+		if ("attribute".equals(req.getParameter("jsonType")))
+			addAttributes(company);
+		
 		getActiveSections(company);
 		super.putModuleData(company);
 	}
@@ -418,7 +436,10 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			CompanyAttributeVO c = (CompanyAttributeVO)o;
 			Node n = t.findNode(c.getAttributeId());
 			String[] split = n.getFullPath().split(Tree.DEFAULT_DELIMITER);
-			if (split.length >= 2) {
+			if ("LINK".equals(c.getAttributeTypeName()) ||
+					"ATTACH".equals(c.getAttributeTypeName())) {
+				c.setGroupName(StringUtil.capitalizePhrase(c.getAttributeName()));
+			} else if (split.length >= 2) {
 				c.setGroupName(split[1]);
 			}
 			company.addCompanyAttribute(c);

@@ -5,9 +5,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+
 //app libs 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrDocument;
+
+
 //Wc_custom
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 //baselibs
@@ -36,14 +40,14 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 public class FeaturedInsightAction extends InsightAction {
 
 	protected static final String ACL_GRANTED_DELIMITER = "" + AccessControlQuery.GRANT + AccessControlQuery.GROUP + AccessControlQuery.ACL_DELIMITER;
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
+
 		//setting pmid for solr action check
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -96,10 +100,11 @@ public class FeaturedInsightAction extends InsightAction {
 		String[] docP = docPermissions.split(" ");
 		//compare them to the set
 		for (String item : Arrays.asList(docP)){
-			int count = StringUtils.countMatches(item, SearchDocumentHandler.HIERARCHY_DELIMITER);
-			if (count == 1 && userRoles.contains(item.replace(ACL_GRANTED_DELIMITER, ""))){
-				authorizedFeatures.add(solDoc);
-				break;
+			for( String userRole : userRoles){
+				if (item.replace(ACL_GRANTED_DELIMITER, "").startsWith(userRole)){
+					authorizedFeatures.add(solDoc);
+					break;
+				}
 			}
 		}
 	}	

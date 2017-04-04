@@ -46,9 +46,7 @@ public class UpdateIndexer extends SMTAbstractIndex {
 	}
 
 	public static UpdateIndexer makeInstance(Map<String, Object> attributes) {
-		Properties props = new Properties();
-		props.putAll(attributes);
-		return new UpdateIndexer(props);
+		return new UpdateIndexer(makeProperties(attributes));
 	}
 
 

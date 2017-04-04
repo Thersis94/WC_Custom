@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
+import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
@@ -53,6 +54,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * Gets the financial data to display in the table and charts
 	 * 
 	 * @param dash
+	 * @param sections
 	 */
 	@Override
 	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections) {
@@ -107,6 +109,66 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		}
 		
 		return scenarioJoins;
+	}
+	
+	/**
+	 * Returns the sql for retrieving financial data. 
+	 * @return
+	 */
+	@Override
+	protected String getFinancialDataSql(FinancialDashVO dash) {
+		StringBuilder sql = new StringBuilder(2600);
+
+		if (dash.getEditMode()) {
+			sql.append(getEditSelectSql(dash));
+		} else {
+			sql.append(getCommonSelectSql(dash));
+		}
+		
+		sql.append(getSelectSql(dash));
+		sql.append(getJoinSql(dash));
+		sql.append(getCommonEndSql(dash));
+
+		log.debug("Financial Data SQL: " + sql.toString());
+		
+		return sql.toString();
+	}
+	
+	/**
+	 * Gets the sql required for the overlay data edit mode
+	 * 
+	 * @param dash
+	 * @return
+	 */
+	protected StringBuilder getEditSelectSql(FinancialDashVO dash) {
+		StringBuilder sql = new StringBuilder(700);
+		TableType tt = dash.getTableType();
+		
+		sql.append("select r.REVENUE_ID as ROW_ID, ");
+		
+		if (TableType.COMPANY == tt) {
+			sql.append("c.COMPANY_NM as ROW_NM, r.COMPANY_ID, ");
+		} else {
+			// When editing market data for a specific company, we always list 4 levels down in the heirarchy
+			int offset = 4;
+			
+			// Use the appropriate parent in the heirarchy
+			sql.append("CASE ");
+			for (int i = 7; i > 0; i--) {
+				sql.append("WHEN s").append(i).append(".PARENT_ID = ? THEN s").append(i-offset < 1 ? 1 : i-offset).append(".SECTION_NM ");
+			}
+			sql.append("END as ROW_NM, ");
+
+			sql.append("CASE ");
+			for (int i = 7; i > 0; i--) {
+				sql.append("WHEN s").append(i).append(".PARENT_ID = ? THEN s").append(i-offset < 1 ? 1 : i-offset).append(".SECTION_ID ");
+			}
+			sql.append("END as SECT_ID, ");
+		}
+		
+		sql.append("r.REGION_CD, r.YEAR_NO, ");
+		
+		return sql;
 	}
 	
 	/**

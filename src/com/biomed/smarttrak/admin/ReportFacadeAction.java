@@ -1,10 +1,14 @@
 package com.biomed.smarttrak.admin;
 
+import javax.servlet.http.HttpServletResponse;
+
 //WC custom
 import com.biomed.smarttrak.admin.report.AccountReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
+import com.biomed.smarttrak.admin.report.LinkReportAction;
+import com.biomed.smarttrak.admin.report.LinkReportVO;
 import com.biomed.smarttrak.admin.report.SupportReportAction;
 import com.biomed.smarttrak.admin.report.SupportReportVO;
 import com.biomed.smarttrak.admin.report.UserActivityAction;
@@ -16,12 +20,15 @@ import com.biomed.smarttrak.admin.report.UserPermissionsReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationDailyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationMonthlyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
-import com.biomed.smarttrak.admin.report.UserUtilizationReportAction.UtilizationReportType;
+
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.util.StringUtil;
+
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -47,20 +54,22 @@ public class ReportFacadeAction extends SBActionAdapter {
 		COMPANY_SEGMENTS,
 		USER_LIST,
 		USER_PERMISSIONS,
-		UTILIZATION,
-		SUPPORT
+		USAGE_ROLLUP_DAILY,
+		USAGE_ROLLUP_MONTHLY,
+		SUPPORT,
+		LINK;
 	}
-	
+
 	/**
-	* Constructor
-	*/
+	 * Constructor
+	 */
 	public ReportFacadeAction() {
 		super();
 	}
 
 	/**
-	* Constructor
-	*/
+	 * Constructor
+	 */
 	public ReportFacadeAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
@@ -92,11 +101,17 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case USER_PERMISSIONS:
 				rpt = generateUserPermissionsReport(req);
 				break;
-			case UTILIZATION:
-				rpt = generateUserUtilizationReport(req);
+			case USAGE_ROLLUP_DAILY:
+				rpt = generateUserUtilizationReport(req,true);
+				break;
+			case USAGE_ROLLUP_MONTHLY:
+				rpt = generateUserUtilizationReport(req,false);
 				break;
 			case SUPPORT:
 				rpt = generateSupportReport(req);
+				break;
+			case LINK:
+				rpt = generateLinkReport(req);
 				break;
 			default:
 				break;
@@ -104,8 +119,31 @@ public class ReportFacadeAction extends SBActionAdapter {
 
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, doRedirect);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+
+		//delete the 'waiting' cookie on the response, so the loading icon disappears
+		HttpServletResponse resp = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
+		CookieUtil.add(resp, "reportLoadingCookie", "", "/", 0);
 	}
-	
+
+
+	/**
+	 * Generates the Account report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateLinkReport(ActionRequest req) 
+			throws ActionException {
+		log.debug("generating Link Report...");
+		LinkReportAction ara = new LinkReportAction();
+		ara.setDBConnection(getDBConnection());
+		ara.setAttributes(getAttributes());
+		LinkReportVO rpt = new LinkReportVO();
+		rpt.setData(ara.retrieveData(req));
+		return rpt;
+	}
+
+
 	/**
 	 * Generates the Account report.
 	 * @param req
@@ -124,7 +162,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		rpt.setData(ara.retrieveAccountsList(req));
 		return rpt;
 	}
-	
+
 	/**
 	 * Generates the activity log report report.
 	 * @param req
@@ -141,7 +179,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		rpt.setData(uaa.retrieveUserActivity(req));
 		return rpt;
 	}
-	
+
 	/**
 	 * Generates the company segment report.
 	 * @param req
@@ -170,13 +208,13 @@ public class ReportFacadeAction extends SBActionAdapter {
 		UserListReportAction ul = new UserListReportAction();
 		ul.setDBConnection(dbConn);
 		ul.setAttributes(getAttributes());
-		
+
 		AbstractSBReportVO rpt = new UserListReportVO();
 		rpt.setData(ul.retrieveUserList(req));
 		return rpt;
-		
+
 	}
-	
+
 	/**
 	 * Generates the user permissions report
 	 * @param req
@@ -188,46 +226,34 @@ public class ReportFacadeAction extends SBActionAdapter {
 		UserPermissionsReportAction upra = new UserPermissionsReportAction();
 		upra.setDBConnection(dbConn);
 		upra.setAttributes(getAttributes());
-		
+
 		AbstractSBReportVO rpt = new UserPermissionsReportVO();
 		rpt.setData(upra.retrieveUserPermissions(req));
 		return rpt;
 
 	}
-	
+
 	/**
 	 * Generates the user utilization roll-up report.
 	 * @param req
+	 * @param isDaily
 	 * @return
 	 * @throws ActionException
 	 */
-	protected AbstractSBReportVO generateUserUtilizationReport(ActionRequest req) 
-			throws ActionException {
+	protected AbstractSBReportVO generateUserUtilizationReport(ActionRequest req, 
+			boolean isDaily) throws ActionException {
 		UserUtilizationReportAction uu = new UserUtilizationReportAction();
 		uu.setDBConnection(dbConn);
 		uu.setAttributes(getAttributes());
-		
-		String uReportType = StringUtil.checkVal(req.getParameter("utilizationReportType")).toUpperCase();
-		UtilizationReportType urt = null;
-		try {
-			urt = UtilizationReportType.valueOf(uReportType);
-		} catch (Exception e) {
-			urt = UtilizationReportType.DAYS_365;
-		}
-		
+		req.setParameter(UserUtilizationReportAction.PARAM_IS_DAILY, Boolean.toString(isDaily));
+
 		AbstractSBReportVO rpt;
-		
-		switch(urt){
-			case DAYS_14:
-			case DAYS_90:
-				rpt = new UserUtilizationDailyRollupReportVO();
-				break;
-			default:
-				rpt = new UserUtilizationMonthlyRollupReportVO();
-				break;
+		if (isDaily) {
+			rpt = new UserUtilizationDailyRollupReportVO();
+		} else {
+			rpt = new UserUtilizationMonthlyRollupReportVO();
 		}
-		
-		rpt.addAttributes(UserUtilizationReportAction.ATTRIB_REPORT_SUFFIX, urt.getReportSuffix());
+
 		rpt.setData(uu.retrieveUserUtilization(req));
 		return rpt;
 	}
@@ -247,7 +273,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		rpt.setData(sra.retrieveSupportData(req));
 		return rpt;
 	}
-	
+
 	/**
 	 * Converts a String to the equivalent ReportType.
 	 * @param reportType
@@ -261,6 +287,4 @@ public class ReportFacadeAction extends SBActionAdapter {
 			throw new ActionException("Unknown report type, " + reportType);
 		}
 	}
-	
-	
 }

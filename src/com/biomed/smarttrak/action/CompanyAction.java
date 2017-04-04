@@ -49,6 +49,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 public class CompanyAction extends AbstractTreeAction {
 	
 	private static final String DEFAULT_GROUP = "Other";
+	private static final int PRODUCT_PATH_LENGTH = 2;
 	
 	public CompanyAction() {
 		super();
@@ -210,12 +211,12 @@ public class CompanyAction extends AbstractTreeAction {
 		
 		// Markets using attributes too high up in the tree do not have enough
 		// information to be sorted properly and are placed in the extras group.
-		if (path.length < 3) {
+		if (path.length < PRODUCT_PATH_LENGTH) {
 			company.addProduct(path[path.length-1], prod);
 			return;
 		}
 		
-		company.addProduct(path[2], prod);
+		company.addProduct(path[PRODUCT_PATH_LENGTH-1], prod);
 	}
 	
 	
@@ -326,7 +327,11 @@ public class CompanyAction extends AbstractTreeAction {
 			
 			while(rs.next()) {
 				company.addCompanySection(new SectionVO(rs));
-				Node n = t.findNode(rs.getString("SECTION_ID"));
+				Node n = null;
+				
+				if (!StringUtil.isEmpty(rs.getString("SECTION_ID"))) 
+					n = t.findNode(rs.getString("SECTION_ID"));
+				
 				if (n != null) {
 					SectionVO sec = (SectionVO) n.getUserObject();
 					company.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
@@ -366,9 +371,16 @@ public class CompanyAction extends AbstractTreeAction {
 	private void addToAttributeMap(Map<String, List<CompanyAttributeVO>> attrMap, Tree attributeTree, CompanyAttributeVO attr) {
 		String[] path = attributeTree.findNode(attr.getAttributeId()).getFullPath().split("/");
 		
+		if ("LINK".equals(attr.getAttributeTypeName()) ||
+				"ATTACH".equals(attr.getAttributeTypeName())) {
+			addLink(attrMap, attr);
+			return;
+		}
+		
 		// Markets using attributes too high up in the tree do not have enough
 		// information to be sorted properly and are placed in the extras group.
 		if (path.length < 2) {
+			if (attrMap.get(DEFAULT_GROUP) == null) attrMap.put(DEFAULT_GROUP, new ArrayList<CompanyAttributeVO>());
 			attr.setGroupName(DEFAULT_GROUP);
 			attrMap.get(DEFAULT_GROUP).add(attr);
 			return;
@@ -384,6 +396,17 @@ public class CompanyAction extends AbstractTreeAction {
 		attrMap.get(n.getNodeName()).add(attr);
 	}
 	
+
+	/**
+	 * Add the link to the proper list, including specialized lists for attatchments
+	 * @param attrMap
+	 * @param attr
+	 */
+	private void addLink(Map<String, List<CompanyAttributeVO>> attrMap,
+			CompanyAttributeVO attr) {
+		if (attrMap.get(attr.getAttributeId()) == null) attrMap.put(attr.getAttributeId(), new ArrayList<CompanyAttributeVO>());
+		attrMap.get(attr.getAttributeId()).add(attr);
+	}
 
 	/**
 	 * Create the full attribute tree in order to determine the full ancestry of each attribute
