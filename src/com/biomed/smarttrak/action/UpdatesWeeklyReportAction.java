@@ -31,8 +31,6 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Mar 1, 2017
  ****************************************************************************/
 public class UpdatesWeeklyReportAction extends SBActionAdapter {
-	//Hard-coded id used to determine which email instances appear in modal listing
-	public static final String EMAIL_INSTANCELIST_ID = "665a5ebc1b6d6f097f000001eb030c9a";
 
 	public UpdatesWeeklyReportAction() {
 		super();
@@ -125,9 +123,6 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		String sectionId = req.getParameter("sectionId");
 
 		List<Object> updates = getUpdates(sectionId, req.hasParameter("actionType"));
-		
-		//set the email campaign id on request for modal
-		req.setAttribute("emailCampaignId", EMAIL_INSTANCELIST_ID);
 
 		putModuleData(updates);
 	}
