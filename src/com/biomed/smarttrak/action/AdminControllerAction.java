@@ -34,7 +34,7 @@ import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
-
+import com.biomed.smarttrak.admin.report.EmailReportAction;
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -167,6 +167,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("grid", GridChartAction.class);
 		ACTIONS.put("author", ManageAuthorAction.class);
 		ACTIONS.put("editorsDesk", EditorsDeskAction.class);
+		ACTIONS.put("emailReport", EmailReportAction.class);
 	}
 
 

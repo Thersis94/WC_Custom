@@ -33,7 +33,6 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * <b>Description: </b> Action for managing Update Notifications.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
- * 
  * @author Billy Larsen
  * @version 1.0
  * @since Feb 14, 2017
@@ -46,12 +45,11 @@ public class UpdatesAction extends AbstractTreeAction {
 	public static final String STATUS_CD = "statusCd"; //req param
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
-
-
 	public static final String ROOT_NODE_ID = MASTER_ROOT;
 
 	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
 	public static final String UPDATE_TYPE_CD = "updates";
+	
 	public enum UpdateType {
 		MARKET(12, "Market"),
 		REVENUES(15, "Revenues"),
@@ -92,6 +90,11 @@ public class UpdatesAction extends AbstractTreeAction {
 		buildSortMapper();
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
