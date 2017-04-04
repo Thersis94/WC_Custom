@@ -224,6 +224,30 @@ public class GridChartAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Retrieves all of the data for charts on a page when multiple
+	 * @param gridIds
+	 * @param schema
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public List<GridVO> retrievePageChartData(List<Object> gridIds, String schema) {
+		StringBuilder sql = new StringBuilder(164);
+		sql.append("select * from ").append(schema).append("biomedgps_grid a ");
+		sql.append("inner join ").append(schema).append("biomedgps_grid_detail b ");
+		sql.append("on a.grid_id = b.grid_id where a.grid_id in ( ");
+		for (int i=0; i < gridIds.size(); i++) {
+			sql.append((i > 0) ? "," : "").append("?");			
+		}
+		sql.append(") order by a.grid_id ");
+		log.debug(sql);
+		
+		DBProcessor db = new DBProcessor(dbConn);
+		List<?> data = db.executeSelect(sql.toString(), gridIds, new GridVO(), null);
+		
+		return (List<GridVO>)data;
+	}
+	
+	/**
 	 * Retrieves a single grid with its details
 	 * @param req
 	 * @param schema
