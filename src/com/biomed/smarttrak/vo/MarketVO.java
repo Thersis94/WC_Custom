@@ -80,6 +80,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 		super.setDocumentId(marketId);
 		this.marketId = marketId;
 	}
+	@SolrField(name="parentId_s")
 	@Column(name="parent_id")
 	public String getParentId() {
 		return parentId;

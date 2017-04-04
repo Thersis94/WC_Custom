@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+
+
 //wc_custom libs
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.vo.UpdateVO;
@@ -34,7 +36,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Mar 9, 2017
  ****************************************************************************/
 
-public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
+public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	/*Specifies how deep down the section hierarchy tree we intend to traverse*/
 	protected static final int SECTION_XR_DEPTH = 3;
 	
@@ -55,6 +57,16 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 	
 	/*
 	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.SectionHierarchyAction#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		//pass to superclass for portlet registration (WC admintool)
+		super.retrieve(req);
+	}
+	
+	/*
+	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	public void retrieve(ActionRequest req) throws ActionException{
@@ -65,7 +77,7 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 		Map<String, Tree> treeCollection = retrieveTreeCollection();
 		
 		//Add the updates to appropriate groupings
-		Map<String, Map<String, List<UpdateVO>>> data = buildUpdatesHierarchy(req, treeCollection);
+		Map<String, Map<String, List<UpdateVO>>> data = buildUpdatesHierarchy(req, treeCollection);		
 		
 		putModuleData(data);
 	}
@@ -119,17 +131,30 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 			
 			//Build the mapping for top-level sections, sub-sections, and updates
 			List<Node> nodes = t.preorderList();
-			Map<String, List<UpdateVO>> subSectionMap = new LinkedHashMap<>();
-			for (Node node : nodes) {
-				if(SECTION_XR_DEPTH == node.getDepthLevel() ){		
-					//locate the related updates and add to map
-					subSectionMap.put(node.getNodeName(), locateSectionUpdates(updates, node));
-				}
-			}
+			
 			//add root section id, with sub-section/updates, to the final collection
-			updatesHierarchyMap.put(rootSectionId, subSectionMap);
+			updatesHierarchyMap.put(rootSectionId, getSubSectionUpdates(nodes, updates));
 		}
 		return updatesHierarchyMap;
+	}
+	
+	/**
+	 * Returns a mapping of a sub section with it's associated updates.
+	 * @param nodes
+	 * @param updates
+	 * @return
+	 */
+	protected Map<String, List<UpdateVO>> getSubSectionUpdates(List<Node> nodes, List<UpdateVO> updates){
+		Map<String, List<UpdateVO>> subSectionMap = new LinkedHashMap<>();
+		for (Node node : nodes) {
+			if(SECTION_XR_DEPTH == node.getDepthLevel() ){		
+				//locate the related updates and add to map
+				List<UpdateVO> holder = locateSectionUpdates(updates, node);
+				if(!holder.isEmpty()) subSectionMap.put(node.getNodeName(), holder);
+			}
+		}
+		
+		return subSectionMap;
 	}
 	
 	/***
@@ -168,5 +193,14 @@ public class UpdatesSectionHierarchyAction extends SectionHierarchyAction {
 				holder.add(update);
 			}
 		}
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
+	 */
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 }

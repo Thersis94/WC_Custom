@@ -24,7 +24,6 @@ import com.google.gson.annotations.SerializedName;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
-
 /********************************************************************
  * <b>Title: </b>GoogleChartVO.java<br/>
  * <b>Description: </b>Hierarchical Structure for the GoogleCharts JSON Data<br/>
@@ -134,13 +133,10 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 				if (StringUtil.isEmpty(detail.getValues()[i])) continue;
 				cell = new GoogleChartCellVO();
 				
-				// Round the decimal places
-				double mult = Math.pow(10.0, grid.getDecimalDisplay());
-				double val = Convert.formatDouble(detail.getValues()[i], 0, true);
-				
-				double roundVal = Math.round(val * mult) / mult;
-				cell.setValue(roundVal);
+				// Store the data as a double and as a formatted string
+				cell.setValue(Convert.formatDouble(detail.getValues()[i], 0, true));
 				cell.setFormat(detail.getValues()[i]);
+				
 				row.addCell(cell);
 				validRows.add(i);
 				

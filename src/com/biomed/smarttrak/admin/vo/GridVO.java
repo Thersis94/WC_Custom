@@ -119,7 +119,6 @@ public class GridVO extends BeanDataVO {
 	private Date createDate;
 	private int numberRows = 0;
 	private int numberColumns = 0;
-	private int maxCols;
 	
 	// Data containers
 	@Expose(serialize = false, deserialize = false)
@@ -741,7 +740,7 @@ public class GridVO extends BeanDataVO {
 			
 			// Loop the values and add to container assumes "" for empty cell and null for unused column
 			for (int x = 1; x < 11; x++) {
-				if (values[x-1] != null || x <= maxCols) {
+				if (values[x-1] != null || x <= getNumberColumns()) {
 					row.put(FIELD_LABEL + x,StringUtil.checkVal(values[x-1]));
 				}
 			}
@@ -767,7 +766,7 @@ public class GridVO extends BeanDataVO {
 		column.put("fieldIndex", "0");
 		column.put("title", "");
 		columns.add(column);
-		for (int x = 1; x < maxCols+1; x++) {
+		for (int x = 1; x < getNumberColumns()+1; x++) {
 			column = new LinkedHashMap<>();
 
 			column.put("class", "bs-header");
