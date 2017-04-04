@@ -12,6 +12,10 @@ import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.AuditLogAction;
 import com.biomed.smarttrak.admin.CRMAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
+import com.biomed.smarttrak.admin.report.EmailReportAction;
+import com.biomed.smarttrak.fd.FinancialDashAction;
+import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
+import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.EditorsDeskAction;
 import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
@@ -26,10 +30,7 @@ import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
-// WC custom
-import com.biomed.smarttrak.fd.FinancialDashAction;
-import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
-import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
+
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -38,17 +39,19 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-//WC Email Campaigns
-import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
-import com.smt.sitebuilder.action.emailcampaign.CampaignProfileConfigAction;
-import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
 import com.smt.sitebuilder.action.solr.management.SolrSynonymAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
+
+//WC Email Campaigns
+import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
+import com.smt.sitebuilder.action.emailcampaign.CampaignProfileConfigAction;
+import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
 
 /****************************************************************************
  * <b>Title</b>: AdminControllerAction.java
@@ -161,6 +164,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("grid", GridChartAction.class);
 		ACTIONS.put("author", ManageAuthorAction.class);
 		ACTIONS.put("editorsDesk", EditorsDeskAction.class);
+		ACTIONS.put("emailReport", EmailReportAction.class);
 		ACTIONS.put("emailConfig", CampaignProfileConfigAction.class); 
 	}
 
