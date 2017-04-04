@@ -58,6 +58,12 @@ public class ProductManagementAction extends AbstractTreeAction {
 	
 	
 	@Override
+	public void delete(ActionRequest req) throws ActionException {
+		deleteElement(req);
+	}
+	
+	
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ActionTarget action;
 		
@@ -264,6 +270,10 @@ public class ProductManagementAction extends AbstractTreeAction {
 			retrieveProduct(req.getParameter("productId"), req);
 		} else if (!req.hasParameter("add")) {
 			retrieveProducts(req);
+		} else if (req.getSession().getAttribute("hierarchyTree") == null){
+			// This is a form for a new market make sure that the hierarchy tree is present 
+			Tree t = loadDefaultTree();
+			req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		}
 	}
 
@@ -638,7 +648,10 @@ public class ProductManagementAction extends AbstractTreeAction {
 			ProductAttributeVO p = (ProductAttributeVO)o;
 			Node n = t.findNode(p.getAttributeId());
 			String[] split = n.getFullPath().split(Tree.DEFAULT_DELIMITER);
-			if (split.length >= 2) {
+			if ("LINK".equals(p.getAttributeTypeCd()) ||
+					"ATTACH".equals(p.getAttributeTypeCd())) {
+				p.setGroupName(StringUtil.capitalizePhrase(p.getAttributeName()));
+			} else if (split.length >= 2) {
 				p.setGroupName(split[1]);
 			}
 			product.addProductAttribute(p);
@@ -690,8 +703,10 @@ public class ProductManagementAction extends AbstractTreeAction {
 	protected List<Object> getProductAttributes(String productId) {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR ");
-		sql.append("WHERE PRODUCT_ID = ? AND ATTRIBUTE_ID not in ( ");
+		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
+		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
+		sql.append("WHERE PRODUCT_ID = ? AND xr.ATTRIBUTE_ID not in ( ");
 		sql.append("SELECT child.ATTRIBUTE_ID from ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE child ");
 		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE parent ");
 		sql.append("on parent.ATTRIBUTE_ID = child.PARENT_ID ");
@@ -855,6 +870,9 @@ public class ProductManagementAction extends AbstractTreeAction {
 		// Delete all sections currently assigned to this product before adding
 		// what is on the request object.
 		deleteSection(true, req.getParameter("productId"));
+		
+		// If there is nothing to add return here
+		if (!req.hasParameter("sectionId")) return;
 		
 		StringBuilder sql = new StringBuilder(225);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
