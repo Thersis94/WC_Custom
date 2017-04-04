@@ -128,6 +128,10 @@ public class MarketManagementAction extends AbstractTreeAction {
 			req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
 		} else if (!req.hasParameter("add")) {
 			retrieveMarkets(req);
+		} else if (req.getSession().getAttributes().keySet().contains("hierarchyTree")){
+			// This is a form for a new market make sure that the hierarchy tree is present 
+			Tree t = loadDefaultTree();
+			req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		}
 	}
 
@@ -488,7 +492,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 
 		switch(action) {
 			case MARKET:
-				completeMarketSave(marketId, req, db);
+				marketId = completeMarketSave(marketId, req, db);
 				break;
 			case MARKETATTRIBUTE:
 			case MARKETGRAPH:
@@ -514,7 +518,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 	 * @param db
 	 * @throws ActionException
 	 */
-	protected void completeMarketSave(String marketId, ActionRequest req, DBProcessor db) throws ActionException {
+	protected String completeMarketSave(String marketId, ActionRequest req, DBProcessor db) throws ActionException {
 		MarketVO c = new MarketVO(req);
 		saveMarket(c, db);
 		marketId = c.getMarketId();
@@ -522,6 +526,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 		// with this market
 		req.setParameter("marketId", marketId);
 		saveSections(req);
+		return marketId;
 	}
 
 
