@@ -1,5 +1,10 @@
 package com.biomed.smarttrak.action;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 // App Libs
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.vo.GridVO;
@@ -57,14 +62,58 @@ public class GridDisplayAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		// Get the request data
 		String gridId = req.getParameter("gridId");
-		ChartType type = ChartType.valueOf(StringUtil.checkVal(req.getParameter("ct"), "NONE").toUpperCase());
+		String[] grids = req.getParameterValues("grid");
+		boolean full = Convert.formatBoolean(req.getParameter("full"), false);
+		boolean stacked = Convert.formatBoolean(req.getParameter("isStacked"), false);
+		ProviderType pt = ProviderType.valueOf(StringUtil.checkVal(req.getParameter("pt"), "GOOGLE").toUpperCase());
 		
-		// Parse the row and series data
-		GridVO grid = getGridData(gridId);
+		// Process the data
+		if (grids != null && grids.length > 0) {
+			this.putModuleData(loadAllGrids(grids, full, stacked, pt));
+		} else {
+			GridVO grid = getGridData(gridId);
+			if (req.hasParameter("excel")) buildExcelFile(req, grid);
+			else if (! StringUtil.isEmpty(gridId)) { 
+				ChartType type = ChartType.valueOf(StringUtil.checkVal(req.getParameter("ct"), "NONE").toUpperCase());
+				this.putModuleData(retrieveChartData(grid, type, full, stacked, pt));
+			}
+		}
 		
-		if (req.hasParameter("excel")) buildExcelFile(req, grid);
-		else this.putModuleData(retrieveChartData(req, grid, type));
+	}
+	
+	/**
+	 * Retrieve the data to populate multiple graphs at page load time
+	 * @param grids
+	 * @param full
+	 * @param stacked
+	 * @param pt
+	 * @return
+	 */
+	public Map<String, SMTGridIntfc> loadAllGrids(String[] grids, boolean full, boolean stacked, ProviderType pt) {
+		Map<String, SMTGridIntfc> data = new HashMap<>(24);
+		String schema = getAttribute(Constants.CUSTOM_DB_SCHEMA) + "";
+		
+		// Parse the map data and place in a map
+		Map<Object, String> items = new HashMap<>(grids.length);
+		for(String grid : grids) {
+			String[] vals = grid.split("\\|");
+			items.put(vals[0], vals[1]);
+		}
+		
+		// Retrieve the data
+		GridChartAction gca = new GridChartAction(actionInit);
+		gca.setAttributes(getAttributes());
+		gca.setDBConnection(getDBConnection());
+		List<GridVO> gridData = gca.retrievePageChartData(new ArrayList<Object>(items.keySet()), schema);
+		
+		// Loop the grid data and format for a chart
+		for (GridVO grid : gridData) {
+			data.put(grid.getGridId(), retrieveChartData(grid, ChartType.valueOf(items.get(grid.getGridId())), full, stacked, pt));
+		}
+		
+		return data;
 	}
 	
 	/**
@@ -90,10 +139,9 @@ public class GridDisplayAction extends SBActionAdapter {
 	 * @param grid
 	 * @param type
 	 */
-	public SMTGridIntfc retrieveChartData(ActionRequest req, GridVO grid, ChartType type) {
-		ProviderType pt = ProviderType.valueOf(StringUtil.checkVal(req.getParameter("pt"), "GOOGLE").toUpperCase());
+	public SMTGridIntfc retrieveChartData(GridVO grid, ChartType type, boolean full, boolean stacked, ProviderType pt) {
 		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type);
-		Boolean full = Convert.formatBoolean(req.getParameter("full"), false);
+
 		
 		// Get the chart options
 		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE, full);
@@ -106,8 +154,7 @@ public class GridDisplayAction extends SBActionAdapter {
 		gridData.addCustomValue("height", "100%");
 		
 		// Add configurable attributes
-		if(req.hasParameter("isStacked"))
-			gridData.addCustomValue("isStacked", Convert.formatBoolean(req.getParameter("isStacked"), false));
+		if(stacked) gridData.addCustomValue("isStacked", true);
 		
 		return gridData;
 	}
