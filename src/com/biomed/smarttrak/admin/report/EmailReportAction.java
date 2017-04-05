@@ -15,6 +15,10 @@ import com.biomed.smarttrak.vo.EmailLogVO;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.io.mail.EmailMessageVO;
+import com.siliconmtn.io.mail.MessageVO;
+import com.siliconmtn.sb.email.EmailCampaignBuilderUtil;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.NameComparator;
@@ -67,7 +71,7 @@ public class EmailReportAction extends SBActionAdapter {
 	 * @param parameter
 	 * @return
 	 */
-	private EmailLogVO loadSingleEmail(ActionRequest req, String campaignLogId) {
+	protected EmailLogVO loadSingleEmail(ActionRequest req, String campaignLogId) {
 		List<EmailLogVO> data = loadSummaryData(req, campaignLogId);
 		if (data == null || data.isEmpty()) return null;
 		EmailLogVO vo = data.get(0);
@@ -82,9 +86,15 @@ public class EmailReportAction extends SBActionAdapter {
 	 * @param vo
 	 * @param campaignLogId
 	 */
-	private void populateEmail(EmailLogVO vo) {
+	protected void populateEmail(EmailLogVO vo) {
 		//call the email core to obtain and re-assemble the email as it was when the user received it.
-
+		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		MessageVO eml = util.getMessage(vo.getCampaignInstanceId(), vo.getCampaignLogId());
+		if (eml instanceof EmailMessageVO) {
+			EmailMessageVO emlVo = (EmailMessageVO) eml;
+			vo.setMessageBody(emlVo.getHtmlBody());
+			vo.setSubject(emlVo.getSubject());
+		}
 	}
 
 
@@ -97,13 +107,15 @@ public class EmailReportAction extends SBActionAdapter {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		int offset = Convert.formatInteger(req.getParameter("offset"),0);
 		int limit = Convert.formatInteger(req.getParameter("limit"),10);
+		String term = req.getParameter("search");
 		List<EmailLogVO> data = new ArrayList<>(50);
 
-		String sql = getGroupByQuery(campaignLogId, req.getParameter("sort"), StringUtil.checkVal(req.getParameter("order"), "asc"));
+		String sql = getGroupByQuery(campaignLogId, req.getParameter("sort"), StringUtil.checkVal(req.getParameter("order"), "asc"), term);
 		log.debug(sql);
 
 		int x=0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			if (!StringUtil.isEmpty(term)) ps.setString(++x, encKeyword(term.toUpperCase()));
 			ps.setString(++x, site.getOrganizationId());
 			if (campaignLogId != null) ps.setString(++x, campaignLogId);
 			ps.setDate(++x,  getThresDate());
@@ -130,11 +142,26 @@ public class EmailReportAction extends SBActionAdapter {
 		return data;
 	}
 
+
+	/**
+	 * encrypts the search term (last name or email address) for searching
+	 * @param parameter
+	 * @return
+	 */
+	protected String encKeyword(String term) {
+		try {
+			return new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY)).encrypt(term);
+		} catch (Exception e) {
+			return term;
+		}
+	}
+
+
 	/**
 	 * @param campaignLogId
 	 * @return
 	 */
-	private String getGroupByQuery(String campaignLogId, String sort, String dir) {
+	protected String getGroupByQuery(String campaignLogId, String sort, String dir, String term) {
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select l.attempt_dt, l.success_flg, p.email_address_txt, p.profile_id, ");
 		sql.append("p.first_nm, p.last_nm, l.campaign_log_id, count(resp.email_response_id) as cnt, ");
@@ -143,6 +170,13 @@ public class EmailReportAction extends SBActionAdapter {
 		sql.append("inner join email_campaign_instance inst on camp.email_campaign_id=inst.email_campaign_id ");
 		sql.append("inner join email_campaign_log l on inst.campaign_instance_id=l.campaign_instance_id ");
 		sql.append("inner join profile p on l.profile_id=p.profile_id ");
+		if (!StringUtil.isEmpty(term)) {
+			if (StringUtil.isValidEmail(term)) {
+				sql.append("and p.search_email_txt=? ");
+			} else {
+				sql.append("and p.search_last_nm=? ");
+			}
+		}
 		sql.append("left join email_response resp on l.campaign_log_id=resp.campaign_log_id and resp.response_type_id='EMAIL_OPEN' ");
 		sql.append("left outer join SENT_EMAIL_PARAM sl on l.campaign_log_id=sl.campaign_log_id and sl.key_nm='subject' ");
 		sql.append("where camp.organization_id=? ");
@@ -187,17 +221,28 @@ public class EmailReportAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected int getEmailCount(ActionRequest req) {
+		String term = req.getParameter("search");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select count(*) from email_campaign_log a ");
+		if (!StringUtil.isEmpty(term)) {
+			sql.append("inner join profile p on a.profile_id=p.profile_id ");
+			if (StringUtil.isValidEmail(term)) {
+				sql.append("and p.search_email_txt=? ");
+			} else {
+				sql.append("and p.search_last_nm=? ");
+			}
+		}
 		sql.append("inner join email_campaign_instance b on a.campaign_instance_id=b.campaign_instance_id ");
 		sql.append("inner join email_campaign c on b.email_campaign_id=c.email_campaign_id and c.organization_id=? ");
 		sql.append("where a.attempt_dt < ?");
 		log.debug(sql);
 
+		int x=0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, site.getOrganizationId());
-			ps.setDate(2, getThresDate());
+			if (!StringUtil.isEmpty(term)) ps.setString(++x, encKeyword(term.toUpperCase()));
+			ps.setString(++x, site.getOrganizationId());
+			ps.setDate(++x, getThresDate());
 			ResultSet rs = ps.executeQuery();
 			return rs.next() ? rs.getInt(1) : 0;
 
@@ -212,7 +257,6 @@ public class EmailReportAction extends SBActionAdapter {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	@SuppressWarnings("unchecked")
 	protected void decryptNames(List<EmailLogVO> data) {
 		new NameComparator().decryptNames(data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
