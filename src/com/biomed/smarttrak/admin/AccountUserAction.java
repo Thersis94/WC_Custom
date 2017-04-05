@@ -148,12 +148,12 @@ public class AccountUserAction extends SBActionAdapter {
 		}
 
 		//Call Execute the Query with given params.
-		List<Object> users = executeUserQuery(req, sql, params);
+		List<Object> users = executeUserQuery(sql, params);
 
 		//get more information about this one user, so we can display the edit screen.
 		//If this is an ADD, we don't need the additional lookups
 		if (loadProfileData) {
-			loadRegistration(req, schema, users);
+			loadRegistration(req, users);
 		}
 
 		return users;
@@ -168,7 +168,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected List<Object> executeUserQuery(ActionRequest req, String sql, List<Object> params) throws ActionException {
+	protected List<Object> executeUserQuery(String sql, List<Object> params) throws ActionException {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
@@ -190,7 +190,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param userObj
 	 * @throws ActionException 
 	 */
-	protected void loadRegistration(ActionRequest req, String schema, List<Object> users) throws ActionException {
+	protected void loadRegistration(ActionRequest req, List<Object> users) throws ActionException {
 		//load the registration form
 		ActionInitVO actionInit = new ActionInitVO();
 		actionInit.setActionGroupId(AdminControllerAction.REGISTRATION_GRP_ID);
@@ -258,7 +258,7 @@ public class AccountUserAction extends SBActionAdapter {
 		//create a random password if this is a new account and a password was not provided - this is for security reasons
 		if (StringUtil.isEmpty(user.getPassword()) && StringUtil.isEmpty(user.getAuthenticationId()))
 			user.setPassword(RandomAlphaNumeric.generateRandom(8));
-		
+
 		UserLogin ul = new UserLogin(dbConn, (String)getAttribute(Constants.ENCRYPT_KEY));
 		//save the record.  Flag it for password reset immediately.
 		try {
@@ -319,7 +319,7 @@ public class AccountUserAction extends SBActionAdapter {
 		saveRegistrationData(req, user);
 
 		//save their UserVO (smarttrak user table)
-		saveRecord(req, user, false);
+		saveRecord(user, false);
 
 		setupRedirect(req);
 	}
@@ -406,7 +406,7 @@ public class AccountUserAction extends SBActionAdapter {
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		UserVO user = new UserVO(req);
-		saveRecord(req, user, true); //deletes them from Smartrak, but not from the WC core
+		saveRecord(user, true); //deletes them from Smartrak, but not from the WC core
 		saveProfileRole(user, true); //revoke website access
 		setupRedirect(req);
 	}
@@ -433,7 +433,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param isDelete
 	 * @throws ActionException
 	 */
-	protected void saveRecord(ActionRequest req, UserVO user, boolean isDelete) throws ActionException {
+	protected void saveRecord(UserVO user, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		try {
 			if (isDelete) {

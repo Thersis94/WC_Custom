@@ -3,31 +3,27 @@ package com.biomed.smarttrak.action;
 import java.util.HashMap;
 import java.util.Map;
 
-
-
 //apache commons-lang jar
 import org.apache.commons.lang.StringEscapeUtils;
 
-
-
-// WC custom
-import com.biomed.smarttrak.fd.FinancialDashAction;
-import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
-import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
-import com.biomed.smarttrak.admin.CRMAction;
-import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
+import com.biomed.smarttrak.admin.AuditLogAction;
+import com.biomed.smarttrak.admin.CRMAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
+import com.biomed.smarttrak.admin.report.EmailReportAction;
+import com.biomed.smarttrak.fd.FinancialDashAction;
+import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
+import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.EditorsDeskAction;
+import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.ManageAuthorAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
-import com.biomed.smarttrak.admin.AuditLogAction;
 import com.biomed.smarttrak.admin.ReportFacadeAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.SupportFacadeAction;
@@ -54,6 +50,7 @@ import com.smt.sitebuilder.security.SecurityController;
 
 //WC Email Campaigns
 import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
+import com.smt.sitebuilder.action.emailcampaign.CampaignProfileConfigAction;
 import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
 
 /****************************************************************************
@@ -167,6 +164,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("grid", GridChartAction.class);
 		ACTIONS.put("author", ManageAuthorAction.class);
 		ACTIONS.put("editorsDesk", EditorsDeskAction.class);
+		ACTIONS.put("emailReport", EmailReportAction.class);
+		ACTIONS.put("emailConfig", CampaignProfileConfigAction.class); 
 	}
 
 

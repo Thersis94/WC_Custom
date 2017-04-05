@@ -183,7 +183,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	protected int manageTotals(Map<String,Integer>acctTotals, 
 			Map<String,Object> currRow, Map<String,Integer> counts, String monthKey) {
 		int mCnt = 0;
-		if (counts == null) return mCnt;
+		if (counts == null) 
+			return mCnt;
+		
 		if (counts.get(monthKey) != null) {
 			mCnt = counts.get(monthKey);
 			updateAccountTotal(acctTotals,monthKey,mCnt);
@@ -248,7 +250,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		int monthTotal = 0;
 		for (String monthKey : monthHeaders) {
 			monthVal = acctTotals.get(monthKey);
-			if (monthVal != null) monthTotal = monthVal;
+			if (monthVal != null) 
+				monthTotal = monthVal;
+
 			row.put(monthKey, monthTotal);
 			acctTotal += monthTotal;
 			monthTotal = 0;
@@ -323,9 +327,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	protected void addMonthHeaders(Map<Integer,String> monthNames, 
 			int startDateMonth, int endDateMonth, int startYr, int endYr) {
 
-		int minMonth = 0;
-		int maxMonth = 0;
-		
+		int minMonth;
+		int maxMonth;
+
 		for (int yr = startYr; yr <= endYr; yr++) {
 
 			if (yr == startYr) {
@@ -349,10 +353,8 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		
 			for (int mth = minMonth; mth <= maxMonth; mth++) {
 				monthHeaders.add(monthNames.get(mth) + " " + yr);
-				log.debug("monthHeader: " + monthNames.get(mth) + " " + yr);
 			}
-			
-			
+
 		}
 	}
 
