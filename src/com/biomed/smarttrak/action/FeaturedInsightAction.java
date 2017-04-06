@@ -103,9 +103,10 @@ public class FeaturedInsightAction extends InsightAction {
 			for( String userRole : userRoles){
 				if (item.replace(ACL_GRANTED_DELIMITER, "").startsWith(userRole)){
 					authorizedFeatures.add(solDoc);
-					break;
 				}
 			}
+			//once authorzied there is no reason to keep checking it
+			if (authorizedFeatures.contains(solDoc)) break;
 		}
 	}	
 
