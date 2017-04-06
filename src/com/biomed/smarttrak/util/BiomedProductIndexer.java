@@ -447,6 +447,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		product.addAttribute("alias", rs.getString("ALIAS_NM"));
 		product.setDocumentUrl(AdminControllerAction.Section.PRODUCT.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString("PRODUCT_ID"));
 		product.addAttribute("ownership", rs.getString("HOLDING_TXT"));
+		product.addAttribute("status", rs.getString("STATUS_NO"));
 		
 		if (rs.getTimestamp("UPDATE_DT") != null) {
 			product.setUpdateDt(rs.getDate("UPDATE_DT"));
@@ -537,7 +538,8 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("ON ps.SECTION_ID = s.SECTION_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
-		if (id != null) sql.append("WHERE p.PRODUCT_ID = ? ");
+		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
+		if (id != null) sql.append("and p.PRODUCT_ID = ? ");
 		log.info(sql);
 		return sql.toString();
 	}
