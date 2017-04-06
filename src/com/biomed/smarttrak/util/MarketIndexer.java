@@ -115,8 +115,11 @@ public class MarketIndexer  extends SMTAbstractIndex {
 					market = makeNewMarket(rs, db);
 					currentMarketId = market.getMarketId();
 				}
-				if (!StringUtil.isEmpty(rs.getString("SECTION_ID")))
-					addSection(market, hierarchies.findNode(rs.getString("SECTION_ID")));
+				if (!StringUtil.isEmpty(rs.getString("SECTION_ID"))) {
+					Node n = hierarchies.findNode(rs.getString("SECTION_ID"));
+					addSection(market, n);
+					buildOrderString(hierarchies, n, market);
+				}
 			}
 			//add that final market to the list
 			if (market != null) 
@@ -132,6 +135,39 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	}
 
 
+	/**
+	 * Combine the order number of the market section level and all ancestors
+	 * into a single string that can be used in the sort in order to mirror
+	 * the order used in the rest of the site.
+	 * @param hierarchies
+	 * @param n
+	 * @param market
+	 */
+	private void buildOrderString(SmarttrakTree hierarchies, Node n,
+			MarketVO market) {
+		StringBuilder order = new StringBuilder();
+		
+		// Cast the order number to a string and pad it out 
+		// so that all order numbers are the same size
+		String hierarchyOrder = StringUtil.checkVal(((SectionVO)n.getUserObject()).getOrderNo());
+		hierarchyOrder = StringUtil.padLeft(hierarchyOrder, '0', 3);
+		order.append(hierarchyOrder);
+		
+		// Traverse the tree until you reach the top
+		while(!StringUtil.isEmpty(n.getParentId())) {
+			n = hierarchies.findNode(n.getParentId());
+			hierarchyOrder = StringUtil.checkVal(((SectionVO)n.getUserObject()).getOrderNo());
+			hierarchyOrder = StringUtil.padLeft(hierarchyOrder, '0', 3);
+			
+			// Insert the padded out order number at the start of the string
+			// so as to match the path back up the tree.
+			order.insert(0, hierarchyOrder);
+		}
+		
+		market.addAttribute("order", order.toString());
+	}
+
+	
 	/**
 	 * Get all html attributes that constitute content for a market and combine
 	 * them into a single contents field.
