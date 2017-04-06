@@ -65,6 +65,26 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		}
 	}
 	
+	/**
+	 * Enum for handling sort values passed to the action
+	 * by the bootstrap table
+	 */
+	private enum SortField {
+		completionScore("c.COMPLETION_SCORE_NO"),
+		statusNo("c.STATUS_NO"),
+		companyName("c.COMPANY_NM");
+		
+		private String dbField;
+		
+		SortField(String dbField) {
+			this.dbField = dbField;
+		}
+		
+		public String getDbField() {
+			return dbField;
+		}
+	}
+	
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
@@ -343,7 +363,16 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
 		sql.append("group by c.COMPANY_NM, c.COMPANY_ID, INVESTED_FLG ");
-		sql.append("ORDER BY COMPANY_NM ");
+		
+		SortField s;
+		if (req.hasParameter("sort")) {
+			s = SortField.valueOf(req.getParameter("sort"));
+		} else {
+			s = SortField.companyName;
+		}
+		sql.append("ORDER BY ").append(s.getDbField());
+		sql.append(" ").append(req.hasParameter("order")? req.getParameter("order"):"desc").append(" ");
+		
 		int limit  = Convert.formatInteger(req.getParameter("limit"));
 		if (limit != 0) {
 			sql.append("LIMIT ? OFFSET ? ");
