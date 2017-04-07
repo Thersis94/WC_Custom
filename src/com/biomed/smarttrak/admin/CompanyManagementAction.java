@@ -70,9 +70,9 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 * by the bootstrap table
 	 */
 	private enum SortField {
-		completionScore("c.COMPLETION_SCORE_NO"),
-		statusNo("c.STATUS_NO"),
-		companyName("c.COMPANY_NM");
+		COMPLETIONSCORE("c.COMPLETION_SCORE_NO"),
+		STATUSNO("c.STATUS_NO"),
+		COMPANYNAME("c.COMPANY_NM");
 		
 		private String dbField;
 		
@@ -82,6 +82,15 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		
 		public String getDbField() {
 			return dbField;
+		}
+		
+		public static SortField getFromString(String sortField) {
+			if (StringUtil.isEmpty(sortField)) return SortField.COMPANYNAME;
+			try {
+				return SortField.valueOf(sortField.toUpperCase());
+			} catch (Exception e) {
+				return SortField.COMPANYNAME;
+			}
 		}
 	}
 	
@@ -364,12 +373,8 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		}
 		sql.append("group by c.COMPANY_NM, c.COMPANY_ID, INVESTED_FLG ");
 		
-		SortField s;
-		if (req.hasParameter("sort")) {
-			s = SortField.valueOf(req.getParameter("sort"));
-		} else {
-			s = SortField.companyName;
-		}
+		SortField s = SortField.getFromString(req.getParameter("sort"));
+		
 		sql.append("ORDER BY ").append(s.getDbField());
 		sql.append(" ").append(req.hasParameter("order")? req.getParameter("order"):"desc").append(" ");
 		

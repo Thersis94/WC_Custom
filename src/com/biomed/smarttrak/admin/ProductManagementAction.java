@@ -57,10 +57,10 @@ public class ProductManagementAction extends AbstractTreeAction {
 	 * by the bootstrap table
 	 */
 	private enum SortField {
-		productName("PRODUCT_NM"),
-		statusNo("p.STATUS_NO"),
-		companyName("COMPANY_NM"),
-		orderNo("p.ORDER_NO");
+		PRODUCTNAME("PRODUCT_NM"),
+		STATUSNO("p.STATUS_NO"),
+		COMPANYNAME("COMPANY_NM"),
+		ORDERNO("p.ORDER_NO");
 		
 		private String dbField;
 		
@@ -70,6 +70,15 @@ public class ProductManagementAction extends AbstractTreeAction {
 		
 		public String getDbField() {
 			return dbField;
+		}
+		
+		public static SortField getFromString(String sortField) {
+			if (StringUtil.isEmpty(sortField)) return SortField.PRODUCTNAME;
+			try {
+				return SortField.valueOf(sortField.toUpperCase());
+			} catch (Exception e) {
+				return SortField.PRODUCTNAME;
+			}
 		}
 	}
 
@@ -449,12 +458,8 @@ public class ProductManagementAction extends AbstractTreeAction {
 			params.add("%" + req.getParameter("search").toLowerCase() + "% ");
 		}
 		
-		SortField s;
-		if (req.hasParameter("sort")) {
-			s = SortField.valueOf(req.getParameter("sort"));
-		} else {
-			s = SortField.productName;
-		}
+		SortField s = SortField.getFromString(req.getParameter("sort"));
+		
 		sql.append("ORDER BY ").append(s.getDbField());
 		sql.append(" ").append(req.hasParameter("order")? req.getParameter("order"):"desc").append(" ");
 		
