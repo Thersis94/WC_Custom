@@ -113,8 +113,6 @@ public class MarketManagementAction extends AbstractTreeAction {
 	private void retireveMarketAttributes(ActionRequest req) {
 		if (req.hasParameter("marketAttributeId"))
 			retrieveMarketAttribute(req);
-		req.setParameter("getList", "true");
-		retrieveAllAttributes(req);
 	}
 
 
