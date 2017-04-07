@@ -51,6 +51,37 @@ public class ProductManagementAction extends AbstractTreeAction {
 		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION
 	}
 
+	
+	/**
+	 * Enum for handling sort values passed to the action
+	 * by the bootstrap table
+	 */
+	private enum SortField {
+		PRODUCTNAME("PRODUCT_NM"),
+		STATUSNO("p.STATUS_NO"),
+		COMPANYNAME("COMPANY_NM"),
+		ORDERNO("p.ORDER_NO");
+		
+		private String dbField;
+		
+		SortField(String dbField) {
+			this.dbField = dbField;
+		}
+		
+		public String getDbField() {
+			return dbField;
+		}
+		
+		public static SortField getFromString(String sortField) {
+			if (StringUtil.isEmpty(sortField)) return SortField.PRODUCTNAME;
+			try {
+				return SortField.valueOf(sortField.toUpperCase());
+			} catch (Exception e) {
+				return SortField.PRODUCTNAME;
+			}
+		}
+	}
+
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
@@ -426,7 +457,12 @@ public class ProductManagementAction extends AbstractTreeAction {
 			sql.append("WHERE lower(PRODUCT_NM) like ?");
 			params.add("%" + req.getParameter("search").toLowerCase() + "% ");
 		}
-		sql.append("ORDER BY PRODUCT_NM ");
+		
+		SortField s = SortField.getFromString(req.getParameter("sort"));
+		
+		sql.append("ORDER BY ").append(s.getDbField());
+		sql.append(" ").append(req.hasParameter("order")? req.getParameter("order"):"desc").append(" ");
+		
 		int limit  = Convert.formatInteger(req.getParameter("limit"));
 		if (limit != 0) {
 			sql.append("LIMIT ? OFFSET ? ");
