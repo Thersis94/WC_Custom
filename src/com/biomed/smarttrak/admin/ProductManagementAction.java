@@ -379,17 +379,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 		// If all attributes of a type is being requested set it as a request attribute since it is
 		// being used to supplement the attribute xr editing.
 		// Search data should not be turned into a tree after a search as requisite nodes may be missing
-		if (req.hasParameter("attributeTypeCd") || Convert.formatBoolean(req.getParameter("getList"))) {
-			Tree t = new Tree(orderedResults);
-			Node rootNode = null;
-			if (req.hasParameter("rootNode")) {
-				rootNode = t.findNode(req.getParameter("rootNode"));
-				if (rootNode.getParentId() != null) {
-					rootNode = getTopParent(t, rootNode);
-				}
-			}
-
-		} else if (req.hasParameter("search")) {
+		if (req.hasParameter("search")) {
 			super.putModuleData(orderedResults.subList(rpp*page, end), orderedResults.size(), false);
 		} else {
 			super.putModuleData(new Tree(orderedResults).getPreorderList().subList(rpp*page, end), orderedResults.size(), false);
