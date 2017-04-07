@@ -47,7 +47,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 	public static final String DETAILS_ID = "DETAILS_ROOT";
 	
 	private enum ActionTarget {
-		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, 
+		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, PRODUCTLINK, PRODUCTATTACH,
 		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION
 	}
 
@@ -108,6 +108,8 @@ public class ProductManagementAction extends AbstractTreeAction {
 			case PRODUCT:
 				retrieveProduct(req);
 				break;
+			case PRODUCTLINK:
+			case PRODUCTATTACH:
 			case PRODUCTATTRIBUTE:
 				productAttributeRetrieve(req);
 				break;
@@ -115,7 +117,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 				attributeRetrieve(req);
 				break;
 			case ATTRIBUTELIST:
-				super.putModuleData(getProductAttributes(req.getParameter("productId")));
+				super.putModuleData(getProductAttributes(req.getParameter("productId"), req.getParameter("attributeTypeCd")));
 				break;
 			case ALLIANCE:
 				allianceRetrieve(req);
@@ -386,12 +388,6 @@ public class ProductManagementAction extends AbstractTreeAction {
 					rootNode = getTopParent(t, rootNode);
 				}
 			}
-			
-			if (rootNode != null && rootNode.getNumberChildren() > 0) {
-				req.getSession().setAttribute("attributeList", t.preorderList(rootNode));
-			} else {
-				req.getSession().setAttribute("attributeList", t.preorderList());
-			}
 
 		} else if (req.hasParameter("search")) {
 			super.putModuleData(orderedResults.subList(rpp*page, end), orderedResults.size(), false);
@@ -528,7 +524,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 		if ("alliance".equals(req.getParameter("jsonType")))
 			addAlliances(product);
 		if ("attribute".equals(req.getParameter("jsonType")))
-			addAttributes(product);
+			addAttributes(product, req.getParameter("attributeTypeCd"));
 		if ("regulation".equals(req.getParameter("jsonType")))
 			addRegulations(product);
 		
@@ -676,57 +672,13 @@ public class ProductManagementAction extends AbstractTreeAction {
 	 * @param product
 	 * @throws ActionException 
 	 */
-	protected void addAttributes(ProductVO product) throws ActionException {
-		List<Object> results = getProductAttributes(product.getProductId());
-		Tree t = buildAttributeTree();
+	protected void addAttributes(ProductVO product, String attributeType) throws ActionException {
+		List<Object> results = getProductAttributes(product.getProductId(), attributeType);
 		
 		for (Object o : results) {
 			ProductAttributeVO p = (ProductAttributeVO)o;
-			Node n = t.findNode(p.getAttributeId());
-			String[] split = n.getFullPath().split(Tree.DEFAULT_DELIMITER);
-			if ("LINK".equals(p.getAttributeTypeCd()) ||
-					"ATTACH".equals(p.getAttributeTypeCd())) {
-				p.setGroupName(StringUtil.capitalizePhrase(p.getAttributeName()));
-			} else if (split.length >= 2) {
-				p.setGroupName(split[1]);
-			}
 			product.addProductAttribute(p);
 		}
-	}
-	
-
-	/**
-	 * Create the full attribute tree in order to determine the full ancestry of each attribute
-	 * @return
-	 * @throws ActionException
-	 */
-	private Tree buildAttributeTree() throws ActionException {
-		StringBuilder sql = new StringBuilder(100);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT c.ATTRIBUTE_ID, c.PARENT_ID, c.ATTRIBUTE_NM, p.ATTRIBUTE_NM as PARENT_NM ");
-		sql.append("FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE c ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE p ");
-		sql.append("ON c.PARENT_ID = p.ATTRIBUTE_ID ");
-		log.debug(sql);
-		List<Node> attributes = new ArrayList<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				Node n = new Node(rs.getString("ATTRIBUTE_ID"), rs.getString("PARENT_ID"));
-				if ("profile".equals(rs.getString("ATTRIBUTE_NM"))) {
-					n.setNodeName(rs.getString("PARENT_NM"));
-				} else {
-					n.setNodeName(rs.getString("ATTRIBUTE_NM"));
-				}
-				attributes.add(n);
-			}
-			
-		} catch (SQLException e) {
-			throw new ActionException(e);
-		}
-		Tree t = new Tree(attributes);
-		t.buildNodePaths(t.getRootNode(), Tree.DEFAULT_DELIMITER, true);
-		return t;
 	}
 	
 	
@@ -736,7 +688,10 @@ public class ProductManagementAction extends AbstractTreeAction {
 	 * @param productId
 	 * @return
 	 */
-	protected List<Object> getProductAttributes(String productId) {
+	protected List<Object> getProductAttributes(String productId, String attributeType) {
+		List<Object> params = new ArrayList<>();
+		params.add(productId);
+		params.add(DETAILS_ID);
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
@@ -747,10 +702,11 @@ public class ProductManagementAction extends AbstractTreeAction {
 		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE parent ");
 		sql.append("on parent.ATTRIBUTE_ID = child.PARENT_ID ");
 		sql.append("where parent.PARENT_ID = ? ) ");
+		if (!StringUtil.isEmpty(attributeType)) {
+			sql.append("and TYPE_CD = ? ");
+			params.add(attributeType);
+		}
 		log.debug(sql+"|"+productId);
-		List<Object> params = new ArrayList<>();
-		params.add(productId);
-		params.add(DETAILS_ID);
 		DBProcessor db = new DBProcessor(dbConn);
 		
 		// DBProcessor returns a list of objects that need to be individually cast to attributes
