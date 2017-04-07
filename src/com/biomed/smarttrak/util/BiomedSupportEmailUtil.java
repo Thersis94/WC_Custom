@@ -15,9 +15,8 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.io.mail.MessageVO;
-import com.siliconmtn.sb.email.EmailCampaignBuilderUtil;
 import com.siliconmtn.sb.email.EmailInstanceHandler;
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
@@ -26,7 +25,6 @@ import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
-import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>: BiomedSupportEmailUtil.java
@@ -76,7 +74,7 @@ public class BiomedSupportEmailUtil {
 
 		TicketEmailVO ticket = loadTicket(ticketId, null);
 		try {
-			buildEmail(ticket, type);
+			sendEmails(ticket, type);
 		} catch (InvalidDataException | EncryptionException e) {
 			throw new ActionException("There was a problem building Biomed support email.", e);
 		}
@@ -197,45 +195,25 @@ public class BiomedSupportEmailUtil {
 	 * @throws EncryptionException 
 	 * @throws Exception 
 	 */
-	protected void buildEmail(TicketEmailVO ticket, ChangeType type) throws InvalidDataException, ActionException, EncryptionException {
-		List<MessageVO> emails = null;
+	protected void sendEmails(TicketEmailVO ticket, ChangeType type) throws InvalidDataException, ActionException, EncryptionException {
 		switch(type) {
 			case ACTIVITY:
-				emails = buildActivityEmails(ticket);
+				sendActivityEmails(ticket);
 				break;
 			case ASSIGNMENT:
-				emails = buildAssignedEmails(ticket);
+				sendAssignedEmails(ticket);
 				break;
 			case STATUS:
-				emails = buildStatusEmails(ticket);
+				sendStatusEmails(ticket);
 				break;
 			case TICKET:
-				emails = buildNewRequestEmails(ticket);
+				sendNewRequestEmails(ticket);
 				break;
 			case ATTACHMENT:
 			default:
 				break;
 		}
-
-		//If an email was built, send it.
-		if(emails != null) {
-			sendEmails(emails);
-		}
 	}
-
-	/**
-	 * Helper method that sends Emails to Campaign System.
-	 *
-	 * @param order
-	 * @throws Exception
-	 */
-	protected void sendEmails(List<MessageVO> emails) {
-		MessageSender sender = new MessageSender(attributes, dbConn);
-		for(MessageVO email : emails) {
-			sender.sendMessage(email);
-		}
-	}
-
 
 	/**
 	 * Helper method attempts to retrieve all the Account Managers.
@@ -286,7 +264,7 @@ public class BiomedSupportEmailUtil {
 	 * @throws EncryptionException 
 	 * @throws Exception 
 	 */
-	protected List<MessageVO> buildNewRequestEmails(TicketEmailVO t) throws InvalidDataException, EncryptionException {
+	protected void sendNewRequestEmails(TicketEmailVO t) throws InvalidDataException, EncryptionException {
 		String campaignInstanceId = (String)attributes.get(NEW_TICKET_CAMP_INST_ID);
 
 		//Get Admins
@@ -295,15 +273,14 @@ public class BiomedSupportEmailUtil {
 		//Build Config
 		Map<String, Object> config = getBaseConfig(t);
 
-		List<MessageVO> msgs = getEmails(campaignInstanceId, t, config);
+		sendBaseEmails(campaignInstanceId, t, config);
 
 		//New Tickets get sent to All Admins.
 		for(AccountVO a : admins) {
 			config.put(EmailInstanceHandler.DEFAULT_EMAIL_KEY, a.getOwnerEmailAddr());
-			msgs.add(ecbu.getMessage(campaignInstanceId, a.getOwnerProfileId(), config));
+			ecbu.sendMessage(campaignInstanceId, a.getOwnerProfileId(), config);
 		}
 
-		return msgs;
 	}
 
 
@@ -317,7 +294,7 @@ public class BiomedSupportEmailUtil {
 	 * @throws ActionException 
 	 * @throws Exception 
 	 */
-	protected List<MessageVO> buildAssignedEmails(TicketEmailVO t) throws InvalidDataException, ActionException {
+	protected void sendAssignedEmails(TicketEmailVO t) throws InvalidDataException, ActionException {
 
 		//Build Config
 		Map<String, Object> config = getBaseConfig(t);
@@ -328,7 +305,7 @@ public class BiomedSupportEmailUtil {
 		config.put("phoneNo", t.getPhoneNo());
 		config.put("createDtFmt", t.getCreateDtFmt());
 
-		return getEmails((String)attributes.get(ASSN_TICKET_CAMP_INST_ID), t, config);
+		sendBaseEmails((String)attributes.get(ASSN_TICKET_CAMP_INST_ID), t, config);
 	}
 
 	/**
@@ -339,7 +316,7 @@ public class BiomedSupportEmailUtil {
 	 * @throws InvalidDataException
 	 * @throws ActionException
 	 */
-	protected List<MessageVO> buildStatusEmails(TicketEmailVO t) throws InvalidDataException, ActionException {
+	protected void sendStatusEmails(TicketEmailVO t) throws InvalidDataException, ActionException {
 
 		//Build Config
 		Map<String, Object> config = getBaseConfig(t);
@@ -348,7 +325,7 @@ public class BiomedSupportEmailUtil {
 		config.put("assignedLastNm", t.getAssignedLastNm());
 
 		//Get Emails
-		return getEmails((String)attributes.get(STAT_TICKET_CAMP_INST_ID), t, config);
+		sendBaseEmails((String)attributes.get(STAT_TICKET_CAMP_INST_ID), t, config);
 	}
 
 	/**
@@ -371,22 +348,20 @@ public class BiomedSupportEmailUtil {
 	 * @param config
 	 * @return
 	 */
-	protected List<MessageVO> getEmails(String campaignInstanceId, TicketEmailVO t, Map<String, Object> config) {
-		List<MessageVO> msgs = new ArrayList<>();
+	protected void sendBaseEmails(String campaignInstanceId, TicketEmailVO t, Map<String, Object> config) {
 
 		//Build Assignee Email
 		if(!StringUtil.isEmpty(t.getAssignedEmail())) {
 			config.put(EmailInstanceHandler.DEFAULT_EMAIL_KEY, "billy@siliconmtn.com");
-			msgs.add(ecbu.getMessage(campaignInstanceId, t.getAssignedId(), config));
+			ecbu.sendMessage(campaignInstanceId, t.getAssignedId(), config);
 		}
 
 		//Build ReporterEmail
 		if(!StringUtil.isEmpty(t.getReporterEmail())) {
 			config.put(EmailInstanceHandler.DEFAULT_EMAIL_KEY, "raptorsshadow@gmail.com");
-			msgs.add(ecbu.getMessage(campaignInstanceId, t.getReporterId(), config));
+			ecbu.sendMessage(campaignInstanceId, t.getReporterId(), config);
 		}
 
-		return msgs;
 	}
 
 	/**
@@ -397,14 +372,14 @@ public class BiomedSupportEmailUtil {
 	 * @return
 	 * @throws InvalidDataException
 	 */
-	protected List<MessageVO> buildActivityEmails(TicketEmailVO t) throws InvalidDataException {
+	protected void sendActivityEmails(TicketEmailVO t) throws InvalidDataException {
 
 		//Build Config
 		Map<String, Object> config = getBaseConfig(t);
 		config.put("ticketDesc", t.getActivities().get(0).getDescText());
 
 		//Get Emails
-		return getEmails((String)attributes.get(ACT_TICKET_CAMP_INST_ID), t, config);
+		sendBaseEmails((String)attributes.get(ACT_TICKET_CAMP_INST_ID), t, config);
 	}
 
 
@@ -416,7 +391,7 @@ public class BiomedSupportEmailUtil {
 	public void sendEmail(TicketActivityVO act) throws ActionException {
 		TicketEmailVO t = loadTicket(act.getTicketId(), act.getActivityId());
 		try {
-			buildEmail(t, ChangeType.ACTIVITY);
+			sendEmails(t, ChangeType.ACTIVITY);
 		} catch (InvalidDataException | EncryptionException e) {
 			throw new ActionException("There was a problem building Biomed support email.", e);
 		}
