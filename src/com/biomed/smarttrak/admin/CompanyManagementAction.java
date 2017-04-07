@@ -281,7 +281,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		// If all attributes of a type is being requested set it as a request attribute since it is
 		// being used to supplement the attribute xr editing.
 		// Search data should not be turned into a tree after a search as requisite nodes may be missing
-		if (req.hasParameter("attributeTypeName")) {
+		if (req.hasParameter("attributeTypeCd")) {
 			req.getSession().setAttribute("attributeList", new Tree(orderedResults).getPreorderList());
 		} else if (req.hasParameter("searchData")) {
 			super.putModuleData(orderedResults, orderedResults.size(), false);
