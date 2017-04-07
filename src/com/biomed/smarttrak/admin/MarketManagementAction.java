@@ -132,8 +132,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 			retrieveMarkets(req);
 		} else if (req.getSession().getAttributes().keySet().contains("hierarchyTree")){
 			// This is a form for a new market make sure that the hierarchy tree is present 
-			Tree t = loadDefaultTree();
-			req.getSession().setAttribute("hierarchyTree", t.preorderList());
+			req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
 		}
 	}
 
@@ -203,20 +202,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 		// If all attributes of a type is being requested set it as a request attribute since it is
 		// being used to supplement the attribute xr editing.
 		// Search data should not be turned into a tree after a search as requisite nodes may be missing
-		if (req.hasParameter("attributeTypeCd") || Convert.formatBoolean(req.getParameter("getList"))) {
-			SmarttrakTree t = new SmarttrakTree(orderedResults);
-			Node rootNode = null;
-			if (req.hasParameter("rootNode")) {
-				rootNode = getTopParent(t, t.findNode(req.getParameter("rootNode")));
-			}
-
-			if (rootNode != null && rootNode.getNumberChildren() > 0) {
-				req.getSession().setAttribute("attributeList", t.preorderList(rootNode));
-			} else {
-				req.getSession().setAttribute("attributeList", t.preorderList());
-			}
-
-		} else if (req.hasParameter("searchData")) {
+		if (req.hasParameter("searchData")) {
 			putModuleData(orderedResults, orderedResults.size(), false);
 		} else {
 			putModuleData(new SmarttrakTree(orderedResults).getPreorderList(), orderedResults.size(), false);
