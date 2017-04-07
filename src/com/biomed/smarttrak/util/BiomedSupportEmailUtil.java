@@ -273,13 +273,14 @@ public class BiomedSupportEmailUtil {
 		//Build Config
 		Map<String, Object> config = getBaseConfig(t);
 
-		sendBaseEmails(campaignInstanceId, t, config);
+		//Get Recipients
+		Map<String, String> recipients = getBaseRecipients(t);
 
 		//New Tickets get sent to All Admins.
 		for(AccountVO a : admins) {
-			config.put(EmailInstanceHandler.DEFAULT_EMAIL_KEY, a.getOwnerEmailAddr());
-			ecbu.sendMessage(campaignInstanceId, a.getOwnerProfileId(), config);
+			recipients.put(a.getOwnerProfileId(), a.getOwnerEmailAddr());
 		}
+		ecbu.sendMessage((String)attributes.get(NEW_TICKET_CAMP_INST_ID), recipients, config);
 
 	}
 
@@ -305,7 +306,7 @@ public class BiomedSupportEmailUtil {
 		config.put("phoneNo", t.getPhoneNo());
 		config.put("createDtFmt", t.getCreateDtFmt());
 
-		sendBaseEmails((String)attributes.get(ASSN_TICKET_CAMP_INST_ID), t, config);
+		ecbu.sendMessage((String)attributes.get(ASSN_TICKET_CAMP_INST_ID), getBaseRecipients(t), config);
 	}
 
 	/**
@@ -325,7 +326,7 @@ public class BiomedSupportEmailUtil {
 		config.put("assignedLastNm", t.getAssignedLastNm());
 
 		//Get Emails
-		sendBaseEmails((String)attributes.get(STAT_TICKET_CAMP_INST_ID), t, config);
+		ecbu.sendMessage((String)attributes.get(STAT_TICKET_CAMP_INST_ID), getBaseRecipients(t), config);
 	}
 
 	/**
@@ -348,20 +349,19 @@ public class BiomedSupportEmailUtil {
 	 * @param config
 	 * @return
 	 */
-	protected void sendBaseEmails(String campaignInstanceId, TicketEmailVO t, Map<String, Object> config) {
-
-		//Build Assignee Email
+	protected Map<String, String> getBaseRecipients(TicketEmailVO t) {
+		Map<String, String> recipients = new HashMap<>();
+		//Add Assignee
 		if(!StringUtil.isEmpty(t.getAssignedEmail())) {
-			config.put(EmailInstanceHandler.DEFAULT_EMAIL_KEY, "billy@siliconmtn.com");
-			ecbu.sendMessage(campaignInstanceId, t.getAssignedId(), config);
+			recipients.put(t.getAssignedId(), t.getAssignedEmail());
 		}
 
-		//Build ReporterEmail
+		//Add Reporter
 		if(!StringUtil.isEmpty(t.getReporterEmail())) {
-			config.put(EmailInstanceHandler.DEFAULT_EMAIL_KEY, "raptorsshadow@gmail.com");
-			ecbu.sendMessage(campaignInstanceId, t.getReporterId(), config);
+			recipients.put(t.getReporterId(), t.getReporterEmail());
 		}
 
+		return recipients;
 	}
 
 	/**
@@ -379,7 +379,7 @@ public class BiomedSupportEmailUtil {
 		config.put("ticketDesc", t.getActivities().get(0).getDescText());
 
 		//Get Emails
-		sendBaseEmails((String)attributes.get(ACT_TICKET_CAMP_INST_ID), t, config);
+		ecbu.sendMessage((String)attributes.get(ACT_TICKET_CAMP_INST_ID), getBaseRecipients(t), config);
 	}
 
 
