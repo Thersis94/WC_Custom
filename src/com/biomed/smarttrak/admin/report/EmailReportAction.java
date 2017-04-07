@@ -87,7 +87,7 @@ public class EmailReportAction extends SBActionAdapter {
 	protected void populateEmail(EmailLogVO vo) {
 		//call the email core to obtain and re-assemble the email as it was when the user received it.
 		SentMessageUtil util = new SentMessageUtil(getDBConnection(), getAttributes());
-		MessageVO eml = util.getMessage(vo.getCampaignInstanceId(), vo.getCampaignLogId());
+		MessageVO eml = util.recreateMessage(vo.getCampaignInstanceId(), vo.getCampaignLogId());
 		if (eml instanceof EmailMessageVO) {
 			EmailMessageVO emlVo = (EmailMessageVO) eml;
 			vo.setMessageBody(emlVo.getHtmlBody());
