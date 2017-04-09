@@ -155,7 +155,8 @@ public class LegacyEmailImporter extends CommandLineUtil {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select count(*) from biomedgps.emaillog_emaillog a ");
 		sql.append("inner join biomedgps.profiles_user b on lower(a.email)=lower(b.email) ");
-		sql.append("where a.last_update > '").append(props.getProperty("minEmailSqlDt")).append("' and b.wc_profile_id is not null ");
+		sql.append("inner join custom.biomedgps_user c on cast(b.id as varchar)=c.user_id ");
+		sql.append("where a.last_update > '").append(props.getProperty("minEmailSqlDt")).append("' and c.profile_id is not null ");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			return rs.next() ? rs.getInt(1) : 0;
@@ -172,9 +173,10 @@ public class LegacyEmailImporter extends CommandLineUtil {
 	private List<EmailLogVO> loadData(int limit, int offset) {
 		List<EmailLogVO> records = new ArrayList<>(100000);
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.*, b.wc_profile_id from biomedgps.emaillog_emaillog a ");
+		sql.append("select a.*, c.profile_id from biomedgps.emaillog_emaillog a ");
 		sql.append("inner join biomedgps.profiles_user b on lower(a.email)=lower(b.email) ");
-		sql.append("where a.last_update > '").append(props.getProperty("minEmailSqlDt")).append("' and b.wc_profile_id is not null ");
+		sql.append("inner join custom.biomedgps_user c on cast(b.id as varchar)=c.user_id ");
+		sql.append("where a.last_update > '").append(props.getProperty("minEmailSqlDt")).append("' and c.profile_id is not null ");
 		sql.append("order by a.id limit ").append(limit).append(" offset " ).append(offset);
 		log.debug(sql);
 

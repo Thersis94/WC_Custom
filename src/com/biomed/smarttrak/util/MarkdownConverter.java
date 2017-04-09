@@ -31,8 +31,8 @@ public class MarkdownConverter extends CommandLineUtil {
 	/**
 	 * regex matchers for the graph injections - we're replacing their html markup with ours, which triggers some jquery onload to populate the DOM.
 	 */
-	private static final String graphMatcher = "(?m)(?i)<!-- —\\s?([^—]+)\\s— -->(<br />)?\\s+?(<p>)?<div class=('|\")([^<>]+)?('|\") data-embed=('|\")([^'\"]+)?('|\")>([^<>]+)?</div>(</p>)?";
-	private static final String graphReplace = "$3<div class=\"biomed_grid\">\n<a data-graph=\"$8\" data-target=\"#graph-modal\" data-title=\"$1\" data-toggle=\"modal\" data-type=\"TABLE\" href=\"#\"><span class=\"graph-name fa fa-table\"></span>$1</a>\n</div>$11";
+	private static final String GRAPH_MATCHER = "(?m)(?i)<!-- —\\s?([^—]+)\\s— -->(<br />)?\\s+?(<p>)?<div class=('|\")([^<>]+)?('|\") data-embed=('|\")([^'\"]+)?('|\")>([^<>]+)?</div>(</p>)?";
+	private static final String GRAPH_REPLACE = "$3<div class=\"biomed_grid\">\n<a data-graph=\"$8\" data-target=\"#graph-modal\" data-title=\"$1\" data-toggle=\"modal\" data-type=\"TABLE\" href=\"#\"><span class=\"graph-name fa fa-table\"></span>$1</a>\n</div>$11";
 	
 	
 	/**
@@ -80,8 +80,8 @@ public class MarkdownConverter extends CommandLineUtil {
 	 */
 	public static void main(String[] args) {
 		MarkdownConverter eui = new MarkdownConverter(args);
-				eui.run(Table.COMPANY_ATTR_XR);
-//		eui.runTest()
+		eui.run();
+		//eui.runTest()
 	}
 
 
@@ -170,7 +170,7 @@ public class MarkdownConverter extends CommandLineUtil {
 	 * @return
 	 */
 	private String fixGraphs(String markup) {
-		return markup.replaceAll(graphMatcher, graphReplace);
+		return markup.replaceAll(GRAPH_MATCHER, GRAPH_REPLACE);
 	}
 
 
