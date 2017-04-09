@@ -16,7 +16,6 @@ import java.util.Set;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.depuysynthes.scripts.showpad.ShowpadDivisionUtil;
 import com.depuysynthes.scripts.showpad.ShowpadMediaBinDecorator;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -142,7 +141,6 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 	@Override
 	protected void downloadFiles(Map<String, MediaBinDeltaVO> masterRecords) {
 		String dropboxFolder = (String) props.get("downloadDirPrivAssets");
-		String dtFmt = "EEE, dd MMM yyyy HH:mm:ss z"; //this matches the http headers coming back from LimeLight
 
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			//note backslashes were turned into forward slashes when the data was loaded from the EXP file, in parseData()
@@ -160,12 +158,11 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 			}
 
 			//get modification date and file size.  Changes to either need to trigger an update to Showpad
-			Date lastModDt = new Date(f.lastModified());
-			String checksum = new StringBuilder(50).append(Convert.formatDate(lastModDt, dtFmt)).append("||").append(f.length()).toString();
+			String checksum = new StringBuilder(15).append("||").append(f.length()).toString();
 			if (!checksum.equals(vo.getChecksum())) {
 				vo.setFileChanged(true);
 				vo.setChecksum(checksum);
-				vo.setModifiedDt(lastModDt);
+				vo.setModifiedDt(new Date(f.lastModified()));
 				if (State.Ignore == vo.getRecordState()) {
 					vo.setRecordState(State.Update);
 					vo.setErrorReason("File on disk was updated");
