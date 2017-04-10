@@ -45,7 +45,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	public static final String COMPANY_ID = "companyId";
 	
 	private enum ActionType {
-		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, ATTRIBUTE
+		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE
 	}
 	
 	/**
@@ -62,6 +62,35 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		
 		public String getTitle() {
 			return title;
+		}
+	}
+	
+	/**
+	 * Enum for handling sort values passed to the action
+	 * by the bootstrap table
+	 */
+	private enum SortField {
+		COMPLETIONSCORE("c.COMPLETION_SCORE_NO"),
+		STATUSNO("c.STATUS_NO"),
+		COMPANYNAME("c.COMPANY_NM");
+		
+		private String dbField;
+		
+		SortField(String dbField) {
+			this.dbField = dbField;
+		}
+		
+		public String getDbField() {
+			return dbField;
+		}
+		
+		public static SortField getFromString(String sortField) {
+			if (StringUtil.isEmpty(sortField)) return SortField.COMPANYNAME;
+			try {
+				return SortField.valueOf(sortField.toUpperCase());
+			} catch (Exception e) {
+				return SortField.COMPANYNAME;
+			}
 		}
 	}
 	
@@ -83,6 +112,8 @@ public class CompanyManagementAction extends AbstractTreeAction {
 				attributeRetrieve(req);
 				break;
 			case COMPANYATTRIBUTE:
+			case COMPANYLINK:
+			case COMPANYATTACH:
 				companyAttributeRetrieve(req);
 				break;
 			case LOCATION:
@@ -145,7 +176,8 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	protected void companyAttributeRetrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("companyAttributeId"))
 			retrieveAttribute(req);
-		retrieveAttributes(req);
+		if ("HTML".equals(req.getParameter("attributeTypeCd")))
+			retrieveAttributes(req);
 	}
 	
 	
@@ -229,9 +261,9 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			sql.append("WHERE lower(ATTRIBUTE_NM) like ? ");
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
-		if (req.hasParameter("attributeTypeName")) {
+		if (req.hasParameter("attributeTypeCd")) {
 			sql.append("WHERE TYPE_NM = ? ");
-			params.add(req.getParameter("attributeTypeName"));
+			params.add(req.getParameter("attributeTypeCd"));
 		}
 		
 		sql.append("ORDER BY DISPLAY_ORDER_NO ");
@@ -249,7 +281,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		// If all attributes of a type is being requested set it as a request attribute since it is
 		// being used to supplement the attribute xr editing.
 		// Search data should not be turned into a tree after a search as requisite nodes may be missing
-		if (req.hasParameter("attributeTypeName")) {
+		if (req.hasParameter("attributeTypeCd")) {
 			req.getSession().setAttribute("attributeList", new Tree(orderedResults).getPreorderList());
 		} else if (req.hasParameter("searchData")) {
 			super.putModuleData(orderedResults, orderedResults.size(), false);
@@ -343,7 +375,12 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
 		sql.append("group by c.COMPANY_NM, c.COMPANY_ID, INVESTED_FLG ");
-		sql.append("ORDER BY COMPANY_NM ");
+		
+		SortField s = SortField.getFromString(req.getParameter("sort"));
+		
+		sql.append("ORDER BY ").append(s.getDbField());
+		sql.append(" ").append(req.hasParameter("order")? req.getParameter("order"):"desc").append(" ");
+		
 		int limit  = Convert.formatInteger(req.getParameter("limit"));
 		if (limit != 0) {
 			sql.append("LIMIT ? OFFSET ? ");
@@ -414,7 +451,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		if ("alliance".equals(req.getParameter("jsonType")))
 			addAlliances(company);
 		if ("attribute".equals(req.getParameter("jsonType")))
-			addAttributes(company);
+			addAttributes(company, req.getParameter("attributeTypeCd"));
 		
 		getActiveSections(company);
 		super.putModuleData(company);
@@ -426,16 +463,20 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 * @param company
 	 * @throws ActionException 
 	 */
-	protected void addAttributes(CompanyVO company) throws ActionException {
+	protected void addAttributes(CompanyVO company, String attributeType) throws ActionException {
+		List<Object> params = new ArrayList<>();
+		params.add(company.getCompanyId());
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("on a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append("WHERE COMPANY_ID = ? ");
-		log.debug(sql+"|"+company.getCompanyId());
-		List<Object> params = new ArrayList<>();
-		params.add(company.getCompanyId());
+		if (!StringUtil.isEmpty(attributeType)) {
+			sql.append("and TYPE_NM = ? ");
+			params.add(attributeType);
+		}
+		log.debug(sql+"|"+company.getCompanyId()+"|"+attributeType);
 		DBProcessor db = new DBProcessor(dbConn);
 		
 		// DBProcessor returns a list of objects that need to be individually cast to attributes
@@ -449,8 +490,8 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			if ("LINK".equals(c.getAttributeTypeName()) ||
 					"ATTACH".equals(c.getAttributeTypeName())) {
 				c.setGroupName(StringUtil.capitalizePhrase(c.getAttributeName()));
-			} else if (split.length >= 2) {
-				c.setGroupName(split[1]);
+			} else if (split.length >= 1) {
+				c.setGroupName(split[0]);
 			}
 			company.addCompanyAttribute(c);
 		}
@@ -591,6 +632,8 @@ public class CompanyManagementAction extends AbstractTreeAction {
 				saveAlliance(a, db);
 				break;
 			case COMPANYATTRIBUTE:
+			case COMPANYLINK:
+			case COMPANYATTACH:
 				CompanyAttributeVO attr = new CompanyAttributeVO(req);
 				saveAttribute(attr, db);
 				break;
@@ -812,6 +855,8 @@ public class CompanyManagementAction extends AbstractTreeAction {
 				db.delete(a);
 				break;
 			case COMPANYATTRIBUTE:
+			case COMPANYLINK:
+			case COMPANYATTACH:
 				CompanyAttributeVO attr = new CompanyAttributeVO(req);
 				db.delete(attr);
 				break;

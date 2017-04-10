@@ -104,6 +104,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 		this.orderNo = orderNo;
 	}
 
+	@SolrField(name="status_s")
 	@Column(name="status_no")
 	public String getStatusNo() {
 		return statusNo;
