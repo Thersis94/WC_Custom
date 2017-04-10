@@ -15,7 +15,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.sb.email.EmailInstanceHandler;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
@@ -118,7 +117,7 @@ public class BiomedSupportEmailUtil {
 		TicketEmailVO t = null;
 		boolean getActivity = !StringUtil.isEmpty(activityId);
 		String sql = getTicketSql(getActivity);
-		List<Object> params = new ArrayList<>(1);
+		List<Object> params = new ArrayList<>();
 		params.add(ticketId);
 		if(getActivity) {
 			params.add(activityId);
@@ -265,7 +264,6 @@ public class BiomedSupportEmailUtil {
 	 * @throws Exception 
 	 */
 	protected void sendNewRequestEmails(TicketEmailVO t) throws InvalidDataException, EncryptionException {
-		String campaignInstanceId = (String)attributes.get(NEW_TICKET_CAMP_INST_ID);
 
 		//Get Admins
 		List<AccountVO> admins = getAdminEmails();
