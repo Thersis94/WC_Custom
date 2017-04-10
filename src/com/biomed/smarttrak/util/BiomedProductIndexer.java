@@ -194,7 +194,9 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("SELECT x.PRODUCT_ID, x.VALUE_TXT FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("on a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
-		sql.append("WHERE a.TYPE_CD = 'HTML' ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("ON p.PRODUCT_ID = x.PRODUCT_ID ");
+		sql.append("WHERE p.STATUS_NO not in ('A','D') and a.TYPE_CD = 'HTML' ");
 		if (id != null) sql.append("and x.PRODUCT_ID = ? ");
 		sql.append("ORDER BY x.PRODUCT_ID ");
 		log.info(sql);
@@ -228,7 +230,9 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			Map<String, SecureSolrDocumentVO> products, String currentProduct) {
 
 		if (content.length() > 0) {
-			products.get(currentProduct).setContents(content.toString());
+			SecureSolrDocumentVO p = products.get(currentProduct);
+			if (p == null) return;
+			p.setContents(content.toString());
 		}
 	}
 
@@ -257,6 +261,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		Map<String, List<ProductAllianceVO>> alliances = retrieveAlliances(id);
 		for (Entry<String, List<ProductAllianceVO>> entry : alliances.entrySet()) {
 			SecureSolrDocumentVO p = products.get(entry.getKey());
+			if (p == null) continue;
 			p.addAttribute("ally", new ArrayList<String>());
 			p.addAttribute("alliance", new ArrayList<String>());
 			p.addAttribute("allyId", new ArrayList<String>());
@@ -287,8 +292,11 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("on t.ALLIANCE_TYPE_ID = xr.ALLIANCE_TYPE_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("on c.COMPANY_ID = xr.COMPANY_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("ON p.PRODUCT_ID = xr.PRODUCT_ID ");
+		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
 		if (id != null) {
-			sql.append("WHERE xr.PRODUCT_ID = ? ");
+			sql.append("and xr.PRODUCT_ID = ? ");
 			params.add(id);
 		}
 		DBProcessor db = new DBProcessor(dbConn);
@@ -315,6 +323,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		Map<String, List<RegulationVO>> regulatoryList = retrieveRegulatory(id);
 		for (Entry<String, List<RegulationVO>> entry : regulatoryList.entrySet()) {
 			SecureSolrDocumentVO p = products.get(entry.getKey());
+			if (p == null) continue;
 			p.addAttribute("usPathNm", new ArrayList<String>());
 			p.addAttribute("usStatusNm", new ArrayList<String>());
 			p.addAttribute("intRegionNm", new ArrayList<String>());
@@ -360,8 +369,11 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("ON re.REGION_ID = r.REGION_ID ");
 		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_PATH p ");
 		sql.append("ON p.PATH_ID = r.PATH_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT pro ");
+		sql.append("ON pro.PRODUCT_ID = r.PRODUCT_ID ");
+		sql.append("WHERE pro.STATUS_NO not in ('A','D') ");
 		if (id != null) {
-			sql.append("WHERE r.PRODUCT_ID = ? ");
+			sql.append("and r.PRODUCT_ID = ? ");
 			params.add(id);
 		}
 		
@@ -414,8 +426,8 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	private void groupDetails(Node child, Node parent, Map<String, SecureSolrDocumentVO> products) {
 		List<ProductAttributeVO> attrs = (List<ProductAttributeVO>) child.getUserObject();
 		for (ProductAttributeVO attr : attrs) {
-			if (attr.getProductId() == null) continue;
 			SecureSolrDocumentVO p = products.get(attr.getProductId());
+			if (p == null) continue;
 			if (!p.getAttributes().containsKey(parent.getNodeName())) {
 				// Two fields are needed for the details, one to search against
 				// and one to display in the product explorer
@@ -475,7 +487,10 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
 		sql.append("ON a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
-		if (id != null) sql.append("WHERE x.PRODUCT_ID = ? ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("ON p.PRODUCT_ID = x.PRODUCT_ID ");
+		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
+		if (id != null) sql.append("and x.PRODUCT_ID = ? ");
 		sql.append("ORDER BY a.ATTRIBUTE_ID ");
 		
 		List<Node> nodes = new ArrayList<>();
