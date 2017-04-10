@@ -185,7 +185,7 @@ public class LegacyEmailImporter extends CommandLineUtil {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				EmailLogVO vo = new EmailLogVO();
-				vo.setProfileId(rs.getString("wc_profile_id"));
+				vo.setProfileId(rs.getString("profile_id"));
 				vo.setCampaignLogId("SMARTTRAK_" + rs.getInt("id"));
 				vo.setSubject(rs.getString("subject"));
 				vo.setOpenCnt(rs.getInt("view_count"));
