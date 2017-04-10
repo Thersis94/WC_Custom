@@ -39,11 +39,11 @@ public class MarkdownConverter extends CommandLineUtil {
 	 * This enum is what we iterate when the script runs.
 	 */
 	enum Table {
-		COMPANY_ATTR_XR("select company_attribute_id, value_txt from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR",
+		COMPANY_ATTR_XR("select a.company_attribute_id, a.value_txt from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR a inner join custom.BIOMEDGPS_COMPANY_ATTRIBUTE b on a.ATTRIBUTE_ID=b.ATTRIBUTE_ID and b.TYPE_NM='HTML'",
 				"UPDATE custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR set value_txt=? where company_attribute_id=?"),
-		PROD_ATTR_XR("select product_attribute_id, value_txt from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR",
+		PROD_ATTR_XR("select a.product_attribute_id, a.value_txt from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR a inner join custom.BIOMEDGPS_PRODUCT_ATTRIBUTE b on a.ATTRIBUTE_ID=b.ATTRIBUTE_ID and b.TYPE_CD='HTML'",
 				"UPDATE custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR set value_txt=? where product_attribute_id=?"),
-		MKRT_ATTR_XR("select market_attribute_id, value_txt from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR",
+		MKRT_ATTR_XR("select a.market_attribute_id, a.value_txt from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR a inner join custom.BIOMEDGPS_MARKET_ATTRIBUTE b on a.ATTRIBUTE_ID=b.ATTRIBUTE_ID and b.TYPE_CD='HTML'",
 				"UPDATE custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR set value_txt=? where market_attribute_id=?"),
 		INSIGHT_ABS("select insight_id, abstract_txt from custom.BIOMEDGPS_INSIGHT",
 				"UPDATE custom.BIOMEDGPS_INSIGHT set abstract_txt=? where insight_id=?"),
