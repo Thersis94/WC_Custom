@@ -440,8 +440,8 @@ public class ProductManagementAction extends AbstractTreeAction {
 		
 		// If the request has search terms on it add them here
 		if (req.hasParameter("search")) {
-			sql.append("WHERE lower(PRODUCT_NM) like ?");
-			params.add("%" + req.getParameter("search").toLowerCase() + "% ");
+			sql.append("WHERE lower(PRODUCT_NM) like ? ");
+			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
 		
 		SortField s = SortField.getFromString(req.getParameter("sort"));
@@ -459,7 +459,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> products = db.executeSelect(sql.toString(), params, new ProductVO());
-		super.putModuleData(products, getProductCount(req.getParameter("searchData")), false);
+		super.putModuleData(products, getProductCount(req.getParameter("search")), false);
 	}
 
 	
@@ -474,7 +474,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 		sql.append("select COUNT(*) ").append("FROM ").append(customDb).append("BIOMEDGPS_product p ");
 		// If the request has search terms on it add them here
 		if (!StringUtil.isEmpty(searchData)) {
-			sql.append("WHERE lower(PRODUCT_NM) like ?");
+			sql.append("WHERE lower(PRODUCT_NM) like ? ");
 		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
