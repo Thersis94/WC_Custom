@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.vo;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
@@ -23,8 +24,13 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_COMPANY_ATTRIBUTE")
-public class CompanyAttributeTypeVO {
+public class CompanyAttributeTypeVO implements Serializable {
 	
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4817813194996225685L;
 	private String attributeId;
 	private String attributeName;
 	private String attributeTypeName;

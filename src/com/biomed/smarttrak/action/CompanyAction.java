@@ -4,10 +4,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.security.SecurityController;
@@ -47,8 +47,6 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
  ****************************************************************************/
 
 public class CompanyAction extends AbstractTreeAction {
-	
-	private static final String DEFAULT_GROUP = "Other";
 	private static final int PRODUCT_PATH_LENGTH = 2;
 	
 	public CompanyAction() {
@@ -287,10 +285,9 @@ public class CompanyAction extends AbstractTreeAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		
 		List<Object> results = db.executeSelect(sql.toString(), params, new CompanyAttributeVO());
-		Tree t = buildAttributeTree("COMPANY");
-		Map<String, List<CompanyAttributeVO>> attrMap = new TreeMap<>();
+		Map<String, List<CompanyAttributeVO>> attrMap = new LinkedHashMap<>();
 		for (Object o : results) {
-			addToAttributeMap(attrMap, t, (CompanyAttributeVO)o);
+			addToAttributeMap(attrMap, (CompanyAttributeVO)o);
 		}
 		
 		for (Entry<String, List<CompanyAttributeVO>> e : attrMap.entrySet()) {
@@ -368,8 +365,7 @@ public class CompanyAction extends AbstractTreeAction {
 	 * @param attributeTree
 	 * @param attr
 	 */
-	private void addToAttributeMap(Map<String, List<CompanyAttributeVO>> attrMap, Tree attributeTree, CompanyAttributeVO attr) {
-		String[] path = attributeTree.findNode(attr.getAttributeId()).getFullPath().split("/");
+	private void addToAttributeMap(Map<String, List<CompanyAttributeVO>> attrMap, CompanyAttributeVO attr) {
 		
 		if ("LINK".equals(attr.getAttributeTypeName()) ||
 				"ATTACH".equals(attr.getAttributeTypeName())) {
@@ -377,23 +373,12 @@ public class CompanyAction extends AbstractTreeAction {
 			return;
 		}
 		
-		// Markets using attributes too high up in the tree do not have enough
-		// information to be sorted properly and are placed in the extras group.
-		if (path.length < 2) {
-			if (attrMap.get(DEFAULT_GROUP) == null) attrMap.put(DEFAULT_GROUP, new ArrayList<CompanyAttributeVO>());
-			attr.setGroupName(DEFAULT_GROUP);
-			attrMap.get(DEFAULT_GROUP).add(attr);
-			return;
-		}
-		
-		Node n = attributeTree.findNode(path[1]);
-		
-		if (!attrMap.keySet().contains(n.getNodeName())) {
-			attrMap.put(n.getNodeName(), new ArrayList<CompanyAttributeVO>());
+		if (!attrMap.keySet().contains(attr.getAttributeName())) {
+			attrMap.put(attr.getAttributeName(), new ArrayList<CompanyAttributeVO>());
 		}
 
-		attr.setGroupName(n.getNodeName());
-		attrMap.get(n.getNodeName()).add(attr);
+		attr.setGroupName(attr.getAttributeName());
+		attrMap.get(attr.getAttributeName()).add(attr);
 	}
 	
 
@@ -407,42 +392,7 @@ public class CompanyAction extends AbstractTreeAction {
 		if (attrMap.get(attr.getAttributeId()) == null) attrMap.put(attr.getAttributeId(), new ArrayList<CompanyAttributeVO>());
 		attrMap.get(attr.getAttributeId()).add(attr);
 	}
-
-	/**
-	 * Create the full attribute tree in order to determine the full ancestry of each attribute
-	 * @param attrType
-	 * @return
-	 * @throws ActionException
-	 */
-	private Tree buildAttributeTree(String attrType) throws ActionException {
-		StringBuilder sql = new StringBuilder(100);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT c.ATTRIBUTE_ID, c.PARENT_ID, c.ATTRIBUTE_NM, p.ATTRIBUTE_NM as PARENT_NM, ");
-		if ("PRODUCT".equals(attrType)) {
-			sql.append("c.ORDER_NO ");
-		} else {
-			sql.append("c.DISPLAY_ORDER_NO ");
-		}
-		sql.append("FROM ").append(customDb).append("BIOMEDGPS_").append(attrType).append("_ATTRIBUTE c ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_").append(attrType).append("_ATTRIBUTE p ");
-		sql.append("ON c.PARENT_ID = p.ATTRIBUTE_ID ");
-		log.debug(sql);
-		List<Node> attributes = new ArrayList<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				Node n = new Node(rs.getString("ATTRIBUTE_ID"), rs.getString("PARENT_ID"));
-				setNodeName(n, rs, attrType);
-				attributes.add(n);
-			}
-			
-		} catch (SQLException e) {
-			throw new ActionException(e);
-		}
-		Tree t = new Tree(attributes);
-		t.buildNodePaths();
-		return t;
-	}
+	
 
 	/**
 	 * Set the name of the supplied node based on the passed attribute type.
