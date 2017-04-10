@@ -159,7 +159,7 @@ public class ListAction extends DirectUrlManagerAction {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select company_id as id, company_nm as val from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_company ");
-		sql.append("order by company_nm");
+		sql.append(" where status_no = 'P' order by company_nm");
 
 		return sql.toString();
 	}
@@ -172,7 +172,7 @@ public class ListAction extends DirectUrlManagerAction {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select market_id as id, market_nm as val from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_MARKET order by market_nm");
+		sql.append("BIOMEDGPS_MARKET where status_no = 'P' order by market_nm");
 
 		return sql.toString();
 	}
@@ -185,7 +185,7 @@ public class ListAction extends DirectUrlManagerAction {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select product_id as id, product_nm as val from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_PRODUCT order by product_nm");
+		sql.append("BIOMEDGPS_PRODUCT where status_no = 'P' order by product_nm");
 
 		return sql.toString();
 	}

@@ -44,6 +44,15 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 		super(actionInit);
 	}
 
+	@Override
+	public void delete(ActionRequest req) throws ActionException {
+		if(req.hasParameter("pkId")) {
+			TicketVO t = new TicketVO(req);
+			t.setTicketId(req.getParameter("pkId"));
+			commitData(t, true);
+		}
+	}
+
 	/**
 	 * @param ticketId
 	 * @param schema
