@@ -31,19 +31,19 @@ public class MarkdownConverter extends CommandLineUtil {
 	/**
 	 * regex matchers for the graph injections - we're replacing their html markup with ours, which triggers some jquery onload to populate the DOM.
 	 */
-	private static final String graphMatcher = "(?m)(?i)<!-- —\\s?([^—]+)\\s— -->(<br />)?\\s+?(<p>)?<div class=('|\")([^<>]+)?('|\") data-embed=('|\")([^'\"]+)?('|\")>([^<>]+)?</div>(</p>)?";
-	private static final String graphReplace = "$3<div class=\"biomed_grid\">\n<a data-graph=\"$8\" data-target=\"#graph-modal\" data-title=\"$1\" data-toggle=\"modal\" data-type=\"TABLE\" href=\"#\"><span class=\"graph-name fa fa-table\"></span>$1</a>\n</div>$11";
+	private static final String GRAPH_MATCHER = "(?m)(?i)<!-- —\\s?([^—]+)\\s— -->(<br />)?\\s+?(<p>)?<div class=('|\")([^<>]+)?('|\") data-embed=('|\")([^'\"]+)?('|\")>([^<>]+)?</div>(</p>)?";
+	private static final String GRAPH_REPLACE = "$3<div class=\"biomed_grid\">\n<a data-graph=\"$8\" data-target=\"#graph-modal\" data-title=\"$1\" data-toggle=\"modal\" data-type=\"TABLE\" href=\"#\"><span class=\"graph-name fa fa-table\"></span>$1</a>\n</div>$11";
 	
 	
 	/**
 	 * This enum is what we iterate when the script runs.
 	 */
 	enum Table {
-		COMPANY_ATTR_XR("select company_attribute_id, value_txt from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR",
+		COMPANY_ATTR_XR("select a.company_attribute_id, a.value_txt from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR a inner join custom.BIOMEDGPS_COMPANY_ATTRIBUTE b on a.ATTRIBUTE_ID=b.ATTRIBUTE_ID and b.TYPE_NM='HTML'",
 				"UPDATE custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR set value_txt=? where company_attribute_id=?"),
-		PROD_ATTR_XR("select product_attribute_id, value_txt from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR",
+		PROD_ATTR_XR("select a.product_attribute_id, a.value_txt from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR a inner join custom.BIOMEDGPS_PRODUCT_ATTRIBUTE b on a.ATTRIBUTE_ID=b.ATTRIBUTE_ID and b.TYPE_CD='HTML'",
 				"UPDATE custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR set value_txt=? where product_attribute_id=?"),
-		MKRT_ATTR_XR("select market_attribute_id, value_txt from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR",
+		MKRT_ATTR_XR("select a.market_attribute_id, a.value_txt from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR a inner join custom.BIOMEDGPS_MARKET_ATTRIBUTE b on a.ATTRIBUTE_ID=b.ATTRIBUTE_ID and b.TYPE_CD='HTML'",
 				"UPDATE custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR set value_txt=? where market_attribute_id=?"),
 		INSIGHT_ABS("select insight_id, abstract_txt from custom.BIOMEDGPS_INSIGHT",
 				"UPDATE custom.BIOMEDGPS_INSIGHT set abstract_txt=? where insight_id=?"),
@@ -80,8 +80,8 @@ public class MarkdownConverter extends CommandLineUtil {
 	 */
 	public static void main(String[] args) {
 		MarkdownConverter eui = new MarkdownConverter(args);
-				eui.run(Table.COMPANY_ATTR_XR);
-//		eui.runTest()
+		eui.run();
+		//eui.runTest()
 	}
 
 
@@ -170,7 +170,7 @@ public class MarkdownConverter extends CommandLineUtil {
 	 * @return
 	 */
 	private String fixGraphs(String markup) {
-		return markup.replaceAll(graphMatcher, graphReplace);
+		return markup.replaceAll(GRAPH_MATCHER, GRAPH_REPLACE);
 	}
 
 

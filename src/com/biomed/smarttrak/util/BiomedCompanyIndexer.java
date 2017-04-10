@@ -212,7 +212,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		SecureSolrDocumentVO company = new SecureSolrDocumentVO(INDEX_TYPE);
 		company.setDocumentId(rs.getString("COMPANY_ID"));
 		company.setTitle(rs.getString("COMPANY_NM"));
-		company.setContentType(rs.getString("STATUS_NO"));
+		company.addAttribute("status", rs.getString("STATUS_NO"));
 		company.addAttribute("ticker", rs.getString("NAME_TXT"));
 		company.setDocumentUrl(AdminControllerAction.Section.COMPANY.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString("COMPANY_ID"));
 		company.addAttribute("productCount", rs.getInt("PRODUCT_NO"));
@@ -253,7 +253,8 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		sql.append("ON cs.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c2 ");
 		sql.append("ON c2.COMPANY_ID = c.PARENT_ID ");
-		if (id != null) sql.append("WHERE c.COMPANY_ID = ? ");
+		sql.append("WHERE c.STATUS_NO not in ('A','D') ");
+		if (id != null) sql.append("and c.COMPANY_ID = ? ");
 		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, cs.SECTION_ID, c.STATUS_NO, ");
 		sql.append("e.NAME_TXT, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT ");
 		log.debug(sql);

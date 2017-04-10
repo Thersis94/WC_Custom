@@ -11,19 +11,17 @@ import java.util.List;
 
 //WC custom
 import com.biomed.smarttrak.vo.EmailLogVO;
-
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.MessageVO;
-import com.siliconmtn.sb.email.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.util.SentMessageUtil;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.SBActionAdapter;
-
 // WebCrescendo
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -88,8 +86,8 @@ public class EmailReportAction extends SBActionAdapter {
 	 */
 	protected void populateEmail(EmailLogVO vo) {
 		//call the email core to obtain and re-assemble the email as it was when the user received it.
-		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-		MessageVO eml = util.getMessage(vo.getCampaignInstanceId(), vo.getCampaignLogId());
+		SentMessageUtil util = new SentMessageUtil(getDBConnection(), getAttributes());
+		MessageVO eml = util.recreateMessage(vo.getCampaignInstanceId(), vo.getCampaignLogId());
 		if (eml instanceof EmailMessageVO) {
 			EmailMessageVO emlVo = (EmailMessageVO) eml;
 			vo.setMessageBody(emlVo.getHtmlBody());
@@ -181,7 +179,7 @@ public class EmailReportAction extends SBActionAdapter {
 		sql.append("left outer join SENT_EMAIL_PARAM sl on l.campaign_log_id=sl.campaign_log_id and sl.key_nm='subject' ");
 		sql.append("where camp.organization_id=? ");
 		if (campaignLogId != null) sql.append("and l.campaign_log_id=? ");
-		sql.append("and l.attempt_dt < ? ");
+		sql.append("and l.attempt_dt > ? ");
 		sql.append("group by l.attempt_dt, p.profile_id, p.email_address_txt, p.first_nm, p.last_nm, success_flg, l.campaign_log_id, subject_txt, sl.value_txt ");
 		sql.append("order by ").append(getOrderBy(sort, dir)).append(" limit ? offset ? ");
 		return sql.toString();

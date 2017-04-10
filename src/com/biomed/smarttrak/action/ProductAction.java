@@ -250,24 +250,17 @@ public class ProductAction extends AbstractTreeAction {
 		
 		String[] path = n.getFullPath().split("/");
 		
-		// Markets using attributes too high up in the tree do not have enough
-		// information to be sorted properly and are placed in the extras group.
-		if (path.length < 2) {
-			attr.setGroupName("Other");
-			attrMap.get("Other").add(attr);
-			return;
-		}
-		Node head = attributeTree.findNode(path[1]);
 		if (n.getFullPath().contains(DETAILS_ID)) {
+			Node head = attributeTree.findNode(path[1]);
 			String[] name = head.getNodeName().split("\\|");
 			product.addDetail(name[name.length-1], attr);
 		} else {
-			if (!attrMap.keySet().contains(path[1])) {
-				attrMap.put(path[1], new ArrayList<ProductAttributeVO>());
+			if (!attrMap.keySet().contains(attr.getAttributeId())) {
+				attrMap.put(attr.getAttributeId(), new ArrayList<ProductAttributeVO>());
 			}
 
-			attr.setGroupName(head.getNodeName());
-			attrMap.get(path[1]).add(attr);
+			attr.setGroupName(attr.getAttributeId());
+			attrMap.get(attr.getAttributeId()).add(attr);
 		}
 		
 	}

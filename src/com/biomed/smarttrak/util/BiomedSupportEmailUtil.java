@@ -2,34 +2,28 @@ package com.biomed.smarttrak.util;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.vo.AccountVO;
-import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.vo.TicketEmailVO;
 import com.siliconmtn.action.ActionException;
-import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.io.mail.EmailMessageVO;
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
-import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
-import com.smt.sitebuilder.action.support.TicketVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
-import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>: BiomedSupportEmailUtil.java
@@ -43,11 +37,13 @@ import com.smt.sitebuilder.util.MessageSender;
  * @since Mar 10, 2017
  ****************************************************************************/
 public class BiomedSupportEmailUtil {
-
-	public static final String CFG_SUPPORT_URL = "smarttrakSupportUrl";
-
+	public static final String NEW_TICKET_CAMP_INST_ID = "newTicketCampInstId";
+	public static final String ASSN_TICKET_CAMP_INST_ID = "assnTicketCampInstId";
+	public static final String STAT_TICKET_CAMP_INST_ID = "statTicketCampInstId";
+	public static final String ACT_TICKET_CAMP_INST_ID = "actTicketCampInstId";
 	private Logger log;
 
+	private EmailCampaignBuilderUtil ecbu;
 	private SMTDBConnection dbConn = null;
 	private Map<String, Object> attributes = null;
 
@@ -62,6 +58,7 @@ public class BiomedSupportEmailUtil {
 		this.log = Logger.getLogger(this.getClass());
 		this.dbConn = conn;
 		this.attributes = attributes;
+		this.ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
 	}
 
 
@@ -74,14 +71,12 @@ public class BiomedSupportEmailUtil {
 	 */
 	public void sendEmail(String ticketId, ChangeType type) throws ActionException {
 
-		TicketVO t = loadTicket(ticketId);
-
+		TicketEmailVO ticket = loadTicket(ticketId, null);
 		try {
-			buildEmail(t, type);
+			sendEmails(ticket, type);
 		} catch (InvalidDataException | EncryptionException e) {
 			throw new ActionException("There was a problem building Biomed support email.", e);
 		}
-		
 	}
 
 	/**
@@ -89,8 +84,8 @@ public class BiomedSupportEmailUtil {
 	 * info and optional assigned info if available.
 	 * @return
 	 */
-	protected String getTicketSql() {
-		StringBuilder sql = new StringBuilder(500);
+	protected String getTicketSql(boolean getActivity) {
+		StringBuilder sql = new StringBuilder(600);
 		sql.append("select a.*, b.first_nm as reporter_first_nm, ");
 		sql.append("b.last_nm as reporter_last_nm, ");
 		sql.append("b.email_address_txt as reporter_email, ");
@@ -100,17 +95,68 @@ public class BiomedSupportEmailUtil {
 		sql.append("from support_ticket a ");
 		sql.append("inner join profile b on a.reporter_id = b.profile_id ");
 		sql.append("left outer join profile c on a.assigned_id = c.profile_id ");
-		sql.append("where a.ticket_id = ?");
+		if(getActivity) {
+			sql.append("left outer join support_activity sa on a.ticket_id = sa.ticket_id ");
+		}
+		sql.append("where a.ticket_id = ? ");
+
+		if(getActivity) {
+			sql.append("and sa.activity_id = ?");
+		}
 
 		return sql.toString();
 	}
 
+	/**
+	 * Load Ticket Info.  This has email Address information in it that we need
+	 * to Send the Emails.
+	 * @param ticketId
+	 * @return
+	 */
+	public TicketEmailVO loadTicket(String ticketId, String activityId) {
+		TicketEmailVO t = null;
+		boolean getActivity = !StringUtil.isEmpty(activityId);
+		String sql = getTicketSql(getActivity);
+		List<Object> params = new ArrayList<>();
+		params.add(ticketId);
+		if(getActivity) {
+			params.add(activityId);
+		}
+
+		List<Object> ticket = new DBProcessor(dbConn).executeSelect(sql, params, new TicketEmailVO());
+
+		if(!ticket.isEmpty()) {
+			t = (TicketEmailVO)ticket.get(0);
+
+			t.setTicketLink(buildTicketLink(t));
+			//Decrypt ProfileData on Ticket.
+			decryptTicket(t);
+		}
+
+		return t;
+	}
 
 	/**
-	 * Helper method that decrypts Profile Data on the TicketVO.
+	 * Helper method that builds the Ticket Link for the email.
+	 * @param t
+	 * @return
+	 */
+	protected String buildTicketLink(TicketEmailVO t) {
+		//Build Url
+		StringBuilder url = new StringBuilder(150);
+		url.append((String)attributes.get("smarttrakSupportUrl"));
+		url.append(attributes.get(Constants.QS_PATH));
+		url.append(t.getTicketId());
+
+		return url.toString();
+	}
+
+
+	/**
+	 * Helper method that decrypts Profile Data on the TicketEmailVO.
 	 * @param t
 	 */
-	protected void decryptTicket(TicketVO t) {
+	protected void decryptTicket(TicketEmailVO t) {
 		try {
 			StringEncrypter se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
 			t.setAssignedEmail(se.decrypt(t.getAssignedEmail()));
@@ -139,8 +185,7 @@ public class BiomedSupportEmailUtil {
 	}
 
 	/**
-	 * Helper method that builds the Proper Email for a given EmailType and
-	 * Sends it.
+	 * Build EmailCampaign Message Objects to be Enqueued.
 	 * @param t
 	 * @param type
 	 * @param ticketMsg
@@ -149,74 +194,24 @@ public class BiomedSupportEmailUtil {
 	 * @throws EncryptionException 
 	 * @throws Exception 
 	 */
-	protected void buildEmail(TicketVO t, ChangeType type) throws InvalidDataException, ActionException, EncryptionException {
-		EmailMessageVO email = null;
+	protected void sendEmails(TicketEmailVO ticket, ChangeType type) throws InvalidDataException, ActionException, EncryptionException {
 		switch(type) {
 			case ACTIVITY:
-				email = buildActivityEmail(t);
+				sendActivityEmails(ticket);
 				break;
 			case ASSIGNMENT:
-				email = buildAssignedEmail(t);
+				sendAssignedEmails(ticket);
 				break;
 			case STATUS:
-				email = buildStatusEmail(t);
+				sendStatusEmails(ticket);
 				break;
 			case TICKET:
-				email = buildNewRequestEmail(t);
+				sendNewRequestEmails(ticket);
 				break;
 			case ATTACHMENT:
 			default:
 				break;
 		}
-
-		//If an email was built, send it.
-		if(email != null) {
-			sendEmail(email);
-		}
-	}
-
-	/**
-	 * Helper method that sends an Email containing the Order that was just
-	 * processed.
-	 * @param order
-	 * @throws Exception
-	 */
-	protected void sendEmail(EmailMessageVO email) {
-		log.debug("Created Message: " + email);
-
-		MessageSender ms = new MessageSender(attributes, dbConn);
-		ms.sendMessage(email);
-	}
-
-	/**
-	 * Helper method that builds Default EmailMessageVO.
-	 * @param t
-	 * @return
-	 * @throws InvalidDataException 
-	 */
-	protected EmailMessageVO buildDefaultEmail(TicketVO t) throws InvalidDataException {
-		EmailMessageVO msg = new EmailMessageVO();
-		msg.setFrom((String)attributes.get(Constants.CFG_DEFAULT_FROM_ADDRESS));
-		msg.addRecipient(t.getReporterEmail());
-
-		if(!StringUtil.isEmpty(t.getAssignedEmail())) {
-			msg.addRecipient(t.getAssignedEmail());
-		}
-
-		return msg;
-	}
-
-	/**
-	 * Helper method builds the Help Url for a given Ticket.
-	 * @param t
-	 * @return
-	 */
-	protected String buildTicketUrl(TicketVO t) {
-		StringBuilder sql = new StringBuilder(150);
-		sql.append((String)attributes.get(CFG_SUPPORT_URL));
-		sql.append(attributes.get(Constants.QS_PATH));
-		sql.append(t.getTicketId());
-		return sql.toString();
 	}
 
 	/**
@@ -225,11 +220,11 @@ public class BiomedSupportEmailUtil {
 	 * @throws EncryptionException 
 	 * @throws Exception 
 	 */
-	protected String [] getAdminEmails() throws EncryptionException {
-		List<String> emails = new ArrayList<>();
+	@SuppressWarnings("unchecked")
+	protected List<AccountVO> getAdminEmails() throws EncryptionException {
 
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.email_address_txt as owner_email_addr, a.first_nm, a.last_nm from profile a ");
+		sql.append("select a.email_address_txt as owner_email_addr, a.first_nm, a.last_nm, a.profile_id as owner_profile_id from profile a ");
 		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=?");
 		sql.append("and b.site_id=? and b.role_id=?");
 		log.debug(sql);
@@ -255,7 +250,7 @@ public class BiomedSupportEmailUtil {
 			a.setLastName(se.decrypt(a.getLastName()));
 		}
 
-		return emails.toArray(new String [emails.size()]);
+		return (List<AccountVO>)(List<?>)accounts;
 	}
 
 	/**
@@ -268,36 +263,23 @@ public class BiomedSupportEmailUtil {
 	 * @throws EncryptionException 
 	 * @throws Exception 
 	 */
-	protected EmailMessageVO buildNewRequestEmail(TicketVO t) throws InvalidDataException, EncryptionException {
-		EmailMessageVO msg = buildDefaultEmail(t);
+	protected void sendNewRequestEmails(TicketEmailVO t) throws InvalidDataException, EncryptionException {
+
+		//Get Admins
+		List<AccountVO> admins = getAdminEmails();
+
+		//Build Config
+		Map<String, Object> config = getBaseConfig(t);
+
+		//Get Recipients
+		Map<String, String> recipients = getBaseRecipients(t);
 
 		//New Tickets get sent to All Admins.
-		msg.addRecipients(getAdminEmails());
+		for(AccountVO a : admins) {
+			recipients.put(a.getOwnerProfileId(), a.getOwnerEmailAddr());
+		}
+		ecbu.sendMessage((String)attributes.get(NEW_TICKET_CAMP_INST_ID), recipients, config);
 
-		//Add New Email Html.
-		msg.setHtmlBody(buildNewEmailBody(t));
-
-		return msg;
-
-	}
-
-
-	/**
-	 * Helper method that builds a New Email Body Message.
-	 * @param t
-	 * @param ticketMsg
-	 * @return
-	 */
-	protected String buildNewEmailBody(TicketVO t) {
-		StringBuilder text = new StringBuilder(1000);
-		text.append("<p>Thank you for creating a Direct Access request, we make ");
-		text.append("every effort to reply to Direct Access requests within 1 ");
-		text.append("business day.To amend your request or add a screenshot or attachment ");
-		text.append("<a href='");
-		text.append(buildTicketUrl(t));
-		text.append("'>view the request here</a>.</p>").append(addDescText(t.getDescText()));
-
-		return text.toString();
 	}
 
 
@@ -311,194 +293,103 @@ public class BiomedSupportEmailUtil {
 	 * @throws ActionException 
 	 * @throws Exception 
 	 */
-	protected EmailMessageVO buildAssignedEmail(TicketVO t) throws InvalidDataException, ActionException {
-		EmailMessageVO msg = buildDefaultEmail(t);
-		msg.setHtmlBody(buildAssignedEmailBody(t));
-		return msg;
+	protected void sendAssignedEmails(TicketEmailVO t) throws InvalidDataException, ActionException {
+
+		//Build Config
+		Map<String, Object> config = getBaseConfig(t);
+		config.put("firstName", t.getFirstName());
+		config.put("lastName", t.getLastName());
+		config.put("companyId", t.getCompanyId());
+		config.put("reporterEmail", t.getReporterEmail());
+		config.put("phoneNo", t.getPhoneNo());
+		config.put("createDtFmt", t.getCreateDtFmt());
+
+		ecbu.sendMessage((String)attributes.get(ASSN_TICKET_CAMP_INST_ID), getBaseRecipients(t), config);
 	}
 
 	/**
-	 * Helper method that builds the Assigned Email Body.
-	 * @param t
-	 * @param ticketMsg
-	 * @return
-	 * @throws ActionException 
-	 * @throws Exception 
-	 */
-	protected String buildAssignedEmailBody(TicketVO t) throws ActionException {
-		UserVO user = getUserData(t);
-		String companyId = user.getCompany();
-		PhoneNumberFormat pnf = new PhoneNumberFormat();
-		pnf.setCountryCode(user.getCountryCode());
-		pnf.setPhoneNumber(user.getMainPhone());
-
-		StringBuilder text = new StringBuilder(1000);
-		text.append("<p>You've been assigned a Direct Access request (#");
-		text.append(t.getTicketId()).append(") from <b>");
-		text.append(t.getFirstName()).append(" ").append(t.getLastName());
-		text.append(" at ");		
-		text.append(companyId);
-		text.append("</b>.<a href='");
-		text.append(buildTicketUrl(t));
-		text.append("'>Click here to review or respond to the request</a>.</p><p>");
-		text.append("Creator: ");
-		text.append(t.getFirstName()).append(" ").append(t.getLastName());
-		text.append("<br>Account: ");
-		text.append(companyId);
-		text.append("<br><a href='");
-		text.append(buildTicketUrl(t));
-		text.append("'>Link to Ticket</a><br>E-Mail: ");
-		text.append(t.getReporterEmail());
-		text.append("<br>Phone: ");
-		text.append(pnf.getFormattedNumber());
-		text.append("<br>Creation Time: ");
-		text.append(Convert.formatDate(t.getCreateDt(), Convert.DATE_TIME_DASH_PATTERN_12HR));
-		text.append("</p>").append(addDescText(t.getDescText()));
-		return text.toString();
-	}
-
-
-	/**
+	 * Helper method builds an email sent to Requester and Assigned Admin that
+	 * status has changed.
 	 * @param t
 	 * @return
-	 * @throws ActionException 
+	 * @throws InvalidDataException
+	 * @throws ActionException
 	 */
-	protected UserVO getUserData(TicketVO t) throws ActionException {
-		ActionRequest req = new ActionRequest();
-		SiteVO s = new SiteVO();
-		s.setOrganizationId(AdminControllerAction.BIOMED_ORG_ID);
-		req.setAttribute(Constants.SITE_DATA, s);
-		AccountUserAction aua = new AccountUserAction();
-		aua.setDBConnection(dbConn);
-		aua.setAttributes(attributes);
-		return (UserVO) aua.loadAccountUsers(req, t.getReporterId()).get(0);
-	}
+	protected void sendStatusEmails(TicketEmailVO t) throws InvalidDataException, ActionException {
 
+		//Build Config
+		Map<String, Object> config = getBaseConfig(t);
+		config.put("statusNm", t.getStatusNm());
+		config.put("assignedFirstNm", t.getAssignedFirstNm());
+		config.put("assignedLastNm", t.getAssignedLastNm());
 
-	/**
-	 * Helper method builds an email sent to Requester and Assigned admin that
-	 * Ticket status has changed.
-	 * @param t
-	 * @param ticketMsg 
-	 * @return
-	 * @throws InvalidDataException 
-	 */
-	protected EmailMessageVO buildStatusEmail(TicketVO t) throws InvalidDataException {
-		EmailMessageVO msg = buildDefaultEmail(t);
-		msg.setHtmlBody(buildStatusEmailBody(t));
-		return msg;
-
+		//Get Emails
+		ecbu.sendMessage((String)attributes.get(STAT_TICKET_CAMP_INST_ID), getBaseRecipients(t), config);
 	}
 
 	/**
-	 * Helper method that builds the StatusEmailBody.
+	 * Helper method that puts together basic config.
 	 * @param t
-	 * @param ticketMsg
 	 * @return
 	 */
-	protected String buildStatusEmailBody(TicketVO t) {
-		StringBuilder text = new StringBuilder(1000);
-		text.append("<p><a href='");
-		//Replace Url
-		text.append(buildTicketUrl(t));
-		text.append("'>Direct Access request (#");
-		//Replace Ticket Number
-		text.append(t.getTicketId());
-		text.append(")</a> was moved to ");
-		text.append(t.getStatusNm());
-		text.append(" status by ");
-
-		//Replace Assigned Name
-		text.append(t.getAssignedFirstNm()).append(" ").append(t.getAssignedLastNm());
-		text.append(".</p>").append(addDescText(t.getDescText()));
-
-		return text.toString();
+	protected Map<String, Object> getBaseConfig(TicketEmailVO t) {
+		Map<String, Object> config = new HashMap<>();
+		config.put("ticketLink", t.getTicketLink());
+		config.put("ticketDesc", t.getDescText());
+		config.put("ticketNo", t.getTicketNo());
+		return config;
 	}
 
+	/**
+	 * Helper method that builds normal emails for Assignee and Reporter.
+	 * @param campaignInstanceId
+	 * @param t
+	 * @param config
+	 * @return
+	 */
+	protected Map<String, String> getBaseRecipients(TicketEmailVO t) {
+		Map<String, String> recipients = new HashMap<>();
+		//Add Assignee
+		if(!StringUtil.isEmpty(t.getAssignedEmail())) {
+			recipients.put(t.getAssignedId(), t.getAssignedEmail());
+		}
+
+		//Add Reporter
+		if(!StringUtil.isEmpty(t.getReporterEmail())) {
+			recipients.put(t.getReporterId(), t.getReporterEmail());
+		}
+
+		return recipients;
+	}
 
 	/**
 	 * Helper method builds an email to the Requester containing message from
 	 * Assigned Admin.
 	 * @param t
-	 * @param ticketMsg 
+	 * @param ticketMsg
 	 * @return
-	 * @throws InvalidDataException 
+	 * @throws InvalidDataException
 	 */
-	protected EmailMessageVO buildActivityEmail(TicketVO t) throws InvalidDataException {
-		EmailMessageVO email = buildDefaultEmail(t);
-		email.setHtmlBody(buildActivityEmailBody(t));
-		return email;
-	}
+	protected void sendActivityEmails(TicketEmailVO t) throws InvalidDataException {
 
-	/**
-	 * Helper method builds Activity Email Body.
-	 * @param t
-	 * @return
-	 */
-	protected String buildActivityEmailBody(TicketVO t) {
-		StringBuilder text = new StringBuilder(1000);
-		text.append("<p><a href='");
-		//Replace Url
-		text.append(buildTicketUrl(t));
-		text.append("'>Direct Access request (#");
-		//Replace Ticket Number
-		text.append(t.getTicketId());
-		text.append(")</a> has been updated.</p>").append(addDescText(t.getActivities().get(0).getDescText()));
+		//Build Config
+		Map<String, Object> config = getBaseConfig(t);
+		config.put("ticketDesc", t.getActivities().get(0).getDescText());
 
-		return text.toString();
+		//Get Emails
+		ecbu.sendMessage((String)attributes.get(ACT_TICKET_CAMP_INST_ID), getBaseRecipients(t), config);
 	}
 
 
-	/**
-	 * Load Ticket Info.  This has email Address information in it that we need
-	 * to Send the Emails.
-	 * @param ticketId
-	 * @return
-	 */
-	protected TicketVO loadTicket(String ticketId) {
-		TicketVO t = null;
-		String sql = getTicketSql();
-		List<Object> params = new ArrayList<>(1);
-		params.add(ticketId);
-
-		List<Object> ticket = new DBProcessor(dbConn).executeSelect(sql, params, new TicketVO());
-
-		if(!ticket.isEmpty()) {
-			t = (TicketVO)ticket.get(0);
-
-			//Decrypt ProfileData on Ticket.
-			decryptTicket(t);
-		}	
-		return t;
-	}
-
-
-	/**
-	 * All emails have the same Desc Text Format at the bottom.
-	 * @param t
-	 * @return
-	 */
-	protected String addDescText(String descText) {
-		StringBuilder text = new StringBuilder(1000);
-
-		text.append("<p><b>Original Request</b>:</p><hr>");
-
-		//Replace ticketMsg
-		text.append(descText);
-		text.append("<br><hr>");
-
-		return text.toString();
-	}
 	/**
 	 * Build the TicketActivity Email Notification. 
 	 * @param act
 	 * @throws ActionException 
 	 */
 	public void sendEmail(TicketActivityVO act) throws ActionException {
-		TicketVO t = loadTicket(act.getTicketId());
-		t.addActivity(act);
+		TicketEmailVO t = loadTicket(act.getTicketId(), act.getActivityId());
 		try {
-			buildEmail(t, ChangeType.ACTIVITY);
+			sendEmails(t, ChangeType.ACTIVITY);
 		} catch (InvalidDataException | EncryptionException e) {
 			throw new ActionException("There was a problem building Biomed support email.", e);
 		}

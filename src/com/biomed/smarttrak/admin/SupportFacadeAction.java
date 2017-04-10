@@ -3,7 +3,9 @@
  */
 package com.biomed.smarttrak.admin;
 
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.support.SupportTicketAttachmentAction;
 import com.smt.sitebuilder.action.support.SupportTicketFacadeAction;
 
@@ -21,6 +23,17 @@ import com.smt.sitebuilder.action.support.SupportTicketFacadeAction;
  * @since Feb 24, 2017
  ****************************************************************************/
 public class SupportFacadeAction extends SupportTicketFacadeAction {
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void delete(ActionRequest req) throws ActionException {
+		ActionInterface a = getAction(ActionType.TICKET);
+
+		a.delete(req);
+	}
 
 	/**
 	 * @param attachment

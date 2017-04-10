@@ -4,10 +4,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import org.apache.solr.common.SolrDocument;
 
@@ -255,7 +255,6 @@ public class MarketAction extends AbstractTreeAction {
 		List<Node> markets = new ArrayList<>();
 		for (SolrDocument doc : res.getResultDocuments()) {
 			Node n = new Node((String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID), (String) doc.getFieldValue("parentId_s"));
-			log.debug(n.getNodeId()+"|"+n.getParentId());
 			n.setUserObject(doc);
 			markets.add(n);
 		}
@@ -274,7 +273,7 @@ public class MarketAction extends AbstractTreeAction {
 	 * @param groups
 	 */
 	private Object prepDocuments(Tree t) {
-		Map<String, Map<String, List<Node>>> groups = new TreeMap<>();
+		Map<String, Map<String, List<Node>>> groups = new LinkedHashMap<>();
 		
 		for (Node n : t.getRootNode().getChildren()) {
 			//use level 3 of the hierarchy as group name, or a default "Other" otherwise

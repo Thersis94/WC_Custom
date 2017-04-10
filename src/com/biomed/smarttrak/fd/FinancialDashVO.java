@@ -47,6 +47,11 @@ public class FinancialDashVO extends SBModuleVO {
 	private int currentYear;
 	
 	/**
+	 * The month offset from the current date, for the financial dashboard to display as current
+	 */
+	public static final int CURRENT_DT_MONTH_OFFSET = -6;
+	
+	/**
 	 * Provides a logger
 	 */
 	protected static Logger log;
@@ -408,7 +413,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * Current quarter/year is defined as: 3 months in the past
 	 */
 	public void setCurrentQtrYear() {
-		Date currentDate = Convert.formatDate(new Date(), Calendar.MONTH, -3);
+		Date currentDate = Convert.formatDate(new Date(), Calendar.MONTH, CURRENT_DT_MONTH_OFFSET);
 
 		Calendar calendar = new GregorianCalendar();
 		calendar.setTime(currentDate);
