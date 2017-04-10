@@ -124,7 +124,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
-			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
@@ -239,7 +238,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
-			mail.addCC("LisaV@metrosn.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			
@@ -422,7 +420,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
-			mail.addCC("LisaV@metrosn.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			
@@ -612,7 +609,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addRecipient("mroderic@its.jnj.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
-			mail.addCC("LisaV@metrosn.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);
