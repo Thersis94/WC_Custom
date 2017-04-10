@@ -11,19 +11,17 @@ import java.util.List;
 
 //WC custom
 import com.biomed.smarttrak.vo.EmailLogVO;
-
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.MessageVO;
-import com.siliconmtn.sb.email.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.util.SentMessageUtil;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.SBActionAdapter;
-
 // WebCrescendo
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -88,8 +86,8 @@ public class EmailReportAction extends SBActionAdapter {
 	 */
 	protected void populateEmail(EmailLogVO vo) {
 		//call the email core to obtain and re-assemble the email as it was when the user received it.
-		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-		MessageVO eml = util.getMessage(vo.getCampaignInstanceId(), vo.getCampaignLogId());
+		SentMessageUtil util = new SentMessageUtil(getDBConnection(), getAttributes());
+		MessageVO eml = util.recreateMessage(vo.getCampaignInstanceId(), vo.getCampaignLogId());
 		if (eml instanceof EmailMessageVO) {
 			EmailMessageVO emlVo = (EmailMessageVO) eml;
 			vo.setMessageBody(emlVo.getHtmlBody());
