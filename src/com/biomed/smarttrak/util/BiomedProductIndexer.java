@@ -228,7 +228,9 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			Map<String, SecureSolrDocumentVO> products, String currentProduct) {
 
 		if (content.length() > 0) {
-			products.get(currentProduct).setContents(content.toString());
+			SecureSolrDocumentVO p = products.get(currentProduct);
+			if (p == null) return;
+			p.setContents(content.toString());
 		}
 	}
 
@@ -257,6 +259,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		Map<String, List<ProductAllianceVO>> alliances = retrieveAlliances(id);
 		for (Entry<String, List<ProductAllianceVO>> entry : alliances.entrySet()) {
 			SecureSolrDocumentVO p = products.get(entry.getKey());
+			if (p == null) continue;
 			p.addAttribute("ally", new ArrayList<String>());
 			p.addAttribute("alliance", new ArrayList<String>());
 			p.addAttribute("allyId", new ArrayList<String>());
@@ -315,6 +318,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		Map<String, List<RegulationVO>> regulatoryList = retrieveRegulatory(id);
 		for (Entry<String, List<RegulationVO>> entry : regulatoryList.entrySet()) {
 			SecureSolrDocumentVO p = products.get(entry.getKey());
+			if (p == null) continue;
 			p.addAttribute("usPathNm", new ArrayList<String>());
 			p.addAttribute("usStatusNm", new ArrayList<String>());
 			p.addAttribute("intRegionNm", new ArrayList<String>());
@@ -416,6 +420,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		for (ProductAttributeVO attr : attrs) {
 			if (attr.getProductId() == null) continue;
 			SecureSolrDocumentVO p = products.get(attr.getProductId());
+			if (p == null) continue;
 			if (!p.getAttributes().containsKey(parent.getNodeName())) {
 				// Two fields are needed for the details, one to search against
 				// and one to display in the product explorer
