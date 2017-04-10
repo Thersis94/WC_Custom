@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import com.biomed.smarttrak.admin.CompanyManagementAction.CompanyStatus;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeTypeVO;
@@ -437,11 +438,16 @@ public class ProductManagementAction extends AbstractTreeAction {
 		sql.append("select * ").append("FROM ").append(customDb).append("BIOMEDGPS_product p ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
+		sql.append("WHERE 1=1 ");
 		
 		// If the request has search terms on it add them here
 		if (req.hasParameter("search")) {
-			sql.append("WHERE lower(PRODUCT_NM) like ? ");
+			sql.append("and lower(PRODUCT_NM) like ? ");
 			params.add("%" + req.getParameter("search").toLowerCase() + "%");
+		}
+		
+		if (!req.hasParameter("inactive")) {
+			sql.append("and p.STATUS_NO = '").append(CompanyStatus.P.toString()).append("' ");
 		}
 		
 		SortField s = SortField.getFromString(req.getParameter("sort"));
@@ -459,7 +465,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> products = db.executeSelect(sql.toString(), params, new ProductVO());
-		super.putModuleData(products, getProductCount(req.getParameter("search")), false);
+		super.putModuleData(products, getProductCount(req.getParameter("search"), req.hasParameter("inactive")), false);
 	}
 
 	
@@ -468,13 +474,18 @@ public class ProductManagementAction extends AbstractTreeAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected int getProductCount(String searchData) throws ActionException {
+	protected int getProductCount(String searchData, boolean inactive) throws ActionException {
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select COUNT(*) ").append("FROM ").append(customDb).append("BIOMEDGPS_product p ");
+		sql.append("WHERE 1=1 ");
 		// If the request has search terms on it add them here
 		if (!StringUtil.isEmpty(searchData)) {
-			sql.append("WHERE lower(PRODUCT_NM) like ? ");
+			sql.append("and lower(PRODUCT_NM) like ? ");
+		}
+		
+		if (!inactive) {
+			sql.append("and p.STATUS_NO = '").append(CompanyStatus.P.toString()).append("' ");
 		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
