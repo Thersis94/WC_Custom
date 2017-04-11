@@ -273,11 +273,13 @@ public class CompanyAction extends AbstractTreeAction {
 	protected void addAttributes(CompanyVO company) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
+		sql.append("SELECT xr.*, a.*, parent.ATTRIBUTE_NM as PARENT_NM FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE parent ");
+		sql.append("ON a.PARENT_ID = parent.ATTRIBUTE_ID ");
 		sql.append("WHERE COMPANY_ID = ? ");
-		sql.append("ORDER BY ORDER_NO ");
+		sql.append("ORDER BY parent.DISPLAY_ORDER_NO, xr.ORDER_NO ");
 		log.debug(sql+"|"+company.getCompanyId());
 		
 		List<Object> params = new ArrayList<>();
@@ -373,12 +375,17 @@ public class CompanyAction extends AbstractTreeAction {
 			return;
 		}
 		
-		if (!attrMap.keySet().contains(attr.getAttributeName())) {
-			attrMap.put(attr.getAttributeName(), new ArrayList<CompanyAttributeVO>());
+		// If there is a parent attribute go with that one, otherwise go with
+		// the current attribute's name
+		String name = attr.getParentName();
+		if (StringUtil.isEmpty(name)) name = attr.getAttributeName();
+		
+		if (!attrMap.keySet().contains(name)) {
+			attrMap.put(name, new ArrayList<CompanyAttributeVO>());
 		}
 
-		attr.setGroupName(attr.getAttributeName());
-		attrMap.get(attr.getAttributeName()).add(attr);
+		attr.setGroupName(name);
+		attrMap.get(name).add(attr);
 	}
 	
 
