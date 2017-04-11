@@ -144,7 +144,7 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		String sql = formatRetrieveQuery(schema, sectionIds, isAdmin, timeRangeCd);
 		log.debug("Updates query to execute: " +sql);
 		List<Object> params = new ArrayList<>();
-		if(sectionIds != null && sectionIds.length > 0 && !sectionIds[0].equalsIgnoreCase("All")){
+		if(sectionIds != null && sectionIds.length > 0 && !("All").equalsIgnoreCase(sectionIds[0])){
 			for (String section : sectionIds) {
 				params.add(section);
 			}			
@@ -173,7 +173,7 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 
 		//If we have SectionId(s), filter results by Sections.	
 		if(sectionIds != null && sectionIds.length > 0 
-				&& !sectionIds[0].equalsIgnoreCase("All")){//account for 'All' option
+				&& !("All").equalsIgnoreCase(sectionIds[0])){//account for 'All' option
 			sql.append("b.section_id in (");
 			for (int i = 0; i < sectionIds.length; i++) {
 				if(i != 0){
