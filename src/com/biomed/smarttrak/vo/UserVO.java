@@ -2,6 +2,7 @@ package com.biomed.smarttrak.vo;
 
 // Java 7
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -36,7 +37,6 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private Date expirationDate;
 	private Date loginDate;
 	private Date createDate;
-	private Date updateDate;
 	private int fdAuthFlg;
 	private int gaAuthFlg;
 	private int mktAuthFlg;
@@ -208,6 +208,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return the updateDate
 	 */
+	@Override
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDate() {
 		return updateDate;
@@ -216,6 +217,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @param updateDate the updateDate to set
 	 */
+	@Override
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
 	}
@@ -236,6 +238,15 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 
 	public void setExpirationDate(Date expirationDate) {
 		this.expirationDate = expirationDate;
+	}
+	
+	public boolean isExpired() {
+		if (Status.INACTIVE.getCode().equals(statusCode)) {
+			return true;
+		} else if (expirationDate != null) {
+			return Calendar.getInstance().getTime().after(expirationDate);
+		}
+		return false;
 	}
 
 	@Column(name="login_dt", isReadOnly=true)
@@ -360,6 +371,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	 *  SOME OVERRIDES FOR O.R.M. TO WORK PROPERLY WITH SUPERCLASS FIELDS
 	 *********************/
 
+	@Override
 	@Column(name="profile_id")
 	public String getProfileId() {
 		return super.getProfileId();
@@ -375,6 +387,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		return super.getLastName();
 	}
 
+	@Override
 	@Column(name="email_address_txt", isReadOnly=true)
 	public String getEmailAddress() {
 		return super.getEmailAddress();

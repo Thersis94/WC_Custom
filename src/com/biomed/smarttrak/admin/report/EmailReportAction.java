@@ -179,7 +179,7 @@ public class EmailReportAction extends SBActionAdapter {
 		sql.append("left outer join SENT_EMAIL_PARAM sl on l.campaign_log_id=sl.campaign_log_id and sl.key_nm='subject' ");
 		sql.append("where camp.organization_id=? ");
 		if (campaignLogId != null) sql.append("and l.campaign_log_id=? ");
-		sql.append("and l.attempt_dt < ? ");
+		sql.append("and l.attempt_dt > ? ");
 		sql.append("group by l.attempt_dt, p.profile_id, p.email_address_txt, p.first_nm, p.last_nm, success_flg, l.campaign_log_id, subject_txt, sl.value_txt ");
 		sql.append("order by ").append(getOrderBy(sort, dir)).append(" limit ? offset ? ");
 		return sql.toString();
