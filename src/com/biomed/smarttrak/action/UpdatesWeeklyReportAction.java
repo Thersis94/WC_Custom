@@ -15,7 +15,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 /****************************************************************************
@@ -31,6 +30,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Mar 1, 2017
  ****************************************************************************/
 public class UpdatesWeeklyReportAction extends SBActionAdapter {
+	public static final String TIME_RANGE_DAILY = "daily";
 
 	public UpdatesWeeklyReportAction() {
 		super();
@@ -119,30 +119,37 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-
-		String sectionId = req.getParameter("sectionId");
-
-		List<Object> updates = getUpdates(sectionId, req.hasParameter("actionType"));
+		
+		//declare sectionId, time range and boolean flag
+		String[] sectionIds = req.getParameterValues("sectionId");
+		boolean isAdmin = req.hasParameter("actionType");
+		String timeRangeCd = req.getParameter("timeRangeCd");
+				
+		List<Object> updates = getUpdates(sectionIds, isAdmin, timeRangeCd);
 
 		putModuleData(updates);
 	}
 
 	/**
-	 * Retrieve all the updates
-	 * @param isAdmin 
-	 * @param updateId
-	 * @param statusCd
-	 * @param typeCd
-	 * @param dateRange
+	 * Retrieve all the updates. Can be filtered by admin, sections, and/or time range
+	 * @param sectionIds
+	 * @param isAdmin
+	 * @param timeRangeCd
 	 * @return
 	 */
-	public List<Object> getUpdates(String sectionId, boolean isAdmin) {
+	public List<Object> getUpdates(String[] sectionIds, boolean isAdmin, String timeRangeCd) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatRetrieveQuery(schema, sectionId, isAdmin);
-
+		
+		//fetch the appropriate query to be executed
+		String sql = formatRetrieveQuery(schema, sectionIds, isAdmin, timeRangeCd);
+		log.debug("Updates query to execute: " +sql);
 		List<Object> params = new ArrayList<>();
-		if (!StringUtil.isEmpty(sectionId)) params.add(sectionId);
-
+		if(sectionIds != null && sectionIds.length > 0 && !("All").equalsIgnoreCase(sectionIds[0])){
+			for (String section : sectionIds) {
+				params.add(section);
+			}			
+		}
+		
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
 		log.debug("loaded " + updates.size() + " updates");
@@ -152,20 +159,29 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 	/**
 	 * Build the DBProcessor Retrieval Query for Updates.
 	 * @param schema
-	 * @param sectionId
+	 * @param sectionIds
 	 * @param isAdmin 
+	 * @param timeRangeCd
 	 * @return
 	 */
-	public String formatRetrieveQuery(String schema, String sectionId, boolean isAdmin) {
+	public String formatRetrieveQuery(String schema, String[] sectionIds, boolean isAdmin, String timeRangeCd) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.*, b.section_id, b.update_section_xr_id ");
 		sql.append("from ").append(schema).append("biomedgps_update a ");
 		sql.append("inner join ").append(schema).append("biomedgps_update_section b ");
 		sql.append("on a.update_id=b.update_id where ");
 
-		//If we have a SectionId, filter results by Section.
-		if(!StringUtil.isEmpty(sectionId)) {
-			sql.append("b.section_id = ? and ");
+		//If we have SectionId(s), filter results by Sections.	
+		if(sectionIds != null && sectionIds.length > 0 
+				&& !("All").equalsIgnoreCase(sectionIds[0])){//account for 'All' option
+			sql.append("b.section_id in (");
+			for (int i = 0; i < sectionIds.length; i++) {
+				if(i != 0){
+					sql.append(", "); 
+				}
+				sql.append("?");
+			}
+			sql.append(") and ");		
 		}
 
 		//If we are on a public site, filter by Email Updates only.
@@ -173,12 +189,17 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 			sql.append("a.email_flg = 1 and ");
 		}
 
-		//Filter by only results in the current week.
-		sql.append("a.create_dt >= cast(date_trunc('week', current_date) as date) - 1 ");
-		sql.append("and a.create_dt < cast(date_trunc('week', current_date) as date) + 5 ");
+		//Filter results by the past day or within in the current week.
+		if(timeRangeCd != null && timeRangeCd.equalsIgnoreCase(TIME_RANGE_DAILY)){
+			sql.append("a.create_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
+			sql.append("and a.create_dt < date_trunc('day', current_timestamp) ");
+		}else{//default to weekly
+			sql.append("a.create_dt >= cast(date_trunc('week', current_date) as date) - 1 ");
+			sql.append("and a.create_dt < cast(date_trunc('week', current_date) as date) + 5 ");
+		}
 		sql.append("order by a.type_cd, a.order_no, a.create_dt");
-
-		log.debug(sql);
+		
 		return sql.toString();
 	}
+
 }
