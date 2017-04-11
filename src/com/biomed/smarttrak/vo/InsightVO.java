@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
 //WC_Custom
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
@@ -55,6 +56,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 
 	private String insightId;
 	private String creatorProfileId;
+	private String creatorTitle;
 	private String firstNm;
 	private String lastNm;
 	private String titleTxt;
@@ -260,6 +262,11 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 		return creatorProfileId;
 	}
 
+	@SolrField(name="creatorTitle_s")
+	public String getCreatorTitle() {
+		return creatorTitle;
+	}
+
 	/**
 	 * @return the titleTxt
 	 */
@@ -451,6 +458,10 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 		this.creatorProfileId = creatorProfileId;
 	}
 
+	public void setCreatorTitle(String creatorTitle) {
+		this.creatorTitle = creatorTitle;
+	}
+
 	/**
 	 * @param titleTxt the titleTxt to set
 	 */
@@ -615,6 +626,4 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	public void setCountNumber(long countNumber) {
 		this.countNumber = countNumber;
 	}
-	
-	
 }
