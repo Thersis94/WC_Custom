@@ -19,6 +19,7 @@ import com.biomed.smarttrak.vo.MarketVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
@@ -28,6 +29,7 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
@@ -72,6 +74,17 @@ public class MarketAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		// Check to see if they have permission to see this tool
+		// If they do not redirect them to the insufficient permissions page.
+		try {
+			SecurityController.isMktAuth(req);
+		} catch (ActionNotAuthorizedException e) {
+			StringBuilder url = new StringBuilder(150);
+			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
+			new SiteBuilderUtil().manualRedirect(req, url.toString());
+			throw e;
+		}
+		
 		if (req.hasParameter("reqParam_1")) {
 			MarketVO vo = retrieveFromDB(req.getParameter("reqParam_1"), req, true);
 
