@@ -244,8 +244,8 @@ public class MarkdownConverter extends CommandLineUtil {
 	protected String fixInnerExpanders(Object id, String markup) {
 		StringBuilder sb = new StringBuilder(markup.length()+100);
 		String[] arr = markup.split("-{3}");
-		if (arr.length > 1 && arr.length % 3 > 0) {
-			log.error("args not divisible by 3, something is wrong with this record.  Not fixing expandables for id=" + id);
+		if (arr.length == 2) {
+			log.error("not enough tokens, this may not be an expandable block.  Not adding expandables to id=" + id + "\n" + markup);
 			return markup;
 		}
 		for (int x=0; x < arr.length; x++) {
@@ -281,7 +281,7 @@ public class MarkdownConverter extends CommandLineUtil {
 		String x = markup.replaceAll("(https?://www\\.smarttrak\\.net)?/(companies|markets|products)?/([0-9]+)?/", "/$2/qs/$3");
 		x = x.replaceAll("(https?://www\\.smarttrak\\.net)?/archives/([0-9]+)?/", "/insights/qs/$2");
 		//some binary paths
-		x = x.replaceAll("/media/photologue/", "/binary/org/BMG_SMARTTRAK/photologue/");
+		x = x.replaceAll("/media/", "/secBinary/org/BMG_SMARTTRAK/");
 		return x;
 	}
 }

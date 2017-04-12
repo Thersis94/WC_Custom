@@ -7,13 +7,17 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.biomed.smarttrak.action.AdminControllerAction;
 //WC_Custom
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
 import com.biomed.smarttrak.vo.InsightXRVO;
+import com.biomed.smarttrak.vo.UserVO;
 //SMT baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -27,6 +31,7 @@ import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 //WebCrescendo
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -112,7 +117,6 @@ public class InsightAction extends AbstractTreeAction {
 
 		log.debug(" total count is: " + count);
 		putModuleData(insights, count.intValue(), false);
-
 	}
 
 	/**
@@ -186,6 +190,59 @@ public class InsightAction extends AbstractTreeAction {
 	}
 
 	/**
+	 * Helper method that builds map of User Titles keyed by profileId.
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	private Map<String, String> loadAuthorTitles() {
+
+		//Generate ActionRequest for Retrieving Author Data.
+		ActionRequest req = new ActionRequest();
+
+		//Some down stream code requires ModuleData to be present.
+		if(getAttribute(Constants.MODULE_DATA) == null) {
+			setAttribute(Constants.MODULE_DATA, new ModuleVO());
+		}
+
+		//Some down stream code requires SiteData to be present.
+		SiteVO site = new SiteVO();
+		site.setOrganizationId(AdminControllerAction.BIOMED_ORG_ID);
+		req.setAttribute(Constants.SITE_DATA, site);
+
+		//Map to hold author Titles in <ProfileId, Title> pairs.
+		Map<String, String> authorTitles = new HashMap<>();
+
+		try {
+			//Get Authors.
+			loadAuthors(req);
+			List<AccountVO> authors = (List<AccountVO>) req.getAttribute(AccountAction.MANAGERS);
+
+			//Action to retrieve AccountUsers Data.
+			AccountUserAction aua = new AccountUserAction(this.actionInit);
+			aua.setAttributes(attributes);
+			aua.setDBConnection(dbConn);
+
+			//Loop over Authors and load Profile Data for them.
+			for(Object o : authors) {
+				AccountVO a = (AccountVO)o;
+				List<Object> authorData = aua.loadAccountUsers(req, a.getOwnerProfileId());
+
+				/*
+				 * If authorData is found for the profile, store their title on
+				 * the map.
+				 */
+				if(authorData != null && !authorData.isEmpty()) {
+					UserVO u = (UserVO)authorData.get(0);
+					authorTitles.put(a.getOwnerProfileId(), u.getTitle());
+				}
+			}
+		} catch(Exception e) {
+			log.error("There was a problem Loading Author Titles.", e);
+		}
+		return authorTitles;
+	}
+
+	/**
 	 * used to pull back a list of insights based on the codes and types. sets a id bypass to true
 	 * and will return all the insight data for each insight in the list, if you do not require 
 	 * text fields
@@ -246,6 +303,9 @@ public class InsightAction extends AbstractTreeAction {
 	@SuppressWarnings("unchecked")
 	public List<Object> getInsights(Map<Fields, String> insightParamsMap) {
 
+		//Load Authors.
+		Map<String, String> authorTitles = loadAuthorTitles();
+
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String sql = formatRetrieveQuery(insightParamsMap, schema);
 
@@ -257,6 +317,9 @@ public class InsightAction extends AbstractTreeAction {
 		for (Object ob : insights){
 			InsightVO vo = (InsightVO)ob;
 			vo.setQsPath((String)getAttribute(Constants.QS_PATH));
+			if(authorTitles.containsKey(vo.getCreatorProfileId())) {
+				vo.setCreatorTitle(authorTitles.get(vo.getCreatorProfileId()));
+			}
 		}
 
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
@@ -449,10 +512,15 @@ public class InsightAction extends AbstractTreeAction {
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		InsightVO ivo = new InsightVO(req);
+		populateAuthorData(req, ivo);
+
 		try {
 			if (isDelete) {
-				//Insights are not deleted from the DB deleted is a status change
-				//    However they are to be removed and deleted from solr so the public can no longer see them. -rjr
+				/*
+				 * Insights rely on status to determine deleting status.  They
+				 * are deleted from Solr, however the database record is simple
+				 * flagged InstightStatusCd.D
+				 */
 				log.debug("deleting " + ivo);
 				ivo.setStatusCd(InsightVO.InsightStatusCd.D.name());
 
@@ -475,6 +543,23 @@ public class InsightAction extends AbstractTreeAction {
 			req.setParameter(INSIGHT_ID, ivo.getInsightId());
 		} catch (Exception e) {
 			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * Helper method loads Author Data.  Slightly Different for one case, we can
+	 * just load the single profile and Set it.
+	 * @param req
+	 * @return
+	 * @throws ActionException 
+	 */
+	private void populateAuthorData(ActionRequest req, InsightVO ivo) throws ActionException {
+		AccountUserAction aua = new AccountUserAction(this.actionInit);
+		aua.setDBConnection(dbConn);
+		aua.setAttributes(attributes);
+		List<Object> authors = aua.loadAccountUsers(req, ivo.getCreatorProfileId());
+		if(authors != null && !authors.isEmpty()) {
+			ivo.setCreatorTitle(((UserVO) authors.get(0)).getTitle());
 		}
 	}
 

@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.admin.CompanyManagementAction.CompanyStatus;
 import com.biomed.smarttrak.util.MarketIndexer;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeTypeVO;
@@ -258,12 +259,18 @@ public class MarketManagementAction extends AbstractTreeAction {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select * FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = m.REGION_CD ");
+		sql.append("WHERE 1=1 ");
 
 		// If the request has search terms on it add them here
 		if (req.hasParameter("searchData")) {
-			sql.append("WHERE lower(MARKET_NM) like ?");
+			sql.append("and lower(MARKET_NM) like ?");
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
+		
+		if (StringUtil.isEmpty(req.getParameter("inactive"))) {
+			sql.append("and STATUS_NO = '").append(CompanyStatus.P.toString()).append("' ");
+		}
+		
 		sql.append("ORDER BY MARKET_NM ");
 		log.debug(sql);
 
