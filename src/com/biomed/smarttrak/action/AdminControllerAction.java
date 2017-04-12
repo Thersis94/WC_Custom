@@ -29,11 +29,11 @@ import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
-import com.biomed.smarttrak.admin.UpdatesEmailSendAction;
 import com.biomed.smarttrak.admin.report.EmailReportAction;
 import com.biomed.smarttrak.fd.FinancialDashAction;
 import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
+
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -45,8 +45,10 @@ import com.siliconmtn.util.StringUtil;
 
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+
 //WC Email Campaigns
 import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
+import com.smt.sitebuilder.action.emailcampaign.CampaignProfileConfigAction;
 import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
 import com.smt.sitebuilder.action.solr.management.SolrSynonymAction;
 import com.smt.sitebuilder.common.PageVO;
@@ -166,8 +168,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("author", ManageAuthorAction.class);
 		ACTIONS.put("editorsDesk", EditorsDeskAction.class);
 		ACTIONS.put("emailReport", EmailReportAction.class);
-
-		ACTIONS.put("emailConfig", UpdatesEmailSendAction.class); 
+		ACTIONS.put("emailConfig", CampaignProfileConfigAction.class); 
 		ACTIONS.put("searchUtil", SearchUtilAction.class);
 	}
 
