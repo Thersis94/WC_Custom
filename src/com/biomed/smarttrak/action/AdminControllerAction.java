@@ -1,11 +1,13 @@
 package com.biomed.smarttrak.action;
 
+// JDK 1.8
 import java.util.HashMap;
 import java.util.Map;
 
 //apache commons-lang jar
 import org.apache.commons.lang.StringEscapeUtils;
 
+// WC Custom Libs
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
@@ -25,6 +27,7 @@ import com.biomed.smarttrak.admin.ManageAuthorAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.ReportFacadeAction;
+import com.biomed.smarttrak.admin.SearchUtilAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
@@ -165,7 +168,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("author", ManageAuthorAction.class);
 		ACTIONS.put("editorsDesk", EditorsDeskAction.class);
 		ACTIONS.put("emailReport", EmailReportAction.class);
-		ACTIONS.put("emailConfig", CampaignProfileConfigAction.class); 
+		ACTIONS.put("emailConfig", CampaignProfileConfigAction.class);
+		ACTIONS.put("searchUtil", SearchUtilAction.class);
 	}
 
 
