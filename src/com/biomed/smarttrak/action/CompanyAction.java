@@ -245,21 +245,32 @@ public class CompanyAction extends AbstractTreeAction {
 
 	
 	/**
-	 * Get all locations supported by the supplied company and add them to the vo.
+	 * Get all locations supported by the supplied company, its children, and its grandchildren and add them to the vo.
 	 * @param company
 	 */
 	protected void addLocations(CompanyVO company) {
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY_LOCATION ");
-		sql.append("WHERE COMPANY_ID = ? ");
+		StringBuilder sql = new StringBuilder(650);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT l.* FROM ").append(customDb).append("BIOMEDGPS_COMPANY_LOCATION l ");
+		sql.append("left join ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("on c.COMPANY_ID = l.COMPANY_ID ");
+		sql.append("WHERE l.COMPANY_ID = ? or c.PARENT_ID = ? or c.PARENT_ID in (");
+		sql.append("SELECT child.COMPANY_ID FROM ").append(customDb).append("BIOMEDGPS_COMPANY parent ");
+		sql.append("left join ").append(customDb).append("BIOMEDGPS_COMPANY child ");
+		sql.append("on parent.COMPANY_ID = child.PARENT_ID ");
+		sql.append("WHERE parent.COMPANY_ID = ? ) ");
+		sql.append("order by c.PARENT_ID desc, PRIMARY_LOCN_FLG asc ");
 		log.debug(sql+"|"+company.getCompanyId());
 		List<Object> params = new ArrayList<>();
+		params.add(company.getCompanyId());
+		params.add(company.getCompanyId());
 		params.add(company.getCompanyId());
 		DBProcessor db = new DBProcessor(dbConn);
 		
 		// DBProcessor returns a list of objects that need to be individually cast to locations
 		List<Object> results = db.executeSelect(sql.toString(), params, new LocationVO());
 		for (Object o : results) {
+			log.debug("Adding  " + ((LocationVO)o).getLocationId());
 			company.addLocation((LocationVO)o);
 		}
 	}
@@ -273,11 +284,13 @@ public class CompanyAction extends AbstractTreeAction {
 	protected void addAttributes(CompanyVO company) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
+		sql.append("SELECT xr.*, a.*, parent.ATTRIBUTE_NM as PARENT_NM FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE parent ");
+		sql.append("ON a.PARENT_ID = parent.ATTRIBUTE_ID ");
 		sql.append("WHERE COMPANY_ID = ? ");
-		sql.append("ORDER BY ORDER_NO ");
+		sql.append("ORDER BY parent.DISPLAY_ORDER_NO, xr.ORDER_NO ");
 		log.debug(sql+"|"+company.getCompanyId());
 		
 		List<Object> params = new ArrayList<>();
@@ -373,12 +386,17 @@ public class CompanyAction extends AbstractTreeAction {
 			return;
 		}
 		
-		if (!attrMap.keySet().contains(attr.getAttributeName())) {
-			attrMap.put(attr.getAttributeName(), new ArrayList<CompanyAttributeVO>());
+		// If there is a parent attribute go with that one, otherwise go with
+		// the current attribute's name
+		String name = attr.getParentName();
+		if (StringUtil.isEmpty(name)) name = attr.getAttributeName();
+		
+		if (!attrMap.keySet().contains(name)) {
+			attrMap.put(name, new ArrayList<CompanyAttributeVO>());
 		}
 
-		attr.setGroupName(attr.getAttributeName());
-		attrMap.get(attr.getAttributeName()).add(attr);
+		attr.setGroupName(name);
+		attrMap.get(name).add(attr);
 	}
 	
 

@@ -1,11 +1,13 @@
 package com.biomed.smarttrak.action;
 
+// JDK 1.8
 import java.util.HashMap;
 import java.util.Map;
 
 //apache commons-lang jar
 import org.apache.commons.lang.StringEscapeUtils;
 
+// WC Custom Libs
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
@@ -21,6 +23,7 @@ import com.biomed.smarttrak.admin.ManageAuthorAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.ReportFacadeAction;
+import com.biomed.smarttrak.admin.SearchUtilAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
@@ -31,6 +34,7 @@ import com.biomed.smarttrak.admin.report.EmailReportAction;
 import com.biomed.smarttrak.fd.FinancialDashAction;
 import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
+
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -39,8 +43,10 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+
 //WC Email Campaigns
 import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
 import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
@@ -162,7 +168,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("author", ManageAuthorAction.class);
 		ACTIONS.put("editorsDesk", EditorsDeskAction.class);
 		ACTIONS.put("emailReport", EmailReportAction.class);
-		ACTIONS.put("emailConfig", UpdatesEmailSendAction.class); 
+		ACTIONS.put("emailConfig", UpdatesEmailSendAction.class);
+		ACTIONS.put("searchUtil", SearchUtilAction.class);
 	}
 
 

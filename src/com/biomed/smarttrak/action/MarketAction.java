@@ -72,6 +72,8 @@ public class MarketAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SecurityController.isMktAuth(req);
+		
 		if (req.hasParameter("reqParam_1")) {
 			MarketVO vo = retrieveFromDB(req.getParameter("reqParam_1"), req, true);
 
