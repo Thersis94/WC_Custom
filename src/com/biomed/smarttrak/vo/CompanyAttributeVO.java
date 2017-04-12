@@ -34,6 +34,7 @@ public class CompanyAttributeVO implements NoteInterface  {
 	private String attributeName;
 	private String altText;
 	private String groupName;
+	private String parentName;
 	private List<NoteVO> notes;
 	
 	private int orderNo;
@@ -176,6 +177,17 @@ public class CompanyAttributeVO implements NoteInterface  {
 
 	public void setGroupName(String groupName) {
 		this.groupName = groupName;
+	}
+
+
+	@Column(name="parent_nm", isReadOnly=true)
+	public String getParentName() {
+		return parentName;
+	}
+
+
+	public void setParentName(String parentName) {
+		this.parentName = parentName;
 	}
 
 }
