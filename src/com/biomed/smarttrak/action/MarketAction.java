@@ -74,16 +74,7 @@ public class MarketAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		// Check to see if they have permission to see this tool
-		// If they do not redirect them to the insufficient permissions page.
-		try {
-			SecurityController.isMktAuth(req);
-		} catch (ActionNotAuthorizedException e) {
-			StringBuilder url = new StringBuilder(150);
-			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-			new SiteBuilderUtil().manualRedirect(req, url.toString());
-			throw e;
-		}
+		SecurityController.isMktAuth(req);
 		
 		if (req.hasParameter("reqParam_1")) {
 			MarketVO vo = retrieveFromDB(req.getParameter("reqParam_1"), req, true);
