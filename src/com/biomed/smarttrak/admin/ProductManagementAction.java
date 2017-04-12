@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import com.biomed.smarttrak.admin.CompanyManagementAction.CompanyStatus;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeTypeVO;
@@ -98,6 +99,11 @@ public class ProductManagementAction extends AbstractTreeAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		ActionTarget action;
 		
+		if (req.hasParameter("buildAction")) {
+			super.retrieve(req);
+			return;
+		}
+		
 		if (req.hasParameter(ACTION_TARGET)) {
 			action = ActionTarget.valueOf(req.getParameter(ACTION_TARGET));
 		} else {
@@ -173,8 +179,6 @@ public class ProductManagementAction extends AbstractTreeAction {
 	private void productAttributeRetrieve(ActionRequest req) {
 		if (req.hasParameter("productAttributeId"))
 			retrieveProductAttribute(req);
-		req.setParameter("getList", "true");
-		retrieveAttributes(req);
 	}
 
 
@@ -437,11 +441,16 @@ public class ProductManagementAction extends AbstractTreeAction {
 		sql.append("select * ").append("FROM ").append(customDb).append("BIOMEDGPS_product p ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
+		sql.append("WHERE 1=1 ");
 		
 		// If the request has search terms on it add them here
 		if (req.hasParameter("search")) {
-			sql.append("WHERE lower(PRODUCT_NM) like ?");
-			params.add("%" + req.getParameter("search").toLowerCase() + "% ");
+			sql.append("and lower(PRODUCT_NM) like ? ");
+			params.add("%" + req.getParameter("search").toLowerCase() + "%");
+		}
+		
+		if (!req.hasParameter("inactive")) {
+			sql.append("and p.STATUS_NO = '").append(CompanyStatus.P.toString()).append("' ");
 		}
 		
 		SortField s = SortField.getFromString(req.getParameter("sort"));
@@ -459,7 +468,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> products = db.executeSelect(sql.toString(), params, new ProductVO());
-		super.putModuleData(products, getProductCount(req.getParameter("searchData")), false);
+		super.putModuleData(products, getProductCount(req.getParameter("search"), req.hasParameter("inactive")), false);
 	}
 
 	
@@ -468,13 +477,18 @@ public class ProductManagementAction extends AbstractTreeAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected int getProductCount(String searchData) throws ActionException {
+	protected int getProductCount(String searchData, boolean inactive) throws ActionException {
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select COUNT(*) ").append("FROM ").append(customDb).append("BIOMEDGPS_product p ");
+		sql.append("WHERE 1=1 ");
 		// If the request has search terms on it add them here
 		if (!StringUtil.isEmpty(searchData)) {
-			sql.append("WHERE lower(PRODUCT_NM) like ?");
+			sql.append("and lower(PRODUCT_NM) like ? ");
+		}
+		
+		if (!inactive) {
+			sql.append("and p.STATUS_NO = '").append(CompanyStatus.P.toString()).append("' ");
 		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -1015,6 +1029,10 @@ public class ProductManagementAction extends AbstractTreeAction {
 				updateElement(req);
 			} else if("delete".equals(buildAction)) {
 				deleteElement(req);
+			} else if ("orderUpdate".equals(buildAction)) {
+				updateOrder(req);
+				// We don't want to send redirects after an order update
+				return;
 			}
 		} catch (Exception e) {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
@@ -1029,6 +1047,27 @@ public class ProductManagementAction extends AbstractTreeAction {
 		}
 
 		redirectRequest(msg, buildAction, req);
+	}
+
+
+	/**
+	 * Alter the order of the supplied attribute
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void updateOrder(ActionRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR SET ORDER_NO = ? WHERE PRODUCT_ATTRIBUTE_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, Convert.formatInteger(req.getParameter("orderNo")));
+			ps.setString(2, req.getParameter("productAttributeId"));
+			
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
 	}
 
 

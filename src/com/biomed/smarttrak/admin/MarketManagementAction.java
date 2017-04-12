@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.admin.CompanyManagementAction.CompanyStatus;
 import com.biomed.smarttrak.util.MarketIndexer;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeTypeVO;
@@ -66,6 +67,11 @@ public class MarketManagementAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		if (req.hasParameter("buildAction")) {
+			super.retrieve(req);
+			return;
+		}
+		
 		ActionTarget action;
 		if (req.hasParameter(ACTION_TARGET)) {
 			action = ActionTarget.valueOf(req.getParameter(ACTION_TARGET));
@@ -258,12 +264,18 @@ public class MarketManagementAction extends AbstractTreeAction {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select * FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = m.REGION_CD ");
+		sql.append("WHERE 1=1 ");
 
 		// If the request has search terms on it add them here
 		if (req.hasParameter("searchData")) {
-			sql.append("WHERE lower(MARKET_NM) like ?");
+			sql.append("and lower(MARKET_NM) like ?");
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
+		
+		if (StringUtil.isEmpty(req.getParameter("inactive"))) {
+			sql.append("and STATUS_NO = '").append(CompanyStatus.P.toString()).append("' ");
+		}
+		
 		sql.append("ORDER BY MARKET_NM ");
 		log.debug(sql);
 
@@ -653,6 +665,10 @@ public class MarketManagementAction extends AbstractTreeAction {
 				marketId = updateElement(req);
 			} else if ("delete".equals(buildAction)) {
 				deleteElement(req);
+			} else if ("orderUpdate".equals(buildAction)) {
+				updateOrder(req);
+				// We don't want to send redirects after an order update
+				return;
 			}
 		} catch (Exception e) {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
@@ -666,6 +682,27 @@ public class MarketManagementAction extends AbstractTreeAction {
 		}
 
 		redirectRequest(msg, buildAction, req);
+	}
+
+
+	/**
+	 * Alter the order of the supplied attribute
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void updateOrder(ActionRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_MARKET_ATTRIBUTE_XR SET ORDER_NO = ? WHERE MARKET_ATTRIBUTE_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, Convert.formatInteger(req.getParameter("orderNo")));
+			ps.setString(2, req.getParameter("marketAttributeId"));
+			
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
 	}
 
 

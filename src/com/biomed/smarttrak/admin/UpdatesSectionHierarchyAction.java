@@ -133,7 +133,10 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			List<Node> nodes = t.preorderList();
 			
 			//add root section id, with sub-section/updates, to the final collection
-			updatesHierarchyMap.put(rootSectionId, getSubSectionUpdates(nodes, updates));
+			//only if it's sub-section map is not empty
+			Map<String, List<UpdateVO>> subSectionMap = getSubSectionUpdates(nodes, updates);
+			if(!subSectionMap.isEmpty()) 
+				updatesHierarchyMap.put(rootSectionId, subSectionMap);
 		}
 		return updatesHierarchyMap;
 	}
