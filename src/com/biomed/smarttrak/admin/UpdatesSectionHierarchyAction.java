@@ -10,6 +10,8 @@ import java.util.Set;
 
 
 
+
+
 //wc_custom libs
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.vo.UpdateVO;
@@ -18,6 +20,7 @@ import com.biomed.smarttrak.vo.UpdateXRVO;
 //smt base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
@@ -75,9 +78,9 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		/*Create separate trees structures for all of the 
 		*root level sections. This will create our groupings. */
 		Map<String, Tree> treeCollection = retrieveTreeCollection();
-		
+
 		//Add the updates to appropriate groupings
-		Map<String, Map<String, List<UpdateVO>>> data = buildUpdatesHierarchy(req, treeCollection);		
+		Map<String, Map<String, List<UpdateVO>>> data = buildUpdatesHierarchy(req, treeCollection);	
 		
 		putModuleData(data);
 	}
@@ -109,20 +112,14 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 * @return
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unchecked")
 	protected Map<String, Map<String, List<UpdateVO>>> buildUpdatesHierarchy(ActionRequest req, 
 			Map<String, Tree> treeCollection) throws ActionException{
 		Map<String, Map<String, List<UpdateVO>>> updatesHierarchyMap = new LinkedHashMap<>();
 		
-		//retrieve the list of daily/weekly updates
-		UpdatesWeeklyReportAction uwr = new UpdatesWeeklyReportAction();
-		uwr.setAttributes(attributes);
-		uwr.setDBConnection(dbConn);
-		uwr.retrieve(req);
-		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		List<UpdateVO> updates = (List<UpdateVO>) mod.getActionData();
+		//get list of updates
+		List<UpdateVO> updates = fetchUpdates(req);
 		log.debug("Number of updates retrieved: " + updates.size());
-		
+
 		//iterate through each section tree hierarchy and add the corresponding update(s)
 		Set<Entry<String, Tree>> treeSet = treeCollection.entrySet();
 		for (Entry<String, Tree> entry : treeSet) {
@@ -196,6 +193,30 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 				holder.add(update);
 			}
 		}
+	}
+	
+	/**
+	 * Retrieves the correct updates, either scheduled or general list of updates
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	@SuppressWarnings("unchecked")
+	protected List<UpdateVO>fetchUpdates(ActionRequest req) throws ActionException{
+		ActionInterface actInf;
+		//if account id is present, return the list of scheduled updates
+		if(req.hasParameter("accountId")){
+			actInf =  new UpdatesScheduledAction();
+		}else{//retrieve the list of daily/weekly updates
+			actInf = new UpdatesWeeklyReportAction();
+		}
+		actInf.setAttributes(attributes);
+		actInf.setDBConnection(dbConn);
+		actInf.retrieve(req);
+		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		List<UpdateVO> updates = (List<UpdateVO>) mod.getActionData();
+		
+		return updates;
 	}
 	
 	/*
