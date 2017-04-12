@@ -67,6 +67,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private List<PropertyChangeEvent> deltas;
 	
 	public MediaBinAssetVO() {
+		super();
 	}
 	
 	public MediaBinAssetVO(ResultSet rs) {
@@ -101,7 +102,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		
 		String dims = db.getStringVal("dimensions_txt", rs);
 		if (dims != null && dims.indexOf("~") > 0) {
-			int delim = dims.indexOf("~");
+			int delim = dims.indexOf('~');
 			setWidthNo(Convert.formatInteger(dims.substring(0, delim)));
 			setHeightNo(Convert.formatInteger(dims.substring(delim+1)));
 		}

@@ -5,19 +5,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
-import com.siliconmtn.security.OAuth2TokenViaCLI;
-import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
-import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -32,9 +26,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
+	public static final String BR = "<br/>";
+	
 	protected ShowpadApiUtil showpadApi;
 	protected List<ShowpadDivisionUtil> divisions = new ArrayList<>();
-	private boolean deduplicate = false; //override via args[1]
 
 	/**
 	 * @param args
@@ -42,21 +37,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 */
 	public ShowpadMediaBinDecorator(String[] args) throws IOException {
 		super(args);
-
-		//setup the oAuth util now that the config file has been loaded
-		Map<Config, String> config = new HashMap<>();
-		config.put(Config.USER_ID, props.getProperty("showpadAcctName"));
-		config.put(Config.API_KEY, props.getProperty("showpadApiKey"));
-		config.put(Config.API_SECRET, props.getProperty("showpadApiSecret"));
-		config.put(Config.TOKEN_CALLBACK_URL, props.getProperty("showpadCallbackUrl"));
-		config.put(Config.TOKEN_SERVER_URL, props.getProperty("showpadTokenUrl"));
-		config.put(Config.AUTH_SERVER_URL,  props.getProperty("showpadAuthUrl"));
-		config.put(Config.KEYSTORE, "showpad");
-		List<String> scopes = Arrays.asList(props.getProperty("showpadScopes").split(","));
-		showpadApi = new ShowpadApiUtil(new OAuth2TokenViaCLI(config, scopes));
-
-		if (args.length > 1)
-			deduplicate = Convert.formatBoolean(args[1]); //args[0] passes 'type' to the superclass, so we'll use args[1] here
+		showpadApi = ShowpadApiUtil.makeInstance(props, null);
 	}
 
 
@@ -74,23 +55,6 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	public void run() {
 		//load the divisions
 		loadShowpadDivisionList();
-
-		//used only for de-duplication, which is more crisis-cleanup than something we do regularly.
-		if (deduplicate) {
-			Map<String, MediaBinDeltaVO> records = loadManifest();
-			Set<String> localShowpadIds = new HashSet<>(records.size());
-
-			for (MediaBinDeltaVO vo : records.values()) {
-				if (vo.getShowpadId() != null) localShowpadIds.add(vo.getShowpadId());
-			}
-
-			for (ShowpadDivisionUtil util : divisions)
-				util.cleanupShowpadDups(localShowpadIds);
-			
-			log.info("deuplication complete");
-			return;
-		}
-
 		super.run();
 	}
 
@@ -179,7 +143,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				continue;
 
 			loopFileThroughDivisions(vo);
-			
+
 			log.info("completed: " + vo.getFileNm());
 		}
 
@@ -312,15 +276,15 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//to add valueable stats to the admin email
 		for (ShowpadDivisionUtil util : divisions) {
 			html.append("<h3>Showpad ").append(util.getDivisionNm()).append(" Division</h3>");
-			html.append("Added: ").append(util.getInsertCount()).append("<br/>");
-			html.append("Updated: ").append(util.getUpdateCount()).append("<br/>");
-			html.append("Deleted: ").append(util.getDeleteCount()).append("<br/>");
-			html.append("Total: ").append(util.getDbCount()).append("<br/>");
-			html.append("Failed to Ingest: ").append(util.getFailCount()).append("<br/><br/>");
+			html.append("Added: ").append(util.getInsertCount()).append(BR);
+			html.append("Updated: ").append(util.getUpdateCount()).append(BR);
+			html.append("Deleted: ").append(util.getDeleteCount()).append(BR);
+			html.append("Total: ").append(util.getDbCount()).append(BR);
+			html.append("Failed to Ingest: ").append(util.getFailCount()).append(BR).append(BR);
 
 			List<Exception> failures = util.getFailures();
 			if (!failures.isEmpty()) {
-				html.append("<b>The following issues were reported:</b><br/><br/>");
+				html.append("<b>The following issues were reported:</b>").append(BR).append(BR);
 
 				// loop the errors and display them
 				for (int i=0; i < failures.size(); i++) {

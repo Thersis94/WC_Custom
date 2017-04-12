@@ -1,15 +1,12 @@
 package com.depuysynthes.scripts.showpad;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import com.siliconmtn.security.OAuth2TokenViaCLI;
-import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
+import com.depuysynthes.scripts.MediaBinDeltaVO;
+import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.siliconmtn.util.CommandLineUtil;
-import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: AccountReplicator.java<p/>
@@ -26,42 +23,29 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 public class AccountReplicator extends CommandLineUtil {
 
-	protected ShowpadApiUtil srcApi;
-	protected ShowpadApiUtil destApi;
+	protected ReplicatorDivisionUtil srcDivision;
+	protected ReplicatorDivisionUtil destDivision;
 
 	/**
 	 * @param args
-	 * @throws IOException 
-	 * @throws QuotaException 
+	 * @throws IOException
 	 */
 	public AccountReplicator(String[] args) throws IOException {
 		super(args);
 		loadProperties("scripts/MediaBin.properties");
 		loadDBConnection(props);
 
-		//setup oAuth util for the target account
-		Map<Config, String> config = new HashMap<>();
-		config.put(Config.USER_ID, props.getProperty("showpadAcctName"));
-		config.put(Config.API_KEY, props.getProperty("showpadApiKey"));
-		config.put(Config.API_SECRET, props.getProperty("showpadApiSecret"));
-		config.put(Config.TOKEN_CALLBACK_URL, props.getProperty("showpadCallbackUrl"));
-		config.put(Config.TOKEN_SERVER_URL, props.getProperty("showpadTokenUrl"));
-		config.put(Config.AUTH_SERVER_URL,  props.getProperty("showpadAuthUrl"));
-		config.put(Config.KEYSTORE, "showpad-" + StringUtil.removeNonAlphaNumeric(config.get(Config.USER_ID)));
-		List<String> scopes = Arrays.asList(props.getProperty("showpadScopes").split(","));
-		destApi = new ShowpadApiUtil(new OAuth2TokenViaCLI(config, scopes));
-		
-		//setup OAuth token for the source account
-		Map<Config, String> config2 = new HashMap<>();
-		config2.put(Config.USER_ID, props.getProperty("src-showpadAcctName"));
-		config2.put(Config.API_KEY, props.getProperty("src-showpadApiKey"));
-		config2.put(Config.API_SECRET, props.getProperty("src-showpadApiSecret"));
-		config2.put(Config.TOKEN_CALLBACK_URL, props.getProperty("src-showpadCallbackUrl"));
-		config2.put(Config.TOKEN_SERVER_URL, props.getProperty("src-showpadTokenUrl"));
-		config2.put(Config.AUTH_SERVER_URL,  props.getProperty("src-showpadAuthUrl"));
-		config2.put(Config.KEYSTORE, "showpad-" + StringUtil.removeNonAlphaNumeric(config.get(Config.USER_ID)));
-		List<String> scopes2 = Arrays.asList(props.getProperty("showpadScopes").split(","));
-		srcApi = new ShowpadApiUtil(new OAuth2TokenViaCLI(config2, scopes2));
+		ShowpadApiUtil srcApi = ShowpadApiUtil.makeInstance(props, "src-");
+		String[] div = props.getProperty("src-showpadDivisions").split("=");
+		props.put("showpadApiUrl", props.getProperty("src-showpadApiUrl"));
+		srcDivision = new ReplicatorDivisionUtil(props, div[1], div[0], srcApi, dbConn);
+
+		//setup API util for the source account
+		ShowpadApiUtil destApi = ShowpadApiUtil.makeInstance(props, "dest-");
+		div = props.getProperty("dest-showpadDivisions").split("=");
+		props.put("showpadApiUrl", props.getProperty("dest-showpadApiUrl"));
+		//give the destDivision a reference to the sourceDivision's API, so it can load tags for each asset as it iterates
+		destDivision = new ReplicatorDivisionUtil(props, div[1], div[0], destApi, dbConn);
 	}
 
 
@@ -70,7 +54,6 @@ public class AccountReplicator extends CommandLineUtil {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws Exception {
-		//Create an instance of the MedianBinImporter
 		AccountReplicator dmb = new AccountReplicator(args);
 		dmb.run();
 	}
@@ -81,26 +64,49 @@ public class AccountReplicator extends CommandLineUtil {
 	 */
 	@Override
 	public void run() {
-		//get all the tags from the source account
-		Map<String, ShowpadTagVO> showpadTags;
-		
-		//get all the tags form the dest account
-		
-		//replicate needed tags from the source account to the dest account
-		
 		//get all assets from the source account
-		
-		//get all assets from the dest account
-		
-		//replicate needed assets from the source account to the dest account
-		
+		Map<String, MediaBinDeltaVO> srcAssets = srcDivision.getAllAssets();
+
+		//populate the destDivision with it's assets, so we're updating existing assets instead of creating duplicates
+		Map<String, MediaBinDeltaVO> destAssets = destDivision.getAllAssets();
+
+		Map<String, String> pointers = new HashMap<>(destAssets.size());
+		for (MediaBinDeltaVO vo : destAssets.values())
+			pointers.put(vo.getDpySynMediaBinId(), vo.getShowpadId());
+		destDivision.setDivisionAssets(pointers);
+		log.debug("gave destDivision " + pointers.size() + " existing assets");
+
+		marryRecords(srcAssets, destAssets);
+
+		//loop through the source assets, fire an update or add for each (the divisionUtil will determine which for us)
+		for (MediaBinDeltaVO vo : srcAssets.values()) {
+			log.debug(vo.getRecordState() + " " + vo.isFileChanged());
+			srcDivision.addDesiredTags(vo);
+			destDivision.pushAsset(vo);
+		}
+		log.info("done!");
+	}
+
+
+	/**
+	 * possible future state: If an asset is deleted from the source account that is not realized and deleted from the destination account.
+	 * @param srcAssets
+	 * @param destAssets
+	 */
+	protected void marryRecords(Map<String, MediaBinDeltaVO> srcAssets, Map<String, MediaBinDeltaVO> destAssets) {
+		for (MediaBinDeltaVO vo : srcAssets.values()) {
+			MediaBinDeltaVO target = destAssets.get(vo.getShowpadId());
+			if (target == null) {
+				vo.setRecordState(State.Insert); //does not exist at the dest account (implies fileChanged=true)
+				srcDivision.downloadFile(vo);
+			} else if (vo.getFileSizeNo() == target.getFileSizeNo()) {
+				vo.setRecordState(State.Ignore); //exists, and file sizes are the same meaning no upload needed.  meta-data will still be replicated.
+				vo.setFileChanged(false);
+			} else {
+				vo.setRecordState(State.Update); //file changed.  the file will be uploaded as an update transaction
+				srcDivision.downloadFile(vo);
+				vo.setFileChanged(true);
+			}
+		}
 	}
 }
-
-
-
-
-
-
-
-
