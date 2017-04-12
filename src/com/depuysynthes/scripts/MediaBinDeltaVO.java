@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import com.depuysynthes.action.MediaBinAssetVO;
 import com.depuysynthes.scripts.showpad.ShowpadTagVO;
@@ -25,27 +26,29 @@ import net.sf.json.JSONObject;
  ****************************************************************************/
 public class MediaBinDeltaVO extends MediaBinAssetVO {
 	private static final long serialVersionUID = 1134677899809090L;
-	
+
 	private State recordState;
 	private String errorReason;
 	private String eCopyTrackingNo;
 	private String limeLightUrl;
 	private String fileName;
 	private String divisionId;
-	
+
 	/*
 	 * used by ShowpadProductDecorator to pass-along the update date of the product to affiliated assets.
 	 */
 	private Date productUpdateDt;
-	
+
 	private List<ShowpadTagVO> tags;
-	
+
 	//added for Showpad support; all the other fields are reuseable
 	private String showpadId;
 
 	private boolean fileChanged;
-	
-	
+
+	private Set<String> replicatorDesiredTags;
+
+
 	public enum State {
 		Insert,Update,Delete,Ignore,Failed;
 	}
@@ -54,13 +57,13 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 		super();
 		tags = new ArrayList<>();
 	}
-	
+
 	public MediaBinDeltaVO(ResultSet rs) {
 		super(rs);
 		tags = new ArrayList<>();
 		setShowpadId(new DBUtil().getStringVal("ASSET_ID", rs));
 	}
-	
+
 	public MediaBinDeltaVO(JSONObject json) {
 		this();
 		setShowpadId(json.getString("id"));
@@ -74,7 +77,7 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	public void setRecordState(State recordState) {
 		this.recordState = recordState;
 	}
-	
+
 	public boolean isUsable() {
 		return (State.Failed != recordState && State.Delete != recordState);
 	}
@@ -126,11 +129,11 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	public void setTags(List<ShowpadTagVO> tags) {
 		this.tags = tags;
 	}
-	
+
 	public void addTag(ShowpadTagVO tag) {
 		tags.add(tag);
 	}
-	
+
 	public void addTag(String id, String name, String division, String externalId) {
 		tags.add(new ShowpadTagVO(id, name, division, externalId));
 	}
@@ -162,4 +165,11 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 		this.divisionId = divisionId;
 	}
 
+	public Set<String> getReplicatorDesiredTags() {
+		return replicatorDesiredTags;
+	}
+
+	public void setReplicatorDesiredTags(Set<String> replicatorDesiredTags) {
+		this.replicatorDesiredTags = replicatorDesiredTags;
+	}
 }

@@ -260,7 +260,7 @@ public class ShowpadTagManager {
 		try {
 			String resp = showpadUtil.executeGet(tagUrl);
 			JSONObject json = JSONObject.fromObject(resp);
-			log.info(json);
+			log.info("tags=" + json);
 			JSONObject metaResp = json.getJSONObject("meta");
 			if (!"200".equals(metaResp.getString("code")))
 				throw new IOException(metaResp.getString("message"));

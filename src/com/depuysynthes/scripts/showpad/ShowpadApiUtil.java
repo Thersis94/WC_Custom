@@ -2,8 +2,12 @@ package com.depuysynthes.scripts.showpad;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.apache.log4j.Logger;
@@ -22,6 +26,9 @@ import com.google.api.client.http.MultipartContent;
 import com.google.api.client.http.UrlEncodedContent;
 import com.siliconmtn.common.FileType;
 import com.siliconmtn.security.OAuth2Token;
+import com.siliconmtn.security.OAuth2TokenViaCLI;
+import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ShowpadApiUtil.java<p/>
@@ -54,6 +61,30 @@ public class ShowpadApiUtil {
 	public ShowpadApiUtil(OAuth2Token oauthUtil) {
 		this.oauthUtil = oauthUtil;
 	}
+
+
+	/**
+	 * reused method to load config and initialize the API util
+	 * @param prefix
+	 * @return
+	 * @throws IOException
+	 */
+	public static ShowpadApiUtil makeInstance(Properties props, String pfx) throws IOException {
+		String prefix = pfx == null ? "" : pfx;
+
+		//setup API util for the target account
+		EnumMap<Config, String> config = new EnumMap<>(Config.class);
+		config.put(Config.USER_ID, props.getProperty(prefix + "showpadAcctName"));
+		config.put(Config.API_KEY, props.getProperty(prefix + "showpadApiKey"));
+		config.put(Config.API_SECRET, props.getProperty(prefix + "showpadApiSecret"));
+		config.put(Config.TOKEN_CALLBACK_URL, props.getProperty(prefix + "showpadCallbackUrl"));
+		config.put(Config.TOKEN_SERVER_URL, props.getProperty(prefix + "showpadTokenUrl"));
+		config.put(Config.AUTH_SERVER_URL,  props.getProperty(prefix + "showpadAuthUrl"));
+		config.put(Config.KEYSTORE, "showpad-" + StringUtil.removeNonAlphaNumeric(config.get(Config.API_KEY)));
+		List<String> scopes = Arrays.asList(props.getProperty(prefix + "showpadScopes").split(","));
+		return new ShowpadApiUtil(new OAuth2TokenViaCLI(config, scopes));
+	}
+
 
 	/**
 	 * simplified/overloaded method to obfuscate the GenericUrl object from SMT code.
@@ -118,6 +149,10 @@ public class ShowpadApiUtil {
 		MultipartContent content = new MultipartContent();
 		content.setMediaType(new HttpMediaType("multipart/form-data").setParameter("boundary", "__END_OF_PART__"));
 		for (Map.Entry<String, String> entry : params.entrySet()) {
+			if (entry.getValue() == null) {
+				log.error("empty content part " + entry.getKey());
+				continue;
+			}
 			MultipartContent.Part part = new MultipartContent.Part(new ByteArrayContent(null, entry.getValue().getBytes()));
 			part.setHeaders(new HttpHeaders().set("Content-Disposition", String.format("form-data; name=\"%s\"", entry.getKey())));
 			content.addPart(part);

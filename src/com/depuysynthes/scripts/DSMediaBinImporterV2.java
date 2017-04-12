@@ -1062,11 +1062,12 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 	/**
 	 * parses the tracking number from the old MediaBin file format
+	 * 
+	 * This should be removed once Angie has tracking numbers populated for all legacy INT assets. 
+	 * They're the only ones falling-back to Name and max 18 chars.
 	 * @param data
 	 * @return
-	 */
-	//TODO this should be removed once Angie has tracking numbers populated for all legacy INT assets.
-	//They're the only ones falling-back to Name and max 18 chars.
+	 */ 
 	private String loadLegacyTrackingNumberFromFileName(Map<String, String> data) {
 		String tn = StringUtil.checkVal(data.get("Name"));
 		if (tn.lastIndexOf(".") > -1) 
