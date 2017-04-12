@@ -3,6 +3,7 @@ package com.biomed.smarttrak.security;
 // Log4j
 import org.apache.log4j.Logger;
 
+
 // SMTBaseLibs
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.siliconmtn.action.ActionException;
@@ -115,26 +116,54 @@ public class SecurityController {
 
 	/**
 	 * tests the user's role object to see if they should have access to this tool.
+	 * if they do not redirect them to the insufficient permissions page.
 	 * called from FinancialDashAction
 	 * @param req
 	 * @throws ActionNotAuthorizedException 
 	 */
 	public static void isFdAuth(ActionRequest req) throws ActionNotAuthorizedException {
 		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if (!role.isFdAuthorized())
+		if (!role.isFdAuthorized()) {
+			StringBuilder url = new StringBuilder(150);
+			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
+			new SiteBuilderUtil().manualRedirect(req, url.toString());
 			throw new ActionNotAuthorizedException("not authorized");
+		}
 	}
 
 
 	/**
 	 * tests the user's role object to see if they should have access to this tool.
+	 * if they do not redirect them to the insufficient permissions page.
 	 * called from GapAnalysisAction
 	 * @param req
 	 * @throws ActionNotAuthorizedException 
 	 */
 	public static void isGaAuth(ActionRequest req) throws ActionNotAuthorizedException {
 		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if (!role.isGaAuthorized())
+		if (!role.isGaAuthorized()) {
+			StringBuilder url = new StringBuilder(150);
+			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
+			new SiteBuilderUtil().manualRedirect(req, url.toString());
 			throw new ActionNotAuthorizedException("not authorized");
+		}
+	}
+
+
+	/**
+	 * tests the user's role object to see if they should have access to this tool.
+	 * if they do not redirect them to the insufficient permissions page.
+	 * called from MarketAction
+	 * @param req
+	 * @throws ActionNotAuthorizedException 
+	 */
+	public static void isMktAuth(ActionRequest req) throws ActionNotAuthorizedException {
+		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
+		if (!role.isMktAuthorized()) {
+			StringBuilder url = new StringBuilder(150);
+			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
+			new SiteBuilderUtil().manualRedirect(req, url.toString());
+			throw new ActionNotAuthorizedException("not authorized");
+		}
 	}
 }
