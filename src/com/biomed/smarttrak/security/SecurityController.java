@@ -137,4 +137,17 @@ public class SecurityController {
 		if (!role.isGaAuthorized())
 			throw new ActionNotAuthorizedException("not authorized");
 	}
+
+
+	/**
+	 * tests the user's role object to see if they should have access to this tool.
+	 * called from GapAnalysisAction
+	 * @param req
+	 * @throws ActionNotAuthorizedException 
+	 */
+	public static void isMktAuth(ActionRequest req) throws ActionNotAuthorizedException {
+		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
+		if (!role.isMktAuthorized())
+			throw new ActionNotAuthorizedException("not authorized");
+	}
 }
