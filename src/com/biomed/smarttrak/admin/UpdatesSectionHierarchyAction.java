@@ -210,9 +210,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		actInf.setDBConnection(dbConn);
 		actInf.retrieve(req);
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		List<UpdateVO> updates = (List<UpdateVO>) mod.getActionData();
-		
-		return updates;
+		return (List<UpdateVO>) mod.getActionData();
 	}
 	
 	/*
