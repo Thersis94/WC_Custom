@@ -14,6 +14,7 @@ import java.util.Set;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
+import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 
 import net.sf.json.JSONArray;
@@ -132,37 +133,53 @@ public class ReplicatorDivisionUtil extends ShowpadDivisionUtil {
 				return;
 			} else if (f.exists()) {
 				//colliding files, rename this one using it's ShowpadID
-				fullPath = props.getProperty("syncTmpDir") + vo.getShowpadId();
+				fullPath = props.getProperty("syncTmpDir") + RandomAlphaNumeric.generateRandom(5) + "-" + vo.getTitleTxt();
 				vo.setFileName(fullPath);
 				f = new File(fullPath);
-				if (f.exists()) return;
-			}
-
-			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
-			InputStream is = conn.retrieveConnectionStream(vo.getLimeLightUrl(), null);				
-
-			if (404 == conn.getResponseCode())
-				throw new FileNotFoundException();
-
-			if (200 != conn.getResponseCode())
-				throw new IOException();
-
-			try (FileOutputStream fos = new FileOutputStream(f)) {
-				int nRead = 0;
-				int byteCnt = 0;
-				byte[] byteBuffer = new byte[8192];
-				while ((nRead = is.read(byteBuffer)) != -1) {
-					byteCnt += nRead;
-					fos.write(byteBuffer, 0, nRead);
+				if (f.exists() && f.length() == vo.getFileSizeNo()) {
+					log.warn("skipping existing file w/special name");
+					return;
 				}
-				fos.flush();
-				int kbCnt = byteCnt > 0 ? byteCnt/1000 : byteCnt;
-				vo.setFileSizeNo(kbCnt);
-				log.debug("wrote file " + fullPath + " kb=" + kbCnt + " bytes=" + byteCnt);
 			}
+
+			downloadFile(f, vo);
+
 		} catch (Exception e) {
 			log.error("could not download file", e);
 			vo.setRecordState(State.Failed);
+		}
+	}
+
+
+	/**
+	 * code abstract to keep things simple.  This does the actual file downloading for the 
+	 * above/parent method.
+	 * @param f
+	 * @param vo
+	 * @throws IOException
+	 */
+	private void downloadFile(File f, MediaBinDeltaVO vo) throws IOException {
+		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
+		InputStream is = conn.retrieveConnectionStream(vo.getLimeLightUrl(), null);				
+
+		if (404 == conn.getResponseCode())
+			throw new FileNotFoundException();
+
+		if (200 != conn.getResponseCode())
+			throw new IOException();
+
+		try (FileOutputStream fos = new FileOutputStream(f)) {
+			int nRead = 0;
+			int byteCnt = 0;
+			byte[] byteBuffer = new byte[8192];
+			while ((nRead = is.read(byteBuffer)) != -1) {
+				byteCnt += nRead;
+				fos.write(byteBuffer, 0, nRead);
+			}
+			fos.flush();
+			int kbCnt = byteCnt > 0 ? byteCnt/1000 : byteCnt;
+			vo.setFileSizeNo(kbCnt);
+			log.debug("wrote file " + f.getAbsolutePath() + " kb=" + kbCnt + " bytes=" + byteCnt);
 		}
 	}
 
