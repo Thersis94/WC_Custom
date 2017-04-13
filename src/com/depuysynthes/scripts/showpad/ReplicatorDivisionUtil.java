@@ -130,6 +130,12 @@ public class ReplicatorDivisionUtil extends ShowpadDivisionUtil {
 			if (f.exists() && f.length() == vo.getFileSizeNo()) {
 				log.warn("skipping existing file");
 				return;
+			} else if (f.exists()) {
+				//colliding files, rename this one using it's ShowpadID
+				fullPath = props.getProperty("syncTmpDir") + vo.getShowpadId();
+				vo.setFileName(fullPath);
+				f = new File(fullPath);
+				if (f.exists()) return;
 			}
 
 			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
