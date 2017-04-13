@@ -139,8 +139,11 @@ public class AccountReplicator extends CommandLineUtil {
 		Set<String> iter = new HashSet<>(destAssets.keySet()); //copy the keyset - make one that is not backed by the Map.
 		//prune the above lists by comparing the two.  We only want records that don't exist on both sides.
 		for (String destTitle: iter) {
-			srcAssets.remove(destTitle);
-			destAssets.remove(destTitle);
+			if (srcAssets.containsKey(destTitle)) {
+				srcAssets.remove(destTitle);
+				destAssets.remove(destTitle);
+				log.debug("removed " + destTitle);
+			}
 		}
 		Map<String, GenericVO> data = new HashMap<>();
 		data.put("Account Replicator", new GenericVO(new ArrayList<MediaBinDeltaVO>(srcAssets.values()), new ArrayList<MediaBinDeltaVO>(destAssets.values())));
