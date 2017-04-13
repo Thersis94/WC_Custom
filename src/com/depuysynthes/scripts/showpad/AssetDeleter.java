@@ -1,13 +1,7 @@
 package com.depuysynthes.scripts.showpad;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import com.siliconmtn.security.OAuth2TokenViaCLI;
-import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.StringUtil;
 
@@ -38,16 +32,7 @@ public class AssetDeleter extends CommandLineUtil {
 		loadDBConnection(props);
 
 		//setup the oAuth util now that the config file has been loaded
-		Map<Config, String> config = new HashMap<>();
-		config.put(Config.USER_ID, props.getProperty("showpadAcctName"));
-		config.put(Config.API_KEY, props.getProperty("showpadApiKey"));
-		config.put(Config.API_SECRET, props.getProperty("showpadApiSecret"));
-		config.put(Config.TOKEN_CALLBACK_URL, props.getProperty("showpadCallbackUrl"));
-		config.put(Config.TOKEN_SERVER_URL, props.getProperty("showpadTokenUrl"));
-		config.put(Config.AUTH_SERVER_URL,  props.getProperty("showpadAuthUrl"));
-		config.put(Config.KEYSTORE, "showpad");
-		List<String> scopes = Arrays.asList(props.getProperty("showpadScopes").split(","));
-		showpadApi = new ShowpadApiUtil(new OAuth2TokenViaCLI(config, scopes));
+		showpadApi = ShowpadApiUtil.makeInstance(props, null);
 	}
 
 
