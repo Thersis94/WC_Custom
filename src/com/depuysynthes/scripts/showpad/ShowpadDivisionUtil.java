@@ -514,6 +514,12 @@ public class ShowpadDivisionUtil {
 			offset += fetchSize;
 			//if we've retrieve less than the maximum amount of tags, we're done.  If the #s are equal we need to iterate.
 		} while (assets.size() == offset);
+		
+		//remove any that are status=deleted...they came from the trash!
+		for (Map.Entry<String, MediaBinDeltaVO> entry : assets.entrySet()) {
+			if (State.ShowpadTrash == entry.getValue().getRecordState())
+				assets.remove(entry.getKey());
+		}
 
 		log.info("loaded " + assets.size() + " showpad assets");
 		return assets;
@@ -527,7 +533,7 @@ public class ShowpadDivisionUtil {
 	 * @throws QuotaException
 	 */
 	protected void loadAssets(int limit, int offset, Map<String, MediaBinDeltaVO> assets) {
-		String tagUrl = divisionUrl + "/assets.json?limit=" + limit + "&fields=id,name&offset=" + offset;
+		String tagUrl = divisionUrl + "/assets.json?limit=" + limit + "&fields=id,name,archivedAt&offset=" + offset;
 		log.debug(tagUrl);
 		try {
 			String resp = showpadUtil.executeGet(tagUrl);
@@ -540,7 +546,13 @@ public class ShowpadDivisionUtil {
 			JSONObject response = json.getJSONObject("response");
 			JSONArray items = response.getJSONArray("items");
 			for (int x=0; x < items.size(); x++) {
-				MediaBinDeltaVO vo = new MediaBinDeltaVO(items.getJSONObject(x));
+				JSONObject item = items.getJSONObject(x);
+				MediaBinDeltaVO vo = new MediaBinDeltaVO(item);
+
+				//if archivedAt is not empty, it means this item is in the trash.  Tag it so we can toss it out.
+				if (!StringUtil.isEmpty(item.optString("archivedAt")) && !"null".equalsIgnoreCase(item.optString("archivedAt")))
+					vo.setRecordState(State.ShowpadTrash);
+				
 				assets.put(vo.getShowpadId(), vo);
 			}
 

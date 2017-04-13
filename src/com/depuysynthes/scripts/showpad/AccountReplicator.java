@@ -85,10 +85,13 @@ public class AccountReplicator extends CommandLineUtil {
 		marryRecords(srcAssets, destAssets);
 
 		//loop through the source assets, fire an update or add for each (the divisionUtil will determine which for us)
+		int cnt = srcAssets.size();
 		for (MediaBinDeltaVO vo : srcAssets.values()) {
-			log.debug(vo.getRecordState() + " " + vo.isFileChanged());
+			log.debug(vo.getRecordState() + " " + vo.isFileChanged() + " " + vo.getTitleTxt());
 			srcDivision.addDesiredTags(vo);
 			destDivision.pushAsset(vo);
+			--cnt;
+			log.info(cnt + " assets remaining");
 		}
 		//process the ticket queue.  This will force the script to wait/block until all assets are processed, which makes our report more accurate
 		destDivision.processTicketQueue();
@@ -104,8 +107,10 @@ public class AccountReplicator extends CommandLineUtil {
 	 * @param destAssets
 	 */
 	protected void marryRecords(Map<String, MediaBinDeltaVO> srcAssets, Map<String, MediaBinDeltaVO> destAssets) {
+		int cnt = srcAssets.size();
+		Map<String, MediaBinDeltaVO> titleMap = makeTitleMap(destAssets.values());
 		for (MediaBinDeltaVO vo : srcAssets.values()) {
-			MediaBinDeltaVO target = destAssets.get(vo.getShowpadId());
+			MediaBinDeltaVO target = titleMap.get(vo.getTitleTxt());
 			if (target == null) {
 				vo.setRecordState(State.Insert); //does not exist at the dest account (implies fileChanged=true)
 				srcDivision.downloadFile(vo);
@@ -117,6 +122,8 @@ public class AccountReplicator extends CommandLineUtil {
 				srcDivision.downloadFile(vo);
 				vo.setFileChanged(true);
 			}
+			--cnt;
+			log.info(cnt + " assets remaining in marry");
 		}
 	}
 

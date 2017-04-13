@@ -14,6 +14,7 @@ import java.util.Set;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
+import com.siliconmtn.util.StringUtil;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -55,7 +56,7 @@ public class ReplicatorDivisionUtil extends ShowpadDivisionUtil {
 
 	@Override
 	protected void loadAssets(int limit, int offset, Map<String, MediaBinDeltaVO> assets) {
-		String tagUrl = divisionUrl + "/assets.json?limit=" + limit + "&fields=id,name,shortLivedDownloadLink,description,fileSize&offset=" + offset;
+		String tagUrl = divisionUrl + "/assets.json?limit=" + limit + "&fields=id,name,shortLivedDownloadLink,description,fileSize,archivedAt&offset=" + offset;
 		log.debug(tagUrl);
 		try {
 			String resp = showpadUtil.executeGet(tagUrl);
@@ -76,7 +77,11 @@ public class ReplicatorDivisionUtil extends ShowpadDivisionUtil {
 				vo.setDownloadTypeTxt(item.optString("description"));
 				if ("null".equalsIgnoreCase(vo.getDownloadTypeTxt())) 
 					vo.setDownloadTypeTxt(null);
-				
+
+				//if archivedAt is not empty, it means this item is in the trash.  Tag it so we can toss it out.
+				if (!StringUtil.isEmpty(item.optString("archivedAt")) && !"null".equalsIgnoreCase(item.optString("archivedAt")))
+					vo.setRecordState(State.ShowpadTrash);
+
 				assets.put(vo.getShowpadId(), vo);
 			}
 

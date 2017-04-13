@@ -50,7 +50,7 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 
 
 	public enum State {
-		Insert,Update,Delete,Ignore,Failed;
+		Insert,Update,Delete,Ignore,Failed,ShowpadTrash;
 	}
 
 	public MediaBinDeltaVO() {
