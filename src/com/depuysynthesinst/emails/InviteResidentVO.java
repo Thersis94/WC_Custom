@@ -17,12 +17,12 @@ import com.smt.sitebuilder.common.SiteVO;
  ****************************************************************************/
 public class InviteResidentVO extends AbstractDSIEmailVO {
 	private static final long serialVersionUID = 1L;
-	
+
 	public InviteResidentVO() {
 		super();
 	}
 
-	
+
 	/**
 	 * add a method to build the message as its passed into the VO, not as it's sent (e.g.: getHtmlBody()).
 	 * This is important, because when this message gets to JMS it won't have access
@@ -48,11 +48,11 @@ public class InviteResidentVO extends AbstractDSIEmailVO {
 
 		sb.append("<p>You may change these permissions at any time by visiting ");
 		sb.append("<a href=\"").append(profileUrl).append("\">My Profile</a>.</p>");
-		
+
 		addIfYouBelieve(sb);
 
 		addClosingRemark(sb, siteUrl);
-		
+
 		addTrackingNo(sb, "DSUS/INS/0615/1108c 06/15");
 
 		super.setHtmlBody(sb.toString());
