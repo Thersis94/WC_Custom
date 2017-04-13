@@ -507,13 +507,13 @@ public class ShowpadDivisionUtil {
 	protected Map<String, MediaBinDeltaVO> getAllAssets() {
 		Map<String, MediaBinDeltaVO> assets = new HashMap<>(8000);
 
-		int fetchSize = 100;
+		int fetchSize = 1000;
 		int offset=0;
 		do {
 			loadAssets(fetchSize, offset, assets);
 			offset += fetchSize;
 			//if we've retrieve less than the maximum amount of tags, we're done.  If the #s are equal we need to iterate.
-		} while (false);
+		} while (assets.size() == offset);
 
 		log.info("loaded " + assets.size() + " showpad assets");
 		return assets;
