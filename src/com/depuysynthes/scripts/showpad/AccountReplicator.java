@@ -1,11 +1,17 @@
 package com.depuysynthes.scripts.showpad;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
+import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.CommandLineUtil;
 
 /****************************************************************************
@@ -84,7 +90,11 @@ public class AccountReplicator extends CommandLineUtil {
 			srcDivision.addDesiredTags(vo);
 			destDivision.pushAsset(vo);
 		}
+		//process the ticket queue.  This will force the script to wait/block until all assets are processed, which makes our report more accurate
+		destDivision.processTicketQueue();
+
 		log.info("done!");
+		sendEmail();
 	}
 
 
@@ -108,5 +118,51 @@ public class AccountReplicator extends CommandLineUtil {
 				vo.setFileChanged(true);
 			}
 		}
+	}
+
+
+
+	/**
+	 * sends an email to the admins containing a reconsile report
+	 */
+	protected void sendEmail() {
+		//get all the assets from both accounts
+		Map<String, MediaBinDeltaVO> srcAssets = makeTitleMap(srcDivision.getAllAssets().values());
+		Map<String, MediaBinDeltaVO> destAssets = makeTitleMap(destDivision.getAllAssets().values());
+		Set<String> iter = new HashSet<>(destAssets.keySet()); //copy the keyset - make one that is not backed by the Map.
+		//prune the above lists by comparing the two.  We only want records that don't exist on both sides.
+		for (String destTitle: iter) {
+			srcAssets.remove(destTitle);
+			destAssets.remove(destTitle);
+		}
+		Map<String, GenericVO> data = new HashMap<>();
+		data.put("Account Replicator", new GenericVO(new ArrayList<MediaBinDeltaVO>(srcAssets.values()), new ArrayList<MediaBinDeltaVO>(destAssets.values())));
+		ReconcileExcelReport rpt = new ReconcileExcelReport(data);
+		EmailMessageVO eml = new EmailMessageVO();
+		try {
+			eml.setFrom("appsupport@siliconmtn.com");
+			eml.addRecipients(props.getProperty("replicatorEmailRcpt"));
+			eml.setSubject(props.getProperty("replicatorEmailSubj"));
+			byte[] rptBytes = rpt.generateReport();
+			if (rptBytes.length > 0)
+				eml.addAttachment(rpt.getFileName(), rptBytes);
+
+			eml.setHtmlBody(rpt.getEmailSummary() + "\n\n\"Mediabin\" represents the source account, \"Showpad\" represents the destination account");
+			super.sendEmail(eml);
+		} catch (Exception e) {
+			log.error("could not send report email", e);
+		}
+	}
+
+
+	/**
+	 * @param values
+	 * @return
+	 */
+	private Map<String, MediaBinDeltaVO> makeTitleMap(Collection<MediaBinDeltaVO> values) {
+		Map<String, MediaBinDeltaVO> data = new HashMap<>(values.size());
+		for (MediaBinDeltaVO vo : values)
+			data.put(vo.getTitleTxt(), vo);
+		return data;
 	}
 }
