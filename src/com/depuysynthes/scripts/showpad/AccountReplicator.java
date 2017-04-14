@@ -136,8 +136,8 @@ public class AccountReplicator extends CommandLineUtil {
 	 */
 	protected void sendEmail() {
 		//get all the assets from both accounts
-		Map<String, MediaBinDeltaVO> srcAssets = makeTitleMap(srcDivision.getAllAssets().values(), false);
-		Map<String, MediaBinDeltaVO> destAssets = makeTitleMap(destDivision.getAllAssets().values(), false);
+		Map<String, MediaBinDeltaVO> srcAssets = makeTitleMap(srcDivision.getAllAssets().values(), true);
+		Map<String, MediaBinDeltaVO> destAssets = makeTitleMap(destDivision.getAllAssets().values(), true);
 		Set<String> iter = new HashSet<>(destAssets.keySet()); //copy the keyset - make one that is not backed by the Map.
 		//prune the above lists by comparing the two.  We only want records that don't exist on both sides.
 		for (String destTitle: iter) {
