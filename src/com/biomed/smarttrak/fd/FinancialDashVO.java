@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import com.biomed.smarttrak.fd.FinancialDashAction.DashType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionRequest;
@@ -49,7 +50,7 @@ public class FinancialDashVO extends SBModuleVO {
 	/**
 	 * The month offset from the current date, for the financial dashboard to display as current
 	 */
-	public static final int CURRENT_DT_MONTH_OFFSET = -6;
+	public static final int CURRENT_DT_MONTH_OFFSET = -3;
 	
 	/**
 	 * Provides a logger
@@ -150,7 +151,7 @@ public class FinancialDashVO extends SBModuleVO {
 		String scenId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String compId = StringUtil.checkVal(req.getParameter("companyId"));
 		
-		setCurrentQtrYear();
+		if (0 == getCurrentYear()) setCurrentQtrYear();
 		Integer calYr = Convert.formatInteger(req.getParameter("calendarYear"), getCurrentYear());
 		
 		// Set the parameters
@@ -409,10 +410,29 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
-	 * Sets both the current quarter and the current year for the financial dashboard
-	 * Current quarter/year is defined as: 3 months in the past
+	 * Sets both the current quarter and the current year for the financial dashboard.
+	 * 
+	 * Current quarter/year is defined as follows: 
+	 *     - Admin: 3 months in the past, from the current date
+	 *     - Public: Latest system-wide published FD quarter
+	 * 
+	 * @param req
 	 */
-	public void setCurrentQtrYear() {
+	public void setCurrentQtrYear(DashType dashType, SectionVO data) {
+		log.debug("Setting Current Quarter - Dash Type: " + dashType.toString());
+		
+		if (DashType.ADMIN == dashType) {
+			setCurrentQtrYear();
+		} else {
+			setCurrentQtrYear(data);
+		}
+	}
+	
+	/**
+	 * Sets the current quarter/year for the financial dashboard display,
+	 * based on the month offset, from the current date.
+	 */
+	private void setCurrentQtrYear() {
 		Date currentDate = Convert.formatDate(new Date(), Calendar.MONTH, CURRENT_DT_MONTH_OFFSET);
 
 		Calendar calendar = new GregorianCalendar();
@@ -422,6 +442,17 @@ public class FinancialDashVO extends SBModuleVO {
 		int month = calendar.get(Calendar.MONTH);
 		setCurrentQtr(month/3 + 1);
 		setCurrentYear(calendar.get(Calendar.YEAR));
+	}
+	
+	/**
+	 * Sets the current quarter/year for the financial dashboard display,
+	 * based on publish data from a section vo.
+	 * 
+	 * @param data
+	 */
+	private void setCurrentQtrYear(SectionVO data) {
+		setCurrentQtr(data.getFdPubQtr());
+		setCurrentYear(data.getFdPubYr());
 	}
 	
 	/**
