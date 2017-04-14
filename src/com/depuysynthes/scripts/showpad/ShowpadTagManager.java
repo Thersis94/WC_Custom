@@ -139,6 +139,7 @@ public class ShowpadTagManager {
 		//add what's left on the "need to add" list as new tags; both to the Asset, and to the Division in Showpad if they don't already exist
 		for (String tagNm : tagsToAdd) {
 			if (StringUtil.isEmpty(tagNm)) continue;
+			tagNm = tagNm.trim();
 			log.info("asset needs tag " + tagNm);
 			ShowpadTagVO tagVo = showpadTags.get(tagNm);
 			if (tagVo == null) {
