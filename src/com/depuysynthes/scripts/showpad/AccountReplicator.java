@@ -78,7 +78,7 @@ public class AccountReplicator extends CommandLineUtil {
 
 		Map<String, String> pointers = new HashMap<>(destAssets.size());
 		for (MediaBinDeltaVO vo : destAssets.values())
-			pointers.put(vo.getDpySynMediaBinId(), vo.getShowpadId());
+			pointers.put(vo.getDpySynMediaBinId().toLowerCase(), vo.getShowpadId());
 		destDivision.setDivisionAssets(pointers);
 		log.debug("gave destDivision " + pointers.size() + " existing assets");
 
@@ -87,6 +87,7 @@ public class AccountReplicator extends CommandLineUtil {
 		//loop through the source assets, fire an update or add for each (the divisionUtil will determine which for us)
 		int cnt = srcAssets.size();
 		for (MediaBinDeltaVO vo : srcAssets.values()) {
+			vo.setDpySynMediaBinId(vo.getDpySynMediaBinId().toLowerCase()); //lowercase the titles to address xls/XLS issues in the source data
 			log.debug(vo.getRecordState() + " " + vo.isFileChanged() + " " + vo.getTitleTxt());
 			srcDivision.addDesiredTags(vo);
 			destDivision.pushAsset(vo);
@@ -108,9 +109,9 @@ public class AccountReplicator extends CommandLineUtil {
 	 */
 	protected void marryRecords(Map<String, MediaBinDeltaVO> srcAssets, Map<String, MediaBinDeltaVO> destAssets) {
 		int cnt = srcAssets.size();
-		Map<String, MediaBinDeltaVO> titleMap = makeTitleMap(destAssets.values());
+		Map<String, MediaBinDeltaVO> titleMap = makeTitleMap(destAssets.values(), true);
 		for (MediaBinDeltaVO vo : srcAssets.values()) {
-			MediaBinDeltaVO target = titleMap.get(vo.getTitleTxt());
+			MediaBinDeltaVO target = titleMap.get(vo.getTitleTxt().toLowerCase());
 			if (target == null) {
 				vo.setRecordState(State.Insert); //does not exist at the dest account (implies fileChanged=true)
 				srcDivision.downloadFile(vo);
@@ -118,7 +119,7 @@ public class AccountReplicator extends CommandLineUtil {
 				vo.setRecordState(State.Ignore); //exists, and file sizes are the same meaning no upload needed.  meta-data will still be replicated.
 				vo.setFileChanged(false);
 			} else {
-				log.debug("sizes: " + vo.getFileSizeNo() +"|"+ target.getFileSizeNo());
+				log.debug("sizes are different: " + vo.getFileSizeNo() +"|"+ target.getFileSizeNo());
 				vo.setRecordState(State.Update); //file changed.  the file will be uploaded as an update transaction
 				srcDivision.downloadFile(vo);
 				vo.setFileChanged(true);
@@ -135,8 +136,8 @@ public class AccountReplicator extends CommandLineUtil {
 	 */
 	protected void sendEmail() {
 		//get all the assets from both accounts
-		Map<String, MediaBinDeltaVO> srcAssets = makeTitleMap(srcDivision.getAllAssets().values());
-		Map<String, MediaBinDeltaVO> destAssets = makeTitleMap(destDivision.getAllAssets().values());
+		Map<String, MediaBinDeltaVO> srcAssets = makeTitleMap(srcDivision.getAllAssets().values(), false);
+		Map<String, MediaBinDeltaVO> destAssets = makeTitleMap(destDivision.getAllAssets().values(), false);
 		Set<String> iter = new HashSet<>(destAssets.keySet()); //copy the keyset - make one that is not backed by the Map.
 		//prune the above lists by comparing the two.  We only want records that don't exist on both sides.
 		for (String destTitle: iter) {
@@ -147,7 +148,7 @@ public class AccountReplicator extends CommandLineUtil {
 			}
 		}
 		Map<String, GenericVO> data = new HashMap<>();
-		data.put("Account Replicator", new GenericVO(new ArrayList<MediaBinDeltaVO>(srcAssets.values()), new ArrayList<MediaBinDeltaVO>(destAssets.values())));
+		data.put("Account Replicator", new GenericVO(new ArrayList<>(srcAssets.values()), new ArrayList<>(destAssets.values())));
 		ReconcileExcelReport rpt = new ReconcileExcelReport(data);
 		EmailMessageVO eml = new EmailMessageVO();
 		try {
@@ -170,10 +171,10 @@ public class AccountReplicator extends CommandLineUtil {
 	 * @param values
 	 * @return
 	 */
-	private Map<String, MediaBinDeltaVO> makeTitleMap(Collection<MediaBinDeltaVO> values) {
+	private Map<String, MediaBinDeltaVO> makeTitleMap(Collection<MediaBinDeltaVO> values, boolean lowercase) {
 		Map<String, MediaBinDeltaVO> data = new HashMap<>(values.size());
 		for (MediaBinDeltaVO vo : values)
-			data.put(vo.getTitleTxt(), vo);
+			data.put(lowercase ? vo.getTitleTxt().toLowerCase() : vo.getTitleTxt(), vo);
 		return data;
 	}
 }
