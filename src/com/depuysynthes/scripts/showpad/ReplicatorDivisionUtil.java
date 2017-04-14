@@ -133,7 +133,7 @@ public class ReplicatorDivisionUtil extends ShowpadDivisionUtil {
 				return;
 			} else if (f.exists()) {
 				//colliding files, rename this one using it's ShowpadID
-				fullPath = props.getProperty("syncTmpDir") + RandomAlphaNumeric.generateRandom(5) + "-" + vo.getTitleTxt();
+				fullPath = props.getProperty("syncTmpDir") + vo.getShowpadId().substring(0, 5) + "-" + vo.getTitleTxt();
 				vo.setFileName(fullPath);
 				f = new File(fullPath);
 				if (f.exists() && f.length() == vo.getFileSizeNo()) {
