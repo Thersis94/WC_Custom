@@ -23,37 +23,55 @@ public abstract class AbstractDSIEmailVO extends EmailMessageVO {
 		super();
 	}
 
-	
+
 	public void buildMessage(UserDataVO rcpt, AssignmentVO assg, SiteVO site) {
 		//intended to be overwritten
 	}
-	
+
 	public void buildMessage(UserDataVO rcpt, SiteVO site) {
 		//intended to be overwritten
 	}
-	
+
 	protected void addIfYouBelieve(StringBuilder sb) {
 		sb.append("<p>If you believe you received this email in error or if you have any questions ");
 		sb.append("please contact us at <a href=\"mailto:futureleaders@its.jnj.com\">futureleaders@its.jnj.com</a>.</p>");
 	}
-	
+
 	protected void addThankYou(StringBuilder sb) {
 		sb.append("<p>Thank you for your interest in DePuy Synthes Future Leaders program.</p>");
 	}
-	
+
 	protected void addClosingRemark(StringBuilder sb, String siteUrl) {
-		sb.append("<p>Sincerely,<br/>DePuy Synthes Institute<br/>donotreply@its.jnj.com</p>");
+		this.addClosingRemark(sb, siteUrl, true);
+	}
+
+	protected void addClosingRemark(StringBuilder sb, String siteUrl, boolean inclProfileUrl) {
+		sb.append("<p>Sincerely,<br/>Johnson & Johnson Institute<br/>donotreply@its.jnj.com</p>");
 
 		sb.append("<p>Please do not reply to this e-mail as we will be unable to respond.  ");
 		sb.append("If you would like to opt-out of receiving future e-mails, have any comments, ");
 		sb.append("questions or general feedback, please e-mail ");
 		sb.append("<a href=\"mailto:depuysynthesinstitute@its.jnj.com\">depuysynthesinstitute@its.jnj.com</a> ");
-		sb.append("or write DePuy Synthes Institute, LLC, 325 Paramount Drive, Raynham, MA 02767.</p>");
+		sb.append("or write Johnson & Johnson Institute, LLC, 325 Paramount Drive, Raynham, MA 02767.</p>");
+
+		if (inclProfileUrl)
+			addDisclaimer(sb, siteUrl);
+	}
+
+
+	protected void addDisclaimer(StringBuilder sb, String siteUrl) {
+		sb.append("<p>You have received this e-mail because you are a registered user of www.depuysynthesinstitute.com.");
+		sb.append("Please do not reply to this e-mail as we are unable to respond.  If you would like to ");
+		sb.append("opt-out of receiving future e-mails, have any comments, questions or general feedback, ");
+		sb.append("please e-mail <a href=\"mailto:depuysynthesinstitute@its.jnj.com\">depuysynthesinstitute@its.jnj.com</a> ");
+		sb.append("or write Johnson & Johnson Institute, LLC, 325 Paramount Drive, Raynham, MA 02767.  Please review our ");
+		sb.append("<a href=\"").append(siteUrl).append("/privacy\">Privacy Policy</a>.</p>");
 
 		sb.append("<p>You may update your profile or communication preferences at any time by visiting ");
 		sb.append("<a href=\"").append(siteUrl).append("\">").append(siteUrl).append("</a></p>");
 	}
-	
+
+
 	protected void addTrackingNo(StringBuilder sb, String trn) {
 		sb.append("<p style=\"font-size:9pt;\">").append(trn).append("</p>");
 	}
