@@ -514,11 +514,12 @@ public class ShowpadDivisionUtil {
 			offset += fetchSize;
 			//if we've retrieve less than the maximum amount of tags, we're done.  If the #s are equal we need to iterate.
 		} while (assets.size() == offset);
-		
+
 		//remove any that are status=deleted...they came from the trash!
-		for (Map.Entry<String, MediaBinDeltaVO> entry : assets.entrySet()) {
-			if (State.ShowpadTrash == entry.getValue().getRecordState())
-				assets.remove(entry.getKey());
+		List<MediaBinDeltaVO> vos = new ArrayList<>(assets.values());
+		for (MediaBinDeltaVO vo : vos) {
+			if (State.ShowpadTrash == vo.getRecordState())
+				assets.remove(vo.getShowpadId());
 		}
 
 		log.info("loaded " + assets.size() + " showpad assets");
@@ -552,7 +553,7 @@ public class ShowpadDivisionUtil {
 				//if archivedAt is not empty, it means this item is in the trash.  Tag it so we can toss it out.
 				if (!StringUtil.isEmpty(item.optString("archivedAt")) && !"null".equalsIgnoreCase(item.optString("archivedAt")))
 					vo.setRecordState(State.ShowpadTrash);
-				
+
 				assets.put(vo.getShowpadId(), vo);
 			}
 
