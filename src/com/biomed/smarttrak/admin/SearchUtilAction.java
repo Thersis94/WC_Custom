@@ -69,13 +69,13 @@ public class SearchUtilAction extends SBActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select '").append(companyPath).append("' + company_id, company_nm from ").append(schema).append("biomedgps_company ");
-		sql.append("where lower(company_nm) like ? ");
+		sql.append("where lower(company_nm) like ? and status_no = 'P' ");
 		sql.append("union ");
 		sql.append("select '").append(productPath).append("' + product_id, product_nm from ").append(schema).append("biomedgps_product ");
-		sql.append("where lower(product_nm) like ? ");
+		sql.append("where lower(product_nm) like ? and status_no = 'P' ");
 		sql.append("union ");
 		sql.append("select '").append(marketPath).append("' + market_id, market_nm from ").append(schema).append("biomedgps_market ");
-		sql.append("where lower(market_nm) like ? ");
+		sql.append("where lower(market_nm) like ? and status_no = 'P' ");
 		sql.append("order by company_nm ");
 		log.debug("SQL: " + sql + "|" + searchData);
 		
