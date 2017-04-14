@@ -36,7 +36,9 @@ public class ListAction extends DirectUrlManagerAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("ajaxListType")) {
 			String listType = req.getParameter("ajaxListType");
-			List<GenericVO> vals = getList(listType, false);
+			String searchTerm = req.getParameter("term");
+
+			List<GenericVO> vals = getList(listType, false, searchTerm);
 			putModuleData(vals, vals.size(), false);
 		} else {
 			list(req);
@@ -73,29 +75,29 @@ public class ListAction extends DirectUrlManagerAction {
 		Map<String, List<GenericVO>> urlMap = new HashMap<>();
 
 		String type = req.getParameter("type");
-
+		String searchTerm = req.getParameter("term");
 		if("ALL".equals(type)) {
 			urlMap.put("PAGE", getPageUrls(req));
-			urlMap.put("COMPANY", getList(ListType.COMPANY.name(), true));
-			urlMap.put("MARKET", getList(ListType.MARKET.name(), true));
-			urlMap.put("PRODUCT", getList(ListType.PRODUCT.name(), true));
+			urlMap.put("COMPANY", getList(ListType.COMPANY.name(), true, searchTerm));
+			urlMap.put("MARKET", getList(ListType.MARKET.name(), true, searchTerm));
+			urlMap.put("PRODUCT", getList(ListType.PRODUCT.name(), true, searchTerm));
 		} else {
 			//Call Super to load any lists from core.
 			urlMap = super.getUrls(req);
 
 			//Get Companies
 			if(ListType.COMPANY.name().equals(type)) {
-				urlMap.put(ListType.COMPANY.name(), getList(ListType.COMPANY.name(), true));
+				urlMap.put(ListType.COMPANY.name(), getList(ListType.COMPANY.name(), true, searchTerm));
 			}
 
 			//Get Markets
 			if(ListType.MARKET.name().equals(type)) {
-				urlMap.put(ListType.MARKET.name(), getList(ListType.MARKET.name(), true));
+				urlMap.put(ListType.MARKET.name(), getList(ListType.MARKET.name(), true, searchTerm));
 			}
 
 			//Get Products
 			if(ListType.PRODUCT.name().equals(type)) {
-				urlMap.put(ListType.PRODUCT.name(), getList(ListType.PRODUCT.name(), true));
+				urlMap.put(ListType.PRODUCT.name(), getList(ListType.PRODUCT.name(), true, searchTerm));
 			}
 		}
 
@@ -109,24 +111,25 @@ public class ListAction extends DirectUrlManagerAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected List<GenericVO> getList(String listType, boolean asUrl) throws ActionException {
+	protected List<GenericVO> getList(String listType, boolean asUrl, String searchTerm) throws ActionException {
 		String sql;
 		String url = null;
+		boolean hasSearchTerm = !StringUtil.isEmpty(searchTerm);
 		switch(ListType.valueOf(listType)) {
 			case COMPANY:
-				sql = getCompanySql();
+				sql = getCompanySql(hasSearchTerm);
 				url = Section.COMPANY.getPageURL() + getAttribute(Constants.QS_PATH);
 				break;
 			case MARKET:
-				sql = getMarketSql();
+				sql = getMarketSql(hasSearchTerm);
 				url = Section.MARKET.getPageURL() + getAttribute(Constants.QS_PATH);
 				break;
 			case PRODUCT:
-				sql = getProductSql();
+				sql = getProductSql(hasSearchTerm);
 				url = Section.PRODUCT.getPageURL() + getAttribute(Constants.QS_PATH);
 				break;
 			case ACCOUNT:
-				sql = getAccountSql();
+				sql = getAccountSql(hasSearchTerm);
 				break;
 			default:
 				throw new ActionException("Invalid List Type.");
@@ -134,6 +137,10 @@ public class ListAction extends DirectUrlManagerAction {
 
 		List<GenericVO> vals = new ArrayList<>(2000);
 		try(PreparedStatement ps = dbConn.prepareCall(sql)) {
+			int i = 1;
+			if(hasSearchTerm) {
+				ps.setString(i++, ".*" + searchTerm + ".*");
+			}
 			ResultSet rs = ps.executeQuery();
 			StringBuilder val = null;
 			while(rs.next()) {
@@ -155,11 +162,15 @@ public class ListAction extends DirectUrlManagerAction {
 	 * Build company list sql
 	 * @return
 	 */
-	protected String getCompanySql() {
+	protected String getCompanySql(boolean hasSearchTerm) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select company_id as id, company_nm as val from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_company ");
-		sql.append(" where status_no = 'P' order by company_nm");
+		sql.append("where status_no = 'P' ");
+		if(hasSearchTerm) {
+			sql.append("and company_nm ~* ? ");
+		}
+		sql.append("order by company_nm limit 100");
 
 		return sql.toString();
 	}
@@ -168,11 +179,15 @@ public class ListAction extends DirectUrlManagerAction {
 	 * Build market list sql
 	 * @return
 	 */
-	protected String getMarketSql() {
+	protected String getMarketSql(boolean hasSearchTerm) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select market_id as id, market_nm as val from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_MARKET where status_no = 'P' order by market_nm");
+		sql.append("BIOMEDGPS_MARKET where status_no = 'P' ");
+		if(hasSearchTerm) {
+			sql.append("and market_nm ~* ? ");
+		}
+		sql.append("order by market_nm limit 100");
 
 		return sql.toString();
 	}
@@ -181,11 +196,15 @@ public class ListAction extends DirectUrlManagerAction {
 	 * Build product list sql
 	 * @return
 	 */
-	protected String getProductSql() {
+	protected String getProductSql(boolean hasSearchTerm) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select product_id as id, product_nm as val from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_PRODUCT where status_no = 'P' order by product_nm");
+		sql.append("BIOMEDGPS_PRODUCT where status_no = 'P' ");
+		if(hasSearchTerm) {
+			sql.append("and product_nm ~* ? ");
+		}
+		sql.append("order by product_nm limit 100");
 
 		return sql.toString();
 	}
@@ -194,10 +213,14 @@ public class ListAction extends DirectUrlManagerAction {
 	 * Build account list sql
 	 * @return
 	 */
-	protected String getAccountSql() {
+	protected String getAccountSql(boolean hasSearchTerm) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select account_id as id, account_nm as val from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_account ");
+		sql.append("where 1=1 ");
+		if(hasSearchTerm) {
+			sql.append("and account_nm ~* ? ");
+		}
 		sql.append("order by account_nm");
 
 		return sql.toString();
