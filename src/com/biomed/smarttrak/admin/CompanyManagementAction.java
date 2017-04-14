@@ -427,7 +427,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> companies = db.executeSelect(sql.toString(), params, new CompanyVO());
 		
-		super.putModuleData(companies, getCompanyCount(req.getParameter("search")), false);
+		super.putModuleData(companies, getCompanyCount(req.getParameter("search"), !req.hasParameter("inactive")), false);
 	}
 
 	
@@ -436,14 +436,20 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected int getCompanyCount(String searchData) throws ActionException {
+	protected int getCompanyCount(String searchData, boolean active) throws ActionException {
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("select count(*) FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("select count(*) FROM ").append(customDb).append("BIOMEDGPS_COMPANY c where 1=1 ");
 		// If the request has search terms on it add them here
 		if (!StringUtil.isEmpty(searchData)) {
-			sql.append("WHERE lower(COMPANY_NM) like ?");
+			sql.append("and lower(COMPANY_NM) like ?");
 		}
+
+		if (active) {
+			sql.append("and (c.STATUS_NO = '").append(Status.P.toString()).append("' ");
+			sql.append("or c.STATUS_NO = '").append(Status.E.toString()).append("') ");
+		}
+	
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (!StringUtil.isEmpty(searchData)) ps.setString(1, "%" + searchData.toLowerCase() + "%");
