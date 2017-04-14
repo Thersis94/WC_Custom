@@ -114,10 +114,11 @@ public class AccountReplicator extends CommandLineUtil {
 			if (target == null) {
 				vo.setRecordState(State.Insert); //does not exist at the dest account (implies fileChanged=true)
 				srcDivision.downloadFile(vo);
-			} else if (vo.getFileSizeNo() == target.getFileSizeNo()) {
+			} else if (vo.getFileSizeNo().intValue() == target.getFileSizeNo().intValue()) {
 				vo.setRecordState(State.Ignore); //exists, and file sizes are the same meaning no upload needed.  meta-data will still be replicated.
 				vo.setFileChanged(false);
 			} else {
+				log.debug("sizes: " + vo.getFileSizeNo() +"|"+ target.getFileSizeNo());
 				vo.setRecordState(State.Update); //file changed.  the file will be uploaded as an update transaction
 				srcDivision.downloadFile(vo);
 				vo.setFileChanged(true);

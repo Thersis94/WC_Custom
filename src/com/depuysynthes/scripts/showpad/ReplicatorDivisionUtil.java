@@ -14,7 +14,7 @@ import java.util.Set;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
-import com.siliconmtn.util.RandomAlphaNumeric;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 import net.sf.json.JSONArray;
@@ -73,7 +73,7 @@ public class ReplicatorDivisionUtil extends ShowpadDivisionUtil {
 				JSONObject item = items.getJSONObject(x);
 				MediaBinDeltaVO vo = new MediaBinDeltaVO(item);
 				vo.setLimeLightUrl(item.optString("shortLivedDownloadLink"));
-				vo.setFileSizeNo(item.optInt("fileSize"));
+				vo.setFileSizeNo(Convert.formatInteger(item.optInt("fileSize")));
 				vo.setDpySynMediaBinId(vo.getTitleTxt()); //these can be the same, it just appeases some Maps we use here in code.
 				vo.setDownloadTypeTxt(item.optString("description"));
 				if ("null".equalsIgnoreCase(vo.getDownloadTypeTxt())) 
