@@ -46,6 +46,7 @@ public class NoteVO extends SBModuleVO {
 	private String userName;
 	private String teamName;
 	private List<ProfileDocumentVO> profileDocuments;
+	private int listCount;
 
 
 	public NoteVO() {super();}
@@ -338,5 +339,20 @@ public class NoteVO extends SBModuleVO {
 	public void setProfileDocuments(List<ProfileDocumentVO> profileDocuments) {
 		this.profileDocuments = profileDocuments;
 	}
+	/**
+	 * @return the listCount
+	 */
+	@Column(name="class_nm", isReadOnly = true)
+	public int getListCount() {
+		return listCount;
+	}
+	/**
+	 * @param listCount the listCount to set
+	 */
+	public void setListCount(int listCount) {
+		this.listCount = listCount;
+	}
+	
+	
 
 }

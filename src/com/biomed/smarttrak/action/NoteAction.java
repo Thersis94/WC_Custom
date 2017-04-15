@@ -14,6 +14,10 @@ import java.util.Map;
 import com.biomed.smarttrak.vo.NoteVO;
 import com.biomed.smarttrak.vo.TeamVO;
 import com.biomed.smarttrak.vo.UserVO;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 //STM baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -24,6 +28,7 @@ import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.http.filter.fileupload.ProfileDocumentFileManagerStructureImpl;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
@@ -56,7 +61,7 @@ public class NoteAction extends SBActionAdapter {
 		MARKET,
 	}
 
-	private static final String PRODUCT_ID = "productId" ;
+	private static final String PRODUCT_ID = "productId";
 	private static final String MARKET_ID = "marketId";
 	private static final String COMPANY_ID = "companyId";
 	private static final String ATTRIBUTE_ID = "attributeId";
@@ -73,6 +78,11 @@ public class NoteAction extends SBActionAdapter {
 		super(arg0);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
@@ -93,30 +103,110 @@ public class NoteAction extends SBActionAdapter {
 
 		if (!StringUtil.isEmpty(req.getParameter("profileDocumentId"))){
 			String profileDocumentId = req.getParameter("profileDocumentId");
-
-			try {
-				if (isAuthorTeam(uvo,profileDocumentId)){
-
-					ProfileDocumentAction pda = new ProfileDocumentAction();
-					pda.setActionInit(actionInit);
-					pda.setDBConnection(dbConn);
-					pda.setAttributes(attributes);
-
-					ProfileDocumentVO pvo = pda.getDocumentByProfileDocumentId(profileDocumentId);
-
-
-
-					//will need a module data vo to send data back to the file handler
-					ModuleVO modVo = new ModuleVO();
-					modVo.setActionData(pvo);
-					attributes.put(Constants.MODULE_DATA, modVo);
-				}
-			} catch (NotAuthorizedException e) {
-				log.error("error in authorizing use of note ", e);
-			}
-
+			processProfileDocumentRequest(profileDocumentId, uvo);
 		}else{
+			StringBuilder filePrefix = new StringBuilder(65);
+			filePrefix.append(NOTES_DIRECTORY_PATH);
+			if (Convert.formatBoolean(req.getParameter("loadCount"))){
+				processNoteCounts(req);
+			}else {
+				processNoteRetrieve(ses, uvo, filePrefix, req);
+			}
+		}
+	}
 
+	/**
+	 * gets the list of notes in each note group and sets a json string to the action data for front end placement
+	 * @param req 
+	 */
+	private void processNoteCounts(ActionRequest req) {
+		log.debug("loading count");
+
+		JsonParser jsonParser = new JsonParser();
+		JsonArray ja = (JsonArray)jsonParser.parse(req.getParameter("notesGroups"));
+
+		log.debug("size of Json array is " + ja.size());
+		
+		Map<String, Integer> counts = new HashMap<>();
+
+		if (ja.size() <= 0){
+			//if they are not searching for anything return an empty map
+			putModuleData(counts);
+			return;
+		}
+		
+		List<Object> params = new ArrayList<>();
+		
+		StringBuilder countSql = new StringBuilder(65);
+		countSql.append("select count(*)as list_size, company_id, market_id, product_id, attribute_id from ");
+		countSql.append(CUSTOM_SCHEMA).append("biomedgps_note ");
+		countSql.append("where 1=1 ");
+		
+		boolean firstId = true;
+		
+		for (JsonElement jo : ja){
+			
+			if(firstId){
+				countSql.append("and ( ");
+				firstId = false;
+			} else {
+				countSql.append("or ( ");
+			}
+			
+			if (!jo.getAsJsonObject().get(COMPANY_ID).getAsString().isEmpty()){
+				countSql.append("company_id = ? and attribute_id ");
+				params.add(jo.getAsJsonObject().get(COMPANY_ID).getAsString());
+			}else if (!jo.getAsJsonObject().get(PRODUCT_ID).getAsString().isEmpty()){
+				countSql.append("product = ? and attribute_id ");
+				params.add(jo.getAsJsonObject().get(PRODUCT_ID).getAsString());
+			}else if (!jo.getAsJsonObject().get(MARKET_ID).getAsString().isEmpty()){
+				countSql.append("market_id = ? and attribute_id ");
+				params.add(jo.getAsJsonObject().get(MARKET_ID).getAsString());
+			}
+			
+			if (!jo.getAsJsonObject().get(ATTRIBUTE_ID).getAsString().isEmpty()){
+				countSql.append("= ? ) ");
+				params.add(jo.getAsJsonObject().get(ATTRIBUTE_ID).getAsString());
+			}else {
+				countSql.append("is null ) ");
+			}
+				
+		}
+		
+		countSql.append("group by company_id, market_id, product_id, attribute_id ");
+		countSql.append("order by list_size desc");
+
+		log.debug("## sql " + countSql.toString());
+		
+		for (Object ob : params)
+		{
+			log.debug("## param  " + (String)ob);
+		}
+		
+		DBProcessor dbp = new DBProcessor(dbConn);
+		List<Object> results = dbp.executeSelect(countSql.toString(), params, new NoteVO());
+		
+		
+		int x = 0;
+		for (JsonElement jo : ja){
+			log.debug("looop: " + jo.getAsJsonObject().get("targetDiv").getAsString());
+			counts.put(jo.getAsJsonObject().get("targetDiv").getAsString(), x++);
+		}
+
+		Gson gson = new Gson();
+		log.debug("#response json: " + gson.toJson(counts));
+		putModuleData(counts);
+	}
+
+	/**
+	 * processes a request for notes
+	 * @param ses 
+	 * @param filePrefix 
+	 * @param uvo 
+	 * @param req 
+	 */
+	protected void processNoteRetrieve(SMTSession ses, UserVO uvo, StringBuilder filePrefix, ActionRequest req) {
+		try  {
 			String encKey = (String) getAttribute(Constants.ENCRYPT_KEY);
 			String productId = StringUtil.checkVal(req.getParameter(PRODUCT_ID));
 			String companyId = StringUtil.checkVal(req.getParameter(COMPANY_ID));
@@ -125,44 +215,58 @@ public class NoteAction extends SBActionAdapter {
 			String noteId = StringUtil.checkVal(req.getParameter("noteId"));
 			String noteType = StringUtil.checkVal(req.getParameter(NOTE_TYPE));
 			String noteEntityId = StringUtil.checkVal(req.getParameter(NOTE_ENTITY_ID));
-			
-			StringBuilder filePrefix = new StringBuilder(65);
-			filePrefix.append(NOTES_DIRECTORY_PATH);
-			
-			
 
-			try  {
-				ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			String fileToken = ProfileDocumentFileManagerStructureImpl.makeDocToken(encKey);
 
-				String fileToken = ProfileDocumentFileManagerStructureImpl.makeDocToken(encKey);
-
-				log.debug("file token " + fileToken);
-				//if the request is for a particular note get that note
-				if (!noteId.isEmpty()){
-					//send the userId so we are sure the requester can see the note.
-					NoteVO vo = getNote(noteId, uvo.getUserId());
-					modVo.setActionData(vo);
-				}
-
-				//if there is an id for a list of notes ret that list of notes
-				if (!productId.isEmpty() || !marketId.isEmpty()|| !companyId.isEmpty()){
-					modVo.setActionData(refreshNoteList(productId, marketId,companyId, attributeId,ses));
-				}
-
-				modVo.setAttribute(ProfileDocumentFileManagerStructureImpl.DOC_TOKEN, fileToken );
-				modVo.setAttribute("filePrefix", filePrefix.toString() );
-				modVo.setAttribute("primaryId", setPrimaryId(productId, companyId, marketId, attributeId));
-				modVo.setAttribute(NOTE_TYPE, noteType.isEmpty()? getNoteType(productId, companyId, marketId) : noteType);
-				modVo.setAttribute(ATTRIBUTE_ID, attributeId);
-				modVo.setAttribute(NOTE_ENTITY_ID, noteEntityId.isEmpty()? setEntityId(productId, companyId, marketId) : noteEntityId);
-				attributes.put(Constants.MODULE_DATA, modVo);
-
-			} catch (EncryptionException e) {
-				log.error("error during string encryption " , e);
+			log.debug("file token " + fileToken);
+			//if the request is for a particular note get that note
+			if (!noteId.isEmpty()){
+				//send the userId so we are sure the requester can see the note.
+				NoteVO vo = getNote(noteId, uvo.getUserId());
+				modVo.setActionData(vo);
 			}
-
+			//if there is an id for a list of notes ret that list of notes
+			if (!productId.isEmpty() || !marketId.isEmpty()|| !companyId.isEmpty()){
+				modVo.setActionData(refreshNoteList(productId, marketId,companyId, attributeId,ses));
+			}
+			modVo.setAttribute(ProfileDocumentFileManagerStructureImpl.DOC_TOKEN, fileToken );
+			modVo.setAttribute("filePrefix", filePrefix.toString() );
+			modVo.setAttribute("primaryId", setPrimaryId(productId, companyId, marketId, attributeId));
+			modVo.setAttribute(NOTE_TYPE, noteType.isEmpty()? getNoteType(productId, companyId, marketId) : noteType);
+			modVo.setAttribute(ATTRIBUTE_ID, attributeId);
+			modVo.setAttribute(NOTE_ENTITY_ID, noteEntityId.isEmpty()? setEntityId(productId, companyId, marketId) : noteEntityId);
+			attributes.put(Constants.MODULE_DATA, modVo);
+		} catch (EncryptionException e) {
+			log.error("error during string encryption " , e);
 		}
+	}
 
+	/**
+	 * processes a request for a profile document
+	 * @param uvo 
+	 * @param profileDocumentId 
+	 * @throws ActionException 
+	 */
+	private void processProfileDocumentRequest(String profileDocumentId, UserVO uvo) throws ActionException {
+		try {
+			if (isAuthorTeam(uvo,profileDocumentId)){
+
+				ProfileDocumentAction pda = new ProfileDocumentAction();
+				pda.setActionInit(actionInit);
+				pda.setDBConnection(dbConn);
+				pda.setAttributes(attributes);
+
+				ProfileDocumentVO pvo = pda.getDocumentByProfileDocumentId(profileDocumentId);
+
+				//will need a module data vo to send data back to the file handler
+				ModuleVO modVo = new ModuleVO();
+				modVo.setActionData(pvo);
+				attributes.put(Constants.MODULE_DATA, modVo);
+			}
+		} catch (NotAuthorizedException e) {
+			log.error("error in authorizing use of note ", e);
+		}
 	}
 
 	/**
@@ -325,7 +429,7 @@ public class NoteAction extends SBActionAdapter {
 		GenericVO type = calculateNoteType(marketId, productId, companyId);
 
 		log.debug("note type: " + type);
-		
+
 		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
 		//if no user return an empty list
 		if (uvo == null){
@@ -377,8 +481,10 @@ public class NoteAction extends SBActionAdapter {
 	 */
 	private GenericVO calculateNoteType(String marketId, String productId,String companyId) {
 
-		if (!StringUtil.isEmpty(productId))return new GenericVO(productId,NoteType.PRODUCT);
-		if (!StringUtil.isEmpty(companyId))return new GenericVO(companyId,NoteType.COMPANY);
+		if (!StringUtil.isEmpty(productId))
+			return new GenericVO(productId,NoteType.PRODUCT);
+		if (!StringUtil.isEmpty(companyId))
+			return new GenericVO(companyId,NoteType.COMPANY);
 		else return new GenericVO(marketId,NoteType.MARKET);
 	}
 
@@ -427,7 +533,7 @@ public class NoteAction extends SBActionAdapter {
 				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getNoteId()));
 				//deletes the note
 				deleteNote(vo, db);	
-				
+
 				//if there are files to delete remove then and they document record
 				if (vo.getProfileDocuments() != null && vo.getProfileDocuments().size() >0){
 					deleteProfileDocuments(pda , vo.getProfileDocuments());
@@ -459,7 +565,7 @@ public class NoteAction extends SBActionAdapter {
 		attributes.put(Constants.MODULE_DATA, modVo);
 	}
 
-	
+
 	/**
 	 * loops the profile documemts deleting each one from the file system.
 	 * @param pda 
