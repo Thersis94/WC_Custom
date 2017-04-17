@@ -140,7 +140,7 @@ public class NoteAction extends SBActionAdapter {
 		StringBuilder countSql = new StringBuilder(65);
 		countSql.append("select count(*)as list_size, company_id, market_id, product_id, attribute_id from ");
 		countSql.append(CUSTOM_SCHEMA).append("biomedgps_note ");
-		countSql.append("where 1=1 ");
+		countSql.append("where ");
 		
 		boolean firstId = true;
 		
