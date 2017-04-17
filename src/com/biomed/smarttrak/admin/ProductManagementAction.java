@@ -769,11 +769,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		switch(action) {
 			case PRODUCT:
-				ProductVO p = new ProductVO(req);
-				boolean isInsert = StringUtil.isEmpty(p.getProductId());
-				saveProduct(p, db, isInsert);
-				saveSections(req, p);
-				if (isInsert) generateContent(req, p.getProductId());
+				saveFullProduct(req, db);
 				break;
 			case PRODUCTATTRIBUTE:
 				ProductAttributeVO attr = new ProductAttributeVO(req);
@@ -796,6 +792,21 @@ public class ProductManagementAction extends AbstractTreeAction {
 				break;
 			default:break;
 		}
+	}
+
+
+	/**
+	 * So all saves needed to update or insert a products core information.
+	 * @param req
+	 * @param db
+	 * @throws ActionException 
+	 */
+	protected void saveFullProduct(ActionRequest req, DBProcessor db) throws ActionException {
+		ProductVO p = new ProductVO(req);
+		boolean isInsert = StringUtil.isEmpty(p.getProductId());
+		saveProduct(p, db, isInsert);
+		saveSections(req, p);
+		if (isInsert) generateContent(req, p.getProductId());
 	}
 
 
