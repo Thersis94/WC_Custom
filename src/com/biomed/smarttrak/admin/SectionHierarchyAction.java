@@ -1,5 +1,8 @@
 package com.biomed.smarttrak.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -208,6 +211,35 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		sql.append("where SECTION_ID = ? ");
 		
 		return sql.toString();
+	}
+	
+	/**
+	 * Gets the year and quarter of the most recently published section.
+	 * 
+	 * @return
+	 */
+	public SectionVO getLatestFdPublish() {
+		SectionVO data = new SectionVO();
+		String custom = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("select fd_pub_yr, max(fd_pub_qtr) as fd_pub_qtr ");
+		sql.append("from ").append(custom).append("biomedgps_section ");
+		sql.append("where fd_pub_yr = (select max(fd_pub_yr) from ").append(custom).append("biomedgps_section) ");
+		sql.append("group by fd_pub_yr ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				data.setFdPubQtr(rs.getInt("fd_pub_qtr"));
+				data.setFdPubYr(rs.getInt("fd_pub_yr"));
+			}
+		} catch(SQLException sqle) {
+			log.error("Unable to get latest FD publish year & quarter", sqle);
+		}
+		
+		return data;
 	}
 
 	/* (non-Javadoc)

@@ -542,9 +542,8 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * either the top gets marked current, or a level is reached where not all nodes match.
 	 * 
 	 * @param req
-	 * @throws ActionException 
 	 */
-	protected void setCurrentQtr(ActionRequest req) throws ActionException {
+	protected void setCurrentQtr(ActionRequest req) {
 		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"));
 		int year = Convert.formatInteger(req.getParameter("currentYear"));
 		int qtr = Convert.formatInteger(req.getParameter("currentQtr"));
@@ -552,8 +551,8 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		log.debug("Setting Current Quarter: " + year + "-" + qtr);
 		
 		// Gets the tree info
-		SectionHierarchyAction sha = getHierarchyAction(req);
-		SmarttrakTree tree = getFullHierarchy(req);
+		SectionHierarchyAction sha = getHierarchyAction();
+		SmarttrakTree tree = getFullHierarchy();
 		Node currentNode = tree.findNode(sectionId);
 		String updateNodeId;
 		

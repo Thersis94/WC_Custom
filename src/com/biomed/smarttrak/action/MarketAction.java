@@ -46,8 +46,6 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
  * <b>Changes: </b>
  ****************************************************************************/
 public class MarketAction extends AbstractTreeAction {
-	private static final String DEFAULT_GROUP = "Other";
-	private static final String DEFAULT_SUBGROUP = "Misc";
 
 	public MarketAction() {
 		super();
@@ -280,8 +278,8 @@ public class MarketAction extends AbstractTreeAction {
 		for (Node n : t.getRootNode().getChildren()) {
 			//use level 3 of the hierarchy as group name, or a default "Other" otherwise
 			String[] hierarchy = StringUtil.checkVal(((SolrDocument)n.getUserObject()).get(SearchDocumentHandler.HIERARCHY)).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
-			String section = hierarchy.length < 3 ? DEFAULT_GROUP : hierarchy[2];
-			String subgroup = hierarchy.length < 4? DEFAULT_SUBGROUP : hierarchy[3];
+			String section = hierarchy.length < 3 ? hierarchy[hierarchy.length-1] : hierarchy[2];
+			String subgroup = hierarchy.length < 4? section : hierarchy[3];
 			addMarket(n, groups, section, subgroup);
 		}
 		
