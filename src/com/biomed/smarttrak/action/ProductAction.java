@@ -135,7 +135,7 @@ public class ProductAction extends AbstractTreeAction {
 			while(rs.next()) {
 				ProductVO p = new ProductVO();
 				db.executePopulate(p, rs);
-				AddRelatedProduct(p, product, t, rs.getString("SECTION_ID"));
+				addRelatedProduct(p, product, t, rs.getString("SECTION_ID"));
 			}
 			
 		} catch (SQLException e) {
@@ -150,7 +150,7 @@ public class ProductAction extends AbstractTreeAction {
 	 * @param product
 	 * @param t
 	 */
-	protected void AddRelatedProduct(ProductVO p, ProductVO product,
+	protected void addRelatedProduct(ProductVO p, ProductVO product,
 			SmarttrakTree t, String sectionId) {
 		Node n = t.findNode(sectionId);
 		
