@@ -386,10 +386,7 @@ public class CompanyAction extends AbstractTreeAction {
 			return;
 		}
 		
-		// If there is a parent attribute go with that one, otherwise go with
-		// the current attribute's name
-		String name = attr.getParentName();
-		if (StringUtil.isEmpty(name)) name = attr.getAttributeName();
+		String name = attr.getAttributeName();
 		
 		if (!attrMap.keySet().contains(name)) {
 			attrMap.put(name, new ArrayList<CompanyAttributeVO>());

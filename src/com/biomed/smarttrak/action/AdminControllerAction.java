@@ -120,6 +120,22 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		}
 	}
 	
+	/**
+	 * Statuses used in companies, markets, and products.
+	 */
+	public enum Status {
+		E("Edit"), P("Published"), A("Archived"), D("Delete");
+		
+		private String title;
+		
+		Status(String title) {
+			this.title = title;
+		}
+		
+		public String getTitle() {
+			return title;
+		}
+	}
 
 	/*
 	 * the master list of actions this Controller can execute
