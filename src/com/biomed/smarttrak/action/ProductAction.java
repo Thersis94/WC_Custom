@@ -29,6 +29,7 @@ import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
 /****************************************************************************
@@ -115,7 +116,7 @@ public class ProductAction extends AbstractTreeAction {
 	protected void addRelatedProducts(ProductVO product) throws ActionException {
 		StringBuilder sql = new StringBuilder(375);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT p.PRODUCT_ID, p.PRODUCT_NM, s.SECTION_NM FROM ");
+		sql.append("SELECT p.PRODUCT_ID, p.PRODUCT_NM, s.SECTION_ID FROM ");
 		sql.append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION xr ");
 		sql.append("ON xr.PRODUCT_ID = p.PRODUCT_ID ");
@@ -129,10 +130,12 @@ public class ProductAction extends AbstractTreeAction {
 			ResultSet rs = ps.executeQuery();
 
 			DBProcessor db = new DBProcessor(dbConn);
+			SmarttrakTree t = loadDefaultTree();
+			t.buildNodePaths();
 			while(rs.next()) {
 				ProductVO p = new ProductVO();
 				db.executePopulate(p, rs);
-				product.addRelatedProduct(rs.getString("SECTION_NM"), p);
+				addRelatedProduct(p, product, t, rs.getString("SECTION_ID"));
 			}
 			
 		} catch (SQLException e) {
@@ -140,6 +143,30 @@ public class ProductAction extends AbstractTreeAction {
 		}
 	}
 
+	
+	/**
+	 * Add a related product to the main product
+	 * @param p
+	 * @param product
+	 * @param t
+	 */
+	protected void addRelatedProduct(ProductVO p, ProductVO product,
+			SmarttrakTree t, String sectionId) {
+		Node n = t.findNode(sectionId);
+		
+		// If this product doesn't have any 
+		if (n == null) return;
+		
+		String[] path = n.getFullPath().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+		
+		if (path.length < 2) {
+			product.addRelatedProduct(path[path.length-1], p);
+		} else {
+			product.addRelatedProduct(path[1], p);
+		}
+	}
+
+	
 	/**
 	 * Add all regulations to the product
 	 */

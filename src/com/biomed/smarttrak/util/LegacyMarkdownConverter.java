@@ -24,7 +24,7 @@ import com.siliconmtn.util.StringUtil;
  * @version 1.0
  * @since Feb 22, 2017
  ****************************************************************************/
-public class MarkdownConverter extends CommandLineUtil {
+public class LegacyMarkdownConverter extends CommandLineUtil {
 
 	private final String markdownServer;
 	
@@ -66,7 +66,7 @@ public class MarkdownConverter extends CommandLineUtil {
 	 * default constructor
 	 * @param args
 	 */
-	public MarkdownConverter(String[] args) {
+	public LegacyMarkdownConverter(String[] args) {
 		super(args);
 		loadProperties("scripts/bmg_smarttrak/markdown.properties");
 		loadDBConnection(props);
@@ -79,7 +79,7 @@ public class MarkdownConverter extends CommandLineUtil {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		MarkdownConverter eui = new MarkdownConverter(args);
+		LegacyMarkdownConverter eui = new LegacyMarkdownConverter(args);
 		eui.run();
 		//eui.runTest()
 	}
