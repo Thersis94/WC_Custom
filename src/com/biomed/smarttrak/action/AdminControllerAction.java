@@ -31,7 +31,7 @@ import com.biomed.smarttrak.admin.TeamMemberAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.admin.UpdatesEmailSendAction;
 import com.biomed.smarttrak.admin.report.EmailReportAction;
-import com.biomed.smarttrak.fd.FinancialDashAction;
+import com.biomed.smarttrak.fd.FinancialDashAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
 
@@ -141,7 +141,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS = new HashMap<>(35);
 		ACTIONS.put("hierarchy", SectionHierarchyAction.class);
 		ACTIONS.put("agap", GapAnalysisAdminAction.class);
-		ACTIONS.put("fd", FinancialDashAction.class);
+		ACTIONS.put("fd", FinancialDashAdminAction.class);
 		ACTIONS.put("fdScenario", FinancialDashScenarioAction.class);
 		ACTIONS.put("fdFootnote", FinancialDashFootnoteAdminAction.class);
 		ACTIONS.put("audit", AuditLogAction.class);

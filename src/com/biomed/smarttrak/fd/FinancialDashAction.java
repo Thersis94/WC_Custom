@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -27,6 +28,15 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 public class FinancialDashAction extends SBActionAdapter {
 	
 	private static final String FD = "fd";
+	public static final String DASH_TYPE = "dashType";
+	
+	// Default financial dashboard type
+	protected DashType dashType = DashType.COMMON;
+	
+	/**
+	 * Values for whether the dashboard is being viewed from admin or public
+	 */
+	public enum DashType {ADMIN, COMMON}
 	
 	/**
 	 * Map of financial dash classes
@@ -47,24 +57,29 @@ public class FinancialDashAction extends SBActionAdapter {
 		super();
 	}
 
+	/**
+	 * @param actionInit
+	 */
 	public FinancialDashAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SecurityController.isFdAuth(req);
-		
-		super.retrieve(req);
 		
 		ActionInterface ai = getAction(req);
 		ai.retrieve(req);
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		super.build(req);
-		
 		ActionInterface ai = getAction(req);
 		ai.build(req);
 	}
@@ -81,8 +96,11 @@ public class FinancialDashAction extends SBActionAdapter {
 	 */
 	private ActionInterface getAction(ActionRequest req) throws ActionException {
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
-		String actionType = StringUtil.checkVal(req.getParameter("actionType"), FD);
+		String actionType = StringUtil.checkVal(req.getParameter(AdminControllerAction.ACTION_TYPE), FD);
 		
+		// Set the dashboard type
+		req.setAttribute(DASH_TYPE, dashType);
+
 		// Determine the request type
 		String action;
 		if (scenarioId.length() > 0 && FD.equals(actionType)) {
@@ -108,7 +126,7 @@ public class FinancialDashAction extends SBActionAdapter {
 		ai.setDBConnection(dbConn);
 		
 		// In case default was used
-		req.setParameter("actionType", actionType);
+		req.setParameter(AdminControllerAction.ACTION_TYPE, actionType);
 
 		return ai;
 	}
