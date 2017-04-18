@@ -338,5 +338,17 @@ public class NoteVO extends SBModuleVO {
 	public void setProfileDocuments(List<ProfileDocumentVO> profileDocuments) {
 		this.profileDocuments = profileDocuments;
 	}
+	/**
+	 * @return the listCount
+	 */
+	public int getListCount() {
+		return listCount;
+	}
+	/**
+	 * @param listCount the listCount to set
+	 */
+	public void setListCount(int listCount) {
+		this.listCount = listCount;
+	}
 
 }
