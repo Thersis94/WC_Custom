@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
 import com.biomed.smarttrak.vo.TeamVO;
@@ -133,35 +134,49 @@ public class NoteAction extends SBActionAdapter {
 			putModuleData(counts);
 			return;
 		}
-		
+		SMTSession ses = req.getSession();
+		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		//if no user return an empty list
+		if (uvo == null){
+			log.debug("no logged in user");
+			putModuleData(counts);
+			return;
+		}
+
 		//used to hold all the ids so Zeros are recorded
 		List<String> params = new ArrayList<>();
-		
+
 		//this query was not compatible with dp processor, when the vo is annotated the count column 
 		//threw an exception or didnt fill in the vo.  
-		
-		try (PreparedStatement ps = dbConn.prepareStatement(getCountSql(ja, params))) {
+
+		try (PreparedStatement ps = dbConn.prepareStatement(getCountSql(ja, params,uvo.getTeams()))) {
 			int x=1;
-			for (String id : params)
-				{
+			for (String id : params){
 					ps.setString(x++, id);
 				}
+
+			ps.setString(x++, uvo.getUserId());
+			
+			for ( TeamVO tvo : uvo.getTeams()){
+				ps.setString(x++, tvo.getTeamId());
+			}
 			
 			ResultSet rs = ps.executeQuery();
-			
+
 			while (rs.next()) {
 				processResults(rs, counts);
 			}
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
-		
+
 		processZeroIds(counts, params);
-		
+
 		putModuleData(counts);
 	}
 
 	/**
+	 * adds zero counts for ids 
 	 * @param counts 
 	 * @param params 
 	 * 
@@ -174,7 +189,7 @@ public class NoteAction extends SBActionAdapter {
 				counts.put(key, 0);
 			}
 		}
-		
+
 	}
 
 	/**
@@ -186,63 +201,73 @@ public class NoteAction extends SBActionAdapter {
 	 */
 	private void processResults(ResultSet rs, Map<String, Integer> counts) throws SQLException {
 		String key="";
-		
-		if (!"".equals(rs.getString("attribute_id"))){
+
+		if (!"".equals(StringUtil.checkVal(rs.getString("attribute_id")))){
 			key = ID_NOTE_LIST+ rs.getString("attribute_id");
-		}else if (!"".equals(rs.getString("market_id"))){
+		}else if (!"".equals(StringUtil.checkVal(rs.getString("market_id")))){
 			key = ID_NOTE_LIST+ rs.getString("market_id");
-		}else if (!"".equals(rs.getString("company_id"))){
+		}else if (!"".equals(StringUtil.checkVal(rs.getString("company_id")))){
 			key = ID_NOTE_LIST+ rs.getString("company_id");
-		}else if (!"".equals(rs.getString("product_id"))){
+		}else if (!"".equals(StringUtil.checkVal(rs.getString("product_id")))){
 			key = ID_NOTE_LIST+ rs.getString("product_id");
 		}
-		
+
+		log.debug("##key: " + key + "  value: " +Convert.formatInteger(rs.getString("LIST_COUNT")) );
+
 		counts.put(key, Convert.formatInteger(rs.getString("LIST_COUNT")));
-		
+
 	}
 
 	/**
 	 * generates the sql for getting a count of notes 
 	 * @param params 
 	 * @param ja 
+	 * @param list 
 	 * @return
 	 */
-	private String getCountSql(JsonArray ja, List<String> params) {
+	private String getCountSql(JsonArray ja, List<String> params, List<TeamVO> teams) {
 		StringBuilder countSql = new StringBuilder(65);
 		countSql.append("select count(*)as list_count, COMPANY_ID, MARKET_ID, PRODUCT_ID, ATTRIBUTE_ID from ");
 		countSql.append(CUSTOM_SCHEMA).append("biomedgps_note ");
 		countSql.append("where ");
-		
+
 		boolean firstId = true;
-		
+
 		for (JsonElement jo : ja){
-			
+
 			if(firstId){
 				countSql.append(" ( ");
 				firstId = false;
 			} else {
 				countSql.append("or ( ");
 			}
-			
+
 			if (!jo.getAsJsonObject().get(COMPANY_ID).getAsString().isEmpty()){
 				countSql.append("company_id = ? and attribute_id ");
 				params.add(jo.getAsJsonObject().get(COMPANY_ID).getAsString());
 			}else if (!jo.getAsJsonObject().get(PRODUCT_ID).getAsString().isEmpty()){
-				countSql.append("product = ? and attribute_id ");
+				countSql.append("product_id = ? and attribute_id ");
 				params.add(jo.getAsJsonObject().get(PRODUCT_ID).getAsString());
 			}else if (!jo.getAsJsonObject().get(MARKET_ID).getAsString().isEmpty()){
 				countSql.append("market_id = ? and attribute_id ");
 				params.add(jo.getAsJsonObject().get(MARKET_ID).getAsString());
 			}
-			
-			if (!jo.getAsJsonObject().get(ATTRIBUTE_ID).getAsString().isEmpty()){
+
+			if ( jo.getAsJsonObject().get(ATTRIBUTE_ID)!= null && !jo.getAsJsonObject().get(ATTRIBUTE_ID).getAsString().isEmpty()){
 				countSql.append("= ? ) ");
 				params.add(jo.getAsJsonObject().get(ATTRIBUTE_ID).getAsString());
 			}else {
 				countSql.append("is null ) ");
 			}
 		}
-		
+
+		countSql.append("and (user_id = ? or team_id in ( ");
+		for (int x=0 ; x <teams.size()-1; x++){
+			countSql.append("?, ");
+		}
+		countSql.append("? ");
+		countSql.append(")) ");
+
 		countSql.append("group by company_id, market_id, product_id, attribute_id ");
 		countSql.append("order by list_count desc");
 
@@ -565,7 +590,7 @@ public class NoteAction extends SBActionAdapter {
 		log.debug("companyId " + vo.getCompanyId());
 		log.debug("marketId " + vo.getMarketId());
 		log.debug("productId " + vo.getProductId());
-		
+
 		setTargetId(req, vo);
 
 		//if a user decided to not share the note, then the team id is set to null 
@@ -589,7 +614,7 @@ public class NoteAction extends SBActionAdapter {
 				deleteNote(vo, db);	
 
 				//if there are files to delete remove then and they document record
-				if (vo.getProfileDocuments() != null && vo.getProfileDocuments().size() >0){
+				if (vo.getProfileDocuments() != null && vo.getProfileDocuments().isEmpty()){
 					deleteProfileDocuments(pda , vo.getProfileDocuments());
 
 				}
