@@ -28,6 +28,7 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
@@ -81,6 +82,9 @@ public class MarketAction extends AbstractTreeAction {
 			} else {
 				//verify user has access to this market
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
+			    	PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
+			    	SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+				page.setTitleName(vo.getMarketName() + " | " + site.getSiteName());
 				putModuleData(vo);
 			}
 			putModuleData(vo);

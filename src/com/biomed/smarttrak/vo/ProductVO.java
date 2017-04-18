@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
@@ -51,6 +52,7 @@ public class ProductVO extends SecureSolrDocumentVO {
 	private List<RegulationVO> regulations;
 	private Map<String, List<ProductAttributeVO>> details;
 	private Map<String, List<ProductVO>> relatedProducts;
+	private Tree detailsTree;
 	
 	public ProductVO () {
 		super(BiomedProductIndexer.INDEX_TYPE);
@@ -340,6 +342,16 @@ public class ProductVO extends SecureSolrDocumentVO {
 		// products are equal or close enough that using either one for its
 		// intended purpose will get the same results.
 		return true;
+	}
+
+
+	public Tree getDetailsTree() {
+		return detailsTree;
+	}
+
+
+	public void setDetailsTree(Tree detailsTree) {
+		this.detailsTree = detailsTree;
 	}
 	
 }
