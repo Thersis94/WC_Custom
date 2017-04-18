@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.util.Date;
 import java.util.List;
 
-
 //SMT baselibs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
@@ -339,20 +338,5 @@ public class NoteVO extends SBModuleVO {
 	public void setProfileDocuments(List<ProfileDocumentVO> profileDocuments) {
 		this.profileDocuments = profileDocuments;
 	}
-	/**
-	 * @return the listCount
-	 */
-	@Column(name="class_nm", isReadOnly = true)
-	public int getListCount() {
-		return listCount;
-	}
-	/**
-	 * @param listCount the listCount to set
-	 */
-	public void setListCount(int listCount) {
-		this.listCount = listCount;
-	}
-	
-	
 
 }

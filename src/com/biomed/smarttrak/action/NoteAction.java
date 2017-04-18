@@ -9,12 +9,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
 import com.biomed.smarttrak.vo.TeamVO;
 import com.biomed.smarttrak.vo.UserVO;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -69,6 +67,8 @@ public class NoteAction extends SBActionAdapter {
 	private static final String NOTE_ENTITY_ID = "noteEntityId";
 	private static final String CUSTOM_SCHEMA = "custom.";
 	private static final String NOTES_DIRECTORY_PATH = "/note";
+	private static final String ID_NOTE_LIST = "#notes-list-";
+	private static final String NOTE_TABLE = "biomedgps_note n ";
 
 	public NoteAction() {
 		super();
@@ -118,15 +118,14 @@ public class NoteAction extends SBActionAdapter {
 	/**
 	 * gets the list of notes in each note group and sets a json string to the action data for front end placement
 	 * @param req 
+	 * @throws ActionException 
 	 */
-	private void processNoteCounts(ActionRequest req) {
+	private void processNoteCounts(ActionRequest req) throws ActionException {
 		log.debug("loading count");
 
 		JsonParser jsonParser = new JsonParser();
 		JsonArray ja = (JsonArray)jsonParser.parse(req.getParameter("notesGroups"));
 
-		log.debug("size of Json array is " + ja.size());
-		
 		Map<String, Integer> counts = new HashMap<>();
 
 		if (ja.size() <= 0){
@@ -135,10 +134,82 @@ public class NoteAction extends SBActionAdapter {
 			return;
 		}
 		
-		List<Object> params = new ArrayList<>();
+		//used to hold all the ids so Zeros are recorded
+		List<String> params = new ArrayList<>();
 		
+		//this query was not compatible with dp processor, when the vo is annotated the count column 
+		//threw an exception or didnt fill in the vo.  
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(getCountSql(ja, params))) {
+			int x=1;
+			for (String id : params)
+				{
+					ps.setString(x++, id);
+				}
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) {
+				processResults(rs, counts);
+			}
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		
+		processZeroIds(counts, params);
+		
+		putModuleData(counts);
+	}
+
+	/**
+	 * @param counts 
+	 * @param params 
+	 * 
+	 */
+	private void processZeroIds(Map<String, Integer> counts, List<String> params) {
+		for ( String id : params){
+			String key= ID_NOTE_LIST+ id;
+
+			if (!counts.containsKey(key)){
+				counts.put(key, 0);
+			}
+		}
+		
+	}
+
+	/**
+	 * 
+	 * @param counts 
+	 * @param rs 
+	 * @throws SQLException 
+	 * 
+	 */
+	private void processResults(ResultSet rs, Map<String, Integer> counts) throws SQLException {
+		String key="";
+		
+		if (!"".equals(rs.getString("attribute_id"))){
+			key = ID_NOTE_LIST+ rs.getString("attribute_id");
+		}else if (!"".equals(rs.getString("market_id"))){
+			key = ID_NOTE_LIST+ rs.getString("market_id");
+		}else if (!"".equals(rs.getString("company_id"))){
+			key = ID_NOTE_LIST+ rs.getString("company_id");
+		}else if (!"".equals(rs.getString("product_id"))){
+			key = ID_NOTE_LIST+ rs.getString("product_id");
+		}
+		
+		counts.put(key, Convert.formatInteger(rs.getString("LIST_COUNT")));
+		
+	}
+
+	/**
+	 * generates the sql for getting a count of notes 
+	 * @param params 
+	 * @param ja 
+	 * @return
+	 */
+	private String getCountSql(JsonArray ja, List<String> params) {
 		StringBuilder countSql = new StringBuilder(65);
-		countSql.append("select count(*)as list_size, company_id, market_id, product_id, attribute_id from ");
+		countSql.append("select count(*)as list_count, COMPANY_ID, MARKET_ID, PRODUCT_ID, ATTRIBUTE_ID from ");
 		countSql.append(CUSTOM_SCHEMA).append("biomedgps_note ");
 		countSql.append("where ");
 		
@@ -147,7 +218,7 @@ public class NoteAction extends SBActionAdapter {
 		for (JsonElement jo : ja){
 			
 			if(firstId){
-				countSql.append("and ( ");
+				countSql.append(" ( ");
 				firstId = false;
 			} else {
 				countSql.append("or ( ");
@@ -170,32 +241,13 @@ public class NoteAction extends SBActionAdapter {
 			}else {
 				countSql.append("is null ) ");
 			}
-				
 		}
 		
 		countSql.append("group by company_id, market_id, product_id, attribute_id ");
-		countSql.append("order by list_size desc");
+		countSql.append("order by list_count desc");
 
-		log.debug("## sql " + countSql.toString());
-		
-		for (Object ob : params)
-		{
-			log.debug("## param  " + (String)ob);
-		}
-		
-		DBProcessor dbp = new DBProcessor(dbConn);
-		List<Object> results = dbp.executeSelect(countSql.toString(), params, new NoteVO());
-		
-		
-		int x = 0;
-		for (JsonElement jo : ja){
-			log.debug("looop: " + jo.getAsJsonObject().get("targetDiv").getAsString());
-			counts.put(jo.getAsJsonObject().get("targetDiv").getAsString(), x++);
-		}
-
-		Gson gson = new Gson();
-		log.debug("#response json: " + gson.toJson(counts));
-		putModuleData(counts);
+		log.debug("count sql " + countSql.toString());
+		return countSql.toString();
 	}
 
 	/**
@@ -288,7 +340,7 @@ public class NoteAction extends SBActionAdapter {
 
 		StringBuilder sb = new StringBuilder(181);
 		sb.append("select n.user_id, n.team_id from profile_document pd ");
-		sb.append("inner join ").append(CUSTOM_SCHEMA).append("biomedgps_note n ");
+		sb.append("inner join ").append(CUSTOM_SCHEMA).append(NOTE_TABLE);
 		sb.append("on n.note_id = pd.feature_id ");
 		sb.append("where profile_document_id = ? ");
 
@@ -364,7 +416,7 @@ public class NoteAction extends SBActionAdapter {
 	protected NoteVO getNote(String noteId, String userId) {
 
 		StringBuilder sb = new StringBuilder(32);
-		sb.append("select * from ").append((String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_note n ");
+		sb.append("select * from ").append((String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).append(NOTE_TABLE);
 		sb.append("where note_id = ? and user_id = ?");
 
 		log.debug(sb.toString() +"|" + noteId +"|"+ userId );
@@ -511,7 +563,9 @@ public class NoteAction extends SBActionAdapter {
 		vo.setUserId(uvo.getUserId());
 
 		log.debug("companyId " + vo.getCompanyId());
-
+		log.debug("marketId " + vo.getMarketId());
+		log.debug("productId " + vo.getProductId());
+		
 		setTargetId(req, vo);
 
 		//if a user decided to not share the note, then the team id is set to null 
@@ -745,7 +799,7 @@ public class NoteAction extends SBActionAdapter {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		Map<String, List<NoteVO>> data = new HashMap<>();
 
-		sql.append("select * from ").append((String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_note n ");
+		sql.append("select * from ").append((String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).append(NOTE_TABLE);
 		sql.append("inner join ").append((String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_USER u on u.user_id = n.user_id ");
 		sql.append("inner join PROFILE p  on p.profile_id = u.profile_id ");
 
