@@ -168,7 +168,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 				allianceRetrieve(req);
 				break;
 			case DETAILSATTRIBUTE:
-				retrieveModuleSets(req);
+				retrieveModuleSets(req, null);
 				break;
 			case REGULATION:
 				retrieveRegulatory(req);
@@ -239,7 +239,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void retrieveModuleSets(ActionRequest req) throws ActionException {
+	protected void retrieveModuleSets(ActionRequest req, ProductVO p) throws ActionException {
 		StringBuilder sql = new StringBuilder(550);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select a.attribute_id, a.parent_id, a.attribute_nm, string_agg(pm.moduleset_id, ',') as section_ids ");
@@ -275,9 +275,12 @@ public class ProductManagementAction extends AbstractTreeAction {
 		}
 		
 		Tree t = new Tree(attributes);
-		t.setRootNode(t.findNode(req.getParameter("attributeId")));
-		super.putModuleData(t);
-		
+		t.setRootNode(t.findNode(DETAILS_ID));
+		if (p == null) {
+			super.putModuleData(t);
+		} else {
+			p.setDetailsTree(t);
+		}
 	}
 
 
@@ -291,6 +294,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select ATTRIBUTE_ID from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR where PRODUCT_ID = ? ");
+		log.debug(sql+"|"+productId);
 		List<String> activeDetails = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, productId);
@@ -566,12 +570,17 @@ public class ProductManagementAction extends AbstractTreeAction {
 		req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		req.getSession().setAttribute("productName", product.getProductName());
 
-		if ("alliance".equals(req.getParameter("jsonType")))
+		if ("alliance".equals(req.getParameter("jsonType"))) {
 			addAlliances(product);
-		if ("attribute".equals(req.getParameter("jsonType")))
+		}  else if ("attribute".equals(req.getParameter("jsonType"))) {
 			addAttributes(product, req.getParameter("attributeTypeCd"));
-		if ("regulation".equals(req.getParameter("jsonType")))
+		} else if ("regulation".equals(req.getParameter("jsonType"))) {
 			addRegulations(product);
+		} else {
+			// This is a main product retrieve. Therefore we need product details as well
+			retrieveModuleSets(req, product);
+		}
+		
 		
 		getActiveSections(product);
 		super.putModuleData(product);

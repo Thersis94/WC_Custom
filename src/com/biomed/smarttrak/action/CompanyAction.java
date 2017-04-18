@@ -28,6 +28,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
@@ -71,6 +72,9 @@ public class CompanyAction extends AbstractTreeAction {
 				sbUtil.manualRedirect(req,page.getFullPath());
 			} else {
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
+			    	PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
+			    	SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+				page.setTitleName(vo.getCompanyName() + " | " + site.getSiteName());
 				putModuleData(vo);
 			}
 		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
@@ -284,13 +288,11 @@ public class CompanyAction extends AbstractTreeAction {
 	protected void addAttributes(CompanyVO company) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT xr.*, a.*, parent.ATTRIBUTE_NM as PARENT_NM FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
+		sql.append("SELECT xr.*, a.* FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE parent ");
-		sql.append("ON a.PARENT_ID = parent.ATTRIBUTE_ID ");
 		sql.append("WHERE COMPANY_ID = ? ");
-		sql.append("ORDER BY parent.DISPLAY_ORDER_NO, xr.ORDER_NO ");
+		sql.append("ORDER BY a.DISPLAY_ORDER_NO, xr.ORDER_NO ");
 		log.debug(sql+"|"+company.getCompanyId());
 		
 		List<Object> params = new ArrayList<>();
