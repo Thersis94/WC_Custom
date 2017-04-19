@@ -53,7 +53,37 @@ public class ProductManagementAction extends AbstractTreeAction {
 		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, PRODUCTLINK, PRODUCTATTACH,
 		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION
 	}
-
+	
+	/**
+	 * Enum for ensuring that the details fields are presented in the proper order
+	 */
+	private enum DetailsField {
+		CLASSIFICATION(0),
+		APPROACH(1),
+		MARKET(2),
+		TECHNOLOGY(3),
+		INDICATION(4);
+		
+		int order;
+		
+		DetailsField(int order) {
+			this.order = order;
+		}
+		
+		public int getOrder() {
+			return order;
+		}
+		
+		public static DetailsField getFromString(String detailField) {
+			if (StringUtil.isEmpty(detailField)) return null;
+			try {
+				return DetailsField.valueOf(detailField);
+			} catch (Exception e) {
+				return null;
+			}
+		}
+	}
+	
 	
 	/**
 	 * Enum for handling sort values passed to the action
@@ -249,7 +279,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 		sql.append("left join ").append(customDb).append("BIOMEDGPS_PRODUCT_MODULESET pm ");
 		sql.append("on pm.moduleset_id = xr.moduleset_id ");
 		sql.append("group by a.attribute_id, a.parent_id, a.attribute_nm ");
-		sql.append("order by a.order_no ");
+		sql.append("order by a.attribute_nm ");
 		log.debug(sql);
 		List<Node> attributes = new ArrayList<>();
 		
@@ -277,10 +307,27 @@ public class ProductManagementAction extends AbstractTreeAction {
 		Tree t = new Tree(attributes);
 		t.setRootNode(t.findNode(DETAILS_ID));
 		if (p == null) {
-			super.putModuleData(t);
+			super.putModuleData(orderModuleSets(t.getRootNode()));
 		} else {
-			p.setDetailsTree(t);
+			p.setDetailsList(orderModuleSets(t.getRootNode()));
 		}
+	}
+	
+
+	/**
+	 * Get the details nodes and put them in the proper order.
+	 * @param rootNode
+	 * @return
+	 */
+	protected Node[] orderModuleSets(Node rootNode) {
+		Node[] nodes = new Node[DetailsField.values().length];
+		
+		for (Node n : rootNode.getChildren()) {
+			DetailsField detail = DetailsField.getFromString(n.getNodeId());
+			nodes[detail.getOrder()] = n;
+		}
+		
+		return nodes;
 	}
 
 
