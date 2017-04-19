@@ -249,7 +249,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 		sql.append("left join ").append(customDb).append("BIOMEDGPS_PRODUCT_MODULESET pm ");
 		sql.append("on pm.moduleset_id = xr.moduleset_id ");
 		sql.append("group by a.attribute_id, a.parent_id, a.attribute_nm ");
-		sql.append("order by a.order_no ");
+		sql.append("order by a.attribute_nm ");
 		log.debug(sql);
 		List<Node> attributes = new ArrayList<>();
 		
