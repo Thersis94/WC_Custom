@@ -11,6 +11,7 @@ import org.apache.solr.client.solrj.SolrQuery.ORDER;
 //WC customs
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
+import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.UserVO;
