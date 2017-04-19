@@ -340,6 +340,9 @@ public class NoteAction extends SBActionAdapter {
 				ModuleVO modVo = new ModuleVO();
 				modVo.setActionData(pvo);
 				attributes.put(Constants.MODULE_DATA, modVo);
+			}else {
+				log.debug("not authorized");
+				throw new NotAuthorizedException();
 			}
 		} catch (NotAuthorizedException e) {
 			log.error("error in authorizing use of note ", e);
@@ -360,7 +363,6 @@ public class NoteAction extends SBActionAdapter {
 			throw new NotAuthorizedException("NOT_AUTHORIZED - user null or data base connect null");
 		}
 
-
 		//this doesn't go through the standard path so attributes are not set here
 
 		StringBuilder sb = new StringBuilder(181);
@@ -379,23 +381,40 @@ public class NoteAction extends SBActionAdapter {
 
 			if (rs.next()) {
 
-				String userId = StringUtil.checkVal(rs.getString("user_id"));
-				String teamId = StringUtil.checkVal(rs.getString("team_id"));
-
-				if (!StringUtil.isEmpty(userId) && userId.equals(uvo.getUserId())){
-					return true;
-				}
-
-				if(!StringUtil.isEmpty(teamId)&& uvo.getTeams() != null  && uvo.getTeams().contains(teamId)){
-					return true;
-				}
-
+				return processAuthorizationResults(rs, uvo);
 			}
 
 		} catch(SQLException sqle) {
 			log.error("could not confirm security by id ", sqle);
 		}
 
+		return false;
+	}
+
+	/**
+	 * processes the teams and ids for note profile document interaction
+	 * @param rs
+	 * @param uvo 
+	 * @return 
+	 * @throws SQLException 
+	 */
+	private boolean processAuthorizationResults(ResultSet rs, UserVO uvo) throws SQLException {
+		String userId = StringUtil.checkVal(rs.getString("user_id"));
+		String teamId = StringUtil.checkVal(rs.getString("team_id"));
+
+		if (!StringUtil.isEmpty(userId) && userId.equals(uvo.getUserId())){
+			return true;
+		}
+		
+		if (uvo.getTeams() == null)
+			return false;
+
+		for ( TeamVO team :uvo.getTeams()){
+			if (!StringUtil.isEmpty(teamId) && teamId.equals(team.getTeamId())){
+				return true;
+			}
+		}
+		
 		return false;
 	}
 
