@@ -278,13 +278,13 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * @return
 	 */
 	public static String formatRetrieveQuery(Map<String, String> reqParams, String schema, boolean isList) {
-		StringBuilder sql = new StringBuilder(400);
+		StringBuilder sql = new StringBuilder(800);
 		sql.append("select a.*, p.first_nm, p.last_nm, ");
 
 		if(isList) {
 			sql.append("s.wc_sync_id ");
 		} else {
-			sql.append("b.section_id, b.update_section_xr_id ");
+			sql.append("m.market_nm, c.company_nm, pr.product_nm, b.section_id, b.update_section_xr_id ");
 		}
 
 		sql.append("from ").append(schema).append("biomedgps_update a ");
@@ -296,6 +296,12 @@ public class UpdatesAction extends AbstractTreeAction {
 		} else {
 			sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
 			sql.append("on a.update_id=b.update_id ");
+			sql.append("left outer join ").append(schema).append("biomedgps_market m ");
+			sql.append("on a.market_id=m.market_id ");
+			sql.append("left outer join ").append(schema).append("biomedgps_company c ");
+			sql.append("on a.company_id=c.company_id ");
+			sql.append("left outer join ").append(schema).append("biomedgps_product pr ");
+			sql.append("on a.product_id=pr.product_id ");
 		}
 		sql.append("where 1=1 ");
 		if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) sql.append("and a.update_id=? ");
