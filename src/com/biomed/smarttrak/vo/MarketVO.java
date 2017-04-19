@@ -42,6 +42,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 	private SectionVO marketSection;
 	private String updateMsg;
 	private Date updateDate;
+	private Date createDate;
 	private String regionCode;
 	private String regionName;
 
@@ -203,7 +204,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 
 	@Override
 	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
-	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
+	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDate;
 	}
@@ -213,9 +214,13 @@ public class MarketVO extends SecureSolrDocumentVO {
 	}
 
 
-	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
-	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
-	public Date getCreateDate() {return null;}
+	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
+	public Date getCreateDt() {
+		return createDate;
+	}
+	public void setCreateDt(Date createDate) {
+		this.createDate = createDate;
+	}
 
 
 	public String getUpdateMsg() {
