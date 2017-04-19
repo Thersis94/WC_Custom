@@ -78,7 +78,7 @@ public class InsightAction extends AbstractTreeAction {
 
 			// after the vo is build set the hierarchies and check authorization
 			vo.configureSolrHierarchies(loadSections());
-			//SecurityController.getInstance(req).isUserAuthorized(vo, req);
+			SecurityController.getInstance(req).isUserAuthorized(vo, req);
 
 			overrideSolrRequest(sa, vo, req);
 
