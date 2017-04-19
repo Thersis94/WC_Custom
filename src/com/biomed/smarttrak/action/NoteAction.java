@@ -193,7 +193,7 @@ public class NoteAction extends SBActionAdapter {
 	}
 
 	/**
-	 * 
+	 * adds the correct key and count to the map so the front end can place the data in the correct div
 	 * @param counts 
 	 * @param rs 
 	 * @throws SQLException 
@@ -212,7 +212,7 @@ public class NoteAction extends SBActionAdapter {
 			key = ID_NOTE_LIST+ rs.getString("product_id");
 		}
 
-		log.debug("##key: " + key + "  value: " +Convert.formatInteger(rs.getString("LIST_COUNT")) );
+		log.debug("key: " + key + "  value: " +Convert.formatInteger(rs.getString("LIST_COUNT")) );
 
 		counts.put(key, Convert.formatInteger(rs.getString("LIST_COUNT")));
 
