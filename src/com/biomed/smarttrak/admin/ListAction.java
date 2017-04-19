@@ -139,7 +139,7 @@ public class ListAction extends DirectUrlManagerAction {
 		try(PreparedStatement ps = dbConn.prepareCall(sql)) {
 			int i = 1;
 			if(hasSearchTerm) {
-				ps.setString(i++, ".*" + searchTerm + ".*");
+				ps.setString(i++, "%" + searchTerm.toLowerCase() + "%");
 			}
 			ResultSet rs = ps.executeQuery();
 			StringBuilder val = null;
@@ -168,7 +168,7 @@ public class ListAction extends DirectUrlManagerAction {
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_company ");
 		sql.append("where status_no = 'P' ");
 		if(hasSearchTerm) {
-			sql.append("and company_nm ~* ? ");
+			sql.append("and lower(company_nm) like ? ");
 		}
 		sql.append("order by company_nm limit 100");
 
@@ -185,7 +185,7 @@ public class ListAction extends DirectUrlManagerAction {
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_MARKET where status_no = 'P' ");
 		if(hasSearchTerm) {
-			sql.append("and market_nm ~* ? ");
+			sql.append("and lower(market_nm) like ? ");
 		}
 		sql.append("order by market_nm limit 100");
 
@@ -202,7 +202,7 @@ public class ListAction extends DirectUrlManagerAction {
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_PRODUCT where status_no = 'P' ");
 		if(hasSearchTerm) {
-			sql.append("and product_nm ~* ? ");
+			sql.append("and lower(product_nm) like ? ");
 		}
 		sql.append("order by product_nm limit 100");
 
@@ -219,7 +219,7 @@ public class ListAction extends DirectUrlManagerAction {
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_account ");
 		sql.append("where 1=1 ");
 		if(hasSearchTerm) {
-			sql.append("and account_nm ~* ? ");
+			sql.append("and lower(account_nm) like ? ");
 		}
 		sql.append("order by account_nm");
 
