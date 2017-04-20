@@ -85,6 +85,7 @@ public class ManageAuthorAction extends SimpleActionAdapter {
 		for (AccountVO manager : managers){
 			UserVO uvo = new UserVO();
 			uvo.setProfileId(manager.getOwnerProfileId());
+			uvo.setManagerTitle(manager.getTitle());
 			if (!users.contains(uvo)){
 				users.add(uvo);
 			}

@@ -40,6 +40,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private int fdAuthFlg;
 	private int gaAuthFlg;
 	private int mktAuthFlg;
+	private String managerTitle;
 	private int acctOwnerFlg;
 	private String loginOperSys;
 	private String loginBrowser;
@@ -418,5 +419,19 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 
 	public void setLoginBrowser(String loginBrowser) {
 		this.loginBrowser = loginBrowser;
+	}
+
+	/**
+	 * @return the managerTitle
+	 */
+	public String getManagerTitle() {
+		return managerTitle;
+	}
+
+	/**
+	 * @param managerTitle the managerTitle to set
+	 */
+	public void setManagerTitle(String managerTitle) {
+		this.managerTitle = managerTitle;
 	}
 }

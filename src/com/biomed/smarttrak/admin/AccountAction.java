@@ -40,6 +40,7 @@ public class AccountAction extends SBActionAdapter {
 
 	public static final String ACCOUNT_ID = "accountId"; //req param
 	public static final String MANAGERS = "managers";
+	private static final String TITLE_REG_FIELD_ID = "dd64d07fb37c2c067f0001012b4210ff";
 
 	public AccountAction() {
 		super();
@@ -89,13 +90,16 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	protected void loadManagerList(ActionRequest req, String schema) throws ActionException {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select newid() as account_id, a.profile_id as owner_profile_id, a.first_nm, a.last_nm from profile a ");
-		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=?");
+		sql.append("select newid() as account_id, a.profile_id as owner_profile_id, a.first_nm, a.last_nm, rd.value_txt as title from profile a ");
+		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id= ? ");
+		sql.append("inner join register_submittal rsub on rsub.profile_id = a.profile_id ");
+		sql.append("inner join register_data rd on rd.register_submittal_id = rsub.register_submittal_id and rd.register_field_id = ? ");
 		sql.append("and b.site_id=? and b.role_id=?");
 		log.debug(sql);
 
 		List<Object> params = new ArrayList<>();
 		params.add(SecurityController.STATUS_ACTIVE);
+		params.add(TITLE_REG_FIELD_ID);
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
 		params.add(AdminControllerAction.STAFF_ROLE_ID);
 
