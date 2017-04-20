@@ -4,8 +4,10 @@ package com.biomed.smarttrak.action;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 //solrcore jar
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
+
 //WC customs
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.security.SecurityController;
@@ -25,6 +27,7 @@ import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -74,6 +77,10 @@ public class InsightAction extends AbstractTreeAction {
 			// after the vo is build set the hierarchies and check authorization
 			vo.configureSolrHierarchies(loadSections());
 			SecurityController.getInstance(req).isUserAuthorized(vo, req);
+	    	
+			PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
+	    	SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+	    	page.setTitleName(vo.getTitleTxt() + " | " + site.getSiteName());
 
 			overrideSolrRequest(sa, vo, req);
 
