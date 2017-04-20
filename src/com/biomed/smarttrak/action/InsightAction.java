@@ -81,10 +81,10 @@ public class InsightAction extends AbstractTreeAction {
 			// after the vo is build set the hierarchies and check authorization
 			vo.configureSolrHierarchies(loadSections());
 			SecurityController.getInstance(req).isUserAuthorized(vo, req);
-	    	
+
 			PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
-	    	SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-	    	page.setTitleName(vo.getTitleTxt() + " | " + site.getSiteName());
+			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+			page.setTitleName(vo.getTitleTxt() + " | " + site.getSiteName());
 
 			overrideSolrRequest(sa, vo, req);
 
