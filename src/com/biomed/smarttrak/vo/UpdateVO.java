@@ -60,6 +60,9 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	private String marketId;
 	private String productId;
 	private String companyId;
+	private String marketNm;
+	private String productNm;
+	private String companyNm;
 	private String titleTxt;
 	private int typeCd;
 	private int orderNo;
@@ -165,6 +168,14 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	}
 
 	/**
+	 * @return the marketNm
+	 */
+	@Column(name="market_nm", isReadOnly=true)
+	public String getMarketNm() {
+		return marketNm;
+	}
+
+	/**
 	 * @return the productId
 	 */
 	@Column(name="product_id")
@@ -173,11 +184,27 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	}
 
 	/**
+	 * @return the productNm
+	 */
+	@Column(name="product_nm", isReadOnly=true)
+	public String getProductNm() {
+		return productNm;
+	}
+
+	/**
 	 * @return the companyId
 	 */
 	@Column(name="company_id")
 	public String getCompanyId() {
 		return companyId;
+	}
+
+	/**
+	 * @return the companyNm
+	 */
+	@Column(name="company_nm", isReadOnly=true)
+	public String getCompanyNm() {
+		return companyNm;
 	}
 
 	/**
@@ -331,6 +358,9 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 		this.marketId = marketId;
 	}
 
+	public void setMarketNm(String marketNm) {
+		this.marketNm = marketNm;
+	}
 	/**
 	 * @param productId the productId to set.
 	 */
@@ -338,6 +368,9 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 		this.productId = productId;
 	}
 
+	public void setProductNm(String productNm) {
+		this.productNm = productNm;
+	}
 	/**
 	 * @param companyId the companyId to set.
 	 */
@@ -345,6 +378,9 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 		this.companyId = companyId;
 	}
 
+	public void setCompanyNm(String companyNm) {
+		this.companyNm = companyNm;
+	}
 	/**
 	 * @param titleTxt the titleTxt to set.
 	 */

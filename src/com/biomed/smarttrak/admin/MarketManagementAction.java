@@ -455,7 +455,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 	protected List<Object> getMarketAttributes(String marketId, String typeCd) {
 		List<Object> params = new ArrayList<>();
 		params.add(marketId);
-		StringBuilder sql = new StringBuilder(150);
+		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT xr.*, a.*, g.TITLE_NM as GROUP_NM FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
@@ -467,6 +467,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 			sql.append("and a.TYPE_CD = ? ");
 			params.add(typeCd);
 		}
+		sql.append("ORDER BY xr.ORDER_NO ");
 		log.debug(sql+"|"+marketId+"|"+typeCd);
 
 		// DBProcessor returns a list of objects that need to be individually cast to attributes

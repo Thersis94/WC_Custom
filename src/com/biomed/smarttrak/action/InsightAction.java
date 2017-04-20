@@ -10,9 +10,11 @@ import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 //WC customs
 import com.biomed.smarttrak.admin.AbstractTreeAction;
+import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
+import com.biomed.smarttrak.vo.UserVO;
 //SMT Baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
@@ -73,6 +75,8 @@ public class InsightAction extends AbstractTreeAction {
 				sbUtil.manualRedirect(req, page.getFullPath());
 				return;
 			}
+
+			populateAuthorData(req, vo);
 
 			// after the vo is build set the hierarchies and check authorization
 			vo.configureSolrHierarchies(loadSections());
@@ -143,6 +147,24 @@ public class InsightAction extends AbstractTreeAction {
 		sa.retrieve(req);
 		req.setParameter(REQ_PARAM_1, vo.getInsightId());
 
+	}
+
+
+	/**
+	 * Helper method loads Author Data.  Slightly Different for one case, we can
+	 * just load the single profile and Set it.
+	 * @param req
+	 * @return
+	 * @throws ActionException 
+	 */
+	private void populateAuthorData(ActionRequest req, InsightVO ivo) throws ActionException {
+		AccountUserAction aua = new AccountUserAction(this.actionInit);
+		aua.setDBConnection(dbConn);
+		aua.setAttributes(attributes);
+		List<Object> authors = aua.loadAccountUsers(req, ivo.getCreatorProfileId());
+		if(authors != null && !authors.isEmpty()) {
+			ivo.setCreatorTitle(((UserVO) authors.get(0)).getTitle());
+		}
 	}
 
 
@@ -246,7 +268,6 @@ public class InsightAction extends AbstractTreeAction {
 		}
 
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>) (List<?>) insight, (String) getAttribute(Constants.ENCRYPT_KEY));
-
 		return (InsightVO) insight.get(0);
 	}
 

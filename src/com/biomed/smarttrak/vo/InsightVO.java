@@ -257,7 +257,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	/**
 	 * @return the creatorProfileId
 	 */
-	@Column(name="creator_profile_id", isInsertOnly=true)
+	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;
 	}
