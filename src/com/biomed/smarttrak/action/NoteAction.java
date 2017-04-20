@@ -402,7 +402,7 @@ public class NoteAction extends SBActionAdapter {
 		String userId = StringUtil.checkVal(rs.getString("user_id"));
 		String teamId = StringUtil.checkVal(rs.getString("team_id"));
 
-		if (!StringUtil.isEmpty(userId) && userId.equals(uvo.getUserId())){
+		if (userId.equals(uvo.getUserId())){
 			return true;
 		}
 		
@@ -410,7 +410,7 @@ public class NoteAction extends SBActionAdapter {
 			return false;
 
 		for ( TeamVO team :uvo.getTeams()){
-			if (!StringUtil.isEmpty(teamId) && teamId.equals(team.getTeamId())){
+			if (teamId.equals(team.getTeamId())){
 				return true;
 			}
 		}
