@@ -196,9 +196,7 @@ public class FavoritesAction extends SBActionAdapter {
 			removeFromSession(favs, fav.getPageId());
 		} else {
 			// add fav
-			if (favs.size() < QuickLinksAction.MAX_LIST_SIZE) {
-				favs.add(fav);
-			}
+			favs.add(fav);
 		}
 		// replace the favs map on the session.
 		session.setAttribute(MyFavoritesAction.MY_FAVORITES, favMap);
@@ -293,8 +291,7 @@ public class FavoritesAction extends SBActionAdapter {
 		log.debug("adding favorite: ref cd | pageId | uri | name: " + page.getReferenceCode() +"|"+page.getPageId() +"|"+page.getRequestUri() +"|"+page.getPageDisplayName());
 
 		List<PageViewVO>pList = pages.get(page.getReferenceCode());
-		if (pList != null && 
-				pList.size() < QuickLinksAction.MAX_LIST_SIZE)
+		if (pList != null)
 			pList.add(page);
 	}
 
