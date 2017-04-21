@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
+import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.action.AdminControllerAction;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
@@ -40,7 +42,6 @@ public class AccountAction extends SBActionAdapter {
 
 	public static final String ACCOUNT_ID = "accountId"; //req param
 	public static final String MANAGERS = "managers";
-	private static final String TITLE_REG_FIELD_ID = "dd64d07fb37c2c067f0001012b4210ff";
 
 	public AccountAction() {
 		super();
@@ -99,7 +100,7 @@ public class AccountAction extends SBActionAdapter {
 
 		List<Object> params = new ArrayList<>();
 		params.add(SecurityController.STATUS_ACTIVE);
-		params.add(TITLE_REG_FIELD_ID);
+		params.add(UserVO.RegistrationMap.TITLE.getFieldId());
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
 		params.add(AdminControllerAction.STAFF_ROLE_ID);
 
