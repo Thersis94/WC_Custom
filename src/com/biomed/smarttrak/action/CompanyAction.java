@@ -107,9 +107,15 @@ public class CompanyAction extends AbstractTreeAction {
 			if (results.isEmpty()) return new CompanyVO();
 			
 			company = (CompanyVO) results.get(0);
+			addProducts(company);
+			// If a company has 0 products it should not be shown. 
+			// Null out the company id to force a redirect and return now.
+			if (company.getProducts().isEmpty()) {
+				company.setCompanyId(null);
+				return company;
+			}
 			addAttributes(company, roleLevel);
 			addLocations(company);
-			addProducts(company);
 			addSections(company);
 			addAlliances(company);
 			addInvestors(company);
