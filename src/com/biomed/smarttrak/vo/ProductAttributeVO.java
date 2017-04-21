@@ -33,6 +33,7 @@ public class ProductAttributeVO {
 	private String altText;
 	private String attributeTypeCd;
 	private String groupName;
+	private String statusNo;
 	private int orderNo;
 	
 	public ProductAttributeVO() {
@@ -53,6 +54,7 @@ public class ProductAttributeVO {
 		titleText = req.getParameter("titleText");
 		altText = req.getParameter("altText");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
+		statusNo = req.getParameter("statusNo");
 	}
 
 
@@ -132,6 +134,17 @@ public class ProductAttributeVO {
 
 	public void setGroupName(String groupName) {
 		this.groupName = groupName;
+	}
+
+
+	@Column(name="status_no")
+	public String getStatusNo() {
+		return statusNo;
+	}
+
+
+	public void setStatusNo(String statusNo) {
+		this.statusNo = statusNo;
 	}
 
 

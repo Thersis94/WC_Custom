@@ -36,6 +36,7 @@ public class CompanyAttributeVO implements NoteInterface  {
 	private String groupName;
 	private String parentName;
 	private List<NoteVO> notes;
+	private String statusNo;
 	
 	private int orderNo;
 	private String attributeTypeName;
@@ -58,6 +59,7 @@ public class CompanyAttributeVO implements NoteInterface  {
 		titleText = req.getParameter("titleText");
 		altText = req.getParameter("altText");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
+		statusNo = req.getParameter("statusNo");
 	}
 
 
@@ -188,6 +190,17 @@ public class CompanyAttributeVO implements NoteInterface  {
 
 	public void setParentName(String parentName) {
 		this.parentName = parentName;
+	}
+
+
+	@Column(name="status_no")
+	public String getStatusNo() {
+		return statusNo;
+	}
+
+
+	public void setStatusNo(String statusNo) {
+		this.statusNo = statusNo;
 	}
 
 }
