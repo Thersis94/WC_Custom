@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.security.SecurityController;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
@@ -66,7 +67,8 @@ public class ProductAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
-			ProductVO vo = retrieveProduct(req.getParameter("reqParam_1"));
+			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+			ProductVO vo = retrieveProduct(req.getParameter("reqParam_1"), role.getRoleLevel());
 
 			if (StringUtil.isEmpty(vo.getProductId())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -85,7 +87,7 @@ public class ProductAction extends AbstractTreeAction {
 		}
 	}
 
-	protected ProductVO retrieveProduct(String productId) throws ActionException {
+	protected ProductVO retrieveProduct(String productId, int roleLevel) throws ActionException {
 		ProductVO product;
 		StringBuilder sql = new StringBuilder(100);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -102,7 +104,7 @@ public class ProductAction extends AbstractTreeAction {
 		product = (ProductVO) results.get(0);
 
 		// Get specifics on product details
-		addAttributes(product);
+		addAttributes(product, roleLevel);
 		addSections(product);
 		addAlliances(product);
 		addRegulatory(product);
@@ -202,13 +204,18 @@ public class ProductAction extends AbstractTreeAction {
 	 * @param product
 	 * @throws ActionException
 	 */
-	protected void addAttributes(ProductVO product) throws ActionException {
+	protected void addAttributes(ProductVO product, int userLevel) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
-		sql.append("WHERE PRODUCT_ID = ? ");
+		sql.append("WHERE PRODUCT_ID = ? and STATUS_NO in (");
+		if (AdminControllerAction.STAFF_ROLE_LEVEL == userLevel) {
+			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
+		}
+		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
+		
 		sql.append("ORDER BY a.ORDER_NO, xr.ORDER_NO ");
 		log.debug(sql+"|"+product.getProductId());
 		
