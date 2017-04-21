@@ -489,7 +489,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("ON a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("ON p.PRODUCT_ID = x.PRODUCT_ID ");
-		sql.append("WHERE p.STATUS_NO not in ('A','D') or p.status_no is null ");
+		sql.append("WHERE (p.STATUS_NO not in ('A','D') or p.status_no is null) ");
 		if (id != null) sql.append("and x.PRODUCT_ID = ? ");
 		sql.append("ORDER BY a.ATTRIBUTE_ID ");
 		
