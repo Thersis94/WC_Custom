@@ -93,9 +93,10 @@ public class CompanyAction extends AbstractTreeAction {
 	protected CompanyVO retrieveCompany(String companyId, int roleLevel) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT c.*, parent.COMPANY_NM as PARENT_NM  FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("SELECT c.*, parent.COMPANY_NM as PARENT_NM, d.SYMBOL_TXT FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY parent ");
 		sql.append("ON c.PARENT_ID = parent.COMPANY_ID ");
+		sql.append("LEFT JOIN CURRENCY d on d.CURRENCY_TYPE_ID = c.CURRENCY_TYPE_ID ");
 		sql.append("WHERE c.COMPANY_ID = ? ");
 
 		DBProcessor db = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
