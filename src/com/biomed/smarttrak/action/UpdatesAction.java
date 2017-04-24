@@ -7,16 +7,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.solr.client.solrj.response.FacetField;
+import org.apache.solr.client.solrj.response.FacetField.Count;
+
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -68,8 +74,70 @@ public class UpdatesAction extends SBActionAdapter {
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		sa.retrieve(req);
+
+		//Sort Facet Hierarchy.
+		mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		SolrResponseVO srv = (SolrResponseVO)mod.getActionData();
+
+		List<Node> sections = loadSections(req);
+		sortFacets(sections, srv);
+
 	}
 
+
+	/**
+	 * Helper method manages sorting Facets according to Section Hierarchy Order
+	 * Values.
+	 * @param srv
+	 */
+	protected void sortFacets(List<Node> sections, SolrResponseVO srv) {
+		List<FacetField> facets = srv.getFacets();
+		FacetField fOld = facets.get(0);
+		FacetField fNew = new FacetField(fOld.getName(), fOld.getGap(), fOld.getEnd());
+
+		/*
+		 * Iterate over Section Nodes first as they have the order.  Iterate
+		 * over FacetFields second as that is the returned data sets.  Compare
+		 * the names and if it's a match, add it to the new Facet.
+		 */
+		for(Node n : sections) {
+			for(Count f : fOld.getValues()) {
+				if(f.getName().endsWith(n.getNodeName())) {
+					log.debug(f.getName());
+					fNew.add(f.getName(), f.getCount());
+					break;
+				}
+			}
+		}
+
+		//Replace Facets List with New one and set on the VO.
+		facets = new ArrayList<>();
+		facets.add(fNew);
+		srv.setFacets(facets);
+	}
+
+	/**
+	 * Helper method that returns the List of Sections for ordering facets on
+	 * the front end.
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	protected List<Node> loadSections(ActionRequest req) {
+		ModuleVO mod = super.readFromCache(actionInit.getActionId());
+		if(mod == null) {
+			com.biomed.smarttrak.admin.UpdatesAction ua = new com.biomed.smarttrak.admin.UpdatesAction(actionInit);
+			ua.setDBConnection(dbConn);
+			ua.setAttributes(attributes);
+			SmarttrakTree tree = ua.loadSections();
+			List<Node> nodes = tree.getPreorderList();
+			mod = new ModuleVO();
+			mod.setActionData(nodes);
+			mod.setPageModuleId(actionInit.getActionId());
+			super.writeToCache(mod);
+		}
+
+		return (List<Node>)mod.getActionData();
+	}
 
 	/**
 	 * Helper method loads all the Document Ids for Updates that the user has
