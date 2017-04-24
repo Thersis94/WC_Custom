@@ -2,8 +2,9 @@ package com.depuysynthes.scripts;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -101,7 +102,7 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 	@Override
 	protected List<Map<String, String>> loadFile(String path) throws IOException {
 		log.info("starting file parser " + path);
-		return parseFile(new BufferedReader(new FileReader(new File(path))));
+		return parseFile(new BufferedReader(new InputStreamReader(new FileInputStream(path), "UTF-16")));
 	}
 
 
