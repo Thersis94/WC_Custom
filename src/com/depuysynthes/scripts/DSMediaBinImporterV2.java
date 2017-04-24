@@ -740,7 +740,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			// test quality of data
 			if (tokens.length != columns.length) {
 				log.error("Not loading row# " + y + "  " + rowStr);
-				failures.add(new Exception("Skipped EXP row# " + y + ", it has " + tokens.length + " columns instead of " + columns.length + ":<br/>" + rowStr.substring(0,rowStr.indexOf("|"))));
+				String msg = rowStr.indexOf('|') > -1 ? rowStr.substring(0,rowStr.indexOf('|')) : rowStr;
+				failures.add(new Exception("Skipped EXP row# " + y + ", it has " + tokens.length + " columns instead of " + columns.length + ":<br/>" + msg));
 				continue;
 			}
 
@@ -871,7 +872,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				if (modDt == null) modDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN_FULL_12HR, row.get("Insertion Time"));
 
 				// Insert the record
-				vo.setAssetNm(row.get("Asset Name").replace('\\','/'));
+				vo.setAssetNm(StringUtil.checkVal(row.get("Asset Name")).replace('\\','/'));
 				vo.setAssetDesc(StringUtil.checkVal(row.get("Asset Description"), row.get("SOUS - Literature Category")));
 				vo.setAssetType(row.get("Asset Type").toLowerCase());
 				vo.setBodyRegionTxt(parseBodyRegion(row));
