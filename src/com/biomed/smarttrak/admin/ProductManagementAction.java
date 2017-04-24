@@ -807,6 +807,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 			sql.append("and TYPE_CD = ? ");
 			params.add(attributeType);
 		}
+		sql.append("ORDER BY xr.ORDER_NO ");
 		log.debug(sql+"|"+productId);
 		DBProcessor db = new DBProcessor(dbConn);
 		
