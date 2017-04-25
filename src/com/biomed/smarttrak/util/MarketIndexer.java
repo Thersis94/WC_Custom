@@ -10,8 +10,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+
+
 //Solr 5.5
 import org.apache.solr.client.solrj.SolrClient;
+
+
 
 // SMT base libs
 import com.siliconmtn.data.Node;
@@ -59,9 +63,14 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
+	@SuppressWarnings("resource")
 	@Override
 	public void addIndexItems(SolrClient server) {
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+		// Never place this in a try with resources.
+		// This server was given to this method and it is not this method's
+		// job or right to close it.
+		SolrActionUtil util = new SmarttrakSolrUtil(server);
+		try {
 			util.addDocuments(retrieveMarkets(null));
 		} catch (Exception e) {
 			log.error("Failed to index markets", e);
