@@ -165,7 +165,7 @@ public class EmailReportAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select inst.campaign_instance_id, l.attempt_dt, l.success_flg, p.email_address_txt, p.profile_id, ");
 		sql.append("p.first_nm, p.last_nm, l.campaign_log_id, count(resp.email_response_id) as cnt, ");
-		sql.append("case when inst.subject_txt = '${subject}' then sl.value_txt else inst.subject_txt end as subject_txt ");
+		sql.append("case when inst.subject_txt = '${subject!\"Not Specified\"}' then sl.value_txt else inst.subject_txt end as subject_txt ");
 		sql.append("from email_campaign camp ");
 		sql.append("inner join email_campaign_instance inst on camp.email_campaign_id=inst.email_campaign_id ");
 		sql.append("inner join email_campaign_log l on inst.campaign_instance_id=l.campaign_instance_id ");

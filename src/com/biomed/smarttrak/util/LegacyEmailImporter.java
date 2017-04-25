@@ -99,8 +99,10 @@ public class LegacyEmailImporter extends CommandLineUtil {
 	private void saveSendParams(List<EmailLogVO> data) {
 		UUIDGenerator uuid = new UUIDGenerator();
 		String sql = "insert into SENT_EMAIL_PARAM (sent_email_param_id, campaign_log_id, key_nm, value_txt, create_dt) values (?,?,?,?,CURRENT_TIMESTAMP)";
-		for (EmailLogVO vo : data) {
-			try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+		int x = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			for (EmailLogVO vo : data) {
+				++x;
 				//msg body
 				ps.setString(1, uuid.getUUID());
 				ps.setString(2,  vo.getCampaignLogId());
@@ -111,14 +113,22 @@ public class LegacyEmailImporter extends CommandLineUtil {
 				ps.setString(1, uuid.getUUID());
 				ps.setString(2,  vo.getCampaignLogId());
 				ps.setString(3, "body");
-				ps.setString(4,  vo.getMessageBody());
+				String body = vo.getMessageBody();
+				if (body.indexOf("<body") > -1) {
+					body = body.replaceAll("(?s)(.*)?<body([^>]*)>(.*)?</body>(.*)?","$3"); //keep only what's inside the <body> tag
+					body = body.replaceAll("(?s)<style([^>]*)>([^<>]*)?</style>",""); //remove nested <style> tags.
+				}
+				ps.setString(4,  body);
 				ps.addBatch();
 
-				ps.executeBatch();
-
-			} catch (Exception e) {
-				log.error("could not save sent_message_log for " + vo.getCampaignLogId(), e);
+				if (x % 500 == 0 || x == data.size()) {
+					ps.executeBatch();
+					log.debug("comitted at " + x);
+				}
 			}
+
+		} catch (Exception e) {
+			log.error("could not save sent_message_log", e);
 		}
 	}
 
