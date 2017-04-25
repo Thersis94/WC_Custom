@@ -285,7 +285,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		TableType tt = dash.getTableType();
 		
 		if (TableType.COMPANY == tt) {
-			sql.append("select ").append("r.COMPANY_ID as ROW_ID, c.COMPANY_NM as ROW_NM, ");
+			sql.append("select ").append("r.COMPANY_ID as ROW_ID, c.SHORT_NM_TXT as ROW_NM, ");
 		} else { // TableType.MARKET
 			
 			// When viewing market data for a specific company, we always list/summarize 4 levels down in the heirarchy

@@ -147,7 +147,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		sql.append("select r.REVENUE_ID as ROW_ID, ");
 		
 		if (TableType.COMPANY == tt) {
-			sql.append("c.COMPANY_NM as ROW_NM, r.COMPANY_ID, ");
+			sql.append("c.SHORT_NM_TXT as ROW_NM, r.COMPANY_ID, ");
 		} else {
 			// When editing market data for a specific company, we always list 4 levels down in the heirarchy
 			int offset = 4;
