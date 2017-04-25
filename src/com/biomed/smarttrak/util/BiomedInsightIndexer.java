@@ -1,7 +1,5 @@
 package com.biomed.smarttrak.util;
 
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -15,7 +13,6 @@ import com.biomed.smarttrak.vo.InsightVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
@@ -36,59 +33,58 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 	public BiomedInsightIndexer(Properties config) {
 		super(config);
 	}
-	
+
+
 	public static BiomedInsightIndexer makeInstance(Map<String, Object> attributes) {
 		return new BiomedInsightIndexer(makeProperties(attributes));
 	}
 
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
+	 */
 	@Override
-	public void addIndexItems(SolrClient server) throws SolrException {
-		try (SolrActionUtil util = new SolrActionUtil(makeServer())) {
-			List<SolrDocumentVO> docs = getDocuments(null);
-			if (docs.isEmpty()) 
-				throw new Exception("No Documents found");
-			
-			util.addDocuments(docs);
+	public void addIndexItems(SolrClient server) {
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+			util.addDocuments(getDocuments(null));
 		} catch (Exception e) {
 			throw new SolrException(ErrorCode.BAD_REQUEST, e);
 		}
 	}
 
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addSingleItem(java.lang.String)
+	 */
 	@Override
-	public void addSingleItem(String itemId) throws SolrException {
+	public void addSingleItem(String itemId) {
 		log.debug("Adding single insight: " + itemId);
-		
-		
-		
-		try (SolrActionUtil util = new SolrActionUtil(makeServer())) {
-			List<SolrDocumentVO> docs = getDocuments(itemId);
-			if (docs.isEmpty()) 
-				throw new Exception("Document " + itemId + " not found");
-			
-			util.addDocuments(docs);
+		SolrClient server = makeServer();
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+			util.addDocuments(getDocuments(itemId));
+			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
 		} catch (Exception e) {
 			throw new SolrException(ErrorCode.BAD_REQUEST, e);
 		}
 	}
 
-	@Override
-	public void purgeIndexItems(SolrClient server) throws IOException {
-		try {
-			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
-		} catch (Exception e) {
-			throw new IOException(e);
-		}
-	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
+	 */
 	@Override
 	public String getIndexType() {
 		return INDEX_TYPE;
 	}
 
+
 	@SuppressWarnings("unchecked")
-	private List<SolrDocumentVO> getDocuments(String documentId) throws SQLException {
+	private List<SolrDocumentVO> getDocuments(String documentId) {
 		InsightAction ia = new InsightAction();
-		ia.setDBConnection(new SMTDBConnection(this.dbConn));
+		ia.setDBConnection(new SMTDBConnection(dbConn));
 		ia.setAttribute(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		ia.setAttribute(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
 		ia.setAttribute(Constants.ENCRYPT_KEY, config.getProperty(Constants.ENCRYPT_KEY));
