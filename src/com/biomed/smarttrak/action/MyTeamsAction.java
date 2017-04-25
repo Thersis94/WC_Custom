@@ -93,9 +93,9 @@ public class MyTeamsAction extends SimpleActionAdapter {
 			} else {
 				ae.build(req);
 			}
-			msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+			msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		} catch (Exception e) {
-			msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
+			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 		}
 
 		//redirect
@@ -116,7 +116,7 @@ public class MyTeamsAction extends SimpleActionAdapter {
 		UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 
 		//restrict access to account owners
-		if (role == null || user == null || !role.isAccountOwner())
+		if (role == null || user == null)
 			throw new ActionException("not authorized");
 
 		//set the accountId - note this cannot be altered from the browser, we take from session

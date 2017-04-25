@@ -35,6 +35,7 @@ public class MarketAttributeVO {
 	private String marketName;
 	private String groupName;
 	private int orderNo;
+	private String statusNo;
 	
 	public MarketAttributeVO() {
 		// Empty default constructor
@@ -52,6 +53,7 @@ public class MarketAttributeVO {
 		titleText = req.getParameter("titleText");
 		attributeId = req.getParameter("attributeId");
 		valueText = req.getParameter("valueText");
+		statusNo = req.getParameter("statusNo");
 		setValue1Text(req.getParameter("value1Text"));
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 	}
@@ -171,6 +173,17 @@ public class MarketAttributeVO {
 	}
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
+	}
+
+
+	@Column(name="status_no")
+	public String getStatusNo() {
+		return statusNo;
+	}
+
+
+	public void setStatusNo(String statusNo) {
+		this.statusNo = statusNo;
 	}
 	
 

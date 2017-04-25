@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.security.SecurityController;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
@@ -66,7 +67,8 @@ public class CompanyAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
-			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"));
+			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role.getRoleLevel());
 			if (StringUtil.isEmpty(vo.getCompanyId())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				sbUtil.manualRedirect(req,page.getFullPath());
@@ -88,12 +90,13 @@ public class CompanyAction extends AbstractTreeAction {
 	 * @param companyId
 	 * @throws ActionException
 	 */
-	protected CompanyVO retrieveCompany(String companyId) throws ActionException {
+	protected CompanyVO retrieveCompany(String companyId, int roleLevel) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT c.*, parent.COMPANY_NM as PARENT_NM  FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("SELECT c.*, parent.COMPANY_NM as PARENT_NM, d.SYMBOL_TXT FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY parent ");
 		sql.append("ON c.PARENT_ID = parent.COMPANY_ID ");
+		sql.append("LEFT JOIN CURRENCY d on d.CURRENCY_TYPE_ID = c.CURRENCY_TYPE_ID ");
 		sql.append("WHERE c.COMPANY_ID = ? ");
 
 		DBProcessor db = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -105,9 +108,15 @@ public class CompanyAction extends AbstractTreeAction {
 			if (results.isEmpty()) return new CompanyVO();
 			
 			company = (CompanyVO) results.get(0);
-			addAttributes(company);
-			addLocations(company);
 			addProducts(company);
+			// If a company has 0 products it should not be shown. 
+			// Null out the company id to force a redirect and return now.
+			if (company.getProducts().isEmpty()) {
+				company.setCompanyId(null);
+				return company;
+			}
+			addAttributes(company, roleLevel);
+			addLocations(company);
 			addSections(company);
 			addAlliances(company);
 			addInvestors(company);
@@ -285,13 +294,17 @@ public class CompanyAction extends AbstractTreeAction {
 	 * @param company
 	 * @throws ActionException
 	 */
-	protected void addAttributes(CompanyVO company) throws ActionException {
+	protected void addAttributes(CompanyVO company, int roleLevel) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT xr.*, a.* FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
-		sql.append("WHERE COMPANY_ID = ? ");
+		sql.append("WHERE COMPANY_ID = ? and STATUS_NO in (");
+		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
+			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
+		}
+		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
 		sql.append("ORDER BY a.DISPLAY_ORDER_NO, xr.ORDER_NO ");
 		log.debug(sql+"|"+company.getCompanyId());
 		

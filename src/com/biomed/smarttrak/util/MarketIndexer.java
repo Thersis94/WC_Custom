@@ -1,7 +1,6 @@
 package com.biomed.smarttrak.util;
 
 //Java 8
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,10 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-
 //Solr 5.5
 import org.apache.solr.client.solrj.SolrClient;
-
 
 // SMT base libs
 import com.siliconmtn.data.Node;
@@ -47,7 +44,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 public class MarketIndexer  extends SMTAbstractIndex {
 
 	public static final String INDEX_TYPE = "BIOMEDGPS_MARKET";
-	private String baseUrl;
+	private final String baseUrl;
 
 	public MarketIndexer(Properties config) {
 		this.config = config;
@@ -64,31 +61,26 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 */
 	@Override
 	public void addIndexItems(SolrClient server) {
-		pushMarkets(server, null);
-	}
-
-	@Override
-	public void addSingleItem(String id) {
-		try (SolrClient server = makeServer()) {
-			pushMarkets(server, id);
-		} catch (IOException e) {
-			log.error("Failed to add document with id: " + id, e);
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+			util.addDocuments(retrieveMarkets(null));
+		} catch (Exception e) {
+			log.error("Failed to index markets", e);
 		}
 	}
 
 
-	/**
-	 * reused method for pushing all, or one, market over to Solr
-	 * @param server
-	 * @param pkId
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addSingleItem(java.lang.String)
 	 */
-	@SuppressWarnings("resource")
-	protected void pushMarkets(SolrClient server, String pkId) {
-		SolrActionUtil util = new SmarttrakSolrUtil(server);
-		try {
-			util.addDocuments(retrieveMarkets(pkId));
+	@Override
+	public void addSingleItem(String id) {
+		SolrClient server = makeServer();
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+			util.addDocuments(retrieveMarkets(id));
+			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
 		} catch (Exception e) {
-			log.error("Failed to update market in Solr, passed pkid=" + pkId, e);
+			log.error("Failed to index market with id: " + id, e);
 		}
 	}
 
@@ -98,7 +90,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 * @param id
 	 * @return
 	 */
-	private List<MarketVO> retrieveMarkets(String id) {
+	protected List<MarketVO> retrieveMarkets(String id) {
 		List<MarketVO> markets = new ArrayList<>();
 		SmarttrakTree hierarchies = createHierarchies();
 		String sql = buildRetrieveSql(id);
@@ -124,7 +116,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 			//add that final market to the list
 			if (market != null) 
 				markets.add(market);
-			
+
 			buildContent(markets, id);
 
 		} catch (SQLException e) {
@@ -143,31 +135,30 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 * @param n
 	 * @param market
 	 */
-	private void buildOrderString(SmarttrakTree hierarchies, Node n,
-			MarketVO market) {
-		StringBuilder order = new StringBuilder();
-		
+	protected void buildOrderString(SmarttrakTree hierarchies, Node n, MarketVO market) {
+		StringBuilder order = new StringBuilder(1000);
+
 		// Cast the order number to a string and pad it out 
 		// so that all order numbers are the same size
 		String hierarchyOrder = StringUtil.checkVal(((SectionVO)n.getUserObject()).getOrderNo());
 		hierarchyOrder = StringUtil.padLeft(hierarchyOrder, '0', 3);
 		order.append(hierarchyOrder);
-		
+
 		// Traverse the tree until you reach the top
 		while(!StringUtil.isEmpty(n.getParentId())) {
 			n = hierarchies.findNode(n.getParentId());
 			hierarchyOrder = StringUtil.checkVal(((SectionVO)n.getUserObject()).getOrderNo());
 			hierarchyOrder = StringUtil.padLeft(hierarchyOrder, '0', 3);
-			
+
 			// Insert the padded out order number at the start of the string
 			// so as to match the path back up the tree.
 			order.insert(0, hierarchyOrder);
 		}
-		
+
 		market.addAttribute("order", order.toString());
 	}
 
-	
+
 	/**
 	 * Get all html attributes that constitute content for a market and combine
 	 * them into a single contents field.
@@ -184,15 +175,14 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		sql.append("WHERE a.TYPE_CD = 'HTML' ");
 		if (!StringUtil.isEmpty(id)) sql.append("and x.MARKET_ID = ? ");
 		sql.append("ORDER BY x.MARKET_ID ");
-		
+
+		StringBuilder content = new StringBuilder(500);
+		String currentMarket = "";
 		Map<String, StringBuilder> contentMap = new HashMap<>();
-		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
-			
+
 			ResultSet rs = ps.executeQuery();
-			StringBuilder content = new StringBuilder();
-			String currentMarket = "";
 			while (rs.next()) {
 				if(!currentMarket.equals(rs.getString("MARKET_ID"))) {
 					if (content.length() > 0) {
@@ -208,14 +198,13 @@ public class MarketIndexer  extends SMTAbstractIndex {
 				contentMap.put(currentMarket, content);
 			}
 		}
-		
+
 		for (MarketVO market : markets) {
 			if (contentMap.get(market.getMarketId()) == null) continue;
 			market.setContents(contentMap.get(market.getMarketId()).toString());
 		}
-		
 	}
-	
+
 
 	/**
 	 * creates the initial MarketVO using the ResultSet and some Smarttrak constants
@@ -245,7 +234,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	/**
 	 * Add section id, name, and acl to document
 	 */
-	protected void addSection(MarketVO market, Node n) throws SQLException {
+	protected void addSection(MarketVO market, Node n) {
 		SectionVO sec = (SectionVO)n.getUserObject();
 		market.addHierarchies(n.getFullPath());
 		market.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
@@ -257,7 +246,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 * @param id
 	 * @return
 	 */
-	private String buildRetrieveSql(String id) {
+	protected String buildRetrieveSql(String id) {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT m.*, coalesce(m.update_dt, m.create_dt) as mod_dt, ms.SECTION_ID, s.SOLR_TOKEN_TXT ");
@@ -274,7 +263,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 * Get a full hierarchy list
 	 * @return
 	 */
-	private SmarttrakTree createHierarchies() {
+	protected SmarttrakTree createHierarchies() {
 		//TODO replace all of this code with a call to the SectionAction to load the default tree.
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("SELECT * FROM ").append(config.getProperty(Constants.CUSTOM_DB_SCHEMA));

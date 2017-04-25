@@ -1,6 +1,5 @@
 package com.biomed.smarttrak.util;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,7 +17,6 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -35,10 +33,12 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @since Feb 15, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
 public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	private static final String ORG_ID = "BMG_SMARTTRAK";
 	public static final String INDEX_TYPE = "BIOMEDGPS_COMPANY";
+
+	private static final String COMPANY_ID  = "COMPANY_ID";
+	private static final String SECTION_ID = "sectionId";
 
 	public BiomedCompanyIndexer(Properties config) {
 		this.config = config;
@@ -49,36 +49,30 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 */
 	@Override
 	public void addIndexItems(SolrClient server) {
-		pushCompanies(server, null);
-	}
-	
-	
-	@Override
-	public void addSingleItem(String id) {
-		try (SolrClient server = super.makeServer()) {
-			pushCompanies(server, id);
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+			util.addDocuments(retreiveCompanies(null));
 		} catch (Exception e) {
-			log.error("Failed to update company with id: " + id, e);
+			log.error("Failed to index companies", e);
 		}
 	}
 
-	
-	/**
-	 * Get companies from the database and push them up to solr.
-	 * @param server
-	 * @param id
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addSingleItem(java.lang.String)
 	 */
-	@SuppressWarnings("resource")
-	protected void pushCompanies (SolrClient server, String id) {
-		SolrActionUtil util = new SmarttrakSolrUtil(server);
-		try {
+	@Override
+	public void addSingleItem(String id) {
+		SolrClient server = makeServer();
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
 			util.addDocuments(retreiveCompanies(id));
+			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
 		} catch (Exception e) {
-			log.error("Failed to update product in Solr, passed pkid=" + id, e);
+			log.error("Failed to index company with id: " + id, e);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Get all companies
 	 * @param id
@@ -88,31 +82,31 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		List<SecureSolrDocumentVO> companies = new ArrayList<>();
 		String sql = buildRetrieveSql(id);
 		SmarttrakTree hierarchies = createHierarchies();
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			if (id != null) ps.setString(1, id);
-			
+
 			ResultSet rs = ps.executeQuery();
 			String currentCompany = "";
 			SecureSolrDocumentVO company = null;
 			while (rs.next()) {
-				if (!currentCompany.equals(rs.getString("COMPANY_ID"))) {
+				if (!currentCompany.equals(rs.getString(COMPANY_ID))) {
 					addCompany(companies, company);
 					company = buildSolrDocument(rs);
-					currentCompany = rs.getString("COMPANY_ID");
+					currentCompany = rs.getString(COMPANY_ID);
 				}
 				if (!StringUtil.isEmpty(rs.getString("SECTION_ID")) && company != null) {
 					addSection(company, hierarchies.findNode(rs.getString("SECTION_ID")));
 				}
-				
+
 			}
 			addCompany(companies, company);
-			
+
 			buildContent(companies, id);
 		} catch (SQLException e) {
 			log.error(e);
 		}
-		
+
 		return companies;
 	}
 
@@ -139,41 +133,37 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT x.COMPANY_ID, x.VALUE_TXT FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR x ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
-		sql.append("on a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a on a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
 		sql.append("WHERE a.TYPE_NM = 'HTML' ");
 		if (!StringUtil.isEmpty(id)) sql.append("and x.COMPANY_ID = ? ");
 		sql.append("ORDER BY x.COMPANY_ID ");
-		
+
+		StringBuilder content = new StringBuilder();
+		String currentMarket = "";
 		Map<String, StringBuilder> contentMap = new HashMap<>();
-		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
-			
+
 			ResultSet rs = ps.executeQuery();
-			StringBuilder content = new StringBuilder();
-			String currentMarket = "";
 			while (rs.next()) {
-				if(!currentMarket.equals(rs.getString("COMPANY_ID"))) {
+				if (!currentMarket.equals(rs.getString(COMPANY_ID))) {
 					addContent(currentMarket, content, contentMap);
 					content = new StringBuilder(1024);
-					currentMarket = rs.getString("COMPANY_ID");
+					currentMarket = rs.getString(COMPANY_ID);
 				}
 				if (content.length() > 1) content.append("\n");
 				content.append(rs.getString("VALUE_TXT"));
 			}
 			addContent(currentMarket, content, contentMap);
 		}
-		
+
 		for (SecureSolrDocumentVO company : companies) {
 			if (contentMap.get(company.getDocumentId()) == null) continue;
-			
 			company.setContents(contentMap.get(company.getDocumentId()).toString());
 		}
-		
 	}
-	
-	
+
+
 	/**
 	 * Ensure content is viable and if so add it to the map
 	 * @param currentMarket
@@ -191,15 +181,15 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * Add section id, name, and acl to document
 	 */
 	@SuppressWarnings("unchecked")
-	protected void addSection(SecureSolrDocumentVO company, Node n) throws SQLException {
+	protected void addSection(SecureSolrDocumentVO company, Node n) {
 		SectionVO sec = (SectionVO)n.getUserObject();
 		company.addHierarchies(n.getFullPath());
 		company.addSection(sec.getSectionNm());
 		company.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
-		if (!company.getAttributes().containsKey("sectionId")) {
-			company.addAttribute("sectionId", new ArrayList<String>());
+		if (!company.getAttributes().containsKey(SECTION_ID)) {
+			company.addAttribute(SECTION_ID, new ArrayList<String>());
 		}
-		((List<String>)company.getAttribute("sectionId")).add(sec.getSectionId());
+		((List<String>)company.getAttribute(SECTION_ID)).add(sec.getSectionId());
 	}
 
 	/**
@@ -210,14 +200,14 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 */
 	private SecureSolrDocumentVO buildSolrDocument(ResultSet rs) throws SQLException {
 		SecureSolrDocumentVO company = new SecureSolrDocumentVO(INDEX_TYPE);
-		company.setDocumentId(rs.getString("COMPANY_ID"));
+		company.setDocumentId(rs.getString(COMPANY_ID));
 		company.setTitle(rs.getString("COMPANY_NM"));
 		company.addAttribute("status", rs.getString("STATUS_NO"));
 		company.addAttribute("ticker", rs.getString("NAME_TXT"));
-		company.setDocumentUrl(AdminControllerAction.Section.COMPANY.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString("COMPANY_ID"));
+		company.setDocumentUrl(AdminControllerAction.Section.COMPANY.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString(COMPANY_ID));
 		company.addAttribute("productCount", rs.getInt("PRODUCT_NO"));
 		company.addAttribute("parentNm", rs.getString("PARENT_NM"));
-		
+
 		if (rs.getTimestamp("UPDATE_DT") != null) {
 			company.setUpdateDt(rs.getDate("UPDATE_DT"));
 		} else {
@@ -229,11 +219,11 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		} else {
 			company.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.
 		}
-		
+
 		return company;
 	}
 
-	
+
 	/**
 	 * Build the retrieve sql
 	 * @param id
@@ -257,11 +247,12 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		if (id != null) sql.append("and c.COMPANY_ID = ? ");
 		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, cs.SECTION_ID, c.STATUS_NO, ");
 		sql.append("e.NAME_TXT, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT ");
+		sql.append("having COUNT(p.COMPANY_ID) > 0 ");
 		log.debug(sql);
 		return sql.toString();
 	}
-	
-	
+
+
 	/**
 	 * Get a full hierarchy list
 	 * @return
@@ -284,23 +275,11 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		} catch (SQLException e) {
 			log.error(e);
 		}
-		
+
 		SmarttrakTree t = new SmarttrakTree(markets);
 		t.buildNodePaths();
-		
-		return t;
-	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.SolrClient)
-	 */
-	@Override
-	public void purgeIndexItems(SolrClient server) throws IOException {
-		try {
-			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
-		} catch (Exception e) {
-			throw new IOException(e);
-		}
+		return t;
 	}
 
 

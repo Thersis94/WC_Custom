@@ -13,6 +13,7 @@ import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.security.SecurityController;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeVO;
 import com.biomed.smarttrak.vo.MarketVO;
@@ -106,8 +107,9 @@ public class MarketAction extends AbstractTreeAction {
 		MarketVO market = new MarketVO();
 		market.setMarketId(marketId);
 		try {
+			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 			db.getByPrimaryKey(market);
-			addAttributes(market);
+			addAttributes(market, role.getRoleLevel());
 			addSections(market);
 			if (loadGraphs) addGraphs(market);
 		} catch (Exception e) {
@@ -146,12 +148,16 @@ public class MarketAction extends AbstractTreeAction {
 	 * Get all non grid attributes for the supplied market
 	 * @param market
 	 */
-	protected void addAttributes(MarketVO market) {
+	protected void addAttributes(MarketVO market, int roleLevel) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
-		sql.append("WHERE MARKET_ID = ? and a.TYPE_CD != 'GRID' ");
+		sql.append("WHERE MARKET_ID = ? and a.TYPE_CD != 'GRID'  and STATUS_NO in (");
+		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
+			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
+		}
+		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
 		sql.append("ORDER BY xr.ORDER_NO");
 		log.debug(sql + "|" + market.getMarketId());
 
