@@ -57,8 +57,13 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
 	@Override
+	@SuppressWarnings("resource")
 	public void addIndexItems(SolrClient server) {
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+		// Never place this in a try with resources.
+		// This server was given to this method and it is not this method's
+		// job or right to close it.
+		SolrActionUtil util = new SmarttrakSolrUtil(server);
+		try {
 			util.addDocuments(retreiveProducts(null).values());
 		} catch (Exception e) {
 			log.error("could not index products", e);
