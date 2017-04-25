@@ -6,7 +6,6 @@ import java.util.Date;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -39,6 +38,7 @@ public class AccountVO implements HumanNameIntfc {
 	private Date updateDate;
 	private String firstName;
 	private String lastName;
+	private String title;
 	private int fdAuthFlg;
 	private int gaAuthFlg;
 	private int mktAuthFlg;
@@ -409,5 +409,20 @@ public class AccountVO implements HumanNameIntfc {
 
 	public void setSeatsNo(int seatsNo) {
 		this.seatsNo = seatsNo;
+	}
+
+	/**
+	 * @return the title
+	 */
+	@Column(name="title", isReadOnly=true)
+	public String getTitle() {
+		return title;
+	}
+
+	/**
+	 * @param title the title to set
+	 */
+	public void setTitle(String title) {
+		this.title = title;
 	}
 }

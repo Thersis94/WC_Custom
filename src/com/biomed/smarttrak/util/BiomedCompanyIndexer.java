@@ -47,9 +47,14 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
+	@SuppressWarnings("resource")
 	@Override
 	public void addIndexItems(SolrClient server) {
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+		// Never place this in a try with resources.
+		// This server was given to this method and it is not this method's
+		// job or right to close it.
+		SolrActionUtil util = new SmarttrakSolrUtil(server);
+		try {
 			util.addDocuments(retreiveCompanies(null));
 		} catch (Exception e) {
 			log.error("Failed to index companies", e);

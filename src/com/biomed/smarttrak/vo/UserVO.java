@@ -419,4 +419,10 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public void setLoginBrowser(String loginBrowser) {
 		this.loginBrowser = loginBrowser;
 	}
+	/**
+	 * sets a title to the attributes list 
+	 **/
+	public void setTitle(String title) {
+		getAttributes().put(RegistrationMap.TITLE.getFieldId(), title);
+	}
 }
