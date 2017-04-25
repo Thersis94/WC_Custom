@@ -79,8 +79,10 @@ public class UpdatesAction extends SBActionAdapter {
 		mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		SolrResponseVO srv = (SolrResponseVO)mod.getActionData();
 
-		List<Node> sections = loadSections(req);
-		sortFacets(sections, srv);
+		if(srv != null) {
+			List<Node> sections = loadSections();
+			sortFacets(sections, srv);
+		}
 
 	}
 
@@ -103,7 +105,6 @@ public class UpdatesAction extends SBActionAdapter {
 		for(Node n : sections) {
 			for(Count f : fOld.getValues()) {
 				if(f.getName().endsWith(n.getNodeName())) {
-					log.debug(f.getName());
 					fNew.add(f.getName(), f.getCount());
 					break;
 				}
@@ -122,7 +123,7 @@ public class UpdatesAction extends SBActionAdapter {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	protected List<Node> loadSections(ActionRequest req) {
+	protected List<Node> loadSections() {
 		ModuleVO mod = super.readFromCache(actionInit.getActionId());
 		if(mod == null) {
 			com.biomed.smarttrak.admin.UpdatesAction ua = new com.biomed.smarttrak.admin.UpdatesAction(actionInit);
