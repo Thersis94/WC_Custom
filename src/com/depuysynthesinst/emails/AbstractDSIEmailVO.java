@@ -64,7 +64,7 @@ public abstract class AbstractDSIEmailVO extends EmailMessageVO {
 		sb.append("Please do not reply to this e-mail as we are unable to respond.  If you would like to ");
 		sb.append("opt-out of receiving future e-mails, have any comments, questions or general feedback, ");
 		sb.append("please e-mail <a href=\"mailto:depuysynthesinstitute@its.jnj.com\">depuysynthesinstitute@its.jnj.com</a> ");
-		sb.append("or write Johnson & Johnson Institute, LLC, 325 Paramount Drive, Raynham, MA 02767.  Please review our ");
+		sb.append("or write Johnson & Johnson Institute, LLC, 325 Paramount Drive, Raynham, MA 02767.  Please review our ");
 		sb.append("<a href=\"").append(siteUrl).append("/privacy\">Privacy Policy</a>.</p>");
 
 		sb.append("<p>You may update your profile or communication preferences at any time by visiting ");
