@@ -4,10 +4,6 @@ package com.depuy.events_v2.vo.report;
 import java.util.HashMap;
 import java.util.Map;
 
-
-// Log4j 1.2.8
-import org.apache.log4j.Logger;
-
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
@@ -36,25 +32,22 @@ import com.smt.sitebuilder.util.ParseException;
  ****************************************************************************/
 public class ComplianceReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 1l;
-	private static Logger log = null;
-	private DePuyEventSeminarVO sem = null;
+	private DePuyEventSeminarVO sem;
 
-	/**
-	 * 
-	 */
 	public ComplianceReportVO() {
 		super();
-		log = Logger.getLogger(getClass());
 		setContentType("application/pdf");
 		isHeaderAttachment(Boolean.TRUE);
 		setFileName("Compliance Form.pdf");
 	}
 
+	@Override
 	public void setData(Object o) {
 		this.sem = (DePuyEventSeminarVO) o;
 		setFileName("Seminar " + sem.getRSVPCodes() + " Compliance Form.pdf");
 	}
 
+	@Override
 	public byte[] generateReport() {
 		AbstractSBReportVO rpt = null;
 		EventEntryVO event = sem.getEvents().get(0);
@@ -109,7 +102,7 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		String apprDt = Convert.formatDate(adv.getApproveDate(), Convert.DATE_SLASH_PATTERN);
 		if (apprDt.length() == 0) apprDt =  "&nbsp; &nbsp; &nbsp; &nbsp;";
 		
-		Map<String, Object> data = new HashMap<String, Object>();
+		Map<String, Object> data = new HashMap<>();
 		data.put("eventDate", Convert.formatDate(event.getStartDate(), Convert.DATE_LONG));
 		data.put("eventLocation", event.getEventName() + " " + event.getAddressText() + " " + event.getCityName() + ", " + event.getStateCode() + " " + event.getZipCode());
 		data.put("admSignature", "<u>&nbsp; &nbsp;" + admSig + "&nbsp; &nbsp;</u>");
@@ -125,7 +118,7 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		}
 		data.put("repName", rep);
 		
-		StringBuffer buf = null;
+		StringBuffer buf;
 		try {
 			buf = MessageParser.getParsedMessage(new String(rpt.generateReport()), data, event.getEventTypeCd());
 		} catch (ParseException e) {
