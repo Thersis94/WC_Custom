@@ -1,11 +1,17 @@
 package com.depuysynthes.pa;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.solr.common.SolrDocument;
+
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -50,16 +56,58 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 			storyId = storyId.substring(8);
 			loadStory(req, storyId, (String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		} else {
-			//call to solr per usual
-			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-			SolrAction sa = new SolrAction(actionInit);
-			sa.setDBConnection(dbConn);
-			sa.setAttributes(getAttributes());
-			sa.retrieve(req);
-			sa = null;
+			loadDocuments(req, mod);
 		}
 	}
 	
+	
+	/**
+	 * Load all documents from solr 
+	 * @param req
+	 * @param mod
+	 * @throws ActionException 
+	 */
+	protected void loadDocuments(SMTServletRequest req, ModuleVO mod) throws ActionException {
+		//call to solr per usual
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		SolrAction sa = new SolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(getAttributes());
+
+		String rpp = req.getParameter("rpp");
+		String pageNo = req.getParameter("page");
+		
+		// In order to ensure that all items are gotten we need to 
+		// trigger the userDataOverride in the solr action.
+		// As well as start at the beginning and get all
+		// documents in as few reasonable solr calls as possible.
+		req.setParameter("pmid", mod.getPageModuleId());
+		req.setParameter("rpp", "2000");
+		req.setParameter("page", "0");
+		List<SolrDocument> documents =  new ArrayList<>();
+		retrieveAllResults(sa, req, documents);
+		
+		// Set the rpp and page back to the original value
+		req.setParameter("rpp", StringUtil.checkVal(rpp));
+		req.setParameter("page",  StringUtil.checkVal(pageNo));
+		
+		putModuleData(documents);
+	}
+
+	
+	/**
+	 * Get all documents from solr so that the map can be properly populated.
+	 * @param sa
+	 * @param req
+	 * @throws ActionException 
+	 */
+	protected void retrieveAllResults(SolrAction sa, SMTServletRequest req, List<SolrDocument> documents) throws ActionException {
+		sa.retrieve(req);
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		SolrResponseVO solrResp = (SolrResponseVO) mod.getActionData();
+		documents.addAll(solrResp.getResultDocuments());
+	}
+
 	
 	/**
 	 * calls the data tool action to load the desired patient story from the black box
