@@ -88,9 +88,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 	 * @param vo
 	 */
 	@Override
-	public void reviewAdOptions(DePuyEventSeminarVO sem, SiteVO site, CoopAdVO vo) {
-		boolean isOnline = false;//Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1;
-
+	public void reviewAdOptions(DePuyEventSeminarVO sem, SiteVO site) {
 		StringBuilder msg = new StringBuilder(500);
 		msg.append("Dear Seminar Holder,\r\r");
 		msg.append("The Newspaper Ad Options are now ready for your review/approval. ");
@@ -108,7 +106,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("ksmith49@its.jnj.com");
-			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Options - Seminar " + sem.getRSVPCodes());
+			mail.setSubject("Newspaper Options - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 
