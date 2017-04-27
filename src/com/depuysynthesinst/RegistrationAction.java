@@ -139,7 +139,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		} else if (req.hasParameter("checkDSRPusername")) {
 			//called via ajax on Modal #3, fail if the username typed does not match the value on record
 			UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
-			String pswd = getLegacyPassword((user != null ? user.getEmailAddress() : ""));
+			String pswd = getLegacyPassword(user != null ? user.getEmailAddress() : "");
 			String userNm = req.getParameter("checkDSRPusername");
 			if (!pswd.equalsIgnoreCase(userNm)) {
 				ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -268,14 +268,15 @@ public class RegistrationAction extends SimpleActionAdapter {
 					vo.setUserValue(dsiUser.getSynthesId());
 					break;
 				case "DSI_PROG_ELIGIBLE": //RegField.DSI_PROG_ELIGIBLE - can't use an object here
-					vo.setUserValue((dsiUser.isEligible() ? "yes" : "no"));
+					vo.setUserValue(dsiUser.isEligible() ? "yes" : "no");
 					break;
 				case "DSI_VERIFIED": //RegField.DSI_VERIFIED - can't use an object here
-					vo.setUserValue((dsiUser.isVerified() ? "yes" : "no"));
+					vo.setUserValue(dsiUser.isVerified() ? "yes" : "no");
 					break;
 				case "c0a80241b71d27b038342fcb3ab567a0": //RegField for specialty
 					vo.setUserValue(dsiUser.getSpecialty());
 					break;
+				default:
 			}
 			regData.add(vo);
 		}
@@ -304,7 +305,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 				LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
 				Map<Object,Object> data = lms.getUserHoldingIDByEmail(user.getEmailAddress());
 				user.setAttributesFromMap(data);
-				inHolding = (Convert.formatInteger(user.getSynthesId()) > 0);
+				inHolding = Convert.formatInteger(user.getSynthesId()) > 0;
 				log.debug(user.getEmailAddress() + " inHolding? " + inHolding);
 			} catch (ActionException ae) {
 				log.error("could not query LMS for user holding", ae);

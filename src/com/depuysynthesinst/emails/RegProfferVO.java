@@ -47,7 +47,7 @@ public class RegProfferVO extends AbstractDSIEmailVO {
 		
 		sb.append("<p>Please follow up with the physician to process a proffer letter.</p>");
 		
-		addClosingRemark(sb, siteUrl);
+		addClosingRemark(sb, siteUrl, false);
 		
 		addTrackingNo(sb, "DSUS/INS/0615/1108k 06/15");
 

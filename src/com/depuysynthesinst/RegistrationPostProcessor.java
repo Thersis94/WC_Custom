@@ -84,8 +84,14 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		}
 		http://c.jmckain.siliconmtn.com/profile?sendEmails=true
 		
+	import com.depuysynthesinst.emails.AssgDeletedVO;
+	import com.depuysynthesinst.emails.AssgPublishVO;
+	import com.depuysynthesinst.emails.AssgRepublishVO;
+	import com.depuysynthesinst.emails.InviteResidentVO;
+	import com.depuysynthesinst.assg.AssignmentVO;
 	public void testAllEmails(SMTServletRequest req) throws Exception {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		String oldAlias = site.getSiteAlias();
 		site.setSiteAlias("www.depuysynthesinstitute.com");
 		DSIUserDataVO dsiUser = new DSIUserDataVO((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
 		ResponseLoader loader = new ResponseLoader();
@@ -94,8 +100,8 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		loader.loadRegistrationResponses(dsiUser, site.getSiteId());
 		log.debug("email DSIUser=" + StringUtil.getToString(dsiUser));
 
-		dsiUser.addAttribute(RegField.DSI_ACAD_NM.name(),"My Test Academy");
-		dsiUser.addAttribute(RegField.c0a80241b71c9d40a59dbd6f4b621260.name(),"Resident");
+		dsiUser.addAttribute(DSIUserDataVO.RegField.DSI_ACAD_NM.name(),"My Test Academy");
+		dsiUser.addAttribute(DSIUserDataVO.RegField.c0a80241b71c9d40a59dbd6f4b621260.name(),"Resident");
 
 		//if eligible AND verified was just toggled to 'yes', send the email
 		MessageSender ms = new MessageSender(getAttributes(), dbConn);
@@ -137,8 +143,11 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		mail4.setFrom(site.getMainEmail());
 		mail4.addRecipient(dsiUser.getEmailAddress());
 		mail4.buildMessage(dsiUser, dsiUser, site); //builds subject and message body automatically
+		ms.sendMessage(mail4);
+		
+		site.setSiteAlias(oldAlias);
 	}
-	 */
+	*/
 
 
 	/* (non-Javadoc)
