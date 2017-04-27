@@ -54,6 +54,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 	 * 
 	 * @param req
 	 */
+	@Override
 	public void sendApprovalRequest(SMTServletRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -78,6 +79,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			if (sem.getTgmEmail() != null && sem.getTgmEmail().length() > 0)
 				mail.addCC(sem.getTgmEmail().split(", "));
@@ -102,6 +104,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 	 * @param req
 	 * @param eventPostcardId
 	 */
+	@Override
 	public void sendPostcardCancellation(SMTServletRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO postcard = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -119,14 +122,14 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com"); // the DePuy intern in charge
-			mail.addCC("mroderic@its.jnj.com");
+			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
-			mail.addCC("Marsha.Leo@umj3.com");
-			mail.addCC("Brianna.Victorio@umj3.com");
-			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
+			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -147,6 +150,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 	/* (non-Javadoc)
 	 * @see com.depuy.events.AbstractPostcardEmailer#sendSRCApprovalRequest(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
 	public void sendAdvApprovalRequest(SMTServletRequest req) {
 		
 		// send email to site admin
@@ -170,6 +174,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -190,6 +195,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 	 * compliance form (PDF) and clicks to approve their portion of the seminar.
 	 * @param req
 	 */
+	@Override
 	protected void sendAdvApproved(SMTServletRequest req) {
 		//Mitek does not use SRC approval, this email is not needed.
 	}
@@ -199,6 +205,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 	 * announcement email triggered by Site Admin once SRC approves the Seminar
 	 * @param req
 	 */
+	@Override
 	protected void sendSrcApproved(SMTServletRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -234,12 +241,12 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
-			mail.addCC("LisaV@metrosn.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			
@@ -261,7 +268,8 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		}
 		return;
 	}
-	
+
+	@Override
 	protected void orderConsumableBox(SMTServletRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -269,11 +277,8 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		StringBuilder subject = new StringBuilder();
 		String ownerEmail = StringUtil.checkVal(sem.getOwner().getEmailAddress());
 		subject.append("Consumable Box request - Seminar " + sem.getRSVPCodes());
-		
-		//logged-in user:
-		//UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 
-		StringBuilder msg = new StringBuilder();
+		StringBuilder msg = new StringBuilder(500);
 		msg.append("The EISC for DePuy ").append(sem.getJointLabel());
 		msg.append(" Seminar #").append(sem.getEvents().get(0).getRSVPCode());
 		msg.append(" has submitted a request for a Patient Education Seminar Kit.  ");
@@ -305,6 +310,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC(ownerEmail);
 			mail.setSubject(subject.toString());
@@ -320,7 +326,8 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		return;
 	}
 	
-	
+
+	@Override
 	protected void requestPostcardApproval(SMTServletRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -341,6 +348,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -355,7 +363,8 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		return;
 	}
 	
-	
+
+	@Override
 	protected void sendPostcardApproved(SMTServletRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -376,6 +385,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
+			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject(subject.toString());
@@ -391,7 +401,8 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		return;
 	}
 	
-	
+
+	@Override
 	protected void sendMedicalAffairsApprovedNotice(SMTServletRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -417,19 +428,18 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
-			mail.addCC("LisaV@metrosn.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			
 			for (PersonVO p : sem.getPeople()) {
-				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
 				//Add only the sales rep
-				else if ( p.getRoleCode() == Role.TGM ){
+				if (Role.TGM  == p.getRoleCode() && StringUtil.isValidEmail(p.getEmailAddress())) {
 					mail.addCC(p.getEmailAddress());
 					break;
 				}
@@ -451,6 +461,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 	 * Sent when the coordinator has declined the postcard.
 	 * @param req
 	 */
+	@Override
 	protected void sendPostcardDeclined(SMTServletRequest req){
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -469,6 +480,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		try{
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.setSubject("Postcard Declined - Seminar "+sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -488,6 +500,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 	 * Sent when the PCP invitation is ready for approval.
 	 * @param req
 	 */
+	@Override
 	protected void sendInvitationApprovalRequest( SMTServletRequest req ){
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -508,6 +521,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			//Recipients
 			mail.addRecipient( sem.getOwner().getEmailAddress() );
 			mail.addCC( "ksmith49@its.jnj.com" );
+			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			//set the email content
 			mail.setTextBody(msg.toString());
@@ -526,6 +540,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 	 * Notification that the coordinator has approved the PCP invitation
 	 * @param req
 	 */
+	@Override
 	protected void sendInvitationApproved( SMTServletRequest req ){
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -543,6 +558,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			
 			//Recipients
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			
@@ -560,6 +576,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 	 * Notification that the PCP Invitations have been sent.
 	 * @param req
 	 */
+	@Override
 	protected void notifyInvitationSent( SMTServletRequest req ){
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -577,6 +594,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			//recipients
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
@@ -592,6 +610,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 	 * Notification that the Postcards have been sent.
 	 * @param req
 	 */
+	@Override
 	protected void notifyPostcardSent( SMTServletRequest req ){
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -609,10 +628,10 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			//recipients
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addRecipient("mroderic@its.jnj.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
-			mail.addCC("LisaV@metrosn.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);
@@ -628,6 +647,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 	 * notifies Harmony when a PEER coordinator uploads their leads
 	 * @param req
 	 */
+	@Override
 	protected void inviteFileUploaded(SMTServletRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -646,6 +666,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			
 			//recipients
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addRecipient("mroderic@its.jnj.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);

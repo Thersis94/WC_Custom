@@ -6,10 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.servlet.http.HttpSession;
 
@@ -45,11 +43,9 @@ import com.smt.sitebuilder.util.MessageSender;
  ****************************************************************************/
 public class RegistrationAction extends SimpleActionAdapter {
 
-	private Set<String> specialProfs = null;
 
 	public RegistrationAction() {
 		super();
-		populateSpecialProfs();
 	}
 
 	/**
@@ -57,22 +53,16 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 */
 	public RegistrationAction(ActionInitVO arg0) {
 		super(arg0);
-		populateSpecialProfs();
 	}
 
-	private void populateSpecialProfs() {
-		specialProfs = new HashSet<>();
-		specialProfs.add("RESIDENT");
-		specialProfs.add("FELLOW");
-		specialProfs.add("CHIEF");
-		specialProfs.add("DIRECTOR");
-	}
 
+	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
-	
+
+	@Override
 	public void update(SMTServletRequest req) throws ActionException {
 		String[] regAction = req.getParameter("attrib1Text").split("~");
 		//need to capture the actionId as well as the actionGroupId for submitting/retrieving Registration on the front end
@@ -87,6 +77,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 	/**
 	 * Invokes WC Registration's retrieve method.  No further logic is needed.
 	 */
+	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -98,7 +89,6 @@ public class RegistrationAction extends SimpleActionAdapter {
 		reg.setDBConnection(dbConn);
 		reg.setAttributes(getAttributes());
 		reg.retrieve(req);
-		reg = null;
 
 		//on the summary page, load the name(s) of this students Residency Director(s)
 		DSIUserDataVO dsiUser = new DSIUserDataVO((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
@@ -136,6 +126,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * extend Registration's build method with added logic for:
 	 * determining if we need to display pages 3 & 4 of registration
 	 */
+	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		//these 'hooks' are here because they live on the Registration/"My Profile" page in the UI.
 		if (req.hasParameter("revokeDirector") || req.hasParameter("approveDirector")) {
@@ -148,7 +139,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		} else if (req.hasParameter("checkDSRPusername")) {
 			//called via ajax on Modal #3, fail if the username typed does not match the value on record
 			UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
-			String pswd = getLegacyPassword((user != null ? user.getEmailAddress() : ""));
+			String pswd = getLegacyPassword(user != null ? user.getEmailAddress() : "");
 			String userNm = req.getParameter("checkDSRPusername");
 			if (!pswd.equalsIgnoreCase(userNm)) {
 				ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -170,7 +161,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		mod.setActionId(actionInit.getActionId());
 		mod.setActionGroupId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		setAttribute(Constants.MODULE_DATA, mod);
-		HttpSession ses = (HttpSession) req.getSession();
+		HttpSession ses = req.getSession();
 
 		//set a parameter to tell Registration to NOT dump the userVO if the user completes without logging in, we need it
 		boolean unloadSessionIfNoRole = false;
@@ -182,7 +173,6 @@ public class RegistrationAction extends SimpleActionAdapter {
 		reg.setDBConnection(dbConn);
 		reg.setAttributes(getAttributes());
 		reg.build(req);
-		reg = null;
 
 		DSIUserDataVO user = new DSIUserDataVO((UserDataVO)ses.getAttribute(Constants.USER_DATA));
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
@@ -200,9 +190,6 @@ public class RegistrationAction extends SimpleActionAdapter {
 			saveUser(user);
 
 			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString()};
-//															 RegField.DSI_SYNTHES_ID.toString(),
-//															 RegField.DSI_PROG_ELIGIBLE.toString(),
-//															 RegField.DSI_VERIFIED.toString() };
 			captureLMSResponses(req, user, regFields);
 			return;
 		}
@@ -245,7 +232,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 			}
 		}
 		
-		boolean isFinalPage = StringUtil.checkVal(req.getParameter("finalPage")).equals("1");
+		boolean isFinalPage = "1".equals(req.getParameter("finalPage"));
 		log.debug("isFinalPage=" + isFinalPage + " " + req.getParameter("finalPage"));
 		if (isFinalPage && unloadSessionIfNoRole && ses.getAttribute(Constants.ROLE_DATA) == null) {
 			ses.removeAttribute(Constants.USER_DATA);
@@ -281,14 +268,15 @@ public class RegistrationAction extends SimpleActionAdapter {
 					vo.setUserValue(dsiUser.getSynthesId());
 					break;
 				case "DSI_PROG_ELIGIBLE": //RegField.DSI_PROG_ELIGIBLE - can't use an object here
-					vo.setUserValue((dsiUser.isEligible() ? "yes" : "no"));
+					vo.setUserValue(dsiUser.isEligible() ? "yes" : "no");
 					break;
 				case "DSI_VERIFIED": //RegField.DSI_VERIFIED - can't use an object here
-					vo.setUserValue((dsiUser.isVerified() ? "yes" : "no"));
+					vo.setUserValue(dsiUser.isVerified() ? "yes" : "no");
 					break;
 				case "c0a80241b71d27b038342fcb3ab567a0": //RegField for specialty
 					vo.setUserValue(dsiUser.getSpecialty());
 					break;
+				default:
 			}
 			regData.add(vo);
 		}
@@ -297,7 +285,6 @@ public class RegistrationAction extends SimpleActionAdapter {
 		sa.setAttributes(getAttributes());
 		sa.setDBConnection(dbConn);
 		sa.updateRegisterData(req, user, registerSubmittalId, regData);
-		sa = null;
 	}
 	
 	
@@ -318,7 +305,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 				LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
 				Map<Object,Object> data = lms.getUserHoldingIDByEmail(user.getEmailAddress());
 				user.setAttributesFromMap(data);
-				inHolding = (Convert.formatInteger(user.getSynthesId()) > 0);
+				inHolding = Convert.formatInteger(user.getSynthesId()) > 0;
 				log.debug(user.getEmailAddress() + " inHolding? " + inHolding);
 			} catch (ActionException ae) {
 				log.error("could not query LMS for user holding", ae);
@@ -427,7 +414,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 			d = lms.createUser(user);
 			//save the newly created TTLMSID to their UserDataVO
 			log.debug("LMS user created: " + d);
-			user.setTtLmsId(Convert.formatInteger("" + d).toString());
+			user.setTtLmsId(Convert.formatInteger(Double.toString(d)).toString());
 		}
 	}
 

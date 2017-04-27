@@ -96,8 +96,8 @@ public class DSIRegistrationDataAction extends RegistrationDataAction {
 	@Override
 	protected void postFilter(SMTServletRequest req, RegistrationDataContainer cdc) {
 		boolean completedOnly = "1".equals(req.getParameter("completedSurveyOnly"));
-		String startDate = req.getParameter("surveyStartDate");
-		String endDate = req.getParameter("surveyEndDate");
+		String startDate = req.getParameter("gradStartDate");
+		String endDate = req.getParameter("gradEndDate");
 
 		//fail fast if there's no work to do here
 		if (!completedOnly && StringUtil.isEmpty(startDate) && StringUtil.isEmpty(endDate))
@@ -106,25 +106,41 @@ public class DSIRegistrationDataAction extends RegistrationDataAction {
 		Date startDt = Convert.formatDate(Convert.DATE_SLASH_PATTERN, startDate);
 		Date endDt = Convert.formatDate(Convert.DATE_SLASH_PATTERN, endDate);
 		List<RegistrationDataModuleVO> results = new ArrayList<>(cdc.getData().size());
+
 		for (RegistrationDataModuleVO vo : cdc.getData()) {
-			Map<String, String> extData = vo.getExtData();
-			String fellowStartDate = extData.get("DSI_SRVY_FELLOW_START_DT");
-			if (StringUtil.isEmpty(fellowStartDate)) fellowStartDate = extData.get("DSI_SRVY_JOB_DT");
-			Date fellowStartDt = Convert.formatDate(Convert.DATE_SLASH_PATTERN, fellowStartDate);
-
-			//test for survey completion - survey is not complete if both of the above dates are missing.
-			if (completedOnly && StringUtil.isEmpty(fellowStartDate)) continue;
-
-			//test for survey start date
-			if (startDt != null && (fellowStartDt == null || fellowStartDt.before(startDt))) continue;
-
-			//test for survey end date
-			if (endDt != null && (fellowStartDt == null || fellowStartDt.after(endDt))) continue;
+			if (!saveSurvey(vo, completedOnly, startDt, endDt)) continue;
 
 			//if we made it this far, INCLUDE the record in the report
 			results.add(vo);
 		}
 
 		cdc.setData(results);
+	}
+
+
+	/**
+	 * tests whether this record is one we want to include in the report
+	 * @param vo
+	 * @param completedOnly
+	 * @param startDt
+	 * @param endDt
+	 * @return
+	 */
+	private boolean saveSurvey(RegistrationDataModuleVO vo, boolean completedOnly, Date startDt, Date endDt) {
+		Map<String, String> extData = vo.getExtData();
+		Date gradDt = Convert.formatDate(Convert.DATE_SLASH_PATTERN, extData.get("DSI_GRAD_DT"));
+		String fellowStartDate = extData.get("DSI_SRVY_FELLOW_START_DT");
+		if (StringUtil.isEmpty(fellowStartDate)) fellowStartDate = extData.get("DSI_SRVY_JOB_DT");
+
+		//test for survey completion - survey is not complete if both of the above dates are missing.
+		if (completedOnly && StringUtil.isEmpty(fellowStartDate)) return false;
+
+		//test for survey start date
+		if (startDt != null && (gradDt == null || gradDt.before(startDt))) return false;
+
+		//test for survey end date
+		if (endDt != null && (gradDt == null || gradDt.after(endDt))) return false;
+
+		return true;
 	}
 }

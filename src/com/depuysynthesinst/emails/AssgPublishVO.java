@@ -49,7 +49,7 @@ public class AssgPublishVO extends AbstractDSIEmailVO {
 		addThankYou(sb);
 
 		addClosingRemark(sb, siteUrl);
-		
+
 		addTrackingNo(sb, "DSUS/INS/0615/1108a 06/15");
 
 		super.setHtmlBody(sb.toString());

@@ -16,17 +16,18 @@ import com.smt.sitebuilder.common.SiteVO;
  ****************************************************************************/
 public class AcctVerifiedVO extends AbstractDSIEmailVO {
 	private static final long serialVersionUID = 19876544L;
-	
+
 	public AcctVerifiedVO() {
 		super();
 	}
 
-	
+
 	/**
 	 * add a method to build the message as its passed into the VO, not as it's sent (e.g.: getHtmlBody()).
 	 * This is important, because when this message gets to JMS it won't have access
 	 * to the Assg or SiteVO to do what it needs to do.
 	 */
+	@Override
 	public void buildMessage(UserDataVO rcpt, SiteVO site) {
 		String siteUrl = site.getFullSiteAlias();
 
@@ -36,15 +37,15 @@ public class AcctVerifiedVO extends AbstractDSIEmailVO {
 		sb.append("We completed the final steps in the validation process. You now have full access to the ");
 		sb.append("site: inclusive of educational content and access to the Future Leaders Redemption Center ");
 		sb.append("in which you may redeem your credits for educational items.</p>");
-		
+
 		sb.append("<p><b><u>PLEASE NOTE:</u></b> The credit limit for redemption is $500 per year. ");
 		sb.append("If you believe you received this email in error or if you have any questions please feel free ");
 		sb.append("to contact us at <a href=\"mailto:futureleaders@its.jnj.com\">futureleaders@its.jnj.com</a>.</p>");
-		
+
 		addThankYou(sb);
 
 		addClosingRemark(sb, siteUrl);
-		
+
 		addTrackingNo(sb, "DSUS/INS/0615/1108f 06/15");
 
 		super.setHtmlBody(sb.toString());
