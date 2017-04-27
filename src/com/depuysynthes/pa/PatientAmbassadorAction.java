@@ -8,7 +8,6 @@ import org.apache.solr.common.SolrDocument;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -83,23 +82,14 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 		// As well as start at the beginning and get all
 		// documents in as few reasonable solr calls as possible.
 		req.setParameter("pmid", mod.getPageModuleId());
-		req.setParameter("rpp", "500");
+		req.setParameter("rpp", "2000");
 		req.setParameter("page", "0");
 		List<SolrDocument> documents =  new ArrayList<>();
 		retrieveAllResults(sa, req, documents);
 		
 		// Set the rpp and page back to the original value
-		if (StringUtil.isEmpty(rpp)) {
-			req.setParameter("rpp", "");
-		} else {
-			req.setParameter("rpp", rpp);
-		}
-		
-		if (StringUtil.isEmpty(pageNo)) {
-			req.setParameter("page", "");
-		} else {
-			req.setParameter("page", pageNo);
-		}
+		req.setParameter("rpp", StringUtil.checkVal(rpp));
+		req.setParameter("page",  StringUtil.checkVal(pageNo));
 		
 		putModuleData(documents);
 	}
@@ -116,11 +106,6 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SolrResponseVO solrResp = (SolrResponseVO) mod.getActionData();
 		documents.addAll(solrResp.getResultDocuments());
-		if (solrResp.getTotalResponses() > documents.size()) {
-			int page = Convert.formatInteger(req.getParameter("page"), 0);
-			req.setParameter("page", StringUtil.checkVal(page+1));
-			retrieveAllResults(sa, req, documents);
-		}
 	}
 
 	
