@@ -26,7 +26,7 @@ import com.siliconmtn.util.StringUtil;
 
 public class SeminarRollupReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 1l;
-	private List<DePuyEventSeminarVO> postcards = null;
+	private transient List<DePuyEventSeminarVO> postcards;
 
 	public SeminarRollupReportVO() {
 		super();
@@ -41,22 +41,19 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
      * @param data (List<DePuyEventPostcardVO>)
      * @throws SQLException
      */
+	@Override
 	@SuppressWarnings("unchecked")
 	public void setData(Object o) {
-		List<DePuyEventSeminarVO> postcards = (List<DePuyEventSeminarVO>) o;
-		this.postcards = postcards;
+		List<DePuyEventSeminarVO> cards = (List<DePuyEventSeminarVO>) o;
+		this.postcards = cards;
 	}
     
+	@Override
 	public byte[] generateReport() {
-		
 		ExcelReport rpt = new ExcelReport(this.getHeader());
-		
 		List<Map<String, Object>> rows = new ArrayList<>(postcards.size());
-		
-		rpt.setTitleCell(getTitleNote());
-
+		rpt.setTitleCell("Local Market Seminars Comprehensive Data");
 		rows = generateDataRows(rows);
-		
 		rpt.setData(rows);
 		return rpt.generateReport();
 	}
@@ -66,8 +63,7 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 	 * @param rows
 	 * @return
 	 */
-	private List<Map<String, Object>> generateDataRows(	List<Map<String, Object>> rows) {
-		
+	private List<Map<String, Object>> generateDataRows(List<Map<String, Object>> rows) {
 		for (DePuyEventSeminarVO sem : postcards) {
 			for (EventEntryVO vo : sem.getEvents()) {
 				
@@ -76,9 +72,10 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 				Integer rsvpCnt = sem.getRsvpCount();
 				int x = 0;
 				List<CoopAdVO> ads = sem.getAllAds();
+				int size = ads != null ? ads.size() : 0;
 				
 				do {
-					Map<String, Object> row = new HashMap<String, Object>();
+					Map<String, Object> row = new HashMap<>();
 					CoopAdVO ad = (ads != null && ads.size() > x) ? ads.get(x) : new CoopAdVO();
 					++x;
 					
@@ -128,14 +125,12 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 					row.put("DATE_AD_WILL_RUN", StringUtil.checkVal(ad.getAdDatesText()));
 					row.put("TOTAL_AD_COST", StringUtil.checkVal(ad.getTotalCostNo()));
 					row.put("COST_TO_TERRITORY", StringUtil.checkVal(ad.getCostToRepNo()));
+					row.put("COST_TO_SPEAKER", StringUtil.checkVal(Convert.formatDouble(ad.getCostToSurgeonNo())));
 					row.put("TERRITORY_NO", StringUtil.checkVal(sem.getTerritoryNumber()));
 					row.put("SENT_AD_INFO", "");
 					row.put("AD_RECEIVED", "");
 					rows.add(row);
-				} while (x < ads.size());
-				
-				//log.debug("added row for Event: " + vo.getActionId() + " code=" + vo.getRSVPCode());
-				
+				} while (x < size);
 			}
 		}
 		
@@ -148,7 +143,7 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 	 */
 	private Map<String, String> getHeader() {
 		
-		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put("JOINT", "Joint");
 		headerMap.put("SEMINAR_TYPE", "Seminar Type");
 		headerMap.put("SEMINAR_CODE", "Seminar Code");
@@ -175,22 +170,11 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 		headerMap.put("DATE_AD_WILL_RUN", "Date Ad will Run");
 		headerMap.put("TOTAL_AD_COST", "Total Ad Cost");
 		headerMap.put("COST_TO_TERRITORY", "Cost to Territory");
+		headerMap.put("COST_TO_SPEAKER", "Cost to Speaker/Hospital");
 		headerMap.put("TERRITORY_NO", "Territory No.");
 		headerMap.put("SENT_AD_INFO", "Sent Ad Info");
 		headerMap.put("AD_RECEIVED", "Ad Received");
 
 		return headerMap;
 	}
-
-	/**
-	 * used to build the title note at the top of the excel document.
-	 * @return
-	 */
-	private String getTitleNote() {
-		
-			String note = "Local Market Seminars Comprehensive Data";
-			
-		return note;
-	}
-	
 }

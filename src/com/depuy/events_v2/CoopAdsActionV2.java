@@ -232,7 +232,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 				log.debug("sending ad options email");
 				// ask the Rep to review their ad options
 				emailer.notifyMetroUpload(sem, site);
-				emailer.reviewAdOptions(sem, site, vo);
+				emailer.reviewAdOptions(sem, site);
 				break;
 
 			case CLIENT_APPROVED_AD:
@@ -265,7 +265,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 					log.debug("sending payment recieved email");
 					//test if we should announce that all ads are paid for
 					if (allAdsMeetStatus(sem, "surgeon_status_flg", SURG_PAID_AD))
-						emailer.notifyAdminOfAdPaymentRecd(sem, site, user, false);
+						emailer.notifyAdminOfAdPaymentRecd(sem, site, false);
 				}
 				break;
 
