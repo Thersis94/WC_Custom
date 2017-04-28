@@ -10,18 +10,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -41,6 +47,11 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * Column prefix used for base data 
 	 */
 	public static final String BASE_PREFIX = "REV_";
+	
+	/**
+	 * Param used for the json data with the overlay edits
+	 */
+	public static final String OVERLAY_DATA = "overlayData";
 	
 	public FinancialDashScenarioOverlayAction() {
 		super();
@@ -238,6 +249,9 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		return sql;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.fd.FinancialDashBaseAction#updateData(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	protected void updateData(ActionRequest req) throws ActionException {
 		String actionPerform = StringUtil.checkVal(req.getParameter("actionPerform"));
@@ -246,34 +260,159 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			return;
 		}
 		
-		log.debug("Updating Scenario Overlay Data Record");
+		log.debug("Updating Scenario Overlay Data Records");
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
-		String revenueId = StringUtil.checkVal(req.getParameter("pk"));
-		String quarter = getQuarterFromField(StringUtil.checkVal(req.getParameter("name")));
-		long value = Convert.formatLong(StringUtil.checkVal(req.getParameter("value")));
+		JsonObject json = getJsonOverlayData(req.getParameter(OVERLAY_DATA));
+		
+		// Get list of revenueIds from the json data to create/update overlay data with
+		List<String> revenueIds = new ArrayList<>();
+		Set<Map.Entry<String, JsonElement>> entries = json.entrySet();
+		for (Map.Entry<String, JsonElement> entry: entries) {
+			revenueIds.add(entry.getKey());
+		}
+
+		// Get any existing scenario overlay records 
+		List<FinancialDashScenarioOverlayVO> sovos = getOverlayRecords(revenueIds, scenarioId);
+		
+		// Remove existing ids with an overlay from the list so we know which revenue records we need
+		for (FinancialDashScenarioOverlayVO sovo : sovos) {
+			revenueIds.remove(sovo.getRevenueId());
+		}
+		
+		// Get the remaining data from the revenue records to create new overlay(s) from
+		List<FinancialDashRevenueVO> rvos = getRevenueRecords(revenueIds);
+		
+		// Create scenario overlay vo's from revenue vo's
+		for (FinancialDashRevenueVO rvo : rvos) {
+			FinancialDashScenarioOverlayVO sovo = new FinancialDashScenarioOverlayVO(rvo);
+			sovo.setScenarioId(scenarioId);
+			sovos.add(sovo);
+		}
+		
+		// Set changed data in each vo
+		setUpdatedOverlayData(sovos, json);
+		
+		// Save the new & updated overlay data
+		saveOverlayData(sovos);
+	}
+	
+	/**
+	 * Parses the submitted overlay json data
+	 * 
+	 * @param overlayData
+	 * @return
+	 */
+	protected JsonObject getJsonOverlayData(String overlayData) {
+		JsonObject obj = null;
 		
 		try {
-			// Get the complete current overlay data if it exists
-			FinancialDashScenarioOverlayVO sovo = getOverlayRecord(revenueId, scenarioId);
-			
-			// If an overlay record doesn't exist, get the current revenue data to create an overlay
-			if (sovo == null) {
-				FinancialDashRevenueVO rvo = getRevenueRecord(revenueId);
-				sovo = new FinancialDashScenarioOverlayVO(rvo);
-				sovo.setScenarioId(scenarioId);
-			}
-			
-			// Dynamically set the specific quarter being updated
-			Method method = sovo.getClass().getMethod("set" + quarter + "No", long.class);
-			method.invoke(sovo, value);
+			JsonElement element = new JsonParser().parse(overlayData);
+			obj = element.getAsJsonObject();
+		} catch(Exception e) {
+			log.error("Problem parsing scenario overlay json data.", e);
+		}
+		
+		return obj;
+	}
+	
+	/**
+	 * Updates list of existing vo data with the submitted updates
+	 * 
+	 * @param sovos
+	 * @param json
+	 * @throws ActionException
+	 */
+	protected void setUpdatedOverlayData(List<FinancialDashScenarioOverlayVO> sovos, JsonObject json) throws ActionException {
+		for (FinancialDashScenarioOverlayVO sovo : sovos) {
+			JsonObject revenueData = json.get(sovo.getRevenueId()).getAsJsonObject();
+			Set<Map.Entry<String, JsonElement>> entries = revenueData.entrySet();
 
-			// Update or insert the record as applicable
-			dbp.save(sovo);
-		} catch (Exception e) {
-			throw new ActionException("Couldn't save updated financial dashboard quarter data to database.", e);
+			for (Map.Entry<String, JsonElement> entry: entries) {
+				String quarter = getQuarterFromField(entry.getKey());
+				long value = entry.getValue().getAsLong();
+				
+				try {
+					// Dynamically set the specific quarter being updated
+					Method method = sovo.getClass().getMethod("set" + quarter + "No", long.class);
+					method.invoke(sovo, value);				
+				} catch (Exception e) {
+					throw new ActionException("Couldn't set updated financial dashboard quarter data to scenario overlay vo.", e);
+				}
+			}
 		}
 	}
 	
+	/**
+	 * Saves the new or updated overlay records to the database
+	 * 
+	 * @param sovos
+	 * @throws ActionException
+	 */
+	protected void saveOverlayData(List<FinancialDashScenarioOverlayVO> sovos) throws ActionException {
+		// Create batch data to save
+		Map<String, List<Object>> insertValues = new HashMap<>();
+		Map<String, List<Object>> updateValues = new HashMap<>();
+		
+		// Loop through the overlay data and add to the batch insert or update data as appropriate
+		for (FinancialDashScenarioOverlayVO sovo : sovos) {
+			if (StringUtil.isEmpty(sovo.getOverlayId())) {
+				String overlayId = new UUIDGenerator().getUUID();
+				
+				List<Object> insertData = new ArrayList<>();
+				insertData.addAll(Arrays.asList(overlayId, sovo.getCompanyId(), sovo.getScenarioId(), sovo.getRevenueId()));		
+				insertData.addAll(Arrays.asList(sovo.getYearNo(), sovo.getQ1No(), sovo.getQ2No(), sovo.getQ3No(), sovo.getQ4No()));	
+				insertData.add(Convert.getCurrentTimestamp());
+				
+				insertValues.put(overlayId, insertData);
+			} else {
+				List<Object> updateData = new ArrayList<>();
+				updateData.addAll(Arrays.asList(sovo.getQ1No(), sovo.getQ2No(), sovo.getQ3No(), sovo.getQ4No()));	
+				updateData.addAll(Arrays.asList(Convert.getCurrentTimestamp(), sovo.getOverlayId()));
+				
+				updateValues.put(sovo.getOverlayId(), updateData);
+			}
+		}
+		
+		// Save new/updated records
+		try {
+			dbp.executeBatch(getOverlayInsertSql(), insertValues);
+			dbp.executeBatch(getOverlayUpdateSql(), updateValues);
+		} catch (Exception e) {
+			throw new ActionException("Couldn't save updated overlay data.", e);
+		}
+	}
+	
+	/**
+	 * Returns the overlay insert sql for the batch update
+	 * 
+	 * @return
+	 */
+	private String getOverlayInsertSql() {
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(225);
+		
+		sql.append("insert into ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY (overlay_id, company_id, ");
+		sql.append("scenario_id, revenue_id, year_no, q1_no, q2_no, q3_no, q4_no, create_dt) values (?,?,?,?,?,?,?,?,?,?)");
+		
+		return sql.toString();
+	}
+
+	/**
+	 * Returns the overlay update sql for the batch update
+	 * 
+	 * @return
+	 */
+	private String getOverlayUpdateSql() {
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(200);
+		
+		sql.append("update ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY ");
+		sql.append("set q1_no = ?, q2_no = ?, q3_no = ?, q4_no = ?, update_dt = ? ");
+		sql.append("where overlay_id = ? ");
+		
+		return sql.toString();
+	}
+
 	/**
 	 * Returns a single scenario overlay record.
 	 * May return null if the record doesn't exist.
@@ -284,32 +423,52 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 */
 	protected FinancialDashScenarioOverlayVO getOverlayRecord(String revenueId, String scenarioId) {
 		FinancialDashScenarioOverlayVO sovo = null;
-		
-		String sql = getOverlayRecordSql();
-		List<Object> params = new ArrayList<>();
-		params.addAll(Arrays.asList(revenueId, scenarioId));
-		
-		List<Object> overlay = dbp.executeSelect(sql, params, new FinancialDashScenarioOverlayVO());
-		
-		if (!overlay.isEmpty()) {
+		List<FinancialDashScenarioOverlayVO> sovos = getOverlayRecords(Arrays.asList(revenueId), scenarioId);
+
+		if (!sovos.isEmpty()) {
 			// For a given revenueId & scenarioId, there will only be one record if it exists
-			sovo = (FinancialDashScenarioOverlayVO) overlay.get(0);
+			sovo = sovos.get(0);
 		}
 		
 		return sovo;
 	}
 
 	/**
-	 * Returns the sql necessary for retrieving a single overlay record
+	 * Returns a list of scenario overlay records.
+	 * 
+	 * @param revenueIds
+	 * @param scenarioId
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	protected List<FinancialDashScenarioOverlayVO> getOverlayRecords(List<String> revenueIds, String scenarioId) {
+		List<FinancialDashScenarioOverlayVO> sovos = new ArrayList<>();
+		
+		String sql = getOverlayRecordSql(revenueIds.size());
+		List<Object> params = new ArrayList<>();
+		params.addAll(revenueIds);
+		params.add(scenarioId);
+		
+		List<?> overlays = dbp.executeSelect(sql, params, new FinancialDashScenarioOverlayVO());
+		
+		if (!overlays.isEmpty()) {
+			sovos = (List<FinancialDashScenarioOverlayVO>) overlays;
+		}
+		
+		return sovos;
+	}
+	
+	/**
+	 * Returns the sql necessary for retrieving overlay records
 	 * 
 	 * @return
 	 */
-	private String getOverlayRecordSql() {
+	private String getOverlayRecordSql(int recordCnt) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
 		
 		sql.append("select * from ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY ");
-		sql.append("where REVENUE_ID = ? and SCENARIO_ID = ? ");
+		sql.append("where REVENUE_ID in (").append(DBUtil.preparedStatmentQuestion(recordCnt)).append(") and SCENARIO_ID = ? ");
 		
 		return sql.toString();
 	}
