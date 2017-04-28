@@ -38,9 +38,10 @@ update biomedgps.companies_company set state=trim(state);
 insert into custom.biomedgps_company_location
 (location_id, company_id, location_nm, address_txt, address2_txt, city_nm, state_cd, 
 zip_cd, country_cd, phone_txt, alt_phone_txt, primary_locn_flg, create_dt, update_dt)
-select id, id, name, address, address1, city, state, zip, country_cd, phone, phone_800, 
+select id, id, name, address, address1, city, state, zip, coalesce(country_cd,'US'), phone, phone_800, 
 0, create_date, last_update FROM biomedgps.companies_company a
-inner join core.country b on a.country_id=b.country_nm;
+left join core.country b on a.country_id=b.country_nm;
+
 
 --company alliance type
 insert into custom.biomedgps_alliance_type (alliance_type_id, type_nm, section_cd, create_dt)
@@ -191,17 +192,6 @@ where e.content_type_id=8 and e.status='P'; --only pushed attributes, there are 
 -- company section data normalization:
 update biomedgps.articles_segment set name='Wound Mgmt - Std of Care' where name='Wound Management - Std of Care';
 
--- company_section_xr -- note the 'null' condition here excludes one record, the "Market (Training)" company has an orphan section.
-insert into custom.biomedgps_company_section (company_section_xr_id, section_id, company_id, create_dt)
-select replace(newid(),'-',''),coalesce(s.section_id,s2.section_id), f.company_id, current_timestamp
-from biomedgps.articles_market a
-inner join biomedgps.articles_segment b on a.id=b.market_id 
-inner join biomedgps.articles_subsegment c on c.segment_id=b.id
-inner join biomedgps.vcompany_subsegment f on f.subsegment_id=c.id
-left join custom.biomedgps_section s on c.name=s.section_nm and s.section_id like '%MASTER%'
-left join custom.biomedgps_section s2 on b.name=s2.section_nm and s2.section_id like '%MASTER%'
-where  c.visible='true' and coalesce(s.section_id,s2.section_id,null) is not null;
-
 
 --from dev
 --the company's attributes
@@ -251,7 +241,7 @@ insert into custom.biomedgps_section (section_id, parent_id, section_nm, solr_to
 select 'GAP_ANALYSIS_L4_' + cast(a.id as varchar), 'GAP_ANALYSIS_L3_' + cast(a.market_id as varchar), a.name, 
 a.name, a.sort_order,current_timestamp 
 from biomedgps.gap_analysis_gasection a 
-inner join biomedgps.gap_analysis_gamarket b on a.market_id=b.id;
+inner join biomedgps.gap_analysis_gamarket b on a.market_id=b.id
 where a.id != 2; --2 is a duplicate (and empty) 'Clavicle' entry
 
 
@@ -339,6 +329,164 @@ current_timestamp from biomedgps.gap_analysis_gacolumn_technologies;
 
 
 
+
+-- accounts
+
+
+--select * from core.state where country_cd='GB' order by state_nm
+--select * from biomedgps.profiles_account where len(state)>5;
+
+--update bad country values
+update biomedgps.profiles_account set country='US' where country in ('Unitednnnn States','United States','United States of America','USA');
+update biomedgps.profiles_account set country='IS' where country='Iceland';
+update biomedgps.profiles_account set country='GB' where country='United Kingdom';
+update biomedgps.profiles_account set country='DK' where country='Denmark';
+update biomedgps.profiles_account set country='IT' where country='Italy';
+update biomedgps.profiles_account set country='SE' where country='Sweden';
+update biomedgps.profiles_account set country='DE' where country='Germany ' or country='Germany';
+update biomedgps.profiles_account set country='FR' where country='France';
+
+-- update bad state values
+UPDATE biomedgps.profiles_account SET state = b.state_cd 
+FROM core.state b WHERE b.country_cd=biomedgps.profiles_account.country and b.state_nm=biomedgps.profiles_account.state;
+UPDATE biomedgps.profiles_account SET state='MA' where state in ('Massachusettes','Massachsettes');
+UPDATE biomedgps.profiles_account SET state='CA' where state='California';
+UPDATE biomedgps.profiles_account SET state='LV' where state='Berkshire' and country='GB';
+
+-- insert accounts
+insert into custom.biomedgps_account (account_id, company_id, account_nm, start_dt, expiration_dt, 
+owner_profile_id, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, status_no, create_dt, update_dt)
+select id, company_id, name, coalesce(start_date, '2000-01-01 00:00:00'), expiration, 
+account_manager_id, address1, address2, city, state, zip_code, country,upper(status),
+CURRENT_TIMESTAMP,modification_timestamp from biomedgps.profiles_account;
+
+--delete bogus accounts from the source tables
+delete from biomedgps.profiles_user where username in ('exp_abigail.freigang','X47XXXabridges@upperoptions.com','X6XXXabridges@upperoptions.com','expbVM_exp_acornell@its.jnj.coexp',
+'acornell@its.jnj.comexp','exp_acornell@its.jnj.comexp','exp_ada.au','exp_adenti1@its.jnj.com37exp','adenti1@its.jnj.comexp',
+'exp_AGangul2@ITS.JNJ.comexp','exp_agangul2@its.jnj.com38exp','X80Xajford@medline.com','alexander.skinner',
+'exp_alexander.skinner@kci1.com','X22Xalexander.skinner@kci1.com','exp_alex.drigan@ferring.com',
+'exp_andrea.cardenas@kci1.com95','exp_andrea.sheehan@arthrex','exp_andrea.sheehan@arthrex.com','exp_andrea.sheehan',
+'exp_aura@biomedgps.com70','aura@biomedgps.com','X48XXawest@carmellrx.com','X86XXawest@carmellrx.com',
+'exp_awohl@rtix.com','exp_bb@cap-partner.eu','exp_bcarlson@orthosensor.com','Becky.Rutland@Arthrex.com','exp_becky.rutland@arthrex.com6',
+'exp_ben.burnham@stryker.com','exp_bernard.difrancesco78','exp_bernard.difrancesco','exp_bnichols@nuvasive.com72',
+'exp_bnichols@nuvasive.com','exp_Bob.Mcnamara','expVYE_exp_bobmcnamara@ldrspin','exp_bobmcnamara@ldrspine.com',
+'X97XXXbobp@dfineinc.com','X85XBobp@dfineinc.com','exp_bordeaux.jean@','exp_bordeaux.jean','X80XXXbrandon.henry@rbccm.com',
+'X30XBrandon.Roller@Arthrex.com','X40XBrandon.Roller@Arthrex.com','X58XBrandon.Roller@Arthrex.com','exp_brian.mckinnon',
+'X46Xbrian.reed@aesculap.com','X71Xbrian.reed@aesculap.com','exp_burgess.ian','exp_burgess.ian@synthes.com','exp_bethwalters',
+'exphAU_exp_bwolfenson@dermasci','exp_bwolfenson@dermasciences.c','exp_caker1@its.jnj.com73exp','exp_caker181',
+'cathleen@biomedgps.com89','X47XXEXPcblakely@rtix.com','exp_cclupper@its.jnj.comexp','exp_cclupper','X60Xceckh42169@aol.com',
+'X93Xceckh42169@aol.com','X2XXXceckh42169@aol.com','exp_cgumera','X79XXXEXPcgumera@wlgore.com','exp_charliegilbride@ldrspine.c',
+'exp_Chelsea.boyte@acumed.net','exp_ex_trchris.chapman@exac.co','X74XXXchris.chapman@exac.com','exp_chris@mahan9group.com',
+'exp_ex_trchris.nader@aesculap.','exp_chrispangman@orthofix.com','exp_chrisv','X57XXXEXPchris.valois@zimmer.com','X34Xchuck.williams@medtronic.com',
+'exp_ex_trchuck.williams@medtro','X94Xcindy.obrecht@arthrex.com','exp_cindy.obrecht@arthrex.com','X23Xcjennewine@alphatecspine.com','X46Xcjennewine@alphatecspine.com','exp_ex_trckoren@innovationmedi',
+'X60XXXckoren@innovationmedical.com','exp_ex_trckuliga@spinewave.com','X85Xckuliga@spinewave.com','exp_clareen.steve','exp_clareen.steve@synthes.com','exp_clloegering1@mmm.com','exp_ex_trcluetto@meridian-med.','X53Xcluetto@meridian-med.com','exp_CODell','X62XXXEXPCodell@organo.com','exp_coffman.katherine@synthes.','exp_craig.kennedy@systagenix.c',
+'exp_ex_trexpwyT_exp_craig.kenn','exp_ex_trcritter@misonix.com','X79XXXcritter@misonix.com','exp_cwagne17','exp_cwagne17@dpyus.jnj.comexp',
+'exp_ex_trdan.hann@biomet.com','X96Xdan.hann@biomet.com','exp_ex_trdanielle.petrow@aptar','X19XXXdanielle.petrow@aptar.com','exp_daniel.ludwig','exp_Daniel.Ludwig@stryker.com',
+'X41Xdan.williamson@biomet.com','X76Xdan.williamson@biomet.com','exp_david.evans@smith-nephew.c','X34XXXdavid.mekeel@smith-nephew.com','exp_David.Nolan@zimmer.com','exp_ex_trdavis','X10Xdavis@activelifescientific','exp_dbanks@orthohelix.com','exp_ex_trexpQgH_exp_dbanks@ort','exp_dbeaubien@mmm.com',
+'exp_dcoppes@its.jnj.comexp','exp_ddemski@globusmedical.com','exp_ex_trddemski@globusmedical','exp_dducharme@orthohelix.com','exp_dducharme@orthohelix.com70','exp_ex_trexp8A6_exp_dducharme@','X42Xdducharme@orthohelix.com','exp_ddufour','X63Xdedgar3@its.jnj.com','exp_Devan.Ball@zimmer.com19','X89XXdidier.t@nlt-spine.com','exp_ex_trdineen.zimmer@bbraun.','exp_dineen.zimmer@bbraun.com','X42Xdkuyper@alphatecspine.com','X48Xdkuyper@alphatecspine.com','exp_deniseluciano',
+'exp_d.mills@dallenmedical.com2','exp_d.mills@dallenmedical.com','X83Xdonna.moats@smith-nephew.com','exp_ex_trdschmierer@osteomed.c','exp_dstoller','exp_dstoller@its.jnj.comexp','exp_ex_trdwhite@allosource.org','exp_dwhite@allosource.org63','exp_dwhite@allosource.org',
+'exp_ex_treanapliotis@merete.de','exp_eanapliotis@merete.de70','exp_eileendunne','exp_efender','X41XEXPefender@vertiflexspine.com','exp_ex_trexpVWw_exp_elaine.f.s','exp_elaine.f.sebak@medtronic.c','exp_elin.almegren','exp_ex_tremccloy@accutektestin','X44Xemccloy@accutektesting.com','X78XEric.Dremel@amportho.com','X73Xeric.goslau@l5partners.com','X21XXXeric.goslau@L5partners.com','X97Xfrhaley@mmm.com','exp_ex_trgary.l.green@medtroni','X56XXXgary.l.green@medtronic.com','exp_gates.juston@synthes.com','expunL_exp_gates.juston@synthe','exp_ex_trinfo@barrx.com','exp_ex_trgbarrett@barrx.com','exp_ex_trexpM4j_exp_gdericks@e','exp_gdericks@eesus.jnj.comexp','X58XXXgeorge_oram@mtf.org','exp_glen.sokaloski','exp_glen.sokaloski@ferring.com','X82XXXgorkem@medistgroup.com','exp_grobinson@kirchnergroup.co','X82XHartmansg@aol.com','X85XHartmansg@aol.com','X58Xhdavies@greatbatchmedical.com','exp_ex_trhdavies@greatbatchmed','exp_hearn.jim@synthes.com','exp_hearn.jim','X59XXhollytshaw@gmail.com','exp_ex_trhollytshaw@gmail.com','X36Xh.oonishi@teijin.co.jp','X81XXh.oonishi@teijin.co.jp','exp_htang2','exp_htang','exp_htang2@its.jnj.com73exp','exp_ian.dawson','exp_ian.dawson@smith-nephew.co','exp_ilka.bijoux','exp_isira@mmm.com','exp_ex_trexpRnn_exp_isira@mmm.','exp_ex_trjacob.haskins@exac.co','X80XXXjacob.haskins@exac.com',
+'X36XXXjamey.rottman@zimmer.com','exp_jason.fowler','exp_jay.sachnoff','exp_jay.sachnoff@ferring.com','X64Xjbapst@k2m.com','jbonitat@its.jnj.comexp','exp_jbonitat@its.jnj.comexp','exp_ex_trjburgessts@gmail.com','exp_jburgessts@gmail.com20','exp_jcash@dpyus.jnj.comexp','exp_jcash@dpyus.jnjexp','exp_jdgordon@orthosensor.com92','X53Xjdl@riverstreetmgt.com','X13Xjdl@riverstreetmgt.com65','exp_ex_trjdl@riverstreetmgt.co','X61Xjean-marc.ferrier@graftys.com','X30Xjean-marc.ferrier@graftys.com','X0XXXjed.white@kenseynash.com','X17Xjed.white@kenseynash.com64','X5XXjeffrey.a.husak@medtronic.com','X84Xjeffrey.a.husak@medtronic.com','X23Xjeffrey.scifert@medtronic.com','exp_ex_trjeffrey.scifert@medtr','X45Xjeffrey.scifert@medtronic.com','X39Xjeff.stebbins@biomet.com','X9XXXjeff.stebbins@biomet.com','exp_jeff.stebbins@biomet.com26','exp_jeff.stebbins@biomet.com44','exp_jenn.davis','exp_jenn.davis@acumed.net','exp_jennifer.gotto@bbraun.com4','exp_jennifer.gotto@bbraun.com','exp_ex_trjennifer.grasso@biome','exp_ex_trjgannoe@extremitymedi','jgannoe@extremitymedical.com','jgiroux@pivotmedical.com35','exp_jgiroux@pivotmedical.com','X42Xjjohnson@amedica.com','exp_ex_trjoconnor@accelalox.co','X47Xjoconnor@accelalox.com','X45Xjoel.pickering@systagenix.com','exp_ex_trjoel.pickering@systag','exp_joeross@ldrspine.com','X16XXXjoeross@ldrspine.com','exp_john.broughton@medela.com','expagE_exp_john.broughton@mede','exp_ex_trjohn.gauger@coringrou','X41Xjohn.gauger@coringroup.com','X73Xjohn.gauger@coringroup.com','X75Xjohn.gotzon@aesculap.com','exp_ex_trjohn.gotzon@aesculap.','exp_ex_trjohn.love@aesculap.co','X95Xjohn.love@aesculap.com','X50XJohn.sparacio@smith-nephew.com','exp_john.sparacio@smith-nephew','expVRf_exp_john.sparacio@smith','exp_ex_trjohn@wintherix.com','X83Xjohn@wintherix.com','X55Xjong.lee@conformis.com','exp_ex_trjong.lee@conformis.co',
+'exp_ex_trjon.peacock@sonosite.','X56XXXjon.peacock@sonosite.com','exp_jonwerner@acell.com','expk9a_exp_joseph.pizzurro@exa','joseph.pizzurro@exac.com',
+'exp_ex_trjosh@3dmedicalconcept','X9Xjosh@3dmedicalconcepts.com','exp_ex_trjpetricek@biomimetics','X18XXXjpetricek@biomimetics.com','exp_jrgannon@shire.com','exp_jrgannon@shire.com19','exp_jenniferRichter','exp_jrichter','exp_jspurgeo@its.jnj.comexp','expgYq_exp_JSpurgeo@its.jnj.coexp','exp_janetstewart','exp_jstewart1@its.jnj.com8exp','exp_jeffreytolonen','exp_jeff.tolonen','X66Xjulian@pivotmedical.com','X44Xjulie@orthoworld.com','X97XXXjulie@orthoworld.com','X26XXXjulie@orthoworld.com','X45Xjulie.tracy@wmt.com','exp_julie.tracy@wmt.com','exp_justin.gjokaj','exp_justin.gjokaj@ferring.com','X21Xjwhite@wmt.com','exp_karl.erikson','X41XXXkathleendschaum@bellsouth.com','X37XXkathleendschaum@bellsouth.com','kaytie.brown@baxsurg.com','X38Xkdieselman@k2m.com','user9','demospine','exp_kevin@biomedgps.com','exp_kevin.bolduc@stryker.com','expVVu_exp_kevin.bolduc@stryke','user8','k.e.v.i.nhicks@gmail.com','updates','exp_kevinhicks@mac.com35','exp_kgallo','exp_kgallo1@its.jnj.comexp','exp_kim.parkins@stryker.com77','X22Xkirk.grayam@kci1.com','exp_kirk.grayam@kci1.com','exp_kkinna','expyg5_exp_kkinna','exp_kmcgrat1@dpyus.jnj.comexp','exp_kmcgrat1@dpyuscom','exp_kplancher@plancherortho.co','X14Xktune@tm-partners.com72','X74Xktune@tm-partners.com','exp_ex_trkurt_t_johnson@baxter','kurt_t_johnson@baxter.com','exp_kvalentine@nuvasive.com67','exp_lauren.jordan@ferring.com3','X17XXXLayton@parcelllabs.com',
+'exp_layton@parcelllabs.com','X29XXXlgarrett@rtix.com','X80XLindsey.Hall@arthrex.com','exp_Lindsey.Hall@arthrex.com','exp_lindsey.hall','exp_ex_trlisa-ann.underwood@kc','X58Xlisa-ann.underwood@kcc.com','X46Xlisa@biomedgps.com','exp_llapierre@gmail.com','exp_llehmull@its.jnj.comexp','exp_ex_trexpzwp_exp_llehmull@i','X58Xlora.fusco@medtronic.com',
+'exp_ex_trlora.fusco@medtronic.','X87Xlora.fusco@medtronic.com','exp_exp_louie.vogtjr@zimmer.co','X12XXXuser10','X51XXXbrent','X22XXXchris','X88XXXuser14','X86XXXuser15','X65XXXuser16','exp_podonnell','X24Xglennhealey','X36XXXsteve','X82XXXstevestaff','X75XXXroyogle','X65XXXJSchiaparelli@cinci.rr.c','X23XXXphilkuhn','X24XXXtlangenderfer','X4XXXjamesclagett','X23XXXtrainer1','X12XXXkevinRTI','X23XXXrcarew2747','X40XXXgeoffreyfournie','X98XXXgaryvivian','X40XXXtracy','expsX9_exp_chelsea.boyte@acume','X61XXXjames.lavan','X36XXXjandeaton1','X51XXXdemoall','X8XXXchrisprime','X27XXXtomkonopka','X45XXXjesushernandez','X70XXXgeorgeayd','X57XXXuser1','X47XXXuser2','X64XXXuser3','X93XXXdmatus','exp_Linda.Smyth','X0Xmichelle.lamory','X85XXXEXPStryker','X80XXXuser4','X92XXXuser5','X24XXXuser6','X21XXXjdrost','X60XXXadamhayden','exp_terri.kapur','X1XXXlanemajor','X50XXXjimbapst','X96XXXtsmith','X58XXXjbelleville','X1XXXjbamis','X30XXXbmorgan','X51XXXgregkowalczyk','X9XXXrob.brown@biomedgps.com','X89XXXnickcotton','X52XXXbartgaskins','XXjbowden@hmpcommunications.','X35XXXchrisolig','X88XXXjohngauger','X88XXXyesisevilla','X22XXXbrian','X9XXXcarriestout','X51XXXalanhomer','exp_ex_trwboren@biomet.com','X18XXXemmitt','X64XXXericjania1','X72XXXsolomonnotik','X25XXXtodd','X10Xtracy.martellotta','expysH_exp_gcorraro@spinewave.','X72XXXAAOS','X82XXXrichard.lanigan','X59Xashleyp','X59Xneil.wintebottom','X89XXXJIMPAP','X88XXXJeff.Jenkins@plantemoran','X58XXXkevi.','X91XXXTrung_Pham','X97XXXmari','X45XXXwilliamplovanic','X52XXXlanemajor1','X2XXXcurtyocam','X85XXXjohnbrunelle','X96XXXjuliegustafson','X22XXXnancy','X59XXXjsarosy','X51XXXdanielomahony','X59Xashley.wohl','X86XXXjaylawson','X94XXXtoddharrington','exp_X75XXXlindsey','X95XXXkarengyongyosi','X60XXXkristineilaria','X24XXXpaul','X82XXXtest2','X73XXXspineview','X38XXXtmcleer','X62XXXjohnsmith','exp_exp_bill.benavitz@arthrex.','X11XXXjillschiaparelli','X86XXXmary annprunier','exp2E9_exp_matthew.abernethy@b','X56XXXtommytriallast','expw6G_exp_verena.harms@bsnmed','exp_exp_Email1',
+'exp_pkrekel@eesus.jnj.comexp','exp7uz_exp_lindsay.ratterman@s','expjms_exp_yolanda.shepard@str','expq5E_exp_hwalthall@nutechmed','exp_exp_exp_lauren.venekas@str',
+'expNuU_exp_verena.harms@bsnmed','expDQV_exp_ack@implantec.ch','X59XXXdavidcossaboon','expTQ7_exp_sstanton@globusmedi','X2XXXtrialuser','expC4C_exp_kevin@biomedgps.com',
+'X1XXXgilpeterson','X8XXdwertzberger','X0XXXjandeaton','X97XXXstuharman','exp_Filippo.Secchi27','expCbV_exp_sstanton@globusmedi','X14XXlynn.tarkington','X87XXXnelsoncooke',
+'X76Xtheresa.hanisko','X70Xkirt.stephenson','X44XXXcelestebrooks','X60XXXjeannevirca','X67XXXlucievan de steeg','X35Xhitoshi.mizuno','X55XXXrobevans','X77XXXpatrickgray','X70Xhector.torres','X22XXXjimhart','X77XXXtimnash',
+'X3Xthien.doan@exac.com','X76XXXtom','X76XDIYAR.AMIN','X71Xjeffery.cole','X34Xrsmestad','X5Xfelix_pustilnik',
+'X22XXXderekharper','X29Xjeanpierre.desmarais','X78XXXdanmurray','X27XXXrebeccamildrew','X92XMiguelFranco',
+'X4Xlaura@noblescommunications.','X15XXXdaffyduck','exp_exp_Email','X2Xlaurie_lucarelli','X10Xtheresa.hanisko38',
+'X17Xrichard.lanigan39','X17Xsteven.sanderson','X36Xguenther','XXJayHouserXXX','X93Xsjcadotte','X20Xsjcadotte4',
+'X44Xdaniel.e.shoemaker','X97Xjamiemurdock','X58Xpamela','drew.josephson@arthrex.com','exp_Susan.paquette',
+'exp_ex_trmarcv@vbllc.com','X70Xmarcv@vbllc.com','exp_mark.nemec','exp_Mark.Nemec@stryker.com','expJwU_exp_markrichards@ldrspi',
+'exp_markrichards@ldrspine.com','exp_ex_trmatt.federico@bsnmedi','X54Xmatt.federico@bsnmedical.com',
+'X85Xmatt.federico@bsnmedical.com','exp_ex_trexppB4_exp_matthew.ab','exp_matthew.abernethy@biomet.c',
+'exp_ex_trmatthew.dodds@citi.co','X10Xmatthew.dodds@citi.com','X94Xmbutler@lifespine.com','exp_mcgill.logan@synthes.com92',
+'exp_ex_trmcouncil@medicalmetri','X54Xmcouncil@medicalmetrics.com','exp_mdeschne@gmail.com','exp_mdeschne@gmail.com32','exp_megan.larch@stryker.com54',
+'exp_melissa.troop@ferring.com','X84Xmembery@invibio.com','X71Xmfrancois@alphatecspine.com','X31XXXm.hall@biocrossroads.com','X41Xm.hall@biocrossroads.com','exp_ex_trm.hall@biocrossroads.',
+'exp_mhanes@dpyus.jnjexp','exp_mhanes@dpyus.jnj.comexp','exp_mhanzo@shire.com','exp_ex_trexpZzA_exp_mhanzo@shi','exp_michaelbaur@me.com','expkmm_exp_michaelbaur@me.com',
+'exp_michael.karnes@arthrex.com','Michael.Karnes@arthrex.com','exp_michael.karnes','X36Xmichael.szachta@zimmer.com','X12Xmichael.warman@mesoblast.c','exp_ex_trmichael.warman@mesobl',
+'michellegammon@orthofix.com','expcfz_exp_mike.hanlin@exac.co','Mike.hanlin@exac.com','X70Xmike.p.smith@me.com','X5Xmike.p.smith@me.com','X63Xmmusick@customspine.com',
+'exp_ex_trmmusick@customspine.c','exp_ex_trmrowe@imeconcepts.com','X36Xmrowe@imeconcepts.com','X50XXXMScanlo3@its.jnj.comexp','exp_mscanlo3@its.jnj.comexp','exp_ex_trmsherman@kenseynash.c',
+'X38Xmsherman@kenseynash.com','exp_mstead@steadmed.com','exp_mtalley@wmt.com','exp_ex_trmuschlg@ccf.org','X42XXmuschlg@ccf.org','nancy@picdexcellence.com',
+'exp_nicole.westin@stryker.com6','X93XXXnkdieselman@hotmail.com','X87Xnkdieselman@hotmail.com','exp_ex_trnness@allosource.org','exp_ex_troded.eshel@exac.com','X30Xoded.eshel@exac.com',
+'exp_paulbryant','exp_Paul','X3XXXsue','exp_paul.maccini@ferring.com','X50Xpernilla@woodwelding.com','X96Xpernilla@woodwelding.com','exp_peter.denove@arthrex.com25','Peter.Denove@Arthrex.com','X9XPeter.Denove@arthrex.com','exp_peter.denove','exp_peter.vansyckle98','exp_phil','X24Xphilkuhn@orthofix.com','exp_Phil@Mundymed.com41','exp_Phil@Mundymed.com52','exp_Phil@Mundymed.com','X96Xp.lempereur@spineguard.com','X50Xp.lempereur@spineguard.com','exp_pmcnees@kirchnergroup.com','exp_pmenon','exp_ex_trexpGfX_exp_pmiles@nuv','exp_ex_trpreynolds@spinewave.c','exp_preynolds@spinewave.com66','exp_ptodonnell@comcast.net','exp_ptodonnell','exp_qblackford@nuvasive.com83','exp_qblackford@nuvasive.com24','exp_randy.sessler','raylinovitz@orthofix.com','exp_ex_trrgreiber@lifespine.co','X55Xrgreiber@lifespine.com','X15XXXRhershman@mac.com','X21XXXRhershman@mac.com','exp_randyh','rick.andrews@exac.com','exp_rick.andrews@exac.com','exp_rick.swaim@wright.com','rj.choinski@arthrex.com','exp_rj.choinski@arthrex.com','exp_rj.choinski','expKEu_exp_rkilburn@dpyus.jnj.exp','exp_rkilburn@dpyus.jnj.comexp','X70Xrobyn.whalen@molnlycke.com','X50Xrodger.fedigan@osseon.com','exp_ex_trrodger.fedigan@osseon','X77Xrodney.lanctot@medtronic.com','exp_ex_trrodney.lanctot@medtro','exp_ronald_vitales@baxter.com','X78XXXrose.vella@ppdi.com','exp_ex_trrose.vella@ppdi.com','exp_ex_trrpowers@nuvasive.com','X57Xrpowers@nuvasive.com','exp_ex_trrrusso@endomedix.com','X42Xrrusso@endomedix.com','expTBZ_exp_rsavage@mimedx.com','exp_RSinha','X2XXrsinha@organo.com','rspencer@mimedx.com','exp_rspencer@mimedx.com','exp_russ.a.johnson','exp_ryan.marshall@arthrex.com5','Ryan.Marshall@arthrex.com','exp_Sabrina.McDaniell@aesculap','X56Xsahin_soysal@yahoo.com',
+'X42Xsahin_soysal@yahoo.com','exp_sascha.haas@de.lrmed.com','expCe4_exp_sascha.haas@de.lrme','exp_chrisscholl','X11Xsdoyle@etexcorp.com54','X89Xsdoyle@etexcorp.com','exp_sdthomas@mmm.com','exp_ex_trexpJUP_exp_sdthomas@m','X61Xsdthomas@mmm.com','X53Xsean.luland@integralife.com','X16Xsergiof@webmpt.com','exp_ex_trsergiof@webmpt.com','X39Xsfox@deroyal.com','exp_ex_trsfox@deroyal.com','X16Xshah@domainvc.com','exp_ex_trshah@domainvc.com','exp_shannon.cummings@wmt.com','exp_shawn.kroll@stryker.com','exp_sheldon.matt@synthes.com','exp_sheldon.matt','X88Xshon.steger@biomet.com','X11Xshon.steger@biomet.com32','exp_ex_trshon.steger@biomet.co','exp_ex_trshuiwong@sbcglobal.ne','X85Xshuiwong@sbcglobal.net','exp_shung','expLxu_exp_shung','exp_singhatat.wamis','exp_singhatat.wamis@synthes.co','exp_siravo.mark','exp_siravo.mark@synthes.com','exp_SLynch','X12XEXPslynch@vertiflexspine.c','exp_ex_trsnair@affinergy.com','X53Xsnair@affinergy.com','X1XXXsoeds@soelim.com','X67Xsoeds@soelim.com','X45Xsoeds@soelim.com','X68Xsoeds@soelim.com','X47XSpinegent@comcast.net','X80XSpinegent@comcast.net','exp_randyryan1','X80XXXsryan004@comcast.net','X63Xssevick@yahoo.com','exp_ex_trexpdKu_exp_sstanton@g','exp_sstanton@globusmedical.com','expUya_exp_sstanton@globusmedi','exp_stephen_czick@baxter.com',
+'exp_ex_trstephenfloe@yahoo.com','X22XXstephenfloe@yahoo.com','exp_steve.atlay','X12XXXsteve.buldiger@biomet.co','exp_ex_trsteve.buldiger@biomet','steve.szabo@exac.com','exp_ex_trsteve.szabo@exac.com','X79Xsusan.a.sexton@medtronic.com','X95Xsusan.a.sexton@medtronic.com',
+'exp_susan@biomedgps.com','X38Xsusan@spinalmodulation.com','X96Xsusan@spinalmodulation.com','exp_ex_trsylvias@vilex.com','X30XXXsylvias@vilex.com','X79Xtalleman@deroyal.com','X50Xtalleman@deroyal.com','exp_ex_trtcahill@tornier.com','X62Xtcahill@tornier.com','exp_tczartos@dpyus.jnj.comexp',
+'exp_tczartos','exp_terri_riley@mtf.org','X35XXXterri_riley@mtf.org','expYR3_exp_tflynn2@dpyus.jnj.cexp','exp_tflynn2@dpyus.jnj.comexp','exp_tforney@dpyus.jnj.comexp',
+'expp6G_exp_tforney@dpyus.jnj.cexp','exp_ex_trtfournier@neurotherm.','X80XXXtfournier@neurotherm.com','X9XXtgarcia@makosurgical.com','exp_ex_trtgarcia@makosurgical.','exp_mini','X64Xthomas.hur@aesculap.com',
+'exp_ex_trthomas.hur@aesculap.c','X95Xtimothy.davidson@genzyme.com','exp_ex_trtimothy.davidson@genz','X12Xtliska@alphatecspine.com82','X28Xtliska@alphatecspine.com','X55Xtliska@alphatecspine.com','X92Xtliska@alphatecspine.com','exp_todd.earhart@arthrex.com',
+'exp_todd.earhart','X39XXXtroueche@biosetinc.com','exp_ttucker@mimedx.com','exp_tyler.palmer','expkgN_exp_tyler.palmer','exp_ulrike.bitzer@hartmann.inf','X55Xverena.harms@bsnmedical.com','exp_verena.harms@bsnmedical.co','X74XXXverena.harms@bsnmedical.com',
+'exp_victoria.ball@hollister.co','exp_wehrli.miriam','exp_wehrli.miriam@synthes.com','X41XXXwgitt@k2m.com','X51Xwgitt@k2m.com','X13Xwgitt@k2m.com49','X21Xwona.smith@olympusbiotech.com',
+'exp_ylisda@its.jnj.comexp','exp_ylisda@its.jnj.com18exp','exp_ex_trymonovoukas@teibio.co','exp_elmarzubriggen','X50XXXstephanseiler','X67XXXianellis','X65XXXalanhorner','X6XXXnickpsaltos');
+
+
+--load user records -- Java process
+get details from Dave.
+
+select * from custom.biomedgps_account;
+-- replace owner_profile_id with a valid PROFILE_ID
+/* replaced below
+UPDATE custom.biomedgps_account SET owner_profile_id = b.wc_profile_id 
+from biomedgps.profiles_user b
+WHERE b.id=cast(custom.biomedgps_account.owner_profile_id as int);
+*/
+-- replace owner_profile_id with a valid PROFILE_ID
+UPDATE custom.biomedgps_account SET owner_profile_id = b.profile_id 
+from custom.biomedgps_user b
+WHERE b.user_id=custom.biomedgps_account.owner_profile_id;
+
+--IMPORTANT, run these in order! - set type & status by separating their single status column 
+update custom.biomedgps_account set type_id=1,status_no='A' where upper(status_no)='A'; --active
+update custom.biomedgps_account set type_id=2,status_no='A' where upper(status_no)='S'; --staff
+update custom.biomedgps_account set type_id=3,status_no='A' where upper(status_no)='T'; --trial
+update custom.biomedgps_account set type_id=4,status_no='A' where upper(status_no)='U'; --updates
+
+/** Dave's script runs the user table population 100%
+
+-- insert the users
+insert into custom.biomedgps_user (user_id, profile_id, account_id, status_cd, expiration_dt, create_dt)
+select id,wc_profile_id, account_id, upper(status), expiration, date_joined 
+from biomedgps.profiles_user where wc_profile_id is not null;
+
+-- update user fields missed by the Java import - run this instead of the above insert
+update custom.biomedgps_user
+set account_id=b.account_id, expiration_dt=b.expiration
+from biomedgps.profiles_user b where custom.biomedgps_user.profile_id=b.wc_profile_id;
+
+-- promote status=Staff to role=Staff
+update profile_role a set role_id='3eef678eb39e87277f000101dfd4f140'
+from custom.biomedgps_user b 
+where a.profile_id=b.profile_id and a.site_id='BMG_SMARTTRAK_1' and b.status_cd='S';
+
+*/
+
+-- insert the teams
+insert into custom.biomedgps_team (team_id, account_id, team_nm, default_flg, private_flg, create_dt)
+select id,account_id, name, 0, is_private, current_timestamp from biomedgps.profiles_team where account_id is not null;
+
+-- set default teams within the accounts
+update custom.biomedgps_team set default_flg=1 from biomedgps.profiles_account b
+where cast(b.default_team_id as varchar)=custom.biomedgps_team.team_id and custom.biomedgps_team.account_id=cast(b.id as varchar);
+
+--purge orphan team member records
+delete from biomedgps.profiles_team_users where user_id not in (select id from biomedgps.profiles_user);
+
+-- insert team members
+insert into custom.biomedgps_user_team_xr (user_team_xr_id, team_id, user_id, create_dt)
+select a.id,team_id, a.user_id, CURRENT_TIMESTAMP from biomedgps.profiles_team_users a 
+	inner join biomedgps.profiles_team b on a.team_id=b.id and b.account_id is not null
+	inner join custom.biomedgps_user c on cast(a.user_id as varchar)=c.user_id;
+
+-- flag account owners
+update custom.biomedgps_user a set acct_owner_flg=1
+from biomedgps.profiles_user_user_permissions b where permission_id=600 and a.user_id=cast(b.user_id as varchar);
+
+
+
 -- financial dashboard
 
 
@@ -418,10 +566,15 @@ select id,region,content,expiration,CURRENT_TIMESTAMP,'MASTER_'+cast(source_node
 object_id from biomedgps.financials_revenuenote where length(trim(content)) > 0 
 and content_type_id=8 and content not like '%test%'; --ignoring content_type_id=143, node bindings.  Seemingly deprecated.
 
---insert FD scenarios
+--insert FD scenarios for teams
 insert into custom.biomedgps_fd_scenario (scenario_id, user_id, team_id, scenario_nm, status_flg, refresh_dt, create_dt, update_dt)
 select id, owner_id, team_id, name, upper(status), last_refresh, current_timestamp, last_changed  from biomedgps.financials_revenueoverlay
 where cast(team_id as varchar) in (select team_id from custom.biomedgps_team);
+
+--insert FD scenarios for users (private)
+insert into custom.biomedgps_fd_scenario (scenario_id, user_id, team_id, scenario_nm, status_flg, refresh_dt, create_dt, update_dt)
+select id, owner_id, null, name, upper(status), last_refresh, current_timestamp, last_changed  from biomedgps.financials_revenueoverlay
+where cast(owner_id as varchar) in (select user_id from custom.biomedgps_user) and team_id=1; --1=no team
 
 --2012 FD scenario overlay data
 insert into custom.biomedgps_fd_scenario_overlay (overlay_id, company_id, scenario_id, 
@@ -497,108 +650,20 @@ and cast(overlay_id as varchar) in (select scenario_id from custom.biomedgps_fd_
 
 
 --delete rows for Mechanical Thrombectomy - per Mike - data was all zeros - 18 records as of 3/10/17
-delete from custom.biomedgps_fd_revenue where section_id = 'MASTER_35023';
+--per Skype note on 3/27, do not delete these 18 records anymore.  They no longer contain all zeros in the legacy data.
+--delete from custom.biomedgps_fd_revenue where section_id = 'MASTER_35023';
 
 
--- links 
-
--- link types
-insert into custom.biomedgps_link_type (link_type_id, name_txt, order_no, create_dt)
-select id,linktype, default_order,current_timestamp from biomedgps.links_linktype;
-
---company links
-insert into custom.biomedgps_link (link_id, link_type_id, company_id, name_txt, url_txt, 
-archive_flg, check_dt, check_status_no, create_dt) select id, linktype_id, object_id, 
-description, url, case when is_archived = 1 then 1 else null end, last_check,  case when broken='true' 
-then 404 else 200 end, current_timestamp from biomedgps.links_link where content_type_id=8;
-
-
-
-
--- accounts
-
-
---select * from core.state where country_cd='GB' order by state_nm
---select * from biomedgps.profiles_account where len(state)>5;
-
---update bad country values
-update biomedgps.profiles_account set country='US' where country in ('United States','United States of America','USA');
-update biomedgps.profiles_account set country='IS' where country='Iceland';
-update biomedgps.profiles_account set country='GB' where country='United Kingdom';
-update biomedgps.profiles_account set country='DK' where country='Denmark';
-update biomedgps.profiles_account set country='IT' where country='Italy';
-update biomedgps.profiles_account set country='SE' where country='Sweden';
-update biomedgps.profiles_account set country='DE' where country='Germany ' or country='Germany';
-update biomedgps.profiles_account set country='FR' where country='France';
-
--- update bad state values
-UPDATE biomedgps.profiles_account SET state = b.state_cd 
-FROM core.state b WHERE b.country_cd=biomedgps.profiles_account.country and b.state_nm=biomedgps.profiles_account.state;
-UPDATE biomedgps.profiles_account SET state='MA' where state in ('Massachusettes','Massachsettes');
-UPDATE biomedgps.profiles_account SET state='CA' where state='California';
-UPDATE biomedgps.profiles_account SET state='LV' where state='Berkshire' and country='GB';
-
--- insert accounts
-insert into custom.biomedgps_account (account_id, company_id, account_nm, start_dt, expiration_dt, 
-owner_profile_id, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, status_no, create_dt, update_dt)
-select id, company_id, name, coalesce(start_date, '2000-01-01 00:00:00'), expiration, 
-account_manager_id, address1, address2, city, state, zip_code, country,upper(status),
-CURRENT_TIMESTAMP,modification_timestamp from biomedgps.profiles_account;
-
-
---load user records -- Java process
-get details from Dave.
-
-
--- replace owner_profile_id with a valid PROFILE_ID
-UPDATE custom.biomedgps_account SET owner_profile_id = b.wc_profile_id 
-from biomedgps.profiles_user b
-WHERE b.id=cast(custom.biomedgps_account.owner_profile_id as int);
-
---IMPORTANT, run these in order! - set type & status by separating their single status column 
-update custom.biomedgps_account set type_id=1,status_no='A' where upper(status_no)='A'; --active
-update custom.biomedgps_account set type_id=2,status_no='A' where upper(status_no)='S'; --staff
-update custom.biomedgps_account set type_id=3,status_no='A' where upper(status_no)='T'; --trial
-update custom.biomedgps_account set type_id=4,status_no='A' where upper(status_no)='U'; --updates
-
-/** Dave's script runs the user table population 100%
-
--- insert the users
-insert into custom.biomedgps_user (user_id, profile_id, account_id, status_cd, expiration_dt, create_dt)
-select id,wc_profile_id, account_id, upper(status), expiration, date_joined 
-from biomedgps.profiles_user where wc_profile_id is not null;
-
--- update user fields missed by the Java import - run this instead of the above insert
-update custom.biomedgps_user
-set account_id=b.account_id, expiration_dt=b.expiration
-from biomedgps.profiles_user b where custom.biomedgps_user.profile_id=b.wc_profile_id;
-
-*/
-
--- promote status=Staff to role=Staff
-update profile_role a set role_id='3eef678eb39e87277f000101dfd4f140'
-from custom.biomedgps_user b 
-where a.profile_id=b.profile_id and a.site_id='BMG_SMARTTRAK_1' and b.status_cd='S';
-
--- change status=Staff to status=Active
-update custom.biomedgps_user set status_cd='A' where status_cd='S';
-
--- insert the teams
-insert into custom.biomedgps_team (team_id, account_id, team_nm, default_flg, private_flg, create_dt)
-select id,account_id, name, 0, is_private, current_timestamp from biomedgps.profiles_team where account_id is not null;
-
--- set default teams within the accounts
-update custom.biomedgps_team set default_flg=1 from biomedgps.profiles_account b
-where cast(b.default_team_id as varchar)=custom.biomedgps_team.team_id and custom.biomedgps_team.account_id=cast(b.id as varchar);
-
---purge orphan team member records
-delete from biomedgps.profiles_team_users where user_id not in (select id from biomedgps.profiles_user);
-
--- insert team members
-insert into custom.biomedgps_user_team_xr (user_team_xr_id, team_id, user_id, create_dt)
-select a.id,team_id, user_id, CURRENT_TIMESTAMP from biomedgps.profiles_team_users a 
-	inner join biomedgps.profiles_team b on a.team_id=b.id and b.account_id is not null;
-
+-- company_section_xr -- note the 'null' condition here excludes one record, the "Market (Training)" company has an orphan section.
+insert into custom.biomedgps_company_section (company_section_xr_id, section_id, company_id, create_dt)
+select replace(newid(),'-',''),coalesce(s.section_id,s2.section_id), f.company_id, current_timestamp
+from biomedgps.articles_market a
+inner join biomedgps.articles_segment b on a.id=b.market_id 
+inner join biomedgps.articles_subsegment c on c.segment_id=b.id
+inner join biomedgps.vcompany_subsegment f on f.subsegment_id=c.id
+left join custom.biomedgps_section s on c.name=s.section_nm and s.section_id like '%MASTER%'
+left join custom.biomedgps_section s2 on b.name=s2.section_nm and s2.section_id like '%MASTER%'
+where  c.visible='true' and coalesce(s.section_id,s2.section_id,null) is not null;
 
 
 -- notes
@@ -607,7 +672,8 @@ select a.id,team_id, user_id, CURRENT_TIMESTAMP from biomedgps.profiles_team_use
 --company notes - for teams we imported
 insert into custom.biomedgps_note (note_id, user_id, team_id, note_nm, note_txt, file_path_txt, expiration_dt, create_dt, update_dt, company_id)
 select id, creator_id, team_id, title, content, attachment, expiration, create_date, last_update, object_id from biomedgps.notes_note
-where content_type_id=8 and cast(team_id as varchar) in (select team_id from custom.biomedgps_team);
+where content_type_id=8 and cast(team_id as varchar) in (select team_id from custom.biomedgps_team)
+and cast(creator_id as varchar) in (select user_id from custom.biomedgps_user);
 
 -- company attribute notes - for teams we imported - tie the companyId & attributeId
 insert into custom.biomedgps_note (note_id, user_id, team_id, note_nm, note_txt, file_path_txt, 
@@ -672,7 +738,7 @@ and cast(partner_id as varchar) in (select company_id from custom.biomedgps_comp
 --insert top level product attributes, which feed the left column & Product Explorer
 insert into custom.biomedgps_product_attribute 
 (attribute_id, parent_id, attribute_nm, active_flg, type_cd, order_no, create_dt) values
-('LINK',null,'Link',1,'LINK',1,current_timestamp),
+('LVL1_LINK',null,'Link',1,'LINK',1,current_timestamp),
 ('GRAPH',null,'Graphic',1,'GRAPH',2,current_timestamp),
 ('DETAILS_ROOT',null,'Product Details',1,null,5,current_timestamp),
 ('INDICATION','DETAILS_ROOT','Indication',1,null,8,current_timestamp),
@@ -889,7 +955,8 @@ where cast(moduleset_id as varchar) in (select moduleset_id from custom.biomedgp
 --product notes - for teams we imported
 insert into custom.biomedgps_note (note_id, user_id, team_id, note_nm, note_txt, file_path_txt, expiration_dt, create_dt, update_dt, product_id)
 select id, creator_id, team_id, title, content, attachment, expiration, create_date, last_update, object_id from biomedgps.notes_note
-where content_type_id=16 and cast(team_id as varchar) in (select team_id from custom.biomedgps_team);
+where content_type_id=16 and cast(team_id as varchar) in (select team_id from custom.biomedgps_team)
+and cast(creator_id as varchar) in (select user_id from custom.biomedgps_user);
 
 -- product attribute notes - for teams we imported - tie the productId & attributeId
 select n.id, n.creator_id, n.team_id, n.title, n.content, n.attachment, n.expiration, n.create_date, 
@@ -911,7 +978,8 @@ delete from notestemp where ctid not in (select min(ctid) from notestemp group b
 insert into custom.biomedgps_note (note_id, user_id, team_id, note_nm, note_txt, file_path_txt, 
 expiration_dt, create_dt, update_dt, product_id, attribute_id)
 select id, creator_id, team_id, title, content, attachment, expiration, create_date, 
-last_update,object_id, attribute_id from notestemp;
+last_update,object_id, attribute_id from notestemp where cast(creator_id as varchar) in (select user_id from custom.biomedgps_user);
+
 
 --drop the notes temp table.
 drop table notestemp;
@@ -936,6 +1004,11 @@ select id, path, current_timestamp from biomedgps.products_path;
 --product regulatory status
 insert into custom.biomedgps_regulatory_status (status_id, status_nm, create_dt)
 select id, status, current_timestamp from biomedgps.products_milestonestatus;
+
+update custom.biomedgps_regulatory_status set STATUS_TXT='DISCONTINUED' where status_id in ('10','21','2','42');
+update custom.biomedgps_regulatory_status set STATUS_TXT='APPROVED' where status_id in ('9','12','13','14','43');
+update custom.biomedgps_regulatory_status set STATUS_TXT='IN_DEVELOPMENT' 
+	where status_id in ('5','6','7','8','11','15','17','18','22','23','24','25','27','28','29','30','31','32','33','34','35','36','37','40');
 
 --product regulatory region
 insert into custom.biomedgps_regulatory_region (region_id, region_nm, create_dt)
@@ -986,8 +1059,41 @@ left join custom.biomedgps_section s2 on b.name=s2.section_nm and s2.section_id 
 where c.visible='true' and coalesce(s.section_id,s2.section_id,null) is not null
 and cast(f.marketreport_id as varchar) in (select market_id from custom.biomedgps_market);
 
---markets that require manual hierarchy placement (34)
-select * from custom.biomedgps_market a left outer join custom.biomedgps_market_section b on a.market_id=b.market_id where b.market_id is null;
+
+
+--- fix market->section bindings.  Mike created these manually:
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_10815','6559',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_18689','6529',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_278','479',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_353','6584',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_21221','6588',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_32111','6603',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_34268','6619',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_34268','6620',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_34419','6621',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_29347','6623',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_32259','6639',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_330','6570',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_318','6572',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_21405','6579',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_338','6581',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_326','6591',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_44830','6641',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_18689','6533',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_328','6540',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_289','6544',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_318','6574',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_338','6583',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_32259','6637',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_328','4136',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_338','6582',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_326','6590',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_21405','6599',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_32259','6604',CURRENT_TIMESTAMP);
+insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_37874','6629',CURRENT_TIMESTAMP);
+
+--report markets not tied to sections to Mike:
+select * from custom.biomedgps_market a left join custom.biomedgps_market_section b on a.market_id=b.market_id where b.market_id is null order by a.market_id;
 
 
 -- market attributes level 1 - from their market level
@@ -1108,7 +1214,7 @@ case when enable_tweet ='true' then 1 else 0 end, 'c0a802414bf056a746696d0df7dc0
 from biomedgps.updates_update where content_type_id=16 
 and (object_id is null or cast(object_id as varchar) in (select product_id from custom.biomedgps_product));
 
--- notes not attached to companies, products, or markets - bind to Kevin Hicks since we don't otherwise know who created them
+-- updates not attached to companies, products, or markets - bind to Kevin Hicks since we don't otherwise know who created them
 insert into custom.biomedgps_update 
 (update_id, title_txt, type_cd, message_txt, twitter_txt, publish_dt, status_cd, tweet_flg, creator_profile_id, create_dt)
 select id, subject, cast(update_type as int), display, tweet_message, date, upper(status), case when enable_tweet ='true' then 1 else 0 end, 'c0a802414bf056a746696d0df7dc039e', create_date
@@ -1123,6 +1229,18 @@ left join custom.biomedgps_section s on 'MASTER_'+cast(a.node_id as varchar)=s.s
 where cast(a.update_id as varchar) in (select update_id from custom.biomedgps_update);
 
 
+--update Update titles tied to companies having the company_nm in the title
+update custom.biomedgps_update 
+set title_txt=regexp_replace(title_txt,'^'+c.company_nm,'')
+from custom.biomedgps_company c
+where custom.biomedgps_update.company_id=c.company_id
+
+--update Update titles tied to products having the company_nm in the title
+update custom.biomedgps_update 
+set title_txt=regexp_replace(title_txt,'^'+c.company_nm,'')
+from custom.biomedgps_company c
+inner join custom.biomedgps_product d on d.company_id=c.company_id
+where custom.biomedgps_update.product_id=d.product_id;
 
 
 
@@ -1244,6 +1362,11 @@ from biomedgps.profiles_user_user_permissions b where cast(b.user_id as varchar)
 update custom.biomedgps_user as a set ga_auth_flg=1
 from biomedgps.profiles_user_user_permissions b where cast(b.user_id as varchar)=a.user_id and b.permission_id=596;
 
+--user Mkt flag
+update custom.biomedgps_user as a set mkt_auth_flg=1
+from biomedgps.profiles_user_user_permissions b where cast(b.user_id as varchar)=a.user_id and b.permission_id=642;
+
+
 --create a temporary table for L4 sections, so we don't have to hunt for them each time
 select section_id, section_nm into temporary l4sections from custom.biomedgps_section where parent_id in ( --4
 	select section_id from custom.biomedgps_section where parent_id in ( --3
@@ -1291,6 +1414,13 @@ and x.account_id=cast(a.account_id as varchar) and x.section_id=replace('MASTER_
 --cleanup
 drop table l4sections;
 delete from custom.biomedgps_account_acl where updates_no is null and browse_no is null and fd_no is null and ga_no is null;
+
+
+--grandfather in some test accounts to have market access - should be 18
+update custom.biomedgps_account 
+set mkt_auth_flg=1
+where account_nm in ('ACME','BioMedGPS, LLC','Byline Only','C. Blakely','Demo, LLC',
+'DemoAll','DemoSpine','DemoWound','Eric Jania','EU Demo','EU Tim Jeavons','Kathleen Schaum','Kevin''s Accounts','Neuro Markets','SmartTRAK-Complimentary','Steve Pinto','Thea Accounts');
 
 
 
@@ -1381,7 +1511,7 @@ where a.object_id is null and page_name like 'Financial %';
 
 --search visits
 insert into core.pageview_user (pageview_user_id, site_id, profile_id, session_id, page_id, request_uri_txt, query_str_txt, visit_dt, create_dt)
-select 'BMG_SMARTTRAK_'+cast(id as varchar), 'BMG_SMARTTRAK_1', b.profile_id, session, '8c3972d994743e800a0014215e515685','/search', 
+select 'BMG_SMARTTRAK_'+cast(id as varchar), 'BMG_SMARTTRAK_1', b.profile_id, session, '270d08c0adcfac1ec0a8024a750a1b36','/search', 
 'searchData=' + replace(page_name,'SmartSearch term = ',''),time_viewed, current_timestamp
 from biomedgps.favorites_breadcrumb a
 inner join custom.biomedgps_user b on cast(a.viewer_id as varchar)=b.user_id
@@ -1458,44 +1588,6 @@ left join PAGE p on p.PAGE_ID = pm.PAGE_ID
 where p.SITE_ID='BMG_SMARTTRAK_2' and pr1.page_module_role_id is not null and pr2.page_module_role_id is null;
 
 
-
---- fix market->section bindings.  Mike created these manually:
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_10815','6559',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_8374','6562',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_18689','6529',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_278','479',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_353','6584',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_21221','6588',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_32111','6603',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_34117','6614',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_34872','6615',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_34268','6619',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_34268','6620',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_34419','6621',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_29347','6623',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_32259','6639',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_8374','6564',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_330','6570',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_318','6572',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_21405','6579',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_338','6581',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_326','6591',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_44830','6641',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_18689','6533',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_328','6540',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_289','6544',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_318','6574',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_338','6583',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_32259','6637',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_328','4136',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_8374','6563',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_338','6582',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_326','6590',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_326','6592',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_21405','6599',CURRENT_TIMESTAMP);
-insert into custom.biomedgps_market_section (market_section_xr_id, section_id, market_id, create_dt) values (replace(newid(),'-',''),'MASTER_32259','6604',CURRENT_TIMESTAMP);
-
-
 -- company audit data
 insert into custom.biomedgps_audit_log (audit_log_id, company_id, auditor_profile_id, status_cd, start_dt, complete_dt, update_dt)
 select a.id, a.object_id, b.profile_id, upper(a.status), a.start_date, a.end_date,coalesce(a.end_date, a.start_date, current_timestamp) 
@@ -1507,14 +1599,550 @@ where a.content_type_id=8;
 select * from biomedgps.audit_audit where content_type_id != 8;
 
 
+--delete the VascularGPS section, hierarchically
+delete from custom.biomedgps_section where section_id='MASTER_34117';
+
+
+--REQ_FOR_SORTING alliances and alliance type:
+DELETE from custom.biomedgps_product_alliance_XR where alliance_type_id = 'PROD_6';
+DELETE from custom.biomedgps_alliance_type where alliance_type_id = 'PROD_6';
+
+--insert solr synonyms
+insert into core.solr_synonym (solr_synonym_id, solr_collection_id, left_term, synonym_list, index_flg, create_dt)
+select replace(newid(),'-',''),'SB_COLLECTION', null,phrase1+','+string_agg(phrase2,','),1,current_timestamp from biomedgps.search_synonym
+group by phrase1;
+
+--delete duplicate product attributes after flattening their hierarchcal structure
+delete from custom.biomedgps_product_attribute_xr a
+where a.ctid in (select min(ctid) from custom.biomedgps_product_attribute_xr b 
+	where length(title_txt) > 0 and length(value_txt)>0
+	group by product_id, title_txt, value_txt, create_dt having count(*) > 1);
+
+
+
+-- NOTE FILES --
+-- rename some linux files:
+mv users/timreed/OFIX_Non-deal_Road_ShowTake-aways_-_William_Plovanic_-_Canaccord_09082011.pdf users/timreed/Canaccord_09082011.pdf
+mv users/aura/CBS-2013-Summary-of-Findings-Costs-of-Importation-of-Musculoskeletal-Allografts-and-Acellular-Dermal-Matrix_1.pdf users/aura/Acellular-Dermal-Matrix_1.pdf
+mv users/aura/CBS-2013-Summary-of-Findings-Costs-of-Importation-of-Musculoskeletal-Allografts-and-Acellular-Dermal-Matrix_1_2.pdf users/aura/Acellular-Dermal-Matrix_1_2.pdf
+mv users/aura/CBS-2013-Summary-of-Findings-Costs-of-Importation-of-Musculoskeletal-Allografts-and-Acellular-Dermal-Matrix_1_1.pdf users/aura/Acellular-Dermal-Matrix_1_1.pdf
+mv users/user7/A-SmartTRAK_is_the_first_Business_Intelligence_Hub_for_the_life_science_industry_1.docx users/user7/life_science_industry_1.docx
+mv users/KRusnack@Organo.com/OAS-90DayGlobal-Release_D1R-Client-13JAN12_4_-_FINAL__APPROVED_FOR_DISTRIBUTION_25jan12.pdf users/KRusnack@Organo.com/FINAL__APPROVED_FOR_DISTRIBUTION_25jan12.pdf 
+
+-- flush values with no file extension.
+update custom.biomedgps_note set file_path_txt=null where strpos(file_path_txt,'.') < 1;
+--rename the files we moved (in linux) above
+update custom.biomedgps_note set file_path_txt=replace(file_path_txt,'OFIX_Non-deal_Road_ShowTake-aways_-_William_Plovanic_-_Canaccord_09082011.pdf','Canaccord_09082011.pdf') where file_path_txt like '%OFIX_Non-deal_Road_ShowTake-aways_-_William_Plovanic_-_Canaccord_09082011.pdf';
+update custom.biomedgps_note set file_path_txt=replace(file_path_txt,'CBS-2013-Summary-of-Findings-Costs-of-Importation-of-Musculoskeletal-Allografts-and-Acellular-Dermal-Matrix_1.pdf','Acellular-Dermal-Matrix_1.pdf') where file_path_txt like '%CBS-2013-Summary-of-Findings-Costs-of-Importation-of-Musculoskeletal-Allografts-and-Acellular-Dermal-Matrix_1.pdf';
+update custom.biomedgps_note set file_path_txt=replace(file_path_txt,'CBS-2013-Summary-of-Findings-Costs-of-Importation-of-Musculoskeletal-Allografts-and-Acellular-Dermal-Matrix_1_2.pdf','Acellular-Dermal-Matrix_1_2.pdf') where file_path_txt like '%CBS-2013-Summary-of-Findings-Costs-of-Importation-of-Musculoskeletal-Allografts-and-Acellular-Dermal-Matrix_1_2.pdf';
+update custom.biomedgps_note set file_path_txt=replace(file_path_txt,'CBS-2013-Summary-of-Findings-Costs-of-Importation-of-Musculoskeletal-Allografts-and-Acellular-Dermal-Matrix_1_1.pdf','Acellular-Dermal-Matrix_1_1.pdf') where file_path_txt like '%CBS-2013-Summary-of-Findings-Costs-of-Importation-of-Musculoskeletal-Allografts-and-Acellular-Dermal-Matrix_1_1.pdf';
+update custom.biomedgps_note set file_path_txt=replace(file_path_txt,'A-SmartTRAK_is_the_first_Business_Intelligence_Hub_for_the_life_science_industry_1.docx','life_science_industry_1.docx') where file_path_txt like '%A-SmartTRAK_is_the_first_Business_Intelligence_Hub_for_the_life_science_industry_1.docx';
+
+update custom.biomedgps_note set file_path_txt=replace(file_path_txt,'OAS-90DayGlobal-Release_D1R-Client-13JAN12_4_-_FINAL__APPROVED_FOR_DISTRIBUTION_25jan12.pdf','FINAL__APPROVED_FOR_DISTRIBUTION_25jan12.pdf') where file_path_txt like '%FINAL__APPROVED_FOR_DISTRIBUTION_25jan12.pdf';
+
+--check for lengths > 97 chars - if found, move the file ("mv") and run an above update query for it.
+select length(file_path_txt),file_path_txt from custom.biomedgps_note 
+where file_path_txt is not null and length(file_path_txt) > 97 order by length(file_path_txt) desc;
+
+
+--create a temp table with our separated file name and path
+create temporary table note_temp as select (regexp_split_to_array(file_path_txt,'/'))[array_upper((regexp_split_to_array(file_path_txt,'/')),1)] as file_nm, 
+(regexp_split_to_array(file_path_txt,'\.'))[array_upper((regexp_split_to_array(file_path_txt,'\.')),1)] as ext, * 
+from custom.biomedgps_note where file_path_txt is not null;
+
+--ensure we have all file types accounted for:
+select * from note_temp a left join file_type b on lower(a.ext)=b.file_type_cd where b.file_type_cd is null;
+
+-- insert the note files into profile_document's reponsitory, which is what serves them to the browser
+insert into profile_document (profile_document_id, action_id, feature_id, organization_id, profile_id, file_nm, file_type_cd, file_path_url, create_dt)
+select replace(newid(),'-',''),'86081535ab51f7afc0a8024a38334aaf',a.note_id,'BMG_SMARTTRAK',b.profile_id,
+replace(a.file_nm,'.'+ext,'')+'--'+a.file_nm, lower(ext), '/'+replace(a.file_path_txt,a.file_nm,''), a.create_dt 
+from note_temp a inner join custom.biomedgps_user b on a.user_id=b.user_id where a.file_path_txt is not null;
+
+--drop temp table
+drop table note_temp;
+
+-- insight images (append to left column)
+
+--cleanup some typos in image names before we import them into insights
+update biomedgps.images_image set name=replace(initcap(name),'Us','US') where name like 'FIgure%';
+update biomedgps.images_image set name='Figure 1' where name='Figure !';
+/**
+--if we're expirimenting, create a backup of the table
+create table custom.biomedgps_insight2 as select * from custom.biomedgps_insight;
+
+--query to restore a record from the backup:
+update custom.biomedgps_insight a
+set content_txt=b.content_txt
+from custom.biomedgps_insight2 b
+where a.insight_id=b.insight_id and b.insight_id='173';
+*/
+
+
+-- ATTACHMENTS --
+
+/*
+--attachments in the various sections
+select content_type_id, count(*), b.name, max(a.object_id)
+from biomedgps.attachments_attachment a
+join biomedgps.django_content_type b on a.content_type_id=b.id
+group by content_type_id,b.name;
+*/
+
+-- market attachments
+
+--create the attribute for attachments:
+insert into custom.biomedgps_market_attribute (attribute_id, parent_id, attribute_nm, active_flg, order_no, type_cd, create_dt) values ('LVL1_ATTACH',null,'Attachments',1,1,'ATTACH',current_timestamp);
+--insert the data
+insert into custom.biomedgps_market_attribute_xr (market_attribute_id, market_id, 
+attribute_id, create_dt, order_no, status_no, title_txt, value_txt, value_1_txt)
+select cast(object_id as varchar)+'_ATTACH_'+cast(id as varchar),object_id,'LVL1_ATTACH',
+last_update,"order",'P',name,'/secBinary/org/BMG_SMARTTRAK/'+attachment, description
+from biomedgps.attachments_attachment where content_type_id=62 and length(name) > 0;
+
+
+--company attachments
+
+--getters to verify inserts
+select * from custom.biomedgps_company_attribute where attribute_id like '%ATT%';
+select * from custom.biomedgps_company_attribute_xr where attribute_id like '%ATT%';
+
+--create the attachment root node
+insert into custom.biomedgps_company_attribute (attribute_id, parent_id, attribute_nm, active_flg, display_order_no, type_nm, create_dt) 
+values ('LVL1_ATTACH',null,'Attachments',1,1,'ATTACH',current_timestamp);
+
+--create the attachments 'archives' lvl2 node
+insert into custom.biomedgps_company_attribute (attribute_id, parent_id, attribute_nm, active_flg, display_order_no, type_nm, create_dt) 
+values ('LVL2_ATTACH_ARCH','LVL1_ATTACH','Archived Attachments',1,1,'ATTACH',current_timestamp);
+
+--create the attachments archives sub-folders based on the data we need to store
+insert into custom.biomedgps_company_attribute (attribute_id, parent_id, attribute_nm, active_flg, display_order_no, type_nm, create_dt) 
+select distinct 'LVL3_ATTACH_ARCH_'+cast(archive_folder as varchar),'LVL2_ATTACH_ARCH',archive_folder,1,
+abs(2020-cast(archive_folder as integer)),'ATTACH',current_timestamp 
+from biomedgps.attachments_attachment where content_type_id=8 and length(archive_folder) > 0 and is_archived=1
+group by archive_folder order by archive_folder;
+
+--create the attachments archives 'misc' lvl3 node
+insert into custom.biomedgps_company_attribute (attribute_id, parent_id, attribute_nm, active_flg, display_order_no, type_nm, create_dt) 
+values ('LVL3_ATTACH_MISC','LVL2_ATTACH_ARCH','Misc.',1,50,'ATTACH',current_timestamp);
+
+--these are the records we need to insert:
+select * from biomedgps.attachments_attachment where content_type_id=8 and length(name) > 0;
+
+-- insert top level company attachments
+insert into custom.biomedgps_company_attribute_xr (company_attribute_id, company_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, alt_title_txt)
+select cast(object_id as varchar)+'_ATTACH_'+cast(id as varchar),object_id,'LVL1_ATTACH',last_update,"order",'P',name,'/secBinary/org/BMG_SMARTTRAK/'+attachment,description 
+from biomedgps.attachments_attachment where content_type_id=8 and length(name) > 0 and is_archived=0;
+
+-- insert 'misc' company attachments (no archive _folder)
+insert into custom.biomedgps_company_attribute_xr (company_attribute_id, company_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, alt_title_txt)
+select cast(object_id as varchar)+'_ATTACH_'+cast(id as varchar),object_id,'LVL3_ATTACH_MISC',last_update,"order",'P',name,'/secBinary/org/BMG_SMARTTRAK/'+attachment,description 
+from biomedgps.attachments_attachment where content_type_id=8 and length(name) > 0 and is_archived=1 and length(archive_folder) = 0;
+
+--insert archived company attachments, using archive_folder
+insert into custom.biomedgps_company_attribute_xr (company_attribute_id, company_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, alt_title_txt)
+select cast(object_id as varchar)+'_ATTACH_'+cast(id as varchar),object_id,'LVL3_ATTACH_ARCH_'+archive_folder,last_update,"order",'P',name,'/secBinary/org/BMG_SMARTTRAK/'+attachment,description 
+from biomedgps.attachments_attachment where content_type_id=8 and length(name) > 0 and is_archived=1 and length(archive_folder) > 0;
+
+
+--product attachments
+
+--getters to verify inserts
+select * from custom.biomedgps_product_attribute where attribute_id like '%ATT%';
+select * from custom.biomedgps_product_attribute_xr where attribute_id like '%ATT%';
+
+--create the attachment root node
+insert into custom.biomedgps_product_attribute (attribute_id, parent_id, attribute_nm, active_flg, order_no, type_cd, create_dt) 
+values ('LVL1_ATTACH',null,'Attachments',1,1,'ATTACH',current_timestamp);
+
+--the records we need to insert:
+select * from biomedgps.attachments_attachment where content_type_id=16 order by object_id;
+
+-- insert top level product attachments
+insert into custom.biomedgps_product_attribute_xr (product_attribute_id, product_id, attribute_id, create_dt, order_no, 
+status_no, title_txt, value_txt, alt_title_txt)
+select cast(object_id as varchar)+'_ATTACH_'+cast(id as varchar),object_id,'LVL1_ATTACH',last_update,"order",'P',
+case when length(name)=0 then (regexp_split_to_array(attachment,'/'))[array_upper((regexp_split_to_array(attachment,'/')),1)] else name end,
+'/secBinary/org/BMG_SMARTTRAK/'+attachment,description 
+from biomedgps.attachments_attachment where content_type_id=16 and is_archived=0
+and cast(object_id as varchar) in (select product_id from custom.biomedgps_product);
+
+--be sure we didn't pick up some new records that are archived or nested
+select * from biomedgps.attachments_attachment where content_type_id=16 and (is_archived=1 or length(archive_folder) > 0);
+
+
+-- LINKS --
+
+--market links
+
+--getters to verify inserts
+select * from custom.biomedgps_market_attribute where attribute_id like '%LINK%';
+select * from custom.biomedgps_market_attribute_xr where attribute_id like '%LINK%';
+
+--create the links root node
+insert into custom.biomedgps_market_attribute (attribute_id, parent_id, attribute_nm, active_flg, order_no, type_cd, create_dt) 
+values ('LVL1_LINK',null,'Links',1,1,'LINK',current_timestamp);
+
+--create the links 'archives' lvl2 node
+insert into custom.biomedgps_market_attribute (attribute_id, parent_id, attribute_nm, active_flg, order_no, type_cd, create_dt) 
+values ('LVL2_LINK_ARCH','LVL1_LINK','Archived Links',1,1,'LINK',current_timestamp);
+
+--create the links archives sub-folders based on the data we need to store
+insert into custom.biomedgps_market_attribute (attribute_id, parent_id, attribute_nm, active_flg, order_no, type_cd, create_dt) 
+select distinct 'LVL3_LINK_ARCH_'+cast(archive_folder as varchar),'LVL2_LINK_ARCH',archive_folder,1,
+abs(2020-cast(archive_folder as integer)),'LINK',current_timestamp 
+from biomedgps.links_link where content_type_id=62 and length(archive_folder) > 0 and is_archived=1
+group by archive_folder order by archive_folder;
+
+--create the links archives 'misc' lvl3 node
+insert into custom.biomedgps_market_attribute (attribute_id, parent_id, attribute_nm, active_flg, order_no, type_cd, create_dt) 
+values ('LVL3_LINK_MISC','LVL2_LINK_ARCH','Misc.',1,50,'LINK',current_timestamp);
+
+--these are the records we need to insert:
+select b.linktype, a.*,b.* from biomedgps.links_link a inner join biomedgps.links_linktype b on a.linktype_id=b.id 
+where content_type_id=62 order by object_id;
+
+-- insert top level market links
+insert into custom.biomedgps_market_attribute_xr (market_attribute_id, market_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, value_1_txt)
+select cast(object_id as varchar)+'_LINK_'+cast(a.id as varchar),object_id,'LVL1_LINK',last_check,sort_order,'P',
+description,regexp_replace(url,'https://www.smarttrak.net/([a-z]+)/([0-9]+)/','/\1/qs/\2'),null 
+from biomedgps.links_link a
+inner join biomedgps.links_linktype b on a.linktype_id=b.id
+where content_type_id=62 and is_archived=0 and cast(object_id as varchar) in (select market_id from custom.biomedgps_market);
+
+-- insert 'misc' market links (no archive _folder)
+insert into custom.biomedgps_market_attribute_xr (market_attribute_id, market_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, value_1_txt)
+select cast(object_id as varchar)+'_LINK_'+cast(a.id as varchar),object_id,'LVL3_LINK_MISC',last_check,sort_order,'P',
+description,regexp_replace(url,'https://www.smarttrak.net/([a-z]+)/([0-9]+)/','/\1/qs/\2'),null 
+from biomedgps.links_link a
+inner join biomedgps.links_linktype b on a.linktype_id=b.id
+where content_type_id=62 and is_archived=1 and length(archive_folder) = 0 and cast(object_id as varchar) in (select market_id from custom.biomedgps_market);
+
+--insert archived market links, using archive_folder
+insert into custom.biomedgps_market_attribute_xr (market_attribute_id, market_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, value_1_txt)
+select cast(object_id as varchar)+'_LINK_'+cast(a.id as varchar),object_id,'LVL3_LINK_ARCH_'+archive_folder,last_check,sort_order,'P',
+description,regexp_replace(url,'https://www.smarttrak.net/([a-z]+)/([0-9]+)/','/\1/qs/\2'),null 
+from biomedgps.links_link a
+inner join biomedgps.links_linktype b on a.linktype_id=b.id
+where content_type_id=62 and is_archived=1 and length(archive_folder) > 0 and cast(object_id as varchar) in (select market_id from custom.biomedgps_market);
+
+
+--company links
+
+--getters to verify inserts
+select * from custom.biomedgps_company_attribute where attribute_id like '%LINK%';
+select * from custom.biomedgps_company_attribute_xr where attribute_id like '%LINK%';
+
+--create the links 'archives' lvl2 node
+insert into custom.biomedgps_company_attribute (attribute_id, parent_id, attribute_nm, active_flg, display_order_no, type_nm, create_dt) 
+values ('LVL2_LINK_ARCH','LVL1_LINK','Archived Links',1,1,'LINK',current_timestamp);
+
+--create the links archives sub-folders based on the data we need to store
+insert into custom.biomedgps_company_attribute (attribute_id, parent_id, attribute_nm, active_flg, display_order_no, type_nm, create_dt) 
+select distinct 'LVL3_LINK_ARCH_'+cast(archive_folder as varchar),'LVL2_LINK_ARCH',archive_folder,1,
+abs(2020-cast(archive_folder as integer)),'LINK',current_timestamp 
+from biomedgps.links_link where content_type_id=8 and length(archive_folder) > 0 and is_archived=1
+group by archive_folder order by archive_folder;
+
+--create the links archives 'misc' lvl3 node
+insert into custom.biomedgps_company_attribute (attribute_id, parent_id, attribute_nm, active_flg, display_order_no, type_nm, create_dt) 
+values ('LVL3_LINK_MISC','LVL2_LINK_ARCH','Misc.',1,50,'LINK',current_timestamp);
+
+--these are the records we need to insert:
+select b.linktype, a.*,b.* from biomedgps.links_link a inner join biomedgps.links_linktype b on a.linktype_id=b.id 
+where content_type_id=8 and object_id=9 order by object_id;
+
+-- insert top level company links
+insert into custom.biomedgps_company_attribute_xr (company_attribute_id, company_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, alt_title_txt)
+select cast(object_id as varchar)+'_LINK_'+cast(a.id as varchar),object_id,'LVL1_LINK',last_check,sort_order,'P',
+linktype,url,case when description != b.linktype and length(description) > 0 then description else null end 
+from biomedgps.links_link a
+inner join biomedgps.links_linktype b on a.linktype_id=b.id
+where content_type_id=8 and is_archived=0;
+
+-- insert 'misc' company links (no archive _folder)
+insert into custom.biomedgps_company_attribute_xr (company_attribute_id, company_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, alt_title_txt)
+select cast(object_id as varchar)+'_LINK_'+cast(a.id as varchar),object_id,'LVL3_LINK_MISC',last_check,sort_order,'P',
+linktype,url,case when description != b.linktype and length(description) > 0 then description else null end 
+from biomedgps.links_link a
+inner join biomedgps.links_linktype b on a.linktype_id=b.id
+where content_type_id=8 and is_archived=1 and length(archive_folder) = 0;
+
+--insert archived company links, using archive_folder
+insert into custom.biomedgps_company_attribute_xr (company_attribute_id, company_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, alt_title_txt)
+select cast(object_id as varchar)+'_LINK_'+cast(a.id as varchar),object_id,'LVL3_LINK_ARCH_'+archive_folder,last_check,sort_order,'P',
+linktype,url,case when description != b.linktype and length(description) > 0 then description else null end 
+from biomedgps.links_link a
+inner join biomedgps.links_linktype b on a.linktype_id=b.id
+where content_type_id=8 and is_archived=1 and length(archive_folder) > 0;
+
+
+-- product links --
+
+--getters to verify inserts
+select * from custom.biomedgps_product_attribute where attribute_id like '%LINK%';
+select * from custom.biomedgps_product_attribute_xr where attribute_id like '%LINK%';
+
+--create the links 'archives' lvl2 node
+insert into custom.biomedgps_product_attribute (attribute_id, parent_id, attribute_nm, active_flg, order_no, type_cd, create_dt) 
+values ('LVL2_LINK_ARCH','LVL1_LINK','Archived Links',1,1,'LINK',current_timestamp);
+
+--create the links archives sub-folders based on the data we need to store
+insert into custom.biomedgps_product_attribute (attribute_id, parent_id, attribute_nm, active_flg, order_no, type_cd, create_dt) 
+select distinct 'LVL3_LINK_ARCH_'+cast(archive_folder as varchar),'LVL2_LINK_ARCH',archive_folder,1,
+abs(2020-cast(archive_folder as integer)),'LINK',current_timestamp 
+from biomedgps.links_link where content_type_id=16 and length(archive_folder) > 0 and is_archived=1
+group by archive_folder order by archive_folder;
+
+--create the links archives 'misc' lvl3 node
+insert into custom.biomedgps_product_attribute (attribute_id, parent_id, attribute_nm, active_flg, order_no, type_cd, create_dt) 
+values ('LVL3_LINK_MISC','LVL2_LINK_ARCH','Misc.',1,50,'LINK',current_timestamp);
+
+--these are the records we need to insert:
+select b.linktype, a.*,b.* from biomedgps.links_link a inner join biomedgps.links_linktype b on a.linktype_id=b.id 
+where content_type_id=16 and object_id=110487 order by object_id;
+
+-- insert top level product links
+insert into custom.biomedgps_product_attribute_xr (product_attribute_id, product_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, alt_title_txt)
+select cast(object_id as varchar)+'_LINK_'+cast(a.id as varchar),object_id,'LVL1_LINK',last_check,sort_order,'P',
+linktype,url,case when description != b.linktype and length(description) > 0 then description else null end 
+from biomedgps.links_link a
+inner join biomedgps.links_linktype b on a.linktype_id=b.id
+where content_type_id=16 and is_archived=0 and cast(object_id as varchar) in (select product_id from custom.biomedgps_product);
+
+-- insert 'misc' product links (no archive _folder)
+insert into custom.biomedgps_product_attribute_xr (product_attribute_id, product_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, alt_title_txt)
+select cast(object_id as varchar)+'_LINK_'+cast(a.id as varchar),object_id,'LVL3_LINK_MISC',last_check,sort_order,'P',
+linktype,url,case when description != b.linktype and length(description) > 0 then description else null end 
+from biomedgps.links_link a
+inner join biomedgps.links_linktype b on a.linktype_id=b.id
+where content_type_id=16 and is_archived=1 and length(archive_folder) = 0 and cast(object_id as varchar) in (select product_id from custom.biomedgps_product);
+
+--insert archived product links, using archive_folder
+insert into custom.biomedgps_product_attribute_xr (product_attribute_id, product_id, attribute_id, create_dt, order_no, status_no, title_txt, value_txt, alt_title_txt)
+select cast(object_id as varchar)+'_LINK_'+cast(a.id as varchar),object_id,'LVL3_LINK_ARCH_'+archive_folder,last_check,sort_order,'P',
+linktype,url,case when description != b.linktype and length(description) > 0 then description else null end 
+from biomedgps.links_link a
+inner join biomedgps.links_linktype b on a.linktype_id=b.id
+where content_type_id=16 and is_archived=1 and length(archive_folder) > 0 and cast(object_id as varchar) in (select product_id from custom.biomedgps_product);
+
+
+-- support tickets --
+
+--delete from core.support_ticket where ticket_id like 'SMARTTRAK_%';
+--delete from core.support_activity where ticket_id like 'SMARTTRAK_%';
+
+-- insert 90 days worth of support tickets
+insert into core.support_ticket (ticket_id, ticket_no, organization_id, reporter_id, assigned_id, 
+status_cd, notify_flg, desc_txt, referrer_url, create_dt, update_dt)
+select 'SMARTTRAK_'+cast(id as varchar),id,'BMG_SMARTTRAK',b.profile_id,c.profile_id,
+case when status='resolved' then 3 
+	 when status='assigned' then 1 
+	 when status='ongoing' then 5 
+	 else 0 end,
+0,description,regexp_replace(page,'^https?://(www\.)?smarttrak\.net',''),incident_date,last_update
+from biomedgps.help_ticket a
+inner join custom.biomedgps_user b on cast(a.creator_id as varchar)=b.user_id
+left join custom.biomedgps_user c on cast(a.assigned_to_id as varchar)=c.user_id
+where create_date > (current_date - interval '90 days');
+
+-- insert ledger entries from the old system - for the tickets we imported
+insert into core.support_activity (activity_id, ticket_id, profile_id, desc_txt, create_dt)
+select 'SMARTTRAK_'+cast(ticket_id as varchar)+'_'+cast(id as varchar),'SMARTTRAK_'+cast(ticket_id as varchar),b.profile_id,entry,a.created
+from biomedgps.help_ticketlog a
+inner join custom.biomedgps_user b on cast(a.owner_id as varchar)=b.user_id
+where 'SMARTTRAK_'+cast(ticket_id as varchar) in (select ticket_id from core.support_ticket);
+
+--create temp table of ticket activities
+create temporary table maxactivity as select max(activity_id) as id,ticket_id from core.support_activity group by ticket_id;
+select * from maxactivity;
+
+-- insert a ledger entry for ticket assignment for tickets that don't have at least one activity already
+insert into core.support_activity (activity_id, ticket_id, profile_id, desc_txt, create_dt)
+select 'SMARTTRAK_'+cast(a.id as varchar)+'_1','SMARTTRAK_'+cast(id as varchar),b.profile_id,'Ticket Assigned',a.create_date
+from biomedgps.help_ticket a
+inner join custom.biomedgps_user b on cast(a.assigned_to_id as varchar)=b.user_id
+where a.assigned_to_id is not null and 'SMARTTRAK_'+cast(id as varchar) not in (select ticket_id from maxactivity)
+and 'SMARTTRAK_'+cast(a.id as varchar) in (select ticket_id from core.support_ticket);
+
+--drop the temp table
+drop table maxactivity;
+
+
+--move minutes/cost values from the ticket over to the last activity on the ticket
+create temporary table maxactivity as select max(activity_id) as id,ticket_id from core.support_activity group by ticket_id;
+select * from maxactivity where ticket_id='SMARTTRAK_1108';
+
+update core.support_activity a
+set cost_no=b.additional_costs, effort_no=case when b.time_worked_value = 0 then b.minutes_worked else b.time_worked_value end
+from biomedgps.help_ticket b
+inner join maxactivity c on 'SMARTTRAK_'+cast(b.id as varchar)=c.ticket_id
+where c.id=a.activity_id;
+
+--drop the temp table
+drop table maxactivity;
+
+--insert staff comments as internal activity ledger entries
+insert into core.support_activity (activity_id, ticket_id, profile_id, desc_txt, internal_flg,create_dt)
+select 'SMARTTRAK_'+cast(ticket_id as varchar)+'_int_'+cast(id as varchar),'SMARTTRAK_'+cast(ticket_id as varchar),b.profile_id,staff_comments,1,a.created
+from biomedgps.help_ticketlog a
+inner join custom.biomedgps_user b on cast(a.owner_id as varchar)=b.user_id
+where length(staff_comments)>0 and 'SMARTTRAK_'+cast(ticket_id as varchar) in (select ticket_id from core.support_ticket);
+
+-- ticket attachments 
+
+--create a temp table with our separated file name and path
+create temporary table attach_temp as select (regexp_split_to_array(attachment,'/'))[array_upper((regexp_split_to_array(attachment,'/')),1)] as file_nm, 
+(regexp_split_to_array(attachment,'\.'))[array_upper((regexp_split_to_array(attachment,'\.')),1)] as ext, * 
+from biomedgps.attachments_attachment where length(attachment)>0 and content_type_id=65;
+
+--ensure we have all file types accounted for:
+select * from attach_temp a left join file_type b on lower(a.ext)=b.file_type_cd where b.file_type_cd is null;
+--find ticket action
+select * from sb_action where module_type_id='BMG_TICKET';
+
+--insert ticket attachments into the profile_document table
+insert into profile_document (profile_document_id, action_id, feature_id, organization_id, profile_id, file_nm, file_type_cd, file_path_url, create_dt)
+select 'TKT_'+cast(object_id as varchar)+'_'+cast(id as varchar),'12e9b159ab5164ffc0a8024a2b9a26e3','SMARTTRAK_'+cast(object_id as varchar),'BMG_SMARTTRAK',
+b.profile_id, replace(a.file_nm,'.'+ext,'')+'--'+a.file_nm, lower(ext), '/'+replace(a.attachment,a.file_nm,''), a.last_update 
+from attach_temp a
+inner join custom.biomedgps_user b on cast(a.owner_id as varchar)=b.user_id
+where 'SMARTTRAK_'+cast(object_id as varchar) in (select ticket_id from core.support_ticket);
+
+
+-- create a binder between ticket attachments and the ticket
+insert into core.support_attachment_xr (attachment_xr_id, ticket_id, profile_document_id, create_dt,desc_txt)
+select replace(newid(),'-',''),'SMARTTRAK_'+cast(object_id as varchar),'TKT_'+cast(object_id as varchar)+'_'+cast(id as varchar),a.last_update,case when length(a.name)>0 then a.name else a.file_nm end
+from attach_temp a inner join custom.biomedgps_user b on cast(a.owner_id as varchar)=b.user_id
+where 'SMARTTRAK_'+cast(object_id as varchar) in (select ticket_id from core.support_ticket);
+
+drop table attach_temp;
+
+
+
+--fix overlapping product attributes - per Eric
+
+--awaiting new queries
+
+
+
+--run GRID_04132017_1155.sql
+
+--ryan fix for profile_document file names:
+-- updates historical file names to match new notes db storage patterns.  
+UPDATE profile_document pd
+SET file_nm = i.newFileNm, file_path_url = i.newFilePath 
+FROM (
+    select 
+    profile_document_id, 
+	substring(file_nm from (position('--' in file_nm)+2))as newFileNm,
+	file_path_url + substring(file_nm from (position('--' in file_nm)+2)) as newFilePath
+	from profile_document
+	where file_nm like '%--%'
+	) i
+WHERE i.profile_document_id = pd.profile_document_id;
+
+
+UPDATE custom.biomedgps_section set section_nm = 'Select Market' where section_id = 'MASTER_ROOT';
+
+delete from custom.biomedgps_market_section where market_id = '56' and section_id ='MASTER_4337';
+delete from custom.biomedgps_market_section where market_id = '6549' and section_id ='MASTER_338';
+delete from custom.biomedgps_market_section where market_id = '6601' and section_id ='MASTER_37874';
+delete from custom.biomedgps_market_section where market_id = '6607' and section_id ='MASTER_37715';
+delete from custom.biomedgps_market_section where market_id = '6609' and section_id ='MASTER_38033';
+delete from custom.biomedgps_market_section where market_id = '6612' and section_id ='MASTER_38192';
+delete from custom.biomedgps_market_section where market_id = '6613' and section_id ='MASTER_38351';
+delete from custom.biomedgps_market_section where market_id = '6617' and section_id ='MASTER_40244';
+delete from custom.biomedgps_market_section where market_id = '6625' and section_id ='MASTER_40081';
+delete from custom.biomedgps_market_section where market_id = '6627' and section_id ='MASTER_29899';
+delete from custom.biomedgps_market_section where market_id = '6628' and section_id ='MASTER_30037';
+delete from custom.biomedgps_market_section where market_id = '6629' and section_id ='MASTER_29623';
+delete from custom.biomedgps_market_section where market_id = '6630' and section_id ='MASTER_29761';
+delete from custom.biomedgps_market_section where market_id = '6631' and section_id ='MASTER_30175';
+
+
+-- HubSpot domain key
+
+-- create Hubspot embed external site key for domain key use.
+insert into external_site_key (external_site_key_id, key_nm, key_cd, key_type_id, tag_txt, create_dt)
+values ('HUBSPOT_EMBED','Hubspot','hs-script-loader','INFO','<!-- HubSpot Embed Code --> <script type="text/javascript" id="${key}" async defer src="//js.hs-scripts.com/${value}.js"></script>',getdate());
+
+-- insert domain key for Smarttrak in sb-uat
+insert into site_key_xr (site_key_xr_id,key_txt,site_alias_id,external_site_key_id,create_dt)
+values (lower(replace(newid(),'-','')),'3044256','c0a802418db21c85da5c8f1def9d70b3','HUBSPOT_EMBED',getdate());
+
 
 -- convert markup -- Java process
-Need to run com.smt.sitebuilder.db.MarkupConverter from command line to convert the markup stored in the database to HTML.
+java com.smt.sitebuilder.db.LegacyMarkdownConverter
 
+-- to merge images into Insight's left column, main content, and insert Attachments.
+-- run the above class in two modes (less risk); once for graphics and once for attachments.
+java com.smt.sitebuilder.db.LegacyImageInserter
+
+-- import legacy emaillog -- Java process
+-- run this absolutely last, it takes over an hour and only serves to populate a legacy report
+java com.smt.sitebuilder.db.LegacyEmailImporter from command line.
+
+run solr indexers
 
 -- place binary images and media
 
 -- apache rules for binary and media
 
 
+-- database validation
+SELECT schemaname,relname,n_live_tup  FROM pg_stat_user_tables where schemaname='biomedgps' ORDER BY schemaname,relname;
+SELECT schemaname,relname,n_live_tup  FROM pg_stat_user_tables where relname like 'biomedgps_%' ORDER BY n_live_tup desc, schemaname,relname;
+
+-- (this was staging after last import, 4-14-2017)
+custom	biomedgps_product_attribute_xr	119105
+custom	biomedgps_update_section	57120
+custom	biomedgps_update	46680
+custom	biomedgps_grid_detail	21089
+custom	biomedgps_fd_revenue	15900
+custom	biomedgps_company_attribute_xr	14246
+custom	biomedgps_product_regulatory	10147
+custom	biomedgps_fd_scenario_overlay	7927
+custom	biomedgps_product_section	7841
+custom	biomedgps_product	7257
+custom	biomedgps_user	6111
+custom	biomedgps_account_acl	3671
+custom	biomedgps_company_section	2409
+custom	biomedgps_company	2396
+custom	biomedgps_company_location	2396
+custom	biomedgps_grid	2163
+custom	biomedgps_note	2010
+custom	biomedgps_product_moduleset_xr	1487
+custom	biomedgps_market_attribute_xr	1342
+custom	biomedgps_product_attribute	1033
+custom	biomedgps_company_alliance_xr	821
+custom	biomedgps_user_team_xr	736
+custom	biomedgps_product_alliance_xr	706
+custom	biomedgps_company_investor	399
+custom	biomedgps_team	366
+custom	biomedgps_insight_section	359
+custom	biomedgps_ga_column_attribute_xr	334
+custom	biomedgps_fd_scenario	332
+custom	biomedgps_insight	327
+custom	biomedgps_section	286
+custom	biomedgps_audit_log	216
+custom	biomedgps_account	207
+custom	biomedgps_market	145
+custom	biomedgps_market_section	142
+custom	biomedgps_fd_revenue_footnote	138
+custom	biomedgps_ga_column	137
+custom	biomedgps_company_attribute	103
+custom	biomedgps_regulatory_path	46
+custom	biomedgps_regulatory_status	37
+custom	biomedgps_stock_exchange	24
+custom	biomedgps_regulatory_region	23
+custom	biomedgps_alliance_type	21
+custom	biomedgps_product_moduleset	14
+custom	biomedgps_chart_type	11
+custom	biomedgps_market_attribute	8
+custom	biomedgps_grid_detail_type	5
+custom	biomedgps_grid_type	4
+custom	biomedgps_explorer_query	0
+custom	biomedgps_ga_savestate	0
+custom	biomedgps_link	0
 

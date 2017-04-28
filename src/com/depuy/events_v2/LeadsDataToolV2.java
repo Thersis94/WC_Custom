@@ -24,7 +24,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.common.html.SMTStateListFactory;
 import com.siliconmtn.common.html.StateList;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.gis.parser.GeoLocation;
 
@@ -100,14 +99,14 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	protected List<UserDataVO> pullLeads(DePuyEventSeminarVO sem, ReportType type,
 			Date startDt) throws ActionException {
 		log.debug("starting LeadsDataTool::pullLeads()");
-		List<UserDataVO> data = new ArrayList<UserDataVO>();
+		List<UserDataVO> data = new ArrayList<>();
 		EventEntryVO event = sem.getEvents().get(0);
 		GeoLocation points = GeoLocation.fromDegrees(event.getLatitude(), event.getLongitude());
 		Map<String, GeoLocation> coords = points.boundingCoordinates(MAX_DISTANCE);
 		log.debug("event=" + event.getLatitude() + " " +  event.getLongitude());
 		StringBuilder sql = new StringBuilder(500);
 		sql.append("select a.*, lds.max_age_no, lds.event_lead_source_id ");
-		sql.append("from (select * from DEPUY_SEMINARS_VIEW where (latitude_no between ? and ?) and (longitude_no between ? and ?) and product_cd in (");
+		sql.append("from (select * from DEPUY_SEMINARS_VIEW where latitude_no between ? and ? and longitude_no between ? and ? and product_cd in (");
 		for (@SuppressWarnings("unused") String joint : sem.getJoints())
 			sql.append("?,");
 		sql.replace(sql.length() - 1, sql.length(), ")"); // replace trailing comma with closing paren
@@ -131,14 +130,13 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 			ps.setString(x++, sem.getEventPostcardId());
 			
 			ResultSet rs = ps.executeQuery();
-			DBUtil db = new DBUtil();
-			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+			ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 			while (rs.next()) {
 //				String geo = rs.getString("geo_match_cd");
 //				if ("noMatch".equals(geo)) continue;  //we don't want these, but they're too taxing to remove in the query
 				
 				//before we capture each record, determine if it falls within the date requirement. (<3mos, 3-6mos, <1yr, all)
-				Date createDt = db.getDateVal("attempt_dt", rs);
+				Date createDt = rs.getDate("attempt_dt");
 				if (createDt == null) createDt = new Date();
 				
 				//no date filters on the targetLeads page.  This is only used in reports:
@@ -158,16 +156,16 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 				
 				UserDataVO vo = new UserDataVO();
 				vo.setBirthDate(createDt);
-				vo.setPrefixName(pm.getStringValue("PREFIX_NM", db.getStringVal("prefix_nm", rs)));
-				vo.setFirstName(pm.getStringValue("FIRST_NM", db.getStringVal("first_nm", rs)));
-				vo.setLastName(pm.getStringValue("LAST_NM", db.getStringVal("last_nm", rs)));
-				vo.setEmailAddress(pm.getStringValue("EMAIL_ADDRESS_TXT", db.getStringVal("EMAIL_ADDRESS_TXT", rs)));
-				vo.setSuffixName(pm.getStringValue("SUFFIX_NM", db.getStringVal("suffix_nm", rs)));
-				vo.setAddress(pm.getStringValue("ADDRESS_TXT", db.getStringVal("address_txt", rs)));
-				vo.setAddress2(pm.getStringValue("ADDRESS2_TXT", db.getStringVal("address2_txt", rs)));
-				vo.setCity(pm.getStringValue("CITY_NM", db.getStringVal("city_nm", rs)));
-				vo.setState(pm.getStringValue("STATE_CD", db.getStringVal("state_cd", rs)));
-				vo.setZipCode(pm.getStringValue("ZIP_CD", db.getStringVal("zip_cd", rs)));
+				vo.setPrefixName(pm.getStringValue("PREFIX_NM", rs.getString("prefix_nm")));
+				vo.setFirstName(pm.getStringValue("FIRST_NM", rs.getString("first_nm")));
+				vo.setLastName(pm.getStringValue("LAST_NM", rs.getString("last_nm")));
+				vo.setEmailAddress(pm.getStringValue("EMAIL_ADDRESS_TXT", rs.getString("EMAIL_ADDRESS_TXT")));
+				vo.setSuffixName(pm.getStringValue("SUFFIX_NM", rs.getString("suffix_nm")));
+				vo.setAddress(pm.getStringValue("ADDRESS_TXT", rs.getString("address_txt")));
+				vo.setAddress2(pm.getStringValue("ADDRESS2_TXT", rs.getString("address2_txt")));
+				vo.setCity(pm.getStringValue("CITY_NM", rs.getString("city_nm")));
+				vo.setState(pm.getStringValue("STATE_CD", rs.getString("state_cd")));
+				vo.setZipCode(pm.getStringValue("ZIP_CD", rs.getString("zip_cd")));
 				vo.setGlobalAdminFlag(rs.getInt("valid_address_flg"));
 				vo.setValidEmailFlag(rs.getInt("valid_email_flg"));
 								
@@ -201,7 +199,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @return
 	 */
 	protected List<UserDataVO> deduplicateUsers(List<UserDataVO> users) {
-		Map<String, UserDataVO> data = new HashMap<String,UserDataVO>(users.size());
+		Map<String, UserDataVO> data = new HashMap<>(users.size());
 		String key = "";
 		
 		for (UserDataVO vo : users) {
@@ -235,7 +233,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 */
 	public void targetLeads(DePuyEventSeminarVO sem, String sort) throws ActionException {
 		log.debug("starting targetLeads");
-		SortType sortType = null;
+		SortType sortType;
 		try {
 			sortType = SortType.valueOf(sort);
 		} catch (Exception e) {
@@ -249,7 +247,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 		List<UserDataVO> leads = pullLeads(sem, ReportType.leads, null);
 		
 		//define data containers
-		Map<Location, LeadCityVO> locnData  = new TreeMap<Location, LeadCityVO>(new LocationComparator());
+		Map<Location, LeadCityVO> locnData  = new TreeMap<>(new LocationComparator());
 		
 		//put each user into the city bucket they belong in.
 		for (UserDataVO user : leads) {
@@ -274,7 +272,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @param cityZips
 	 */
 	private void loadSoloKiosks(SortType sortType, Map<Location, LeadCityVO> locnData) {
-		List<String> unqStates = new ArrayList<String>();
+		List<String> unqStates = new ArrayList<>();
 		
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select city_nm, state_cd, zip_cd from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -366,7 +364,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 		//tweak some data depending on the SortType requested
 		if (SortType.county == sort) {
 			loc.setCounty(StringUtil.capitalizePhrase(user.getCounty()));
-			if (loc.getCounty().length() == 0) loc.setCounty("Unknown");
+			if (StringUtil.isEmpty(loc.getCounty())) loc.setCounty("Unknown");
 		} else if (SortType.zip == sort) {
 			//stuff the zip into the city so the natural ordering of the rows is "by zip"
 			loc.setCity(user.getZipCode());

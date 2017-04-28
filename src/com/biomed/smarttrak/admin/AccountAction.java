@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
+import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.action.AdminControllerAction;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
@@ -82,20 +84,37 @@ public class AccountAction extends SBActionAdapter {
 
 
 	/**
+	 * method overloading so only methods that want the managers titles get them.  
+	 * @param req
+	 * @param schema
+	 * @throws ActionException
+	 */
+	protected void loadManagerList(ActionRequest req, String schema) {
+		loadManagerList(req, schema, false);
+	}
+
+
+	/**
 	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
-	 * TODO - This appears to be returning duplicate Users.  Can see behavior under Manage/Support "Assigned To" Select list.
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void loadManagerList(ActionRequest req, String schema) throws ActionException {
+	protected void loadManagerList(ActionRequest req, String schema, boolean loadTitles) {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select newid() as account_id, a.profile_id as owner_profile_id, a.first_nm, a.last_nm from profile a ");
-		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=?");
+		sql.append("select newid() as account_id, a.profile_id as owner_profile_id, a.first_nm, a.last_nm ");
+		if (loadTitles) sql.append(", rd.value_txt as title ");
+		sql.append("from profile a ");
+		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=? ");
+		if (loadTitles)  {
+			sql.append("inner join register_submittal rsub on rsub.profile_id=a.profile_id ");
+			sql.append("inner join register_data rd on rd.register_submittal_id=rsub.register_submittal_id and rd.register_field_id=? ");
+		}
 		sql.append("and b.site_id=? and b.role_id=?");
 		log.debug(sql);
 
 		List<Object> params = new ArrayList<>();
 		params.add(SecurityController.STATUS_ACTIVE);
+		if (loadTitles) params.add(UserVO.RegistrationMap.TITLE.getFieldId());
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
 		params.add(AdminControllerAction.STAFF_ROLE_ID);
 
@@ -106,7 +125,6 @@ public class AccountAction extends SBActionAdapter {
 		//decrypt the owner profiles
 		decryptNames(accounts);
 		Collections.sort(accounts, new NameComparator());
-
 		req.setAttribute(MANAGERS, accounts);
 	}
 

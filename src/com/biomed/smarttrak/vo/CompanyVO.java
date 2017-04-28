@@ -63,6 +63,7 @@ public class CompanyVO  extends SecureSolrDocumentVO {
 	private Map<String, List<ProductVO>> products;
 	private Date updateDate;
 	private String updateMsg;
+	private String currencyTypeSymbol;
 	
 	
 	public CompanyVO() {
@@ -387,6 +388,15 @@ public class CompanyVO  extends SecureSolrDocumentVO {
 			sections.append(section.getSectionId()).append("|");
 		}
 		return sections.toString();
+	}
+
+	@Column(name="symbol_txt", isReadOnly=true)
+	public String getCurrencyTypeSymbol() {
+		return currencyTypeSymbol;
+	}
+
+	public void setCurrencyTypeSymbol(String currencyTypeSymbol) {
+		this.currencyTypeSymbol = currencyTypeSymbol;
 	}
 
 }

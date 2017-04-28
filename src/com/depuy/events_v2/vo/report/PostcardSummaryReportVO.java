@@ -36,12 +36,11 @@ import com.siliconmtn.security.UserDataVO;
  @updates
  		refactored from HTML stuffed in Excel file to a true POI Excel document.  - 08.24.2016 - JM
  ***************************************************************************/
-
 public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 11233634423123l;
 	private DePuyEventSeminarVO sem;
 
-	private CreationHelper createHelper; //used by Excel for making hyperlinks
+	private transient CreationHelper createHelper; //used by Excel for making hyperlinks
 
 	public PostcardSummaryReportVO() {
 		super();
@@ -50,7 +49,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		setFileName("Seminar-Summary.xls");
 	}
 
-	
+
 	/**
 	 * Assigns the event postcard data retrieved from the parent action
 	 * variables
@@ -61,7 +60,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	public void setData(Object o) {
 		this.sem = (DePuyEventSeminarVO) o;
 	}
-	
+
 
 	/**
 	 * main method - called by servlet when its time to stream the report back to the browser
@@ -75,13 +74,13 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		Workbook wb = new HSSFWorkbook();
 		Sheet s = wb.createSheet();
 		createHelper = wb.getCreationHelper();
-		
+
 		//make a heading font we can use to separate the sections
 		CellStyle headingStyle = wb.createCellStyle();
 		Font font = wb.createFont();
 		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
 		headingStyle.setFont(font);
-		
+
 		// make title row, its the first row in the sheet (0)
 		addHeader(s, headingStyle);
 
@@ -111,8 +110,8 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 
 		return new byte[0];
 	}
-	
-	
+
+
 	/**
 	 * creates a row and populates the 2 columns using the data provided
 	 * supports heading rows (colspan=2) and hyperlinks (clickable links)
@@ -125,29 +124,29 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	private void addRow(Sheet s, String label, String value, CellStyle headingStyle, String link) {
 		int rowNo = s.getPhysicalNumberOfRows();
 		Row r = s.createRow(rowNo);
-		
+
 		// the label
 		Cell c = r.createCell(0);
 		c.setCellType(Cell.CELL_TYPE_STRING);
 		c.setCellValue(label);
-		
+
 		if (headingStyle != null) { //make it span both columns and use the heading font
 			c.setCellStyle(headingStyle);
 			s.addMergedRegion(new CellRangeAddress(rowNo, rowNo, 0, 1));
-			
+
 		} else { //print the value in column 2
 			c = r.createCell(1);
 			c.setCellType(Cell.CELL_TYPE_STRING);
 			c.setCellValue(StringUtil.checkVal(value));
 			if (link != null) {
 				Hyperlink hLink = createHelper.createHyperlink(Hyperlink.LINK_URL);
-			        hLink.setAddress(link);
-			        c.setHyperlink(hLink);
+				hLink.setAddress(link);
+				c.setHyperlink(hLink);
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * overloaded for simplicity when added key/value pairs of plain text to the report.
 	 * @param s
@@ -158,7 +157,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		this.addRow(s, label, value, null, null);
 	}
 
-	
+
 	/**
 	 * used generic vos so i could deal with areas that didn't have unique keys
 	 * generates the top part of the report as a map
@@ -168,14 +167,14 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		addRow(s, "Product", sem.getJointLabel());
 		addRow(s, "Seminar Type", sem.getEvents().get(0).getEventTypeDesc());
 		addRow(s, "Seminar Promotion #", sem.getRSVPCodes());
-		
+
 		StringBuilder sb;
 		for (PersonVO p : sem.getPeople()) {
 			sb = new StringBuilder(100);
 			sb.append(StringUtil.checkVal(p.getFirstName())).append(" ");
 			sb.append(StringUtil.checkVal(p.getLastName()));
 			sb.append(" (").append(p.getEmailAddress()).append(")");
-			
+
 			addRow(s, p.getRoleCode().toString(), sb.toString());
 		}
 	}
@@ -187,7 +186,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	 */
 	private void addEventRows(Sheet s) {
 		StringBuilder sb;
-		
+
 		for (EventEntryVO event : sem.getEvents()) {
 			addRow(s, "", ""); //empty spacer
 			addRow(s, "Seminar #" + event.getRSVPCode(), event.getEventName());
@@ -199,9 +198,9 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			sb = new StringBuilder(50);
 			sb.append(event.getCityName()).append(", ").append(event.getStateCode()).append(" ").append(event.getZipCode());
 			addRow(s, "Seminar Location", sb.toString());
-			
+
 			addRow(s, "Joint", sem.getJointLabel());
-			
+
 			if (!sem.getProductCodes().isEmpty())
 				addRow(s, "Product", sem.getProductCodes());
 
@@ -212,14 +211,14 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			addRow(s, "Refreshment Choice", event.getServiceText());
 			addRow(s, "Venue Address", event.getAddressText());
 			if (!StringUtil.checkVal(event.getAddress2Text()).isEmpty())
-					addRow(s, "", event.getAddress2Text());
+				addRow(s, "", event.getAddress2Text());
 			sb.append(event.getCityName()).append(" " ).append(event.getStateCode()).append(", " ).append(event.getZipCode());
 			addRow(s, "", sb.toString());
 
 		}
 	}
-	
-	
+
+
 	/**
 	 * generates the post card section of the report
 	 * @return
@@ -233,7 +232,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		addRow(s, "Initial Invitation Send Date", Convert.formatDate(sem.getPostcardSendDate(), Convert.DATE_LONG));
 		addRow(s, "Additional Postcards Send Date: ", Convert.formatDate(sem.getAddtlPostcardSendDate(), Convert.DATE_LONG));
 		addRow(s, "Additional cards should have the letter \"S\" at the end of the seminar#", "");
-		
+
 		UserDataVO owner = sem.getOwner();
 		addRow(s, "Additional Postcards", "Send additional postcards to:");
 		//owner name
@@ -267,7 +266,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			addRow(s, "Years at current practice:", String.valueOf(surg.getPractYrs()));
 			addRow(s, "Employed by hospital?:", surg.getHospEmployeeFlg() == 1 ? "yes" : "no");
 			addRow(s, "Hospital Address:", surg.getHospAddress());
-			
+
 			String location = (surg.getPractLocation() != null) ? surg.getPractLocation().getFormattedLocation() : "";
 			addRow(s, "Practice Address:", location);
 			addRow(s, "Practice Phone:", surg.getPractPhone());
@@ -280,7 +279,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			addRow(s, "Speaker Bio:", surg.getSurgeonBio());
 		}
 	}
-	
+
 
 	/**
 	 * generates the ad section of the report
@@ -292,7 +291,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 
 		addRow(s, "", ""); //spacer row
 		addRow(s, "Ad Information", null, headingStyle, null);
-		
+
 		int cnt = 1;
 		StringBuilder sb;
 		for (CoopAdVO ad : sem.getAllAds() ){
@@ -301,24 +300,23 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			if (cnt > 1) addRow(s, "", ""); //spacer row
 			addRow(s, "Newspaper Ad #" + (cnt++), "");
 			addRow(s, "Ad Type:", ad.getAdType());
-			
+
 			sb = new StringBuilder(100);
 			sb.append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(ad.getNewspaper1Phone()).append(")");
 			addRow(s, "Sponsored Newspaper:", sb.toString());
-			
+
 			addRow(s, "Coordinator approved ad?:", adSts == CoopAdsActionV2.CLIENT_APPROVED_AD ? "Yes" : "No");
 			addRow(s, "Approved Paper:", ad.getApprovedPaperName());
 			addRow(s, "Total Cost:", String.valueOf(ad.getTotalCostNo()));
-			
+
 			//calculate cost of ad to territory or surgeon
-			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) {
+			if (StringUtil.checkVal(sem.getEvents().get(0).getEventTypeCd()).startsWith("CFSEM")) {
 				int surgSts = Convert.formatInteger(ad.getSurgeonStatusFlg(), 0).intValue();
 				addRow(s, "Speaker approved ad?:", surgSts == CoopAdsActionV2.SURG_APPROVED_AD ? "Yes" : "No");
 				addRow(s, "Speaker paid for ad?:", surgSts == CoopAdsActionV2.SURG_PAID_AD ? "Yes" : "No");
-				addRow(s, "Ad Cost to Speaker:", String.valueOf(ad.getCostToRepNo()));
-			} else {
-				addRow(s, "Ad Cost to Territory:", String.valueOf(ad.getCostToRepNo()));
+				addRow(s, "Ad Cost to Speaker:", StringUtil.checkVal(ad.getCostToRepNo()));
 			}
+			addRow(s, "Ad Cost to Territory:", StringUtil.checkVal(ad.getCostToRepNo()));
 
 			if (ad.getAdFileUrl() != null) {
 				sb = new StringBuilder(250);
@@ -327,8 +325,8 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * adds the title to this report
 	 * @param s

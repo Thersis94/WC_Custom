@@ -11,8 +11,6 @@
 -- update articles_article set last_update='1970-01-01'  where last_update ='0000-00-00 00:00:00';
 -- update articles_article set create_date='1970-01-01'  where create_date ='0000-00-00 00:00:00';
 -- update articles_article set content=replace(content,'\0','') where content like '%\0%';
--- update articles_articledraft set content=replace(content,'\0','') where content like '%\0%';
--- update articles_historicalarticle set content=replace(content,'\0','') where content like '%\0%';
 -- update attachments_attachment set last_update='1970-01-01'  where last_update ='0000-00-00 00:00:00';
 
 -- if creating a new PG database to target
@@ -28,15 +26,20 @@
 -- man page:
 -- http://pgloader.io/howto/pgloader.1.html
 
+-- add this between SET & BEFORE to import the emaillog (only)
+-- INCLUDING ONLY TABLE NAMES MATCHING 'emaillog_emaillog'
+-- or 
+-- EXCLUDING TABLE NAMES MATCHING 'emaillog_emaillog'
+
 LOAD DATABASE
-	FROM mysql://root:sqll0gin@10.0.20.33/biomedgps
+	FROM mysql://root:sqll0gin@10.0.20.33/biomedgps5
 	INTO postgresql://wc_user_sb_uat2:sqll0gin@streetfighter/webcrescendo_sb_uat2
 	WITH include drop, create tables
- 
-  SET maintenance_work_mem to '128MB',  
-      work_mem to '12MB',  
-      search_path to 'biomedgps' 
-      
+
+  	SET maintenance_work_mem to '128MB', work_mem to '12MB', search_path to 'biomedgps' 
+
+	INCLUDING ONLY TABLE NAMES MATCHING 'emaillog_emaillog'
+
 	BEFORE LOAD DO  
     $$ create schema if not exists biomedgps; $$;
 
@@ -48,8 +51,6 @@ LOAD DATABASE
 
 --notes:
 -- articles_article * 4 failures if the update \0 is not run
--- articles_historicalarticle * 14 failures if the update \0 is not run
-
 -- these are actually VIEWS, not tables:
 -- category_nodes
 -- profiles_account_metrics

@@ -37,6 +37,7 @@ import com.smt.sitebuilder.util.MessageSender;
 public class RegistrationPostProcessor extends SimpleActionAdapter {
 
 	public RegistrationPostProcessor() {
+		super();
 	}
 
 	/**
@@ -50,6 +51,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 	/**
 	 * this is called from the admintool, to notify the user their account has been verified.
 	 */
+	@Override
 	public void update(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DSIUserDataVO dsiUser = new DSIUserDataVO();
@@ -59,12 +61,93 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		dsiUser.setLastName(req.getParameter("lastName"));
 		dsiUser.setEmailAddress(req.getParameter("email"));
 		req.setValidateInput(true);
-		log.debug("email DSIUser=" + StringUtil.getToString(dsiUser));
 
 		//if eligible AND verified was just toggled to 'yes', send the email
 		MessageSender ms = new MessageSender(getAttributes(), dbConn);
 		sendAcctVerifiedEmail(dsiUser, site, ms);
 	}
+
+
+	/**
+	 * this is called by manually hooking it into an action - when Regulatory wants a copy of all of the emails.
+	 * ADD THIS SNIPPET TO THE TOP OF THE DSI REGISTRATION ACTION, THEN INVOKE VIA URL:
+		if (req.hasParameter("sendEmails")) {
+			try {
+				RegistrationPostProcessor pp = new RegistrationPostProcessor();
+				pp.setDBConnection(dbConn);
+				pp.setAttributes(getAttributes());
+				pp.testAllEmails(req);
+			} catch (Exception e) {
+				log.error("could not send test emails", e);
+			}
+			return;
+		}
+		http://c.jmckain.siliconmtn.com/profile?sendEmails=true
+		
+	import com.depuysynthesinst.emails.AssgDeletedVO;
+	import com.depuysynthesinst.emails.AssgPublishVO;
+	import com.depuysynthesinst.emails.AssgRepublishVO;
+	import com.depuysynthesinst.emails.InviteResidentVO;
+	import com.depuysynthesinst.assg.AssignmentVO;
+	public void testAllEmails(SMTServletRequest req) throws Exception {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		String oldAlias = site.getSiteAlias();
+		site.setSiteAlias("www.depuysynthesinstitute.com");
+		DSIUserDataVO dsiUser = new DSIUserDataVO((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
+		ResponseLoader loader = new ResponseLoader();
+		loader.setDbConn(dbConn);
+		loader.setSite(site);
+		loader.loadRegistrationResponses(dsiUser, site.getSiteId());
+		log.debug("email DSIUser=" + StringUtil.getToString(dsiUser));
+
+		dsiUser.addAttribute(DSIUserDataVO.RegField.DSI_ACAD_NM.name(),"My Test Academy");
+		dsiUser.addAttribute(DSIUserDataVO.RegField.c0a80241b71c9d40a59dbd6f4b621260.name(),"Resident");
+
+		//if eligible AND verified was just toggled to 'yes', send the email
+		MessageSender ms = new MessageSender(getAttributes(), dbConn);
+		sendAcctVerifiedEmail(dsiUser, site, ms);
+		sendDirectorEmail(dsiUser, site, ms);
+		sendTransferEligibleEmail(dsiUser, site, ms);
+		sendTransferIneligibleEmail(dsiUser, site, ms);
+		sendChiefEligibleEmail(dsiUser, site, ms);
+		sendChiefIneligibleEmail(dsiUser, site, ms);
+		sendResidentEligibleEmail(dsiUser, site, ms);
+		sendResidentIneligibleEmail(dsiUser, site, ms);
+		sendProfferEmail(dsiUser, site, ms);
+
+		//some assignement emails we need to include
+		AssignmentVO assg = new AssignmentVO();
+		assg.setAssgId("SAMPLE");
+		assg.setDirectorProfile(dsiUser);
+		assg.setAssgName("Sample Assignment");
+
+		AssgDeletedVO mail = new AssgDeletedVO();
+		mail.setFrom(site.getMainEmail());
+		mail.addRecipient(dsiUser.getEmailAddress());
+		mail.buildMessage(dsiUser, assg, site); //builds subject and message body automatically
+		ms.sendMessage(mail);
+
+		AssgPublishVO mail2 = new AssgPublishVO();
+		mail2.setFrom(site.getMainEmail());
+		mail2.addRecipient(dsiUser.getEmailAddress());
+		mail2.buildMessage(dsiUser, assg, site); //builds subject and message body automatically
+		ms.sendMessage(mail2);
+
+		AssgRepublishVO mail3 = new AssgRepublishVO();
+		mail3.setFrom(site.getMainEmail());
+		mail3.addRecipient(dsiUser.getEmailAddress());
+		mail3.buildMessage(dsiUser, assg, site); //builds subject and message body automatically
+		ms.sendMessage(mail3);
+
+		InviteResidentVO mail4 = new InviteResidentVO();
+		mail4.setFrom(site.getMainEmail());
+		mail4.addRecipient(dsiUser.getEmailAddress());
+		mail4.buildMessage(dsiUser, dsiUser, site); //builds subject and message body automatically
+		ms.sendMessage(mail4);
+		
+		site.setSiteAlias(oldAlias);
+	}
+	*/
 
 
 	/* (non-Javadoc)
@@ -96,8 +179,24 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		loader.setDbConn(dbConn);
 		loader.setSite(site);
 		loader.loadRegistrationResponses(dsiUser, site.getSiteId());
-		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 
+		sendConditionalEmail(dsiUser, site, ms);
+
+		//if isProffer, send proffer email to the site admin
+		String proffer = StringUtil.checkVal(dsiUser.getAttribute(DSIUserDataVO.RegField.DSI_MIL_HOSP.toString()));
+		log.debug("proffer=" + proffer + " from " + dsiUser.getAttribute(DSIUserDataVO.RegField.DSI_MIL_HOSP.toString()));
+		if (Convert.formatBoolean(proffer))
+			sendProfferEmail(dsiUser, site, ms);
+	}
+
+
+	/**
+	 * @param dsiUser
+	 * @param site
+	 * @param ms
+	 */
+	private void sendConditionalEmail(DSIUserDataVO dsiUser, SiteVO site, MessageSender ms) {
+		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		if (dsiRoleMgr.isDirector(dsiUser)) {
 			sendDirectorEmail(dsiUser, site, ms);
 		} else if (dsiUser.isTransfer() && dsiUser.isEligible()) {
@@ -113,13 +212,6 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		} else if (dsiRoleMgr.isResident(dsiUser) || dsiRoleMgr.isFellow(dsiUser)) {
 			sendResidentIneligibleEmail(dsiUser, site, ms);
 		}
-
-		//if isProffer, send proffer email to the site admin
-		String proffer = StringUtil.checkVal(dsiUser.getAttribute(DSIUserDataVO.RegField.DSI_MIL_HOSP.toString()));
-		log.debug("proffer=" + proffer + " from " + dsiUser.getAttribute(DSIUserDataVO.RegField.DSI_MIL_HOSP.toString()));
-		if (Convert.formatBoolean(proffer))
-			sendProfferEmail(dsiUser, site, ms);
-
 	}
 
 
@@ -141,7 +233,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		}
 	}
 
-	
+
 	/**
 	 * fires the RESIDENT/FELLOW elidgible email
 	 * @param dsiUser
@@ -160,7 +252,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		}
 	}
 
-	
+
 	/**
 	 * fires the transfer ineligible email
 	 * @param dsiUser
@@ -179,7 +271,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		}
 	}
 
-	
+
 	/**
 	 * fires the CHEIF eligble email
 	 * @param dsiUser
@@ -198,7 +290,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		}
 	}
 
-	
+
 	/**
 	 * fires the CHIEF ineligible email
 	 * @param dsiUser
@@ -235,7 +327,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 			log.error("could not send resident ineligible email", e);
 		}
 	}
-	
+
 
 	/**
 	 * fires the resident eligible email
@@ -254,7 +346,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 			log.error("could not send resident eligible email", e);
 		}
 	}
-	
+
 
 	/**
 	 * fires the proffer notification to the admins
@@ -273,7 +365,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 			log.error("could not send proffer email", e);
 		}
 	}
-	
+
 
 	/**
 	 * fires the acct verified email to the user

@@ -40,6 +40,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 	}
 
 
+	@Override
 	public void notifyAdminOfAdDeclined(DePuyEventSeminarVO sem, SiteVO site, UserDataVO user, String reason, int cnt, CoopAdVO vo) {
 		String label = (Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1) ? "Online" : "Newspaper";
 		StringBuilder msg = new StringBuilder();
@@ -51,21 +52,21 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			msg.append("The Coordinator commented:\r\n").append(reason).append("\r\n");
 		}
 		msg.append("\r\n");
-		
+
 
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
-			mail.addCC("mroderic@its.jnj.com");
+			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addRecipient("Amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
-			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
-			
+			mail.addCC("mroderic@its.jnj.com");
+
 			mail.setSubject(label + " Ad #" + cnt + " declined for Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -78,7 +79,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			log.error("Co-Op Ad declined", me);
 		}
 	}
-	
+
 	/**
 	 * sends a notification to the coordinator about their ad options. (an uploaded file)
 	 * @param sem
@@ -86,9 +87,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 	 * @param cnt
 	 * @param vo
 	 */
-	public void reviewAdOptions(DePuyEventSeminarVO sem, SiteVO site, CoopAdVO vo) {
-		boolean isOnline = false;//Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1;
-		
+	@Override
+	public void reviewAdOptions(DePuyEventSeminarVO sem, SiteVO site) {
 		StringBuilder msg = new StringBuilder(500);
 		msg.append("Dear Seminar Holder,\r\r");
 		msg.append("The Newspaper Ad Options are now ready for your review/approval. ");
@@ -104,8 +104,9 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("ksmith49@its.jnj.com");
-			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Options - Seminar " + sem.getRSVPCodes());
+			mail.setSubject("Newspaper Options - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 
@@ -117,8 +118,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			log.error("Co-Op Ad options", me);
 		}
 	}
-	
-	
+
+
 	/**
 	 * sends a notification to Harmony with Ad option feedback from the coordinator
 	 * @param sem
@@ -126,11 +127,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 	 * @param cnt
 	 * @param vo
 	 */
+	@Override
 	public void feedbackAdOptions(DePuyEventSeminarVO sem, SiteVO site, CoopAdVO vo) {
-		boolean isOnline = false; //Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1;
-		//String eventType = StringUtil.checkVal(sem.getEvents().get(0).getEventTypeCd());
-		//boolean isCFSEM = ( eventType.toUpperCase().startsWith("CFSEM") );
-		
 		StringBuilder msg = new StringBuilder(500);
 		msg.append("The seminar coordinator has chosen their Newspaper Ad Options and they are listed below:\r\r\r");
 		msg.append(vo.getOptionFeedbackText()).append("\r\r\r");
@@ -141,13 +139,13 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 
-			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Options Confirmed - Seminar " + sem.getRSVPCodes());
+			mail.setSubject("Newspaper Options Confirmed - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 
@@ -159,13 +157,14 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			log.error("Co-Op Ad options feedback", me);
 		}
 	}
-	
 
+
+	@Override
 	public void requestCoordinatorApproval(DePuyEventSeminarVO sem, SiteVO site, CoopAdVO vo) {
 		//Allow 5 business days for response
 		Date dueDate = addBusinessDays(5);
 		boolean isOnline = Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1;
-		
+
 		StringBuilder msg = new StringBuilder(500);
 		msg.append("Dear Seminar Holder,\r\r");
 		msg.append("The cost and proof for your ");
@@ -183,17 +182,17 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("ksmith49@its.jnj.com");
 
 			for (PersonVO p : sem.getPeople()) {
-				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
 				//Add only the sales rep
-				else if (p.getRoleCode() == Role.TGM ) {
+				if (Role.TGM == p.getRoleCode() && StringUtil.isValidEmail(p.getEmailAddress())) {
 					mail.addCC(p.getEmailAddress());
 					break;
 				}
 			}
-			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Ad approval required - Seminar " + sem.getRSVPCodes());
+			mail.setSubject((isOnline ? "Online" : "Newspaper") + " Ad approval required - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 
@@ -206,32 +205,33 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 		}
 	}
 
-	
+
+	@Override
 	public void requestAdApprovalOfConsignee(DePuyEventSeminarVO sem, SiteVO site, boolean isHospital) {
 		EventEntryVO event = sem.getEvents().get(0);
 		ConsigneeVO consignee = sem.getConsignees().get((isHospital ? Long.valueOf(2) : Long.valueOf(1)));
 		if (consignee == null) consignee = new ConsigneeVO();
 		Date approvalDt = addBusinessDays(6);
 
-		StringBuilder msg = new StringBuilder();
+		StringBuilder msg = new StringBuilder(500);
 		msg.append("Dear ").append(consignee.getContactName()).append(",");
 		msg.append("<p>The promotional ad(s) for the ").append(sem.getJointLabel());
 		msg.append(" patient education seminar scheduled on <i>");
 		msg.append(Convert.formatDate(event.getStartDate(), Convert.DATE_LONG));
 		msg.append("</i> at <i>").append(event.getEventName())
-				.append("</i> are ready for your approval.</p>");
-		
+		.append("</i> are ready for your approval.</p>");
+
 		msg.append("<p>Please click the link below to review the ad(s), ");
 		msg.append("and your portion of the costs.  Once you approve, you will click on a link taking you to a secure PayPal account ");
 		msg.append("set-up and contracted by DePuy Synthes.  Your credit card information will NOT ");
 		msg.append("be provided to any party other than PayPal to ensure the privacy and security of your personal information.</p>");
-		
+
 		msg.append("<p>Ad approval and payment must be received by ").append(
 				Convert.formatDate(approvalDt, Convert.DATE_LONG));
 		msg.append(" or the seminar will be canceled.</p>");
 		msg.append("<p><a href=\"http://").append(site.getSiteAlias())
-				.append("/approve-ad?reqType=coopAdsReview&amp;eventPostcardId=")
-				.append(sem.getEventPostcardId());
+		.append("/approve-ad?reqType=coopAdsReview&amp;eventPostcardId=")
+		.append(sem.getEventPostcardId());
 		if (isHospital) msg.append("&isHosp=1");
 		msg.append("\">Click here to review &amp; approve this ad.</a></p>");
 		msg.append("<p>Regards,<br/><i>DePuy Synthes Joint Reconstruction</i></p><br/>");
@@ -241,6 +241,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(consignee.getEmail());
 			mail.addBCC("ksmith49@its.jnj.com");
+			mail.addBCC("cmarcos1@its.jnj.com");
 			mail.addBCC("mroderic@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject("Approval Required: Promotion for Seminar #" + sem.getRSVPCodes());
@@ -255,19 +256,21 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 		}
 	}
 
+
+	@Override
 	public void notifyAdminOfAdApproval(DePuyEventSeminarVO sem, SiteVO site,
 			UserDataVO user, int cnt, CoopAdVO vo) {
 		//Determine if it's co-funded or DePuy funded (used for subject line and recipients)
 		String eventType = StringUtil.checkVal(sem.getEvents().get(0).getEventTypeCd());
 		boolean isCFSEM = ( eventType.toUpperCase().startsWith("CFSEM") );
 		String label = (Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1) ? "Online" : "Newspaper";
-		
+
 		//Build the subject text
 		StringBuilder subject = new StringBuilder();
 		subject.append(label + " Ad #" + cnt + " approved by Coordinator for ");
 		subject.append( (isCFSEM ? "Co-Funded" : "DePuy Funded") );
 		subject.append(" Seminar #").append(sem.getRSVPCodes());
-		
+
 		StringBuilder msg = new StringBuilder(425);
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has approved ");
@@ -278,11 +281,10 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			msg.append("the portal for their approval.\r\n");
 		}
 		msg.append("\r\n");
-		
+
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
@@ -291,8 +293,9 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
-			
+
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -313,11 +316,12 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 	 * @param site
 	 * @param user
 	 */
+	@Override
 	public void notifyAdminOfSurgeonsApproval(DePuyEventSeminarVO sem, SiteVO site, boolean isHospital) {
 		//Mitek does not do co-funded seminars
 	}
 
-	
+
 	/**
 	 * Notification sent out after Novus has uploaded ad details to the portal.
 	 * @param sem
@@ -330,27 +334,27 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 		msg.append("the portal for Seminar #").append(sem.getRSVPCodes()).append(". ");
 		msg.append("Detailed information is now available for Harmony to begin ");
 		msg.append("ad creation.\r\r");
-		
+
 		//Email subject
 		StringBuilder subject = new StringBuilder(100);
 		subject.append("Newspaper Advertising Options Available in Portal - Seminar ");
 		subject.append(sem.getRSVPCodes());
-		
+
 		try{
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
-			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.setTextBody(msg.toString());
-			
+
 			//Send message
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
@@ -365,11 +369,12 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 	 * @param sem
 	 * @param site
 	 */
+	@Override
 	protected void allAdsComplete(DePuyEventSeminarVO sem, SiteVO site) {
 		StringBuilder msg = new StringBuilder(140);
 		msg.append("Newspaper Advertising for Seminar #").append(sem.getRSVPCodes());
 		msg.append(" has been sent and confirmed by the publication(s).\r\r");
-		
+
 		try{
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.setSubject("Newspaper Advertising Placement Confirmation - Seminar "+sem.getRSVPCodes());
@@ -378,19 +383,19 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
-			mail.addCC("LisaV@metrosn.com");
 			mail.addCC("amy.zimmerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
-			
+
 			MessageSender sender = new MessageSender(attributes,dbConn);
 			sender.sendMessage(mail);
 			log.debug("Notify Ad Placement Sent");
-			
+
 		} catch (Exception e){
 			log.error("Ad Placement Notification",e);
 		}

@@ -180,7 +180,6 @@ public class QuickLinksAction extends SBActionAdapter {
 	 * @return
 	 */
 	public static boolean isFavorite(Map<String, List<PageViewVO>> data, String sec, String pkId) {
-		log.debug("isFavorite...");
 		// no data, no match.
 		if (data == null) return false;
 		// unpack target section

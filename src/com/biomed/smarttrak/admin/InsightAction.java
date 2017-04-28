@@ -49,12 +49,13 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  ****************************************************************************/
 public class InsightAction extends AbstractTreeAction {
 	protected static final String INSIGHT_ID = "insightId"; //req param
+	public static final String TITLE_BYPASS = "titleBypass"; //req param
 	public static final String ROOT_NODE_ID = AbstractTreeAction.MASTER_ROOT;
 	private Map<String, String> sortMapper;
 
 	protected enum Fields {
 		INSIGHT_ID, STATUS_CD, TYPE_CD, DATE_RANGE, START, RPP, SORT, ORDER,
-		SEARCH, ID_BYPASS;
+		SEARCH, ID_BYPASS, TITLE_BYPASS;
 	}
 
 	public InsightAction() {
@@ -78,9 +79,12 @@ public class InsightAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("insight retrieve called");
-
+		
 		if (req.hasParameter("loadData") || req.hasParameter(INSIGHT_ID) ) {
-			loadAuthors(req);
+			req.setParameter(TITLE_BYPASS, StringUtil.checkVal(true));
+			if (req.hasParameter(INSIGHT_ID)){
+				loadAuthors(req);
+			}
 			loadInsightsData(req);
 		}
 	}
@@ -100,6 +104,7 @@ public class InsightAction extends AbstractTreeAction {
 		if (req.hasParameter("statusCd")) insightParamsMap.put(Fields.STATUS_CD, req.getParameter("statusCd"));
 		if (req.hasParameter("typeCd")) insightParamsMap.put(Fields.TYPE_CD, req.getParameter("typeCd"));
 		if (req.hasParameter("dateRange")) insightParamsMap.put(Fields.DATE_RANGE, req.getParameter("dateRange"));
+		if (req.hasParameter(TITLE_BYPASS)) insightParamsMap.put(Fields.TITLE_BYPASS, req.getParameter(TITLE_BYPASS));
 		insightParamsMap.put(Fields.START, req.getParameter("offset", "0"));
 		insightParamsMap.put(Fields.RPP, req.getParameter("limit","10"));
 		insightParamsMap.put(Fields.SORT, StringUtil.checkVal(sortMapper.get(req.getParameter("sort")), "publish_dt"));
@@ -108,7 +113,7 @@ public class InsightAction extends AbstractTreeAction {
 		insightParamsMap.put(Fields.ID_BYPASS, "false");
 
 		List<Object> insights;
-
+		
 		insights = getInsights(insightParamsMap);
 
 		decryptNames(insights);
@@ -187,6 +192,8 @@ public class InsightAction extends AbstractTreeAction {
 		aa.setAttributes(attributes);
 		aa.setDBConnection(dbConn);
 		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
+		
+		
 	}
 
 	/**
@@ -302,10 +309,15 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	@SuppressWarnings("unchecked")
 	public List<Object> getInsights(Map<Fields, String> insightParamsMap) {
+		boolean tb = insightParamsMap.containsKey(Fields.TITLE_BYPASS) && Convert.formatBoolean(insightParamsMap.get(Fields.TITLE_BYPASS));
+		
+		Map<String, String> authorTitles = new HashMap<>();
+		if (!tb){
+			//Load Authors.
+			authorTitles = loadAuthorTitles();
+		}
 
-		//Load Authors.
-		Map<String, String> authorTitles = loadAuthorTitles();
-
+			
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String sql = formatRetrieveQuery(insightParamsMap, schema);
 
@@ -314,12 +326,14 @@ public class InsightAction extends AbstractTreeAction {
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
 
+		
 		for (Object ob : insights){
 			InsightVO vo = (InsightVO)ob;
 			vo.setQsPath((String)getAttribute(Constants.QS_PATH));
-			if(authorTitles.containsKey(vo.getCreatorProfileId())) {
+			if(!tb && authorTitles.containsKey(vo.getCreatorProfileId())) {
 				vo.setCreatorTitle(authorTitles.get(vo.getCreatorProfileId()));
 			}
+			
 		}
 
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));

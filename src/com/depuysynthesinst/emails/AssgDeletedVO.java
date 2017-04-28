@@ -48,7 +48,7 @@ public class AssgDeletedVO extends AbstractDSIEmailVO {
 		addThankYou(sb);
 
 		addClosingRemark(sb, siteUrl);
-		
+
 		addTrackingNo(sb, "DSUS/INS/0715/1154 07/15");
 
 		super.setHtmlBody(sb.toString());

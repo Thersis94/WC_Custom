@@ -59,7 +59,7 @@ public class ManageAuthorAction extends SimpleActionAdapter {
 
 		if (!req.hasParameter(LOAD_AUTHOR_LIST)) return;
 
-		loadAuthors(req);
+		loadAuthors(req, true);
 		List<AccountVO> managers = (List<AccountVO>) req.getAttribute(AccountAction.MANAGERS);
 
 		try {
@@ -85,6 +85,7 @@ public class ManageAuthorAction extends SimpleActionAdapter {
 		for (AccountVO manager : managers){
 			UserVO uvo = new UserVO();
 			uvo.setProfileId(manager.getOwnerProfileId());
+			uvo.setTitle(manager.getTitle());
 			if (!users.contains(uvo)){
 				users.add(uvo);
 			}
@@ -147,13 +148,13 @@ public class ManageAuthorAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private void loadAuthors(ActionRequest req) throws ActionException {
+	private void loadAuthors(ActionRequest req, boolean loadTitles) throws ActionException {
 		log.debug("loaded authors");
 
 		AccountAction aa = new AccountAction();
 		aa.setActionInit(actionInit);
 		aa.setAttributes(attributes);
 		aa.setDBConnection(dbConn);
-		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
+		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA), loadTitles);
 	}
 }

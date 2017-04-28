@@ -48,6 +48,141 @@ display_flg, create_dt, report_flg, cacheable_flg, clonable_flg, approvable_flg,
 VALUES('EMAIL_CAMPAIGN_WIDGET', null, 'Email Campaign Widget', 'com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAssociativeAction', 1, 0, 0,
 0, getDate(), 0, 0, 0, 0, 'UNALLOCATED', null);
 
+--register new data sources
+insert into data_source
+(data_source_id, organization_id, create_dt, update_dt, common_nm, class_nm )
+values(lower(replace(newid(), '-', '')), 'BMG_SMARTTRAK', getDate(), null, 'Biomed Scheduled Weekly Updates DataSource', 'com.siliconmtn.sb.email.datasource.SmarttrakScheduledWeeklyDataSource'),
+(lower(replace(newid(), '-', '')), 'BMG_SMARTTRAK', getDate(), null, 'Biomed Scheduled Daily Updates DataSource', 'com.siliconmtn.sb.email.datasource.SmarttrakScheduledDailyDataSource'),
+--use hard-coded id for this source for later use
+('ac850d2afc344e058e88de729361161f', 'BMG_SMARTTRAK', getDate(), null, 'Biomed Updates DataSource', 'com.siliconmtn.sb.email.datasource.SmarttrakUpdatesDataSource');
+
+--create the campaign_source(data-sets)
+insert into email_campaign_source 
+(campaign_source_id, data_source_id, organization_id, campaign_source_nm, create_dt, active_flg)
+--use hard-coded id here for later use
+values('593b949c1b72a6b47f0000015d12daf6', 'ac850d2afc344e058e88de729361161f', 'BMG_SMARTTRAK', 'SmartTRAK OnDemand Set', getDate(), 1);
+
+--Add the email campaign and instances used for send feature.(hard-coded id values in sb-config file)
+insert into email_campaign
+(email_campaign_id, organization_id, campaign_nm, campaign_desc, coordinator_nm, coordinator_email_txt, create_dt, 
+op_co_nm, op_co_address_txt, footer_class_nm, active_flg, manditory_flg)
+values('665a5ebc1b6d6f097f000001eb030c9a', 'BMG_SMARTTRAK', 'SmartTRAK Promotional Updates', 'SmartTRAK Promotional Updates', 'Lisa Mahan', 'lisa@biomedgps.com', 
+getDate(), 'BioMedGPS, LLC', '3943 Irvine Blvd, Suite 150, Irvine, CA 92602', 'com.siliconmtn.sb.email.footer.DefaultFooterMessage', 1, 0 );
+
+insert into email_campaign_instance
+(campaign_instance_id, campaign_source_id, email_campaign_id, instance_nm, email_from_txt, email_reply_txt, subject_txt, 
+html_source_txt, send_dt, approval_flg, base_redirect_url, create_dt, instance_type_cd, send_type_cd)
+values('fa70cd591b7464c57f000001b67e1040', '593b949c1b72a6b47f0000015d12daf6', '665a5ebc1b6d6f097f000001eb030c9a', 'SmartTRAK Daily Updates', 'noreply@smarttrak.com', 'noreply@smarttrak.com', 'SmartTRAK Daily Updates', 
+'', null, 0, 'smarttrak.uat.sbdev.siliconmtn.com', getDate(), 'EMAIL', 'MANUAL'), ('cd2be6881b75a9c97f00000181c77d14', '593b949c1b72a6b47f0000015d12daf6', '665a5ebc1b6d6f097f000001eb030c9a', 'SmartTRAK Weekly Updates', 'noreply@smarttrak.com', 'noreply@smarttrak.com', 'SmartTRAK Weekly Updates Email', 
+'', null, 0, 'smarttrak.uat.sbdev.siliconmtn.com', getDate(), 'EMAIL', 'MANUAL');
+
+--register updatesSectionHierarchy to system
+insert into module_type
+(module_type_id, organization_id, module_type_nm, class_nm, admin_flg, service_url, facade_flg, global_admin_flg,
+display_flg, update_dt, create_dt, report_flg, cacheable_flg, clonable_flg, approvable_flg, widget_category_id, indexer_class_nm)
+values('BIOMED_UPDATES_HIERARCHY', 'BMG_SMARTTRAK', 'Biomed Updates Hierarchy', 'com.biomed.smarttrak.admin.UpdatesSectionHierarchyAction', 0, '', 0, 0,
+1, null, getDate(), 0, 0, 0, 0, 'CUSTOM', '')
+
+
+--add the email free-marker view
+insert into module_display
+(module_display_id, module_type_id, display_page_nm, display_desc, create_dt, update_dt, stylesheet_txt, organization_id,
+indexable_flg, default_flg, view_txt, view_type_no)
+values(lower(replace(newid(), '-', '')), 'BIOMED_UPDATES_HIERARCHY', null, 'Weekly/Daily Email View', getDate(), null, '', 'BMG_SMARTTRAK', 0, 0, 
+'<#assign dataMap = actionData> <#-- assign the actionData -->
+
+<#-- main content wrapper table -->
+<table align="center" bgcolor="#fff" border="0" cellpadding="0" cellspacing="0" width="650" style="margin: 0 auto:padding: 0;">
+		<tr><td height="25"></td><td></td></tr>
+		<#if dataMap?? && dataMap?size gt 0>
+		<tr>
+		  <td width="100%">
+		    <table align="center" bgcolor="#fff" border="0" cellpadding="0" cellspacing="0" width="100%">
+		      <tbody>
+		        <tr>
+		          <td>Jump to:</td><td width="5"></td>
+		          <#list dataMap as rootName, subMap>
+		            <#assign colorVal = "#0077b5" ><#--Determine colors (default to blue)-->
+		              <#if rootName == "WoundGPS"><#assign colorVal = "#dd5143">
+		                  <#elseif rootName == "RegenGPS"><#assign colorVal = "#39df28">
+		                  <#elseif rootName == "NeuroGPS"><#assign colorVal = "#F7DC6F">
+		                  <#elseif rootName == "VascularGPS"><#assign colorVal = "#b60ff4">
+		                  <#elseif rootName == "Regional"><#assign colorVal = "#E67E22">
+		              </#if>
+		            <td style="text-align: center; border-bottom: 3px solid ${colorVal}">
+		              <p style="font-size: 14px; margin: 0 0 5px; padding-left: 5px; color: #0077b5;">
+		                <a href="#${rootName}" style="text-decoration: none; color: #0077b5;"><span style="font-weight: bold;">${rootName}</span></a>
+		              </p>
+		            </td>
+		            <td width="5"></td>
+		          </#list>
+		        </tr>
+		        <tr><td height="25"></td><td></td></tr>
+		      </tbody>
+		    </table>
+		  </td>
+		</tr>
+    <tr>
+      <td width="100%" valign="top">
+        <table align="center" bgcolor="#fff" border="0" cellpadding="0" cellspacing="0" width="100%">
+					<tbody>
+            <#list dataMap as rootName, subMap>
+              <#--Determine colors (default to blue)-->
+              <#assign colorVal = "#0077b5">
+
+              <#if rootName == "WoundGPS"><#assign colorVal = "#dd5143">
+                <#elseif rootName == "RegenGPS"><#assign colorVal = "#39df28">
+                <#elseif rootName == "NeuroGPS"><#assign colorVal = "#F7DC6F">
+                <#elseif rootName == "VascularGPS"><#assign colorVal = "#b60ff4">
+                <#elseif rootName == "Regional"><#assign colorVal = "#E67E22">
+              </#if>
+              <tr><td><h2 id="${rootName}" style="background-color: ${colorVal}; font-size: 17px; color: #e9e9e9; padding: 8px 8px; border-radius: 3px; margin: 0;">${rootName}</h2></td></tr>
+              <#--Second level items -->
+              <#list subMap as subName, updateList>
+                <tr><td><p id="${subName}" style="font-size: 16px; margin: 8px 0; color: #0077b5; font-weight: bold; padding-left: 10px;">${subName}</p></td></tr>
+                <#--Associated updates level items -->
+                <#assign typeCd = 0 >
+                <#if updateList?size gt 0>
+                  <#assign typeCd = updateList[0].typeCd>
+
+                  <tr><td style="padding-left: 20px;"><#-- Wrapper tag -->
+                    <p style="font-size: 13px; text-transform: uppercase; color: #686868; font-weight: bold;">${updateList[0].typeNm}</p>
+                    <#list updateList as update>
+                      <#if update.typeCd != typeCd>
+                        <#assign typeCd = update.typeCd>
+                      </td></tr>
+                      <tr><td style="padding-left: 20px;">
+                        <p style="font-size: 13px; text-transform: uppercase; color: #686868; font-weight: bold;">${update.typeNm}</p>
+                      </#if>
+												<p style="background-color: #f3f3f3; padding: 15px; border: 1px solid #e9e9e9; font-size: 13px; margin:0;">
+                           <span style="color: #0077b5;">${update.titleTxt} </span>
+                           <#--Sanitize the message text before outputting-->
+                           <#assign updateMessage = update.messageTxt?remove_beginning("<p>")>
+                           <#assign updateMessage = updateMessage?remove_ending("</p>")>
+                           <#assign updateMessage = updateMessage?remove_beginning("<div>")>
+                           <#assign updateMessage = updateMessage?remove_ending("</div>")>
+                           <span style="">&mdash; ${updateMessage}</span>
+                       </p><span style="color: #fff; min-height: 1px; margin:0; display: inline-block;">&nbsp;</span>
+                    </#list>
+                  </td></tr>
+                </#if>
+              </#list>
+            </#list>
+          </tbody>
+				</table>
+      </td>
+    </tr>
+    <#else>
+			<p>No updates availables.</p>
+  </#if>
+</table>', 
+1);
+
+
+
+
+
+
 
 insert into core.INDEX_TYPE (INDEX_TYPE_CD, TYPE_NM, CREATE_DT, SOLR_COLLECTION_ID)
 values ('BIOMEDGPS_PRODUCT', 'SmartTRAK Products', current_timestamp, 'SB_COLLECTION'),
@@ -128,6 +263,10 @@ Widget Display Creation
 insert into MODULE_DISPLAY (MODULE_DISPLAY_ID, MODULE_TYPE_ID, DISPLAY_PAGE_NM, DISPLAY_DESC, CREATE_DT, STYLESHEET_TXT, ORGANIZATION_ID, INDEXABLE_FLG, DEFAULT_FLG) values ('b7542e386ef5ab787f000101e37ad6d6', 'BIOMED_INSIGHTS', '/custom/biomed/smarttrak/insights/index.jsp', 'default insights view', getdate(), '', null, 0, 1);
 insert into MODULE_DISPLAY (MODULE_DISPLAY_ID, MODULE_TYPE_ID, DISPLAY_PAGE_NM, DISPLAY_DESC, CREATE_DT, STYLESHEET_TXT, ORGANIZATION_ID, INDEXABLE_FLG, DEFAULT_FLG) values ('ec82315e8276a03b7f000101e6ba202d', 'BIOMED_INSIGHTS', '/custom/biomed/smarttrak/insights/featured.jsp', 'featured', getdate(), '', null, 0, 0);
 
+--featured insight
+insert into MODULE_TYPE (MODULE_TYPE_ID, ORGANIZATION_ID, MODULE_TYPE_NM, CLASS_NM, INDEXER_CLASS_NM, ADMIN_FLG, SERVICE_URL, FACADE_FLG, GLOBAL_ADMIN_FLG, DISPLAY_FLG, CREATE_DT, REPORT_FLG, CACHEABLE_FLG, CLONABLE_FLG, APPROVABLE_FLG, WIDGET_CATEGORY_ID) values ('BIOMED_FEATURED_INSIGHT', 'BMG_SMARTTRAK', 'Biomed Featured Insight', 'com.biomed.smarttrak.action.FeaturedInsightAction', '', 0, '', 0, 0, 1, getdate(), 0, 0, 0, 0, 'CONTENT_MANAGEMENT');
+insert into MODULE_DISPLAY (MODULE_DISPLAY_ID, MODULE_TYPE_ID, DISPLAY_PAGE_NM, DISPLAY_DESC, CREATE_DT, STYLESHEET_TXT, ORGANIZATION_ID, INDEXABLE_FLG, DEFAULT_FLG) values ('c943fdb8dcdef7c17f000101813b2a7b', 'BIOMED_FEATURED_INSIGHT', '/custom/biomed/smarttrak/featuredInsight/index.jsp', 'featured ', getdate(), '', null, 0, 1);
+
 
 --markets
 insert into MODULE_TYPE (MODULE_TYPE_ID, ORGANIZATION_ID, MODULE_TYPE_NM, CLASS_NM, INDEXER_CLASS_NM, ADMIN_FLG, SERVICE_URL, FACADE_FLG, GLOBAL_ADMIN_FLG, DISPLAY_FLG, CREATE_DT, REPORT_FLG, CACHEABLE_FLG, CLONABLE_FLG, APPROVABLE_FLG, WIDGET_CATEGORY_ID) values ('BIOMEDGPS_MARKET', 'BMG_SMARTTRAK', 'SmartTRAK Markets', 'com.biomed.smarttrak.action.MarketAction', '', 0, '', 0, 0, 1, getdate(), 0, 0, 0, 0, 'CUSTOM');
@@ -173,3 +312,29 @@ insert into MODULE_DISPLAY (MODULE_DISPLAY_ID, MODULE_TYPE_ID, DISPLAY_PAGE_NM, 
 
 --registration view
 insert into MODULE_DISPLAY (MODULE_DISPLAY_ID, MODULE_TYPE_ID, DISPLAY_PAGE_NM, DISPLAY_DESC, CREATE_DT, STYLESHEET_TXT, ORGANIZATION_ID, INDEXABLE_FLG, DEFAULT_FLG) values ('83346fb948ec46830a00142196d99c41', 'REGISTRATION', '/custom/biomed/smarttrak/registration/index.jsp', 'SmartTRAK My Account', getdate(), '', 'BMG_SMARTTRAK', 0, 0);
+
+ --Create Module Type
+
+insert into MODULE_TYPE (module_type_id, module_type_nm, class_nm, create_dt, widget_category_id)
+
+values ('SEC_FILE_MANAGER', 'Secure File Manager', 'com.smt.sitebuilder.action.file.SecFileManagerAction', GETDATE(), 'CONTENT_MANAGEMENT');
+
+
+--Add View
+insert into module_display(module_display_id, module_type_id, display_page_nm, display_desc, create_dt, default_flg)
+values(replace(newId(), '-', ''), 'SEC_FILE_MANAGER', '/secFM/index.jsp', 'Default Secure Display', getDate(), 1);
+
+--Add Action
+insert into sb_action(action_id, organization_id, module_type_id, action_nm, action_desc)
+values(replace(newId(), '-', ''), 'BMG_SMARTTRAK', 'SEC_FILE_MANAGER', 'Biomed Secure File Manager', 'Biomed Secure File Manager');
+
+--Add Org Module Xr
+insert into organization_module(organization_module_id, organization_id, module_type_id, create_dt)
+values(replace(newId(), '-', ''), 'BMG_SMARTTRAK', 'SEC_FILE_MANAGER', GETDATE());
+
+
+
+need to deploy JMS queues to joust!
+need to deploy siliconmtn.jar to Solr, and Zookeeper config updates.
+
+
