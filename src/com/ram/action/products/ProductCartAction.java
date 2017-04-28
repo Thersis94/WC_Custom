@@ -14,14 +14,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpSession;
-
 import com.ram.action.data.ORKitVO;
 import com.ram.action.report.vo.KitExcelReport;
 import com.ram.action.report.vo.ProductCartReport;
 import com.ram.datafeed.data.RAMProductVO;
+
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.cart.storage.Storage;
@@ -29,12 +29,13 @@ import com.siliconmtn.commerce.cart.storage.StorageFactory;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -112,7 +113,7 @@ public class ProductCartAction extends SBActionAdapter {
 	
 	
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		// Check the request object for triggers that determine
 		// what we are going to do with it
 		if (req.hasParameter("deleteKit")) {
@@ -161,7 +162,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void editAttr(SMTServletRequest req) throws ActionException {
+	private void editAttr(ActionRequest req) throws ActionException {
 		StringBuilder postParam = new StringBuilder(500);
 		BufferedReader reader;
 		try {
@@ -188,7 +189,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void editCart(SMTServletRequest req) throws ActionException {
+	private void editCart(ActionRequest req) throws ActionException {
 		Storage store = retrieveContainer(req);
 		ShoppingCartVO cart = store.load();
 		if (Convert.formatBoolean(req.getParameter("clearCart"))) {
@@ -224,7 +225,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param oldLot
 	 * @param cart
 	 */
-	private void editCartProduct(SMTServletRequest req, int pos, List<GenericVO> addedItems, String oldLot, ShoppingCartVO cart) {
+	private void editCartProduct(ActionRequest req, int pos, List<GenericVO> addedItems, String oldLot, ShoppingCartVO cart) {
 		ShoppingCartItemVO p = cart.getItems().get(req.getParameterValues("productId")[pos] + oldLot);
 		Map<String, Object> prodAttributes = p.getProduct().getProdAttributes();
 		p.setProductId(req.getParameterValues("productId")[pos] + req.getParameterValues(LOT_NO)[pos]);
@@ -257,7 +258,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param cart
 	 * @param req
 	 */
-	private void deleteItem(ShoppingCartVO cart, SMTServletRequest req) {
+	private void deleteItem(ShoppingCartVO cart, ActionRequest req) {
 		// Determine whether we are deleting a single item or the entire cart
 		if (req.hasParameter("productId")){
 			cart.remove(req.getParameter("productId"));
@@ -273,7 +274,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private ShoppingCartItemVO buildProduct(SMTServletRequest req, int pos) {
+	private ShoppingCartItemVO buildProduct(ActionRequest req, int pos) {
 		ProductVO product = new ProductVO();
 		
 		product.setProductId(req.getParameterValues("productId")[pos]);
@@ -327,7 +328,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private Storage retrieveContainer(SMTServletRequest req) 
+	private Storage retrieveContainer(ActionRequest req) 
 			throws ActionException {
 		Map<String, Object> attrs = new HashMap<>();
 		attrs.put(GlobalConfig.HTTP_REQUEST, req);
@@ -346,7 +347,7 @@ public class ProductCartAction extends SBActionAdapter {
 
 
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		// If a kitId has been passed along we need to load the kit first.
 		if (req.hasParameter(KIT_ID))populateCart(req);
 		
@@ -380,7 +381,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * current search and add it to the request
 	 * @param req
 	 */
-	private void buildKitSummaryReport(SMTServletRequest req) throws ActionException {
+	private void buildKitSummaryReport(ActionRequest req) throws ActionException {
 		loadKits(req);
 		AbstractSBReportVO report = new KitExcelReport();
 		report.setData(((ModuleVO)attributes.get(Constants.MODULE_DATA)).getActionData());
@@ -394,7 +395,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * Get a list of companies from the customer table in the database with valid products
 	 * @param req
 	 */
-	private void getCompanies(SMTServletRequest req) {
+	private void getCompanies(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(200);
 		
 		sql.append("SELECT CUSTOMER_ID, CUSTOMER_NM FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -422,7 +423,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void getHospitals(SMTServletRequest req) throws ActionException {
+	private void getHospitals(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT CUSTOMER_NM FROM ").append(customDb).append("RAM_CUSTOMER c ");
@@ -448,7 +449,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void searchProducts(SMTServletRequest req) throws ActionException {
+	private void searchProducts(ActionRequest req) throws ActionException {
 		List<RAMProductVO> products = new ArrayList<>();
 		String[] fields = req.getParameterValues("searchFields");
 		int searchType = Convert.formatInteger(req.getParameter("searchType"), 1);
@@ -495,7 +496,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param searchType
 	 * @return
 	 */
-	private String getProductSearchSQL (SMTServletRequest req, String[] fields, int searchType) {
+	private String getProductSearchSQL (ActionRequest req, String[] fields, int searchType) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String searchComaparator = searchType > 1? " like ":" = ";
 		StringBuilder sql = new StringBuilder(300);
@@ -528,7 +529,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private void buildReport(SMTServletRequest req) throws ActionException {
+	private void buildReport(ActionRequest req) throws ActionException {
 		ShoppingCartVO cart = retrieveContainer(req).load();
 		AbstractSBReportVO report;
 		String filename;
@@ -542,7 +543,7 @@ public class ProductCartAction extends SBActionAdapter {
 		report.setFileName(filename + ".pdf");
 		
 		Map<String, Object> data = new HashMap<>();
-		HttpSession sess = req.getSession();
+		SMTSession sess = req.getSession();
 		data.put("cart", cart.getItems().values());
 		data.put(HOSPITAL,StringUtil.checkVal(sess.getAttribute(HOSPITAL)));
 		data.put(ROOM, StringUtil.checkVal(sess.getAttribute(ROOM)));
@@ -571,7 +572,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void deleteCart(SMTServletRequest req) throws ActionException {
+	private void deleteCart(ActionRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("DELETE ").append(customDb).append("RAM_KIT_INFO ");
@@ -598,10 +599,10 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param finalizeCart
 	 * @throws ActionException
 	 */
-	private void saveCart(SMTServletRequest req, int finalizeCart) throws ActionException {
+	private void saveCart(ActionRequest req, int finalizeCart) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(225);
-		HttpSession sess = req.getSession();
+		SMTSession sess = req.getSession();
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		if (StringUtil.checkVal(req.getSession().getAttribute(KIT_ID)).length() == 0) {
 			sql.append("INSERT INTO ").append(customDb).append("RAM_KIT_INFO ");
@@ -656,7 +657,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param kitId
 	 * @throws ActionException
 	 */
-	private void saveProducts(SMTServletRequest req, String kitId) throws ActionException {
+	private void saveProducts(ActionRequest req, String kitId) throws ActionException {
 		// Delete all associated products to prevent duplicates
 		purgeProducts(kitId);
 		
@@ -716,7 +717,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @param finalized
 	 */
-	private void loadKits(SMTServletRequest req) throws ActionException {
+	private void loadKits(ActionRequest req) throws ActionException {
 		List<ORKitVO> kits = new ArrayList<>();
 		String sql = buildKitSearchSQL(req);
 		int count = 0;
@@ -753,7 +754,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String buildKitSearchSQL(SMTServletRequest req) {
+	private String buildKitSearchSQL(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
@@ -790,10 +791,10 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void populateCart(SMTServletRequest req) throws ActionException {
+	private void populateCart(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		HttpSession sess = req.getSession();
+		SMTSession sess = req.getSession();
 		
 		sql.append("SELECT * FROM ").append(customDb).append("RAM_KIT_INFO k ");
 		sql.append("LEFT JOIN ").append(customDb).append("RAM_KIT_PRODUCT_XR xr ");
@@ -880,8 +881,8 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void newKit(SMTServletRequest req) throws ActionException {
-		HttpSession sess = req.getSession();
+	private void newKit(ActionRequest req) throws ActionException {
+		SMTSession sess = req.getSession();
 		sess.removeAttribute(HOSPITAL);
 		sess.removeAttribute(ROOM);
 		sess.removeAttribute(SURGEON);
@@ -906,7 +907,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * Send emails to the representative and the hospital
 	 * @param req
 	 */
-	private void sendEmails(SMTServletRequest req) throws ActionException {
+	private void sendEmails(ActionRequest req) throws ActionException {
 		try {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipients(req.getParameterValues("emails"));
