@@ -43,6 +43,9 @@ CREATE TABLE core.pageview_user (
 	visit_dt timestamp NOT NULL,
 	create_dt timestamp NOT NULL,
 	src_pageview_id int4 NULL,
+	visit_day_no int,
+	visit_month_no int,
+	visit_year_no int,
 	CONSTRAINT pk_pageview_user PRIMARY KEY (pageview_user_id),
 	CONSTRAINT site_pageview_user_fkey FOREIGN KEY (site_id) REFERENCES core.site(site_id)
 ) Without Oids;
@@ -52,7 +55,6 @@ REFERENCES core.page(page_id) on delete cascade on update restrict;
 
 ALTER TABLE core.pageview_user ADD CONSTRAINT profile_fkey FOREIGN KEY (profile_id) 
 REFERENCES core.PROFILE(PROFILE_ID) on delete cascade on update restrict;
-
 
 --update our dollar record
 update core.currency set abbr_txt='USD', symbol_txt='$', exch_rate_no=1 where currency_type_id='dollars';
@@ -110,6 +112,10 @@ FOREIGN KEY (file_type_cd)
 REFERENCES core.file_type(file_type_cd) on delete restrict on update restrict;
 
 
+/**
+ * RUN DATAMODEL.sql for datafeed schema
+**/
+
 
 
 Create table core.SUPPORT_TICKET
@@ -118,9 +124,10 @@ Create table core.SUPPORT_TICKET
 	ORGANIZATION_ID varchar(32) NOT NULL,
 	REPORTER_ID varchar(32) NOT NULL,
 	ASSIGNED_ID varchar(32) NULL,
+	TICKET_NO Integer,
 	STATUS_CD Integer NOT NULL,
 	NOTIFY_FLG Integer NULL,
-	DESC_TXT Varchar(2000) NOT NULL,
+	DESC_TXT Varchar NOT NULL,
 	REFERRER_URL Varchar(150) NULL,
 	CREATE_DT timestamp not NULL,
 	UPDATE_DT timestamp null,
@@ -132,7 +139,7 @@ Create table core.SUPPORT_ACTIVITY
 	ACTIVITY_ID Varchar(32) NOT NULL,
 	TICKET_ID Varchar(32) NOT NULL,
 	PROFILE_ID varchar(32) NOT NULL,
-	DESC_TXT Varchar(2000) NULL,
+	DESC_TXT Varchar NULL,
 	INTERNAL_FLG Integer NULL,
 	EFFORT_NO Decimal(5,2) NULL,
 	COST_NO Decimal(5,2) null,
@@ -150,17 +157,31 @@ Create table core.SUPPORT_ATTACHMENT_XR
 	primary key (ATTACHMENT_XR_ID)
 ) Without Oids;
 
-
 ALTER TABLE core.support_ticket ALTER COLUMN assigned_id TYPE varchar(32) USING assigned_id::varchar ;
 Alter table core.SUPPORT_TICKET add constraint organization_support_ticket_fkey foreign key(ORGANIZATION_ID) references ORGANIZATION (ORGANIZATION_ID)  on update no action on delete cascade;
 Alter table core.SUPPORT_TICKET add constraint profile_support_ticket_fkey foreign key(REPORTER_ID) references PROFILE (PROFILE_ID)  on update no action on delete set null;
 Alter table core.SUPPORT_TICKET add constraint profile2_support_ticket_fkey  foreign key(ASSIGNED_ID) references PROFILE (PROFILE_ID)  on update no action on delete set null;
 Alter table core.SUPPORT_ACTIVITY add constraint profile_support_activity_fkey  foreign key(PROFILE_ID) references PROFILE (PROFILE_ID)  on update no action on delete set null;
-Alter table core.SUPPORT_ATTACHMENT_XR add constraint profile_document_support_attachment_fkey  foreign key(PROFILE_DOCUMENT_ID) references PROFILE_DOCUMENT (PROFILE_DOCUMENT_ID)  on update no action on delete no action;
+Alter table core.SUPPORT_ATTACHMENT_XR add constraint profile_document_support_attachment_fkey  foreign key(PROFILE_DOCUMENT_ID) references PROFILE_DOCUMENT (PROFILE_DOCUMENT_ID)  on update no action on delete cascade;
 Alter table core.SUPPORT_ATTACHMENT_XR add constraint ticket_attachment_fkey  foreign key(TICKET_ID) references SUPPORT_TICKET (TICKET_ID)  on update no action on delete cascade;
 Alter table core.SUPPORT_ACTIVITY add constraint support_ticket_activity_fkey  foreign key(TICKET_ID) references SUPPORT_TICKET (TICKET_ID)  on update no action on delete cascade;
 
+--
+-- trigger to increament human-readable ticket_no field, at the organizationId level, on row INSERT.
+--
+CREATE OR REPLACE FUNCTION inc_support_ticket_no() 
+RETURNS trigger as
+$$
+begin
+	new.ticket_no = 1+(select max(ticket_no) from core.support_ticket where organization_id=new.organization_id);
+	return new;
+END;
 
+$$
+LANGUAGE 'plpgsql';
+
+CREATE TRIGGER inc_support_ticket_no_trigger BEFORE INSERT 
+ON support_ticket FOR EACH ROW EXECUTE PROCEDURE inc_support_ticket_no();
 
 
 /*Create email widget table*/
@@ -181,6 +202,23 @@ alter table core.EMAIL_CAMPAIGN_WIDGET
 add foreign key (email_instance_id) REFERENCES email_campaign_instance(campaign_instance_id) ON DELETE CASCADE,
 add foreign key (module_display_id) REFERENCES core.module_display(module_display_id);
 
+create table core.EMAIL_CAMPAIGN_PROFILE_CONFIG (
+ PROFILE_CONFIG_ID varchar(32) not null,
+ PROFILE_ID varchar(32) not null,
+ CAMPAIGN_INSTANCE_ID varchar(32) not null,
+ CAMPAIGN_LOG_ID varchar(32) not null,
+ KEY_NM varchar(80),
+ VALUE_TXT text,
+ CREATE_DT timestamp not null,
+ primary key (PROFILE_CONFIG_ID)
+) without oids;
+
+--Add constraints
+alter table core.EMAIL_CAMPAIGN_PROFILE_CONFIG
+add foreign key (profile_id) REFERENCES core.profile(profile_id) ON DELETE CASCADE,
+add foreign key (campaign_instance_id) REFERENCES core.email_campaign_instance (campaign_instance_id) ON DELETE CASCADE,
+add foreign key (campaign_log_id) REFERENCES core.email_campaign_log (campaign_log_id) ON DELETE CASCADE;
+
 -- change log table - wc core.
 Create table core.CHANGE_LOG
 (
@@ -195,6 +233,18 @@ Constraint pk_CHANGE_LOG Primary Key (CHANGE_LOG_ID)
 
 Alter table core.CHANGE_LOG add foreign key(WC_SYNC_ID) references core.WC_SYNC (WC_SYNC_ID)  on update no action on delete cascade;
 
+
+Create table core.SENT_EMAIL_PARAM
+(
+	SENT_EMAIL_PARAM_ID Varchar(32) NOT NULL,
+	CAMPAIGN_LOG_ID Varchar(32) NULL,
+	KEY_NM Varchar(150) NOT NULL,
+	VALUE_TXT Varchar NOT NULL,
+	CREATE_DT Timestamp NOT NULL,
+	Primary Key (SENT_EMAIL_PARAM_ID)
+) Without oids;
+
+Alter table core.SENT_EMAIL_PARAM add foreign key(CAMPAIGN_LOG_ID) references core.EMAIL_CAMPAIGN_LOG (CAMPAIGN_LOG_ID)  on update no action on delete cascade;
 
 
 --for UUID generation support: newid()
@@ -303,29 +353,17 @@ Create table custom.BIOMEDGPS_COMPANY_INVESTOR
 Create table custom.BIOMEDGPS_LINK
 (
 	LINK_ID Varchar(32) NOT NULL,
-	LINK_TYPE_ID Integer NOT NULL,
 	COMPANY_ID Varchar(32),
 	MARKET_ID Varchar(32),
 	PRODUCT_ID Varchar(32),
-	NAME_TXT Varchar(100),
+	INSIGHT_ID Varchar(32),
+	UPDATE_ID Varchar(32),
 	URL_TXT Varchar(1024) NOT NULL,
-	ARCHIVE_FLG Smallint,
 	CHECK_DT Timestamp,
-	CHECK_STATUS_NO Smallint,
+	STATUS_NO Smallint,
 	CREATE_DT Timestamp NOT NULL,
 	UPDATE_DT Timestamp,
  primary key (LINK_ID)
-) Without Oids;
-
-
-Create table custom.BIOMEDGPS_LINK_TYPE
-(
-	LINK_TYPE_ID Integer NOT NULL,
-	NAME_TXT Varchar(100) NOT NULL,
-	ORDER_NO Smallint,
-	CREATE_DT Timestamp NOT NULL,
-	UPDATE_DT Timestamp,
- primary key (LINK_TYPE_ID)
 ) Without Oids;
 
 
@@ -373,6 +411,7 @@ Create table custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR
 	ATTRIBUTE_ID Varchar(32) NOT NULL,
 	PRODUCT_ID Varchar(32) NOT NULL,
 	TITLE_TXT Varchar(250),
+	ALT_TITLE_TXT Varchar(250),
 	VALUE_TXT Varchar,
 	ORDER_NO Smallint,
 	STATUS_NO Varchar(1),
@@ -452,11 +491,13 @@ Create table custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR
 	MARKET_ID Varchar(32) NOT NULL,
 	ATTRIBUTE_ID Varchar(32) NOT NULL,
 	VALUE_TXT Varchar,
+	TITLE_TXT Varchar(256),
+	VALUE_1_TXT Varchar(256),
 	ORDER_NO Smallint,
 	STATUS_NO Varchar(1),
 	CREATE_DT Timestamp NOT NULL,
 	UPDATE_DT Timestamp,
- primary key (MARKET_ATTRIBUTE_XR_ID)
+ primary key (MARKET_ATTRIBUTE_ID)
 ) Without Oids;
 
 
@@ -502,19 +543,6 @@ Create table custom.BIOMEDGPS_NOTE
 	CREATE_DT Timestamp,
 	UPDATE_DT Timestamp,
  primary key (NOTE_ID)
-) Without Oids;
-
-
-Create table custom.BIOMEDGPS_FAVORITE
-(
-	FAVORITE_ID Varchar(32) NOT NULL,
-	MARKET_ID Varchar(32),
-	COMPANY_ID Varchar(32),
-	PRODUCT_ID Varchar(32),
-	URL_TXT Varchar(1024) NOT NULL,
-	CREATE_DT Timestamp NOT NULL,
-	USER_ID Varchar(32) NOT NULL,
- primary key (FAVORITE_ID)
 ) Without Oids;
 
 
@@ -610,6 +638,7 @@ Create table custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR
 	COMPANY_ID Varchar(32) NOT NULL,
 	VALUE_TXT Varchar,
 	TITLE_TXT Varchar(250),
+	ALT_TITLE_TXT Varchar(250),
 	ORDER_NO Smallint,
 	STATUS_NO Varchar(1),
 	CREATE_DT Timestamp NOT NULL,
@@ -685,9 +714,6 @@ Create table custom.BIOMEDGPS_TEAM
  primary key (TEAM_ID)
 ) Without Oids;
 
-
-
-drop table custom.BIOMEDGPS_ACCOUNT_ACL_XR;
 
 Create table custom.BIOMEDGPS_ACCOUNT_ACL
 (
@@ -772,7 +798,7 @@ Create table custom.BIOMEDGPS_FD_REVENUE_FOOTNOTE
 	CREATE_DT Timestamp NOT NULL,
 	UPDATE_DT Timestamp,
 	SECTION_ID Varchar(32) NOT NULL,
-	COMPANY_ID Varchar(32) NOT NULL,
+	COMPANY_ID Varchar(32),
  primary key (FOOTNOTE_ID)
 ) Without Oids;
 
@@ -798,6 +824,7 @@ Create table custom.BIOMEDGPS_REGULATORY_STATUS
 (
 	STATUS_ID Varchar(32) NOT NULL,
 	STATUS_NM Varchar(30) NOT NULL,
+	STATUS_TXT Varchar(15),
 	CREATE_DT Timestamp NOT NULL,
  primary key (STATUS_ID)
 ) Without Oids;
@@ -830,7 +857,7 @@ Create table custom.BIOMEDGPS_INSIGHT
 	ABSTRACT_TXT Varchar(1000),
 	BYLINE_TXT Varchar(255),
 	CONTENT_TXT Varchar,
-	SIDE_CONTENT_TXT Varchar(5000),
+	SIDE_CONTENT_TXT Varchar(7500),
 	FEATURED_FLG Smallint,
 	FEATURED_IMAGE_TXT Varchar(255),
 	STATUS_CD Varchar(1) NOT NULL,
@@ -889,13 +916,9 @@ Alter table custom.BIOMEDGPS_COMPANY_INVESTOR add  foreign key (INVESTOR_COMPANY
 
 Alter table custom.BIOMEDGPS_COMPANY_INVESTOR add  foreign key (INVESTEE_COMPANY_ID) references custom.BIOMEDGPS_COMPANY (COMPANY_ID) on update restrict on delete restrict;
 
-Alter table custom.BIOMEDGPS_LINK add  foreign key (COMPANY_ID) references custom.BIOMEDGPS_COMPANY (COMPANY_ID) on update restrict on delete cascade;
-
 Alter table custom.BIOMEDGPS_PRODUCT add  foreign key (COMPANY_ID) references custom.BIOMEDGPS_COMPANY (COMPANY_ID) on update restrict on delete restrict;
 
 Alter table custom.BIOMEDGPS_COMPANY_SECTION add  foreign key (COMPANY_ID) references custom.BIOMEDGPS_COMPANY (COMPANY_ID) on update restrict on delete cascade;
-
-Alter table custom.BIOMEDGPS_FAVORITE add  foreign key (COMPANY_ID) references custom.BIOMEDGPS_COMPANY (COMPANY_ID) on update restrict on delete restrict;
 
 Alter table custom.BIOMEDGPS_COMPANY_ALLIANCE_XR add  foreign key (ALLIANCE_TYPE_ID) references custom.BIOMEDGPS_ALLIANCE_TYPE (ALLIANCE_TYPE_ID) on update restrict on delete restrict;
 
@@ -908,17 +931,22 @@ Alter table custom.BIOMEDGPS_COMPANY_LOCATION add  foreign key (COMPANY_ID) refe
 Alter table custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR add  foreign key (COMPANY_ID) references custom.BIOMEDGPS_COMPANY (COMPANY_ID) on update restrict on delete restrict;
 
 Alter table custom.BIOMEDGPS_ACCOUNT add  foreign key (COMPANY_ID) references custom.BIOMEDGPS_COMPANY (COMPANY_ID) on update restrict on delete restrict;
-Alter table custom.BIOMEDGPS_LINK add  foreign key (LINK_TYPE_ID) references custom.BIOMEDGPS_LINK_TYPE (LINK_TYPE_ID) on update restrict on delete restrict;
+
+Alter table custom.BIOMEDGPS_LINK add  foreign key (COMPANY_ID) references custom.BIOMEDGPS_COMPANY (COMPANY_ID) on update restrict on delete cascade;
+
+Alter table custom.BIOMEDGPS_LINK add  foreign key (PRODUCT_ID) references custom.BIOMEDGPS_PRODUCT (PRODUCT_ID) on update restrict on delete cascade;
+
+Alter table custom.BIOMEDGPS_LINK add  foreign key (MARKET_ID) references custom.BIOMEDGPS_MARKET (MARKET_ID) on update restrict on delete cascade;
+
+Alter table custom.BIOMEDGPS_LINK add  foreign key (INSIGHT_ID) references custom.BIOMEDGPS_INSIGHT (INSIGHT_ID) on update restrict on delete cascade;
+
+Alter table custom.BIOMEDGPS_LINK add  foreign key (UPDATE_ID) references custom.BIOMEDGPS_UPDATE (UPDATE_ID) on update restrict on delete cascade;
 
 Alter table custom.BIOMEDGPS_PRODUCT add  foreign key (PARENT_ID) references custom.BIOMEDGPS_PRODUCT (PRODUCT_ID) on update restrict on delete restrict;
 
 Alter table custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR add  foreign key (PRODUCT_ID) references custom.BIOMEDGPS_PRODUCT (PRODUCT_ID) on update restrict on delete cascade;
 
-Alter table custom.BIOMEDGPS_FAVORITE add  foreign key (PRODUCT_ID) references custom.BIOMEDGPS_PRODUCT (PRODUCT_ID) on update restrict on delete restrict;
-
 Alter table custom.BIOMEDGPS_PRODUCT_SECTION add  foreign key (PRODUCT_ID) references custom.BIOMEDGPS_PRODUCT (PRODUCT_ID) on update restrict on delete cascade;
-
-Alter table custom.BIOMEDGPS_LINK add  foreign key (PRODUCT_ID) references custom.BIOMEDGPS_PRODUCT (PRODUCT_ID) on update restrict on delete restrict;
 
 Alter table custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR add  foreign key (ATTRIBUTE_ID) references custom.BIOMEDGPS_PRODUCT_ATTRIBUTE (ATTRIBUTE_ID) on update restrict on delete restrict;
 
@@ -926,13 +954,10 @@ Alter table custom.BIOMEDGPS_PRODUCT_ATTRIBUTE add  foreign key (PARENT_ID) refe
 
 Alter table custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR add  foreign key (MARKET_ID) references custom.BIOMEDGPS_MARKET (MARKET_ID) on update restrict on delete cascade;
 
-Alter table custom.BIOMEDGPS_MARKET add  foreign key (PARENT_ID) references custom.BIOMEDGPS_MARKET (MARKET_ID) on update restrict on delete restrict;
+Alter table custom.BIOMEDGPS_MARKET add  foreign key (PARENT_ID) references custom.BIOMEDGPS_MARKET (MARKET_ID) on update restrict on delete cascade;
 
-Alter table custom.BIOMEDGPS_FAVORITE add  foreign key (MARKET_ID) references custom.BIOMEDGPS_MARKET (MARKET_ID) on update restrict on delete restrict;
 
-Alter table custom.BIOMEDGPS_MARKET_SECTION add  foreign key (MARKET_ID) references custom.BIOMEDGPS_MARKET (MARKET_ID) on update restrict on delete restrict;
-
-Alter table custom.BIOMEDGPS_LINK add  foreign key (MARKET_ID) references custom.BIOMEDGPS_MARKET (MARKET_ID) on update restrict on delete restrict;
+Alter table custom.BIOMEDGPS_MARKET_SECTION add  foreign key (MARKET_ID) references custom.BIOMEDGPS_MARKET (MARKET_ID) on update restrict on delete cascade;
 
 Alter table custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR add  foreign key (ATTRIBUTE_ID) references custom.BIOMEDGPS_MARKET_ATTRIBUTE (ATTRIBUTE_ID) on update restrict on delete restrict;
 
@@ -942,17 +967,13 @@ Alter table custom.BIOMEDGPS_SECTION add  foreign key (PARENT_ID) references cus
 
 Alter table custom.BIOMEDGPS_COMPANY_SECTION add  foreign key (SECTION_ID) references custom.BIOMEDGPS_SECTION (SECTION_ID) on update restrict on delete cascade;
 
-Alter table custom.BIOMEDGPS_PRODUCT_SECTION add  foreign key (SECTION_ID) references custom.BIOMEDGPS_SECTION (SECTION_ID) on update restrict on delete restrict;
+Alter table custom.BIOMEDGPS_PRODUCT_SECTION add  foreign key (SECTION_ID) references custom.BIOMEDGPS_SECTION (SECTION_ID) on update restrict on delete cascade;
 
-Alter table custom.BIOMEDGPS_MARKET_SECTION add  foreign key (SECTION_ID) references custom.BIOMEDGPS_SECTION (SECTION_ID) on update restrict on delete restrict;
-
+Alter table custom.BIOMEDGPS_MARKET_SECTION add  foreign key (SECTION_ID) references custom.BIOMEDGPS_SECTION (SECTION_ID) on update restrict on delete cascade;
 
 Alter table custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR add  foreign key (ATTRIBUTE_ID) references custom.BIOMEDGPS_COMPANY_ATTRIBUTE (ATTRIBUTE_ID) on update restrict on delete restrict;
 
 Alter table custom.BIOMEDGPS_COMPANY_ATTRIBUTE add  foreign key (PARENT_ID) references custom.BIOMEDGPS_COMPANY_ATTRIBUTE (ATTRIBUTE_ID) on update restrict on delete restrict;
-
-Alter table custom.BIOMEDGPS_FAVORITE add  foreign key (USER_ID) references custom.BIOMEDGPS_USER (USER_ID) on update restrict on delete restrict;
-
 
 Alter table custom.BIOMEDGPS_NOTE add  foreign key (USER_ID) references custom.BIOMEDGPS_USER (USER_ID) on update restrict on delete cascade;
 
@@ -1012,7 +1033,7 @@ Alter table custom.BIOMEDGPS_UPDATE add  foreign key (COMPANY_ID) references cus
 
 Alter table custom.BIOMEDGPS_UPDATE add  foreign key (PRODUCT_ID) references custom.BIOMEDGPS_PRODUCT (PRODUCT_ID) on update restrict on delete cascade;
 
-Alter table custom.BIOMEDGPS_UPDATE_SECTION add  foreign key (SECTION_ID) references custom.BIOMEDGPS_SECTION (SECTION_ID) on update restrict on delete restrict;
+Alter table custom.BIOMEDGPS_UPDATE_SECTION add  foreign key (SECTION_ID) references custom.BIOMEDGPS_SECTION (SECTION_ID) on update restrict on delete cascade;
 
 Alter table custom.BIOMEDGPS_UPDATE_SECTION add  foreign key (UPDATE_ID) references custom.BIOMEDGPS_UPDATE (UPDATE_ID) on update restrict on delete cascade;
 
@@ -1022,7 +1043,7 @@ Alter table custom.BIOMEDGPS_ACCOUNT_ACL add  foreign key (SECTION_ID) reference
 Alter table custom.BIOMEDGPS_ACCOUNT_ACL add  foreign key (ACCOUNT_ID) references custom.BIOMEDGPS_ACCOUNT (ACCOUNT_ID) on update restrict on delete cascade;
 
 
-Alter table custom.BIOMEDGPS_INSIGHT_SECTION add  foreign key (SECTION_ID) references custom.BIOMEDGPS_SECTION (SECTION_ID) on update restrict on delete restrict;
+Alter table custom.BIOMEDGPS_INSIGHT_SECTION add  foreign key (SECTION_ID) references custom.BIOMEDGPS_SECTION (SECTION_ID) on update restrict on delete cascade;
 
 Alter table custom.BIOMEDGPS_INSIGHT_SECTION add  foreign key (INSIGHT_ID) references custom.BIOMEDGPS_INSIGHT (INSIGHT_ID) on update restrict on delete cascade;
 

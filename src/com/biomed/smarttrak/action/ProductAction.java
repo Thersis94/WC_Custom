@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.security.SecurityController;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
@@ -28,7 +29,9 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
 /****************************************************************************
@@ -64,7 +67,8 @@ public class ProductAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
-			ProductVO vo = retrieveProduct(req.getParameter("reqParam_1"));
+			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+			ProductVO vo = retrieveProduct(req.getParameter("reqParam_1"), role.getRoleLevel());
 
 			if (StringUtil.isEmpty(vo.getProductId())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -74,13 +78,16 @@ public class ProductAction extends AbstractTreeAction {
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
 				putModuleData(vo);
 			}
+		    	PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
+		    	SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+			page.setTitleName(vo.getProductName() + " | " + site.getSiteName());
 			putModuleData(vo);
 		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
 			retrieveProducts(req);
 		}
 	}
 
-	protected ProductVO retrieveProduct(String productId) throws ActionException {
+	protected ProductVO retrieveProduct(String productId, int roleLevel) throws ActionException {
 		ProductVO product;
 		StringBuilder sql = new StringBuilder(100);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -97,7 +104,7 @@ public class ProductAction extends AbstractTreeAction {
 		product = (ProductVO) results.get(0);
 
 		// Get specifics on product details
-		addAttributes(product);
+		addAttributes(product, roleLevel);
 		addSections(product);
 		addAlliances(product);
 		addRegulatory(product);
@@ -115,7 +122,7 @@ public class ProductAction extends AbstractTreeAction {
 	protected void addRelatedProducts(ProductVO product) throws ActionException {
 		StringBuilder sql = new StringBuilder(375);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT p.PRODUCT_ID, p.PRODUCT_NM, s.SECTION_NM FROM ");
+		sql.append("SELECT p.PRODUCT_ID, p.PRODUCT_NM, s.SECTION_ID FROM ");
 		sql.append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION xr ");
 		sql.append("ON xr.PRODUCT_ID = p.PRODUCT_ID ");
@@ -129,10 +136,12 @@ public class ProductAction extends AbstractTreeAction {
 			ResultSet rs = ps.executeQuery();
 
 			DBProcessor db = new DBProcessor(dbConn);
+			SmarttrakTree t = loadDefaultTree();
+			t.buildNodePaths();
 			while(rs.next()) {
 				ProductVO p = new ProductVO();
 				db.executePopulate(p, rs);
-				product.addRelatedProduct(rs.getString("SECTION_NM"), p);
+				addRelatedProduct(p, product, t, rs.getString("SECTION_ID"));
 			}
 			
 		} catch (SQLException e) {
@@ -140,6 +149,30 @@ public class ProductAction extends AbstractTreeAction {
 		}
 	}
 
+	
+	/**
+	 * Add a related product to the main product
+	 * @param p
+	 * @param product
+	 * @param t
+	 */
+	protected void addRelatedProduct(ProductVO p, ProductVO product,
+			SmarttrakTree t, String sectionId) {
+		Node n = t.findNode(sectionId);
+		
+		// If this product doesn't have any 
+		if (n == null) return;
+		
+		String[] path = n.getFullPath().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+		
+		if (path.length < 2) {
+			product.addRelatedProduct(path[path.length-1], p);
+		} else {
+			product.addRelatedProduct(path[1], p);
+		}
+	}
+
+	
 	/**
 	 * Add all regulations to the product
 	 */
@@ -171,13 +204,18 @@ public class ProductAction extends AbstractTreeAction {
 	 * @param product
 	 * @throws ActionException
 	 */
-	protected void addAttributes(ProductVO product) throws ActionException {
+	protected void addAttributes(ProductVO product, int userLevel) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
-		sql.append("WHERE PRODUCT_ID = ? ");
+		sql.append("WHERE PRODUCT_ID = ? and STATUS_NO in (");
+		if (AdminControllerAction.STAFF_ROLE_LEVEL == userLevel) {
+			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
+		}
+		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
+		
 		sql.append("ORDER BY a.ORDER_NO, xr.ORDER_NO ");
 		log.debug(sql+"|"+product.getProductId());
 		

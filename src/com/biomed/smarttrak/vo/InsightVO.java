@@ -228,6 +228,15 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	public String getLastName() {
 		return lastNm;
 	}
+	
+	/**
+	 * used by solr to search by authors name note case sensitive
+	 * @return
+	 */
+	@SolrField(name="author")
+	public String getAuthorName(){
+		return getFirstName() + " " + getLastName();
+	}
 
 	/* (non-Javadoc)
 	 * @see com.biomed.smarttrak.admin.user.HumanNameIntfc#setFirstName(java.lang.String)
@@ -257,7 +266,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	/**
 	 * @return the creatorProfileId
 	 */
-	@Column(name="creator_profile_id", isInsertOnly=true)
+	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;
 	}

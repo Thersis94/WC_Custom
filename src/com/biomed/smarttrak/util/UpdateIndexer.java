@@ -7,10 +7,10 @@ import java.util.Map;
 import java.util.Properties;
 
 
+
 // Solr 5.5
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
+
 
 
 //WC Custom
@@ -50,37 +50,46 @@ public class UpdateIndexer extends SMTAbstractIndex {
 	}
 
 
-	@Override
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
+	 */
 	@SuppressWarnings("resource")
-	public void addIndexItems(SolrClient server) throws SolrException {
-		try {
-			SolrActionUtil util = new SmarttrakSolrUtil(server);
-			List<SolrDocumentVO> docs = getDocuments(null);
-			if (docs.isEmpty())
-				throw new Exception("No Documents found");
-
-			util.addDocuments(docs);
-		} catch (Exception e) {
-			throw new SolrException(ErrorCode.BAD_REQUEST, e);
-		}
-	}
-
-
 	@Override
-	public void addSingleItem(String itemId) throws SolrException {
-		log.debug("adding single Update: " + itemId);
-		try (SolrActionUtil util = new SmarttrakSolrUtil(makeServer())){
-			List<SolrDocumentVO> docs = getDocuments(itemId);
-			if (docs.isEmpty())
-				throw new Exception("Update not found: " + itemId);
-
-			util.addDocuments(docs);
+	public void addIndexItems(SolrClient server) {
+		// Never place this in a try with resources.
+		// This server was given to this method and it is not this method's
+		// job or right to close it.
+		SolrActionUtil util = new SmarttrakSolrUtil(server);
+		try {
+			util.addDocuments(getDocuments(null));
 		} catch (Exception e) {
-			throw new SolrException(ErrorCode.BAD_REQUEST, e);
+			log.error("Failed to index Updates", e);
 		}
 	}
 
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addSingleItem(java.lang.String)
+	 */
+	@Override
+	public void addSingleItem(String itemId) {
+		log.debug("adding single Update: " + itemId);
+		SolrClient server = makeServer();
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+			util.addDocuments(getDocuments(itemId));
+			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
+		} catch (Exception e) {
+			log.error("Failed to index Update with id=" + itemId, e);
+		}
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
+	 */
 	@Override
 	public String getIndexType() {
 		return INDEX_TYPE;
@@ -94,7 +103,7 @@ public class UpdateIndexer extends SMTAbstractIndex {
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	private List<SolrDocumentVO> getDocuments(String documentId) throws SQLException {
+	private List<SolrDocumentVO> getDocuments(String documentId) {
 		UpdatesAction ua = new UpdatesAction();
 		ua.setDBConnection(new SMTDBConnection(dbConn));
 		ua.setAttribute(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));

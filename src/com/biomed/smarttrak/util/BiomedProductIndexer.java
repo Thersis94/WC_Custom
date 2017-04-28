@@ -1,6 +1,5 @@
 package com.biomed.smarttrak.util;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -25,7 +24,6 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
@@ -44,10 +42,12 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
  ****************************************************************************/
 
 public class BiomedProductIndexer  extends SMTAbstractIndex {
-	private static final String ORG_ID = "BMG_SMARTTRAK";
 	public static final String INDEX_TYPE = "BIOMEDGPS_PRODUCT";
+
+	private static final String ORG_ID = AdminControllerAction.BIOMED_ORG_ID;
 	private static final String DETAILS_ROOT = "DETAILS_ROOT";
 	private static final String US_REGION_ID = "1";
+	private static final String PRODUCT_ID = "PRODUCT_ID";
 
 	public BiomedProductIndexer(Properties config) {
 		this.config = config;
@@ -57,58 +57,60 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
 	@Override
+	@SuppressWarnings("resource")
 	public void addIndexItems(SolrClient server) {
-		pushProducts(server, null);
-	}
-	
-	
-	@Override
-	public void addSingleItem(String id) {
-		try (SolrClient server = super.makeServer()) {
-			pushProducts(server, id);
+		// Never place this in a try with resources.
+		// This server was given to this method and it is not this method's
+		// job or right to close it.
+		SolrActionUtil util = new SmarttrakSolrUtil(server);
+		try {
+			util.addDocuments(retreiveProducts(null).values());
 		} catch (Exception e) {
-			log.error("Failed to update company with id: " + id, e);
+			log.error("could not index products", e);
 		}
 	}
 
-	
-	/**
-	 * Get products from the database and push them up to solr.
-	 * @param server
-	 * @param id
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addSingleItem(java.lang.String)
 	 */
-	@SuppressWarnings("resource")
-	protected void pushProducts (SolrClient server, String id) {
-		SolrActionUtil util = new SmarttrakSolrUtil(server);
-		try {
+	@Override
+	public void addSingleItem(String id) {
+		SolrClient server = makeServer();
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
 			util.addDocuments(retreiveProducts(id).values());
+			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
 		} catch (Exception e) {
-			log.error("Failed to update product in Solr, passed pkid=" + id, e);
+			log.error("Failed to index product with id: " + id, e);
 		}
 	}
-	
-	
-	private Map<String, SecureSolrDocumentVO> retreiveProducts(String id) {
+
+
+	/**
+	 * loads a list of products to push to Solr
+	 * @param id
+	 * @return
+	 */
+	protected Map<String, SecureSolrDocumentVO> retreiveProducts(String id) {
 		Map<String, SecureSolrDocumentVO> products = new HashMap<>();
 		String sql = buildRetrieveSql(id);
 		SmarttrakTree hierarchies = createHierarchies();
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			if (id != null) ps.setString(1, id);
-			
+
 			ResultSet rs = ps.executeQuery();
 			String currentProduct = "";
 			SecureSolrDocumentVO product = null;
 			while (rs.next()) {
-				if (!currentProduct.equals(rs.getString("PRODUCT_ID"))) {
+				if (!currentProduct.equals(rs.getString(PRODUCT_ID))) {
 					addProduct(product, products);
 					product = buildSolrDocument(rs);
-					currentProduct = rs.getString("PRODUCT_ID");
+					currentProduct = rs.getString(PRODUCT_ID);
 				}
-				if (!StringUtil.isEmpty(rs.getString("SECTION_ID")) && product != null) {
+				if (!StringUtil.isEmpty(rs.getString("SECTION_ID")) && product != null)
 					addSection(product, hierarchies.findNode(rs.getString("SECTION_ID")));
-				}
-				
 			}
 			addProduct(product, products);
 			buildDetails(products, id);
@@ -117,9 +119,9 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			buildAlliances(products, id);
 			buildContent(products, id);
 		} catch (SQLException e) {
-			log.error(e);
+			log.error("could not retrieve products", e);
 		}
-		
+
 		return products;
 	}
 
@@ -129,10 +131,8 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * and assign that information to the solr document.
 	 * @param products
 	 */
-	protected void buildLocationInformation(
-			Map<String, SecureSolrDocumentVO> products) {
+	protected void buildLocationInformation(Map<String, SecureSolrDocumentVO> products) {
 		Map<String, LocationVO> locationMap = retrieveLocations();
-		
 		for (Entry<String, SecureSolrDocumentVO> product : products.entrySet()) {
 			String companyId = (String)product.getValue().getAttributes().get("companyId");
 			LocationVO loc = locationMap.get(companyId);
@@ -140,23 +140,22 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			product.getValue().setState(loc.getStateCode());
 			product.getValue().setCountry(loc.getCountryName());
 		}
-		
 	}
 
-	
+
 	/**
 	 * Get a collection of all companies and thier primary locations
 	 * @return
 	 */
 	protected Map<String, LocationVO> retrieveLocations() {
-		StringBuilder sql = new StringBuilder(150);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(150);
 		List<Object> params = new ArrayList<>();
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_LOCATION l ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = l.COUNTRY_CD ");
 		sql.append("ORDER BY COMPANY_ID, PRIMARY_LOCN_FLG DESC ");
+
 		DBProcessor db = new DBProcessor(dbConn);
-		
 		List<Object> results = db.executeSelect(sql.toString(), params, new LocationVO());
 		Map<String, LocationVO> locations = new HashMap<>();
 		for (Object o : results) {
@@ -165,21 +164,21 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			if (!locations.containsKey(vo.getCompanyId()))
 				locations.put(vo.getCompanyId(), vo);
 		}
-		
+
 		return locations;
 	}
+
 
 	/**
 	 * Check if product is viable and add it if so.
 	 * @param product
 	 * @param products
 	 */
-	protected void addProduct(SecureSolrDocumentVO product,
-			Map<String, SecureSolrDocumentVO> products) {
-		if (product != null) {
+	protected void addProduct(SecureSolrDocumentVO product, Map<String, SecureSolrDocumentVO> products) {
+		if (product != null)
 			products.put(product.getDocumentId(), product);
-		}
 	}
+
 
 	/**
 	 * Get all html attributes that constitute content for a product and combine
@@ -202,15 +201,15 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		log.info(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
-			
+
 			ResultSet rs = ps.executeQuery();
 			StringBuilder content = new StringBuilder();
 			String currentProduct = "";
 			while (rs.next()) {
-				if(!currentProduct.equals(rs.getString("PRODUCT_ID"))) {
+				if(!currentProduct.equals(rs.getString(PRODUCT_ID))) {
 					addContent(content, products, currentProduct);
 					content = new StringBuilder(1024);
-					currentProduct = rs.getString("PRODUCT_ID");
+					currentProduct = rs.getString(PRODUCT_ID);
 				}
 				if (content.length() > 1) content.append("\n");
 				content.append(rs.getString("VALUE_TXT"));
@@ -218,7 +217,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			addContent(content, products, currentProduct);
 		}
 	}
-	
+
 
 	/**
 	 * Check to see if the supplied content is viable and if so add it.
@@ -240,7 +239,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * Add section id, name, and acl to document
 	 */
 	@SuppressWarnings("unchecked")
-	protected void addSection(SecureSolrDocumentVO product, Node n) throws SQLException {
+	protected void addSection(SecureSolrDocumentVO product, Node n) {
 		SectionVO sec = (SectionVO)n.getUserObject();
 		product.addHierarchies(n.getFullPath());
 		product.addSection(sec.getSectionNm());
@@ -250,8 +249,8 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		}
 		((List<String>)product.getAttribute("sectionId")).add(sec.getSectionId());
 	}
-	
-	
+
+
 	/**
 	 * Add all alliances to the products
 	 * @param products
@@ -277,7 +276,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		}
 	}
 
-	
+
 	/**
 	 * Get all alliances from the database and put them into a map with a
 	 * product id key
@@ -300,7 +299,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			params.add(id);
 		}
 		DBProcessor db = new DBProcessor(dbConn);
-		
+
 		List<Object> results = db.executeSelect(sql.toString(), params, new ProductAllianceVO());
 		Map<String, List<ProductAllianceVO>> alliances = new HashMap<>();
 		for (Object o : results) {
@@ -310,9 +309,10 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			}
 			alliances.get(vo.getProductId()).add(vo);
 		}
-		
+
 		return alliances;
 	}
+
 
 	/**
 	 * Add regulatory information to all products
@@ -350,15 +350,15 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 				}
 			}
 		}
-		
+
 	}
 
-	
+
 	/**
 	 * Get all regulatory information
 	 * @return
 	 */
-	private Map<String, List<RegulationVO>> retrieveRegulatory(String id) {
+	protected Map<String, List<RegulationVO>> retrieveRegulatory(String id) {
 		StringBuilder sql = new StringBuilder(475);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		List<Object> params = new ArrayList<>();
@@ -376,9 +376,9 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			sql.append("and r.PRODUCT_ID = ? ");
 			params.add(id);
 		}
-		
+
 		DBProcessor db = new DBProcessor(dbConn);
-		
+
 		List<Object> results = db.executeSelect(sql.toString(), params, new RegulationVO());
 		Map<String, List<RegulationVO>> regulations = new HashMap<>();
 		for (Object o : results) {
@@ -388,16 +388,16 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			}
 			regulations.get(vo.getProductId()).add(vo);
 		}
-		
+
 		return regulations;
 	}
 
-	
+
 	/**
 	 * Add the details to the product
 	 * @param products
 	 */
-	private void buildDetails(Map<String, SecureSolrDocumentVO> products, String id) {
+	protected void buildDetails(Map<String, SecureSolrDocumentVO> products, String id) {
 		Tree t = retrieveAttributes(id);
 		Node n =  t.findNode(DETAILS_ROOT);
 		// If this node is null there are no details to index
@@ -414,7 +414,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			}
 		}
 	}
-	
+
 
 	/**
 	 * Loop over the children of the supplied child not and properly sort all it's details
@@ -423,7 +423,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * @param products
 	 */
 	@SuppressWarnings("unchecked")
-	private void groupDetails(Node child, Node parent, Map<String, SecureSolrDocumentVO> products) {
+	protected void groupDetails(Node child, Node parent, Map<String, SecureSolrDocumentVO> products) {
 		List<ProductAttributeVO> attrs = (List<ProductAttributeVO>) child.getUserObject();
 		for (ProductAttributeVO attr : attrs) {
 			SecureSolrDocumentVO p = products.get(attr.getProductId());
@@ -436,7 +436,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			}
 			((List<String>)p.getAttribute(parent.getNodeName())).add(child.getNodeName());
 			((List<String>)p.getAttribute(parent.getNodeName()+"Ids")).add(child.getNodeId());
-			
+
 		}
 	}
 
@@ -446,9 +446,9 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * @return
 	 * @throws SQLException
 	 */
-	private SecureSolrDocumentVO buildSolrDocument(ResultSet rs) throws SQLException {
+	protected SecureSolrDocumentVO buildSolrDocument(ResultSet rs) throws SQLException {
 		SecureSolrDocumentVO product = new SecureSolrDocumentVO(INDEX_TYPE);
-		product.setDocumentId(rs.getString("PRODUCT_ID"));
+		product.setDocumentId(rs.getString(PRODUCT_ID));
 		product.setTitle(rs.getString("PRODUCT_NM"));
 		String name = rs.getString("company_nm");
 		if (name != null) {
@@ -457,10 +457,10 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		}
 		product.addAttribute("companyId", rs.getString("COMPANY_ID"));
 		product.addAttribute("alias", rs.getString("ALIAS_NM"));
-		product.setDocumentUrl(AdminControllerAction.Section.PRODUCT.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString("PRODUCT_ID"));
+		product.setDocumentUrl(AdminControllerAction.Section.PRODUCT.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString(PRODUCT_ID));
 		product.addAttribute("ownership", rs.getString("HOLDING_TXT"));
 		product.addAttribute("status", rs.getString("STATUS_NO"));
-		
+
 		if (rs.getTimestamp("UPDATE_DT") != null) {
 			product.setUpdateDt(rs.getDate("UPDATE_DT"));
 		} else {
@@ -472,16 +472,16 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		} else {
 			product.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.
 		}
-		
+
 		return product;
 	}
-	
-	
+
+
 	/**
 	 * Retrieve all attributes.
 	 * @return
 	 */
-	private Tree retrieveAttributes(String id) {
+	protected Tree retrieveAttributes(String id) {
 		StringBuilder sql = new StringBuilder(125);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
@@ -489,15 +489,15 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("ON a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("ON p.PRODUCT_ID = x.PRODUCT_ID ");
-		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
+		sql.append("WHERE (p.STATUS_NO not in ('A','D') or p.status_no is null) ");
 		if (id != null) sql.append("and x.PRODUCT_ID = ? ");
 		sql.append("ORDER BY a.ATTRIBUTE_ID ");
-		
+
 		List<Node> nodes = new ArrayList<>();
 		DBProcessor db = new DBProcessor(dbConn);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (id != null) ps.setString(1, id);
-			
+
 			ResultSet rs = ps.executeQuery();
 			String curr = "";
 			List<ProductAttributeVO> attrList = new ArrayList<>();
@@ -518,35 +518,34 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		} catch (SQLException e) {
 			log.error(e);
 		}
-		Tree t = new Tree(nodes);
-		
-		return t;
+		return new Tree(nodes);
 	}
 
-	
+
 	/**
 	 * Check to see if the node is viable and if so add it.
 	 * @param n
 	 * @param attrList
 	 * @param nodes
 	 */
-	protected void addNode(Node n, List<ProductAttributeVO> attrList,
-			List<Node> nodes) {
+	protected void addNode(Node n, List<ProductAttributeVO> attrList, List<Node> nodes) {
 		if (n != null) {
 			n.setUserObject(attrList);
 			nodes.add(n);
 		}
 	}
 
+
 	/**
 	 * Create the sql for the product retrieve
 	 * @param id
 	 * @return
 	 */
-	private String buildRetrieveSql(String id) {
+	protected String buildRetrieveSql(String id) {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT p.*, s.SECTION_ID, s.SECTION_NM, s.SOLR_TOKEN_TXT, c.COMPANY_NM, c.HOLDING_TXT FROM ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("SELECT p.*, s.SECTION_ID, s.SECTION_NM, s.SOLR_TOKEN_TXT, c.COMPANY_NM, c.HOLDING_TXT FROM ");
+		sql.append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION ps ");
 		sql.append("ON ps.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
@@ -558,13 +557,13 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		log.info(sql);
 		return sql.toString();
 	}
-	
-	
+
+
 	/**
 	 * Get a full hierarchy list
 	 * @return
 	 */
-	private SmarttrakTree createHierarchies() {
+	protected SmarttrakTree createHierarchies() {
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("SELECT * FROM ").append(config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_SECTION ");
@@ -582,23 +581,10 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		} catch (SQLException e) {
 			log.error(e);
 		}
-		
+
 		SmarttrakTree t = new SmarttrakTree(markets);
 		t.buildNodePaths();
-		
 		return t;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.SolrClient)
-	 */
-	@Override
-	public void purgeIndexItems(SolrClient server) throws IOException {
-		try {
-			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
-		} catch (Exception e) {
-			throw new IOException(e);
-		}
 	}
 
 

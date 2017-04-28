@@ -1,15 +1,9 @@
 package com.depuysynthes.huddle;
 
-// JDK 1.6.x
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
+// JDK 1.8
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 // Apache POI Office API
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -23,6 +17,7 @@ import org.apache.solr.common.SolrDocument;
 
 // SMT Base Libs
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.siliconmtn.data.report.ExcelReport;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /****************************************************************************
@@ -37,113 +32,106 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  * @since Jan 25, 2016
  ****************************************************************************/
 public class ContentReportVO extends AbstractSBReportVO {
-	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	
-	List<SolrDocument> data = new ArrayList<SolrDocument>();
-	
-	// Member Variables
-	Map<String, Object> solrAttribs = new HashMap<>();
-	CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder(); 
+	private static final long serialVersionUID = 187654323987L;
 
-	
+	private List<SolrDocument> data;
+
 	public ContentReportVO() {
 		super();
 	}
-	
-	
-	
+
+
 	/**
-	 * 
+	 * Build Excel File
 	 */
 	public byte[] generateReport() {
-		
-		//Build Excel File
 		HSSFWorkbook workbook = new HSSFWorkbook();
 		Sheet sheet = workbook.createSheet("Huddle Products");
-		this.createHeader(sheet, workbook);
+		createHeader(sheet, workbook);
 		buildWorkbook(sheet);
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try {
-			workbook.write(baos);
-		} catch (IOException e) {
-			log.error("Unable to write file to stream", e);
-		}
-
-		return baos.toByteArray();
+		return ExcelReport.getBytes(workbook);
 	}
-	
-	
+
+
 	/**
-	 * Build the report's content.
+	 * Build the report's content.  Loop the queries until all rows have been retrieved
 	 * @param sheet
 	 */
+	@SuppressWarnings("unchecked")
 	private void buildWorkbook(Sheet sheet) {
-		// Loop the queries until all rows have been retrieved
-		int i = 1;
+		int rowNo = 0;
 		for (SolrDocument doc : data) {
-			Row row = sheet.createRow(i++);
-			
-			int j = 0;
-			row.createCell(j++).setCellValue((String)doc.getFieldValue(SearchDocumentHandler.TITLE));
-			row.createCell(j++).setCellValue((String)doc.getFieldValue(HuddleUtils.SOLR_OPCO_FIELD));
-			
-			Collection<Object> categories = doc.getFieldValues(SearchDocumentHandler.HIERARCHY);
-			StringBuilder cList = new StringBuilder(100);
-			
-			// Iterate over the hierarchies and add to the report
-			if (categories != null) {
-				for (Object o : categories) {
-					if (o == null) continue;
-					if (cList.length() > 0) cList.append(", ");
-					cList.append((String)o);
-				}
-				
-			}
-			row.createCell(j++).setCellValue(cList.toString());
-			
-			StringBuilder images = new StringBuilder(100);
-			StringBuilder documents = new StringBuilder(100);
-			
+			Row row = sheet.createRow(++rowNo);
+
+			int cellNo = 0;
+			row.createCell(cellNo).setCellValue((String)doc.getFieldValue(SearchDocumentHandler.TITLE));
+
+			StringBuilder opCoNms = new StringBuilder(200);
+			concatValues(doc.getFieldValues(HuddleUtils.SOLR_OPCO_FIELD), opCoNms);
+			row.createCell(++cellNo).setCellValue(opCoNms.toString());
+
+			StringBuilder cList = new StringBuilder(200);
+			concatValues(doc.getFieldValues(SearchDocumentHandler.HIERARCHY), cList);
+			row.createCell(++cellNo).setCellValue(cList.toString());
+
+			StringBuilder images = new StringBuilder(200);
+			StringBuilder documents = new StringBuilder(200);
+
 			// Loop over all fields to ensure all custom attributes are
 			// added to the excel file
 			for (String name : doc.getFieldNames()) {
-				if (name == null || !name.startsWith(HuddleUtils.PROD_ATTR_PREFIX)
-						|| doc.get(name) == null) continue;
+				if (name == null || !name.startsWith(HuddleUtils.PROD_ATTR_PREFIX) || doc.get(name) == null) continue;
+
 				if (name.contains(HuddleUtils.PROD_ATTR_IMG_TYPE.toLowerCase())) {
-					for (Object o : doc.getFieldValues(name)) {
-						if (images.length() > 0) images.append(", ");
-						images.append((String)o);
-					}
+					concatValues(doc.getFieldValues(name), images);
+
 				} else if (name.contains(HuddleUtils.PROD_ATTR_MB_TYPE.toLowerCase())) {
-					for (Object o : doc.getFieldValues(name)) {
-						if (documents.length() > 0) documents.append(", ");
-						documents.append((String)o);
-					}
+					concatValues(doc.getFieldValues(name), documents);
 				}
 			}
-			row.createCell(j++).setCellValue(images.toString());
-			row.createCell(j++).setCellValue(documents.toString());
+			String str = images.toString();
+			row.createCell(++cellNo).setCellValue(!str.isEmpty() ? str.split(",").length : 0);
+			row.createCell(++cellNo).setCellValue(str);
+			str = documents.toString();
+			row.createCell(++cellNo).setCellValue(!str.isEmpty() ? str.split(",").length : 0);
+			row.createCell(++cellNo).setCellValue(str);
 		}
 	}
-	
-	
+
+	/**
+	 * reusable method to turn a list into a delimited string
+	 * @param records
+	 * @param str
+	 */
+	private void concatValues(Collection<Object> records, StringBuilder str) {
+		if (records == null || str == null || records.isEmpty()) return;
+		for (Object o : records) {
+			if (str.length() > 0) str.append(", ");
+			str.append((String)o);
+		}
+	}
+
+
+	/**
+	 * creates the header row for Excel
+	 * @param sheet
+	 * @param wb
+	 */
 	private void createHeader(Sheet sheet, Workbook wb) {
-		List<String> headers = new ArrayList<String>();
+		List<String> headers = new ArrayList<>();
 		headers.add("Product Name");
 		headers.add("Speciality");
 		headers.add("Categories");
+		headers.add("Image Count");
 		headers.add("Images");
+		headers.add("Document Count");
 		headers.add("Documents");
-		
+
 		// Add the date and time
 		Row row = sheet.createRow(0);
 		Cell cell;
 		int c = 0;
-		
+
 		CellStyle style = wb.createCellStyle();
 		style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
 		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
@@ -156,7 +144,7 @@ public class ContentReportVO extends AbstractSBReportVO {
 			cell.setCellValue(n);
 			cell.setCellStyle(style);
 		}
-		
+
 		// Set the column sizes.
 		sheet.setColumnWidth(0, 8000);
 		sheet.setColumnWidth(1, 5000);
@@ -165,14 +153,11 @@ public class ContentReportVO extends AbstractSBReportVO {
 		sheet.setColumnWidth(4, 12000);
 	}
 
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object o) {
-		if (o == null) return;
-		if (!(o instanceof List)) return;
-		if (((List<?>)o).isEmpty() || !(((List<?>)o).get(0) instanceof SolrDocument)) return;
+		if (o == null || !(o instanceof List<?>)) return;
 		data = (List<SolrDocument>) o;
 	}
-	
-	
 }

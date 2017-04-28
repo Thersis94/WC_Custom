@@ -12,11 +12,13 @@ import java.util.Map;
 import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.fd.FinancialDashAction.DashType;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.fd.FinancialDashVO.CountryType;
 import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.CompanyVO;
+import com.biomed.smarttrak.vo.SectionVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -98,7 +100,11 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		}
 		
 		SmarttrakTree sections = getHierarchy(req);
-		FinancialDashVO dash = new FinancialDashVO(req, sections);
+		DashType dashType = (DashType) req.getAttribute(FinancialDashAction.DASH_TYPE);
+		
+		FinancialDashVO dash = new FinancialDashVO();
+		dash.setCurrentQtrYear(dashType, getLatestPublish());
+		dash.setData(req, sections);
 		
 		// Filter out financial data requests (i.e initial page load vs. json call).
 		// Financial data is only needed on a json call or report request.
@@ -113,7 +119,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		
 		// Gets the company name for page display
 		if (!StringUtil.isEmpty(dash.getCompanyId())) {
-			String companyName = getCompanyName(req, dash.getCompanyId());
+			String companyName = getCompanyName(dash.getCompanyId());
 			dash.setCompanyName(companyName);
 		}
 		
@@ -136,10 +142,9 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	/**
 	 * Returns a section hierarchy action
 	 * 
-	 * @param req
 	 * @return
 	 */
-	protected SectionHierarchyAction getHierarchyAction(ActionRequest req) {
+	protected SectionHierarchyAction getHierarchyAction() {
 		SectionHierarchyAction sha = new SectionHierarchyAction(this.actionInit);
 		sha.setAttributes(this.attributes);
 		sha.setDBConnection(dbConn);
@@ -156,7 +161,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected SmarttrakTree getHierarchy(ActionRequest req) throws ActionException {
-		SectionHierarchyAction sha = getHierarchyAction(req);
+		SectionHierarchyAction sha = getHierarchyAction();
 		sha.retrieve(req);
 		
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
@@ -168,24 +173,31 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	/**
 	 * Gets the full hierarchy
 	 * 
-	 * @param req
 	 * @return
-	 * @throws ActionException
 	 */
-	protected SmarttrakTree getFullHierarchy(ActionRequest req) throws ActionException {
-		SectionHierarchyAction sha = getHierarchyAction(req);
+	protected SmarttrakTree getFullHierarchy() {
+		SectionHierarchyAction sha = getHierarchyAction();
 		return sha.loadTree(null);
+	}
+	
+	/**
+	 * Gets the latest system-wide published FD quarter/year
+	 * 
+	 * @return
+	 */
+	protected SectionVO getLatestPublish() {
+		SectionHierarchyAction sha = getHierarchyAction();
+		return sha.getLatestFdPublish();
 	}
 	
 	/**
 	 * Returns the company name for the company displayed on the dashboard
 	 * 
-	 * @param req
-	 * @param dash
+	 * @param companyId
 	 * @return
 	 * @throws ActionException
 	 */
-	protected String getCompanyName(ActionRequest req, String companyId) throws ActionException {
+	protected String getCompanyName(String companyId) throws ActionException {
 		CompanyAction compAct = new CompanyAction(this.actionInit);
 		compAct.setAttributes(this.attributes);
 		compAct.setDBConnection(dbConn);

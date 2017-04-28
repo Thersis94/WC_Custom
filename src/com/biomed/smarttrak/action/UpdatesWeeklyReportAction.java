@@ -119,15 +119,19 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
 		//declare sectionId, time range and boolean flag
 		String[] sectionIds = req.getParameterValues("sectionId");
 		boolean isAdmin = req.hasParameter("actionType");
 		String timeRangeCd = req.getParameter("timeRangeCd");
+		
+		//if reloadList is present, this is an ajax call. Flag for view.
+		if(req.hasParameter("reloadList"))
+			req.setAttribute("reload", req.getParameter("reloadList"));
 				
 		List<Object> updates = getUpdates(sectionIds, isAdmin, timeRangeCd);
-
+		
 		putModuleData(updates);
+	
 	}
 
 	/**

@@ -13,6 +13,7 @@ import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.security.SecurityController;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeVO;
 import com.biomed.smarttrak.vo.MarketVO;
@@ -28,6 +29,7 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
@@ -46,8 +48,6 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
  * <b>Changes: </b>
  ****************************************************************************/
 public class MarketAction extends AbstractTreeAction {
-	private static final String DEFAULT_GROUP = "Other";
-	private static final String DEFAULT_SUBGROUP = "Misc";
 
 	public MarketAction() {
 		super();
@@ -72,6 +72,8 @@ public class MarketAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SecurityController.isMktAuth(req);
+		
 		if (req.hasParameter("reqParam_1")) {
 			MarketVO vo = retrieveFromDB(req.getParameter("reqParam_1"), req, true);
 
@@ -81,6 +83,9 @@ public class MarketAction extends AbstractTreeAction {
 			} else {
 				//verify user has access to this market
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
+			    	PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
+			    	SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+				page.setTitleName(vo.getMarketName() + " | " + site.getSiteName());
 				putModuleData(vo);
 			}
 			putModuleData(vo);
@@ -102,8 +107,9 @@ public class MarketAction extends AbstractTreeAction {
 		MarketVO market = new MarketVO();
 		market.setMarketId(marketId);
 		try {
+			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 			db.getByPrimaryKey(market);
-			addAttributes(market);
+			addAttributes(market, role.getRoleLevel());
 			addSections(market);
 			if (loadGraphs) addGraphs(market);
 		} catch (Exception e) {
@@ -142,12 +148,16 @@ public class MarketAction extends AbstractTreeAction {
 	 * Get all non grid attributes for the supplied market
 	 * @param market
 	 */
-	protected void addAttributes(MarketVO market) {
+	protected void addAttributes(MarketVO market, int roleLevel) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
-		sql.append("WHERE MARKET_ID = ? and a.TYPE_CD != 'GRID' ");
+		sql.append("WHERE MARKET_ID = ? and a.TYPE_CD != 'GRID'  and STATUS_NO in (");
+		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
+			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
+		}
+		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
 		sql.append("ORDER BY xr.ORDER_NO");
 		log.debug(sql + "|" + market.getMarketId());
 
@@ -278,8 +288,8 @@ public class MarketAction extends AbstractTreeAction {
 		for (Node n : t.getRootNode().getChildren()) {
 			//use level 3 of the hierarchy as group name, or a default "Other" otherwise
 			String[] hierarchy = StringUtil.checkVal(((SolrDocument)n.getUserObject()).get(SearchDocumentHandler.HIERARCHY)).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
-			String section = hierarchy.length < 3 ? DEFAULT_GROUP : hierarchy[2];
-			String subgroup = hierarchy.length < 4? DEFAULT_SUBGROUP : hierarchy[3];
+			String section = hierarchy.length < 3 ? hierarchy[hierarchy.length-1] : hierarchy[2];
+			String subgroup = hierarchy.length < 4? section : hierarchy[3];
 			addMarket(n, groups, section, subgroup);
 		}
 		
