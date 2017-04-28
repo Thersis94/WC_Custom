@@ -1,18 +1,17 @@
-package com.depuysynthes.scripts;
+package com.depuysynthes.scripts.showpad;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.depuysynthes.scripts.DSMediaBinImporterV2;
+import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
-import com.siliconmtn.security.OAuth2TokenViaCLI;
-import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -27,8 +26,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
-	private ShowpadApiUtil showpadApi;
-	private List<ShowpadDivisionUtil> divisions = new ArrayList<>();
+	public static final String BR = "<br/>";
+	
+	protected ShowpadApiUtil showpadApi;
+	protected List<ShowpadDivisionUtil> divisions = new ArrayList<>();
 
 	/**
 	 * @param args
@@ -36,19 +37,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 */
 	public ShowpadMediaBinDecorator(String[] args) throws IOException {
 		super(args);
-
-		//setup the oAuth util now that the config file has been loaded
-		showpadApi = new ShowpadApiUtil(new OAuth2TokenViaCLI(new HashMap<Config, String>(){
-			private static final long serialVersionUID = -8625615784451892590L;
-			{
-				put(Config.USER_ID, props.getProperty("showpadAcctName"));
-				put(Config.API_KEY, props.getProperty("showpadApiKey"));
-				put(Config.API_SECRET, props.getProperty("showpadApiSecret"));
-				put(Config.TOKEN_CALLBACK_URL, props.getProperty("showpadCallbackUrl"));
-				put(Config.TOKEN_SERVER_URL, props.getProperty("showpadTokenUrl"));
-				put(Config.AUTH_SERVER_URL,  props.getProperty("showpadAuthUrl"));
-				put(Config.KEYSTORE, "showpad");
-			}}, Arrays.asList(props.getProperty("showpadScopes").split(","))));
+		showpadApi = ShowpadApiUtil.makeInstance(props, null);
 	}
 
 
@@ -65,18 +54,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	@Override
 	public void run() {
 		//load the divisions
-		try {
-			loadShowpadDivisionList();
-		} catch (QuotaException qe) {
-			log.error(qe);
-		}
-
-		/*
-		//use only for de-duplication
-		loadManifest();
-		for (ShowpadDivisionUtil util : divisions)
-			cleanupShowpadDups(assetNames, localShowpadIds);
-		 */
+		loadShowpadDivisionList();
 		super.run();
 	}
 
@@ -87,11 +65,12 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 * If we try to add a tag to an asset without using it's ID, and it already existing in the system, it will fail.
 	 * @throws QuotaException 
 	 */
-	private void loadShowpadDivisionList() throws QuotaException {
+	protected void loadShowpadDivisionList() {
 		String[] divs = props.getProperty("showpadDivisions").split(",");
 		for (String d : divs) {
 			String[] div = d.split("=");
-			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi));
+			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi, dbConn));
+			log.debug("created division " + div[0] + " with id " + div[1]);
 		}
 		log.info("loaded " + divisions.size() + " showpad divisions");
 	}
@@ -126,11 +105,11 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		log.info("loaded " + divisionAssets.size() + " divisions from the database");
 
 		//marry the divisionAssets to their respective util object
-		for (String divId : divisionAssets.keySet()) {
+		for (Map.Entry<String, Map<String, String>> entry : divisionAssets.entrySet()) {
 			for (ShowpadDivisionUtil util : divisions) {
-				if (util.getDivisionId().equals(divId)) {
-					util.setDivisionAssets(divisionAssets.get(divId));
-					log.info("gave " + divisionAssets.get(divId).size() + " assets to division=" + divId);
+				if (util.getDivisionId().equals(entry.getKey())) {
+					util.setDivisionAssets(entry.getValue());
+					log.info("gave " + entry.getValue().size() + " assets to division=" + entry.getKey());
 					break;
 				}
 			}
@@ -155,43 +134,38 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//all the mediabin records are already in our database.
 		if (!isInsert) return;
 
-		//confirm we have something to add or update
-		if (getDataCount("inserted") == 0 && getDataCount("updated") == 0) return;
-
-
 		//push all changes to Showpad
-		outer: for (MediaBinDeltaVO vo : masterRecords.values()) {
+		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			//we need to sort out what gets pushed to Showpad on our own.
 			//if it's failed, being deleted, or unchanged and already in Showpad, skip it.
 			State s = vo.getRecordState();
 			if (s == State.Failed || s == State.Delete)
 				continue;
 
-			for (ShowpadDivisionUtil util : divisions) {
-				try {
-					util.pushAsset(vo);					
-				} catch (QuotaException qe) {
-					String msg = makeMessage(vo, "Could not push file to showpad: " + qe.getMessage());
-					failures.add(new Exception(msg));
-					log.error("could not push to showpad, quota reached", qe);
-					break outer;
-				}
-			}
+			loopFileThroughDivisions(vo);
+
 			log.info("completed: " + vo.getFileNm());
 		}
 
 		//process the ticket queue for each division
-		try {
-			for (ShowpadDivisionUtil util : divisions)
-				util.processTicketQueue();
-		} catch (QuotaException qe) {
-			failures.add(qe);
-			log.error("could not process showpad queue, quota limit reached", qe);
-		}
+		for (ShowpadDivisionUtil util : divisions)
+			util.processTicketQueue();
 
 		//save the newly created records to our database for each division
 		for (ShowpadDivisionUtil util : divisions)
-			util.saveDBRecords(dbConn);
+			util.saveDBRecords();
+	}
+
+
+	/**
+	 * called for each mediabin asset in the stack - push it out to each of the Divisions we're managing
+	 * @param vo
+	 * @throws QuotaException
+	 */
+	protected void loopFileThroughDivisions(MediaBinDeltaVO vo) {
+		for (ShowpadDivisionUtil util : divisions) {
+			util.pushAsset(vo);	
+		}
 	}
 
 
@@ -207,46 +181,48 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//confirm we have something to delete
 		if (getDataCount("deleted") == 0) return;
 
-		int cnt = 0;
+		List<String> deletedIds = deleteFromShowpad(masterRecords);
+
+		//fail-fast if there's nothing to do
+		if (deletedIds == null || deletedIds.isEmpty()) return;
+
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(350);
 		sql.append("delete from ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_showpad ");
-		sql.append("where dpy_syn_mediabin_id in ('~'");
-		for (MediaBinDeltaVO vo : masterRecords.values()) {
-			if (vo.getRecordState() == State.Delete) {
-				sql.append(",?");
-				++cnt;
-			}
-		}
-		sql.append(")");
+		sql.append("where dpy_syn_mediabin_id=?");
 		log.debug(sql);
-
-		if (cnt > 0) { //don't run the query if we don't need to
-			cnt = 1;
-			try (PreparedStatement ps  = dbConn.prepareStatement(sql.toString())) {
-				for (MediaBinDeltaVO vo : masterRecords.values()) {
-					if (vo.getRecordState() == State.Delete)  {
-						try {
-							//push deletions to Showpad
-							for (ShowpadDivisionUtil util : divisions)
-								util.deleteAsset(vo);
-
-							//if success, delete it from the DB as well
-							ps.setString(cnt++, vo.getDpySynMediaBinId());
-
-						} catch (QuotaException qe) {
-							String msg = makeMessage(vo, "Could not delete file from showpad: " + qe.getMessage());
-							failures.add(new Exception(msg));
-							log.error("could not delete from showpad", qe);
-							break;
-						}
-					}
-				}
-				cnt = ps.executeUpdate();
-			} catch (SQLException sqle) {
-				failures.add(sqle);
+		try (PreparedStatement ps  = dbConn.prepareStatement(sql.toString())) {
+			for (String id : deletedIds) {
+				ps.setString(1, id);
+				ps.addBatch();
 			}
+			ps.executeBatch();
+		} catch (SQLException sqle) {
+			failures.add(sqle);
 		}
+	}
+
+
+	/**
+	 * deletes all the 'deleted' records from Showpad.
+	 * Returns a list of IDs that were deleted, so we can delete them from the local database as well.
+	 * @param masterRecords
+	 * @return
+	 * @throws QuotaException
+	 */
+	protected List<String> deleteFromShowpad(Map<String, MediaBinDeltaVO> masterRecords) {
+		List<String> data = new ArrayList<>(100);
+		for (MediaBinDeltaVO vo : masterRecords.values()) {
+			if (vo.getRecordState() != State.Delete)  continue;
+
+			//push deletions to Showpad
+			for (ShowpadDivisionUtil util : divisions)
+				util.deleteAsset(vo);
+
+			//if success, delete it from the DB as well
+			data.add(vo.getDpySynMediaBinId());
+		}
+		return data;
 	}
 
 
@@ -259,28 +235,35 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	protected void countDBRecords() {
 		super.countDBRecords();
 
-		int cnt = 0;
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select count(*), division_id from ");
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select count(*), division_id, case when asset_id='FAILED_PROCESSING' then 1 else 0 end as status from ");
 		sql.append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_showpad ");
-		sql.append("group by division_id");
+		sql.append("group by division_id, case when asset_id='FAILED_PROCESSING' then 1 else 0 end");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				for (ShowpadDivisionUtil util : divisions) {
-					if (rs.getString(2).equals(util.getDivisionId()))
-						util.setDbCount(rs.getInt(1));
-				}
-			}
-
+			while (rs.next())
+				setRecordCounts(rs);
 		} catch (SQLException sqle) {
 			log.error("could not count records", sqle);
 		}
+	}
 
-		dataCounts.put("showpad-total", cnt);
-		log.info("there are now " + cnt + " records in the showpad database");
+
+	/**
+	 * sets the counter values (to be reported in the email) into each of the division utils. 
+	 * @param rs
+	 * @throws SQLException
+	 */
+	protected void setRecordCounts(ResultSet rs) throws SQLException {
+		for (ShowpadDivisionUtil util : divisions) {
+			if (rs.getString(2).equals(util.getDivisionId()) && rs.getInt("status") == 0) {
+				util.setDbCount(rs.getInt(1));
+			} else if (rs.getString(2).equals(util.getDivisionId()) && rs.getInt("status") == 1) {
+				util.setFailCount(rs.getInt(1));
+			}
+		}
 	}
 
 
@@ -293,20 +276,23 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//to add valueable stats to the admin email
 		for (ShowpadDivisionUtil util : divisions) {
 			html.append("<h3>Showpad ").append(util.getDivisionNm()).append(" Division</h3>");
-			html.append("Showpad Added: ").append(util.getInsertCount()).append("<br/>");
-			html.append("Showpad Updated: ").append(util.getUpdateCount()).append("<br/>");
-			html.append("Showpad Deleted: ").append(util.getDeleteCount()).append("<br/>");
-			html.append("Showpad Total: ").append(util.getDbCount()).append("<br/><br/>");
+			html.append("Added: ").append(util.getInsertCount()).append(BR);
+			html.append("Updated: ").append(util.getUpdateCount()).append(BR);
+			html.append("Deleted: ").append(util.getDeleteCount()).append(BR);
+			html.append("Total: ").append(util.getDbCount()).append(BR);
+			html.append("Failed to Ingest: ").append(util.getFailCount()).append(BR).append(BR);
 
-			if (util.getFailures().size() > 0) {
-				html.append("<b>The following issues were reported:</b><br/><br/>");
+			List<Exception> failures = util.getFailures();
+			if (!failures.isEmpty()) {
+				html.append("<b>The following issues were reported:</b>").append(BR).append(BR);
 
 				// loop the errors and display them
-				for (int i=0; i < util.getFailures().size(); i++) {
-					html.append(util.getFailures().get(i).getMessage()).append("<hr/>\r\n");
-					log.warn(util.getFailures().get(i).getMessage());
+				for (int i=0; i < failures.size(); i++) {
+					html.append(failures.get(i).getMessage()).append("<hr/>\r\n");
+					log.warn(failures.get(i).getMessage());
 				}
 			}
+
 			html.append("<hr/>\r\n");
 		}
 	}
