@@ -263,7 +263,7 @@ public class RamUserAction extends SBActionAdapter {
 	/**
 	 * Add the hospitals the user is associated with.
 	 */
-	private void manageAssociatedHospitals(SMTServletRequest req,
+	private void manageAssociatedHospitals(ActionRequest req,
 			String profileId) {
 		
 		StringBuilder sql = new StringBuilder(200);
