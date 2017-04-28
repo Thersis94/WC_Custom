@@ -6,6 +6,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: MarketAttributeVO.java <p/>
@@ -30,6 +31,7 @@ public class MarketAttributeVO {
 	private String titleText;
 	private String valueText;
 	private String value1Text;
+	private String value2Text;
 	private String attributeTypeCd;
 	private String attributeName;
 	private String marketName;
@@ -53,6 +55,7 @@ public class MarketAttributeVO {
 		attributeId = req.getParameter("attributeId");
 		valueText = req.getParameter("valueText");
 		setValue1Text(req.getParameter("value1Text"));
+		setValue2Text(StringUtil.getDelimitedList(req.getParameterValues("value2Text"), false, ","));
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 	}
 
@@ -116,11 +119,18 @@ public class MarketAttributeVO {
 		return value1Text;
 	}
 
-
+	@Column(name="value_2_txt")
+	public String getValue2Text() {
+		return value2Text;
+	}
+	
 	public void setValue1Text(String value1Text) {
 		this.value1Text = value1Text;
 	}
 
+	public void setValue2Text(String value2Text) {
+		this.value2Text = value2Text;
+	}
 
 	@Column(name="type_cd", isReadOnly=true)
 	public String getAttributeTypeCd() {
