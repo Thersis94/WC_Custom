@@ -27,6 +27,7 @@ import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -53,6 +54,7 @@ import com.smt.sitebuilder.security.SBUserRole;
  ****************************************************************************/
 public class RamUserAction extends SBActionAdapter {
 
+	public static final int ROLE_LEVEL_OR_MODULE = 10;
 	public static final int ROLE_LEVEL_AUDITOR = 15;
 	public static final int ROLE_LEVEL_OEM = 20;
 	public static final int ROLE_LEVEL_PROVIDER = 25;
@@ -88,7 +90,8 @@ public class RamUserAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.*, b.FIRST_NM, b.LAST_NM, b.EMAIL_ADDRESS_TXT, ");
 		sql.append("c.ROLE_ORDER_NO, c.ROLE_NM, d.PHONE_NUMBER_TXT, ");
-		sql.append("e.CUSTOMER_ID, e.CUSTOMER_NM, f.AUDITOR_ID ");
+		sql.append("e.CUSTOMER_ID, e.CUSTOMER_NM, f.AUDITOR_ID, ");
+		sql.append("hc.CUSTOMER_NM as HOSPITAL_NM, hc.CUSTOMER_ID as HOSPITAL_ID ");
 		sql.append("from PROFILE_ROLE a ");
 		sql.append("inner join PROFILE b on a.PROFILE_ID = b.PROFILE_ID ");
 		sql.append("inner join ROLE c on a.ROLE_ID = c.ROLE_ID ");
@@ -96,7 +99,11 @@ public class RamUserAction extends SBActionAdapter {
 		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER e ");
 		sql.append("on a.ATTRIB_TXT_1 = e.CUSTOMER_ID ");
 		sql.append("left outer join ").append(schema).append("RAM_AUDITOR f ");
-		sql.append("on a.PROFILE_ID = f.PROFILE_ID where 1 = 1 ");
+		sql.append("on a.PROFILE_ID = f.PROFILE_ID ");
+		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER_PROFILE_XR h ");
+		sql.append("on h.PROFILE_ID = a.PROFILE_ID ");
+		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER hc ");
+		sql.append("on hc.CUSTOMER_ID = h.CUSTOMER_ID where 1 = 1 ");
 
 		// filter by site ID
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -131,9 +138,27 @@ public class RamUserAction extends SBActionAdapter {
 			 * Since we sort on userName, we need to retrieve all records each 
 			 * time to properly paginate the results.
 			 */
+			String currentProfile = "";
+			RAMUserVO user = null;
 			while (rs.next()) {
+				if (!currentProfile.equals(rs.getString("PROFILE_ID"))) {
+					if (user != null) {
+						recCtr++;
+						data.add(user);
+					}
+					user = new RAMUserVO(rs);
+					currentProfile = rs.getString("PROFILE_ID");
+				}
+				
+				if (rs.getString("HOSPITAL_ID") != null) {
+					log.debug("Added " + rs.getString("HOSPITAL_NM") + " to " + rs.getString("PROFILE_ID"));
+					user.addHospital(rs.getString("HOSPITAL_ID"), rs.getString("HOSPITAL_NM"));
+				}
+			}
+			
+			if (user != null) {
 				recCtr++;
-				data.add(new RAMUserVO(rs));
+				data.add(user);
 			}
 
 		} catch (SQLException sqle) {
@@ -199,6 +224,8 @@ public class RamUserAction extends SBActionAdapter {
 			int origRoleLevel = Convert.formatInteger(req.getParameter("origRoleLevel"), -1);
 			if (origRoleLevel == ROLE_LEVEL_AUDITOR || userRole.getRoleLevel() == ROLE_LEVEL_AUDITOR) {
 				manageAuditor(req, site, user, userRole, origRoleLevel);
+			} else if (origRoleLevel == ROLE_LEVEL_OR_MODULE) {
+				manageAssociatedHospitals(req, user.getProfileId());
 			}
 		} else {
 			// if non-admin and has changed email address, check auth record.
@@ -230,6 +257,56 @@ public class RamUserAction extends SBActionAdapter {
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, url.toString());
 		}
+	}
+
+	
+	/**
+	 * Add the hospitals the user is associated with.
+	 */
+	private void manageAssociatedHospitals(SMTServletRequest req,
+			String profileId) {
+		
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("INSERT INTO ").append(getAttribute("customDbSchema")).append("RAM_CUSTOMER_PROFILE_XR ");
+		sql.append("(CUSTOMER_PROFILE_XR_ID, PROFILE_ID, CUSTOMER_ID, CREATE_DT) ");
+		sql.append("VALUES(?,?,?,?)");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			// Delete the current hospitals associated with this user.
+			deleteCurrentHospitals(profileId);
+			String hospitals = StringUtil.checkVal(req.getParameter("associatedHospitals"));
+			for (String hospital : hospitals.split("\\|")) {
+				ps.setString(1, new UUIDGenerator().getUUID());
+				ps.setString(2, profileId);
+				ps.setString(3, hospital);
+				ps.setTimestamp(4, Convert.getCurrentTimestamp());
+				ps.addBatch();
+			}
+
+			ps.executeBatch();
+		} catch (SQLException e) {
+			log.error("Unable to add hospitals for user " + profileId, e);
+		}
+	}
+	
+	
+	/**
+	 * Delete any hospital associations this user has at the moment in order
+	 * to make way for the new list of 
+	 * @param profileId
+	 * @throws SQLException
+	 */
+	private void deleteCurrentHospitals(String profileId) throws SQLException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("DELETE ").append(getAttribute("customDbSchema")).append("RAM_CUSTOMER_PROFILE_XR ");
+		sql.append("WHERE PROFILE_ID = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, profileId);
+			
+			ps.executeUpdate();
+		}
+		
 	}
 
 	/**
