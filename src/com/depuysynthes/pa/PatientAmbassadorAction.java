@@ -67,7 +67,7 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 	 * @param mod
 	 * @throws ActionException 
 	 */
-	protected void loadDocuments(SMTServletRequest req, ModuleVO mod) throws ActionException {
+	protected void loadDocuments(ActionRequest req, ModuleVO mod) throws ActionException {
 		//call to solr per usual
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		SolrAction sa = new SolrAction(actionInit);
@@ -101,7 +101,7 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	protected void retrieveAllResults(SolrAction sa, SMTServletRequest req, List<SolrDocument> documents) throws ActionException {
+	protected void retrieveAllResults(SolrAction sa, ActionRequest req, List<SolrDocument> documents) throws ActionException {
 		sa.retrieve(req);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SolrResponseVO solrResp = (SolrResponseVO) mod.getActionData();
