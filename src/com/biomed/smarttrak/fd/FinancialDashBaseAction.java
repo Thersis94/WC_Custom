@@ -24,6 +24,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.session.SMTSession;
@@ -285,7 +286,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		TableType tt = dash.getTableType();
 		
 		if (TableType.COMPANY == tt) {
-			sql.append("select ").append("r.COMPANY_ID as ROW_ID, c.COMPANY_NM as ROW_NM, ");
+			sql.append("select ").append("r.COMPANY_ID as ROW_ID, c.SHORT_NM_TXT as ROW_NM, ");
 		} else { // TableType.MARKET
 			
 			// When viewing market data for a specific company, we always list/summarize 4 levels down in the heirarchy
@@ -497,6 +498,44 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		return rvo;
 	}
 
+	/**
+	 * Returns a list of revenue records based on the passed ids.
+	 * 
+	 * @param revenueIds
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	protected List<FinancialDashRevenueVO> getRevenueRecords(List<String> revenueIds) {
+		List<FinancialDashRevenueVO> rvos = new ArrayList<>();
+		
+		String sql = getRevenueRecordSql(revenueIds.size());
+		List<Object> params = new ArrayList<>();
+		params.addAll(revenueIds);
+		
+		List<?> revRecords = dbp.executeSelect(sql, params, new FinancialDashRevenueVO());
+		
+		if (!revRecords.isEmpty()) {
+			rvos = (List<FinancialDashRevenueVO>) revRecords;
+		}
+		
+		return rvos;
+	}
+
+	/**
+	 * Returns the sql that retrieves fd revenue records
+	 * 
+	 * @return
+	 */
+	private String getRevenueRecordSql(int recordCnt) {
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(100);
+		
+		sql.append("select * from ").append(custom).append("BIOMEDGPS_FD_REVENUE ");
+		sql.append("where REVENUE_ID in (").append(DBUtil.preparedStatmentQuestion(recordCnt)).append(") ");
+		
+		return sql.toString();
+	}
+	
 	/**
 	 * Gets the existing base revenue data that is related to a specific scenario.
 	 * 
