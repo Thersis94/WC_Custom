@@ -132,7 +132,7 @@ public class GridExcelManager {
 		CellRangeAddress range = new CellRangeAddress(0, 0, 0, numColumns);
 		sheet.addMergedRegion(range);
 		cell.setCellValue("SmartTRAK® - " + name);
-		row.setHeightInPoints((2 * sheet.getDefaultRowHeightInPoints()));
+		row.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
 		cell.setCellStyle(getHeadingLabelStyle(workbook));
 	}
 	
@@ -154,8 +154,6 @@ public class GridExcelManager {
 		HSSFPalette palette = workbook.getCustomPalette();
 		short backColor = palette.findSimilarColor(208, 208, 208).getIndex();
 		style.setFillForegroundColor(backColor);
-		
-		//style.setFillForegroundColor(HSSFColor.GREY_25_PERCENT.index);
 		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
 		style.setIndention((short) 1);
 		
@@ -199,10 +197,6 @@ public class GridExcelManager {
 		switch(rsType) {
 			case HEADING:
 				style = getHeadingStyle(workbook);
-				break;
-			case DATA:
-			case UNCHARTED_DATA:
-				style = getDataStyle(workbook, neg);
 				break;
 			case SUB_TOTAL:
 				style = getSubTotalStyle(workbook, neg);

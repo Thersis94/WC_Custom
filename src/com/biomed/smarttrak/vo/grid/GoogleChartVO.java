@@ -234,7 +234,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 					cell.addCustomValue("className", RowStyle.valueOf(detail.getDetailType()).getName());
 				
 				// Determine if there is a columns filter and apply
-				if (fCols.size() > 0) {
+				if (! fCols.isEmpty()) {
 					if (fCols.contains(i + 1)) {
 						row.addCell(cell);
 					}
@@ -262,7 +262,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			col.setLabel(series[j]);
 			
 			// Determine if there is a columns filter and apply
-			if (fCols.size() > 0) {
+			if (! fCols.isEmpty()) {
 				if (fCols.contains(j + 1)) addColumn(col);
 			} else {
 				addColumn(col);

@@ -107,7 +107,7 @@ public class GridChartAction extends SBActionAdapter {
 
 		try {
 			List<Object> gridData = dbp.executeSelect(sql.toString(), params, new GridVO());
-			if (gridData.size() > 0) grid = (GridVO) gridData.get(0);
+			if (! gridData.isEmpty()) grid = (GridVO) gridData.get(0);
 			int i = 1;
 			for (String val : grid.getSeries()) {
 				val = StringUtil.checkVal(val, "* Column " + (i++));

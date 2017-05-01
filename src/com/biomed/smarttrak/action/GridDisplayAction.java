@@ -74,8 +74,6 @@ public class GridDisplayAction extends SBActionAdapter {
 		ChartType type = ChartType.valueOf(StringUtil.checkVal(req.getParameter("ct"), "NONE").toUpperCase());
 		boolean display = Convert.formatBoolean(req.getParameter("display"));
 		
-		log.debug("Grid: " + gridId + "|" + req.getParameter("columns"));
-		
 		// Get the list of columns and convert to integer list
 		List<Integer> columns = new ArrayList<>();
 		if (! StringUtil.isEmpty(req.getParameter("columns"))) {
