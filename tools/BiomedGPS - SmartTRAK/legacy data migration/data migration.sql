@@ -1422,6 +1422,10 @@ set mkt_auth_flg=1
 where account_nm in ('ACME','BioMedGPS, LLC','Byline Only','C. Blakely','Demo, LLC',
 'DemoAll','DemoSpine','DemoWound','Eric Jania','EU Demo','EU Tim Jeavons','Kathleen Schaum','Kevin''s Accounts','Neuro Markets','SmartTRAK-Complimentary','Steve Pinto','Thea Accounts');
 
+-- account notes
+insert into custom.biomedgps_note (note_id, user_id, account_id, note_nm, note_txt, file_path_txt, expiration_dt, create_dt, update_dt)
+select id, creator_id, object_id, title, content, attachment, expiration, create_date, last_update from biomedgps.notes_note
+where content_type_id=95 and cast(object_id as varchar) in (select account_id from custom.biomedgps_account);
 
 
 -- user favorites
@@ -2059,6 +2063,15 @@ delete from custom.biomedgps_market_section where market_id = '6628' and section
 delete from custom.biomedgps_market_section where market_id = '6629' and section_id ='MASTER_29623';
 delete from custom.biomedgps_market_section where market_id = '6630' and section_id ='MASTER_29761';
 delete from custom.biomedgps_market_section where market_id = '6631' and section_id ='MASTER_30175';
+
+
+-- 
+--Change all "Regulatory"(8) , "Reimbursement"(7), "Healthcare Reform"(13), 
+-- "Intellectual Property"(14), "Compliance"(11) to Deleted status
+--
+update custom.biomedgps_insight
+set status_cd = 'D', update_dt = now()
+where type_cd in ('8', '7', '13', '14', '11');
 
 
 -- HubSpot domain key

@@ -493,6 +493,7 @@ Create table custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR
 	VALUE_TXT Varchar,
 	TITLE_TXT Varchar(256),
 	VALUE_1_TXT Varchar(256),
+	VALUE_2_TXT varchar(256),
 	ORDER_NO Smallint,
 	STATUS_NO Varchar(1),
 	CREATE_DT Timestamp NOT NULL,
@@ -535,6 +536,7 @@ Create table custom.BIOMEDGPS_NOTE
 	COMPANY_ID Varchar(32),
 	PRODUCT_ID Varchar(32),
 	MARKET_ID Varchar(32),
+	ACCOUNT_ID Varchar(32),
 	ATTRIBUTE_ID Varchar(32),
 	NOTE_NM Varchar(150),
 	NOTE_TXT Varchar NOT NULL,
@@ -984,6 +986,8 @@ Alter table custom.BIOMEDGPS_NOTE add  foreign key (COMPANY_ID) references custo
 Alter table custom.BIOMEDGPS_NOTE add  foreign key (MARKET_ID) references custom.BIOMEDGPS_MARKET (MARKET_ID) on update restrict on delete cascade;
 
 Alter table custom.BIOMEDGPS_NOTE add  foreign key (PRODUCT_ID) references custom.BIOMEDGPS_PRODUCT (PRODUCT_ID) on update restrict on delete cascade;
+
+Alter table custom.BIOMEDGPS_NOTE add  foreign key (ACCOUNT_ID) references custom.BIOMEDGPS_ACCOUNT (ACCOUNT_ID) on update restrict on delete cascade;
 
 Alter table custom.BIOMEDGPS_USER_TEAM_XR add  foreign key (USER_ID) references custom.BIOMEDGPS_USER (USER_ID) on update restrict on delete cascade;
 
