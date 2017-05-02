@@ -116,7 +116,7 @@ public class CompanyAction extends AbstractTreeAction {
 				return company;
 			}
 			addAttributes(company, roleLevel);
-			addLocations(company);
+			addLocations(company, roleLevel);
 			addSections(company);
 			addAlliances(company);
 			addInvestors(company);
@@ -236,7 +236,7 @@ public class CompanyAction extends AbstractTreeAction {
 	 * @param company
 	 */
 	protected void addAlliances(CompanyVO company) {
-		StringBuilder sql = new StringBuilder(400);
+		StringBuilder sql = new StringBuilder(450);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ALLIANCE_XR cax ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_ALLIANCE_TYPE at ");
@@ -244,6 +244,7 @@ public class CompanyAction extends AbstractTreeAction {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = cax.REL_COMPANY_ID ");
 		sql.append("WHERE cax.COMPANY_ID = ? ");
+		sql.append("ORDER BY at.TYPE_NM, c.COMPANY_NM ");
 		
 		List<Object> params = new ArrayList<>();
 		params.add(company.getCompanyId());
@@ -261,17 +262,30 @@ public class CompanyAction extends AbstractTreeAction {
 	 * Get all locations supported by the supplied company, its children, and its grandchildren and add them to the vo.
 	 * @param company
 	 */
-	protected void addLocations(CompanyVO company) {
+	protected void addLocations(CompanyVO company, int roleLevel) {
 		StringBuilder sql = new StringBuilder(650);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT l.* FROM ").append(customDb).append("BIOMEDGPS_COMPANY_LOCATION l ");
 		sql.append("left join ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("on c.COMPANY_ID = l.COMPANY_ID ");
-		sql.append("WHERE l.COMPANY_ID = ? or c.PARENT_ID = ? or c.PARENT_ID in (");
+		sql.append("WHERE (l.COMPANY_ID = ? or c.PARENT_ID = ? or c.PARENT_ID in (");
 		sql.append("SELECT child.COMPANY_ID FROM ").append(customDb).append("BIOMEDGPS_COMPANY parent ");
 		sql.append("left join ").append(customDb).append("BIOMEDGPS_COMPANY child ");
 		sql.append("on parent.COMPANY_ID = child.PARENT_ID ");
-		sql.append("WHERE parent.COMPANY_ID = ? ) ");
+		sql.append("WHERE parent.COMPANY_ID = ? and parent.STATUS_NO in (");
+		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
+			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
+		}
+		sql.append("'").append(AdminControllerAction.Status.P).append("') and child.STATUS_NO in (");
+		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
+			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
+		}
+		sql.append("'").append(AdminControllerAction.Status.P).append("') ");  
+		sql.append("))  and c.STATUS_NO in (");
+		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
+			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
+		}
+		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
 		sql.append("order by c.PARENT_ID desc, PRIMARY_LOCN_FLG asc ");
 		log.debug(sql+"|"+company.getCompanyId());
 		List<Object> params = new ArrayList<>();
@@ -297,9 +311,11 @@ public class CompanyAction extends AbstractTreeAction {
 	protected void addAttributes(CompanyVO company, int roleLevel) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT xr.*, a.* FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
+		sql.append("SELECT xr.*, a.*, parent.ATTRIBUTE_NM as PARENT_NM FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE parent ");
+		sql.append("ON parent.ATTRIBUTE_ID = a.PARENT_ID ");
 		sql.append("WHERE COMPANY_ID = ? and STATUS_NO in (");
 		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
 			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 

@@ -460,6 +460,8 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		product.setDocumentUrl(AdminControllerAction.Section.PRODUCT.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString(PRODUCT_ID));
 		product.addAttribute("ownership", rs.getString("HOLDING_TXT"));
 		product.addAttribute("status", rs.getString("STATUS_NO"));
+		product.addAttribute("shortNm", rs.getString("SHORT_NM"));
+		product.addAttribute("companyShortNm", rs.getString("SHORT_NM_TXT"));
 
 		if (rs.getTimestamp("UPDATE_DT") != null) {
 			product.setUpdateDt(rs.getDate("UPDATE_DT"));
@@ -544,7 +546,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	protected String buildRetrieveSql(String id) {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT p.*, s.SECTION_ID, s.SECTION_NM, s.SOLR_TOKEN_TXT, c.COMPANY_NM, c.HOLDING_TXT FROM ");
+		sql.append("SELECT p.*, s.SECTION_ID, s.SECTION_NM, s.SOLR_TOKEN_TXT, c.COMPANY_NM, c.SHORT_NM_TXT, c.HOLDING_TXT FROM ");
 		sql.append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION ps ");
 		sql.append("ON ps.PRODUCT_ID = p.PRODUCT_ID ");
