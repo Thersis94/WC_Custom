@@ -116,8 +116,14 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 		chartArea.put("width", "85%");
 		chartArea.put("height", "70%");
 		
+		// Annotation style.  Always outside puts the labels on the background and not the bar
+		Map<String, Object> annotations = new HashMap<>();
+		annotations.put("alwaysOutside", true);
+		annotations.put("textStyle", text);
+		
 		chart.put("legend", legend); // none to hide
 		chart.put("tooltip", " {text: 'value'}");
+		chart.put("annotations", annotations);
 		chart.put("chartArea", chartArea);
 		
 		chart.put("colors", new String[]{ "#3366cc","#dc3912","#ff9900","#109618","#990099","#0099c6","#8f8f8f","#e53ac3","#f96125","#316395" });

@@ -2,6 +2,7 @@ package com.biomed.smarttrak.vo.grid;
 
 // JDK 1.8.x
 import java.io.Serializable;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -90,7 +91,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	 * Creates the chart vo by populating it with data from the grid
 	 * @param grid
 	 */
-	public GoogleChartVO(GridVO grid, ChartType type) {
+	public GoogleChartVO(GridVO grid, ChartType type, boolean full, List<Integer> columns) {
 		this();
 		
 		// Different charts require that the data be processed differently
@@ -99,10 +100,10 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			case DONUT:
 			case GEO:
 			case TABLE:
-				processGridPie(grid);
+				processGridPie(grid, columns);
 				break;
 			default:
-				processGridBar(grid);
+				processGridBar(grid, full, columns);
 		}
 		
 	}
@@ -111,7 +112,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	 * Converts the grid data into a google grid object
 	 * @param grid Grid data
 	 */
-	public void processGridBar(GridVO grid) {
+	public void processGridBar(GridVO grid, boolean full, List<Integer> fCols) {
 		String[] series = grid.getSeries();
 		Set<Integer> validRows = new HashSet<>();
 		
@@ -127,6 +128,8 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			cell.setValue(series[i]);
 			row.addCell(cell);
 			
+			double total = 0;
+			String formatter = "";
 			// Loop the rows
 			for (int x=0; x < details.size(); x++) {
 				GridDetailVO detail = details.get(x);
@@ -136,11 +139,32 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 				// Store the data as a double and as a formatted string
 				cell.setValue(Convert.formatDouble(detail.getValues()[i], 0, true));
 				cell.setFormat(detail.getValues()[i]);
+				total += (Double)cell.getValue();
 				
-				row.addCell(cell);
+				if (cell.getFormat().contains("$")) formatter = "$";
+				if (cell.getFormat().contains("%")) formatter = "%";
+				
+				// Determine if there is a columns filter and apply
+				if (fCols.contains(i + 1)) row.addCell(cell);
+				if (fCols.size() == 0)row.addCell(cell);
 				validRows.add(i);
-				
 			}
+			
+			// Only add annotations if the col was supposed to be displayed and it is a full size image
+			if (full && row.getC().size() > 1) {
+				cell = new GoogleChartCellVO();
+				
+				// Format the data 
+				DecimalFormat df = new DecimalFormat();
+				String val = df.format(total);
+				if ("$".equals(formatter)) val = "$" + val;
+				else if ("%".equals(formatter)) val += "%";
+				
+				cell.setFormat(val);
+				cell.setValue(total);
+				row.addCell(cell);
+			}
+
 			// Make sure there is data in the elements
 			if (row.getC().size() > 1) addRow(row);
 		}
@@ -162,15 +186,21 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			col.setDataType(DataType.NUMBER.getName());
 			col.setLabel(detail.getLabel());
 			
+			// Determine if there is a columns filter and apply
 			addColumn(col);
 		}
+		
+		col = new GoogleChartColumnVO();
+		col.setDataType(DataType.STRING.getName());
+		col.setRole("annotation");
+		addColumn(col);
 	}
 	
 	/**
 	 * Converts the grid data into a google grid object
 	 * @param grid Grid data
 	 */
-	public void processGridPie(GridVO grid) {
+	public void processGridPie(GridVO grid, List<Integer> fCols) {
 		String[] series = grid.getSeries();
 
 		// Get the row data that corresponds to the series
@@ -203,7 +233,14 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 				if (!StringUtil.isEmpty(detail.getDetailType()))
 					cell.addCustomValue("className", RowStyle.valueOf(detail.getDetailType()).getName());
 				
-				row.addCell(cell);
+				// Determine if there is a columns filter and apply
+				if (! fCols.isEmpty()) {
+					if (fCols.contains(i + 1)) {
+						row.addCell(cell);
+					}
+				} else {
+					row.addCell(cell);
+				}
 			}
 			
 			addRow(row);
@@ -223,8 +260,14 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			col.setId(COLUMN_NAME + ((char) val++));
 			col.setDataType(DataType.NUMBER.getName());
 			col.setLabel(series[j]);
-
-			addColumn(col);
+			
+			// Determine if there is a columns filter and apply
+			if (! fCols.isEmpty()) {
+				if (fCols.contains(j + 1)) addColumn(col);
+			} else {
+				addColumn(col);
+			}
+			
 		}
 	}
 	

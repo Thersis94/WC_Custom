@@ -1,5 +1,7 @@
 package com.biomed.smarttrak.vo.grid;
 
+import java.util.List;
+
 // App Libs
 import com.biomed.smarttrak.admin.vo.GridVO;
 import com.biomed.smarttrak.vo.grid.SMTChartOptionFactory.ChartType;
@@ -35,10 +37,10 @@ public class SMTChartFactory {
 	 * @param grid GridVO Data
 	 * @return
 	 */
-	public static SMTGridIntfc getInstance(ProviderType prov, GridVO grid, ChartType type) {
-		
+	public static SMTGridIntfc getInstance(ProviderType prov, GridVO grid, ChartType type, boolean full, List<Integer> columnList) {
+
 		SMTGridIntfc chart = null;
-		if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleChartVO(grid, type);
+		if (ProviderType.GOOGLE.equals(prov)) chart = new GoogleChartVO(grid, type, full, columnList);
 		
 		return chart;
 	}
