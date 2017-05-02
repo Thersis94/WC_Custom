@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -258,7 +257,8 @@ public class MarketAction extends AbstractTreeAction {
 
 
 	/**
-	 * Sort all returned markets into groups based on thier hierarchies.
+	 * Create a tree based on the markets in order to ensure proper parent child relationships
+	 * and place the list of root children into the module data
 	 * @param res
 	 */
 	protected void orderMarkets(SolrResponseVO res) {
@@ -271,52 +271,9 @@ public class MarketAction extends AbstractTreeAction {
 		
 		Tree t = new Tree(markets);
 		
-		putModuleData(prepDocuments(t));
+		putModuleData(t.getRootNode().getChildren());
 	}
 	
-
-	/**
-	 * Prepare the values that are used to check the proper sorting for the document
-	 * and add it to the proper position
-	 * @param doc
-	 * @param isChild
-	 * @param groups
-	 */
-	private Object prepDocuments(Tree t) {
-		Map<String, Map<String, List<Node>>> groups = new LinkedHashMap<>();
-		
-		for (Node n : t.getRootNode().getChildren()) {
-			//use level 3 of the hierarchy as group name, or a default "Other" otherwise
-			String[] hierarchy = StringUtil.checkVal(((SolrDocument)n.getUserObject()).get(SearchDocumentHandler.HIERARCHY)).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
-			String section = hierarchy.length < 3 ? hierarchy[hierarchy.length-1] : hierarchy[2];
-			String subgroup = hierarchy.length < 4? section : hierarchy[3];
-			addMarket(n, groups, section, subgroup);
-		}
-		
-		return groups;
-	}
-	
-	
-	/**
-	 * Add the current market to the supplied group.
-	 * @param doc
-	 * @param groups
-	 * @param groupName
-	 */
-	protected void addMarket(Node n, Map<String, Map<String, List<Node>>> groups, String groupName, String subgroup) {
-		//create the group if it doesn't exist yet
-		if (!groups.containsKey(groupName)) {
-			groups.put(groupName, new HashMap<String, List<Node>>());
-		}
-		
-		// Get the group and check if the subgroup exists
-		Map<String, List<Node>> group = groups.get(groupName);
-		if (!group.containsKey(subgroup)) {
-			group.put(subgroup, new ArrayList<Node>());
-		}
-		
-		group.get(subgroup).add(n);
-	}
 
 	@Override
 	public String getCacheKey() {
