@@ -268,7 +268,6 @@ public class NoteVO implements Serializable {
 	 * @param noteText the noteText to set
 	 */
 	public void setNoteText(String noteText) {
-		noteText = noteText.replaceAll("(\r\n|\n)", "<br />");
 		this.noteText = noteText;
 	}
 
