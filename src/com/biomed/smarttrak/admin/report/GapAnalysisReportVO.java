@@ -154,12 +154,7 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 
 		for(GapColumnVO c : children) {
 			doc.append("<th class='colSort ");
-			if(c.isAltCol()) {
-				doc.append("alt ");
-			}
-			if(c.isSelected()) {
-				doc.append("sel ");
-			}
+			doc.append("col-group-").append(c.getColGroupNo());
 			doc.append("'>");
 			doc.append(se.encodeValue(StringUtil.checkVal(c.getName()))).append("</th>");
 		}
@@ -182,9 +177,6 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 				doc.append("rowspan='").append(g.getRowSpan()).append("' ");
 			}
 			doc.append("colspan='").append(g.getColSpan()).append("' class='parents ");
-			if(g.isAltCol()) {
-				doc.append(" alt ");
-			}
 			doc.append("'><span class='wrap'>").append(se.encodeValue(StringUtil.checkVal(g.getName()))).append("</span></th>");
 		}
 		doc.append("</tr>");
