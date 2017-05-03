@@ -12,6 +12,7 @@ import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.admin.action.DirectUrlManagerAction;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -37,8 +38,9 @@ public class ListAction extends DirectUrlManagerAction {
 		if(req.hasParameter("ajaxListType")) {
 			String listType = req.getParameter("ajaxListType");
 			String searchTerm = req.getParameter("term");
+			boolean isAutoComplete = Convert.formatBoolean(req.getParameter("autoComplete"));
 
-			List<GenericVO> vals = getList(listType, false, searchTerm);
+			List<GenericVO> vals = getList(listType, false, searchTerm, isAutoComplete);
 			putModuleData(vals, vals.size(), false);
 		} else {
 			list(req);
@@ -76,28 +78,30 @@ public class ListAction extends DirectUrlManagerAction {
 
 		String type = req.getParameter("type");
 		String searchTerm = req.getParameter("term");
+		boolean isAutoComplete = Convert.formatBoolean(req.getParameter("autoComplete"));
+
 		if("ALL".equals(type)) {
 			urlMap.put("PAGE", getPageUrls(req));
-			urlMap.put("COMPANY", getList(ListType.COMPANY.name(), true, searchTerm));
-			urlMap.put("MARKET", getList(ListType.MARKET.name(), true, searchTerm));
-			urlMap.put("PRODUCT", getList(ListType.PRODUCT.name(), true, searchTerm));
+			urlMap.put("COMPANY", getList(ListType.COMPANY.name(), true, searchTerm, isAutoComplete));
+			urlMap.put("MARKET", getList(ListType.MARKET.name(), true, searchTerm, isAutoComplete));
+			urlMap.put("PRODUCT", getList(ListType.PRODUCT.name(), true, searchTerm, isAutoComplete));
 		} else {
 			//Call Super to load any lists from core.
 			urlMap = super.getUrls(req);
 
 			//Get Companies
 			if(ListType.COMPANY.name().equals(type)) {
-				urlMap.put(ListType.COMPANY.name(), getList(ListType.COMPANY.name(), true, searchTerm));
+				urlMap.put(ListType.COMPANY.name(), getList(ListType.COMPANY.name(), true, searchTerm, isAutoComplete));
 			}
 
 			//Get Markets
 			if(ListType.MARKET.name().equals(type)) {
-				urlMap.put(ListType.MARKET.name(), getList(ListType.MARKET.name(), true, searchTerm));
+				urlMap.put(ListType.MARKET.name(), getList(ListType.MARKET.name(), true, searchTerm, isAutoComplete));
 			}
 
 			//Get Products
 			if(ListType.PRODUCT.name().equals(type)) {
-				urlMap.put(ListType.PRODUCT.name(), getList(ListType.PRODUCT.name(), true, searchTerm));
+				urlMap.put(ListType.PRODUCT.name(), getList(ListType.PRODUCT.name(), true, searchTerm, isAutoComplete));
 			}
 		}
 
@@ -111,21 +115,21 @@ public class ListAction extends DirectUrlManagerAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected List<GenericVO> getList(String listType, boolean asUrl, String searchTerm) throws ActionException {
+	protected List<GenericVO> getList(String listType, boolean asUrl, String searchTerm, boolean isAutoComplete) throws ActionException {
 		String sql;
 		String url = null;
 		boolean hasSearchTerm = !StringUtil.isEmpty(searchTerm);
 		switch(ListType.valueOf(listType)) {
 			case COMPANY:
-				sql = getCompanySql(hasSearchTerm);
+				sql = getCompanySql(hasSearchTerm, isAutoComplete);
 				url = Section.COMPANY.getPageURL() + getAttribute(Constants.QS_PATH);
 				break;
 			case MARKET:
-				sql = getMarketSql(hasSearchTerm);
+				sql = getMarketSql(hasSearchTerm, isAutoComplete);
 				url = Section.MARKET.getPageURL() + getAttribute(Constants.QS_PATH);
 				break;
 			case PRODUCT:
-				sql = getProductSql(hasSearchTerm);
+				sql = getProductSql(hasSearchTerm, isAutoComplete);
 				url = Section.PRODUCT.getPageURL() + getAttribute(Constants.QS_PATH);
 				break;
 			case ACCOUNT:
@@ -162,7 +166,7 @@ public class ListAction extends DirectUrlManagerAction {
 	 * Build company list sql
 	 * @return
 	 */
-	protected String getCompanySql(boolean hasSearchTerm) {
+	protected String getCompanySql(boolean hasSearchTerm, boolean isAutoComplete) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select company_id as id, company_nm as val from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_company ");
@@ -170,7 +174,8 @@ public class ListAction extends DirectUrlManagerAction {
 		if(hasSearchTerm) {
 			sql.append("and lower(company_nm) like ? ");
 		}
-		sql.append("order by company_nm limit 100");
+		sql.append("order by company_nm ");
+		if(isAutoComplete) sql.append("limit 100");
 
 		return sql.toString();
 	}
@@ -179,7 +184,7 @@ public class ListAction extends DirectUrlManagerAction {
 	 * Build market list sql
 	 * @return
 	 */
-	protected String getMarketSql(boolean hasSearchTerm) {
+	protected String getMarketSql(boolean hasSearchTerm, boolean isAutoComplete) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select market_id as id, market_nm as val from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -187,7 +192,8 @@ public class ListAction extends DirectUrlManagerAction {
 		if(hasSearchTerm) {
 			sql.append("and lower(market_nm) like ? ");
 		}
-		sql.append("order by market_nm limit 100");
+		sql.append("order by market_nm ");
+		if(isAutoComplete) sql.append("limit 100");
 
 		return sql.toString();
 	}
@@ -196,7 +202,7 @@ public class ListAction extends DirectUrlManagerAction {
 	 * Build product list sql
 	 * @return
 	 */
-	protected String getProductSql(boolean hasSearchTerm) {
+	protected String getProductSql(boolean hasSearchTerm, boolean isAutoComplete) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select product_id as id, product_nm as val from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -204,7 +210,8 @@ public class ListAction extends DirectUrlManagerAction {
 		if(hasSearchTerm) {
 			sql.append("and lower(product_nm) like ? ");
 		}
-		sql.append("order by product_nm limit 100");
+		sql.append("order by product_nm ");
+		if(isAutoComplete) sql.append("limit 100");
 
 		return sql.toString();
 	}
