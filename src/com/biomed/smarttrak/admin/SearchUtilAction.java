@@ -60,6 +60,7 @@ public class SearchUtilAction extends SBActionAdapter {
 	 */
 	public void findCompanyProductMarketSearch(ActionRequest req) {
 		String searchData = ("%" + req.getParameter("searchData") + "%").toLowerCase();
+		
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String qsPath = (String) attributes.get(Constants.QS_PATH);
 		String companyPath = AdminControllerAction.Section.COMPANY.getPageURL() + qsPath;
@@ -68,15 +69,15 @@ public class SearchUtilAction extends SBActionAdapter {
 		log.debug("Company Path: " + companyPath);
 		
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select '").append(companyPath).append("' + company_id, company_nm from ").append(schema).append("biomedgps_company ");
+		sql.append("select '").append(companyPath).append("' + company_id, short_nm_txt from ").append(schema).append("biomedgps_company ");
 		sql.append("where lower(company_nm) like ? and status_no = 'P' ");
 		sql.append("union ");
-		sql.append("select '").append(productPath).append("' + product_id, product_nm from ").append(schema).append("biomedgps_product ");
+		sql.append("select '").append(productPath).append("' + product_id, short_nm from ").append(schema).append("biomedgps_product ");
 		sql.append("where lower(product_nm) like ? and status_no = 'P' ");
 		sql.append("union ");
 		sql.append("select '").append(marketPath).append("' + market_id, market_nm from ").append(schema).append("biomedgps_market ");
 		sql.append("where lower(market_nm) like ? and status_no = 'P' ");
-		sql.append("order by company_nm ");
+		sql.append("order by short_nm_txt ");
 		log.debug("SQL: " + sql + "|" + searchData);
 		
 		List<GenericVO> data = new ArrayList<>();
