@@ -1,9 +1,11 @@
 package com.biomed.smarttrak.action;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 // App Libs
 import com.biomed.smarttrak.admin.GridChartAction;
@@ -20,6 +22,7 @@ import com.biomed.smarttrak.vo.grid.SMTGridIntfc;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -68,16 +71,26 @@ public class GridDisplayAction extends SBActionAdapter {
 		boolean full = Convert.formatBoolean(req.getParameter("full"), false);
 		boolean stacked = Convert.formatBoolean(req.getParameter("isStacked"), false);
 		ProviderType pt = ProviderType.valueOf(StringUtil.checkVal(req.getParameter("pt"), "GOOGLE").toUpperCase());
+		ChartType type = ChartType.valueOf(StringUtil.checkVal(req.getParameter("ct"), "NONE").toUpperCase());
+		boolean display = Convert.formatBoolean(req.getParameter("display"));
 		
+		// Get the list of columns and convert to integer list
+		List<Integer> columns = new ArrayList<>();
+		if (! StringUtil.isEmpty(req.getParameter("columns"))) {
+			List<String> sCols = Arrays.asList(req.getParameter("columns").split("\\,"));
+			columns = sCols.stream().map(Integer::parseInt).collect(Collectors.toList());
+		}
+
 		// Process the data
 		if (grids != null && grids.length > 0) {
 			this.putModuleData(loadAllGrids(grids, full, stacked, pt));
 		} else {
-			GridVO grid = getGridData(gridId);
+			if (display && ChartType.TABLE.equals(type)) display = false;
+			GridVO grid = getGridData(gridId, display);
 			if (req.hasParameter("excel")) buildExcelFile(req, grid);
+			
 			else if (! StringUtil.isEmpty(gridId)) { 
-				ChartType type = ChartType.valueOf(StringUtil.checkVal(req.getParameter("ct"), "NONE").toUpperCase());
-				this.putModuleData(retrieveChartData(grid, type, full, stacked, pt));
+				this.putModuleData(retrieveChartData(grid, type, full, stacked, pt, columns	));
 			}
 		}
 		
@@ -96,10 +109,12 @@ public class GridDisplayAction extends SBActionAdapter {
 		String schema = getAttribute(Constants.CUSTOM_DB_SCHEMA) + "";
 		
 		// Parse the map data and place in a map
-		Map<Object, String> items = new HashMap<>(grids.length);
+		Map<Object, GenericVO> items = new HashMap<>(grids.length);
 		for(String grid : grids) {
 			String[] vals = grid.split("\\|");
-			items.put(vals[0], vals[1]);
+			String columns = "";
+			if (vals.length == 3) columns = vals[2];
+			items.put(vals[0], new GenericVO(vals[1], columns));
 		}
 		
 		// Retrieve the data
@@ -110,7 +125,23 @@ public class GridDisplayAction extends SBActionAdapter {
 		
 		// Loop the grid data and format for a chart
 		for (GridVO grid : gridData) {
-			data.put(grid.getGridId(), retrieveChartData(grid, ChartType.valueOf(items.get(grid.getGridId())), full, stacked, pt));
+			List<Integer> cols = new ArrayList<>();
+			
+			// Since the iD can be the grid id or the slug (Backwards compatibility)
+			// Figure out which is which and assign to the id
+			String id = grid.getGridId();
+			if (items.get(grid.getGridId()) == null)  id = grid.getSlug();
+			
+			// Parse pout the passed in data and format for calling each chart
+			ChartType ct = ChartType.valueOf(items.get(id).getKey() + "");
+			String columns = StringUtil.checkVal(items.get(id).getValue());
+			if (columns.length() > 0) {
+				List<String> sCols = Arrays.asList(columns.split("\\,"));
+				cols = sCols.stream().map(Integer::parseInt).collect(Collectors.toList());
+			}
+			
+			// Retrieve the data for all of the charts
+			data.put(id, retrieveChartData(grid, ct, full, stacked, pt, cols));
 		}
 		
 		return data;
@@ -138,10 +169,10 @@ public class GridDisplayAction extends SBActionAdapter {
 	 * @param req
 	 * @param grid
 	 * @param type
+	 * @param cols List of columns to display.  Blank equals all
 	 */
-	public SMTGridIntfc retrieveChartData(GridVO grid, ChartType type, boolean full, boolean stacked, ProviderType pt) {
-		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type);
-
+	public SMTGridIntfc retrieveChartData(GridVO grid, ChartType type, boolean full, boolean stacked, ProviderType pt, List<Integer> cols) {
+		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type, full, cols);
 		
 		// Get the chart options
 		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE, full);
@@ -164,12 +195,12 @@ public class GridDisplayAction extends SBActionAdapter {
 	 * @param gridId
 	 * @return
 	 */
-	public GridVO getGridData(String gridId) {
+	public GridVO getGridData(String gridId, boolean display) {
 		GridChartAction gca = new GridChartAction(actionInit);
 		gca.setAttributes(getAttributes());
 		gca.setDBConnection(getDBConnection());
 		
-		gca.retrieveData(gridId, attributes.get(Constants.CUSTOM_DB_SCHEMA) + "", false);
+		gca.retrieveData(gridId, attributes.get(Constants.CUSTOM_DB_SCHEMA) + "", display);
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		
 		return (GridVO) mod.getActionData();

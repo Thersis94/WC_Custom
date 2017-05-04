@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
@@ -90,13 +91,19 @@ public class UserActivityAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected String formatReportDate(String date, boolean isStartDate) {
-		String tmpDate = StringUtil.checkVal(date,null);
-		if (tmpDate == null && isStartDate) {
+		String strDate = StringUtil.checkVal(date,null);
+		if (strDate == null) {
 			Calendar cal = GregorianCalendar.getInstance();
-			cal.add(Calendar.HOUR_OF_DAY, DEFAULT_START_DATE_OFFSET);
-			tmpDate = Convert.formatDate(cal.getTime(),Convert.DATE_TIME_DASH_PATTERN);
+			if (isStartDate) {
+				cal.add(Calendar.HOUR_OF_DAY, DEFAULT_START_DATE_OFFSET);
+			} else {
+				cal.add(Calendar.DAY_OF_MONTH, 1);
+			}
+			strDate = Convert.formatDate(cal.getTime(),Convert.DATE_SLASH_PATTERN);
 		}
-		return tmpDate;
+		// Convert to Date and back to String in correct pattern.
+		Date tmpDt = Convert.formatDate(Convert.DATE_SLASH_PATTERN,strDate);
+		return Convert.formatDate(tmpDt,Convert.DATE_TIME_DASH_PATTERN); 
 	}
 	
 	/**

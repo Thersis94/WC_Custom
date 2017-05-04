@@ -41,6 +41,11 @@ public class GoogleChartColumnVO implements Serializable, SMTGridColumnIntfc {
 	private Map<String, String> p;
 	
 	/**
+	 * Role utilized by annotations
+	 */
+	private String role;
+	
+	/**
 	 * String value for the enum DataType
 	 */
 	private String type;
@@ -124,6 +129,20 @@ public class GoogleChartColumnVO implements Serializable, SMTGridColumnIntfc {
 	 */
 	public void setDataType(DataType dt) {
 		this.type = dt.getName();
+	}
+
+	/**
+	 * @return the role
+	 */
+	public String getRole() {
+		return role;
+	}
+
+	/**
+	 * @param role the role to set
+	 */
+	public void setRole(String role) {
+		this.role = role;
 	}
 }
 

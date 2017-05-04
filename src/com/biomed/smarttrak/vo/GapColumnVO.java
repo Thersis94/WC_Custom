@@ -18,20 +18,20 @@ public class GapColumnVO {
 	private List<GapColumnVO> columns;
 	private String name;
 	private String id;
-	private boolean altCol;
 	private boolean selected;
 	private int rowSpan = 1;
 	private int colSpan = 1;
+	private int colGroupNo;
 
 	/**
 	 * @param altCol
 	 * @param nodeId
 	 * @param nodeName
 	 */
-	public GapColumnVO(boolean altCol, String nodeId, String nodeName) {
+	public GapColumnVO(int colGroupNo, String nodeId, String nodeName) {
 		this.id = nodeId;
 		this.name = nodeName;
-		this.altCol = altCol;
+		this.colGroupNo = colGroupNo;
 	}
 
 	/**
@@ -40,8 +40,8 @@ public class GapColumnVO {
 	 * @param nodeName
 	 * @param colSpan
 	 */
-	public GapColumnVO(boolean altCol, String nodeId, String nodeName, int colSpan) {
-		this(altCol, nodeId, nodeName);
+	public GapColumnVO(int colGroupNo, String nodeId, String nodeName, int colSpan) {
+		this(colGroupNo, nodeId, nodeName);
 		this.colSpan = colSpan;
 	}
 
@@ -52,8 +52,8 @@ public class GapColumnVO {
 	 * @param colSpan
 	 * @param rowSpan
 	 */
-	public GapColumnVO(boolean altCol, String nodeId, String nodeName, int colSpan, int rowSpan) {
-		this(altCol, nodeId, nodeName, colSpan);
+	public GapColumnVO(int colGroupNo, String nodeId, String nodeName, int colSpan, int rowSpan) {
+		this(colGroupNo, nodeId, nodeName, colSpan);
 		this.rowSpan = rowSpan;
 	}
 
@@ -81,8 +81,8 @@ public class GapColumnVO {
 	/**
 	 * @return the altCol
 	 */
-	public boolean isAltCol() {
-		return altCol;
+	public int getColGroupNo() {
+		return colGroupNo;
 	}
 
 	/**
@@ -123,8 +123,8 @@ public class GapColumnVO {
 	/**
 	 * @param altCol the altCol to set.
 	 */
-	public void setAltCol(boolean altCol) {
-		this.altCol = altCol;
+	public void setColGroupNo(int colGroupNo) {
+		this.colGroupNo = colGroupNo;
 	}
 
 	/**

@@ -9,6 +9,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 
 // WC Custom Libs
 import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.admin.AccountNotesAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.AuditLogAction;
@@ -166,6 +167,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("companyAdmin", CompanyManagementAction.class);
 		ACTIONS.put("accounts", AccountAction.class);
 		ACTIONS.put("account-permissions", AccountPermissionAction.class);
+		ACTIONS.put("account-notes", AccountNotesAction.class);
 		ACTIONS.put("users", AccountUserAction.class);
 		ACTIONS.put("insights", com.biomed.smarttrak.admin.InsightAction.class);
 		ACTIONS.put("teams", TeamAction.class);

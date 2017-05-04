@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.vo;
 
+import java.io.Serializable;
 // java
 import java.sql.ResultSet;
 import java.util.Date;
@@ -12,7 +13,6 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
 
 /****************************************************************************
@@ -28,8 +28,7 @@ import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
  * @updates:
  ****************************************************************************/
 @Table(name="BIOMEDGPS_NOTE")
-public class NoteVO extends SBModuleVO {
-
+public class NoteVO implements Serializable {
 	private static final long serialVersionUID = -4071567645204934866L;
 	private String noteId;
 	private String userId;
@@ -38,17 +37,22 @@ public class NoteVO extends SBModuleVO {
 	private String attributeId;
 	private String productId;
 	private String marketId;
+	private String accountId;
 	private String noteName;
 	private String noteText;
 	private String filePathText;
 	private Date expirationDate;
+	private Date createDate;
+	private Date updateDate;
 	private String userName;
 	private String teamName;
 	private List<ProfileDocumentVO> profileDocuments;
 	private int listCount;
 
 
-	public NoteVO() {super();}
+	public NoteVO() {
+		super();
+	}
 	public NoteVO(ResultSet rs) {
 		this();
 		setData(rs);
@@ -63,6 +67,7 @@ public class NoteVO extends SBModuleVO {
 	 * @param req
 	 */
 	private void setData(ActionRequest req) {
+		String ptn = Convert.DATE_SLASH_SHORT_PATTERN;
 
 		setNoteId(StringUtil.checkVal(req.getParameter("noteId")));
 		setUserId(StringUtil.checkVal(req.getParameter("userId")));
@@ -71,24 +76,20 @@ public class NoteVO extends SBModuleVO {
 		setAttributeId(req.getParameter("attributeId"));
 		setProductId(req.getParameter("productId"));
 		setMarketId(req.getParameter("marketId"));
+		setAccountId(req.getParameter("accountId"));
 		setNoteName(StringUtil.checkVal(req.getParameter("noteName")));
 		setNoteText(StringUtil.checkVal(req.getParameter("noteText")));
 		setFilePathText(StringUtil.checkVal(req.getParameter("filePathText")));
-		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
-				StringUtil.checkVal(req.getParameter("expirationDate"))));
-		setCreateDate(Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
-				StringUtil.checkVal(req.getParameter("createDate"))));
-		setUpdateDate(Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
-				StringUtil.checkVal(req.getParameter("updateDate"))));
-
+		setExpirationDate(Convert.formatDate(ptn, StringUtil.checkVal(req.getParameter("expirationDate"))));
+		setCreateDate(Convert.formatDate(ptn, StringUtil.checkVal(req.getParameter("createDate"))));
+		setUpdateDate(Convert.formatDate(ptn, StringUtil.checkVal(req.getParameter("updateDate"))));
 	}
+
 	/**
 	 * @param rs
 	 */
 	private void setData(ResultSet rs) {
-
 		DBUtil util = new DBUtil();
-
 		setNoteId(util.getStringVal("NOTE_ID", rs));
 		setUserId(util.getStringVal("USER_ID", rs));
 		setTeamId(util.getStringVal("TEAM_ID", rs));
@@ -96,13 +97,13 @@ public class NoteVO extends SBModuleVO {
 		setAttributeId(util.getStringVal("ATTRIBUTE_ID", rs));
 		setProductId(util.getStringVal("PRODUCT_ID", rs));
 		setMarketId(util.getStringVal("MARKET_ID", rs));
+		setAccountId(util.getStringVal("ACCOUNT_ID", rs));
 		setNoteName(util.getStringVal("NOTE_NM", rs));
 		setNoteText(util.getStringVal("NOTE_TXT", rs));
 		setFilePathText( util.getStringVal("FILE_PATH_TXT", rs));
 		setExpirationDate(util.getDateVal("EXPIRATION_DT", rs));
 		setCreateDate(util.getDateVal("CREATE_DT", rs));
 		setUpdateDate(util.getDateVal("UPDATE_DT", rs));
-
 	}
 
 	/**
@@ -110,10 +111,9 @@ public class NoteVO extends SBModuleVO {
 	 * @return
 	 */
 	public boolean isNoteSaveable() {
-		if (StringUtil.isEmpty(userId)) return false;
-		if (StringUtil.isEmpty(noteText) || StringUtil.isEmpty(noteName)) return false;
-		//ensure we have one of the 3 bindings - company, market or product
-		return !StringUtil.isEmpty(companyId) || !StringUtil.isEmpty(marketId) || !StringUtil.isEmpty(productId);
+		if (StringUtil.isEmpty(userId) || StringUtil.isEmpty(noteText)) return false;
+		//ensure we have one of the 4 bindings - company, market, product, or account
+		return !StringUtil.isEmpty(companyId) || !StringUtil.isEmpty(marketId) || !StringUtil.isEmpty(productId) || !StringUtil.isEmpty(accountId);
 	}
 
 	/*
@@ -196,7 +196,10 @@ public class NoteVO extends SBModuleVO {
 	 */
 	@Column(name = "create_dt", isInsertOnly = true, isAutoGen = true)
 	public Date getCreateDate() {
-		return super.getCreateDate();
+		return createDate;
+	}
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
 	}
 
 
@@ -205,7 +208,10 @@ public class NoteVO extends SBModuleVO {
 	 */
 	@Column(name = "update_dt", isUpdateOnly = true, isAutoGen = true)
 	public Date getUpdateDate() {
-		return super.getUpdateDate();
+		return updateDate;
+	}
+	public void setUpdateDate(Date updateDate) {
+		this.updateDate = updateDate;
 	}
 
 	/**
@@ -351,4 +357,11 @@ public class NoteVO extends SBModuleVO {
 		this.listCount = listCount;
 	}
 
+	@Column(name="ACCOUNT_ID" )
+	public String getAccountId() {
+		return accountId;
+	}
+	public void setAccountId(String accountId) {
+		this.accountId = accountId;
+	}
 }
