@@ -418,15 +418,20 @@ public class ProductAction extends AbstractTreeAction {
 	protected void retrieveProducts(ActionRequest req) throws ActionException {
 
 		// Pass along the proper information for a search to be done.
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-	    	req.setParameter("pmid", mod.getPageModuleId());
-		
-	    	// Build the solr action
+    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+    	req.setParameter("pmid", mod.getPageModuleId());
+    	String search = StringUtil.checkVal(req.getParameter("searchData"));
+    	
+    	req.setParameter("searchData", search.toLowerCase());
+	
+    	// Build the solr action
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		sa.retrieve(req);
+		
+    	req.setParameter("searchData", search);
 	}
 	
 
