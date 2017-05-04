@@ -22,6 +22,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -77,9 +78,92 @@ public class GridChartAction extends SBActionAdapter {
 		
 		if (StringUtil.isEmpty(gridId)) {
 			retrieveList(req, schema);
+		} else if ("column".equalsIgnoreCase(req.getParameter("type"))) {
+			getColumnList(schema, gridId);
 		} else if (! "ADD".equalsIgnoreCase(gridId)){
 			retrieveData(req.getParameter("gridId"), schema, false);
 		}
+	}
+	
+	/**
+	 * Gets a list of columns and their associated ids and returns JSON 
+	 * @param gridId
+	 */
+	public void getColumnList(String schema, String gridId) {
+		// get number of columns.  Return empty list of 0
+		int numCols = this.getNumberColumns(gridId, schema);
+		if (numCols == 0) {
+			this.putModuleData(new ArrayList<>());
+			return;
+		}
+		
+		// Grab the columns
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select * from ").append(schema).append("biomedgps_grid where grid_id = ? or slug_txt = ?");
+		List<Object> params = Arrays.asList(new Object[]{gridId, gridId});
+		GridVO grid = new GridVO();
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		List<GenericVO> data = new ArrayList<>();
+
+		try {
+			List<Object> gridData = dbp.executeSelect(sql.toString(), params, new GridVO());
+			if (! gridData.isEmpty()) grid = (GridVO) gridData.get(0);
+			int i = 1;
+			for (String val : grid.getSeries()) {
+				val = StringUtil.checkVal(val, "* Column " + (i++));
+				data.add(new GenericVO(i-1, val));
+			}
+
+			// Remove the empty columns and add the data to the bean for processing
+			data = data.subList(0, numCols);
+			this.putModuleData(data);
+			
+		} catch (Exception e) {
+			String msg = "Unable to retrieve grid data for columns"; 
+			log.error(msg, e);
+			this.putModuleData(null, 0, false, msg, true);
+		}
+		
+	}
+	
+	/**
+	 * Calculates the number of columns that have data in at lease one row
+	 * @param gridId
+	 * @return
+	 */
+	private int getNumberColumns(String gridId, String schema) {
+		int numCols = 0;
+		
+		StringBuilder sql = new StringBuilder(512);
+		sql.append("select ");
+		sql.append("case ");
+		sql.append("when max(length(value_10_txt)) > 0 then 10 ");
+		sql.append("when max(length(value_9_txt)) > 0 then 9 ");
+		sql.append("when max(length(value_8_txt)) > 0 then 8 ");
+		sql.append("when max(length(value_7_txt)) > 0 then 7 ");
+		sql.append("when max(length(value_6_txt)) > 0 then 6 ");
+		sql.append("when max(length(value_5_txt)) > 0 then 5 ");
+		sql.append("when max(length(value_4_txt)) > 0 then 4 ");
+		sql.append("when max(length(value_3_txt)) > 0 then 3 ");
+		sql.append("when max(length(value_2_txt)) > 0 then 2 ");
+		sql.append("when max(length(value_1_txt)) > 0 then 1 ");
+		sql.append("else 0 ");
+		sql.append("end as num_cols from ").append(schema).append("biomedgps_grid_detail a ");
+		sql.append("inner join ").append(schema).append("biomedgps_grid b on a.grid_id = b.grid_id ");
+		sql.append("where b.grid_id = ? or slug_txt = ? ");
+		log.debug("Count SQL: " + sql + "|" + gridId);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+			ps.setString(1, gridId);
+			ps.setString(2, gridId);
+			ResultSet rs = ps.executeQuery();
+			rs.next();
+			numCols = rs.getInt("num_cols");
+		} catch(Exception e) {
+			log.error("Unable to retrieve the number of columns", e);
+		}
+		
+		return numCols;
 	}
 	
 	/*
@@ -235,14 +319,16 @@ public class GridChartAction extends SBActionAdapter {
 		sql.append("select * from ").append(schema).append("biomedgps_grid a ");
 		sql.append("inner join ").append(schema).append("biomedgps_grid_detail b ");
 		sql.append("on a.grid_id = b.grid_id where a.grid_id in ( ");
-		for (int i=0; i < gridIds.size(); i++) {
-			sql.append((i > 0) ? "," : "").append("?");			
-		}
+		for (int i=0; i < gridIds.size(); i++) sql.append((i > 0) ? "," : "").append("?");			
+		sql.append(") or slug_txt in ( ");
+		for (int i=0; i < gridIds.size(); i++) sql.append((i > 0) ? "," : "").append("?");	
 		sql.append(") order by a.grid_id ");
 		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
-		List<?> data = db.executeSelect(sql.toString(), gridIds, new GridVO(), null);
+		List<Object> params = new ArrayList<>(gridIds);
+		params.addAll(gridIds);
+		List<?> data = db.executeSelect(sql.toString(), params, new GridVO(), null);
 		
 		return (List<GridVO>)data;
 	}
@@ -257,9 +343,9 @@ public class GridChartAction extends SBActionAdapter {
 		sql.append("select * from ").append(schema).append("biomedgps_grid a ");
 		sql.append("inner join ").append(schema).append("biomedgps_grid_detail b ");
 		sql.append("on a.grid_id = b.grid_id where (a.grid_id = ? or a.slug_txt = ?) ");
-		if (display) sql.append("and grid_detail_type_cd = 'DATA' ");
+		if (display) sql.append(" and (grid_detail_type_cd = 'DATA' or grid_detail_type_cd is null) ");
 		sql.append("order by b.order_no");
-		log.debug(sql);
+		log.debug(sql + "|" + gridId + "|" + display);
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> params = Arrays.asList(new Object[]{gridId, gridId});

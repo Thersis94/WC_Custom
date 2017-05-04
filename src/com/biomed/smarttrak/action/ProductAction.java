@@ -210,11 +210,12 @@ public class ProductAction extends AbstractTreeAction {
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
-		sql.append("WHERE PRODUCT_ID = ? and STATUS_NO in (");
+		sql.append("WHERE PRODUCT_ID = ? and (STATUS_NO in (");
 		if (AdminControllerAction.STAFF_ROLE_LEVEL == userLevel) {
 			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
 		}
-		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
+		// Detail attributes never have a status number but shouldn't be skipped.
+		sql.append("'").append(AdminControllerAction.Status.P).append("') or STATUS_NO is null) "); 
 		
 		sql.append("ORDER BY a.ORDER_NO, xr.ORDER_NO ");
 		log.debug(sql+"|"+product.getProductId());
