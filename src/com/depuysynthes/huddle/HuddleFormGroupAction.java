@@ -102,8 +102,6 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 		// Get the forms for this group id
 		HuddleGroupVO forms = getHuddleGroupVO(formGroupId, site.getOrganizationId(), page.isPreviewMode(), true);
 
-		if (forms == null) throw new ActionException("No forms found");
-
 		putModuleData(forms);
 	}
 

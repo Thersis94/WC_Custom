@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.depuysynthes.huddle;
 
 import java.sql.PreparedStatement;
@@ -48,6 +45,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class SiteSurveyAction extends SBActionAdapter {
 
+	public SiteSurveyAction() {
+		super();
+	}
+	
 	/**
 	 * @param actionInit
 	 */
@@ -55,14 +56,8 @@ public class SiteSurveyAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-	/**
-	 * 
-	 */
-	public SiteSurveyAction() {
-	}
-
+	@Override
 	public void list(ActionRequest req) throws ActionException {
-
 		//Get parameters off request.
 		String actionId = req.getParameter(SB_ACTION_ID);
 		String orgId = req.getParameter("organizationId");
@@ -74,7 +69,7 @@ public class SiteSurveyAction extends SBActionAdapter {
 		List<SurveyVO> surveys = getSurveys(orgId);
 
 		//Put Info on Request
-		this.putModuleData(ssv, 1, true);
+		putModuleData(ssv, 1, true);
 		req.setAttribute("surveys", surveys);
 	}
 
@@ -93,6 +88,7 @@ public class SiteSurveyAction extends SBActionAdapter {
         sbUtil.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), req.getParameter(SBActionAdapter.SB_ACTION_ID));
 	}
 
+	@Override
 	public void update(ActionRequest req) throws ActionException {
 		//Update SB_ACTION record
 		super.update(req);
@@ -110,8 +106,8 @@ public class SiteSurveyAction extends SBActionAdapter {
         sbUtil.adminRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), ssv.getSiteSurveyId());
 	}
 
+	@Override
 	public void build(ActionRequest req) throws ActionException {
-
 		//Get the Site Survey Info
 		retrieve(req);
 
@@ -122,11 +118,11 @@ public class SiteSurveyAction extends SBActionAdapter {
 		 * If User declined to Submit Form, Write a dummy record into first
 		 * question. Otherwise if user submitted form, record all results.
 		 */
-		if(req.hasParameter("noThanks")) {
+		if (req.hasParameter("noThanks")) {
 			UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 			writeNoThanks(ssv, user, site.getSiteId());
-		} else if(req.hasParameter("surveySubmit")) {
+		} else if (req.hasParameter("surveySubmit")) {
 			actionInit.setActionId(ssv.getSurveyId());
 			SurveyFacadeAction sfa = new SurveyFacadeAction(this.actionInit);
 			sfa.setAttributes(attributes);
@@ -143,13 +139,12 @@ public class SiteSurveyAction extends SBActionAdapter {
 	 * @param siteId
 	 */
 	private void writeNoThanks(SiteSurveyVO ssv, UserDataVO user, String siteId) {
-
 		//Retrieve the first questionId on Survey
 		String questionId = getQuestion(ssv.getSurveyId());
 
 		//If there is a question, write a value.
-		if(StringUtil.checkVal(questionId).length() > 0) {
-			try(PreparedStatement ps = dbConn.prepareStatement(getResponseInsert())) {
+		if (StringUtil.checkVal(questionId).length() > 0) {
+			try (PreparedStatement ps = dbConn.prepareStatement(getResponseInsert())) {
 				int i = 1;
 				ps.setString(i++, new UUIDGenerator().getUUID());
 				ps.setString(i++, questionId);
@@ -262,7 +257,7 @@ public class SiteSurveyAction extends SBActionAdapter {
 		} catch (SQLException e) {
 			log.error(e);
 		}
-		return new ArrayList<SurveyVO>(surveys.values());
+		return new ArrayList<>(surveys.values());
 	}
 
 	/**
@@ -276,20 +271,19 @@ public class SiteSurveyAction extends SBActionAdapter {
 
 		try(PreparedStatement ps = dbConn.prepareStatement(getSiteSurveyListSql())) {
 			ps.setString(1, actionId);
-
 			ResultSet rs = ps.executeQuery();
-
-			if(rs.next()) {
+			if(rs.next())
 				ssv = new SiteSurveyVO(rs);
-			}
 
 		} catch (SQLException e) {
-			log.error(e);
+			log.error("could not load surveey", e);
 		}
 
 		return ssv;
 	}
 
+
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//Get parameters off request.
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
@@ -322,7 +316,7 @@ public class SiteSurveyAction extends SBActionAdapter {
 			log.error(e);
 		}
 
-		if(req.hasParameter("getSurvey")) {
+		if (req.hasParameter("getSurvey") && ssv != null) {
 			actionInit.setActionId(ssv.getSurveyId());
 			SurveyFacadeAction ssfa = new SurveyFacadeAction(actionInit);
 			ssfa.setAttributes(attributes);
@@ -399,7 +393,7 @@ public class SiteSurveyAction extends SBActionAdapter {
 	 */
 	private String getSurveyLookupQuery() {
 		StringBuilder sql = new StringBuilder(600);
-		sql.append("select a.SITE_SURVEY_ID, a.ACTION_ID, b.ACTION_ID as 'SURVEY_ID', ");
+		sql.append("select a.SITE_SURVEY_ID, a.ACTION_ID, b.ACTION_ID as SURVEY_ID, ");
 		sql.append("b.PENDING_SYNC_FLG, b.ACTION_DESC, b.ACTION_NM, c.ACTION_ID, ");
 		sql.append("c.REQUIRED_FLG, d.PROFILE_ID from ");
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_HUDDLE_SURVEY a ");

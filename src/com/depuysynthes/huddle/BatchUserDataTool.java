@@ -19,6 +19,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -57,32 +58,33 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		FilePartDataBean fpdb = req.getFile("xlsFile");
 		String siteId = req.getParameter("targetSiteId");
-		int saveCnt = 0, wwidCnt = 0;
+		int saveCnt = 0;
+		int wwidCnt = 0;
 		String[] profileIds = {};
-		
+
 		try {
 			if (fpdb == null) throw new InvalidDataException("file missing");
-			
+
 			//turn the file into a set of WWIDs relevant to our needs
 			Set<String> wwids = parseFile(fpdb);
 			wwidCnt = wwids.size();
-			
+
 			//turn the set of WWIDs into a set of profileIds
 			profileIds = loadProfileIds(wwids, siteId);
-			
+
 			//call ProfileRoleManager to have the list of profileIds+siteId accounts disabled
 			saveCnt = uploadRoles(siteId, profileIds);
-			
+
 		} catch (Exception e) {
 			log.error("could not process transaction", e);
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 		}
-		
+
 		//return some stats to the administrator
-		super.adminRedirect(req, msg, buildRedirect(saveCnt, profileIds.length, wwidCnt));
+		super.adminRedirect(req, msg, buildRedirect(saveCnt, profileIds != null ? profileIds.length : 0, wwidCnt));
 	}
-	
-	
+
+
 	/**
 	 * Append extra parameters to the redirect url so we can display some stats
 	 * about the transaction performed
@@ -96,8 +98,8 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 		redirect.append("&profileCnt=").append(profileCnt);
 		return redirect.toString();
 	}
-	
-	
+
+
 	/**
 	 * tap into the registration tables to transpose WWIDs to profileIds.
 	 * @param wwids
@@ -106,16 +108,16 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 	 */
 	private String[] loadProfileIds(Set<String> wwids, String siteId) {
 		Set<String> profileIds = new HashSet<>(wwids.size());
-		
+
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select rs.profile_id from register_submittal rs ");
 		sql.append("inner join register_data rd on rs.register_submittal_id=rd.register_submittal_id and rd.register_field_id=? ");
-		sql.append("where cast(rd.value_txt as nvarchar(50)) in ('~'");
-		for (@SuppressWarnings("unused") String s : wwids) sql.append(",?");
+		sql.append("where cast(rd.value_txt as varchar) in (");
+		DBUtil.preparedStatmentQuestion(wwids.size(), sql);
 		sql.append(") and rs.site_id=?");
 		log.debug(sql);
 		log.debug("WWIDs: " + wwids);
-		
+
 		int x = 1;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(x++, HuddleUtils.WWID_REGISTER_FIELD_ID);
@@ -124,15 +126,15 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
 				profileIds.add(rs.getString(1));
-			
+
 		} catch (SQLException sqle) {
 			log.error("could not load profileIds from WWIDs", sqle);
 		}
 		log.debug("found " + profileIds.size() + " user accounts in the database");
 		return profileIds.toArray(new String[profileIds.size()]);
 	}
-	
-	
+
+
 	/**
 	 * calls ProfileRoleManager to save the new status for the profileIds given.
 	 * @param siteId
@@ -142,19 +144,18 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 	private int uploadRoles(String siteId, String[] profileIds) {
 		int cnt = 0;
 		if (profileIds == null || profileIds.length == 0) return cnt;
-		
+
 		ProfileRoleManager prm = new ProfileRoleManager();
 		try {
 			cnt = prm.changeRoleStatus(dbConn, SecurityController.STATUS_DISABLED, siteId, profileIds);
 		} catch (DatabaseException de) {
 			log.error("could not save profile_role records", de);
 		}
-		prm = null;
 		log.debug("updatd " + cnt + " database records");
 		return cnt;
 	}
 
-	
+
 	/**
 	 * iterates the incoming Excel file and returns a Set<String> that represents
 	 * all the WWIDs of accounts that need to be expired.
@@ -186,10 +187,11 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 					case Cell.CELL_TYPE_NUMERIC:
 						d = Convert.formatDouble(wwidCell.getNumericCellValue());
 						break;
+					default:
 				}
 
-				if (d > 0)
-					wwids.add("" + d.intValue());
+				if (d != null && d > 0)
+					wwids.add(Integer.toString(d.intValue()));
 			}
 			workbook.close();
 		} catch (Exception e) {
