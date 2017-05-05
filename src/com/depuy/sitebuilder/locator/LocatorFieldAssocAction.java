@@ -13,10 +13,8 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.UUIDGenerator;
-
 // SB Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.admin.action.SBModuleAction;
 import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 
@@ -60,7 +58,7 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
     public void delete(ActionRequest req) throws ActionException {
         StringBuffer sb = new StringBuffer();
         sb.append("delete from locator_field_assoc where action_id = ?");
-        String actionId = (String) req.getAttribute(SBModuleAction.SB_ACTION_ID);
+        String actionId = (String) req.getAttribute(SBActionAdapter.SB_ACTION_ID);
         
         log.info("Delete rss assoc sql: " + sb + " - " + actionId);
         PreparedStatement ps = null;
@@ -107,7 +105,7 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
             for (int i=0; i < lfid.length; i++) {
                 ps.setString(1, new UUIDGenerator().getUUID());
                 ps.setString(2, lfid[i]);
-                ps.setString(3, (String) req.getAttribute(SBModuleAction.SB_ACTION_ID));
+                ps.setString(3, (String) req.getAttribute(SBActionAdapter.SB_ACTION_ID));
                 ps.setDate(4, new java.sql.Date(new Date().getTime()));
                 
                 ps.addBatch();
@@ -182,7 +180,7 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
     @Override
     public void list(ActionRequest req) throws ActionException {
         log.info("Listing fields for locator");
-        String sbActionId = req.getParameter(SBModuleAction.SB_ACTION_ID);
+        String sbActionId = req.getParameter(SBActionAdapter.SB_ACTION_ID);
         
         StringBuffer sql = new StringBuffer();
         sql.append("select a.locator_field_id, locator_field_assoc_id ");

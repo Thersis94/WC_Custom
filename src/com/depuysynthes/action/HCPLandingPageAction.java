@@ -12,22 +12,20 @@ import java.util.Map;
 //BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-
 //WebCrescendo 
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.commerce.product.ProductController;
 import com.smt.sitebuilder.action.tools.PageViewReportingAction;
 import com.smt.sitebuilder.action.tools.StatVO;
-import com.smt.sitebuilder.admin.action.SBModuleAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -62,7 +60,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		super.delete(req);
 		
-        String sbActionId = req.getParameter(SBModuleAction.SB_ACTION_ID);
+        String sbActionId = req.getParameter(SBActionAdapter.SB_ACTION_ID);
         ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
         log.debug("Starting HCPLandingPageAction Action - Delete: " + sbActionId);
         

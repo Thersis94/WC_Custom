@@ -21,7 +21,6 @@ import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.survey.SurveyFacadeAction;
 import com.smt.sitebuilder.action.survey.SurveyVO;
-import com.smt.sitebuilder.admin.action.SBModuleAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -91,7 +90,7 @@ public class SiteSurveyAction extends SBActionAdapter {
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 		}
 
-        sbUtil.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), req.getParameter(SBModuleAction.SB_ACTION_ID));
+        sbUtil.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), req.getParameter(SBActionAdapter.SB_ACTION_ID));
 	}
 
 	public void update(ActionRequest req) throws ActionException {
