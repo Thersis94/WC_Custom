@@ -51,7 +51,7 @@ public class SigninReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		StringBuilder doc = new StringBuilder();
 		doc.append("<html><head></head><body>\n");
-		doc.append("<img src='http://events.depuy.com/binary/org/DEPUY/DPY_EVENTS/images/logo.png' width='200' height='52'/>\n");
+		doc.append("<img src='http://events.depuysynthes.com/binary/org/DEPUY/DPY_EVENTS/images/logo.png' width='195' />\n");
 		
 		doc.append("<br/><center><h3>");
 		doc.append("Seminar ").append(eventCode).append(" Sign in Sheet</h3>");

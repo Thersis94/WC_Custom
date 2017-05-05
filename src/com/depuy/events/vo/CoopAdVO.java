@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.depuy.events_v2.CoopAdsActionV2;
+import com.depuy.events.CoopAdsActionV2;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
