@@ -29,7 +29,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  ***************************************************************************
  */
 public class HuddleSolrSearch  extends SimpleActionAdapter {
-	
+
 	public HuddleSolrSearch() {
 		super();
 	}
@@ -42,16 +42,17 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
-	
+
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		
+
 		if (req.hasParameter("searchData") && mod.getDisplayColumn() != null && mod.getDisplayColumn().equals(page.getDefaultColumn()))
 			this.build(req);
 	}
-	
-	
+
+
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -65,7 +66,7 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 
 		//apply sorting
 		HuddleUtils.setSearchParameters(req, req.getParameter("siteSort"));
-		
+
 		//apply section-based boosting if there is no sort order requested by the user
 		if (!req.hasParameter("siteSort")) {
 			if (req.hasParameter("specialty")) {
@@ -75,9 +76,7 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 			}
 			log.debug("boost=" + req.getParameter("customParam"));
 		}
-		
-		
-		
+
 		ActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);

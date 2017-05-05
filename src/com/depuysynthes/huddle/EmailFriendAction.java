@@ -121,15 +121,12 @@ public class EmailFriendAction extends SimpleActionAdapter {
 		sb.append("<ul>");
 		String url;
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		//String assetBase = site.getFullSiteAlias() + HuddleUtils.ASSET_PG_ALIAS + StringUtil.checkVal(getAttribute(Constants.QS_PATH));
 		String mbBase = site.getFullSiteAlias() + HuddleUtils.MEDIABIN_REDIR_URL;
 		@SuppressWarnings("unchecked")
 		Map<String, ShareVO> shareMap = (Map<String, ShareVO>) req.getAttribute("shareMap");
 		for (ShareVO vo : shareMap.values()) {
 			if (vo.getId().startsWith(DocumentAction.SOLR_PREFIX)) {
 				url = site.getFullSiteAlias() + vo.getUrl();
-			//} else if ("video".equals(vo.getType()) || "podcast".equals(vo.getType())) {
-			//	url = assetBase + vo.getId();
 			} else {
 				url = mbBase + vo.getId();
 			}
