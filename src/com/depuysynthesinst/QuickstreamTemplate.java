@@ -1,11 +1,7 @@
 package com.depuysynthesinst;
 
 import com.siliconmtn.annotations.SolrField;
-import com.siliconmtn.cms.TemplateFieldVO;
-import com.siliconmtn.cms.TemplateFieldVOContainer;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.cms.CMSContentVO;
-import com.smt.sitebuilder.action.cms.CMSSolrDocumentVO;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
@@ -18,7 +14,8 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @version 1.0
  * @since Mar 1, 2015
  ****************************************************************************/
-public class QuickstreamTemplate extends CMSSolrDocumentVO {
+public class QuickstreamTemplate {
+	//TODO - depuy-wc |JC| This class did extend CMSSolrDocumentVO
 
 	private String assetType;
 	protected String assetUrl;
@@ -28,7 +25,8 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 	 * @param solrIndex
 	 */
 	public QuickstreamTemplate(String indexType) {
-		super(indexType);
+		//TODO - depuy-wc|JC| Called the super doc
+		//super(indexType);
 	}
 	
 	public QuickstreamTemplate() {
@@ -40,23 +38,24 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 	 * extension of superclass implementation; for DSI-specific template fields
 	 */
 	public void setData(Object o) {
+		//TODO - depuy-wc|JC| Commented a lot of code here.  Needs to be reviewed
 		//this is for debugging; trying to track down an NPE - JM 03.26.15
 		if (o == null) {
-			log.error("passed a null vo, figure out why.");
+			//log.error("passed a null vo, figure out why.");
 			return;
 		}
-		super.setData(o);
-		CMSContentVO vo = (CMSContentVO) o;
-		
-		TemplateFieldVOContainer templateData = vo.getTemplateData();
+		//super.setData(o);
+		//CMSContentVO vo = (CMSContentVO) o;
+		/*
+		TemplateFieldVOContainer templateData = null; //vo.getTemplateData();
 		//this is for debugging; trying to track down an NPE - JM 03.26.15
 		if (templateData == null) {
-			log.error("no template data passed on VO");
+			//log.error("no template data passed on VO");
 			return;
 		}
 		
-		if (vo.getArticle() != null)
-			super.setSummary(StringUtil.checkVal(vo.getArticle().toString()));
+		//if (vo.getArticle() != null)
+		//	super.setSummary(StringUtil.checkVal(vo.getArticle().toString()));
 		
 		
 		//some core fields are provided here-in:
@@ -77,7 +76,7 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 					setAssetType(StringUtil.checkVal(field.getFieldValue())); 
 					break;
 			}
-		}
+		} */
 	}
 	
 	
@@ -92,7 +91,8 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
     			if (sb.length() >= SearchDocumentHandler.HIERARCHY_DELIMITER.length())
     				sb.deleteCharAt(sb.length()-SearchDocumentHandler.HIERARCHY_DELIMITER.length());
     			
-    			super.addHierarchies(sb.toString());
+    			//TODO - depuy-wc|JC|commented this out form CMS Removal
+    			//super.addHierarchies(sb.toString());
     		}
 	}
 
@@ -106,7 +106,7 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 		this.assetType = assetType;
 	}
 
-	@Override
+	/*
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
 	public String getDocumentUrl() {
 		//if there is nothing in assetUrl, return documentUrl, which is the /docs/ path to a likely XLS or PDF file
@@ -115,7 +115,7 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 		} else {
 			return super.getDocumentUrl();
 		}
-	}
+	} */
 
 	public void setAssetUrl(String assetUrl) {
 		this.assetUrl = assetUrl;

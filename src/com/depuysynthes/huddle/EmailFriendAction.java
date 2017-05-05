@@ -11,7 +11,6 @@ import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.SMTSerializer;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.cms.DocumentAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -125,7 +124,8 @@ public class EmailFriendAction extends SimpleActionAdapter {
 		@SuppressWarnings("unchecked")
 		Map<String, ShareVO> shareMap = (Map<String, ShareVO>) req.getAttribute("shareMap");
 		for (ShareVO vo : shareMap.values()) {
-			if (vo.getId().startsWith(DocumentAction.SOLR_PREFIX)) {
+			//TODO - depuy-wc | JC | Hardcoded value from DocumentAction.SOLR_PREFIX
+			if (vo.getId().startsWith("CMS")) { //DocumentAction.SOLR_PREFIX)) {
 				url = site.getFullSiteAlias() + vo.getUrl();
 			} else {
 				url = mbBase + vo.getId();
