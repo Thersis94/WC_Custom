@@ -26,6 +26,7 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.solr.AccessControlQuery;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
@@ -68,14 +69,14 @@ public class CompanyAction extends AbstractTreeAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role.getRoleLevel());
+			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role);
 			if (StringUtil.isEmpty(vo.getCompanyId())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				sbUtil.manualRedirect(req,page.getFullPath());
 			} else {
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
-			    	PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
-			    	SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		    	PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
+		    	SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 				page.setTitleName(vo.getCompanyName() + " | " + site.getSiteName());
 				putModuleData(vo);
 			}
@@ -90,7 +91,7 @@ public class CompanyAction extends AbstractTreeAction {
 	 * @param companyId
 	 * @throws ActionException
 	 */
-	protected CompanyVO retrieveCompany(String companyId, int roleLevel) throws ActionException {
+	protected CompanyVO retrieveCompany(String companyId, SmarttrakRoleVO role) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT c.*, parent.COMPANY_NM as PARENT_NM, d.SYMBOL_TXT FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
@@ -115,8 +116,8 @@ public class CompanyAction extends AbstractTreeAction {
 				company.setCompanyId(null);
 				return company;
 			}
-			addAttributes(company, roleLevel);
-			addLocations(company, roleLevel);
+			addAttributes(company, role);
+			addLocations(company, role.getRoleLevel());
 			addSections(company);
 			addAlliances(company);
 			addInvestors(company);
@@ -308,7 +309,7 @@ public class CompanyAction extends AbstractTreeAction {
 	 * @param company
 	 * @throws ActionException
 	 */
-	protected void addAttributes(CompanyVO company, int roleLevel) throws ActionException {
+	protected void addAttributes(CompanyVO company, SmarttrakRoleVO role) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT xr.*, a.*, parent.ATTRIBUTE_NM as PARENT_NM FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
@@ -317,7 +318,7 @@ public class CompanyAction extends AbstractTreeAction {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE parent ");
 		sql.append("ON parent.ATTRIBUTE_ID = a.PARENT_ID ");
 		sql.append("WHERE COMPANY_ID = ? and STATUS_NO in (");
-		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
+		if (AdminControllerAction.STAFF_ROLE_LEVEL == role.getRoleLevel()) {
 			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
 		}
 		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
@@ -329,9 +330,41 @@ public class CompanyAction extends AbstractTreeAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		
 		List<Object> results = db.executeSelect(sql.toString(), params, new CompanyAttributeVO());
+		filterAttributes(results, company, role);
+	}
+	
+	
+	/**
+	 * Filter supplied attributes based on thier sections and the user's acl 
+	 */
+	protected void filterAttributes(List<Object> results, CompanyVO company, SmarttrakRoleVO role) {
+		String[] roleAcl = role.getAuthorizedSections();
 		Map<String, List<CompanyAttributeVO>> attrMap = new LinkedHashMap<>();
+		SmarttrakTree t = loadDefaultTree();
+		t.buildNodePaths();
 		for (Object o : results) {
-			addToAttributeMap(attrMap, (CompanyAttributeVO)o);
+			CompanyAttributeVO attr = (CompanyAttributeVO)o;
+			Node n = null;
+			
+			if (StringUtil.isEmpty(attr.getSectionId())) {
+				// Items that don't have sections are viewable by anyone.
+				addToAttributeMap(attrMap, (CompanyAttributeVO)o);
+			} else {
+				n = t.findNode(attr.getSectionId());
+			}
+			
+			// If n is null we can leave finish the loop as
+			// the attribute is either already in the map now
+			// or it is an anomaly that exists outside standard operations
+			if (n == null) continue;
+			
+			SectionVO sec = (SectionVO) n.getUserObject();
+			if (roleAcl == null || roleAcl.length == 0 || !AccessControlQuery.isAllowed("+g:" + sec.getSolrTokenTxt(), null, roleAcl)) {
+				// Do nothing. This attribute cannot be seen by the current user
+				// and there is nothing left for the loop to do
+			} else {
+				addToAttributeMap(attrMap, (CompanyAttributeVO)o);
+			}
 		}
 		
 		for (Entry<String, List<CompanyAttributeVO>> e : attrMap.entrySet()) {

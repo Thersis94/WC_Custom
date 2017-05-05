@@ -37,6 +37,7 @@ public class CompanyAttributeVO implements NoteInterface  {
 	private String parentName;
 	private List<NoteVO> notes;
 	private String statusNo;
+	private String sectionId;
 	
 	private int orderNo;
 	private String attributeTypeName;
@@ -201,6 +202,16 @@ public class CompanyAttributeVO implements NoteInterface  {
 
 	public void setStatusNo(String statusNo) {
 		this.statusNo = statusNo;
+	}
+
+	@Column(name="section_id", isReadOnly=true)
+	public String getSectionId() {
+		return sectionId;
+	}
+
+
+	public void setSectionId(String sectionId) {
+		this.sectionId = sectionId;
 	}
 
 }
