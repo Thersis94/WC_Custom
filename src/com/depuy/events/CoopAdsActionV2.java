@@ -43,23 +43,18 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 public class CoopAdsActionV2 extends SBActionAdapter {
 
 	// Ad status levels
-	//public static final int NO_ADS = 15;
 	public static final int CLIENT_SUBMITTED = 1;
 	public static final int PENDING_CLIENT_APPROVAL = 2;
 	public static final int PENDING_AD_OPTIONS = 11;
 	public static final int CLIENT_APPROVED_AD = 3;
 	public static final int CLIENT_DECLINED_AD = 4;
 	public static final int AD_BUY_COMPLETE = 50;
-	//public static final int CLIENT_PAYMENT_RECD = 5;
-	//public static final int AD_DETAILS_RECD = 6;
 	public static final int PENDING_SURGEON_APPROVAL = 7;
 	public static final int SURG_APPROVED_AD = 8;
 	public static final int SURG_DECLINED_AD = 9;
 	public static final int SURG_PAID_AD = 10;
-	//public static final int PENDING_HOSP_APPROVAL = 12;
 	public static final int HOSP_APPROVED_AD = 13;
 	public static final int HOSP_DECLINED_AD = 14;
-	//public static final int REMIND_ME_LATER = 10;
 
 	public CoopAdsActionV2() {
 		super();
@@ -69,57 +64,63 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		super(arg0);
 	}
 
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"));
 
 		CoopAdVO vo = new CoopAdVO(req);
-		
+
 		//record the transaction
 		switch(reqType) {
-			case "approveAd":
-				vo.setStatusFlg(CLIENT_APPROVED_AD);
-				this.updateAdStatus(vo, req);
-				break;
-				
-			case "declineAd":
-				vo.setStatusFlg(CLIENT_DECLINED_AD);
-				this.updateAdStatus(vo, req);
-				break;
-				
-			case "coopAdsSurgeonApproval":
-				// create the VO based on the incoming request object
-				for (CoopAdVO v : createAdList(req)) {
-					this.saveSurgeonsAdApproval(v);
-				}
-				break;
-				
-			case "coopAdsHospitalApproval":
-				// create the VO based on the incoming request object
-				for (CoopAdVO v : createAdList(req)) {
-					this.saveHospitalAdApproval(v);
-				}
-				break;
-				
-			case "eventInfo":
-				// create the VO based on the incoming request object
-				for (CoopAdVO v : createAdList(req))
-					this.saveAd(req,site,v);
-				
-				return;
-				
-			case "uploadAdFile": //this gets called once per ad, from the Promote page
-				this.savePromoteAdData(req, site, vo);
-				break;
-				
-			case "optionFeedback":
-				this.saveAdOptionFeedback(vo);
-				break;
-			
-			case "markAdsComplete":
-				this.markAdsComplete(req.getParameter("eventPostcardId"));
-				break;
+		case "approveAd":
+			vo.setStatusFlg(CLIENT_APPROVED_AD);
+			this.updateAdStatus(vo);
+			break;
+
+		case "declineAd":
+			vo.setStatusFlg(CLIENT_DECLINED_AD);
+			this.updateAdStatus(vo);
+			break;
+
+		case "coopAdsSurgeonApproval":
+			// create the VO based on the incoming request object
+			for (CoopAdVO v : createAdList(req)) {
+				this.saveSurgeonsAdApproval(v);
+			}
+			break;
+
+		case "coopAdsHospitalApproval":
+			// create the VO based on the incoming request object
+			for (CoopAdVO v : createAdList(req)) {
+				this.saveHospitalAdApproval(v);
+			}
+			break;
+
+		case "eventInfo":
+			// create the VO based on the incoming request object
+			for (CoopAdVO v : createAdList(req))
+				this.saveAd(req,site,v);
+
+			return;
+
+		case "uploadAdFile": //this gets called once per ad, from the Promote page
+			this.savePromoteAdData(req, site, vo);
+			break;
+
+		case "optionFeedback":
+			this.saveAdOptionFeedback(vo);
+			break;
+
+		case "markAdsComplete":
+			this.markAdsComplete(req.getParameter("eventPostcardId"));
+			break;
 		}
 
 		req.setAttribute("coopAdId", vo.getCoopAdId());
@@ -134,7 +135,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		return;
 	}
 
-	
+
 	/**
 	 * Creates a list of CoopAdVO's from the seminar submission form. Used for 
 	 * both the print and online ads. Grouped by suffix in the step2Form.
@@ -144,21 +145,19 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	private List<CoopAdVO> createAdList(ActionRequest req) {
 		//determine how many iterations to run.  Internet ads start at #4
 		//current UI supports 3
-		final int MAX_ADS = 3;
+		final int maxAds = 3;
 		List<CoopAdVO> adList = new ArrayList<>();
 		CoopAdVO vo = null;
-		for (int i=1; i <= MAX_ADS; ++i) {
-			//int onlineFlg = (i > 4) ? 1 : 0;
-
+		for (int i=1; i <= maxAds; ++i) {
 			vo = new CoopAdVO(req);
 			assignAdFields(req, vo, i, 0);
 			//the ad block/form was left blank and can be discarded if newspaperName was left blank
 			if (StringUtil.checkVal(vo.getNewspaper1Text()).length() > 0 || vo.getCoopAdId() != null) 
 				adList.add(vo);
 		}
-
 		return adList;
 	}
+
 
 	/**
 	 * Sets ad info for a CoopAdVO, using the specified suffix to identify 
@@ -184,10 +183,8 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			vo.setCoopAdId(req.getParameter("coopAdId_"+suffix));
 	}
 
-	
-	private void sendNotificationEmail(CoopAdVO vo, String reqType, SiteVO site, 
-			UserDataVO user, ActionRequest req) {
 
+	private void sendNotificationEmail(CoopAdVO vo, String reqType, SiteVO site, UserDataVO user, ActionRequest req) {
 		DePuyEventManageActionV2 epsa = new DePuyEventManageActionV2(actionInit);
 		epsa.setDBConnection(dbConn);
 		epsa.setAttributes(attributes);
@@ -212,74 +209,65 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		if (vo.getStatusFlg() == null) vo.setStatusFlg(0);
 
 		switch (vo.getStatusFlg()) {
-			case CLIENT_SUBMITTED:
-				//this is 'stuffed' here because of the status reversion - send the email back to the admins that the coordinator has reviewed the Ad Options.
-				if ("optionFeedback".equals(reqType))
-					emailer.feedbackAdOptions(sem, site, vo);
-					
-				break;
+		case CLIENT_SUBMITTED:
+			//this is 'stuffed' here because of the status reversion - send the email back to the admins that the coordinator has reviewed the Ad Options.
+			if ("optionFeedback".equals(reqType))
+				emailer.feedbackAdOptions(sem, site, vo);
 
-			case PENDING_CLIENT_APPROVAL:
-				log.debug("sending client's approval notice email");
-				
-				//test if we should tell the coordinator all of the ads are ready for their review
-				if (allAdsMeetStatus(sem, null, PENDING_CLIENT_APPROVAL, CLIENT_APPROVED_AD))
-					emailer.requestCoordinatorApproval(sem, site, vo);
-				
-				break;
-				
-			case PENDING_AD_OPTIONS:
-				log.debug("sending ad options email");
-				// ask the Rep to review their ad options
-				emailer.notifyMetroUpload(sem, site);
-				emailer.reviewAdOptions(sem, site);
-				break;
+			break;
 
-			case CLIENT_APPROVED_AD:
-				//determine if we need to enact on a surgeon or hospital approval
-				if ("coopAdsSurgeonApproval".equals(reqType)) {
-					// surgeon approved or declined ads - the email clarifies which
-					log.debug("sending surgeon approval email");
-					emailer.notifyAdminOfSurgeonsApproval(sem, site, false);
+		case PENDING_CLIENT_APPROVAL:
+			log.debug("sending client's approval notice email");
 
-					//email the hospital to approve their portion of the ad if this is a CFSEM25 and all ads were approved.
-					//if (allAdsMeetStatus(sem, "surgeon_status_flg", SURG_APPROVED_AD))
-						//emailer.requestAdApprovalOfConsignee(sem, site, true);
-// no longer supporting 50/25/25 - Rachel W. - 04.02.15 
-//				} else if ("coopAdsHospitalApproval".equals(reqType)) {
-//					// surgeon approved or declined ads - the email clarifies which
-//					log.debug("sending surgeon approval email");
-//					emailer.notifyAdminOfSurgeonsApproval(sem, site, true);
-					
-				} else if (req.hasParameter("isCoordinator")) {
-					//only send this if the coordinator submitted the approved status
-					log.debug("sending client approved email");
-					emailer.notifyAdminOfAdApproval(sem, site, user, Convert.formatInteger(req.getParameter("adCount"), 1), vo);
-					
-				} else if ("9".equals(req.getParameter("origSurgeonStatusFlg")) && vo.getSurgeonStatusFlg() == 0) {
-					//if the surgeon had previously declined this ad, email them that the ad is ready for re-review
-					emailer.requestAdApprovalOfConsignee(sem, site, false);
-					
-				} else if (SURG_PAID_AD == vo.getSurgeonStatusFlg() && SURG_PAID_AD != Convert.formatInteger(req.getParameter("origSurgeonStatusFlg"))) {
-					//the surgeon's ad status is now being marked as paid, and was not previous marked as paid.
-					log.debug("sending payment recieved email");
-					//test if we should announce that all ads are paid for
-					if (allAdsMeetStatus(sem, "surgeon_status_flg", SURG_PAID_AD))
-						emailer.notifyAdminOfAdPaymentRecd(sem, site, false);
-				}
-				break;
+			//test if we should tell the coordinator all of the ads are ready for their review
+			if (allAdsMeetStatus(sem, null, PENDING_CLIENT_APPROVAL, CLIENT_APPROVED_AD))
+				emailer.requestCoordinatorApproval(sem, site, vo);
 
-			case CLIENT_DECLINED_AD:
-				log.debug("sending admin declined email");
-				emailer.notifyAdminOfAdDeclined(sem, site, user, req.getParameter("notesText"), Convert.formatInteger(req.getParameter("adCount"), 1), vo);
-				break;
+			break;
 
-			case AD_BUY_COMPLETE:
-				log.debug("sending ad-buy-complete email");
-				emailer.allAdsComplete(sem, site);
+		case PENDING_AD_OPTIONS:
+			log.debug("sending ad options email");
+			// ask the Rep to review their ad options
+			emailer.notifyMetroUpload(sem, site);
+			emailer.reviewAdOptions(sem, site);
+			break;
+
+		case CLIENT_APPROVED_AD:
+			//determine if we need to enact on a surgeon or hospital approval
+			if ("coopAdsSurgeonApproval".equals(reqType)) {
+				// surgeon approved or declined ads - the email clarifies which
+				log.debug("sending surgeon approval email");
+				emailer.notifyAdminOfSurgeonsApproval(sem, site, false);
+			} else if (req.hasParameter("isCoordinator")) {
+				//only send this if the coordinator submitted the approved status
+				log.debug("sending client approved email");
+				emailer.notifyAdminOfAdApproval(sem, site, user, Convert.formatInteger(req.getParameter("adCount"), 1), vo);
+
+			} else if ("9".equals(req.getParameter("origSurgeonStatusFlg")) && vo.getSurgeonStatusFlg() == 0) {
+				//if the surgeon had previously declined this ad, email them that the ad is ready for re-review
+				emailer.requestAdApprovalOfConsignee(sem, site, false);
+
+			} else if (SURG_PAID_AD == vo.getSurgeonStatusFlg() && SURG_PAID_AD != Convert.formatInteger(req.getParameter("origSurgeonStatusFlg"))) {
+				//the surgeon's ad status is now being marked as paid, and was not previous marked as paid.
+				log.debug("sending payment recieved email");
+				//test if we should announce that all ads are paid for
+				if (allAdsMeetStatus(sem, "surgeon_status_flg", SURG_PAID_AD))
+					emailer.notifyAdminOfAdPaymentRecd(sem, site, false);
+			}
+			break;
+
+		case CLIENT_DECLINED_AD:
+			log.debug("sending admin declined email");
+			emailer.notifyAdminOfAdDeclined(sem, site, user, req.getParameter("notesText"), Convert.formatInteger(req.getParameter("adCount"), 1), vo);
+			break;
+
+		case AD_BUY_COMPLETE:
+			log.debug("sending ad-buy-complete email");
+			emailer.allAdsComplete(sem, site);
 		}
 	}
-	
+
+
 	/**
 	 * tests to see if all newspaper ads for this Seminar have ad files uploaded
 	 * @param sem
@@ -295,18 +283,18 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			sql.append((x > 0) ? ",?" : "?");
 		sql.append(") and event_postcard_id=? ");
 		log.debug(sql);
-		
+
 		int cnt=0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (int s : status) ps.setInt(++cnt, s);
 			ps.setString(++cnt, sem.getEventPostcardId());
-			
+
 			ResultSet rs = ps.executeQuery();
 			return !(rs.next()); //no results is a TRUE for this test.
 		} catch (SQLException sqle) {
 			log.error("could not check ad status", sqle);
 		}
-		
+
 		return false;
 	}
 
@@ -321,11 +309,9 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private CoopAdVO saveAd(ActionRequest req, SiteVO site, CoopAdVO vo)
-			throws ActionException {
+	private CoopAdVO saveAd(SiteVO site, CoopAdVO vo)throws ActionException {
 		StringBuilder sql = new StringBuilder(300);
 		boolean insertRecord = StringUtil.checkVal(vo.getCoopAdId()).length() == 0;
-
 		if (insertRecord) {
 			sql.append("INSERT INTO ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 			sql.append("DEPUY_EVENT_COOP_AD (EVENT_POSTCARD_ID, ");
@@ -412,8 +398,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void updateAdStatus(CoopAdVO vo, ActionRequest req) 
-			throws ActionException {
+	private void updateAdStatus(CoopAdVO vo) throws ActionException {
 		Integer statusLvl = Convert.formatInteger( vo.getStatusFlg() );
 
 		StringBuilder sql = new StringBuilder(100);
@@ -429,13 +414,13 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			ps.setString(3, vo.getCoopAdId());
 
 			if (ps.executeUpdate() < 1)
-				throw new SQLException("No Co-Op Ad status records updated");
+				throw new SQLException("Co-Op Ad record not updated");
 		} catch (SQLException sqle) {
 			log.error("Error saving Co-op Ad status", sqle);
 			throw new ActionException(sqle);
 		}
 	}
-	
+
 
 	/**
 	 * captures the surgeon's approval of their ad/expense. CFSEM only.
@@ -447,7 +432,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		int statusLvl = Convert.formatInteger(vo.getStatusFlg()).intValue(); //uses generic statusFlg field
 		boolean surgApproved = (statusLvl == SURG_APPROVED_AD);
 		boolean haveReason = StringUtil.checkVal(vo.getInstructionsText()).length() > 0;
-		
+
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("UPDATE ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DEPUY_EVENT_COOP_AD SET SURGEON_STATUS_FLG=?, UPDATE_DT=? ");
@@ -470,8 +455,8 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			throw new ActionException(sqle);
 		}
 	}
-	
-	
+
+
 	/**
 	 * captures the surgeon's approval of their ad/expense. CFSEM only.
 	 * 
@@ -482,7 +467,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		int statusLvl = Convert.formatInteger(vo.getStatusFlg()).intValue(); //uses generic statusFlg field
 		boolean surgApproved = (statusLvl == HOSP_APPROVED_AD);
 		boolean haveReason = StringUtil.checkVal(vo.getInstructionsText()).length() > 0;
-		
+
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("UPDATE ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DEPUY_EVENT_COOP_AD SET HOSPITAL_STATUS_FLG=?, UPDATE_DT=? ");
@@ -505,8 +490,8 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			throw new ActionException(sqle);
 		}
 	}
-	
-	
+
+
 	/**
 	 * captures the coordinator's ad option feedback
 	 * 
@@ -535,8 +520,8 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			throw new ActionException(sqle);
 		}
 	}
-	
-	
+
+
 
 	/**
 	 * simple facade to our standard file upload util.
@@ -547,13 +532,12 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @return
 	 */
 	private String saveFile(ActionRequest req, String paramNm, String subPath, SiteVO site) {
-		//log.debug("starting saveAdFile");
 		PostcardInsertV2 pi2 = new PostcardInsertV2();
 		pi2.setAttributes(attributes);
 		return pi2.saveFile(req, paramNm, subPath, site);
 	}
 
-	
+
 	/**
 	 * retrieves a CoopAdVO or List<CoopAdVO> from the database
 	 * @param coopAdId
@@ -601,7 +585,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	private void savePromoteAdData(ActionRequest req, SiteVO site, 
 			CoopAdVO vo) throws ActionException {
 		final String customDB = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		
+
 		//Create prepared statement
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("update ").append(customDB).append("DEPUY_EVENT_COOP_AD ");
@@ -637,11 +621,11 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			throw new ActionException(e);
 		}
 	}
-	
-	
+
+
 	private void markAdsComplete(String eventPostcardId) throws ActionException {
 		final String customDB = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		
+
 		//Create prepared statement
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("update ").append(customDB).append("DEPUY_EVENT_COOP_AD ");
@@ -654,7 +638,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			ps.setTimestamp(2, Convert.getCurrentTimestamp());
 			ps.setString(3, eventPostcardId);
 			ps.executeUpdate();
-			
+
 		} catch (SQLException sqle) {
 			throw new ActionException(sqle);
 		}

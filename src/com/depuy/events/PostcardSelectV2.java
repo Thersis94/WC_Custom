@@ -106,7 +106,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		owner	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new OwnerComparator(); } };
 
 		abstract Comparator<DePuyEventSeminarVO> getComparator();
-	};
+	}
 
 	public PostcardSelectV2() {
 		super();

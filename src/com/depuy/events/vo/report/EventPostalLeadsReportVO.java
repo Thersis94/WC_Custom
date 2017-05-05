@@ -30,7 +30,7 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 19843246851684541l;
 	private List<EventEntryVO> events = new ArrayList<>();
 	private List<UserDataVO> leads = new ArrayList<>();
-	private Date rsvpDate = null;;
+	private Date rsvpDate = null;
 	private String labelText = "";
 
 

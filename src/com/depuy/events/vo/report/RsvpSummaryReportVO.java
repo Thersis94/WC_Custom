@@ -20,60 +20,54 @@ import com.siliconmtn.util.Convert;
  @version 1.0
  @since Mar 24, 2008
  ***************************************************************************/
-
 public class RsvpSummaryReportVO extends AbstractSBReportVO {
-    private static final long serialVersionUID = 1l;
-    private List<EventEntryVO> events = new ArrayList<EventEntryVO>();
+	private static final long serialVersionUID = 1l;
+	private List<EventEntryVO> events = new ArrayList<>();
 
-    /**
-     * 
-     */
-    public RsvpSummaryReportVO() {
-        super();
-        setContentType("application/vnd.ms-excel");
-        isHeaderAttachment(Boolean.TRUE);
-        setFileName("RSVP-Summary.xls");
-    }
-    
-    /**
-     * Assigns the event postcard data retrieved from the parent action
-     * variables
-     * @param data (List<DePuyEventPostcardVO>)
-     * @throws SQLException
-     */
-    @SuppressWarnings("unchecked")
-    public void setData(Object o) {
-    	List<?> events = (List<?>) o;
-    	this.events = (List<EventEntryVO>) events;
-    }
-    
+	/**
+	 * 
+	 */
+	public RsvpSummaryReportVO() {
+		super();
+		setContentType("application/vnd.ms-excel");
+		isHeaderAttachment(Boolean.TRUE);
+		setFileName("RSVP-Summary.xls");
+	}
+
+
+	/**
+	 * Assigns the event postcard data retrieved from the parent action
+	 * variables
+	 * @param data (List<DePuyEventPostcardVO>)
+	 * @throws SQLException
+	 */
+	@Override
+	@SuppressWarnings("unchecked")
+	public void setData(Object o) {
+		List<?> e = (List<?>) o;
+		this.events = (List<EventEntryVO>) e;
+	}
+
+
+	@Override
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
-		
 		ExcelReport rpt = new ExcelReport(this.getHeader());
-		
 		List<Map<String, Object>> rows = new ArrayList<>(events.size());
-		
 		rows = generateDataRows(rows);
-		
 		rpt.setData(rows);
-		
 		return rpt.generateReport();
-				
 	}
-	
+
 
 	/**
 	 * this method is used to generate the data rows of the excel sheet.
 	 * @param rows
 	 * @return
 	 */
-	private List<Map<String, Object>> generateDataRows(
-			List<Map<String, Object>> rows) {
-		
-	
+	private List<Map<String, Object>> generateDataRows(List<Map<String, Object>> rows) {
 		for (EventEntryVO vo : events){
-			Map<String, Object> row = new HashMap<String, Object>();
+			Map<String, Object> row = new HashMap<>();
 			Integer rsvpTotal = vo.getRsvpTotal("call") + vo.getRsvpTotal("web");
 			row.put("SEMINAR_NO", vo.getRSVPCode());
 			row.put("SEMINAR_HOST", vo.getContactName());
@@ -81,29 +75,24 @@ public class RsvpSummaryReportVO extends AbstractSBReportVO {
 			row.put("CALL_IN_RSVPS", vo.getRsvpTotal("call"));
 			row.put("TOTAL_RSVPS", rsvpTotal);
 			row.put("SEMINAR_DATE", Convert.formatDate(vo.getStartDate(), "EEEE, MMMM dd, yyyy"));
-		
 			rows.add(row);
 		}
-		
-		
 		return rows;
 	}
+
 
 	/**
 	 * builds the header map for the excel report
 	 * @return
 	 */
 	private HashMap<String, String> getHeader() {
-					
-		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put("SEMINAR_NO","Seminar#");
 		headerMap.put("SEMINAR_HOST","Seminar Host");
 		headerMap.put("WEB_RSVPS","Web RSVPs");
 		headerMap.put("CALL_IN_RSVPS", "Call-in RSVPs");
 		headerMap.put("TOTAL_RSVPS", "Total RSVPs");
 		headerMap.put("SEMINAR_DATE", "Seminar Date");
-		
 		return headerMap;
 	}
-
 }

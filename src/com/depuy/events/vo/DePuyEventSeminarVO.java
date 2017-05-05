@@ -49,7 +49,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	private CoopAdVO radioAd = null;
 	private List<CoopAdVO> newspaperAds = null;
 	private List<CoopAdVO> onlineAds = null;
-	private List<DePuyEventLeadSourceVO> leadSources = null;;
+	private List<DePuyEventLeadSourceVO> leadSources = null;
 	private List<UserDataVO> leadsData = null;
 	private int rsvpCount = 0;
 	private String baseUrl = null; //used in reports to give AbsURLs to urls in the Excel files.
@@ -664,7 +664,9 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		String typeCd = "";
 		try {
 			typeCd = super.getEvents().get(0).getEventTypeCd();
-		} catch (Exception e) {}
+		} catch (Exception e) {
+			//ignoreable
+		}
 		return typeCd.startsWith("MITEK-");
 	}
 
@@ -672,7 +674,9 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		String typeCd = "";
 		try {
 			typeCd = super.getEvents().get(0).getEventTypeCd();
-		} catch (Exception e) {}
+		} catch (Exception e) {
+			//ignoreable
+		}
 		return "HSEM".equals(typeCd);
 	}
 
