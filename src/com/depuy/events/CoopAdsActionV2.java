@@ -106,7 +106,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		case "eventInfo":
 			// create the VO based on the incoming request object
 			for (CoopAdVO v : createAdList(req))
-				this.saveAd(req,site,v);
+				this.saveAd(site,v);
 
 			return;
 
