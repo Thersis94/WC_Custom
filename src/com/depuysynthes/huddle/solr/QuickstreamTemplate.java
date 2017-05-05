@@ -2,10 +2,6 @@ package com.depuysynthes.huddle.solr;
 
 import com.depuysynthes.huddle.HuddleUtils;
 import com.siliconmtn.annotations.SolrField;
-import com.siliconmtn.cms.TemplateFieldVO;
-import com.siliconmtn.cms.TemplateFieldVOContainer;
-import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.cms.CMSContentVO;
 
 /****************************************************************************
  * <b>Title</b>: QuickstreamTemplate.java<p/>
@@ -27,6 +23,8 @@ public class QuickstreamTemplate extends com.depuysynthesinst.QuickstreamTemplat
 	}
 
 	public void setData(Object o) {
+		//TODO - depuy-wc|JC|Commented out.  Needs to be updated for the Doc Mgmt System
+		/*
 		if (o == null) return;
 		super.setData(o);
 		CMSContentVO vo = (CMSContentVO) o;
@@ -43,6 +41,7 @@ public class QuickstreamTemplate extends com.depuysynthesinst.QuickstreamTemplat
 					break;
 			}
 		}
+		*/
 	}
 
 	@SolrField(name=HuddleUtils.SOLR_OPCO_FIELD)

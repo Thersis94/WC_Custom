@@ -21,7 +21,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 
 // SMT Base Libs
-import com.siliconmtn.cms.CMSConnection;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
@@ -64,11 +63,12 @@ public class ProductIndex implements SMTCustomIndexIntfc {
         ldm = new DocumentMap();
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, org.apache.lucene.index.IndexWriter, java.util.Properties)
 	 */
 	@Override
-	public void addIndexItems(Connection conn, CMSConnection cmsConn, IndexWriter writer, Properties config) {
+	public void addIndexItems(Connection conn, IndexWriter writer, Properties config) {
 		log.info("Indexing USA Products");
 		this.indexProducts(conn, ORGANIZATON_ID, writer);
 	}

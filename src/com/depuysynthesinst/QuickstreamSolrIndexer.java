@@ -5,16 +5,8 @@ import java.util.Properties;
 
 import org.apache.solr.client.solrj.SolrClient;
 
-import com.quickstream.doccentral.storage.DocSearchDataObject;
-import com.quickstream.doccentral.storage.DocSearchDataObjectContainer;
-import com.siliconmtn.cms.QSSimpleSearch;
-import com.siliconmtn.exception.CMSException;
-import com.smt.sitebuilder.action.cms.CMSContentVO;
-import com.smt.sitebuilder.action.cms.DocumentAction;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.util.solr.SolrActionUtil;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: QuickstreamSolrIndexer.java<p/>
@@ -33,7 +25,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 	
 	public static final String INDEX_TYPE = "CMS_QUICKSTREAM"; //formerly QUICKSTREAM_DSI -JM 04.14.16
-	private static final String ORG_ID = "DPY_SYN_INST"; //in CMS and WC, must match.
+	protected static final String ORG_ID = "DPY_SYN_INST"; //in CMS and WC, must match.
 
 	public QuickstreamSolrIndexer(Properties config) {
 		this.config = config;
@@ -43,9 +35,10 @@ public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
-	@SuppressWarnings("resource")
 	@Override
 	public void addIndexItems(SolrClient server) {
+		//TODO - depuy-wc|JC| Commented this out.  Nees to be converted to Doc Mgmt
+		/*
 		//get a list of CMS documents for our org
 		DocumentAction da = new DocumentAction(); //use the WC core to load the articles
 		da.setCMSConnection(cmsConn);
@@ -87,7 +80,7 @@ public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 			} catch (Exception e) {
 				log.error("could not create document to add to Solr", e);
 			}
-		}
+		} */
 
 	}
 
@@ -110,16 +103,7 @@ public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 	public boolean isDBConnection() {
 		return false;
 	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#isCMSConnection()
-	 */
-	@Override
-	public boolean isCMSConnection() {
-		return true;
-	}
-
-
+	
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
 	 */
