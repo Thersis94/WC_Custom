@@ -1,23 +1,18 @@
 package com.depuysynthes.action;
 
-// JDK 1.6.x
+// JDK 1.8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-
-
-// SMT BAse Libs
+// SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.util.Convert;
 
-// 
+// WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -39,58 +34,46 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class MediaBinLinkAction extends SimpleActionAdapter {
 	public static final String US_BASE_URL = "http://synthes.vo.llnwd.net/o16/LLNWMB8/US%20Mobile/";
 	public static final String INT_BASE_URL = "http://synthes.vo.llnwd.net/o16/LLNWMB8/INT%20Mobile/";
-	
+
 	public MediaBinLinkAction() {
-		
+		super();
 	}
 
 	public MediaBinLinkAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
-		ModuleVO mod = (ModuleVO)attributes.get(AdminConstants.ADMIN_MODULE_DATA);
-		mod.setSimpleAction(Boolean.TRUE);
+		super.retrieve(req);
 	}
-	
+
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		//boolean success = false;
 		try {
 			req.setValidateInput(Boolean.FALSE);
-			String path = this.getDocumentLink(req.getParameter("mbid"));
+			String path = getDocumentLink(req.getParameter("mbid"));
 			req.setValidateInput(Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, path);
-			//success = true;
 		} catch (Exception e) {
 			//we don't care about these in production.
-			log.debug("Unable to retrieve media bin file path", e);
+			log.warn("Unable to retrieve media bin file path", e);
 			req.setAttribute(Constants.CFG_PAGE_NOT_FOUND, Boolean.TRUE);
 		}
-		
-		/**
-		 * This was added for DSI, then they decided not to use it.  -JM 09.12.14
-		 * 
-		//drop a message to UDP for PageViewReporting to capture
-		//this is not done by the Filter because we're returning a 302 response header (a redirect)
-		if (success) {
-			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			PageViewUDPUtil util = new PageViewUDPUtil();
-			byte[] data = util.buildPayload(site, null, "/mediabin/" + req.getParameter("mbid"));
-			try {
-				util.sendDatagram(data, attributes);
-			} catch (Exception e) {
-				log.error("could not log mediabin pageview for " + req.getParameter("mbid"), e);
-			}
-		}
-		 */
 	}
-	
+
+
 	/**
 	 * Gets the document path form the provided id
 	 * @param id
@@ -98,30 +81,21 @@ public class MediaBinLinkAction extends SimpleActionAdapter {
 	 * @throws SQLException
 	 */
 	public String getDocumentLink(String id) throws InvalidDataException {
-		StringBuilder s = new StringBuilder();
-		s.append("select asset_nm, import_file_cd from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		StringBuilder s = new StringBuilder(150);
+		s.append("select asset_nm, import_file_cd from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		s.append("dpy_syn_mediabin where dpy_syn_mediabin_id = ?");
-		
-		String url = null;
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(s.toString());
+
+		try (PreparedStatement ps = dbConn.prepareStatement(s.toString())) {
 			ps.setString(1, id);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				//serve Intl assets from an alternate baseUrl
-				url = (Convert.formatInteger(rs.getInt(2)) == 2) ? INT_BASE_URL : US_BASE_URL;
-				url += rs.getString(1);
-			} else {
-				throw new InvalidDataException("Media Bin Document not found: " + id);
+				return (2 == rs.getInt(2) ? INT_BASE_URL : US_BASE_URL) + rs.getString(1);
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load mediaBin asset", sqle);
-			throw new InvalidDataException("Media Bin Document not found: " + id);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
-		
-		return url;
+
+		throw new InvalidDataException("Media Bin Document not found: " + id);
 	}
 }

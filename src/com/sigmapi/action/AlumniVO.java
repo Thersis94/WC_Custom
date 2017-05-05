@@ -22,29 +22,25 @@ import com.smt.sitebuilder.data.vo.FormTransactionVO;
 public class AlumniVO extends UserDataVO implements Serializable {
 
 	private static final long serialVersionUID = -3410583156068170049L;
-	private UserDataVO user = null;
 	private FormTransactionVO extData = null;
 	private Date lastLoginDate = null;
-	
+
 	public AlumniVO() {
+		super();
 	}
-	
-	public void setUserData(UserDataVO user) {
-		super.setData(user.getDataMap());
-	}
-	
+
 	public void setExtData(FormTransactionVO vo) {
 		extData = vo;
 	}
-	
+
 	public UserDataVO getCoreData() {
-		return user;
+		return this;
 	}
-	
+
 	public FormTransactionVO getExtData() {
 		return extData;
 	}
-	
+
 	public void setLastLoginDate(Date d) {
 		lastLoginDate = d;
 	}
