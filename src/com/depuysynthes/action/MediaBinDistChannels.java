@@ -20,18 +20,26 @@ import java.util.Set;
 public class MediaBinDistChannels {
 
 	private String orgId = "";
-	
-	
+
+	public MediaBinDistChannels() {
+		super();
+	}
+
+	public MediaBinDistChannels(String orgId) {
+		this();
+		setOrgId(orgId);
+	}
+
 	/**
 	 * enum containing all the constants.  These are driven by DS/Mediabin
 	 * and should never change once the org is added to WC.
 	 */
-	public static enum DistChannel {
+	public enum DistChannel {
 		INTDS("INTDS.com", 2, "DPY_SYN_EMEA"),
 		USDS("USDS.com", 1, "DPY_SYN"),
 		DSI("DSI.com", 1, "DPY_SYN_INST"),
 		DSHuddle("DSHuddle.com", 1, "DPY_SYN_HUDDLE");
-		
+
 		private String orgId;
 		private int typeCd;
 		private String channel;
@@ -43,9 +51,8 @@ public class MediaBinDistChannels {
 		public String getOrgId() { return orgId; }
 		public int getTypeCd() { return typeCd; }
 		public String getChannel() { return channel; }
-		
 	}
-	
+
 	/**
 	 * returns a static list compiled from the above enum, of the EXP file dist 
 	 * channels for the passed typeCd
@@ -60,20 +67,11 @@ public class MediaBinDistChannels {
 		}
 		return data.toArray(new String[data.size()]);
 	}
-	
-
-	public MediaBinDistChannels() {
-	}
-	
-	public MediaBinDistChannels(String orgId) {
-		this();
-		setOrgId(orgId);
-	}
 
 	public void setOrgId(String orgId) {
 		if (orgId != null) this.orgId = orgId;
 	}
-	
+
 	public String getOpCoNm() {
 		for (DistChannel dc : DistChannel.values()) {
 			if (dc.getOrgId().equals(orgId))
@@ -82,7 +80,7 @@ public class MediaBinDistChannels {
 		//default to EMEA, for all their different countries
 		return DistChannel.INTDS.getChannel();
 	}
-	
+
 	public int getTypeCd() {
 		for (DistChannel dc : DistChannel.values()) {
 			if (dc.getOrgId().equals(orgId))
