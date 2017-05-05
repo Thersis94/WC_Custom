@@ -30,8 +30,8 @@ import com.google.gson.JsonParser;
 // SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.exception.MailException;
@@ -48,7 +48,6 @@ import com.smt.sitebuilder.action.survey.SurveyAction;
 import com.smt.sitebuilder.action.survey.SurveyResponseAction;
 import com.smt.sitebuilder.action.tools.EmailFriendAction;
 import com.smt.sitebuilder.action.tools.EmailFriendVO;
-import com.smt.sitebuilder.admin.action.SBModuleAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.SiteVO;
@@ -236,7 +235,7 @@ public class LocatorAction extends SBActionAdapter {
     @Override
     public void delete(ActionRequest req) throws ActionException {
     	Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-        String sbActionId = req.getParameter(SBModuleAction.SB_ACTION_ID);
+        String sbActionId = req.getParameter(SBActionAdapter.SB_ACTION_ID);
         ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
         log.info("Starting Locator Data Action - Delete: " + sbActionId);
         
@@ -257,7 +256,7 @@ public class LocatorAction extends SBActionAdapter {
 
                 // Delete the entry in the Module Table
                 log.info("Deleting entry in SB_ACTION");
-                req.setAttribute(SBModuleAction.SB_ACTION_ID, sbActionId);
+                req.setAttribute(SBActionAdapter.SB_ACTION_ID, sbActionId);
                 super.delete(req);
             }
             
@@ -290,8 +289,8 @@ public class LocatorAction extends SBActionAdapter {
         
 	    super.update(req);
 	    
-        String sbActionId = (String) req.getAttribute(SBModuleAction.SB_ACTION_ID);
-        req.setAttribute(SBModuleAction.MODULE_TYPE, mod.getModuleType());
+        String sbActionId = (String) req.getAttribute(SBActionAdapter.SB_ACTION_ID);
+        req.setAttribute(SBActionAdapter.MODULE_TYPE, mod.getModuleType());
 
         if (Convert.formatBoolean(req.getAttribute(INSERT_TYPE))) {
             sql.append("insert into locator (search_id, search_type_id, ");
@@ -464,7 +463,7 @@ public class LocatorAction extends SBActionAdapter {
     @SuppressWarnings("unchecked")
     @Override
     public void list(ActionRequest req) throws ActionException {
-        String actionId = req.getParameter(SBModuleAction.SB_ACTION_ID);
+        String actionId = req.getParameter(SBActionAdapter.SB_ACTION_ID);
         
         if (actionId == null || actionId.length() == 0) return;
         ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);

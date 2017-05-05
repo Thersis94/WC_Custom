@@ -9,11 +9,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
+import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.formbuilder.vo.FBFormVO;
-import com.smt.sitebuilder.admin.action.SBModuleAction;
 
 /****************************************************************************
  * <b>Title</b>: HuddleFormVO.java
@@ -53,10 +53,10 @@ public class HuddleGroupVO extends SBModuleVO {
 	 * @param req
 	 */
 	public void setData(ActionRequest req) {
-		setActionId(req.getParameter(SBModuleAction.SB_ACTION_ID));
+		setActionId(req.getParameter(SBActionAdapter.SB_ACTION_ID));
 		setActionName(req.getParameter("actionName"));
 		setActionDesc(req.getParameter("actionDesc"));
-		setActionGroupId(req.getParameter(SBModuleAction.SB_ACTION_GROUP_ID));
+		setActionGroupId(req.getParameter(SBActionAdapter.SB_ACTION_GROUP_ID));
 	}
 
 	/**
