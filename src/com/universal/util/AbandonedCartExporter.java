@@ -54,22 +54,21 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Aug 28, 2014; David Bargerhuff: Created class 
  ****************************************************************************/
 public class AbandonedCartExporter extends CommandLineUtil {
-	
-	private final String DELIM_FIELD = "|";
-	private final String DELIM_VALUE = ";";
-	private final Integer DEFAULT_SITES_LIMIT = new Integer(10);
-	private final char terminator = 0xa;
-	private final String NEWLINE = Character.toString(terminator);
+
+	private static final String DELIM_FIELD = "|";
+	private static final String DELIM_VALUE = ";";
+	private static final Integer DEFAULT_SITES_LIMIT = Integer.valueOf(10);
+	private static final char TERMINATOR = 0xa;
+	private static final String NEWLINE = Character.toString(TERMINATOR);
 	private Date dateStart = null;
 	private Date dateEnd = null;
-	private List<String> profileIds = null;
 	private Map<String, UserDataVO> users = null;
 	private List<AbandonedCartVO> carts = null;
 	private List<String> messageLog = null;
 	private Map<String,String> brandMap = null;
 	private String propertiesPath = "C:/Users/beaker/gitHome/git/WC_Custom/scripts/usa_abandoned_carts.properties"; 
 	private String logPropertiesPath = "C:/Users/beaker/gitHome/git/WC_Custom/scripts/usa_abandoned_carts_log4j.properties";
-	
+
 	public AbandonedCartExporter(String[] args) {
 		super(args);
 		messageLog = new ArrayList<>();
@@ -84,39 +83,39 @@ public class AbandonedCartExporter extends CommandLineUtil {
 			DBUtil.close(ace.dbConn);
 		}
 	}
-	
+
 	@Override
 	public void run() {
-		
+
 		// load properties
 		this.loadProperties(propertiesPath);
 		if (props == null) {
 			// notify admin FAIL/Properties
 			addMessage("Failed to load properties file. Check log!");
-			sendEmail(0,1);
+			sendEmail(1);
 			return;
 		}
-		
+
 		// load dbConn
 		this.loadDBConnection(props);
 		if (dbConn == null) {
 			// notify admin FAIL/Database
 			addMessage("Failed to establish a database connection. Check log!");
-			sendEmail(0,1);
+			sendEmail(1);
 			return;
 		}
-		
+
 		// loads the brand map from the properties file.
 		loadBrandMap();
-		
+
 		// format the start/end dates for this run
 		formatDates();
 
 		// process abandoned carts
 		processCarts();
-		
+
 	}
-	
+
 	/**
 	 * Formats the start/end date for this process.
 	 */
@@ -124,12 +123,11 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		log.info("formatting dates...");
 		// Use 'yesterday' for start/end date range
 		Calendar cal = Calendar.getInstance();
-		//cal.add(Calendar.DAY_OF_MONTH, -1);
 		dateStart = Convert.formatStartDate(cal.getTime());
 		dateEnd = Convert.formatEndDate(cal.getTime());
 		log.info("Start/End dates used: " + dateStart + "-" + dateEnd);
 	}
-	
+
 	/**
 	 * Controlling method that utilizes other methods to load carts, load profiles, 
 	 * build reports, and send admin email.
@@ -138,23 +136,22 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		log.info("processing carts...");
 		long baseTime = Calendar.getInstance().getTimeInMillis();
 		StringBuilder statusMsg = null;
-		int successCnt = 0, failCnt = 0;
-		for (String sourceId : brandMap.keySet()) {
+		int failCnt = 0;
+		for (Map.Entry<String, String> entry : brandMap.entrySet()) {
 			statusMsg = new StringBuilder();
 			try {
 				//1. retrieve carts
-				loadCarts(sourceId);
-				
+				loadCarts(entry.getKey());
+
 				// 2. retrieve profiles assoc with carts
 				loadProfiles();
-				
+
 				// 3. build export
 				StringBuilder fileName = new StringBuilder();
-				fileName.append(brandMap.get(sourceId)).append("_").append(baseTime);
+				fileName.append(entry.getValue()).append("_").append(baseTime);
 				fileName.append(props.getProperty("reportFileExtension"));
-				buildExportFile(sourceId, fileName.toString());
-				
-				successCnt++;
+				buildExportFile(fileName.toString());
+
 			} catch (SQLException sqle) {
 				statusMsg.append("Error loading cart information, ");
 				statusMsg.append(sqle);
@@ -172,9 +169,9 @@ public class AbandonedCartExporter extends CommandLineUtil {
 				statusMsg.append(ioe);
 				failCnt++;
 			}
-			
+
 			if (statusMsg.length() == 0) {
-				statusMsg.append(sourceId).append(": ");
+				statusMsg.append(entry.getKey()).append(": ");
 				if (carts.isEmpty()) {
 					statusMsg.append("No abandoned carts found for this source.");
 				} else {
@@ -185,12 +182,12 @@ public class AbandonedCartExporter extends CommandLineUtil {
 			addMessage(statusMsg.toString());
 		}
 		log.info(messageLog);
-		
+
 		// 4. send admin email
-		sendEmail(successCnt, failCnt);
+		sendEmail(failCnt);
 
 	}
-	
+
 	/**
 	 * Retrieves persisted (serialized) cart objects from the Object table based on 
 	 * source ID and non-null profile IDs.
@@ -201,52 +198,55 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		log.info("Retrieving abandoned carts...");
 		// reset carts * profiles
 		carts = new ArrayList<>();
-		profileIds = new ArrayList<>();
-		
+
 		// build query
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(250);
 		sql.append("select * from OBJECT_STOR where 1=1 ");
 		sql.append("and PROFILE_ID is not null and SOURCE_ID = ? ");
 		sql.append("and UPDATE_DT between ? and ? ");
 		sql.append("order by SOURCE_ID, PROFILE_ID, UPDATE_DT desc");
-		log.info("Using cart query SQL: " + sql.toString());
+		log.info("Using cart query SQL: " + sql);
 		log.info("sourceId|start|end: " + sourceId + "|" + 
 				Convert.formatSQLDate(dateStart) + "|" + Convert.formatSQLDate(dateEnd));
-		
+
 		// execute query
-		PreparedStatement ps = null;
-		ps = dbConn.prepareStatement(sql.toString());
-		int index = 1;
-		ps.setString(index++, sourceId);
-		ps.setDate(index++,  Convert.formatSQLDate(dateStart));
-		ps.setDate(index++,  Convert.formatSQLDate(dateEnd));
-		ResultSet rs = ps.executeQuery();
-		
-		// parse results
-		ObjectInputStream ois = null;
-		while (rs.next()) {
-			AbandonedCartVO acv = new AbandonedCartVO();
-			ShoppingCartVO cart = null;
-			try {
-				ois = new ObjectInputStream(new ByteArrayInputStream(rs.getBytes("object")));
-				cart = (ShoppingCartVO) ois.readObject();
-				acv.setCart(cart);
-				acv.setObjectId(rs.getString("object_id"));
-				acv.setProfileId(rs.getString("profile_id"));
-				profileIds.add(acv.getProfileId());
-				acv.setSourceId(rs.getString("source_id"));
-				acv.setCreateDate(rs.getTimestamp("update_dt"));
-				carts.add(acv);
-				
-			} catch (IOException ioe) {
-				addMessage("Failed to read cart for object ID: " + rs.getString("object_id"));
-			} catch (ClassNotFoundException cnfe) {
-				addMessage("Class not found, " + cnfe);
+		int index = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(++index, sourceId);
+			ps.setDate(++index,  Convert.formatSQLDate(dateStart));
+			ps.setDate(++index,  Convert.formatSQLDate(dateEnd));
+			ResultSet rs = ps.executeQuery();
+
+			// parse results
+			ObjectInputStream ois = null;
+			while (rs.next()) {
+				AbandonedCartVO acv = new AbandonedCartVO();
+				ShoppingCartVO cart = null;
+				try {
+					ois = new ObjectInputStream(new ByteArrayInputStream(rs.getBytes("object")));
+					cart = (ShoppingCartVO) ois.readObject();
+					acv.setCart(cart);
+					acv.setObjectId(rs.getString("object_id"));
+					acv.setProfileId(rs.getString("profile_id"));
+
+					UserDataVO userVo = new UserDataVO();
+					userVo.setProfileId(acv.getProfileId());
+					users.put(userVo.getProfileId(), userVo);
+					
+					acv.setSourceId(rs.getString("source_id"));
+					acv.setCreateDate(rs.getTimestamp("update_dt"));
+					carts.add(acv);
+
+				} catch (IOException ioe) {
+					addMessage("Failed to read cart for object ID: " + rs.getString("object_id"));
+				} catch (ClassNotFoundException cnfe) {
+					addMessage("Class not found, " + cnfe);
+				}
 			}
 		}
 		log.info("Abandoned carts found: " + carts.size());
 	}
-	
+
 	/**
 	 * Retrieves user profiles based on a List of user profile IDs and loads the 
 	 * profiles into a Map.
@@ -257,19 +257,17 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		Map<String,Object> config = new HashMap<>();
 		config.put(Constants.ENCRYPT_KEY, props.getProperty("encryptKey"));
 		ProfileManager pm = ProfileManagerFactory.getInstance(config);
-		users = pm.searchProfileMap(dbConn, profileIds);
+		pm.populateRecords(dbConn, new ArrayList<>(users.values()));
 		log.info("User profiles loaded: " + users.size());
 	}
-	
+
 	/**
 	 * Builds the export file for abandoned carts.
-	 * @param sourceId
 	 * @param baseTime
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private void buildExportFile(String sourceId, String reportFileName) 
-			throws FileNotFoundException, IOException {
+	private void buildExportFile(String reportFileName) throws IOException {
 		if (carts.isEmpty()) return;
 		StringBuilder outFile = new StringBuilder();
 		outFile.append(buildFileHeader());
@@ -285,7 +283,7 @@ public class AbandonedCartExporter extends CommandLineUtil {
 			outFile.append(Convert.formatDate(cart.getCreateDate(), Convert.DATE_TIME_DASH_PATTERN)); // cart update date
 			outFile.append(NEWLINE);
 		}
-		
+
 		// write local file
 		boolean doFlag = Convert.formatBoolean(props.getProperty("copyFilesLocally"));
 		log.info("local copy enabled: " + doFlag);
@@ -304,14 +302,14 @@ public class AbandonedCartExporter extends CommandLineUtil {
 				} catch (Exception e) {log.error("Error closing FileOutputStream, ", e);}
 			}
 		}
-		
+
 		// ftp file
 		doFlag = Convert.formatBoolean(props.getProperty("sftpEnabled"));
 		log.info("SFTP enabled: " + doFlag);
 		if (doFlag) {
 			moveFile(outFile.toString().getBytes(), reportFileName);
 		}
-		
+
 	}
 
 	/**
@@ -328,7 +326,7 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		hdr.append(NEWLINE);
 		return hdr;
 	}
-	
+
 	/**
 	 * Builds a String of comma-delimited product ID values.
 	 * @param cart
@@ -339,11 +337,11 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		Map<String, ShoppingCartItemVO> items = cart.getItems();
 		StringBuilder skus = new StringBuilder();
 		int cnt = 0;
-		for (String key : items.keySet()) {
-			ShoppingCartItemVO item = items.get(key);
+		for (Map.Entry<String, ShoppingCartItemVO> entry: items.entrySet()) {
+			ShoppingCartItemVO item = entry.getValue();
 			if (cnt > 0) skus.append(DELIM_VALUE);
-			if (item.getProductId().indexOf("_") > -1) {
-				skus.append(item.getProductId().substring(0,item.getProductId().indexOf("_")));
+			if (item.getProductId().indexOf('_') > -1) {
+				skus.append(item.getProductId().substring(0,item.getProductId().indexOf('_')));
 			} else {
 				skus.append(item.getProductId());
 			}
@@ -351,7 +349,7 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		}
 		return skus;
 	}
-	
+
 	/**
 	 * Retrieves a user's data from the profile map based on the profile ID passed in
 	 * and gets the user's email address.
@@ -366,38 +364,38 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		}
 		return StringUtil.checkVal(email);
 	}
-	
+
 	/**
 	 * Sends email admin. 
 	 * @param successCnt
 	 * @param failCnt
 	 */
-	private void sendEmail(int successCnt, int failCnt) {
+	private void sendEmail(int failCnt) {
 		log.info("sending email...");
 		try {
 			// Build the email message
 			EmailMessageVO msg = new EmailMessageVO();
 			msg.setFrom("scriptMaster@siliconmtn.com");
 			msg.addRecipient(props.getProperty("adminEmail"));
-			String result = (failCnt == 0 ? "Success: " : "FAILED: ");
+			String result = failCnt == 0 ? "Success: " : "FAILED: ";
 			msg.setSubject(result + "Universal Abandoned Cart Export");
-			
+
 			StringBuilder html= new StringBuilder();
 			html.append("<p>");
 			for (String logMsg : messageLog){
 				html.append(logMsg).append("</br>");
 			}
 			html.append("</p>");
-			
+
 			msg.setHtmlBody(html.toString());
 			MailTransportAgentIntfc mail = MailHandlerFactory.getDefaultMTA(props);
 			mail.sendMessage(msg);
-			
+
 		} catch (Exception e) {
 			log.error("Error sending admin email, ", e);
 		}
 	}
-	
+
 	/**
 	 * Moves file to an SFTP host.
 	 * @param data
@@ -405,31 +403,31 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	 * @throws IOException
 	 */
 	private void moveFile(byte[] data, String reportFileName) throws IOException {
-		log.info("SFTP'ing file to: " + props.getProperty("sftpHost"));
+		String host = props.getProperty("sftpHost");
+		log.info("SFTP'ing file to: " + host);
 		String reportFullPath = props.getProperty("sftpReportFilePath") + reportFileName;
-		
-    	// Connect to the SFTP Server
-    	SFTPClient s = new SFTPClient();
-    	int port = Convert.formatInteger(props.getProperty("sftpPort"));
-    	try {
-	        s.connect(props.getProperty("sftpHost"), port, props.getProperty("sftpUser"), 
-	        		props.getProperty("sftpPassword"));
-	        
-	       	// Transfer the data
-	       	s.writeData(data, reportFullPath);
+
+		// Connect to the SFTP Server
+		SFTPClient s = new SFTPClient();
+		int port = Convert.formatInteger(props.getProperty("sftpPort"));
+		try {
+			s.connect(host, port, props.getProperty("sftpUser"), props.getProperty("sftpPassword"));
+
+			// Transfer the data
+			s.writeData(data, reportFullPath);
 			log.info("Successfully wrote file: " + reportFullPath);
-	       	addMessage("Successfully SFTP'd " + reportFileName + " to " + props.getProperty("sftpHost"));
-    	} catch(IOException ioe) {
-    		addMessage("Failed to SFTP " + reportFileName + " to " + props.getProperty("sftpHost"));
-    		addMessage("Error cause: " + ioe.getMessage());
-    		log.error("Error SFTP'ing file: " + reportFullPath + ", ", ioe);
-    	} finally {
-    		// Close the connection
-    		s.disconnect();
-    		log.info("Disconnected from SFTP host.");
-    	}
-    }
-	
+			addMessage("Successfully SFTP'd " + reportFileName + " to " + host);
+		} catch(IOException ioe) {
+			addMessage("Failed to SFTP " + reportFileName + " to " + host);
+			addMessage("Error cause: " + ioe.getMessage());
+			log.error("Error SFTP'ing file: " + reportFullPath + ", ", ioe);
+		} finally {
+			// Close the connection
+			s.disconnect();
+			log.info("Disconnected from SFTP host.");
+		}
+	}
+
 	/**
 	 * Adds a message to the message log
 	 * @param msg
@@ -455,10 +453,10 @@ public class AbandonedCartExporter extends CommandLineUtil {
 				break;
 			}
 		}
-		
-		// TODO remove DEBUG after testing.
-		for (String key : brandMap.keySet()) {
-			log.debug("brandMap key/val: " + key + "|" + brandMap.get(key));
+
+		if (log.isDebugEnabled()) {
+			for (Map.Entry<String, String> entry: brandMap.entrySet())
+				log.debug("brandMap key/val: " + entry.getKey() + "|" + entry.getValue());
 		}
 	}
 
