@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -160,7 +161,7 @@ public class ReplicatorDivisionUtil extends ShowpadDivisionUtil {
 	 */
 	private void downloadFile(File f, MediaBinDeltaVO vo) throws IOException {
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
-		InputStream is = conn.retrieveConnectionStream(vo.getLimeLightUrl(), null);				
+		InputStream is = conn.getConnectionStream(vo.getLimeLightUrl(), new HashMap<String, String>());				
 
 		if (404 == conn.getResponseCode())
 			throw new FileNotFoundException();
