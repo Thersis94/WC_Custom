@@ -39,9 +39,9 @@ import com.smt.sitebuilder.util.MessageSender;
  ****************************************************************************/
 public class PostcardEmailer {
 
-	protected static Logger log = null;
-	protected Map<String, Object> attributes = null;
-	protected Connection dbConn = null;
+	protected static Logger log;
+	protected Map<String, Object> attributes;
+	protected Connection dbConn;
 
 
 	/**
@@ -108,9 +108,9 @@ public class PostcardEmailer {
 
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
-			log.debug("EventPostcardSubmit Admin Email Sent");
+			log.debug("ApprovalRequest Email Sent");
 		} catch (Exception me) {
-			log.error("EventPostcardSubmitEmail", me);
+			log.error("ApprovalRequestEmail", me);
 		}
 		return;
 	}
@@ -150,6 +150,8 @@ public class PostcardEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
+			mail.addCC("kgeorge@mediaspace.com");
+			mail.addCC("krogalski@mediaspace.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -245,6 +247,8 @@ public class PostcardEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
+			mail.addCC("kgeorge@mediaspace.com");
+			mail.addCC("krogalski@mediaspace.com");
 			mail.addCC(site.getAdminEmail());
 
 			mail.setSubject(subject.toString());
@@ -275,7 +279,7 @@ public class PostcardEmailer {
 		StringBuilder subject = new StringBuilder();
 		subject.append("SRC Approval - Seminar " + sem.getRSVPCodes());
 
-		StringBuilder msg = new StringBuilder();
+		StringBuilder msg = new StringBuilder(500);
 		msg.append("This email confirms that your ").append(event.getEventTypeDesc());
 		msg.append(" ").append(sem.getJointLabel()).append(" Seminar #").append(event.getRSVPCode());
 		msg.append(" as detailed below, has now been Approved by SRC and your ");
@@ -309,8 +313,6 @@ public class PostcardEmailer {
 			mail.addRecipient("stephanie.balsley@hmktgroup.com"); // Jenn Parrish-Davis
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
-			//mail.addCC("WWilder@its.jnj.com");
-			//mail.addCC("RSmith68@its.jnj.com");
 			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC(site.getAdminEmail());
@@ -471,7 +473,7 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("stephanie.balsley@hmktgroup.com"); // Jenn Parrish-Davis);
+			mail.addRecipient("stephanie.balsley@hmktgroup.com"); // Jenn Parrish-Davis
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
@@ -525,6 +527,8 @@ public class PostcardEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
+			mail.addCC("kgeorge@mediaspace.com");
+			mail.addCC("krogalski@mediaspace.com");
 
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;

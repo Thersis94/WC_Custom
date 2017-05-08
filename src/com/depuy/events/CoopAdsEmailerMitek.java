@@ -42,7 +42,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 
 	@Override
 	public void notifyAdminOfAdDeclined(DePuyEventSeminarVO sem, SiteVO site, UserDataVO user, String reason, int cnt, CoopAdVO vo) {
-		String label = (Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1) ? "Online" : "Newspaper";
+		String label = Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1 ? "Online" : "Newspaper";
 		StringBuilder msg = new StringBuilder();
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has declined ");
@@ -62,6 +62,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("Amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
+			mail.addRecipient("kgeorge@mediaspace.com");
+			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
@@ -141,6 +143,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
+			mail.addRecipient("kgeorge@mediaspace.com");
+			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
@@ -209,7 +213,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 	@Override
 	public void requestAdApprovalOfConsignee(DePuyEventSeminarVO sem, SiteVO site, boolean isHospital) {
 		EventEntryVO event = sem.getEvents().get(0);
-		ConsigneeVO consignee = sem.getConsignees().get((isHospital ? Long.valueOf(2) : Long.valueOf(1)));
+		ConsigneeVO consignee = sem.getConsignees().get(isHospital ? Long.valueOf(2) : Long.valueOf(1));
 		if (consignee == null) consignee = new ConsigneeVO();
 		Date approvalDt = addBusinessDays(6);
 
@@ -262,13 +266,13 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			UserDataVO user, int cnt, CoopAdVO vo) {
 		//Determine if it's co-funded or DePuy funded (used for subject line and recipients)
 		String eventType = StringUtil.checkVal(sem.getEvents().get(0).getEventTypeCd());
-		boolean isCFSEM = ( eventType.toUpperCase().startsWith("CFSEM") );
+		boolean isCFSEM = eventType.toUpperCase().startsWith("CFSEM");
 		String label = (Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1) ? "Online" : "Newspaper";
 
 		//Build the subject text
 		StringBuilder subject = new StringBuilder();
 		subject.append(label + " Ad #" + cnt + " approved by Coordinator for ");
-		subject.append( (isCFSEM ? "Co-Funded" : "DePuy Funded") );
+		subject.append(isCFSEM ? "Co-Funded" : "DePuy Funded");
 		subject.append(" Seminar #").append(sem.getRSVPCodes());
 
 		StringBuilder msg = new StringBuilder(425);
@@ -288,6 +292,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
+			mail.addRecipient("kgeorge@mediaspace.com");
+			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
@@ -346,6 +352,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.setFrom(site.getMainEmail());
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
+			mail.addRecipient("kgeorge@mediaspace.com");
+			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
@@ -391,6 +399,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
+			mail.addCC("kgeorge@mediaspace.com");
+			mail.addCC("krogalski@mediaspace.com");
 
 			MessageSender sender = new MessageSender(attributes,dbConn);
 			sender.sendMessage(mail);
