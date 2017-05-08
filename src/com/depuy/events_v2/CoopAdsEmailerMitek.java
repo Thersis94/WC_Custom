@@ -62,6 +62,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("Amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
+			mail.addRecipient("kgeorge@mediaspace.com");
+			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
@@ -141,6 +143,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
+			mail.addRecipient("kgeorge@mediaspace.com");
+			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
@@ -288,6 +292,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
+			mail.addRecipient("kgeorge@mediaspace.com");
+			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
@@ -346,6 +352,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.setFrom(site.getMainEmail());
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
+			mail.addRecipient("kgeorge@mediaspace.com");
+			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
@@ -391,6 +399,8 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
+			mail.addCC("kgeorge@mediaspace.com");
+			mail.addCC("krogalski@mediaspace.com");
 
 			MessageSender sender = new MessageSender(attributes,dbConn);
 			sender.sendMessage(mail);
