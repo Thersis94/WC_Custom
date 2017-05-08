@@ -35,7 +35,7 @@ import com.siliconmtn.util.Convert;
 	DSI_SRVY_EMP_ZIP - moved to RegField.DSI_ACAD_ZIP
 	DSI_SRVY_JOB_DT - not used
 	DSI_SRVY_CONTACT_FLG - not used
-	
+
 	Intended outcome: The next time the user logs-in they'll be a Fellow instead of a Resident
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2015<p/>
@@ -47,12 +47,12 @@ import com.siliconmtn.util.Convert;
 public class DSIGraduationWorkflow extends CommandLineUtil {
 
 	private String gradDateStr; // MM/DD/YYYY formatted graduation date used in the lookup query 
-	
+
 	/**
 	 * List of errors 
 	 */
 	List <Exception> failures = new ArrayList<Exception>();
-	
+
 	/**
 	 * @param args
 	 */
@@ -66,7 +66,7 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 			gradDateStr = Convert.formatDate(new Date(), Convert.DATE_SLASH_PATTERN);
 		}
 	}
-	
+
 	/**
 	 * @param args
 	 * @throws Exception 
@@ -84,10 +84,10 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 	@Override
 	public void run() {
 		log.info("starting script for " + gradDateStr);
-		
+
 		//find registration accounts that are Residents, Cheifs, and Fellows that graduate 'today'
 		Map<String,List<DataVO>> accounts = loadRegistrations();
-		
+
 		int cnt = 0;
 		//for each account, move the desired fields
 		for (String rsId : accounts.keySet()) {
@@ -101,14 +101,14 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 				}
 			}
 			if (!converting) continue;
-			
+
 			try {
 				saveAccount(accounts.get(rsId));
 				++cnt;
 			} catch (SQLException sqle) {
 				log.error("could not update account for " + rsId, sqle);
 			}
-			
+
 			try {
 				deleteOldSrvyResponses(accounts.get(rsId));
 				++cnt;
@@ -116,12 +116,12 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 				log.error("could not update account for " + rsId, sqle);
 			}
 		}
-		
+
 		//noitify the admin we did what something
 		sendAdminEmail(accounts.size(), cnt);
 	}
 
-	
+
 	/**
 	 * grab all registration accounts for user who are of specific professions 
 	 * and have a graduation date of today
@@ -130,7 +130,7 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 	private Map<String,List<DataVO>> loadRegistrations() {
 		Map<String,List<DataVO>> regData = new HashMap<String,List<DataVO>>();
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select rd.value_txt, rd.register_field_id, rd.register_submittal_id, prof.value_txt as 'profession' ");
+		sql.append("select rd.value_txt, rd.register_field_id, rd.register_submittal_id, prof.value_txt as profession ");
 		sql.append("from register_data rd ");
 		sql.append("inner join register_submittal rs on rd.register_submittal_id=rs.register_submittal_id and rs.site_id=? ");
 		sql.append("inner join register_data prof on rs.register_submittal_id=prof.register_submittal_id and prof.register_field_id=? and prof.value_txt in (?,?,?) ");
@@ -138,7 +138,7 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 		//sql.append("where rd.register_field_id like 'DSI_SRVY_%' "); //we only need the survey responses
 		sql.append("order by rd.register_submittal_id");
 		log.debug(sql);
-		
+
 		List<DataVO> acctData = null;
 		String rsid = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -149,7 +149,7 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 			ps.setString(5, "FELLOW");
 			ps.setString(6, RegField.DSI_GRAD_DT.toString()); //Graduation Date field
 			ps.setString(7, gradDateStr);
-			
+
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				rsid = rs.getString("register_submittal_id");
@@ -161,19 +161,19 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 				}
 				DataVO vo = transposeData(rs);
 				if (vo != null)  acctData.add(vo);
-				
+
 				regData.put(rsid, acctData);
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load user accounts", sqle);
 			failures.add(sqle);
 		}
-		
+
 		log.info("loaded records: " + regData.size());
 		return regData;
 	}
-	
-	
+
+
 	private DataVO transposeData(ResultSet rs) throws SQLException {
 		boolean isResident = !"FELLOW".equals(rs.getString("profession"));
 		String fieldId = rs.getString("register_field_id");
@@ -181,13 +181,13 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 		vo.value = rs.getString("value_txt");
 		vo.registerSubmittalId = rs.getString("register_submittal_id");
 		//log.debug("" + fieldId + " " + rs.getString("register_submittal_id") + " " + vo.value);
-		
+
 		switch (fieldId) {
 			case "DSI_SRVY_SEC_JOB":
 				//this is likely a Fellow, but let's verify
 				if (isResident || !"yes".equals(vo.value)) return null;
 				//it's a Fellow with a job!  Slide through to below case so we can convert them
-				
+
 			case "DSI_SRVY_FELLOW_OBTD":
 				//this one is special, anyone going through this process is implied to be becoming a Fellow - change their Profession
 				//users that do NOT have this VO on thier account will not get updated when we run the inserts.
@@ -198,42 +198,42 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 				//tag the record so we can flush all existing survey responses for this user; they'll get a new survey for their Fellowship
 				vo.delSrvyResponses = true;
 				return vo;
-				
+
 			case "DSI_SRVY_SPECIALTY":
 				vo.profileFieldId = RegField.c0a80241b71d27b038342fcb3ab567a0.toString();
 				if (isResident) return vo;
 				else return null;
-			
+
 			case "DSI_SRVY_FELLOW_END_DT":
 				vo.profileFieldId = RegField.DSI_GRAD_DT.toString();
 				if (isResident) return vo;
 				else return null;
-				
+
 			case "DSI_SRVY_EMP_NM":
 				vo.profileFieldId = RegField.DSI_ACAD_NM.toString();
 				return vo;
-				
+
 			case "DSI_SRVY_EMP_ADDR":
 				vo.profileFieldId = "DSI_ACAD_ADDR";
 				return vo;
-				
+
 			case "DSI_SRVY_EMP_CITY":
 				vo.profileFieldId = "DSI_ACAD_CITY";
 				return vo;
-				
+
 			case "DSI_SRVY_EMP_STATE":
 				vo.profileFieldId = "DSI_ACAD_STATE";
 				return vo;
-				
+
 			case "DSI_SRVY_EMP_ZIP":
 				vo.profileFieldId = "DSI_ACAD_ZIP";
 				return vo;
-				
+
 			default: return null;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Batch updates the data for specific questions in the register_data table
 	 * "update this field for this user/submittal"
@@ -259,7 +259,7 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 			throw sqle;
 		}
 	}
-	
+
 	/**
 	 * Purge survey responses for residents who just became Fellows;
 	 * They'll get a new set of survey questions from here forward.
@@ -271,7 +271,7 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 		boolean failFast = true;
 		for (DataVO vo : data) if (vo.delSrvyResponses) failFast = false;
 		if (failFast) return;
-		
+
 		String sql = "delete from register_data where register_field_id like ? and register_submittal_id=?";
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, "DSI_SRVY_%");
@@ -284,8 +284,8 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 			throw sqle;
 		}
 	}
-	
-	
+
+
 	/**
 	 * sends a synopsys email to the admin of what was done and if errors were generated
 	 * @param acctCnt
@@ -298,29 +298,29 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 			msg.addRecipients(props.getProperty("adminEmail").split(","));
 			msg.setSubject("DSI Graduation Workflow - " + gradDateStr);
 			msg.setFrom("appsupport@siliconmtn.com");
-			
+
 			StringBuilder html= new StringBuilder();
 			html.append("<h4>Graduating: " + acctCnt + "</h4>");
 			html.append("<h4>Converted: " + updateCnt + "</h4>");
-			
+
 			if (failures.size() > 0) {
 				html.append("<b>Script generated the following exceptions:</b><br/><br/>");
-			
+
 				// loop the errors and display them
 				for (int i=0; i < failures.size(); i++) {
 					html.append(failures.get(i).getMessage()).append("<hr/>\r\n");
 				}
 			}
 			msg.setHtmlBody(html.toString());
-			
+
 			MailTransportAgentIntfc mail = MailHandlerFactory.getDefaultMTA(props);
 			mail.sendMessage(msg);
 		} catch (Exception e) {
 			log.error("Could not send admin email, ", e);
 		}
 	}
-	
-	
+
+
 	/**
 	 * **************************************************************************
 	 * <b>Title</b>: DataVO.java<p/>

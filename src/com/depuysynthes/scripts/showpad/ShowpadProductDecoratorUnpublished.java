@@ -119,11 +119,11 @@ public class ShowpadProductDecoratorUnpublished extends ShowpadProductDecorator 
 	 * @param masterRecords
 	 */
 	@Override
-	protected void removeProductReferences(Map<String, MediaBinDeltaVO> masterRecords, List<ProductVO> products) {
+	protected void removeProductReferences(List<ProductVO> products) {
 		//run against the public catalog
-		super.removeProductReferences(masterRecords, products);
+		super.removeProductReferences(products);
 		//run against the unpublished catalog
-		super.removeProductReferences(masterRecords, unpublishedProducts);
+		super.removeProductReferences(unpublishedProducts);
 	}
 
 
