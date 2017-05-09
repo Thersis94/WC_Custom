@@ -536,7 +536,7 @@ public class ProductAction extends SBActionAdapter {
 			throws SQLException {
 
 		StringBuilder s = new StringBuilder();
-		s.append("select a.*, c.*, c.image_url as 'category_image_url' from product a ");
+		s.append("select a.*, c.*, c.image_url as category_image_url from product a ");
 		s.append("inner join PRODUCT_CATEGORY_XR b on a.PRODUCT_ID = b.PRODUCT_ID ");
 		s.append("inner join PRODUCT_CATEGORY c on b.PRODUCT_CATEGORY_CD = c.PRODUCT_CATEGORY_CD ");
 		s.append("inner join PRODUCT_CATALOG d on a.product_catalog_id=d.product_catalog_id and d.product_catalog_id = ? ");
