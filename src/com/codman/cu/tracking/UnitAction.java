@@ -86,6 +86,7 @@ public class UnitAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
 			this.saveUnit(new UnitVO(req));
@@ -111,7 +112,6 @@ public class UnitAction extends SBActionAdapter {
 
 	public String saveUnit(UnitVO vo) throws SQLException {
 		msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
 
 		if (StringUtil.checkVal(vo.getUnitId()).length() == 0 && vo.getParentId() == null)
@@ -147,8 +147,7 @@ public class UnitAction extends SBActionAdapter {
 
 		}
 		log.debug(sql + "|" + vo.getUnitId() + "|" + vo.getStatusId());
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, vo.getSerialNo());
 			ps.setString(2, vo.getSoftwareRevNo());
 			ps.setString(3, vo.getHardwareRevNo());
@@ -179,8 +178,6 @@ public class UnitAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 			throw(sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 
 		return vo.getUnitId();
@@ -215,14 +212,11 @@ public class UnitAction extends SBActionAdapter {
 	 */
 	public UnitVO retrieveUnit(String unitId) {
 		UnitVO vo = null;
-		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder(40);
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("CODMAN_CU_UNIT where unit_id=?");
 
-
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (		PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, unitId);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
@@ -230,8 +224,6 @@ public class UnitAction extends SBActionAdapter {
 
 		} catch (SQLException sqle) {
 			log.error("could not load unitVO", sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 		return vo;
 	}
@@ -242,6 +234,7 @@ public class UnitAction extends SBActionAdapter {
 	 *
 	 * modified 2/13/2012, added city and country to query.
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		final String custom_db = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -259,7 +252,7 @@ public class UnitAction extends SBActionAdapter {
 			return;
 		}
 
-		List<UnitVO> data = new ArrayList<UnitVO>();
+		List<UnitVO> data = new ArrayList<>();
 		UnitSearchVO search = new UnitSearchVO(req, prodCd);
 		String unitId = req.getParameter("unitId");
 		boolean isReport = Convert.formatBoolean(req.getParameter("excel"));
@@ -306,10 +299,7 @@ public class UnitAction extends SBActionAdapter {
 
 		log.debug(sql);
 		MSSQLRangeQuery qryBldr = new MSSQLRangeQuery(getSortOrder(search), search.getStart(), search.getEnd());
-		Statement ps = null;
-		try {
-			ps = dbConn.createStatement();
-
+		try (Statement ps = dbConn.createStatement()) {
 
 			//if (role.getRoleLevel() != SecurityController.ADMIN_ROLE_LEVEL)
 			//if (rLevel == 10)
@@ -332,13 +322,11 @@ public class UnitAction extends SBActionAdapter {
 			rs = ps.executeQuery(qryBldr.buildCountQuery(sql));
 			if (rs.next())
 				req.setAttribute("resultCnt",rs.getInt(1));
-
+			rs.close();
 		} catch (SQLException sqle) {
 			log.error(sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
-		
+
 		data = attachProfiles(search, data);
 
 		mod.setActionData(data);
@@ -373,14 +361,14 @@ public class UnitAction extends SBActionAdapter {
 	 */
 	private List<UnitVO> attachProfiles(RequestSearchVO search, List<UnitVO> data) {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		Set<String> profileIds = new HashSet<String>();
+		Set<String> profileIds = new HashSet<>();
 		for (UnitVO vo : data) {
 			profileIds.add(vo.getRepId());
 			profileIds.add(vo.getPhysicianId());
 			profileIds.add(vo.getModifyingUserId());
 		}
 		
-		List<UnitVO> newResults = new ArrayList<UnitVO>(data.size());
+		List<UnitVO> newResults = new ArrayList<>(data.size());
 		try {
 			Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, new ArrayList<String>(profileIds));
 			for (UnitVO vo : data) {
@@ -439,11 +427,10 @@ public class UnitAction extends SBActionAdapter {
 
 	private void historyReport(ActionRequest req, int roleLevel) throws ActionException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		List<String> profileIds = new ArrayList<String>();
-		List<UnitVO> data = new ArrayList<UnitVO>();
-		PreparedStatement ps = null;
+		List<String> profileIds = new ArrayList<>();
+		List<UnitVO> data = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.*, d.account_nm, g.profile_id as 'phys_profile_id', ");
+		sql.append("select a.*, d.account_nm, g.profile_id as phys_profile_id, ");
 		sql.append("e.center_txt, e.department_txt, c.transaction_type_id, ");
 		sql.append("g.profile_id as rep_person_id, ");
 		sql.append("b.create_dt as deployed_dt ");
@@ -463,8 +450,7 @@ public class UnitAction extends SBActionAdapter {
 		String unitId = req.getParameter("unitId");
 		UnitSearchVO search = new UnitSearchVO(req, "MEDSTREAM");
 		log.debug(sql);
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, unitId);
 			ps.setString(2, unitId);
 			ResultSet rs = ps.executeQuery();
@@ -481,12 +467,10 @@ public class UnitAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 			throw new ActionException(sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		List<UnitVO> newResults = new ArrayList<UnitVO>();
+		List<UnitVO> newResults = new ArrayList<>();
 		try {
 			Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, profileIds);
 			for (UnitVO vo : data) {
@@ -549,9 +533,7 @@ public class UnitAction extends SBActionAdapter {
 		String unitId = null;
 		final String sql = "select unit_id from " + ((String) getAttribute(Constants.CUSTOM_DB_SCHEMA)) +
 				"codman_cu_unit where serial_no_txt=? and organization_id=?";
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, serialNo);
 			ps.setString(2, orgId);
 			ResultSet rs = ps.executeQuery();
@@ -559,14 +541,12 @@ public class UnitAction extends SBActionAdapter {
 				unitId = rs.getString(1);
 		} catch (SQLException sqle) {
 			log.error(sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 
 		return unitId;
 	}
 
-
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
