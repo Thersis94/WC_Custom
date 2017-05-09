@@ -19,7 +19,7 @@ import com.codman.cu.tracking.vo.UnitSearchVO;
 import com.codman.cu.tracking.vo.UnitVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.db.MSSQLRangeQuery;
+import com.siliconmtn.db.RangeQuery;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -298,7 +298,7 @@ public class UnitAction extends SBActionAdapter {
 		//sql.append(") select * from qry where RowNumber between ").append(search.getStart()).append(" AND ").append(search.getEnd());
 
 		log.debug(sql);
-		MSSQLRangeQuery qryBldr = new MSSQLRangeQuery(getSortOrder(search), search.getStart(), search.getEnd());
+		RangeQuery qryBldr = new RangeQuery(getSortOrder(search), search.getStart(), search.getEnd());
 		try (Statement ps = dbConn.createStatement()) {
 
 			//if (role.getRoleLevel() != SecurityController.ADMIN_ROLE_LEVEL)
