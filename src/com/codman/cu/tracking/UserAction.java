@@ -87,9 +87,7 @@ public class UserAction extends SimpleActionAdapter {
 		if (roleVo.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) return;
 		
 		String sql = "delete from profile_role where profile_id=? and site_id=?";
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, req.getParameter("del"));
 			ps.setString(2, site.getSiteId());
 			int x = ps.executeUpdate();
@@ -98,13 +96,10 @@ public class UserAction extends SimpleActionAdapter {
 		} catch (SQLException sqle) {
 			log.error(sqle);
             msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
-		
+
 		sql = "delete from " + custom_db + "codman_cu_person where person_id=?";
-		try {
-			ps = dbConn.prepareStatement(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, req.getParameter("del"));
 			int x = ps.executeUpdate();
 			if (x < 1)
@@ -112,8 +107,6 @@ public class UserAction extends SimpleActionAdapter {
 		} catch (SQLException sqle) {
 			log.error(sqle);
             msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 		
 		// Setup the redirect.
@@ -142,7 +135,6 @@ public class UserAction extends SimpleActionAdapter {
 		
 		// save custom CODMAN_CU_PERSON
 		String custom_db = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
 
 		//verify they're not already in the system
@@ -162,8 +154,7 @@ public class UserAction extends SimpleActionAdapter {
 		}
 		log.debug("UserAction build SQL: " + sql.toString() + "|" + vo.getPersonId());
 		
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, vo.getTerritoryId());
 			ps.setString(2, vo.getProfileId());
 			ps.setString(3, vo.getOrganizationId());
@@ -174,8 +165,6 @@ public class UserAction extends SimpleActionAdapter {
 			
 		} catch (SQLException sqle) {
 			log.error(sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 		
 		this.sendEmail(req, site, vo);
@@ -204,7 +193,7 @@ public class UserAction extends SimpleActionAdapter {
 		if (req.hasParameter("del"))
 	        delete(req);
 		
-		List<PersonVO> results = new ArrayList<PersonVO>();
+		List<PersonVO> results = new ArrayList<>();
 		
 		try {
 			results = this.retrieveUsers(req);
@@ -227,9 +216,7 @@ public class UserAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select person_id from ").append((String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("CODMAN_CU_PERSON where profile_id=? and organization_id=?");
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, profileId);
 			ps.setString(2, orgId);
 			ResultSet rs = ps.executeQuery();
@@ -238,8 +225,6 @@ public class UserAction extends SimpleActionAdapter {
 			
 		} catch (SQLException sqle) {
 			log.error(sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 		return personId;
 	}
@@ -254,8 +239,8 @@ public class UserAction extends SimpleActionAdapter {
 	public List<PersonVO> retrieveUsers(ActionRequest req) 
 	throws SQLException, DatabaseException {
 		
-		Map<String, PersonVO> data = new HashMap<String, PersonVO>();
-		List<PersonVO> results = new ArrayList<PersonVO>();
+		Map<String, PersonVO> data = new HashMap<>();
+		List<PersonVO> results = new ArrayList<>();
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		String personId = StringUtil.checkVal(req.getParameter("personId"));
 		UserSearchVO search = new UserSearchVO(req);
@@ -266,7 +251,7 @@ public class UserAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.territory_id, a.person_id, b.profile_id, a.sample_acct_no, ");
 		sql.append("b.authentication_id, e.role_id, e.status_id, e.profile_role_id, ");
-		sql.append("c.password_txt, max(d.login_dt) as 'login_dt' ");
+		sql.append("c.password_txt, max(d.login_dt) as login_dt ");
 		sql.append("from profile b ");
 		if (role.getRoleLevel() == SecurityController.ADMIN_ROLE_LEVEL && req.hasParameter("my")) {
 			//this prevents SMT site admins (not actual CU admins) from appearing in "Manage Users" on the site
@@ -291,10 +276,8 @@ public class UserAction extends SimpleActionAdapter {
 		sql.append("b.authentication_id, c.password_txt, e.role_id, e.status_id, e.profile_role_id ");
 		log.info(sql);
 		
-		PreparedStatement ps = null;
 		int i = 0;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(++i, site.getSiteId());
 			ps.setString(++i, site.getSiteId());
 			if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL || req.hasParameter("my"))
@@ -315,8 +298,6 @@ public class UserAction extends SimpleActionAdapter {
 		} catch (SQLException sqle) {
 			log.error(sqle);
 			throw new SQLException(sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 		
 		//get the UserDataVOs for these people...
@@ -351,7 +332,7 @@ public class UserAction extends SimpleActionAdapter {
 		
 		//save core LOGIN info
 		try {
-			Map<String, Object> lm = new HashMap<String, Object>();
+			Map<String, Object> lm = new HashMap<>();
 			lm.put(Constants.ENCRYPT_KEY, (String)getAttribute(Constants.ENCRYPT_KEY));
 			lm.put(GlobalConfig.KEY_DB_CONN, dbConn);
 			AbstractLoginModule loginModule = SecurityModuleFactoryImpl.getLoginInstance(site.getLoginModule(), lm);
@@ -372,11 +353,11 @@ public class UserAction extends SimpleActionAdapter {
 		
 		this.checkProfile(req, pm, vo);
 		
-		this.saveProfileRole(req, site, vo);
+		this.saveProfileRole(site, vo);
 		
 	}
 	
-	private void saveProfileRole(ActionRequest req, SiteVO site, PersonVO vo) {
+	private void saveProfileRole(SiteVO site, PersonVO vo) {
 		ProfileRoleManager prm = new ProfileRoleManager();
 		
 		//create a base ROLE VO
@@ -445,7 +426,7 @@ public class UserAction extends SimpleActionAdapter {
 				
 		if (msg == null && Convert.formatBoolean(req.getParameter("email"))) {
 			MedstreamEmailer emailer = null;
-			if (site.getOrganizationId().equals("CODMAN_EU")) {
+			if ("CODMAN_EU".equals(site.getOrganizationId())) {
 				emailer = new MedstreamEmailerEU(this.actionInit);
 			} else {
 				emailer = new MedstreamEmailer(this.actionInit);
@@ -459,16 +440,14 @@ public class UserAction extends SimpleActionAdapter {
 			} catch (MailException me) {
 				log.error(me);
 				msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-			} finally {
-				emailer = null;
 			}
 		}
 	}
 	
 	
 	public List<UserDataVO> loadUserList(Integer roleLvl, String organizationId) {
-		List<UserDataVO> data = new ArrayList<UserDataVO>();
-		Map<String, String> people = new HashMap<String, String>();
+		List<UserDataVO> data = new ArrayList<>();
+		Map<String, String> people = new HashMap<>();
 		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.profile_id, a.person_id from ").append((String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
