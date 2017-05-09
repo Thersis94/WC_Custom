@@ -12,7 +12,6 @@ import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: MarketVO.java <p/>
@@ -28,7 +27,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  * <b>Changes: </b>
  ****************************************************************************/
 @Table(name="BIOMEDGPS_MARKET")
-public class MarketVO extends SecureSolrDocumentVO {
+public class MarketVO extends AuthorVO {
 	private String marketId;
 	private String parentId;
 	private String marketName;
@@ -60,7 +59,8 @@ public class MarketVO extends SecureSolrDocumentVO {
 	}
 
 
-	private void setData(ActionRequest req) {
+	protected void setData(ActionRequest req) {
+		super.setData(req); //set the creator_profile_id
 		marketId = req.getParameter("marketId");
 		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
 		marketName = req.getParameter("marketName");
@@ -251,5 +251,13 @@ public class MarketVO extends SecureSolrDocumentVO {
 
 	public void setRegionName(String regionName) {
 		this.regionName = regionName;
+	}
+	
+	/**
+	 * @return the creatorProfileId
+	 */
+	@Column(name="creator_profile_id")
+	public String getCreatorProfileId() {
+		return creatorProfileId;
 	}
 }

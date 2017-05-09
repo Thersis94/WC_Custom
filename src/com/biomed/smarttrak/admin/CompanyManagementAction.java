@@ -40,7 +40,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class CompanyManagementAction extends AbstractTreeAction {
+public class CompanyManagementAction extends AuthorTreeAction {
 
 	public static final String ACTION_TYPE = "actionTarget";
 	public static final String COMPANY_ID = "companyId";
@@ -175,15 +175,18 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 * @throws ActionException
 	 */
 	protected void companyRetrieve(ActionRequest req) throws ActionException {
-		if (req.hasParameter(COMPANY_ID) && ! req.hasParameter("add")) {
+		if (req.hasParameter(COMPANY_ID) && !req.hasParameter("add")) {
 			retrieveCompany(req.getParameter(COMPANY_ID), req);
 		} else if (!req.hasParameter("add")) {
 			retrieveCompanies(req);
-		} else if (req.getSession().getAttribute("hierarchyTree") == null){
-			// This is a form for a new market make sure that the hierarchy tree is present 
-			Tree t = loadDefaultTree();
-			req.getSession().setAttribute("hierarchyTree", t.preorderList());
-		}
+		}else{
+			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
+			if (req.getSession().getAttribute("hierarchyTree") == null){
+				// This is a form for a new market make sure that the hierarchy tree is present 
+				Tree t = loadDefaultTree();
+				req.getSession().setAttribute("hierarchyTree", t.preorderList());
+			}
+		}	
 	}
 	
 	
@@ -495,6 +498,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			addAttributes(company, req.getParameter("attributeTypeCd"));
 		
 		getActiveSections(company);
+		loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
 		super.putModuleData(company);
 	}
 
@@ -1122,12 +1126,6 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
-	}
-
-
-	@Override
-	public String getCacheKey() {
-		return null;
 	}
 
 }

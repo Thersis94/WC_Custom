@@ -37,7 +37,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class UpdatesAction extends AbstractTreeAction {
+public class UpdatesAction extends AuthorTreeAction {
 	public static final String UPDATE_ID = "updateId"; //req param
 	public static final String SORT = "sort"; //req param
 	public static final String ORDER = "order"; //req param
@@ -120,6 +120,10 @@ public class UpdatesAction extends AbstractTreeAction {
 		} else {
 			putModuleData(data);
 		}
+		
+		//when an add/edit form, load list of BiomedGPS Staff for the "Author" drop-down
+		if (req.getParameter("updateId") != null)
+			loadAuthors(req);
 	}
 
 	/**
@@ -498,10 +502,5 @@ public class UpdatesAction extends AbstractTreeAction {
 		sortMapper.put("publishDt", "publish_dt");
 		sortMapper.put("typeNm", "type_cd");
 		sortMapper.put("statusNm", "status_cd");
-	}
-
-	@Override
-	public String getCacheKey() {
-		return null;
 	}
 }

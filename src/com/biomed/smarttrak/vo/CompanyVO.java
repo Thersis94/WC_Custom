@@ -8,13 +8,11 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
-import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: CompanyVO.java <p/>
@@ -31,7 +29,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_COMPANY")
-public class CompanyVO  extends SecureSolrDocumentVO {
+public class CompanyVO  extends AuthorVO {
 	private String companyId;
 	private String parentId;
 	private String parentName;
@@ -82,6 +80,7 @@ public class CompanyVO  extends SecureSolrDocumentVO {
 	}
 	
 	public void setData(ActionRequest req) {
+		super.setData(req);//set the creator_profile_id
 		companyId = req.getParameter("companyId");
 		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
 		companyName = req.getParameter("companyName");
@@ -397,6 +396,14 @@ public class CompanyVO  extends SecureSolrDocumentVO {
 
 	public void setCurrencyTypeSymbol(String currencyTypeSymbol) {
 		this.currencyTypeSymbol = currencyTypeSymbol;
+	}
+	
+	/**
+	 * @return the creatorProfileId
+	 */
+	@Column(name="creator_profile_id")
+	public String getCreatorProfileId() {
+		return creatorProfileId;
 	}
 
 }
