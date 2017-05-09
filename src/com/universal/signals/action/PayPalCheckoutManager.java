@@ -287,7 +287,7 @@ public class PayPalCheckoutManager {
 		log.debug("using proxy: " + smtProxyUrl.toString());
 		smtProxyUrl.append("/payment/process");
 		SMTHttpConnectionManager mgr = new SMTHttpConnectionManager();
-		Map<String, String> params = new HashMap<>();
+		Map<String, Object> params = new HashMap<>();
 		params.put("type", "json");
 		params.put("xmlData", postData);
 		byte[] bytes = mgr.retrieveDataViaPost(smtProxyUrl.toString(), params);

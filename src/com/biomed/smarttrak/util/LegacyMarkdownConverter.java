@@ -175,7 +175,7 @@ public class LegacyMarkdownConverter extends CommandLineUtil {
 
 
 	protected String convertViaHttp(Object id, String markdown) {
-		Map<String, String> params = new HashMap<>();
+		Map<String, Object> params = new HashMap<>();
 		params.put("content", markdown);
 		try {
 			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
