@@ -161,7 +161,7 @@ public class ReplicatorDivisionUtil extends ShowpadDivisionUtil {
 	 */
 	private void downloadFile(File f, MediaBinDeltaVO vo) throws IOException {
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
-		InputStream is = conn.getConnectionStream(vo.getLimeLightUrl(), new HashMap<String, String>());				
+		InputStream is = conn.getConnectionStream(vo.getLimeLightUrl(), new HashMap<String, Object>());
 
 		if (404 == conn.getResponseCode())
 			throw new FileNotFoundException();

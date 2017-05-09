@@ -566,7 +566,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		log.info("retrieving " + vo.getLimeLightUrl());
 		try {
 			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
-			InputStream is = conn.getConnectionStream(vo.getLimeLightUrl(), new HashMap<String, String>());				
+			InputStream is = conn.getConnectionStream(vo.getLimeLightUrl(), new HashMap<String, Object>());
 
 			if (404 == conn.getResponseCode())
 				throw new FileNotFoundException();
