@@ -416,7 +416,7 @@ public class InsightAction extends AuthorTreeAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void loadSections(ActionRequest req, String schema) throws ActionException {
+	protected void loadSections(ActionRequest req) throws ActionException {
 		SectionHierarchyAction cha = new SectionHierarchyAction(this.actionInit);
 		cha.setDBConnection(dbConn);
 		cha.setAttributes(getAttributes());

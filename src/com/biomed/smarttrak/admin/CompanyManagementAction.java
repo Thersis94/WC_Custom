@@ -75,6 +75,7 @@ public class CompanyManagementAction extends AuthorTreeAction {
 			try {
 				return SortField.valueOf(sortField.toUpperCase());
 			} catch (Exception e) {
+				log.error("Error getting sort field: " + e);
 				return SortField.COMPANYNAME;
 			}
 		}
@@ -118,6 +119,7 @@ public class CompanyManagementAction extends AuthorTreeAction {
 			try {
 				return ContentType.valueOf(contentType);
 			} catch (Exception e) {
+				log.error("Error getting content type: " + e);
 				return null;
 			}
 		}
@@ -1009,6 +1011,7 @@ public class CompanyManagementAction extends AuthorTreeAction {
 				return;
 			}
 		} catch (Exception e) {
+			log.error("Error attempting to build: " + e);
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
 		String companyId = req.getParameter(COMPANY_ID);
