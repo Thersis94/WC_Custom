@@ -583,7 +583,7 @@ public class ProductAction extends SBActionAdapter {
 			}
 		}
 		
-		if (! pData.isEmpty() && pCat != null) 
+		if (pCat != null && ! pData.isEmpty()) 
 			pCat.setProducts(pData);
 		
 		// Get the attributes and add the nav piece
