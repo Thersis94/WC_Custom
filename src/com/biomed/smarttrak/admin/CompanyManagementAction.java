@@ -75,7 +75,7 @@ public class CompanyManagementAction extends AuthorAction {
 			try {
 				return SortField.valueOf(sortField.toUpperCase());
 			} catch (Exception e) {
-				log.error("Error getting sort field: " + e);
+				log.error("Error getting sort field: ", e);
 				return SortField.COMPANYNAME;
 			}
 		}
@@ -119,7 +119,7 @@ public class CompanyManagementAction extends AuthorAction {
 			try {
 				return ContentType.valueOf(contentType);
 			} catch (Exception e) {
-				log.error("Error getting content type: " + e);
+				log.error("Error getting content type: ", e);
 				return null;
 			}
 		}
@@ -131,6 +131,7 @@ public class CompanyManagementAction extends AuthorAction {
 	
 	
 	public void retrieve(ActionRequest req) throws ActionException {
+		//TODO refactor this class to have a common parent class for same functionality.
 		if (req.hasParameter("buildAction")) {
 			super.retrieve(req);
 			return;
@@ -1011,7 +1012,7 @@ public class CompanyManagementAction extends AuthorAction {
 				return;
 			}
 		} catch (Exception e) {
-			log.error("Error attempting to build: " + e);
+			log.error("Error attempting to build: ", e);
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
 		String companyId = req.getParameter(COMPANY_ID);

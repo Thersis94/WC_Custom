@@ -79,7 +79,7 @@ public class ProductManagementAction extends AuthorAction {
 			try {
 				return DetailsField.valueOf(detailField);
 			} catch (Exception e) {
-				log.error("Error getting details field: " + e);
+				log.error("Error getting details field: ", e);
 				return null;
 			}
 		}
@@ -111,7 +111,7 @@ public class ProductManagementAction extends AuthorAction {
 			try {
 				return SortField.valueOf(sortField.toUpperCase());
 			} catch (Exception e) {
-				log.error("Error getting sort field: " + e);
+				log.error("Error getting sort field: ", e);
 				return SortField.PRODUCTNAME;
 			}
 		}
@@ -149,7 +149,7 @@ public class ProductManagementAction extends AuthorAction {
 			try {
 				return ContentType.valueOf(contentType);
 			} catch (Exception e) {
-				log.error("Error getting content type: " + e);
+				log.error("Error getting content type: ", e);
 				return null;
 			}
 		}
@@ -169,6 +169,7 @@ public class ProductManagementAction extends AuthorAction {
 	
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		//TODO refactor this class to have a common parent class for same functionality.
 		ActionTarget action;
 		
 		if (req.hasParameter("buildAction")) {
@@ -1196,7 +1197,7 @@ public class ProductManagementAction extends AuthorAction {
 				return;
 			}
 		} catch (Exception e) {
-			log.error("Error attempting to build: " + e);
+			log.error("Error attempting to build: ", e);
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
 
