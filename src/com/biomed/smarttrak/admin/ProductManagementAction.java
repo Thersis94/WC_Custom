@@ -41,7 +41,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class ProductManagementAction extends AuthorTreeAction {
+public class ProductManagementAction extends AuthorAction {
 	
 	public static final String ACTION_TARGET = "actionTarget";
 	

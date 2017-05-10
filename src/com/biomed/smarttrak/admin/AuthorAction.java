@@ -17,7 +17,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * Title: AuthorTreeAction.java <p/>
+ * Title: AuthorAction.java <p/>
  * Project: WC_Custom <p/>
  * Description: Wrapper action around AccountAction and extends AbstractTreeAction, 
  * handles Author related responsibilities for actions. <p/>
@@ -28,12 +28,12 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since May 8, 2017
  ****************************************************************************/
 
-public class AuthorTreeAction extends AbstractTreeAction {
+public class AuthorAction extends AbstractTreeAction {
 	
 	/**
 	 * Default no-arg constructor
 	 */
-	public AuthorTreeAction(){
+	public AuthorAction(){
 		super();
 	}
 	
@@ -41,7 +41,7 @@ public class AuthorTreeAction extends AbstractTreeAction {
 	 * Takes ActionInitVO for initialization
 	 * @param init
 	 */
-	public AuthorTreeAction(ActionInitVO init){
+	public AuthorAction(ActionInitVO init){
 		super(init);
 	}
 

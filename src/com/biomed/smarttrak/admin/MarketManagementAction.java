@@ -42,7 +42,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * - Eric Damschroder 3/10/2017
  * </b>
  ****************************************************************************/
-public class MarketManagementAction extends AuthorTreeAction {
+public class MarketManagementAction extends AuthorAction {
 
 	public static final String ACTION_TARGET = "actionTarget";
 	public static final String GRAPH_ID = "GRID";

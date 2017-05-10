@@ -40,7 +40,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class CompanyManagementAction extends AuthorTreeAction {
+public class CompanyManagementAction extends AuthorAction {
 
 	public static final String ACTION_TYPE = "actionTarget";
 	public static final String COMPANY_ID = "companyId";
