@@ -283,8 +283,8 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	/**
 	 * @return the publishDt
 	 */
-	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
-	@Column(name="publish_dt", isAutoGen=true, isInsertOnly=true)
+	@SolrField(name=SearchDocumentHandler.PUBLISH_DATE)
+	@Column(name="publish_dt")
 	public Date getPublishDt() {
 		return publishDt;
 	}
@@ -310,6 +310,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	/**
 	 * @return the updateDt
 	 */
+	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDt;

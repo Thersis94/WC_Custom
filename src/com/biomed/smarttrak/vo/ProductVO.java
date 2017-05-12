@@ -35,6 +35,7 @@ public class ProductVO extends SecureSolrDocumentVO {
 	private String parentId;
 	private String companyId;
 	private String companyName;
+	private String companyShortName;
 	private String productName;
 	private int orderNo;
 	private String metaKeyword;
@@ -119,6 +120,17 @@ public class ProductVO extends SecureSolrDocumentVO {
 
 	public void setCompanyName(String companyName) {
 		this.companyName = companyName;
+	}
+
+
+	@Column(name="short_nm_txt", isReadOnly=true)
+	public String getCompanyShortName() {
+		return companyShortName;
+	}
+
+
+	public void setCompanyShortName(String companyShortName) {
+		this.companyShortName = companyShortName;
 	}
 
 
