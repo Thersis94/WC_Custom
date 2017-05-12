@@ -260,7 +260,7 @@ public class CompanyAction extends AbstractTreeAction {
 
 	
 	/**
-	 * Get all locations supported by the supplied company, its children, and its grandchildren and add them to the vo.
+	 * Get all locations supported by the supplied company and add them to the vo.
 	 * @param company
 	 */
 	protected void addLocations(CompanyVO company, int roleLevel) {
@@ -269,20 +269,7 @@ public class CompanyAction extends AbstractTreeAction {
 		sql.append("SELECT l.* FROM ").append(customDb).append("BIOMEDGPS_COMPANY_LOCATION l ");
 		sql.append("left join ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("on c.COMPANY_ID = l.COMPANY_ID ");
-		sql.append("WHERE (l.COMPANY_ID = ? or c.PARENT_ID = ? or c.PARENT_ID in (");
-		sql.append("SELECT child.COMPANY_ID FROM ").append(customDb).append("BIOMEDGPS_COMPANY parent ");
-		sql.append("left join ").append(customDb).append("BIOMEDGPS_COMPANY child ");
-		sql.append("on parent.COMPANY_ID = child.PARENT_ID ");
-		sql.append("WHERE parent.COMPANY_ID = ? and parent.STATUS_NO in (");
-		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
-			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
-		}
-		sql.append("'").append(AdminControllerAction.Status.P).append("') and child.STATUS_NO in (");
-		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
-			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
-		}
-		sql.append("'").append(AdminControllerAction.Status.P).append("') ");  
-		sql.append("))  and c.STATUS_NO in (");
+		sql.append("WHERE l.COMPANY_ID = ? and c.STATUS_NO in (");
 		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
 			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
 		}
@@ -291,14 +278,11 @@ public class CompanyAction extends AbstractTreeAction {
 		log.debug(sql+"|"+company.getCompanyId());
 		List<Object> params = new ArrayList<>();
 		params.add(company.getCompanyId());
-		params.add(company.getCompanyId());
-		params.add(company.getCompanyId());
 		DBProcessor db = new DBProcessor(dbConn);
 		
 		// DBProcessor returns a list of objects that need to be individually cast to locations
 		List<Object> results = db.executeSelect(sql.toString(), params, new LocationVO());
 		for (Object o : results) {
-			log.debug("Adding  " + ((LocationVO)o).getLocationId());
 			company.addLocation((LocationVO)o);
 		}
 	}
