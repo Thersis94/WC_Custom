@@ -1,18 +1,22 @@
 package com.biomed.smarttrak.admin.report;
-
+//jdk 1.8
 import java.util.ArrayList;
 import java.util.List;
 
+//wc custom libs
 import com.biomed.smarttrak.vo.UpdateVO;
+//smt base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.rss.RSSCreatorReport;
 import com.smt.sitebuilder.action.rss.RSSCreatorVO;
 import com.smt.sitebuilder.action.tools.SearchVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -50,14 +54,11 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req)throws ActionException{
-		//build query of updates with twitter text, since yesterday
-		List<UpdateVO> updates = getTwitterUpdates();
-		
-		//transpose updates into search vos
-		List<SearchVO> searchItems = buildSearchItems(updates);
+		//build query of updates with twitter text, then transpose updates into search vos
+		List<SearchVO> searchItems = buildSearchItems(getTwitterUpdates());
 		
 		//populate the general RSS Feed Information
-		RSSCreatorVO rss = setRSSData(searchItems);
+		RSSCreatorVO rss = setRSSData(searchItems, req);
 		
 		//generate the report
 		RSSCreatorReport rpt = new RSSCreatorReport();
@@ -77,8 +78,7 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select update_id, title_txt, twitter_txt, market_id, product_id, company_id ");
-		sql.append("from ").append(schema).append("biomedgps_update ");
+		sql.append("select * from ").append(schema).append("biomedgps_update ");
 		sql.append("where tweet_flg = 1 ");
 		sql.append("and create_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
 		sql.append("and create_dt < date_trunc('day', current_timestamp) ");
@@ -92,9 +92,9 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 		//downcast into appropriate type
 		List<UpdateVO> updates = new ArrayList<>();
 		for (Object object : data) {
-			log.debug("Update document url: " + ((UpdateVO)object).getDocumentUrl());
 			updates.add((UpdateVO) object);		
 		}
+		log.debug("Updates retrieved: " + updates.size());
 		return updates;
 	}
 	
@@ -105,41 +105,55 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	 */
 	private List<SearchVO> buildSearchItems(List<UpdateVO> updates){
 		List<SearchVO> searchItems = new ArrayList<>();
+		UUIDGenerator uuid = new UUIDGenerator();
 		
 		//add the relevant pieces to create the search vo
 		for (UpdateVO update : updates) {
 			SearchVO vo = new SearchVO();
 			vo.setActionId(update.getUpdateId());
-	        vo.setDocumentUrl(update.getDocumentUrl()); 
-	        vo.setTitle(update.getTitle());
+	       	vo.setTitle(update.getTitleTxt());
 	        vo.setSummary(update.getTwitterTxt());
+	        vo.setCreateDate(update.getCreateDt());
+	        vo.setUpdateDate(update.getUpdateDt());
+	        //ensure each document url is unique
+	        vo.setDocumentUrl(update.getDocumentUrl() +"?"+ uuid.getUUID());        
+	        searchItems.add(vo); //add the item
 		}
 		
 		return searchItems;
 	}
 	
-	
-	private RSSCreatorVO setRSSData(List<SearchVO> searchItems){
-		//Retrieve the site data to help populate RSS Feed information
-		//**This returns null 
-		SiteVO site = (SiteVO) getAttribute(Constants.SITE_DATA); 
+	/**
+	 * Sets the Smarttrak Updates RSS feed information for creation
+	 * @param searchItems
+	 * @param req
+	 * @return
+	 */
+	private RSSCreatorVO setRSSData(List<SearchVO> searchItems, ActionRequest req){
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		SiteVO site =  (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		
-
-		RSSCreatorVO rss = new RSSCreatorVO();
-		rss.setTitle("[Populate from site data]");
-		rss.setLink("[Populate from site data]");
-		rss.setBaseUrl("[Populate from site data]");
-		rss.setLanguage("[Populate from site data]");
-		rss.setTtl(60);
-		rss.setDescription("Updates from smarttrak.com");
-		rss.setCategory(new GenericVO("SmartTRAK_Updates", "SmartTRAK Updates"));
+		//Build the unique pieces for feed
+		String locale = site.getLanguageCode() +"-"+ site.getCountryCode();
 		StringBuilder copyRight = new StringBuilder(150);
-		copyRight.append("&copy; 2017 BioMed GPS — SmartTRAK All trademarks and copyrighted material ");
+		copyRight.append("&#169; 2017 BioMed GPS — SmartTRAK All trademarks and copyrighted material ");
 		copyRight.append("are the property of BioMedGPS LLC or the respective owners thereof.");
+		String feedUrl = site.getFullSiteAlias() + page.getFullPath(); //this page is the feed
+		
+		//Set the general RSS Feed information
+		RSSCreatorVO rss = new RSSCreatorVO();
+		rss.setTitle("SmartTRAK Updates");
+		rss.setLink(site.getFullSiteAlias());
+		rss.setBaseUrl(site.getFullSiteAlias());
+		rss.setLanguage(locale.toLowerCase());
+		rss.setFeedUrl(feedUrl);
+		rss.setTtl(60);
+		rss.setRssDocs("http://www.w3.org/2005/Atom");
+		rss.setDescription("Updates from SmartTRAK");
+		rss.setCategory(new GenericVO("STUpdates", "SmartTRAK Updates"));
 		rss.setCopyright(copyRight.toString());
 		rss.setArticles(searchItems); //set the search items
 		
 		return rss;
 	}
-	
 }
