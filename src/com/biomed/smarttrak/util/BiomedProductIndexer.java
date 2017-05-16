@@ -24,6 +24,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
@@ -469,7 +470,9 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			product.setUpdateDt(rs.getDate("CREATE_DT"));
 		}
 		product.addOrganization(ORG_ID);
-		if ("E".equals(rs.getString("STATUS_NO"))) {
+		if (1 == rs.getInt("PUBLIC_FLG")) {
+			product.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+		} else if ("E".equals(rs.getString("STATUS_NO"))) {
 			product.addRole(AdminControllerAction.STAFF_ROLE_LEVEL);
 		} else {
 			product.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.
