@@ -45,6 +45,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 	private Date createDate;
 	private String regionCode;
 	private String regionName;
+	private int publicFlag;
 
 	public MarketVO () {
 		super(MarketIndexer.INDEX_TYPE);
@@ -70,6 +71,7 @@ public class MarketVO extends SecureSolrDocumentVO {
 		statusNo = req.getParameter("statusNo");
 		setRegionCode(req.getParameter("regionCode"));
 		marketSection = new SectionVO(req);
+		setPublicFlag(Convert.formatInteger(req.getParameter("publicFlag")));
 	}
 
 
@@ -251,5 +253,15 @@ public class MarketVO extends SecureSolrDocumentVO {
 
 	public void setRegionName(String regionName) {
 		this.regionName = regionName;
+	}
+
+	@Column(name="public_flg")
+	public int getPublicFlag() {
+		return publicFlag;
+	}
+
+
+	public void setPublicFlag(int publicFlag) {
+		this.publicFlag = publicFlag;
 	}
 }

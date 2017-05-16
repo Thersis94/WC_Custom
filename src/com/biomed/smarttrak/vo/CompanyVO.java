@@ -64,6 +64,7 @@ public class CompanyVO  extends SecureSolrDocumentVO {
 	private Date updateDate;
 	private String updateMsg;
 	private String currencyTypeSymbol;
+	private int publicFlag;
 	
 	
 	public CompanyVO() {
@@ -102,6 +103,7 @@ public class CompanyVO  extends SecureSolrDocumentVO {
 		profileNo = Convert.formatInteger(req.getParameter("profileNo"));
 		peopleNo = Convert.formatInteger(req.getParameter("peopleNo"));
 		fiscalYearEnd = req.getParameter("fiscalYearEnd");
+		publicFlag = Convert.formatInteger(req.getParameter("publicFlag"));
 		if (req.hasParameter("investors")) {
 			for (String s : req.getParameterValues("investors")) {
 				investors.put(s, "");
@@ -397,6 +399,15 @@ public class CompanyVO  extends SecureSolrDocumentVO {
 
 	public void setCurrencyTypeSymbol(String currencyTypeSymbol) {
 		this.currencyTypeSymbol = currencyTypeSymbol;
+	}
+
+	@Column(name="public_flg")
+	public int getPublicFlag() {
+		return publicFlag;
+	}
+
+	public void setPublicFlag(int publicFlag) {
+		this.publicFlag = publicFlag;
 	}
 
 }
