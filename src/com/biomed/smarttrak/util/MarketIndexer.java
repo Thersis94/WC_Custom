@@ -30,6 +30,7 @@ import com.biomed.smarttrak.vo.SectionVO;
 //WC
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
@@ -228,7 +229,9 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		vo.setUpdateDt(rs.getTimestamp("mod_dt"));
 		vo.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
 
-		if ("E".equals(vo.getStatusNo())) { //preview mode, set role for staff or higher only
+		if (1 == rs.getInt("PUBLIC_FLG")) {
+			vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+		} else if ("E".equals(vo.getStatusNo())) { //preview mode, set role for staff or higher only
 			vo.addRole(AdminControllerAction.STAFF_ROLE_LEVEL);
 		} else if ("EU".equals(vo.getRegionCode())) { //EU region markets get a lesser permission level, correlates to a special User Role.
 			vo.addRole(AdminControllerAction.EUREPORT_ROLE_LEVEL);

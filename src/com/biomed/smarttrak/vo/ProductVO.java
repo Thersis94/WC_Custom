@@ -54,6 +54,7 @@ public class ProductVO extends SecureSolrDocumentVO {
 	private Map<String, List<ProductAttributeVO>> details;
 	private Map<String, List<ProductVO>> relatedProducts;
 	private Node[] detailsList;
+	private int publicFlag;
 	
 	public ProductVO () {
 		super(BiomedProductIndexer.INDEX_TYPE);
@@ -87,6 +88,7 @@ public class ProductVO extends SecureSolrDocumentVO {
 		authorProfileId = req.getParameter("authorProfileId");
 		statusNo = req.getParameter("statusNo");
 		productGroupId = req.getParameter("productGroupId");
+		setPublicFlag(Convert.formatInteger(req.getParameter("publicFlag")));
 	}
 
 
@@ -364,6 +366,16 @@ public class ProductVO extends SecureSolrDocumentVO {
 
 	public void setDetailsList(Node[] detailsList) {
 		this.detailsList = detailsList;
+	}
+
+	@Column(name="public_flg")
+	public int getPublicFlag() {
+		return publicFlag;
+	}
+
+
+	public void setPublicFlag(int publicFlag) {
+		this.publicFlag = publicFlag;
 	}
 	
 }
