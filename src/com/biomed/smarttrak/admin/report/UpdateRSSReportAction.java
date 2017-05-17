@@ -114,7 +114,6 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	       	vo.setTitle(update.getTitleTxt());
 	        vo.setSummary(update.getTwitterTxt());
 	        vo.setCreateDate(update.getCreateDt());
-	        vo.setUpdateDate(update.getUpdateDt());
 	        //ensure each document url is unique
 	        vo.setDocumentUrl(update.getDocumentUrl() +"?"+ uuid.getUUID());        
 	        searchItems.add(vo); //add the item
