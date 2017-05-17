@@ -136,7 +136,7 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
             ps.setString(1, actionInit.getActionId());
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                data.put(rs.getString(1), true);
+                data.put(rs.getString(1), Boolean.TRUE);
             }
         } catch (SQLException sqle) {
             throw new ActionException("Error Gettting Content Action: " + sqle.getMessage());
