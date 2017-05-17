@@ -58,13 +58,14 @@ public class LocatorQueryUtil {
 	// uniqueId is a composite value built using surgeonId, clinicId, and locationId
 	// e.g. 12345-6789-0123
 	private String uniqueId = null;
+	private String locatorUrl = null;
 		
-    public LocatorQueryUtil() {
-    	// empty by design
+    public LocatorQueryUtil(String locatorUrl) {
+    	this.locatorUrl = locatorUrl;
     }
     
     public static void main(String[] args) {
-    	LocatorQueryUtil lq = new LocatorQueryUtil();
+    	LocatorQueryUtil lq = new LocatorQueryUtil("http://www.allaboutmydoc.com/");
     	lq.setSpecialty(6);
     	lq.setSiteLocation("aamd");
     	lq.setZipCode("46580");
@@ -163,7 +164,8 @@ public class LocatorQueryUtil {
 	 */
 	private String buildLocatorQueryUrl() {
 		StringBuilder s = new StringBuilder(500);
-		s.append("http://www.allaboutmydoc.com/AAMD/locator?");
+		s.append(locatorUrl);
+		s.append("/AAMD/locator?");
 		s.append("display_template=/xml_display_ids.jsp&company=1");
 		s.append("&site_location=").append(siteLocation);
 		s.append("&accept=true");
@@ -486,6 +488,13 @@ public class LocatorQueryUtil {
 	 */
 	public void setUniqueId(String uniqueId) {
 		this.uniqueId = uniqueId;
+	}
+
+	/**
+	 * @param locatorUrl the locatorUrl to set
+	 */
+	public void setLocatorUrl(String locatorUrl) {
+		this.locatorUrl = locatorUrl;
 	}
 	
 }

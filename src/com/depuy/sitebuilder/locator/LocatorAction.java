@@ -7,12 +7,12 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
 // Xerces
 import org.apache.xerces.dom.DeferredDocumentImpl;
+
 // W3C
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -22,11 +22,13 @@ import org.w3c.dom.NodeList;
 import com.depuysynthes.locator.LocationBean;
 import com.depuysynthes.locator.ResultsContainer;
 import com.depuysynthes.locator.SurgeonBean;
+
 // Google Gson libs
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 // SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -40,6 +42,7 @@ import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
+
 // SB Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
@@ -488,7 +491,8 @@ public class LocatorAction extends SBActionAdapter {
         	String sendValue=StringUtil.checkVal(req.getParameter("sendValue"));
         	boolean isValidSend = this.prepareMessageSendParameters(req, type, sendValue);
         	String errMsg = null;
-        	if (isValidSend) { log.debug("isValidSend: " + isValidSend);
+        	if (isValidSend) { 
+        		log.debug("isValidSend: " + isValidSend);
         		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
         		Map<String,String> surgeon = this.findSurgeon(req);
         		attributes.put(EmailFriendAction.MESSAGE_DATA_MAP, surgeon);
@@ -571,7 +575,7 @@ public class LocatorAction extends SBActionAdapter {
      */
     private StringBuilder buildSurgeonDetailUrl(ActionRequest req) {
     	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		StringBuilder url = new StringBuilder(150);
+		StringBuilder url = new StringBuilder(300);
 		url.append(site.getFullSiteAlias());
 		url.append(req.getParameter("locatorPage"));
 		url.append("?language=").append(StringUtil.checkVal(req.getParameter("language"), "en"));
@@ -632,7 +636,7 @@ public class LocatorAction extends SBActionAdapter {
      */
     private Map<String,String> findSurgeonFromLookup(ActionRequest req) {
     	log.debug("finding surgeon by lookup...");
-    	LocatorQueryUtil lq = new LocatorQueryUtil();
+    	LocatorQueryUtil lq = new LocatorQueryUtil(StringUtil.checkVal(getAttribute("aamdUrl")));
     	lq.setSpecialty(Convert.formatInteger(req.getParameter("specialty")));
     	lq.setSiteLocation("aamd");
     	lq.setZipCode(req.getParameter("zip"));
