@@ -63,31 +63,7 @@ public class LocatorQueryUtil {
     public LocatorQueryUtil(String locatorUrl) {
     	this.locatorUrl = locatorUrl;
     }
-    
-    public static void main(String[] args) {
-    	LocatorQueryUtil lq = new LocatorQueryUtil("http://www.allaboutmydoc.com/");
-    	lq.setSpecialty(6);
-    	lq.setSiteLocation("aamd");
-    	lq.setZipCode("46580");
-    	//lq.setResultCount(50);
-    	//lq.setResultId("5");
-    	lq.setUniqueId("12926-12325-17991");
-    	Map<String,String> surgeon = null;
-    	try {
-    		surgeon = lq.locateSurgeonByUniqueId("12926-12325-17991");
-    	} catch(Exception e) {
-    		System.out.println("error: " + e);
-    	}
-    	
-    	if (surgeon != null) {
-    		for (String s : surgeon.keySet()) {
-    			System.out.println("key/val: " + s + "/" + surgeon.get(s));
-    		}
-    	} else {
-    		System.out.println("No surgeon found for uniqueId: " + lq.getUniqueId());
-    	}
-    }
-    
+
     /**
      * Queries the Locator and returns the results.
      * @return
