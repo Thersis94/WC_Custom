@@ -76,7 +76,7 @@ public class DataLoader {
 	public List<ComplianceVO> loadFile(String path) throws
 	IOException {
 		BufferedReader in = new BufferedReader(new FileReader(path));
-		List<ComplianceVO> data = new ArrayList<ComplianceVO>();
+		List<ComplianceVO> data = new ArrayList<>();
 		String temp = null;
 		while((temp = in.readLine()) != null) {
 			data.add(new ComplianceVO(temp));
@@ -92,17 +92,16 @@ public class DataLoader {
 	 * @param data
 	 */
 	public void loadData(Connection conn, List<ComplianceVO> data) {
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder(400);
 		sql.append("insert into compliance_info (compliance_id, company_nm, ");
 		sql.append("last_nm, first_nm, title_nm, city_nm, state_cd, zip_cd, ");
 		sql.append("latitude_no, longitude_no, match_cd, consulting_no, ");
 		sql.append("grant_no, research_no, royalty_no, create_dt) values ");
 		sql.append("(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		
-		try {
+		try (PreparedStatement ps =conn.prepareStatement(sql.toString())) {
 			AbstractGeocoder ag = new GoogleGeocoder();
 			ag.addAttribute(AbstractGeocoder.CONNECT_URL, geoUrl);
-			PreparedStatement ps =conn.prepareStatement(sql.toString());
 			for (int i = 0; i < data.size(); i++) {
 				ComplianceVO vo = data.get(i);
 				Location loc = new Location();

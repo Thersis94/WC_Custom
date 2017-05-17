@@ -58,7 +58,8 @@ public class ComplianceFacadeAction extends SBActionAdapter {
 		NavManager nav = new NavManager();
 		nav.setRpp(Convert.formatInteger(req.getParameter("rpp"), 10));
 		nav.setCurrentPage(Convert.formatInteger(req.getParameter("page"), 1));
-		StringBuffer baseUrl = new StringBuffer("?facadeType=true&cPage=facade");
+		StringBuilder baseUrl = new StringBuilder(200);
+		baseUrl.append("?facadeType=true&cPage=facade");
 		baseUrl.append("&manMod=true&actionId=").append(req.getParameter("actionId"));;
 		baseUrl.append("&lastName=").append(lastName);
 		baseUrl.append("&state=").append(state);
@@ -69,7 +70,7 @@ public class ComplianceFacadeAction extends SBActionAdapter {
 		nav.setBaseUrl(baseUrl.toString());
 		
 		// Build the core sql statement
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder(125);
 		sql.append("select * from compliance_info where 1=1 ");
 		
 		// Build the filters
@@ -82,7 +83,7 @@ public class ComplianceFacadeAction extends SBActionAdapter {
 		log.debug("Compliance list SQL: " + sql);
 		
 		PreparedStatement ps = null;
-		List<ComplianceVO> data = new ArrayList<ComplianceVO>();
+		List<ComplianceVO> data = new ArrayList<>();
 		try {
 			int ctr = 1;
 			ps = dbConn.prepareStatement(sql.toString());
@@ -121,7 +122,7 @@ public class ComplianceFacadeAction extends SBActionAdapter {
 	@Override
 	public void update(ActionRequest req) throws ActionException {
         Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder(300);
 		String complianceId = StringUtil.checkVal(req.getParameter("complianceId"));
 		if (complianceId.length() == 0) {
 			complianceId = new UUIDGenerator().getUUID();
@@ -146,10 +147,8 @@ public class ComplianceFacadeAction extends SBActionAdapter {
 		Location loc = new Location(null, vo.getCityName(), vo.getStateCode(), null);
 		log.debug("OK");
 		GeocodeLocation gl = ag.geocodeLocation(loc).get(0);
-		PreparedStatement ps = null;
 		log.debug("Preparing to update: ");
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, vo.getCompanyName());
 			ps.setString(2, vo.getLastName());
 			ps.setString(3, vo.getFirstName());
@@ -171,15 +170,12 @@ public class ComplianceFacadeAction extends SBActionAdapter {
 		} catch(SQLException sqle) {
 			log.error("Error updating compliance info", sqle);
 			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-		} finally {
-			try {
-				ps.close();
-			} catch(Exception e) {}
 		}
 		
         // Redirect after the update
         util.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
-        StringBuffer url = new StringBuffer((String)req.getAttribute(Constants.REDIRECT_URL));
+        StringBuilder url = new StringBuilder(125);
+        url.append((String)req.getAttribute(Constants.REDIRECT_URL));
         url.append("&page=").append(req.getParameter("page"));
         url.append("&lastName=").append(req.getParameter("lastName"));
         url.append("&state=").append(req.getParameter("state"));

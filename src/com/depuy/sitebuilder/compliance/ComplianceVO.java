@@ -46,7 +46,7 @@ public class ComplianceVO implements Serializable {
 	}
 	
 	public String toString() {
-		StringBuffer s = new StringBuffer();
+		StringBuilder s = new StringBuilder(200);
 		s.append(complianceId).append("|");
 		s.append(companyName).append("|");
 		s.append(lastName).append("|");
@@ -259,7 +259,7 @@ public class ComplianceVO implements Serializable {
 	 * @return
 	 */
 	public String getName() {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder(125);
 		if (StringUtil.checkVal(firstName).length() > 0)
 			sb.append(firstName).append("&nbsp;");
 		

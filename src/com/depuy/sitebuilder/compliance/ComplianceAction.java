@@ -97,7 +97,7 @@ public class ComplianceAction extends SBActionAdapter {
 		}
 		
 		// Build the core sql statement
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder(125);
 		sql.append("select * from compliance_info where 1=1 ");
 		
 		// Build the filters
@@ -122,7 +122,8 @@ public class ComplianceAction extends SBActionAdapter {
 		NavManager nav = new NavManager();
 		nav.setRpp(Convert.formatInteger(req.getParameter("rpp"), 10));
 		nav.setCurrentPage(Convert.formatInteger(req.getParameter("page"), 1));
-		StringBuffer baseUrl = new StringBuffer("?searchSubmitted=true");
+		StringBuilder baseUrl = new StringBuilder(125);
+		baseUrl.append("?searchSubmitted=true");
 		baseUrl.append("&rpp=").append(nav.getRpp());
 		baseUrl.append("&firstName=").append(firstName);
 		baseUrl.append("&lastName=").append(lastName);
@@ -131,11 +132,9 @@ public class ComplianceAction extends SBActionAdapter {
 		baseUrl.append("&company=").append(company);
 		nav.setBaseUrl(baseUrl.toString());
 		
-		PreparedStatement ps = null;
-		List<ComplianceVO> data = new ArrayList<ComplianceVO>();
-		try {
+		List<ComplianceVO> data = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int ctr = 1;
-			ps = dbConn.prepareStatement(sql.toString());
 			if (firstName.length() > 0) ps.setString(ctr++, "%" + firstName + "%");
 			if (lastName.length() > 0) ps.setString(ctr++, lastName + "%");
 			if (company.length() > 0) ps.setString(ctr++, company + "%");
@@ -153,10 +152,6 @@ public class ComplianceAction extends SBActionAdapter {
 			
 		} catch(SQLException sqle) {
 			log.error("Error Rtrv Compliance Data", sqle);
-		} finally {
-			try {
-				ps.close();
-			} catch (Exception e) {}
 		}
 		
         // Store the retrieved data in the ModuleVO.actionData and replace into
@@ -218,7 +213,7 @@ public class ComplianceAction extends SBActionAdapter {
 		Double lat = loc.getLatitude();
 		Double lng = loc.getLongitude();
 		double radDegree = 25 * .014;
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder(125);
 		sql.append("and Latitude_no > ").append(NumberFormat.roundGeocode(lat - radDegree)).append(" and ");
 		sql.append("Latitude_no < ").append(NumberFormat.roundGeocode(lat + radDegree)).append(" and ");
 		sql.append("Longitude_no > ").append(NumberFormat.roundGeocode(lng - radDegree)).append(" and ");
