@@ -56,25 +56,16 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
      */
     @Override
     public void delete(ActionRequest req) throws ActionException {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder(75);
         sb.append("delete from locator_field_assoc where action_id = ?");
         String actionId = (String) req.getAttribute(SBActionAdapter.SB_ACTION_ID);
         
         log.info("Delete rss assoc sql: " + sb + " - " + actionId);
-        PreparedStatement ps = null;
-        try {
-            ps = dbConn.prepareStatement(sb.toString());
+        try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
             ps.setString(1, actionId);
-            
             ps.executeUpdate();
         } catch (SQLException sqle) {
             log.error("Error deleting locaotr assoc field: " + sqle.getMessage());
-        } finally {
-            if (ps != null) {
-                try {
-                    ps.close();
-                } catch(Exception e) {}
-            }
         }
     }
 
@@ -89,25 +80,22 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
         this.delete(req);
         
         // Loop the checked boxes and add to the assoc
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder(125);
         sb.append("insert into locator_field_assoc (locator_field_assoc_id, ");
         sb.append("locator_field_id, action_id, create_dt) ");
         sb.append("values (?,?,?,?)");
         
-        PreparedStatement ps = null;
         String[] lfid = req.getParameterValues("locatorFieldId");
         if (lfid == null) lfid = new String[0];
         
-        try {
+        try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
             dbConn.setAutoCommit(false);
-            ps = dbConn.prepareStatement(sb.toString());
             
             for (int i=0; i < lfid.length; i++) {
                 ps.setString(1, new UUIDGenerator().getUUID());
                 ps.setString(2, lfid[i]);
                 ps.setString(3, (String) req.getAttribute(SBActionAdapter.SB_ACTION_ID));
                 ps.setDate(4, new java.sql.Date(new Date().getTime()));
-                
                 ps.addBatch();
             }
             
@@ -123,14 +111,8 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
             
             log.error("Error updating Loc Field Assoc: " + sqle.getMessage());
             msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-        } finally {
-            if (ps != null) {
-                try {
-                    ps.close();
-                } catch(Exception e) {}
-            }
         }
-        
+
         util.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
     }
 
@@ -142,32 +124,22 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
     public void retrieve(ActionRequest req) throws ActionException {
         log.info("Listing fields for locator");
         
-        StringBuffer sql = new StringBuffer();
+        StringBuilder sql = new StringBuilder(200);
         sql.append("select b.locator_field_id, b.field_nm ");
         sql.append("from locator_field_assoc a inner join locator_field b ");
         sql.append("on a.locator_field_id = b.locator_field_id ");
         sql.append("where action_id = ? ");
         
         log.info("LocatorField Action Retrieve SQL: " + sql.toString());
-        PreparedStatement ps = null;
-        Map<String, Boolean> data = new HashMap<String, Boolean>();
-        try {
-            ps = dbConn.prepareStatement(sql.toString());
+        Map<String, Boolean> data = new HashMap<>();
+        try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
             ps.setString(1, actionInit.getActionId());
-            
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                data.put(rs.getString(1), new Boolean(true));
+                data.put(rs.getString(1), true);
             }
         } catch (SQLException sqle) {
-            
             throw new ActionException("Error Gettting Content Action: " + sqle.getMessage());
-        } finally {
-            if (ps != null) {
-                try {
-                    ps.close();
-                } catch(Exception e) {}
-            }
         }
         
         // Add the collection to the request object
@@ -182,7 +154,7 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
         log.info("Listing fields for locator");
         String sbActionId = req.getParameter(SBActionAdapter.SB_ACTION_ID);
         
-        StringBuffer sql = new StringBuffer();
+        StringBuilder sql = new StringBuilder(400);
         sql.append("select a.locator_field_id, locator_field_assoc_id ");
         sql.append("from locator_field a right outer join locator_field_assoc b ");
         sql.append("on a.locator_field_id = b.locator_field_id ");
@@ -196,10 +168,8 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
         
         log.info("LocatorField Action List SQL: " + sql.toString());
         LocatorFieldVO vo = null;
-        PreparedStatement ps = null;
-        Map<String, Boolean> data = new HashMap<String, Boolean>();
-        try {
-            ps = dbConn.prepareStatement(sql.toString());
+        Map<String, Boolean> data = new HashMap<>();
+        try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
             ps.setString(1, sbActionId);
             ps.setString(2, sbActionId);
             
@@ -213,19 +183,13 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
                 if (lfai != null && lfai.length() > 0) vo.setSelected(true);
                 else vo.setSelected(false);
                 
-                data.put(vo.getActionId(), new Boolean(vo.isSelected()));
+                data.put(vo.getActionId(), vo.isSelected());
             }
         } catch (SQLException sqle) {
             
             throw new ActionException("Error getting LocatorFieldAssocAction: " + sqle.getMessage());
-        } finally {
-            if (ps != null) {
-                try {
-                    ps.close();
-                } catch(Exception e) {}
-            }
         }
-        
+
         // Add the collection to the request object
         req.setAttribute(LOCATOR_FIELD_LIST, data);
     }

@@ -59,7 +59,9 @@ public class LocatorQueryUtil {
 	// e.g. 12345-6789-0123
 	private String uniqueId = null;
 		
-    public LocatorQueryUtil() { }
+    public LocatorQueryUtil() {
+    	// empty by design
+    }
     
     public static void main(String[] args) {
     	LocatorQueryUtil lq = new LocatorQueryUtil();
@@ -90,7 +92,7 @@ public class LocatorQueryUtil {
      * @return
      * @throws IOException
      */
-    public StringBuffer locateSurgeons() throws IOException {
+    public StringBuilder locateSurgeons() throws IOException {
     	return this.connect(this.buildLocatorQueryUrl());
     }
     
@@ -105,7 +107,7 @@ public class LocatorQueryUtil {
     public Map<String, String> locateSurgeonByUniqueId(String uniqueId) 
     		throws IOException, DocumentException {
     	this.uniqueId = uniqueId;
-    	StringBuffer results = this.locateSurgeons();
+    	StringBuilder results = this.locateSurgeons();
     	return this.findSurgeon(results);
     }
         
@@ -118,14 +120,14 @@ public class LocatorQueryUtil {
      * @throws DocumentException
      */
 	@SuppressWarnings("rawtypes")
-	private Map<String, String> findSurgeon(StringBuffer xml) 
+	private Map<String, String> findSurgeon(StringBuilder xml) 
 			throws DocumentException {
 		// Parse out the XML Data and create the root element
 		ByteArrayInputStream bais = null;
 		try {
 			bais = new ByteArrayInputStream(xml.toString().getBytes("UTF-8"));
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error getting surgeon's xml data, ", e);
 		}
 		SAXReader reader = new SAXReader();
 		Document doc = reader.read(bais);
@@ -136,7 +138,7 @@ public class LocatorQueryUtil {
 		Element result = null;
 		// loop the 'result' elements
 		for (int i = 0; i < results.size(); i ++) {
-			if (! found) rowData = new HashMap<String, String>();
+			if (! found) rowData = new HashMap<>();
 			result = (Element)results.get(i);
 			Iterator iter = result.elementIterator();
 			// loop children of 'result' element we are currently parsing
@@ -160,7 +162,7 @@ public class LocatorQueryUtil {
 	 * @return URL Formatted for AAMD Locator Request
 	 */
 	private String buildLocatorQueryUrl() {
-		StringBuffer s = new StringBuffer();
+		StringBuilder s = new StringBuilder(500);
 		s.append("http://www.allaboutmydoc.com/AAMD/locator?");
 		s.append("display_template=/xml_display_ids.jsp&company=1");
 		s.append("&site_location=").append(siteLocation);
@@ -200,8 +202,8 @@ public class LocatorQueryUtil {
 	 * @return
 	 * @throws IOException
 	 */
-	private StringBuffer connect(String actionUrl) throws IOException {
-        StringBuffer sb = new StringBuffer();
+	private StringBuilder connect(String actionUrl) throws IOException {
+        StringBuilder sb = new StringBuilder(500);
         HttpURLConnection conn = null;
         URL url = null;
         try {

@@ -193,17 +193,11 @@ public class LocatorAction extends SBActionAdapter {
 	    } else if (processPhysician) {
 		    log.debug("Update phys info");
 		    String sql = "insert into locator_survey_bypass (create_dt) values(?)";
-		    PreparedStatement ps = null;
-		    try {
-			    ps = dbConn.prepareStatement(sql);
+		    try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			    ps.setTimestamp(1, Convert.getCurrentTimestamp());
 			    ps.executeUpdate();
 		    } catch(Exception e) {
-			    log.error("Error updating locator phyician bypass");
-		    } finally {
-			    try {
-				    ps.close();
-			    } catch(Exception e) {}
+			    log.error("Error updating locator phyician bypass, ", e);
 		    }
 		    newUrl = newUrl + "&doneReg=1";
 
@@ -221,6 +215,7 @@ public class LocatorAction extends SBActionAdapter {
     /**
 	 * New Copy method utilizing the record Duplicator.
 	 */
+    @Override
 	public void copy(ActionRequest req) throws ActionException{
 		super.copy(req);	
 		
@@ -242,20 +237,13 @@ public class LocatorAction extends SBActionAdapter {
         StringBuilder sb = new StringBuilder(75);
         sb.append("delete from locator where action_id = ?");
 
-        PreparedStatement ps = null;
-        try {
-        	log.debug("Attempting to connect to database");
-            ps = dbConn.prepareStatement(sb.toString());
-            log.debug("Statement created");
+        try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
             ps.setString(1, sbActionId);
-            log.debug("Statement Set");
             if (ps.executeUpdate() < 1) {
                 msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-                log.debug("Nothing was deleted for " + sbActionId);
             } else {
 
                 // Delete the entry in the Module Table
-                log.info("Deleting entry in SB_ACTION");
                 req.setAttribute(SBActionAdapter.SB_ACTION_ID, sbActionId);
                 super.delete(req);
             }
@@ -265,12 +253,7 @@ public class LocatorAction extends SBActionAdapter {
             msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
         } finally {
             mod.setErrorMessage((String)msg);
-            if (ps != null) {
-                try {
-                    ps.close();
-                } catch(Exception e) {}
-            }
-        }
+       }
         
         // Redirect the user
         util.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
@@ -312,13 +295,11 @@ public class LocatorAction extends SBActionAdapter {
         log.info("Locator Data Update SQL: " + sql.toString());
         
         // perform the execute
-        PreparedStatement ps = null;
         int idx = 1;
-        try {
+        try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
             LocatorVO vo = new LocatorVO();
             vo.setData(req);
-            
-            ps = dbConn.prepareStatement(sql.toString());
+
             ps.setString(idx++, vo.getSearchId());
             ps.setInt(idx++, vo.getSearchTypeId());
             ps.setString(idx++, vo.getOrganizationId());
@@ -351,12 +332,6 @@ public class LocatorAction extends SBActionAdapter {
         } catch (Exception sqle) {
             msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
             log.info("Error Update Content", sqle);
-        } finally {
-            if (ps != null) {
-                try {
-                    ps.close();
-                } catch(Exception e) {}
-            }
         }
         
         // Redirect after the update
@@ -400,21 +375,13 @@ public class LocatorAction extends SBActionAdapter {
 	        sql.append("select * from locator where action_id = ?");
 	        log.info("Locator Action Retrieve SQL: " + sql.toString());
 	        
-	        PreparedStatement ps = null;
 	        LocatorVO vo = new LocatorVO();
-	        try {
-	            ps = dbConn.prepareStatement(sql.toString());
+	        try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 	            ps.setString(1, actionInit.getActionId());
 	            ResultSet rs = ps.executeQuery();
 	            if (rs.next()) vo.setData(rs);
 	        } catch (SQLException sqle) {
 	            throw new ActionException("Error getting Locator action: " + sqle.getMessage());
-	        } finally {
-	            if (ps != null) {
-	                try {
-	                    ps.close();
-	                } catch(Exception e) {}
-	            }
 	        }
 	        
 	        // retrieve the list of fields for the action
@@ -481,9 +448,7 @@ public class LocatorAction extends SBActionAdapter {
         
         log.info("Locator Action List SQL: " + sql.toString());
         LocatorVO vo = new LocatorVO();
-        PreparedStatement ps = null;
-        try {
-            ps = dbConn.prepareStatement(sql.toString());
+        try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
             ps.setString(1, actionId);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
@@ -495,14 +460,7 @@ public class LocatorAction extends SBActionAdapter {
 
             }
         } catch (SQLException sqle) {
-            
             throw new ActionException("Error getting Locator action: " + sqle.getMessage());
-        } finally {
-            if (ps != null) {
-                try {
-                    ps.close();
-                } catch(Exception e) {}
-            }
         }
         
         // retrieve the list of fields for the action
@@ -526,7 +484,6 @@ public class LocatorAction extends SBActionAdapter {
     private void processMessageSend(ActionRequest req, LocatorSubmittalVO loc) {
     	log.debug("processing locator message send...");
     	String type = StringUtil.checkVal(req.getParameter("messageType"));
-    	log.debug("type is: " + type);
     	if (type.length() > 0) {
         	String sendValue=StringUtil.checkVal(req.getParameter("sendValue"));
         	boolean isValidSend = this.prepareMessageSendParameters(req, type, sendValue);
@@ -700,8 +657,8 @@ public class LocatorAction extends SBActionAdapter {
     	String idFormat = StringUtil.checkVal(req.getParameter("idFormat"), null);
     	String version = StringUtil.checkVal(req.getParameter("version"),"1");
     	if (idFormat != null) {
-    		if (idFormat.equalsIgnoreCase("json")) {
-    			if (version.equals("2")) {
+    		if ("json".equalsIgnoreCase(idFormat)) {
+    			if ("2".equals(version)) {
     				//return findSurgeonFromJsonV2(req, uniqueId);
     				return this.findSurgeonFromResultsContainer(req, uniqueId);
     			} else {
@@ -730,7 +687,7 @@ public class LocatorAction extends SBActionAdapter {
     	if (ddi != null) {
 	    	Element root = ddi.getDocumentElement();
 	    	if (root != null) {
-	    		surgeon = new HashMap<String,String>();
+	    		surgeon = new HashMap<>();
 	    		log.debug("uniqueId: " + uniqueId);
 	    		// get all of the "uniqueId" nodes
 	    		NodeList results = root.getElementsByTagName("uniqueId");
