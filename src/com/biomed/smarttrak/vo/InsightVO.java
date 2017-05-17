@@ -26,6 +26,7 @@ import com.smt.sitebuilder.changelog.ChangeLogIntfc;
 //WebCrescendo
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
@@ -115,7 +116,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 		super(BiomedInsightIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
-		super.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL);
+		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 	}
 
 	public InsightVO(ResultSet rs) {
@@ -379,7 +380,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	 * return the date for java and sets up a solr field as publish date string
 	 * @return the publishDt
 	 */
-	@SolrField(name="publish_dt")
+	@SolrField(name=SearchDocumentHandler.PUBLISH_DATE)
 	@Column(name="publish_dt")
 	public Date getPublishDt() {
 		return publishDt;

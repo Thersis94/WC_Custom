@@ -24,6 +24,7 @@ import com.siliconmtn.util.user.HumanNameIntfc;
 import com.smt.sitebuilder.changelog.ChangeLogIntfc;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
@@ -84,7 +85,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 		super(UpdateIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
-		super.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL);
+		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 	}
 
 
@@ -285,8 +286,8 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	/**
 	 * @return the publishDt
 	 */
-	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
-	@Column(name="publish_dt", isAutoGen=true, isInsertOnly=true)
+	@SolrField(name=SearchDocumentHandler.PUBLISH_DATE)
+	@Column(name="publish_dt")
 	public Date getPublishDt() {
 		return publishDt;
 	}
@@ -312,6 +313,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	/**
 	 * @return the updateDt
 	 */
+	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	@Override
 	public Date getUpdateDt() {
