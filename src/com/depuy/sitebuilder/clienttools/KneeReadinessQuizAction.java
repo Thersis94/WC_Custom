@@ -52,20 +52,24 @@ public class KneeReadinessQuizAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
+    @Override
 	public void build(ActionRequest req) throws ActionException {
-		
+		// empty by design
 	}
     
     /* (non-Javadoc)
      * @see com.siliconmtn.action.ActionController#list(com.siliconmtn.http.SMTServletRequest)
      */
+	@Override
     public void list(ActionRequest req) throws ActionException {
+		// empty by design
     }
 
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
 	public void retrieve(ActionRequest req) throws ActionException {
 		String page = StringUtil.checkVal(req.getParameter("page"));
@@ -73,9 +77,10 @@ public class KneeReadinessQuizAction extends SBActionAdapter {
     	
 		//store all request values into the session for the results page display
 		Map<String,String> vals = (Map<String,String>) ses.getAttribute("kneeReadinessQuizMap");
-		if (vals == null || page.equals("")) vals = new HashMap<String,String>(100);  //if no page assume they started over
+		if (vals == null || "".equals(page)) vals = new HashMap<>(100);  //if no page assume they started over
 		Enumeration iter = req.getParameterNames();
-		String paramName,paramValue;
+		String paramName;
+		String paramValue;
 		try {
 			while (iter.hasMoreElements()) {
 				paramName = StringUtil.checkVal(iter.nextElement());
