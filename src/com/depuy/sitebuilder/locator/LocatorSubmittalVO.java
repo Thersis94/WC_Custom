@@ -77,7 +77,7 @@ public class LocatorSubmittalVO extends SBModuleVO {
 	 * @return
 	 */
 	public String getRedirectUrl() {
-    	StringBuffer url = new StringBuffer();
+    	StringBuilder url = new StringBuilder(250);
     	url.append(baseUrl);
     	url.append("?language=").append(language);
     	url.append("&country=").append(country);

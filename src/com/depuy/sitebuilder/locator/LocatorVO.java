@@ -54,7 +54,7 @@ public class LocatorVO extends SBModuleVO {
      */
     public LocatorVO() {
         super();
-        fields = new HashMap<String, Boolean>();
+        fields = new HashMap<>();
     }
     
     /**
