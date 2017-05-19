@@ -57,7 +57,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	public CourseCalendar(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
+
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
@@ -67,13 +67,12 @@ public class CourseCalendar extends SimpleActionAdapter {
 	public void update(ActionRequest req) throws ActionException {
 		if (!Convert.formatBoolean(req.getParameter("batchOnly")))
 			super.update(req);
-		
+
 		if (req.getFile("xlsFile") != null || req.getFile("batchFile") != null)
 			processUpload(req);
-		
 	}
-	
-	
+
+
 	/**
 	 * processes the file upload and imports each row as a new event to add to the 
 	 * desired event calendar. 
@@ -93,44 +92,46 @@ public class CourseCalendar extends SimpleActionAdapter {
 			//Gets the xls file from the request object, and passes it to the parser.
 			//Parser then returns the list of populated beans
 			Map<Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
-			
-			 UUIDGenerator uuid = new UUIDGenerator();
+
+			UUIDGenerator uuid = new UUIDGenerator();
 			ArrayList<Object> beanList = new ArrayList<>(beans.get(CourseCalendarVO.class));
 			Set<String> eventIds = new HashSet<>(beanList.size());
-			
+
 			//Disable the db autocommit for the insert batch
 			dbConn.setAutoCommit(false);
-			
+
 			EventEntryAction eventAction = new EventEntryAction();
 			eventAction.setDBConnection(dbConn);
-			
+
 			for (Object o : beanList) {
 				//set the eventTypeId for each
 				CourseCalendarVO vo = (CourseCalendarVO) o;
 				vo.setEventEntryId(uuid.getUUID());
-				vo.setActionId(vo.getEventEntryId()); //TODO remove, legacy compatability
+				vo.setActionId(vo.getEventEntryId()); //remove, legacy compatability
 				eventIds.add(vo.getEventEntryId());
 				vo.setEventTypeId(req.getParameter("eventTypeId"));
 				vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
 			}
 			eventAction.importBeans(beanList, req.getParameter("attrib1Text"));
-			
+
 			//commit only after the entire import succeeds
 			dbConn.commit();
-			
+
 			//push the new assets to Solr
 			pushToSolr(eventIds);
-			
+
 		} catch (InvalidDataException | SQLException e) {
 			log.error("could not process DSI calendar import", e);
 		} finally {
 			try {
 				//restore autocommit state
 				dbConn.setAutoCommit(true);
-			} catch (SQLException e) {}
+			} catch (SQLException e) {
+				//ignoreable
+			}
 		}
 	}
-	
+
 	/**
 	 * retrieves a list of Events tied to this porlet.  Filters the list to the passed anatomy, if present. 
 	 */
@@ -140,8 +141,8 @@ public class CourseCalendar extends SimpleActionAdapter {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 
 		String anatomy = null;
-		boolean showFilters = (page.getAliasName().equals("calendar")); //not needed on these pages/views;
-		
+		boolean showFilters = "calendar".equals(page.getAliasName()); //not needed on these pages/views
+
 		//hook for event signup; these would come from an email and the user must login first,
 		//so we needed to keep the URLs short and redirect-able.
 		if (req.hasParameter("reqParam_2") && "ADD".equalsIgnoreCase(req.getParameter("reqParam_1"))) {
@@ -154,19 +155,19 @@ public class CourseCalendar extends SimpleActionAdapter {
 			}
 			return;
 		}
-		
+
 		//if not on the calendar page, we'll need to filter the events by anatomy
-		if (! page.getAliasName().equals("calendar") && ! page.getAliasName().equals("profile")) {
+		if (!"calendar".equals(page.getAliasName()) && !"profile".equals(page.getAliasName())) {
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			anatomy = getAnatomyFromAlias(page, site);
 			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
 		}
-		
+
 		Calendar cal = Calendar.getInstance();
-		if (page.getAliasName().equals("profile"))
+		if ("profile".equals(page.getAliasName()))
 			cal.add(Calendar.DATE, -90);
 		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(cal.getTime(), Convert.DATE_SLASH_PATTERN));
-		
+
 		//load the Events
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		mod.setActionId(actionInit.getActionId());
@@ -176,27 +177,27 @@ public class CourseCalendar extends SimpleActionAdapter {
 		efa.retrieve(req);
 		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		EventGroupVO vo = (EventGroupVO) mod.getActionData();
-		
+
 		//prepare facets/filters
 		if (showFilters) {
 			if (!req.hasParameter("location"))
 				prepareSpecialtyFacets(req, vo);
-			
+
 			req.setValidateInput(false);
 			filterDataBySpecialty(req, vo);
 			filterDataByLocation(req, vo);
 			req.setValidateInput(true);
-			
+
 			if (req.hasParameter("location"))
 				prepareSpecialtyFacets(req, vo);
-			
+
 			//locations listed are limited to only those containing events (after specialty filter is applied)
 			prepareLocationFacets(req, vo);
-			
+
 			super.putModuleData(vo);
 		}
 	}
-	
+
 	/**
 	 * prepare search filters to present to the user based on the data we're displaying
 	 * @param req
@@ -205,7 +206,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	private void prepareSpecialtyFacets(ActionRequest req, EventGroupVO grpVo) {
 		//one for specialties, put on the request by Type
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
-			Map<String, Integer> specialties = new TreeMap<String, Integer>();
+			Map<String, Integer> specialties = new TreeMap<>();
 			boolean isFutureLdrs = "FUTURE".equals(typeVo.getTypeName());
 			for (EventEntryVO vo : typeVo.getEvents()) {
 				String specs = StringUtil.checkVal(vo.getServiceText(), "Other");
@@ -223,16 +224,16 @@ public class CourseCalendar extends SimpleActionAdapter {
 			req.setAttribute("facet_spec_" + typeVo.getTypeName(), specialties);
 		}
 	}
-	
+
 	private void prepareLocationFacets(ActionRequest req, EventGroupVO grpVo) {
 		//one for Location (city & state), put on the request by Type
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
-			Map<String, Integer> locations = new TreeMap<String, Integer>();
+			Map<String, Integer> locations = new TreeMap<>();
 			for (EventEntryVO vo : typeVo.getEvents()) {
 				String state = StringUtil.checkVal(vo.getStateCode());
 				String locn = StringUtil.checkVal(vo.getCityName());
 				if (state.length() > 0) locn += ", " + state;
-				
+
 				if (locn.length() == 2) locn = "Other";
 				if (locations.containsKey(locn)) {
 					locations.put(locn, locations.get(locn)+1);
@@ -244,8 +245,8 @@ public class CourseCalendar extends SimpleActionAdapter {
 			req.setAttribute("facet_locn_" + typeVo.getTypeName(), locations);
 		}
 	}
-	
-	
+
+
 	/**
 	 * filter the list of events being returned to the browser to only those matching 
 	 * certain locations.  A "location" here is a String: "city, st"
@@ -255,10 +256,10 @@ public class CourseCalendar extends SimpleActionAdapter {
 	private void filterDataByLocation(ActionRequest req, EventGroupVO grpVo) {
 		if (!req.hasParameter("location")) return;
 		List<String> filters = Arrays.asList(req.getParameter("location").split("~"));
-		if (filters == null || filters.size() == 0) return;
-		
+		if (filters == null || filters.isEmpty()) return;
+
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
-			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
+			List<EventEntryVO> data = new ArrayList<>();
 			for (EventEntryVO vo : typeVo.getEvents()) {
 				//check each event and only include those matching our filters
 				String locn = StringUtil.checkVal(vo.getCityName()) + ", " + StringUtil.checkVal(vo.getStateCode());
@@ -269,21 +270,20 @@ public class CourseCalendar extends SimpleActionAdapter {
 			typeVo.setEvents(data);
 		}
 	}
-	
+
 	/**
 	 * filter the list of events being returned to the browser to only those matching 
-	* certain specialties
+	 * certain specialties
 	 * @param req
 	 * @param vo
 	 */
 	private void filterDataBySpecialty(ActionRequest req, EventGroupVO grpVo) {
 		if (!req.hasParameter("specialty")) return;
 		List<String> filters = Arrays.asList(req.getParameter("specialty").split("~"));
-		if (filters == null || filters.size() == 0) return;
-		//log.debug(filters);
-		
+		if (filters == null || filters.isEmpty()) return;
+
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
-			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
+			List<EventEntryVO> data = new ArrayList<>();
 			boolean isFutureLdrs = "FUTURE".equals(typeVo.getTypeName());
 			for (EventEntryVO vo : typeVo.getEvents()) {
 				boolean addIt = false;
@@ -291,25 +291,24 @@ public class CourseCalendar extends SimpleActionAdapter {
 				String spec = StringUtil.checkVal(vo.getServiceText());
 				if (spec == null || spec.length() == 0) spec = "Other";
 				outer:
-				for (String s : spec.split(",")) {
-					if (isFutureLdrs) s = StringUtil.checkVal(FutureLeaderACGME.getNameFromCode(s), s);
-					log.debug("spec=" + s);
-					for (String f : filters) {
-						if (s.contains(f)) {
-							addIt = true;
-							break outer;
+					for (String s : spec.split(",")) {
+						if (isFutureLdrs) s = StringUtil.checkVal(FutureLeaderACGME.getNameFromCode(s), s);
+						log.debug("spec=" + s);
+						for (String f : filters) {
+							if (s.contains(f)) {
+								addIt = true;
+								break outer;
+							}
 						}
 					}
-				}
 				if (!addIt) continue;
 				data.add(vo);
-				//log.debug("added " + vo.getServiceText());
 			}
 			log.debug("removed " + (typeVo.getEvents().size() - data.size()) + " events by specialty, now " + data.size());
 			typeVo.setEvents(data);
 		}
 	}
-	
+
 	/**
 	 * cast the URL alias to a anotomical section (as used in the Events lists)
 	 * most of these align, but a couple needed massaging.
@@ -320,27 +319,27 @@ public class CourseCalendar extends SimpleActionAdapter {
 		//on the main site we don't filter
 		if (site.getAliasPathName() == null && page.isDefaultPage()) return "";
 		String alias = page.getAliasName().toLowerCase();
-		
+
 		if ("veterinary".equals(site.getAliasPathName())) return "Vet"; //vet section
 		else if ("outpatient-education".equals(site.getAliasPathName())) return "Outpatient Education"; //Outpatient Ed. section
 		else if ("bundled-payments".equals(site.getAliasPathName())) return "Bundled Payments"; // Bundled Payments section
 		else if ("nurse-education".equals(site.getAliasPathName())) return "Nurse Education"; //nursing section
 		else if ("futureleaders".equals(site.getAliasPathName())) return FutureLeaderACGME.getCodeFromAlias(alias);
-		else if (alias.equals("chest-wall")) return "Chest Wall";
-		else if (alias.indexOf("-") > 0) return StringUtil.capitalizePhrase(alias.replace("-", " & ")); //Foot & Ankle, Hand & Wrist
-		
+		else if ("chest-wall".equals(alias)) return "Chest Wall";
+		else if (alias.indexOf('-') > -1) return StringUtil.capitalizePhrase(alias.replace("-", " & ")); //Foot & Ankle, Hand & Wrist
+
 		return StringUtil.capitalize(alias);
 	}
-	
-	
-	
-	/**
+
+
+
+	/*
 	 * Build gets called for creating iCal files (downloads) of the passed eventEntryId
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		
+
 		//for event RSVP signups
 		if (req.hasParameter("userSignup")) {
 			req.setAttribute(EventFacadeAction.STATUS_OVERRIDE, EventFacadeAction.STATUS_APPROVED);
@@ -352,8 +351,8 @@ public class CourseCalendar extends SimpleActionAdapter {
 				req.setAttribute(EventFacadeAction.STATUS_OVERRIDE, url);
 			}
 		}
-		
-		
+
+
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		mod.setActionId(actionInit.getActionId());
 		EventFacadeAction efa = new EventFacadeAction(actionInit);
@@ -361,8 +360,8 @@ public class CourseCalendar extends SimpleActionAdapter {
 		efa.setDBConnection(dbConn);
 		efa.build(req);
 	}
-	
-	
+
+
 	protected void pushToSolr(Set<String> eventIds) {
 		Properties props = new Properties();
 		props.putAll(getAttributes());
