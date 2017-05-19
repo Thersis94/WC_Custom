@@ -1,4 +1,4 @@
-package com.biomed.smarttrak.action.rss;
+package com.biomed.smarttrak.action.rss.util;
 
 import java.util.ArrayList;
 import java.util.List;
