@@ -1,5 +1,6 @@
 package com.depuysynthes.action;
 
+//java 8
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -7,24 +8,32 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+//WC Custom
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
+
+//SMT base lib
 import com.siliconmtn.data.report.ExcelStyleFactory;
 import com.siliconmtn.data.report.MultisheetExcelReport;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /****************************************************************************
- * <b>Title</b>: EMEAProductCatalogReport.java<p/>
- * <b>Description: Excel report for the EMEA product catalog.</b> 
- * <p/>
- * <b>Copyright:</b> Copyright (c) 2017<p/>
- * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * <b>Title</b>: EMEAProductCatalogReport.java
+ * <b>Project</b>: WC_Custom
+ * <b>Description: </b> Excel report for the EMEA product catalog.
+ * <b>Copyright:</b> Copyright (c) 2017
+ * <b>Company:</b> Silicon Mountain Technologies
+ * 
  * @author James McKain
- * @version 1.0
+ * @version 3.0
  * @since Jan 14, 2017
- * @update
+ * @updates:
+ * RJR code clean up May 18, 2017
  ****************************************************************************/
+
 public class EMEAProductCatalogReport extends AbstractSBReportVO {
 
 	private static final long serialVersionUID = 969372461467629288L;
