@@ -26,14 +26,12 @@ import com.siliconmtn.util.StringUtil;
  * @version 1.0
  * @since Jul 7, 2015
  ****************************************************************************/
-public class ResidentVO implements Serializable {
+public class ResidentVO extends UserDataVO implements Serializable {
 	private static final long serialVersionUID = -1227800196334867170L;
 
 	private String residentId;
 	private int residentDirectorId;
 	private String pgyId;
-	private String profileId;
-	private UserDataVO profile;
 	private int orderNo;
 	private Date consentDt;
 	private boolean consentTimedOut;
@@ -47,7 +45,8 @@ public class ResidentVO implements Serializable {
 	}
 
 	public ResidentVO(ResultSet rs) {
-		this();
+		super(rs);
+		assignments = new ArrayList<>();
 		DBUtil util = new DBUtil();
 		residentId = util.getStringVal("resident_id", rs);
 		residentDirectorId = util.getIntVal("res_dir_id", rs);
@@ -57,15 +56,15 @@ public class ResidentVO implements Serializable {
 		consentDt = util.getDateVal("consent_dt", rs);
 		setConsentTimedOut(util.getDateVal("invite_sent_dt", rs));
 	}
-	
+
 	public ResidentVO(ActionRequest req) {
 		this();
 		profileId = StringUtil.checkVal(req.getParameter("profileId"), null);
 		residentId = StringUtil.checkVal(req.getParameter("residentId"), null);
 		residentDirectorId = Convert.formatInteger("" + req.getSession().getAttribute(AssignmentsFacadeAction.RES_DIR_ID));
 	}
-	
-	
+
+
 	public String getResidentId() {
 		return residentId;
 	}
@@ -80,14 +79,6 @@ public class ResidentVO implements Serializable {
 
 	public void setPgyId(String pgyId) {
 		this.pgyId = pgyId;
-	}
-
-	public String getProfileId() {
-		return profileId;
-	}
-
-	public void setProfileId(String profileId) {
-		this.profileId = profileId;
 	}
 
 	public int getOrderNo() {
@@ -121,7 +112,7 @@ public class ResidentVO implements Serializable {
 	public void setAssignments(List<AssignmentVO> assignments) {
 		this.assignments = assignments;
 	}
-	
+
 	public boolean isConsentTimedOut() {
 		return consentTimedOut;
 	}
@@ -138,15 +129,11 @@ public class ResidentVO implements Serializable {
 		cal.setTime(updateDt);
 		cal.add(Calendar.DAY_OF_YEAR, MyResidentsAction.CONSENT_TIMEOUT);
 
-		consentTimedOut = (cal.getTime().before(Convert.getCurrentTimestamp()));
+		consentTimedOut = cal.getTime().before(Convert.getCurrentTimestamp());
 	}
 
 	public UserDataVO getProfile() {
-		return profile;
-	}
-
-	public void setProfile(UserDataVO profile) {
-		this.profile = profile;
+		return this;
 	}
 
 	public int getResidentDirectorId() {
@@ -156,8 +143,8 @@ public class ResidentVO implements Serializable {
 	public void setResidentDirectorId(int residentDirectorId) {
 		this.residentDirectorId = residentDirectorId;
 	}
-	
-	
+
+
 	public String getResAssgId() {
 		return resAssgId;
 	}
@@ -201,7 +188,7 @@ public class ResidentVO implements Serializable {
 			data.put("PGY 6",new ArrayList<ResidentVO>());
 			data.put("PGY 7",new ArrayList<ResidentVO>());
 			data.put("Unknown",new ArrayList<ResidentVO>());
-			
+
 			for (ResidentVO res : resList) {
 				++totalResidents;
 				if (res.getPgyId() == null || res.getPgyId().length() == 0) {
@@ -211,10 +198,8 @@ public class ResidentVO implements Serializable {
 				}
 			}
 		}
-		
+
 		public Map<String, List<ResidentVO>> getData() { return data; }
 		public int getTotalResidents() { return totalResidents; }
 	}
 }
-
-

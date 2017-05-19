@@ -25,38 +25,35 @@ public class LoginAction extends com.smt.sitebuilder.action.user.LoginAction {
 	public LoginAction() {
 		super();
 	}
-	
+
 	public LoginAction(ActionInitVO init) {
 		super(init);
 	}
-	
+
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//do not redirect logOff requests
 		if (req.hasParameter("logOff")) return;
-		
+
 		//capture the destnUrl before we add more params to the request
 		if (!req.hasParameter(Constants.SSO_SAML_RESPONSE)) {
 			//initiate login, which is a redirect to SSO
-			
-			//bring the user back to this page, query string and all
-			//log.debug("URL=" + req.getRequestURL() + " URI=" + req.getRequestURI());
-			//log.debug("QS=" + req.getQueryString());
+
 			String url = req.getRequestURL().toString();
-			
+
 			//remove the context path from the URL so we don't get an unnecessary double-redirect from Apache when we go back to the page.
 			url = StringUtil.replace(url, "/" + getAttribute(Constants.CONTEXT_NAME), "" + getAttribute(Constants.CONTEXT_PATH));
-			
+
 			//append the query string, but not for /qs/ URL structures
 			if (req.getQueryString() != null && ActionRequest.DIRECTORY_TYPE != req.getReqType()) url += "?" + req.getQueryString();
-			
+
 			//set the redirectUrl
 			req.setParameter(DESTN_URL, url);
-			
+
 			req.setParameter(Constants.SSO_INITIATE, "true");
 			req.setParameter(GlobalConfig.KEY_AUTH_TYPE_OTHER, AuthenticationType.SAML.name());
 		}
-		
+
 		build(req);
 	}
 }
