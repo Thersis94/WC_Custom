@@ -1,5 +1,6 @@
 package com.depuysynthes.nexus;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,9 +19,9 @@ import com.siliconmtn.action.ActionRequest;
  * @version 1.0
  * @since Aug 9, 2015
  ****************************************************************************/
-
-public class NexusKitLayerVO implements Cloneable {
-
+public class NexusKitLayerVO implements Cloneable, Serializable {
+	private static final long serialVersionUID = 1L;
+	
 	private String layerId;
 	private String layerName;
 	private int orderNo;
@@ -29,25 +30,25 @@ public class NexusKitLayerVO implements Cloneable {
 	private String parentId;
 	private String parentName;
 	
-	NexusKitLayerVO() {
+	public NexusKitLayerVO() {
 		products = new ArrayList<>();
 		sublayers = new ArrayList<>();
 	}
 	
-	NexusKitLayerVO(ActionRequest req) {
+	public NexusKitLayerVO(ActionRequest req) {
 		this();
 		setData(req);
+	}
+	
+	public NexusKitLayerVO(ResultSet rs) {
+		this();
+		setData(rs);
 	}
 	
 	public void setData(ActionRequest req) {
 		layerId = req.getParameter("layerId");
 		layerName = req.getParameter("layerNm");
 		parentId = req.getParameter("parentId");
-	}
-	
-	NexusKitLayerVO(ResultSet rs) {
-		this();
-		setData(rs);
 	}
 	
 	public void setData(ResultSet rs) {
