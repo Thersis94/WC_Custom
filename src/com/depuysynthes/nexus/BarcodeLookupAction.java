@@ -42,7 +42,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @updates:
  ****************************************************************************/
 public class BarcodeLookupAction extends SBActionAdapter {
-	
+
 	/**
 	 * Creates a list of GTIN and HIBC codes for the barcode lookup
 	 */
@@ -68,11 +68,12 @@ public class BarcodeLookupAction extends SBActionAdapter {
 		}
 	};
 
+
 	/**
 	 * 
 	 */
 	public BarcodeLookupAction() {
-		
+		super();
 	}
 
 	/**
@@ -80,19 +81,21 @@ public class BarcodeLookupAction extends SBActionAdapter {
 	 */
 	public BarcodeLookupAction(ActionInitVO actionInit) {
 		super(actionInit);
-		
+
 	}
-	
+
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		// Get the barcode data
-		Set<String> scans = new HashSet<String>();
+		Set<String> scans = new HashSet<>();
 		scans.add(req.getParameter("barcode"));
 		scans.add(req.getParameter("barcode2"));
-		
+
 		ProductVO product = null;
 		String errorMsg = null;
 		try {
@@ -100,19 +103,19 @@ public class BarcodeLookupAction extends SBActionAdapter {
 			BarcodeManager bcm = new BarcodeManager(oems);
 			BarcodeItemVO barcode = bcm.parseBarCode(scans);
 			log.info("barcode: " + barcode);
-			
+
 			// Call the SOLR Query to populate
 			if (barcode == null) throw new Exception("Invalid Barcode Recieved");
-			
+
 			product = this.retrieveProduct(barcode);
 		} catch(Exception e) {
 			errorMsg = e.getLocalizedMessage();
 		}
-		
+
 		// Add the data to the collection for return to the view
 		this.putModuleData(product, 1, false, errorMsg, errorMsg == null ? false: true);
 	}
-	
+
 	/**
 	 * Retrieves the product information for the provided barcode
 	 * @param barcode
@@ -131,11 +134,11 @@ public class BarcodeLookupAction extends SBActionAdapter {
 		filter.put("gtin", "*"+barcode.getProductId()+" OR searchableName:*"+barcode.getProductId());
 		qData.setFilterQueries(filter);
 		SolrResponseVO resp = sqp.processQuery(qData);
-		
+
 		return buildProduct(resp, barcode);
 	}
 
-	
+
 	/**
 	 * Build a product from the supplied solr response
 	 * @param resp
@@ -145,7 +148,7 @@ public class BarcodeLookupAction extends SBActionAdapter {
 	 */
 	private ProductVO buildProduct(SolrResponseVO resp, BarcodeItemVO barcode) throws ActionException {
 		ProductVO prod = new ProductVO();
-		if (resp.getResultDocuments().size() == 0) {
+		if (resp.getResultDocuments().isEmpty()) {
 			throw new ActionException("No Product Found with Supplied Barcode.");
 		}
 		SolrDocument doc = resp.getResultDocuments().get(0);
@@ -157,7 +160,7 @@ public class BarcodeLookupAction extends SBActionAdapter {
 
 		Object[] gtin = doc.getFieldValues(NexusProductVO.GTIN).toArray();
 		Object[] uom = doc.getFieldValues(NexusProductVO.UOM_LVL).toArray();
-		
+
 		for (int i=0; i < gtin.length; i++) {
 			if (StringUtil.checkVal(gtin[i]).equals(prod.getProductGroupId())) {
 				prod.getProdAttributes().put("primaryUOM", uom[i]);
@@ -166,7 +169,7 @@ public class BarcodeLookupAction extends SBActionAdapter {
 				prod.getProdAttributes().put("uom", uom[i]);
 			}
 		}
-		
+
 		prod.getProdAttributes().put("lotNo", barcode.getLotCodeNumber());
 		return prod;
 	}

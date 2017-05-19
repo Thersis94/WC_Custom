@@ -47,6 +47,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	private static final int RPP = 48; //DSI #results per page, could be moved to attribute2Text if needed to be configurable
 
 	public SolrSearchWrapper() {
+		super();
 	}
 
 	/**
@@ -56,10 +57,22 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		super(arg0);
 	}
 
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//determine if custom sort is needed
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -69,8 +82,6 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		if (!isFeatItem && req.hasParameter("pmid"))
 			isFeatItem = req.getParameter("pmid").equals(mod.getPageModuleId()) && StringUtil.checkVal(mod.getParamName()).length() == 0;
 
-		//log.debug("isFocused=" + isFeatItem);
-		//log.debug("isCustomSort=" + doCustomSort);
 
 		//reset sortOrder or Solr will bomb (unknown sortType)
 		if (isFeatItem && doCustomSort) {
@@ -141,7 +152,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		Collection<String> favs = loadFavorites(req);
 
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
-		List<SolrDocument> docs = new ArrayList<SolrDocument>(Long.valueOf(resp.getTotalResponses()).intValue());
+		List<SolrDocument> docs = new ArrayList<>(Long.valueOf(resp.getTotalResponses()).intValue());
 		for (SolrDocument sd : resp.getResultDocuments()) {
 			String docId = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 			sd.setField(FAVORITES, (favs.contains(docId)) ? 0 : 5); //use zero for 'like', because the compatator will put lowest #s first
@@ -170,7 +181,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		log.debug("base=" + baseUrl);
 
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
-		List<SolrDocument> docs = new ArrayList<SolrDocument>(Long.valueOf(resp.getTotalResponses()).intValue());
+		List<SolrDocument> docs = new ArrayList<>(Long.valueOf(resp.getTotalResponses()).intValue());
 		for (SolrDocument sd : resp.getResultDocuments()) {
 			String url = "";
 			if (baseUrl == null) {
@@ -178,7 +189,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			} else {
 				url = baseUrl + StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 			}
-			sd.setField(PAGEVIEWS, (favs.containsKey(url)) ? favs.get(url) : 0);
+			sd.setField(PAGEVIEWS, favs.containsKey(url) ? favs.get(url) : 0);
 			docs.add(sd);
 		}
 
@@ -207,7 +218,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 
 		//turn the map into one keyed using IDs, so we don't have to parse it every time.
 		//for DSI, any URL containing /qs/ is proceeded by the Solr documentId, which is convenient.  :)
-		List<String> data = new ArrayList<String>(favs.size());
+		List<String> data = new ArrayList<>(favs.size());
 		for (FavoriteVO vo : favs)
 			if (vo.getRelId() != null) data.add(vo.getRelId());
 
@@ -241,10 +252,9 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 
 		//turn the map into one keyed using IDs, so we don't have to parse it every time.
 		//for DSI, any URL containing /qs/ is proceeded by the Solr documentId, which is convenient.  :)
-		Map<String, Integer> data = new HashMap<String, Integer>(stats.size());
+		Map<String, Integer> data = new HashMap<>(stats.size());
 		for (StatVO vo : stats.values()) {
 			String key = vo.getRequestUri();
-			//log.debug("key=" + key);
 			if (key != null && key.contains("/" + attributes.get(Constants.QS_PATH))) {
 				data.put(key, vo.getHitCnt());
 			}
@@ -266,7 +276,9 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		String hierarchy = "";
 		try {
 			hierarchy= StringUtil.checkVal(sd.getFieldValues(SearchDocumentHandler.HIERARCHY).iterator().next());
-		} catch (Exception e) {};
+		} catch (Exception e) {
+			//ignoreable
+		}
 
 		return buildDSIUrl(hierarchy, (String)sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID), (String)attributes.get(Constants.QS_PATH), (String)sd.get(SearchDocumentHandler.MODULE_TYPE));
 	}
@@ -281,25 +293,23 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	 * @return
 	 */
 	public static String buildDSIUrl(String hierarchy, String documentId, String qsPath, String moduleType) {
-		//log.debug(hierarchy);
 		if (hierarchy == null || hierarchy.length() == 0) return null;
 
-		String rootLvl = (hierarchy.indexOf("~") > 0) ? hierarchy.substring(0, hierarchy.indexOf("~")) : hierarchy;
+		String rootLvl = hierarchy.indexOf('~') > -1 ? hierarchy.substring(0, hierarchy.indexOf('~')) : hierarchy;
 		rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
 		if ("vet".equals(rootLvl)) {
 			//vet hierarchies start at level 2, indent and find the rootLvl (at the second level)
 			int tildeIndx = rootLvl.length() +1;
-			int nextDelim = hierarchy.indexOf("~", tildeIndx);
+			int nextDelim = hierarchy.indexOf('~', tildeIndx);
 			if (nextDelim == -1) nextDelim = hierarchy.length(); //if there isn't more than 1 level use the length as the endpoint.
 			if (nextDelim > tildeIndx) rootLvl = hierarchy.substring(tildeIndx, nextDelim); //if we have a next level, capture it as the new root.
 			rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
 
 			rootLvl = "veterinary/" + rootLvl;
-			//log.debug(rootLvl);
 		} else if ("future leaders".equals(rootLvl)) {
 			//future leaders start at level 2, indent and find the rootLvl (at the second level)
 			int tildeIndx = rootLvl.length() +1;
-			int nextDelim = hierarchy.indexOf("~", tildeIndx);
+			int nextDelim = hierarchy.indexOf('~', tildeIndx);
 			if (nextDelim == -1) nextDelim = hierarchy.length(); //if there isn't more than 1 level use the length as the endpoint.
 			if (nextDelim > tildeIndx) rootLvl = hierarchy.substring(tildeIndx, nextDelim); //if we have a next level, capture it as the new root.
 			rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
@@ -312,11 +322,11 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			} else if ("graduation resources".equals(rootLvl)) {
 				rootLvl = "futureleaders/graduation-resources";
 			} else {
-				rootLvl =StringUtil.replace(rootLvl, " medicine", "");
-				rootLvl =StringUtil.replace(rootLvl, " surgery", "");
+				rootLvl = StringUtil.replace(rootLvl, " medicine", "");
+				rootLvl = StringUtil.replace(rootLvl, " surgery", "");
 				rootLvl = "futureleaders/kc/" + rootLvl;
 			}
-			
+
 		}
 
 		//remove ampersands and replace spaces
@@ -337,7 +347,6 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			rootLvl = "outpatient-education/resource-library";
 		}
 
-		//log.debug(rootLvl);
 		hierarchy = rootLvl;
 
 		//assemble & return the URL
