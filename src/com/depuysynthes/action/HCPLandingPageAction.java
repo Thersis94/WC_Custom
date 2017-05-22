@@ -32,18 +32,22 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
-
 /****************************************************************************
- * <b>Title</b>: HCPLandingPageAction.java<p/>
- * <b>Description: loads all the data for the HCP division landing pages.  (each has it's own)</b>
- * retrieve method calls to pageViewReportingAction as well as ProductController 
- * <p/>
- * <b>Copyright:</b> Copyright (c) 2013<p/>
- * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * <b>Title</b>: HCPLandingPageAction.java
+ * <b>Project</b>: WC_Custom
+ * <b>Description: </b> loads all the data for the HCP division landing pages.  
+ * (each has it's own) retrieve method calls to pageViewReportingAction as well 
+ * as ProductController
+ * <b>Copyright:</b> Copyright (c) 2013
+ * <b>Company:</b> Silicon Mountain Technologies
+ * 
  * @author James McKain
- * @version 1.0
+ * @version 3.0
  * @since May 9, 2013
+ * @updates:
+ * RJR Code clean up May 21, 2017
  ****************************************************************************/
+
 public class HCPLandingPageAction extends SBActionAdapter {
 	
 	public HCPLandingPageAction() {
@@ -55,22 +59,23 @@ public class HCPLandingPageAction extends SBActionAdapter {
 	}
 
 	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		super.delete(req);
 		
         String sbActionId = req.getParameter(SBActionAdapter.SB_ACTION_ID);
-        ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
         log.debug("Starting HCPLandingPageAction Action - Delete: " + sbActionId);
         
         StringBuilder sb = new StringBuilder(60);
         sb.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
         sb.append("DPY_SYN_HCP_LANDING where action_id = ?");
 
-        PreparedStatement ps = null;
-        try {
-            ps = dbConn.prepareStatement(sb.toString());
+        try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())){
             ps.setString(1, sbActionId);
             if (ps.executeUpdate() < 1) 
                 msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
@@ -78,19 +83,16 @@ public class HCPLandingPageAction extends SBActionAdapter {
         } catch (SQLException sqle) {
             log.error("Error deleting content: " + sbActionId, sqle);
             msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-        } finally {
-            if (mod != null) mod.setErrorMessage((String)msg);
-            if (ps != null) {
-                try {
-                    ps.close();
-                } catch(Exception e) {}
-            }
-        }
+        } 
         
         // Redirect the user
         moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
 	@SuppressWarnings("unchecked")
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
@@ -208,9 +210,6 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		}
 	}
 	
-
-
-	
 	/**
 	 * prunes the catalog of anything that's not a true product (or procedure)
 	 * @param catalog
@@ -219,7 +218,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 	 */
 	private List<Node> filterCatalog(Tree catalog) {
 		//remove anything that's not a product (all the categories); we don't display categories
-		List<Node> prodNodes = new ArrayList<Node>();
+		List<Node> prodNodes = new ArrayList<>();
 		for (Node n : catalog.preorderList()) {
 			ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
 			if (cat.getProductId() == null) continue;
@@ -242,7 +241,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 	private List<ProductVO> loadProductDetails(ProductController pc, 
 			Map<String, Long> orderedProdIds, ActionRequest req) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		List<ProductVO> products = new ArrayList<ProductVO>();
+		List<ProductVO> products = new ArrayList<>();
 			
 		try {
 			String[] selIds = orderedProdIds.keySet().toArray(new String[orderedProdIds.size()]);
@@ -291,6 +290,10 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		products.add(prodVo);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -344,12 +347,16 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		super.putModuleData(vo);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 		
         // Build the sql
-        StringBuffer sql = new StringBuffer(150);
+        StringBuilder sql = new StringBuilder(150);
 		if (Convert.formatBoolean(req.getAttribute(INSERT_TYPE))) {
 			sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 	        sql.append("DPY_SYN_HCP_LANDING (education_txt, support_txt, tracking_no_txt, ");
@@ -362,10 +369,8 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		}
 		
 		// perform the execute
-		PreparedStatement ps = null;
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
             ps.setString(1, req.getParameter("educationText"));
 			ps.setString(2, req.getParameter("supportText"));
 			ps.setString(3, req.getParameter("trackingNoText"));
@@ -384,15 +389,16 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
             msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
             log.error("Error Update HCP_LANDING_PG", sqle);
-		} finally {
-			try { ps.close(); } catch(Exception e) {}
-        }
-		
+		} 
 		
 		// Redirect after the update
         moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void copy(ActionRequest req) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
@@ -486,5 +492,4 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		ps.executeBatch();
 		log.debug("done saving _XR to prods & procs");
 	}
-
 }
