@@ -70,6 +70,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	private int emailFlg;
 	private String messageTxt;
 	private String twitterTxt;
+	private int tweetFlg;
 	private String creatorProfileId;
 	private String firstNm;
 	private String lastNm;
@@ -112,6 +113,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 		this.typeCd = Convert.formatInteger(req.getParameter("typeCd"));
 		this.messageTxt = req.getParameter("messageTxt");
 		this.twitterTxt = req.getParameter("twitterTxt");
+		this.tweetFlg = Convert.formatInteger(Convert.formatBoolean(req.getParameter("tweetFlg")));
 		this.statusCd = req.getParameter("statusCd");
 		this.publishDt = Convert.formatDate(req.getParameter("publishDt"));
 		this.orderNo = Convert.formatInteger(req.getParameter("orderNo"));
@@ -313,6 +315,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	 */
 	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
+	@Override
 	public Date getUpdateDt() {
 		return updateDt;
 	}
@@ -442,6 +445,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	/**
 	 * @param updateDt the updateDt to set.
 	 */
+	@Override
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
 	}
@@ -489,6 +493,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	 * @return the lastNm
 	 */
 	@Column(name="last_nm", isReadOnly=true)
+	@Override
 	public String getLastName() {
 		return lastNm;
 	}
@@ -568,5 +573,20 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 
 	public boolean getHasHistory() {
 		return !StringUtil.isEmpty(historyId);
+	}
+
+	/**
+	 * @return the tweetFlg
+	 */
+	@Column(name="tweet_flg")
+	public int getTweetFlg() {
+		return tweetFlg;
+	}
+
+	/**
+	 * @param tweetFlg the tweetFlg to set
+	 */
+	public void setTweetFlg(int tweetFlg) {
+		this.tweetFlg = tweetFlg;
 	}
 }
