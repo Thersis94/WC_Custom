@@ -14,6 +14,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
@@ -28,7 +29,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.solr.SolrClientBuilder;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
@@ -55,7 +56,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Aug 9, 2015
  ****************************************************************************/
-public class NexusKitAction extends SBActionAdapter {
+public class NexusKitAction extends SimpleActionAdapter {
 
 	public static final String KIT_SESSION_NM = "depuyNexusKit";
 
@@ -75,6 +76,23 @@ public class NexusKitAction extends SBActionAdapter {
 	// The level of the kit that is being targeted
 	enum KitType {
 		Custom, Loaner
+	}
+
+	public NexusKitAction() {
+		super();
+	}
+	
+	public NexusKitAction(ActionInitVO ai) {
+		super(ai);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
 	}
 
 
@@ -111,7 +129,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	private Object getSharedKits(ActionRequest req) throws ActionException {
-		NexusKitVO kit = new NexusKitVO(NexusProductVO.solrIndex);
+		NexusKitVO kit = new NexusKitVO(NexusProductVO.SOLR_IDX);
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT *, u.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
@@ -153,85 +171,85 @@ public class NexusKitAction extends SBActionAdapter {
 		List<NexusKitVO> kits;
 		try {
 			switch(action) {
-			case Permissions:
-				modifyPermissions(req);
-				super.putModuleData("Kits Successfully Shared.");
-				break;
-			case Clone:
-				kits = loadKits(req, true);
-				if (!kits.isEmpty()) {
-					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-					NexusKitVO kit = kits.get(0);
-					if (user != null) {
-						kit.setOwnerId(user.getProfileId());
-					} else {
-						// Only clone kits when there is a user to claim ownership of the clone.
-						throw new ActionException("Sets can only be cloned while logged in.");
-					}
-					kit.setKitId("");
-					kit.setKitDesc("(Copy)"+kit.getKitDesc());
-					for (NexusKitLayerVO layer : kit.getLayers()) {
-						layer.setLayerId(uuid.getUUID());
-						for (NexusKitLayerVO sublayer : layer.getSublayers()) {
-							sublayer.setLayerId(uuid.getUUID());
-							sublayer.setParentId(layer.getLayerId());
+				case Permissions:
+					modifyPermissions(req);
+					super.putModuleData("Kits Successfully Shared.");
+					break;
+				case Clone:
+					kits = loadKits(req, true);
+					if (!kits.isEmpty()) {
+						UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+						NexusKitVO kit = kits.get(0);
+						if (user != null) {
+							kit.setOwnerId(user.getProfileId());
+						} else {
+							// Only clone kits when there is a user to claim ownership of the clone.
+							throw new ActionException("Sets can only be cloned while logged in.");
 						}
+						kit.setKitId("");
+						kit.setKitDesc("(Copy)"+kit.getKitDesc());
+						for (NexusKitLayerVO layer : kit.getLayers()) {
+							layer.setLayerId(uuid.getUUID());
+							for (NexusKitLayerVO sublayer : layer.getSublayers()) {
+								sublayer.setLayerId(uuid.getUUID());
+								sublayer.setParentId(layer.getLayerId());
+							}
+						}
+						kit.setOrgName(KitType.Custom.toString());
+						kit.setBranchCode(KitType.Custom.toString());
+						req.getSession().setAttribute(KIT_SESSION_NM, kit);
+						saveKit(req);
 					}
-					kit.setOrgName(KitType.Custom.toString());
-					kit.setBranchCode(KitType.Custom.toString());
-					req.getSession().setAttribute(KIT_SESSION_NM, kit);
+					super.putModuleData("Kit Successfully Cloned." + successMsgEnd);
+					break;
+				case Load:
+					kits = loadKits(req, true);
+					if (!kits.isEmpty() && req.hasParameter("moduleStore")){
+						super.putModuleData(kits.get(0));
+					} else if (!kits.isEmpty()) {
+						req.getSession().setAttribute(KIT_SESSION_NM, kits.get(0));
+					}
+					break;
+				case Save: 
 					saveKit(req);
-				}
-				super.putModuleData("Kit Successfully Cloned." + successMsgEnd);
-				break;
-			case Load:
-				kits = loadKits(req, true);
-				if (!kits.isEmpty() && req.hasParameter("moduleStore")){
-					super.putModuleData(kits.get(0));
-				} else if (!kits.isEmpty()) {
-					req.getSession().setAttribute(KIT_SESSION_NM, kits.get(0));
-				}
-				break;
-			case Save: 
-				saveKit(req);
-				super.putModuleData("Kit Successfully Saved." + successMsgEnd);
-				break;
-			case Delete: 
-				deleteKit(req);
-				break;
-			case Edit: 
-				editKit(req);
-				break;
-			case ChangeLayer:
-				changeLayer(req);
-				break;
-			case Reorder:
-				reorderKit(req);
-				break;
-			case Copy:
-				copyItem(req);
-				super.putModuleData("Item Successfully Copied."+successMsgEnd);
-				break;
-			case NewKit:
-				NexusKitVO newKit = new NexusKitVO(NexusProductVO.solrIndex);
-				UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-				newKit.setKitDesc("Empty Kit");
-				newKit.setOwnerId(user.getProfileId());
-				newKit.setOrgName(KitType.Custom.toString());
-				NexusKitLayerVO tray = new NexusKitLayerVO();
-				tray.setLayerId(uuid.getUUID());
-				tray.setLayerName("Primary Tray");
-				tray.setOrderNo(1);
-				newKit.addLayer(tray);
-				req.getSession().setAttribute(KIT_SESSION_NM, newKit);
-				break;
-			case Print:
-				buildReport(req);
-				break;
-			case showShared:
-				super.putModuleData(getSharedKits(req));
-				break;
-			default:
+					super.putModuleData("Kit Successfully Saved." + successMsgEnd);
+					break;
+				case Delete: 
+					deleteKit(req);
+					break;
+				case Edit: 
+					editKit(req);
+					break;
+				case ChangeLayer:
+					changeLayer(req);
+					break;
+				case Reorder:
+					reorderKit(req);
+					break;
+				case Copy:
+					copyItem(req);
+					super.putModuleData("Item Successfully Copied."+successMsgEnd);
+					break;
+				case NewKit:
+					NexusKitVO newKit = new NexusKitVO(NexusProductVO.SOLR_IDX);
+					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+					newKit.setKitDesc("Empty Kit");
+					newKit.setOwnerId(user.getProfileId());
+					newKit.setOrgName(KitType.Custom.toString());
+					NexusKitLayerVO tray = new NexusKitLayerVO();
+					tray.setLayerId(uuid.getUUID());
+					tray.setLayerName("Primary Tray");
+					tray.setOrderNo(1);
+					newKit.addLayer(tray);
+					req.getSession().setAttribute(KIT_SESSION_NM, newKit);
+					break;
+				case Print:
+					buildReport(req);
+					break;
+				case showShared:
+					super.putModuleData(getSharedKits(req));
+					break;
+				default:
 			}
 		} catch (Exception e) {
 			super.putModuleData("Action Failed to Complete");
@@ -284,36 +302,36 @@ public class NexusKitAction extends SBActionAdapter {
 		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		try {
 			switch(level) {
-			case Layer:
-				// Check if we are dealing with a sublayer
-				if (req.hasParameter("parentId")) {
-					NexusKitLayerVO parent = kit.findLayer(req.getParameter("parentId"));
-					layer = parent.getSublayers().get(Convert.formatInteger(req.getParameter("index"))).clone();
-					layer.setLayerId(new UUIDGenerator().getUUID());
-					for (NexusKitLayerVO sublayer : layer.getSublayers()) {
-						sublayer.setLayerId(layer.getLayerId());
-						sublayer.setLayerId(new UUIDGenerator().getUUID());
+				case Layer:
+					// Check if we are dealing with a sublayer
+					if (req.hasParameter("parentId")) {
+						NexusKitLayerVO parent = kit.findLayer(req.getParameter("parentId"));
+						layer = parent.getSublayers().get(Convert.formatInteger(req.getParameter("index"))).clone();
+						layer.setLayerId(new UUIDGenerator().getUUID());
+						for (NexusKitLayerVO sublayer : layer.getSublayers()) {
+							sublayer.setLayerId(layer.getLayerId());
+							sublayer.setLayerId(new UUIDGenerator().getUUID());
+						}
+						layer.setOrderNo(parent.getSublayers().size()+1);
+						parent.addLayer(layer);
+					} else {
+						layer= kit.getLayers().get(Convert.formatInteger(req.getParameter("index"))).clone();
+						layer.setLayerId(new UUIDGenerator().getUUID());
+						for (NexusKitLayerVO sublayer : layer.getSublayers()) {
+							sublayer.setLayerId(layer.getLayerId());
+							sublayer.setLayerId(new UUIDGenerator().getUUID());
+						}
+						layer.setOrderNo(kit.getLayers().size()+1);
+						kit.addLayer(layer);
 					}
-					layer.setOrderNo(parent.getSublayers().size()+1);
-					parent.addLayer(layer);
-				} else {
-					layer= kit.getLayers().get(Convert.formatInteger(req.getParameter("index"))).clone();
-					layer.setLayerId(new UUIDGenerator().getUUID());
-					for (NexusKitLayerVO sublayer : layer.getSublayers()) {
-						sublayer.setLayerId(layer.getLayerId());
-						sublayer.setLayerId(new UUIDGenerator().getUUID());
-					}
-					layer.setOrderNo(kit.getLayers().size()+1);
-					kit.addLayer(layer);
-				}
-				break;
-			case Product:
-				layer = kit.findLayer(req.getParameter("parentId"));
-				NexusProductVO p = layer.getProducts().get(Convert.formatInteger(req.getParameter("index"))).clone();
-				p.setOrderNo(layer.getProducts().size()+1);
-				layer.addProduct(p);
-				break;
-			default: break;
+					break;
+				case Product:
+					layer = kit.findLayer(req.getParameter("parentId"));
+					NexusProductVO p = layer.getProducts().get(Convert.formatInteger(req.getParameter("index"))).clone();
+					p.setOrderNo(layer.getProducts().size()+1);
+					layer.addProduct(p);
+					break;
+				default: break;
 			}
 		} catch(CloneNotSupportedException e) {
 			throw new ActionException(e);
@@ -335,13 +353,13 @@ public class NexusKitAction extends SBActionAdapter {
 			throw new ActionException("unknown kit action: " + req.getParameter("kitAction"), e);
 		}
 		switch(level) {
-		case Layer:
-			changeSubLayer(req);
-			break;
-		case Product:
-			changeProductLayer(req);
-			break;
-		default: break;
+			case Layer:
+				changeSubLayer(req);
+				break;
+			case Product:
+				changeProductLayer(req);
+				break;
+			default: break;
 		}
 	}
 
@@ -434,13 +452,13 @@ public class NexusKitAction extends SBActionAdapter {
 			throw new ActionException("unknown kit action: " + req.getParameter("kitAction"), e);
 		}
 		switch(level) {
-		case Layer:
-			reorderLayer(req);
-			break;
-		case Product:
-			reorderProduct(req);
-			break;
-		default: break;
+			case Layer:
+				reorderLayer(req);
+				break;
+			case Product:
+				reorderProduct(req);
+				break;
+			default: break;
 		}
 	}
 
@@ -523,17 +541,14 @@ public class NexusKitAction extends SBActionAdapter {
 			profileId = user.getProfileId();
 		}
 		// Get the kit, its top layers, and their products
-		sql.append("SELECT s.*, ");
-		if (fullLoad) sql.append("sl.*, si.*, ");
+		sql.append("SELECT * from (select s.*, ");
+		if (fullLoad) sql.append("sl.*, sl.order_no as SLORDER_NO, si.*, si.order_no as SIORDER_NO, ");
 		sql.append("p.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
 		if (fullLoad) {
-			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl ");
-			sql.append("on sl.SET_INFO_ID = s.SET_INFO_ID ");
-			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM si ");
-			sql.append("on si.LAYER_ID = sl.LAYER_ID ");
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl on sl.SET_INFO_ID = s.SET_INFO_ID ");
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM si on si.LAYER_ID = sl.LAYER_ID ");
 		}
-		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
-		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG=1 ");
 		sql.append("WHERE s.DESCRIPTION_TXT is not null ");
 
 
@@ -574,15 +589,12 @@ public class NexusKitAction extends SBActionAdapter {
 			sql.append("union ");
 
 			// Get the sublayers and their products
-			sql.append("SELECT s.*, sl2.*, si.*, p.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
-			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl ");
-			sql.append("on sl.SET_INFO_ID = s.SET_INFO_ID ");
-			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl2 ");
-			sql.append("on sl2.PARENT_ID = sl.LAYER_ID ");
-			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM si ");
-			sql.append("on si.LAYER_ID = sl2.LAYER_ID ");
-			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
-			sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
+			sql.append("SELECT s.*, sl2.*, sl2.order_no as SLORDER_NO, si.*, si.order_no as SIORDER_NO, p.PROFILE_ID as SHARED_ID ");
+			sql.append("FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl on sl.SET_INFO_ID = s.SET_INFO_ID ");
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl2 on sl2.PARENT_ID = sl.LAYER_ID ");
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM si on si.LAYER_ID = sl2.LAYER_ID ");
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG=1 ");
 			sql.append("WHERE s.DESCRIPTION_TXT is not null ");
 
 			if (kitId.length() > 0) {
@@ -611,11 +623,11 @@ public class NexusKitAction extends SBActionAdapter {
 		}
 
 		if (req.hasParameter("gtinOrder")) {
-			sql.append("ORDER BY s.GTIN_TXT ");
+			sql.append(") as tbl ORDER BY GTIN_TXT ");
 		} else if (req.hasParameter("orgOrder")) {
-			sql.append("ORDER BY s.ORGANIZATION_ID ");
+			sql.append(") as tbl ORDER BY ORGANIZATION_ID ");
 		} else {
-			sql.append("ORDER BY s.DESCRIPTION_TXT ");
+			sql.append(") as tbl ORDER BY DESCRIPTION_TXT ");
 		}
 
 
@@ -626,7 +638,7 @@ public class NexusKitAction extends SBActionAdapter {
 			sql.append("ASC ");
 		}
 
-		if (fullLoad) sql.append(", sl.PARENT_ID, sl.ORDER_NO, si.ORDER_NO ");
+		if (fullLoad) sql.append(", PARENT_ID, SLORDER_NO, SIORDER_NO ");
 
 		log.debug(sql+"|"+profileId+"|"+kitId+"|"+orgId+"|"+searchTerms);
 		List<NexusKitVO> kits = new ArrayList<>();
@@ -681,7 +693,7 @@ public class NexusKitAction extends SBActionAdapter {
 						if (kit != null) kits.add(kit);
 					}
 					currentKit = rs.getString("SET_INFO_ID");
-					kit = new NexusKitVO(rs, NexusProductVO.solrIndex);
+					kit = new NexusKitVO(rs, NexusProductVO.SOLR_IDX);
 					if (StringUtil.checkVal(rs.getString("SHARED_ID")).length() > 0) {
 						kit.setShared(true);
 					}
@@ -690,13 +702,12 @@ public class NexusKitAction extends SBActionAdapter {
 
 				if (count < start || count >= end) continue;
 				if (fullLoad) {
-					if (!currentLayer.equals(rs.getString("LAYER_ID")) 
-							&& StringUtil.checkVal(rs.getString("LAYER_ID")).length() > 0) {
+					if (!currentLayer.equals(rs.getString("LAYER_ID")) && StringUtil.checkVal(rs.getString("LAYER_ID")).length() > 0) {
 						if (layer != null) kit.addLayer(layer);
 						currentLayer = rs.getString("LAYER_ID");
 						layer = new NexusKitLayerVO(rs);
 					}
-					if(StringUtil.checkVal(rs.getString("ITEM_ID")).length() > 0) {
+					if (StringUtil.checkVal(rs.getString("ITEM_ID")).length() > 0) {
 						NexusProductVO p = new NexusProductVO(rs);
 						SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, collection);
 						SolrActionVO qData = new SolrActionVO();
@@ -704,7 +715,7 @@ public class NexusKitAction extends SBActionAdapter {
 						qData.setStartLocation(0);
 						qData.setOrganizationId("DPY_SYN_NEXUS");
 						qData.setRoleLevel(0);
-						qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
+						qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.SOLR_IDX));
 						Map<String, String> filter = new HashMap<>();
 						filter.put("documentId", p.getProductId());
 						qData.setFilterQueries(filter);
@@ -765,20 +776,20 @@ public class NexusKitAction extends SBActionAdapter {
 		}
 
 		switch(level) {
-		case Layer:
-			editLayer(req);
-			break;
-		case Product:
-			editProduct(req);
-			break;
-		case Kit:
-			NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-			if (kit == null) kit = new NexusKitVO(NexusProductVO.solrIndex);
-			kit.setData(req);
-			req.getSession().setAttribute(KIT_SESSION_NM, kit);
-			break;
-		default:
-			break;
+			case Layer:
+				editLayer(req);
+				break;
+			case Product:
+				editProduct(req);
+				break;
+			case Kit:
+				NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
+				if (kit == null) kit = new NexusKitVO(NexusProductVO.SOLR_IDX);
+				kit.setData(req);
+				req.getSession().setAttribute(KIT_SESSION_NM, kit);
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -790,7 +801,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 */
 	private void editProduct(ActionRequest req) {
 		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-		if(kit == null) kit = new NexusKitVO(NexusProductVO.solrIndex);
+		if(kit == null) kit = new NexusKitVO(NexusProductVO.SOLR_IDX);
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		if (req.hasParameter("products")) {
 			int order = layer.getProducts().size() + 1;
@@ -820,7 +831,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 */
 	private void editLayer(ActionRequest req) {
 		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-		if(kit == null) kit = new NexusKitVO(NexusProductVO.solrIndex);
+		if(kit == null) kit = new NexusKitVO(NexusProductVO.SOLR_IDX);
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		if (layer == null) {
 			layer = new NexusKitLayerVO(req);
@@ -1039,71 +1050,71 @@ public class NexusKitAction extends SBActionAdapter {
 		}
 		int index;
 		switch(level) {
-		case Layer:
-			index = Convert.formatInteger(req.getParameter("index"));
-			kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
-			if (req.hasParameter("parentId")) {
-				NexusKitLayerVO parent = kit.findLayer(req.getParameter("parentId"));
-				parent.getSublayers().remove(index);
-				changeOrderNo(parent.getSublayers(), index);
-			} else {
-				kit.getLayers().remove(index);
-				changeOrderNo(kit.getLayers(), index);
-			}
-			req.getSession().setAttribute(KIT_SESSION_NM, kit);
-			break;
-		case Product:
-			kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
-			String[] indexes = req.getParameterValues("index");
-			int offset = 0;
-			NexusKitLayerVO layer = null;
-			String currentLayer = "";
-			for (String single : indexes) {
-				String[] split = single.split("\\|");
-				if (!currentLayer.equals(split[1])) {
-					offset = 0;
-					layer = kit.findLayer(split[1]);
+			case Layer:
+				index = Convert.formatInteger(req.getParameter("index"));
+				kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
+				if (req.hasParameter("parentId")) {
+					NexusKitLayerVO parent = kit.findLayer(req.getParameter("parentId"));
+					parent.getSublayers().remove(index);
+					changeOrderNo(parent.getSublayers(), index);
+				} else {
+					kit.getLayers().remove(index);
+					changeOrderNo(kit.getLayers(), index);
 				}
-				int i = Convert.formatInteger(split[0]);
-				layer.getProducts().remove(i-offset);
-				offset++;
-			}
+				req.getSession().setAttribute(KIT_SESSION_NM, kit);
+				break;
+			case Product:
+				kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
+				String[] indexes = req.getParameterValues("index");
+				int offset = 0;
+				NexusKitLayerVO layer = null;
+				String currentLayer = "";
+				for (String single : indexes) {
+					String[] split = single.split("\\|");
+					if (!currentLayer.equals(split[1])) {
+						offset = 0;
+						layer = kit.findLayer(split[1]);
+					}
+					int i = Convert.formatInteger(split[0]);
+					layer.getProducts().remove(i-offset);
+					offset++;
+				}
 
-			req.getSession().setAttribute(KIT_SESSION_NM, kit);
-			break;
-		case Kit:
-			index = Convert.formatInteger(req.getParameter("index"));
-			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-			StringBuilder sql = new StringBuilder(150);
+				req.getSession().setAttribute(KIT_SESSION_NM, kit);
+				break;
+			case Kit:
+				index = Convert.formatInteger(req.getParameter("index"));
+				UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+				StringBuilder sql = new StringBuilder(150);
 
-			sql.append("DELETE FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
-			sql.append("WHERE (1=2) ");
+				sql.append("DELETE FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
+				sql.append("WHERE (1=2) ");
 
-			for (int i=0; i < req.getParameterValues("kitId").length; i++) {
-				sql.append("OR (SET_INFO_ID = ? and PROFILE_ID = ?) ");
-			}
-			super.retrieve(req);
-			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-			try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-				int i = 1;
+				for (int i=0; i < req.getParameterValues("kitId").length; i++) {
+					sql.append("OR (SET_INFO_ID = ? and PROFILE_ID = ?) ");
+				}
+				super.retrieve(req);
+				ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+				try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+					int i = 1;
+					for (String s: req.getParameterValues("kitId")) {
+						ps.setString(i++, s);
+						ps.setString(i++, user.getProfileId());
+					}
+
+					ps.executeUpdate();
+				} catch (SQLException e) {
+					throw new ActionException(e);
+				}
+				attributes.put(Constants.SOLR_COLLECTION_NAME, getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
+				SolrActionUtil util = new SolrActionUtil(attributes, false);
 				for (String s: req.getParameterValues("kitId")) {
-					ps.setString(i++, s);
-					ps.setString(i++, user.getProfileId());
+					util.removeDocument(s);
 				}
-
-				ps.executeUpdate();
-			} catch (SQLException e) {
-				throw new ActionException(e);
-			}
-			attributes.put(Constants.SOLR_COLLECTION_NAME, getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
-			SolrActionUtil util = new SolrActionUtil(attributes, false);
-			for (String s: req.getParameterValues("kitId")) {
-				util.removeDocument(s);
-			}
-			req.getSession().removeAttribute(KIT_SESSION_NM);
-			break;
-		default:
-			break;
+				req.getSession().removeAttribute(KIT_SESSION_NM);
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -1133,7 +1144,6 @@ public class NexusKitAction extends SBActionAdapter {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		String collection = getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		try (SolrClient server = SolrClientBuilder.build(baseUrl, collection)) {
-
 			if (req.hasParameter("delete")) {
 				String kitId = req.getParameter("kitId");
 				removePermission(req.getParameter("profileId"), kitId);
@@ -1158,6 +1168,7 @@ public class NexusKitAction extends SBActionAdapter {
 				if (!owner.getProfileId().equals(user.getProfileId())) request = 1;
 				List<SolrInputDocument> docUpdates = new ArrayList<>();
 				String[] ids = req.getParameterValues("kitId");
+				if (ids == null) ids = new String[0];
 				for (String kitId : ids) {
 					addPermission(user.getProfileId(), kitId, request);
 					if (request == 1) {
@@ -1170,9 +1181,7 @@ public class NexusKitAction extends SBActionAdapter {
 					}
 				}
 				try {
-					for (SolrInputDocument doc : docUpdates) {
-						server.add( doc );
-					}
+					server.add( docUpdates );
 				} catch (Exception e) {
 					throw new ActionException(e);
 				}
@@ -1196,10 +1205,10 @@ public class NexusKitAction extends SBActionAdapter {
 			email.addRecipient(emailAddress);
 			email.setSubject(name + " has Shared Some of Their Sets With You");
 			StringBuilder body = new StringBuilder(500);
-			body.append("<p><img alt='' src='http://www.depuysynthesudi.com/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/logo.jpg' style='width: 424px; height: 66px;' /></p>");
+			body.append("<p><img alt='' src='https://www.depuysynthesudi.com/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/logo.jpg' style='width: 424px; height: 66px;' /></p>");
 			body.append("<p>").append(name).append(" has shared ").append(total).append(" sets with you.</p>");
-			body.append("<p>Please log in to <a href='http://www.depuysynthesudi.com/my_sets'>DePuy Synthes UDI</a> to view these sets</p>");
-			body.append("<p>If you do not have an account with our site please <a href='http://www.depuysynthesudi.com/register'>create one here</a> ");
+			body.append("<p>Please log in to <a href='https://www.depuysynthesudi.com/my_sets'>DePuy Synthes UDI</a> to view these sets</p>");
+			body.append("<p>If you do not have an account with our site please <a href='https://www.depuysynthesudi.com/register'>create one here</a> ");
 			body.append("in order to view these sets.</p>");
 			email.setHtmlBody(body.toString());
 			email.setFrom("donotreply@its.jnj.com");
@@ -1294,7 +1303,7 @@ public class NexusKitAction extends SBActionAdapter {
 		sql.append("inner join SOLR_COLLECTION sc on sa.SOLR_COLLECTION_ID=sc.SOLR_COLLECTION_ID ");
 		sql.append("WHERE ACTION_ID=?");
 		log.debug(sql+"|"+solrId);
-		
+
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, solrId);
 			ResultSet rs = ps.executeQuery();

@@ -256,7 +256,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			qData.setStartLocation(0);
 			qData.setOrganizationId("DPY_SYN_NEXUS");
 			qData.setRoleLevel(0);
-			qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
+			qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.SOLR_IDX));
 			
 			Map<String, String> filter = new HashMap<>();
 			filter.put("documentId", where);
