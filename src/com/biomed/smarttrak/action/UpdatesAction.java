@@ -219,6 +219,9 @@ public class UpdatesAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void transposeRequest(ActionRequest req, List<String> docIds) throws ActionException {
+		//Enusre action request does NOT encode params. Solr needs exact phrase.
+		req.setValidateInput(Boolean.FALSE);
+		
 		//get the filter queries already on the request.  Add ours to the stack, and put the String[] back on the request for Solr
 		String[] fqs = req.getParameterValues("fq");
 		if (fqs == null) fqs = new String[0];
