@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
@@ -26,7 +27,7 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
@@ -46,8 +47,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since May 20, 2015
  * <b>Changes: </b>
  ****************************************************************************/
-
-public class NexusSolrCartAction extends SBActionAdapter {
+public class NexusSolrCartAction extends SimpleActionAdapter {
 
 	// Names for the cookies related to this action
 	public static final String HOSPITAL = "hospital";
@@ -55,9 +55,18 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	public static final String SURGEON = "surgeon";
 	public static final String TIME = "time";
 	public static final String CASE_ID = "caseId";
-
 	private static final String DDMMMYYYY = "ddMMMyyyy";
 
+	public NexusSolrCartAction() {
+		super();
+	}
+
+	/**
+	 * @param actionInit
+	 */
+	public NexusSolrCartAction(ActionInitVO actionInit) {
+		super(actionInit);
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -257,23 +266,27 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private Storage retrieveContainer(ActionRequest req) 
-			throws ActionException {
+	private Storage retrieveContainer(ActionRequest req) throws ActionException {
 		Map<String, Object> attrs = new HashMap<>();
 		attrs.put(GlobalConfig.HTTP_REQUEST, req);
 		attrs.put(GlobalConfig.HTTP_RESPONSE, attributes.get(GlobalConfig.HTTP_RESPONSE));
 
-		Storage container = null;
-
 		try {
-			container = StorageFactory.getInstance(StorageFactory.SESSION_STORAGE, attrs);
+			return StorageFactory.getInstance(StorageFactory.SESSION_STORAGE, attrs);
 		} catch (Exception ex) {
 			throw new ActionException(ex);
 		}
-		return container;
 	}
 
-
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -289,10 +302,10 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		if (req.hasParameter("buildFile")) {
 			buildReport(cart, req);
 			return;
-		}
 
-		if (req.hasParameter("kitId")) {
+		} else if (req.hasParameter("kitId")) {
 			getKitProducts(req);
+
 		} else if (!Convert.formatBoolean(req.getParameter("showCart"))) {
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			SolrAction sa = new SolrAction(actionInit);
@@ -311,7 +324,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			String searchData = StringUtil.checkVal(req.getParameter("searchData"));
 			int searchType = Convert.formatInteger(req.getParameter("searchType"));
 			qData.setSearchData((searchType>2?"*":"")+searchData+(searchType>1?"*":""));
-			qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
+			qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.SOLR_IDX));
 			Map<String, String> filter = new HashMap<>();
 			// Build the filter that ensures users only see kits that they are allowed to see.
 			if (user != null) {
@@ -338,7 +351,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 				}
 			}
 			qData.setFilterQueries(filter);
-			super.putModuleData(sqp.processQuery(qData));
+			putModuleData(sqp.processQuery(qData));
 
 			req.setParameter("searchData", searchData, true);
 		}

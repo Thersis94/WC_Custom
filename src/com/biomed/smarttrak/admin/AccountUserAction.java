@@ -104,7 +104,7 @@ public class AccountUserAction extends SBActionAdapter {
 			String encProfileId = StringEncoder.urlEncode(se.encrypt(req.getParameter("loginAs")));
 
 			SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), getAttributes());
-			sc.loadUserFromCookie(encProfileId, encKey, dbConn, req, site);
+			sc.processCookieLogin(encProfileId, dbConn, req, site);
 
 			sendRedirect("/","", req);
 		} catch (Exception e) {
