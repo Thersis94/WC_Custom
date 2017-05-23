@@ -17,7 +17,7 @@ import com.siliconmtn.util.StringUtil;
  * <b>Description:</b> VO Manages Feed Group Data.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 1.0
  * @since May 9, 2017
@@ -34,6 +34,7 @@ public class RSSFeedGroupVO implements Serializable {
 	private String feedTypeId;
 	private String feedFilterGroupXrId;
 	private String feedEntityGroupXrId;
+	private long articleCount;
 	private List<RSSFilterVO> filters;
 	private List<RSSFilterTerm> terms;
 	private Date createDt;
@@ -49,6 +50,7 @@ public class RSSFeedGroupVO implements Serializable {
 		this();
 		setData(req);
 	}
+
 	/**
 	 * @param req
 	 */
@@ -110,6 +112,12 @@ public class RSSFeedGroupVO implements Serializable {
 	public String getFeedEntityGroupXrId() {
 		return feedEntityGroupXrId;
 	}
+
+	@Column(name="article_count", isReadOnly=true)
+	public long getArticleCount() {
+		return articleCount;
+	}
+
 	/**
 	 * @return the createDt
 	 */
@@ -194,6 +202,11 @@ public class RSSFeedGroupVO implements Serializable {
 	public void setFeedEntityGroupXrId(String feedEntityGroupXrId) {
 		this.feedEntityGroupXrId = feedEntityGroupXrId;
 	}
+
+	public void setArticleCount(long articleCount) {
+		this.articleCount = articleCount;
+	}
+
 	/**
 	 * @param updateDt the updateDt to set.
 	 */
