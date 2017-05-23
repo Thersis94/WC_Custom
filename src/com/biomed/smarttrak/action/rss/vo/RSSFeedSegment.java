@@ -16,7 +16,7 @@ import com.siliconmtn.db.orm.Table;
  * <b>Description:</b> VO Manages Feed Segment Data.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 1.0
  * @since May 9, 2017

@@ -15,6 +15,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.SAXException;
 
+import com.biomed.smarttrak.action.rss.RSSFilterAction.FilterType;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFilterTerm;
@@ -123,7 +124,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	@SuppressWarnings("unchecked")
 	protected List<RSSFilterTerm> retrieveRequiredTerms() {
 		List<Object> vals = new ArrayList<>();
-		vals.add("R");
+		vals.add(FilterType.R.name());
 		return (List<RSSFilterTerm>)(List<?>) new DBProcessor(dbConn, props.getProperty(Constants.CUSTOM_DB_SCHEMA)).executeSelect(getTermsSql(), vals, new RSSFilterTerm());
 	}
 
@@ -135,7 +136,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	protected Map<String, List<RSSFilterTerm>> retrieveOmitTerms() {
 		Map<String, List<RSSFilterTerm>> terms = new HashMap<>();
 		List<Object> vals = new ArrayList<>();
-		vals.add("O");
+		vals.add(FilterType.O.name());
 
 		List<RSSFeedGroupVO> groups = (List<RSSFeedGroupVO>)(List<?>) new DBProcessor(dbConn, props.getProperty(Constants.CUSTOM_DB_SCHEMA)).executeSelect(getTermsSql(), vals, new RSSFeedGroupVO());
 

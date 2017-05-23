@@ -17,6 +17,8 @@ import javax.xml.parsers.SAXParserFactory;
 import org.xml.sax.SAXException;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
+import com.biomed.smarttrak.action.rss.RSSFilterAction.FilterType;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFilterVO;
@@ -142,7 +144,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		for(RSSArticleVO a : articles) {
 			if(!existsIds.contains(a.getArticleGuid())) {
 				a.setRssEntityId(f.getRssEntityId());
-				a.setArticleStatusCd("O");
+				a.setArticleStatusCd(ArticleStatus.O.name());
 				a.setPublicationName(f.getFeedName());
 				if(a.getPublishDt() == null)
 					a.setPublishDt(Calendar.getInstance().getTime());
@@ -182,9 +184,9 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private void matchArticle(RSSArticleVO article, List<RSSFilterVO> filters) {
 		for(RSSFilterVO filter: filters) {
-			if("O".equals(filter.getTypeCd())) {
+			if(FilterType.O.name().equals(filter.getTypeCd())) {
 				checkOmitMatch(article, filter);
-			} else if("R".equals(filter.getTypeCd())) {
+			} else if(FilterType.R.name().equals(filter.getTypeCd())) {
 				checkReqMatch(article, filter);
 			}
 		}
@@ -201,7 +203,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		boolean isMatch = checkMatch(article, filter);
 
 		if(isMatch) {
-			article.setArticleStatusCd("R");
+			article.setArticleStatusCd(ArticleStatus.R.name());
 		}
 	}
 
@@ -215,8 +217,8 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	private void checkReqMatch(RSSArticleVO article, RSSFilterVO filter) {
 		boolean isMatch = checkMatch(article, filter);
 
-		if(isMatch && !"R".equals(article.getArticleStatusCd())) {
-			article.setArticleStatusCd("N");
+		if(isMatch && !ArticleStatus.R.name().equals(article.getArticleStatusCd())) {
+			article.setArticleStatusCd(ArticleStatus.N.name());
 		}
 	}
 

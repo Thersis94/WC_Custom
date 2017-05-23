@@ -38,6 +38,17 @@ public class RSSFilterAction extends SBActionAdapter {
 	public static final String RETRV_FILTER = "retrvFilter";
 	public static final String FILTER_ID = "filterId";
 
+	public enum FilterType{R("Required"), O("Omit"), Q("Unused");
+		private String typeName;
+		FilterType(String typeName) {
+			this.typeName = typeName;
+		}
+
+		public String getTypeName() {
+			return typeName;
+		}
+	}
+
 	public RSSFilterAction() {
 		super();
 	}
