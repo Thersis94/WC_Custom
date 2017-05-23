@@ -1,9 +1,12 @@
 package com.biomed.smarttrak.action.rss.vo;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
@@ -31,14 +34,19 @@ public class RSSFeedGroupVO implements Serializable {
 	private String feedTypeId;
 	private String feedFilterGroupXrId;
 	private String feedEntityGroupXrId;
+	private List<RSSFilterVO> filters;
+	private List<RSSFilterTerm> terms;
 	private Date createDt;
 	private Date updateDt;
 
 	public RSSFeedGroupVO() {
 		super();
+		filters = new ArrayList<>();
+		terms = new ArrayList<>();
 	}
 
 	public RSSFeedGroupVO(ActionRequest req) {
+		this();
 		setData(req);
 	}
 	/**
@@ -118,6 +126,26 @@ public class RSSFeedGroupVO implements Serializable {
 		return updateDt;
 	}
 
+	public List<RSSFilterVO> getFilters() {
+		return filters;
+	}
+
+	public List<RSSFilterTerm> getTerms() {
+		return terms;
+	}
+
+	@BeanSubElement
+	public void addFilter(RSSFilterVO f) {
+		if(f != null)
+			filters.add(f);
+	}
+
+	@BeanSubElement
+	public void addTerm(RSSFilterTerm t) {
+		if(t != null)
+			terms.add(t);
+	}
+
 	/**
 	 * @param feedGroupId the feedGroupId to set.
 	 */
@@ -171,5 +199,13 @@ public class RSSFeedGroupVO implements Serializable {
 	 */
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
+	}
+
+	public void setFilters(List<RSSFilterVO> filters) {
+		this.filters = filters;
+	}
+
+	public void setTerms(List<RSSFilterTerm> terms) {
+		this.terms = terms;
 	}
 }
