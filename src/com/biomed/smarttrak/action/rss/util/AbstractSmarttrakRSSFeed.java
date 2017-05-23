@@ -67,7 +67,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * @return
 	 */
 	protected String buildUpdateFeedStatusStatement() {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(75);
 		sql.append("update RSS_ENTITY set is_active = ? where rss_entity_id = ?");
 		return sql.toString();
 	}
@@ -130,7 +130,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * @return
 	 */
 	protected String getArticleInsertSql() {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(410);
 		sql.append("insert into ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_rss_article (rss_article_id, article_status_cd, ");
 		sql.append("feed_group_id, rss_entity_id, article_guid, article_txt, ");

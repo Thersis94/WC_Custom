@@ -102,7 +102,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	protected String buildPubmedQuery(RSSFilterTerm req, List<RSSFilterTerm> omits) {
-		StringBuilder query = new StringBuilder();
+		StringBuilder query = new StringBuilder(30 + (omits != null ? omits.size() * 30 : 0));
 		query.append("\"").append(req.getFilterTerm()).append("\"[TIAB]");
 		if(omits != null) {
 			query.append(" NOT (");
@@ -152,7 +152,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	protected String getTermsSql() {
 		String schema = props.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(300);
 		sql.append("select g.feed_segment_id, t.* from ").append(schema).append("biomedgps_feed_group g ");
 		sql.append("inner join ").append(schema).append("biomedgps_filter_term t on g.feed_group_id = t.feed_group_id ");
 		sql.append("where filter_type_cd = ? order by g.feed_group_id;");
@@ -192,7 +192,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private RSSArticleVO highlightMatch(RSSArticleVO r, RSSFilterTerm reqTerm) {
 
-		StringBuilder filter = new StringBuilder();
+		StringBuilder filter = new StringBuilder(30);
 		filter.append("(?i)(").append(reqTerm.getFilterTerm()).append(")");
 		r.setFilterArticleTxt(r.getArticleTxt().replaceAll(filter.toString(), props.getProperty(REPLACE_SPAN)));
 		r.setFilterArticleTxt(r.getArticleTxt().replaceAll("\n", "<br/>"));

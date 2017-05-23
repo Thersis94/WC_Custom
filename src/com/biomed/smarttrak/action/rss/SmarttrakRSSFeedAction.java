@@ -265,4 +265,12 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 		sql.append("order by rss_feed_nm");
 		return sql.toString();
 	}
+
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		NewsroomAction nra = new NewsroomAction(this.actionInit);
+		nra.setAttributes(attributes);
+		nra.setDBConnection(dbConn);
+		nra.retrieve(req);
+	}
 }

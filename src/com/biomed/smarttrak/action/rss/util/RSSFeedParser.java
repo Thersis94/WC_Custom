@@ -17,22 +17,26 @@ import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
- * <b>Title:</b> FeedParser.java <b>Project:</b> SMTBaseLibs <b>Description:</b>
- * TODO <b>Copyright:</b> Copyright (c) 2017 <b>Company:</b> Silicon Mountain
+ * <b>Title:</b> FeedParser.java
+ * <b>Project:</b> SMTBaseLibs
+ * <b>Description:</b> Class manages Parsing an RSS Xml Feed.
+ * <b>Copyright:</b> Copyright (c) 2017
+ * <b>Company:</b> Silicon Mountain
  * Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 3.0
  * @since May 19, 2017
  ****************************************************************************/
 public class RSSFeedParser {
-	static final String TITLE = "title";
-	static final String DESCRIPTION = "description";
-	static final String CHANNEL = "channel";
-	static final String LINK = "link";
-	static final String ITEM = "item";
-	static final String PUB_DATE = "pubDate";
-	static final String GUID = "guid";
+	private static final String TITLE = "title";
+	private static final String DESCRIPTION = "description";
+	private static final String LINK = "link";
+	private static final String ITEM = "item";
+	private static final String PUB_DATE = "pubDate";
+	private static final String GUID = "guid";
+
+	// Set header values intial to the empty string
 	final URL url;
 
 
@@ -46,15 +50,8 @@ public class RSSFeedParser {
 
 
 	public List<RSSArticleVO> readFeed() {
-		List<RSSArticleVO> articles = null;
+		List<RSSArticleVO> articles = new ArrayList<>();
 		try {
-			boolean isFeedHeader = true;
-			// Set header values intial to the empty string
-			String description = "";
-			String title = "";
-			String link = "";
-			String pubdate = "";
-			String guid = "";
 
 			// First create a new XMLInputFactory
 			XMLInputFactory inputFactory = XMLInputFactory.newInstance();
@@ -62,47 +59,7 @@ public class RSSFeedParser {
 			InputStream in = read();
 			XMLEventReader eventReader = inputFactory.createXMLEventReader(in);
 			// read the XML document
-			while (eventReader.hasNext()) {
-				XMLEvent event = eventReader.nextEvent();
-				if (event.isStartElement()) {
-					String localPart = event.asStartElement().getName()
-							.getLocalPart();
-					switch (localPart) {
-						case ITEM:
-							if (isFeedHeader) {
-								isFeedHeader = false;
-								articles = new ArrayList<>();
-							}
-							event = eventReader.nextEvent();
-							break;
-						case TITLE:
-							title = getCharacterData(event, eventReader);
-							break;
-						case DESCRIPTION:
-							description = getCharacterData(event, eventReader);
-							break;
-						case LINK:
-							link = getCharacterData(event, eventReader);
-							break;
-						case GUID:
-							guid = getCharacterData(event, eventReader);
-							break;
-						case PUB_DATE:
-							pubdate = getCharacterData(event, eventReader);
-							break;
-					}
-				} else if (event.isEndElement() && event.asEndElement().getName().getLocalPart() == (ITEM)) {
-					RSSArticleVO message = new RSSArticleVO();
-					message.setArticleTxt(description);
-					message.setArticleGuid(guid);
-					message.setArticleUrl(link);
-					message.setTitleTxt(title);
-					message.setPublishDt(Convert.formatDate(pubdate));
-					if(articles != null)
-						articles.add(message);
-					continue;
-				}
-			}
+			parseEvent(eventReader, articles);
 		} catch (XMLStreamException e) {
 			throw new RuntimeException(e);
 		}
@@ -110,6 +67,62 @@ public class RSSFeedParser {
 	}
 
 
+	/**
+	 * 
+	 * @param event
+	 * @throws XMLStreamException 
+	 */
+	private void parseEvent(XMLEventReader eventReader, List<RSSArticleVO> articles) throws XMLStreamException {
+		RSSArticleVO message = new RSSArticleVO();
+		while (eventReader.hasNext()) {
+			XMLEvent event = eventReader.nextEvent();
+			if (event.isStartElement()) {
+				populateMessage(message, event, eventReader);
+			} else if (event.isEndElement() && event.asEndElement().getName().getLocalPart() == (ITEM)) {
+				articles.add(message);
+				message = new RSSArticleVO();
+			}
+		}
+	}
+
+	/**
+	 * Populates the given RSSArticleVO with data from the RSS Feed.
+	 * @param message
+	 * @param event
+	 * @param eventReader
+	 * @throws XMLStreamException 
+	 */
+	private void populateMessage(RSSArticleVO message, XMLEvent event, XMLEventReader eventReader) throws XMLStreamException {
+		switch (event.asStartElement().getName().getLocalPart()) {
+			case TITLE:
+				message.setTitleTxt(getCharacterData(event, eventReader));
+				break;
+			case DESCRIPTION:
+				message.setArticleTxt(getCharacterData(event, eventReader));
+				break;
+			case LINK:
+				message.setArticleUrl(getCharacterData(event, eventReader));
+				break;
+			case GUID:
+				message.setArticleGuid(getCharacterData(event, eventReader));
+				break;
+			case PUB_DATE:
+				message.setPublishDt(Convert.formatDate(getCharacterData(event, eventReader)));
+				break;
+			case ITEM:
+			default:
+				break;
+		}
+	}
+
+
+	/**
+	 * Method extracs Character Data from an XML Field.
+	 * @param event
+	 * @param eventReader
+	 * @return
+	 * @throws XMLStreamException
+	 */
 	private String getCharacterData(XMLEvent event, XMLEventReader eventReader) throws XMLStreamException {
 		String result = "";
 		event = eventReader.nextEvent();
@@ -120,6 +133,10 @@ public class RSSFeedParser {
 	}
 
 
+	/**
+	 * Method opens an InputStream for the url.
+	 * @return
+	 */
 	private InputStream read() {
 		try {
 			return url.openStream();
