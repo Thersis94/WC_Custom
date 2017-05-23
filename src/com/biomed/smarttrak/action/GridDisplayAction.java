@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 // App Libs
 import com.biomed.smarttrak.admin.GridChartAction;
+import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 import com.biomed.smarttrak.vo.grid.BiomedExcelReport;
 import com.biomed.smarttrak.vo.grid.SMTChartFactory;
@@ -172,6 +173,14 @@ public class GridDisplayAction extends SBActionAdapter {
 	 * @param cols List of columns to display.  Blank equals all
 	 */
 	public SMTGridIntfc retrieveChartData(GridVO grid, ChartType type, boolean full, boolean stacked, ProviderType pt, List<Integer> cols) {
+		// Pie charts need to have their labels modified in order to
+		// get all pertinant information to the user.
+		if (ChartType.PIE == type) {
+			for (GridDetailVO detail : grid.getDetails()) {
+				detail.setLabel(detail.getLabel() + " - " + detail.getValue1());
+			}
+		}
+		
 		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type, full, cols);
 		
 		// Get the chart options
