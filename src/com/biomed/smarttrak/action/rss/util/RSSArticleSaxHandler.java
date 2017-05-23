@@ -18,7 +18,7 @@ import com.siliconmtn.util.StringUtil;
 /****************************************************************************
  * <b>Title:</b> RSSArticleSaxHandler.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Standard RSS Sax Handler.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
