@@ -1,11 +1,20 @@
 package com.biomed.smarttrak.action.rss.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.xml.sax.SAXException;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
@@ -27,12 +36,19 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Apr 18, 2017
  ****************************************************************************/
 public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
+	private SAXParserFactory factory;
+	private SAXParser saxParser;
 	/**
 	 *
 	 */
 	public RSSDataFeed(String... args) {
 		super(args);
-		
+		factory = SAXParserFactory.newInstance();
+		try {
+			saxParser = factory.newSAXParser();
+		} catch (ParserConfigurationException | SAXException e) {
+			log.error("Error Instantiating Sax Parser", e);
+		}
 	}
 
 
@@ -65,7 +81,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		for(SmarttrakRssEntityVO f : feeds) {
 			if(!f.getRssEntityId().equals(props.get(PUBMED_ENTITY_ID))) {
 				try {
-					List<RSSArticleVO> articles = new RSSFeedParser(f.getRssUrl()).readFeed();
+					List<RSSArticleVO> articles = retrieveArticles(f.getRssUrl());
 					filterArticles(f, articles, filters);
 				} catch (Exception e) {
 					log.info("Deactivating Feed: " + f.getRssEntityId());
@@ -76,6 +92,37 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		}
 	}
 
+	/**
+	 * Method retrieves Article text for the given article Id.
+	 * @param id
+	 * @return
+	 */
+	private List<RSSArticleVO> retrieveArticles(String url) {
+		byte[] results = getDataViaHTTP(url, null);
+
+		//Process XML
+		return processArticleResult(results);
+	}
+
+	/**
+	 * Method Processes Data Stream containing article list and Converts it to
+	 * a list of RSSArticleVO.
+	 * @param results
+	 * @return
+	 */
+	private List<RSSArticleVO> processArticleResult(byte[] results) {
+		List<RSSArticleVO> articles = null;
+
+		try {
+			InputStream is = new ByteArrayInputStream(results);
+			RSSArticleSaxHandler handler = new RSSArticleSaxHandler();
+			saxParser.parse(is, handler);
+			articles = handler.getVos();
+		} catch(SAXException | IOException se) {
+			log.error("Problem Processing Pubmed Articles", se);
+		}
+		return articles;
+	}
 
 	/**
 	 * Method manages applying filters to each of the messages in a feed.

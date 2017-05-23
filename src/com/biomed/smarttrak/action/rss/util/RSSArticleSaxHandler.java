@@ -13,38 +13,37 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
- * <b>Title</b>: PubmedListSaxHandler.java
- * <b>Project</b>: WC_Custom
- * <b>Description</b>: Sax Handler for processing Pubmed Article List.
- * <b>Copyright</b>: Copyright (c) 2017
- * <b>Company</b>: Silicon Mountain Technologies
- *
- * @author Billy Larsen
- * @version 1.0
- * @since Apr 22, 2017
+ * <b>Title:</b> RSSArticleSaxHandler.java
+ * <b>Project:</b> WC_Custom
+ * <b>Description:</b> TODO
+ * <b>Copyright:</b> Copyright (c) 2017
+ * <b>Company:</b> Silicon Mountain Technologies
+ * 
+ * @author raptor
+ * @version 3.0
+ * @since May 23, 2017
  ****************************************************************************/
-public class PubmedArticleSaxHandler extends DefaultHandler {
-	public enum SearchType {PUB_DATE("PubDate"), PUB_TYPE("PublicationType"), PUBMED_ARTICLE("PubmedArticle"), ABSTRACT_TEXT("AbstractText"), PMID("PMID"), TITLE("Title"), ARTICLE_TITLE("ArticleTitle"), PUBLICATION_NAME("PublicationName"), YEAR("Year"), MONTH("Month"), DAY("Day"), F_DATE("formatDate");
+public class RSSArticleSaxHandler extends DefaultHandler {
+
+	public enum SearchType {TITLE("title"), DESCRIPTION("description"), LINK("link"), ITEM("item"),PUB_DATE("pubDate"), GUID("guid"), F_DATE("fDate");
 		private String qName;
 		SearchType(String qName) {
 			this.qName = qName;
 		}
+
 		public String getQName() {
 			return qName;
 		}
 	}
 
-	private SearchType type;
-	private boolean isDate = false;
-	private Map<SearchType, String> data;
 	private List<RSSArticleVO> vos;
+	private Map<SearchType, String> data;
+	private SearchType type;
 
-	/**
-	 * 
-	 */
-	public PubmedArticleSaxHandler() {
+	public RSSArticleSaxHandler() {
 		super();
 		vos = new ArrayList<>();
 		data = new EnumMap<>(SearchType.class);
@@ -62,10 +61,6 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 				break;
 			}
 		}
-
-		if(SearchType.PUB_DATE.getQName().equals(qName)) {					
-			isDate = true;
-		}
 	}
 
 	/* (non-Javadoc)
@@ -75,10 +70,7 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 		super.endElement(uri, localName, qName);
 		type = null;
-		if(SearchType.PUB_DATE.getQName().equals(qName)) {
-			isDate = false;
-		}
-		if(SearchType.PUBMED_ARTICLE.getQName().equals(qName)) {
+		if(SearchType.ITEM.getQName().equals(qName)) {
 			vos.add(buildRSSVO());
 			data = new EnumMap<>(SearchType.class);
 		}
@@ -89,33 +81,20 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 	 */
 	protected RSSArticleVO buildRSSVO() {
 		RSSArticleVO rss = new RSSArticleVO();
-		String date = data.get(SearchType.DAY) + "/" + data.get(SearchType.MONTH) + "/" + data.get(SearchType.YEAR);
-		Date d = Convert.formatDate("dd/MMM/yyyy", date);
+		String date = data.get(SearchType.PUB_DATE);
+		Date d = Convert.formatDate(date);
 		if(d == null) d = Calendar.getInstance().getTime();
 
 		data.put(SearchType.F_DATE, Convert.formatDate(d, Convert.DATE_TIME_DASH_PATTERN_12HR));
 		rss.setPublicationName("PubMed");
 		rss.setArticleStatusCd("N");
-		rss.setArticleGuid(data.get(SearchType.PMID));
-		rss.setArticleTxt(buildArticleText());
+		rss.setArticleGuid(data.get(SearchType.GUID));
+		rss.setArticleTxt(StringUtil.checkVal(data.get(SearchType.DESCRIPTION)));
 		rss.setPublishDt(d);
-		rss.setTitleTxt(data.get(SearchType.TITLE));
-		rss.setPublicationName(data.get(SearchType.ARTICLE_TITLE));
+		rss.setArticleUrl(data.get(SearchType.LINK));
+		rss.setTitleTxt(StringUtil.checkVal(data.get(SearchType.TITLE)));
+		rss.setPublicationName(data.get(SearchType.TITLE));
 		return rss;
-	}
-
-	/**
-	 * Helper method that builds the PubMed Article Text Body for view.
-	 * @return
-	 */
-	private String buildArticleText() {
-		StringBuilder articleText = new StringBuilder(2000);
-		articleText.append("<p>").append(data.get(SearchType.TITLE)).append("</p>");
-		articleText.append("<p>").append(data.get(SearchType.ABSTRACT_TEXT)).append("</p>");
-		articleText.append("<br/>").append(data.get(SearchType.PUB_TYPE)).append(": ").append(data.get(SearchType.ARTICLE_TITLE));
-		articleText.append("<br/>PMID: ").append(data.get(SearchType.PMID));
-		articleText.append("<br/>Article Date:").append(data.get(SearchType.F_DATE));
-		return articleText.toString();
 	}
 
 	/* (non-Javadoc)
@@ -127,13 +106,8 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 		if(type == null) {
 			return;
 		}
-		boolean buildValue = (!data.containsKey(SearchType.PMID) && SearchType.PMID.equals(type)) || (!SearchType.DAY.equals(type) && !SearchType.MONTH.equals(type) && !SearchType.YEAR.equals(type) && !SearchType.PMID.equals(type));
 		String val = new String(ch, start, length);
-		if(isDate) {
-			data.put(type, val);
-		} else if(buildValue) {
-			data.put(type, buildValueString(type, val));
-		}
+		data.put(type, buildValueString(type, val));
 	}
 
 	/**

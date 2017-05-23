@@ -5,7 +5,7 @@ import com.siliconmtn.util.CommandLineUtil;
 /****************************************************************************
  * <b>Title:</b> QuertleDataFeed.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Data Parser responsible for interfacing to Quertle System.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -24,10 +24,12 @@ public class QuertleDataFeed extends CommandLineUtil {
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.util.CommandLineUtil#run()
-	 * TODO - COMPLETE METHOD BODY
 	 */
 	@Override
 	public void run() {
+		//Load SOAP API
+
+		//Query Feed.
 	}
 
 }
