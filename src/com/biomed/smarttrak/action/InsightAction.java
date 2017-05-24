@@ -12,11 +12,13 @@ import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.security.SecurityController;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.UserVO;
 //SMT Baselibs
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.DirectoryParser;
@@ -29,6 +31,7 @@ import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -67,6 +70,16 @@ public class InsightAction extends AbstractTreeAction {
 		sa.setAttributes(attributes);
 
 		if (req.hasParameter(REQ_PARAM_1)) {
+
+			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+			
+			// Public users can get a preview of the insights. Registered users need to confirm permissions.
+			if (role == null) {
+				StringBuilder url = new StringBuilder(150);
+				url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
+				new SiteBuilderUtil().manualRedirect(req, url.toString());
+				throw new ActionNotAuthorizedException("not authorized");
+			}
 
 			InsightVO vo = getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
 

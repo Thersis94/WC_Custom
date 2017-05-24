@@ -7,6 +7,7 @@ import java.util.Map;
 //apache commons-lang jar
 import org.apache.commons.lang.StringEscapeUtils;
 
+import com.biomed.smarttrak.action.rss.CustomRSSFacadeAction;
 // WC Custom Libs
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountNotesAction;
@@ -188,6 +189,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("emailReport", EmailReportAction.class);
 		ACTIONS.put("emailConfig", UpdatesEmailSendAction.class);
 		ACTIONS.put("searchUtil", SearchUtilAction.class);
+		ACTIONS.put("feeds", CustomRSSFacadeAction.class);
 	}
 
 
