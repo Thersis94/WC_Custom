@@ -10,10 +10,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFPalette;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -41,6 +43,14 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 	// Member Variables
 	Map<String, Object> solrAttribs = new HashMap<>();
 	CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder(); 
+	HSSFCellStyle header = null;
+	HSSFCellStyle alternate = null;
+	HSSFCellStyle green = null;
+	HSSFCellStyle headerGreen = null;
+	HSSFCellStyle alternateGreen = null;
+	HSSFCellStyle blue = null;
+	HSSFCellStyle headerBlue = null;
+	HSSFCellStyle alternateBlue = null;
 
 	
 	public ProductExplorerReportVO() {
@@ -53,10 +63,11 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 	 * 
 	 */
 	public byte[] generateReport() {
-		
 		//Build Excel File
 		HSSFWorkbook workbook = new HSSFWorkbook();
 		Sheet sheet = workbook.createSheet("Product Set");
+		sheet.setDefaultColumnWidth(20);
+		buildStyles(workbook);
 		this.createHeader(sheet, workbook);
 		buildWorkbook(sheet);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -69,6 +80,61 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 		return baos.toByteArray();
 	}
 	
+	/**
+	 * 
+	 */
+	protected void buildStyles(HSSFWorkbook wb) {
+		header = wb.createCellStyle();
+		header.setFillForegroundColor(setColor(wb, (byte) 0xE0,(byte) 0xE0, (byte) 0xE0, (short) 46).getIndex());
+		header.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		header.setBorderTop(CellStyle.BORDER_MEDIUM);
+		header.setBorderBottom(CellStyle.BORDER_MEDIUM);
+		
+		alternate = wb.createCellStyle();
+		alternate.setFillForegroundColor(setColor(wb, (byte) 0xCA,(byte) 0xCA, (byte) 0xCA, (short) 47).getIndex());
+		alternate.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		
+		headerGreen = wb.createCellStyle();
+		headerGreen.setFillForegroundColor(setColor(wb, (byte) 0xA5,(byte) 0xB0, (byte) 0x86, (short) 48).getIndex());
+		headerGreen.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		headerGreen.setBorderTop(CellStyle.BORDER_MEDIUM);
+		headerGreen.setBorderBottom(CellStyle.BORDER_MEDIUM);
+		
+		green = wb.createCellStyle();
+		green.setFillForegroundColor(setColor(wb, (byte) 0xD7,(byte) 0xD9, (byte) 0xCD, (short) 50).getIndex());
+		green.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		
+		alternateGreen = wb.createCellStyle();
+		alternateGreen.setFillForegroundColor(setColor(wb, (byte) 0xF7,(byte) 0xF9, (byte) 0xED, (short) 49).getIndex());
+		alternateGreen.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		
+		headerBlue = wb.createCellStyle();
+		headerBlue.setFillForegroundColor(setColor(wb, (byte) 0x84,(byte) 0xA6, (byte) 0xC2, (short) 51).getIndex());
+		headerBlue.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		headerBlue.setBorderTop(CellStyle.BORDER_MEDIUM);
+		headerBlue.setBorderBottom(CellStyle.BORDER_MEDIUM);
+		
+		blue = wb.createCellStyle();
+		blue.setFillForegroundColor(setColor(wb, (byte) 0xCC,(byte) 0xD8, (byte) 0xDF, (short) 52).getIndex());
+		blue.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		
+		alternateBlue = wb.createCellStyle();
+		alternateBlue.setFillForegroundColor(setColor(wb, (byte) 0xEC,(byte) 0xEC, (byte) 0xF8, (short) 53).getIndex());
+		alternateBlue.setFillPattern(CellStyle.SOLID_FOREGROUND);
+	}
+	
+	
+	public HSSFColor setColor(HSSFWorkbook workbook, byte r,byte g, byte b, short index){
+		HSSFPalette palette = workbook.getCustomPalette();
+		HSSFColor hssfColor = null;
+		try {
+			palette.setColorAtIndex(index, r, g,b);
+			hssfColor = palette.getColor(index);
+		} catch (Exception e) {
+			log.error("Failed to set color for styles", e);
+		}
+		return hssfColor;
+	}
 	
 	/**
 	 * Build the report's content.
@@ -80,22 +146,82 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 		int i = 1;
 		for (SolrDocument doc : data) {
 			Row row = sheet.createRow(i++);
-			
 			int j = 0;
-			row.createCell(j++).setCellValue((String)doc.getFieldValue(SearchDocumentHandler.TITLE));
-			row.createCell(j++).setCellValue((String)doc.getFieldValue("company_s"));
-			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("sectionname_ss")));
-			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("target_market_ss")));
-			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("indication_ss")));
-			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("classification_ss")));
-			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("technology_ss")));
-			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("approach_ss")));
-			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("uspathnm_ss")));
-			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("usstatusnm_ss")));
-			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("intregionnm_ss")));
-			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("intpathnm_ss")));
-			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("intstatusnm_ss")));
-			row.createCell(j).setCellValue(buildAllyList(doc));
+			Cell cell = row.createCell(j++);
+			cell.setCellValue((String)doc.getFieldValue(SearchDocumentHandler.TITLE));
+			if (i%2 == 1)cell.setCellStyle(alternate);
+			
+			cell = row.createCell(j++);
+			cell.setCellValue((String)doc.getFieldValue("company_s"));
+			if (i%2 == 1)cell.setCellStyle(alternate);
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildContentList(doc.getFieldValues("sectionname_ss")));
+			if (i%2 == 1)cell.setCellStyle(alternate);
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildContentList(doc.getFieldValues("target_market_ss")));
+			if (i%2 == 1)cell.setCellStyle(alternate);
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildContentList(doc.getFieldValues("indication_ss")));
+			if (i%2 == 1)cell.setCellStyle(alternate);
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildContentList(doc.getFieldValues("classification_ss")));
+			if (i%2 == 1)cell.setCellStyle(alternate);
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildContentList(doc.getFieldValues("technology_ss")));
+			if (i%2 == 1)cell.setCellStyle(alternate);
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildContentList(doc.getFieldValues("approach_ss")));
+			if (i%2 == 1)cell.setCellStyle(alternate);
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildContentList(doc.getFieldValues("uspathnm_ss")));
+			if (i%2 == 0) {
+				cell.setCellStyle(alternateGreen);
+			} else {
+				cell.setCellStyle(green);
+			}
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildContentList(doc.getFieldValues("usstatusnm_ss")));
+			if (i%2 == 0) {
+				cell.setCellStyle(alternateGreen);
+			} else {
+				cell.setCellStyle(green);
+			}
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildContentList(doc.getFieldValues("intregionnm_ss")));
+			if (i%2 == 0) {
+				cell.setCellStyle(alternateBlue);
+			} else {
+				cell.setCellStyle(blue);
+			}
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildContentList(doc.getFieldValues("intpathnm_ss")));
+			if (i%2 == 0) {
+				cell.setCellStyle(alternateBlue);
+			} else {
+				cell.setCellStyle(blue);
+			}
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildContentList(doc.getFieldValues("intstatusnm_ss")));
+			if (i%2 == 0) {
+				cell.setCellStyle(alternateBlue);
+			} else {
+				cell.setCellStyle(blue);
+			}
+
+			cell = row.createCell(j++);
+			cell.setCellValue(buildAllyList(doc));
+			if (i%2 == 1)cell.setCellStyle(alternate);
 		}
 	}
 	
@@ -173,19 +299,19 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 		Row row = sheet.createRow(0);
 		Cell cell;
 		int c = 0;
-		
-		CellStyle style = wb.createCellStyle();
-		style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
-		style.setBorderTop(CellStyle.BORDER_MEDIUM);
-		style.setBorderBottom(CellStyle.BORDER_MEDIUM);
 
 		//Loop Headers and set cell values.
 		for(String n : headers) {
 			cell = row.createCell(c++);
 			cell.setCellValue(n);
-			cell.setCellStyle(style);
+			cell.setCellStyle(header);
 		}
+
+		row.getCell(8).setCellStyle(headerGreen);
+		row.getCell(9).setCellStyle(headerGreen);
+		row.getCell(10).setCellStyle(headerBlue);
+		row.getCell(11).setCellStyle(headerBlue);
+		row.getCell(12).setCellStyle(headerBlue);
 	}
 
 	
