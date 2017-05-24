@@ -78,7 +78,8 @@ public class RSSFilterAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String filterId = req.getParameter(FILTER_ID);
 		String rssEntityId = req.getParameter("rssEntityId");
-		List<RSSFilterVO> filters = loadFilters(filterId, rssEntityId);
+		String feedGroupId = req.getParameter("feedGroupId");
+		List<RSSFilterVO> filters = loadFilters(filterId, rssEntityId, feedGroupId);
 
 		this.putModuleData(filters);
 	}
@@ -89,7 +90,7 @@ public class RSSFilterAction extends SBActionAdapter {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	protected List<RSSFilterVO> loadFilters(String filterId, String rssEntityId) {
+	protected List<RSSFilterVO> loadFilters(String filterId, String rssEntityId, String feedGroupId) {
 		List<Object> vals = new ArrayList<>();
 		if(!StringUtil.isEmpty(rssEntityId)) {
 			vals.add(rssEntityId);
@@ -97,7 +98,11 @@ public class RSSFilterAction extends SBActionAdapter {
 		if(!StringUtil.isEmpty(filterId)) {
 			vals.add(filterId);
 		}
-		List<Object> data = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA)).executeSelect(buildRSSFilterRetrieve(filterId, rssEntityId), vals, new RSSFilterVO());
+		if(!StringUtil.isEmpty(feedGroupId)) {
+			vals.add(feedGroupId);
+		}
+		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		List<Object> data = dbp.executeSelect(buildRSSFilterRetrieve(filterId, rssEntityId, feedGroupId), vals, new RSSFilterVO());
 		return (List<RSSFilterVO>)(List<?>) data;
 	}
 
@@ -107,7 +112,7 @@ public class RSSFilterAction extends SBActionAdapter {
 	 * @param rssEntityId
 	 * @return
 	 */
-	private String buildRSSFilterRetrieve(String filterId, String rssEntityId) {
+	private String buildRSSFilterRetrieve(String filterId, String rssEntityId, String feedGroupId) {
 		StringBuilder sql = new StringBuilder(350);
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select * from ").append(schema).append("BIOMEDGPS_RSS_PARSER_FILTER f ");
@@ -115,10 +120,16 @@ public class RSSFilterAction extends SBActionAdapter {
 			sql.append("inner join ").append(schema).append("BIOMEDGPS_RSS_FILTER_TYPE x ");
 			sql.append("on filter_id = f.filter_id and x.rss_entity_id = ? ");
 		}
+		if(!StringUtil.isEmpty(feedGroupId)) {
+			sql.append("inner join ").append(schema).append("biomedgps_feed_filter_group_xr xr ");
+			sql.append("on f.filter_id = xr.filter_id and xr.feed_group_id = ? ");
+		}
 		if(!StringUtil.isEmpty(filterId)) {
 			sql.append("where f.filter_id = ? ");
 		}
 		sql.append("order by filter_nm");
+
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 

@@ -14,6 +14,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.rss.RSSEntityVO;
 import com.smt.sitebuilder.action.rss.RssVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -51,13 +52,34 @@ public class NewsroomAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("isBuckets")) {
 			loadBuckets(req);
-		} else if(req.hasParameter("feedGroupId")){
+		} else if(req.hasParameter("feedGroupId") && !req.hasParameter("isConsole")){
 			loadArticles(req);
+		} else if(req.hasParameter("loadFeeds")) {
+			loadFeeds(req);
 		} else {
 			loadSegmentGroupArticles(req);
 		}
 	}
 
+	/**
+	 * @param req
+	 */
+	private void loadFeeds(ActionRequest req) {
+		List<Object> vals = new ArrayList<>();
+		vals.add(req.getParameter("feedGroupId"));
+		DBProcessor dbp = new DBProcessor(dbConn);
+		this.putModuleData(dbp.executeSelect(loadFeedsSql(), vals, new RSSEntityVO()));
+	}
+
+	private String loadFeedsSql() {
+		String scheme = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder();
+		sql.append("select * from rss_entity re ");
+		sql.append("inner join ").append(scheme).append("biomedgps_feed_source_group_xr xr ");
+		sql.append("on re.rss_entity_id = xr.rss_entity_id where xr.feed_group_id = ?");
+
+		return sql.toString();
+	}
 	/**
 	 * @param req
 	 */

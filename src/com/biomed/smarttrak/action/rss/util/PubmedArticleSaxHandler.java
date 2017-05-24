@@ -115,7 +115,7 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 		articleText.append("<p>").append(data.get(SearchType.ABSTRACT_TEXT)).append("</p>");
 		articleText.append("<br/>").append(data.get(SearchType.PUB_TYPE)).append(": ").append(data.get(SearchType.ARTICLE_TITLE));
 		articleText.append("<br/>PMID: ").append(data.get(SearchType.PMID));
-		articleText.append("<br/>Article Date:").append(data.get(SearchType.F_DATE));
+		articleText.append("<br/>Article Date: ").append(data.get(SearchType.F_DATE));
 		return articleText.toString();
 	}
 
