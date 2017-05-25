@@ -344,7 +344,6 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		ffa.setAttributes(attributes);
 		//req.setParameter("formId", PAFConst.FORM_ID.getId());
 		DataContainer dc = ffa.retrieveSubmittedForm(req);
-		FormTransactionVO test = dc.getTransactions().get(req.getParameter("fsi"));
 		this.putModuleData(dc.getTransactions().get(req.getParameter("fsi")), 1, true);
 	}
 
