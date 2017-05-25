@@ -34,7 +34,7 @@ public class RSSFeedGroupVO implements Serializable {
 	private String feedTypeId;
 	private String feedFilterGroupXrId;
 	private String feedEntityGroupXrId;
-	private long articleCount;
+	private int articleCount;
 	private List<RSSFilterVO> filters;
 	private List<RSSFilterTerm> terms;
 	private Date createDt;
@@ -114,7 +114,7 @@ public class RSSFeedGroupVO implements Serializable {
 	}
 
 	@Column(name="article_count", isReadOnly=true)
-	public long getArticleCount() {
+	public int getArticleCount() {
 		return articleCount;
 	}
 
@@ -203,7 +203,7 @@ public class RSSFeedGroupVO implements Serializable {
 		this.feedEntityGroupXrId = feedEntityGroupXrId;
 	}
 
-	public void setArticleCount(long articleCount) {
+	public void setArticleCount(int articleCount) {
 		this.articleCount = articleCount;
 	}
 
