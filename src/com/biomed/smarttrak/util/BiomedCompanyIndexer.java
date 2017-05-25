@@ -208,6 +208,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		SecureSolrDocumentVO company = new SecureSolrDocumentVO(INDEX_TYPE);
 		company.setDocumentId(rs.getString(COMPANY_ID));
 		company.setTitle(rs.getString("COMPANY_NM"));
+		company.addAttribute("shortNm", rs.getString("SHORT_NM_TXT"));
 		company.addAttribute("status", rs.getString("STATUS_NO"));
 		company.addAttribute("ticker", rs.getString("NAME_TXT"));
 		company.setDocumentUrl(AdminControllerAction.Section.COMPANY.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString(COMPANY_ID));
@@ -238,22 +239,26 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * @return
 	 */
 	private String buildRetrieveSql(String id) {
-		StringBuilder sql = new StringBuilder(1000);
+		StringBuilder sql = new StringBuilder(1250);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT c.COMPANY_ID, cs.SECTION_ID, c.COMPANY_NM, c.STATUS_NO, e.NAME_TXT, c.PUBLIC_FLG, ");
+		sql.append("SELECT c.COMPANY_ID, a.SECTION_ID, c.COMPANY_NM, c.STATUS_NO, e.NAME_TXT, c.PUBLIC_FLG, c.SHORT_NM_TXT, ");
 		sql.append("c2.COMPANY_NM as PARENT_NM, COUNT(p.COMPANY_ID) as PRODUCT_NO, c.CREATE_DT, c.UPDATE_DT ");
 		sql.append("FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("ON p.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_STOCK_EXCHANGE e ");
 		sql.append("ON e.EXCHANGE_ID = c.EXCHANGE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
+		sql.append("ON xr.COMPANY_ID = c.COMPANY_ID ");
+		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
+		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID and a.SECTION_ID is not null ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_SECTION cs ");
 		sql.append("ON cs.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c2 ");
 		sql.append("ON c2.COMPANY_ID = c.PARENT_ID ");
 		sql.append("WHERE c.STATUS_NO not in ('A','D') ");
 		if (id != null) sql.append("and c.COMPANY_ID = ? ");
-		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, cs.SECTION_ID, c.STATUS_NO, ");
+		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, a.SECTION_ID, c.STATUS_NO, ");
 		sql.append("e.NAME_TXT, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT ");
 		sql.append("having COUNT(p.COMPANY_ID) > 0 ");
 		log.debug(sql);

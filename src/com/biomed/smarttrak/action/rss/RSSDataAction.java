@@ -16,7 +16,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  ****************************************************************************/
 public class RSSDataAction extends SBActionAdapter {
 
-	public enum ArticleStatus{N("New"), R("Rejected"), O("Other"), K("Kept");
+	public enum ArticleStatus{N("New"), R("Rejected"), O("Other"), K("Kept"), F("Follow-Up");
 		private String statusName;
 		ArticleStatus(String statusName) {
 			this.statusName = statusName;

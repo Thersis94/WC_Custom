@@ -24,7 +24,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class CustomRSSFacadeAction extends SBActionAdapter {
 
-	public enum FeedType {FEED, SYNC, GROUP, TYPE, SEGMENT, TERMS, FILTER}
+	public enum FeedType {FEED, SYNC, GROUP, TYPE, SEGMENT, TERMS, FILTER, CONSOLE, NEWSROOM}
 	public static final String FACADE_TYPE = "facadeType";
 
 	public CustomRSSFacadeAction() {
@@ -139,6 +139,12 @@ public class CustomRSSFacadeAction extends SBActionAdapter {
 				break;
 			case FILTER:
 				ai = new RSSFilterAction(this.actionInit);
+				break;
+			case NEWSROOM:
+				ai = new NewsroomAction(this.actionInit);
+				break;
+			case CONSOLE:
+				ai = new NewsroomConsoleAction(this.actionInit);
 				break;
 			case FEED:
 			default:
