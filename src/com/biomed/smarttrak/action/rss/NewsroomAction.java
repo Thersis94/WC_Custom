@@ -13,8 +13,8 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.rss.RSSEntityVO;
 import com.smt.sitebuilder.action.rss.RssVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -52,52 +52,44 @@ public class NewsroomAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("isBuckets")) {
 			loadBuckets(req);
+			loadSegmentGroupArticles(req);
+		} else if (req.hasParameter("isConsole")) {
+			
 		} else if(req.hasParameter("feedGroupId") && !req.hasParameter("isConsole")){
-			loadArticles(req);
-		} else if(req.hasParameter("loadFeeds")) {
-			loadFeeds(req);
+			loadArticles(req.getParameter("feedGroupId"), req.getParameter("statusCd"));
 		} else {
 			loadSegmentGroupArticles(req);
 		}
 	}
 
 	/**
+	 * Method loads list of articles tied to a given groupId.
 	 * @param req
 	 */
-	private void loadFeeds(ActionRequest req) {
+	private void loadArticles(String feedGroupId, String statusCd) {
 		List<Object> vals = new ArrayList<>();
-		vals.add(req.getParameter("feedGroupId"));
-		DBProcessor dbp = new DBProcessor(dbConn);
-		this.putModuleData(dbp.executeSelect(loadFeedsSql(), vals, new RSSEntityVO()));
-	}
+		boolean hasStatus = !"ALL".equals(StringUtil.checkVal(statusCd));
+		vals.add(feedGroupId);
+		if(hasStatus) {
+			vals.add(statusCd);
+		}
 
-	private String loadFeedsSql() {
-		String scheme = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
-		sql.append("select * from rss_entity re ");
-		sql.append("inner join ").append(scheme).append("biomedgps_feed_source_group_xr xr ");
-		sql.append("on re.rss_entity_id = xr.rss_entity_id where xr.feed_group_id = ?");
-
-		return sql.toString();
-	}
-	/**
-	 * @param req
-	 */
-	private void loadArticles(ActionRequest req) {
-		List<Object> vals = new ArrayList<>();
-		vals.add(req.getParameter("feedGroupId"));
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		this.putModuleData(dbp.executeSelect(loadArticleSql(), vals, new RSSArticleVO()));
+		this.putModuleData(dbp.executeSelect(loadArticleSql(hasStatus), vals, new RSSArticleVO()));
 	}
 
 	/**
+	 * Method returns the sql for loading the article list.
 	 * @return
 	 */
-	private String loadArticleSql() {
+	private String loadArticleSql(boolean hasStatusCd) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
 		sql.append("select * from ").append(schema).append("biomedgps_rss_article a ");
-		sql.append("where a.feed_group_id = ?");
+		sql.append("where a.feed_group_id = ? ");
+		if(hasStatusCd) {
+			sql.append("and a.article_status_cd = ? ");
+		}
 
 		return sql.toString();
 	}
@@ -114,7 +106,7 @@ public class NewsroomAction extends SBActionAdapter {
 	 * @param req
 	 * @return 
 	 */
-	private void loadSegmentGroupArticles(ActionRequest req) {
+	protected void loadSegmentGroupArticles(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
 		vals.add(ArticleStatus.N.name());
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -129,16 +121,15 @@ public class NewsroomAction extends SBActionAdapter {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(700);
 		sql.append("select a.feed_segment_id, a.feed_group_id, a.feed_group_nm, ");
-		sql.append("b.FEED_SEGMENT_NM, Count(d.feed_group_id) as article_count from ");
+		sql.append("b.FEED_SEGMENT_NM, cast(Count(d.feed_group_id) as int) as article_count from ");
 		sql.append(schema).append("BIOMEDGPS_FEED_GROUP a ");
 		sql.append("inner join ").append(schema).append("BIOMEDGPS_FEED_SEGMENT b ");
 		sql.append("on a.FEED_SEGMENT_ID = b.FEED_SEGMENT_ID ");
-		sql.append("left outer join ").append(schema).append("biomedgps_feed_source_group_xr c ");
-		sql.append("on a.feed_group_id = c.feed_group_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_rss_article d ");
-		sql.append("on c.feed_group_id = d.feed_group_id and d.article_status_cd = ? ");
+		sql.append("on a.feed_group_id = d.feed_group_id and d.article_status_cd = ? ");
 		sql.append("group by a.feed_segment_id, a.feed_group_id, a.feed_group_nm, b.feed_segment_id ");
 		sql.append("order by cast(b.FEED_SEGMENT_ID as int), FEED_GROUP_NM");
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 
@@ -156,6 +147,7 @@ public class NewsroomAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Method manages updating a bucket.
 	 * @param req
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 

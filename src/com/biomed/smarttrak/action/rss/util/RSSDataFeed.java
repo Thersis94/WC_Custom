@@ -236,10 +236,10 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		article.setFilterTitleTxt(article.getTitleTxt().replaceAll(filter.getFilterExpression(), props.getProperty(REPLACE_SPAN)));
 
 		//Build Matchers.
-		if(article.getFilterArticleTxt().contains("<span class='f-match'>")) {
+		if(article.getFilterArticleTxt().contains("<span class='hit'>")) {
 			isMatch = true;
 		}
-		if(article.getFilterTitleTxt().contains("<span class='f-match'>")) {
+		if(article.getFilterTitleTxt().contains("<span class='hit'>")) {
 			isMatch = true;
 		}
 

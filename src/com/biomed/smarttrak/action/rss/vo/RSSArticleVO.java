@@ -21,6 +21,7 @@ import com.siliconmtn.db.orm.Table;
 @Table(name="biomedgps_rss_article")
 public class RSSArticleVO implements Serializable {
 
+	public enum ArticleSourceType {RSS, PUBMED, QUERTLE}
 	private static final long serialVersionUID = 3528944442225589967L;
 	private String rssArticleId;
 	private String articleStatusCd;
@@ -33,6 +34,7 @@ public class RSSArticleVO implements Serializable {
 	private String filterTitleTxt;
 	private String articleUrl;
 	private String publicationName;
+	private ArticleSourceType articleSourceType;
 	private Date publishDt;
 	private Date createDt;
 
@@ -41,7 +43,8 @@ public class RSSArticleVO implements Serializable {
 	}
 
 	public RSSArticleVO(ActionRequest req) {
-		
+		rssArticleId = req.getParameter("rssArticleId");
+		articleStatusCd = req.getParameter("articleStatusCd");
 	}
 
 	/**
@@ -122,6 +125,15 @@ public class RSSArticleVO implements Serializable {
 	@Column(name="article_url")
 	public String getArticleUrl() {
 		return articleUrl;
+	}
+
+	@Column(name="article_source_type")
+	public String getArticleSourceTypeNm() {
+		return articleSourceType != null ? articleSourceType.name() : "";
+	}
+
+	public ArticleSourceType getArticleSourceType() {
+		return articleSourceType;
 	}
 
 	/**
@@ -217,6 +229,13 @@ public class RSSArticleVO implements Serializable {
 		this.articleUrl = articleUrl;
 	}
 
+	public void setArticleSourceTypeNm(String articleSourceTypeNm) {
+		this.articleSourceType = ArticleSourceType.valueOf(articleSourceTypeNm);
+	}
+
+	public void setArticleSourceType(ArticleSourceType articleSourceType) {
+		this.articleSourceType = articleSourceType;
+	}
 	/**
 	 * @param publishDt the publishDt to set.
 	 */

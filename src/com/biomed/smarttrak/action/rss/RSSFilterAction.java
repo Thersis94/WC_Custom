@@ -257,7 +257,7 @@ public class RSSFilterAction extends SBActionAdapter {
 	 * @param filterId
 	 * @param groupIds
 	 */
-	private void saveFilterGroupXRVals(String filterId, String[] groupIds) {
+	protected void saveFilterGroupXRVals(String filterId, String... groupIds) {
 		StringBuilder s = new StringBuilder(150);
 		s.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		s.append("biomedgps_feed_filter_group_xr (feed_filter_group_xr_id, ");
