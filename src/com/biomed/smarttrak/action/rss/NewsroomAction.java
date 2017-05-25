@@ -53,8 +53,6 @@ public class NewsroomAction extends SBActionAdapter {
 		if(req.hasParameter("isBuckets")) {
 			loadBuckets(req);
 			loadSegmentGroupArticles(req);
-		} else if (req.hasParameter("isConsole")) {
-			
 		} else if(req.hasParameter("feedGroupId") && !req.hasParameter("isConsole")){
 			loadArticles(req.getParameter("feedGroupId"), req.getParameter("statusCd"));
 		} else {
