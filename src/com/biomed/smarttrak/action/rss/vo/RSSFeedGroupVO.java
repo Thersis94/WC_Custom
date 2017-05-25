@@ -1,9 +1,12 @@
 package com.biomed.smarttrak.action.rss.vo;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
@@ -14,7 +17,7 @@ import com.siliconmtn.util.StringUtil;
  * <b>Description:</b> VO Manages Feed Group Data.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 1.0
  * @since May 9, 2017
@@ -31,16 +34,23 @@ public class RSSFeedGroupVO implements Serializable {
 	private String feedTypeId;
 	private String feedFilterGroupXrId;
 	private String feedEntityGroupXrId;
+	private int articleCount;
+	private List<RSSFilterVO> filters;
+	private List<RSSFilterTerm> terms;
 	private Date createDt;
 	private Date updateDt;
 
 	public RSSFeedGroupVO() {
 		super();
+		filters = new ArrayList<>();
+		terms = new ArrayList<>();
 	}
 
 	public RSSFeedGroupVO(ActionRequest req) {
+		this();
 		setData(req);
 	}
+
 	/**
 	 * @param req
 	 */
@@ -102,6 +112,12 @@ public class RSSFeedGroupVO implements Serializable {
 	public String getFeedEntityGroupXrId() {
 		return feedEntityGroupXrId;
 	}
+
+	@Column(name="article_count", isReadOnly=true)
+	public int getArticleCount() {
+		return articleCount;
+	}
+
 	/**
 	 * @return the createDt
 	 */
@@ -116,6 +132,26 @@ public class RSSFeedGroupVO implements Serializable {
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDt;
+	}
+
+	public List<RSSFilterVO> getFilters() {
+		return filters;
+	}
+
+	public List<RSSFilterTerm> getTerms() {
+		return terms;
+	}
+
+	@BeanSubElement
+	public void addFilter(RSSFilterVO f) {
+		if(f != null)
+			filters.add(f);
+	}
+
+	@BeanSubElement
+	public void addTerm(RSSFilterTerm t) {
+		if(t != null)
+			terms.add(t);
 	}
 
 	/**
@@ -166,10 +202,23 @@ public class RSSFeedGroupVO implements Serializable {
 	public void setFeedEntityGroupXrId(String feedEntityGroupXrId) {
 		this.feedEntityGroupXrId = feedEntityGroupXrId;
 	}
+
+	public void setArticleCount(int articleCount) {
+		this.articleCount = articleCount;
+	}
+
 	/**
 	 * @param updateDt the updateDt to set.
 	 */
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
+	}
+
+	public void setFilters(List<RSSFilterVO> filters) {
+		this.filters = filters;
+	}
+
+	public void setTerms(List<RSSFilterTerm> terms) {
+		this.terms = terms;
 	}
 }

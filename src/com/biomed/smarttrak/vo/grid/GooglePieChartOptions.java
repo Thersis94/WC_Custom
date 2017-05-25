@@ -46,7 +46,7 @@ public class GooglePieChartOptions extends GoogleBaseChartOptions {
 
 		chart.put("pieHole", .4);
 		chart.put("sliceVisibilityThreshold", .05);
-		chart.put("pieSliceText", "percentage");
+		chart.put("pieSliceText", "none");
 		
 		Map<String, Object> chartArea = new HashMap<>();
 		chartArea.put("width", "85%");

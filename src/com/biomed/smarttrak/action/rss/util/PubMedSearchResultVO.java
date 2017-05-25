@@ -3,6 +3,8 @@ package com.biomed.smarttrak.action.rss.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.action.rss.vo.RSSFilterTerm;
+
 /***************************************************************************
  * <b>Title:</b> PubMedSearchResultVO.java
  * <b>Project:</b> WC_Custom
@@ -22,7 +24,8 @@ public class PubMedSearchResultVO {
 	private int retStart;
 	private int queryKey;
 	private String webEnv;
-	private List<Integer> idList;
+	private List<String> idList;
+	private RSSFilterTerm req;
 
 	public PubMedSearchResultVO() {
 		idList = new ArrayList<>();
@@ -71,11 +74,14 @@ public class PubMedSearchResultVO {
 	/**
 	 * @return the idList
 	 */
-	public List<Integer> getIdList() {
+	public List<String> getIdList() {
 		return idList;
 	}
 
 
+	public RSSFilterTerm getReqTerm() {
+		return req;
+	}
 	/**
 	 * @param count the count to set.
 	 */
@@ -119,7 +125,7 @@ public class PubMedSearchResultVO {
 	/**
 	 * @param idList the idList to set.
 	 */
-	public void setIdList(List<Integer> idList) {
+	public void setIdList(List<String> idList) {
 		this.idList = idList;
 	}
 
@@ -127,7 +133,14 @@ public class PubMedSearchResultVO {
 	/**
 	 * @param id the id to add to idList
 	 */
-	public void addId(int id) {
-		idList.add(Integer.valueOf(id));
+	public void addId(String id) {
+		idList.add(id);
+	}
+
+	/**
+	 * @param req
+	 */
+	public void setQueryTerm(RSSFilterTerm req) {
+		this.req = req;
 	}
 }
