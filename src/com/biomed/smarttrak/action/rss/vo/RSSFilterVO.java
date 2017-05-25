@@ -29,6 +29,7 @@ public class RSSFilterVO implements Serializable {
 	private String filterNm;
 	private String typeCd;
 	private String filterExpression;
+	private String filterGroupXrId;
 	private Date createDt;
 	private Date updateDt;
 
@@ -95,6 +96,11 @@ public class RSSFilterVO implements Serializable {
 		return updateDt;
 	}
 
+	@Column(name="feed_filter_group_xr_id", isReadOnly=true)
+	public String getFilterGroupXrId() {
+		return filterGroupXrId;
+	}
+
 	/**
 	 * @param filterId the filterId to set.
 	 */
@@ -135,5 +141,9 @@ public class RSSFilterVO implements Serializable {
 	 */
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
+	}
+
+	public void setFilterGroupXrId(String filterGroupXrId) {
+		this.filterGroupXrId = filterGroupXrId;
 	}
 }

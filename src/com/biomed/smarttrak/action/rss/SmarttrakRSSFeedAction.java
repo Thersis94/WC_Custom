@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.SmarttrakRssEntityVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -65,7 +66,38 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		update(req);
+		if(req.hasParameter("isStatusUpdate")) {
+			updateArticleStatus(req);
+		} else {
+			update(req);
+		}
+		
+	}
+
+	/**
+	 * @param parameter
+	 * @param parameter2
+	 */
+	private void updateArticleStatus(ActionRequest req) throws ActionException {
+		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		try {
+			List<String> fields = new ArrayList<>();
+			fields.addAll(Arrays.asList("article_status_cd", "rss_article_id"));
+			dbp.executeSqlUpdate(getArticleStatusSql(), new RSSArticleVO(req), fields);
+		} catch (Exception e) {
+			log.error("Error updating article status Code", e);
+			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * @return
+	 */
+	private String getArticleStatusSql() {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_rss_article set article_status_cd = ? where rss_article_id = ? ");
+		return sql.toString();
 	}
 
 	/* (non-Javadoc)
