@@ -18,15 +18,15 @@ import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: IFUApprover.java<p/>
- * <b>Description: Handles all tasks related to approving/rejecting/canceling 
- * changes to IFU documents.</b> 
- * <p/>
- * <b>Copyright:</b> Copyright (c) 2015<p/>
- * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * <b>Title:</b> IFUApprover.java
+ * <b>Description:</b> Handles all tasks related to approving/rejecting/canceling
+ * changes to IFU documents.
+ * <b>Copyright:</b> Copyright (c) 2017
+ * <b>Company:</b> Silicon Mountain Technologies
+ *
  * @author Eric Damschroder
- * @version 1.0
- * @since Mar 18, 2015
+ * @version 3.0
+ * @since Mar 18, 2017
  ****************************************************************************/
 
 public class IFUApprover extends AbstractApprover {
@@ -134,6 +134,7 @@ public class IFUApprover extends AbstractApprover {
 	/**
 	 * Delete the in progress item
 	 */
+	@Override
 	public void cancel(ApprovalVO... items) throws ApprovalException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String delete = "DELETE FROM " + customDb + "DEPUY_IFU WHERE DEPUY_IFU_ID = ?";
@@ -166,7 +167,7 @@ public class IFUApprover extends AbstractApprover {
 	public List<ApprovalVO> list(SyncStatus status) throws ApprovalException {
 		List<ApprovalVO> appItems = new ArrayList<>();
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(80);
+		StringBuilder sql = new StringBuilder(450);
 		sql.append("SELECT di.title_txt as PORTLET_NM, ws.*, FIRST_NM as admin_first, ");
 		sql.append("LAST_NM as admin_last FROM ");
 		sql.append(customDb).append("DEPUY_IFU di ");
