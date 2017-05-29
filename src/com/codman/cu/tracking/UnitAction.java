@@ -1,5 +1,6 @@
 package com.codman.cu.tracking;
 
+//Java
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,12 +12,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+//WC Custom
 import com.codman.cu.tracking.vo.PhysicianVO;
 import com.codman.cu.tracking.vo.RequestSearchVO;
 import com.codman.cu.tracking.vo.UnitHistoryReportRepsVO;
 import com.codman.cu.tracking.vo.UnitHistoryReportVO;
 import com.codman.cu.tracking.vo.UnitSearchVO;
 import com.codman.cu.tracking.vo.UnitVO;
+
+//SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.RangeQuery;
@@ -25,6 +29,8 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -37,13 +43,17 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
- * <b>Title</b>: UnitAction.java<p/>
- * <b>Description: Responsible for saving Unit data into the DB.</b> 
- * <p/>
- * <b>Copyright:</b> Copyright (c) 2014<p/>
- * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * <b>Title</b>: UnitAction.java
+ * <b>Project</b>: WC_Custom
+ * <b>Description: </b>  Responsible for saving Unit data into the DB.
+ * <b>Copyright:</b> Copyright (c) 2014
+ * <b>Company:</b> Silicon Mountain Technologies
+ * 
  * @author Erik Wingo
+ * @version 3.0
  * @since Oct 30, 2014
+ * @updates:
+ * rjr code clean up May 29, 2017
  ****************************************************************************/
 public class UnitAction extends SBActionAdapter {
 
@@ -74,6 +84,11 @@ public class UnitAction extends SBActionAdapter {
 		super(arg0);
 	}
 
+	/**
+	 * return a sting related to the status
+	 * @param id
+	 * @return
+	 */
 	public static String getStatusName(int id) {
 		if (id == UnitAction.STATUS_IN_USE) return "In-Use";
 		if (id == UnitAction.STATUS_AVAILABLE) return "Available";
@@ -95,7 +110,7 @@ public class UnitAction extends SBActionAdapter {
 		}
 
 		// Setup the redirect
-		StringBuilder url = new StringBuilder();
+		StringBuilder url = new StringBuilder(50);
 		if (StringUtil.checkVal(req.getParameter("redir")).length() > 0) {
 			url.append(req.getParameter("redir"));
 			url.append("?type=unit&accountId=").append(req.getParameter("accountId"));
@@ -112,7 +127,7 @@ public class UnitAction extends SBActionAdapter {
 
 	public String saveUnit(UnitVO vo) throws SQLException {
 		msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(200);
 
 		if (StringUtil.checkVal(vo.getUnitId()).length() == 0 && vo.getParentId() == null)
 			vo.setUnitId(findUnitId(vo.getSerialNo(), vo.getOrganizationId()));
@@ -177,7 +192,7 @@ public class UnitAction extends SBActionAdapter {
 
 		} catch (SQLException sqle) {
 			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-			throw(sqle);
+			throw sqle;
 		}
 
 		return vo.getUnitId();
@@ -262,7 +277,6 @@ public class UnitAction extends SBActionAdapter {
 		sql.append("select a.*, f.status_nm, e.profile_id as phys_profile_id, ");
 		sql.append("d.account_nm, g.profile_id as rep_person_id, e.center_txt, e.department_txt, ");
 		sql.append("b.create_dt as ledger_deployed_dt, d.city_nm, d.country_cd, c.transaction_type_id ");
-		//sql.append(" ROW_NUMBER() OVER (ORDER BY ").append(getSortOrder(search)).append(") AS 'RowNumber' ");
 		sql.append("from ").append(custom_db);
 		sql.append("codman_cu_unit a ").append(join).append(custom_db);
 		sql.append("codman_cu_unit_ledger b on a.unit_id=b.unit_id and b.active_record_flg=1 ");
