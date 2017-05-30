@@ -33,10 +33,14 @@ public class AuthorVO extends SecureSolrDocumentVO {
 	 * @param req
 	 */
 	protected void setData(ActionRequest req){
-		SMTSession ses = req.getSession();
-		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
-		if(vo != null) {
-			setCreatorProfileId(StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId()));
+		if(req.hasParameter("creatorProfileId")){
+			setCreatorProfileId(req.getParameter("creatorProfileId"));
+		}else{//attempt to retrieve from the session if not on request
+			SMTSession ses = req.getSession();
+			UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+			if(vo != null) {
+				setCreatorProfileId(StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId()));
+			}			
 		}
 	}
 			
