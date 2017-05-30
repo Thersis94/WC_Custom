@@ -1,10 +1,11 @@
 package com.codman.cu.tracking;
-
+//java 8
 import java.sql.PreparedStatement;
-
 import java.sql.SQLException;
-
+//WC Customs
 import com.codman.cu.tracking.vo.TransactionVO;
+
+//SMT Base Lib
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -12,28 +13,30 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 
+//WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: TransferFacadeAction.java<p/>
+ * <b>Title</b>: UnitTransferAction.java
+ * <b>Project</b>: WC_Custom
  * <b>Description: </b> 
- * <p/>
- * <b>Copyright:</b> Copyright (c) 2010<p/>
- * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * <b>Copyright:</b> Copyright (c) 2017
+ * <b>Company:</b> Silicon Mountain Technologies
+ * 
  * @author Dave Bargerhuff
- * @version 1.0
- * @since Nov 09, 2010
+ * @version 3.0
+ * @since Nov 09, 2010 
+ * @updates:
+ * rjr code clean up May 29, 2017
  ****************************************************************************/
+
 public class UnitTransferAction extends SBActionAdapter {
 		
 	private Object msg = null;
 	
-	/**
-	 * 
-	 */
 	public UnitTransferAction() {
 		super();
 	}
@@ -46,7 +49,8 @@ public class UnitTransferAction extends SBActionAdapter {
 		super(arg0);
 	}
 
-	/* (non-Javadoc)
+	/* 
+	 * (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void build(ActionRequest req) throws ActionException {			
