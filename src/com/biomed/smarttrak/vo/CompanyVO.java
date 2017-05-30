@@ -403,6 +403,7 @@ public class CompanyVO  extends AuthorVO {
 	/**
 	 * @return the creatorProfileId
 	 */
+	@Override
 	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;

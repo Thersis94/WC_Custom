@@ -254,6 +254,15 @@ public class MarketVO extends AuthorVO {
 	public void setRegionName(String regionName) {
 		this.regionName = regionName;
 	}
+	
+	/**
+	 * @return the creatorProfileId
+	 */
+	@Override
+	@Column(name="creator_profile_id")
+	public String getCreatorProfileId() {
+		return creatorProfileId;
+	}
 
 	@Column(name="public_flg")
 	public int getPublicFlag() {

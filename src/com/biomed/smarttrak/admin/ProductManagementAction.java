@@ -169,7 +169,6 @@ public class ProductManagementAction extends AuthorAction {
 	
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		//TODO refactor this class to have a common parent class for same functionality.
 		ActionTarget action;
 		
 		if (req.hasParameter("buildAction")) {

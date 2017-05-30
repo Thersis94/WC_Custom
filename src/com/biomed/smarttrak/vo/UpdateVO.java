@@ -68,7 +68,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private String messageTxt;
 	private String twitterTxt;
 	private int tweetFlg;
-	private String creatorProfileId;
 	private String firstNm;
 	private String lastNm;
 	private String statusCd;
@@ -248,6 +247,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	/**
 	 * @return the creatorProfileId
 	 */
+	@Override
 	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;

@@ -108,7 +108,6 @@ public class MarketManagementAction extends AuthorAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		//TODO refactor this class to have a common parent class for same functionality.
 		if (req.hasParameter("buildAction")) {
 			super.retrieve(req);
 			return;

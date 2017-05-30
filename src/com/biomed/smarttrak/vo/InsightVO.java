@@ -130,7 +130,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	 * @param req
 	 */
 	protected void setData(ActionRequest req) {
-		super.setData(req); //set the creator_profile_id
+		//don't default creator_profile_id to current user, for insights
 		setInsightId(req.getParameter("insightId"));
 		if (StringUtil.isEmpty(insightId)) setInsightId(req.getParameter("pkId"));
 		setTitleTxt(req.getParameter("titleTxt"));
