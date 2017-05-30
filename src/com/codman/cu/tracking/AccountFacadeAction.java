@@ -98,7 +98,6 @@ public class AccountFacadeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		//TODO this method is long and complex and should be broken up time permitting.
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String type = StringUtil.checkVal(req.getParameter("type"));

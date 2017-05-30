@@ -242,7 +242,6 @@ public class UserAction extends SimpleActionAdapter {
 	 */
 	public List<PersonVO> retrieveUsers(ActionRequest req) 
 	throws SQLException, DatabaseException {
-		log.debug("retrieving users");
 		Map<String, PersonVO> data = new HashMap<>();
 		List<PersonVO> results = new ArrayList<>();
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
@@ -373,7 +372,8 @@ public class UserAction extends SimpleActionAdapter {
 		role.setRoleId(vo.getRoleId());
 		role.setProfileRoleId(vo.getProfileRoleId());
 		role.setStatusId(SecurityController.STATUS_ACTIVE);
-		log.debug(StringUtil.checkVal(role.toString()));
+		
+		log.debug(StringUtil.getToString(role));
 		
 		// retrieve any existing profileRoleId so that we can update it
 		if (role.getProfileRoleId() == null || role.getProfileRoleId().length() == 0) {
