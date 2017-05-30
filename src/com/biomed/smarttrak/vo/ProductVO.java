@@ -34,6 +34,7 @@ public class ProductVO extends AuthorVO {
 	private String parentId;
 	private String companyId;
 	private String companyName;
+	private String companyShortName;
 	private String productName;
 	private int orderNo;
 	private String metaKeyword;
@@ -52,6 +53,7 @@ public class ProductVO extends AuthorVO {
 	private Map<String, List<ProductAttributeVO>> details;
 	private Map<String, List<ProductVO>> relatedProducts;
 	private Node[] detailsList;
+	private int publicFlag;
 	
 	public ProductVO () {
 		super(BiomedProductIndexer.INDEX_TYPE);
@@ -86,6 +88,7 @@ public class ProductVO extends AuthorVO {
 		authorProfileId = req.getParameter("authorProfileId");
 		statusNo = req.getParameter("statusNo");
 		productGroupId = req.getParameter("productGroupId");
+		setPublicFlag(Convert.formatInteger(req.getParameter("publicFlag")));
 	}
 
 
@@ -119,6 +122,17 @@ public class ProductVO extends AuthorVO {
 
 	public void setCompanyName(String companyName) {
 		this.companyName = companyName;
+	}
+
+
+	@Column(name="short_nm_txt", isReadOnly=true)
+	public String getCompanyShortName() {
+		return companyShortName;
+	}
+
+
+	public void setCompanyShortName(String companyShortName) {
+		this.companyShortName = companyShortName;
 	}
 
 
@@ -352,6 +366,16 @@ public class ProductVO extends AuthorVO {
 
 	public void setDetailsList(Node[] detailsList) {
 		this.detailsList = detailsList;
+	}
+
+	@Column(name="public_flg")
+	public int getPublicFlag() {
+		return publicFlag;
+	}
+
+
+	public void setPublicFlag(int publicFlag) {
+		this.publicFlag = publicFlag;
 	}
 	
 	/**

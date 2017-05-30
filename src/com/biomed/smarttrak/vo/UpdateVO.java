@@ -22,6 +22,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.smt.sitebuilder.changelog.ChangeLogIntfc;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: UpdateVO.java
@@ -66,6 +67,8 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private int emailFlg;
 	private String messageTxt;
 	private String twitterTxt;
+	private int tweetFlg;
+	private String creatorProfileId;
 	private String firstNm;
 	private String lastNm;
 	private String statusCd;
@@ -79,7 +82,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		super(UpdateIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
-		super.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL);
+		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 	}
 
 
@@ -103,6 +106,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		this.typeCd = Convert.formatInteger(req.getParameter("typeCd"));
 		this.messageTxt = req.getParameter("messageTxt");
 		this.twitterTxt = req.getParameter("twitterTxt");
+		this.tweetFlg = Convert.formatInteger(Convert.formatBoolean(req.getParameter("tweetFlg")));
 		this.statusCd = req.getParameter("statusCd");
 		this.publishDt = Convert.formatDate(req.getParameter("publishDt"));
 		this.orderNo = Convert.formatInteger(req.getParameter("orderNo"));
@@ -275,8 +279,8 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	/**
 	 * @return the publishDt
 	 */
-	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
-	@Column(name="publish_dt", isAutoGen=true, isInsertOnly=true)
+	@SolrField(name=SearchDocumentHandler.PUBLISH_DATE)
+	@Column(name="publish_dt")
 	public Date getPublishDt() {
 		return publishDt;
 	}
@@ -302,7 +306,9 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	/**
 	 * @return the updateDt
 	 */
+	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
+	@Override
 	public Date getUpdateDt() {
 		return updateDt;
 	}
@@ -425,6 +431,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	/**
 	 * @param updateDt the updateDt to set.
 	 */
+	@Override
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
 	}
@@ -472,6 +479,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @return the lastNm
 	 */
 	@Column(name="last_nm", isReadOnly=true)
+	@Override
 	public String getLastName() {
 		return lastNm;
 	}
@@ -551,5 +559,20 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 
 	public boolean getHasHistory() {
 		return !StringUtil.isEmpty(historyId);
+	}
+
+	/**
+	 * @return the tweetFlg
+	 */
+	@Column(name="tweet_flg")
+	public int getTweetFlg() {
+		return tweetFlg;
+	}
+
+	/**
+	 * @param tweetFlg the tweetFlg to set
+	 */
+	public void setTweetFlg(int tweetFlg) {
+		this.tweetFlg = tweetFlg;
 	}
 }

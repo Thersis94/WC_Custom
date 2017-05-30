@@ -219,6 +219,9 @@ public class UpdatesAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void transposeRequest(ActionRequest req, List<String> docIds) throws ActionException {
+		//Enusre action request does NOT encode params. Solr needs exact phrase.
+		req.setValidateInput(Boolean.FALSE);
+		
 		//get the filter queries already on the request.  Add ours to the stack, and put the String[] back on the request for Solr
 		String[] fqs = req.getParameterValues("fq");
 		if (fqs == null) fqs = new String[0];
@@ -252,19 +255,26 @@ public class UpdatesAction extends SBActionAdapter {
 			data.add(SearchDocumentHandler.MODULE_TYPE + ":" + req.getParameter("typeId"));
 
 		//Custom Filtering for when looking at an Email View.
-		if(req.hasParameter("isEmail")) {
-
-			//Set fmid from ModuleVO
-			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-			req.setParameter("fmid", mod.getPageModuleId());
-
-			//Set Custom Sort Field and Direction.
-			req.setParameter("sortField", "moduleType asc, publishDtNoTime_s desc, order_i asc, publishTime_s ");
-			req.setParameter("sortDirection", "desc");
-		}
+		transposeEmailFilter(req);
 
 		//put the new list of filter queries back on the request
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 		req.setParameter("ft", terms.toArray(new String[terms.size()]), true);
+	}
+	
+	/**
+	 * Handles processing the custom filter for email views for Solr
+	 * @param req
+	 */
+	protected void transposeEmailFilter(ActionRequest req){
+		if(!req.hasParameter("isEmail")) return;
+		
+		//Set fmid from ModuleVO
+		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		req.setParameter("fmid", mod.getPageModuleId());
+
+		//Set Custom Sort Field and Direction.
+		req.setParameter("sortField", "moduleType asc, publishDtNoTime_s desc, order_i asc, publishTime_s ");
+		req.setParameter("sortDirection", "desc");
 	}
 }

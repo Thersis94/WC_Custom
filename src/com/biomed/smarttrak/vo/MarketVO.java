@@ -44,6 +44,7 @@ public class MarketVO extends AuthorVO {
 	private Date createDate;
 	private String regionCode;
 	private String regionName;
+	private int publicFlag;
 
 	public MarketVO () {
 		super(MarketIndexer.INDEX_TYPE);
@@ -70,6 +71,7 @@ public class MarketVO extends AuthorVO {
 		statusNo = req.getParameter("statusNo");
 		setRegionCode(req.getParameter("regionCode"));
 		marketSection = new SectionVO(req);
+		setPublicFlag(Convert.formatInteger(req.getParameter("publicFlag")));
 	}
 
 
@@ -252,12 +254,14 @@ public class MarketVO extends AuthorVO {
 	public void setRegionName(String regionName) {
 		this.regionName = regionName;
 	}
-	
-	/**
-	 * @return the creatorProfileId
-	 */
-	@Column(name="creator_profile_id")
-	public String getCreatorProfileId() {
-		return creatorProfileId;
+
+	@Column(name="public_flg")
+	public int getPublicFlag() {
+		return publicFlag;
+	}
+
+
+	public void setPublicFlag(int publicFlag) {
+		this.publicFlag = publicFlag;
 	}
 }

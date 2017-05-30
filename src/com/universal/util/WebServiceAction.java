@@ -119,10 +119,10 @@ public class WebServiceAction extends SBActionAdapter {
 	public Element retrieveTaxInfo(UserDataVO shippingInfo, Collection<ShoppingCartItemVO> prods, String promoCode) 
 	throws DocumentException {
 		boolean useSSL = false;
-		if (shippingInfo == null || prods == null || prods.size() == 0) return new DefaultElement("Tax");
+		if (shippingInfo == null || prods == null || prods.isEmpty()) return new DefaultElement("Tax");
 		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "tax", useSSL);
-		StringBuilder s = new StringBuilder();
-		s.append("xml=").append(BASE_XML_HEADER).append("<TaxRequest>");
+		StringBuilder s = new StringBuilder(150);
+		s.append(BASE_XML_HEADER).append("<TaxRequest>");
 		s.append("<State>").append(shippingInfo.getState()).append("</State>");
 		s.append("<Zip>").append(shippingInfo.getZipCode()).append("</Zip>");
 		this.addProductXMLByCollection(s, prods);		
@@ -141,12 +141,12 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public Element retrievePromotionDiscount(Collection<ShoppingCartItemVO> prods, String pc) 
 	throws DocumentException {
-		if (prods == null || prods.size() == 0) return new DefaultElement("PromotionCodeResponse");
+		if (prods == null || prods.isEmpty()) return new DefaultElement("PromotionCodeResponse");
 		boolean useSSL = true;
 		String siteId = StringUtil.checkVal(getAttribute(CATALOG_SITE_ID));
 		String url = this.retrieveServiceURL(siteId, "promocode", useSSL);
 		StringBuilder s = new StringBuilder();
-		s.append("xml=").append(BASE_XML_HEADER).append("<PromotionCodeRequest>");
+		s.append(BASE_XML_HEADER).append("<PromotionCodeRequest>");
 		s.append("<Code>").append(pc).append("</Code>");
 		this.addProductXMLByCollection(s, prods);
 		s.append("</PromotionCodeRequest>");
@@ -169,7 +169,7 @@ public class WebServiceAction extends SBActionAdapter {
 		boolean useSSL = true;
 		String url = this.retrieveServiceURL(StringUtil.checkVal(catalogSiteId), "login", useSSL);
 		StringBuilder s = new StringBuilder();
-		s.append("xml=").append(BASE_XML_HEADER).append("<MemberRequest>");
+		s.append(BASE_XML_HEADER).append("<MemberRequest>");
 		s.append("<Email>").append(email).append("</Email>");
 		s.append("<Password>").append(pwd).append("</Password>");
 		s.append("</MemberRequest>");
@@ -191,7 +191,7 @@ public class WebServiceAction extends SBActionAdapter {
 		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "shipping", useSSL);
 		// Build the XML Request
 		StringBuilder s = new StringBuilder();
-		s.append("xml=").append(BASE_XML_HEADER).append("<ShippingRequest>");
+		s.append(BASE_XML_HEADER).append("<ShippingRequest>");
 		s.append("<Zip>").append(StringUtil.checkVal(zip)).append("</Zip>");
 		// add product XML
 		this.addProductXMLByMap(s, prods);
@@ -211,7 +211,7 @@ public class WebServiceAction extends SBActionAdapter {
 		boolean useSSL = false;
 		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "stock", useSSL);
 		StringBuilder s = new StringBuilder();
-		s.append("xml=").append(BASE_XML_HEADER).append("<StockRequest>");
+		s.append(BASE_XML_HEADER).append("<StockRequest>");
 		s.append("<Products>");
 		this.addProductXML(s, product, 1, false);
 		s.append("</Products>");
@@ -345,7 +345,7 @@ public class WebServiceAction extends SBActionAdapter {
 				StringUtil.checkVal(req.getParameter("paypal")).equalsIgnoreCase("do"));
 		
 		StringBuilder s = new StringBuilder();
-		s.append("xml=").append(BASE_XML_HEADER).append("<OrderRequest>");
+		s.append(BASE_XML_HEADER).append("<OrderRequest>");
 		s.append("<Addresses>");
 		s.append("<Address type=\"billing\">");
 		/*If is PayPal, use shipping info for billing info because PayPal Express Checkout
@@ -368,18 +368,7 @@ public class WebServiceAction extends SBActionAdapter {
 		if (StringUtil.checkVal(eveningPhone).length() > 0) {
 			s.append("<EveningPhone>").append(eveningPhone).append("</EveningPhone>");
 		}
-		/* Mantis #9173 DBargerhuff TODO Waiting for USA to provide specific XML 
-		 * tag structure to use.*
-		 *
-		if (billInfo.getAttributes() != null) {
-			Object o = billInfo.getAttributes().get(ShoppingCartAction.BILLING_COMMENTS);
-			if (o != null) {
-				s.append("<Comments>");
-				s.append((String)o);
-				s.append("</Comments>");				
-			}
-		}
-		*/
+
 		s.append("</Address>");
 		s.append("<Address type=\"shipping\">");
 		s.append("<Email>").append(cart.getShippingInfo().getEmailAddress()).append("</Email>");
@@ -464,7 +453,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String retrieveServiceURL(String siteId, String suffix, boolean useSSL) {
-		StringBuffer prefix = new StringBuffer();
+		StringBuilder prefix = new StringBuilder(25);
 		if (useSSL) prefix.append("https://"); else prefix.append("http://");
 		prefix.append(StringUtil.checkVal(getAttribute(siteId), (String)getAttribute("USA_1")));
 		prefix.append(suffix);
@@ -572,6 +561,11 @@ public class WebServiceAction extends SBActionAdapter {
 			String elem, boolean useSSL) throws DocumentException {
 		// Make the HTTP call the web service
 		log.debug("xmlRequest: " + xmlRequest);
+		
+		// create param map
+		Map<String, Object> params = new HashMap<>();
+		params.put("xml", xmlRequest.toString());
+		
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
 		// if using SSL for the call, create an SSL socket factory for the conn.
 		if (useSSL) {
@@ -582,7 +576,7 @@ public class WebServiceAction extends SBActionAdapter {
 		byte[] data = null;
 		boolean isError = false;
 		try {
-			data = conn.retrieveDataViaPost(url, xmlRequest.toString());
+			data = conn.retrieveDataViaPost(url, params);
 			// examine the response code for success
 			if (conn.getResponseCode() != 200) {
 				// We did not receive parseable XML from the webservice, throw exception
@@ -605,7 +599,7 @@ public class WebServiceAction extends SBActionAdapter {
 			isError = true;
 		}
 		
-		if (isError) return this.createErrorElement("SYSTEM_ERROR", "A system error occurred.");
+		if (isError) return this.createErrorElement("A system error occurred.");
 		
 		log.debug("xml response data: " + new String(data));
 		return this.retrieveElement(data, elem);
@@ -646,7 +640,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @param message
 	 * @return
 	 */
-	private Element createErrorElement(String code, String message) {
+	private Element createErrorElement(String message) {
 		Element err = new DefaultElement("Error");
 		err.addElement("ErrorCode").setText("SystemError");
 		err.addElement("ErrorMessage").setText("SystemError");
@@ -713,7 +707,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	private String safeDouble(double val) {
 		try {
-			return new Double(val).toString();
+			return Double.toString(val);
 		} catch (NumberFormatException nfe) {
 			return "0.00";
 		}

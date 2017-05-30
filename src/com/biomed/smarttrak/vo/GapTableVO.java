@@ -15,9 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.siliconmtn.data.Node;
-
 import net.sf.json.JSONObject;
+
+import com.siliconmtn.data.Node;
 
 /****************************************************************************
  * <b>Title</b>: GapTableVO.java
@@ -131,7 +131,7 @@ public class GapTableVO implements Serializable {
 	 */
 	private void buildRows() {
 		for(GapCompanyVO c : companies.values()) {
-			c.buildCellData(getColumns());
+			c.buildCellData(associateColGroup(getColumns()));
 		}
 	}
 
@@ -271,6 +271,32 @@ public class GapTableVO implements Serializable {
 			return columnMap.values();
 		}
 		return Collections.<Node>emptyList();
+	}
+	
+	/**
+	 * Maps the associated column group to the gap column based on the 
+	 * corresponding child level headers. 
+	 * @param columns
+	 * @return
+	 */
+	protected Collection<Node> associateColGroup(Collection<Node> columns){	
+		if(columns == null)  return columns;
+		
+		//get the child level header cols
+		List<GapColumnVO> childCols = headerCols.get(ColumnKey.CHILD.name());
+		
+		//find the matching node within collection	
+		for (Node col : columns) {
+			for (GapColumnVO childCol : childCols) {
+				if(col.getNodeId() == childCol.getId()){
+					com.biomed.smarttrak.admin.vo.GapColumnVO gapVO;
+					gapVO = (com.biomed.smarttrak.admin.vo.GapColumnVO)col.getUserObject();
+					gapVO.setColGroupNo(childCol.getColGroupNo());
+				}
+			}
+		}
+		
+		return columns;
 	}
 
 	/**

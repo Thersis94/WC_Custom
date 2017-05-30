@@ -21,6 +21,7 @@ import com.biomed.smarttrak.vo.ProductVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
@@ -30,6 +31,7 @@ import com.siliconmtn.util.solr.AccessControlQuery;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -69,6 +71,14 @@ public class CompanyAction extends AbstractTreeAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+			if (role == null) {
+				// Null role means this is a public user.
+				StringBuilder url = new StringBuilder(150);
+				url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
+				new SiteBuilderUtil().manualRedirect(req, url.toString());
+				throw new ActionNotAuthorizedException("not authorized");
+			}
+			
 			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role);
 			if (StringUtil.isEmpty(vo.getCompanyId())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -118,7 +128,6 @@ public class CompanyAction extends AbstractTreeAction {
 			}
 			addAttributes(company, role);
 			addLocations(company, role.getRoleLevel());
-			addSections(company);
 			addAlliances(company);
 			addInvestors(company);
 		} catch (Exception e) {
@@ -260,7 +269,7 @@ public class CompanyAction extends AbstractTreeAction {
 
 	
 	/**
-	 * Get all locations supported by the supplied company, its children, and its grandchildren and add them to the vo.
+	 * Get all locations supported by the supplied company and add them to the vo.
 	 * @param company
 	 */
 	protected void addLocations(CompanyVO company, int roleLevel) {
@@ -269,20 +278,7 @@ public class CompanyAction extends AbstractTreeAction {
 		sql.append("SELECT l.* FROM ").append(customDb).append("BIOMEDGPS_COMPANY_LOCATION l ");
 		sql.append("left join ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("on c.COMPANY_ID = l.COMPANY_ID ");
-		sql.append("WHERE (l.COMPANY_ID = ? or c.PARENT_ID = ? or c.PARENT_ID in (");
-		sql.append("SELECT child.COMPANY_ID FROM ").append(customDb).append("BIOMEDGPS_COMPANY parent ");
-		sql.append("left join ").append(customDb).append("BIOMEDGPS_COMPANY child ");
-		sql.append("on parent.COMPANY_ID = child.PARENT_ID ");
-		sql.append("WHERE parent.COMPANY_ID = ? and parent.STATUS_NO in (");
-		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
-			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
-		}
-		sql.append("'").append(AdminControllerAction.Status.P).append("') and child.STATUS_NO in (");
-		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
-			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
-		}
-		sql.append("'").append(AdminControllerAction.Status.P).append("') ");  
-		sql.append("))  and c.STATUS_NO in (");
+		sql.append("WHERE l.COMPANY_ID = ? and c.STATUS_NO in (");
 		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
 			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
 		}
@@ -291,14 +287,11 @@ public class CompanyAction extends AbstractTreeAction {
 		log.debug(sql+"|"+company.getCompanyId());
 		List<Object> params = new ArrayList<>();
 		params.add(company.getCompanyId());
-		params.add(company.getCompanyId());
-		params.add(company.getCompanyId());
 		DBProcessor db = new DBProcessor(dbConn);
 		
 		// DBProcessor returns a list of objects that need to be individually cast to locations
 		List<Object> results = db.executeSelect(sql.toString(), params, new LocationVO());
 		for (Object o : results) {
-			log.debug("Adding  " + ((LocationVO)o).getLocationId());
 			company.addLocation((LocationVO)o);
 		}
 	}
@@ -364,6 +357,7 @@ public class CompanyAction extends AbstractTreeAction {
 				// and there is nothing left for the loop to do
 			} else {
 				addToAttributeMap(attrMap, (CompanyAttributeVO)o);
+				company.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 			}
 		}
 		
