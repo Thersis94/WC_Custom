@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Properties;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.ProductAction;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeTypeVO;
@@ -51,7 +53,7 @@ public class ProductManagementAction extends AbstractTreeAction {
 	
 	private enum ActionTarget {
 		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, PRODUCTLINK, PRODUCTATTACH,
-		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION
+		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION, PREVIEW
 	}
 	
 	/**
@@ -203,7 +205,23 @@ public class ProductManagementAction extends AbstractTreeAction {
 			case REGULATION:
 				retrieveRegulatory(req);
 				break;
+			case PREVIEW:
+				retrievePreview(req);
+				break;
 		}
+	}
+	
+	
+	/**
+	 * Get the product as it would appear on the public side.
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void retrievePreview(ActionRequest req) throws ActionException {
+		ProductAction pa = new ProductAction(actionInit);
+		pa.setDBConnection(dbConn);
+		pa.setAttributes(attributes);
+		super.putModuleData(pa.retrieveProduct(req.getParameter("productId"), AdminControllerAction.STAFF_ROLE_LEVEL));
 	}
 	
 	

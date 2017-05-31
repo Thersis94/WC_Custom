@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
+import com.biomed.smarttrak.action.MarketAction;
 import com.biomed.smarttrak.util.MarketIndexer;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeTypeVO;
@@ -49,7 +50,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 	public static final String CONTENT_ATTRIBUTE_ID = "CONTENT";
 
 	private enum ActionTarget {
-		MARKET, MARKETATTRIBUTE, ATTRIBUTE, SECTION, MARKETGRAPH, MARKETLINK,MARKETATTACH
+		MARKET, MARKETATTRIBUTE, ATTRIBUTE, SECTION, MARKETGRAPH, MARKETLINK,MARKETATTACH, PREVIEW
 	}
 	
 	/**
@@ -135,8 +136,25 @@ public class MarketManagementAction extends AbstractTreeAction {
 			case SECTION:
 				retrieveSections(req);
 				break;
+			case PREVIEW :
+				retrievePreview(req);
+				break;
 		}
 	}
+	
+	
+	/**
+	 * Get the market as it would appear on the public side.
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void retrievePreview(ActionRequest req) throws ActionException {
+		MarketAction ma = new MarketAction(actionInit);
+		ma.setDBConnection(dbConn);
+		ma.setAttributes(attributes);
+		super.putModuleData(ma.retrieveFromDB(req.getParameter("marketId"), req, true));
+	}
+	
 
 
 	/**
@@ -504,6 +522,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 			case SECTION:
 				saveSections(req);
 				break;
+			default:break;
 		}
 		return marketId;
 	}
@@ -693,6 +712,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 				case SECTION:
 					deleteSection(false, req.getParameter("sectionId"));
 					break;
+				default:break;
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
