@@ -18,6 +18,7 @@ public class GapCellVO {
 	private StatusVal usReg;
 	private StatusVal ousReg;
 	private String columnId;
+	private int colGroupNo;
 
 	/**
 	 * @param usReg
@@ -28,6 +29,18 @@ public class GapCellVO {
 		this.ousReg = ousReg;
 		this.columnId = columnId;
 	}
+	
+	/**
+	 * @param usReg
+	 * @param ousReg
+	 * @param columnId
+	 * @param colGroupNo
+	 */
+	public GapCellVO(StatusVal usReg, StatusVal ousReg, String columnId, int colGroupNo) {
+		this(usReg, ousReg, columnId);
+		this.colGroupNo = colGroupNo;
+	}
+
 
 	/**
 	 * @return the usReg
@@ -74,5 +87,19 @@ public class GapCellVO {
 
 	public void setColumnId(String columnId) {
 		this.columnId = columnId;
+	}
+
+	/**
+	 * @return the colGroupNo
+	 */
+	public int getColGroupNo() {
+		return colGroupNo;
+	}
+
+	/**
+	 * @param colGroupNo the colGroupNo to set
+	 */
+	public void setColGroupNo(int colGroupNo) {
+		this.colGroupNo = colGroupNo;
 	}
 }

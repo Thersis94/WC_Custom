@@ -17,15 +17,12 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.smt.sitebuilder.changelog.ChangeLogIntfc;
-import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SecurityController;
-import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: UpdateVO.java
@@ -39,7 +36,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  * @since Feb 14, 2017
  ****************************************************************************/
 @Table(name="biomedgps_update")
-public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, ChangeLogIntfc, Serializable {
+public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc, Serializable {
 
 	/**
 	 *
@@ -71,7 +68,6 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	private String messageTxt;
 	private String twitterTxt;
 	private int tweetFlg;
-	private String creatorProfileId;
 	private String firstNm;
 	private String lastNm;
 	private String statusCd;
@@ -100,11 +96,7 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	}
 
 	protected void setData(ActionRequest req) {
-		SMTSession ses = req.getSession();
-		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
-		if (vo != null) {
-			this.creatorProfileId = StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId());
-		}
+		super.setData(req); //set the creator_profile_id
 		setUpdateId(StringUtil.checkVal(req.getParameter("updateId")));
 		this.marketId = StringUtil.checkVal(req.getParameter("marketId"), null);
 		this.productId = StringUtil.checkVal(req.getParameter("productId"), null);
@@ -255,7 +247,8 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	/**
 	 * @return the creatorProfileId
 	 */
-	@Column(name="creator_profile_id", isInsertOnly=true)
+	@Override
+	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;
 	}
@@ -412,13 +405,6 @@ public class UpdateVO extends SecureSolrDocumentVO implements HumanNameIntfc, Ch
 	 */
 	public void setTwitterTxt(String twitterTxt) {
 		this.twitterTxt = twitterTxt;
-	}
-
-	/**
-	 * @param creatorProfileId the creatorProfileId to set.
-	 */
-	public void setCreatorProfileId(String creatorProfileId) {
-		this.creatorProfileId = creatorProfileId;
 	}
 
 	/**

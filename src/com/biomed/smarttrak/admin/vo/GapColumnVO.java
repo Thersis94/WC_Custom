@@ -39,6 +39,7 @@ public class GapColumnVO implements Serializable {
 	private String specialRulesTxt;
 	private Date createDt;
 	private Date updateDt;
+	private int colGroupNo;
 	private Map<String, GapColumnAttributeVO> attributes;
 	public GapColumnVO() {
 		attributes = new HashMap<>();
@@ -233,5 +234,19 @@ public class GapColumnVO implements Serializable {
 	 */
 	public void addAttribute(GapColumnAttributeVO attribute) {
 		this.attributes.put(attribute.getParentId(), attribute);
+	}
+
+	/**
+	 * @return the colGroupNo
+	 */
+	public int getColGroupNo() {
+		return colGroupNo;
+	}
+
+	/**
+	 * @param colGroupNo the colGroupNo to set
+	 */
+	public void setColGroupNo(int colGroupNo) {
+		this.colGroupNo = colGroupNo;
 	}
 }
