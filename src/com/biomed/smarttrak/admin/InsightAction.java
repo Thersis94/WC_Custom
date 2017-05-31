@@ -8,12 +8,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
 //WC_Custom
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
-import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
 import com.biomed.smarttrak.vo.InsightXRVO;
@@ -31,7 +29,6 @@ import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 //WebCrescendo
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -47,7 +44,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class InsightAction extends AbstractTreeAction {
+public class InsightAction extends AuthorAction {
 	protected static final String INSIGHT_ID = "insightId"; //req param
 	public static final String TITLE_BYPASS = "titleBypass"; //req param
 	public static final String ROOT_NODE_ID = AbstractTreeAction.MASTER_ROOT;
@@ -177,76 +174,6 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	private void generateSelectCountQuery(StringBuilder sql, String schema) {
 		sql.append("select count(*) as count_no from ").append(schema).append("biomedgps_insight a ");
-	}
-
-	/**
-	 * loads a list of to the request.
-	 * @param req
-	 * @throws ActionException 
-	 */
-	private void loadAuthors(ActionRequest req) throws ActionException {
-		log.debug("loaded authors");
-
-		AccountAction aa = new AccountAction();
-		aa.setActionInit(actionInit);
-		aa.setAttributes(attributes);
-		aa.setDBConnection(dbConn);
-		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
-		
-		
-	}
-
-	/**
-	 * Helper method that builds map of User Titles keyed by profileId.
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	private Map<String, String> loadAuthorTitles() {
-
-		//Generate ActionRequest for Retrieving Author Data.
-		ActionRequest req = new ActionRequest();
-
-		//Some down stream code requires ModuleData to be present.
-		if(getAttribute(Constants.MODULE_DATA) == null) {
-			setAttribute(Constants.MODULE_DATA, new ModuleVO());
-		}
-
-		//Some down stream code requires SiteData to be present.
-		SiteVO site = new SiteVO();
-		site.setOrganizationId(AdminControllerAction.BIOMED_ORG_ID);
-		req.setAttribute(Constants.SITE_DATA, site);
-
-		//Map to hold author Titles in <ProfileId, Title> pairs.
-		Map<String, String> authorTitles = new HashMap<>();
-
-		try {
-			//Get Authors.
-			loadAuthors(req);
-			List<AccountVO> authors = (List<AccountVO>) req.getAttribute(AccountAction.MANAGERS);
-
-			//Action to retrieve AccountUsers Data.
-			AccountUserAction aua = new AccountUserAction(this.actionInit);
-			aua.setAttributes(attributes);
-			aua.setDBConnection(dbConn);
-
-			//Loop over Authors and load Profile Data for them.
-			for(Object o : authors) {
-				AccountVO a = (AccountVO)o;
-				List<Object> authorData = aua.loadAccountUsers(req, a.getOwnerProfileId());
-
-				/*
-				 * If authorData is found for the profile, store their title on
-				 * the map.
-				 */
-				if(authorData != null && !authorData.isEmpty()) {
-					UserVO u = (UserVO)authorData.get(0);
-					authorTitles.put(a.getOwnerProfileId(), u.getTitle());
-				}
-			}
-		} catch(Exception e) {
-			log.error("There was a problem Loading Author Titles.", e);
-		}
-		return authorTitles;
 	}
 
 	/**
@@ -489,7 +416,7 @@ public class InsightAction extends AbstractTreeAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void loadSections(ActionRequest req, String schema) throws ActionException {
+	protected void loadSections(ActionRequest req) throws ActionException {
 		SectionHierarchyAction cha = new SectionHierarchyAction(this.actionInit);
 		cha.setDBConnection(dbConn);
 		cha.setAttributes(getAttributes());

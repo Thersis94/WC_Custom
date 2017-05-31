@@ -42,7 +42,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * - Eric Damschroder 3/10/2017
  * </b>
  ****************************************************************************/
-public class MarketManagementAction extends AbstractTreeAction {
+public class MarketManagementAction extends AuthorAction {
 
 	public static final String ACTION_TARGET = "actionTarget";
 	public static final String GRAPH_ID = "GRID";
@@ -86,6 +86,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 			try {
 				return ContentType.valueOf(contentType);
 			} catch (Exception e) {
+				log.error("Error getting content type: ", e);
 				return null;
 			}
 		}
@@ -174,9 +175,12 @@ public class MarketManagementAction extends AbstractTreeAction {
 			req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
 		} else if (!req.hasParameter("add")) {
 			retrieveMarkets(req);
-		} else if (req.getSession().getAttributes().keySet().contains("hierarchyTree")){
-			// This is a form for a new market make sure that the hierarchy tree is present 
-			req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
+		} else{ 
+			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
+			if (req.getSession().getAttributes().keySet().contains("hierarchyTree")){
+				// This is a form for a new market make sure that the hierarchy tree is present 
+				req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
+			}
 		}
 	}
 
@@ -347,6 +351,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 		// Get specifics on market details
 		addAttributes(market, req.getParameter("typeCd"));
 		addSections(market);
+		loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
 		putModuleData(market);
 	}
 
@@ -754,6 +759,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 				return;
 			}
 		} catch (Exception e) {
+			log.error("Error attempting to build: ", e);
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
 
@@ -867,9 +873,4 @@ public class MarketManagementAction extends AbstractTreeAction {
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
 	}
 
-
-	@Override
-	public String getCacheKey() {
-		return null;
-	}
 }
