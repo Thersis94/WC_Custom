@@ -34,6 +34,7 @@ public class RSSArticleVO implements Serializable {
 	private String filterTitleTxt;
 	private String articleUrl;
 	private String publicationName;
+	private String bucketId;
 	private ArticleSourceType articleSourceType;
 	private Date publishDt;
 	private Date createDt;
@@ -136,6 +137,11 @@ public class RSSArticleVO implements Serializable {
 		return articleSourceType;
 	}
 
+	@Column(name="bucket_id")
+	public String getBucketId() {
+		return bucketId;
+	}
+
 	/**
 	 * @return the publishDt
 	 */
@@ -236,6 +242,11 @@ public class RSSArticleVO implements Serializable {
 	public void setArticleSourceType(ArticleSourceType articleSourceType) {
 		this.articleSourceType = articleSourceType;
 	}
+
+	public void setBucketId(String bucketId) {
+		this.bucketId = bucketId;
+	}
+
 	/**
 	 * @param publishDt the publishDt to set.
 	 */

@@ -89,7 +89,7 @@ public class AccountAction extends SBActionAdapter {
 	 * @param schema
 	 * @throws ActionException
 	 */
-	protected void loadManagerList(ActionRequest req, String schema) {
+	public void loadManagerList(ActionRequest req, String schema) {
 		loadManagerList(req, schema, false);
 	}
 
