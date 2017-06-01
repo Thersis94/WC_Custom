@@ -279,7 +279,7 @@ public class LegacyMarkdownConverter extends CommandLineUtil {
 
 	protected String fixLinks(String markup) {
 		String x = markup.replaceAll("(https?://www\\.smarttrak\\.net)?/(companies|markets|products)?/([0-9]+)?/", "/$2/qs/$3");
-		x = x.replaceAll("(https?://www\\.smarttrak\\.net)?/archives/([0-9]+)?/", "/insights/qs/$2");
+		x = x.replaceAll("(https?://www\\.smarttrak\\.net)?/archives/([0-9]+)?/", "/analysis/qs/$2");
 		//some binary paths
 		x = x.replaceAll("/media/", "/secBinary/org/BMG_SMARTTRAK/");
 		return x;
