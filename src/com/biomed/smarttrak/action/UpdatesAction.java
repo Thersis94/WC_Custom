@@ -105,7 +105,7 @@ public class UpdatesAction extends SBActionAdapter {
 		for(Node n : sections) {
 			for(Count f : fOld.getValues()) {
 				/*Split to ensure matches are made against the entire facet name*/
-				String parts[] = f.getName().split("~");
+				String[] parts = f.getName().split("~");
 				String endName = parts[parts.length -1];
 				if(endName.equals(n.getNodeName())) {
 					fNew.add(f.getName(), f.getCount());
