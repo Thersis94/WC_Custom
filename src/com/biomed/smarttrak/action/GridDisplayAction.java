@@ -176,9 +176,7 @@ public class GridDisplayAction extends SBActionAdapter {
 		// Pie charts need to have their labels modified in order to
 		// get all pertinant information to the user.
 		if (ChartType.PIE == type) {
-			for (GridDetailVO detail : grid.getDetails()) {
-				detail.setLabel(detail.getLabel() + " - " + detail.getValue1());
-			}
+			modifyLabel(grid);
 		}
 		
 		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type, full, cols);
@@ -197,6 +195,30 @@ public class GridDisplayAction extends SBActionAdapter {
 		if(stacked) gridData.addCustomValue("isStacked", true);
 		
 		return gridData;
+	}
+
+	
+	/**
+	 * Check to see if the label needs to be modified
+	 * and do so if necessary.
+	 */
+	private void modifyLabel(GridVO grid) {
+		// Add up all values to see if the chart was generated
+		// with percentages instead of actual values.
+		int total = 0;
+		for (GridDetailVO detail : grid.getDetails()) {
+			total += Convert.formatInteger(detail.getValue1(), 0);
+		}
+		
+		// If the total is 100 the percentage is functionally 
+		// the same as the value and appending it to the 
+		// label will result in needless duplication of data.
+		if (total == 100) return;
+		
+		for (GridDetailVO detail : grid.getDetails()) {
+			detail.setLabel(detail.getLabel() + " - " + detail.getValue1());
+		}
+		
 	}
 
 	/**
