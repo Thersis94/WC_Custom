@@ -101,7 +101,7 @@ public class CompanyAction extends AbstractTreeAction {
 	 * @param companyId
 	 * @throws ActionException
 	 */
-	protected CompanyVO retrieveCompany(String companyId, SmarttrakRoleVO role) throws ActionException {
+	public CompanyVO retrieveCompany(String companyId, SmarttrakRoleVO role) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT c.*, parent.COMPANY_NM as PARENT_NM, d.SYMBOL_TXT FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");

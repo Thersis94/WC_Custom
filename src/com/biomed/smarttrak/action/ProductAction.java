@@ -96,7 +96,7 @@ public class ProductAction extends AbstractTreeAction {
 		}
 	}
 
-	protected ProductVO retrieveProduct(String productId, int roleLevel) throws ActionException {
+	public ProductVO retrieveProduct(String productId, int roleLevel) throws ActionException {
 		ProductVO product;
 		StringBuilder sql = new StringBuilder(100);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
