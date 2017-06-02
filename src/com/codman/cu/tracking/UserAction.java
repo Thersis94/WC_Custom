@@ -41,22 +41,22 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
- * <b>Title</b>: UserAction.java<p/>
- * <b>Description: </b> 
- * <p/>
- * <b>Copyright:</b> Copyright (c) 2010<p/>
- * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * <b>Title</b>: UserAction.java
+ * <b>Project</b>: WC_Custom
+ * <b>Description: </b> manages users for codman sites
+ * <b>Copyright:</b> Copyright (c) 2010
+ * <b>Company:</b> Silicon Mountain Technologies
+ * 
  * @author James McKain
- * @version 1.0
+ * @version 3.0
  * @since Aug 09, 2010
+ * @updates:
+ * RJR code clean up for WC3 May 26, 2017
  ****************************************************************************/
 public class UserAction extends SimpleActionAdapter {
 	
 	private Object msg = null;
 	
-	/**
-	 * 
-	 */
 	public UserAction() {
 		super();
 	}
@@ -76,6 +76,10 @@ public class UserAction extends SimpleActionAdapter {
 		super.retrieve(req);
 	}
 	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#delete(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
@@ -238,7 +242,6 @@ public class UserAction extends SimpleActionAdapter {
 	 */
 	public List<PersonVO> retrieveUsers(ActionRequest req) 
 	throws SQLException, DatabaseException {
-		
 		Map<String, PersonVO> data = new HashMap<>();
 		List<PersonVO> results = new ArrayList<>();
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
@@ -334,6 +337,7 @@ public class UserAction extends SimpleActionAdapter {
 		try {
 			Map<String, Object> lm = new HashMap<>();
 			lm.put(Constants.ENCRYPT_KEY, (String)getAttribute(Constants.ENCRYPT_KEY));
+			lm.put(Constants.CFG_PASSWORD_SALT, (String) getAttribute(Constants.CFG_PASSWORD_SALT));
 			lm.put(GlobalConfig.KEY_DB_CONN, dbConn);
 			AbstractLoginModule loginModule = SecurityModuleFactoryImpl.getLoginInstance(site.getLoginModule(), lm);
 			
@@ -357,6 +361,9 @@ public class UserAction extends SimpleActionAdapter {
 		
 	}
 	
+	/**
+	 * saves the users role
+	 */
 	private void saveProfileRole(SiteVO site, PersonVO vo) {
 		ProfileRoleManager prm = new ProfileRoleManager();
 		
@@ -366,6 +373,7 @@ public class UserAction extends SimpleActionAdapter {
 		role.setRoleId(vo.getRoleId());
 		role.setProfileRoleId(vo.getProfileRoleId());
 		role.setStatusId(SecurityController.STATUS_ACTIVE);
+		
 		log.debug(StringUtil.getToString(role));
 		
 		// retrieve any existing profileRoleId so that we can update it
@@ -391,7 +399,7 @@ public class UserAction extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * checks profiles
 	 * @param req
 	 * @param pm
 	 * @param vo
@@ -445,6 +453,9 @@ public class UserAction extends SimpleActionAdapter {
 	}
 	
 	
+	/**
+	 * loads the list of users
+	 */
 	public List<UserDataVO> loadUserList(Integer roleLvl, String organizationId) {
 		List<UserDataVO> data = new ArrayList<>();
 		Map<String, String> people = new HashMap<>();

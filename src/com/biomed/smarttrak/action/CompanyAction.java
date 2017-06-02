@@ -128,7 +128,6 @@ public class CompanyAction extends AbstractTreeAction {
 			}
 			addAttributes(company, role);
 			addLocations(company, role.getRoleLevel());
-			addSections(company);
 			addAlliances(company);
 			addInvestors(company);
 		} catch (Exception e) {
@@ -358,6 +357,7 @@ public class CompanyAction extends AbstractTreeAction {
 				// and there is nothing left for the loop to do
 			} else {
 				addToAttributeMap(attrMap, (CompanyAttributeVO)o);
+				company.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 			}
 		}
 		

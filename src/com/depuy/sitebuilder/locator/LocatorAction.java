@@ -52,6 +52,7 @@ import com.smt.sitebuilder.action.survey.SurveyResponseAction;
 import com.smt.sitebuilder.action.tools.EmailFriendAction;
 import com.smt.sitebuilder.action.tools.EmailFriendVO;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -122,11 +123,9 @@ public class LocatorAction extends SBActionAdapter {
 	    Boolean processRegistration = Convert.formatBoolean(req.getParameter("processRegistration"));
 	    Boolean processPhysician = Convert.formatBoolean(req.getParameter("processPhysician"));
 
-	    // set the locator data
-	    LocatorSubmittalVO loc = (LocatorSubmittalVO)req.getSession().getAttribute(LOCATOR_SUBMITTAL_DATA);
-	    if (loc == null) loc = new LocatorSubmittalVO();
-
 	    //the page to send the user to after we process.
+	    LocatorSubmittalVO loc = (LocatorSubmittalVO)req.getSession().getAttribute(LOCATOR_SUBMITTAL_DATA);
+	    if (loc == null) loc = new LocatorSubmittalVO(); 
 	    String newUrl = loc.getRedirectUrl();
 
 	    log.debug("processing build: " + processRegistration + "|" + processSurvey);
@@ -142,7 +141,6 @@ public class LocatorAction extends SBActionAdapter {
 
 		    // Add a session param so user does not receive the survey twice
 		    req.getSession().setAttribute("locatorSurveySubmitted", Boolean.TRUE);
-		    newUrl = newUrl + "&doneReg=1";
 
 	    } else if (processRegistration && !processPhysician) {
 		    log.debug("Process Registration: " + processRegistration);
@@ -150,7 +148,7 @@ public class LocatorAction extends SBActionAdapter {
 		    try {
 			    // Add the data to the registration submittal
 			    log.debug("Registration ID: " + req.getParameter("sbActionId"));
-			    ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+			    ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
 			    mod.setActionId(req.getParameter("sbActionId"));
 
 			    //verify we have a valid email address, if we don't then force printed fulfillment (instead of email)
@@ -158,7 +156,7 @@ public class LocatorAction extends SBActionAdapter {
 			    if (req.getParameter("reg_||c0a8022dd74873cf6a6706c42120cb01") != null) {
 				    String type = req.getParameter("reg_||c0a8022dd74873cf6a6706c42120cb01");
 				    String email = req.getParameter("reg_enc|EMAIL_ADDRESS_TXT|7f000001397b18842a834a598cdeafa");
-				    if (type.equalsIgnoreCase("INTERNET") && !StringUtil.isValidEmail(email)) {
+				    if ("INTERNET".equalsIgnoreCase(type) && !StringUtil.isValidEmail(email)) {
 					    req.setParameter("reg_||c0a8022dd74873cf6a6706c42120cb01", "MAIL", true);
 				    }
 			    }
@@ -179,19 +177,6 @@ public class LocatorAction extends SBActionAdapter {
 		    cookie.setPath("/" + (String) this.getAttribute(Constants.CONTEXT_NAME));
 		    res.addCookie(cookie);
 
-		    //req.getSession().setAttribute("locatorRegistrationSubmitted", Boolean.TRUE);
-		    newUrl = newUrl + "&doneReg=1";
-
-		    // Send the email if user requested Internet kit (Production Codes)
-		    //String type = StringUtil.checkVal(this.getFulfillType(req), "MAIL");
-
-		    // Dev codes
-		    //log.debug("Request Type for fulfillment: " + type);
-		    //log.debug("Call Target for fulfillment: " + this.getCallTarget(req));
-		    //if ("INTERNET".equalsIgnoreCase(type)) {
-		    //this.sendLocatorEmail(req, this.getCallTarget(req));
-		    //}
-
 		    // Process the physician by adding a single record to a DB table for tracking
 	    } else if (processPhysician) {
 		    log.debug("Update phys info");
@@ -202,14 +187,14 @@ public class LocatorAction extends SBActionAdapter {
 		    } catch(Exception e) {
 			    log.error("Error updating locator phyician bypass, ", e);
 		    }
-		    newUrl = newUrl + "&doneReg=1";
 
 	    } else if (req.hasParameter("emailFriendId")) {
-		    this.processMessageSend(req, loc);
+		    this.processMessageSend(req);
 		    return;
 	    }
 
 		// Build the redirection
+	    newUrl = newUrl + "&doneReg=1";
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, newUrl);
 		log.debug("Redirect URL: " + newUrl);
@@ -234,7 +219,7 @@ public class LocatorAction extends SBActionAdapter {
     public void delete(ActionRequest req) throws ActionException {
     	Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
         String sbActionId = req.getParameter(SBActionAdapter.SB_ACTION_ID);
-        ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
+        ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
         log.info("Starting Locator Data Action - Delete: " + sbActionId);
         
         StringBuilder sb = new StringBuilder(75);
@@ -267,7 +252,7 @@ public class LocatorAction extends SBActionAdapter {
      */
     @Override
     public void update(ActionRequest req) throws ActionException {
-        ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
+        ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
         log.info("Starting Locator Data - Update: " + mod.toString());
         
         Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
@@ -346,7 +331,6 @@ public class LocatorAction extends SBActionAdapter {
     /* (non-Javadoc)
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
-    @SuppressWarnings("unchecked")
     @Override
     public void retrieve(ActionRequest req) throws ActionException {
     	log.debug("LocatorAction retrieve...");
@@ -354,77 +338,149 @@ public class LocatorAction extends SBActionAdapter {
     	Boolean locatorSubmit = Convert.formatBoolean(req.getParameter("locatorSubmit"));
     	String surveyId = StringUtil.checkVal(req.getParameter("surveyId"));
     	String registrationId = StringUtil.checkVal(req.getParameter("registrationId"));
-        Boolean locatorSurveySubmitted = Convert.formatBoolean(req.getSession().getAttribute("locatorSurveySubmitted"));
-        SMTCookie c = req.getCookie("locatorRegistrationSubmitted");
         Boolean locRegSubmitted = Boolean.FALSE;
-        if (c != null) locRegSubmitted = Convert.formatBoolean(c.getValue());
-        log.debug("Boolean: " + locatorSubmit + "|" + surveyId.length() + "|" +  registrationId.length() + "|" + locRegSubmitted);
         
-        // If the call is to the locator results, bypass the below
-    	if (locatorSubmit && surveyId.length() == 0 && (registrationId.length() == 0 || locRegSubmitted)) {
-    		log.debug("Going straight to results");
-    		req.setAttribute("NoRegistration", Boolean.TRUE);
-    		return;
-    	}
-    	
-        // Only get the data if the locator has not been submitted
-        ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+        SMTCookie c = req.getCookie("locatorRegistrationSubmitted");
+        if (c != null) 
+        	locRegSubmitted = Convert.formatBoolean(c.getValue());
+        log.debug("locatorSubmit | surveyId length | registrationId length | locRegSubmitted: " + 
+        	locatorSubmit + "|" + surveyId.length() + "|" +  registrationId.length() + "|" + locRegSubmitted);
+
+        ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
+
         if (locatorSubmit) {
+            // If the call is to the locator results, bypass the below
+        	if (surveyId.isEmpty() && (registrationId.isEmpty() || locRegSubmitted)) {
+        		log.debug("Going straight to results");
+        		req.setAttribute("NoRegistration", Boolean.TRUE);
+        		return;
+        	}
+        	
         	req.getSession().setAttribute(LOCATOR_SUBMITTAL_DATA, new LocatorSubmittalVO(req));
         	mod.setActionData(new LocatorVO());
 	        attributes.put(Constants.MODULE_DATA, mod);
+	        
         } else {
-	        StringBuilder sql = new StringBuilder(75);
-	        sql.append("select * from locator where action_id = ?");
-	        log.info("Locator Action Retrieve SQL: " + sql.toString());
-	        
-	        LocatorVO vo = new LocatorVO();
-	        try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-	            ps.setString(1, actionInit.getActionId());
-	            ResultSet rs = ps.executeQuery();
-	            if (rs.next()) vo.setData(rs);
-	        } catch (SQLException sqle) {
-	            throw new ActionException("Error getting Locator action: " + sqle.getMessage());
-	        }
-	        
-	        // retrieve the list of fields for the action
-	        ActionInterface sbac = new LocatorFieldAssocAction(actionInit);
-	        sbac.setAttributes(this.attributes);
-	        sbac.setDBConnection(dbConn);
-	        sbac.retrieve(req);
-	        vo.setFields((Map<String, Boolean>)req.getAttribute(LocatorFieldAssocAction.LOCATOR_FIELD_RETRV));
-	        
-	    	// If the user has the locator reg cookie or there is no reg id
-	        // set a variable for tracking
-	    	if (locRegSubmitted || StringUtil.checkVal(vo.getRegistrationId()).length() == 0) {
-	    		req.setAttribute("NoRegistration", Boolean.TRUE);
-	    	}
-	    	
-	        // Store the retrieved data in the ModuleVO.actionData and replace into
-	        // the Map
-	        mod.setActionData(vo);
-	        attributes.put(Constants.MODULE_DATA, mod);
+        	// retrieve locator from cache or db
+        	retrieveLocator(req,mod,locRegSubmitted);
         }
         
         // If the user has submitted a survey or registraton, don't get the data
+        Boolean locatorSurveySubmitted = Convert.formatBoolean(req.getSession().getAttribute("locatorSurveySubmitted"));
         if (locRegSubmitted || locatorSurveySubmitted) return;
         
         // Get the survey Data or registration data if required
-        if (StringUtil.checkVal(req.getParameter("surveyId")).length() > 0) {
-        	ActionInitVO newAi = this.actionInit;
-        	newAi.setActionId(req.getParameter("surveyId"));
-        	SurveyAction sa = new SurveyAction(newAi);
-        	sa.setDBConnection(dbConn);
-        	sa.setAttributes(attributes);
-        	sa.retrieve(req);
-        } else if (StringUtil.checkVal(req.getParameter("registrationId")).length() > 0) {
-        	log.debug("Getting registration data: " + req.getParameter("registrationId"));
-        	actionInit.setActionGroupId(req.getParameter("registrationId"));
-        	RegistrationAction sa = new RegistrationAction(actionInit);
-        	sa.setDBConnection(dbConn);
-        	sa.setAttributes(attributes);
-        	sa.retrieve(req);
+        if (! surveyId.isEmpty()) 
+        	retrieveSurvey(req,surveyId);
+        else if (! registrationId.isEmpty())
+        	retrieveRegistration(req,registrationId);
+    }
+    
+    /**
+     * Retrieves the locator from cache or db.
+     * @param req
+     * @param mod
+     * @param locRegSubmitted
+     * @throws ActionException
+     */
+    private void retrieveLocator(ActionRequest req, ModuleVO mod, boolean locRegSubmitted) 
+    		throws ActionException {
+		String cacheKey = mod.getPageModuleId();
+		ModuleVO cachedMod = super.readFromCache(cacheKey);
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		boolean isPreview = page.isPreviewMode();
+		log.debug("isPreview: " + isPreview);
+		log.debug("cacheKey: " + cacheKey);
+		
+		if (cachedMod == null || isPreview) {
+			cachedMod = loadLocatorData(req);
+			/* If we are in preview mode we do not want this to have anything to do with the cache
+			 * Otherwise we make use of the cache as normal. */
+			cachedMod.setCacheable(!isPreview);
+			cachedMod.setPageModuleId(cacheKey);
+			log.debug("writing to cache, groups=" + StringUtil.getToString(mod.getCacheGroups(), false, false,",") + " id=" + mod.getPageModuleId());
+
+			// If we are in preview mode, do not cache this. 
+			if (!isPreview)
+				super.writeToCache(cachedMod);
+		}
+
+    	// If the user has the locator reg cookie or there is no reg id, set a variable for tracking
+		String regId = ((LocatorVO)cachedMod.getActionData()).getRegistrationId();
+    	if (locRegSubmitted || StringUtil.isEmpty(regId)) {
+    		req.setAttribute("NoRegistration", Boolean.TRUE);
+    	}
+
+        // replace into the Map
+		mod.setActionData(cachedMod.getActionData());
+		setAttribute(Constants.MODULE_DATA, mod);
+    }
+    
+    /**
+     * Retrieves the locator based on the action's action ID.
+     * @param req
+     * @return
+     * @throws ActionException
+     */
+    @SuppressWarnings("unchecked")
+	private ModuleVO loadLocatorData(ActionRequest req) throws ActionException {
+        StringBuilder sql = new StringBuilder(75);
+        sql.append("select * from locator where action_id = ?");
+        log.debug("Locator Action Retrieve SQL: " + sql.toString());
+        
+        LocatorVO vo = new LocatorVO();
+        try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+            ps.setString(1, actionInit.getActionId());
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) vo.setData(rs);
+        } catch (SQLException sqle) {
+            throw new ActionException("Error getting Locator action: " + sqle);
         }
+        
+        // retrieve the list of fields for the action
+        ActionInterface sbac = new LocatorFieldAssocAction(actionInit);
+        sbac.setAttributes(this.attributes);
+        sbac.setDBConnection(dbConn);
+        sbac.retrieve(req);
+        vo.setFields((Map<String, Boolean>)req.getAttribute(LocatorFieldAssocAction.LOCATOR_FIELD_RETRV));
+
+        ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		mod.setActionData(vo);
+		mod.addCacheGroup(actionInit.getActionId());
+		return mod;
+    }
+    
+    /**
+     * Retrieves the survey associated to the given surveyId.
+     * @param req
+     * @param surveyId
+     * @throws ActionException
+     */
+    private void retrieveSurvey(ActionRequest req, String surveyId) 
+    		throws ActionException {
+        // Get the survey Data or registration data if required
+    	ActionInitVO newAi = this.actionInit;
+    	newAi.setActionId(surveyId);
+    	SurveyAction sa = new SurveyAction(newAi);
+    	sa.setDBConnection(dbConn);
+    	sa.setAttributes(attributes);
+    	sa.retrieve(req);
+    }
+    
+    /**
+     * Retrieves the registration associated to the given registrationId.
+     * @param req
+     * @param registrationId
+     * @throws ActionException
+     */
+    private void retrieveRegistration(ActionRequest req, String registrationId) 
+    		throws ActionException {
+    	log.debug("Getting registration data: " + registrationId);
+    	actionInit.setActionGroupId(registrationId);
+    	RegistrationAction sa = new RegistrationAction(actionInit);
+    	sa.setDBConnection(dbConn);
+    	sa.setAttributes(attributes);
+    	sa.retrieve(req);
     }
     
     /* (non-Javadoc)
@@ -436,7 +492,7 @@ public class LocatorAction extends SBActionAdapter {
         String actionId = req.getParameter(SBActionAdapter.SB_ACTION_ID);
         
         if (actionId == null || actionId.length() == 0) return;
-        ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
+        ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
         
         StringBuilder sql = new StringBuilder(450);
         sql.append("select search_id, a.action_id, action_nm, b.action_id, ");
@@ -463,7 +519,7 @@ public class LocatorAction extends SBActionAdapter {
 
             }
         } catch (SQLException sqle) {
-            throw new ActionException("Error getting Locator action: " + sqle.getMessage());
+            throw new ActionException("Error getting Locator action: " + sqle);
         }
         
         // retrieve the list of fields for the action
@@ -484,7 +540,7 @@ public class LocatorAction extends SBActionAdapter {
      * @param req
      * @param loc
      */
-    private void processMessageSend(ActionRequest req, LocatorSubmittalVO loc) {
+    private void processMessageSend(ActionRequest req) {
     	log.debug("processing locator message send...");
     	String type = StringUtil.checkVal(req.getParameter("messageType"));
     	if (type.length() > 0) {
@@ -519,7 +575,7 @@ public class LocatorAction extends SBActionAdapter {
         		
         		if (errMsg != null) {
         			log.error("Error sending locator message: " + errMsg);
-            		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+            		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
             		mod.setErrorCondition(true);
             		mod.setErrorMessage(errMsg);
             		attributes.put(Constants.MODULE_DATA, mod);
@@ -558,7 +614,7 @@ public class LocatorAction extends SBActionAdapter {
     		}
    			if (isValidSend) req.setParameter("rcptNo", tmpVal);
     	} else {
-    		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+    		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
     		mod.setErrorCondition(true);
     		mod.setErrorMessage("Invalid message type specified for message send.  Message type must be one of 'email' or 'sms'.");
     		return isValidSend;
@@ -708,11 +764,10 @@ public class LocatorAction extends SBActionAdapter {
 	    					NodeList children = uId.getChildNodes();
 	    					for (int child = 0; child < children.getLength(); child++) {
 	    						Node childItem = children.item(child);
-	    						if (childItem.getLocalName() != null) {
-	    							if (childItem.getTextContent().equalsIgnoreCase(uniqueId)) {
-	    								targetParent = uId.getParentNode();
-	    								found = true;
-	    							}
+	    						if (childItem.getLocalName() != null && 
+	    								childItem.getTextContent().equalsIgnoreCase(uniqueId)) {
+    								targetParent = uId.getParentNode();
+    								found = true;
 	    						}
 	    						if (found) break;
 	    					}
@@ -724,16 +779,14 @@ public class LocatorAction extends SBActionAdapter {
 	    			if (found) break;
 	    		}
 	    		
-	    		if (found) {
-    				if (targetParent.hasChildNodes()) {
-    					NodeList children = targetParent.getChildNodes();
-    					for (int j = 0; j < children.getLength(); j++) {
-    						Node child = children.item(j);
-    						if (child.getLocalName() != null) {
-    							surgeon.put(child.getLocalName(), child.getTextContent());
-    						}
-    					}
-    				}
+	    		if (found && targetParent.hasChildNodes()) {
+					NodeList children = targetParent.getChildNodes();
+					for (int j = 0; j < children.getLength(); j++) {
+						Node child = children.item(j);
+						if (child.getLocalName() != null) {
+							surgeon.put(child.getLocalName(), child.getTextContent());
+						}
+					}
 	    		}
 	    	}
     	}		

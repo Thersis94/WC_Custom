@@ -18,14 +18,14 @@ import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: LeihsetApprover.java<p/>
- * <b>Description: Handles all tasks related to approving/rejecting/canceling 
- * changes to Leihsets.</b> 
- * <p/>
- * <b>Copyright:</b> Copyright (c) 2015<p/>
- * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * <b>Title</b>: LeihsetApprover.java
+ * <b>Description:</b> Handles all tasks related to approving/rejecting/canceling
+ * changes to Leihsets.
+ * <b>Copyright:</b> Copyright (c) 2017
+ * <b>Company:</b> Silicon Mountain Technologies
+ *
  * @author James McKain
- * @version 1.0
+ * @version 3.0
  * @since Dec 1, 2015
  ****************************************************************************/
 
@@ -88,6 +88,7 @@ public class LeihsetApprover extends AbstractApprover {
 	/**
 	 * Delete the in progress item
 	 */
+	@Override
 	public void cancel(ApprovalVO... items) throws ApprovalException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String delete = "DELETE FROM " + customDb + "DPY_SYN_LEIHSET WHERE LEIHSET_ID = ?";
@@ -120,7 +121,7 @@ public class LeihsetApprover extends AbstractApprover {
 	public List<ApprovalVO> list(SyncStatus status) throws ApprovalException {
 		List<ApprovalVO> appItems = new ArrayList<>();
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(80);
+		StringBuilder sql = new StringBuilder(450);
 		sql.append("SELECT l.leihset_nm as PORTLET_NM, ws.*, FIRST_NM as admin_first, ");
 		sql.append("LAST_NM as admin_last FROM ");
 		sql.append(customDb).append("DPY_SYN_LEIHSET l ");

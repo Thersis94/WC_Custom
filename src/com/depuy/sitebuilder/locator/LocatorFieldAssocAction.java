@@ -153,7 +153,7 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
     public void list(ActionRequest req) throws ActionException {
         log.info("Listing fields for locator");
         String sbActionId = req.getParameter(SBActionAdapter.SB_ACTION_ID);
-        
+
         StringBuilder sql = new StringBuilder(400);
         sql.append("select a.locator_field_id, locator_field_assoc_id ");
         sql.append("from locator_field a right outer join locator_field_assoc b ");
@@ -164,7 +164,7 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
         sql.append("where locator_field_id not in ");
         sql.append("(select locator_field_id from locator_field_assoc ");
         sql.append("where action_id = ?) ");
-        sql.append("order by a.locator_field_id");
+        sql.append("order by locator_field_id");
         
         log.info("LocatorField Action List SQL: " + sql.toString());
         LocatorFieldVO vo = null;

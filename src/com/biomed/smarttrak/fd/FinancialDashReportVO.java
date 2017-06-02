@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.hssf.record.cf.BorderFormatting;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -36,7 +37,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
     private static final long serialVersionUID = 1l;
     
     private static final String NAME = "NAME";
-    private enum CellStyleName {TITLE, HEADER_LEFT, HEADER_RIGHT, RIGHT, PERCENT_POS, PERCENT_NEG}
+    private enum CellStyleName {TITLE, HEADER_LEFT, HEADER_RIGHT, RIGHT, PERCENT_POS, PERCENT_NEG, RIGHT_ALT, PERCENT_POS_ALT, PERCENT_NEG_ALT, ALT, TOTAL_ROW}
     
     private String reportTitle = "SmartTRAK - Financial Dashboard";
     private FinancialDashVO dash;
@@ -109,9 +110,14 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		cellStyles.put(CellStyleName.TITLE, setTitleStyle());
 		cellStyles.put(CellStyleName.HEADER_LEFT, setHeaderLeftStyle());
 		cellStyles.put(CellStyleName.HEADER_RIGHT, setHeaderRightStyle());
-		cellStyles.put(CellStyleName.RIGHT, setRightStyle());
-		cellStyles.put(CellStyleName.PERCENT_POS, setPercentStyle(IndexedColors.GREEN.getIndex()));
-		cellStyles.put(CellStyleName.PERCENT_NEG, setPercentStyle(IndexedColors.RED.getIndex()));
+		cellStyles.put(CellStyleName.RIGHT, setRightStyle(false));
+		cellStyles.put(CellStyleName.RIGHT_ALT, setRightStyle(true));
+		cellStyles.put(CellStyleName.PERCENT_POS, setPercentStyle(IndexedColors.GREEN.getIndex(), false));
+		cellStyles.put(CellStyleName.PERCENT_POS_ALT, setPercentStyle(IndexedColors.GREEN.getIndex(), true));
+		cellStyles.put(CellStyleName.PERCENT_NEG, setPercentStyle(IndexedColors.RED.getIndex(), false));
+		cellStyles.put(CellStyleName.PERCENT_NEG_ALT, setPercentStyle(IndexedColors.RED.getIndex(), true));
+		cellStyles.put(CellStyleName.ALT, setAltStyle());
+		cellStyles.put(CellStyleName.TOTAL_ROW, setTotalStyle());
 	}
 	
 	/**
@@ -189,8 +195,10 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		// Setup to increment totals for the totals row
 		Map<String, Integer> totals = initTotals(dash.getRows().get(0));
 		
+		int i = 0;
 		for (FinancialDashDataRowVO fdRow : dash.getRows()) {
-			addExcelRowsFromFdRow(fdRow, totals, curFormat, pctFormat);
+			addExcelRowsFromFdRow(fdRow, totals, curFormat, pctFormat, i);
+			i++;
 		}
 		
 		// Generate the totals row
@@ -199,7 +207,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		for (Entry<String, Integer> entry : totals.entrySet()) {
 			totalRow.put(entry.getKey(), entry.getValue());
 		}
-		addDollarRow(totalRow, curFormat);
+		addDollarRow(totalRow, curFormat, -1);
 	}
 	
 	/**
@@ -227,7 +235,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * @param pctFormat
 	 * @return
 	 */
-	protected void addExcelRowsFromFdRow(FinancialDashDataRowVO fdRow, Map<String, Integer> totals, NumberFormat curFormat, NumberFormat pctFormat) {
+	protected void addExcelRowsFromFdRow(FinancialDashDataRowVO fdRow, Map<String, Integer> totals, NumberFormat curFormat, NumberFormat pctFormat, int rowNum) {
 		Map<String, Object> dollarRow = new HashMap<>();
 		Map<String, Object> percentRow = new HashMap<>();
 		
@@ -240,14 +248,14 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 			totals.put(entry.getKey(), totals.get(entry.getKey()) + entry.getValue().getDollarValue());
 		}
 	
-		addDollarRow(dollarRow, curFormat);
-		addPercentRow(percentRow, pctFormat);
+		addDollarRow(dollarRow, curFormat, rowNum);
+		addPercentRow(percentRow, pctFormat, rowNum);
 	}
 	
 	/**
 	 * Adds/formats the data in the dollar rows
 	 */
-	protected void addDollarRow(Map<String, Object> dollarRow, NumberFormat curFormat) {
+	protected void addDollarRow(Map<String, Object> dollarRow, NumberFormat curFormat, int rowNum) {
 		row = sheet.createRow(rowCount++);
 		
 		int cellCount = 0;
@@ -259,8 +267,16 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 			if (NAME.equals(key)) {
 				value = (String) dollarRow.get(key);
 			} else {
-				cell.setCellStyle(cellStyles.get(CellStyleName.RIGHT));
+				cell.setCellStyle(cellStyles.get(rowNum%2==0? CellStyleName.RIGHT : CellStyleName.RIGHT_ALT));
 				value = curFormat.format((int) dollarRow.get(key));
+			}
+			
+			if (rowNum == -1) {
+				cell.setCellStyle(cellStyles.get(CellStyleName.TOTAL_ROW));
+			} else if (NAME.equals(key)) {
+				cell.setCellStyle(cellStyles.get(rowNum%2==0? null : CellStyleName.ALT));
+			} else {
+				cell.setCellStyle(cellStyles.get(rowNum%2==0? CellStyleName.RIGHT : CellStyleName.RIGHT_ALT));
 			}
 			
 			cell.setCellValue(value);
@@ -271,7 +287,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * Adds/formats the data in the percentage rows. The percentage rows have special formatting requirements such
 	 * that, negative values are red, positive values are green, and zero values are black.
 	 */
-	protected void addPercentRow(Map<String, Object> percentRow, NumberFormat pctFormat) {
+	protected void addPercentRow(Map<String, Object> percentRow, NumberFormat pctFormat, int rowNum) {
 		row = sheet.createRow(rowCount++);
 		
 		int cellCount = 0;
@@ -285,10 +301,12 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 				value = pctFormat.format(dblValue);
 				
 				if (dblValue > 0) {
-					cell.setCellStyle(cellStyles.get(CellStyleName.PERCENT_POS));
+					cell.setCellStyle(cellStyles.get(rowNum%2==0? CellStyleName.PERCENT_POS : CellStyleName.PERCENT_POS_ALT));
 				} else if (dblValue < 0) {
-					cell.setCellStyle(cellStyles.get(CellStyleName.PERCENT_NEG));
+					cell.setCellStyle(cellStyles.get(rowNum%2==0? CellStyleName.PERCENT_NEG : CellStyleName.PERCENT_NEG_ALT));
 				}
+			} else {
+				cell.setCellStyle(cellStyles.get(rowNum%2==0? null : CellStyleName.ALT));
 			}
 			
 			cell.setCellValue(value);
@@ -322,6 +340,10 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		Font font = wb.createFont();
 		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
 		style.setFont(font);
+		style.setFillForegroundColor(IndexedColors.GREY_40_PERCENT.index);
+		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		style.setBorderBottom(BorderFormatting.BORDER_THICK);
+		style.setBottomBorderColor(IndexedColors.GREY_80_PERCENT.index);
 		
 		return style;
 	}
@@ -334,6 +356,10 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	protected CellStyle setHeaderRightStyle() {
 		CellStyle style = setHeaderLeftStyle();
 		style.setAlignment(CellStyle.ALIGN_RIGHT);
+		style.setFillForegroundColor(IndexedColors.GREY_40_PERCENT.index);
+		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		style.setBorderBottom(BorderFormatting.BORDER_THICK);
+		style.setBottomBorderColor(IndexedColors.GREY_80_PERCENT.index);
 		
 		return style;
 	}
@@ -343,9 +369,13 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * 
 	 * @return
 	 */
-	protected CellStyle setRightStyle() {
+	protected CellStyle setRightStyle(boolean alt) {
 		CellStyle style = wb.createCellStyle();
 		style.setAlignment(CellStyle.ALIGN_RIGHT);
+		if (alt) {
+			style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+			style.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		}
 		
 		return style;
 	}
@@ -355,13 +385,47 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * 
 	 * @return
 	 */
-	protected CellStyle setPercentStyle(short color) {
-		CellStyle style = setRightStyle();
+	protected CellStyle setPercentStyle(short color, boolean alt) {
+		CellStyle style = setRightStyle(alt);
 		Font font = wb.createFont();
 		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
 		font.setColor(color);
 		style.setFont(font);
+		if (alt) {
+			style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+			style.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		}
 		
 		return style;
 	}
+	
+	/**
+	 * Create a deault style for alternating colored rows
+	 * 
+	 * @return
+	 */
+	protected CellStyle setAltStyle() {
+		CellStyle style = wb.createCellStyle();
+		style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		
+		return style;
+	}
+	
+	/**
+	 * Create a style specifically for the totals row
+	 * 
+	 * @return
+	 */
+	protected CellStyle setTotalStyle() {
+		CellStyle style = wb.createCellStyle();
+		style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		style.setTopBorderColor(IndexedColors.GREY_80_PERCENT.index);
+		style.setBorderTop(BorderFormatting.BORDER_THICK);
+		
+		return style;
+	}
+	
+	
 }
