@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
+import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeTypeVO;
@@ -47,7 +49,7 @@ public class CompanyManagementAction extends AuthorAction {
 	public static final String CONTENT_ATTRIBUTE_ID = "LVL1_1";
 	
 	private enum ActionType {
-		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE
+		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW
 	}
 	
 	
@@ -162,7 +164,24 @@ public class CompanyManagementAction extends AuthorAction {
 			case ALLIANCE:
 				allianceRetrieve(req);
 				break;
+			case PREVIEW:
+				retrievePreview(req);
+				break;
 		}
+	}
+	
+	
+	/**
+	 * Get the company as it would appear on the public side.
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void retrievePreview(ActionRequest req) throws ActionException {
+		SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+		CompanyAction ca = new CompanyAction(actionInit);
+		ca.setDBConnection(dbConn);
+		ca.setAttributes(attributes);
+		super.putModuleData(ca.retrieveCompany(req.getParameter("companyId"), role));
 	}
 	
 	
@@ -691,6 +710,7 @@ public class CompanyManagementAction extends AuthorAction {
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
 				saveAttributeType(t, db, Convert.formatBoolean(req.getParameter("insert")));
 				break;
+				default:break;
 		}
 	}
 
@@ -957,6 +977,7 @@ public class CompanyManagementAction extends AuthorAction {
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
 				db.delete(t);
 				break;
+			default:break;
 		}
 		} catch (Exception e) {
 			throw new ActionException(e);

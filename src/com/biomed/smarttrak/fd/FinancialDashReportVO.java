@@ -11,16 +11,19 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.hssf.record.cf.BorderFormatting;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFFont;
+import org.apache.poi.hssf.usermodel.HSSFPalette;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /*****************************************************************************
@@ -37,11 +40,11 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
     private static final long serialVersionUID = 1l;
     
     private static final String NAME = "NAME";
-    private enum CellStyleName {TITLE, HEADER_LEFT, HEADER_RIGHT, RIGHT, PERCENT_POS, PERCENT_NEG, RIGHT_ALT, PERCENT_POS_ALT, PERCENT_NEG_ALT, ALT, TOTAL_ROW}
+    private enum CellStyleName {TITLE, HEADER, RIGHT, LEFT, PERCENT_POS, PERCENT_NEG, TOTAL_ROW_POS, TOTAL_ROW_NEG}
     
-    private String reportTitle = "SmartTRAK - Financial Dashboard";
+    private String reportTitle = "SmartTRAK - Financial Dashboard"; 
     private FinancialDashVO dash;
-    private Workbook wb;
+    private HSSFWorkbook wb;
     private Sheet sheet;
     private Row row;
     private int rowCount;
@@ -76,10 +79,9 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		
 		// Add the rows
 		addTitleRow();
-		addEmptyRow();
 		addHeaderRow();
 		addDataRows();
-
+		
 		// Format so everthing can be seen when opened
 		for (Cell cell : row)
 			sheet.autoSizeColumn(cell.getColumnIndex());
@@ -108,16 +110,13 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		cellStyles = new EnumMap<>(CellStyleName.class);
 		
 		cellStyles.put(CellStyleName.TITLE, setTitleStyle());
-		cellStyles.put(CellStyleName.HEADER_LEFT, setHeaderLeftStyle());
-		cellStyles.put(CellStyleName.HEADER_RIGHT, setHeaderRightStyle());
-		cellStyles.put(CellStyleName.RIGHT, setRightStyle(false));
-		cellStyles.put(CellStyleName.RIGHT_ALT, setRightStyle(true));
-		cellStyles.put(CellStyleName.PERCENT_POS, setPercentStyle(IndexedColors.GREEN.getIndex(), false));
-		cellStyles.put(CellStyleName.PERCENT_POS_ALT, setPercentStyle(IndexedColors.GREEN.getIndex(), true));
-		cellStyles.put(CellStyleName.PERCENT_NEG, setPercentStyle(IndexedColors.RED.getIndex(), false));
-		cellStyles.put(CellStyleName.PERCENT_NEG_ALT, setPercentStyle(IndexedColors.RED.getIndex(), true));
-		cellStyles.put(CellStyleName.ALT, setAltStyle());
-		cellStyles.put(CellStyleName.TOTAL_ROW, setTotalStyle());
+		cellStyles.put(CellStyleName.HEADER, setHeaderStyle());
+		cellStyles.put(CellStyleName.RIGHT, setRightStyle());
+		cellStyles.put(CellStyleName.LEFT, setLeftStyle());
+		cellStyles.put(CellStyleName.PERCENT_POS, setPercentStyle(IndexedColors.GREEN.getIndex()));
+		cellStyles.put(CellStyleName.PERCENT_NEG, setPercentStyle(IndexedColors.RED.getIndex()));
+		cellStyles.put(CellStyleName.TOTAL_ROW_NEG, setTotalNegStyle());
+		cellStyles.put(CellStyleName.TOTAL_ROW_POS, setTotalPosStyle());
 	}
 	
 	/**
@@ -133,7 +132,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		cell.setCellStyle(cellStyles.get(CellStyleName.TITLE));
 
 		// Merge the title cell across additional cells to display full title
-		sheet.addMergedRegion(new CellRangeAddress(0,0,0,8));
+		sheet.addMergedRegion(new CellRangeAddress(0,0,0,5));
 	}
 	
 	/**
@@ -154,27 +153,20 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 */
 	protected void addHeaderRow() {
 		row = sheet.createRow(rowCount++);
-		CellStyle style;
 		
 		int cellCount = 0;		
 		for (Map.Entry<String, String> entry : getHeaderData().entrySet()) {
-			style = cellStyles.get(CellStyleName.HEADER_RIGHT);
-			if (NAME.equals(entry.getKey())) {
-				style = cellStyles.get(CellStyleName.HEADER_LEFT);
+			if (!NAME.equals(entry.getKey())) {
+				Cell cell = row.createCell(cellCount++);
+				cell.setCellType(Cell.CELL_TYPE_STRING);
+				cell.setCellValue(entry.getValue());
+				cell.setCellStyle(cellStyles.get(CellStyleName.HEADER));
+			} else {
+				// Create an empty cell to offset the header row
+				Cell cell = row.createCell(cellCount++);
+				cell.setCellStyle(cellStyles.get(CellStyleName.HEADER));
 			}
-			
-			Cell cell = row.createCell(cellCount++);
-			cell.setCellType(Cell.CELL_TYPE_STRING);
-			cell.setCellValue(entry.getValue());
-			cell.setCellStyle(style);
 		}
-	}
-	
-	/**
-	 * Adds an empty row when needed
-	 */
-	protected void addEmptyRow() {
-		row = sheet.createRow(rowCount++);
 	}
 
 	/**
@@ -267,16 +259,15 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 			if (NAME.equals(key)) {
 				value = (String) dollarRow.get(key);
 			} else {
-				cell.setCellStyle(cellStyles.get(rowNum%2==0? CellStyleName.RIGHT : CellStyleName.RIGHT_ALT));
 				value = curFormat.format((int) dollarRow.get(key));
 			}
 			
 			if (rowNum == -1) {
-				cell.setCellStyle(cellStyles.get(CellStyleName.TOTAL_ROW));
-			} else if (NAME.equals(key)) {
-				cell.setCellStyle(cellStyles.get(rowNum%2==0? null : CellStyleName.ALT));
+				cell.setCellStyle(cellStyles.get(Convert.formatInteger(value) < 0? CellStyleName.TOTAL_ROW_NEG : CellStyleName.TOTAL_ROW_POS));
+			} else if (!NAME.equals(key)){
+				cell.setCellStyle(cellStyles.get(CellStyleName.RIGHT));
 			} else {
-				cell.setCellStyle(cellStyles.get(rowNum%2==0? CellStyleName.RIGHT : CellStyleName.RIGHT_ALT));
+				cell.setCellStyle(cellStyles.get(CellStyleName.LEFT));
 			}
 			
 			cell.setCellValue(value);
@@ -301,12 +292,10 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 				value = pctFormat.format(dblValue);
 				
 				if (dblValue > 0) {
-					cell.setCellStyle(cellStyles.get(rowNum%2==0? CellStyleName.PERCENT_POS : CellStyleName.PERCENT_POS_ALT));
+					cell.setCellStyle(cellStyles.get(CellStyleName.PERCENT_POS));
 				} else if (dblValue < 0) {
-					cell.setCellStyle(cellStyles.get(rowNum%2==0? CellStyleName.PERCENT_NEG : CellStyleName.PERCENT_NEG_ALT));
+					cell.setCellStyle(cellStyles.get(CellStyleName.PERCENT_NEG));
 				}
-			} else {
-				cell.setCellStyle(cellStyles.get(rowNum%2==0? null : CellStyleName.ALT));
 			}
 			
 			cell.setCellValue(value);
@@ -319,47 +308,43 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	protected CellStyle setTitleStyle() {
-		CellStyle style = wb.createCellStyle();
-		
-		Font font = wb.createFont();
-		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
-		font.setFontHeightInPoints((short) 18);
+		HSSFFont font = getBaseFont(wb, false);
+		font.setColor(HSSFColor.BLACK.index);
+		font.setBold(true);
+		font.setFontHeightInPoints((short)14);
+
+		HSSFCellStyle style = getBaseStyle(wb);
 		style.setFont(font);
-		
-		return style;
-	}
-	
-	/**
-	 * Creates the Left Aligned Header style
-	 * 
-	 * @return
-	 */
-	protected CellStyle setHeaderLeftStyle() {
-		CellStyle style = wb.createCellStyle();
-		
-		Font font = wb.createFont();
-		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
-		style.setFont(font);
-		style.setFillForegroundColor(IndexedColors.GREY_40_PERCENT.index);
+		style.setAlignment(CellStyle.ALIGN_LEFT);
+		style.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+		HSSFPalette palette = wb.getCustomPalette();
+		short backColor = palette.findSimilarColor(208, 208, 208).getIndex();
+		style.setFillForegroundColor(backColor);
 		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
-		style.setBorderBottom(BorderFormatting.BORDER_THICK);
-		style.setBottomBorderColor(IndexedColors.GREY_80_PERCENT.index);
+		style.setIndention((short) 1);
 		
 		return style;
 	}
 	
 	/**
-	 * Creates the Right Aligned Header style
+	 * Creates the Header style
 	 * 
 	 * @return
 	 */
-	protected CellStyle setHeaderRightStyle() {
-		CellStyle style = setHeaderLeftStyle();
+	protected CellStyle setHeaderStyle() {
+		HSSFFont font = getBaseFont(wb, false);
+		font.setColor(HSSFColor.WHITE.index);
+		font.setBold(true);
+		HSSFCellStyle style = getBaseStyle(wb);
+		style.setFont(font);
 		style.setAlignment(CellStyle.ALIGN_RIGHT);
-		style.setFillForegroundColor(IndexedColors.GREY_40_PERCENT.index);
+		style.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+
+		HSSFPalette palette = wb.getCustomPalette();
+		short backColor = palette.findSimilarColor(0, 69, 134).getIndex();
+		style.setFillForegroundColor(backColor);
 		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
-		style.setBorderBottom(BorderFormatting.BORDER_THICK);
-		style.setBottomBorderColor(IndexedColors.GREY_80_PERCENT.index);
+		style.setIndention((short) 1);
 		
 		return style;
 	}
@@ -369,13 +354,25 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * 
 	 * @return
 	 */
-	protected CellStyle setRightStyle(boolean alt) {
-		CellStyle style = wb.createCellStyle();
-		style.setAlignment(CellStyle.ALIGN_RIGHT);
-		if (alt) {
-			style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
-			style.setFillPattern(CellStyle.SOLID_FOREGROUND);
-		}
+	protected CellStyle setRightStyle() {
+		HSSFCellStyle style= getBaseStyle(wb);
+		
+		HSSFFont font = getBaseFont(wb, false);
+		style.setFont(font);
+		
+		return style;
+	}
+	
+	/**
+	 * Creates the Left Aligned style
+	 * 
+	 * @return
+	 */
+	protected CellStyle setLeftStyle() {
+		HSSFCellStyle style= getBaseStyle(wb);
+		style.setAlignment(HSSFCellStyle.ALIGN_LEFT);
+		HSSFFont font = getBaseFont(wb, false);
+		style.setFont(font);
 		
 		return style;
 	}
@@ -385,47 +382,87 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * 
 	 * @return
 	 */
-	protected CellStyle setPercentStyle(short color, boolean alt) {
-		CellStyle style = setRightStyle(alt);
+	protected CellStyle setPercentStyle(short color) {
+		CellStyle style = setRightStyle();
 		Font font = wb.createFont();
 		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
 		font.setColor(color);
 		style.setFont(font);
-		if (alt) {
-			style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
-			style.setFillPattern(CellStyle.SOLID_FOREGROUND);
-		}
 		
 		return style;
 	}
 	
 	/**
-	 * Create a deault style for alternating colored rows
+	 * Create a style specifically for the totals row when negative
 	 * 
 	 * @return
 	 */
-	protected CellStyle setAltStyle() {
-		CellStyle style = wb.createCellStyle();
-		style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+	protected CellStyle setTotalNegStyle() {
+		HSSFCellStyle style= getBaseStyle(wb);
+		style.setFillForegroundColor(HSSFColor.GREY_25_PERCENT.index);
 		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		style.setBorderBottom((short)1);
+		style.setBorderTop((short)1);
+		
+		HSSFFont font = getBaseFont(wb, true);
+		style.setFont(font);
+		font.setColor(HSSFColor.BLACK.index);
+		font.setBold(true);
 		
 		return style;
 	}
 	
 	/**
-	 * Create a style specifically for the totals row
+	 * Create a style specifically for the totals row when positive
 	 * 
 	 * @return
 	 */
-	protected CellStyle setTotalStyle() {
-		CellStyle style = wb.createCellStyle();
-		style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+	protected CellStyle setTotalPosStyle() {
+		HSSFCellStyle style= getBaseStyle(wb);
+		style.setFillForegroundColor(HSSFColor.GREY_25_PERCENT.index);
 		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
-		style.setTopBorderColor(IndexedColors.GREY_80_PERCENT.index);
-		style.setBorderTop(BorderFormatting.BORDER_THICK);
+		style.setBorderBottom((short)1);
+		style.setBorderTop((short)1);
+		
+		HSSFFont font = getBaseFont(wb, false);
+		style.setFont(font);
+		font.setColor(HSSFColor.BLACK.index);
+		font.setBold(true);
+		
+		return style;
+	}
+
+	
+	/**
+	 * Sets the base cell styles
+	 * @param workbook
+	 * @return
+	 */
+	private HSSFCellStyle getBaseStyle(HSSFWorkbook workbook) {
+		HSSFCellStyle style = workbook.createCellStyle();
+		style.setAlignment(HSSFCellStyle.ALIGN_RIGHT);
+		style.setIndention((short) 1);
+		style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
 		
 		return style;
 	}
 	
+	/**
+	 * Creates the base fonts
+	 * @param workbook
+	 * @return
+	 */
+	private HSSFFont getBaseFont(HSSFWorkbook workbook, boolean neg) {
+		HSSFFont font = workbook.createFont();
+		font.setFontHeightInPoints((short)10);
+		font.setFontName("Arial");
+		if (neg) font.setColor(HSSFColor.RED.index);
+		else font.setColor(HSSFColor.BLACK.index);
+		
+		font.setBold(false);
+		font.setItalic(false);
+		
+		return font;
+	}
 	
 }
