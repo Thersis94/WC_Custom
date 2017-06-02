@@ -100,12 +100,13 @@ public class UserDataImport extends ProfileImport {
 		
 		List<UserVO> sourceUsers = new ArrayList<>();
 		Map<String, Object> config = new HashMap<>();
-		config.put(Constants.ENCRYPT_KEY, encKey);
+		config.put(Constants.ENCRYPT_KEY, ENC_KEY);
+		config.put(Constants.CFG_PASSWORD_SALT, PWD_SALT);
 		config.put(Constants.GEOCODE_CLASS, GEOCODE_CLASS);
 		config.put(Constants.GEOCODE_URL, GEOCODE_URL);
 	    ProfileManager pm = new SBProfileManager(config);
 		ProfileRoleManager prm = new ProfileRoleManager();
-		UserLogin ul = new UserLogin(dbConn, encKey);
+		UserLogin ul = new UserLogin(dbConn, config);
 		SiteUserVO user;
 		Map<String,Object> dataSet;
 		String tmpField1;
@@ -289,7 +290,7 @@ public class UserDataImport extends ProfileImport {
 		user.setAuthenticationId(ul.checkAuth(user.getEmailAddress()));
 		if (user.getAuthenticationId() == null) {
 			//pwd will be encrypted at qry, 0 sets password reset flag to false
-			user.setAuthenticationId(ul.modifyUser(user.getAuthenticationId(), 
+			user.setAuthenticationId(ul.saveAuthRecord(user.getAuthenticationId(), 
 					user.getEmailAddress(), user.getPassword(), 0));
 		}
 	}
