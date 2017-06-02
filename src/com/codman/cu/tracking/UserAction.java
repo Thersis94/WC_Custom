@@ -337,6 +337,7 @@ public class UserAction extends SimpleActionAdapter {
 		try {
 			Map<String, Object> lm = new HashMap<>();
 			lm.put(Constants.ENCRYPT_KEY, (String)getAttribute(Constants.ENCRYPT_KEY));
+			lm.put(Constants.CFG_PASSWORD_SALT, (String) getAttribute(Constants.CFG_PASSWORD_SALT));
 			lm.put(GlobalConfig.KEY_DB_CONN, dbConn);
 			AbstractLoginModule loginModule = SecurityModuleFactoryImpl.getLoginInstance(site.getLoginModule(), lm);
 			

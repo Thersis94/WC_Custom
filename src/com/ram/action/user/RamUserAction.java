@@ -363,9 +363,9 @@ public class RamUserAction extends SBActionAdapter {
 			throws ApplicationException {
 		log.debug("managing authentication...");
 		String loginClass = site.getLoginModule();
-		Map<String, Object> lm = new HashMap<String, Object>();
-		String encKey = (String) getAttribute(Constants.ENCRYPT_KEY);
-		lm.put(Constants.ENCRYPT_KEY, encKey);
+		Map<String, Object> lm = new HashMap<>();
+		lm.put(Constants.ENCRYPT_KEY, (String) getAttribute(Constants.ENCRYPT_KEY));
+		lm.put(Constants.CFG_PASSWORD_SALT, (String) getAttribute(Constants.CFG_PASSWORD_SALT));
 		lm.put(GlobalConfig.KEY_DB_CONN, dbConn);
 		String authId = null;
 		try {
