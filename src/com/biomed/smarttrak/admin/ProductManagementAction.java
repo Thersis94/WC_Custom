@@ -560,7 +560,9 @@ public class ProductManagementAction extends AuthorAction {
 		
 		// If the request has search terms on it add them here
 		if (req.hasParameter("search")) {
-			sql.append("and lower(PRODUCT_NM) like ? ");
+			sql.append("and (lower(PRODUCT_NM) like ? ");
+			params.add("%" + req.getParameter("search").toLowerCase() + "%");
+			sql.append("or lower(COMPANY_NM) like ? )");
 			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
 		
@@ -597,10 +599,13 @@ public class ProductManagementAction extends AuthorAction {
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select COUNT(*) ").append("FROM ").append(customDb).append("BIOMEDGPS_product p ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("ON p.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("WHERE 1=1 ");
 		// If the request has search terms on it add them here
 		if (!StringUtil.isEmpty(searchData)) {
-			sql.append("and lower(PRODUCT_NM) like ? ");
+			sql.append("and (lower(PRODUCT_NM) like ? ");
+			sql.append("or lower(COMPANY_NM) like ? )");
 		}
 		
 		if (!inactive) {
@@ -609,7 +614,10 @@ public class ProductManagementAction extends AuthorAction {
 		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			if (!StringUtil.isEmpty(searchData)) ps.setString(1, "%" + searchData.toLowerCase() + "%");
+			if (!StringUtil.isEmpty(searchData)) {
+				ps.setString(1, "%" + searchData.toLowerCase() + "%");
+				ps.setString(2, "%" + searchData.toLowerCase() + "%");
+			}
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				return rs.getInt(1);
