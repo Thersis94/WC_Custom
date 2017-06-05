@@ -3,9 +3,9 @@ package com.biomed.smarttrak.vo;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.siliconmtn.action.ActionRequest;
@@ -72,7 +72,7 @@ public class CompanyVO  extends AuthorVO {
 		alliances = new ArrayList<>();
 		companyAttributes = new ArrayList<>();
 		companySections = new ArrayList<>();
-		products = new TreeMap<>();
+		products = new LinkedHashMap<>();
 	}
 	
 	public CompanyVO(ActionRequest req) {
