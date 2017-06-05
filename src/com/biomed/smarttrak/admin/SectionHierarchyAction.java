@@ -137,7 +137,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	 * @param role
 	 */
 	protected List<Node> checkPermissions(List<Node> sections, SmarttrakRoleVO role) {
-		if (sections == null || sections.isEmpty()) return null;
+		if (sections == null || sections.isEmpty()) return new ArrayList<Node>();
 		
 		String[] roleAcl = role.getAuthorizedSections();
 		List<Node> allowed = new ArrayList<>();
