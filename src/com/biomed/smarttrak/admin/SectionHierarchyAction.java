@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -17,6 +18,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.solr.AccessControlQuery;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -117,6 +119,10 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 			Node n = t.findNode(sectionId);
 			List<Node> sections = new ArrayList<>();
 			sections.add(n);
+
+			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+			sections = checkPermissions(sections, role);
+			
 			this.putModuleData(sections);
 		} else {
 			List<Node> sections = t.preorderList();
@@ -124,6 +130,31 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		}
 	}
 
+	
+	/**
+	 * Loop over the sections and make sure that the user has permission to access them
+	 * @param sections
+	 * @param role
+	 */
+	protected List<Node> checkPermissions(List<Node> sections, SmarttrakRoleVO role) {
+		if (sections == null || sections.isEmpty()) return null;
+		
+		String[] roleAcl = role.getAuthorizedSections();
+		for (String s : roleAcl) log.debug(s);
+		List<Node> allowed = new ArrayList<Node>();
+		for (Node n : sections) {
+			SectionVO sec = (SectionVO) n.getUserObject();
+			log.debug(sec.getSolrTokenTxt());
+			if (roleAcl == null || roleAcl.length == 0 || !AccessControlQuery.isAllowed("+g:" + sec.getSolrTokenTxt(), null, roleAcl)) {
+				// Do nothing. This section cannot be seen by the current user
+				// and there is nothing left for the loop to do
+			} else {
+				n.setChildren(checkPermissions(n.getChildren(), role));
+				allowed.add(n);
+			}
+		}
+		return allowed;
+	}
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.ActionRequest)
 	 */
