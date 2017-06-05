@@ -24,7 +24,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.solr.AccessControlQuery;
@@ -200,9 +199,7 @@ public class CompanyAction extends AbstractTreeAction {
 		sql.append("on p.PRODUCT_ID = s.PRODUCT_ID ");
 		sql.append("WHERE p.COMPANY_ID = ? ");
 		log.debug(sql+"|"+company.getCompanyId());
-
-		SmarttrakTree t = loadDefaultTree();
-		t.buildNodePaths();
+		List<ProductVO> products = new ArrayList<ProductVO>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, company.getCompanyId());
 			ResultSet rs = ps.executeQuery();
@@ -211,27 +208,51 @@ public class CompanyAction extends AbstractTreeAction {
 				ProductVO p = new ProductVO();
 				p.setProductId(rs.getString("PRODUCT_ID"));
 				p.setProductName(rs.getString("PRODUCT_NM"));
-				addToProductMap(company, t, p, rs.getString("SECTION_ID"));
+				p.addSection(rs.getString("SECTION_ID"));
+				products.add(p);
 			}
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
+		
+		sortProducts(company, products);
 	}
 	
 	
+	/**
+	 * Ensure that the product order matches that of the hierarchy
+	 * @param company
+	 * @param products
+	 */
+	private void sortProducts(CompanyVO company, List<ProductVO> products) {
+		SmarttrakTree t = loadDefaultTree();
+		t.buildNodePaths();
+		List<Node> sorted = t.preorderList();
+		
+		for (Node n : sorted) {
+			for (ProductVO p : products) {
+				addToProductMap(company, n, p);
+			}
+		}
+	}
+
 	
 	/**
-	 * Group the products according to thier groups.
+	 * Group the products according to their groups.
 	 * @param company
 	 * @param sectionTree
 	 * @param prod
 	 * @param sectionId
 	 */
-	private void addToProductMap(CompanyVO company, Tree sectionTree, ProductVO prod, String sectionId) {
-		String[] path = sectionTree.findNode(sectionId).getFullPath().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+	private void addToProductMap(CompanyVO company, Node n, ProductVO prod) {
+		// If the supplied node and the supplied product section do not match, return.
+		if (prod.getSections().isEmpty() ||
+				!n.getNodeId().equals(prod.getSections().get(0))) return;
 		
-		// Markets using attributes too high up in the tree do not have enough
-		// information to be sorted properly and are placed in the extras group.
+		String[] path = n.getFullPath().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+		
+		// Products should never be this far up the hierachy tree
+		// but we need to head of potential NPEs here.
 		if (path.length < PRODUCT_PATH_LENGTH) {
 			company.addProduct(path[path.length-1], prod);
 			return;
