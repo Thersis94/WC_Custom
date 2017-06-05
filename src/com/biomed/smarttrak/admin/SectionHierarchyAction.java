@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
@@ -137,7 +138,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	 * @param role
 	 */
 	protected List<Node> checkPermissions(List<Node> sections, SmarttrakRoleVO role) {
-		if (sections == null || sections.isEmpty()) return new ArrayList<>();
+		if (sections == null || sections.isEmpty()) return Collections.emptyList();
 		
 		String[] roleAcl = role.getAuthorizedSections();
 		List<Node> allowed = new ArrayList<>();
