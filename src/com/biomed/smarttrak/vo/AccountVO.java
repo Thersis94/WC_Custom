@@ -6,9 +6,10 @@ import java.util.Date;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountVO.java</p>
@@ -22,12 +23,13 @@ import com.siliconmtn.util.Convert;
  <b>Changes:</b> 
  ***************************************************************************/
 @Table(name="BIOMEDGPS_ACCOUNT")
-public class AccountVO {
+public class AccountVO implements HumanNameIntfc {
 	private String accountId;
 	private String companyId;
 	private String accountName;
 	private String typeId;
 	private String ownerProfileId;
+	private String ownerEmailAddr;
 	private Location location;
 	private String statusNo;
 	private Date startDate;
@@ -36,6 +38,11 @@ public class AccountVO {
 	private Date updateDate;
 	private String firstName;
 	private String lastName;
+	private String title;
+	private int fdAuthFlg;
+	private int gaAuthFlg;
+	private int mktAuthFlg;
+	private int seatsNo;
 
 	/*
 	 * Account Type enum - not to be confused with status, which is Active or Inactive only.  (e.g. Inactive Staff account)
@@ -73,7 +80,7 @@ public class AccountVO {
 		this();
 		setAccountId(req.getParameter("accountId"));
 		setAccountName(req.getParameter("accountName"));
-		setCompanyId(req.getParameter("companyId"));
+		setCompanyId(StringUtil.checkVal(req.getParameter("companyId"), null)); //nullable foreign key
 		setTypeId(req.getParameter("typeId"));
 		setOwnerProfileId(req.getParameter("ownerProfileId"));
 		setStatusNo(req.getParameter("statusNo"));
@@ -85,6 +92,10 @@ public class AccountVO {
 		setState(req.getParameter("stateCode"));
 		setZipCode(req.getParameter("zipCode"));
 		setCountry(req.getParameter("countryCode"));
+		setFdAuthFlg(Convert.formatInteger(req.getParameter("fdAuthFlg")));
+		setGaAuthFlg(Convert.formatInteger(req.getParameter("gaAuthFlg")));
+		setMktAuthFlg(Convert.formatInteger(req.getParameter("mktAuthFlg")));
+		setSeatsNo(Convert.formatInteger(req.getParameter("seatsNo")));
 	}
 
 
@@ -214,6 +225,21 @@ public class AccountVO {
 		this.ownerProfileId = ownerProfileId;
 	}
 
+	/**
+	 * @return the ownerEmailAddr
+	 */
+	@Column(name="owner_email_addr", isReadOnly=true)
+	public String getOwnerEmailAddr() {
+		return ownerEmailAddr;
+	}
+
+	/**
+	 * @param ownerEmailAddr the ownerEmailAddr to set
+	 */
+	public void setOwnerEmailAddr(String ownerEmailAddr) {
+		this.ownerEmailAddr = ownerEmailAddr;
+	}
+	
 	/**
 	 * @return the location
 	 *NOTE no setter for location - we don't want outsiders to be able to nullify it, or our setter/getters around address will fail
@@ -347,5 +373,56 @@ public class AccountVO {
 
 	public void setLastName(String lastName) {
 		this.lastName = lastName;
+	}
+
+	@Column(name="fd_auth_flg")
+	public int getFdAuthFlg() {
+		return fdAuthFlg;
+	}
+
+	public void setFdAuthFlg(int fdAuthFlg) {
+		this.fdAuthFlg = fdAuthFlg;
+	}
+
+	@Column(name="ga_auth_flg")
+	public int getGaAuthFlg() {
+		return gaAuthFlg;
+	}
+
+	public void setGaAuthFlg(int gaAuthFlg) {
+		this.gaAuthFlg = gaAuthFlg;
+	}
+
+	@Column(name="mkt_auth_flg")
+	public int getMktAuthFlg() {
+		return mktAuthFlg;
+	}
+
+	public void setMktAuthFlg(int mktAuthFlg) {
+		this.mktAuthFlg = mktAuthFlg;
+	}
+
+	@Column(name="seats_no")
+	public int getSeatsNo() {
+		return seatsNo;
+	}
+
+	public void setSeatsNo(int seatsNo) {
+		this.seatsNo = seatsNo;
+	}
+
+	/**
+	 * @return the title
+	 */
+	@Column(name="title", isReadOnly=true)
+	public String getTitle() {
+		return title;
+	}
+
+	/**
+	 * @param title the title to set
+	 */
+	public void setTitle(String title) {
+		this.title = title;
 	}
 }

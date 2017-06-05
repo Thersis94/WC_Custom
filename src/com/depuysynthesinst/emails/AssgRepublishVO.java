@@ -16,12 +16,12 @@ import com.smt.sitebuilder.common.SiteVO;
  ****************************************************************************/
 public class AssgRepublishVO extends AbstractDSIEmailVO {
 	private static final long serialVersionUID = 1L;
-	
+
 	public AssgRepublishVO() {
 		super();
 	}
 
-	
+
 	/**
 	 * add a method to build the message as its passed into the VO, not as it's sent (e.g.: getHtmlBody()).
 	 * This is important, because when this message gets to JMS it won't have access
@@ -49,7 +49,7 @@ public class AssgRepublishVO extends AbstractDSIEmailVO {
 		addThankYou(sb);
 
 		addClosingRemark(sb, siteUrl);
-		
+
 		addTrackingNo(sb, "DSUS/INS/0615/1108b 06/15");
 
 		super.setHtmlBody(sb.toString());

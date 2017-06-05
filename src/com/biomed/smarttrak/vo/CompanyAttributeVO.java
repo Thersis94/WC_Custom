@@ -3,8 +3,8 @@ package com.biomed.smarttrak.vo;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.vo.NoteInterface;
 import com.biomed.smarttrak.vo.NoteVO;
-import com.bmg.admin.vo.NoteInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -31,7 +31,13 @@ public class CompanyAttributeVO implements NoteInterface  {
 	private String attributeId;
 	private String valueText;
 	private String titleText;
+	private String attributeName;
+	private String altText;
+	private String groupName;
+	private String parentName;
 	private List<NoteVO> notes;
+	private String statusNo;
+	private String sectionId;
 	
 	private int orderNo;
 	private String attributeTypeName;
@@ -52,7 +58,9 @@ public class CompanyAttributeVO implements NoteInterface  {
 		attributeId = req.getParameter("attributeId");
 		valueText = req.getParameter("valueText");
 		titleText = req.getParameter("titleText");
+		altText = req.getParameter("altText");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
+		statusNo = req.getParameter("statusNo");
 	}
 
 
@@ -109,6 +117,17 @@ public class CompanyAttributeVO implements NoteInterface  {
 	}
 	
 
+	@Column(name="attribute_nm", isReadOnly=true)
+	public String getAttributeName() {
+		return attributeName;
+	}
+
+
+	public void setAttributeName(String attributeName) {
+		this.attributeName = attributeName;
+	}
+
+
 	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
 	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDate() {return null;}
@@ -140,6 +159,59 @@ public class CompanyAttributeVO implements NoteInterface  {
 	@Override
 	public List<NoteVO> getNotes() {
 		return this.notes;
+	}
+
+
+	@Column(name="alt_title_txt")
+	public String getAltText() {
+		return altText;
+	}
+
+
+	public void setAltText(String altText) {
+		this.altText = altText;
+	}
+
+
+	public String getGroupName() {
+		return groupName;
+	}
+
+
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
+	}
+
+
+	@Column(name="parent_nm", isReadOnly=true)
+	public String getParentName() {
+		return parentName;
+	}
+
+
+	public void setParentName(String parentName) {
+		this.parentName = parentName;
+	}
+
+
+	@Column(name="status_no")
+	public String getStatusNo() {
+		return statusNo;
+	}
+
+
+	public void setStatusNo(String statusNo) {
+		this.statusNo = statusNo;
+	}
+
+	@Column(name="section_id", isReadOnly=true)
+	public String getSectionId() {
+		return sectionId;
+	}
+
+
+	public void setSectionId(String sectionId) {
+		this.sectionId = sectionId;
 	}
 
 }

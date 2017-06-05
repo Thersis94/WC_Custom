@@ -6,6 +6,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: MarketAttributeVO.java <p/>
@@ -27,11 +28,16 @@ public class MarketAttributeVO {
 	private String marketAttributeId;
 	private String attributeId;
 	private String marketId;
+	private String titleText;
 	private String valueText;
+	private String value1Text;
+	private String value2Text;
 	private String attributeTypeCd;
 	private String attributeName;
 	private String marketName;
+	private String groupName;
 	private int orderNo;
+	private String statusNo;
 	
 	public MarketAttributeVO() {
 		// Empty default constructor
@@ -46,8 +52,12 @@ public class MarketAttributeVO {
 	public void setData(ActionRequest req) {
 		marketAttributeId = req.getParameter("marketAttributeId");
 		marketId = req.getParameter("marketId");
+		titleText = req.getParameter("titleText");
 		attributeId = req.getParameter("attributeId");
 		valueText = req.getParameter("valueText");
+		statusNo = req.getParameter("statusNo");
+		setValue1Text(req.getParameter("value1Text"));
+		setValue2Text(StringUtil.getDelimitedList(req.getParameterValues("value2Text"), false, ","));
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 	}
 
@@ -66,6 +76,17 @@ public class MarketAttributeVO {
 	public void setMarketId(String marketId) {
 		this.marketId = marketId;
 	}
+	@Column(name="title_txt")
+	public String getTitleText() {
+		return titleText;
+	}
+
+
+	public void setTitleText(String titleText) {
+		this.titleText = titleText;
+	}
+
+
 	@Column(name="attribute_id")
 	public String getAttributeId() {
 		return attributeId;
@@ -77,9 +98,42 @@ public class MarketAttributeVO {
 	public String getValueText() {
 		return valueText;
 	}
+	
+	public String getIcon() {
+		switch (valueText) {
+			case "PIE":
+				return "fa-pie-chart";
+			case "BAR":
+				return "fa-bar-chart";
+			case "COLUMN":
+				return "fa-line-chart";
+			default:
+				return "";
+		}
+	}
+	
 	public void setValueText(String valueText) {
 		this.valueText = valueText;
 	}
+	
+	@Column(name="value_1_txt")
+	public String getValue1Text() {
+		return value1Text;
+	}
+
+	@Column(name="value_2_txt")
+	public String getValue2Text() {
+		return value2Text;
+	}
+	
+	public void setValue1Text(String value1Text) {
+		this.value1Text = value1Text;
+	}
+
+	public void setValue2Text(String value2Text) {
+		this.value2Text = value2Text;
+	}
+
 	@Column(name="type_cd", isReadOnly=true)
 	public String getAttributeTypeCd() {
 		return attributeTypeCd;
@@ -112,12 +166,34 @@ public class MarketAttributeVO {
 	}
 
 
+	@Column(name="group_nm", isReadOnly=true)
+	public String getGroupName() {
+		return groupName;
+	}
+
+
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
+	}
+
+
 	@Column(name="order_no")
 	public int getOrderNo() {
 		return orderNo;
 	}
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
+	}
+
+
+	@Column(name="status_no")
+	public String getStatusNo() {
+		return statusNo;
+	}
+
+
+	public void setStatusNo(String statusNo) {
+		this.statusNo = statusNo;
 	}
 	
 

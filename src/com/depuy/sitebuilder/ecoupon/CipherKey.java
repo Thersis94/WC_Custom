@@ -1,18 +1,12 @@
 package com.depuy.sitebuilder.ecoupon;
 
 // JDK 1.5.0
-import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 
 // SMT Base Libs 2.0
 import com.siliconmtn.util.Convert;
-
-// Fremarker API
-import freemarker.cache.StringTemplateLoader;
-import freemarker.template.Configuration;
-import freemarker.template.DefaultObjectWrapper;
-import freemarker.template.Template;
+import com.smt.sitebuilder.util.MessageParser;
 
 /****************************************************************************
  * <b>Title</b>: CipherKey.java<p/>
@@ -162,34 +156,14 @@ public class CipherKey {
 	 */
 	public String getResponseText() {
 		// Set the data params for the marker
-		Map<String, String> data = new HashMap<String, String>();
-		data.put(ECOUPON_URL_KEY, this.getCouponUrl());
+		Map<String, String> data = new HashMap<>();
+		data.put(ECOUPON_URL_KEY, getCouponUrl());
 		
-		// Create the free marker config and templates
-		Configuration cfg = new Configuration();
-		Template temp = null;
-		StringBuffer sb = new StringBuffer();
 		try {
-			// Get or create a template
-			cfg.setObjectWrapper(new DefaultObjectWrapper());
-			
-			// Use the String loader and load the template
-			StringTemplateLoader stl = new StringTemplateLoader();
-			stl.putTemplate("HTML", message);
-			cfg.setTemplateLoader(stl);
-			temp = cfg.getTemplate("HTML");
-			
-			// Load the data to a stream
-			StringWriter out = new StringWriter();
-			temp.process(data, out);
-			sb = out.getBuffer();
-			out.flush();
-			
+			return MessageParser.parse(getMessage(), data, "com.depuy.sitebiulder.ecoupon.CipkerKey.HTML");
 		} catch(Exception e) {
-			
+			return "";
 		}
-		
-		return sb.toString();
 	}
 
 	/**

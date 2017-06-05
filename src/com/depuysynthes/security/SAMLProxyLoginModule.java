@@ -37,7 +37,7 @@ import com.smt.sitebuilder.security.SAMLLoginModule;
 public class SAMLProxyLoginModule extends SAMLLoginModule {
 
 	private final String REDIRECT_URI_SRT = "/srt/sso.asp";
-	
+
 	public SAMLProxyLoginModule() {
 	}
 
@@ -47,23 +47,24 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 	public SAMLProxyLoginModule(Map<String, Object> config) {
 		super(config);
 	}
-	
+
+
 	/**
 	 * Checks for SAML auth initiation or SAML response.  Defaults to WC login
 	 * authentication.
 	 */
 	@Override
-	public UserDataVO retrieveUserData(String user, String pwd) 
+	public UserDataVO authenticateUser(String user, String pwd) 
 			throws AuthenticationException {
 
-		ActionRequest req = (ActionRequest)initVals.get(GlobalConfig.ACTION_REQUEST);
-		Connection conn = (Connection) initVals.get(GlobalConfig.KEY_DB_CONN);
+		ActionRequest req = (ActionRequest)getAttribute(GlobalConfig.ACTION_REQUEST);
+		Connection conn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
 		if (req.hasParameter("initiateSSO")) {
 			// behave the same as superclass
-			super.retrieveUserData(user, pwd);
-			
+			super.authenticateUser(user, pwd);
+
 		} else if (req.hasParameter("SAMLResponse")) {
 			/* process the response, redirect tokens calling site.  
 			 * WC does not consume this response.
@@ -78,7 +79,7 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 			} catch (AuthenticationException ae) {
 				log.error("Intercepted the parent SSO response parsing exception.");
 			}
-			
+
 			// build/set sso redirect using the alternate service endpoint URI.
 			StringBuilder redir = new StringBuilder(40);
 			redir.append(REDIRECT_URI_SRT);
@@ -100,11 +101,11 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 			// if neither case, throw 'invalid login'
 			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
 		}
-		
-		return null;
 
+		return null;
 	}
-	
+
+
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.security.AbstractLoginModule#initiateLogin()
 	 */
@@ -120,5 +121,4 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 		req.setParameter("initiateSSO", "true");
 		return super.canInitiateLogin(req);
 	}
-
 }

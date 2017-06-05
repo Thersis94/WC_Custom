@@ -1,15 +1,17 @@
 package com.biomed.smarttrak.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 //Java 7
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
+
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
-
+import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.action.AdminControllerAction;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -17,9 +19,10 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.user.HumanNameIntfc;
+import com.siliconmtn.util.user.NameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -37,7 +40,8 @@ import com.smt.sitebuilder.security.SecurityController;
  ***************************************************************************/
 public class AccountAction extends SBActionAdapter {
 
-	protected static final String ACCOUNT_ID = "accountId"; //req param
+	public static final String ACCOUNT_ID = "accountId"; //req param
+	public static final String MANAGERS = "managers";
 
 	public AccountAction() {
 		super();
@@ -59,7 +63,7 @@ public class AccountAction extends SBActionAdapter {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
-		String sql = formatRetrieveQuery(accountId, schema);
+		String sql = formatRetrieveQuery(accountId, schema, req.getParameter("inactive"));
 
 		List<Object> params = new ArrayList<>();
 		if (accountId != null) params.add(accountId);
@@ -80,19 +84,37 @@ public class AccountAction extends SBActionAdapter {
 
 
 	/**
+	 * method overloading so only methods that want the managers titles get them.  
+	 * @param req
+	 * @param schema
+	 * @throws ActionException
+	 */
+	public void loadManagerList(ActionRequest req, String schema) {
+		loadManagerList(req, schema, false);
+	}
+
+
+	/**
 	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void loadManagerList(ActionRequest req, String schema) throws ActionException {
+	protected void loadManagerList(ActionRequest req, String schema, boolean loadTitles) {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.profile_id as owner_profile_id, a.first_nm, a.last_nm from profile a ");
-		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=?");
+		sql.append("select newid() as account_id, a.profile_id as owner_profile_id, a.first_nm, a.last_nm ");
+		if (loadTitles) sql.append(", rd.value_txt as title ");
+		sql.append("from profile a ");
+		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=? ");
+		if (loadTitles)  {
+			sql.append("inner join register_submittal rsub on rsub.profile_id=a.profile_id ");
+			sql.append("inner join register_data rd on rd.register_submittal_id=rsub.register_submittal_id and rd.register_field_id=? ");
+		}
 		sql.append("and b.site_id=? and b.role_id=?");
 		log.debug(sql);
 
 		List<Object> params = new ArrayList<>();
 		params.add(SecurityController.STATUS_ACTIVE);
+		if (loadTitles) params.add(UserVO.RegistrationMap.TITLE.getFieldId());
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
 		params.add(AdminControllerAction.STAFF_ROLE_ID);
 
@@ -103,8 +125,7 @@ public class AccountAction extends SBActionAdapter {
 		//decrypt the owner profiles
 		decryptNames(accounts);
 		Collections.sort(accounts, new NameComparator());
-
-		req.setAttribute("managers", accounts);
+		req.setAttribute(MANAGERS, accounts);
 	}
 
 
@@ -112,23 +133,9 @@ public class AccountAction extends SBActionAdapter {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	protected void decryptNames(List<Object>  accounts) {
-		StringEncrypter se;
-		try {
-			se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
-		} catch (EncryptionException e1) {
-			return; //cannot use the decrypter, fail fast
-		}
-
-		for (Object o : accounts) {
-			try {
-				AccountVO acct = (AccountVO) o;
-				acct.setFirstName(se.decrypt(acct.getFirstName()));
-				acct.setLastName(se.decrypt(acct.getLastName()));
-			} catch (Exception e) {
-				//ignoreable
-			}
-		}
+	@SuppressWarnings("unchecked")
+	protected void decryptNames(List<Object> data) {
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 
@@ -136,15 +143,22 @@ public class AccountAction extends SBActionAdapter {
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	protected String formatRetrieveQuery(String accountId, String schema) {
+	protected String formatRetrieveQuery(String accountId, String schema, String inactive) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, ");
 		sql.append("a.start_dt, a.expiration_dt, a.owner_profile_id, a.address_txt, ");
-		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, ");
-		sql.append("a.status_no, a.create_dt, a.update_dt, p.first_nm, p.last_nm ");
-		sql.append("from ").append(schema).append("biomedgps_account a ");
-		sql.append("left outer join profile p on a.owner_profile_id=p.profile_id ");		
-		if (accountId != null) sql.append("where a.account_id=? ");
+		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, a.seats_no, ");
+		sql.append("a.status_no, a.create_dt, a.update_dt, a.fd_auth_flg, a.ga_auth_flg, a.mkt_auth_flg, ");
+		sql.append("p.first_nm, p.last_nm from ").append(schema).append("biomedgps_account a ");
+		sql.append("left outer join profile p on a.owner_profile_id=p.profile_id ");
+		sql.append("where 1=1 ");
+
+		if (accountId != null) {
+			sql.append("and a.account_id=? ");
+		} else if (StringUtil.isEmpty(inactive)) {
+			//conditionally include inactive accounts  (load all if inactive was passed)
+			sql.append("and a.status_no='A' ");
+		}
 		sql.append("order by a.account_nm");
 
 		log.debug(sql);
@@ -188,30 +202,30 @@ public class AccountAction extends SBActionAdapter {
 			throw new ActionException(e);
 		}
 	}
-	
-	
-	/****************************************************************************
-	 * <b>Title</b>: NameComparator.java<p/>
-	 * <b>Description: Compares AccountVOs and sorts them by name</b> 
-	 * <p/>
-	 * <b>Copyright:</b> Copyright (c) 2017<p/>
-	 * <b>Company:</b> Silicon Mountain Technologies<p/>
-	 * @author James McKain
-	 * @version 1.0
-	 * @since Feb 11, 2017
-	 ****************************************************************************/
-	protected class NameComparator implements Comparator<Object> {
 
-		/* (non-Javadoc)
-		 * @see java.lang.Comparable#compareTo(java.lang.Object)
-		 */
-		@Override
-		public int compare(Object o1, Object o2) {
-			AccountVO vo1 = (AccountVO) o1;
-			String name1 = vo1.getFirstName() + vo1.getLastName();
-			AccountVO vo2 = (AccountVO) o2;
-			String name2 = vo2.getFirstName() + vo2.getLastName();
-			return StringUtil.checkVal(name1).compareTo(name2);
+
+	/**
+	 * saves the 3-4 fields we store on the account record for global-scope overrides
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void saveGlobalPermissions(ActionRequest req) throws ActionException {
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("update ").append(schema).append("BIOMEDGPS_ACCOUNT ");
+		sql.append("set ga_auth_flg=?, fd_auth_flg=?, mkt_auth_flg=?, update_dt=? where account_id=?");
+		log.debug(sql);
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, req.hasParameter("accountGA") ? 1 : 0);
+			ps.setInt(2, req.hasParameter("accountFD") ? 1 : 0);
+			ps.setInt(3, req.hasParameter("accountMkt") ? 1 : 0);
+			ps.setTimestamp(4,  Convert.getCurrentTimestamp());
+			ps.setString(5,  req.getParameter(ACCOUNT_ID));
+			ps.executeUpdate();
+
+		} catch (SQLException sqle) {
+			throw new ActionException("could not save account ACLs", sqle);
 		}
 	}
 }

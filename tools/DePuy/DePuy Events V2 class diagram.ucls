@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <class-diagram version="1.1.6" icons="true" automaticImage="PNG" always-add-relationships="true" generalizations="true" 
   realizations="true" associations="true" dependencies="true" nesting-relationships="true">  
-  <class id="1" language="java" name="com.depuy.events_v2.DePuyEventManageActionV2" project="WC_Custom" 
-    file="/WC_Custom/src/com/depuy/events_v2/DePuyEventManageActionV2.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="1" language="java" name="com.depuy.events.DePuyEventManageActionV2" project="WC_Custom" 
+    file="/WC_Custom/src/com/depuy/events/DePuyEventManageActionV2.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="797" y="84"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
@@ -10,8 +10,8 @@
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <class id="2" language="java" name="com.depuy.events_v2.PostcardSelectV2" project="WC_Custom" 
-    file="/WC_Custom/src/com/depuy/events_v2/PostcardSelectV2.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="2" language="java" name="com.depuy.events.PostcardSelectV2" project="WC_Custom" 
+    file="/WC_Custom/src/com/depuy/events/PostcardSelectV2.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="488" y="328"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
@@ -19,8 +19,8 @@
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <class id="3" language="java" name="com.depuy.events_v2.PostcardInsertV2" project="WC_Custom" 
-    file="/WC_Custom/src/com/depuy/events_v2/PostcardInsertV2.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="3" language="java" name="com.depuy.events.PostcardInsertV2" project="WC_Custom" 
+    file="/WC_Custom/src/com/depuy/events/PostcardInsertV2.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="1202" y="460"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
@@ -28,8 +28,8 @@
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <class id="4" language="java" name="com.depuy.events_v2.ReportBuilder" project="WC_Custom" 
-    file="/WC_Custom/src/com/depuy/events_v2/ReportBuilder.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="4" language="java" name="com.depuy.events.ReportBuilder" project="WC_Custom" 
+    file="/WC_Custom/src/com/depuy/events/ReportBuilder.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="656" y="663"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
@@ -37,8 +37,8 @@
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <class id="5" language="java" name="com.depuy.events_v2.CoopAdsActionV2" project="WC_Custom" 
-    file="/WC_Custom/src/com/depuy/events_v2/CoopAdsActionV2.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="5" language="java" name="com.depuy.events.CoopAdsActionV2" project="WC_Custom" 
+    file="/WC_Custom/src/com/depuy/events/CoopAdsActionV2.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="1215" y="984"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
@@ -46,8 +46,8 @@
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <class id="6" language="java" name="com.depuy.events_v2.CoopAdsEmailer" project="WC_Custom" 
-    file="/WC_Custom/src/com/depuy/events_v2/CoopAdsEmailer.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="6" language="java" name="com.depuy.events.CoopAdsEmailer" project="WC_Custom" 
+    file="/WC_Custom/src/com/depuy/events/CoopAdsEmailer.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="1679" y="963"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
@@ -55,8 +55,8 @@
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <class id="7" language="java" name="com.depuy.events_v2.PostcardEmailer" project="WC_Custom" 
-    file="/WC_Custom/src/com/depuy/events_v2/PostcardEmailer.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="7" language="java" name="com.depuy.events.PostcardEmailer" project="WC_Custom" 
+    file="/WC_Custom/src/com/depuy/events/PostcardEmailer.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="1620" y="448"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      

@@ -2,12 +2,13 @@ package com.biomed.smarttrak.vo;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
-import com.biomed.smarttrak.vo.NoteVO;
-import com.bmg.admin.vo.NoteEntityInterface;
+import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
@@ -28,9 +29,10 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_COMPANY")
-public class CompanyVO  implements NoteEntityInterface {
+public class CompanyVO  extends AuthorVO {
 	private String companyId;
 	private String parentId;
+	private String parentName;
 	private String companyName;
 	private String shortName;
 	private String aliasName;
@@ -50,20 +52,27 @@ public class CompanyVO  implements NoteEntityInterface {
 	private int profileNo;
 	private int peopleNo;
 	private int investedFlag;
-	private List<String> investors;
+	private Map<String, String> investors;
 	private List<LocationVO> locations;
 	private List<AllianceVO> alliances;
-	private List<CompanyAttributeVO> attributes;
+	private List<CompanyAttributeVO> companyAttributes;
 	private List<NoteVO> notes;
-	private List<GenericVO> sections;
+	private List<SectionVO> companySections;
+	private Map<String, List<ProductVO>> products;
+	private Date updateDate;
+	private String updateMsg;
+	private String currencyTypeSymbol;
+	private int publicFlag;
 	
 	
 	public CompanyVO() {
-		investors = new ArrayList<>();
+		super(BiomedCompanyIndexer.INDEX_TYPE);
+		investors = new HashMap<>();
 		locations = new ArrayList<>();
 		alliances = new ArrayList<>();
-		attributes = new ArrayList<>();
-		sections = new ArrayList<>();
+		companyAttributes = new ArrayList<>();
+		companySections = new ArrayList<>();
+		products = new TreeMap<>();
 	}
 	
 	public CompanyVO(ActionRequest req) {
@@ -72,6 +81,7 @@ public class CompanyVO  implements NoteEntityInterface {
 	}
 	
 	public void setData(ActionRequest req) {
+		super.setData(req);//set the creator_profile_id
 		companyId = req.getParameter("companyId");
 		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
 		companyName = req.getParameter("companyName");
@@ -80,7 +90,7 @@ public class CompanyVO  implements NoteEntityInterface {
 		currencyTypeId = req.getParameter("currencyId");
 		holdingText = req.getParameter("holdingText");
 		stockAbbr = req.getParameter("stockAbbr");
-		exchangeId = req.getParameter("exchangeId");
+		exchangeId = StringUtil.checkVal(req.getParameter("exchangeId"), null);
 		archiveReason = req.getParameter("archiveReason");
 		startupFlag = Convert.formatInteger(req.getParameter("startupFlag"));
 		statusNo = req.getParameter("statusNo");
@@ -92,9 +102,10 @@ public class CompanyVO  implements NoteEntityInterface {
 		profileNo = Convert.formatInteger(req.getParameter("profileNo"));
 		peopleNo = Convert.formatInteger(req.getParameter("peopleNo"));
 		fiscalYearEnd = req.getParameter("fiscalYearEnd");
+		publicFlag = Convert.formatInteger(req.getParameter("publicFlag"));
 		if (req.hasParameter("investors")) {
 			for (String s : req.getParameterValues("investors")) {
-				investors.add(s);
+				investors.put(s, "");
 			}
 		}
 	}
@@ -104,6 +115,7 @@ public class CompanyVO  implements NoteEntityInterface {
 		return companyId;
 	}
 	public void setCompanyId(String companyId) {
+		super.setDocumentId(companyId);
 		this.companyId = companyId;
 	}
 	@Column(name="parent_id")
@@ -113,6 +125,15 @@ public class CompanyVO  implements NoteEntityInterface {
 	public void setParentId(String parentId) {
 		this.parentId = parentId;
 	}
+	@Column(name="parent_nm", isReadOnly=true)
+	public String getParentName() {
+		return parentName;
+	}
+
+	public void setParentName(String parentName) {
+		this.parentName = parentName;
+	}
+
 	@Column(name="company_nm")
 	public String getCompanyName() {
 		return companyName;
@@ -249,16 +270,16 @@ public class CompanyVO  implements NoteEntityInterface {
 		this.investedFlag = investedFlag;
 	}
 
-	public List<String> getInvestors() {
+	public Map<String, String> getInvestors() {
 		return investors;
 	}
 
-	public void setInvestors(List<String> investors) {
+	public void setInvestors(Map<String, String> investors) {
 		this.investors = investors;
 	}
 	
-	public void addInvestor(String investor) {
-		investors.add(investor);
+	public void addInvestor(String id, String name) {
+		investors.put(id, name);
 	}
 
 	public List<LocationVO> getLocations() {
@@ -285,46 +306,59 @@ public class CompanyVO  implements NoteEntityInterface {
 		this.alliances.add(alliance);
 	}
 	
-	/*
-	 * (non-Javadoc)
-	 * @see com.bmg.admin.vo.NoteEntityInterface#getAttributes()
-	 */
-	@Override
-	public List<CompanyAttributeVO> getAttributes() {
-		return attributes;
+	public List<CompanyAttributeVO> getCompanyAttributes() {
+		return companyAttributes;
 	}
 
-	public void setAttributes(List<CompanyAttributeVO> attributes) {
-		this.attributes = attributes;
+	public void setCompanyAttributes(List<CompanyAttributeVO> attributes) {
+		this.companyAttributes = attributes;
 	}
 	
-	public void addAttribute(CompanyAttributeVO attribute) {
-		this.attributes.add(attribute);
+	public void addCompanyAttribute(CompanyAttributeVO attribute) {
+		this.companyAttributes.add(attribute);
 	}
 
-	public List<GenericVO> getSections() {
-		return sections;
+	public List<SectionVO> getCompanySections() {
+		return companySections;
 	}
 
-	public void setSections(List<GenericVO> sections) {
-		this.sections = sections;
+	public void setCompanySections(List<SectionVO> sections) {
+		this.companySections = sections;
 	}
 	
-	public void addSection(GenericVO section) {
-		this.sections.add(section);
+	public void addCompanySection(SectionVO section) {
+		this.companySections.add(section);
 	}
+	public Map<String, List<ProductVO>> getProducts() {
+		return products;
+	}
+
+	public void setProducts(Map<String, List<ProductVO>> products) {
+		this.products = products;
+	}
+
+	public void addProduct(String group, ProductVO product) {
+		if (!this.products.keySet().contains(group))
+			this.products.put(group, new ArrayList<ProductVO>());
+		
+		// If this product is already in this group skip it.
+		if (products.get(group).contains(product)) return;
+		
+		products.get(group).add(product);
+	}
+
+	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
+	public Date getUpdateDate() {return updateDate;}
+	public void setUpdateDate(Date updateDate) {this.updateDate = updateDate;}
 	
 
 	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
-	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
-	public Date getUpdateDate() {return null;}
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
 
 	/* (non-Javadoc)
 	 * @see com.bmg.admin.vo.BiomedNoteInterface#setNotes(java.util.List)
 	 */
-	@Override
 	public void setNotes(List<NoteVO> notes) {
 		this.notes = notes;
 	}
@@ -335,14 +369,53 @@ public class CompanyVO  implements NoteEntityInterface {
 	public List<NoteVO> getNotes(){
 		return notes;
 	}
-
-	/* (non-Javadoc)
-	 * @see com.bmg.admin.vo.BiomedNoteInterface#getId()
-	 */
-	@Override
+	
 	public String getId() {
 		//each vo will return its own primary id.
 		return getCompanyId();
+	}
+
+	public String getUpdateMsg() {
+		return updateMsg;
+	}
+
+	public void setUpdateMsg(String updateMsg) {
+		this.updateMsg = updateMsg;
+	}
+	
+	public String getAllSections() {
+		StringBuilder sections = new StringBuilder(200);
+		for (SectionVO section : companySections) {
+			sections.append(section.getSectionId()).append("|");
+		}
+		return sections.toString();
+	}
+
+	@Column(name="symbol_txt", isReadOnly=true)
+	public String getCurrencyTypeSymbol() {
+		return currencyTypeSymbol;
+	}
+
+	public void setCurrencyTypeSymbol(String currencyTypeSymbol) {
+		this.currencyTypeSymbol = currencyTypeSymbol;
+	}
+	
+	/**
+	 * @return the creatorProfileId
+	 */
+	@Override
+	@Column(name="creator_profile_id")
+	public String getCreatorProfileId() {
+		return creatorProfileId;
+	}
+
+	@Column(name="public_flg")
+	public int getPublicFlag() {
+		return publicFlag;
+	}
+
+	public void setPublicFlag(int publicFlag) {
+		this.publicFlag = publicFlag;
 	}
 
 }

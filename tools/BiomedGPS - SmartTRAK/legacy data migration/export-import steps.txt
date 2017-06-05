@@ -1,0 +1,62 @@
+# legacy product data exports
+
+#export main DB minus the emaillog table:
+/home/django/backup/smt_db.sh
+
+#tar the files on the file-system:
+sudo tar czvf /tmp/backup.tar.gz --exclude='/home/django/django/resources/videos/*' /var/www /home/django/django
+
+# sftp the above data over to SMT:
+sftp -P 2222 STARCASTLE\\jackson@ftp.siliconmtn.com
+mput /tmp/emaillog.tar.gz
+mput /tmp/backup.tar.gz
+
+# unzip locally
+gunzip core_db.dmp.gz
+gunzip emaillog.dmp.gz
+
+mysql> create database biomedgps5;
+
+#import the core DB in prep for migration to postgres
+mysql -u root -p biomedgps5 < core-db.dmp
+
+#import the emailog table in prep for migration to postgres
+mysql -u root -p biomedgps5 < emaillog.dmp
+
+
+mysql> grant all privileges on biomedgps5.* to 'django'@'localhost';
+update articles_article set last_update='1970-01-01'  where last_update ='0000-00-00 00:00:00';
+update articles_article set create_date='1970-01-01'  where create_date ='0000-00-00 00:00:00';
+update articles_article set content=replace(content,'\0','') where content like '%\0%';
+update articles_articledraft set content=replace(content,'\0','') where content like '%\0%';
+update articles_historicalarticle set content=replace(content,'\0','') where content like '%\0%';
+update attachments_attachment set last_update='1970-01-01'  where last_update ='0000-00-00 00:00:00';
+
+run pgloader
+
+--moving files into /secBinary:
+sudo cp -r ./media/attachments /data/WebCrescendo/mnt/staging_sbinary/org/BMG_SMARTTRAK/
+sudo cp -r ./media/photologue /data/WebCrescendo/mnt/staging_sbinary/org/BMG_SMARTTRAK/
+sudo cp -r ./userfiles/users/* /data/WebCrescendo/mnt/staging_profile_document/org/BMG_SMARTTRAK/users/
+
+
+---------------- for re-importing the data -----------------
+
+--drop tables in staging
+SELECT concat('drop table if exists custom.',relname,' cascade;' ) FROM pg_stat_user_tables 
+	where schemaname='custom' and relname like 'biomedgps_%' order by relname;
+	
+--delete the old core data with these:
+delete from profile_role where site_id='BMG_SMARTTRAK_1';
+delete from register_submittal where site_id='BMG_SMARTTRAK_1';
+delete from support_attachment_xr where ticket_id like 'SMARTTRAK_%';
+delete from support_ticket where organization_id='BMG_SMARTTRAK';
+delete from pageview_user where pageview_user_id like 'BMG_SMARTTRAK_%';
+delete from profile_document where organization_id='BMG_SMARTTRAK';
+delete from email_campaign_log where campaign_log_id like 'SMARTTRAK_%';
+delete from change_log; --new table for ST
+select * from email_campaign_widget;
+delete from sent_email_param where campaign_log_id like 'SMARTTRAK_%';
+delete from profile_favorite where site_id='BMG_SMARTTRAK_1';
+
+

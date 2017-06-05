@@ -1,9 +1,10 @@
 package com.biomed.smarttrak.vo;
 
-// java
 import java.io.Serializable;
+// java
 import java.sql.ResultSet;
 import java.util.Date;
+import java.util.List;
 
 //SMT baselibs
 import com.siliconmtn.action.ActionRequest;
@@ -12,6 +13,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: NoteVO.java <p/>
@@ -27,7 +29,6 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 @Table(name="BIOMEDGPS_NOTE")
 public class NoteVO implements Serializable {
-
 	private static final long serialVersionUID = -4071567645204934866L;
 	private String noteId;
 	private String userId;
@@ -36,16 +37,22 @@ public class NoteVO implements Serializable {
 	private String attributeId;
 	private String productId;
 	private String marketId;
+	private String accountId;
 	private String noteName;
 	private String noteText;
 	private String filePathText;
 	private Date expirationDate;
-	private Date creationDate;
+	private Date createDate;
 	private Date updateDate;
 	private String userName;
+	private String teamName;
+	private List<ProfileDocumentVO> profileDocuments;
+	private int listCount;
 
 
-	public NoteVO() {super();}
+	public NoteVO() {
+		super();
+	}
 	public NoteVO(ResultSet rs) {
 		this();
 		setData(rs);
@@ -60,57 +67,53 @@ public class NoteVO implements Serializable {
 	 * @param req
 	 */
 	private void setData(ActionRequest req) {
+		String ptn = Convert.DATE_SLASH_SHORT_PATTERN;
 
-		this.noteId = StringUtil.checkVal(req.getParameter("noteId"));
-		this.userId = StringUtil.checkVal(req.getParameter("userId"));
-		this.teamId = req.getParameter("teamId");
-		this.companyId = req.getParameter("companyId");
-		this.attributeId = req.getParameter("attributeId");
-		this.productId = req.getParameter("productId");
-		this.marketId  = req.getParameter("marketId");
-		this.noteName = StringUtil.checkVal(req.getParameter("noteName"));
-		this.noteText = StringUtil.checkVal(req.getParameter("noteText"));
-		this.filePathText = StringUtil.checkVal(req.getParameter("filePath"));
-		this.expirationDate = Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
-				StringUtil.checkVal(req.getParameter("expirationDate")));
-		this.creationDate = Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
-				StringUtil.checkVal(req.getParameter("createDate")));
-		this.updateDate = Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
-				StringUtil.checkVal(req.getParameter("updateDate")));
-
+		setNoteId(StringUtil.checkVal(req.getParameter("noteId")));
+		setUserId(StringUtil.checkVal(req.getParameter("userId")));
+		setTeamId(req.getParameter("teamId"));
+		setCompanyId(req.getParameter("companyId"));
+		setAttributeId(req.getParameter("attributeId"));
+		setProductId(req.getParameter("productId"));
+		setMarketId(req.getParameter("marketId"));
+		setAccountId(req.getParameter("accountId"));
+		setNoteName(StringUtil.checkVal(req.getParameter("noteName")));
+		setNoteText(StringUtil.checkVal(req.getParameter("noteText")));
+		setFilePathText(StringUtil.checkVal(req.getParameter("filePathText")));
+		setExpirationDate(Convert.formatDate(ptn, StringUtil.checkVal(req.getParameter("expirationDate"))));
+		setCreateDate(Convert.formatDate(ptn, StringUtil.checkVal(req.getParameter("createDate"))));
+		setUpdateDate(Convert.formatDate(ptn, StringUtil.checkVal(req.getParameter("updateDate"))));
 	}
+
 	/**
 	 * @param rs
 	 */
 	private void setData(ResultSet rs) {
-
 		DBUtil util = new DBUtil();
-
-		this.noteId = util.getStringVal("NOTE_ID", rs);
-		this.userId = util.getStringVal("USER_ID", rs);
-		this.teamId = util.getStringVal("TEAM_ID", rs);
-		this.companyId = util.getStringVal("COMPANY_ID", rs);
-		this.attributeId = util.getStringVal("ATTRIBUTE_ID", rs);
-		this.productId = util.getStringVal("PRODUCT_ID", rs);
-		this.marketId  = util.getStringVal("MARKET_ID", rs);
-		this.noteName = util.getStringVal("NOTE_NM", rs);
-		this.noteText = util.getStringVal("NOTE_TXT", rs);
-		this.filePathText = util.getStringVal("FILE_PATH_TXT", rs);
-		this.expirationDate = util.getDateVal("EXPIRATION_DT", rs);
-		this.creationDate = util.getDateVal("CREATE_DT", rs);
-		this.updateDate = util.getDateVal("UPDATE_DT", rs);
-
+		setNoteId(util.getStringVal("NOTE_ID", rs));
+		setUserId(util.getStringVal("USER_ID", rs));
+		setTeamId(util.getStringVal("TEAM_ID", rs));
+		setCompanyId(util.getStringVal("COMPANY_ID", rs));
+		setAttributeId(util.getStringVal("ATTRIBUTE_ID", rs));
+		setProductId(util.getStringVal("PRODUCT_ID", rs));
+		setMarketId(util.getStringVal("MARKET_ID", rs));
+		setAccountId(util.getStringVal("ACCOUNT_ID", rs));
+		setNoteName(util.getStringVal("NOTE_NM", rs));
+		setNoteText(util.getStringVal("NOTE_TXT", rs));
+		setFilePathText( util.getStringVal("FILE_PATH_TXT", rs));
+		setExpirationDate(util.getDateVal("EXPIRATION_DT", rs));
+		setCreateDate(util.getDateVal("CREATE_DT", rs));
+		setUpdateDate(util.getDateVal("UPDATE_DT", rs));
 	}
 
 	/**
-	 * checks the feilds that are requred in order to save a note,
+	 * checks the fields that are required in order to save a note,
 	 * @return
 	 */
 	public boolean isNoteSaveable() {
-		if (StringUtil.isEmpty(userId)) return false;
-		if (StringUtil.isEmpty(noteText) || StringUtil.isEmpty(noteName)) return false;
-		//ensure we have one of the 3 bindings - company, market or product
-		return !StringUtil.isEmpty(companyId) || !StringUtil.isEmpty(marketId) || !StringUtil.isEmpty(productId);
+		if (StringUtil.isEmpty(userId) || StringUtil.isEmpty(noteText)) return false;
+		//ensure we have one of the 4 bindings - company, market, product, or account
+		return !StringUtil.isEmpty(companyId) || !StringUtil.isEmpty(marketId) || !StringUtil.isEmpty(productId) || !StringUtil.isEmpty(accountId);
 	}
 
 	/*
@@ -189,18 +192,26 @@ public class NoteVO implements Serializable {
 		return expirationDate;
 	}
 	/**
-	 * @return the creationDate
+	 * Must override the method to apply an annotation
 	 */
-	@Column(name="CREATE_DT " )
-	public Date getCreationDate() {
-		return creationDate;
+	@Column(name = "create_dt", isInsertOnly = true, isAutoGen = true)
+	public Date getCreateDate() {
+		return createDate;
 	}
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+
 	/**
-	 * @return the updateDate
+	 * Must override the method to apply an annotation
 	 */
-	@Column(name="UPDATE_DT" )
+	@Column(name = "update_dt", isUpdateOnly = true, isAutoGen = true)
 	public Date getUpdateDate() {
 		return updateDate;
+	}
+	public void setUpdateDate(Date updateDate) {
+		this.updateDate = updateDate;
 	}
 
 	/**
@@ -275,19 +286,6 @@ public class NoteVO implements Serializable {
 	}
 
 	/**
-	 * @param creationDate the creationDate to set
-	 */
-	public void setCreationDate(Date creationDate) {
-		this.creationDate = creationDate;
-	}
-
-	/**
-	 * @param updateDate the updateDate to set
-	 */
-	public void setUpdateDate(Date updateDate) {
-		this.updateDate = updateDate;
-	}
-	/**
 	 * @return the userName
 	 */
 	public String getUserName() {
@@ -311,14 +309,59 @@ public class NoteVO implements Serializable {
 	/**
 	 * @return the attributeId
 	 */
+	@Column(name="ATTRIBUTE_ID" )
 	public String getAttributeId() {
 		return attributeId;
 	}
 	/**
 	 * @param attributeId the attributeId to set
 	 */
+
 	public void setAttributeId(String attributeId) {
 		this.attributeId = attributeId;
 	}
+	/**
+	 * @return the teamName
+	 */
+	public String getTeamName() {
+		return teamName;
+	}
+	/**
+	 * @param teamName the teamName to set
+	 */
+	public void setTeamName(String teamName) {
+		this.teamName = teamName;
+	}
+	/**
+	 * @return the profileDocuments
+	 */
+	public List<ProfileDocumentVO> getProfileDocuments() {
+		return profileDocuments;
+	}
+	/**
+	 * @param profileDocuments the profileDocuments to set
+	 */
+	public void setProfileDocuments(List<ProfileDocumentVO> profileDocuments) {
+		this.profileDocuments = profileDocuments;
+	}
+	/**
+	 * @return the listCount
+	 */
+	public int getListCount() {
+		return listCount;
+	}
+	/**
+	 * @param listCount the listCount to set
+	 */
+	public void setListCount(int listCount) {
+		this.listCount = listCount;
+	}
 
+	@Column(name="ACCOUNT_ID" )
+	public String getAccountId() {
+		return accountId;
+	}
+	public void setAccountId(String accountId) {
+		this.accountId = accountId;
+	}
 }

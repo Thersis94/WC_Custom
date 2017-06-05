@@ -4,7 +4,9 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.StringUtil;
+
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -56,6 +58,10 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		req.setParameter("fmid", mod.getPageModuleId());
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
+
+		SMTCookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
+		if (rppCook != null)
+			req.setParameter("rpp", rppCook.getValue());
 
 		//apply sorting
 		HuddleUtils.setSearchParameters(req, req.getParameter("siteSort"));

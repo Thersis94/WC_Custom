@@ -5,12 +5,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+
+
 //WC_Custom
 import com.biomed.smarttrak.action.NoteAction.NoteType;
+import com.biomed.smarttrak.vo.NoteEntityInterface;
+import com.biomed.smarttrak.vo.NoteInterface;
 import com.biomed.smarttrak.vo.NoteVO;
-import com.bmg.admin.vo.NoteEntityInterface;
-
-import com.bmg.admin.vo.NoteInterface;
 //WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
@@ -28,8 +29,8 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
  ****************************************************************************/
 public class NoteLoader extends SimpleActionAdapter {
 
-	private String userId = null;
-	private List<String> teamIds = null;
+	private String userId;
+	private List<String> teamIds;
 
 	//the loader requires an smart track user id and a list of team ids. 
 	public NoteLoader(String userId, List<String> teamIds) {
@@ -42,9 +43,8 @@ public class NoteLoader extends SimpleActionAdapter {
 	 * takes the VOs provided and loads any notes on to those VOs, sets type to company
 	 * @param companyVOs
 	 */
-	public void addCompanyNotes(List<NoteEntityInterface> companyVOs){
+	public void addCompanyNotes(List<NoteEntityInterface> companyVOs) {
 		log.debug("add company notes called");
-
 		loadNotes((List<NoteEntityInterface>) companyVOs, NoteType.COMPANY);
 	}
 
@@ -52,18 +52,17 @@ public class NoteLoader extends SimpleActionAdapter {
 	 * takes the VOs provided and loads any notes on to those VOs, sets type to product
 	 * @param ProductVOs
 	 */
-	public void addProductNotes(List<NoteEntityInterface> productVOs){
+	public void addProductNotes(List<NoteEntityInterface> productVOs) {
 		log.debug("add product notes called");
-
 		loadNotes((List<NoteEntityInterface>) productVOs, NoteType.PRODUCT);
 	}
+
 	/**
 	 * takes the VOs provided and loads any notes on to those VOs, sets type to market
 	 * @param MarketVOs
 	 */
-	public void addMarketNotes(List<NoteEntityInterface> marketVOs){
+	public void addMarketNotes(List<NoteEntityInterface> marketVOs) {
 		log.debug("add market notes called");
-
 		loadNotes((List<NoteEntityInterface>) marketVOs, NoteType.MARKET);
 	}
 
@@ -76,30 +75,19 @@ public class NoteLoader extends SimpleActionAdapter {
 	 */
 	private void loadNotes(List<NoteEntityInterface> targetVOs, NoteType type) {
 		List<String>targetIds = new ArrayList<>();
-		List<String> attributeIds = new ArrayList<>();
 		if (targetVOs == null) return;
 
-		for ( NoteEntityInterface vo : targetVOs){
+		for ( NoteEntityInterface vo : targetVOs)
 			targetIds.add(vo.getId());
-			
-			List<? extends NoteInterface> results =  vo.getAttributes();
-
-			for (NoteInterface vo2 : results){
-				attributeIds.add(vo2.getId());
-			}
-		}
 
 		NoteAction na = new NoteAction();	
 		na.setDBConnection(dbConn);
 		na.setAttributes(attributes);
 
-		if (this.userId != null){
-
-			Map<String, List<NoteVO>> results = na.getNotes(this.userId, this.teamIds, attributeIds, targetIds, type);
-
-			if(results != null){
+		if (userId != null) {
+			Map<String, List<NoteVO>> results = na.getNotes(userId, teamIds, targetIds, type);
+			if (results != null)
 				attachNotes(targetVOs, results);
-			}
 		}
 	}
 
@@ -113,7 +101,7 @@ public class NoteLoader extends SimpleActionAdapter {
 	 */
 	private void attachNotes(List<NoteEntityInterface> targetVOs, Map<String, List<NoteVO>> results) {
 		for (NoteEntityInterface vo : targetVOs) {
-			if (results.containsKey(vo.getId())){
+			if (results.containsKey(vo.getId())) {
 				log.debug("size of note list added to " + vo.getId() + " is " + results.get(vo.getId()).size());
 				vo.setNotes(results.get(vo.getId()));
 			}
@@ -128,11 +116,11 @@ public class NoteLoader extends SimpleActionAdapter {
 	 * @param attriTargetVos 
 	 */
 	private void attachAttributeNotes(List<? extends NoteInterface> attriTargetVos, Map<String, List<NoteVO>> results) {
-		if(attriTargetVos != null && results != null){
-			for(NoteInterface avo : attriTargetVos ){
-				log.debug("size of note list added to " + avo.getId() + " is " + results.get(avo.getId()).size());
-				avo.setNotes(results.get(avo.getId()));
-			}
+		if (attriTargetVos == null || results == null) return;
+
+		for (NoteInterface avo : attriTargetVos) {
+			log.debug("size of note list added to " + avo.getId() + " is " + results.get(avo.getId()).size());
+			avo.setNotes(results.get(avo.getId()));
 		}
 	}
 

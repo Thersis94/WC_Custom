@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -14,17 +15,31 @@ import java.util.Map;
 
 import org.apache.commons.lang.ArrayUtils;
 
-import com.biomed.smarttrak.admin.ContentHierarchyAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.admin.report.GapAnalysisReportVO;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
+import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.GapCompanyVO;
+import com.biomed.smarttrak.vo.GapProductVO;
 import com.biomed.smarttrak.vo.GapTableVO;
+import com.biomed.smarttrak.vo.SaveStateVO;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.data.OrderedTree;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+
+import net.sf.json.JSONObject;
 
 /****************************************************************************
  * <b>Title</b>: GapAnalysisAction.java
@@ -38,11 +53,12 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Jan 13, 2017
  ****************************************************************************/
-public class GapAnalysisAction extends ContentHierarchyAction {
+public class GapAnalysisAction extends SectionHierarchyAction {
 
 	public static final String GAP_ROOT_ID = "GAP_ANALYSIS_ROOT";
 	public static final String GAP_CACHE_KEY = "GAP_ANALYSIS_TREE_CACHE_KEY";
-	private String [] selNodes;
+	private String[] selNodes;
+
 	public GapAnalysisAction() {
 		super();
 	}
@@ -56,6 +72,8 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SecurityController.isGaAuth(req);
+		
 		if(req.hasParameter("selNodes")) {
 
 			//Instantiate GapTableVO to Store Data.
@@ -68,10 +86,135 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 			//Get Table Body Data based on columns in the GTV.
 			loadGapTableData(gtv);
 
-			super.putModuleData(gtv);
-		} else if(req.hasParameter("saveState")) {
-			//TODO add code to handle SaveState Retrieval.
+			//forward to Report if parameter present.
+			if(req.hasParameter("buildReport")) {
+
+				//Set State on the GapTableVO.
+				gtv.setState(JSONObject.fromObject(req.getParameter("state")));
+
+				//Build Report
+				GapAnalysisReportVO rpt = new GapAnalysisReportVO((String) attributes.get(Constants.QS_PATH));
+				rpt.setData(gtv);
+				rpt.setSite((SiteVO)req.getAttribute(Constants.SITE_DATA));
+
+				//Set Report on Attributes Map.
+				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+				req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+			} else {
+				super.putModuleData(gtv);
+			}
+
+		} else if(req.hasParameter("getProducts")) {
+			String regionId = req.getParameter("regionId");
+			String companyId = req.getParameter("companyId");
+			String columnId = req.getParameter("columnId");
+			super.putModuleData(getProductList(regionId, companyId, columnId));
+		} else if(req.hasParameter("getState")) {
+
+			SMTSession ses = req.getSession();
+			UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+			String userId = StringUtil.checkVal(vo.getUserId());
+
+			String saveStateId = req.getParameter("saveStateId");
+			super.putModuleData(getSaveStates(userId, saveStateId));
 		}
+	}
+
+	/**
+	 * Return list of products that are of a given regionId, companyId and columnId
+	 * @param regionId
+	 * @param companyId
+	 * @param columnId
+	 * @return
+	 */
+	private List<Object> getProductList(String regionId, String companyId, String columnId) {
+
+		List<Object> params = new ArrayList<>();
+		params.add(companyId);
+		params.add(columnId);
+		params.add("1");
+
+		log.debug(this.getProductListSql("usa".equalsIgnoreCase(regionId)));
+		DBProcessor db = new DBProcessor(dbConn, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
+		List<Object>  data = db.executeSelect(getProductListSql(regionId.startsWith("u")), params, new GapProductVO());
+		log.debug("loaded " + data.size() + " products");
+
+		return data;
+	}
+
+	/**
+	 * @param isUSRegion 
+	 * @return
+	 */
+	private String getProductListSql(boolean isUSRegion) {
+		StringBuilder sql = new StringBuilder(750);
+		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select distinct f.product_nm, f.product_id, c.column_nm, g.company_nm, a.section_nm ");
+		sql.append("from ").append(custom).append("biomedgps_section a ");
+		sql.append("inner join ").append(custom).append("biomedgps_ga_column c ");
+		sql.append("on a.section_id = c.section_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_ga_column_attribute_xr d ");
+		sql.append("on d.ga_column_id = c.ga_column_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_product_attribute_xr e ");
+		sql.append("on d.attribute_id = e.attribute_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_product f ");
+		sql.append("on e.product_id = f.product_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_product_regulatory r ");
+		sql.append("on f.product_id = r.product_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_company g ");
+		sql.append("on f.company_id = g.company_id ");
+		sql.append("where g.company_id = ? and c.ga_column_id = ? ");
+		if(isUSRegion) {
+			sql.append("and r.region_id = ? ");
+		} else {
+			sql.append("and r.region_id != ? ");
+		}
+
+		return sql.toString();
+	}
+
+	/**
+	 * Helper method returns list of SaveStates.
+	 * @param req
+	 * @return
+	 */
+	private List<SaveStateVO> getSaveStates(String userId, String saveStateId) {
+		List<SaveStateVO> saveStates = new ArrayList<>();
+		boolean hasSaveStateId = !StringUtil.isEmpty(saveStateId);
+		try(PreparedStatement ps = dbConn.prepareStatement(getSaveStateSql(hasSaveStateId))) {
+			ps.setString(1, userId);
+
+			if(hasSaveStateId) {
+				ps.setString(2, saveStateId);
+			}
+
+			ResultSet rs = ps.executeQuery();
+
+			while(rs.next()) {
+				saveStates.add(new SaveStateVO(rs));
+			}
+		} catch (SQLException e) {
+			log.error(e);
+		}
+		return saveStates;
+	}
+
+	/**
+	 * Helper method retrieves Gap Analysis Save States.
+	 * @param hasSaveStateId
+	 * @return
+	 */
+	private String getSaveStateSql(boolean hasSaveStateId) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_ga_savestate where user_id = ? ");
+
+		if(hasSaveStateId) {
+			sql.append("and save_state_id = ? ");
+		}
+
+		sql.append("order by order_no");
+		return sql.toString();
 	}
 
 	/**
@@ -99,7 +242,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		nodes.addAll(getColumns());
 
 		//Build a tree and sort nodes so children are set properly.
-		Tree t = new Tree(nodes);
+		Tree t = new OrderedTree(nodes);
 
 		//Filter down to the Gap Node and retrieve it's children.
 		Node n = t.findNode(GAP_ROOT_ID);
@@ -119,19 +262,31 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		for(Node g : nodes) {
 			for(Node p : g.getChildren()) {
 				ListIterator<Node> nIter = p.getChildren().listIterator();
-				while(nIter.hasNext()) {
-					Node n = nIter.next();
-					for(int i = 0; i < selNodes.length; i++) {
-						if(n.getNodeId().equals(selNodes[i]) && n.getNumberChildren() > 0) {  
-							filteredNodes.add(n);
-							nIter.remove();
-							selNodes = (String[]) ArrayUtils.remove(selNodes, i);
-							break;
-						}
-					}
+				filteredNodes.addAll(filterChildNodes(nIter));
+			}
+		}
+		return filteredNodes;
+	}
+
+	/**
+	 * Helper method that filters childNodes out by selected Nodes.
+	 * @param nIter
+	 * @return
+	 */
+	protected Collection<Node> filterChildNodes(ListIterator<Node> nIter) {
+		List<Node> filteredNodes = new ArrayList<>();
+		while(nIter.hasNext()) {
+			Node n = nIter.next();
+			for(int i = 0; i < selNodes.length; i++) {
+				if(n.getNodeId().equals(selNodes[i]) && n.getNumberChildren() > 0) {
+					filteredNodes.add(n);
+					nIter.remove();
+					selNodes = (String[]) ArrayUtils.remove(selNodes, i);
+					break;
 				}
 			}
 		}
+
 		return filteredNodes;
 	}
 
@@ -149,6 +304,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 				Node n = new Node(gap.getGaColumnId(), gap.getSectionId());
 				n.setNodeName(gap.getButtonTxt());
 				n.setUserObject(gap);
+				n.setOrderNo(gap.getOrderNo());
 				nodes.add(n);
 			}
 		} catch (SQLException e) {
@@ -194,7 +350,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 					companies.put(c.getCompanyId(), c);
 				}
 
-				c.addRegulation(rs.getString("ga_column_id"), rs.getInt("status_id"), rs.getInt("region_Id"));
+				c.addRegulation(rs.getString("ga_column_id"), rs.getString("status_txt"), rs.getInt("region_Id"));
 			}
 		} catch (SQLException e) {
 			log.error("Problem Retrieving Gap Table Data", e);
@@ -213,7 +369,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		StringBuilder sql = new StringBuilder(850);
 
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("select distinct c.ga_column_id, g.short_nm_txt, g.company_nm, g.company_id, r.status_id, r.region_id ");
+		sql.append("select distinct c.ga_column_id, g.short_nm_txt, g.company_nm, g.company_id, s.status_txt, r.region_id ");
 		sql.append("from ").append(custom).append("biomedgps_section a ");
 		sql.append("inner join ").append(custom).append("biomedgps_section b ");
 		sql.append("on a.section_id = b.parent_id ");
@@ -227,6 +383,8 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		sql.append("on e.product_id = f.product_id ");
 		sql.append("inner join ").append(custom).append("biomedgps_product_regulatory r ");
 		sql.append("on f.product_id = r.product_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_regulatory_status s ");
+		sql.append("on r.status_id = s.status_id ");
 		sql.append("inner join ").append(custom).append("biomedgps_company g ");
 		sql.append("on f.company_id = g.company_id ");
 		sql.append("where c.ga_column_id in ( ");
@@ -238,9 +396,29 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		}
 		sql.append(") order by g.company_nm");
 
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.ContentHierarchyAction#build(com.siliconmtn.action.ActionRequest)
+	 */
+	public void build(ActionRequest req) {
+		SaveStateVO ss = new SaveStateVO(req);
+
+		DBProcessor dbp = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
+
+		try {
+			dbp.save(ss);
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Problem Saving State Object.", e.getCause());
+		}
+	}
+
+	/**
+	 * Helper method returns cache key for Content Hierarchy Object.
+	 */
 	public String getCacheKey() {
 		return GAP_CACHE_KEY;
 	}
