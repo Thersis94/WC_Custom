@@ -35,6 +35,8 @@ public class RSSArticleVO implements Serializable {
 	private String articleUrl;
 	private String publicationName;
 	private String bucketId;
+	private String attribute1Txt;
+	private String attribute2Txt;
 	private ArticleSourceType articleSourceType;
 	private Date publishDt;
 	private Date createDt;
@@ -165,6 +167,17 @@ public class RSSArticleVO implements Serializable {
 	public String getPublicationName() {
 		return publicationName;
 	}
+
+	@Column(name="attribute1_txt")
+	public String getAttribute1Txt() {
+		return attribute1Txt;
+	}
+
+	@Column(name="attribute2_txt")
+	public String getAttribute2Txt() {
+		return attribute2Txt;
+	}
+
 	/**
 	 * @param rssArticleId the rssArticleId to set.
 	 */
@@ -264,4 +277,13 @@ public class RSSArticleVO implements Serializable {
 	public void setPublicationName(String publicationName) {
 		this.publicationName = publicationName;
 	}
+
+	public void setAttribute1Txt(String attribute1Txt) {
+		this.attribute1Txt = attribute1Txt;
+	}
+
+	public void setAttribute2Txt(String attribute2Txt) {
+		this.attribute2Txt = attribute2Txt;
+	}
+
 }
