@@ -199,7 +199,7 @@ public class CompanyAction extends AbstractTreeAction {
 		sql.append("on p.PRODUCT_ID = s.PRODUCT_ID ");
 		sql.append("WHERE p.COMPANY_ID = ? ");
 		log.debug(sql+"|"+company.getCompanyId());
-		List<ProductVO> products = new ArrayList<ProductVO>();
+		List<ProductVO> products = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, company.getCompanyId());
 			ResultSet rs = ps.executeQuery();
