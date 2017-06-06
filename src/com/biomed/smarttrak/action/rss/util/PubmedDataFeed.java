@@ -20,6 +20,7 @@ import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFilterTerm;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -191,13 +192,17 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param reqTerm
 	 */
 	private RSSArticleVO highlightMatch(RSSArticleVO r, RSSFilterTerm reqTerm) {
-
 		StringBuilder filter = new StringBuilder(30);
 		filter.append("(?i)(").append(reqTerm.getFilterTerm()).append(")");
-		r.setFilterArticleTxt(r.getArticleTxt().replaceAll(filter.toString(), props.getProperty(REPLACE_SPAN)));
-		r.setFilterArticleTxt(r.getArticleTxt().replaceAll("\n", "<br/>"));
 
-		r.setFilterTitleTxt(r.getTitleTxt().replaceAll(filter.toString(), props.getProperty(REPLACE_SPAN)));
+		if(!StringUtil.isEmpty(r.getArticleTxt())) {
+			r.setFilterArticleTxt(r.getArticleTxt().replaceAll(filter.toString(), props.getProperty(REPLACE_SPAN)));
+			r.setFilterArticleTxt(r.getFilterArticleTxt().replaceAll("\n", "<br/>"));
+		}
+
+		if(!StringUtil.isEmpty(r.getTitleTxt())) {
+			r.setFilterTitleTxt(r.getTitleTxt().replaceAll(filter.toString(), props.getProperty(REPLACE_SPAN)));
+		}
 		return r;
 	}
 
