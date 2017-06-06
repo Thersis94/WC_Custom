@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.action;
 
+// JDK 1.8
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -66,13 +68,18 @@ public class GridDisplayAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		ChartType type = ChartType.valueOf(StringUtil.checkVal(req.getParameter("ct"), "NONE").toUpperCase());
+		
+		// Check to see if there is a mapping for the grid when displaying a table
+		if (ChartType.TABLE.equals(type)) lookupTableMap(req);
+		
 		// Get the request data
 		String gridId = req.getParameter("gridId");
 		String[] grids = req.getParameterValues("grid");
 		boolean full = Convert.formatBoolean(req.getParameter("full"), false);
 		boolean stacked = Convert.formatBoolean(req.getParameter("isStacked"), false);
 		ProviderType pt = ProviderType.valueOf(StringUtil.checkVal(req.getParameter("pt"), "GOOGLE").toUpperCase());
-		ChartType type = ChartType.valueOf(StringUtil.checkVal(req.getParameter("ct"), "NONE").toUpperCase());
+		
 		boolean display = Convert.formatBoolean(req.getParameter("display"));
 		
 		// Get the list of columns and convert to integer list
@@ -95,6 +102,27 @@ public class GridDisplayAction extends SBActionAdapter {
 			}
 		}
 		
+	}
+	
+	/**
+	 * Looks up the gridId for a chart that utilizes a different data set for the table representation
+	 * @param req If a mapping is found, the gridId on the request object is overridden with the new value
+	 */
+	public void lookupTableMap(ActionRequest req) {
+		StringBuilder sql = new StringBuilder(164);
+		sql.append("select grid_id "); 
+		sql.append("from custom.grid_table_map a ") ;
+		sql.append("inner join custom.biomedgps_grid b on a.slug_txt = b.slug_txt ");
+		sql.append("where lower(a.grid_graphic_id) = lower(?) ");
+		
+		List<Object> params =  Arrays.asList(new Object[]{req.getParameter("gridId")});
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		List<Object> data = dbp.executeSelect(sql.toString(), params, new GridVO());
+		
+		if (! data.isEmpty()) {
+			GridVO grid = (GridVO) data.get(0);
+			req.setParameter("gridId", grid.getGridId());
+		}
 	}
 	
 	/**
