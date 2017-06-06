@@ -136,7 +136,7 @@ public class UpdatesAction extends AuthorAction {
 	private List<Object> getFilteredUpdates(ActionRequest req) {
 		//Get Relevant Params off Request.
 		int start = Convert.formatInteger(req.getParameter("offset"),0);
-		int rpp = Convert.formatInteger(req.getParameter("limit"),10);
+		int rpp = Convert.formatInteger(req.getParameter("limit"),15);
 		if (rpp == 0) {//this is initial page load, set default for display listing  
 			rpp = INIT_DISPLAY_LIMIT;
 		}
