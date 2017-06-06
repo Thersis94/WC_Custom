@@ -46,6 +46,7 @@ public class UpdatesAction extends AuthorAction {
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
 	public static final String ROOT_NODE_ID = MASTER_ROOT;
+	public static final int INIT_DISPLAY_LIMIT = 15; //initial display limit
 
 	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
 	public static final String UPDATE_TYPE_CD = "updates";
@@ -136,6 +137,9 @@ public class UpdatesAction extends AuthorAction {
 		//Get Relevant Params off Request.
 		int start = Convert.formatInteger(req.getParameter("offset"),0);
 		int rpp = Convert.formatInteger(req.getParameter("limit"),10);
+		if (rpp == 0) {//this is initial page load, set default for display listing  
+			rpp = INIT_DISPLAY_LIMIT;
+		}
 		Map<String, String> reqParams = getReqParams(req);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
