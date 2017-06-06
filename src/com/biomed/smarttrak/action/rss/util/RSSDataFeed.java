@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -16,11 +15,12 @@ import javax.xml.parsers.SAXParserFactory;
 import org.xml.sax.SAXException;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.SmarttrakRssEntityVO;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -67,21 +67,21 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		//Load Feeds
 		List<SmarttrakRssEntityVO> feeds = loadFeeds();
 		//Load Filters
-		Map<String, RSSFeedGroupVO> filters = loadFilters(null);
+		loadFilters(null);
 		//Process Feeds.
-		process(feeds, filters);
+		process(feeds);
 	}
 
 	/**
 	 * Process RSS Feeds for given Schedule.
 	 * @param scheduleNo
 	 */
-	public void process(List<SmarttrakRssEntityVO> feeds, Map<String, RSSFeedGroupVO> filters) {
+	public void process(List<SmarttrakRssEntityVO> feeds) {
 		for(SmarttrakRssEntityVO f : feeds) {
 			if(!f.getRssEntityId().equals(props.get(PUBMED_ENTITY_ID))) {
 				try {
 					List<RSSArticleVO> articles = retrieveArticles(f.getRssUrl());
-					filterArticles(f, articles, filters);
+					filterArticles(f, articles);
 				} catch (Exception e) {
 					log.info("Deactivating Feed: " + f.getRssEntityId());
 					log.error("Problem Processing Feed", e);
@@ -129,7 +129,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param feed
 	 * @param filters
 	 */
-	private void filterArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Map<String, RSSFeedGroupVO> filters) {
+	private void filterArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles) {
 		//Query if any of the retrieved articles are already processed.
 		Set<String> existsIds = getExistingArticles(buildArticleIdsList(articles), f.getRssEntityId());
 
@@ -141,14 +141,15 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		for(RSSArticleVO a : articles) {
 			if(!existsIds.contains(a.getArticleGuid())) {
 				a.setRssEntityId(f.getRssEntityId());
-				a.setArticleStatusCd(ArticleStatus.O.name());
 				a.setPublicationName(f.getFeedName());
 				if(a.getPublishDt() == null)
 					a.setPublishDt(Calendar.getInstance().getTime());
 				for(RSSFeedGroupVO fg : f.getGroups()) {
-					RSSFeedGroupVO g = filters.get(fg.getFeedGroupId());
-					matchArticle(a, g.getFilters());
-					a.setFeedGroupId(g.getFeedGroupId());
+					matchArticle(a, fg.getFeedGroupId());
+					if(!StringUtil.isEmpty(a.getFeedGroupId())) {
+						break;
+					}
+					a.setFeedGroupId(fg.getFeedGroupId());
 				}
 				nArticles.add(a);
 			}
@@ -199,7 +200,10 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		sql.append("on e.rss_entity_id = bre.rss_entity_id ");
 		sql.append("inner join ").append(schema).append("biomedgps_feed_source_group_xr fsg ");
 		sql.append("on bre.rss_entity_id = fsg.rss_entity_id ");
-		sql.append("where e.organization_id = ? and e.is_active = 1");
+		sql.append("where e.organization_id = ? ");
+		if(!Convert.formatBoolean(props.getProperty(IS_DEBUG))) {
+			sql.append("and e.is_active = 1");
+		}
 		return sql.toString();
 	}
 }

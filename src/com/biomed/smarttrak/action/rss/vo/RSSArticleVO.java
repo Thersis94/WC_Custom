@@ -3,6 +3,7 @@ package com.biomed.smarttrak.action.rss.vo;
 import java.io.Serializable;
 import java.util.Date;
 
+import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -24,7 +25,6 @@ public class RSSArticleVO implements Serializable {
 	public enum ArticleSourceType {RSS, PUBMED, QUERTLE}
 	private static final long serialVersionUID = 3528944442225589967L;
 	private String rssArticleId;
-	private String articleStatusCd;
 	private String feedGroupId;
 	private String rssEntityId;
 	private String articleGuid;
@@ -38,6 +38,7 @@ public class RSSArticleVO implements Serializable {
 	private String attribute1Txt;
 	private String attribute2Txt;
 	private ArticleSourceType articleSourceType;
+	private ArticleStatus articleStatus;
 	private Date publishDt;
 	private Date createDt;
 
@@ -47,7 +48,8 @@ public class RSSArticleVO implements Serializable {
 
 	public RSSArticleVO(ActionRequest req) {
 		rssArticleId = req.getParameter("rssArticleId");
-		articleStatusCd = req.getParameter("articleStatusCd");
+		if(req.hasParameter("articleStatusCd"))
+			articleStatus = ArticleStatus.valueOf(req.getParameter("articleStatusCd"));
 	}
 
 	/**
@@ -63,7 +65,11 @@ public class RSSArticleVO implements Serializable {
 	 */
 	@Column(name="article_status_cd")
 	public String getArticleStatusCd() {
-		return articleStatusCd;
+		return articleStatus.name();
+	}
+
+	public ArticleStatus getArticleStatus() {
+		return articleStatus;
 	}
 
 	/**
@@ -189,7 +195,11 @@ public class RSSArticleVO implements Serializable {
 	 * @param articleStatusCd the articleStatusCd to set.
 	 */
 	public void setArticleStatusCd(String articleStatusCd) {
-		this.articleStatusCd = articleStatusCd;
+		this.articleStatus = ArticleStatus.valueOf(articleStatusCd);
+	}
+
+	public void setArticleStatus(ArticleStatus articleStatus) {
+		this.articleStatus = articleStatus;
 	}
 
 	/**

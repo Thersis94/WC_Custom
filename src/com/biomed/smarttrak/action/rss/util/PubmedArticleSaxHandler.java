@@ -15,6 +15,7 @@ import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: PubmedListSaxHandler.java
@@ -28,11 +29,19 @@ import com.siliconmtn.util.Convert;
  * @since Apr 22, 2017
  ****************************************************************************/
 public class PubmedArticleSaxHandler extends DefaultHandler {
-	public enum SearchType {PUB_DATE("PubDate"), PUB_TYPE("PublicationType"), PUBMED_ARTICLE("PubmedArticle"), ABSTRACT_TEXT("AbstractText"), PMID("PMID"), TITLE("Title"), ARTICLE_TITLE("ArticleTitle"), PUBLICATION_NAME("PublicationName"), YEAR("Year"), MONTH("Month"), DAY("Day"), F_DATE("formatDate");
+	public enum SearchType {
+		PUB_DATE("PubDate"), PUB_TYPE("PublicationType"),
+		PUBMED_ARTICLE("PubmedArticle"), ABSTRACT_TEXT("AbstractText"),
+		PMID("PMID"), TITLE("Title"), ARTICLE_TITLE("ArticleTitle"),
+		PUBLICATION_NAME("PublicationName"), YEAR("Year"), MONTH("Month"),
+		DAY("Day"), F_DATE("formatDate");
 		private String qName;
+
 		SearchType(String qName) {
 			this.qName = qName;
 		}
+
+
 		public String getQName() {
 			return qName;
 		}
@@ -43,6 +52,7 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 	private Map<SearchType, String> data;
 	private List<RSSArticleVO> vos;
 
+
 	/**
 	 * 
 	 */
@@ -52,39 +62,46 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 		data = new EnumMap<>(SearchType.class);
 	}
 
-	/* (non-Javadoc)
-	 * @see org.xml.sax.helpers.DefaultHandler#startElement(java.lang.String, java.lang.String, java.lang.String, org.xml.sax.Attributes)
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.xml.sax.helpers.DefaultHandler#startElement(java.lang.String,
+	 * java.lang.String, java.lang.String, org.xml.sax.Attributes)
 	 */
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
 		super.startElement(uri, localName, qName, attributes);
-		for(SearchType s : SearchType.values()) {
-			if(s.getQName().equals(qName)) {
+		for (SearchType s : SearchType.values()) {
+			if (s.getQName().equals(qName)) {
 				type = s;
 				break;
 			}
 		}
 
-		if(SearchType.PUB_DATE.getQName().equals(qName)) {					
+		if (SearchType.PUB_DATE.getQName().equals(qName)) {
 			isDate = true;
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see org.xml.sax.helpers.DefaultHandler#endElement(java.lang.String, java.lang.String, java.lang.String)
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.xml.sax.helpers.DefaultHandler#endElement(java.lang.String,
+	 * java.lang.String, java.lang.String)
 	 */
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 		super.endElement(uri, localName, qName);
 		type = null;
-		if(SearchType.PUB_DATE.getQName().equals(qName)) {
+		if (SearchType.PUB_DATE.getQName().equals(qName)) {
 			isDate = false;
 		}
-		if(SearchType.PUBMED_ARTICLE.getQName().equals(qName)) {
+		if (SearchType.PUBMED_ARTICLE.getQName().equals(qName)) {
 			vos.add(buildRSSVO());
 			data = new EnumMap<>(SearchType.class);
 		}
 	}
+
 
 	/**
 	 * @return
@@ -93,51 +110,47 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 		RSSArticleVO rss = new RSSArticleVO();
 		String date = data.get(SearchType.DAY) + "/" + data.get(SearchType.MONTH) + "/" + data.get(SearchType.YEAR);
 		Date d = Convert.formatDate("dd/MMM/yyyy", date);
-		if(d == null) d = Calendar.getInstance().getTime();
+		if (d == null)
+			d = Calendar.getInstance().getTime();
 
 		data.put(SearchType.F_DATE, Convert.formatDate(d, Convert.DATE_TIME_DASH_PATTERN_12HR));
 		rss.setPublicationName("PubMed");
-		rss.setArticleStatusCd(ArticleStatus.N.name());
+		rss.setArticleStatus(ArticleStatus.N);
 		rss.setArticleSourceType(ArticleSourceType.PUBMED);
 		rss.setArticleGuid(data.get(SearchType.PMID));
-		rss.setArticleTxt(buildArticleText());
+		rss.setArticleTxt(StringUtil.checkVal(data.get(SearchType.ABSTRACT_TEXT)));
 		rss.setPublishDt(d);
-		rss.setTitleTxt(data.get(SearchType.TITLE));
-		rss.setPublicationName(data.get(SearchType.ARTICLE_TITLE));
+		rss.setTitleTxt(data.get(SearchType.ARTICLE_TITLE));
+		rss.setPublicationName(data.get(SearchType.TITLE));
+		rss.setAttribute1Txt(data.get(SearchType.PUB_TYPE));
 		return rss;
 	}
 
-	/**
-	 * Helper method that builds the PubMed Article Text Body for view.
-	 * @return
-	 */
-	private String buildArticleText() {
-		StringBuilder articleText = new StringBuilder(2000);
-		articleText.append("<p>").append(data.get(SearchType.TITLE)).append("</p>");
-		articleText.append("<p>").append(data.get(SearchType.ABSTRACT_TEXT)).append("</p>");
-		articleText.append("<br/>").append(data.get(SearchType.PUB_TYPE)).append(": ").append(data.get(SearchType.ARTICLE_TITLE));
-		articleText.append("<br/>PMID: ").append(data.get(SearchType.PMID));
-		articleText.append("<br/>Article Date: ").append(data.get(SearchType.F_DATE));
-		return articleText.toString();
-	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
 	 * @see org.xml.sax.helpers.DefaultHandler#characters(char[], int, int)
 	 */
 	@Override
 	public void characters(char[] ch, int start, int length) throws SAXException {
 		super.characters(ch, start, length);
-		if(type == null) {
+		if (type == null) {
 			return;
 		}
-		boolean buildValue = (!data.containsKey(SearchType.PMID) && SearchType.PMID.equals(type)) || (!SearchType.DAY.equals(type) && !SearchType.MONTH.equals(type) && !SearchType.YEAR.equals(type) && !SearchType.PMID.equals(type));
+		boolean buildValue = (!data.containsKey(SearchType.PMID)
+				&& SearchType.PMID.equals(type))
+				|| (!SearchType.DAY.equals(type)
+						&& !SearchType.MONTH.equals(type)
+						&& !SearchType.YEAR.equals(type)
+						&& !SearchType.PMID.equals(type));
 		String val = new String(ch, start, length);
-		if(isDate) {
+		if (isDate) {
 			data.put(type, val);
-		} else if(buildValue) {
+		} else if (buildValue) {
 			data.put(type, buildValueString(type, val));
 		}
 	}
+
 
 	/**
 	 * @param val
@@ -145,13 +158,13 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 	 */
 	private String buildValueString(SearchType t, String val) {
 		StringBuilder articleTxt = new StringBuilder(2000);
-		if(data.containsKey(t)) {
+		if (data.containsKey(t)) {
 			articleTxt.append(" ").append(data.get(t));
 		}
 		articleTxt.append(val);
-
 		return articleTxt.toString();
 	}
+
 
 	/**
 	 * @return the vo

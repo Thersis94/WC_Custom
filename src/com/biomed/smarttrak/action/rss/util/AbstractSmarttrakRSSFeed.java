@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -46,6 +47,11 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	public static final String REPLACE_SPAN = "replaceSpan";
 	public static final String PUBMED_ARTICLE_URL = "pubmedArticleUrl";
 	public static final String PUBMED_ENTITY_ID = "pubmedEntityId";
+	public static final String IS_DEBUG = "isDebug";
+
+	protected Map<FilterType, Map<String, List<RSSFilterVO>>> filters;
+	protected List<RSSFeedGroupVO> groups;
+
 	/**
 	 * @param args
 	 */
@@ -53,6 +59,8 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		super(args);
 		loadProperties("scripts/bmg_smarttrak/rss_config.properties");
 		loadDBConnection(props);
+		filters = new EnumMap<>(FilterType.class);
+		groups = new ArrayList<>();
 	}
 
 	/**
@@ -145,8 +153,8 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		sql.append("biomedgps_rss_article (rss_article_id, article_status_cd, ");
 		sql.append("feed_group_id, rss_entity_id, article_guid, article_txt, ");
 		sql.append("filter_article_txt, title_txt, filter_title_txt, article_url, ");
-		sql.append("publish_dt, create_dt, publication_nm) values (?,?,?,?,?,?,?,?,?,?,?,?,?)");
-		log.debug(sql.toString());
+		sql.append("publish_dt, create_dt, publication_nm, article_source_type, ");
+		sql.append("attribute1_txt, attribute2_txt) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		return sql.toString();
 	}
 
@@ -165,7 +173,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			insertData.addAll(Arrays.asList(xrId, a.getArticleStatusCd(), a.getFeedGroupId(), a.getRssEntityId()));
 			insertData.addAll(Arrays.asList(a.getArticleGuid(), a.getArticleTxt(), a.getFilterArticleTxt(), a.getTitleTxt()));
 			insertData.addAll(Arrays.asList(a.getFilterTitleTxt(), a.getArticleUrl(), a.getPublishDt(), Convert.getCurrentTimestamp()));
-			insertData.addAll(Arrays.asList(a.getPublicationName()));
+			insertData.addAll(Arrays.asList(a.getPublicationName(), a.getArticleSourceTypeNm(), a.getAttribute1Txt(), a.getAttribute2Txt()));
 			insertValues.put(xrId, insertData);
 		}
 
@@ -206,19 +214,31 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	protected Map<String, RSSFeedGroupVO> loadFilters(String rssEntityId) {
-		Map<String, RSSFeedGroupVO> groupMap = new HashMap<>();
+	protected void loadFilters(String rssEntityId) {
+		Map<String, List<RSSFilterVO>> omits = new HashMap<>();
+		Map<String, List<RSSFilterVO>> reqs = new HashMap<>();
 		DBProcessor dbp = new DBProcessor(dbConn, props.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		List<Object> vals = new ArrayList<>();
 		if(!StringUtil.isEmpty(rssEntityId)) {
 			vals.add(rssEntityId);
 		}
-		List<RSSFeedGroupVO> groups = (List<RSSFeedGroupVO>)(List<?>)dbp.executeSelect(getFiltersSql(!StringUtil.isEmpty(rssEntityId)), vals, new RSSFeedGroupVO());
+		groups = (List<RSSFeedGroupVO>)(List<?>)dbp.executeSelect(getFiltersSql(!StringUtil.isEmpty(rssEntityId)), vals, new RSSFeedGroupVO());
 		for(RSSFeedGroupVO g : groups) {
-			groupMap.put(g.getFeedGroupId(), g);
+			List<RSSFilterVO> o = new ArrayList<>();
+			List<RSSFilterVO> r = new ArrayList<>();
+			for(RSSFilterVO f : g.getFilters()) {
+				if(FilterType.O.name().equals(f.getTypeCd())) {
+					o.add(f);
+				} else if (FilterType.R.name().equals(f.getTypeCd())) {
+					r.add(f);
+				}
+			}
+			omits.put(g.getFeedGroupId(), o);
+			reqs.put(g.getFeedGroupId(), r);
 		}
 
-		return groupMap;
+		filters.put(FilterType.O, omits);
+		filters.put(FilterType.R, reqs);
 	}
 
 
@@ -249,12 +269,22 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * @param article
 	 * @param filters
 	 */
-	protected void matchArticle(RSSArticleVO article, List<RSSFilterVO> filters) {
-		for(RSSFilterVO filter: filters) {
-			if(FilterType.O.name().equals(filter.getTypeCd())) {
-				checkOmitMatch(article, filter);
-			} else if(FilterType.R.name().equals(filter.getTypeCd())) {
-				checkReqMatch(article, filter);
+	protected void matchArticle(RSSArticleVO article, String feedGroupId) {
+		for(RSSFilterVO filter: filters.get(FilterType.O).get(feedGroupId)) {
+			if(checkOmitMatch(article, filter)) {
+				article.setFeedGroupId(feedGroupId);
+			}
+		}
+
+		/*
+		 * If we haven't marked the article as omitted, check if we pass required
+		 * filters.
+		 */
+		if(!ArticleStatus.R.equals(article.getArticleStatus())) {
+			for(RSSFilterVO filter: filters.get(FilterType.R).get(feedGroupId)) {
+				if(checkReqMatch(article, filter)) {
+					article.setFeedGroupId(feedGroupId);
+				}
 			}
 		}
 	}
@@ -266,12 +296,15 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * @param article
 	 * @param filter
 	 */
-	protected void checkOmitMatch(RSSArticleVO article, RSSFilterVO filter) {
+	protected boolean checkOmitMatch(RSSArticleVO article, RSSFilterVO filter) {
 		boolean isMatch = checkMatch(article, filter);
 
 		if(isMatch) {
-			article.setArticleStatusCd(ArticleStatus.R.name());
+			article.setArticleStatus(ArticleStatus.R);
+			return true;
 		}
+
+		return false;
 	}
 
 
@@ -281,12 +314,15 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * @param article
 	 * @param filter
 	 */
-	protected void checkReqMatch(RSSArticleVO article, RSSFilterVO filter) {
+	protected boolean checkReqMatch(RSSArticleVO article, RSSFilterVO filter) {
 		boolean isMatch = checkMatch(article, filter);
 
-		if(isMatch && !ArticleStatus.R.name().equals(article.getArticleStatusCd())) {
-			article.setArticleStatusCd(ArticleStatus.N.name());
+		if(isMatch && !ArticleStatus.R.equals(article.getArticleStatus())) {
+			article.setArticleStatus(ArticleStatus.N);
+			return true;
 		}
+
+		return false;
 	}
 
 
