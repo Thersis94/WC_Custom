@@ -568,6 +568,11 @@ public class ProductManagementAction extends AuthorAction {
 			sql.append("and (p.STATUS_NO = '").append(Status.P.toString()).append("' ");
 			sql.append("or p.STATUS_NO = '").append(Status.E.toString()).append("') ");
 		}
+
+		if (req.hasParameter("authorId")) {
+			sql.append("and p.creator_profile_id = ? ");
+			params.add(req.getParameter("authorId"));
+		}
 		
 		SortField s = SortField.getFromString(req.getParameter("sort"));
 		
@@ -584,7 +589,7 @@ public class ProductManagementAction extends AuthorAction {
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> products = db.executeSelect(sql.toString(), params, new ProductVO());
-		super.putModuleData(products, getProductCount(req.getParameter("search"), req.hasParameter("inactive")), false);
+		super.putModuleData(products, getProductCount(req.getParameter("search"), req.getParameter("authorId"), req.hasParameter("inactive")), false);
 	}
 
 	
@@ -593,7 +598,7 @@ public class ProductManagementAction extends AuthorAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected int getProductCount(String searchData, boolean inactive) throws ActionException {
+	protected int getProductCount(String searchData, String authorId, boolean inactive) throws ActionException {
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select COUNT(*) ").append("FROM ").append(customDb).append("BIOMEDGPS_product p ");
@@ -607,9 +612,15 @@ public class ProductManagementAction extends AuthorAction {
 			sql.append("and (p.STATUS_NO = '").append(Status.P.toString()).append("' ");
 			sql.append("or p.STATUS_NO = '").append(Status.E.toString()).append("') ");
 		}
+
+		if (!StringUtil.isEmpty(authorId)) {
+			sql.append("and creator_profile_id = ? ");
+		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			if (!StringUtil.isEmpty(searchData)) ps.setString(1, "%" + searchData.toLowerCase() + "%");
+			int i = 1;
+			if (!StringUtil.isEmpty(searchData)) ps.setString(i++, "%" + searchData.toLowerCase() + "%");
+			if (!StringUtil.isEmpty(authorId)) ps.setString(i, authorId);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				return rs.getInt(1);

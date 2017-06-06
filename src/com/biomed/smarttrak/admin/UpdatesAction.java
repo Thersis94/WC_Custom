@@ -45,6 +45,7 @@ public class UpdatesAction extends AuthorAction {
 	public static final String STATUS_CD = "statusCd"; //req param
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
+	public static final String CREATOR_PROFILE_ID = "authorId"; //req param
 	public static final String ROOT_NODE_ID = MASTER_ROOT;
 
 	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
@@ -146,6 +147,7 @@ public class UpdatesAction extends AuthorAction {
 		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) params.add(reqParams.get(STATUS_CD));
 		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) params.add(Convert.formatInteger((String)reqParams.get(TYPE_CD)));
 		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) params.add("%" + reqParams.get(SEARCH).toLowerCase() + "%");
+		if (!StringUtil.isEmpty(reqParams.get(CREATOR_PROFILE_ID))) params.add(reqParams.get(CREATOR_PROFILE_ID));
 		params.add(rpp);
 		params.add(start);
 
@@ -223,15 +225,20 @@ public class UpdatesAction extends AuthorAction {
 	protected int getUpdateCount(ActionRequest req, String schema) {
 		int count = 0;
 		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
+		String authorId = req.getParameter(CREATOR_PROFILE_ID);
 
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select count(*) from ").append(schema).append("biomedgps_update ");
-		if (search.length() > 0) sql.append("where upper(title_txt) like ? ");
+		sql.append("where 1=1 ");
+		if (search.length() > 0) sql.append("and upper(title_txt) like ? ");
+		if (!StringUtil.isEmpty(authorId)) sql.append("and creator_profile_id = ? ");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			int i = 1;
 			if (search.length() > 0) {
-				ps.setString(1, "%" + search + "%");
+				ps.setString(i++, "%" + search + "%");
 			}
+			if (!StringUtil.isEmpty(authorId)) ps.setString(i, authorId);
 
 			ResultSet rs = ps.executeQuery();
 			rs.next();
@@ -312,6 +319,7 @@ public class UpdatesAction extends AuthorAction {
 		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) sql.append("and a.status_cd=? ");
 		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) sql.append("and a.type_cd=? ");
 		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) sql.append("and lower(a.title_txt) like ? ");
+		if (!StringUtil.isEmpty(reqParams.get(CREATOR_PROFILE_ID))) sql.append("and creator_profile_id = ? ");
 		String dateRange = reqParams.get(DATE_RANGE);
 		if (!StringUtil.isEmpty(dateRange)) {
 			if ("1".equals(dateRange)) {
