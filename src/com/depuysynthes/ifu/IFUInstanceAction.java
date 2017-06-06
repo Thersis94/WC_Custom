@@ -42,6 +42,10 @@ public class IFUInstanceAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		if (req.hasParameter("implId") || req.hasParameter("add")) {
 			getSingleInstance(req);
@@ -153,6 +157,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	 * Delete the supplied IFU document instance and redirect the user to the 
 	 * parent IFU document.
 	 */
+	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String implId = req.getParameter("implId");
@@ -177,6 +182,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	 * vo specific update method and then redirects the user to the parent IFU
 	 * document's page.
 	 */
+	@Override
 	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
@@ -219,8 +225,8 @@ public class IFUInstanceAction extends SBActionAdapter {
 	 * @param vo
 	 * @throws ActionException
 	 */
-	public void update(IFUDocumentVO vo) throws ActionException {
-		boolean isInsert = (StringUtil.checkVal(vo.getImplId()).length() == 0);
+	public void update(IFUDocumentVO vo) {
+		boolean isInsert = StringUtil.checkVal(vo.getImplId()).length() == 0;
 		if (isInsert)
 			vo.setImplId(new UUIDGenerator().getUUID());
 		
