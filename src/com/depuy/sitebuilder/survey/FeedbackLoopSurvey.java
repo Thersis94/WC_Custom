@@ -32,6 +32,10 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class FeedbackLoopSurvey extends SimpleActionAdapter {
 	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("starting FeedbackLoopSurvey build");
 		String emailAddress = StringUtil.checkVal(req.getParameter("SURVEY_c0a8022ddd3b8ecaaea94f9cc6a8888b")); //from KNEE survey
@@ -60,11 +64,19 @@ public class FeedbackLoopSurvey extends SimpleActionAdapter {
 		survey.build(req);
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String wrapperId = actionInit.getActionId();
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
