@@ -320,10 +320,6 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	public SearchingSEI buildPort() {
 		URL wsdlURL = buildUrl();
 
-		if (wsdlURL == null) {
-			return null;
-		}
-
 		//Create the Service.
 		SearchWSImplementationsService ss = new SearchWSImplementationsService(wsdlURL, SERVICE_NAME);
 
