@@ -210,7 +210,7 @@ public class InsightAction extends AbstractTreeAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void transposeRequest(ActionRequest req) throws ActionException {
+	protected void transposeRequest(ActionRequest req) {
 		// get the filter queries already on the request. Add ours to the stack,
 		// and put the String[] back on the request for Solr
 		String[] fqs = req.getParameterValues("fq");
@@ -230,7 +230,7 @@ public class InsightAction extends AbstractTreeAction {
 		// Get a Date Range String.
 		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
 		if (!StringUtil.isEmpty(dates)) {
-			data.add("publish_dt:" + dates);
+			data.add("publishDate:" + dates);
 		}
 
 		// Add a ModuleType filter if typeId was passed

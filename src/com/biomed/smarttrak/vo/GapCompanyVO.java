@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.admin.vo.GapColumnVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.StringUtil;
@@ -250,7 +251,9 @@ public class GapCompanyVO {
 			StatusVal usReg = this.getRegulation(col.getNodeId() + "-US");
 			StatusVal ousReg = this.getRegulation(col.getNodeId() + "-OUS");
 
-			cells.add(new GapCellVO(usReg, ousReg, col.getNodeId()));
+			//pull the cell's group and associate it
+			GapColumnVO gapVO = (com.biomed.smarttrak.admin.vo.GapColumnVO) col.getUserObject();
+			cells.add(new GapCellVO(usReg, ousReg, col.getNodeId(), gapVO.getColGroupNo()));
 		}
 	}
 

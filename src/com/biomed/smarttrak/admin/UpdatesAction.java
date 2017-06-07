@@ -37,7 +37,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class UpdatesAction extends AbstractTreeAction {
+public class UpdatesAction extends AuthorAction {
 	public static final String UPDATE_ID = "updateId"; //req param
 	public static final String SORT = "sort"; //req param
 	public static final String ORDER = "order"; //req param
@@ -46,6 +46,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
 	public static final String ROOT_NODE_ID = MASTER_ROOT;
+	public static final int INIT_DISPLAY_LIMIT = 15; //initial display limit
 
 	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
 	public static final String UPDATE_TYPE_CD = "updates";
@@ -120,6 +121,10 @@ public class UpdatesAction extends AbstractTreeAction {
 		} else {
 			putModuleData(data);
 		}
+		
+		//when an add/edit form, load list of BiomedGPS Staff for the "Author" drop-down
+		if (req.getParameter("updateId") != null)
+			loadAuthors(req);
 	}
 
 	/**
@@ -131,7 +136,10 @@ public class UpdatesAction extends AbstractTreeAction {
 	private List<Object> getFilteredUpdates(ActionRequest req) {
 		//Get Relevant Params off Request.
 		int start = Convert.formatInteger(req.getParameter("offset"),0);
-		int rpp = Convert.formatInteger(req.getParameter("limit"),10);
+		int rpp = Convert.formatInteger(req.getParameter("limit"),INIT_DISPLAY_LIMIT);
+		if (rpp == 0) {//this is initial page load, set default for display listing  
+			rpp = INIT_DISPLAY_LIMIT;
+		}
 		Map<String, String> reqParams = getReqParams(req);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
@@ -498,10 +506,5 @@ public class UpdatesAction extends AbstractTreeAction {
 		sortMapper.put("publishDt", "publish_dt");
 		sortMapper.put("typeNm", "type_cd");
 		sortMapper.put("statusNm", "status_cd");
-	}
-
-	@Override
-	public String getCacheKey() {
-		return null;
 	}
 }

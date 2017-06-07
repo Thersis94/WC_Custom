@@ -18,16 +18,13 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.smt.sitebuilder.changelog.ChangeLogIntfc;
-//WebCrescendo
-import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+//WebCrescendo
 import com.smt.sitebuilder.security.SecurityController;
-import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: InsightVO.java <p/>
@@ -42,7 +39,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  * @updates:
  ****************************************************************************/
 @Table(name="biomedgps_insight")
-public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, ChangeLogIntfc {
+public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc {
 
 	public enum InsightStatusCd {
 		P("Published"), D("Deleted"), E("Edited");
@@ -56,7 +53,6 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	}
 
 	private String insightId;
-	private String creatorProfileId;
 	private String creatorTitle;
 	private String firstNm;
 	private String lastNm;
@@ -133,13 +129,12 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	 * sets the vo off of the req object
 	 * @param req
 	 */
+	@Override
 	protected void setData(ActionRequest req) {
-		SMTSession ses = req.getSession();
-		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
-		if(vo != null) {
-			this.setCreatorProfileId(StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId()));
-		}
+		//don't default creator_profile_id to current user, for insights
+		setCreatorProfileId(req.getParameter("creatorProfileId"));
 		setInsightId(req.getParameter("insightId"));
+		setCreatorProfileId(req.getParameter("creatorProfileId"));
 		if (StringUtil.isEmpty(insightId)) setInsightId(req.getParameter("pkId"));
 		setTitleTxt(req.getParameter("titleTxt"));
 		setTypeCd(Convert.formatInteger(req.getParameter("typeCd")));
@@ -155,7 +150,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 		setPublishDt(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("publishDt")));	
 
 		//only want to see the publish date to today if the status is publish and the 
-		//date feild is null
+		//date field is null
 		if(InsightStatusCd.P.toString().equals(statusCd) && publishDt == null) {
 			setPublishDt(new Date());
 		}
@@ -267,6 +262,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	/**
 	 * @return the creatorProfileId
 	 */
+	@Override
 	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;
@@ -397,6 +393,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	/**
 	 * @return the updateDt
 	 */
+	@Override
 	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
@@ -459,13 +456,6 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 		}else {
 			super.setDocumentId(insightId);
 		}
-	}
-
-	/**
-	 * @param creatorProfileId the creatorProfileId to set
-	 */
-	public void setCreatorProfileId(String creatorProfileId) {
-		this.creatorProfileId = creatorProfileId;
 	}
 
 	public void setCreatorTitle(String creatorTitle) {
@@ -559,6 +549,7 @@ public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc, C
 	/**
 	 * @param createDt the createDt to set
 	 */
+	@Override
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
 	}

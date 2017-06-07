@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
+import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeTypeVO;
@@ -40,14 +42,14 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class CompanyManagementAction extends AbstractTreeAction {
+public class CompanyManagementAction extends AuthorAction {
 
 	public static final String ACTION_TYPE = "actionTarget";
 	public static final String COMPANY_ID = "companyId";
 	public static final String CONTENT_ATTRIBUTE_ID = "LVL1_1";
 	
 	private enum ActionType {
-		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE
+		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW
 	}
 	
 	
@@ -75,6 +77,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			try {
 				return SortField.valueOf(sortField.toUpperCase());
 			} catch (Exception e) {
+				log.error("Error getting sort field: ", e);
 				return SortField.COMPANYNAME;
 			}
 		}
@@ -118,6 +121,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			try {
 				return ContentType.valueOf(contentType);
 			} catch (Exception e) {
+				log.error("Error getting content type: ", e);
 				return null;
 			}
 		}
@@ -129,6 +133,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	
 	
 	public void retrieve(ActionRequest req) throws ActionException {
+		//TODO refactor this class to have a common parent class for same functionality.
 		if (req.hasParameter("buildAction")) {
 			super.retrieve(req);
 			return;
@@ -159,7 +164,24 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			case ALLIANCE:
 				allianceRetrieve(req);
 				break;
+			case PREVIEW:
+				retrievePreview(req);
+				break;
 		}
+	}
+	
+	
+	/**
+	 * Get the company as it would appear on the public side.
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void retrievePreview(ActionRequest req) throws ActionException {
+		SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+		CompanyAction ca = new CompanyAction(actionInit);
+		ca.setDBConnection(dbConn);
+		ca.setAttributes(attributes);
+		super.putModuleData(ca.retrieveCompany(req.getParameter("companyId"), role));
 	}
 	
 	
@@ -175,15 +197,18 @@ public class CompanyManagementAction extends AbstractTreeAction {
 	 * @throws ActionException
 	 */
 	protected void companyRetrieve(ActionRequest req) throws ActionException {
-		if (req.hasParameter(COMPANY_ID) && ! req.hasParameter("add")) {
+		if (req.hasParameter(COMPANY_ID) && !req.hasParameter("add")) {
 			retrieveCompany(req.getParameter(COMPANY_ID), req);
 		} else if (!req.hasParameter("add")) {
 			retrieveCompanies(req);
-		} else if (req.getSession().getAttribute("hierarchyTree") == null){
-			// This is a form for a new market make sure that the hierarchy tree is present 
-			Tree t = loadDefaultTree();
-			req.getSession().setAttribute("hierarchyTree", t.preorderList());
-		}
+		}else{
+			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
+			if (req.getSession().getAttribute("hierarchyTree") == null){
+				// This is a form for a new market make sure that the hierarchy tree is present 
+				Tree t = loadDefaultTree();
+				req.getSession().setAttribute("hierarchyTree", t.preorderList());
+			}
+		}	
 	}
 	
 	
@@ -495,6 +520,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 			addAttributes(company, req.getParameter("attributeTypeCd"));
 		
 		getActiveSections(company);
+		loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
 		super.putModuleData(company);
 	}
 
@@ -684,6 +710,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
 				saveAttributeType(t, db, Convert.formatBoolean(req.getParameter("insert")));
 				break;
+				default:break;
 		}
 	}
 
@@ -950,6 +977,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
 				db.delete(t);
 				break;
+			default:break;
 		}
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -1005,6 +1033,7 @@ public class CompanyManagementAction extends AbstractTreeAction {
 				return;
 			}
 		} catch (Exception e) {
+			log.error("Error attempting to build: ", e);
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
 		String companyId = req.getParameter(COMPANY_ID);
@@ -1122,12 +1151,6 @@ public class CompanyManagementAction extends AbstractTreeAction {
 		
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
-	}
-
-
-	@Override
-	public String getCacheKey() {
-		return null;
 	}
 
 }

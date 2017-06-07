@@ -88,12 +88,15 @@ public class RSSArticleSaxHandler extends DefaultHandler {
 		if(d == null) d = Calendar.getInstance().getTime();
 
 		data.put(SearchType.F_DATE, Convert.formatDate(d, Convert.DATE_TIME_DASH_PATTERN_12HR));
-		rss.setArticleStatusCd(ArticleStatus.N.getStatusName());
+		rss.setArticleStatus(ArticleStatus.O);
 		rss.setArticleSourceType(ArticleSourceType.RSS);
 		rss.setArticleGuid(data.get(SearchType.GUID));
 		rss.setArticleTxt(StringUtil.checkVal(data.get(SearchType.DESCRIPTION)));
 		rss.setPublishDt(d);
 		rss.setArticleUrl(data.get(SearchType.LINK));
+		if(StringUtil.isEmpty(rss.getArticleGuid())) {
+			rss.setArticleGuid(rss.getArticleUrl());
+		}
 		rss.setTitleTxt(StringUtil.checkVal(data.get(SearchType.TITLE)));
 		rss.setPublicationName(data.get(SearchType.TITLE));
 		return rss;

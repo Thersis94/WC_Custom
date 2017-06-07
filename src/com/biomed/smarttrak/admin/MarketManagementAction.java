@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
+import com.biomed.smarttrak.action.MarketAction;
 import com.biomed.smarttrak.util.MarketIndexer;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeTypeVO;
@@ -42,14 +43,14 @@ import com.smt.sitebuilder.common.constants.Constants;
  * - Eric Damschroder 3/10/2017
  * </b>
  ****************************************************************************/
-public class MarketManagementAction extends AbstractTreeAction {
+public class MarketManagementAction extends AuthorAction {
 
 	public static final String ACTION_TARGET = "actionTarget";
 	public static final String GRAPH_ID = "GRID";
 	public static final String CONTENT_ATTRIBUTE_ID = "CONTENT";
 
 	private enum ActionTarget {
-		MARKET, MARKETATTRIBUTE, ATTRIBUTE, SECTION, MARKETGRAPH, MARKETLINK,MARKETATTACH
+		MARKET, MARKETATTRIBUTE, ATTRIBUTE, SECTION, MARKETGRAPH, MARKETLINK,MARKETATTACH, PREVIEW
 	}
 	
 	/**
@@ -86,6 +87,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 			try {
 				return ContentType.valueOf(contentType);
 			} catch (Exception e) {
+				log.error("Error getting content type: ", e);
 				return null;
 			}
 		}
@@ -135,8 +137,25 @@ public class MarketManagementAction extends AbstractTreeAction {
 			case SECTION:
 				retrieveSections(req);
 				break;
+			case PREVIEW :
+				retrievePreview(req);
+				break;
 		}
 	}
+	
+	
+	/**
+	 * Get the market as it would appear on the public side.
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void retrievePreview(ActionRequest req) throws ActionException {
+		MarketAction ma = new MarketAction(actionInit);
+		ma.setDBConnection(dbConn);
+		ma.setAttributes(attributes);
+		super.putModuleData(ma.retrieveFromDB(req.getParameter("marketId"), req, true));
+	}
+	
 
 
 	/**
@@ -174,9 +193,12 @@ public class MarketManagementAction extends AbstractTreeAction {
 			req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
 		} else if (!req.hasParameter("add")) {
 			retrieveMarkets(req);
-		} else if (req.getSession().getAttributes().keySet().contains("hierarchyTree")){
-			// This is a form for a new market make sure that the hierarchy tree is present 
-			req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
+		} else{ 
+			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
+			if (req.getSession().getAttributes().keySet().contains("hierarchyTree")){
+				// This is a form for a new market make sure that the hierarchy tree is present 
+				req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
+			}
 		}
 	}
 
@@ -347,6 +369,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 		// Get specifics on market details
 		addAttributes(market, req.getParameter("typeCd"));
 		addSections(market);
+		loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
 		putModuleData(market);
 	}
 
@@ -504,6 +527,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 			case SECTION:
 				saveSections(req);
 				break;
+			default:break;
 		}
 		return marketId;
 	}
@@ -693,6 +717,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 				case SECTION:
 					deleteSection(false, req.getParameter("sectionId"));
 					break;
+				default:break;
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -754,6 +779,7 @@ public class MarketManagementAction extends AbstractTreeAction {
 				return;
 			}
 		} catch (Exception e) {
+			log.error("Error attempting to build: ", e);
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
 
@@ -867,9 +893,4 @@ public class MarketManagementAction extends AbstractTreeAction {
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
 	}
 
-
-	@Override
-	public String getCacheKey() {
-		return null;
-	}
 }

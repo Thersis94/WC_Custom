@@ -12,7 +12,6 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
-import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: ProductVO.java <p/>
@@ -29,7 +28,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_PRODUCT")
-public class ProductVO extends SecureSolrDocumentVO {
+public class ProductVO extends AuthorVO {
 	
 	private String productId;
 	private String parentId;
@@ -73,7 +72,8 @@ public class ProductVO extends SecureSolrDocumentVO {
 	}
 	
 
-	private void setData(ActionRequest req) {
+	protected void setData(ActionRequest req) {
+		super.setData(req); //set the creator_profile_id
 		productId = req.getParameter("productId");
 		parentId = req.getParameter("parentId");
 		companyId = req.getParameter("companyId");
@@ -376,6 +376,15 @@ public class ProductVO extends SecureSolrDocumentVO {
 
 	public void setPublicFlag(int publicFlag) {
 		this.publicFlag = publicFlag;
+	}
+	
+	/**
+	 * @return the creatorProfileId
+	 */
+	@Override
+	@Column(name="creator_profile_id")
+	public String getCreatorProfileId() {
+		return creatorProfileId;
 	}
 	
 }
