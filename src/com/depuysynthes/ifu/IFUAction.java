@@ -47,6 +47,7 @@ public class IFUAction  extends SBActionAdapter {
 	/**
 	 * Determine whether or not we are getting a single IFU or all of them
 	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		if (req.hasParameter("ifuId") || req.hasParameter("add")) {
 			getSingleIFU(req);
@@ -65,14 +66,17 @@ public class IFUAction  extends SBActionAdapter {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(55);
 		sql.append("SELECT * FROM ").append(customDb).append("DEPUY_IFU di ");
-	     sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = di.DEPUY_IFU_ID and WC_SYNC_STATUS_CD not in ('Approved', 'Declined')");
-	     sql.append("WHERE DEPUY_IFU_ID not in (SELECT DEPUY_IFU_GROUP_ID FROM ");
-	     sql.append(customDb).append("DEPUY_IFU di WHERE DEPUY_IFU_GROUP_ID is not null and DEPUY_IFU_GROUP_ID != DEPUY_IFU_ID) ");
-	     sql.append("ORDER BY ORDER_NO, TITLE_TXT");
+		sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = di.DEPUY_IFU_ID and WC_SYNC_STATUS_CD not in ('Approved', 'Declined')");
+		sql.append("WHERE ARCHIVE_FLG = ? and DEPUY_IFU_ID not in (SELECT DEPUY_IFU_GROUP_ID FROM ");
+		sql.append(customDb).append("DEPUY_IFU di WHERE DEPUY_IFU_GROUP_ID is not null and DEPUY_IFU_GROUP_ID != DEPUY_IFU_ID) ");
+		sql.append("ORDER BY ORDER_NO, TITLE_TXT");
+		
+		int archived = Convert.formatInteger(req.getParameter("archived"));
 		
 		log.debug(sql);
-		List<IFUVO> data = new ArrayList<IFUVO>();
+		List<IFUVO> data = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, archived);
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
@@ -94,7 +98,7 @@ public class IFUAction  extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	public void getSingleIFU(ActionRequest req) throws ActionException {
+	public void getSingleIFU(ActionRequest req) {
 		log.debug("Reftriving IFUs");
 		String ifuId = req.getParameter("ifuId");
 		String sql = buildSingleIFUSql();
@@ -147,6 +151,7 @@ public class IFUAction  extends SBActionAdapter {
 	/**
 	 * Delete the supplied IFU document
 	 */
+	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		log.debug("Deleting document");
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
@@ -174,6 +179,7 @@ public class IFUAction  extends SBActionAdapter {
 	 * Create an IFUVO from the request object and and send it to the
 	 *  vo specific updater
 	 */
+	@Override
 	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
@@ -197,7 +203,7 @@ public class IFUAction  extends SBActionAdapter {
 	 */
 	public void update(IFUVO vo) throws ActionException {
 		log.debug("Updating IFU Document");
-		boolean isInsert = (StringUtil.checkVal(vo.getIfuId()).length() == 0);
+		boolean isInsert = StringUtil.checkVal(vo.getIfuId()).length() == 0;
 		if  (isInsert) {
 			vo.setIfuId(new UUIDGenerator().getUUID());
 			vo.setIfuGroupId(vo.getIfuId());
@@ -251,6 +257,7 @@ public class IFUAction  extends SBActionAdapter {
 	 * Create a copy of the supplied IFU 
 	 */
 	@SuppressWarnings("unchecked")
+	@Override
 	public void copy(ActionRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String oldIFU = req.getParameter("ifuId");

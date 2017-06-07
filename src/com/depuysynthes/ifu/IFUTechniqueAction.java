@@ -43,6 +43,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	/**
 	 * Determine if we are getting all the technique guides or just one
 	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		if (req.hasParameter("tgId") || req.hasParameter("add")) {
 			getSingleTechniqueGuide(req);
@@ -65,7 +66,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 		log.debug(sql+"|"+tgId);
 		
 		IFUTechniqueGuideVO tech = null;
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, tgId);
 			
 			ResultSet rs = ps.executeQuery();
@@ -105,7 +106,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 		String instanceId = req.getParameter("documentId");
 		log.debug("Getting all technique guides for document instance: " + instanceId);
 		String sql = buildListSql();
-		List<IFUTechniqueGuideVO> data = new ArrayList<IFUTechniqueGuideVO>();
+		List<IFUTechniqueGuideVO> data = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, instanceId);
 			
@@ -139,6 +140,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	/**
 	 * Delete the supplied technique guide
 	 */
+	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -165,6 +167,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	 * to a vo based update method then redirect the user to the technique guide's
 	 * parent IFU document instance
 	 */
+	@Override
 	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
@@ -184,7 +187,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	public void update(IFUTechniqueGuideVO vo ) throws ActionException {
-		boolean isInsert = (StringUtil.checkVal(vo.getTgId()).length() == 0);
+		boolean isInsert = StringUtil.checkVal(vo.getTgId()).length() == 0;
 		if (isInsert)
 			vo.setTgId(new UUIDGenerator().getUUID());
 		
@@ -216,7 +219,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	private void updateXR(IFUTechniqueGuideVO vo, boolean isInsert) throws SQLException {
 		String sql = buildXRInsert(isInsert);
 		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)){
 			int i = 1;
 			ps.setInt(i++, vo.getOrderNo());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
