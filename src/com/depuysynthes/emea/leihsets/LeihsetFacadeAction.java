@@ -42,22 +42,38 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 		leihset, asset, category; 
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		//add a hook to save categories via ajax
-		ActionType type = (req.hasParameter("addCategory")) ? ActionType.category : ActionType.leihset;	
+		ActionType type = req.hasParameter("addCategory") ? ActionType.category : ActionType.leihset;	
 		
 		//LeihsetAction handles both Leihset and LeihsetAsset lists
 		getAction(type).list(req);
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		getAction(req.getParameter(AdminConstants.FACADE_TYPE)).delete(req);
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void update(ActionRequest req) throws ActionException {
 		getAction(req.getParameter(AdminConstants.FACADE_TYPE)).update(req);
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void copy(ActionRequest req) throws ActionException {
 		//LeihsetAction handles both Leihset and LeihsetAsset copies
 		getAction(ActionType.leihset).copy(req);
