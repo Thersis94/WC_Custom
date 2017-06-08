@@ -66,6 +66,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	private String sideContentTxt;
 	private int featuredFlg;
 	private String featuredImageTxt;
+	private String featuredProfileDocId;
 	private String profileImg;
 	private String statusCd;
 	private int orderNo;
@@ -662,5 +663,20 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	 */
 	public void setProfileDocuments(List<ProfileDocumentVO> profileDocuments) {
 		this.profileDocuments = profileDocuments;
+	}
+
+	/**
+	 * @return the featuredProfileDocId
+	 */
+	@SolrField(name="featuredProfileDocId_s")
+	public String getFeaturedProfileDocId() {
+		return featuredProfileDocId;
+	}
+
+	/**
+	 * @param featuredProfileDocId the featuredProfileDocId to set
+	 */
+	public void setFeaturedProfileDocId(String featuredProfileDocId) {
+		this.featuredProfileDocId = featuredProfileDocId;
 	}
 }
