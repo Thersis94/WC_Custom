@@ -47,21 +47,21 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-    	List<SolrResponseVO> resp = new ArrayList<>();
-    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-    	
-    	String searchData = StringUtil.checkVal(req.getParameter("searchData"));
-    	req.setParameter("searchData", searchData.toLowerCase(), true);
-    	
-    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-    	req.setParameter("pmid", mod.getPageModuleId());
-    	resp.add(getResults(req));
-	
-    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
-    	resp.add(getResults(req));
+	    	List<SolrResponseVO> resp = new ArrayList<>();
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+	    	
+	    	String searchData = StringUtil.checkVal(req.getParameter("searchData"));
+	    	req.setParameter("searchData", searchData.toLowerCase(), true);
+	    	
+	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+	    	req.setParameter("pmid", mod.getPageModuleId());
+	    	resp.add(getResults(req));
+		
+	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
+	    	resp.add(getResults(req));
 		
 		putModuleData(resp);
-    	req.setParameter("searchData", searchData, true);
+    		req.setParameter("searchData", searchData, true);
 	}
 
 	
