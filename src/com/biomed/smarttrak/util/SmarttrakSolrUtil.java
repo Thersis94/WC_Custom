@@ -78,4 +78,18 @@ public class SmarttrakSolrUtil extends SolrActionUtil {
 	public static Predicate<SolrDocumentVO> isInsecureDoc() {
 		return p -> !(p instanceof SecureSolrDocumentVO);
 	}
+	
+	
+	/**
+	 * Create the unchanged field value combo and a case insensitive search
+	 * version where the value has been reduced to lower case
+	 * @param value
+	 * @param field
+	 * @param product
+	 */
+	public static void setSearchField(String value, String field, SecureSolrDocumentVO product) {
+		if (value == null) return;
+		product.addAttribute(field, value);
+		product.addAttribute(field + "search", value.toLowerCase());
+	}
 }
