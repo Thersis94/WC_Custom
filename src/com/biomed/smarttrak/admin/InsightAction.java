@@ -297,7 +297,7 @@ public class InsightAction extends AuthorAction {
 			
 			try {
 				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getInsightId()));
-				log.debug("@@@@@ doc size " + vo.getProfileDocuments().size());
+				log.debug(" doc size " + vo.getProfileDocuments().size());
 			} catch (ActionException e) {
 				log.error("error loading profile documents",e);
 			}
@@ -559,7 +559,7 @@ public class InsightAction extends AuthorAction {
 
 		try {
 			//remove the files
-			deleteFilesFromDisk(vo, pda);
+			deleteFilesFromDisk(vo, pda, orgId);
 			
 			//remove the profile docs
 			deleteOutdatedSqlRecords(vo, pda);
@@ -596,9 +596,11 @@ public class InsightAction extends AuthorAction {
 	 * deletes the files off the disc
 	 * @param pda 
 	 * @param vo 
+	 * @param orgId 
 	 * @throws ActionException 
 	 */
-	private void deleteFilesFromDisk(InsightVO vo, ProfileDocumentAction pda) throws ActionException {
+	private void deleteFilesFromDisk(InsightVO vo, ProfileDocumentAction pda, String orgId) throws ActionException {
+
 		StringBuilder sql = new StringBuilder(85);
 		sql.append("select * from profile_document ");
 		sql.append("where feature_id = ? ");
@@ -612,7 +614,11 @@ public class InsightAction extends AuthorAction {
 			while (rs.next()) {
 				
 				ProfileDocumentVO target = new ProfileDocumentVO(rs);
-				log.debug("deleting file at " + target.getFilePathUrl());
+				String targetUrl = pda.getPathToFileUrl(orgId) + target.getFilePathUrl();
+				target.setFilePathUrl(targetUrl);
+				
+				log.debug(" deleting file at " + target.getFilePathUrl());
+
 				pda.deleteFileFromDisk(target);
 			}
 			
