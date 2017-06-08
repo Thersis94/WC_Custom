@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.admin;
 //java 8
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -16,6 +17,7 @@ import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
 import com.biomed.smarttrak.vo.InsightXRVO;
 import com.biomed.smarttrak.vo.UserVO;
+
 //SMT baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -23,12 +25,18 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.filter.fileupload.ProfileDocumentFileManagerStructureImpl;
+import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
 //WebCrescendo
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -48,6 +56,7 @@ public class InsightAction extends AuthorAction {
 	protected static final String INSIGHT_ID = "insightId"; //req param
 	public static final String TITLE_BYPASS = "titleBypass"; //req param
 	public static final String ROOT_NODE_ID = AbstractTreeAction.MASTER_ROOT;
+	public static final String INSIGHTS_DIRECTORY_PATH = "/featuredImage";
 	private Map<String, String> sortMapper;
 
 	protected enum Fields {
@@ -76,16 +85,36 @@ public class InsightAction extends AuthorAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("insight retrieve called");
-		
-		if (req.hasParameter("loadData") || req.hasParameter(INSIGHT_ID) ) {
-			req.setParameter(TITLE_BYPASS, StringUtil.checkVal(true));
-			if (req.hasParameter(INSIGHT_ID)){
-				loadAuthors(req);
-			}
-			loadInsightsData(req);
-		}
-	}
+		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
+			if (req.hasParameter("loadData") || req.hasParameter(INSIGHT_ID) ) {
+				req.setParameter(TITLE_BYPASS, StringUtil.checkVal(true));
+				if (req.hasParameter(INSIGHT_ID)){
+					loadAuthors(req);
+				}
+				loadInsightsData(req);
+			}
+		
+		setupAttributes(modVo);
+		setAttribute(Constants.MODULE_DATA, modVo);
+	}
+	
+	/**
+	 * sets a file upload token to the class
+	 * @param modVo
+	 */
+	public void setupAttributes(ModuleVO modVo) {
+		String fileToken = null;
+		try {
+			fileToken = ProfileDocumentFileManagerStructureImpl.makeDocToken((String)getAttribute(Constants.ENCRYPT_KEY));
+		} catch (EncryptionException e) {
+			log.error("could not generate fileToken", e);
+		}
+		modVo.setAttribute("filePrefix", INSIGHTS_DIRECTORY_PATH);
+		modVo.setAttribute(ProfileDocumentFileManagerStructureImpl.DOC_TOKEN, fileToken );
+		log.debug("###### set doc token: " + fileToken);
+	}
+	
 	/**
 	 * loads the insight data 
 	 * @param req
@@ -261,6 +290,17 @@ public class InsightAction extends AuthorAction {
 				vo.setCreatorTitle(authorTitles.get(vo.getCreatorProfileId()));
 			}
 			
+			ProfileDocumentAction pda = new ProfileDocumentAction();
+			pda.setAttributes(attributes);
+			pda.setDBConnection(dbConn);
+			pda.setActionInit(actionInit);
+			
+			try {
+				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getInsightId()));
+				log.debug("@@@@@ doc size " + vo.getProfileDocuments().size());
+			} catch (ActionException e) {
+				log.error("error loading profile documents",e);
+			}
 		}
 
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
@@ -477,6 +517,16 @@ public class InsightAction extends AuthorAction {
 					ivo = loadInsight(ivo);
 				}else {
 					saveInsight(db, ivo);
+					
+					
+					SMTSession ses = req.getSession();
+					UserVO user = (UserVO) ses.getAttribute(Constants.USER_DATA);
+					log.debug("user id = " + user.getUserId());
+					ivo.setUserId(user.getUserId());
+	
+					if (!StringUtil.isEmpty(ivo.getFeaturedImageTxt()))
+						processProfileDocumentCreation(ivo, req, user.getProfileId());
+					
 				}
 				
 				publishChangeToSolr(ivo);
@@ -485,6 +535,91 @@ public class InsightAction extends AuthorAction {
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
+	}
+
+	/**
+	 * this method will make and save a profile document entry for the new insight.
+	 * @param vo
+	 * @param req
+	 * @param profileId 
+	 */
+	protected void processProfileDocumentCreation(InsightVO vo, ActionRequest req, String profileId) {
+		log.debug("process profile document creation called ");
+		ProfileDocumentAction pda = new ProfileDocumentAction();
+		pda.setAttributes(attributes);
+		pda.setDBConnection(dbConn);
+		pda.setActionInit(actionInit);
+
+		String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
+
+		req.setParameter("profileId", profileId);
+		req.setParameter("featureId", vo.getInsightId());
+		req.setParameter("organizationId", orgId);
+		req.setParameter("actionId", actionInit.getActionId());
+
+		try {
+			//remove the files
+			deleteFilesFromDisk(vo, pda);
+			
+			//remove the profile docs
+			deleteOutdatedSqlRecords(vo, pda);
+			
+			//adds the new record and file
+			pda.build(req);
+		} catch (ActionException e) {
+			log.error("error occured during profile document generation " , e);
+		}
+	}
+	
+	/**
+	 * removes the out-dated featured images profile documents recoreds.
+	 * @param vo
+	 * @param pda
+	 */
+	private void deleteOutdatedSqlRecords(InsightVO vo, ProfileDocumentAction pda) {
+		StringBuilder dSql = new StringBuilder(85);
+		dSql.append("delete from profile_document ");
+		dSql.append("where feature_id = ? ");
+		
+		log.debug("sql: " + dSql + "|" + vo.getInsightId());
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(dSql.toString())) {
+			ps.setString(1, vo.getInsightId());
+			ps.execute();
+		} catch (SQLException e) {
+			log.error("could not remove profile doc files ", e);
+		}
+		
+	}
+
+	/**
+	 * deletes the files off the disc
+	 * @param pda 
+	 * @param vo 
+	 * @throws ActionException 
+	 */
+	private void deleteFilesFromDisk(InsightVO vo, ProfileDocumentAction pda) throws ActionException {
+		StringBuilder sql = new StringBuilder(85);
+		sql.append("select * from profile_document ");
+		sql.append("where feature_id = ? ");
+		
+		log.debug("swl: " + sql + "|" + vo.getInsightId() );
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, vo.getInsightId());
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) {
+				
+				ProfileDocumentVO target = new ProfileDocumentVO(rs);
+				log.debug("deleting file at " + target.getFilePathUrl());
+				pda.deleteFileFromDisk(target);
+			}
+			
+		} catch (SQLException e) {
+			log.error("could not remove profile doc files ", e);
+		}
+		
 	}
 
 	/**
