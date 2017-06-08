@@ -124,6 +124,8 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
+			mail.addRecipient("kgeorge@mediaspace.com");
+			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
@@ -246,6 +248,8 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
+			mail.addCC("kgeorge@mediaspace.com");
+			mail.addCC("krogalski@mediaspace.com");
 			
 			for (PersonVO p : sem.getPeople()) { 
 				//add only the sales reps
@@ -429,6 +433,8 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
+			mail.addCC("kgeorge@mediaspace.com");
+			mail.addCC("krogalski@mediaspace.com");
 			
 			for (PersonVO p : sem.getPeople()) {
 				//Add only the sales rep
@@ -625,6 +631,8 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addRecipient("mroderic@its.jnj.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
+			mail.addCC("kgeorge@mediaspace.com");
+			mail.addCC("krogalski@mediaspace.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);

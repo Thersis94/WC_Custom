@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Properties;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.ProductAction;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeTypeVO;
@@ -51,7 +53,7 @@ public class ProductManagementAction extends AuthorAction {
 	
 	private enum ActionTarget {
 		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, PRODUCTLINK, PRODUCTATTACH,
-		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION
+		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION, PREVIEW
 	}
 	
 	/**
@@ -206,7 +208,23 @@ public class ProductManagementAction extends AuthorAction {
 			case REGULATION:
 				retrieveRegulatory(req);
 				break;
+			case PREVIEW:
+				retrievePreview(req);
+				break;
 		}
+	}
+	
+	
+	/**
+	 * Get the product as it would appear on the public side.
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void retrievePreview(ActionRequest req) throws ActionException {
+		ProductAction pa = new ProductAction(actionInit);
+		pa.setDBConnection(dbConn);
+		pa.setAttributes(attributes);
+		super.putModuleData(pa.retrieveProduct(req.getParameter("productId"), AdminControllerAction.STAFF_ROLE_LEVEL));
 	}
 	
 	
@@ -542,7 +560,9 @@ public class ProductManagementAction extends AuthorAction {
 		
 		// If the request has search terms on it add them here
 		if (req.hasParameter("search")) {
-			sql.append("and lower(PRODUCT_NM) like ? ");
+			sql.append("and (lower(PRODUCT_NM) like ? ");
+			params.add("%" + req.getParameter("search").toLowerCase() + "%");
+			sql.append("or lower(COMPANY_NM) like ? )");
 			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
 		
@@ -579,10 +599,13 @@ public class ProductManagementAction extends AuthorAction {
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select COUNT(*) ").append("FROM ").append(customDb).append("BIOMEDGPS_product p ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("ON p.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("WHERE 1=1 ");
 		// If the request has search terms on it add them here
 		if (!StringUtil.isEmpty(searchData)) {
-			sql.append("and lower(PRODUCT_NM) like ? ");
+			sql.append("and (lower(PRODUCT_NM) like ? ");
+			sql.append("or lower(COMPANY_NM) like ? )");
 		}
 		
 		if (!inactive) {
@@ -591,7 +614,10 @@ public class ProductManagementAction extends AuthorAction {
 		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			if (!StringUtil.isEmpty(searchData)) ps.setString(1, "%" + searchData.toLowerCase() + "%");
+			if (!StringUtil.isEmpty(searchData)) {
+				ps.setString(1, "%" + searchData.toLowerCase() + "%");
+				ps.setString(2, "%" + searchData.toLowerCase() + "%");
+			}
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				return rs.getInt(1);
