@@ -663,6 +663,9 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	 * @param profileDocuments the profileDocuments to set
 	 */
 	public void setProfileDocuments(List<ProfileDocumentVO> profileDocuments) {
+		if(profileDocuments != null && !profileDocuments.isEmpty())
+			this.setFeaturedProfileDocId(profileDocuments.get(0).getProfileDocumentId());
+		
 		this.profileDocuments = profileDocuments;
 	}
 
