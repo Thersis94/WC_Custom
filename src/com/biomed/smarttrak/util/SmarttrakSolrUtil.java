@@ -85,11 +85,11 @@ public class SmarttrakSolrUtil extends SolrActionUtil {
 	 * version where the value has been reduced to lower case
 	 * @param value
 	 * @param field
-	 * @param product
+	 * @param doc
 	 */
-	public static void setSearchField(String value, String field, SecureSolrDocumentVO product) {
+	public static void setSearchField(String value, String field, SecureSolrDocumentVO doc) {
 		if (value == null) return;
-		product.addAttribute(field, value);
-		product.addAttribute(field + "search", value.toLowerCase());
+		doc.addAttribute(field, value);
+		doc.addAttribute(field + "search", value.toLowerCase());
 	}
 }
