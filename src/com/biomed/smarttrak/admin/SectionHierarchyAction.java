@@ -150,7 +150,6 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		String[] roleAcl = role.getAuthorizedSections();
 		List<Node> allowed = new ArrayList<>();
 		for (Node n : sections) {
-			log.debug(n.getNodeName());
 			SectionVO sec = (SectionVO) n.getUserObject();
 			if (roleAcl == null || roleAcl.length == 0 || !AccessControlQuery.isAllowed("+g:" + sec.getSolrTokenTxt(), null, roleAcl)) {
 				// Do nothing. This section cannot be seen by the current user
