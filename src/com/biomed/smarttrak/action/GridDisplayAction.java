@@ -233,9 +233,9 @@ public class GridDisplayAction extends SBActionAdapter {
 	private void modifyLabel(GridVO grid) {
 		// Add up all values to see if the chart was generated
 		// with percentages instead of actual values.
-		int total = 0;
+		Double total = 0.0;
 		for (GridDetailVO detail : grid.getDetails()) {
-			total += Convert.formatInteger(detail.getValue1(), 0);
+			total += Convert.formatDouble(detail.getValue1(), 0);
 		}
 		
 		// If the total is 100 the percentage is functionally 
