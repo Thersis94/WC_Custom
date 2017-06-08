@@ -1,14 +1,21 @@
 package com.universal.util.data;
 
+// Java 8
 import java.util.Calendar;
 
+// Log4j
 import org.apache.log4j.Logger;
 
+// SMTBaseLibs
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.util.StringUtil;
+
+// WebCrescendo 
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
+
+// WC Custom
 import com.universal.util.ProductSolrIndex;
 
 /****************************************************************************
@@ -43,34 +50,22 @@ public class ProductSolrDocumentVO extends SolrDocumentVO {
 	}
 	
 	/**
-	 * Captures DS Product Catalog data fields into the SolrDocument.
+	 * Captures USA Product Catalog data fields into the SolrDocument.
 	 */
+	@Override
 	public void setData(Object o) {
 		ProductVO vo = (ProductVO) o;
-
 		super.setLanguage("en");
 		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 		super.setDocumentId(vo.getProductId());
 		super.setTitle(vo.getProductName());
 		super.setSummary(vo.getDescText());
 		
-	    /* 2014-03-26: DBargerhuff: 
-	     * In order to filter searches by product catalog ID, we are adding product catalog ID to the document using a custom field 
-	     * type value that is synonymous with a meta tag in the USA CMS field template.  We will be using a CMS
-	     * dynamic list to filter searches, therefore the filter field name must be in all lowercase and the meta tag choice values must
-	     * also be in lowercase.
-	     * 
-	     * If we were to use a DocumentHandler constant (e.g. MODULE_TYPE) for the field type value, and if that constant 
-	     * was subsequently added to the 'searchableFields' array in SiteSearchAction, we would lose the ability to filter on 
-	     * product catalog ID.  We use a StringField type so that the field value is not tokenized by the Lucene search query parser.
-	     */
+	    /* 2017-06-08: DBargerhuff:  In order to filter searches by product catalog ID, 
+	     * we are adding product catalog ID to the document using a custom field. */
 		this.setCustomFieldCatalog(StringUtil.checkVal(vo.getCatalogId()).toLowerCase());
 	}
 
-
-
-	// ------- Getters and Setters Below This Line -------
-	
 	@SolrField(name=ProductSolrIndex.CUSTOM_FIELD_CATALOG)
 	public String getCustomFieldCatalog() {
 		return customFieldCatalog;
