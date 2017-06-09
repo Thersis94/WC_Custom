@@ -47,8 +47,13 @@ public class LeihsetAction extends SBActionAdapter {
 
 
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
-		loadLeihsets(req);
+		if (req.hasParameter("json") || req.hasParameter("leihsetId"))
+			loadLeihsets(req);
 	}
 
 	
@@ -88,7 +93,7 @@ public class LeihsetAction extends SBActionAdapter {
 		}
 		
 		log.debug("loaded " + data.size() + " liehsets");
-		List<LeihsetVO> list = new ArrayList<LeihsetVO>(data.values());
+		List<LeihsetVO> list = new ArrayList<>(data.values());
 		Collections.sort(list);
 		
 
@@ -100,7 +105,7 @@ public class LeihsetAction extends SBActionAdapter {
 		for (LeihsetVO vo : list) {
 			vo.setCategoryTree(ca.loadCategoryTree(vo.getLeihsetId()));
 		}
-		if (list.size() == 0) { //add form
+		if (list.isEmpty()) { //add form
 			req.setAttribute("categories",  ca.loadCategoryTree(null));
 		}
 		
@@ -132,6 +137,7 @@ public class LeihsetAction extends SBActionAdapter {
 	/**
 	 * Delete the supplied Leihset and redirect the user
 	 */
+	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String leihsetId = req.getParameter("leihsetId");
@@ -156,6 +162,7 @@ public class LeihsetAction extends SBActionAdapter {
 	 * Builds a LeihsetVO from the request object and passes it along to the
 	 * vo specific update method and then redirects the user
 	 */
+	@Override
 	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
@@ -192,8 +199,8 @@ public class LeihsetAction extends SBActionAdapter {
 	 * @param vo
 	 * @throws ActionException
 	 */
-	private void update(LeihsetVO vo) throws ActionException {
-		boolean isInsert = (StringUtil.checkVal(vo.getLeihsetId()).length() == 0);
+	private void update(LeihsetVO vo) {
+		boolean isInsert = StringUtil.checkVal(vo.getLeihsetId()).length() == 0;
 		if (isInsert) {
 			vo.setLeihsetId(new UUIDGenerator().getUUID());
 			vo.setLeihsetGroupId(vo.getLeihsetId());

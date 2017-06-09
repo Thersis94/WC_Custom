@@ -171,11 +171,11 @@ public class LeihsetCategoryAction extends SBActionAdapter {
 		deleteXRCategories(vo);
 
 		//test whether we have anything to save
-		if (vo.getCategories().size() == 0)
+		if (vo.getCategories().isEmpty())
 			return;
 		
 		//save any new categories being added
-		List<String> saveCats = new ArrayList<String>();
+		List<String> saveCats = new ArrayList<>();
 		for (String cat : vo.getCategories())
 			saveCats.add(cat);
 
