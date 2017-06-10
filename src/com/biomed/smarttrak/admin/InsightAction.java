@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 //WC_Custom
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
@@ -518,7 +519,6 @@ public class InsightAction extends AuthorAction {
 				}else {
 					saveInsight(db, ivo);
 					
-					
 					SMTSession ses = req.getSession();
 					UserVO user = (UserVO) ses.getAttribute(Constants.USER_DATA);
 					log.debug("user id = " + user.getUserId());
@@ -527,6 +527,16 @@ public class InsightAction extends AuthorAction {
 					if (!StringUtil.isEmpty(ivo.getFeaturedImageTxt()))
 						processProfileDocumentCreation(ivo, req, user.getProfileId());
 					
+					//redirect to stay on the same form page
+					String actionType = req.getParameter(AdminControllerAction.ACTION_TYPE);
+					
+					StringBuilder url = new StringBuilder(200);
+					url.append("/manage");
+					if (!StringUtil.isEmpty(actionType)) url.append("?actionType=").append(actionType);
+					
+					if (!StringUtil.isEmpty(ivo.getInsightId())) url.append("&insightId=").append(ivo.getInsightId());
+						
+					req.setAttribute(Constants.REDIRECT_URL, url.toString());
 				}
 				
 				publishChangeToSolr(ivo);
