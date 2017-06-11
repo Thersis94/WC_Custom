@@ -113,7 +113,7 @@ public class InsightAction extends AuthorAction {
 		}
 		modVo.setAttribute("filePrefix", INSIGHTS_DIRECTORY_PATH);
 		modVo.setAttribute(ProfileDocumentFileManagerStructureImpl.DOC_TOKEN, fileToken );
-		log.debug("###### set doc token: " + fileToken);
+		log.debug("set doc token: " + fileToken);
 	}
 	
 	/**
