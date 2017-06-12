@@ -28,9 +28,9 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -154,21 +154,25 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Gets the hierarchy starting from the passed sectionId
+	 * 
+	 * @param sectionId
+	 * @return
+	 */
+	protected SmarttrakTree getHierarchy(String sectionId) {
+		SectionHierarchyAction sha = getHierarchyAction();
+		return sha.loadTree(sectionId);
+	}
+	
+	/**
 	 * Gets the hierarchy for the requested level
 	 * 
 	 * @param req
 	 * @return
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unchecked")
-	protected SmarttrakTree getHierarchy(ActionRequest req) throws ActionException {
-		SectionHierarchyAction sha = getHierarchyAction();
-		sha.retrieve(req);
-		
-		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		List<Node> sections = (List<Node>) mod.getActionData();
-		
-		return new SmarttrakTree(sections, sections.get(0));
+	protected SmarttrakTree getHierarchy(ActionRequest req) {
+		return getHierarchy(req.getParameter("sectionId"));
 	}
 	
 	/**
@@ -177,8 +181,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected SmarttrakTree getFullHierarchy() {
-		SectionHierarchyAction sha = getHierarchyAction();
-		return sha.loadTree(null);
+		return getHierarchy((String) null);
 	}
 	
 	/**
@@ -430,7 +433,12 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		super.build(req);
+		String actionPerform = StringUtil.checkVal(req.getParameter("actionPerform"));
+		if ("markCurrent".equals(actionPerform)) {
+			markCurrentQuarter(req);
+			return;
+		}
+		
 		this.updateData(req);
 	}
 	
@@ -576,5 +584,46 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		sql.append("where r.SECTION_ID = ? and r.YEAR_NO = ? and r.REGION_CD = ? and so.SCENARIO_ID = ? ");
 		
 		return sql.toString();
+	}
+	
+	/**
+	 * Marks the current quarter for the selected section and all sections
+	 * in the tree below it.
+	 * 
+	 * @param req
+	 */
+	protected void markCurrentQuarter(ActionRequest req) {
+		SectionHierarchyAction sha = getHierarchyAction();
+
+		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"));
+		int yr = Convert.formatInteger(req.getParameter("currentYr"));
+		int qtr = Convert.formatInteger(req.getParameter("currentQtr"));
+		
+		log.debug("Marking the current quarter for " + sectionId);
+		
+		// Gets the tree starting at the selected level
+		SmarttrakTree tree = getHierarchy(sectionId);
+		Node n = tree.getRootNode();
+		
+		// Mark sections(s) current
+		setSectionCurrent(sha, n, yr, qtr);
+	}
+	
+	/**
+	 * Marks a section current to the specified quarter
+	 * 
+	 * @param sha
+	 * @param n
+	 * @param yr
+	 * @param qtr
+	 */
+	private void setSectionCurrent(SectionHierarchyAction sha, Node n, int yr, int qtr) {
+		// Update the section to the specified quarter
+		sha.updateFdPublish(n.getNodeId(), yr, qtr);
+		
+		// Set children to the current quarter
+		for (Node child : n.getChildren()) {
+			setSectionCurrent(sha, child, yr, qtr);
+		}
 	}
 }
