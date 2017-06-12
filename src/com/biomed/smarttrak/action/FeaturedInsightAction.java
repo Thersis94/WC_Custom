@@ -16,13 +16,11 @@ import org.apache.solr.common.SolrDocument;
 
 //Wc_custom
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
-import com.biomed.smarttrak.vo.UserVO;
 
 //baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.NotAuthorizedException;
-import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.solr.AccessControlQuery;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
@@ -57,14 +55,11 @@ public class FeaturedInsightAction extends InsightAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-
-		SMTSession ses = req.getSession();
-		UserVO user = (UserVO) ses.getAttribute(Constants.USER_DATA);
 		
 		//this section of the retrieve is used by file handler to process and send back the correct vo
 		if (!StringUtil.isEmpty(req.getParameter("profileDocumentId"))) {
 			String profileDocumentId = req.getParameter("profileDocumentId");
-			processProfileDocumentRequest(profileDocumentId, user, ses.getAttribute(Constants.ROLE_DATA));
+			processProfileDocumentRequest(profileDocumentId);
 		} else {
 		processFeaturedRequest(req);
 		}
@@ -77,7 +72,7 @@ public class FeaturedInsightAction extends InsightAction {
 	 * @param profileDocumentId 
 	 * @throws ActionException 
 	 */
-	private void processProfileDocumentRequest(String profileDocumentId, UserVO user, Object roleVo) throws ActionException {
+	private void processProfileDocumentRequest(String profileDocumentId) throws ActionException {
 		
 				ProfileDocumentAction pda = new ProfileDocumentAction();
 				pda.setActionInit(actionInit);

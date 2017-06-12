@@ -519,24 +519,9 @@ public class InsightAction extends AuthorAction {
 				}else {
 					saveInsight(db, ivo);
 					
-					SMTSession ses = req.getSession();
-					UserVO user = (UserVO) ses.getAttribute(Constants.USER_DATA);
-					log.debug("user id = " + user.getUserId());
-					ivo.setUserId(user.getUserId());
-	
-					if (!StringUtil.isEmpty(ivo.getFeaturedImageTxt()))
-						processProfileDocumentCreation(ivo, req, user.getProfileId());
+					saveProfileDoc(req, ivo);
 					
-					//redirect to stay on the same form page
-					String actionType = req.getParameter(AdminControllerAction.ACTION_TYPE);
-					
-					StringBuilder url = new StringBuilder(200);
-					url.append("/manage");
-					if (!StringUtil.isEmpty(actionType)) url.append("?actionType=").append(actionType);
-					
-					if (!StringUtil.isEmpty(ivo.getInsightId())) url.append("&insightId=").append(ivo.getInsightId());
-						
-					req.setAttribute(Constants.REDIRECT_URL, url.toString());
+					buildRedirectUrl(req, ivo);
 				}
 				
 				publishChangeToSolr(ivo);
@@ -545,6 +530,43 @@ public class InsightAction extends AuthorAction {
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
+	}
+
+	/**
+	 * builds the redirect list to return to the same page
+	 * @param ivo 
+	 * @param req 
+	 */
+	private void buildRedirectUrl(ActionRequest req, InsightVO ivo) {
+		//redirect to stay on the same form page
+		String actionType = req.getParameter(AdminControllerAction.ACTION_TYPE);
+		
+		StringBuilder url = new StringBuilder(200);
+		url.append("/manage");
+		if (!StringUtil.isEmpty(actionType)) url.append("?actionType=").append(actionType);
+		
+		if (!StringUtil.isEmpty(ivo.getInsightId())) url.append("&insightId=").append(ivo.getInsightId());
+			
+		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		
+	}
+
+	/**
+	 * if there is a profile doc on the insight saves it
+	 * @param ivo 
+	 * @param req 
+	 */
+	private void saveProfileDoc(ActionRequest req, InsightVO ivo) {
+		
+		if (StringUtil.isEmpty(ivo.getFeaturedImageTxt())) return;
+		
+		SMTSession ses = req.getSession();
+		UserVO user = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		log.debug("user id = " + user.getUserId());
+		ivo.setUserId(user.getUserId());
+		
+		processProfileDocumentCreation(ivo, req, user.getProfileId());
+		
 	}
 
 	/**
@@ -572,7 +594,7 @@ public class InsightAction extends AuthorAction {
 			deleteFilesFromDisk(vo, pda, orgId);
 			
 			//remove the profile docs
-			deleteOutdatedSqlRecords(vo, pda);
+			deleteOutdatedSqlRecords(vo);
 			
 			//adds the new record and file
 			pda.build(req);
@@ -582,11 +604,11 @@ public class InsightAction extends AuthorAction {
 	}
 	
 	/**
-	 * removes the out-dated featured images profile documents recoreds.
+	 * removes the out-dated featured images profile documents records.
 	 * @param vo
 	 * @param pda
 	 */
-	private void deleteOutdatedSqlRecords(InsightVO vo, ProfileDocumentAction pda) {
+	private void deleteOutdatedSqlRecords(InsightVO vo) {
 		StringBuilder dSql = new StringBuilder(85);
 		dSql.append("delete from profile_document ");
 		dSql.append("where feature_id = ? ");
