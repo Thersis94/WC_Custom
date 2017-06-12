@@ -251,7 +251,7 @@ public class UpdatesAction extends SBActionAdapter {
 		//Get a Date Range String.
 		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
 		if (!StringUtil.isEmpty(dates))
-			data.add(SearchDocumentHandler.UPDATE_DATE + ":" + dates);
+			data.add(SearchDocumentHandler.PUBLISH_DATE + ":" + dates);
 
 		//Add a ModuleType filter if typeId was passed
 		if (req.hasParameter("typeId"))
