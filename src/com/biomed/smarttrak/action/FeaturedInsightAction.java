@@ -20,7 +20,6 @@ import com.biomed.smarttrak.security.SmarttrakRoleVO;
 //baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.solr.AccessControlQuery;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
@@ -55,13 +54,13 @@ public class FeaturedInsightAction extends InsightAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
+
 		//this section of the retrieve is used by file handler to process and send back the correct vo
 		if (!StringUtil.isEmpty(req.getParameter("profileDocumentId"))) {
 			String profileDocumentId = req.getParameter("profileDocumentId");
 			processProfileDocumentRequest(profileDocumentId);
 		} else {
-		processFeaturedRequest(req);
+			processFeaturedRequest(req);
 		}
 
 	}
@@ -73,24 +72,22 @@ public class FeaturedInsightAction extends InsightAction {
 	 * @throws ActionException 
 	 */
 	private void processProfileDocumentRequest(String profileDocumentId) throws ActionException {
-		
-				ProfileDocumentAction pda = new ProfileDocumentAction();
-				pda.setActionInit(actionInit);
-				pda.setDBConnection(dbConn);
-				pda.setAttributes(attributes);
-				ProfileDocumentVO pvo = pda.getDocumentByProfileDocumentId(profileDocumentId);
-				
-				StringBuilder sql = new StringBuilder(205);
-				sql.append("select  count(*) from profile_document pd ");
-				sql.append("inner join custom.biomedgps_insight bi on bi.insight_id = pd.feature_id ");
-				sql.append("where bi.featured_flg = '1' and profile_document_id = ? ");
-				
-				log.debug("sql: " + sql + "|" + profileDocumentId );
+		ProfileDocumentAction pda = new ProfileDocumentAction();
+		pda.setActionInit(actionInit);
+		pda.setDBConnection(dbConn);
+		pda.setAttributes(attributes);
+		ProfileDocumentVO pvo = pda.getDocumentByProfileDocumentId(profileDocumentId);
 
-				authorizeFeaturedImage(sql,profileDocumentId, pvo);
-				
+		StringBuilder sql = new StringBuilder(205);
+		sql.append("select  count(*) from profile_document pd ");
+		sql.append("inner join custom.biomedgps_insight bi on bi.insight_id = pd.feature_id ");
+		sql.append("where bi.featured_flg = '1' and profile_document_id = ? ");
+
+		log.debug("sql: " + sql + "|" + profileDocumentId );
+
+		authorizeFeaturedImage(sql,profileDocumentId, pvo);
 	}
-	
+
 	/**
 	 * this method checks that the profile document id matches one that is an insight and also has the featured flg set 
 	 * to 1 or it throws and catches a not authorized exception.
@@ -99,30 +96,29 @@ public class FeaturedInsightAction extends InsightAction {
 	 * @param pvo 
 	 */
 	private void authorizeFeaturedImage(StringBuilder sql, String profileDocumentId, ProfileDocumentVO pvo){
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, profileDocumentId);
 			int rowCount = 0;
-			
+
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				rowCount = rs.getInt(1);
 			}
-			
-			if (rowCount == 0 )
-				throw new NotAuthorizedException("This profile doc. is not related to a featured insight");
 
-			//will need a module data vo to send data back to the file handler
-			ModuleVO modVo = new ModuleVO();
-			modVo.setActionData(pvo);
-			attributes.put(Constants.MODULE_DATA, modVo);
-			
-		} catch(NotAuthorizedException|SQLException sqle) {
+			if (rowCount != 0 ){
+				//will need a module data vo to send data back to the file handler
+				ModuleVO modVo = new ModuleVO();
+				modVo.setActionData(pvo);
+				attributes.put(Constants.MODULE_DATA, modVo);
+			}
+
+		} catch(SQLException sqle) {
 			log.error("could not load or verify profile document ", sqle);
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param req 
 	 * @throws ActionException 
@@ -152,7 +148,6 @@ public class FeaturedInsightAction extends InsightAction {
 		}
 		//change out results sets
 		transposeResults(solVo, authorizedFeatures);
-		
 	}
 
 	/**
