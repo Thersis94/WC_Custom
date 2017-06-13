@@ -210,7 +210,7 @@ public class InsightAction extends AbstractTreeAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void transposeRequest(ActionRequest req) throws ActionException {
+	protected void transposeRequest(ActionRequest req) {
 		// get the filter queries already on the request. Add ours to the stack,
 		// and put the String[] back on the request for Solr
 		String[] fqs = req.getParameterValues("fq");

@@ -129,8 +129,10 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	 * sets the vo off of the req object
 	 * @param req
 	 */
+	@Override
 	protected void setData(ActionRequest req) {
 		//don't default creator_profile_id to current user, for insights
+		setCreatorProfileId(req.getParameter("creatorProfileId"));
 		setInsightId(req.getParameter("insightId"));
 		setCreatorProfileId(req.getParameter("creatorProfileId"));
 		if (StringUtil.isEmpty(insightId)) setInsightId(req.getParameter("pkId"));
@@ -148,7 +150,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 		setPublishDt(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("publishDt")));	
 
 		//only want to see the publish date to today if the status is publish and the 
-		//date feild is null
+		//date field is null
 		if(InsightStatusCd.P.toString().equals(statusCd) && publishDt == null) {
 			setPublishDt(new Date());
 		}
@@ -260,6 +262,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	/**
 	 * @return the creatorProfileId
 	 */
+	@Override
 	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;
@@ -390,6 +393,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	/**
 	 * @return the updateDt
 	 */
+	@Override
 	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
@@ -545,6 +549,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	/**
 	 * @param createDt the createDt to set
 	 */
+	@Override
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
 	}
