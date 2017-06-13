@@ -9,6 +9,19 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
+
+/****************************************************************************
+ * <b>Title</b>: DashboardAction.java
+ * <b>Project</b>: WC_Custom
+ * <b>Description: </b> Passes along information for a solr search specified by 
+ * the admin controller.
+ * <b>Copyright:</b> Copyright (c) 2017
+ * <b>Company:</b> Silicon Mountain Technologies
+ * @author Billy Larsen
+ * @version 1.0
+ * @since Jun 13, 2017
+ ****************************************************************************/
+
 public class DashboardAction extends SBActionAdapter {
 
 	public DashboardAction() {
@@ -20,10 +33,8 @@ public class DashboardAction extends SBActionAdapter {
 	}
 	
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("Searching");
 		// Pass along the proper information for a search to be done.
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		log.debug(actionInit);
     	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
     	req.setParameter("pmid", mod.getPageModuleId());
     	String search = StringUtil.checkVal(req.getParameter("searchData"));
