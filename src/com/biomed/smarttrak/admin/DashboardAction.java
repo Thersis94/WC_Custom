@@ -35,19 +35,19 @@ public class DashboardAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		// Pass along the proper information for a search to be done.
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
-    	req.setParameter("pmid", mod.getPageModuleId());
-    	String search = StringUtil.checkVal(req.getParameter("searchData"));
-    	
-    	req.setParameter("searchData", search.toLowerCase());
-	
-    	// Build the solr action
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
+		req.setParameter("pmid", mod.getPageModuleId());
+		String search = StringUtil.checkVal(req.getParameter("searchData"));
+		
+		req.setParameter("searchData", search.toLowerCase());
+		
+		// Build the solr action
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		sa.retrieve(req);
 		
-    	req.setParameter("searchData", search);
+		req.setParameter("searchData", search);
 	}
 
 }
