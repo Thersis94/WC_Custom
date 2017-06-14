@@ -238,7 +238,7 @@ public class UpdatesAction extends AuthorAction {
 			if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) ps.setString(i++, reqParams.get(UPDATE_ID));
 			if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) ps.setString(i++, reqParams.get(STATUS_CD));
 			if (!StringUtil.isEmpty(reqParams.get(TYPE_CD)))  ps.setInt(i++, Convert.formatInteger((String)reqParams.get(TYPE_CD)));
-			if (!StringUtil.isEmpty(reqParams.get(SEARCH)))  ps.setString(i++, "%" + reqParams.get(SEARCH) + "%");
+			if (!StringUtil.isEmpty(reqParams.get(SEARCH)))  ps.setString(i++, "%" + reqParams.get(SEARCH).toLowerCase() + "%");
 			if (!StringUtil.isEmpty(reqParams.get(CREATOR_PROFILE_ID)))  ps.setString(i, reqParams.get(CREATOR_PROFILE_ID));
 
 			ResultSet rs = ps.executeQuery();
