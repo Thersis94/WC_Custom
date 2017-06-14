@@ -16,6 +16,7 @@ import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
 import com.biomed.smarttrak.vo.InsightXRVO;
 import com.biomed.smarttrak.vo.UserVO;
+
 //SMT baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -23,12 +24,18 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.filter.fileupload.ProfileDocumentFileManagerStructureImpl;
+import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
+
 //WebCrescendo
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -48,6 +55,7 @@ public class InsightAction extends AuthorAction {
 	protected static final String INSIGHT_ID = "insightId"; //req param
 	public static final String TITLE_BYPASS = "titleBypass"; //req param
 	public static final String ROOT_NODE_ID = AbstractTreeAction.MASTER_ROOT;
+	public static final String INSIGHTS_DIRECTORY_PATH = "/featuredImage";
 	private Map<String, String> sortMapper;
 
 	protected enum Fields {
@@ -76,7 +84,8 @@ public class InsightAction extends AuthorAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("insight retrieve called");
-		
+		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+
 		if (req.hasParameter("loadData") || req.hasParameter(INSIGHT_ID) ) {
 			req.setParameter(TITLE_BYPASS, StringUtil.checkVal(true));
 			if (req.hasParameter(INSIGHT_ID)){
@@ -84,6 +93,25 @@ public class InsightAction extends AuthorAction {
 			}
 			loadInsightsData(req);
 		}
+
+		setupAttributes(modVo);
+		setAttribute(Constants.MODULE_DATA, modVo);
+	}
+
+	/**
+	 * sets a file upload token to the class
+	 * @param modVo
+	 */
+	public void setupAttributes(ModuleVO modVo) {
+		String fileToken = null;
+		try {
+			fileToken = ProfileDocumentFileManagerStructureImpl.makeDocToken((String)getAttribute(Constants.ENCRYPT_KEY));
+		} catch (EncryptionException e) {
+			log.error("could not generate fileToken", e);
+		}
+		modVo.setAttribute("filePrefix", INSIGHTS_DIRECTORY_PATH);
+		modVo.setAttribute(ProfileDocumentFileManagerStructureImpl.DOC_TOKEN, fileToken );
+		log.debug("set doc token: " + fileToken);
 	}
 
 	/**
@@ -110,7 +138,7 @@ public class InsightAction extends AuthorAction {
 		insightParamsMap.put(Fields.ID_BYPASS, "false");
 
 		List<Object> insights;
-		
+
 		insights = getInsights(insightParamsMap);
 
 		decryptNames(insights);
@@ -187,7 +215,6 @@ public class InsightAction extends AuthorAction {
 	 * @return
 	 */
 	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
-
 		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
 		if (!StringUtil.isEmpty(insightId)) insightParamsMap.put(Fields.INSIGHT_ID, insightId );
 		if (!StringUtil.isEmpty(statusCd)) insightParamsMap.put(Fields.STATUS_CD, statusCd);
@@ -200,7 +227,7 @@ public class InsightAction extends AuthorAction {
 
 		return getInsights (insightParamsMap);
 	}
-	
+
 	/**
 	 * used to pull back a list of insights based on the codes and types. sets a id bypass to true
 	 * and will return all the insight data for each insight in the list, if you do not require 
@@ -212,7 +239,6 @@ public class InsightAction extends AuthorAction {
 	 * @return
 	 */
 	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange, boolean idBypass) {
-
 		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
 		if (!StringUtil.isEmpty(insightId)) insightParamsMap.put(Fields.INSIGHT_ID, insightId );
 		if (!StringUtil.isEmpty(statusCd)) insightParamsMap.put(Fields.STATUS_CD, statusCd);
@@ -237,14 +263,13 @@ public class InsightAction extends AuthorAction {
 	@SuppressWarnings("unchecked")
 	public List<Object> getInsights(Map<Fields, String> insightParamsMap) {
 		boolean tb = insightParamsMap.containsKey(Fields.TITLE_BYPASS) && Convert.formatBoolean(insightParamsMap.get(Fields.TITLE_BYPASS));
-		
+
 		Map<String, String> authorTitles = new HashMap<>();
 		if (!tb){
 			//Load Authors.
 			authorTitles = loadAuthorTitles();
 		}
 
-			
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String sql = formatRetrieveQuery(insightParamsMap, schema);
 
@@ -253,14 +278,24 @@ public class InsightAction extends AuthorAction {
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
 
-		
 		for (Object ob : insights){
 			InsightVO vo = (InsightVO)ob;
 			vo.setQsPath((String)getAttribute(Constants.QS_PATH));
 			if(!tb && authorTitles.containsKey(vo.getCreatorProfileId())) {
 				vo.setCreatorTitle(authorTitles.get(vo.getCreatorProfileId()));
 			}
-			
+
+			ProfileDocumentAction pda = new ProfileDocumentAction();
+			pda.setAttributes(attributes);
+			pda.setDBConnection(dbConn);
+			pda.setActionInit(actionInit);
+
+			try {
+				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getInsightId()));
+				log.debug(" doc size " + vo.getProfileDocuments().size());
+			} catch (ActionException e) {
+				log.error("error loading profile documents",e);
+			}
 		}
 
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
@@ -477,8 +512,11 @@ public class InsightAction extends AuthorAction {
 					ivo = loadInsight(ivo);
 				}else {
 					saveInsight(db, ivo);
+
+					saveProfileDoc(req, ivo);
+
 				}
-				
+
 				publishChangeToSolr(ivo);
 			}
 			req.setParameter(INSIGHT_ID, ivo.getInsightId());
@@ -486,6 +524,55 @@ public class InsightAction extends AuthorAction {
 			throw new ActionException(e);
 		}
 	}
+
+	/**
+	 * if there is a profile doc on the insight saves it
+	 * @param ivo 
+	 * @param req 
+	 */
+	private void saveProfileDoc(ActionRequest req, InsightVO ivo) {
+
+		if (StringUtil.isEmpty(ivo.getFeaturedImageTxt())) return;
+
+		SMTSession ses = req.getSession();
+		UserVO user = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		log.debug("user id = " + user.getUserId());
+		ivo.setUserId(user.getUserId());
+
+		processProfileDocumentCreation(ivo, req, user.getProfileId());
+
+	}
+
+	/**
+	 * this method will make and save a profile document entry for the new insight.
+	 * @param vo
+	 * @param req
+	 * @param profileId 
+	 */
+	protected void processProfileDocumentCreation(InsightVO vo, ActionRequest req, String profileId) {
+		log.debug("process profile document creation called ");
+		ProfileDocumentAction pda = new ProfileDocumentAction();
+		pda.setAttributes(attributes);
+		pda.setDBConnection(dbConn);
+		pda.setActionInit(actionInit);
+
+		String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
+
+		req.setParameter("profileId", profileId);
+		req.setParameter("featureId", vo.getInsightId());
+		req.setParameter("organizationId", orgId);
+		req.setParameter("actionId", actionInit.getActionId());
+
+		try {
+			//deletes all records and files related to this featured id
+			pda.deleteByFeaturedId(vo.getInsightId(), orgId);
+			//adds the new record and file
+			pda.build(req);
+		} catch (ActionException e) {
+			log.error("error occured during profile document generation " , e);
+		}
+	}
+
 
 	/**
 	 * Helper method loads Author Data.  Slightly Different for one case, we can
@@ -512,10 +599,10 @@ public class InsightAction extends AuthorAction {
 	private InsightVO loadInsight(InsightVO ivo) {
 		List<Object> insights = getInsights(ivo.getInsightId(), null, null, null);
 		if(!insights.isEmpty()) ivo = (InsightVO) insights.get(0);
-		
+
 		return ivo;
 	}
-	
+
 	/**
 	 * write to or removes from solr based on status code
 	 * @param ivo
