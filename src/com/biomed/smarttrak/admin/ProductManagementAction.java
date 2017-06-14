@@ -232,6 +232,7 @@ public class ProductManagementAction extends AuthorAction {
 	 * Get regulations associated with a product or an id
 	 */
 	protected void retrieveRegulatory(ActionRequest req) {
+		
 		StringBuilder sql = new StringBuilder(475);
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		List<Object> params = new ArrayList<>();
@@ -245,10 +246,8 @@ public class ProductManagementAction extends AuthorAction {
 		sql.append("ON p.PATH_ID = r.PATH_ID ");
 		sql.append("WHERE r.PRODUCT_ID = ? ");
 		params.add(req.getParameter("productId"));
-		if (req.hasParameter("regulatoryId")) {
-			sql.append("and r.REGULATORY_ID = ? ");
-			params.add(req.getParameter("regulatoryId"));
-		}
+		sql.append("and r.REGULATORY_ID = ? ");
+		params.add(req.getParameter("regulatoryId"));
 		
 		DBProcessor db = new DBProcessor(dbConn);
 		
