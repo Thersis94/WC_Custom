@@ -73,7 +73,7 @@ public class CourseSolrTemplate extends SolrDocumentVO {
 		
 		//save Specialty into categories - these match the values in Registration for Specialty
 		for (String s : StringUtil.checkVal(vo.getSPECIALTYLIST()).split(","))
-			super.addCategories(s.trim().toUpperCase()); //upper-case these for equality to what we keep in Registration
+			super.addCategory(s.trim().toUpperCase()); //upper-case these for equality to what we keep in Registration
 	}
 	
 	

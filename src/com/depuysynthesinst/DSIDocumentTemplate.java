@@ -1,11 +1,13 @@
 package com.depuysynthesinst;
 
+import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.content.DocumentSolrVO;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
- * <b>Title</b>: QuickstreamTemplate.java<p/>
+ * <b>Title</b>: DSIDocumentTemplate.java<p/>
  * <b>Description: </b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2015<p/>
@@ -14,86 +16,42 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @version 1.0
  * @since Mar 1, 2015
  ****************************************************************************/
-public class QuickstreamTemplate {
-	//TODO - depuy-wc |JC| This class did extend CMSSolrDocumentVO
+public class DSIDocumentTemplate extends DocumentSolrVO {
 
 	private String assetType;
 	protected String assetUrl;
 	private String trackingNo;
-	
-	/**
-	 * @param solrIndex
-	 */
-	public QuickstreamTemplate(String indexType) {
-		//TODO - depuy-wc|JC| Called the super doc
-		//super(indexType);
-	}
-	
-	public QuickstreamTemplate() {
-		super();
-	}
-	
-	
-	/**
-	 * extension of superclass implementation; for DSI-specific template fields
-	 */
-	public void setData(Object o) {
-		//TODO - depuy-wc|JC| Commented a lot of code here.  Needs to be reviewed
-		//this is for debugging; trying to track down an NPE - JM 03.26.15
-		if (o == null) {
-			//log.error("passed a null vo, figure out why.");
-			return;
-		}
-		//super.setData(o);
-		//CMSContentVO vo = (CMSContentVO) o;
-		/*
-		TemplateFieldVOContainer templateData = null; //vo.getTemplateData();
-		//this is for debugging; trying to track down an NPE - JM 03.26.15
-		if (templateData == null) {
-			//log.error("no template data passed on VO");
-			return;
-		}
-		
-		//if (vo.getArticle() != null)
-		//	super.setSummary(StringUtil.checkVal(vo.getArticle().toString()));
-		
-		
-		//some core fields are provided here-in:
-		for (TemplateFieldVO field : templateData.getContainerData()) {
-			if (field == null || field.getFieldName() == null) continue;
 
-			switch (field.getFieldName()) {
-				case "Hierarchy":
-					this.parseHierarchies(StringUtil.checkVal(field.getFieldValue()));
-					break;
-				case "Asset URL":
-					setAssetUrl(StringUtil.checkVal(field.getFieldValue()));
-					break;
-				case "Tracking Number":
-					setTrackingNo(StringUtil.checkVal(field.getFieldValue()));
-					break;
-				case "Asset Type":
-					setAssetType(StringUtil.checkVal(field.getFieldValue())); 
-					break;
-			}
-		} */
+	public DSIDocumentTemplate() {
+		super();
+		this.initDSI(); //'this' used intentionally
 	}
-	
-	
-	private void parseHierarchies(String val) {
-		StringBuilder sb = null;
-		for (String s : val.split("~")) { //the ~ here is NOT our hierarchy delimiter; it comes from MediaBin's business rules, not ours.
-    			//need to tokenize the levels and trim spaces from each, the MB team are slobs!
-    			sb = new StringBuilder();
-    			for (String subStr : s.split(",")) {
-    				sb.append(StringUtil.checkVal(subStr).trim()).append(SearchDocumentHandler.HIERARCHY_DELIMITER);
-    			}
-    			if (sb.length() >= SearchDocumentHandler.HIERARCHY_DELIMITER.length())
-    				sb.deleteCharAt(sb.length()-SearchDocumentHandler.HIERARCHY_DELIMITER.length());
-    			
-    			//TODO - depuy-wc|JC|commented this out form CMS Removal
-    			//super.addHierarchies(sb.toString());
-    		}
+
+	/**
+	 * populates some custom meta-data setter methods for the superclass to invoke dynamically.
+	 * put in an init method because we have two constructors that both need to support this. 
+	 */
+	private final void initDSI() {
+		attributeSetters.put("Hierarchy", "parseHierarchies");
+		attributeSetters.put("Asset URL", "setAssetUrl");
+		attributeSetters.put("Tracking Number", "setTrackingNo");
+		attributeSetters.put("Asset Type", "setAssetType");
+	}
+
+
+	public void parseHierarchies(String val) {
+		StringBuilder sb;
+		for (String s : val.split(DSMediaBinImporterV2.TOKENIZER)) { //the ~ comes from MediaBin's business rules, not ours.
+			//need to tokenize the levels and trim spaces from each, the MB team are slobs!
+			sb = new StringBuilder(200);
+			for (String subStr : s.split(",")) {
+				sb.append(StringUtil.checkVal(subStr).trim()).append(SearchDocumentHandler.HIERARCHY_DELIMITER);
+			}
+			if (sb.length() >= SearchDocumentHandler.HIERARCHY_DELIMITER.length())
+				sb.deleteCharAt(sb.length()-SearchDocumentHandler.HIERARCHY_DELIMITER.length());
+
+			super.addHierarchies(sb.toString());
+		}
 	}
 
 
@@ -101,31 +59,30 @@ public class QuickstreamTemplate {
 	public String getAssetType() {
 		return assetType;
 	}
-
 	public void setAssetType(String assetType) {
 		this.assetType = assetType;
 	}
 
-	/*
+
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
+	@Override
 	public String getDocumentUrl() {
 		//if there is nothing in assetUrl, return documentUrl, which is the /docs/ path to a likely XLS or PDF file
-		if (assetUrl != null && assetUrl.length() > 0) {
+		if (!StringUtil.isEmpty(assetUrl)) {
 			return assetUrl;
 		} else {
 			return super.getDocumentUrl();
 		}
-	} */
-
+	}
 	public void setAssetUrl(String assetUrl) {
 		this.assetUrl = assetUrl;
 	}
+
 
 	@SolrField(name="trackingNumber_s")
 	public String getTrackingNo() {
 		return trackingNo;
 	}
-
 	public void setTrackingNo(String trackingNo) {
 		this.trackingNo = trackingNo;
 	}
