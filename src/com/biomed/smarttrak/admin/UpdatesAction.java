@@ -291,18 +291,56 @@ public class UpdatesAction extends AuthorAction {
 	 */
 	public static String formatRetrieveQuery(Map<String, String> reqParams, String schema, boolean isList, boolean isCount) {
 		StringBuilder sql = new StringBuilder(800);
-		sql.append("select ");
-		if (isCount) {
-			sql.append("count(*) ");
-		} else {
-			sql.append("a.*, p.first_nm, p.last_nm, ");
-			if(isList) {
-				sql.append("s.wc_sync_id ");
-			} else {
-				sql.append("m.market_nm, c.company_nm, pr.product_nm, b.section_id, b.update_section_xr_id ");
-			}
+		
+		sql.append(buildSelectClause(isList, isCount));
+
+		sql.append(buildFromClause(isList, schema));
+		
+		sql.append(buildWhereClause(reqParams));
+		
+		if (!isCount) {
+			sql.append("order by ").append(reqParams.get(SORT)).append(" ").append(reqParams.get(ORDER));
+			sql.append(" limit ? offset ? ");
 		}
 
+		log.debug(sql);
+		return sql.toString();
+	}
+
+
+	/**
+	 * Build the where clause from the request parameters
+	 * @param reqParams
+	 * @return
+	 */
+	private static String buildWhereClause(Map<String, String> reqParams) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("where 1=1 ");
+		if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) sql.append("and a.update_id=? ");
+		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) sql.append("and a.status_cd=? ");
+		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) sql.append("and a.type_cd=? ");
+		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) sql.append("and lower(a.title_txt) like ? ");
+		if (!StringUtil.isEmpty(reqParams.get(CREATOR_PROFILE_ID))) sql.append("and creator_profile_id = ? ");
+		String dateRange = reqParams.get(DATE_RANGE);
+		if (!StringUtil.isEmpty(dateRange)) {
+			if ("1".equals(dateRange)) {
+				sql.append("and a.create_dt > CURRENT_DATE - INTERVAL '6 months' ");
+			} else if ("2".equals(dateRange)) {
+				sql.append("and a.create_dt < CURRENT_DATE - INTERVAL '6 months' ");
+			}
+		}
+		return sql.toString();
+	}
+	
+
+	/**
+	 * Build the from clause based on whether it is a list request or not.
+	 * @param isList
+	 * @param schema
+	 * @return
+	 */
+	private static String buildFromClause(boolean isList, String schema) {
+		StringBuilder sql = new StringBuilder(300);
 		sql.append("from ").append(schema).append("biomedgps_update a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		if(isList) {
@@ -319,30 +357,31 @@ public class UpdatesAction extends AuthorAction {
 			sql.append("left outer join ").append(schema).append("biomedgps_product pr ");
 			sql.append("on a.product_id=pr.product_id ");
 		}
-		sql.append("where 1=1 ");
-		if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) sql.append("and a.update_id=? ");
-		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) sql.append("and a.status_cd=? ");
-		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) sql.append("and a.type_cd=? ");
-		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) sql.append("and lower(a.title_txt) like ? ");
-		if (!StringUtil.isEmpty(reqParams.get(CREATOR_PROFILE_ID))) sql.append("and creator_profile_id = ? ");
-		String dateRange = reqParams.get(DATE_RANGE);
-		if (!StringUtil.isEmpty(dateRange)) {
-			if ("1".equals(dateRange)) {
-				sql.append("and a.create_dt > CURRENT_DATE - INTERVAL '6 months' ");
-			} else if ("2".equals(dateRange)) {
-				sql.append("and a.create_dt < CURRENT_DATE - INTERVAL '6 months' ");
-			}
-		}
-		
-		if (!isCount) {
-			sql.append("order by ").append(reqParams.get(SORT)).append(" ").append(reqParams.get(ORDER));
-			sql.append(" limit ? offset ? ");
-		}
-
-		log.debug(sql);
 		return sql.toString();
 	}
 
+	/**
+	 * Build the select clause based on whether this is 
+	 * a list select and whether it is a count select.
+	 * @param isList
+	 * @param isCount
+	 * @return
+	 */
+	private static String buildSelectClause(boolean isList, boolean isCount) {
+		StringBuilder sql = new StringBuilder(50);
+		sql.append("select ");
+		if (isCount) {
+			sql.append("count(*) ");
+		} else {
+			sql.append("a.*, p.first_nm, p.last_nm, ");
+			if(isList) {
+				sql.append("s.wc_sync_id ");
+			} else {
+				sql.append("m.market_nm, c.company_nm, pr.product_nm, b.section_id, b.update_section_xr_id ");
+			}
+		}
+		return sql.toString();
+	}
 
 	/**
 	 * loop and decrypt owner names, which came from the profile table
