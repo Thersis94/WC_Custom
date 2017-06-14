@@ -148,19 +148,13 @@ public class ProductExplorer extends SBActionAdapter {
 	/**
 	 * Build a text representation of the filters applied to the search
 	 */
-	private void buildFilterList(ActionRequest req, SolrResponseVO resp) {
+	private void buildFilterList(ActionRequest req) {
 		StringBuilder text = new StringBuilder(512);
 		buildQueryFilters(text, req);
 		if (req.hasParameter("selNodes")) {
 			text.append(buildHierarchyFilters(req));
 		} else {
-			text.append("Any hierarchy section. ");
-		}
-		if (resp.getTotalResponses() > 0) {
-			text.append(" ").append(resp.getTotalResponses()).append(" products/brands and ");
-			text.append(resp.getFacetByName("company_s").size()).append(" companies found.");
-		} else {
-			text.append(" Nothing was found.");
+			text.append("All Markets.");
 		}
 		req.getSession().setAttribute("filterList", text.toString());
 	}
@@ -180,11 +174,11 @@ public class ProductExplorer extends SBActionAdapter {
 		StringBuilder part = new StringBuilder(128);
 		for (String s : req.getParameterValues("selNodes")) {
 			Node n = t.findNode(s);
-			if (n == null) continue;
+			if (n == null || n.getDepthLevel() == 2) continue;
 			if (part.length() < 2) {
-				part.append("Hierarchy Sections are ");
+				part.append("in ");
 			} else {
-				part.append(" or ");
+				part.append(", ");
 			}
 			part.append(n.getNodeName());
 		}
