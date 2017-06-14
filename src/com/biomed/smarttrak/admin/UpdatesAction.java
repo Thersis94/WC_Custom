@@ -228,7 +228,6 @@ public class UpdatesAction extends AuthorAction {
 	 */
 	protected int getUpdateCount(ActionRequest req, String schema) {
 		int count = 0;
-		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
 
 		Map<String, String> reqParams = getReqParams(req);
 		String sql = formatRetrieveQuery(reqParams, schema, true, true);
@@ -290,7 +289,7 @@ public class UpdatesAction extends AuthorAction {
 	 * Formats the Update retrieval query.
 	 * @return
 	 */
-	public static String formatRetrieveQuery(Map<String, String> reqParams, String schema, boolean isList) {
+	public static String formatRetrieveQuery(Map<String, String> reqParams, String schema, boolean isList, boolean isCount) {
 		StringBuilder sql = new StringBuilder(800);
 		sql.append("select ");
 		if (isCount) {
