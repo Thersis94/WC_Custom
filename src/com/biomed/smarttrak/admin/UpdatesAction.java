@@ -143,7 +143,7 @@ public class UpdatesAction extends AuthorAction {
 		Map<String, String> reqParams = getReqParams(req);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
-		String sql = formatRetrieveQuery(reqParams, schema, req.hasParameter("loadData"));
+		String sql = formatRetrieveQuery(reqParams, schema, req.hasParameter("loadData"), false);
 
 		List<Object> params = new ArrayList<>();
 		if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) params.add(reqParams.get(UPDATE_ID));
@@ -228,14 +228,16 @@ public class UpdatesAction extends AuthorAction {
 		int count = 0;
 		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
 
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select count(*) from ").append(schema).append("biomedgps_update ");
-		if (search.length() > 0) sql.append("where upper(title_txt) like ? ");
+		Map<String, String> reqParams = getReqParams(req);
+		String sql = formatRetrieveQuery(reqParams, schema, true, true);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			if (search.length() > 0) {
-				ps.setString(1, "%" + search + "%");
-			}
+			int i = 1;
+			
+			if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) ps.setString(i++, reqParams.get(UPDATE_ID));
+			if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) ps.setString(i++, reqParams.get(STATUS_CD));
+			if (!StringUtil.isEmpty(reqParams.get(TYPE_CD)))  ps.setInt(i++, Convert.formatInteger((String)reqParams.get(TYPE_CD)));
+			if (!StringUtil.isEmpty(reqParams.get(SEARCH)))  ps.setString(i, "%" + reqParams.get(SEARCH) + "%");
 
 			ResultSet rs = ps.executeQuery();
 			rs.next();
@@ -285,14 +287,18 @@ public class UpdatesAction extends AuthorAction {
 	 * Formats the Update retrieval query.
 	 * @return
 	 */
-	public static String formatRetrieveQuery(Map<String, String> reqParams, String schema, boolean isList) {
+	public static String formatRetrieveQuery(Map<String, String> reqParams, String schema, boolean isList, boolean isCount) {
 		StringBuilder sql = new StringBuilder(800);
-		sql.append("select a.*, p.first_nm, p.last_nm, ");
-
-		if(isList) {
-			sql.append("s.wc_sync_id ");
+		sql.append("select ");
+		if (isCount) {
+			sql.append("count(*) ");
 		} else {
-			sql.append("m.market_nm, c.company_nm, pr.product_nm, b.section_id, b.update_section_xr_id ");
+			sql.append("a.*, p.first_nm, p.last_nm, ");
+			if(isList) {
+				sql.append("s.wc_sync_id ");
+			} else {
+				sql.append("m.market_nm, c.company_nm, pr.product_nm, b.section_id, b.update_section_xr_id ");
+			}
 		}
 
 		sql.append("from ").append(schema).append("biomedgps_update a ");
@@ -324,8 +330,11 @@ public class UpdatesAction extends AuthorAction {
 				sql.append("and a.create_dt < CURRENT_DATE - INTERVAL '6 months' ");
 			}
 		}
-		sql.append("order by ").append(reqParams.get(SORT)).append(" ").append(reqParams.get(ORDER));
-		sql.append(" limit ? offset ? ");
+		
+		if (!isCount) {
+			sql.append("order by ").append(reqParams.get(SORT)).append(" ").append(reqParams.get(ORDER));
+			sql.append(" limit ? offset ? ");
+		}
 
 		log.debug(sql);
 		return sql.toString();
