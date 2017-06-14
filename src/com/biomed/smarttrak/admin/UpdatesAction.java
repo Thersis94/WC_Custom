@@ -232,7 +232,7 @@ public class UpdatesAction extends AuthorAction {
 		Map<String, String> reqParams = getReqParams(req);
 		String sql = formatRetrieveQuery(reqParams, schema, true, true);
 
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
 			
 			if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) ps.setString(i++, reqParams.get(UPDATE_ID));
