@@ -326,11 +326,13 @@ public class MarketManagementAction extends AuthorAction {
 	protected void retrieveMarkets(ActionRequest req) throws ActionException {
 		List<Object> params = new ArrayList<>();
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select * FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
+		StringBuilder sql = new StringBuilder(300);
+		sql.append("select m.*, s.* FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = m.REGION_CD ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_SECTION ms ");
 		sql.append("ON m.MARKET_ID = ms.MARKET_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
+		sql.append("ON s.SECTION_ID = ms.SECTION_ID ");
 		sql.append("WHERE 1=1 ");
 
 		// If the request has search terms on it add them here
