@@ -148,7 +148,7 @@ public class ProductExplorer extends SBActionAdapter {
 	/**
 	 * Build a text representation of the filters applied to the search
 	 */
-	private void buildFilterList(ActionRequest req, SolrResponseVO resp) {
+	private void buildFilterList(ActionRequest req) {
 		StringBuilder text = new StringBuilder(512);
 		buildQueryFilters(text, req);
 		if (req.hasParameter("selNodes")) {
