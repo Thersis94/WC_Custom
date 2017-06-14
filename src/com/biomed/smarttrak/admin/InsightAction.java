@@ -52,9 +52,10 @@ public class InsightAction extends AuthorAction {
 
 	protected enum Fields {
 		INSIGHT_ID, STATUS_CD, TYPE_CD, DATE_RANGE, START, RPP, SORT, ORDER,
-		SEARCH, ID_BYPASS, TITLE_BYPASS;
+		SEARCH, ID_BYPASS, TITLE_BYPASS, CREATOR_PROFILE_ID;
 	}
 
+	
 	public InsightAction() {
 		super();
 		sortMapper = new HashMap<>();
@@ -102,6 +103,8 @@ public class InsightAction extends AuthorAction {
 		if (req.hasParameter("typeCd")) insightParamsMap.put(Fields.TYPE_CD, req.getParameter("typeCd"));
 		if (req.hasParameter("dateRange")) insightParamsMap.put(Fields.DATE_RANGE, req.getParameter("dateRange"));
 		if (req.hasParameter(TITLE_BYPASS)) insightParamsMap.put(Fields.TITLE_BYPASS, req.getParameter(TITLE_BYPASS));
+		if (req.hasParameter("authorId")) insightParamsMap.put(Fields.CREATOR_PROFILE_ID, req.getParameter("authorId"));
+		log.debug(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
 		insightParamsMap.put(Fields.START, req.getParameter("offset", "0"));
 		insightParamsMap.put(Fields.RPP, req.getParameter("limit","10"));
 		insightParamsMap.put(Fields.SORT, StringUtil.checkVal(sortMapper.get(req.getParameter("sort")), "publish_dt"));
@@ -281,6 +284,8 @@ public class InsightAction extends AuthorAction {
 
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.SEARCH)))
 			params.add(StringUtil.checkVal("%"+insightParamsMap.get(Fields.SEARCH)+"%"));
+		
+		if (insightParamsMap.containsKey(Fields.CREATOR_PROFILE_ID)) params.add(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
 
 		if (insightParamsMap.containsKey(Fields.RPP) && insightParamsMap.containsKey(Fields.START)){
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.RPP)));
@@ -359,6 +364,9 @@ public class InsightAction extends AuthorAction {
 
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.SEARCH)))
 			sql.append("and upper(title_txt) like ? "); 
+		
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.CREATOR_PROFILE_ID)))
+			sql.append("and a.creator_profile_id=? ");
 	}
 
 	/**

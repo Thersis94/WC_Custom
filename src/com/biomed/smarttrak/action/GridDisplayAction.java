@@ -109,10 +109,11 @@ public class GridDisplayAction extends SBActionAdapter {
 	 * @param req If a mapping is found, the gridId on the request object is overridden with the new value
 	 */
 	public void lookupTableMap(ActionRequest req) {
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(164);
 		sql.append("select grid_id "); 
-		sql.append("from custom.grid_table_map a ") ;
-		sql.append("inner join custom.biomedgps_grid b on a.slug_txt = b.slug_txt ");
+		sql.append("from ").append(schema).append("biomedgps_grid_table_map a ") ;
+		sql.append("inner join ").append(schema).append("biomedgps_grid b on a.slug_txt = b.slug_txt ");
 		sql.append("where lower(a.grid_graphic_id) = lower(?) ");
 		
 		List<Object> params =  Arrays.asList(new Object[]{req.getParameter("gridId")});
@@ -233,9 +234,9 @@ public class GridDisplayAction extends SBActionAdapter {
 	private void modifyLabel(GridVO grid) {
 		// Add up all values to see if the chart was generated
 		// with percentages instead of actual values.
-		int total = 0;
+		Double total = 0.0;
 		for (GridDetailVO detail : grid.getDetails()) {
-			total += Convert.formatInteger(detail.getValue1(), 0);
+			total += Convert.formatDouble(detail.getValue1(), 0);
 		}
 		
 		// If the total is 100 the percentage is functionally 

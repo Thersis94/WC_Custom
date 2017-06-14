@@ -45,6 +45,7 @@ public class UpdatesAction extends AuthorAction {
 	public static final String STATUS_CD = "statusCd"; //req param
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
+	public static final String CREATOR_PROFILE_ID = "authorId"; //req param
 	public static final String ROOT_NODE_ID = MASTER_ROOT;
 	public static final int INIT_DISPLAY_LIMIT = 15; //initial display limit
 
@@ -150,6 +151,7 @@ public class UpdatesAction extends AuthorAction {
 		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) params.add(reqParams.get(STATUS_CD));
 		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) params.add(Convert.formatInteger((String)reqParams.get(TYPE_CD)));
 		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) params.add("%" + reqParams.get(SEARCH).toLowerCase() + "%");
+		if (!StringUtil.isEmpty(reqParams.get(CREATOR_PROFILE_ID))) params.add(reqParams.get(CREATOR_PROFILE_ID));
 		params.add(rpp);
 		params.add(start);
 
@@ -237,7 +239,8 @@ public class UpdatesAction extends AuthorAction {
 			if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) ps.setString(i++, reqParams.get(UPDATE_ID));
 			if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) ps.setString(i++, reqParams.get(STATUS_CD));
 			if (!StringUtil.isEmpty(reqParams.get(TYPE_CD)))  ps.setInt(i++, Convert.formatInteger((String)reqParams.get(TYPE_CD)));
-			if (!StringUtil.isEmpty(reqParams.get(SEARCH)))  ps.setString(i, "%" + reqParams.get(SEARCH) + "%");
+			if (!StringUtil.isEmpty(reqParams.get(SEARCH)))  ps.setString(i++, "%" + reqParams.get(SEARCH) + "%");
+			if (!StringUtil.isEmpty(reqParams.get(CREATOR_PROFILE_ID)))  ps.setString(i, reqParams.get(CREATOR_PROFILE_ID));
 
 			ResultSet rs = ps.executeQuery();
 			rs.next();
@@ -287,7 +290,7 @@ public class UpdatesAction extends AuthorAction {
 	 * Formats the Update retrieval query.
 	 * @return
 	 */
-	public static String formatRetrieveQuery(Map<String, String> reqParams, String schema, boolean isList, boolean isCount) {
+	public static String formatRetrieveQuery(Map<String, String> reqParams, String schema, boolean isList) {
 		StringBuilder sql = new StringBuilder(800);
 		sql.append("select ");
 		if (isCount) {
@@ -322,6 +325,7 @@ public class UpdatesAction extends AuthorAction {
 		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) sql.append("and a.status_cd=? ");
 		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) sql.append("and a.type_cd=? ");
 		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) sql.append("and lower(a.title_txt) like ? ");
+		if (!StringUtil.isEmpty(reqParams.get(CREATOR_PROFILE_ID))) sql.append("and creator_profile_id = ? ");
 		String dateRange = reqParams.get(DATE_RANGE);
 		if (!StringUtil.isEmpty(dateRange)) {
 			if ("1".equals(dateRange)) {

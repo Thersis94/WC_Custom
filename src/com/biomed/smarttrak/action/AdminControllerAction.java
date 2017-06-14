@@ -16,6 +16,7 @@ import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.AuditLogAction;
 import com.biomed.smarttrak.admin.CRMAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
+import com.biomed.smarttrak.admin.DashboardAction;
 import com.biomed.smarttrak.admin.EditorsDeskAction;
 import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
@@ -190,6 +191,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("emailConfig", UpdatesEmailSendAction.class);
 		ACTIONS.put("searchUtil", SearchUtilAction.class);
 		ACTIONS.put("feeds", CustomRSSFacadeAction.class);
+		ACTIONS.put("dashboard", DashboardAction.class);
 	}
 
 
@@ -266,6 +268,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		//instantiate the action & return it - pass attributes & dbConn
 		try {
 			ActionInterface action = (ActionInterface) c.newInstance();
+			action.setActionInit(actionInit);
 			action.setDBConnection(dbConn);
 			action.setAttributes(getAttributes());
 			return action;
