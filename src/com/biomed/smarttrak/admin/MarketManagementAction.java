@@ -5,7 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.MarketAction;
@@ -326,6 +329,8 @@ public class MarketManagementAction extends AuthorAction {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select * FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = m.REGION_CD ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_SECTION ms ");
+		sql.append("ON m.MARKET_ID = ms.MARKET_ID ");
 		sql.append("WHERE 1=1 ");
 
 		// If the request has search terms on it add them here
@@ -339,12 +344,69 @@ public class MarketManagementAction extends AuthorAction {
 			sql.append("or m.STATUS_NO = '").append(Status.E.toString()).append("') ");
 		}
 		
+		if (!StringUtil.isEmpty(req.getParameter("authorId"))) {
+			sql.append("and m.creator_profile_id = ? ");
+			params.add(req.getParameter("authorId"));
+		}
+		
 		sql.append("ORDER BY MARKET_NM ");
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(dbConn, customDb);
-		List<Object> markets = db.executeSelect(sql.toString(), params, new MarketVO());
-		putModuleData(markets, markets.size(), false);
+		List<Object> results = db.executeSelect(sql.toString(), params, new MarketVO());
+		List<MarketVO> markets = new ArrayList<>();
+		
+		for (Object o : results) markets.add((MarketVO)o);
+		
+		Map<String, List<MarketVO>> orderedMarkets = orderMarkets(markets);
+		
+		putModuleData(orderedMarkets, markets.size(), false);
+	}
+
+
+	protected Map<String, List<MarketVO>> orderMarkets(List<MarketVO> markets) {
+		Map<String, List<MarketVO>> orderedMarkets = new LinkedHashMap<>();
+		List<Node> hierarchies = loadDefaultTree().getPreorderList();
+		
+		// Loop over the hierarchy and put markets into the map if they match the current node.
+		// Hierarchies are looped over so that the order of items matches the hierarchy structure.
+		for (Node n : hierarchies) {
+			if (n.getDepthLevel() == 2) {
+				orderedMarkets.put(n.getNodeName(), Collections.emptyList());
+				continue;
+			}
+			
+			for (MarketVO market : markets) {
+				if (market.getMarketSection() == null || market.getMarketSection().getSectionId() == null ||
+						!market.getMarketSection().getSectionId().equals(n.getNodeId()))
+					continue;
+				
+				if (n.getDepthLevel() == 3 && !orderedMarkets.keySet().contains(n.getNodeName())) {
+					orderedMarkets.put(n.getNodeName(), new ArrayList<>());
+				} else if (!orderedMarkets.keySet().contains(n.getParentName())) {
+					orderedMarkets.put(n.getParentName(), new ArrayList<>());
+				}
+				
+				if (n.getDepthLevel() == 3) {
+					orderedMarkets.get(n.getNodeName()).add(market);
+				} else {
+					orderedMarkets.get(n.getParentName()).add(market);
+				}
+			}
+		}
+		
+		// Get all markets not associated with any sections
+		// and add them to the last section grouping.
+		orderedMarkets.put("Unsorted", new ArrayList<>());
+		for (MarketVO market : markets) {
+			log.debug(market.getMarketSection().getSectionId()+"|"+market.getMarketSection().getSectionNm());
+			if (market.getMarketSection().getSectionId() == null) {
+				orderedMarkets.get("Unsorted").add(market);
+				log.debug("Added " + market.getMarketName());
+			}
+		}
+		
+		return orderedMarkets;
 	}
 
 
