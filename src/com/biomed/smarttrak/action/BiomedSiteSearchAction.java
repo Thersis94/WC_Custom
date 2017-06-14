@@ -6,6 +6,7 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
@@ -49,6 +50,9 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 	    	List<SolrResponseVO> resp = new ArrayList<>();
 	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 	    	
+	    	String searchData = StringUtil.checkVal(req.getParameter("searchData"));
+	    	req.setParameter("searchData", searchData.toLowerCase(), true);
+	    	
 	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 	    	req.setParameter("pmid", mod.getPageModuleId());
 	    	resp.add(getResults(req));
@@ -57,6 +61,7 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 	    	resp.add(getResults(req));
 		
 		putModuleData(resp);
+    		req.setParameter("searchData", searchData, true);
 	}
 
 	

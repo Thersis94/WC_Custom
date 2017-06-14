@@ -208,12 +208,12 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		SecureSolrDocumentVO company = new SecureSolrDocumentVO(INDEX_TYPE);
 		company.setDocumentId(rs.getString(COMPANY_ID));
 		company.setTitle(rs.getString("COMPANY_NM"));
-		company.addAttribute("shortNm", rs.getString("SHORT_NM_TXT"));
+		SmarttrakSolrUtil.setSearchField(rs.getString("SHORT_NM_TXT"), "shortNm", company);
 		company.addAttribute("status", rs.getString("STATUS_NO"));
 		company.addAttribute("ticker", rs.getString("NAME_TXT"));
 		company.setDocumentUrl(AdminControllerAction.Section.COMPANY.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString(COMPANY_ID));
 		company.addAttribute("productCount", rs.getInt("PRODUCT_NO"));
-		company.addAttribute("parentNm", rs.getString("PARENT_NM"));
+		SmarttrakSolrUtil.setSearchField(rs.getString("PARENT_NM"), "parentNm", company);
 
 		if (rs.getTimestamp("UPDATE_DT") != null) {
 			company.setUpdateDt(rs.getDate("UPDATE_DT"));
