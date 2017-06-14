@@ -72,7 +72,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 					//default case here slips through and returns the asset's documentUrl
 				}
 				
-			case CMS_QUICKSTREAM:
+			case DMS:
 				String cmsType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
 				switch(cmsType) {
 					case "external site":
@@ -136,7 +136,6 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		switch (type) {
 			case COURSE_CAL: return "EVENT";
 			case MEDIA_BIN: return "MEDIABIN";
-			case CMS_QUICKSTREAM: return "CMS";
 			default:
 				return type.toString();
 		}
@@ -197,7 +196,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		} else if (this.getMinRoleLevel() > SecurityController.PUBLIC_ROLE_LEVEL) {
 			//secure assets are not permitted in the Briefcase
 			return false;
-		} else if (IndexType.CMS_QUICKSTREAM == type) {
+		} else if (IndexType.DMS == type) {
 			//need to look at AssetType, only non-html can go into the briefcase
 			String cmsType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
 			switch(cmsType) {

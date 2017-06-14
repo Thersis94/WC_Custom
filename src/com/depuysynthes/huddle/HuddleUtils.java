@@ -165,8 +165,8 @@ public class HuddleUtils {
 		HUDDLE_PRODUCT_CONTACT("Product Contacts"),
 		MEDIA_BIN("Documents"),
 		PRODUCT("Products"),
-		CMS_QUICKSTREAM("Documents"),
 		FORM("Forms"),
+		DMS("Documents"),
 		// Module Types used in the same way as index Types
 		DOCUMENT("Documents"),
 		EVENT("Courses & Events"),
@@ -186,6 +186,7 @@ public class HuddleUtils {
 			try {
 				return IndexType.valueOf(t);
 			} catch (Exception e) {
+				e.printStackTrace();
 				return null;
 			}
 		}
