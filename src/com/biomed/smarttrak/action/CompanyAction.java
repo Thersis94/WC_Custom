@@ -78,7 +78,7 @@ public class CompanyAction extends AbstractTreeAction {
 				throw new ActionNotAuthorizedException("not authorized");
 			}
 			
-			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role);
+			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role, false);
 			if (StringUtil.isEmpty(vo.getCompanyId())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				sbUtil.manualRedirect(req,page.getFullPath());
@@ -100,7 +100,7 @@ public class CompanyAction extends AbstractTreeAction {
 	 * @param companyId
 	 * @throws ActionException
 	 */
-	public CompanyVO retrieveCompany(String companyId, SmarttrakRoleVO role) throws ActionException {
+	public CompanyVO retrieveCompany(String companyId, SmarttrakRoleVO role, boolean bypassProducts) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT c.*, parent.COMPANY_NM as PARENT_NM, d.SYMBOL_TXT FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
@@ -121,7 +121,7 @@ public class CompanyAction extends AbstractTreeAction {
 			addProducts(company);
 			// If a company has 0 products it should not be shown. 
 			// Null out the company id to force a redirect and return now.
-			if (company.getProducts().isEmpty()) {
+			if (!bypassProducts && company.getProducts().isEmpty()) {
 				company.setCompanyId(null);
 				return company;
 			}
