@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,12 +37,12 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @since Dec 29, 2015
  ****************************************************************************/
 public class HuddleUtils {
-	
+
 	/** page aliases **/
 	public static final String PRODUCT_PG_ALIAS = "/product/"; //used in ProductAssetAction for referer inspection
 	public static final String ASSET_PG_ALIAS = "/asset/"; //used in SolrBusinessRules & EmailAFriend
 	public static final String MEDIABIN_REDIR_URL = "/json?amid=MEDIA_BIN_AJAX&mbid="; //used in EmailAFriend
-		
+
 	/** Solr field names of product attributes **/
 	public static final String PROD_ATTR_PREFIX = "huddle_";
 
@@ -49,24 +50,24 @@ public class HuddleUtils {
 	public static final String PROD_ATTR_IMG_TYPE = "IMAGE";
 	public static final String PROD_ATTR_HTML_TYPE = "HTML";
 	public static final String PROD_ATTR_MB_TYPE = "MEDIABIN";
-	
+
 	/** registration (user account) fields **/
 	public static final String WWID_REGISTER_FIELD_ID = "HUDDLE_WWID";
 	public static final String HOMEPAGE_REGISTER_FIELD_ID = "c0a80241f4bfdb229fce1431e31a1cfe";
 	public static final String COMM_PREFS_REGISTER_FIELD_ID = "HUDDLE_COMM_CHANNEL";
 	public static final String CELL_PHONE_REGISTER_FIELD_ID = "7f000001517b18842a834a598cdeafa"; //from WC core
-	
+
 	// wwid attribute (name) stored in UserDataVO during SSO login.
 	public static final String WWID = "wwid";
-	
+
 	//session constants
 	public static final String MY_HOMEPAGE = "huddleMyHomepage";
-	
+
 	//cookies
 	public static final String SORT_COOKIE = "huddleSort";
 	public static final String RPP_COOKIE = "huddleRpp";
 	public static final int DEFAULT_RPP_INT = 12;
-	public static final String DEFAULT_RPP = "" + DEFAULT_RPP_INT; //set as String, the same way we'd get it from the Browser/Cookie
+	public static final String DEFAULT_RPP = Integer.toString(DEFAULT_RPP_INT); //set as String, the same way we'd get it from the Browser/Cookie
 	public static final String PROD_SHARE_COOKIE = "huddle-share-products";
 	public static final String GRID_VIEW_COOKIE = "huddleGridView";
 
@@ -78,11 +79,18 @@ public class HuddleUtils {
 	public static final String productCategoryCd = CAT_PRODCAT_ID;
 	@Deprecated //old and duplicate, do not use - JM 02.29.16
 	public static final String productCatalogId = CATALOG_ID;
-	
+
 	//solr fields
 	public static final String SOLR_OPCO_FIELD = "opco_ss";
 	public static final String SOLR_IMAGE_FIELD = "huddle_1|image|images_ss";
 	private static String[] solrProdAttributeFields = null;
+
+	/**
+	 * the number of days to subtract from an event to designate when Registration opens
+	 */
+	public static final int EVENT_REGISTRATION_OPENS = -90;
+
+
 	/**
 	 * leverage a method to evaluate whether we've already obtained the product attributes
 	 * and stored them statically, or if we need to query the DB and load them up.
@@ -96,15 +104,15 @@ public class HuddleUtils {
 			Set<String> data = new HashSet<>();
 			for (ProductAttributeVO vo: loadProductAttributes(dbConn, orgId))
 				data.add(makeSolrNmFromProdAttrNm(vo.getDisplayOrderNo(), vo.getAttributeName(), vo.getAttributeType()));
-			
+
 			solrProdAttributeFields = data.toArray(new String[data.size()]);
 		}
-			
-		
+
+
 		return solrProdAttributeFields;
 	}
-	
-	
+
+
 	/**
 	 * loads the sort order of the attributes since we could not get this accurately from the ProductAttributeController
 	 */
@@ -117,41 +125,37 @@ public class HuddleUtils {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
 				data.add(new ProductAttributeVO(rs));
-		} catch (SQLException sqle) { }
-		
+		} catch (SQLException sqle) { 
+			//ignoreable
+		}
+
 		return data;
 	}
-	
+
 
 	//solrize (for indexing)
 	public static String makeSolrNmFromProdAttrNm(int order, String nm, String type) {
-		return (PROD_ATTR_PREFIX + order + "|" +type +"|" + StringUtil.replace(nm, " ", "_")).toLowerCase();
+		return (PROD_ATTR_PREFIX + order + '|' +type +'|' + StringUtil.replace(nm, " ", "_")).toLowerCase();
 	}
 	//desolrize (for display)
 	public static String makeProdAttrNmFromSolrNm(String nm) {
 		nm = nm.toLowerCase();
 		if (nm.endsWith("_ss")) 
 			nm = nm.substring(0, nm.lastIndexOf("_ss")); //prune-off Solr's suffix
-		
-		nm = nm.substring(nm.lastIndexOf("|")+1);
+
+		nm = nm.substring(nm.lastIndexOf('|')+1);
 		return StringUtil.replace(nm,"_"," ");
 	}
 	public static String makeProdAttrTypeFromSolrNm(String nm) {
-		nm = nm.substring(nm.indexOf("|")+1); //removes the prefix and the <order>|
-		return nm.substring(0, nm.indexOf("|"));
+		nm = nm.substring(nm.indexOf('|')+1); //removes the prefix and the <order>|
+		return nm.substring(0, nm.indexOf('|'));
 	}
 	public static Integer makeProdAttrOrderFromSolrNm(String nm) {
-		nm = nm.substring(0, nm.indexOf("|")+1); //removes the prefix and the <order>|
+		nm = nm.substring(0, nm.indexOf('|')+1); //removes the prefix and the <order>|
 		return Convert.formatInteger(StringUtil.replace(nm,PROD_ATTR_PREFIX,""));
 	}
-	
-	
-	/**
-	 * the number of days to subtract from an event to designate when Registration opens
-	 */
-	public static final int EVENT_REGISTRATION_OPENS = -90;
-	
-	
+
+
 	/**
 	 * These are used to create reader friendly versions of titles that are
 	 * stored in solr in non reader friendly formats.
@@ -172,11 +176,11 @@ public class HuddleUtils {
 		EVENT("Courses & Events"),
 		BLOG("News"),
 		FORM_BUILDER("Forms");
-		
+
 		private String name;
 		IndexType(String name) { this.name = name; }
 		public String getName() { return name; }
-		
+
 		/**
 		 * return a type without throwing an exception
 		 * @param t
@@ -186,14 +190,13 @@ public class HuddleUtils {
 			try {
 				return IndexType.valueOf(t);
 			} catch (Exception e) {
-				e.printStackTrace();
 				return null;
 			}
 		}
 	}
-	
-	
-	
+
+
+
 	/**
 	 *  Per Bradley / TDS - 12.28.2015
 	 *  o   SPINE 000942, pre-select 
@@ -240,13 +243,13 @@ public class HuddleUtils {
 		public String getPageAlias() { return pageAlias; }
 		public String[] getBusinessUnits() { return businessUnits; }
 	}
-	
-	
+
+
 	public static String getBusUnitNm(String mrcCode) {
 		SSOBusinessUnit bu = getSSOBusinessUnit(mrcCode);
 		return (bu != null) ? bu.getName() : null;
 	}
-	
+
 	public static String getBusUnitNmFromAbbr(String abbr) {
 		for (SSOBusinessUnit vo : SSOBusinessUnit.values()) {
 			if (vo.getAbbreviation().equalsIgnoreCase(abbr))
@@ -254,7 +257,7 @@ public class HuddleUtils {
 		}
 		return null;
 	}
-	
+
 	public static SSOBusinessUnit getSSOBusinessUnit(String mrcCode) {
 		for (SSOBusinessUnit vo : SSOBusinessUnit.values()) {
 			if (Arrays.asList(vo.getBusinessUnits()).contains(mrcCode))
@@ -262,12 +265,12 @@ public class HuddleUtils {
 		}
 		return null;
 	}
-	
-	
+
+
 	public static void determineSortParameters(ActionRequest req) {
 		determineSortParameters(req, "titleAZ");
 	}
-	
+
 
 	/**
 	 * Get the sort type and rpp from cookies and assign them to the request
@@ -279,11 +282,11 @@ public class HuddleUtils {
 
 		SMTCookie sortCook = req.getCookie(HuddleUtils.SORT_COOKIE);
 		String sort = (sortCook != null) ? sortCook.getValue() : defaultSort;
-		
+
 		setSearchParameters(req, sort);
 	}
 
-	
+
 	/**
 	 * Set the sort field and direction.
 	 */
@@ -299,8 +302,8 @@ public class HuddleUtils {
 			req.setParameter("sortDirection", ORDER.asc.toString(), true);
 		}
 	}
-	
-	
+
+
 	/**
 	 * ties specifically to Site Search.  We facet on moduleType, which are not the display values 
 	 * used on the website.  This method substitutes in the proper display values
@@ -309,13 +312,13 @@ public class HuddleUtils {
 	 * @return
 	 */
 	public static Collection<GenericVO> facetModuleType(Collection<FacetField.Count> solrResp) {
-		if (solrResp == null) return null;
+		if (solrResp == null) return Collections.emptyList();
 		Map<String, GenericVO> records = new TreeMap<>();
 		for (FacetField.Count c : solrResp) {
 			if (c.getCount() == 0) continue;
-			String key = IndexType.quietValueOf(c.getName()).getName(); //quietValueOf will not throw exceptions
-			if (key == null || key.length() == 0) continue;
-			records.put(key, new GenericVO(key, c));
+			IndexType key = IndexType.quietValueOf(c.getName()); //quietValueOf will not throw exceptions
+			if (key != null)
+				records.put(key.getName(), new GenericVO(key.getName(), c));
 		}
 		return records.values();
 	}

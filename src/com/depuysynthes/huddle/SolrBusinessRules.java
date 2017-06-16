@@ -112,7 +112,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	 */
 	public String getFirstImage() {
 		Collection<Object> images = sd.getFieldValues(HuddleUtils.SOLR_IMAGE_FIELD);
-		if (images != null && images.size() > 0) return (String) images.toArray()[0];
+		if (images != null && !images.isEmpty()) return (String) images.toArray()[0];
 		
 		//return the system's default as a last resort
 		return "/binary/themes/CUSTOM/DEPUY/DPY_SYN_HUDDLE/images/default-thumbnail.png";
@@ -150,7 +150,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	public String getFamilyName() {
 		String family = "";
 		Collection<Object> hierarchies = sd.getFieldValues(SearchDocumentHandler.HIERARCHY);
-		if (hierarchies == null || hierarchies.size() == 0) return "";
+		if (hierarchies == null || hierarchies.isEmpty()) return "";
 		
 		for (Object o : hierarchies) {
 			if (o == null) continue;
