@@ -805,10 +805,15 @@ public class MarketManagementAction extends AuthorAction {
 		sql.append("BIOMEDGPS_MARKET_ATTRIBUTE_XR SET ORDER_NO = ? WHERE MARKET_ATTRIBUTE_ID = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setInt(1, Convert.formatInteger(req.getParameter("orderNo")));
-			ps.setString(2, req.getParameter("marketAttributeId"));
+			String[] order = req.getParameterValues("orderNo");
+			String[] ids = req.getParameterValues("marketAttributeId");
+			for (int i=0; i < order.length || i < ids.length; i++) {
+				ps.setInt(1, Convert.formatInteger(order[i]));
+				ps.setString(2, ids[i]);
+				ps.addBatch();
+			}
 			
-			ps.executeUpdate();
+			ps.executeBatch();
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
