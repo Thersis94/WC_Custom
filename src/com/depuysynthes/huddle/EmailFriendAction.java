@@ -9,6 +9,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.SMTSerializer;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -35,12 +36,12 @@ public class EmailFriendAction extends SimpleActionAdapter {
 	public EmailFriendAction(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
+
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
-	
+
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//if the request is for a product's assets, call the HuddleProductAction to load
@@ -48,19 +49,19 @@ public class EmailFriendAction extends SimpleActionAdapter {
 		if (req.hasParameter("productId")) {
 			req.setParameter("runDetail", "true");
 			req.setParameter("skipContacts", "true");
-			 req.setParameter("reqParam_1", req.getParameter("productId"));
+			req.setParameter("reqParam_1", req.getParameter("productId"));
 			HuddleProductAction hpa = new HuddleProductAction(actionInit);
 			hpa.setDBConnection(dbConn);
 			hpa.setAttributes(getAttributes());
 			hpa.retrieve(req);
 			//we can go straight to View with what's already been put into mod.getActionData()
 		}
-		
+
 		// parse the cookie data
 		loadSharePOJOs(req);
 	}
-	
-	
+
+
 	/**
 	 * turns the javascript Array[JSON] stored in a cookie into POJOs so we can 
 	 * use them in the View
@@ -69,37 +70,37 @@ public class EmailFriendAction extends SimpleActionAdapter {
 	private void loadSharePOJOs(ActionRequest req) {
 		SMTCookie prods = req.getCookie(HuddleUtils.PROD_SHARE_COOKIE);
 		if  (prods == null || prods.getValue() == null) return;
-		
+
 		try {
 			String shareStr = new StringEncoder().decode(prods.getValue());
 			ShareVO[] shares = (ShareVO[]) SMTSerializer.fromJson(shareStr, ShareVO[].class);
 			Map<String, ShareVO> shareMap = new HashMap<>(shares.length);
 			for (ShareVO sh : shares)
 				shareMap.put(sh.getId(), sh);
-			
+
 			req.setAttribute("shareMap", shareMap);
 		} catch (Exception e) {
 			log.warn("could not parse ShareVOs array", e);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("**********************");
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		
+
 		String[] addys = req.getParameter("rcptEml").split(",");
 		req.setParameter("rcptEml", addys, true);
-		
+
 		if (req.hasParameter("isProducts")) {
 			// parse the cookie data
 			loadSharePOJOs(req);
-			
+
 			// build the alternate message body w/multiple URLs
 			req.setAttribute(com.smt.sitebuilder.action.tools.EmailFriendAction.EMAIL_MSG_BODY, buildProductEmailBody(req));
 		}
-		
+
 		actionInit.setActionId("" + mod.getAttribute(SBModuleVO.ATTRIBUTE_2));
 		com.smt.sitebuilder.action.tools.EmailFriendAction efa = new com.smt.sitebuilder.action.tools.EmailFriendAction(actionInit);
 		efa.setDBConnection(dbConn);
@@ -107,7 +108,7 @@ public class EmailFriendAction extends SimpleActionAdapter {
 		efa.build(req);
 	}
 
-	
+
 	/**
 	 * builds the body of the email message for product Assets, which needs to 
 	 * loop around the 'cart' the user has built.
@@ -124,8 +125,7 @@ public class EmailFriendAction extends SimpleActionAdapter {
 		@SuppressWarnings("unchecked")
 		Map<String, ShareVO> shareMap = (Map<String, ShareVO>) req.getAttribute("shareMap");
 		for (ShareVO vo : shareMap.values()) {
-			//TODO - depuy-wc | JC | Hardcoded value from DocumentAction.SOLR_PREFIX
-			if (vo.getId().startsWith("CMS")) { //DocumentAction.SOLR_PREFIX)) {
+			if (StringUtil.checkVal(vo.getUrl()).startsWith("/docs/") || "DMS".equals(vo.getType())) {
 				url = site.getFullSiteAlias() + vo.getUrl();
 			} else {
 				url = mbBase + vo.getId();
