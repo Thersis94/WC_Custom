@@ -59,7 +59,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
-			mail.addRecipient("Amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
 			mail.addRecipient("kgeorge@mediaspace.com");

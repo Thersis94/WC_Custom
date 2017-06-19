@@ -14,7 +14,6 @@ import org.apache.solr.client.solrj.SolrClient;
 
 import com.depuysynthes.pa.PatientAmbassadorStoriesTool.PAFConst;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.SBProfileManager;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -51,27 +50,26 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	public void addIndexItems(SolrClient server) {
 		SolrActionUtil solrUtil = new SolrActionUtil(server);
 		List<FormTransactionVO> formVOs = retreiveAllSubmissions();
-		
+
 		// Loop over each form transaction and turn it into a SolrStoryVO for processing
 		for (FormTransactionVO vo : formVOs) {
 			try {
 				SolrStoryVO story = buildSolrStoryVO(vo);
-				log.debug("adding to Solr: " + story.toString());
+				log.debug("adding to Solr: " + story.getTitle());
 				solrUtil.addDocument(story);
 			} catch (Exception e) {
 				log.error("could not create document to add to Solr", e);
 			}
 		}
-		solrUtil = null;
 	}
-	
+
 	/**
 	 * Turns the form transaction vo into a SolrStoryVO that we
 	 * can just drop into the SolrActionutil
 	 * @param vo
 	 * @return
 	 */
-	private SolrStoryVO buildSolrStoryVO(FormTransactionVO vo) throws Exception {
+	private SolrStoryVO buildSolrStoryVO(FormTransactionVO vo) {
 		Map<String, FormFieldVO> fields = vo.getCustomData();
 
 		//Store Data on the SolrStoryVO
@@ -91,7 +89,7 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 			ssv.setSurgeonName(fields.get(PAFConst.SURGEON_NM.getId()).getResponses().get(0));
 		ssv.setHierarchies(fields.get(PAFConst.JOINT_ID.getId()).getResponses());
 		if (fields.get(PAFConst.OTHER_HOBBY_ID.getId()) != null) {
-				ssv.setOtherHobbies(fields.get(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0));
+			ssv.setOtherHobbies(fields.get(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0));
 		}
 		ssv.setTitle(fields.get(PAFConst.STORY_TITLE_ID.getId()).getResponses().get(0));
 		ssv.setSummary(fields.get(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0));
@@ -107,12 +105,7 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	 * @return 
 	 */
 	private List<FormTransactionVO> retreiveAllSubmissions() {
-		List<FormTransactionVO> vos = new ArrayList<FormTransactionVO>();
-		Map<String, Object> vals = new HashMap<String, Object>();
-		vals.put(Constants.ENCRYPT_KEY, config.get(Constants.ENCRYPT_KEY));
-		ProfileManager pm = new SBProfileManager(vals);
-		
-		
+		List<FormTransactionVO> vos = new ArrayList<>();
 		String srQuery = getSubmittalRecordQuery();
 		log.debug("Query = " + srQuery + "|" + PAFConst.FORM_ID.getId() + "|" + PAFConst.STATUS_ID.getId());
 
@@ -129,51 +122,55 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 			FormFieldVO field = null;
 			//Process Results
 			while(rs.next()) {
+				String formSubmittalId = rs.getString("FORM_SUBMITTAL_ID");
+
+				// If we are dealing with a new submission store the old one
+				// and create a new vo for the new submission.
+				if (!submittalId.equals(formSubmittalId)) {
+					if (vo != null) vos.add(vo);
+					vo = new FormTransactionVO(rs);
+					submittalId = formSubmittalId;
+				}
+				
 				// If we are dealing with a new field we add the current
 				// one to the vo and create a new field vo.
 				// This needs to be done before the vo so that all fields are
 				// associated with the proper submissions.
-				if (!fieldId.equals(rs.getString("FORM_FIELD_ID")) || !submittalId.equals(rs.getString("FORM_SUBMITTAL_ID"))) {
-					if (field != null) vo.addCustomData(fieldId, field);
+				if (!fieldId.equals(rs.getString("FORM_FIELD_ID")) || !submittalId.equals(formSubmittalId)) {
+					if (field != null && vo != null)
+						vo.addCustomData(fieldId, field);
 					field = new FormFieldVO(rs, true);
 					fieldId = rs.getString("FORM_FIELD_ID");
 				}
-				
-				// If we are dealing with a new submission store the old one
-				// and create a new vo for the new submission.
-				if (!submittalId.equals(rs.getString("FORM_SUBMITTAL_ID"))) {
-					if (vo != null) vos.add(vo);
-					vo = new FormTransactionVO(rs);
-					submittalId = rs.getString("FORM_SUBMITTAL_ID");
-				}
-				
-				field.addResponse(rs.getString("VALUE_TXT"));
+				if (field != null)
+					field.addResponse(rs.getString("VALUE_TXT"));
 			}
-			
+
 			// Add the dangling field and vo.
 			if (vo != null) {
 				if (field != null) vo.addCustomData(fieldId, field);
 				vos.add(vo);
 			}
-			
+
 			//Loop over the Transactions and retrieve the profile data for them.
-			for(FormTransactionVO f : vos) {
-				log.debug("Getting infromation for use " + f.getProfileId());
-				UserDataVO t = pm.getProfile(f.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, ORG_ID);
-				f.setData(t.getDataMap());
-			}
-			
-			if(vos.size() == 0)
+			Map<String, Object> vals = new HashMap<>();
+			vals.put(Constants.ENCRYPT_KEY, config.get(Constants.ENCRYPT_KEY));
+			ProfileManager pm = new SBProfileManager(vals);
+			pm.setOrganizationId(ORG_ID);
+			pm.populateRecords(dbConn, vos);
+
+			if (vos.isEmpty())
 				log.warn("No Results Found");
+
 		} catch(SQLException sqle) {
 			log.error("Problem Retrieving Data from Database.", sqle);
 		} catch (DatabaseException e) {
 			log.error("Problem Retrieveing Profile Data", e);
 		}
-		
+
 		return vos;
 	}
-	
+
 	/**
 	 * Builds the search query for the Submittal List.  Since we are building
 	 * a list of documents for solr we only care about published submissions.
@@ -184,10 +181,9 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 		sb.append("SELECT fs.*, fd.* FROM FORM_SUBMITTAL fs ");
 		sb.append("left join FORM_DATA fd on fd.FORM_SUBMITTAL_ID = fs.FORM_SUBMITTAL_ID ");
 		sb.append("left join FORM_DATA filter on filter.FORM_SUBMITTAL_ID = fs.FORM_SUBMITTAL_ID ");
-		sb.append("and filter.FORM_FIELD_ID = ? and convert(nvarchar(max), filter.VALUE_TXT) = 'published' ");
+		sb.append("and filter.VALUE_TXT='published' and filter.FORM_FIELD_ID=? ");
 		sb.append("WHERE FORM_ID = ? and filter.FORM_DATA_ID is not null ");
 		sb.append("ORDER BY fs.FORM_SUBMITTAL_ID, fd.FORM_FIELD_ID");
-		
 		return sb.toString();
 	}
 
@@ -211,8 +207,8 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	public String getIndexType() {
 		return SolrStoryVO.INDEX_TYPE;
 	}
-	
-	
+
+
 	@Override
 	public void addSingleItem(String id) {
 		// Nothing uses this class's addSingleItem method right now.
