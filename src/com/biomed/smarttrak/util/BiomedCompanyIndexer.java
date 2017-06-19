@@ -321,13 +321,12 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	protected Map<String, LocationVO> retrieveLocations() {
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
-		List<Object> params = new ArrayList<>();
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_LOCATION l ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = l.COUNTRY_CD ");
 		sql.append("ORDER BY COMPANY_ID, PRIMARY_LOCN_FLG DESC ");
 
 		DBProcessor db = new DBProcessor(dbConn);
-		List<Object> results = db.executeSelect(sql.toString(), params, new LocationVO());
+		List<Object> results = db.executeSelect(sql.toString(), null, new LocationVO());
 		Map<String, LocationVO> locations = new HashMap<>();
 		for (Object o : results) {
 			LocationVO vo = (LocationVO) o;
