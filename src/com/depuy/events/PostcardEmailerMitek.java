@@ -122,7 +122,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
-			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
@@ -246,7 +245,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
-			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
@@ -382,7 +380,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
-			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
@@ -431,7 +428,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
-			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
@@ -629,7 +625,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addRecipient("mroderic@its.jnj.com");
-			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
