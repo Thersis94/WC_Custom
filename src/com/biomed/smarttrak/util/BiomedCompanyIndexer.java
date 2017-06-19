@@ -12,8 +12,10 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
@@ -109,6 +111,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			addCompany(companies, company);
 
 			buildContent(companies, id);
+			buildLocationInformation(companies);
 		} catch (SQLException e) {
 			log.error(e);
 		}
@@ -211,6 +214,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		SmarttrakSolrUtil.setSearchField(rs.getString("SHORT_NM_TXT"), "shortNm", company);
 		company.addAttribute("status", rs.getString("STATUS_NO"));
 		company.addAttribute("ticker", rs.getString("NAME_TXT"));
+		company.addAttribute("companyId", rs.getString(COMPANY_ID));
 		company.setDocumentUrl(AdminControllerAction.Section.COMPANY.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString(COMPANY_ID));
 		company.addAttribute("productCount", rs.getInt("PRODUCT_NO"));
 		SmarttrakSolrUtil.setSearchField(rs.getString("PARENT_NM"), "parentNm", company);
@@ -293,6 +297,47 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		t.buildNodePaths();
 
 		return t;
+	}
+	
+	/**
+	 * Get the state and country for the company that owns each product
+	 * and assign that information to the solr document.
+	 * @param companies
+	 */
+	protected void buildLocationInformation(List<SecureSolrDocumentVO> companies) {
+		Map<String, LocationVO> locationMap = retrieveLocations();
+		for (SecureSolrDocumentVO company : companies) {
+			String companyId = company.getDocumentId();
+			LocationVO loc = locationMap.get(companyId);
+			if (loc == null) continue;
+			company.setState(loc.getStateCode());
+			company.setCountry(loc.getCountryName());
+		}
+	}
+	
+	/**
+	 * Get a collection of all companies and thier primary locations
+	 * @return
+	 */
+	protected Map<String, LocationVO> retrieveLocations() {
+		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(150);
+		List<Object> params = new ArrayList<>();
+		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_LOCATION l ");
+		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = l.COUNTRY_CD ");
+		sql.append("ORDER BY COMPANY_ID, PRIMARY_LOCN_FLG DESC ");
+
+		DBProcessor db = new DBProcessor(dbConn);
+		List<Object> results = db.executeSelect(sql.toString(), params, new LocationVO());
+		Map<String, LocationVO> locations = new HashMap<>();
+		for (Object o : results) {
+			LocationVO vo = (LocationVO) o;
+			// The first location for each company is it's primary location, others can be ignored.
+			if (!locations.containsKey(vo.getCompanyId()))
+				locations.put(vo.getCompanyId(), vo);
+		}
+
+		return locations;
 	}
 
 
