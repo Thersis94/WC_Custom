@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -146,6 +147,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		
 		try {
 			int maxYear = util.getIntVal("YEAR_NO", rs);
+			boolean isCurrent = maxYear == Calendar.getInstance().get(Calendar.YEAR);
 			Map<Integer, Integer> totals = new HashMap<>();
 			
 			ResultSetMetaData rsmd;
@@ -163,7 +165,7 @@ public class FinancialDashDataRowVO implements Serializable {
 					case FinancialDashBaseAction.QUARTER_3:
 					case FinancialDashBaseAction.QUARTER_4:
 						addColumn(qtr, yearIdx, maxYear, util, rs);
-						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs));
+						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs), isCurrent, qtr + "-" + maxYear);
 						calculateInactivity(qtr, yearIdx, util, rs);
 						break;
 					default:
@@ -413,11 +415,25 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param key
 	 * @param dollarValue
 	 */
-	protected void incrementTotal(Map<Integer, Integer> totals, int key, int dollarValue) {
+	protected void incrementTotal(Map<Integer, Integer> totals, int key, int dollarValue, 
+			boolean isCurrent, String colId) {
 		if (totals.get(key) == null) {
 			totals.put(key, 0);
 		}
 		
-		totals.put(key, totals.get(key) + dollarValue);
+		// Run through a series of checks to see if the current 
+		// quarter should be added to the totals.  This prevents two
+		// quarters of sales in the current year from being compared
+		// to a previous year's full compliment of profits.
+		// 1 - Check to see if this is a report for the current year.
+		// 2 - Check to see if we are building the total
+		// 3 - Check to see if there is a value for the corresponding quarter
+		boolean add = true;
+		if (isCurrent && key == 1 && 
+				columns.get(colId).getDollarValue() == 0) {
+			add = false;
+		}
+
+		if (add) totals.put(key, totals.get(key) + dollarValue);
 	}
 }
