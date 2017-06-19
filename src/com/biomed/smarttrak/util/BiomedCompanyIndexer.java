@@ -214,7 +214,6 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		SmarttrakSolrUtil.setSearchField(rs.getString("SHORT_NM_TXT"), "shortNm", company);
 		company.addAttribute("status", rs.getString("STATUS_NO"));
 		company.addAttribute("ticker", rs.getString("NAME_TXT"));
-		company.addAttribute("companyId", rs.getString(COMPANY_ID));
 		company.setDocumentUrl(AdminControllerAction.Section.COMPANY.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString(COMPANY_ID));
 		company.addAttribute("productCount", rs.getInt("PRODUCT_NO"));
 		SmarttrakSolrUtil.setSearchField(rs.getString("PARENT_NM"), "parentNm", company);
