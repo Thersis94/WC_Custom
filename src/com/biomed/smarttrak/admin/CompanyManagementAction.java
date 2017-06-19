@@ -1094,13 +1094,7 @@ public class CompanyManagementAction extends AuthorAction {
 		sql.append("BIOMEDGPS_COMPANY_ALLIANCE_XR SET ORDER_NO = ? WHERE COMPANY_ALLIANCE_XR_ID = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			String[] order = req.getParameterValues("orderNo");
-			String[] ids = req.getParameterValues("allianceId");
-			for (int i=0; i < order.length || i < ids.length; i++) {
-				ps.setInt(1, Convert.formatInteger(order[i]));
-				ps.setString(2, ids[i]);
-				ps.addBatch();
-			}
+			populateReorderBatch(ps, req, "allianceId");
 			
 			ps.executeBatch();
 		} catch (SQLException e) {
@@ -1120,17 +1114,30 @@ public class CompanyManagementAction extends AuthorAction {
 		sql.append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR SET ORDER_NO = ? WHERE COMPANY_ATTRIBUTE_ID = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			String[] order = req.getParameterValues("orderNo");
-			String[] ids = req.getParameterValues("companyAttributeId");
-			for (int i=0; i < order.length || i < ids.length; i++) {
-				ps.setInt(1, Convert.formatInteger(order[i]));
-				ps.setString(2, ids[i]);
-				ps.addBatch();
-			}
+			populateReorderBatch(ps, req, "companyAttributeId");
 			
 			ps.executeBatch();
 		} catch (SQLException e) {
 			throw new ActionException(e);
+		}
+	}
+	
+	
+	/**
+	 * Loop over the orders and id field supplied in the action request
+	 * and add them to the batch statement
+	 * @param ps
+	 * @param req
+	 * @param idField
+	 * @throws SQLException
+	 */
+	protected void populateReorderBatch(PreparedStatement ps, ActionRequest req, String idField) throws SQLException {
+		String[] order = req.getParameterValues("orderNo");
+		String[] ids = req.getParameterValues(idField);
+		for (int i=0; i < order.length || i < ids.length; i++) {
+			ps.setInt(1, Convert.formatInteger(order[i]));
+			ps.setString(2, ids[i]);
+			ps.addBatch();
 		}
 	}
 
