@@ -441,6 +441,7 @@ public class ProductManagementAction extends AuthorAction {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append("WHERE PRODUCT_ATTRIBUTE_ID = ? ");
+		sql.append("ORDER BY xr.order_no");
 		
 		List<Object> params = new ArrayList<>();
 		params.add(req.getParameter("productAttributeId"));
@@ -722,6 +723,7 @@ public class ProductManagementAction extends AuthorAction {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = pax.COMPANY_ID ");
 		sql.append("WHERE pax.PRODUCT_ID = ? ");
+		sql.append("ORDER BY pax.ORDER_NO ");
 		
 		List<Object> params = new ArrayList<>();
 		params.add(product.getProductId());
@@ -1250,22 +1252,82 @@ public class ProductManagementAction extends AuthorAction {
 
 
 	/**
-	 * Alter the order of the supplied attribute
+	 * Determine what is being reordered and call the proper method.
 	 * @param req
 	 * @throws ActionException
 	 */
 	protected void updateOrder(ActionRequest req) throws ActionException {
+		ActionTarget action = ActionTarget.valueOf(req.getParameter(ACTION_TARGET));
+		
+		switch (action) {
+		case ALLIANCE:
+			updateAllianceOrder(req);
+			break;
+		case PRODUCTATTACH:
+		case PRODUCTLINK:
+			updateAttributeOrder(req);
+			break;
+		default:
+			break;
+		}
+	}
+
+
+	/**
+	 * Alter the order of the supplied alliances
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void updateAllianceOrder(ActionRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_PRODUCT_ALLIANCE_XR SET ORDER_NO = ? WHERE PRODUCT_ALLIANCE_XR_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			populateReorderBatch(ps, req, "allianceId");
+			
+			ps.executeBatch();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * Alter the order of the supplied attributes
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void updateAttributeOrder(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR SET ORDER_NO = ? WHERE PRODUCT_ATTRIBUTE_ID = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setInt(1, Convert.formatInteger(req.getParameter("orderNo")));
-			ps.setString(2, req.getParameter("productAttributeId"));
+			populateReorderBatch(ps, req, "productAttributeId");
 			
-			ps.executeUpdate();
+			ps.executeBatch();
 		} catch (SQLException e) {
 			throw new ActionException(e);
+		}
+	}
+	
+	
+	/**
+	 * Loop over the orders and id field supplied in the action request
+	 * and add them to the batch statement
+	 * @param ps
+	 * @param req
+	 * @param idField
+	 * @throws SQLException
+	 */
+	protected void populateReorderBatch(PreparedStatement ps, ActionRequest req, String idField) throws SQLException {
+		String[] order = req.getParameterValues("orderNo");
+		String[] ids = req.getParameterValues(idField);
+		for (int i=0; i < order.length || i < ids.length; i++) {
+			ps.setInt(1, Convert.formatInteger(order[i]));
+			ps.setString(2, ids[i]);
+			ps.addBatch();
 		}
 	}
 
