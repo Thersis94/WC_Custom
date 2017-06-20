@@ -346,11 +346,6 @@ public class MarketManagementAction extends AuthorAction {
 			sql.append("or m.STATUS_NO = '").append(Status.E.toString()).append("') ");
 		}
 		
-		if (!StringUtil.isEmpty(req.getParameter("authorId"))) {
-			sql.append("and m.creator_profile_id = ? ");
-			params.add(req.getParameter("authorId"));
-		}
-		
 		sql.append("ORDER BY MARKET_NM ");
 		log.debug(sql);
 
