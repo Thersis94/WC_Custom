@@ -378,23 +378,7 @@ public class MarketManagementAction extends AuthorAction {
 				continue;
 			}
 			
-			for (MarketVO market : markets) {
-				if (market.getMarketSection() == null || market.getMarketSection().getSectionId() == null ||
-						!market.getMarketSection().getSectionId().equals(n.getNodeId()))
-					continue;
-				
-				if (n.getDepthLevel() == 3 && !orderedMarkets.keySet().contains(n.getNodeName())) {
-					orderedMarkets.put(n.getNodeName(), new ArrayList<>());
-				} else if (!orderedMarkets.keySet().contains(n.getParentName())) {
-					orderedMarkets.put(n.getParentName(), new ArrayList<>());
-				}
-				
-				if (n.getDepthLevel() == 3) {
-					orderedMarkets.get(n.getNodeName()).add(market);
-				} else {
-					orderedMarkets.get(n.getParentName()).add(market);
-				}
-			}
+			loopMarkets(markets, orderedMarkets, n);
 		}
 		
 		// Get all markets not associated with any sections
@@ -407,6 +391,34 @@ public class MarketManagementAction extends AuthorAction {
 		}
 		
 		return orderedMarkets;
+	}
+	
+	
+	/**
+	 * Loop over all markets to see if they match the supplied node
+	 * and place them into their proper mapped list if so.
+	 * @param markets
+	 * @param orderedMarkets
+	 * @param n
+	 */
+	protected void loopMarkets(List<MarketVO> markets, Map<String, List<MarketVO>> orderedMarkets, Node n) {
+		for (MarketVO market : markets) {
+			if (market.getMarketSection() == null || market.getMarketSection().getSectionId() == null ||
+					!market.getMarketSection().getSectionId().equals(n.getNodeId()))
+				continue;
+			
+			if (n.getDepthLevel() == 3 && !orderedMarkets.keySet().contains(n.getNodeName())) {
+				orderedMarkets.put(n.getNodeName(), new ArrayList<>());
+			} else if (!orderedMarkets.keySet().contains(n.getParentName())) {
+				orderedMarkets.put(n.getParentName(), new ArrayList<>());
+			}
+			
+			if (n.getDepthLevel() == 3) {
+				orderedMarkets.get(n.getNodeName()).add(market);
+			} else {
+				orderedMarkets.get(n.getParentName()).add(market);
+			}
+		}
 	}
 
 
