@@ -361,6 +361,11 @@ public class MarketManagementAction extends AuthorAction {
 	}
 
 
+	/**
+	 * Order markets based on their assigned section
+	 * @param markets
+	 * @return
+	 */
 	protected Map<String, List<MarketVO>> orderMarkets(List<MarketVO> markets) {
 		Map<String, List<MarketVO>> orderedMarkets = new LinkedHashMap<>();
 		List<Node> hierarchies = loadDefaultTree().getPreorderList();
@@ -396,10 +401,8 @@ public class MarketManagementAction extends AuthorAction {
 		// and add them to the last section grouping.
 		orderedMarkets.put("Unsorted", new ArrayList<>());
 		for (MarketVO market : markets) {
-			log.debug(market.getMarketSection().getSectionId()+"|"+market.getMarketSection().getSectionNm());
 			if (market.getMarketSection().getSectionId() == null) {
 				orderedMarkets.get("Unsorted").add(market);
-				log.debug("Added " + market.getMarketName());
 			}
 		}
 		
