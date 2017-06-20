@@ -451,18 +451,14 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		SecureSolrDocumentVO product = new SecureSolrDocumentVO(INDEX_TYPE);
 		product.setDocumentId(rs.getString(PRODUCT_ID));
 		product.setTitle(rs.getString("PRODUCT_NM"));
-		String name = rs.getString("company_nm");
-		if (name != null) {
-			product.addAttribute("company", name);
-			product.addAttribute("companySearch", name.toLowerCase());
-		}
+		SmarttrakSolrUtil.setSearchField(rs.getString("company_nm"), "company", product);
 		product.addAttribute("companyId", rs.getString("COMPANY_ID"));
 		product.addAttribute("alias", rs.getString("ALIAS_NM"));
 		product.setDocumentUrl(AdminControllerAction.Section.PRODUCT.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString(PRODUCT_ID));
 		product.addAttribute("ownership", rs.getString("HOLDING_TXT"));
 		product.addAttribute("status", rs.getString("STATUS_NO"));
-		product.addAttribute("shortNm", rs.getString("SHORT_NM"));
-		product.addAttribute("companyShortNm", rs.getString("SHORT_NM_TXT"));
+		SmarttrakSolrUtil.setSearchField(rs.getString("short_nm"), "shortNm", product);
+		SmarttrakSolrUtil.setSearchField(rs.getString("short_nm_txt"), "companyShortNm", product);
 
 		if (rs.getTimestamp("UPDATE_DT") != null) {
 			product.setUpdateDt(rs.getDate("UPDATE_DT"));
