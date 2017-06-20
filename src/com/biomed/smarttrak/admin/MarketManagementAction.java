@@ -327,7 +327,7 @@ public class MarketManagementAction extends AuthorAction {
 		List<Object> params = new ArrayList<>();
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select m.*, s.* FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
+		sql.append("select m.market_nm, m.market_id, s.section_nm, s.section_id FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = m.REGION_CD ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_SECTION ms ");
 		sql.append("ON m.MARKET_ID = ms.MARKET_ID ");
@@ -351,9 +351,9 @@ public class MarketManagementAction extends AuthorAction {
 
 		DBProcessor db = new DBProcessor(dbConn, customDb);
 		List<Object> results = db.executeSelect(sql.toString(), params, new MarketVO());
-		List<MarketVO> markets = new ArrayList<>();
 		
-		for (Object o : results) markets.add((MarketVO)o);
+		@SuppressWarnings("unchecked")
+		List<MarketVO> markets = (List<MarketVO>)(List<?>)results;
 		
 		Map<String, List<MarketVO>> orderedMarkets = orderMarkets(markets);
 		
