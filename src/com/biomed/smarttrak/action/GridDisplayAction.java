@@ -1,6 +1,5 @@
 package com.biomed.smarttrak.action;
 
-import java.math.BigDecimal;
 // JDK 1.8
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
 
 // App Libs
 import com.biomed.smarttrak.admin.GridChartAction;
@@ -110,10 +110,11 @@ public class GridDisplayAction extends SBActionAdapter {
 	 * @param req If a mapping is found, the gridId on the request object is overridden with the new value
 	 */
 	public void lookupTableMap(ActionRequest req) {
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(164);
 		sql.append("select grid_id "); 
-		sql.append("from custom.grid_table_map a ") ;
-		sql.append("inner join custom.biomedgps_grid b on a.slug_txt = b.slug_txt ");
+		sql.append("from ").append(schema).append("biomedgps_grid_table_map a ") ;
+		sql.append("inner join ").append(schema).append("biomedgps_grid b on a.slug_txt = b.slug_txt ");
 		sql.append("where lower(a.grid_graphic_id) = lower(?) ");
 		
 		List<Object> params =  Arrays.asList(new Object[]{req.getParameter("gridId")});

@@ -181,7 +181,7 @@ public class CompanyManagementAction extends AuthorAction {
 		CompanyAction ca = new CompanyAction(actionInit);
 		ca.setDBConnection(dbConn);
 		ca.setAttributes(attributes);
-		super.putModuleData(ca.retrieveCompany(req.getParameter("companyId"), role));
+		super.putModuleData(ca.retrieveCompany(req.getParameter("companyId"), role, true));
 	}
 	
 	
@@ -434,6 +434,13 @@ public class CompanyManagementAction extends AuthorAction {
 			sql.append("and lower(COMPANY_NM) like ?");
 			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
+		
+		// If this is a request for the dashboard an author id will be provided
+		if (req.hasParameter("authorId")) {
+			sql.append("and creator_profile_id = ? ");
+			params.add(req.getParameter("authorId"));
+		}
+		
 		sql.append("group by c.COMPANY_NM, c.COMPANY_ID, INVESTED_FLG ");
 		
 		SortField s = SortField.getFromString(req.getParameter("sort"));
@@ -452,7 +459,7 @@ public class CompanyManagementAction extends AuthorAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> companies = db.executeSelect(sql.toString(), params, new CompanyVO());
 		
-		super.putModuleData(companies, getCompanyCount(req.getParameter("search"), !req.hasParameter("inactive")), false);
+		super.putModuleData(companies, getCompanyCount(req.getParameter("search"), !req.hasParameter("inactive"), req.getParameter("authorId")), false);
 	}
 
 	
@@ -461,7 +468,7 @@ public class CompanyManagementAction extends AuthorAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected int getCompanyCount(String searchData, boolean active) throws ActionException {
+	protected int getCompanyCount(String searchData, boolean active, String authorId) throws ActionException {
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select count(*) FROM ").append(customDb).append("BIOMEDGPS_COMPANY c where 1=1 ");
@@ -474,10 +481,16 @@ public class CompanyManagementAction extends AuthorAction {
 			sql.append("and (c.STATUS_NO = '").append(Status.P.toString()).append("' ");
 			sql.append("or c.STATUS_NO = '").append(Status.E.toString()).append("') ");
 		}
+		
+		if (!StringUtil.isEmpty(authorId)) {
+			sql.append("and creator_profile_id = ? ");
+		}
 	
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			if (!StringUtil.isEmpty(searchData)) ps.setString(1, "%" + searchData.toLowerCase() + "%");
+			int i =1;
+			if (!StringUtil.isEmpty(searchData)) ps.setString(i++, "%" + searchData.toLowerCase() + "%");
+			if (!StringUtil.isEmpty(authorId)) ps.setString(i, authorId);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				return rs.getInt(1);
