@@ -243,7 +243,7 @@ public class GridDisplayAction extends SBActionAdapter {
 		// If the total is 100 the percentage is functionally 
 		// the same as the value and appending it to the 
 		// label will result in needless duplication of data.
-		if (total.doubleValue() == 100) return;
+		if (total.compareTo(new BigDecimal(100)) == 0) return;
 		
 		for (GridDetailVO detail : grid.getDetails()) {
 			detail.setLabel(detail.getLabel() + " - " + detail.getValue1());
