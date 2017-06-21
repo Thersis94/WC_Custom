@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
 
 // App Libs
 import com.biomed.smarttrak.admin.GridChartAction;
@@ -234,15 +235,15 @@ public class GridDisplayAction extends SBActionAdapter {
 	private void modifyLabel(GridVO grid) {
 		// Add up all values to see if the chart was generated
 		// with percentages instead of actual values.
-		Double total = 0.0;
+		BigDecimal total = new BigDecimal(0);
 		for (GridDetailVO detail : grid.getDetails()) {
-			total += Convert.formatDouble(detail.getValue1(), 0);
+			total = total.add(new BigDecimal(detail.getValue1()));
 		}
 		
 		// If the total is 100 the percentage is functionally 
 		// the same as the value and appending it to the 
 		// label will result in needless duplication of data.
-		if (total == 100) return;
+		if (total.compareTo(new BigDecimal(100)) == 0) return;
 		
 		for (GridDetailVO detail : grid.getDetails()) {
 			detail.setLabel(detail.getLabel() + " - " + detail.getValue1());
