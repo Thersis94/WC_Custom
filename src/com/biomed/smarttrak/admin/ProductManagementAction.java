@@ -618,7 +618,7 @@ public class ProductManagementAction extends AuthorAction {
 		}
 
 		if (!StringUtil.isEmpty(authorId)) {
-			sql.append("and creator_profile_id = ? ");
+			sql.append("and p.creator_profile_id = ? ");
 		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
