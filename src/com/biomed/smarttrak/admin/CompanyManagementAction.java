@@ -181,7 +181,7 @@ public class CompanyManagementAction extends AuthorAction {
 		CompanyAction ca = new CompanyAction(actionInit);
 		ca.setDBConnection(dbConn);
 		ca.setAttributes(attributes);
-		super.putModuleData(ca.retrieveCompany(req.getParameter("companyId"), role));
+		super.putModuleData(ca.retrieveCompany(req.getParameter("companyId"), role, true));
 	}
 	
 	
