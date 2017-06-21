@@ -271,6 +271,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			action.setActionInit(actionInit);
 			action.setDBConnection(dbConn);
 			action.setAttributes(getAttributes());
+			action.setActionInit(actionInit);
 			return action;
 		} catch (InstantiationException | IllegalAccessException e) {
 			throw new ActionException("Problem Instantiating type: " + actionType);
