@@ -68,25 +68,24 @@ public class MediaBinDistChannels {
 		return data.toArray(new String[data.size()]);
 	}
 
-	public void setOrgId(String orgId) {
-		if (orgId != null) this.orgId = orgId;
+	public static DistChannel getByOrgId(String orgId) {
+		for (DistChannel dc : DistChannel.values()) {
+			if (dc.getOrgId().equals(orgId))
+				return dc;
+		}
+		//default to EMEA, for all their different countries
+		return DistChannel.INTDS;
 	}
 
 	public String getOpCoNm() {
-		for (DistChannel dc : DistChannel.values()) {
-			if (dc.getOrgId().equals(orgId))
-				return dc.getChannel();
-		}
-		//default to EMEA, for all their different countries
-		return DistChannel.INTDS.getChannel();
+		return getByOrgId(orgId).getChannel();
 	}
 
 	public int getTypeCd() {
-		for (DistChannel dc : DistChannel.values()) {
-			if (dc.getOrgId().equals(orgId))
-				return dc.getTypeCd();
-		}
-		//default to EMEA, for all their different countries
-		return DistChannel.INTDS.getTypeCd();
+		return getByOrgId(orgId).getTypeCd();
+	}
+
+	public void setOrgId(String orgId) {
+		if (orgId != null) this.orgId = orgId;
 	}
 }
