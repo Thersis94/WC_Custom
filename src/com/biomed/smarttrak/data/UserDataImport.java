@@ -63,22 +63,22 @@ public class UserDataImport extends CommandLineUtil {
 	private Map<String,String> failedSourceUserAuthenticationUpdates;
 	
 	enum ImportField {
-		account_id, active, address_txt, address2_txt, 
-		advtrainingdt, allow_comm_flg, 
-		city_nm, company, companyurl, country_cd,
-		date_expiration, date_joined, demodt,
-		email_address_txt,
-		favoriteupdates, first_nm,
-		industry, inittrainingdt, 
-		jobcategory, 	joblevel, last_nm, 
-		main_phone_txt, mobile_phone_txt, notes,  
-		organization_id, othertrainingdt, password_txt,
-		role_id,
-		site_id,	smarttrak_id, smarttrak_user_nm, smarttrak_password_txt, 
-		source, staff, status, state_cd, super_user,
-		title, trainingdt,
-		updates, username,
-		zip_cd
+		ACCOUNT_ID, ACTIVE, ADDRESS_TXT, ADDRESS2_TXT, 
+		ADVTRAININGDT, ALLOW_COMM_FLG, 
+		CITY_NM, COMPANY, COMPANYURL, COUNTRY_CD,
+		DATE_EXPIRATION, DATE_JOINED, DEMODT,
+		EMAIL_ADDRESS_TXT,
+		FAVORITEUPDATES, FIRST_NM,
+		INDUSTRY, INITTRAININGDT, 
+		JOBCATEGORY, 	JOBLEVEL, LAST_NM, 
+		MAIN_PHONE_TXT, MOBILE_PHONE_TXT, NOTES,  
+		ORGANIZATION_ID, OTHERTRAININGDT, PASSWORD_TXT,
+		ROLE_ID,
+		SITE_ID,	SMARTTRAK_ID, SMARTTRAK_USER_NM, SMARTTRAK_PASSWORD_TXT, 
+		SOURCE, STAFF, STATUS, STATE_CD, SUPER_USER,
+		TITLE, TRAININGDT,
+		UPDATES, USERNAME,
+		ZIP_CD
 	}
 
 	public UserDataImport(String[] args) {
@@ -109,7 +109,14 @@ public class UserDataImport extends CommandLineUtil {
 		List<Map<String,Object>> records = retrieveData();
 		log.info("records retrieved: " + records.size());
 		try {
-			insertRecords(records);
+			//insertRecords(records);
+			for (Map<String,Object> record : records) {
+				log.debug("Record start.....");
+				for (Map.Entry<String,Object> rec : record.entrySet()) {
+					log.debug(rec.getKey() + " | " + rec.getValue());
+				}
+				log.debug("Record end.......");
+			}
 		} catch(Exception e) {
 			log.error("Error, failed to insert records, ", e);
 		}
@@ -149,7 +156,7 @@ public class UserDataImport extends CommandLineUtil {
 		while(rs.next()) {
 			record = new HashMap<>();
 			for (ImportField field : ImportField.values()) {
-				record.put(field.name(), rs.getObject(field.name()));
+				record.put(field.name(), rs.getObject(field.name().toLowerCase()));
 			}
 			records.add(record);
 		}
@@ -261,16 +268,16 @@ public class UserDataImport extends CommandLineUtil {
 	protected UserVO initUser(Map<String,Object> dataSet) {
 		UserVO user = new UserVO();
 		user.setData(dataSet);
-		user.setUserId((String)dataSet.get(ImportField.smarttrak_id.name()));
-		user.setPassword(StringUtil.checkVal(dataSet.get(ImportField.smarttrak_password_txt.name()),null));
+		user.setUserId((String)dataSet.get(ImportField.SMARTTRAK_ID.name()));
+		user.setPassword(StringUtil.checkVal(dataSet.get(ImportField.SMARTTRAK_PASSWORD_TXT.name()),null));
 		// ensure status code is set to a default or uppercase value.
-		user.setStatusCode(StringUtil.checkVal(dataSet.get(ImportField.status.name()),UserVO.Status.INACTIVE.getCode()).toUpperCase());
-		user.setCreateDate(Convert.formatDate(StringUtil.checkVal(dataSet.get(ImportField.date_joined.name()),null)));
-		user.setExpirationDate(Convert.formatDate(StringUtil.checkVal(dataSet.get(ImportField.date_expiration.name()),null)));
-		user.setAccountId(StringUtil.checkVal(dataSet.get(ImportField.account_id.name()),null));
+		user.setStatusCode(StringUtil.checkVal(dataSet.get(ImportField.STATUS.name()),UserVO.Status.INACTIVE.getCode()).toUpperCase());
+		user.setCreateDate(Convert.formatDate(StringUtil.checkVal(dataSet.get(ImportField.DATE_JOINED.name()),null)));
+		user.setExpirationDate(Convert.formatDate(StringUtil.checkVal(dataSet.get(ImportField.DATE_EXPIRATION.name()),null)));
+		user.setAccountId(StringUtil.checkVal(dataSet.get(ImportField.ACCOUNT_ID.name()),null));
 
 		// parse user's email.
-		parseUserEmail(user, (String)dataSet.get(ImportField.smarttrak_user_nm.name()));
+		parseUserEmail(user, (String)dataSet.get(ImportField.SMARTTRAK_USER_NM.name()));
 
 		return user;
 	}
@@ -460,7 +467,7 @@ public class UserDataImport extends CommandLineUtil {
 	 */
 	protected void processAuthentication(Map<String,Object> dataSet, 
 			UserLogin ul, UserVO user) throws DatabaseException {
-		String password = StringUtil.checkVal(dataSet.get(ImportField.password_txt.name()),null);
+		String password = StringUtil.checkVal(dataSet.get(ImportField.PASSWORD_TXT.name()),null);
 		if (password == null || user.getEmailAddress() == null) 
 			return;
 		
@@ -510,8 +517,8 @@ public class UserDataImport extends CommandLineUtil {
 	 */
 	protected void processCommFlag(Connection dbConn, ProfileManager pm, 
 			Map<String,Object> dataSet, String profileId) throws DatabaseException {
-		String orgId = StringUtil.checkVal(dataSet.get(ImportField.organization_id.name()),null);
-		String allowCommFlag = StringUtil.checkVal(dataSet.get(ImportField.allow_comm_flg.name()),null);
+		String orgId = StringUtil.checkVal(dataSet.get(ImportField.ORGANIZATION_ID.name()),null);
+		String allowCommFlag = StringUtil.checkVal(dataSet.get(ImportField.ALLOW_COMM_FLG.name()),null);
 		
 		if (orgId == null || allowCommFlag == null) 
 			return;
@@ -530,8 +537,8 @@ public class UserDataImport extends CommandLineUtil {
 	 */
 	protected void processRole(Connection dbConn, ProfileRoleManager prm, 
 			Map<String,Object> dataSet, String profileId) throws DatabaseException {
-		String newRoleId = StringUtil.checkVal(dataSet.get(ImportField.role_id.name()),null);
-		String siteId = StringUtil.checkVal(dataSet.get(ImportField.site_id.name()),null);
+		String newRoleId = StringUtil.checkVal(dataSet.get(ImportField.ROLE_ID.name()),null);
+		String siteId = StringUtil.checkVal(dataSet.get(ImportField.SITE_ID.name()),null);
 		if (newRoleId == null || siteId == null) 
 			return;
 		
@@ -627,7 +634,7 @@ public class UserDataImport extends CommandLineUtil {
 		String regSubId = new UUIDGenerator().getUUID();
 		try (PreparedStatement ps = dbConn.prepareStatement(queries.get("REGSUB").toString())) {
 			ps.setString(idx++, regSubId);
-			ps.setString(idx++, (String)record.get(ImportField.site_id.name()));
+			ps.setString(idx++, (String)record.get(ImportField.SITE_ID.name()));
 			ps.setString(idx++, props.getProperty("registerActionId"));
 			ps.setString(idx++, user.getProfileId());
 			ps.setTimestamp(idx++, Convert.getCurrentTimestamp());
@@ -643,7 +650,7 @@ public class UserDataImport extends CommandLineUtil {
 				if (RegistrationMap.DIVISIONS.equals(regKey)) {
 					formatDivisionInserts(ps,regKey,regSubId,userDivs);
 				} else {
-					formatRegistrationInsert(ps,regKey,regSubId, record.get(regKey.name().toLowerCase()));
+					formatRegistrationInsert(ps,regKey,regSubId, record.get(regKey.name()));
 				}
 			}
 			ps.executeBatch();
@@ -749,17 +756,17 @@ public class UserDataImport extends CommandLineUtil {
 	 * @param records
 	 */
 	protected void sanitizeFieldData(Map<String,Object> record) {
-		String country = StringUtil.checkVal(record.get(ImportField.country_cd.name()));
-		String tmpVal = (String)record.get(ImportField.zip_cd.name());
-		record.put(ImportField.zip_cd.name(),fixZipCode(tmpVal,country));
-		tmpVal = (String)record.get(ImportField.main_phone_txt.name());
-		record.put(ImportField.main_phone_txt.name(), stripPhoneExtension(tmpVal));
-		tmpVal = (String)record.get(ImportField.mobile_phone_txt.name());
-		record.put(ImportField.mobile_phone_txt.name(),stripPhoneExtension(tmpVal));
-		tmpVal = (String)record.get(ImportField.first_nm.name());
-		record.put(ImportField.first_nm.name(), checkNameField(tmpVal));
-		tmpVal = (String)record.get(ImportField.last_nm.name());
-		record.put(ImportField.last_nm.name(), checkNameField(tmpVal));
+		String country = StringUtil.checkVal(record.get(ImportField.COUNTRY_CD.name()));
+		String tmpVal = (String)record.get(ImportField.ZIP_CD.name());
+		record.put(ImportField.ZIP_CD.name(),fixZipCode(tmpVal,country));
+		tmpVal = (String)record.get(ImportField.MAIN_PHONE_TXT.name());
+		record.put(ImportField.MAIN_PHONE_TXT.name(), stripPhoneExtension(tmpVal));
+		tmpVal = (String)record.get(ImportField.MOBILE_PHONE_TXT.name());
+		record.put(ImportField.MOBILE_PHONE_TXT.name(),stripPhoneExtension(tmpVal));
+		tmpVal = (String)record.get(ImportField.FIRST_NM.name());
+		record.put(ImportField.FIRST_NM.name(), checkNameField(tmpVal));
+		tmpVal = (String)record.get(ImportField.LAST_NM.name());
+		record.put(ImportField.LAST_NM.name(), checkNameField(tmpVal));
 	}
 	
 	/**
@@ -896,10 +903,6 @@ public class UserDataImport extends CommandLineUtil {
 		sql.append("'wc1mp0rt' AS PASSWORD_TXT, 'BMG_SMARTTRAK' as ORGANIZATION_ID, ");
 		sql.append("'BMG_SMARTTRAK_1' as SITE_ID, '1' as ALLOW_COMM_FLG ");
 		sql.append("from biomedgps.profiles_user ");
-		
-		// TODO DEBUG filter - remove after testing
-		//sql.append("where COMPANY = 'Biomedgps' ");
-		
 		sql.append("order by active desc, id; ");
 		return sql;
 	}
