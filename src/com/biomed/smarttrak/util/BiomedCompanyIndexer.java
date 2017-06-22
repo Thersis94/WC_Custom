@@ -12,8 +12,10 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
@@ -109,6 +111,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			addCompany(companies, company);
 
 			buildContent(companies, id);
+			buildLocationInformation(companies);
 		} catch (SQLException e) {
 			log.error(e);
 		}
@@ -293,6 +296,46 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		t.buildNodePaths();
 
 		return t;
+	}
+	
+	/**
+	 * Get the state and country for the company that owns each product
+	 * and assign that information to the solr document.
+	 * @param companies
+	 */
+	protected void buildLocationInformation(List<SecureSolrDocumentVO> companies) {
+		Map<String, LocationVO> locationMap = retrieveLocations();
+		for (SecureSolrDocumentVO company : companies) {
+			String companyId = company.getDocumentId();
+			LocationVO loc = locationMap.get(companyId);
+			if (loc == null) continue;
+			company.setState(loc.getStateCode());
+			company.setCountry(loc.getCountryName());
+		}
+	}
+	
+	/**
+	 * Get a collection of all companies and thier primary locations
+	 * @return
+	 */
+	protected Map<String, LocationVO> retrieveLocations() {
+		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_LOCATION l ");
+		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = l.COUNTRY_CD ");
+		sql.append("ORDER BY COMPANY_ID, PRIMARY_LOCN_FLG DESC ");
+
+		DBProcessor db = new DBProcessor(dbConn);
+		List<Object> results = db.executeSelect(sql.toString(), null, new LocationVO());
+		Map<String, LocationVO> locations = new HashMap<>();
+		for (Object o : results) {
+			LocationVO vo = (LocationVO) o;
+			// The first location for each company is it's primary location, others can be ignored.
+			if (!locations.containsKey(vo.getCompanyId()))
+				locations.put(vo.getCompanyId(), vo);
+		}
+
+		return locations;
 	}
 
 
