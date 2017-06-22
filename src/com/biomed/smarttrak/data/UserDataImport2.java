@@ -111,13 +111,16 @@ public class UserDataImport2 extends CommandLineUtil {
 		List<Map<String,Object>> records = retrieveData();
 		log.info("records retrieved: " + records.size());
 		try {
-			//insertRecords(records);
+			insertRecords(records);
+			
+			/* for record verification of retrieved records
 			for (Map<String,Object> record : records) {
 				log.info("record for user ID: " + record.get(ImportField.smarttrak_id.name()));
 				for (ImportField field : ImportField.values()) {
 					log.info(field.name() + " | " + record.get(field.name()));
 				}
 			}
+			*/
 		} catch(Exception e) {
 			log.error("Error, failed to insert records, ", e);
 		}
@@ -239,13 +242,13 @@ public class UserDataImport2 extends CommandLineUtil {
 				log.error("Error processing source ID " + user.getUserId() + ", " + ex);
 			}
 
-			//increment our counters
+			// if valid profile, insert reg records, create biomedgps user, update profile/auth.
 			if (user.getProfileId() != null) {
 				successCnt++;
 				insertRegistrationRecords(dbConn, dataSet, user, userDivs.get(user.getUserId()));
 				insertSourceUser(dbConn, user);
 				// if valid auth record, update profile/auth
-				if (! hasInvalidAuthentication(user)) {
+				if (hasValidAuthentication(user)) {
 					updateSourceUserProfile(dbConn, user);
 					updateSourceUserAuthentication(dbConn, user);
 				}
@@ -438,10 +441,10 @@ public class UserDataImport2 extends CommandLineUtil {
 	 * @param sUser
 	 * @return
 	 */
-	protected boolean hasInvalidAuthentication(UserVO sUser) {
-		return StringUtil.isEmpty(sUser.getAuthenticationId()) ||
+	protected boolean hasValidAuthentication(UserVO sUser) {
+		return ! (StringUtil.isEmpty(sUser.getAuthenticationId()) ||
 				StringUtil.isEmpty(sUser.getPassword()) || 
-				"INVALID".equalsIgnoreCase(sUser.getPassword());
+				"INVALID".equalsIgnoreCase(sUser.getPassword()));
 	}
 	
 	/**
@@ -635,7 +638,7 @@ public class UserDataImport2 extends CommandLineUtil {
 		String regSubId = new UUIDGenerator().getUUID();
 		try (PreparedStatement ps = dbConn.prepareStatement(queries.get("REGSUB").toString())) {
 			ps.setString(idx++, regSubId);
-			ps.setString(idx++, (String)record.get("SITE_ID"));
+			ps.setString(idx++, (String)record.get(ImportField.site_id.name()));
 			ps.setString(idx++, props.getProperty("registerActionId"));
 			ps.setString(idx++, user.getProfileId());
 			ps.setTimestamp(idx++, Convert.getCurrentTimestamp());
@@ -651,7 +654,7 @@ public class UserDataImport2 extends CommandLineUtil {
 				if (RegistrationMap.DIVISIONS.equals(regKey)) {
 					formatDivisionInserts(ps,regKey,regSubId,userDivs);
 				} else {
-					formatRegistrationInsert(ps,regKey,regSubId, record.get(regKey.name()));
+					formatRegistrationInsert(ps,regKey,regSubId, record.get(regKey.name().toLowerCase()));
 				}
 			}
 			ps.executeBatch();
@@ -787,6 +790,7 @@ public class UserDataImport2 extends CommandLineUtil {
 	
 	/**
 	 * Strips out any extension text that was included as part of a phone number
+	 * and strips out alphanumerics.
 	 * e.g.
 	 * 		123-456-7890 ext 123 ('ext 123' is removed)
 	 * 		123-456-7890, xt 456 (', xt 456' is removed)
@@ -807,9 +811,11 @@ public class UserDataImport2 extends CommandLineUtil {
 			if (idx == -1) 
 				idx = tmpPhone.indexOf('x');
 		}
-		if (idx > -1) 
-			return tmpPhone.substring(0, idx).trim();
-		return tmpPhone.trim();
+		if (idx > -1)
+			tmpPhone = tmpPhone.substring(0, idx);
+		
+		return StringUtil.removeNonNumeric(tmpPhone);
+		
 	}
 	
 	/**
@@ -820,13 +826,15 @@ public class UserDataImport2 extends CommandLineUtil {
 	protected String checkNameField(String val) {
 		if (StringUtil.isEmpty(val)) 
 			return val;
-		
-		if (val.indexOf('"') > -1)
-			val.replace("\"", "");
-		
-		if (val.indexOf(',') > -1) 
-			return val.substring(0,val.indexOf(','));
-		return val;
+
+		String tmpVal = val;
+		if (tmpVal.indexOf('"') > -1)
+			tmpVal = tmpVal.replace("\"", "");
+
+		if (tmpVal.indexOf(',') > -1) 
+			tmpVal = tmpVal.substring(0,tmpVal.indexOf(','));
+
+		return tmpVal;
 	}
 	
 	/**
@@ -875,7 +883,7 @@ public class UserDataImport2 extends CommandLineUtil {
 	 */
 	protected StringBuilder buildMainQuery() {
 		StringBuilder sql = new StringBuilder(1375);
-		sql.append("select id AS SMARTTRAK_ID, username AS SMARTTRAK_USER_NM, ");
+		sql.append("select cast(id as varchar) AS SMARTTRAK_ID, username AS SMARTTRAK_USER_NM, ");
 		sql.append("first_name AS FIRST_NM, last_name AS LAST_NM, lower(email) AS EMAIL_ADDRESS_TXT,  ");
 		sql.append("address AS ADDRESS_TXT, address1 AS ADDRESS2_TXT, city AS CITY_NM, state AS STATE_CD,  ");
 		sql.append("zip_code AS ZIP_CD, country as COUNTRY_CD,phone_number AS MAIN_PHONE_TXT,  ");
@@ -885,13 +893,13 @@ public class UserDataImport2 extends CommandLineUtil {
 		sql.append("else upper(status) end else upper(status) end as STATUS, ");
 		sql.append("date_joined as DATE_JOINED, ");
 		sql.append("expiration as DATE_EXPIRATION,username AS USERNAME, password AS SMARTTRAK_PASSWORD_TXT, ");
-		sql.append("title AS TITLE,account_id as ACCOUNT_ID,update_frequency AS UPDATES,  ");
+		sql.append("title AS TITLE, cast(account_id as varchar) as ACCOUNT_ID,update_frequency AS UPDATES,  ");
 		sql.append("fav_frequency AS FAVORITEUPDATES, company as COMPANY,company_url as COMPANYURL, ");
 		sql.append("biomedgps.profiles_user.\"source\" as \"SOURCE\",date_demoed as DEMODT, ");
 		sql.append("date_trained as TRAININGDT,date_training_initial as INITTRAININGDT, ");
 		sql.append("date_training_advanced as ADVTRAININGDT,date_training_other as OTHERTRAININGDT, ");
-		sql.append("job_category_id as JOBCATEGORY,job_level_id as JOBLEVEL, ");
-		sql.append("industry_id as INDUSTRY, ");
+		sql.append("cast(job_category_id as varchar) as JOBCATEGORY, cast(job_level_id as varchar) as JOBLEVEL, ");
+		sql.append("cast(industry_id as varchar) as INDUSTRY, ");
 		sql.append("regexp_replace(quick_notes, E'[\\n\\r\\f\\t\\v]+', ';;', 'g') as NOTES, ");
 		sql.append("case when is_active='TRUE' then ");
 		sql.append("case when is_staff='TRUE' then '3eef678eb39e87277f000101dfd4f140' ");
