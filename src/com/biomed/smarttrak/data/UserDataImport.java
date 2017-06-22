@@ -109,14 +109,7 @@ public class UserDataImport extends CommandLineUtil {
 		List<Map<String,Object>> records = retrieveData();
 		log.info("records retrieved: " + records.size());
 		try {
-			//insertRecords(records);
-			for (Map<String,Object> record : records) {
-				log.debug("Record start.....");
-				for (Map.Entry<String,Object> rec : record.entrySet()) {
-					log.debug(rec.getKey() + " | " + rec.getValue());
-				}
-				log.debug("Record end.......");
-			}
+			insertRecords(records);
 		} catch(Exception e) {
 			log.error("Error, failed to insert records, ", e);
 		}
