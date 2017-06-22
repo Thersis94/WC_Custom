@@ -328,9 +328,10 @@ public class UpdatesAction extends AuthorAction {
 		sql.append("from ").append(schema).append("biomedgps_update a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		if (isList) {
-			sql.append("left outer join (select wc_sync_id, wc_key_id, row_number() ");
+			sql.append(LEFT_OUTER_JOIN).append("(select wc_sync_id, wc_key_id, row_number() ");
 			sql.append("over (partition by wc_key_id order by create_dt) as rn from wc_sync) s ");
 			sql.append("on s.wc_key_id=a.update_id and s.rn=1 ");
+			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_type ut on ut.TYPE_CD=a.TYPE_CD ");
 			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section b ");
 			sql.append("on a.update_id=b.update_id ");
 		} else {
