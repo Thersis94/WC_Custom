@@ -359,10 +359,13 @@ public class MarketManagementAction extends AuthorAction {
 		
 		@SuppressWarnings("unchecked")
 		List<MarketVO> markets = (List<MarketVO>)(List<?>)results;
-		
-		Map<String, List<MarketVO>> orderedMarkets = orderMarkets(markets);
-		
-		putModuleData(orderedMarkets, markets.size(), false);
+		if (Convert.formatBoolean(req.getParameter("loadData"))) {
+			putModuleData(markets);
+		} else {
+			Map<String, List<MarketVO>> orderedMarkets = orderMarkets(markets);
+			
+			putModuleData(orderedMarkets, markets.size(), false);
+		}
 	}
 
 
