@@ -460,6 +460,13 @@ public class UpdatesAction extends AuthorAction {
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		UpdateVO u = new UpdateVO(req);
+		
+		// The form used to send this update can come from either the updates tool or 
+		// we need the updates review tool. If it has come from the review tool 
+		// the end redirect to send the user back there instead of the updates tool
+		if (Convert.formatBoolean(req.getParameter("reviewUpdate"))) {
+			req.setAttribute(Constants.REDIRECT_URL, "?actionType=uwr");
+		}
 
 		try {
 			if (isDelete) {
