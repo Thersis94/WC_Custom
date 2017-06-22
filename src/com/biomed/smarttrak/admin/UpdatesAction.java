@@ -420,13 +420,11 @@ public class UpdatesAction extends AuthorAction {
 	 */
 	private void markReviewed(String updateId) throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
-
 		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_UPDATE set status_cd = 'R' where UPDATE_ID = ?");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, updateId);
-
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new ActionException(e);
@@ -451,6 +449,12 @@ public class UpdatesAction extends AuthorAction {
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		UpdateVO u = new UpdateVO(req);
+
+		// The form used to send this update can come from either the updates tool or 
+		// we need the updates review tool. If it has come from the review tool 
+		// the end redirect to send the user back there instead of the updates tool
+		if (Convert.formatBoolean(req.getParameter("reviewUpdate")))
+			req.setAttribute(Constants.REDIRECT_URL, "?actionType=uwr");
 
 		try {
 			if (isDelete) {
@@ -570,7 +574,7 @@ public class UpdatesAction extends AuthorAction {
 		sortMapper = new HashMap<>();
 		sortMapper.put("titleTxt", "title_txt");
 		sortMapper.put("publishDt", "publish_dt");
-		sortMapper.put("typeNm", "type_cd");
+		sortMapper.put("typeNm", "type_nm");
 		sortMapper.put("statusNm", "status_cd");
 	}
 }

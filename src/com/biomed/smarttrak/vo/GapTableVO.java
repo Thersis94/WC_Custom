@@ -217,6 +217,7 @@ public class GapTableVO implements Serializable {
 			Node c = cNodes.get(k);
 			primChild.add(new GapColumnVO(colGroupNo, c.getNodeId(), c.getNodeName(), null));
 			altChild.add(new GapColumnVO(colGroupNo, p.getNodeId(), p.getNodeName(), null));
+			numKids++;
 		}
 
 		return numKids;

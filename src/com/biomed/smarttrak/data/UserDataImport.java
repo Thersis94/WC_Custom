@@ -1,16 +1,19 @@
 package com.biomed.smarttrak.data;
 
 // Java 7
-import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+
+// Log4j
+import org.apache.log4j.PropertyConfigurator;
 
 // WC custom
 import com.biomed.smarttrak.vo.UserVO;
@@ -18,6 +21,7 @@ import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 
 //SMTBaseLibs
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -26,9 +30,7 @@ import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.action.user.SBProfileManager;
-import com.smt.sitebuilder.admin.action.data.SiteUserVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.db.ProfileImport;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.UserLogin;
 
@@ -46,219 +48,392 @@ import com.smt.sitebuilder.security.UserLogin;
  * @version 1.0
  * @since Jan 19, 2017
  ****************************************************************************/
-public class UserDataImport extends ProfileImport {
+public class UserDataImport extends CommandLineUtil {
 
 	// import env params
-	private static final String SOURCE_FILE_PATH="/data/SMT/accounts/SmartTRAK/smarttrak/user-import/test/smarttrak-TEST-2017-03-05.csv";
-	private static final String GEOCODE_CLASS="com.siliconmtn.gis.SMTGeocoder";
-	private static final String GEOCODE_URL="http://localhost:9000/websvc/geocoder";
-	// WC params
-	private static final String REG_PMID = "6d9674d8b7dc54077f0001019b2cb979";
-	private static final String REG_ACTION_ID = "ea884793b2ef163f7f0001011a253456";
-	// profile header vals
-	private static final String FIRST_NM = "FIRST_NM";
-	private static final String LAST_NM = "LAST_NM";
-	private static final String ZIP_CD = "ZIP_CD";
-	private static final String MAIN_PHONE_TXT = "MAIN_PHONE_TXT";
-	private static final String MOBILE_PHONE_TXT = "MOBILE_PHONE_TXT";
-	private Map<String,String> regFieldMap;
+	private static final String SOURCE_FILE_CONFIG="scripts/bmg_smarttrak/user_import_config.properties";
+	private static final String SOURCE_FILE_LOG="scripts/bmg_smarttrak/user_import_log4j.properties";
 
-	public UserDataImport() {
-		super();
-		regFieldMap = createRegFieldMap();
+	// profile header vals
+	private Map<String,StringBuilder> queries;
+	private Map<String,String> duplicateProfiles;
+	private Map<String,String> processedProfiles;
+	private Map<String,String> failedSourceUserInserts;
+	private Map<String,String> failedSourceUserProfileUpdates;
+	private Map<String,String> failedSourceUserAuthenticationUpdates;
+	
+	enum ImportField {
+		ACCOUNT_ID, ACTIVE, ADDRESS_TXT, ADDRESS2_TXT, 
+		ADVTRAININGDT, ALLOW_COMM_FLG, 
+		CITY_NM, COMPANY, COMPANYURL, COUNTRY_CD,
+		DATE_EXPIRATION, DATE_JOINED, DEMODT,
+		EMAIL_ADDRESS_TXT,
+		FAVORITEUPDATES, FIRST_NM,
+		INDUSTRY, INITTRAININGDT, 
+		JOBCATEGORY, 	JOBLEVEL, LAST_NM, 
+		MAIN_PHONE_TXT, MOBILE_PHONE_TXT, NOTES,  
+		ORGANIZATION_ID, OTHERTRAININGDT, PASSWORD_TXT,
+		ROLE_ID,
+		SITE_ID,	SMARTTRAK_ID, SMARTTRAK_USER_NM, SMARTTRAK_PASSWORD_TXT, 
+		SOURCE, STAFF, STATUS, STATE_CD, SUPER_USER,
+		TITLE, TRAININGDT,
+		UPDATES, USERNAME,
+		ZIP_CD
+	}
+
+	public UserDataImport(String[] args) {
+		super(args);
+		PropertyConfigurator.configure(SOURCE_FILE_LOG);
+		queries = initQueryStatements();
+		duplicateProfiles = new LinkedHashMap<>();
+		processedProfiles = new LinkedHashMap<>();
+		failedSourceUserInserts = new LinkedHashMap<>();
+		failedSourceUserProfileUpdates = new LinkedHashMap<>();
+		failedSourceUserAuthenticationUpdates = new LinkedHashMap<>();
 	}
 	
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {        
-        UserDataImport db = new UserDataImport();
+	public static void main(String[] args) {
+		UserDataImport udi = new UserDataImport(args);
+		udi.run();
+	}
+	
+	public void run() {
+		// load props
+		loadProperties(SOURCE_FILE_CONFIG);
+		// get dbconn
+		loadDBConnection(props);
+		// retrieve records
+		List<Map<String,Object>> records = retrieveData();
+		log.info("records retrieved: " + records.size());
 		try {
-			log.info("importFile=" + SOURCE_FILE_PATH);
-			List<Map<String,String>> data = db.parseFile(SOURCE_FILE_PATH);
-			db.insertRecords(data);
-		} catch (Exception e) {
-			log.error("Error Processing ... " + e.getMessage());
+			insertRecords(records);
+		} catch(Exception e) {
+			log.error("Error, failed to insert records, ", e);
 		}
+		
+		// clean up
+		closeDBConnection();
+	}
+	
+	/**
+	 * Retrieve data.
+	 * @return
+	 */
+	protected List<Map<String,Object>> retrieveData() {
+		// doQuery
+		StringBuilder sql = buildMainQuery();
+		log.info("SQL: " + sql.toString());
+		List<Map<String,Object>> records;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			records = parseResults(rs);
+		} catch (Exception e) {
+			log.error("Error retrieving data, ", e);
+			records = new ArrayList<>();
+		}
+		return records;
+	}
+	
+	/**
+	 * Parses the result set into a Map of String (key) to Object (value).
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	protected List<Map<String,Object>> parseResults(ResultSet rs) throws SQLException {
+		Map<String,Object> record;
+		List<Map<String,Object>> records = new ArrayList<>();
+		while(rs.next()) {
+			record = new HashMap<>();
+			for (ImportField field : ImportField.values()) {
+				record.put(field.name(), rs.getObject(field.name().toLowerCase()));
+			}
+			records.add(record);
+		}
+		return records;
 	}
 
 	/**
-	 * 
+	 * Processes import records
 	 * @param records
 	 * @throws Exception
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	protected void insertRecords(List<Map<String,String>> records) throws Exception {
+	protected void insertRecords(List<Map<String, Object>> records) throws Exception {
 		log.debug("inserting records..., records list size is: " + records.size());
+		if (records.isEmpty()) return;
+		
+		// create config map
+		Map<String, Object> config = new HashMap<>();
+		config.put(Constants.ENCRYPT_KEY, props.getProperty("encryptionKey"));
+		config.put(Constants.GEOCODE_CLASS, props.getProperty("geocodeClass"));
+		config.put(Constants.GEOCODE_URL, props.getProperty("geocodeUrl"));
+
+		// init profile managers
+	    ProfileManager pm = new SBProfileManager(config);
+		ProfileRoleManager prm = new ProfileRoleManager();
+		UserLogin ul = new UserLogin(dbConn, props.getProperty("encryptionKey"));
+
+		// load user divisions
+		Map<String,List<String>> userDivs = loadUserDivisions(dbConn);
+
+		// init vars
 		int recordCnt = 0;
 		int successCnt = 0;
 		int failedCnt = 0;
 		int skipCnt = 0;
-		String sourceId;
-		//Open DB Connection
-		Connection dbConn = getDBConnection(DESTINATION_AUTH[0], DESTINATION_AUTH[1], DESTINATION_DB_DRIVER, DESTINATION_DB_URL);
-		
-		List<UserVO> sourceUsers = new ArrayList<>();
-		Map<String, Object> config = new HashMap<>();
-		config.put(Constants.ENCRYPT_KEY, encKey);
-		config.put(Constants.GEOCODE_CLASS, GEOCODE_CLASS);
-		config.put(Constants.GEOCODE_URL, GEOCODE_URL);
-	    ProfileManager pm = new SBProfileManager(config);
-		ProfileRoleManager prm = new ProfileRoleManager();
-		UserLogin ul = new UserLogin(dbConn, encKey);
-		SiteUserVO user;
+		UserVO user;
 		Map<String,Object> dataSet;
-		String tmpField1;
-		String tmpField2;
+
 		//iterate the records, inserting each
-		Iterator iter = records.iterator();
+		Iterator<Map<String,Object>> iter = records.iterator();
 		while (iter.hasNext()) {
 			recordCnt++;
-			// populate user data vo
-			user = new SiteUserVO();
-			dataSet = (Map<String,Object>) iter.next();
-			sourceId = (String)dataSet.get("SMARTTRAK_ID");
+			dataSet = iter.next();
 			
-			// clean up certain values before we use them.
+			// clean up certain values before we import them.
 			sanitizeFieldData(dataSet);
-			user.setData(dataSet);
-
-			// check email address
-			if (!StringUtil.isValidEmail(user.getEmailAddress())) {
-				user.setEmailAddress(null);
-				log.warn("Invalid email found, setting to null for source id|email: " + sourceId + "|" + user.getEmailAddress());
-			} else {
-				user.setValidEmailFlag(1);
+			
+			// init site user from import source
+			user = initUser(dataSet);
+			
+			log.info("START: processing record|source: " + recordCnt + "|" + user.getUserId());
+			// if we weren't able to get a valid email address for the user, don't even process it.
+			if (user.getValidEmailFlag() == 0) {
+				logInvalidUserRecord(recordCnt, user);
+				failedCnt++;
+				continue;
 			}
 			
 			try {
 				/* check for pre-existing user profile */
-				tmpField1 = StringUtil.checkVal(dataSet.get("PROFILE_ID"),null);
-				findProfile(dbConn, pm, user, tmpField1);
+				findProfile(dbConn, pm, user);
 				
-				/* Process a password if supplied for the user */
-				tmpField1 = StringUtil.checkVal(dataSet.get("PASSWORD_TXT"),null);
-				checkForPassword(ul, user,tmpField1);
+				/* Check for duplicates */
+				if (isDuplicateProfile(user,recordCnt))
+					continue;
+				
+				/* create a profile if appropriate, otherwise, leave profile untouched */
+				skipCnt = processProfile(dbConn, pm, user, skipCnt);
 
-				/* create a profile if appropriate */
-				createProfile(dbConn, pm, user, skipCnt);
-				
+				/* Create an auth record if appropriate, otherwise, leave auth untouched */
+				processAuthentication(dataSet,ul,user);
+
 				/* If an org ID and comm flag were supplied, opt-in this user for the given org.	 */
-				tmpField1 = StringUtil.checkVal(dataSet.get("ORGANIZATION_ID"),null);
-				tmpField2 = StringUtil.checkVal(dataSet.get("ALLOW_COMM_FLG"),null);
-				checkForCommFlag(dbConn, pm, user.getProfileId(), tmpField1, tmpField2);
+				processCommFlag(dbConn, pm, dataSet, user.getProfileId());
 
 				/* Add profile roles for this user for the specified site ID. */
-				tmpField1 = StringUtil.checkVal(dataSet.get("ROLE_ID"),null);
-				tmpField2 = StringUtil.checkVal(dataSet.get("SITE_ID"),null);
-				checkForRole(dbConn, prm, user.getProfileId(), tmpField1, tmpField2);
-				
+				processRole(dbConn, prm, dataSet, user.getProfileId());
+
 			} catch(Exception ex) {
-				log.error("Error processing source ID " + sourceId + ", " + ex.getMessage());
+				log.error("Error processing source ID " + user.getUserId() + ", " + ex);
 			}
-			
-			//increment our counters
+
+			// if valid profile, insert reg records, create biomedgps user, update profile/auth.
 			if (user.getProfileId() != null) {
 				successCnt++;
-				try {
-					insertRegistrationRecords(dbConn, dataSet, user);
-				} catch (Exception e) {
-					log.error("Error inserting registration records for this record: " + recordCnt);
+				insertRegistrationRecords(dbConn, dataSet, user, userDivs.get(user.getUserId()));
+				insertSourceUser(dbConn, user);
+				// if valid auth record, update profile/auth
+				if (hasValidAuthentication(user)) {
+					updateSourceUserProfile(dbConn, user);
+					updateSourceUserAuthentication(dbConn, user);
 				}
-				// now create a native UserVO for generating the post-import inserts/updates.
-				sourceUsers.add(createSourceUser(dataSet,sourceId,user));
+				log.info("END: inserting for record|source: " + recordCnt + "|" + user.getUserId());
+			} else {
+				// if we couldn't successfully create a profile, add to failed count.
+				logInvalidUserRecord(recordCnt, user);
+				failedCnt++;
 			}
 		}
-		
-		log.debug(recordCnt + " total profile import records processed.");
-		log.debug(successCnt + " profile import records successfully processed.");
-		log.debug(failedCnt + " profile import records failed.");
-		log.debug(skipCnt + " pre-existing profiles found.");
-		
-		//close DB Connection
-		this.closeConnection(dbConn);
-		
-		/* Output inserts for the source ID mapped to the WC profile ID found/created. */
-		for (UserVO sUser : sourceUsers) {
-			logUserInsertStatement(sUser);
-			logAuthUpdateStatement(sUser);
-		}
+
+		// log summary info.
+		writeLogs(recordCnt,successCnt,failedCnt,skipCnt);
 	}
-	
+
 	/**
-	 * Writes the post-import user insert query to the log file for post-import execution
-	 * @param sUser
+	 * Initializes a UserVO from the dataset map passed in.
+	 * @param dataSet
 	 * @return
 	 */
-	protected void logUserInsertStatement(UserVO sUser) {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("insert into custom.biomedgps_user (user_id, profile_id, ");
-		if (sUser.getRegisterSubmittalId() != null) sql.append("register_submittal_id, ");
-		if (sUser.getExpirationDate() != null) sql.append("expiration_dt, ");
-		if (sUser.getCreateDate() != null) sql.append("create_dt, ");
-		sql.append("status_cd) values (");
-		
-		sql.append("'").append(sUser.getUserId()).append("',");
-		sql.append("'").append(sUser.getProfileId()).append("',");
-		if (sUser.getRegisterSubmittalId() != null) { 
-			sql.append("'");
-			sql.append(sUser.getRegisterSubmittalId());
-			sql.append("',");
-		}
-		if (sUser.getExpirationDate() != null) {
-			sql.append("'");
-			sql.append(Convert.formatDate(sUser.getExpirationDate(),Convert.DATE_TIME_DASH_PATTERN));
-			sql.append("',");
-		}
-		if (sUser.getCreateDate() != null) {
-			sql.append("'");
-			sql.append(Convert.formatDate(sUser.getCreateDate(),Convert.DATE_TIME_DASH_PATTERN));
-			sql.append("',");
-		}
-		sql.append("'").append(sUser.getStatusCode().toUpperCase()).append("'");
-		sql.append(");");
-		log.info(sql.toString());
-	}
-	
-	/**
-	 * Writes the auth record update statement to the log for post-import execution.
-	 * @param sUser
-	 */
-	protected void logAuthUpdateStatement(UserVO sUser) {
-		// if auth ID, update auth record with original BMG SmartTRAK pwd.
-		if (StringUtil.isEmpty(sUser.getAuthenticationId()) ||
-				StringUtil.isEmpty(sUser.getPassword())) return;
-		
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("update authentication set password_txt = '");
-		sql.append(sUser.getPassword());
-		sql.append("', password_history_txt = '");
-		sql.append(sUser.getPassword());
-		sql.append("' where authentication_id = '");
-		sql.append(sUser.getAuthenticationId());
-		sql.append("'");
-		log.info(sql.toString());
-	}
-	
-	/**
-	 * Creates a native UserVO and maps it to the user's WC profile ID.
-	 * @param record
-	 * @param sourceId
-	 * @param sUser
-	 * @return
-	 */
-	protected UserVO createSourceUser(Map<String,Object> record, 
-			String sourceId, SiteUserVO sUser) {
+	protected UserVO initUser(Map<String,Object> dataSet) {
 		UserVO user = new UserVO();
-		user.setUserId(sourceId);
-		user.setProfileId(sUser.getProfileId());
-		user.setAuthenticationId(sUser.getAuthenticationId());
-		user.setPassword(StringUtil.checkVal(record.get("SMARTTRAK_PASSWORD_TXT"),null));
-		user.setStatusCode(StringUtil.checkVal(record.get("STATUS"),null));
-		user.setCreateDate(Convert.formatDate(StringUtil.checkVal(record.get("DATE_JOINED"),null)));
-		user.setExpirationDate(Convert.formatDate(StringUtil.checkVal(record.get("DATE_EXPIRATION"),null)));
-		user.setRegisterSubmittalId(sUser.getBarCodeId());
+		user.setData(dataSet);
+		user.setUserId((String)dataSet.get(ImportField.SMARTTRAK_ID.name()));
+		user.setPassword(StringUtil.checkVal(dataSet.get(ImportField.SMARTTRAK_PASSWORD_TXT.name()),null));
+		// ensure status code is set to a default or uppercase value.
+		user.setStatusCode(StringUtil.checkVal(dataSet.get(ImportField.STATUS.name()),UserVO.Status.INACTIVE.getCode()).toUpperCase());
+		user.setCreateDate(Convert.formatDate(StringUtil.checkVal(dataSet.get(ImportField.DATE_JOINED.name()),null)));
+		user.setExpirationDate(Convert.formatDate(StringUtil.checkVal(dataSet.get(ImportField.DATE_EXPIRATION.name()),null)));
+		user.setAccountId(StringUtil.checkVal(dataSet.get(ImportField.ACCOUNT_ID.name()),null));
+
+		// parse user's email.
+		parseUserEmail(user, (String)dataSet.get(ImportField.SMARTTRAK_USER_NM.name()));
+
 		return user;
+	}
+	
+	/**
+	 * 
+	 * @param recordCnt
+	 * @param user
+	 */
+	protected void logInvalidUserRecord(int recordCnt, UserVO user) {
+		log.info("END: INVALID record, DID NOT insert for record|source: " + recordCnt + "|" + user.getUserId());
+	}
+	
+	/**
+	 * Check for duplicate profile.
+	 * @param user
+	 * @param recordCnt
+	 * @return
+	 */
+	protected boolean isDuplicateProfile(UserVO user, int recordCnt) {
+		if (user.getProfileId() != null) {
+			if (processedProfiles.containsValue(user.getProfileId())) {
+				log.info("END: IS DUPLICATE PROFILE, skipping record|userId: " + recordCnt + "|" + user.getUserId());
+				// add profile ID to dupes map.
+				duplicateProfiles.put(user.getUserId(),user.getProfileId());
+				return true;
+			} else {
+				processedProfiles.put(user.getUserId(), user.getProfileId());
+				return false;
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Checks user's email address.  If email address is invalid, the user's legacy 
+	 * username is checked.  If the username is not a valid email address, 
+	 * the user's email address is set to null.
+	 * @param user
+	 * @param originalUserName
+	 */
+	protected void parseUserEmail(UserVO user, String legacyUserName) {
+		// check email address
+		if (! StringUtil.isValidEmail(user.getEmailAddress())) {
+			// email address not valid, check username
+			String stUserName = StringUtil.checkVal(legacyUserName);
+			if (! StringUtil.isValidEmail(stUserName)) {
+				// username not valid email address either, append fallback email suffix
+				user.setEmailAddress(stUserName + props.getProperty("emailSuffixDefault"));
+			} else {
+				user.setEmailAddress(stUserName);
+			}
+		}
+		// Check to see if we can set 'valid' email flag
+		if (StringUtil.isValidEmail(user.getEmailAddress())) {
+			user.setValidEmailFlag(1);
+		} else {
+			user.setValidEmailFlag(0);
+		}
+		log.debug("User email address is: " + user.getEmailAddress());
+	}
+	
+	/**
+	 * Inserts the SmartTRAK source user record.
+	 * @param dbConn
+	 * @param sUser
+	 */
+	protected void insertSourceUser(Connection dbConn, UserVO sUser) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("insert into custom.biomedgps_user (user_id, profile_id, account_id, ");
+		if (sUser.getRegisterSubmittalId() != null) 
+			sql.append("register_submittal_id, ");
+		
+		if (sUser.getExpirationDate() != null) 
+			sql.append("expiration_dt, ");
+		
+		if (sUser.getCreateDate() != null) 
+			sql.append("create_dt, ");
+		
+		sql.append("status_cd) values (?,?,?");
+
+		if (sUser.getRegisterSubmittalId() != null) 
+			sql.append(",?");
+		
+		if (sUser.getExpirationDate() != null) 
+			sql.append(",?");
+		
+		if (sUser.getCreateDate() != null) 
+			sql.append(",?");
+	
+		// add last one for status
+		sql.append(",?)");
+
+		int idx = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(++idx, sUser.getUserId());
+			ps.setString(++idx, sUser.getProfileId());
+			ps.setString(++idx, sUser.getAccountId());
+			if (sUser.getRegisterSubmittalId() != null) {
+				ps.setString(++idx, sUser.getRegisterSubmittalId());
+			}
+			if (sUser.getExpirationDate() != null) {
+				ps.setDate(++idx, Convert.formatSQLDate(sUser.getExpirationDate()));
+			}
+			if (sUser.getCreateDate() != null) {
+				ps.setDate(++idx, Convert.formatSQLDate(sUser.getCreateDate()));
+			}
+			ps.setString(++idx, sUser.getStatusCode());
+			ps.execute();
+			log.debug("inserted source user record for user_id|profile_id: " + sUser.getUserId() + "|" + sUser.getProfileId());
+		} catch(SQLException sqle) {
+			log.error("Error inserting source user, ", sqle);
+			failedSourceUserInserts.put(sUser.getUserId(),sUser.getProfileId());
+		}
+
+	}
+	
+	/**
+	 * Updates a SmartTRAK user's profile with their auth ID.
+	 * @param dbConn
+	 * @param sUser
+	 */
+	protected void updateSourceUserProfile(Connection dbConn, UserVO sUser) {
+		int idx = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(queries.get("AUTH").toString())) {
+			ps.setString(++idx, sUser.getAuthenticationId());
+			ps.setString(++idx, sUser.getProfileId());
+			ps.execute();
+			
+		} catch(SQLException sqle) {
+			failedSourceUserProfileUpdates.put(sUser.getUserId(),sUser.getProfileId());
+		}
+	}
+	
+	/**
+	 * Updates a SmartTRAK user's authentication record with their original 
+	 * SmartTRAK password if it exists.
+	 * @param dbConn
+	 * @param sUser
+	 */
+	protected void updateSourceUserAuthentication(Connection dbConn, UserVO sUser) {
+		int idx = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(queries.get("PWD").toString())) {
+			ps.setString(++idx, sUser.getPassword());
+			ps.setString(++idx, sUser.getPassword());
+			ps.setString(++idx, sUser.getAuthenticationId());
+
+			ps.execute();
+
+		} catch(SQLException sqle) {
+			failedSourceUserAuthenticationUpdates.put(sUser.getUserId(),sUser.getAuthenticationId());
+		}
+	}	
+
+	/**
+	 * Checks for invalid authentication record data.
+	 * @param sUser
+	 * @return
+	 */
+	protected boolean hasValidAuthentication(UserVO sUser) {
+		return ! (StringUtil.isEmpty(sUser.getAuthenticationId()) ||
+				StringUtil.isEmpty(sUser.getPassword()) || 
+				"INVALID".equalsIgnoreCase(sUser.getPassword()));
 	}
 	
 	/**
@@ -269,28 +444,35 @@ public class UserDataImport extends ProfileImport {
 	 * @param profileId
 	 * @throws DatabaseException
 	 */
-	protected void findProfile(Connection dbConn, ProfileManager pm, SiteUserVO user, 
-			String profileId) throws DatabaseException {
-		if (profileId == null)  
+	protected void findProfile(Connection dbConn, ProfileManager pm, 
+			UserVO user) throws DatabaseException {
 			user.setProfileId(pm.checkProfile(user, dbConn));
 	}
 	
 	/**
-	 * Checks for existence of a password for the user record and attempts to create one
-	 * if password was supplied.
+	 * Checks for an authentication for the user if the user has a valid email address
+	 * and if a password was supplied in the user's source record.  If an authentication
+	 * ID is not found, the authentication record is created.
+	 * @param dataSet
 	 * @param ul
 	 * @param user
-	 * @param password
 	 * @throws DatabaseException
 	 */
-	protected void checkForPassword(UserLogin ul, SiteUserVO user, 
-			String password) throws DatabaseException {
-		if (password == null) return;
+	protected void processAuthentication(Map<String,Object> dataSet, 
+			UserLogin ul, UserVO user) throws DatabaseException {
+		String password = StringUtil.checkVal(dataSet.get(ImportField.PASSWORD_TXT.name()),null);
+		if (password == null || user.getEmailAddress() == null) 
+			return;
+		
 		user.setAuthenticationId(ul.checkAuth(user.getEmailAddress()));
-		if (user.getAuthenticationId() == null) {
-			//pwd will be encrypted at qry, 0 sets password reset flag to false
+		
+		// if no auth record, create one, otherwise leave existing auth alone.
+		if (user.getAuthenticationId() == null) {	
+			/* We use the pwd passed in to the method, NOT the password on the user data VO
+			 * so that we can come along behind and update the user's auth record with 
+			 * the password that we set on the user data VO at a later time. */
 			user.setAuthenticationId(ul.modifyUser(user.getAuthenticationId(), 
-					user.getEmailAddress(), user.getPassword(), 0));
+					user.getEmailAddress(), password, 0));
 		}
 	}
 
@@ -305,8 +487,8 @@ public class UserDataImport extends ProfileImport {
 	 * @return
 	 * @throws DatabaseException
 	 */
-	protected int createProfile(Connection dbConn, ProfileManager pm, 
-			SiteUserVO user, int skipCnt) throws DatabaseException {
+	protected int processProfile(Connection dbConn, ProfileManager pm, 
+			UserVO user, int skipCnt) throws DatabaseException {
 		/* 2017-01-19: If profile doesn't exist, insert it.  Otherwise leave the existing 
 		 * profile alone. */
 		if (user.getProfileId() == null) {
@@ -322,14 +504,18 @@ public class UserDataImport extends ProfileImport {
 	 * for this user.
 	 * @param dbConn
 	 * @param pm
+	 * @param dataSet
 	 * @param profileId
-	 * @param orgId
-	 * @param allowCommFlag
 	 * @throws DatabaseException
 	 */
-	protected void checkForCommFlag(Connection dbConn, ProfileManager pm, String profileId, 
-			String orgId, String allowCommFlag) throws DatabaseException {
-		if (orgId == null || allowCommFlag == null) return;
+	protected void processCommFlag(Connection dbConn, ProfileManager pm, 
+			Map<String,Object> dataSet, String profileId) throws DatabaseException {
+		String orgId = StringUtil.checkVal(dataSet.get(ImportField.ORGANIZATION_ID.name()),null);
+		String allowCommFlag = StringUtil.checkVal(dataSet.get(ImportField.ALLOW_COMM_FLG.name()),null);
+		
+		if (orgId == null || allowCommFlag == null) 
+			return;
+		
 		pm.assignCommunicationFlg(orgId, profileId, Convert.formatInteger(allowCommFlag), dbConn);
 	}
 	
@@ -338,27 +524,90 @@ public class UserDataImport extends ProfileImport {
 	 * for an existing role for this user.  If no role is found we add the role.
 	 * @param dbConn
 	 * @param prm
+	 * @param dataSet
 	 * @param profileId
-	 * @param roleId
-	 * @param siteId
 	 * @throws DatabaseException
 	 */
-	protected void checkForRole(Connection dbConn, ProfileRoleManager prm, String profileId, 
-			String roleId, String siteId) throws DatabaseException {
-		if (roleId == null || siteId == null) return;
+	protected void processRole(Connection dbConn, ProfileRoleManager prm, 
+			Map<String,Object> dataSet, String profileId) throws DatabaseException {
+		String newRoleId = StringUtil.checkVal(dataSet.get(ImportField.ROLE_ID.name()),null);
+		String siteId = StringUtil.checkVal(dataSet.get(ImportField.SITE_ID.name()),null);
+		if (newRoleId == null || siteId == null) 
+			return;
 		
-		if (! prm.roleExists(profileId, siteId, roleId, dbConn)) {
-			SBUserRole userRole = new SBUserRole();
-			userRole.setSiteId(siteId);
-			userRole.setRoleId(roleId);
-			userRole.setStatusId(20);
-			userRole.setProfileId(profileId);
-			try {
-				prm.addRole(userRole, dbConn);
-			} catch (Exception e) {
-				log.error("Error: Cannot add role for this record number: ", e);
-			}
+		/* Check for existing role for this user for this site? Returns profile role id (primary key)
+		 * if role exists, null if not. */
+		String currProfileRoleId = prm.checkRole(profileId, siteId, dbConn);
+
+		log.info("Profile-role ID: " + currProfileRoleId);
+		
+		// create role VO for the insert or update
+		SBUserRole userRole = new SBUserRole();
+		userRole.setSiteId(siteId);
+		userRole.setRoleId(newRoleId);
+		userRole.setStatusId(20);
+		userRole.setProfileId(profileId);
+		
+		// if found existing profile role id, set on vo so update occurs.
+		if (currProfileRoleId != null) 
+			userRole.setProfileRoleId(currProfileRoleId);
+
+		// process role
+		try {
+			prm.addRole(userRole, dbConn);
+			log.info("Processed profile role - profileId|roleId|siteId: " + profileId + "|" + newRoleId + "|" + siteId);
+		} catch (Exception e) {
+			log.error("Error processing profile role for this record number: ", e);
 		}
+	}
+	
+	/**
+	 * Loads user divisions.
+	 * @param dbConn
+	 * @return
+	 */
+	protected Map<String,List<String>> loadUserDivisions(Connection dbConn) {
+		try (PreparedStatement ps = dbConn.prepareStatement(queries.get("DIVS").toString())) {
+
+			ResultSet rs = ps.executeQuery();
+			return parseDivisions(rs);
+
+		} catch (SQLException sqle) {
+			log.error("Error retrieving user divisions, ", sqle);
+			return new HashMap<>();
+		}
+	}
+	
+	/**
+	 * Parses the divisions query result set.
+	 * @param rs
+	 * @throws SQLException
+	 */
+	protected Map<String,List<String>> parseDivisions(ResultSet rs) throws SQLException {
+		String prevId = null;
+		String currId;
+		List<String> divs = new ArrayList<>();
+		Map<String,List<String>> divsMap = new HashMap<>();
+		while (rs.next()) {
+			currId = rs.getString("user_id");
+			if (! currId.equals(prevId)) {
+				// changed users
+				if (prevId != null) 
+					divsMap.put(prevId, divs);
+			
+				// 	init the divs List.
+				divs = new ArrayList<>();
+			}
+			// add div to list
+			divs.add(rs.getString("division_id"));
+			prevId = currId;
+		}
+	
+		// pick up the dangler
+		if (prevId != null) 
+			divsMap.put(prevId, divs);
+		
+		return divsMap;
 	}
 
 	/**
@@ -369,169 +618,148 @@ public class UserDataImport extends ProfileImport {
 	 * @param dbConn
 	 * @param record
 	 * @param user
-	 * @throws Exception
+	 * @param userDivs
+	 * @throws SQLException
 	 */
 	protected void insertRegistrationRecords(Connection dbConn, Map<String, Object> record, 
-			SiteUserVO user) throws Exception {
-		log.debug("insertRegistrationRecordsManually...");
-		StringBuilder regSub = new StringBuilder(122);
-		regSub.append("insert into register_submittal (register_submittal_id, site_id, action_id, ");
-		regSub.append("profile_id, create_dt) values (?,?,?,?,?)");
+			UserVO user, List<String> userDivs) {
 		int idx = 1;
 		String regSubId = new UUIDGenerator().getUUID();
-		try (PreparedStatement ps = dbConn.prepareStatement(regSub.toString())) {
+		try (PreparedStatement ps = dbConn.prepareStatement(queries.get("REGSUB").toString())) {
 			ps.setString(idx++, regSubId);
-			ps.setString(idx++, (String)record.get("SITE_ID"));
-			ps.setString(idx++, REG_ACTION_ID);
+			ps.setString(idx++, (String)record.get(ImportField.SITE_ID.name()));
+			ps.setString(idx++, props.getProperty("registerActionId"));
 			ps.setString(idx++, user.getProfileId());
 			ps.setTimestamp(idx++, Convert.getCurrentTimestamp());
 			ps.execute();
 			// set the register submittal ID on an unused user field so we can get it later.
-			user.setBarCodeId(regSubId);
-			log.debug("setting barcodeid to regsubid: " + regSubId);
+			user.setRegisterSubmittalId(regSubId);
 		} catch (SQLException sqle) {
-			log.error("Error inserting registration submittal records manually, ", sqle);
-			throw new Exception(sqle.getMessage());
+			log.error("Error inserting registration submittal record, ", sqle);
 		}
 
-		regSub = new StringBuilder(132);
-		regSub.append("insert into register_data (register_data_id, register_submittal_id, ");
-		regSub.append("register_field_id, value_txt, create_dt) values (?,?,?,?,?)");
-
-		try (PreparedStatement ps = dbConn.prepareStatement(regSub.toString())) {
-			
-			for (RegistrationMap mKey : RegistrationMap.values()) {
-				// check record val, only write reg records if have a value.
-				String recVal = (String)record.get(mKey.name());
-				if (StringUtil.isEmpty(recVal)) continue;
-				
-				idx = 0;
-				ps.setString(++idx, new UUIDGenerator().getUUID());
-				ps.setString(++idx, regSubId);
-				ps.setString(++idx, mKey.getFieldId());
-				ps.setString(++idx, recVal);
-				ps.setTimestamp(++idx, Convert.getCurrentTimestamp());
-				ps.addBatch();
-				
+		try (PreparedStatement ps = dbConn.prepareStatement(queries.get("REGDATA").toString())) {
+			for (RegistrationMap regKey : RegistrationMap.values()) {
+				if (RegistrationMap.DIVISIONS.equals(regKey)) {
+					formatDivisionInserts(ps,regKey,regSubId,userDivs);
+				} else {
+					formatRegistrationInsert(ps,regKey,regSubId, record.get(regKey.name()));
+				}
 			}
-			
 			ps.executeBatch();
 			log.debug("inserted registration records for user: " + user.getProfileId());
 
-		} catch (BatchUpdateException sqle) {
-			log.error("Error inserting registration submittal records manually, ", sqle.getNextException());
-			throw new Exception(sqle.getNextException().getMessage());
+		} catch (Exception sqle) {
+			log.error("Error inserting registration data records for user, ", sqle);
 		}
-		
 	}
 	
 	/**
-	 * Builds the registration submittal params.
-	 * @param data
-	 * @return
+	 * Loops the user's divisions list and adds each record to the registration batch insert
+	 * @param ps
+	 * @param regKey
+	 * @param regSubId
+	 * @param userDivs
+	 * @throws SQLException
 	 */
-	protected String buildRegistrationParams(Map<String, Object> data) {
-		StringBuilder params = new StringBuilder("1=1");		
-		//append any runtime requests of the calling class.  (login would pass username & password here)
-		String param;
-		// only append the field names and values that we have specified in the reg field map.
-		for (Map.Entry<String, Object> entry : data.entrySet()) {
-			param = (String)data.get(entry.getKey());
-			if (param == null) continue;
-			String fieldKey = regFieldMap.get(entry.getKey());
-			if (fieldKey != null) {
-				params.append("&").append(fieldKey);
-				params.append("=").append(StringUtil.replace(param, "\\n","\n").trim());
-			}
-		}
+	protected void formatDivisionInserts(PreparedStatement ps, RegistrationMap regKey, 
+			String regSubId, List<String> userDivs) throws SQLException {
+		if (userDivs == null || userDivs.isEmpty()) 
+			return;
 		
-		// now append the formFields params.
-		int fieldIndex;
-		for (Map.Entry<String, Object> entry : data.entrySet()) {
-			param = regFieldMap.get(entry.getKey());
-			if (param == null) continue;
-			fieldIndex = param.lastIndexOf('|');
-			params.append("&formFields=");
-			if (fieldIndex == -1) {
-				params.append(param);
-			} else {
-				params.append(param.substring(fieldIndex + 1));
-			}
+		for (String div : userDivs) {
+			formatRegistrationInsert(ps,regKey,regSubId,div);
 		}
-		
-		//append some form constants that WC passed in hidden fields
-		params.append("&pmid=").append(REG_PMID);
-		params.append("&requestType=reqBuild");
-		params.append("&actionName=");
-		params.append("&sbActionId=").append(REG_ACTION_ID);
-		params.append("&page=2");
-		params.append("&registerSubmittalId=");
-		params.append("&postProcess=");
-		params.append("&notifyAdminFlg=0");
-		params.append("&finalPage=1");
-		params.append("&apprReg=0");
-		log.debug("post data:" + params);
-		return params.toString();
 	}
 	
 	/**
-	 * Created Map of column name to registration field name.
-	 * @return
+	 * Creates a record for insertion and adds it to the batch of records to insert.
+	 * @param ps
+	 * @param regKey
+	 * @param regSubId
+	 * @param regVal
+	 * @throws SQLException
 	 */
-	protected final Map<String, String> createRegFieldMap() {
-		Map<String, String> fieldMap = new TreeMap<>();
-		// profile fields
-		fieldMap.put("EMAIL_ADDRESS_TXT","reg_enc|EMAIL_ADDRESS_TXT|7f000001397b18842a834a598cdeafa");
-		fieldMap.put(FIRST_NM,"reg_enc|FIRST_NM|7f000001427b18842a834a598cdeafa");
-		fieldMap.put(LAST_NM,"reg_enc|LAST_NM|7f000001447b18842a834a598cdeafa");
-		fieldMap.put("ADDRESS_TXT","reg_enc|ADDRESS_TXT|7f000001467b18842a834a598cdeafa");
-		fieldMap.put("ADDRESS2_TXT","reg_enc|ADDRESS2_TXT|7f000001477b18842a834a598cdeafa");
-		fieldMap.put("CITY_NM","reg_enc|CITY_NM|7f000001487b18842a834a598cdeafa");
-		fieldMap.put("STATE_CD","reg_enc|STATE_CD|7f000001497b18842a834a598cdeafa");
-		fieldMap.put(ZIP_CD,"reg_enc|ZIP_CD|7f000001507b18842a834a598cdeafa");
-		fieldMap.put(MOBILE_PHONE_TXT,"reg_enc|MOBILE_PHONE_TXT|7f000001517b18842a834a598cdeafa");
-		fieldMap.put(MAIN_PHONE_TXT,"reg_enc|MAIN_PHONE_TXT|7f000001527b18842a834a598cdeafa");
-		fieldMap.put("COUNTRY_CD","pfl_COUNTRY_CD");
-		// non-profile fields
-		fieldMap.put(RegistrationMap.TITLE.name(), formatFieldId(RegistrationMap.TITLE.getFieldId()));
-		fieldMap.put(RegistrationMap.UPDATES.name(), formatFieldId(RegistrationMap.UPDATES.getFieldId()));
-		fieldMap.put(RegistrationMap.FAVORITEUPDATES.name(), formatFieldId(RegistrationMap.FAVORITEUPDATES.getFieldId()));
-		fieldMap.put(RegistrationMap.COMPANY.name(), formatFieldId(RegistrationMap.COMPANY.getFieldId()));
-		fieldMap.put(RegistrationMap.COMPANYURL.name(), formatFieldId(RegistrationMap.COMPANYURL.getFieldId()));
-		fieldMap.put(RegistrationMap.SOURCE.name(), formatFieldId(RegistrationMap.SOURCE.getFieldId()));
-		fieldMap.put(RegistrationMap.DEMODT.name(), formatFieldId(RegistrationMap.DEMODT.getFieldId()));
-		fieldMap.put(RegistrationMap.TRAININGDT.name(), formatFieldId(RegistrationMap.TRAININGDT.getFieldId()));
-		fieldMap.put(RegistrationMap.INITTRAININGDT.name(), formatFieldId(RegistrationMap.INITTRAININGDT.getFieldId()));
-		fieldMap.put(RegistrationMap.ADVTRAININGDT.name(), formatFieldId(RegistrationMap.ADVTRAININGDT.getFieldId()));
-		fieldMap.put(RegistrationMap.OTHERTRAININGDT.name(), formatFieldId(RegistrationMap.OTHERTRAININGDT.getFieldId()));
-		fieldMap.put(RegistrationMap.JOBCATEGORY.name(), formatFieldId(RegistrationMap.JOBCATEGORY.getFieldId()));
-		fieldMap.put(RegistrationMap.JOBLEVEL.name(), formatFieldId(RegistrationMap.JOBLEVEL.getFieldId()));
-		fieldMap.put(RegistrationMap.INDUSTRY.name(), formatFieldId(RegistrationMap.INDUSTRY.getFieldId()));
-		fieldMap.put(RegistrationMap.NOTES.name(), formatFieldId(RegistrationMap.NOTES.getFieldId()));
-		return fieldMap;
+	protected void formatRegistrationInsert(PreparedStatement ps, RegistrationMap regKey, 
+			String regSubId, Object regVal) throws SQLException {
+		// check record val, only write reg records if have a value.
+		String val = StringUtil.checkVal(regVal);
+		if (val.isEmpty()) 
+			return;
+		
+		int idx = 0;
+		ps.setString(++idx, new UUIDGenerator().getUUID());
+		ps.setString(++idx, regSubId);
+		ps.setString(++idx, regKey.getFieldId());
+		ps.setString(++idx, val);
+		ps.setTimestamp(++idx, Convert.getCurrentTimestamp());
+		ps.addBatch();
 	}
 	
-	protected String formatFieldId(String fieldId) {
-		return "reg_||" + fieldId;
+	/**
+	 * Writes out log summaries.
+	 * @param recordCnt
+	 * @param successCnt
+	 * @param failedCnt
+	 * @param skipCnt
+	 */
+	protected void writeLogs(int recordCnt, int successCnt, int failedCnt, int skipCnt) {
+		log.info(recordCnt + " total profile import records processed.");
+		log.info(successCnt + " profile import records successfully processed.");
+		log.info(failedCnt + " profile import records failed or were invalid.");
+		log.info(skipCnt + " pre-existing profiles found.");
+
+		/* output list of existing profiles found as they may be duplicates	 */
+		if (! duplicateProfiles.isEmpty()) {
+			log.info("Duplicate Profiles in Import Source: ");
+			for (Map.Entry<String,String> rec : duplicateProfiles.entrySet()) {
+				log.info(rec.getKey() + "|" + rec.getValue());
+			}
+			log.info("-----------------------------------------------\n\n");
+		}
+
+		if (! failedSourceUserInserts.isEmpty()) {
+			log.info("Failed Source User Inserts: ");
+			for (Map.Entry<String,String> fail : failedSourceUserInserts.entrySet()) {
+				log.info(fail.getKey() + "|" + fail.getValue());
+			}
+			log.info("------------------------------------------------\n\n");
+		}
+
+		if (! failedSourceUserProfileUpdates.isEmpty()) {
+			log.info("Failed Source User Profile Updates: ");
+			for (Map.Entry<String,String> fail : failedSourceUserProfileUpdates.entrySet()) {
+				log.info(fail.getKey() + "|" + fail.getValue());
+			}
+			log.info("-------------------------------------------------\n\n");
+		}
+
+		if (! failedSourceUserAuthenticationUpdates.isEmpty()) {
+			log.info("Failed Source User Authentication Updates: ");
+			for (Map.Entry<String,String> fail : failedSourceUserAuthenticationUpdates.entrySet()) {
+				log.info(fail.getKey() + "|" + fail.getValue());
+			}
+			log.info("--------------------------------------------------");
+		}
+
 	}
-	
+
 	/**
 	 * Sanitizes/cleans import data for certain fields
 	 * @param records
 	 */
 	protected void sanitizeFieldData(Map<String,Object> record) {
-		log.debug("sanitizing field data...");
-		String country = StringUtil.checkVal(record.get("COUNTRY_CD"));
-		String tmpVal = (String)record.get(ZIP_CD);
-		record.put(ZIP_CD,fixZipCode(tmpVal,country));
-		tmpVal = (String)record.get(MAIN_PHONE_TXT);
-		record.put(MAIN_PHONE_TXT, stripPhoneExtension(tmpVal,country));
-		tmpVal = (String)record.get(MOBILE_PHONE_TXT);
-		record.put(MOBILE_PHONE_TXT,stripPhoneExtension(tmpVal,country));
-		tmpVal = (String)record.get(FIRST_NM);
-		record.put(FIRST_NM, checkField(tmpVal));
-		tmpVal = (String)record.get(LAST_NM);
-		record.put(LAST_NM, checkField(tmpVal));
+		String country = StringUtil.checkVal(record.get(ImportField.COUNTRY_CD.name()));
+		String tmpVal = (String)record.get(ImportField.ZIP_CD.name());
+		record.put(ImportField.ZIP_CD.name(),fixZipCode(tmpVal,country));
+		tmpVal = (String)record.get(ImportField.MAIN_PHONE_TXT.name());
+		record.put(ImportField.MAIN_PHONE_TXT.name(), stripPhoneExtension(tmpVal));
+		tmpVal = (String)record.get(ImportField.MOBILE_PHONE_TXT.name());
+		record.put(ImportField.MOBILE_PHONE_TXT.name(),stripPhoneExtension(tmpVal));
+		tmpVal = (String)record.get(ImportField.FIRST_NM.name());
+		record.put(ImportField.FIRST_NM.name(), checkNameField(tmpVal));
+		tmpVal = (String)record.get(ImportField.LAST_NM.name());
+		record.put(ImportField.LAST_NM.name(), checkNameField(tmpVal));
 	}
 	
 	/**
@@ -541,6 +769,7 @@ public class UserDataImport extends ProfileImport {
 	 * @return
 	 */
 	protected String fixZipCode(String zip, String country) {
+		if (StringUtil.isEmpty(zip)) return zip;
 		if ("US".equalsIgnoreCase(country) &&
 				StringUtil.checkVal(zip).length() == 4) {
 					return "0" + zip;
@@ -550,6 +779,7 @@ public class UserDataImport extends ProfileImport {
 	
 	/**
 	 * Strips out any extension text that was included as part of a phone number
+	 * and strips out alphanumerics.
 	 * e.g.
 	 * 		123-456-7890 ext 123 ('ext 123' is removed)
 	 * 		123-456-7890, xt 456 (', xt 456' is removed)
@@ -559,29 +789,115 @@ public class UserDataImport extends ProfileImport {
 	 * @param country
 	 * @return
 	 */
-	protected String stripPhoneExtension(String phone, String country) {
-		if (StringUtil.checkVal(phone,null) == null) return phone;
+	protected String stripPhoneExtension(String phone) {
+		if (StringUtil.isEmpty(phone)) 
+			return phone;
+		
 		String tmpPhone = phone.toLowerCase();
 		int idx = tmpPhone.indexOf(',');
 		if (idx == -1) {
 			idx = tmpPhone.indexOf('e');
-			if (idx == -1) idx = tmpPhone.indexOf('x');
+			if (idx == -1) 
+				idx = tmpPhone.indexOf('x');
 		}
-		if (idx > -1) return tmpPhone.substring(0, idx).trim();
-		return tmpPhone.trim();
+		if (idx > -1)
+			tmpPhone = tmpPhone.substring(0, idx);
+		
+		return StringUtil.removeNonNumeric(tmpPhone);
+		
 	}
 	
 	/**
-	 * Returns a String whose length is less than or equal to the maxLength.
+	 * Cleans name fields
 	 * @param val
-	 * @param maxLength
 	 * @return
 	 */
-	protected String checkField(String val) {
-		if (val == null) return val;
-		
-		if (val.indexOf(',') > -1) 
-			return val.substring(0,val.indexOf(','));
-		return val;
+	protected String checkNameField(String val) {
+		if (StringUtil.isEmpty(val)) 
+			return val;
+
+		String tmpVal = val;
+		if (tmpVal.indexOf('"') > -1)
+			tmpVal = tmpVal.replace("\"", "");
+
+		if (tmpVal.indexOf(',') > -1) 
+			tmpVal = tmpVal.substring(0,tmpVal.indexOf(','));
+
+		return tmpVal;
 	}
+	
+	/**
+	 * Creates map of query statements that have fixed number of
+	 * fields so that the queries can be reused without re-creating
+	 * thousands of times.
+	 * @return
+	 */
+	protected Map<String,StringBuilder> initQueryStatements() {
+		Map<String,StringBuilder> sql = new HashMap<>();
+
+		StringBuilder tmp = new StringBuilder(100);
+		tmp.append("update profile set authentication_id = ? ");
+		tmp.append("where profile_id = ?");
+		sql.put("AUTH",tmp);
+
+		tmp = new StringBuilder(200);
+		tmp.append("update authentication set password_txt = ?, ");
+		tmp.append("password_history_txt = ? ");
+		tmp.append("where authentication_id = ?");
+		sql.put("PWD",tmp);
+
+		// query for user divisions
+		tmp = new StringBuilder(200);
+		tmp.append("select user_id, division_id ");
+		tmp.append("from biomedgps.profiles_user_divisions ");
+		tmp.append("order by user_id");
+		sql.put("DIVS",tmp);
+
+		tmp = new StringBuilder(200);
+		tmp.append("insert into register_submittal (register_submittal_id, site_id, action_id, ");
+		tmp.append("profile_id, create_dt) values (?,?,?,?,?)");
+		sql.put("REGSUB",tmp);
+
+		tmp = new StringBuilder(200);
+		tmp.append("insert into register_data (register_data_id, register_submittal_id, ");
+		tmp.append("register_field_id, value_txt, create_dt) values (?,?,?,?,?)");
+		sql.put("REGDATA",tmp);
+
+		return sql;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	protected StringBuilder buildMainQuery() {
+		StringBuilder sql = new StringBuilder(1375);
+		sql.append("select cast(id as varchar) AS SMARTTRAK_ID, username AS SMARTTRAK_USER_NM, ");
+		sql.append("first_name AS FIRST_NM, last_name AS LAST_NM, lower(email) AS EMAIL_ADDRESS_TXT,  ");
+		sql.append("address AS ADDRESS_TXT, address1 AS ADDRESS2_TXT, city AS CITY_NM, state AS STATE_CD,  ");
+		sql.append("zip_code AS ZIP_CD, country as COUNTRY_CD,phone_number AS MAIN_PHONE_TXT,  ");
+		sql.append("mobile_number AS MOBILE_PHONE_TXT,is_active AS ACTIVE, is_staff AS STAFF,  ");
+		sql.append("is_superuser AS SUPER_USER, ");
+		sql.append("case when is_active='TRUE' then case when is_staff='TRUE' and status = 'a' then 'S' ");
+		sql.append("else upper(status) end else upper(status) end as STATUS, ");
+		sql.append("date_joined as DATE_JOINED, ");
+		sql.append("expiration as DATE_EXPIRATION,username AS USERNAME, password AS SMARTTRAK_PASSWORD_TXT, ");
+		sql.append("title AS TITLE, cast(account_id as varchar) as ACCOUNT_ID,update_frequency AS UPDATES,  ");
+		sql.append("fav_frequency AS FAVORITEUPDATES, company as COMPANY,company_url as COMPANYURL, ");
+		sql.append("biomedgps.profiles_user.\"source\" as \"SOURCE\",date_demoed as DEMODT, ");
+		sql.append("date_trained as TRAININGDT,date_training_initial as INITTRAININGDT, ");
+		sql.append("date_training_advanced as ADVTRAININGDT,date_training_other as OTHERTRAININGDT, ");
+		sql.append("cast(job_category_id as varchar) as JOBCATEGORY, cast(job_level_id as varchar) as JOBLEVEL, ");
+		sql.append("cast(industry_id as varchar) as INDUSTRY, ");
+		sql.append("regexp_replace(quick_notes, E'[\\n\\r\\f\\t\\v]+', ';;', 'g') as NOTES, ");
+		sql.append("case when is_active='TRUE' then ");
+		sql.append("case when is_staff='TRUE' then '3eef678eb39e87277f000101dfd4f140' ");
+		sql.append("else '10' end else null end as ROLE_ID, ");
+		sql.append("'wc1mp0rt' AS PASSWORD_TXT, 'BMG_SMARTTRAK' as ORGANIZATION_ID, ");
+		sql.append("'BMG_SMARTTRAK_1' as SITE_ID, '1' as ALLOW_COMM_FLG ");
+		sql.append("from biomedgps.profiles_user ");
+		sql.append("order by active desc, id; ");
+		return sql;
+	}
+
 }
