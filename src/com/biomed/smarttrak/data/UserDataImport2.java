@@ -51,9 +51,8 @@ import com.smt.sitebuilder.security.UserLogin;
 public class UserDataImport2 extends CommandLineUtil {
 
 	// import env params
-	private static final String SOURCE_FILE_PATH_ROOT="/data/SMT/accounts/SmartTRAK/smarttrak/user-import/staging/";
-	private static final String SOURCE_FILE_CONFIG="config.properties";
-	private static final String SOURCE_FILE_LOG="log4j.properties";
+	private static final String SOURCE_FILE_CONFIG="scripts/bmg_smarttrak/user_import_config.properties";
+	private static final String SOURCE_FILE_LOG="scripts/bmg_smarttrak/user_import_log4j.properties";
 
 	// profile header vals
 	private Map<String,StringBuilder> queries;
@@ -81,11 +80,10 @@ public class UserDataImport2 extends CommandLineUtil {
 		updates, username,
 		zip_cd
 	}
-	
 
 	public UserDataImport2(String[] args) {
 		super(args);
-		PropertyConfigurator.configure(SOURCE_FILE_PATH_ROOT + SOURCE_FILE_LOG);
+		PropertyConfigurator.configure(SOURCE_FILE_LOG);
 		queries = initQueryStatements();
 		duplicateProfiles = new LinkedHashMap<>();
 		processedProfiles = new LinkedHashMap<>();
@@ -104,7 +102,7 @@ public class UserDataImport2 extends CommandLineUtil {
 	
 	public void run() {
 		// load props
-		loadProperties(SOURCE_FILE_PATH_ROOT + SOURCE_FILE_CONFIG);
+		loadProperties(SOURCE_FILE_CONFIG);
 		// get dbconn
 		loadDBConnection(props);
 		// retrieve records
@@ -112,15 +110,6 @@ public class UserDataImport2 extends CommandLineUtil {
 		log.info("records retrieved: " + records.size());
 		try {
 			insertRecords(records);
-			
-			/* for record verification of retrieved records
-			for (Map<String,Object> record : records) {
-				log.info("record for user ID: " + record.get(ImportField.smarttrak_id.name()));
-				for (ImportField field : ImportField.values()) {
-					log.info(field.name() + " | " + record.get(field.name()));
-				}
-			}
-			*/
 		} catch(Exception e) {
 			log.error("Error, failed to insert records, ", e);
 		}
