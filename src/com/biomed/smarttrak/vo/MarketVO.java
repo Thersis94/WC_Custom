@@ -181,6 +181,28 @@ public class MarketVO extends AuthorVO {
 		sections.add(section);
 	}
 
+	public void setSectionId (String id) {
+		if (marketSection == null)
+			marketSection = new SectionVO();
+		marketSection.setSectionId(id);
+	}
+	
+	@Column(name="section_id", isReadOnly=true)
+	public String getSectionId() {
+		return marketSection.getSectionId();
+	}
+
+	public void setSectionName (String name) {
+		if (marketSection == null)
+			marketSection = new SectionVO();
+		marketSection.setSectionNm(name);
+	}
+	
+	@Column(name="section_nm", isReadOnly=true)
+	public String getSectionName() {
+		return marketSection.getSectionNm();
+	}
+
 	/**
 	 * Turn the list of generic vos
 	 * @return

@@ -33,6 +33,7 @@ import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.admin.UpdatesEmailSendAction;
+import com.biomed.smarttrak.admin.UserAccountSearchAction;
 import com.biomed.smarttrak.admin.report.EmailReportAction;
 import com.biomed.smarttrak.fd.FinancialDashAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
@@ -190,6 +191,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("emailReport", EmailReportAction.class);
 		ACTIONS.put("emailConfig", UpdatesEmailSendAction.class);
 		ACTIONS.put("searchUtil", SearchUtilAction.class);
+		ACTIONS.put("userAccountSearch", UserAccountSearchAction.class);
 		ACTIONS.put("feeds", CustomRSSFacadeAction.class);
 		ACTIONS.put("dashboard", DashboardAction.class);
 	}
@@ -271,6 +273,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			action.setActionInit(actionInit);
 			action.setDBConnection(dbConn);
 			action.setAttributes(getAttributes());
+			action.setActionInit(actionInit);
 			return action;
 		} catch (InstantiationException | IllegalAccessException e) {
 			throw new ActionException("Problem Instantiating type: " + actionType);

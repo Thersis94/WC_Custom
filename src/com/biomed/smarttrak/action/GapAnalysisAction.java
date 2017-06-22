@@ -30,6 +30,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.OrderedTree;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -55,6 +56,7 @@ import net.sf.json.JSONObject;
  ****************************************************************************/
 public class GapAnalysisAction extends SectionHierarchyAction {
 
+	private static final String INNER_JOIN = "inner join ";
 	public static final String GAP_ROOT_ID = "GAP_ANALYSIS_ROOT";
 	public static final String GAP_CACHE_KEY = "GAP_ANALYSIS_TREE_CACHE_KEY";
 	private String[] selNodes;
@@ -73,7 +75,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SecurityController.isGaAuth(req);
-		
+
 		if(req.hasParameter("selNodes")) {
 
 			//Instantiate GapTableVO to Store Data.
@@ -109,8 +111,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			String companyId = req.getParameter("companyId");
 			String columnId = req.getParameter("columnId");
 			super.putModuleData(getProductList(regionId, companyId, columnId));
-		} else if(req.hasParameter("getState")) {
 
+		} else if(req.hasParameter("getState")) {
 			SMTSession ses = req.getSession();
 			UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
 			String userId = StringUtil.checkVal(vo.getUserId());
@@ -120,6 +122,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		}
 	}
 
+
 	/**
 	 * Return list of products that are of a given regionId, companyId and columnId
 	 * @param regionId
@@ -128,19 +131,19 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @return
 	 */
 	private List<Object> getProductList(String regionId, String companyId, String columnId) {
-
 		List<Object> params = new ArrayList<>();
 		params.add(companyId);
 		params.add(columnId);
 		params.add("1");
 
-		log.debug(this.getProductListSql("usa".equalsIgnoreCase(regionId)));
+		String sql = getProductListSql(regionId.startsWith("u"));
+		log.debug(sql);
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
-		List<Object>  data = db.executeSelect(getProductListSql(regionId.startsWith("u")), params, new GapProductVO());
+		List<Object>  data = db.executeSelect(sql, params, new GapProductVO());
 		log.debug("loaded " + data.size() + " products");
-
 		return data;
 	}
+
 
 	/**
 	 * @param isUSRegion 
@@ -151,17 +154,17 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select distinct f.product_nm, f.product_id, c.column_nm, g.company_nm, a.section_nm ");
 		sql.append("from ").append(custom).append("biomedgps_section a ");
-		sql.append("inner join ").append(custom).append("biomedgps_ga_column c ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_ga_column c ");
 		sql.append("on a.section_id = c.section_id ");
-		sql.append("inner join ").append(custom).append("biomedgps_ga_column_attribute_xr d ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_ga_column_attribute_xr d ");
 		sql.append("on d.ga_column_id = c.ga_column_id ");
-		sql.append("inner join ").append(custom).append("biomedgps_product_attribute_xr e ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr e ");
 		sql.append("on d.attribute_id = e.attribute_id ");
-		sql.append("inner join ").append(custom).append("biomedgps_product f ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_product f ");
 		sql.append("on e.product_id = f.product_id ");
-		sql.append("inner join ").append(custom).append("biomedgps_product_regulatory r ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_regulatory r ");
 		sql.append("on f.product_id = r.product_id ");
-		sql.append("inner join ").append(custom).append("biomedgps_company g ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_company g ");
 		sql.append("on f.company_id = g.company_id ");
 		sql.append("where g.company_id = ? and c.ga_column_id = ? ");
 		if(isUSRegion) {
@@ -209,13 +212,13 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_ga_savestate where user_id = ? ");
 
-		if(hasSaveStateId) {
+		if (hasSaveStateId)
 			sql.append("and save_state_id = ? ");
-		}
 
 		sql.append("order by order_no");
 		return sql.toString();
 	}
+
 
 	/**
 	 * Helper method that returns all the representing Columns Data.
@@ -230,13 +233,10 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 */
 	@SuppressWarnings("unchecked")
 	protected List<Node> getColData(ActionRequest req) throws ActionException {
-
-		List<Node> nodes;
-
 		//Get Sections from super.
 		super.retrieve(req);
 		ModuleVO mod = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
-		nodes = (List<Node>) mod.getActionData();
+		List<Node> nodes = (List<Node>) mod.getActionData();
 
 		//Get All the columns.
 		nodes.addAll(getColumns());
@@ -251,6 +251,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		//Get Columns
 		return nodes;
 	}
+
 
 	/**
 	 * Helper method that filters the Selected Child Nodes out of the main tree.
@@ -268,6 +269,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		return filteredNodes;
 	}
 
+
 	/**
 	 * Helper method that filters childNodes out by selected Nodes.
 	 * @param nIter
@@ -277,8 +279,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		List<Node> filteredNodes = new ArrayList<>();
 		while(nIter.hasNext()) {
 			Node n = nIter.next();
-			for(int i = 0; i < selNodes.length; i++) {
-				if(n.getNodeId().equals(selNodes[i]) && n.getNumberChildren() > 0) {
+			for (int i = 0; i < selNodes.length; i++) {
+				if (n.getNodeId().equals(selNodes[i]) && n.getNumberChildren() > 0) {
 					filteredNodes.add(n);
 					nIter.remove();
 					selNodes = (String[]) ArrayUtils.remove(selNodes, i);
@@ -286,9 +288,9 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 				}
 			}
 		}
-
 		return filteredNodes;
 	}
+
 
 	/**
 	 * Get All Columns from the system.
@@ -296,12 +298,14 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @param selNodes
 	 */
 	protected List<Node> getColumns() {
+		GapColumnVO gap;
+		Node n;
 		List<Node> nodes = new ArrayList<>();
-		try(PreparedStatement ps = dbConn.prepareStatement(getColumnListSql())) {
+		try (PreparedStatement ps = dbConn.prepareStatement(getColumnListSql())) {
 			ResultSet rs = ps.executeQuery();
-			while(rs.next()) {
-				GapColumnVO gap = new GapColumnVO(rs);
-				Node n = new Node(gap.getGaColumnId(), gap.getSectionId());
+			while (rs.next()) {
+				gap = new GapColumnVO(rs);
+				n = new Node(gap.getGaColumnId(), gap.getSectionId());
 				n.setNodeName(gap.getButtonTxt());
 				n.setUserObject(gap);
 				n.setOrderNo(gap.getOrderNo());
@@ -310,9 +314,9 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		} catch (SQLException e) {
 			log.error("Error retrieving Columns", e);
 		}
-
 		return nodes;
 	}
+
 
 	/**
 	 * Helper method returns SQL to get all Columns in the system.
@@ -326,32 +330,30 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		return sql.toString();
 	}
 
+
 	/**
 	 * Helper method that manages retrieving the Gap Table Data and organizing it into the GapTable
 	 * @param selNodes
 	 * @return
 	 */
 	protected void loadGapTableData(GapTableVO gtv) {
+		int i = 1;
+		GapCompanyVO c;
 		Map<String, GapCompanyVO> companies = new HashMap<>();
-		try(PreparedStatement ps = dbConn.prepareStatement(getTableBuilderSql(gtv.getColumns().size()))) {
-			int i = 1;
-			for(String id : gtv.getColumnMap().keySet()) {
+		try (PreparedStatement ps = dbConn.prepareStatement(getTableBuilderSql(gtv.getColumns().size()))) {
+			for (String id : gtv.getColumnMap().keySet())
 				ps.setString(i++, id);
-			}
 
 			ResultSet rs = ps.executeQuery();
-
-			GapCompanyVO c;
-			while(rs.next()) {
-				if(companies.containsKey(rs.getString("company_id"))) {
-					c = companies.get(rs.getString("company_id"));
-				} else {
+			while (rs.next()) {
+				c = companies.get(rs.getString("company_id"));
+				if (c == null) {
 					c = new GapCompanyVO(rs);
 					companies.put(c.getCompanyId(), c);
 				}
-
 				c.addRegulation(rs.getString("ga_column_id"), rs.getString("status_txt"), rs.getInt("region_Id"));
 			}
+
 		} catch (SQLException e) {
 			log.error("Problem Retrieving Gap Table Data", e);
 		}
@@ -360,6 +362,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		gtv.setCompanies(companies);
 	}
 
+
 	/**
 	 * Helper method that builds the Table Body Query
 	 * @param length
@@ -367,58 +370,53 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 */
 	protected String getTableBuilderSql(int numColumns) {
 		StringBuilder sql = new StringBuilder(850);
-
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select distinct c.ga_column_id, g.short_nm_txt, g.company_nm, g.company_id, s.status_txt, r.region_id ");
 		sql.append("from ").append(custom).append("biomedgps_section a ");
-		sql.append("inner join ").append(custom).append("biomedgps_section b ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_section b ");
 		sql.append("on a.section_id = b.parent_id ");
-		sql.append("inner join ").append(custom).append("biomedgps_ga_column c ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_ga_column c ");
 		sql.append("on b.section_id = c.section_id ");
 		sql.append("left outer join ").append(custom).append("biomedgps_ga_column_attribute_xr d ");
 		sql.append("on d.ga_column_id = c.ga_column_id ");
-		sql.append("inner join ").append(custom).append("biomedgps_product_attribute_xr e ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr e ");
 		sql.append("on d.attribute_id = e.attribute_id ");
-		sql.append("inner join ").append(custom).append("biomedgps_product f ");
-		sql.append("on e.product_id = f.product_id ");
-		sql.append("inner join ").append(custom).append("biomedgps_product_regulatory r ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_product f ");
+		sql.append("on e.product_id=f.product_id ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_regulatory r ");
 		sql.append("on f.product_id = r.product_id ");
-		sql.append("inner join ").append(custom).append("biomedgps_regulatory_status s ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_regulatory_status s ");
 		sql.append("on r.status_id = s.status_id ");
-		sql.append("inner join ").append(custom).append("biomedgps_company g ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_company g ");
 		sql.append("on f.company_id = g.company_id ");
 		sql.append("where c.ga_column_id in ( ");
-		for(int i = 0; i < numColumns; i++) {
-			if(i > 0) {
-				sql.append(", ");
-			}
-			sql.append("?");
-		}
+		DBUtil.preparedStatmentQuestion(numColumns, sql);
 		sql.append(") order by g.company_nm");
 
-		log.debug(sql.toString());
+		log.debug(sql);
 		return sql.toString();
 	}
+
 
 	/*
 	 * (non-Javadoc)
 	 * @see com.biomed.smarttrak.admin.ContentHierarchyAction#build(com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
 	public void build(ActionRequest req) {
-		SaveStateVO ss = new SaveStateVO(req);
-
 		DBProcessor dbp = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
-
 		try {
-			dbp.save(ss);
+			dbp.save(new SaveStateVO(req));
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Problem Saving State Object.", e.getCause());
 		}
 	}
 
+
 	/**
 	 * Helper method returns cache key for Content Hierarchy Object.
 	 */
+	@Override
 	public String getCacheKey() {
 		return GAP_CACHE_KEY;
 	}

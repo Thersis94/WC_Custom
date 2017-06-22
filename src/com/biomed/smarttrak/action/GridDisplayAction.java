@@ -111,12 +111,14 @@ public class GridDisplayAction extends SBActionAdapter {
 	public void lookupTableMap(ActionRequest req) {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(164);
-		sql.append("select grid_id "); 
-		sql.append("from ").append(schema).append("biomedgps_grid_table_map a ") ;
-		sql.append("inner join ").append(schema).append("biomedgps_grid b on a.slug_txt = b.slug_txt ");
-		sql.append("where lower(a.grid_graphic_id) = lower(?) ");
 		
-		List<Object> params =  Arrays.asList(new Object[]{req.getParameter("gridId")});
+		sql.append("select grid_id from ").append(schema).append("biomedgps_grid ");
+		sql.append("where lower(slug_txt) in ( ");
+		sql.append("select lower(gtm.slug_txt) from ").append(schema).append("biomedgps_grid g ") ;
+		sql.append("inner join ").append(schema).append(" biomedgps_grid_table_map gtm on g.slug_txt = gtm.grid_graphic_id ");
+		sql.append("where lower(g.grid_id) = lower(?) or lower(g.slug_txt) = lower(?) ) ");
+
+		List<Object> params =  Arrays.asList(new Object[]{req.getParameter("gridId"),req.getParameter("gridId") });
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		List<Object> data = dbp.executeSelect(sql.toString(), params, new GridVO());
 		

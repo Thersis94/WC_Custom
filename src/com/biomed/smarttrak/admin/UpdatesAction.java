@@ -414,10 +414,33 @@ public class UpdatesAction extends AuthorAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		saveRecord(req, false);
+		if (Convert.formatBoolean(req.getParameter("markReviewed"))) {
+			markReviewed(req.getParameter("updateId"));
+		} else {
+			saveRecord(req, false);
+		}
 	}
 
 
+	/**
+	 * Change the supplied update's status code to Reviewed
+	 * @param updateId
+	 * @throws ActionException
+	 */
+	private void markReviewed(String updateId) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		
+		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_UPDATE set status_cd = 'R' where UPDATE_ID = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, updateId);
+			
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
