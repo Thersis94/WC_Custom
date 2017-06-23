@@ -159,7 +159,7 @@ public class AccountAction extends SBActionAdapter {
 			//conditionally include inactive accounts  (load all if inactive was passed)
 			sql.append("and a.status_no='A' ");
 		}
-		sql.append("order by a.account_nm");
+		sql.append("order by a.type_id, a.account_nm");
 
 		log.debug(sql);
 		return sql.toString();
