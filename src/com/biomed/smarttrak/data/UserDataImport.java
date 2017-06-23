@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -61,6 +62,7 @@ public class UserDataImport extends CommandLineUtil {
 	private Map<String,String> failedSourceUserInserts;
 	private Map<String,String> failedSourceUserProfileUpdates;
 	private Map<String,String> failedSourceUserAuthenticationUpdates;
+	private long startTimeInMillis;
 	
 	enum ImportField {
 		ACCOUNT_ID, ACTIVE, ADDRESS_TXT, ADDRESS2_TXT, 
@@ -101,6 +103,7 @@ public class UserDataImport extends CommandLineUtil {
 	}
 	
 	public void run() {
+		startTimeInMillis = Calendar.getInstance().getTimeInMillis();
 		// load props
 		loadProperties(SOURCE_FILE_CONFIG);
 		// get dbconn
@@ -708,6 +711,8 @@ public class UserDataImport extends CommandLineUtil {
 		log.info(successCnt + " profile import records successfully processed.");
 		log.info(failedCnt + " profile import records failed or were invalid.");
 		log.info(skipCnt + " pre-existing profiles found.");
+		log.info(duplicateProfiles.size() + " duplicate profiles found.");
+		log.info("Elapsed time: " + (Calendar.getInstance().getTimeInMillis() - startTimeInMillis)/1000 + " seconds.");
 
 		/* output list of existing profiles found as they may be duplicates	 */
 		if (! duplicateProfiles.isEmpty()) {
