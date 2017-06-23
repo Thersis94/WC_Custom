@@ -12,7 +12,6 @@ import java.util.Set;
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
-
 //smt base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -33,11 +32,11 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @author Devon Franklin
  * @version 1.0
  * @since Mar 9, 2017
+ *   Updates - Included the root node in listing. Removed intended depth level value 
+ *   to allow full hierarchy searching. 06/23/17
  ****************************************************************************/
 
 public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
-	/*Specifies how deep down the section hierarchy tree we intend to traverse*/
-	protected static final int SECTION_XR_DEPTH = 3;
 	
 	/**
 	 * No arg-constructor for initialization
@@ -68,6 +67,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException{
 		log.debug("Retrieving updates section hierarchy listing...");
 	
@@ -123,7 +123,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			String rootSectionId = t.getRootNode().getNodeName();
 			
 			//Build the mapping for top-level sections, sub-sections, and updates
-			List<Node> nodes = t.preorderList();
+			List<Node> nodes = t.preorderList(true);
 			
 			//add root section id, with sub-section/updates, to the final collection
 			//only if it's sub-section map is not empty
@@ -142,11 +142,13 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 */
 	protected Map<String, List<UpdateVO>> getSubSectionUpdates(List<Node> nodes, List<UpdateVO> updates){
 		Map<String, List<UpdateVO>> subSectionMap = new LinkedHashMap<>();
+		
 		for (Node node : nodes) {
-			if(SECTION_XR_DEPTH == node.getDepthLevel() ){		
-				//locate the related updates and add to map
-				List<UpdateVO> holder = locateSectionUpdates(updates, node);
-				if(!holder.isEmpty()) subSectionMap.put(node.getNodeName(), holder);
+			//locate the related updates and add to map
+			List<UpdateVO> holder = locateSectionUpdates(updates, node);
+			if(!holder.isEmpty()) {
+				//associate sub sub level updates
+				subSectionMap.put(node.getNodeName(), holder);
 			}
 		}
 		
