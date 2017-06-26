@@ -64,6 +64,8 @@ public class CompanyVO  extends AuthorVO {
 	private String currencyTypeSymbol;
 	private int publicFlag;
 	
+	public static final String SOLR_ID_PREFACE = "biomedgps_company_";
+	
 	
 	public CompanyVO() {
 		super(BiomedCompanyIndexer.INDEX_TYPE);

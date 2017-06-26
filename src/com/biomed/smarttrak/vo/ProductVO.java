@@ -55,6 +55,8 @@ public class ProductVO extends AuthorVO {
 	private Node[] detailsList;
 	private int publicFlag;
 	
+	public static final String SOLR_ID_PREFACE = "biomedgps_product_";
+	
 	public ProductVO () {
 		super(BiomedProductIndexer.INDEX_TYPE);
 		productAttributes = new ArrayList<>();
