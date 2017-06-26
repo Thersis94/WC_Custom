@@ -197,7 +197,7 @@ public class CompanyAction extends AbstractTreeAction {
 		sql.append("SELECT p.PRODUCT_NM, p.PRODUCT_ID, s.SECTION_ID FROM ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION s ");
 		sql.append("on p.PRODUCT_ID = s.PRODUCT_ID ");
-		sql.append("WHERE p.COMPANY_ID = ? order by p.PRODUCT_NM");
+		sql.append("WHERE p.COMPANY_ID = ? ");
 		log.debug(sql+"|"+company.getCompanyId());
 		List<ProductVO> products = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -234,6 +234,9 @@ public class CompanyAction extends AbstractTreeAction {
 				addToProductMap(company, n, p);
 			}
 		}
+		
+		// Ensure that the products are all in alphabetical order
+		company.sortProducts();
 	}
 
 	
