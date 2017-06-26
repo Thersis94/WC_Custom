@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.vo;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -416,6 +417,12 @@ public class CompanyVO  extends AuthorVO {
 
 	public void setPublicFlag(int publicFlag) {
 		this.publicFlag = publicFlag;
+	}
+
+	public void sortProducts() {
+		for (List<ProductVO> prodList : products.values()) {
+			Collections.sort(prodList);
+		}
 	}
 
 }
