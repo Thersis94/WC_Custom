@@ -118,7 +118,7 @@ public class CompanyAction extends AbstractTreeAction {
 			if (results.isEmpty()) return new CompanyVO();
 			
 			company = (CompanyVO) results.get(0);
-			addProducts(company);
+			addProducts(company, role.getRoleLevel());
 			// If a company has 0 products it should not be shown. 
 			// Null out the company id to force a redirect and return now.
 			if (!bypassProducts && company.getProducts().isEmpty()) {
@@ -190,25 +190,40 @@ public class CompanyAction extends AbstractTreeAction {
 	 * @param company
 	 * @throws ActionException
 	 */
-	private void addProducts(CompanyVO company) throws ActionException {
-		StringBuilder sql = new StringBuilder(400);
+	private void addProducts(CompanyVO company, int roleLevel) throws ActionException {
+		StringBuilder sql = new StringBuilder(600);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
-		sql.append("SELECT p.PRODUCT_NM, p.PRODUCT_ID, s.SECTION_ID FROM ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("SELECT p.PRODUCT_NM, p.PRODUCT_ID, s.SECTION_ID, p.COMPANY_ID, c.COMPANY_NM, ");
+		sql.append("SHORT_NM, SHORT_NM_TXT FROM ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR a ");
+		sql.append("on p.PRODUCT_ID = a.PRODUCT_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("on c.COMPANY_ID = p.COMPANY_ID ");
 		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION s ");
 		sql.append("on p.PRODUCT_ID = s.PRODUCT_ID ");
-		sql.append("WHERE p.COMPANY_ID = ? ");
+		sql.append("WHERE (p.COMPANY_ID = ? or a.COMPANY_ID = ?) and p.STATUS_NO in (");
+		if (AdminControllerAction.STAFF_ROLE_LEVEL == roleLevel) {
+			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
+		}
+		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
+		sql.append("order by p.PRODUCT_NM ");
 		log.debug(sql+"|"+company.getCompanyId());
 		List<ProductVO> products = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, company.getCompanyId());
+			ps.setString(2, company.getCompanyId());
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 				
 				ProductVO p = new ProductVO();
 				p.setProductId(rs.getString("PRODUCT_ID"));
 				p.setProductName(rs.getString("PRODUCT_NM"));
+				p.setShortName(rs.getString("SHORT_NM"));
 				p.addSection(rs.getString("SECTION_ID"));
+				p.setCompanyId(rs.getString("COMPANY_ID"));
+				p.setCompanyName(rs.getString("COMPANY_NM"));
+				p.setCompanyShortName(rs.getString("SHORT_NM_TXT"));
 				products.add(p);
 			}
 		} catch (SQLException e) {
