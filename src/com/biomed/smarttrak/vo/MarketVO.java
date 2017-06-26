@@ -45,6 +45,8 @@ public class MarketVO extends AuthorVO {
 	private String regionCode;
 	private String regionName;
 	private int publicFlag;
+	
+	public static final String SOLR_ID_PREFACE = "biomedgps_market_";
 
 	public MarketVO () {
 		super(MarketIndexer.INDEX_TYPE);
@@ -80,7 +82,7 @@ public class MarketVO extends AuthorVO {
 		return marketId;
 	}
 	public void setMarketId(String marketId) {
-		super.setDocumentId(marketId);
+		super.setDocumentId(SOLR_ID_PREFACE + marketId);
 		this.marketId = marketId;
 	}
 	@SolrField(name="parentId_s")
