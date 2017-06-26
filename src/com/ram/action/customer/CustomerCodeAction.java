@@ -79,7 +79,7 @@ public class CustomerCodeAction extends SBActionAdapter {
 		
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(1, req.getParameter("customerId"));
+			ps.setInt(1, Convert.formatInteger(req.getParameter("customerId")));
 			
 			//Retrieve results and populate the Hibc List
 			ResultSet rs = ps.executeQuery();

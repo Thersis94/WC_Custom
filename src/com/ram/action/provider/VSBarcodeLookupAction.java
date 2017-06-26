@@ -20,6 +20,7 @@ import com.siliconmtn.barcode.BarcodeItemVO;
 import com.siliconmtn.barcode.BarcodeItemVO.BarcodeType;
 import com.siliconmtn.barcode.BarcodeManager;
 import com.siliconmtn.barcode.BarcodeOEM;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -231,9 +232,9 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	 */
 	protected RAMProductVO retrieveProduct(BarcodeItemVO barcode) throws ActionException {
 		RAMProductVO p = null;
-		log.debug("Performing lookup on productId: " + barcode.getProductId());
+		log.info("Performing lookup on productId: " + barcode.getProductId());
 		try(PreparedStatement ps = dbConn.prepareStatement(getProductSql(barcode.getBarcodeType()))) {
-			ps.setString(1, barcode.getCustomerId());
+			ps.setInt(1, Convert.formatInteger(barcode.getCustomerId()));
 			ps.setString(2, barcode.getProductId());
 	
 			ResultSet rs = ps.executeQuery();

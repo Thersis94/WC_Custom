@@ -113,7 +113,7 @@ public class ProductRecallAction extends SBActionAdapter {
 		
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(1, req.getParameter("productId"));
+			ps.setInt(1, Convert.formatInteger(req.getParameter("productId")));
 			
 			//Retrieve results and populate the Products List
 			ResultSet rs = ps.executeQuery();
