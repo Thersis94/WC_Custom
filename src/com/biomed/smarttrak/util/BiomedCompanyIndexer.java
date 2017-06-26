@@ -12,6 +12,7 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
@@ -209,7 +210,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 */
 	private SecureSolrDocumentVO buildSolrDocument(ResultSet rs) throws SQLException {
 		SecureSolrDocumentVO company = new SecureSolrDocumentVO(INDEX_TYPE);
-		company.setDocumentId("biomedgps_copmany_" + rs.getString(COMPANY_ID));
+		company.setDocumentId(CompanyVO.SOLR_ID_PREFACE + rs.getString(COMPANY_ID));
 		company.setTitle(rs.getString("COMPANY_NM"));
 		SmarttrakSolrUtil.setSearchField(rs.getString("SHORT_NM_TXT"), "shortNm", company);
 		company.addAttribute("status", rs.getString("STATUS_NO"));
