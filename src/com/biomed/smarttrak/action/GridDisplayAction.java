@@ -239,7 +239,7 @@ public class GridDisplayAction extends SBActionAdapter {
 		// with percentages instead of actual values.
 		BigDecimal total = new BigDecimal(0);
 		for (GridDetailVO detail : grid.getDetails()) {
-			total = total.add(new BigDecimal(detail.getValue1()));
+			total = total.add(new BigDecimal(Convert.formatDouble(detail.getValue1())));
 		}
 		
 		// If the total is 100 the percentage is functionally 
