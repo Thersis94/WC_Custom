@@ -97,7 +97,7 @@ public class RamUserAction extends SBActionAdapter {
 		sql.append("inner join ROLE c on a.ROLE_ID = c.ROLE_ID ");
 		sql.append("left outer join PHONE_NUMBER d on a.PROFILE_ID = d.PROFILE_ID and d.PHONE_TYPE_CD = 'HOME' ");
 		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER e ");
-		sql.append("on a.ATTRIB_TXT_1 = e.CUSTOMER_ID ");
+		sql.append("on a.ATTRIB_TXT_1 = cast(e.CUSTOMER_ID as varchar) ");
 		sql.append("left outer join ").append(schema).append("RAM_AUDITOR f ");
 		sql.append("on a.PROFILE_ID = f.PROFILE_ID ");
 		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER_PROFILE_XR h ");
@@ -124,7 +124,7 @@ public class RamUserAction extends SBActionAdapter {
 
 		if (profileId.length() > 0) sql.append("and a.PROFILE_ID = ? ");
 		sql.append("order by a.PROFILE_ID");
-		log.debug("RamUserAction retrieve SQL: " + sql.toString() + " | " + profileId);
+		log.info("RamUserAction retrieve SQL: " + sql.toString() + " | " + profileId);
 
 		int recCtr = 0;
 		PreparedStatement ps = null;

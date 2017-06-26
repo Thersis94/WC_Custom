@@ -185,9 +185,9 @@ public class ProductAction extends SBActionAdapter {
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
 			if(isProductLookup)
-				ps.setString(1, req.getParameter("productId"));
+				ps.setInt(1, Convert.formatInteger(req.getParameter("productId")));
 			else
-				ps.setString(1, req.getParameter("customerId"));
+				ps.setInt(1, Convert.formatInteger(req.getParameter("customerId")));
 			
 			//Loop the results and add to products list.
 			ResultSet rs = ps.executeQuery();
@@ -251,9 +251,9 @@ public class ProductAction extends SBActionAdapter {
 			ps.setString(i++, req.getParameter("customerProductId"));
 			ps.setInt(i++, 1);
 			if(req.hasParameter("productId")) {
-				ps.setString(i++, req.getParameter("productId"));
+				ps.setInt(i++, Convert.formatInteger(req.getParameter("productId")));
 			} else {
-				ps.setString(i++, req.getParameter("customerId"));
+				ps.setInt(i++, Convert.formatInteger(req.getParameter("customerId")));
 				ps.setString(i++, req.getParameter("gtinProductId"));
 			}
 			//Execute
@@ -284,8 +284,6 @@ public class ProductAction extends SBActionAdapter {
 		
 		//Pull relevant data off the request
 		RAMProductSearchVO svo = new RAMProductSearchVO(req);
-		
-		log.debug("Retrieving Products");
 		PreparedStatement ps = null;
 		int index = 1, ctr = 0;
 		try{
@@ -297,6 +295,7 @@ public class ProductAction extends SBActionAdapter {
 				ps.setString(index++, "%" + svo.getTerm() + "%");
 				ps.setString(index++, "%" + svo.getTerm() + "%");
 			}
+			
 			/*
 			 * Providers use an intersect to get the correct products
 			 * so we need to set the same attributes again.
@@ -312,14 +311,15 @@ public class ProductAction extends SBActionAdapter {
 			}
 			ps.setInt(index++, svo.getStart());
 			ps.setInt(index++, svo.getLimit());
-
+			
 			/*
 			 * Iterate over results to get our paginated selection
 			 */
 			ResultSet rs = ps.executeQuery();
-			while(rs.next())
+			while(rs.next()) {
 				products.add(new RAMProductVO(rs));
-			
+			}
+
 			/*
 			 * Retrieve the total count of products to properly show pagination.
 			 * Need to increment by one as this is a 0 start number and the list
@@ -327,13 +327,13 @@ public class ProductAction extends SBActionAdapter {
 			 */
 			svo.setCount(true);
 			ctr = getRecordCount(svo);
-		} catch(SQLException sqle) {
+		} catch(Exception sqle) {
 			log.error("Error retrieving product list", sqle);
 			throw new ActionException(sqle);
 		} finally {
 			DBUtil.close(ps);
 		}
-
+		
 		//Return the data.
 		putModuleData(products, ctr, false);
 	}
@@ -440,7 +440,7 @@ public class ProductAction extends SBActionAdapter {
 		if(svo.isCount()) {
 			sb.append("select count(a.product_id) from ").append(schema);
 		} else {
-			sb.append("select * from (select ROW_NUMBER() OVER (order by Product_nm) as RowNum, a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG, a.MANUAL_ENTRY_FLG from ").append(schema);
+			sb.append("select  a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG, a.MANUAL_ENTRY_FLG from ").append(schema);
 		}
 		//Build Initial Query
 
@@ -451,7 +451,7 @@ public class ProductAction extends SBActionAdapter {
 
 		//Lastly if this is not a count call order the results.
 		if(!svo.isCount())
-			sb.append(") as paginatedResult where RowNum >= ? and RowNum < ? order by RowNum");
+			sb.append(" order by product_nm offset ?  limit ? ");
 
 		log.debug(svo.getCustomerId() + "|" + svo.getProviderId() + "|" + sb.toString());
 		return sb.toString();

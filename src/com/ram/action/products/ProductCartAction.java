@@ -37,7 +37,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 
 import com.smt.sitebuilder.action.AbstractSBReportVO;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -56,7 +56,7 @@ import com.smt.sitebuilder.util.MessageSender;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class ProductCartAction extends SBActionAdapter {
+public class ProductCartAction extends SimpleActionAdapter {
 
 	// Names for the request parameters related to this action
 	public static final String HOSPITAL = "hospital";
@@ -86,7 +86,7 @@ public class ProductCartAction extends SBActionAdapter {
 		productName("PRODUCT_NM"),
 		productDesc("DESC_TXT"),
 		productSKU("CUST_PRODUCT_ID"),
-		productGTIN("c.GTIN_NUMBER_TXT + CAST(p.GTIN_PRODUCT_ID as NVARCHAR(64))"),
+		productGTIN("c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64))"),
 		surgeonName("SURGEON_NM"),
 		hospital("HOSPITAL_NM"),
 		repId("REP_ID"),
@@ -111,6 +111,10 @@ public class ProductCartAction extends SBActionAdapter {
 		super(avo);
 	}
 	
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
 	
 	@Override
 	public void build(ActionRequest req) throws ActionException {
@@ -346,7 +350,7 @@ public class ProductCartAction extends SBActionAdapter {
 	}
 
 
-
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		// If a kitId has been passed along we need to load the kit first.
 		if (req.hasParameter(KIT_ID))populateCart(req);
@@ -460,7 +464,7 @@ public class ProductCartAction extends SBActionAdapter {
 			int i = 1;
 			if (req.hasParameter("searchCustomer")) ps.setString(i++, req.getParameter("searchCustomer"));
 			if (fields != null) {
-				String searchData = req.getParameter("searchData");
+				String searchData =StringUtil.checkVal(req.getParameter("searchData")).toLowerCase();
 				for (int j=0; j<fields.length; j++) {
 					ps.setString(i++, (searchType == 3? "%":"") + searchData + (searchType > 1 ? "%":""));
 				}
@@ -500,24 +504,24 @@ public class ProductCartAction extends SBActionAdapter {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String searchComaparator = searchType > 1? " like ":" = ";
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("SELECT p.PRODUCT_ID, p.CUST_PRODUCT_ID, c.GTIN_NUMBER_TXT + CAST(p.GTIN_PRODUCT_ID as NVARCHAR(64)) as GTIN_NUMBER_TXT, PRODUCT_NM, ");
+		sql.append("SELECT p.PRODUCT_ID, p.CUST_PRODUCT_ID, c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64)) as GTIN_NUMBER_TXT, PRODUCT_NM, ");
 		sql.append("DESC_TXT, SHORT_DESC, c.CUSTOMER_NM, l.KIT_LAYER_ID FROM ").append(customDb).append("RAM_PRODUCT p ");
 		sql.append("LEFT JOIN ").append(customDb).append("RAM_CUSTOMER c on c.CUSTOMER_ID = p.CUSTOMER_ID ");
 		sql.append("left join ").append(customDb).append("RAM_KIT_LAYER l on l.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append("WHERE p.CUSTOMER_ID is not null and p.GTIN_PRODUCT_ID is not null AND  c.GTIN_NUMBER_TXT is not null ");
-		sql.append("AND p.CUSTOMER_ID != '' AND p.GTIN_PRODUCT_ID != '' AND c.GTIN_NUMBER_TXT != '' ");
-		if (req.hasParameter("searchCustomer")) sql.append("AND p.CUSTOMER_ID = ? ");
+		sql.append("AND p.CUSTOMER_ID > 0 AND p.GTIN_PRODUCT_ID != '' AND c.GTIN_NUMBER_TXT != '' ");
+		if (req.hasParameter("searchCustomer")) sql.append("AND p.CUSTOMER_ID > 0 ");
 		if (fields != null) {
 			// Add fail condition to allow for multiple OR clauses
 			sql.append("AND (1=2 ");
 			// Loop over the selected search fields and add each one to the query
 			for (String field : fields) {
-				sql.append("OR ").append(SearchFields.valueOf(field).getColumnName()).append(searchComaparator).append("? ");
+				sql.append("OR lower(").append(SearchFields.valueOf(field).getColumnName()).append(") ").append(searchComaparator).append("? ");
 			}
 			sql.append(") ");
 		}
 		if (req.hasParameter("orgName")) sql.append("AND p.CUSTOMER_ID = ? ");
-		
+		log.info(sql);
 		return sql.toString();
 	}
 	

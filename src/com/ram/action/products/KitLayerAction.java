@@ -265,7 +265,7 @@ public class KitLayerAction extends SBActionAdapter {
 		
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(1, req.getParameter("productId"));
+			ps.setInt(1, Convert.formatInteger(req.getParameter("productId")));
 			
 			ResultSet rs = ps.executeQuery();
 			

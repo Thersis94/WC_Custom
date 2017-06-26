@@ -195,7 +195,7 @@ public class DashboardReportAction extends SBActionAdapter {
 		sql.append("on rr.region_id = rcl.region_id ");
 		sql.append("left outer join ").append(schema).append("ram_inventory_event rie "); 
 		sql.append("on rcl.customer_location_id = rie.customer_location_id "); 
-		sql.append("and datepart(week, schedule_dt) = ? ");
+		sql.append("and date_part('week', schedule_dt) = ? ");
 		sql.append("and rie.inventory_event_id in ( ");
 		sql.append("select inventory_event_id ");
 		sql.append("from ").append(schema).append("ram_customer_event_xr ");
@@ -252,7 +252,7 @@ public class DashboardReportAction extends SBActionAdapter {
 		sql.append("on rr.region_id = rcl.region_id ");
 		sql.append("left outer join ").append(schema).append("ram_inventory_event rie "); 
 		sql.append("on rcl.customer_location_id = rie.customer_location_id "); 
-		sql.append("and datepart(week, schedule_dt) = ? ");
+		sql.append("and date_part('week', schedule_dt) = ? ");
 		sql.append("and rie.inventory_event_id in ( ");
 		sql.append("select inventory_event_id ");
 		sql.append("from ").append(schema).append("ram_customer_event_xr ");
@@ -322,7 +322,7 @@ public class DashboardReportAction extends SBActionAdapter {
 		if (customerId.length() > 0) sql.append("and customer_id = ").append(customerId);
 		sql.append(" inner join ").append(schema).append("ram_inventory_event_auditor_xr aud "); 
 		sql.append("on rii.inventory_event_auditor_xr_id = aud.inventory_event_auditor_xr_id "); 
-		sql.append("and datepart(week, inventory_dt) = ? ");
+		sql.append("and date_part('week', inventory_dt) = ? ");
 		sql.append("inner join ").append(schema);
 		sql.append("ram_inventory_event rie on rie.inventory_event_id = aud.inventory_event_id ");
 		sql.append("inner join ").append(schema);

@@ -54,23 +54,15 @@ public class InventoryEventAction extends SBActionAdapter {
 	/**
 	 * Maps the extjs column names to the actual field names
 	 */
-	protected final Map<String, String> fieldMap = new LinkedHashMap<String, String>(){
-		private static final long serialVersionUID = 1l;
-		{
-			put("locationName", "location_nm");
-			put("scheduleDate", "schedule_dt");
-			put("activeFlag", "active_Flg");
-			put("inventoryCompleteDate", "location_nm");
-			put("dataLoadCompleteDate", "location_nm");
-			put("returnProducts", "location_nm");
-		}
-	};
+	protected final Map<String, String> fieldMap = new LinkedHashMap<>();
+	
 	
 	/**
 	 * 
 	 */
 	public InventoryEventAction() {
-		
+		super();
+		initFieldMap();
 	}
 
 	/**
@@ -78,7 +70,19 @@ public class InventoryEventAction extends SBActionAdapter {
 	 */
 	public InventoryEventAction(ActionInitVO actionInit) {
 		super(actionInit);
-		
+		initFieldMap();
+	}
+	
+	/**
+	 * Maps the extjs column names to the actual field names
+	 */
+	private final void initFieldMap() {
+		fieldMap.put("locationName", "location_nm");
+		fieldMap.put("scheduleDate", "schedule_dt");
+		fieldMap.put("activeFlag", "active_Flg");
+		fieldMap.put("inventoryCompleteDate", "location_nm");
+		fieldMap.put("dataLoadCompleteDate", "location_nm");
+		fieldMap.put("returnProducts", "location_nm");
 	}
 	
 	/*
@@ -104,7 +108,7 @@ public class InventoryEventAction extends SBActionAdapter {
 			globalUpdate(event);
 		} else {
 			//update the single record passed  on the request
-			List<InventoryEventVO> list = new ArrayList<InventoryEventVO>();
+			List<InventoryEventVO> list = new ArrayList<>();
 			list.add(event);
 			this.update(list);
 			req.setParameter("inventoryEventId", "" + list.get(0).getInventoryEventId());
@@ -214,8 +218,9 @@ public class InventoryEventAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if (inventoryEventId == 0) this.retrieveAll(req);
-		else if(r.getRoleLevel() != RamUserAction.ROLE_LEVEL_PROVIDER) this.retrieveEvent(req, inventoryEventId);
+		if (req.hasParameter("amid")) this.retrieveAll(req);
+		else if(inventoryEventId > 0 && r.getRoleLevel() != RamUserAction.ROLE_LEVEL_PROVIDER) 
+			this.retrieveEvent(inventoryEventId);
 	}
 	
 	/**
@@ -224,7 +229,7 @@ public class InventoryEventAction extends SBActionAdapter {
 	 * @param id
 	 * @throws ActionException
 	 */
-	public void retrieveEvent(ActionRequest req, int id) throws ActionException {
+	public void retrieveEvent(int id) throws ActionException {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
 		sql.append("select * from ").append(schema).append("ram_inventory_event a ");
@@ -232,9 +237,8 @@ public class InventoryEventAction extends SBActionAdapter {
 		sql.append("on a.customer_location_id = b.customer_location_id ");
 		sql.append("where a.inventory_event_id = ? ");
 		log.info("Inventory Event Retrieve: " + sql);
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setInt(1, id);
 			
 			ResultSet rs = ps.executeQuery();
@@ -242,10 +246,8 @@ public class InventoryEventAction extends SBActionAdapter {
 				this.putModuleData(new InventoryEventVO(rs, true, null));
 			}
 		} catch(SQLException sqle) {
-			throw new ActionException("", sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {} 
-		}
+			throw new ActionException("Unable to retrieve event", sqle);
+		} 
 	}
 	
 	/**
@@ -278,10 +280,8 @@ public class InventoryEventAction extends SBActionAdapter {
 		sql.append("order by ").append(fieldMap.get(sort)).append(" " ).append(dir);
 		
 		log.info("SQL: " + sql);
-		PreparedStatement ps = null;
 		int ctr = -1;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setDate(1, Convert.formatSQLDate(start));
 			ps.setDate(2, Convert.formatSQLDate(end));
 			if(r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER || r.getRoleLevel() == RamUserAction.ROLE_LEVEL_OEM)
@@ -312,9 +312,7 @@ public class InventoryEventAction extends SBActionAdapter {
 			}
 		} catch(SQLException sqle) {
 			throw new ActionException("", sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {} 
-		}
+		} 
 		
 		
 		Map<String, Object> data = new HashMap<>();
@@ -370,18 +368,17 @@ public class InventoryEventAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select cl.location_nm, schedule_dt, ie.active_flg, inventory_complete_dt, ");
 		sql.append("data_load_complete_dt, ie.inventory_event_id, ");
-		sql.append("inventory_event_group_id, count(distinct d.event_return_id) as returnProducts, ");
-		sql.append("count(e.customer_event_id) as numberCustomers, ");
-		sql.append("stuff(( ");
-		sql.append("select ', ' + b.first_nm + ' ' + b.last_nm ");
-		sql.append("from ").append(schema).append("ram_inventory_event_auditor_xr a ");
-		sql.append("left outer join ").append(schema).append("ram_auditor b on a.auditor_id = b.auditor_id ");
-		sql.append("where a.inventory_event_id = ie.inventory_event_id ");
-		sql.append("for xml path('')), 1, 1, '') as auditors ");
+		sql.append("inventory_event_group_id, count(distinct(d.event_return_id)) as returnProducts, ");
+		sql.append("count(distinct(e.customer_event_id)) as numberCustomers, ra.auditors ");
 		sql.append("from ").append(schema).append("ram_inventory_event ie ");
 		sql.append("inner join ").append(schema).append("ram_customer_location cl on ie.customer_location_id = cl.customer_location_id ");
 		sql.append("left outer join ").append(schema).append("ram_event_return_xr d on ie.inventory_event_id = d.inventory_event_id ");
 		sql.append("left outer join ").append(schema).append("ram_customer_event_xr e on ie.inventory_event_id = e.inventory_event_id ");
+		sql.append("left outer join ( ");
+		sql.append("select inventory_event_id, array_to_string(array_agg(first_nm || ' ' || last_nm), ',') as auditors ");
+		sql.append("from ").append(schema).append("ram_inventory_event_auditor_xr a ");
+		sql.append("inner join ").append(schema).append("ram_auditor b on a.auditor_id = b.auditor_id ");
+		sql.append("group by inventory_event_id ) ra on ra.inventory_event_id = ie.inventory_event_id ");
 		sql.append("where schedule_dt between ? and ? ");
 		
 		return sql;
@@ -394,8 +391,7 @@ public class InventoryEventAction extends SBActionAdapter {
 	protected StringBuilder getGroupBy() {
 		StringBuilder sql = new StringBuilder();
 		sql.append(" group by cl.location_nm, schedule_dt, ie.active_flg, inventory_complete_dt,  ");
-		sql.append("data_load_complete_dt, ie.inventory_event_id, ");
-		sql.append("inventory_event_group_id ");
+		sql.append("data_load_complete_dt, ie.inventory_event_id, inventory_event_group_id, ra.auditors ");
 		
 		return sql;
 	}

@@ -101,13 +101,13 @@ public class KitLayerProductAction extends SBActionAdapter {
 		sb.append("where a.KIT_LAYER_ID = ?");
 		
 		//Log sql Statement for verification
-		log.debug("sql: " + sb.toString());
+		log.info("sql: " + sb.toString() + "|" + req.getParameter("kitLayerId"));
 		
 		PreparedStatement ps = null;
 		
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(1, req.getParameter("kitLayerId"));
+			ps.setInt(1, Convert.formatInteger(req.getParameter("kitLayerId")));
 			ResultSet rs = ps.executeQuery();
 			
 			while(rs.next()) 
