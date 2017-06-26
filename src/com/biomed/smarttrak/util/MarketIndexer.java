@@ -239,7 +239,6 @@ public class MarketIndexer  extends SMTAbstractIndex {
 			vo.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.
 		}
 		vo.setDocumentUrl(baseUrl+vo.getMarketId());
-		vo.setMarketId("market_" + vo.getMarketId());
 		return vo;
 	}
 
