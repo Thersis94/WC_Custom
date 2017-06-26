@@ -12,6 +12,7 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ProductVO.java <p/>
@@ -28,7 +29,7 @@ import com.siliconmtn.util.Convert;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_PRODUCT")
-public class ProductVO extends AuthorVO {
+public class ProductVO extends AuthorVO implements Comparable<ProductVO> {
 	
 	private String productId;
 	private String parentId;
@@ -385,6 +386,14 @@ public class ProductVO extends AuthorVO {
 	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;
+	}
+
+
+	@Override
+	public int compareTo(ProductVO o) {
+		String comparer = StringUtil.checkVal(o.getProductName());
+		String compared = StringUtil.checkVal(getProductName());
+		return compared.compareTo(comparer);
 	}
 	
 }

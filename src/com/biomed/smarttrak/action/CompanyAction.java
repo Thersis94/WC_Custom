@@ -249,6 +249,9 @@ public class CompanyAction extends AbstractTreeAction {
 				addToProductMap(company, n, p);
 			}
 		}
+		
+		// Ensure that the products are all in alphabetical order
+		company.sortProducts();
 	}
 
 	
