@@ -49,6 +49,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  *******************************************************************/
 public class GridDisplayAction extends SBActionAdapter {
 
+	public static final String GRID_ID = "gridId";
 	/**
 	 * 
 	 */
@@ -63,6 +64,11 @@ public class GridDisplayAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -75,7 +81,7 @@ public class GridDisplayAction extends SBActionAdapter {
 		if (ChartType.TABLE.equals(type)) lookupTableMap(req);
 		
 		// Get the request data
-		String gridId = req.getParameter("gridId");
+		String gridId = req.getParameter(GRID_ID);
 		String[] grids = req.getParameterValues("grid");
 		boolean full = Convert.formatBoolean(req.getParameter("full"), false);
 		boolean stacked = Convert.formatBoolean(req.getParameter("isStacked"), false);
@@ -119,13 +125,13 @@ public class GridDisplayAction extends SBActionAdapter {
 		sql.append("inner join ").append(schema).append(" biomedgps_grid_table_map gtm on g.slug_txt = gtm.grid_graphic_id ");
 		sql.append("where lower(g.grid_id) = lower(?) or lower(g.slug_txt) = lower(?) ) ");
 
-		List<Object> params =  Arrays.asList(new Object[]{req.getParameter("gridId"),req.getParameter("gridId") });
+		List<Object> params =  Arrays.asList(new Object[]{req.getParameter(GRID_ID),req.getParameter(GRID_ID) });
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		List<Object> data = dbp.executeSelect(sql.toString(), params, new GridVO());
 		
 		if (! data.isEmpty()) {
 			GridVO grid = (GridVO) data.get(0);
-			req.setParameter("gridId", grid.getGridId());
+			req.setParameter(GRID_ID, grid.getGridId());
 		}
 	}
 	
