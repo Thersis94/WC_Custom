@@ -228,7 +228,6 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		db.executePopulate(vo, rs);
 		vo.setUpdateDt(rs.getTimestamp("mod_dt"));
 		vo.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
-		vo.setMarketId("market_" + vo.getMarketId());
 
 		if (1 == rs.getInt("PUBLIC_FLG")) {
 			vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
@@ -240,6 +239,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 			vo.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.
 		}
 		vo.setDocumentUrl(baseUrl+vo.getMarketId());
+		vo.setMarketId("market_" + vo.getMarketId());
 		return vo;
 	}
 
