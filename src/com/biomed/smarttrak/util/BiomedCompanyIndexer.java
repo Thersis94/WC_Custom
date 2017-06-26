@@ -209,7 +209,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 */
 	private SecureSolrDocumentVO buildSolrDocument(ResultSet rs) throws SQLException {
 		SecureSolrDocumentVO company = new SecureSolrDocumentVO(INDEX_TYPE);
-		company.setDocumentId(rs.getString(COMPANY_ID));
+		company.setDocumentId("company_" + rs.getString(COMPANY_ID));
 		company.setTitle(rs.getString("COMPANY_NM"));
 		SmarttrakSolrUtil.setSearchField(rs.getString("SHORT_NM_TXT"), "shortNm", company);
 		company.addAttribute("status", rs.getString("STATUS_NO"));
