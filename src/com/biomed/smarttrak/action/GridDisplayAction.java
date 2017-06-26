@@ -31,7 +31,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -47,7 +47,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * Last Updated:
  * 	
  *******************************************************************/
-public class GridDisplayAction extends SBActionAdapter {
+public class GridDisplayAction extends SimpleActionAdapter {
 
 	public static final String GRID_ID = "gridId";
 	/**
