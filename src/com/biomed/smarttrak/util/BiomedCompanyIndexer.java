@@ -12,6 +12,7 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.SectionVO;
@@ -149,22 +150,22 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		sql.append("ORDER BY x.COMPANY_ID ");
 
 		StringBuilder content = new StringBuilder();
-		String currentMarket = "";
+		String currentCompany = "";
 		Map<String, StringBuilder> contentMap = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
 
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				if (!currentMarket.equals(rs.getString(COMPANY_ID))) {
-					addContent(currentMarket, content, contentMap);
+				if (!currentCompany.equals(rs.getString(COMPANY_ID))) {
+					addContent(currentCompany, content, contentMap);
 					content = new StringBuilder(1024);
-					currentMarket = rs.getString(COMPANY_ID);
+					currentCompany = rs.getString(COMPANY_ID);
 				}
 				if (content.length() > 1) content.append("\n");
 				content.append(rs.getString("VALUE_TXT"));
 			}
-			addContent(currentMarket, content, contentMap);
+			addContent(currentCompany, content, contentMap);
 		}
 
 		for (SecureSolrDocumentVO company : companies) {
@@ -180,10 +181,10 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * @param content
 	 * @param contentMap
 	 */
-	protected void addContent(String currentMarket, StringBuilder content,
+	protected void addContent(String currentCompany, StringBuilder content,
 			Map<String, StringBuilder> contentMap) {
 		if (content.length() > 0) {
-			contentMap.put(currentMarket, content);
+			contentMap.put(Section.COMPANY+"_"+currentCompany, content);
 		}
 	}
 
@@ -334,7 +335,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			LocationVO vo = (LocationVO) o;
 			// The first location for each company is it's primary location, others can be ignored.
 			if (!locations.containsKey(vo.getCompanyId()))
-				locations.put(vo.getCompanyId(), vo);
+				locations.put(Section.COMPANY + "_" + vo.getCompanyId(), vo);
 		}
 
 		return locations;

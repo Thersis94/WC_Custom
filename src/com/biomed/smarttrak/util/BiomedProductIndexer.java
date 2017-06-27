@@ -13,6 +13,7 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
@@ -178,7 +179,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 */
 	protected void addProduct(SecureSolrDocumentVO product, Map<String, SecureSolrDocumentVO> products) {
 		if (product != null)
-			products.put(product.getDocumentId(), product);
+			products.put(product.getDocumentId().replace(Section.PRODUCT + "_", ""), product);
 	}
 
 
