@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.biomed.smarttrak.action;
 
 import java.sql.PreparedStatement;
@@ -58,9 +55,13 @@ import net.sf.json.JSONObject;
  ****************************************************************************/
 public class GapAnalysisAction extends SectionHierarchyAction {
 
+	/*
+	 * Gap Attribute Types.
+	 */
 	public enum AType {MARKET, CLASSIFICATION, INDICATION, TECHNOLOGY, METHOD}
 
 	private static final String INNER_JOIN = "inner join ";
+	private static final String FROM = "from ";
 	public static final String GAP_ROOT_ID = "GAP_ANALYSIS_ROOT";
 	public static final String GAP_CACHE_KEY = "GAP_ANALYSIS_TREE_CACHE_KEY";
 	private String[] selNodes;
@@ -127,6 +128,30 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	}
 
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.ContentHierarchyAction#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void build(ActionRequest req) {
+		DBProcessor dbp = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		try {
+			dbp.save(new SaveStateVO(req));
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Problem Saving State Object.", e.getCause());
+		}
+	}
+
+
+	/**
+	 * Helper method returns cache key for Content Hierarchy Object.
+	 */
+	@Override
+	public String getCacheKey() {
+		return GAP_CACHE_KEY;
+	}
+
+
 	/**
 	 * Return list of products that are of a given regionId, companyId and columnId
 	 * @param regionId
@@ -135,45 +160,94 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @return
 	 */
 	private List<Object> getProductList(String regionId, String companyId, String columnId) {
+
+		//Load Attributes for the Given Column.
 		Map<String, Map<AType, String>> attrs = loadProductAttributes(columnId);
 
+		//Using Retrieved Attributes, load Products.
 		return loadProducts(attrs, regionId, companyId);
 	}
 
 
 	/**
-	 * @param attrs
+	 * Helper method retrieves all the products for the given company related
+	 * to the given region and column attributes.
+	 *
+	 * @param colAttrs
 	 * @param regionId
 	 * @param companyId
 	 * @return
 	 */
-	private List<Object> loadProducts(Map<String, Map<AType, String>> attrs, String regionId, String companyId) {
-		List<Object> params = new ArrayList<>();
-		String sql = null;
+	private List<Object> loadProducts(Map<String, Map<AType, String>> colAttrs, String regionId, String companyId) {
+		/*
+		 * Get the Attribute Data Map.
+		 * For this call there will only ever be one entry for the requested column.
+		 */
+		Entry<String, Map<AType, String>> aData  = colAttrs.entrySet().iterator().next();
 
-		params.add(companyId);
-		params.add("P");
-		params.add("1");
-		for(Entry<String, Map<AType, String>> aData : attrs.entrySet()) {
-			for(AType a : AType.values()) {
-				if(aData.getValue().containsKey(a)) {
-					params.add(aData.getKey());
-					for(String s : aData.getValue().get(a).split(",")) {
-						params.add(s);
-					}
-				}
-			}
-			sql = getProductListSql(regionId.startsWith("u"), aData.getValue());
-		}
+		//Build the List of Query Params.
+		List<Object> params = buildProductParams(aData, companyId);
 
-		log.debug(sql);
+		//Build the Product List Sql Query
+		String sql = getProductListSql(regionId.startsWith("u"), aData.getValue());
+
+		//Retrieve Products
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
 		List<Object>  data = db.executeSelect(sql, params, new GapProductVO());
-		log.debug("loaded " + data.size() + " products");
+		if(!data.isEmpty()) {
+			log.debug("loaded " + ((GapProductVO)data.get(0)).getProducts().size() + " products");
+		}
+
+		//Return
 		return data;
 	}
 
 	/**
+	 * Helper method builds the Parameter Map for the Product List Query.
+	 * @param aData
+	 * @param companyId
+	 * @return
+	 */
+	private List<Object> buildProductParams(Entry<String, Map<AType, String>> aData, String companyId) {
+		List<Object> params = new ArrayList<>();
+		//Set company Id
+		params.add(companyId);
+
+		//Set Published Flag
+		params.add("P");
+
+		//Set RegionId Flag
+		params.add("1");
+
+		//Set ColumnId
+		params.add(aData.getKey());
+
+		//Add Attribute Ids.
+		addAttributeParams(params, aData);
+
+		return params;
+	}
+
+	/**
+	 * Helper method that adds Attribute Ids to the given Params Map.
+	 * Set Attribute Ids.
+	 * Iterate over the AType values and check for presence to ensure that the
+	 * same order is used in both the query building and the value setting.
+	 * @param params
+	 * @param aData
+	 */
+	private void addAttributeParams(List<Object> params, Entry<String, Map<AType, String>> aData) {
+		for(AType a : AType.values()) {
+			if(aData.getValue().containsKey(a)) {
+				for(String s : aData.getValue().get(a).split(",")) {
+					params.add(s);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Helper method loads All Product Attribute XRs for a given column.
 	 * @param columnId
 	 * @return
 	 */
@@ -187,61 +261,9 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 				attrs.put(rs.getString("ga_column_id"), buildAttributesMap(rs));
 			}
 		} catch (SQLException e) {
-			log.error("Problem Retrieving Gap Table Data", e);
+			log.error("Problem Retrieving Gap Column Attributes.", e);
 		}
 		return attrs;
-	}
-
-	/**
-	 * @param isUSRegion 
-	 * @return
-	 */
-	private String getProductListSql(boolean isUSRegion, Map<AType, String> aData) {
-		StringBuilder sql = new StringBuilder(750);
-		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("select distinct f.short_nm, f.product_id, c.column_nm, g.company_nm ");
-		sql.append("from ").append(custom).append("biomedgps_ga_column c ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_ga_column_attribute_xr d ");
-		sql.append("on d.ga_column_id = c.ga_column_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute pa ");
-		sql.append("on d.attribute_id = pa.attribute_id and pa.parent_id != 'MARKET' ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr e ");
-		sql.append("on d.attribute_id = e.attribute_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_product f ");
-		sql.append("on e.product_id = f.product_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_regulatory r ");
-		sql.append("on f.product_id = r.product_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_company g ");
-		sql.append("on f.company_id = g.company_id ");
-		sql.append("where g.company_id = ? and f.status_no = ? ");
-		if(isUSRegion) {
-			sql.append("and r.region_id = ? ");
-		} else {
-			sql.append("and r.region_id != ? ");
-		}
-		sql.append("and c.ga_column_id = ? ");
-		sql.append("and f.product_id in ( ");
-		sql.append("select product_id from ( ");
-			sql.append("select distinct ip.product_id ");
-			sql.append("from ").append(custom).append("biomedgps_product ip ");
-			for(AType a : AType.values()) {
-				if(aData.containsKey(a)) {
-					sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr ").append(a.toString()).append(" ");
-					sql.append("on ip.product_id = ").append(a.toString()).append(".product_id and ip.status_no = 'P' ");
-				}
-			}
-			sql.append("where 1 = 1 ");
-			for(AType a : AType.values()) {
-				if(aData.containsKey(a)) {
-					sql.append("and ").append(a.toString()).append(".attribute_id in (");
-					DBUtil.preparedStatmentQuestion(aData.get(a).split(",").length, sql);
-					sql.append(") ");
-				}
-			}
-		sql.append(") as res ");
-	sql.append(") order by f.short_nm");
-		log.debug(sql.toString());
-		return sql.toString();
 	}
 
 	/**
@@ -277,7 +299,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 */
 	private String getSaveStateSql(boolean hasSaveStateId) {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("select * ").append(FROM).append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_ga_savestate where user_id = ? ");
 
 		if (hasSaveStateId)
@@ -300,7 +322,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	protected List<Node> getColData(ActionRequest req) throws ActionException {
+	private List<Node> getColData(ActionRequest req) throws ActionException {
 		//Get Sections from super.
 		super.retrieve(req);
 		ModuleVO mod = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
@@ -326,7 +348,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @param selNodes
 	 * @return
 	 */
-	protected List<Node> filterNodes(List<Node> nodes) {
+	private List<Node> filterNodes(List<Node> nodes) {
 		List<Node> filteredNodes = new ArrayList<>();
 		for(Node g : nodes) {
 			for(Node p : g.getChildren()) {
@@ -343,7 +365,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @param nIter
 	 * @return
 	 */
-	protected Collection<Node> filterChildNodes(ListIterator<Node> nIter) {
+	private Collection<Node> filterChildNodes(ListIterator<Node> nIter) {
 		List<Node> filteredNodes = new ArrayList<>();
 		while(nIter.hasNext()) {
 			Node n = nIter.next();
@@ -365,7 +387,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @param gtv
 	 * @param selNodes
 	 */
-	protected List<Node> getColumns() {
+	private List<Node> getColumns() {
 		GapColumnVO gap;
 		Node n;
 		List<Node> nodes = new ArrayList<>();
@@ -391,9 +413,9 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @param size
 	 * @return
 	 */
-	protected String getColumnListSql() {
+	private String getColumnListSql() {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("select * ").append(FROM).append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_ga_column order by order_no");
 		return sql.toString();
 	}
@@ -404,7 +426,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @param selNodes
 	 * @return
 	 */
-	protected void loadGapTableData(GapTableVO gtv) {
+	private void loadGapTableData(GapTableVO gtv) {
 		Map<String, Map<AType, String>> attrs = loadColumnAttributes(gtv);
 
 		Map<String, GapCompanyVO> companies = loadCompanies(attrs);
@@ -413,6 +435,9 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	}
 
 	/**
+	 * Helper method that retrieves all the Column Attributes for a Gap Table
+	 * Request.
+	 * ColumnId -> Map of Attributes (AType -> Comma,Delim,List,of,Attribute,Ids)
 	 * @param gtv
 	 * @return
 	 */
@@ -435,6 +460,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	}
 
 	/**
+	 * Helper method processes a ResultSet and returns Map of
+	 * AType -> Comma,Delim,List,of,Attribute,Ids
 	 * @param rs
 	 * @return
 	 * @throws SQLException 
@@ -455,30 +482,20 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 */
 	private Map<String, GapCompanyVO> loadCompanies(Map<String, Map<AType, String>> attrs) {
 		Map<String, GapCompanyVO> companies = new HashMap<>();
-		GapCompanyVO c;
 
 		for(Entry<String, Map<AType, String>> aData : attrs.entrySet()) {
 			int i = 1;
+			List<Object> params = new ArrayList<>();
+			addAttributeParams(params, aData);
+
 			try (PreparedStatement ps = dbConn.prepareStatement(getTableBuilderSql(aData.getValue()))) {
 
 				//Populate PreparedStatement
-				for (AType a : AType.values()) {
-					if(aData.getValue().containsKey(a)) {
-						for(String s : aData.getValue().get(a).split(","))
-							ps.setString(i++, s);
-					}
-				}
+				for(Object p : params)
+					ps.setString(i++, (String)p);
 
 				//Query for Companies.
-				ResultSet rs = ps.executeQuery();
-				while (rs.next()) {
-					c = companies.get(rs.getString("company_id"));
-					if (c == null) {
-						c = new GapCompanyVO(rs);
-						companies.put(c.getCompanyId(), c);
-					}
-					c.addRegulation(aData.getKey(), rs.getString("status_txt"), rs.getInt("region_Id"));
-				}
+				addCompanies(companies, ps.executeQuery(), aData.getKey());
 
 			} catch (SQLException e) {
 				log.error("Problem Retrieving Gap Table Data", e);
@@ -488,15 +505,36 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	}
 
 	/**
-	 * Helper method that builds the Table Body Query
-	 * @param length
+	 * Helper method iterates the loadCompanies ResultSet and builds Company
+	 * VOs and adds Regulations.
+	 * @param companies
+	 * @param executeQuery
+	 * @throws SQLException 
+	 */
+	private void addCompanies(Map<String, GapCompanyVO> companies, ResultSet rs, String columnId) throws SQLException {
+		GapCompanyVO c;
+
+		while (rs.next()) {
+			c = companies.get(rs.getString("company_id"));
+			if (c == null) {
+				c = new GapCompanyVO(rs);
+				companies.put(c.getCompanyId(), c);
+			}
+			c.addRegulation(columnId, rs.getString("status_txt"), rs.getInt("region_Id"));
+		}
+	}
+
+
+	/**
+	 * Helper method that builds the Table Body Query.
+	 * @param colAttrs
 	 * @return
 	 */
-	protected String getTableBuilderSql(Map<AType, String> aData) {
-		StringBuilder sql = new StringBuilder(1500);
+	private String getTableBuilderSql(Map<AType, String> colAttrs) {
+		StringBuilder sql = new StringBuilder(2500);
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select distinct g.short_nm_txt, g.company_nm, g.company_id, s.status_txt, r.region_id ");
-		sql.append("from ").append(custom).append("biomedgps_product f ");
+		sql.append(FROM).append(custom).append("biomedgps_product f ");
 		sql.append("left outer join ").append(custom).append("biomedgps_product_alliance_xr axr ");
 		sql.append("on axr.product_id = f.product_id and (axr.alliance_type_id != 'PROD_4' or axr.ga_display_flg > 0) ");
 		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_regulatory r ");
@@ -513,52 +551,75 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		sql.append("on i.section_id = j.section_id ");
 		sql.append("where 1 = 1 ");
 		sql.append("and f.product_id in ( ");
-			sql.append("select product_id from ( ");
-				sql.append("select distinct ip.product_id ");
-				sql.append("from ").append(custom).append("biomedgps_product ip ");
-				for(AType a : AType.values()) {
-					if(aData.containsKey(a)) {
-						sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr ").append(a.toString()).append(" ");
-						sql.append("on ip.product_id = ").append(a.toString()).append(".product_id and ip.status_no = 'P' ");
-					}
-				}
-				sql.append("where 1 = 1 ");
-				for(AType a : AType.values()) {
-					if(aData.containsKey(a)) {
-						sql.append("and ").append(a.toString()).append(".attribute_id in (");
-						DBUtil.preparedStatmentQuestion(aData.get(a).split(",").length, sql);
-						sql.append(") ");
-					}
-				}
-			sql.append(") as res ");
+		buildProdAttributeFilterQuery(sql, colAttrs);
 		sql.append(") order by g.company_nm");
 
 		log.debug(sql);
 		return sql.toString();
 	}
 
-
-	/*
-	 * (non-Javadoc)
-	 * @see com.biomed.smarttrak.admin.ContentHierarchyAction#build(com.siliconmtn.action.ActionRequest)
+	/**
+	 * Helper method builds the Product List Sql Query.
+	 * @param isUSRegion 
+	 * @return
 	 */
-	@Override
-	public void build(ActionRequest req) {
-		DBProcessor dbp = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		try {
-			dbp.save(new SaveStateVO(req));
-		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Problem Saving State Object.", e.getCause());
+	private String getProductListSql(boolean isUSRegion, Map<AType, String> colAttrs) {
+		StringBuilder sql = new StringBuilder(2500);
+		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select distinct f.short_nm, f.product_id, c.column_nm, g.company_nm ");
+		sql.append(FROM).append(custom).append("biomedgps_ga_column c ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_ga_column_attribute_xr d ");
+		sql.append("on d.ga_column_id = c.ga_column_id ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute pa ");
+		sql.append("on d.attribute_id = pa.attribute_id ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr e ");
+		sql.append("on d.attribute_id = e.attribute_id ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_product f ");
+		sql.append("on e.product_id = f.product_id ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_regulatory r ");
+		sql.append("on f.product_id = r.product_id ");
+		sql.append(INNER_JOIN).append(custom).append("biomedgps_company g ");
+		sql.append("on f.company_id = g.company_id ");
+		sql.append("where g.company_id = ? and f.status_no = ? ");
+		if(isUSRegion) {
+			sql.append("and r.region_id = ? ");
+		} else {
+			sql.append("and r.region_id != ? ");
 		}
+		sql.append("and c.ga_column_id = ? ");
+		sql.append("and f.product_id in ( ");
+		buildProdAttributeFilterQuery(sql, colAttrs);
+		sql.append(") order by f.short_nm");
+		log.debug(sql.toString());
+		return sql.toString();
 	}
 
-
 	/**
-	 * Helper method returns cache key for Content Hierarchy Object.
+	 * Helper Method builds the Product Id Selection Query nested inside
+	 * other queries that ensures only products we care about are selected.
+	 * @param colAttrs
 	 */
-	@Override
-	public String getCacheKey() {
-		return GAP_CACHE_KEY;
+	private void buildProdAttributeFilterQuery(StringBuilder sql, Map<AType, String> colAttrs) {
+		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+
+		sql.append("select product_id ").append(FROM).append("( ");
+			sql.append("select distinct ip.product_id ");
+			sql.append(FROM).append(custom).append("biomedgps_product ip ");
+			for(AType a : AType.values()) {
+				if(colAttrs.containsKey(a)) {
+					sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr ").append(a.toString()).append(" ");
+					sql.append("on ip.product_id = ").append(a.toString()).append(".product_id and ip.status_no = 'P' ");
+				}
+			}
+			sql.append("where 1 = 1 ");
+			for(AType a : AType.values()) {
+				if(colAttrs.containsKey(a)) {
+					sql.append("and ").append(a.toString()).append(".attribute_id in (");
+					DBUtil.preparedStatmentQuestion(colAttrs.get(a).split(",").length, sql);
+					sql.append(") ");
+				}
+			}
+		sql.append(") as res ");
 	}
 
 	/**
@@ -567,12 +628,12 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @return
 	 */
 	protected String getColumnAttrs(int numColumns) {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(2500);
 		String custom = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select c.ga_column_id, ");
 		for(AType a : AType.values()) {
 			sql.append("(select string_agg(tm.attribute_id, ',') ");
-			sql.append("from ").append(custom).append("biomedgps_ga_column_attribute_xr xr ");
+			sql.append(FROM).append(custom).append("biomedgps_ga_column_attribute_xr xr ");
 			sql.append("join ").append(custom).append("biomedgps_product_attribute tm on tm.attribute_id = xr.attribute_id ");
 			sql.append("where xr.ga_column_id = c.ga_column_id and tm.parent_id= '").append(a.toString()).append("') as ").append(a.toString()).append(", ");
 		}
@@ -580,7 +641,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		//Remove trailing comma
 		sql.setLength(sql.length() - 2);
 
-		sql.append(" from ").append(custom).append("biomedgps_ga_column c ");
+		sql.append(" ").append(FROM).append(custom).append("biomedgps_ga_column c ");
 		sql.append("where c.ga_column_id in( ");
 		DBUtil.preparedStatmentQuestion(numColumns, sql);
 		sql.append(") group by c.ga_column_id ");
