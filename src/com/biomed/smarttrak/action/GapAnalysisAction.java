@@ -336,8 +336,11 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 
 		//Filter down to the Gap Node and retrieve it's children.
 		Node n = t.findNode(GAP_ROOT_ID);
-		if(n != null)
+		if(n != null) {
 			nodes = n.getChildren();
+		} else {
+			throw new ActionException("No Node Found");
+		}
 
 		//Get Columns
 		return nodes;
