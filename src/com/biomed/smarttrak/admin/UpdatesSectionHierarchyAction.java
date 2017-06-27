@@ -1,7 +1,9 @@
 package com.biomed.smarttrak.admin;
 
 //jdk 1.8.x
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +12,7 @@ import java.util.Set;
 
 //wc_custom libs
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
+import com.biomed.smarttrak.vo.UpdateTrackerVO;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
 //smt base libs
@@ -19,6 +22,8 @@ import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.util.DateUtil;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -37,6 +42,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
+	private Map<String, UpdateTrackerVO> masterCollection;
+	public static final int UNIQUE_DEPTH_LEVEL = 3;
+	public static final int TRACKING_DEPTH_LEVEL = 2;
 	
 	/**
 	 * No arg-constructor for initialization
@@ -70,13 +78,17 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException{
 		log.debug("Retrieving updates section hierarchy listing...");
-	
+		String sectionNm = StringUtil.checkVal(req.getParameter("sectionNm"));
+		
 		/*Create separate trees structures for all of the 
 		*root level sections. This will create our groupings. */
-		Map<String, Tree> treeCollection = retrieveTreeCollection();
+		Map<String, Tree> treeCollection = retrieveTreeCollection(sectionNm);
 
 		//Add the updates to appropriate groupings
-		Map<String, Map<String, List<UpdateVO>>> data = buildUpdatesHierarchy(req, treeCollection);	
+		Map<String, Map<Node, List<UpdateVO>>> data = buildUpdatesHierarchy(req, treeCollection);	
+		
+		//set the appropriate time range onto request for view
+		setDateRange(req);
 		
 		putModuleData(data);
 	}
@@ -86,18 +98,35 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 * tree contains each sub-root section's hierarchy.
 	 * @return
 	 */
-	protected Map<String, Tree> retrieveTreeCollection(){
+	protected Map<String, Tree> retrieveTreeCollection(String sectionName){
 		Map<String, Tree> collection = new LinkedHashMap<>();
 		
 		//load the tree once
 		Tree t = loadDefaultTree();
 		
 		for (Node node : t.getRootNode().getChildren()) {
-			Tree sectionTree = new Tree(node.getChildren());
-			sectionTree.setRootNode(node);
-			collection.put(node.getNodeId(), sectionTree);
+			//if section name is valid, retrieve only that section of tree
+			if(!sectionName.isEmpty()){
+				if(node.getNodeName().equalsIgnoreCase(sectionName)){
+					addSectionTree(node, collection);
+					break;					
+				}
+			}else{
+				addSectionTree(node, collection);
+			}
 		}
 		return collection;
+	}
+	
+	/**
+	 * Helper method that assigns a new section Tree to the given collection
+	 * @param node
+	 * @param collection
+	 */
+	protected void addSectionTree(Node node, Map<String, Tree> collection){
+		Tree sectionTree = new Tree(node.getChildren());
+		sectionTree.setRootNode(node);
+		collection.put(node.getNodeId(), sectionTree);
 	}
 	
 	/**
@@ -108,9 +137,9 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected Map<String, Map<String, List<UpdateVO>>> buildUpdatesHierarchy(ActionRequest req, 
+	protected Map<String, Map<Node, List<UpdateVO>>> buildUpdatesHierarchy(ActionRequest req, 
 			Map<String, Tree> treeCollection) throws ActionException{
-		Map<String, Map<String, List<UpdateVO>>> updatesHierarchyMap = new LinkedHashMap<>();
+		Map<String, Map<Node, List<UpdateVO>>> updatesHierarchyMap = new LinkedHashMap<>();
 		
 		//get list of updates
 		List<UpdateVO> updates = fetchUpdates(req);
@@ -122,14 +151,22 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			Tree t = entry.getValue();
 			String rootSectionId = t.getRootNode().getNodeName();
 			
+			//Create a brand new collection for each tree for tracking updates
+			masterCollection = new HashMap<>();
+			
 			//Build the mapping for top-level sections, sub-sections, and updates
 			List<Node> nodes = t.preorderList(true);
 			
 			//add root section id, with sub-section/updates, to the final collection
 			//only if it's sub-section map is not empty
-			Map<String, List<UpdateVO>> subSectionMap = getSubSectionUpdates(nodes, updates);
-			if(!subSectionMap.isEmpty()) 
+			Map<Node, List<UpdateVO>> subSectionMap = getSubSectionUpdates(nodes, updates);
+			if(!subSectionMap.isEmpty()) {
+				//prune the sub section map of any "meaningfully" similar updates
+				pruneSection(subSectionMap);
+				
+				//add to final collection
 				updatesHierarchyMap.put(rootSectionId, subSectionMap);
+			}	
 		}
 		return updatesHierarchyMap;
 	}
@@ -140,15 +177,15 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 * @param updates
 	 * @return
 	 */
-	protected Map<String, List<UpdateVO>> getSubSectionUpdates(List<Node> nodes, List<UpdateVO> updates){
-		Map<String, List<UpdateVO>> subSectionMap = new LinkedHashMap<>();
+	protected Map<Node, List<UpdateVO>> getSubSectionUpdates(List<Node> nodes, List<UpdateVO> updates){
+		Map<Node, List<UpdateVO>> subSectionMap = new LinkedHashMap<>();
 		
 		for (Node node : nodes) {
 			//locate the related updates and add to map
 			List<UpdateVO> holder = locateSectionUpdates(updates, node);
 			if(!holder.isEmpty()) {
 				//associate sub sub level updates
-				subSectionMap.put(node.getNodeName(), holder);
+				subSectionMap.put(node, holder);
 			}
 		}
 		
@@ -188,9 +225,39 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		for (UpdateXRVO updatesXRVO : updateSections) {
 			if(updatesXRVO.getSectionId() != null
 					&& nodeToMatch.getNodeId().equals(updatesXRVO.getSectionId())){
+				//track any applicable updates
+				trackUpdates(nodeToMatch, update);
 				holder.add(update);
 			}
 		}
+	}
+	
+	/**
+	 * Handles tracking of relevant updates to master collection
+	 * @param nodeToMatch
+	 * @param update
+	 */
+	private void trackUpdates(Node nodeToMatch, UpdateVO update){
+		if(nodeToMatch.getDepthLevel() < TRACKING_DEPTH_LEVEL) return;
+		
+		//create the status entry for the update
+		boolean hasUniqueLevel = false;
+		if(nodeToMatch.getDepthLevel() == UNIQUE_DEPTH_LEVEL){
+			hasUniqueLevel = true;
+		}
+		
+		//grab existing element from collection, otherwise update it's attributes
+		UpdateTrackerVO tracker = masterCollection.get(update.getUpdateId());
+		if(tracker == null){
+			tracker = new UpdateTrackerVO(update.getUpdateId(), 1, hasUniqueLevel);
+		}else{
+			tracker.setTrackingCount(tracker.getTrackingCount() + 1);
+			if(!tracker.isUniqueLevel()){//only override if not already unique
+				tracker.setHasUniqueLevel(hasUniqueLevel);
+			}
+		}
+		//add to master collection
+		masterCollection.put(update.getUpdateId(), tracker);
 	}
 	
 	/**
@@ -213,6 +280,66 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		actInf.retrieve(req);
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		return (List<UpdateVO>) mod.getActionData();
+	}
+	
+	/**
+	 * Searches over the section map for similar updates for relevant hierarchy sections
+	 * @param sectionUpdates
+	 */
+	private void pruneSection(Map<Node, List<UpdateVO>> sectionUpdates){
+		Set<Entry<Node, List<UpdateVO>>> entries = sectionUpdates.entrySet();
+		
+		for (Entry<Node, List<UpdateVO>> entry : entries) {
+			Node currentNode = entry.getKey();
+			
+			/*Do NOT prune updates from any entry with depth level 3. This is currently 
+			 *the only depth level that will display unique headings(view-wise) 
+			 *and allows contextually similar updates */
+			if(currentNode.getDepthLevel() != UNIQUE_DEPTH_LEVEL){
+				pruneUpdates(entry.getValue());
+			}
+		}
+	}
+	
+	/**
+	 * Removes any updates from the passed collection based on associated depth level
+	 * @param updateCollection
+	 */
+	private void pruneUpdates(List<UpdateVO> updateCollection){
+		for (int i =0; i < updateCollection.size(); i++) {
+			UpdateVO update = updateCollection.get(i);
+			
+			//grab the update from the master collection
+			UpdateTrackerVO tracker = masterCollection.get(update.getUpdateId());
+			
+			//determine if update a unique level, if so prune it from ALL other sections
+			if(tracker.isUniqueLevel()){
+				updateCollection.remove(update);
+			}else if(tracker.getTrackingCount() > 1){
+			/*otherwise only remove it up to (x)number of additional times it repeats
+			* throughout all other sections. Leaving only one occurrence.*/
+				updateCollection.remove(update);
+				tracker.setTrackingCount(tracker.getTrackingCount() - 1);
+			}
+		}
+	}
+	
+	/**
+	 * Sets the appropriate time range value to the request
+	 * @param req
+	 */
+	protected void setDateRange(ActionRequest req){
+		String timeRangeCd = StringUtil.checkVal(req.getParameter("timeRangeCd"));
+		String dateRange = null;
+		
+		//determine the date range
+		if(UpdatesWeeklyReportAction.TIME_RANGE_DAILY.equalsIgnoreCase(timeRangeCd)){
+			dateRange = DateUtil.getDate(-1, DateFormat.MEDIUM);
+		}else{
+			dateRange = DateUtil.currentWeek(DateFormat.MEDIUM);
+		}
+		
+		req.setAttribute("dateRange", dateRange);
 	}
 	
 	/*
