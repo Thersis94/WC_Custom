@@ -447,6 +447,7 @@ public class MarketManagementAction extends AuthorAction {
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		market = (MarketVO) db.executeSelect(sql.toString(), params, new MarketVO()).get(0);
 		req.getSession().setAttribute("marketName", market.getMarketName());
+		req.getSession().setAttribute("marketShortName", market.getShortName());
 		
 		// Get specifics on market details
 		addAttributes(market, req.getParameter("typeCd"));

@@ -47,6 +47,8 @@ public class CompanyManagementAction extends AuthorAction {
 	public static final String ACTION_TYPE = "actionTarget";
 	public static final String COMPANY_ID = "companyId";
 	public static final String CONTENT_ATTRIBUTE_ID = "LVL1_1";
+	public static final String COMPANY_PATH = "companies/";
+	
 	
 	private enum ActionType {
 		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW
@@ -522,7 +524,8 @@ public class CompanyManagementAction extends AuthorAction {
 		
 		req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		req.getSession().setAttribute("companyName", company.getCompanyName());
-
+		req.getSession().setAttribute("companyShortName", company.getShortName());
+		
 		addInvestors(company);
 		
 		if ("location".equals(req.getParameter("jsonType")))

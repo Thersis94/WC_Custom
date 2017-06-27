@@ -75,6 +75,8 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
+	private String companyLink;
+	private String companyShortName;
 	private List<UpdateXRVO> sections;
 
 	public UpdateVO() {
@@ -288,6 +290,34 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	@SolrField(name="publishDtNoTime_s")
 	public String getPublishDtNoTime() {
 		return Convert.formatDate(publishDt, Convert.DATE_DASH_PATTERN);
+	}
+	
+	@SolrField(name="companyLink_s")
+	public String getCompanyLink(){
+		
+		if (StringUtil.isEmpty(this.productId)) {
+			return "";
+		}else{
+			return companyLink;
+		}
+	}
+	
+	public void setCompanyLink(String link){
+		this.companyLink = link;
+	}
+	
+	@SolrField(name="companyShortName_s")
+	public String getCompanyShortName(){
+		
+		if (StringUtil.isEmpty(this.productId)) {
+			return "";
+		}else{
+			return companyShortName;
+		}
+	}
+	
+	public void setCompanyShortName(String shortNm){
+		this.companyShortName = shortNm;
 	}
 
 	@SolrField(name="publishTime_s")
