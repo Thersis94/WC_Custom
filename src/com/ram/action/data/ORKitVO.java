@@ -44,7 +44,7 @@ public class ORKitVO {
 	
 	public void setData(ResultSet rs) {
 		DBUtil db = new DBUtil();
-		setKitId(StringUtil.checkVal(db.getStringVal("RAM_KIT_INFO_ID", rs)));
+		setKitId(StringUtil.checkVal(db.getStringVal("RAM_CASE_INFO_ID", rs)));
 		hospitalName = StringUtil.checkVal(db.getStringVal("HOSPITAL_NM", rs));
 		operatingRoom = StringUtil.checkVal(db.getStringVal("OPERATING_ROOM", rs));
 		surgeonNm = StringUtil.checkVal(db.getStringVal("SURGEON_NM", rs));

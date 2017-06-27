@@ -145,7 +145,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 			req.getSession().setAttribute(FINALIZED, true);
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			req.setParameter("emails", user.getEmailAddress());
-			sendEmails(req);
+			// sendEmails(req);
 		}else if (Convert.formatBoolean(req.getParameter("sendEmails"))) {
 			populateCart(req);
 			sendEmails(req);
@@ -212,6 +212,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 				}
 
 			}
+			
 			// Put the added products onto the request object so the page can
 			// be updated accordingly.
 			super.putModuleData(addedItems);
@@ -521,7 +522,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 			sql.append(") ");
 		}
 		if (req.hasParameter("orgName")) sql.append("AND p.CUSTOMER_ID = ? ");
-		log.info(sql);
+		log.debug(sql);
 		return sql.toString();
 	}
 	
@@ -579,9 +580,9 @@ public class ProductCartAction extends SimpleActionAdapter {
 	private void deleteCart(ActionRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(125);
-		sql.append("DELETE ").append(customDb).append("RAM_KIT_INFO ");
+		sql.append("DELETE from ").append(customDb).append("ram_case_info ");
 		// We will only ever delete non finalized kits
-		sql.append("WHERE FINALIZED_FLG = 0 AND RAM_KIT_INFO_ID = ? ");
+		sql.append("WHERE FINALIZED_FLG = 0 AND ram_case_info_id = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, req.getParameter(KIT_ID));
@@ -607,22 +608,23 @@ public class ProductCartAction extends SimpleActionAdapter {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(225);
 		SMTSession sess = req.getSession();
+
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		if (StringUtil.checkVal(req.getSession().getAttribute(KIT_ID)).length() == 0) {
-			sql.append("INSERT INTO ").append(customDb).append("RAM_KIT_INFO ");
+			sql.append("INSERT INTO ").append(customDb).append("ram_case_info ");
 			sql.append("(HOSPITAL_NM,OPERATING_ROOM,SURGERY_DT,SURGEON_NM,");
 			sql.append("RESELLER_NM,CASE_ID,CREATE_DT,PROFILE_ID,FINALIZED_FLG,");
 			sql.append("RESELLER_SIGNATURE,ADMIN_SIGNATURE,RESELLER_SIGN_DT,");
-			sql.append("ADMIN_SIGN_DT,OTHER_ID,REP_ID,RAM_KIT_INFO_ID)");
+			sql.append("ADMIN_SIGN_DT,OTHER_ID,REP_ID,ram_case_info_ID)");
 			sql.append("VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			sess.setAttribute(KIT_ID, new UUIDGenerator().getUUID());
 		} else {
-			sql.append("UPDATE ").append(customDb).append("RAM_KIT_INFO SET ");
+			sql.append("UPDATE ").append(customDb).append("ram_case_info SET ");
 			sql.append("HOSPITAL_NM=?,OPERATING_ROOM=?,SURGERY_DT=?,");
 			sql.append("SURGEON_NM=?,RESELLER_NM=?,CASE_ID=?,UPDATE_DT=?, ");
 			sql.append("PROFILE_ID=?, FINALIZED_FLG=?, RESELLER_SIGNATURE=?, ");
 			sql.append("ADMIN_SIGNATURE=?,RESELLER_SIGN_DT=?,");
-			sql.append("ADMIN_SIGN_DT=?,OTHER_ID=?,REP_ID=? WHERE RAM_KIT_INFO_ID=? ");
+			sql.append("ADMIN_SIGN_DT=?,OTHER_ID=?,REP_ID=? WHERE ram_case_info_ID=? ");
 		}
 		log.debug(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
@@ -664,13 +666,13 @@ public class ProductCartAction extends SimpleActionAdapter {
 	private void saveProducts(ActionRequest req, String kitId) throws ActionException {
 		// Delete all associated products to prevent duplicates
 		purgeProducts(kitId);
-		
+
 		ShoppingCartVO cart = retrieveContainer(req).load();
 		
 		StringBuilder sql = new StringBuilder(175);
-		sql.append("INSERT INTO ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_KIT_PRODUCT_XR (KIT_PRODUCT_ID, PRODUCT_ID,RAM_KIT_INFO_ID,ORDER_NO,LOT_NO,QTY,BILLABLE_FLG,WASTED_FLG,PRODUCT_FROM,CREATE_DT, KIT_FLG) ");
-		sql.append("VALUES(?,?,?,?,?,?,?,?,?,?,?)");
+		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_case_product (case_product_id, product_id,ram_case_info_id,order_no,lot_no,qty,billable_flg,wasted_flg,product_from,create_dt, kit_flg) ");
+		sql.append("values(?,?,?,?,?,?,?,?,?,?,?)");
 		
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i=1;
@@ -703,8 +705,8 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 */
 	private void purgeProducts(String kitId) throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("DELETE ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_KIT_PRODUCT_XR WHERE RAM_KIT_INFO_ID = ?");
+		sql.append("DELETE from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_case_product WHERE ram_case_info_id = ?");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, kitId);
@@ -762,16 +764,16 @@ public class ProductCartAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
-		sql.append("SELECT HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, REP_ID, OTHER_ID, CASE_ID, RESELLER_NM, k.RAM_KIT_INFO_ID, COUNT(k.RAM_KIT_INFO_ID) as NUM_PRODUCTS, FINALIZED_FLG ");
-		sql.append("FROM ").append(customDb).append("RAM_KIT_INFO k ");
-		sql.append("LEFT JOIN ").append(customDb).append("RAM_KIT_PRODUCT_XR xr ");
-		sql.append("on k.RAM_KIT_INFO_ID = xr.RAM_KIT_INFO_ID ");
+		sql.append("SELECT HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, REP_ID, OTHER_ID, CASE_ID, RESELLER_NM, k.ram_case_info_id, COUNT(k.ram_case_info_ID) as NUM_PRODUCTS, FINALIZED_FLG ");
+		sql.append("FROM ").append(customDb).append("ram_case_info k ");
+		sql.append("LEFT JOIN ").append(customDb).append("ram_case_product xr ");
+		sql.append("on k.ram_case_info_ID = xr.ram_case_info_ID ");
 		sql.append("WHERE k.PROFILE_ID = ? ");
 		if (req.hasParameter("searchData") && req.hasParameter("searchType")) sql.append("AND ").append(SearchFields.valueOf(req.getParameter("searchType")).getColumnName()).append(" like ? ");
 		if (req.hasParameter("startDate")) sql.append("AND k.SURGERY_DT > ? ");
 		if (req.hasParameter("endDate")) sql.append("AND k.SURGERY_DT < ? ");
 		if (req.hasParameter("finalized")) sql.append("AND k.FINALIZED_FLG = ? ");
-		sql.append("GROUP BY HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, CASE_ID, RESELLER_NM, k.RAM_KIT_INFO_ID, FINALIZED_FLG, REP_ID, OTHER_ID ");
+		sql.append("GROUP BY HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, CASE_ID, RESELLER_NM, k.ram_case_info_ID, FINALIZED_FLG, REP_ID, OTHER_ID ");
 		sql.append("ORDER BY FINALIZED_FLG ");
 		
 
@@ -800,14 +802,14 @@ public class ProductCartAction extends SimpleActionAdapter {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		SMTSession sess = req.getSession();
 		
-		sql.append("SELECT * FROM ").append(customDb).append("RAM_KIT_INFO k ");
-		sql.append("LEFT JOIN ").append(customDb).append("RAM_KIT_PRODUCT_XR xr ");
-		sql.append("on k.RAM_KIT_INFO_ID = xr.RAM_KIT_INFO_ID ");
+		sql.append("SELECT * FROM ").append(customDb).append("ram_case_info k ");
+		sql.append("LEFT JOIN ").append(customDb).append("ram_case_product xr ");
+		sql.append("on k.ram_case_info_id = xr.ram_case_info_id ");
 		sql.append("LEFT JOIN ").append(customDb).append("RAM_PRODUCT p ");
 		sql.append("on xr.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("RAM_CUSTOMER c ");
 		sql.append("on c.CUSTOMER_ID = p.CUSTOMER_ID ");
-		sql.append("WHERE k.PROFILE_ID = ? and k.RAM_KIT_INFO_ID = ?");
+		sql.append("WHERE k.PROFILE_ID = ? and k.ram_case_info_ID = ?");
 		UserDataVO user = (UserDataVO) sess.getAttribute(Constants.USER_DATA);
 		log.debug(sql+"|"+req.getParameter(KIT_ID)+"|"+user.getProfileId());
 		
@@ -829,7 +831,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 					if (rs.getTimestamp("SURGERY_DT") != null)
 						sess.setAttribute(TIME, new SimpleDateFormat(DATE_PATTERN).format(rs.getTimestamp("SURGERY_DT")));
 					sess.setAttribute(CASE_ID, rs.getString("CASE_ID"));
-					sess.setAttribute(KIT_ID, rs.getString("RAM_KIT_INFO_ID"));
+					sess.setAttribute(KIT_ID, rs.getString("ram_case_info_ID"));
 					sess.setAttribute(FINALIZED, Convert.formatBoolean(rs.getString("FINALIZED_FLG")));
 					sess.setAttribute(RESELLER, rs.getString("RESELLER_NM"));
 					sess.setAttribute(SALES_SIGNATURE, rs.getString("RESELLER_SIGNATURE"));

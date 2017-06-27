@@ -124,7 +124,7 @@ public class RamUserAction extends SBActionAdapter {
 
 		if (profileId.length() > 0) sql.append("and a.PROFILE_ID = ? ");
 		sql.append("order by a.PROFILE_ID");
-		log.info("RamUserAction retrieve SQL: " + sql.toString() + " | " + profileId);
+		log.debug("RamUserAction retrieve SQL: " + sql.toString() + " | " + profileId);
 
 		int recCtr = 0;
 		PreparedStatement ps = null;
