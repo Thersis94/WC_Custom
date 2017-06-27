@@ -46,7 +46,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  ****************************************************************************/
 public class FeaturedInsightAction extends InsightAction {
 
-	protected static final String ACL_GRANTED_DELIMITER = "" + AccessControlQuery.GRANT + AccessControlQuery.GROUP + AccessControlQuery.ACL_DELIMITER;
+	protected static final String ACL_GRANTED_DELIMITER = Character.toString(AccessControlQuery.GRANT )+ AccessControlQuery.GROUP + AccessControlQuery.ACL_DELIMITER;
 
 	/*
 	 * (non-Javadoc)
@@ -54,15 +54,13 @@ public class FeaturedInsightAction extends InsightAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-
 		//this section of the retrieve is used by file handler to process and send back the correct vo
-		if (!StringUtil.isEmpty(req.getParameter("profileDocumentId"))) {
-			String profileDocumentId = req.getParameter("profileDocumentId");
+		String profileDocumentId = req.getParameter("profileDocumentId");
+		if (!StringUtil.isEmpty(profileDocumentId)) {
 			processProfileDocumentRequest(profileDocumentId);
 		} else {
 			processFeaturedRequest(req);
 		}
-
 	}
 
 	/**
@@ -139,7 +137,7 @@ public class FeaturedInsightAction extends InsightAction {
 		SolrResponseVO solVo = (SolrResponseVO)mod.getActionData();
 		mod.setAttribute("solarRes",solVo );
 
-		log.debug("Total uncheck number of responses" + solVo.getTotalResponses());
+		log.debug("Total uncheck number of responses " + solVo.getTotalResponses());
 		//get each document permissions and split them
 		List<SolrDocument> authorizedFeatures = new ArrayList<>();
 

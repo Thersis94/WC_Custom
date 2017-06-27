@@ -63,7 +63,7 @@ public class InsightAction extends AuthorAction {
 		SEARCH, ID_BYPASS, TITLE_BYPASS, CREATOR_PROFILE_ID;
 	}
 
-	
+
 	public InsightAction() {
 		super();
 		sortMapper = new HashMap<>();
@@ -88,7 +88,7 @@ public class InsightAction extends AuthorAction {
 		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
 		if (req.hasParameter("loadData") || req.hasParameter(INSIGHT_ID) ) {
-			req.setParameter(TITLE_BYPASS, StringUtil.checkVal(true));
+			req.setParameter(TITLE_BYPASS, "true");
 			if (req.hasParameter(INSIGHT_ID)){
 				loadAuthors(req);
 			}
@@ -140,12 +140,8 @@ public class InsightAction extends AuthorAction {
 		insightParamsMap.put(Fields.SEARCH, StringUtil.checkVal(req.getParameter("search")).toUpperCase());
 		insightParamsMap.put(Fields.ID_BYPASS, "false");
 
-		List<Object> insights;
-
-		insights = getInsights(insightParamsMap);
-
+		List<Object> insights = getInsights(insightParamsMap);
 		decryptNames(insights);
-
 		Long count = getCount(insightParamsMap);
 
 		log.debug(" total count is: " + count);
@@ -252,7 +248,7 @@ public class InsightAction extends AuthorAction {
 		insightParamsMap.put(Fields.SORT, StringUtil.checkVal("publish_dt"));
 		insightParamsMap.put(Fields.ORDER, StringUtil.checkVal("desc"));
 
-		return getInsights (insightParamsMap);
+		return getInsights(insightParamsMap);
 	}
 
 	/**
@@ -312,17 +308,14 @@ public class InsightAction extends AuthorAction {
 	 */
 	private List<Object> loadSqlParams(Map<Fields, String> insightParamsMap) {
 		List<Object> params = new ArrayList<>();
-
 		if (insightParamsMap.containsKey(Fields.INSIGHT_ID)) params.add(insightParamsMap.get(Fields.INSIGHT_ID));
 		if (insightParamsMap.containsKey(Fields.STATUS_CD)) params.add(insightParamsMap.get(Fields.STATUS_CD));
 		if (insightParamsMap.containsKey(Fields.TYPE_CD)) params.add(Convert.formatInteger(insightParamsMap.get(Fields.TYPE_CD)));
-
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.SEARCH)))
 			params.add(StringUtil.checkVal("%"+insightParamsMap.get(Fields.SEARCH)+"%"));
-		
-		if (insightParamsMap.containsKey(Fields.CREATOR_PROFILE_ID)) params.add(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
-
-		if (insightParamsMap.containsKey(Fields.RPP) && insightParamsMap.containsKey(Fields.START)){
+		if (insightParamsMap.containsKey(Fields.CREATOR_PROFILE_ID)) 
+			params.add(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
+		if (insightParamsMap.containsKey(Fields.RPP) && insightParamsMap.containsKey(Fields.START)) {
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.RPP)));
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.START)));
 		}
@@ -399,7 +392,7 @@ public class InsightAction extends AuthorAction {
 
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.SEARCH)))
 			sql.append("and upper(title_txt) like ? "); 
-		
+
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.CREATOR_PROFILE_ID)))
 			sql.append("and a.creator_profile_id=? ");
 	}
@@ -498,39 +491,30 @@ public class InsightAction extends AuthorAction {
 		InsightVO ivo = new InsightVO(req);
 		populateAuthorData(req, ivo);
 
-		try {
-			if (isDelete) {
-				/*
-				 * Insights rely on status to determine deleting status.  They
-				 * are deleted from Solr, however the database record is simple
-				 * flagged InstightStatusCd.D
-				 */
-				log.debug("deleting " + ivo);
-				ivo.setStatusCd(InsightVO.InsightStatusCd.D.name());
+		if (isDelete) {
+			/*
+			 * Insights rely on status to determine deleting status.  They
+			 * are deleted from Solr, however the database record is simple
+			 * flagged InstightStatusCd.D
+			 */
+			log.debug("deleting " + ivo);
+			ivo.setStatusCd(InsightVO.InsightStatusCd.D.name());
+			updateStatus(db, ivo);
+			publishChangeToSolr(ivo);
 
-				updateStatus(db, ivo);
-
-				publishChangeToSolr(ivo);
-
+		} else {
+			if (req.hasParameter("listSave")) {
+				updateFeatureOrder(ivo, db);
+				//fill the vo up with the rest of the data so there is something to push to solr
+				ivo = loadInsight(ivo);
 			} else {
-
-				if (req.hasParameter("listSave")){
-					updateFeatureOrder(ivo, db);
-					//fill the vo up with the rest of the data so there is something to push to solr
-					ivo = loadInsight(ivo);
-				}else {
-					saveInsight(db, ivo);
-
-					saveProfileDoc(req, ivo);
-
-				}
-
-				publishChangeToSolr(ivo);
+				saveInsight(db, ivo);
+				saveProfileDoc(req, ivo);
 			}
-			req.setParameter(INSIGHT_ID, ivo.getInsightId());
-		} catch (Exception e) {
-			throw new ActionException(e);
+			publishChangeToSolr(ivo);
 		}
+
+		req.setParameter(INSIGHT_ID, ivo.getInsightId());
 	}
 
 	/**
@@ -606,7 +590,8 @@ public class InsightAction extends AuthorAction {
 	 */
 	private InsightVO loadInsight(InsightVO ivo) {
 		List<Object> insights = getInsights(ivo.getInsightId(), null, null, null);
-		if(!insights.isEmpty()) ivo = (InsightVO) insights.get(0);
+		if (!insights.isEmpty()) 
+			return (InsightVO) insights.get(0);
 
 		return ivo;
 	}
@@ -634,9 +619,9 @@ public class InsightAction extends AuthorAction {
 	 * @param u
 	 */
 	protected void writeToSolr(InsightVO ivo) {
-		BiomedInsightIndexer bindx = BiomedInsightIndexer.makeInstance(getAttributes());
-		bindx.setDBConnection(dbConn);
-		bindx.addSingleItem(ivo.getInsightId());
+		BiomedInsightIndexer indexer = BiomedInsightIndexer.makeInstance(getAttributes());
+		indexer.setDBConnection(dbConn);
+		indexer.addSingleItem(ivo.getInsightId());
 	}
 
 	/**
@@ -659,14 +644,15 @@ public class InsightAction extends AuthorAction {
 	 * @throws Exception 
 	 * 
 	 */
-	private void saveInsight(DBProcessor db, InsightVO ivo) throws Exception {
-		db.save(ivo);
+	private void saveInsight(DBProcessor db, InsightVO ivo) throws ActionException {
+		try {
+			db.save(ivo);
+			setInsightIdOnInsert(ivo, db);
+			saveSections(ivo);
 
-		setInsightIdOnInsert(ivo, db);
-
-		//Save Insight Sections.
-		saveSections(ivo);
-
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
 	}
 
 	private void updateStatus(DBProcessor db, InsightVO ivo) throws ActionException {
@@ -717,21 +703,21 @@ public class InsightAction extends AuthorAction {
 		}
 	}
 
+	
 	/**
 	 * sets the new insight vo on insert
 	 * @param db 
 	 * @param u 
 	 */
 	private void setInsightIdOnInsert(InsightVO ivo, DBProcessor db) {
-
-		if(StringUtil.isEmpty(ivo.getInsightId())) {
+		if (StringUtil.isEmpty(ivo.getInsightId())) {
 			ivo.setInsightId(db.getGeneratedPKId());
 			for(InsightXRVO uxr : ivo.getInsightSections()) {
 				uxr.setInsightId(ivo.getInsightId());
 			}
 		}
-
 	}
+	
 
 	/**
 	 * Delete old Insight Sections and save new ones.
@@ -741,13 +727,11 @@ public class InsightAction extends AuthorAction {
 	 * @throws DatabaseException
 	 */
 	protected void saveSections(InsightVO ivo) throws Exception {
-
 		//Delete old Insight Section XRs
 		deleteSections(ivo.getInsightId());
 
-		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-
 		//Save new Sections.
+		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		for(InsightXRVO uxr : ivo.getInsightSections()) {
 			db.save(uxr);
 		}
