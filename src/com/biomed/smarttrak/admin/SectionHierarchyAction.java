@@ -121,13 +121,15 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 			List<Node> sections = new ArrayList<>();
 			sections.add(n);
 
-			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+			if(req.hasParameter("amid") && !"smarttrakAdmin".equals(req.getParameter("amid"))) {
+				SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 			
-			// Attempt to limit sections by the user's permissions
-			try {
-				sections = checkPermissions(sections, role);
-			} catch (CloneNotSupportedException e) {
-				throw new ActionException(e);
+				// Attempt to limit sections by the user's permissions
+				try {
+					sections = checkPermissions(sections, role);
+				} catch (CloneNotSupportedException e) {
+					throw new ActionException(e);
+				}
 			}
 			
 			this.putModuleData(sections);
