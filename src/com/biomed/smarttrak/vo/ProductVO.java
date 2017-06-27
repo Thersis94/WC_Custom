@@ -6,12 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: ProductVO.java <p/>
@@ -55,8 +58,6 @@ public class ProductVO extends AuthorVO {
 	private Node[] detailsList;
 	private int publicFlag;
 	
-	public static final String SOLR_ID_PREFACE = "biomedgps_product_";
-	
 	public ProductVO () {
 		super(BiomedProductIndexer.INDEX_TYPE);
 		productAttributes = new ArrayList<>();
@@ -91,6 +92,14 @@ public class ProductVO extends AuthorVO {
 		statusNo = req.getParameter("statusNo");
 		productGroupId = req.getParameter("productGroupId");
 		setPublicFlag(Convert.formatInteger(req.getParameter("publicFlag")));
+	}
+	
+	public static void setSolrId(SecureSolrDocumentVO doc, String docId) {
+		if(docId.length() < AdminControllerAction.DOC_ID_MIN_LEN){
+			doc.setDocumentId(Section.PRODUCT.name() + "_" +docId);
+		}else {
+			doc.setDocumentId(docId);
+		}
 	}
 
 

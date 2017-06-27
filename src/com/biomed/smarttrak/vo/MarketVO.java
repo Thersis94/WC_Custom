@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.util.MarketIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
@@ -45,8 +47,6 @@ public class MarketVO extends AuthorVO {
 	private String regionCode;
 	private String regionName;
 	private int publicFlag;
-	
-	public static final String SOLR_ID_PREFACE = "biomedgps_market_";
 
 	public MarketVO () {
 		super(MarketIndexer.INDEX_TYPE);
@@ -82,8 +82,13 @@ public class MarketVO extends AuthorVO {
 		return marketId;
 	}
 	public void setMarketId(String marketId) {
-		super.setDocumentId(SOLR_ID_PREFACE + marketId);
 		this.marketId = marketId;
+
+		if(getMarketId().length() < AdminControllerAction.DOC_ID_MIN_LEN){
+			super.setDocumentId(Section.MARKET.name() + "_" +marketId);
+		}else {
+			super.setDocumentId(marketId);
+		}
 	}
 	@SolrField(name="parentId_s")
 	@Column(name="parent_id")
