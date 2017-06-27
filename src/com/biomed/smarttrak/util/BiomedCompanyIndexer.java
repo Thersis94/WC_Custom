@@ -183,7 +183,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			}
 			
 		} catch (SQLException e) {
-			
+			log.error(e);
 		}
 		return acls;
 	}
