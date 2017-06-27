@@ -176,9 +176,11 @@ public class NewsroomAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String loadBucketArticlesSql() {
-		StringBuilder sql = new StringBuilder(150);
+		StringBuilder sql = new StringBuilder(250);
 		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_rss_article where article_status_cd = ? and bucket_id = ?");
+		sql.append("biomedgps_rss_article where article_status_cd = ? and bucket_id = ? ");
+		sql.append("order by COALESCE(publish_dt, create_dt) desc ");
+
 		log.debug(sql.toString());
 		return sql.toString();
 	}
