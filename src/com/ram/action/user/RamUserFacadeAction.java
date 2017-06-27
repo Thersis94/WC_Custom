@@ -71,6 +71,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		if (searchSubmitted) {
 			performSearch(req);
 		} else {
+			if (! req.hasParameter("amid")) return;
 			ActionInterface sai = new RamUserAction(actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
@@ -122,7 +123,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		sql.append("inner join ROLE c on a.ROLE_ID = c.ROLE_ID ");
 		sql.append("left outer join PHONE_NUMBER d on a.PROFILE_ID = d.PROFILE_ID and d.PHONE_TYPE_CD = 'HOME' ");
 		sql.append("left outer join ").append(ramSchema).append("RAM_CUSTOMER e ");
-		sql.append("on a.ATTRIB_TXT_1 = e.CUSTOMER_ID ");
+		sql.append("on a.ATTRIB_TXT_1 = cast(e.CUSTOMER_ID as varchar) ");
 		sql.append("left outer join ").append(ramSchema).append("RAM_AUDITOR f ");
 		sql.append("on a.PROFILE_ID = f.PROFILE_ID ");
 		sql.append("left outer join ").append(ramSchema).append("RAM_CUSTOMER_PROFILE_XR h ");
