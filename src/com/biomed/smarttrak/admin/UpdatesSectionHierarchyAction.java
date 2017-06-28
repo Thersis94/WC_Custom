@@ -298,7 +298,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		String profileId = null;
 	
 		if(req.hasParameter(PROFILE_ID)){
-			profileId = req.getParameter("PROFILE_ID");
+			profileId = req.getParameter(PROFILE_ID);
 		}else{
 			SMTSession ses = req.getSession();
 			UserVO user = (UserVO) ses.getAttribute(Constants.USER_DATA);
@@ -361,10 +361,10 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		String dateRange = null;
 		
 		//determine the date range
-		if(UpdatesWeeklyReportAction.TIME_RANGE_DAILY.equalsIgnoreCase(timeRangeCd)){
-			dateRange = DateUtil.getDate(-1, DateFormat.MEDIUM);
-		}else{
+		if(UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd)){
 			dateRange = DateUtil.currentWeek(DateFormat.MEDIUM);
+		}else{
+			dateRange = DateUtil.getDate(-1, DateFormat.MEDIUM);
 		}
 		
 		req.setAttribute("dateRange", dateRange);
