@@ -12,6 +12,8 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
@@ -112,6 +114,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 
 			buildContent(companies, id);
 			buildLocationInformation(companies);
+			addProductAcls(companies, id, hierarchies);
 		} catch (SQLException e) {
 			log.error(e);
 		}
@@ -119,6 +122,112 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		return companies;
 	}
 
+
+	/**
+	 * Get the acl permissions for all products associated with 
+	 * this company, either through ownership or alliance.
+	 * @param companies
+	 * @param id
+	 * @param hierarchies
+	 */
+	@SuppressWarnings("unchecked")
+	private void addProductAcls(List<SecureSolrDocumentVO> companies, String id, SmarttrakTree hierarchies) {
+		Map<String, List<SectionVO>> productAcls = loadProductAcls(id, hierarchies);
+		
+		for (SecureSolrDocumentVO company : companies) {
+			List<SectionVO> aclList = productAcls.get(company.getDocumentId());
+			if (aclList == null) continue;
+
+			List<String> sectionIds = ((List<String>)company.getAttribute(SECTION_ID));
+			// If the company didn't have any section ids create a new list for them.
+			if (sectionIds == null) sectionIds = new ArrayList<>();
+			for (SectionVO s : aclList) {
+				company.addACLGroup(Permission.GRANT, s.getSolrTokenTxt());
+				sectionIds.add(s.getSectionId());
+			}
+			// Add the section ids to the document. This will either be the newly appended
+			// original list of a brand new one.
+			company.addAttribute(SECTION_ID, sectionIds);
+		}
+	}
+
+	
+	/**
+	 * Load all products and their alliances
+	 * @param id
+	 * @param hierarchies
+	 * @return
+	 */
+	private Map<String, List<SectionVO>> loadProductAcls(String id, SmarttrakTree hierarchies) {
+		String sql = getProductSql(id);
+		Map<String, List<SectionVO>> acls = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			if (!StringUtil.isEmpty(id)) {
+				ps.setString(1, id);
+				ps.setString(2, id);
+			}
+			
+			String currentProduct = "";
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				String sectionId = rs.getString("SECTION_ID");
+				if (StringUtil.isEmpty(sectionId))continue;
+				
+				if (!currentProduct.equals(rs.getString("PRODUCT_ID"))) {
+					currentProduct = rs.getString("PRODUCT_ID");
+					// Add the acl for the owning company
+					addAcl(sectionId, hierarchies, rs.getString("COMPANY_ID"), acls);
+				}
+				// Add the acl for the allied company
+				addAcl(sectionId, hierarchies, rs.getString("ALLY_ID"), acls);
+			}
+			
+		} catch (SQLException e) {
+			log.error(e);
+		}
+		return acls;
+	}
+	
+	
+	/**
+	 * Add the requested section to the list associated with the supplied company
+	 * @param sectionId
+	 * @param hierarchies
+	 * @param companyId
+	 * @param acls
+	 */
+	private void addAcl(String sectionId, SmarttrakTree hierarchies, String companyId, Map<String, List<SectionVO>> acls) {
+		Node n = hierarchies.findNode(sectionId);
+		if (n == null) return;
+		SectionVO sec = (SectionVO)n.getUserObject();
+		String docId = Section.COMPANY+"_"+companyId;
+		if (!acls.keySet().contains(docId))
+			acls.put(docId, new ArrayList<>());
+		
+		acls.get(docId).add(sec);
+	}
+
+	
+	/**
+	 * Build the product sql
+	 * @param id
+	 * @return
+	 */
+	private String getProductSql(String id) {
+		StringBuilder sql = new StringBuilder(300);
+		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT p.PRODUCT_ID, p.COMPANY_ID, ps.SECTION_ID, a.COMPANY_ID as ALLY_ID FROM ");
+		sql.append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION ps ");
+		sql.append("ON ps.PRODUCT_ID = p.PRODUCT_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("biomedgps_product_alliance_xr a ");
+		sql.append("ON a.PRODUCT_ID = p.PRODUCT_ID ");
+		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
+		if (id != null) sql.append("and p.COMPANY_ID = ? or a.COMPANY_ID = ? ");
+		sql.append("ORDER BY COMPANY_ID ");
+		log.info(sql);
+		return sql.toString();
+	}
 
 	/**
 	 * Check to see if the supplied company is viable and if so add it.
@@ -148,22 +257,22 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		sql.append("ORDER BY x.COMPANY_ID ");
 
 		StringBuilder content = new StringBuilder();
-		String currentMarket = "";
+		String currentCompany = "";
 		Map<String, StringBuilder> contentMap = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
 
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				if (!currentMarket.equals(rs.getString(COMPANY_ID))) {
-					addContent(currentMarket, content, contentMap);
+				if (!currentCompany.equals(rs.getString(COMPANY_ID))) {
+					addContent(currentCompany, content, contentMap);
 					content = new StringBuilder(1024);
-					currentMarket = rs.getString(COMPANY_ID);
+					currentCompany = rs.getString(COMPANY_ID);
 				}
 				if (content.length() > 1) content.append("\n");
 				content.append(rs.getString("VALUE_TXT"));
 			}
-			addContent(currentMarket, content, contentMap);
+			addContent(currentCompany, content, contentMap);
 		}
 
 		for (SecureSolrDocumentVO company : companies) {
@@ -179,10 +288,10 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * @param content
 	 * @param contentMap
 	 */
-	protected void addContent(String currentMarket, StringBuilder content,
+	protected void addContent(String currentCompany, StringBuilder content,
 			Map<String, StringBuilder> contentMap) {
 		if (content.length() > 0) {
-			contentMap.put(currentMarket, content);
+			contentMap.put(Section.COMPANY+"_"+currentCompany, content);
 		}
 	}
 
@@ -209,7 +318,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 */
 	private SecureSolrDocumentVO buildSolrDocument(ResultSet rs) throws SQLException {
 		SecureSolrDocumentVO company = new SecureSolrDocumentVO(INDEX_TYPE);
-		company.setDocumentId(rs.getString(COMPANY_ID));
+		CompanyVO.setSolrId(company, rs.getString(COMPANY_ID));
 		company.setTitle(rs.getString("COMPANY_NM"));
 		SmarttrakSolrUtil.setSearchField(rs.getString("SHORT_NM_TXT"), "shortNm", company);
 		company.addAttribute("status", rs.getString("STATUS_NO"));
@@ -253,7 +362,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		sql.append("ON e.EXCHANGE_ID = c.EXCHANGE_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append("ON xr.COMPANY_ID = c.COMPANY_ID ");
-		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID and a.SECTION_ID is not null ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_SECTION cs ");
 		sql.append("ON cs.COMPANY_ID = c.COMPANY_ID ");
@@ -264,6 +373,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, a.SECTION_ID, c.STATUS_NO, ");
 		sql.append("e.NAME_TXT, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT ");
 		sql.append("having COUNT(p.COMPANY_ID) > 0 ");
+		sql.append("order by c.company_id ");
 		log.debug(sql);
 		return sql.toString();
 	}
@@ -332,7 +442,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			LocationVO vo = (LocationVO) o;
 			// The first location for each company is it's primary location, others can be ignored.
 			if (!locations.containsKey(vo.getCompanyId()))
-				locations.put(vo.getCompanyId(), vo);
+				locations.put(Section.COMPANY + "_" + vo.getCompanyId(), vo);
 		}
 
 		return locations;
