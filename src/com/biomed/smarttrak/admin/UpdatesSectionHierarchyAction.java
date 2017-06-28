@@ -15,6 +15,7 @@ import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.vo.UpdateTrackerVO;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
+import com.biomed.smarttrak.vo.UserVO;
 //smt base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -22,6 +23,7 @@ import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.DateUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -45,6 +47,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	private Map<String, UpdateTrackerVO> masterCollection;
 	public static final int UNIQUE_DEPTH_LEVEL = 3;
 	public static final int TRACKING_DEPTH_LEVEL = 2;
+	public static final String PROFILE_ID = "profileId";
 	
 	/**
 	 * No arg-constructor for initialization
@@ -76,7 +79,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
-	public void retrieve(ActionRequest req) throws ActionException{
+	public void retrieve(ActionRequest req) throws ActionException{		
 		log.debug("Retrieving updates section hierarchy listing...");
 		String sectionNm = StringUtil.checkVal(req.getParameter("sectionNm"));
 		
@@ -269,8 +272,12 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	@SuppressWarnings("unchecked")
 	protected List<UpdateVO>fetchUpdates(ActionRequest req) throws ActionException{
 		ActionInterface actInf;
-		//if account id is present, return the list of scheduled updates
-		if(req.hasParameter("accountId")){
+		
+		//grab the profile id from the request or session
+		String profileId = getProfileId(req);
+		
+		//if profile id is present, return the list of scheduled updates
+		if(profileId != null){
 			actInf =  new UpdatesScheduledAction();
 		}else{//retrieve the list of daily/weekly updates
 			actInf = new UpdatesWeeklyReportAction();
@@ -280,6 +287,27 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		actInf.retrieve(req);
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		return (List<UpdateVO>) mod.getActionData();
+	}
+	
+	/**
+	 * Grabs the profileId from either the request or session if available
+	 * @param req
+	 * @return
+	 */
+	protected String getProfileId(ActionRequest req){
+		String profileId = null;
+	
+		if(req.hasParameter(PROFILE_ID)){
+			profileId = req.getParameter("PROFILE_ID");
+		}else{
+			SMTSession ses = req.getSession();
+			UserVO user = (UserVO) ses.getAttribute(Constants.USER_DATA);
+			if(user != null){
+				profileId = user.getProfileId();
+				req.setParameter(PROFILE_ID, profileId); //place on request for downstream
+			}			
+		}
+		return profileId;
 	}
 	
 	/**
