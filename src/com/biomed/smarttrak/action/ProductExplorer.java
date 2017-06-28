@@ -172,7 +172,8 @@ public class ProductExplorer extends SBActionAdapter {
 		Tree t = c.loadDefaultTree();
 
 		StringBuilder part = new StringBuilder(128);
-		for (String s : req.getParameterValues("selNodes")) {
+		String nodes = req.getParameter("selNodes");
+		for (String s : nodes.split(",")) {
 			Node n = t.findNode(s);
 			if (n == null || n.getDepthLevel() == 2) continue;
 			if (part.length() < 2) {
@@ -310,7 +311,8 @@ public class ProductExplorer extends SBActionAdapter {
 	protected void buildNodeParams(ActionRequest req, SolrActionVO qData) {
 		StringBuilder selected = new StringBuilder(50);
 		selected.append("(");
-		for (String s : req.getParameterValues("selNodes")) {
+		String nodes = req.getParameter("selNodes");
+		for (String s : nodes.split(",")) {
 			if (selected.length() > 2) selected.append(" OR ");
 			selected.append(s.replace("~", "\\~").replace(" ", "\\ ")).append("*");
 		}
@@ -532,23 +534,8 @@ public class ProductExplorer extends SBActionAdapter {
 				url.append("&").append(name).append("=").append(value);
 			}
 		}
-
-		if (req.hasParameter("selNodes")) {
-			buildHierarchyUrl(req, url);
-		}
+		url.append("&selNodes=").append(req.getParameter("selNodes"));
 
 		return url.toString();
-	}
-
-
-	/**
-	 * Append the selected hierarchy nodes to the url
-	 * @param req
-	 * @param url
-	 */
-	protected void buildHierarchyUrl(ActionRequest req, StringBuilder url) {
-		for (String s : req.getParameterValues("selNodes")) {
-			url.append("&selNodes=").append(s);
-		}
 	}
 }

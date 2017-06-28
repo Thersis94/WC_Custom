@@ -6,12 +6,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ProductVO.java <p/>
@@ -26,9 +30,8 @@ import com.siliconmtn.util.Convert;
  * @since Jan 17, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
 @Table(name="BIOMEDGPS_PRODUCT")
-public class ProductVO extends AuthorVO {
+public class ProductVO extends AuthorVO implements Comparable<ProductVO> {
 	
 	private String productId;
 	private String parentId;
@@ -72,6 +75,7 @@ public class ProductVO extends AuthorVO {
 	}
 	
 
+	@Override
 	protected void setData(ActionRequest req) {
 		super.setData(req); //set the creator_profile_id
 		productId = req.getParameter("productId");
@@ -89,6 +93,14 @@ public class ProductVO extends AuthorVO {
 		statusNo = req.getParameter("statusNo");
 		productGroupId = req.getParameter("productGroupId");
 		setPublicFlag(Convert.formatInteger(req.getParameter("publicFlag")));
+	}
+	
+	public static void setSolrId(SecureSolrDocumentVO doc, String docId) {
+		if(docId.length() < AdminControllerAction.DOC_ID_MIN_LEN){
+			doc.setDocumentId(Section.PRODUCT.name() + "_" +docId);
+		}else {
+			doc.setDocumentId(docId);
+		}
 	}
 
 
@@ -158,9 +170,11 @@ public class ProductVO extends AuthorVO {
 		this.metaKeyword = metaKeyword;
 	}
 	@Column(name="meta_desc")
+	@Override
 	public String getMetaDesc() {
 		return metaDesc;
 	}
+	@Override
 	public void setMetaDesc(String metaDesc) {
 		this.metaDesc = metaDesc;
 	}
@@ -385,6 +399,14 @@ public class ProductVO extends AuthorVO {
 	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;
+	}
+
+
+	@Override
+	public int compareTo(ProductVO o) {
+		String comparer = StringUtil.checkVal(o.getProductName());
+		String compared = StringUtil.checkVal(getProductName());
+		return compared.compareTo(comparer);
 	}
 	
 }

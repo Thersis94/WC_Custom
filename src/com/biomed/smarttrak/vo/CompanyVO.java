@@ -1,18 +1,22 @@
 package com.biomed.smarttrak.vo;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: CompanyVO.java <p/>
@@ -107,6 +111,14 @@ public class CompanyVO  extends AuthorVO {
 			for (String s : req.getParameterValues("investors")) {
 				investors.put(s, "");
 			}
+		}
+	}
+	
+	public static void setSolrId(SecureSolrDocumentVO doc, String docId) {
+		if(docId.length() < AdminControllerAction.DOC_ID_MIN_LEN){
+			doc.setDocumentId(Section.COMPANY.name() + "_" +docId);
+		}else {
+			doc.setDocumentId(docId);
 		}
 	}
 	
@@ -416,6 +428,12 @@ public class CompanyVO  extends AuthorVO {
 
 	public void setPublicFlag(int publicFlag) {
 		this.publicFlag = publicFlag;
+	}
+
+	public void sortProducts() {
+		for (List<ProductVO> prodList : products.values()) {
+			Collections.sort(prodList);
+		}
 	}
 
 }
