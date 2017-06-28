@@ -26,9 +26,6 @@ public class UpdateTitleVO implements Serializable {
 	private String fullNm;
 	private String shortNm;
 	private String mainUrl;
-	private String associatedCompanyShortNm;
-	private String associatedCompanyId;
-	private String associatedCompanyUrl;
 	
 
 	public UpdateTitleVO() {
@@ -47,8 +44,6 @@ public class UpdateTitleVO implements Serializable {
 		setMainId(util.getStringVal("MAIN_ID", rs));
 		setFullNm(util.getStringVal("FULL_NM", rs));
 		setShortNm(util.getStringVal("SHORT_NM", rs));
-		setAssociatedCompanyShortNm(util.getStringVal("COMPANY_NM", rs));
-		setAssociatedCompanyId(util.getStringVal("COMPANY_ID", rs));
 	}
 	/**
 	 * @return the mainId
@@ -86,30 +81,6 @@ public class UpdateTitleVO implements Serializable {
 	public void setShortNm(String shortNm) {
 		this.shortNm = shortNm;
 	}
-	/**
-	 * @return the associatedCompanyShortNm
-	 */
-	public String getAssociatedCompanyShortNm() {
-		return associatedCompanyShortNm;
-	}
-	/**
-	 * @param associatedCompanyShortNm the associatedCompanyShortNm to set
-	 */
-	public void setAssociatedCompanyShortNm(String associatedCompanyShortNm) {
-		this.associatedCompanyShortNm = associatedCompanyShortNm;
-	}
-	/**
-	 * @return the associatedCompanyId
-	 */
-	public String getAssociatedCompanyId() {
-		return associatedCompanyId;
-	}
-	/**
-	 * @param associatedCompanyId the associatedCompanyId to set
-	 */
-	public void setAssociatedCompanyId(String associatedCompanyId) {
-		this.associatedCompanyId = associatedCompanyId;
-	}
 	/*
 	 * (non-Javadoc)
 	 * @see java.lang.Object#toString()
@@ -129,17 +100,5 @@ public class UpdateTitleVO implements Serializable {
 	 */
 	public void setMainUrl(String mainUrl) {
 		this.mainUrl = mainUrl;
-	}
-	/**
-	 * @return the associatedCompanyUrk
-	 */
-	public String getAssociatedCompanyUrl() {
-		return associatedCompanyUrl;
-	}
-	/**
-	 * @param associatedCompanyUrk the associatedCompanyUrk to set
-	 */
-	public void setAssociatedCompanyUrl(String associatedCompanyUrk) {
-		this.associatedCompanyUrl = associatedCompanyUrk;
 	}
 }

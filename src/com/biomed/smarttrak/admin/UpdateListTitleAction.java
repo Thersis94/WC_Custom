@@ -63,7 +63,6 @@ public class UpdateListTitleAction extends ListAction {
 	protected List<UpdateTitleVO> getUpdateTitleList(String listType, String searchTerm, boolean isAutoComplete) throws ActionException {
 		String sql;
 		String mainUrl = null;
-		String associatedCompanyUrl=null;
 		boolean hasSearchTerm = !StringUtil.isEmpty(searchTerm);
 		switch(ListType.valueOf(listType)) {
 		case COMPANY:
@@ -77,7 +76,6 @@ public class UpdateListTitleAction extends ListAction {
 		case PRODUCT:
 			sql = getProductSql(hasSearchTerm, isAutoComplete);
 			mainUrl = Section.PRODUCT.getPageURL() + getAttribute(Constants.QS_PATH);
-			associatedCompanyUrl = Section.COMPANY.getPageURL() + getAttribute(Constants.QS_PATH);
 			break;
 		case ACCOUNT:
 			sql = getAccountSql(hasSearchTerm);
@@ -103,12 +101,6 @@ public class UpdateListTitleAction extends ListAction {
 				if(!StringUtil.isEmpty(mainUrl)) {
 					main.insert(0, mainUrl);
 					vo.setMainUrl(main.toString());
-				}
-
-				if(!StringUtil.isEmpty(associatedCompanyUrl)){
-					StringBuilder comp = new StringBuilder(rs.getString("COMPANY_ID"));
-					comp.insert(0, associatedCompanyUrl);
-					vo.setAssociatedCompanyUrl(comp.toString());
 				}
 
 				vals.add(vo);
@@ -166,7 +158,7 @@ public class UpdateListTitleAction extends ListAction {
 	@Override
 	protected String getProductSql(boolean hasSearchTerm, boolean isAutoComplete) {
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("select product_id as MAIN_ID, p.product_nm as FULL_NM, p.short_nm as SHORT_NM, c.short_nm_txt as COMPANY_NM, c.company_id as COMPANY_ID from ");
+		sql.append("select product_id as MAIN_ID, p.product_nm as FULL_NM, p.short_nm as SHORT_NM from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("inner join custom.biomedgps_company c on p.company_id = c.company_id ");
 		sql.append("where p.status_no = 'P' ");
