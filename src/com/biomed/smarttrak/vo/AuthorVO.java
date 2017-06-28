@@ -19,6 +19,9 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  * @since May 8, 2017
  ****************************************************************************/
 public class AuthorVO extends SecureSolrDocumentVO {
+
+	protected static final String CREATOR_PROFILE_ID = "creatorProfileId";
+
 	protected String creatorProfileId;
 
 	/**
@@ -27,23 +30,23 @@ public class AuthorVO extends SecureSolrDocumentVO {
 	public AuthorVO(String solrIndex) {
 		super(solrIndex);
 	}
-	
+
 	/**
 	 * Sets the common data for an author using the request object
 	 * @param req
 	 */
 	protected void setData(ActionRequest req){
-		if(req.hasParameter("creatorProfileId")){
-			setCreatorProfileId(req.getParameter("creatorProfileId"));
+		if(req.hasParameter(CREATOR_PROFILE_ID)){
+			setCreatorProfileId(req.getParameter(CREATOR_PROFILE_ID));
 		}else{//attempt to retrieve from the session if not on request
 			SMTSession ses = req.getSession();
 			UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
 			if(vo != null) {
-				setCreatorProfileId(StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId()));
+				setCreatorProfileId(StringUtil.checkVal(req.getParameter(CREATOR_PROFILE_ID), vo.getProfileId()));
 			}			
 		}
 	}
-			
+
 	/**
 	 * @return the creatorProfileId
 	 */

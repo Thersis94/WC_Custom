@@ -30,7 +30,6 @@ import com.siliconmtn.util.StringUtil;
  * @since Jan 17, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
 @Table(name="BIOMEDGPS_PRODUCT")
 public class ProductVO extends AuthorVO implements Comparable<ProductVO> {
 	
@@ -76,6 +75,7 @@ public class ProductVO extends AuthorVO implements Comparable<ProductVO> {
 	}
 	
 
+	@Override
 	protected void setData(ActionRequest req) {
 		super.setData(req); //set the creator_profile_id
 		productId = req.getParameter("productId");
@@ -170,9 +170,11 @@ public class ProductVO extends AuthorVO implements Comparable<ProductVO> {
 		this.metaKeyword = metaKeyword;
 	}
 	@Column(name="meta_desc")
+	@Override
 	public String getMetaDesc() {
 		return metaDesc;
 	}
+	@Override
 	public void setMetaDesc(String metaDesc) {
 		this.metaDesc = metaDesc;
 	}
