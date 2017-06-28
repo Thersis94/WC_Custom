@@ -47,7 +47,6 @@ public class CompanyManagementAction extends AuthorAction {
 	public static final String ACTION_TYPE = "actionTarget";
 	public static final String COMPANY_ID = "companyId";
 	public static final String CONTENT_ATTRIBUTE_ID = "LVL1_1";
-	public static final String COMPANY_PATH = "companies/";
 	
 	
 	private enum ActionType {
