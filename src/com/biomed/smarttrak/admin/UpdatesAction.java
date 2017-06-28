@@ -119,6 +119,8 @@ public class UpdatesAction extends AuthorAction {
 		}
 
 		decryptNames(data);
+		
+		addProductCompanyData(data);
 
 		if(count > 0) {
 			putModuleData(data, count, false);
@@ -183,16 +185,16 @@ public class UpdatesAction extends AuthorAction {
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
-		addCompanyData(updates);
+		addProductCompanyData(updates);
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
 
 	/**
-	 * takes the current list of updates and adds the company information to the 
+	 * takes the current list of updates and adds the company information to any product updates
 	 * @param updates
 	 */
-	private void addCompanyData(List<Object> updates) {
+	private void addProductCompanyData(List<Object> updates) {
 		log.debug("adding company short name and id "); 
 		String qs = (String) getAttribute(Constants.QS_PATH);
 		String companyPath = CompanyManagementAction.COMPANY_PATH;
