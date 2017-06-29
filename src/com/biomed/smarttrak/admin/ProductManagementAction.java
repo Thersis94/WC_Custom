@@ -660,6 +660,7 @@ public class ProductManagementAction extends AuthorAction {
 		
 		req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		req.getSession().setAttribute("productName", product.getProductName());
+		req.getSession().setAttribute("productShortName", product.getShortName());
 
 		if ("alliance".equals(req.getParameter("jsonType"))) {
 			addAlliances(product);

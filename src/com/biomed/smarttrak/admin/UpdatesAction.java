@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
@@ -120,6 +121,8 @@ public class UpdatesAction extends AuthorAction {
 
 		decryptNames(data);
 
+		addProductCompanyData(data);
+
 		if(count > 0) {
 			putModuleData(data, count, false);
 		} else {
@@ -183,8 +186,42 @@ public class UpdatesAction extends AuthorAction {
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
+		addProductCompanyData(updates);
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
+	}
+
+	/**
+	 * takes the current list of updates and adds the company information to any product updates
+	 * @param updates
+	 */
+	private void addProductCompanyData(List<Object> updates) {
+		log.debug("adding company short name and id "); 
+		String qs = (String) getAttribute(Constants.QS_PATH);
+
+		for(Object ob : updates){
+			//loops all the updates and see if they have a product id
+			UpdateVO vo = (UpdateVO) ob;
+
+			if (StringUtil.isEmpty(vo.getProductId())) continue;
+
+			StringBuilder sb = new StringBuilder(161);
+
+			sb.append("select p.company_id, c.short_nm_txt from custom.biomedgps_product p ");
+			sb.append("inner join custom.biomedgps_company c on p.company_id = c.company_id ");
+			sb.append("where p.product_id = ? ");
+
+			try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
+				ps.setString(1, vo.getProductId());
+				ResultSet rs = ps.executeQuery();
+				if (rs.next()){		
+					vo.setCompanyLink("/"+AdminControllerAction.Section.COMPANY.getURLToken()+qs+rs.getString("company_id"));
+					vo.setCompanyShortName(rs.getString("short_nm_txt"));
+				}
+			} catch(SQLException sqle) {
+				log.error("could not confirm security by id ", sqle);
+			}
+		}
 	}
 
 	/**

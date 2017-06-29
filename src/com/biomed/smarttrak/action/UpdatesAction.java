@@ -79,7 +79,7 @@ public class UpdatesAction extends SBActionAdapter {
 		mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		SolrResponseVO srv = (SolrResponseVO)mod.getActionData();
 
-		if(srv != null) {
+		if(srv != null && !srv.getResultDocuments().isEmpty()) {
 			List<Node> sections = loadSections();
 			sortFacets(sections, srv);
 		}
@@ -221,7 +221,7 @@ public class UpdatesAction extends SBActionAdapter {
 	 * @param docIds 
 	 * @throws ActionException
 	 */
-	protected void transposeRequest(ActionRequest req, List<String> docIds) throws ActionException {
+	protected void transposeRequest(ActionRequest req, List<String> docIds)  {
 		//Enusre action request does NOT encode params. Solr needs exact phrase.
 		req.setValidateInput(Boolean.FALSE);
 		

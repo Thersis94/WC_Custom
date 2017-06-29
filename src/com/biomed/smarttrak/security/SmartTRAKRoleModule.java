@@ -81,7 +81,16 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 	 * @throws AuthorizationException 
 	 */
 	protected void loadSmarttrakRoles(SmarttrakRoleVO role) throws AuthorizationException {
-		UserVO user = (UserVO) getAttribute(Constants.USER_DATA);
+		UserVO user;
+		/* 2017-06-21 DBargerhuff: In case of 'forgot password' request, the user data on the
+		 * attributes map will be a UserDataVO instead of a SmartTRAK UserVO.  We try/catch
+		 * here to handle the CCE that results from the former case. */
+		try {
+			user = (UserVO) getAttribute(Constants.USER_DATA);
+		} catch (ClassCastException cce) {
+			// logging not required.
+			return;
+		}
 		ActionRequest req = (ActionRequest) getAttribute(HTTP_REQUEST);
 
 		if (user == null || StringUtil.isEmpty(user.getAccountId()) || req == null)
