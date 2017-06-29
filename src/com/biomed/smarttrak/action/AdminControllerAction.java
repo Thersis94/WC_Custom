@@ -81,6 +81,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
 	public static final String EUREPORT_ROLE_ID = "6f5c869a9b0e9b640a001421bce81c9b";
 	public static final String REGISTRATION_GRP_ID = "ea884793b2ef163f7f0001011a253456";
+	public static final String UPDATES_USER_ID = "edf3243498c048ca82a2f1041fa4b92e";
 
 	// All logged-in users are Registered Users or Site Administrators.  
 	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
@@ -97,7 +98,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
 	 */
 	public enum Section {
-		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("analysis/"), PRODUCT_EXPLOERER("explorer/");
+		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("analysis/"), PRODUCT_EXPLOERER("explorer/"),
+		UPDATES_EDITION("updates-edition/");
 
 		private String path;
 		Section(String path) { this.path = path; }
