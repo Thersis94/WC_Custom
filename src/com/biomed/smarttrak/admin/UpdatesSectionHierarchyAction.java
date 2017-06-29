@@ -305,7 +305,9 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			if(user != null){
 				profileId = user.getProfileId();
 				req.setParameter(PROFILE_ID, profileId); //place on request for downstream
-			}			
+				//set their status code on request
+				req.setAttribute("statusCode", user.getStatusCode());				
+			}	
 		}
 		return profileId;
 	}
