@@ -381,10 +381,10 @@ public class BiomedSupportEmailUtil {
 	private void addCCRecipients(Map<String, String> recipients, String ccAddresses) {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		List<UserDataVO> users = new ArrayList<>();
-		for (String address : ccAddresses.split(" ")) {
+		for (String address : ccAddresses.split(",")) {
 			try {
 				Map<String, String> searchMap = new HashMap<>();
-				searchMap.put("EMAIL_ADDRESS_TXT", address);
+				searchMap.put("EMAIL_ADDRESS_TXT", address.trim());
 				List<UserDataVO> search = pm.searchProfile(dbConn, searchMap);
 			
 				if (search.isEmpty()) {
