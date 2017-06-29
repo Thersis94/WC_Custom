@@ -31,7 +31,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class UpdatesWeeklyReportAction extends SBActionAdapter {
 	public static final String TIME_RANGE_DAILY = "daily";
-
+	public static final String TIME_RANGE_WEEKLY = "weekly";
+	
 	public UpdatesWeeklyReportAction() {
 		super();
 	}
