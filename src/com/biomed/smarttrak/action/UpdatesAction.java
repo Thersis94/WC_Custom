@@ -79,7 +79,7 @@ public class UpdatesAction extends SBActionAdapter {
 		mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		SolrResponseVO srv = (SolrResponseVO)mod.getActionData();
 
-		if(srv != null) {
+		if(srv != null && !srv.getResultDocuments().isEmpty()) {
 			List<Node> sections = loadSections();
 			sortFacets(sections, srv);
 		}
