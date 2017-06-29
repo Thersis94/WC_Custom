@@ -31,6 +31,7 @@ import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
+import com.biomed.smarttrak.admin.UpdateListTitleAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.admin.UpdatesEmailSendAction;
 import com.biomed.smarttrak.admin.UserAccountSearchAction;
@@ -178,6 +179,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("marketAdmin", MarketManagementAction.class);
 		ACTIONS.put("updates", UpdatesAction.class);
 		ACTIONS.put("list", ListAction.class);
+		ACTIONS.put("update-list", UpdateListTitleAction.class);
 		ACTIONS.put("reports", ReportFacadeAction.class);
 		ACTIONS.put("support", SupportFacadeAction.class);
 		ACTIONS.put("synonyms", SolrSynonymAction.class);
