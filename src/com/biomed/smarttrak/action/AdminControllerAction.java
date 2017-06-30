@@ -80,7 +80,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	public static final String PUBLIC_SITE_ID = "BMG_SMARTTRAK_1";
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
 	public static final String EUREPORT_ROLE_ID = "6f5c869a9b0e9b640a001421bce81c9b";
-	public static final String REGISTRATION_GRP_ID = "ea884793b2ef163f7f0001011a253456";
+	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
 
 	// All logged-in users are Registered Users or Site Administrators.  
 	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
