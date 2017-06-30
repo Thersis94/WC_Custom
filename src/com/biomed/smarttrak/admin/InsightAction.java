@@ -315,7 +315,7 @@ public class InsightAction extends AuthorAction {
 			params.add(StringUtil.checkVal("%"+insightParamsMap.get(Fields.SEARCH)+"%"));
 		if (insightParamsMap.containsKey(Fields.CREATOR_PROFILE_ID)) 
 			params.add(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
-		if (insightParamsMap.containsKey(Fields.RPP) && insightParamsMap.containsKey(Fields.START)) {
+		if (insightParamsMap.containsKey(Fields.RPP) && Convert.formatInteger(insightParamsMap.get(Fields.RPP)) > 0 && insightParamsMap.containsKey(Fields.START)) {
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.RPP)));
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.START)));
 		}
@@ -353,7 +353,7 @@ public class InsightAction extends AuthorAction {
 
 		sql.append("order by ").append(insightParamsMap.get(Fields.SORT)).append(" ").append(insightParamsMap.get(Fields.ORDER));
 
-		if (insightParamsMap.containsKey(Fields.RPP) && insightParamsMap.containsKey(Fields.START)){
+		if (insightParamsMap.containsKey(Fields.RPP) && Convert.formatInteger(insightParamsMap.get(Fields.RPP)) > 0 && insightParamsMap.containsKey(Fields.START)){
 			sql.append(" limit ? offset ? ");
 		}
 	}
