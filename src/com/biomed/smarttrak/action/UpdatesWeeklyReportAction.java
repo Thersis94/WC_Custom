@@ -32,6 +32,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class UpdatesWeeklyReportAction extends SBActionAdapter {
 	public static final String TIME_RANGE_DAILY = "daily";
 	public static final String TIME_RANGE_WEEKLY = "weekly";
+	public static final String EMAIL_UPDATES = "emailUpdates";
 	
 	public UpdatesWeeklyReportAction() {
 		super();
@@ -41,6 +42,7 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 
 		//Get Params off the request.
@@ -85,6 +87,7 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		}
 	}
 
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
@@ -120,16 +123,11 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		//declare sectionId, time range and boolean flag
-		String[] sectionIds = req.getParameterValues("sectionId");
-		boolean isAdmin = req.hasParameter("actionType");
-		String timeRangeCd = req.getParameter("timeRangeCd");
-		
 		//if reloadList is present, this is an ajax call. Flag for view.
 		if(req.hasParameter("reloadList"))
 			req.setAttribute("reload", req.getParameter("reloadList"));
 				
-		List<Object> updates = getUpdates(sectionIds, isAdmin, timeRangeCd);
+		List<Object> updates = getUpdates(req);
 		
 		putModuleData(updates);
 	
@@ -138,15 +136,17 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 	/**
 	 * Retrieve all the updates. Can be filtered by admin, sections, and/or time range
 	 * @param sectionIds
-	 * @param isAdmin
-	 * @param timeRangeCd
+	 * @param req
 	 * @return
 	 */
-	public List<Object> getUpdates(String[] sectionIds, boolean isAdmin, String timeRangeCd) {
+	public List<Object> getUpdates(ActionRequest req) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
+		//declare sectionId, time range and boolean flag
+		String[] sectionIds = req.getParameterValues("sectionId");
+		
 		//fetch the appropriate query to be executed
-		String sql = formatRetrieveQuery(schema, sectionIds, isAdmin, timeRangeCd);
+		String sql = formatRetrieveQuery(schema, sectionIds, req);
 		log.debug("Updates query to execute: " +sql);
 		List<Object> params = new ArrayList<>();
 		if(sectionIds != null && sectionIds.length > 0 && !("All").equalsIgnoreCase(sectionIds[0])){
@@ -165,11 +165,15 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 	 * Build the DBProcessor Retrieval Query for Updates.
 	 * @param schema
 	 * @param sectionIds
-	 * @param isAdmin 
-	 * @param timeRangeCd
+	 * @param req
 	 * @return
 	 */
-	public String formatRetrieveQuery(String schema, String[] sectionIds, boolean isAdmin, String timeRangeCd) {
+	public String formatRetrieveQuery(String schema, String[] sectionIds, ActionRequest req) {
+		//grab values from request
+		boolean isAdmin = req.hasParameter("actionType");
+		String timeRangeCd = req.getParameter("timeRangeCd");
+		boolean emailUpdates = req.hasParameter(EMAIL_UPDATES);
+		
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.*, b.section_id, b.update_section_xr_id ");
 		sql.append("from ").append(schema).append("biomedgps_update a ");
@@ -198,6 +202,9 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		if(timeRangeCd != null && timeRangeCd.equalsIgnoreCase(TIME_RANGE_DAILY)){
 			sql.append("a.create_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
 			sql.append("and a.create_dt < date_trunc('day', current_timestamp) ");
+		}else if(emailUpdates){//updates for email use previous week range
+			sql.append("a.create_dt >= cast(date_trunc('week', current_date) as date) - 8 ");
+			sql.append("and a.create_dt < cast(date_trunc('week', current_date) as date) - 2 ");
 		}else{//default to weekly
 			sql.append("a.create_dt >= cast(date_trunc('week', current_date) as date) - 1 ");
 			sql.append("and a.create_dt < cast(date_trunc('week', current_date) as date) + 5 ");
