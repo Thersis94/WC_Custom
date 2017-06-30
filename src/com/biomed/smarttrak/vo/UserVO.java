@@ -425,4 +425,13 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public void setTitle(String title) {
 		getAttributes().put(RegistrationMap.TITLE.getFieldId(), title);
 	}
+	/**
+	 * sets a title to the attributes list
+	 * @deprecated - title should never be a list.  If you're using this method you're doing something wrong, or data is bad. 
+	 **/
+	@Deprecated
+	public void setTitle(List<String> title) {
+		if (title != null && !title.isEmpty())
+			getAttributes().put(RegistrationMap.TITLE.getFieldId(), title.get(0));
+	}
 }
