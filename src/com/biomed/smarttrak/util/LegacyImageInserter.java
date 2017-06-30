@@ -227,6 +227,7 @@ public class LegacyImageInserter extends CommandLineUtil {
 		} catch (SQLException sqle) {
 			log.error("could not read records", sqle);
 		}
+		log.info("loaded " + records.size() + " attachment records");
 		return records;
 	}
 

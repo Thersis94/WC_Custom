@@ -1,4 +1,4 @@
-package com.biomed.smarttrak.data;
+package com.biomed.smarttrak.util;
 
 // Java 7
 import java.sql.Connection;
@@ -36,7 +36,7 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.UserLogin;
 
 /****************************************************************************
- * <b>Title</b>: UserDataImport.java<p/>
+ * <b>Title</b>: LegacyUserDataImport.java<p/>
  * <b>Description: This class was created to batch-load legacy SmartTRAK data for the
  * BiomedGPS SmartTRAK site.  This class uses an Excel file as the source data for 
  * inserting/updating profiles, creating roles, and creating registration records for a user.
@@ -49,7 +49,7 @@ import com.smt.sitebuilder.security.UserLogin;
  * @version 1.0
  * @since Jan 19, 2017
  ****************************************************************************/
-public class UserDataImport extends CommandLineUtil {
+public class LegacyUserDataImport extends CommandLineUtil {
 
 	// import env params
 	private static final String SOURCE_FILE_CONFIG="scripts/bmg_smarttrak/user_import_config.properties";
@@ -83,7 +83,7 @@ public class UserDataImport extends CommandLineUtil {
 		ZIP_CD
 	}
 
-	public UserDataImport(String[] args) {
+	public LegacyUserDataImport(String[] args) {
 		super(args);
 		PropertyConfigurator.configure(SOURCE_FILE_LOG);
 		queries = initQueryStatements();
@@ -98,7 +98,7 @@ public class UserDataImport extends CommandLineUtil {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		UserDataImport udi = new UserDataImport(args);
+		LegacyUserDataImport udi = new LegacyUserDataImport(args);
 		udi.run();
 	}
 	
@@ -109,6 +109,7 @@ public class UserDataImport extends CommandLineUtil {
 		// get dbconn
 		loadDBConnection(props);
 		// retrieve records
+		log.info("loading records");
 		List<Map<String,Object>> records = retrieveData();
 		log.info("records retrieved: " + records.size());
 		try {
@@ -899,7 +900,7 @@ public class UserDataImport extends CommandLineUtil {
 		sql.append("case when is_staff='TRUE' then '3eef678eb39e87277f000101dfd4f140' ");
 		sql.append("else '10' end else null end as ROLE_ID, ");
 		sql.append("'wc1mp0rt' AS PASSWORD_TXT, 'BMG_SMARTTRAK' as ORGANIZATION_ID, ");
-		sql.append("'BMG_SMARTTRAK_1' as SITE_ID, '1' as ALLOW_COMM_FLG ");
+		sql.append("'BMG_SMARTTRAK_1' as SITE_ID, 1 as ALLOW_COMM_FLG ");
 		sql.append("from biomedgps.profiles_user ");
 		sql.append("order by active desc, id; ");
 		return sql;
