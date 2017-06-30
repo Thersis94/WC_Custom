@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
+import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
 //WC_Custom libs
 import com.biomed.smarttrak.vo.UpdateVO;
 
@@ -47,7 +49,7 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
-	 */
+	 */@Override
 	public void retrieve(ActionRequest req) throws ActionException{
 		
 		//get req params
@@ -100,9 +102,10 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		sql.append("inner join ").append(schema).append("biomedgps_update_section us on us.section_id = s.parent_id ");
 		sql.append("inner join ").append(schema).append("biomedgps_update up on up.update_id = us.update_id ");
 		sql.append("where p.profile_id = ? ");
-		if("weekly".equalsIgnoreCase(timeRangeCd)){
-			sql.append("and up.create_dt >= cast(date_trunc('week', current_date) as date) - 1 ");
-			sql.append("and up.create_dt < cast(date_trunc('week', current_date) as date) + 5 ");
+		if(UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd)){
+			//updates for previous week
+			sql.append("and up.create_dt >= cast(date_trunc('week', current_date) as date) - 8 ");
+			sql.append("and up.create_dt < cast(date_trunc('week', current_date) as date) - 2 ");
 		}else{//default to daily
 			sql.append("and up.create_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
 			sql.append("and up.create_dt < date_trunc('day', current_timestamp) ");

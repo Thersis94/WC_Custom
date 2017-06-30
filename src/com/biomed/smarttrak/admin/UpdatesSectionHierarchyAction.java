@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+
 //wc_custom libs
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.vo.UpdateTrackerVO;
@@ -24,6 +25,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.DateUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -277,9 +279,11 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		String profileId = getProfileId(req);
 		
 		//if profile id is present, return the list of scheduled updates
+		
 		if(profileId != null){
 			actInf =  new UpdatesScheduledAction();
 		}else{//retrieve the list of daily/weekly updates
+			req.setParameter(UpdatesWeeklyReportAction.EMAIL_UPDATES, "true");
 			actInf = new UpdatesWeeklyReportAction();
 		}
 		actInf.setAttributes(attributes);
@@ -296,7 +300,12 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 */
 	protected String getProfileId(ActionRequest req){
 		String profileId = null;
-	
+		
+		//This means that a unique send(no account was used) has occurred, simply return
+		if(Convert.formatBoolean(req.getParameter("uniqueSendFlg"))){
+			return profileId;
+		}
+		
 		if(req.hasParameter(PROFILE_ID)){
 			profileId = req.getParameter(PROFILE_ID);
 		}else{
@@ -364,7 +373,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		
 		//determine the date range
 		if(UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd)){
-			dateRange = DateUtil.currentWeek(DateFormat.MEDIUM);
+			dateRange = DateUtil.previousWeek(DateFormat.MEDIUM);
 		}else{
 			dateRange = DateUtil.getDate(-1, DateFormat.MEDIUM);
 		}
