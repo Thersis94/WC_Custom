@@ -168,7 +168,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected List<Object> executeUserQuery(String sql, List<Object> params) throws ActionException {
+	protected List<Object> executeUserQuery(String sql, List<Object> params) {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
@@ -223,7 +223,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	protected void callProfileManager(UserVO user, ActionRequest req, boolean isSave) throws ActionException {
+	protected void callProfileManager(UserVO user, ActionRequest req, boolean isSave) {
 		//load the users profile data
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		try {
