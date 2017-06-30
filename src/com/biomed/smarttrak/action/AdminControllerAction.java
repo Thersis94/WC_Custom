@@ -31,6 +31,7 @@ import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
+import com.biomed.smarttrak.admin.UpdateListTitleAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.admin.UpdatesEmailSendAction;
 import com.biomed.smarttrak.admin.UserAccountSearchAction;
@@ -81,6 +82,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
 	public static final String EUREPORT_ROLE_ID = "6f5c869a9b0e9b640a001421bce81c9b";
 	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
+	public static final String UPDATES_USER_ID = "edf3243498c048ca82a2f1041fa4b92e";
 
 	// All logged-in users are Registered Users or Site Administrators.  
 	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
@@ -97,7 +99,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
 	 */
 	public enum Section {
-		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("analysis/"), PRODUCT_EXPLOERER("explorer/");
+		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("analysis/"), PRODUCT_EXPLOERER("explorer/"),
+		UPDATES_EDITION("updates-edition/");
 
 		private String path;
 		Section(String path) { this.path = path; }
@@ -178,6 +181,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("marketAdmin", MarketManagementAction.class);
 		ACTIONS.put("updates", UpdatesAction.class);
 		ACTIONS.put("list", ListAction.class);
+		ACTIONS.put("update-list", UpdateListTitleAction.class);
 		ACTIONS.put("reports", ReportFacadeAction.class);
 		ACTIONS.put("support", SupportFacadeAction.class);
 		ACTIONS.put("synonyms", SolrSynonymAction.class);
