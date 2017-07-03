@@ -38,11 +38,7 @@ import com.smt.sitebuilder.security.SecurityController;
 @Table(name="biomedgps_update")
 public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc, Serializable {
 
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = 5149725371008749427L;
-
 
 	public enum UpdateStatusCd {
 		N("New"), 
@@ -77,7 +73,8 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private Date updateDt;
 	private String companyLink;
 	private String companyShortName;
-	private List<UpdateXRVO> sections;
+	private transient List<UpdateXRVO> sections; //UpdateXRVO is not serializable, so this List must be transient -JM- 7.03.2017
+
 
 	public UpdateVO() {
 		super(UpdateIndexer.INDEX_TYPE);
@@ -85,7 +82,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
 		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 	}
-
 
 	public UpdateVO(ResultSet rs) {
 		this();
@@ -97,6 +93,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		setData(req);
 	}
 
+	@Override
 	protected void setData(ActionRequest req) {
 		super.setData(req); //set the creator_profile_id
 		setUpdateId(StringUtil.checkVal(req.getParameter("updateId")));
@@ -291,31 +288,31 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	public String getPublishDtNoTime() {
 		return Convert.formatDate(publishDt, Convert.DATE_DASH_PATTERN);
 	}
-	
+
 	@SolrField(name="companyLink_s")
 	public String getCompanyLink(){
-		
+
 		if (StringUtil.isEmpty(this.productId)) {
 			return "";
 		}else{
 			return companyLink;
 		}
 	}
-	
+
 	public void setCompanyLink(String link){
 		this.companyLink = link;
 	}
-	
+
 	@SolrField(name="companyShortName_s")
 	public String getCompanyShortName(){
-		
+
 		if (StringUtil.isEmpty(this.productId)) {
 			return "";
 		}else{
 			return companyShortName;
 		}
 	}
-	
+
 	public void setCompanyShortName(String shortNm){
 		this.companyShortName = shortNm;
 	}

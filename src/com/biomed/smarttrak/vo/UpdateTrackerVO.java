@@ -10,7 +10,6 @@ package com.biomed.smarttrak.vo;
  * @version 1.0
  * @since Jun 27, 2017
  ****************************************************************************/
-
 public class UpdateTrackerVO {
 	private String updateId;
 	private int trackingCount;
