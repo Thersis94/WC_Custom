@@ -14,8 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.ram.action.data.ORKitVO;
-import com.ram.action.report.vo.KitExcelReport;
 import com.ram.action.report.vo.ProductCartReport;
 import com.ram.datafeed.data.RAMProductVO;
 
@@ -38,15 +36,13 @@ import com.siliconmtn.util.UUIDGenerator;
 
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>ProductCartAction.java<p/>
- * <b>Description: Handles product search and cart functionality for the 
- * ram site</b> 
+ * <b>Description: Handles cart functionality for the ram site.</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2016<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -54,6 +50,7 @@ import com.smt.sitebuilder.util.MessageSender;
  * @version 1.0
  * @since September 6, 2016
  * <b>Changes: </b>
+ * 		June 30, 2017 - Moved case search functionality to CaseSearchAction
  ****************************************************************************/
 
 public class ProductCartAction extends SimpleActionAdapter {
@@ -135,7 +132,10 @@ public class ProductCartAction extends SimpleActionAdapter {
 			if (req.hasParameter("kitId")) {
 				populateCart(req);
 			} else {
-				loadKits(req);
+				CaseSearchAction cs = new CaseSearchAction(actionInit);
+				cs.setDBConnection(dbConn);
+				cs.setAttributes(attributes);
+				cs.loadKits(req);
 			}
 		} else if (Convert.formatBoolean(req.getParameter("finalize"))) {
 			// Finalized carts need to be saved as such, be updated on the
@@ -145,7 +145,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 			req.getSession().setAttribute(FINALIZED, true);
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			req.setParameter("emails", user.getEmailAddress());
-			// sendEmails(req);
+			sendEmails(req);
 		}else if (Convert.formatBoolean(req.getParameter("sendEmails"))) {
 			populateCart(req);
 			sendEmails(req);
@@ -369,31 +369,13 @@ public class ProductCartAction extends SimpleActionAdapter {
 		ShoppingCartVO cart = retrieveContainer(req).load();
 		req.setAttribute("cart", cart.getItems());
 		
-		if (req.hasParameter("exportKits")) {
-			buildKitSummaryReport(req);
-		}else if (req.hasParameter("buildFile")) {
+		if (req.hasParameter("buildFile")) {
 			buildReport(req);
 		} else if ("load".equals(req.getParameter("step")) && req.hasParameter("searchData")) {
 			searchProducts(req);
-		} else if (!"load".equals(req.getParameter("step"))) {
-			loadKits(req);
 		}
 	}
 	
-	
-	/**
-	 * Build an excel file with the all kits from the
-	 * current search and add it to the request
-	 * @param req
-	 */
-	private void buildKitSummaryReport(ActionRequest req) throws ActionException {
-		loadKits(req);
-		AbstractSBReportVO report = new KitExcelReport();
-		report.setData(((ModuleVO)attributes.get(Constants.MODULE_DATA)).getActionData());
-		report.setFileName("kit_summary_report.xls");
-		req.setAttribute(Constants.BINARY_DOCUMENT, report);
-		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
-	}
 	
 	
 	/**
@@ -716,81 +698,6 @@ public class ProductCartAction extends SimpleActionAdapter {
 			throw new ActionException(e);
 		}
 	}
-	
-	
-	/**
-	 * Load all kits, potentially filtering them down based on supplied search criteria
-	 * @param req
-	 * @param finalized
-	 */
-	private void loadKits(ActionRequest req) throws ActionException {
-		List<ORKitVO> kits = new ArrayList<>();
-		String sql = buildKitSearchSQL(req);
-		int count = 0;
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-			int i =1;
-			ps.setString(i++, user.getProfileId());
-			if (req.hasParameter("searchData") && req.hasParameter("searchType")) ps.setString(i++, "%" + req.getParameter("searchData")+ "%");
-			if (req.hasParameter("startDate")) ps.setTimestamp(i++, Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter("startDate")), false));
-			if (req.hasParameter("endDate")) ps.setTimestamp(i++, Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter("endDate")), false));
-			if (req.hasParameter("finalized")) ps.setInt(i++, Convert.formatInteger(req.getParameter("finalized")));
-			
-			ResultSet rs = ps.executeQuery();
-			int page = Convert.formatInteger(req.getParameter("page"), 0);
-			int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
-			int start = page * rpp;
-			int end = rpp * (page+1);
-			boolean loadAll = Convert.formatBoolean(req.getParameter("loadAll"));
-			while(rs.next()) {
-				count++;
-				if ((count <= start || count > end) && !loadAll) continue; 
-				kits.add(new ORKitVO(rs));
-			}
-		} catch (SQLException e) {
-			throw new ActionException(e);
-		}
-		
-		super.putModuleData(kits, count, false);
-	}
-	
-	
-	/**
-	 * Build the kit search sql query
-	 * @param req
-	 * @return
-	 */
-	private String buildKitSearchSQL(ActionRequest req) {
-		StringBuilder sql = new StringBuilder(300);
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		
-		sql.append("SELECT HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, REP_ID, OTHER_ID, CASE_ID, RESELLER_NM, k.ram_case_info_id, COUNT(k.ram_case_info_ID) as NUM_PRODUCTS, FINALIZED_FLG ");
-		sql.append("FROM ").append(customDb).append("ram_case_info k ");
-		sql.append("LEFT JOIN ").append(customDb).append("ram_case_product xr ");
-		sql.append("on k.ram_case_info_ID = xr.ram_case_info_ID ");
-		sql.append("WHERE k.PROFILE_ID = ? ");
-		if (req.hasParameter("searchData") && req.hasParameter("searchType")) sql.append("AND ").append(SearchFields.valueOf(req.getParameter("searchType")).getColumnName()).append(" like ? ");
-		if (req.hasParameter("startDate")) sql.append("AND k.SURGERY_DT > ? ");
-		if (req.hasParameter("endDate")) sql.append("AND k.SURGERY_DT < ? ");
-		if (req.hasParameter("finalized")) sql.append("AND k.FINALIZED_FLG = ? ");
-		sql.append("GROUP BY HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, CASE_ID, RESELLER_NM, k.ram_case_info_ID, FINALIZED_FLG, REP_ID, OTHER_ID ");
-		sql.append("ORDER BY FINALIZED_FLG ");
-		
-
-		if (req.hasParameter("orderParam")) {
-			sql.append(", ").append(SearchFields.valueOf(req.getParameter("orderParam")).getColumnName());
-			if (Convert.formatBoolean(req.getParameter("reverseOrder"))) {
-				sql.append(" DESC ");
-			} else {
-				sql.append(" ASC ");
-			}
-		} else {
-			sql.append(", SURGERY_DT DESC");
-		}
-		
-		return sql.toString();
-	}
-	
 	
 	/**
 	 * Get all information and products associated with the current kit
