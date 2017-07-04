@@ -91,7 +91,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			gtv.setHeaders(filterNodes(getColData(req)));
 
 			//Get Table Body Data based on columns in the GTV.
-			loadGapTableData(gtv);
+			if(!gtv.getColumns().isEmpty())
+				loadGapTableData(gtv);
 
 			//forward to Report if parameter present.
 			if(req.hasParameter("buildReport")) {
