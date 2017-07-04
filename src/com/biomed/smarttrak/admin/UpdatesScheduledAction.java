@@ -93,13 +93,18 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 	 protected String fetchScheduledSQL(String schema, String timeRangeCd) {		
 		 final String innerJoin = "inner join ";
 		 StringBuilder sql = new StringBuilder(800);
-		 sql.append("select distinct up.*, us.update_section_xr_id, us.section_id from core.profile p ");
+		 sql.append("select distinct up.update_id, up.title_txt, up.message_txt, up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
+		 sql.append("c.short_nm_txt as company_nm, prod.short_nm as product_nm, ");
+		 sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id ");
+		 sql.append("from profile p ");
 		 sql.append(innerJoin).append(schema).append("biomedgps_user u on p.profile_id=u.profile_id ");
 		 sql.append(innerJoin).append(schema).append("biomedgps_account a on a.account_id=u.account_id ");
 		 sql.append(innerJoin).append(schema).append("biomedgps_account_acl sec on sec.account_id=a.account_id and sec.updates_no=1 ");
 		 sql.append(innerJoin).append(schema).append("biomedgps_section s on s.section_id=sec.section_id ");
 		 sql.append(innerJoin).append(schema).append("biomedgps_update_section us on us.section_id=s.parent_id ");
 		 sql.append(innerJoin).append(schema).append("biomedgps_update up on up.update_id=us.update_id ");
+		 sql.append("left outer join ").append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
+		 sql.append("left outer join ").append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (prod.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
 		 sql.append("where p.profile_id=? ");
 		 if (UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd)) {
 			 //updates for previous week
@@ -109,7 +114,7 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 			 sql.append("and up.create_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
 			 sql.append("and up.create_dt < date_trunc('day', current_timestamp) ");
 		 }
-		 sql.append("order by up.type_cd, up.create_dt desc ");
+		 sql.append("order by up.type_cd, up.publish_dt desc ");
 		 return sql.toString();
 	 }
 }
