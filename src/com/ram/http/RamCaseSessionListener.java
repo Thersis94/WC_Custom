@@ -1,7 +1,21 @@
 package com.ram.http;
 
+import java.sql.Connection;
+import java.util.Map;
+
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
+import javax.sql.DataSource;
+
+import org.apache.log4j.Logger;
+
+import com.ram.action.or.vo.RAMCaseVO;
+import com.ram.persistance.RAMCasePersistanceManager;
+import com.siliconmtn.common.constants.GlobalConfig;
 
 /****************************************************************************
  * <b>Title:</b> RamCaseSessionListener.java
@@ -15,6 +29,13 @@ import javax.servlet.http.HttpSessionListener;
  * @since Jun 28, 2017
  ****************************************************************************/
 public class RamCaseSessionListener implements HttpSessionListener {
+	public static final String CTX_COMP_ENV = "java:/comp/env";
+	protected static Logger log;
+
+	public RamCaseSessionListener() {
+		super();
+		log = Logger.getLogger(getClass());
+	}
 
 	/* (non-Javadoc)
 	 * @see javax.servlet.http.HttpSessionListener#sessionCreated(javax.servlet.http.HttpSessionEvent)
@@ -27,9 +48,26 @@ public class RamCaseSessionListener implements HttpSessionListener {
 	/* (non-Javadoc)
 	 * @see javax.servlet.http.HttpSessionListener#sessionDestroyed(javax.servlet.http.HttpSessionEvent)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
-	public void sessionDestroyed(HttpSessionEvent arg0) {
-		//TODO - Persist any Case Info on the Session.
+	public void sessionDestroyed(HttpSessionEvent sessionEvent) {
+		synchronized(this) {
+			HttpSession session = sessionEvent.getSession();
+			ServletContext sc = session.getServletContext();
+			Map<Object, Object> attributes = (Map<Object, Object>) sc.getAttribute(GlobalConfig.KEY_ALL_CONFIG);
+
+			RAMCaseVO cVo = (RAMCaseVO) session.getAttribute(RAMCasePersistanceManager.CASE_DATA_KEY);
+
+			DataSource ds = sc.setAttribute(GlobalConfig.KEY_DB_CONN, ds);
+		}
 	}
 
+	//getConnection
+	private Connection getDBConnection() {
+		// Get the datasource for the Init Name
+        Context initContext = new InitialContext();
+        Context ctx  = (Context)initContext.lookup(CTX_COMP_ENV);
+		DataSource ds = (DataSource) ctx.lookup(dbName);
+		return ds.getConnection();
+	}
 }

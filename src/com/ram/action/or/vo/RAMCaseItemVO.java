@@ -17,6 +17,7 @@ public class RAMCaseItemVO {
 
 	public enum RAMCaseType {}
 
+	private String caseItemId;
 	private String productId;
 	private String caseKitId;
 	private int qtyNo;
@@ -33,6 +34,13 @@ public class RAMCaseItemVO {
 
 	private void setData(ActionRequest req) {
 		
+	}
+
+	/**
+	 * @return the caseItemId
+	 */
+	public String getCaseItemId() {
+		return caseItemId;
 	}
 
 	/**
@@ -61,6 +69,13 @@ public class RAMCaseItemVO {
 	 */
 	public RAMCaseType getCaseType() {
 		return caseType;
+	}
+
+	/**
+	 * @param caseItemId the caseItemId to set.
+	 */
+	public void setCaseItemId(String caseItemId) {
+		this.caseItemId = caseItemId;
 	}
 
 	/**

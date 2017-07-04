@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -40,10 +41,12 @@ public class RAMCaseVO {
 	private Date spdDt;
 	private List<RAMSignatureVO> signatures;
 	private Map<RAMCaseType, Map<String, RAMCaseItemVO>> items;
+	private Map<String, RAMCaseKitVO> kits;
 	private RAMCaseStatus caseStatus;
 
 	public RAMCaseVO() {
 		this.signatures = new ArrayList<>();
+		this.kits = new HashMap<>();
 		this.items = new EnumMap<>(RAMCaseType.class);
 	}
 
@@ -71,6 +74,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the hospitalId
 	 */
+	@Column(name="hospital_id")
 	public String getHospitalId() {
 		return hospitalId;
 	}
@@ -78,6 +82,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the operatingRoomId
 	 */
+	@Column(name="or_id")
 	public String getOperatingRoomId() {
 		return operatingRoomId;
 	}
@@ -85,6 +90,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the surgeonId
 	 */
+	@Column(name="surgeon_id")
 	public String getSurgeonId() {
 		return surgeonId;
 	}
@@ -92,6 +98,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the salesRepId
 	 */
+	@Column(name="sales_rep_id")
 	public String getSalesRepId() {
 		return salesRepId;
 	}
@@ -99,6 +106,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the hospitalRepId
 	 */
+	@Column(name="hospital_rep_id")
 	public String getHospitalRepId() {
 		return hospitalRepId;
 	}
@@ -106,6 +114,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the createDt
 	 */
+	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDt() {
 		return createDt;
 	}
@@ -113,6 +122,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the updateDt
 	 */
+	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDt;
 	}
@@ -120,6 +130,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the surgeryDt
 	 */
+	@Column(name="surgery_dt")
 	public Date getSurgeryDt() {
 		return surgeryDt;
 	}
@@ -127,6 +138,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the spdDt
 	 */
+	@Column(name="spd_dt")
 	public Date getSpdDt() {
 		return spdDt;
 	}
@@ -136,6 +148,13 @@ public class RAMCaseVO {
 	 */
 	public List<RAMSignatureVO> getSignatures() {
 		return signatures;
+	}
+
+	/**
+	 * @return the kits
+	 */
+	public Map<String, RAMCaseKitVO> getKits() {
+		return kits;
 	}
 
 	/**
@@ -230,6 +249,13 @@ public class RAMCaseVO {
 	}
 
 	/**
+	 * @param kits the kits to set.
+	 */
+	public void setKits(Map<String, RAMCaseKitVO> kits) {
+		this.kits = kits;
+	}
+
+	/**
 	 * @param items the items to set.
 	 */
 	public void setItems(Map<RAMCaseType, Map<String, RAMCaseItemVO>> items) {
@@ -243,11 +269,20 @@ public class RAMCaseVO {
 		this.caseStatus = caseStatus;
 	}
 
+	@BeanSubElement
 	public void addSignature(RAMSignatureVO signature) {
 		if(signature != null)
 			signatures.add(signature);
 	}
 
+	@BeanSubElement
+	public void addCaseKit(RAMCaseKitVO kit) {
+		if(kit != null) {
+			kits.put(kit.getCaseKitId(), kit);
+		}
+	}
+
+	@BeanSubElement
 	public void addItem(RAMCaseItemVO item) {
 		if(item != null) {
 			Map<String, RAMCaseItemVO> imap = items.get(item.getCaseType());
@@ -268,6 +303,12 @@ public class RAMCaseVO {
 	public void removeItem(RAMCaseItemVO item) {
 		if(item != null && items.containsKey(item.getCaseType())) {
 			items.get(item.getCaseType()).remove(item.getProductId());
+		}
+	}
+
+	public void removeKit(RAMCaseKitVO kit) {
+		if(kit != null && kits.containsKey(kit.getCaseKitId())) {
+			kits.remove(kit.getCaseKitId());
 		}
 	}
 }
