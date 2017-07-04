@@ -23,6 +23,10 @@ public class AuthorVO extends SecureSolrDocumentVO {
 	protected static final String CREATOR_PROFILE_ID = "creatorProfileId";
 
 	protected String creatorProfileId;
+	
+	public AuthorVO() {
+		super(null);
+	}
 
 	/**
 	 * @param solrIndex

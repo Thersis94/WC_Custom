@@ -10,8 +10,10 @@ import java.util.List;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
+import com.biomed.smarttrak.vo.SectionVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -59,7 +61,6 @@ public class UpdatesAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		List<String> docIds = null;
@@ -77,24 +78,38 @@ public class UpdatesAction extends SBActionAdapter {
 
 		//Sort Facet Hierarchy.
 		mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		SolrResponseVO srv = (SolrResponseVO)mod.getActionData();
+		SolrResponseVO resp = (SolrResponseVO) mod.getActionData();
 
-		if(srv != null && !srv.getResultDocuments().isEmpty()) {
-			List<Node> sections = loadSections();
-			sortFacets(sections, srv);
+		if (resp != null && !resp.getResultDocuments().isEmpty()) {
+			List<Node> sections = loadSections(req);
+			sortFacets(sections, resp);
 		}
 
 	}
 
 
 	/**
-	 * Helper method manages sorting Facets according to Section Hierarchy Order
-	 * Values.
-	 * @param srv
+	 * Helper method manages sorting Facets according to Section Hierarchy Order Values.
+	 * Note: this method is shared with InsightAction
+	 * @param resp
 	 */
-	protected void sortFacets(List<Node> sections, SolrResponseVO srv) {
-		List<FacetField> facets = srv.getFacets();
-		FacetField fOld = facets.get(0);
+	protected void sortFacets(List<Node> sections, SolrResponseVO resp) {
+		List<FacetField> facets = resp.getFacets();
+		int idx = 0;
+		FacetField fOld = null;
+		//find the correct facet, by name
+		for (int x=0; x < facets.size(); x++) {
+			FacetField ff = facets.get(x);
+			if (SearchDocumentHandler.HIERARCHY.equals(ff.getName())) {
+				fOld = ff;
+				idx = x;
+				break;
+			}
+		}
+		
+		//fail fast if we can't perform our duty here
+		if (fOld == null) return;
+		
 		FacetField fNew = new FacetField(fOld.getName(), fOld.getGap(), fOld.getEnd());
 
 		/*
@@ -102,12 +117,12 @@ public class UpdatesAction extends SBActionAdapter {
 		 * over FacetFields second as that is the returned data sets.  Compare
 		 * the names and if it's a match, add it to the new Facet.
 		 */
-		for(Node n : sections) {
-			for(Count f : fOld.getValues()) {
+		for (Node n : sections) {
+			for (Count f : fOld.getValues()) {
 				/*Split to ensure matches are made against the entire facet name*/
 				String[] parts = f.getName().split("~");
 				String endName = parts[parts.length -1];
-				if(endName.equals(n.getNodeName())) {
+				if (endName.equals(n.getNodeName())) {
 					fNew.add(f.getName(), f.getCount());
 					break;
 				}
@@ -115,9 +130,8 @@ public class UpdatesAction extends SBActionAdapter {
 		}
 
 		//Replace Facets List with New one and set on the VO.
-		facets = new ArrayList<>();
-		facets.add(fNew);
-		srv.setFacets(facets);
+		facets.set(idx, fNew); //put the rebuild facet back in place of the original
+		resp.setFacets(facets);
 	}
 
 	/**
@@ -126,9 +140,10 @@ public class UpdatesAction extends SBActionAdapter {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	protected List<Node> loadSections() {
+	protected List<Node> loadSections(ActionRequest req) {
+		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
 		ModuleVO mod = super.readFromCache(actionInit.getActionId());
-		if(mod == null) {
+		if (mod == null) {
 			com.biomed.smarttrak.admin.UpdatesAction ua = new com.biomed.smarttrak.admin.UpdatesAction(actionInit);
 			ua.setDBConnection(dbConn);
 			ua.setAttributes(attributes);
@@ -137,10 +152,22 @@ public class UpdatesAction extends SBActionAdapter {
 			mod = new ModuleVO();
 			mod.setActionData(nodes);
 			mod.setPageModuleId(actionInit.getActionId());
+			mod.addCacheGroup(role.getSiteId());
+			mod.addCacheGroup(role.getOrganizationId());
 			super.writeToCache(mod);
 		}
 
-		return (List<Node>)mod.getActionData();
+		//now filter the global hierarchy down to only the areas the user can view:
+		List<Node> masterList = (List<Node>)mod.getActionData();
+		List<Node> data = new ArrayList<>(masterList.size());
+		List<String> roles = Arrays.asList(role.getAuthorizedSections());
+		for (Node n : masterList) {
+			SectionVO vo = (SectionVO) n.getUserObject();
+			if (roles.contains(vo.getSolrTokenTxt()))
+				data.add(n);
+		}
+
+		return data;
 	}
 
 	/**
@@ -224,7 +251,7 @@ public class UpdatesAction extends SBActionAdapter {
 	protected void transposeRequest(ActionRequest req, List<String> docIds)  {
 		//Enusre action request does NOT encode params. Solr needs exact phrase.
 		req.setValidateInput(Boolean.FALSE);
-		
+
 		//get the filter queries already on the request.  Add ours to the stack, and put the String[] back on the request for Solr
 		String[] fqs = req.getParameterValues("fq");
 		if (fqs == null) fqs = new String[0];
@@ -264,14 +291,14 @@ public class UpdatesAction extends SBActionAdapter {
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 		req.setParameter("ft", terms.toArray(new String[terms.size()]), true);
 	}
-	
+
 	/**
 	 * Handles processing the custom filter for email views for Solr
 	 * @param req
 	 */
 	protected void transposeEmailFilter(ActionRequest req){
 		if(!req.hasParameter("isEmail")) return;
-		
+
 		//Set fmid from ModuleVO
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		req.setParameter("fmid", mod.getPageModuleId());
