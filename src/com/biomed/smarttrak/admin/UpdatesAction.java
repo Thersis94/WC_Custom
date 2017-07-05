@@ -242,7 +242,7 @@ public class UpdatesAction extends AuthorAction {
 		sql.append("inner join profile p on up.creator_profile_id=p.profile_id ");
 		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section us on up.update_id=us.update_id ");
 		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
-		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (prod.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
+		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (up.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
 		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
 		if (!StringUtil.isEmpty(updateId))
 			sql.append("where up.update_id = ? ");

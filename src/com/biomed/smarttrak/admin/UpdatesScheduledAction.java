@@ -90,7 +90,7 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 	  * @param timeRangeCd
 	  * @return
 	  */
-	 protected String fetchScheduledSQL(String schema, String timeRangeCd) {		
+	 protected String fetchScheduledSQL(String schema, String timeRangeCd) {
 		 final String innerJoin = "inner join ";
 		 final String leftJoin = "left outer join ";
 		 StringBuilder sql = new StringBuilder(800);
@@ -106,7 +106,7 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		 sql.append(innerJoin).append(schema).append("biomedgps_update_section us on us.section_id=s.parent_id ");
 		 sql.append(innerJoin).append(schema).append("biomedgps_update up on up.update_id=us.update_id ");
 		 sql.append(leftJoin).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
-		 sql.append(leftJoin).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (prod.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
+		 sql.append(leftJoin).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (up.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
 		 sql.append(leftJoin).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
 		 sql.append("where p.profile_id=? ");
 		 if (UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd)) {
