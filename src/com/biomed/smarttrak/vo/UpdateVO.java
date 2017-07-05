@@ -57,7 +57,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private String marketNm;
 	private String productNm;
 	private String companyNm;
-	private String titleTxt;
 	private int typeCd;
 	private int orderNo;
 	private int emailFlg;
@@ -71,16 +70,15 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
-	private String companyLink;
-	private String companyShortName;
 	private transient List<UpdateXRVO> sections; //UpdateXRVO is not serializable, so this List must be transient -JM- 7.03.2017
+	private String qsPath;
 
 
 	public UpdateVO() {
 		super(UpdateIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
-		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
-		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+		addOrganization(AdminControllerAction.BIOMED_ORG_ID);
+		addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 	}
 
 	public UpdateVO(ResultSet rs) {
@@ -97,23 +95,22 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	protected void setData(ActionRequest req) {
 		super.setData(req); //set the creator_profile_id
 		setUpdateId(StringUtil.checkVal(req.getParameter("updateId")));
-		this.marketId = StringUtil.checkVal(req.getParameter("marketId"), null);
-		this.productId = StringUtil.checkVal(req.getParameter("productId"), null);
-		this.companyId = StringUtil.checkVal(req.getParameter("companyId"), null);
-		this.titleTxt = req.getParameter("titleTxt");
-		this.typeCd = Convert.formatInteger(req.getParameter("typeCd"));
-		this.messageTxt = req.getParameter("messageTxt");
-		this.twitterTxt = req.getParameter("twitterTxt");
-		this.tweetFlg = Convert.formatInteger(Convert.formatBoolean(req.getParameter("tweetFlg")));
-		this.statusCd = req.getParameter("statusCd");
-		this.publishDt = Convert.formatDate(req.getParameter("publishDt"));
-		this.orderNo = Convert.formatInteger(req.getParameter("orderNo"));
-		this.emailFlg = Convert.formatInteger(req.getParameter("emailFlg"), 1);
+		marketId = StringUtil.checkVal(req.getParameter("marketId"), null);
+		productId = StringUtil.checkVal(req.getParameter("productId"), null);
+		companyId = StringUtil.checkVal(req.getParameter("companyId"), null);
+		setTitle(req.getParameter("titleTxt"));
+		typeCd = Convert.formatInteger(req.getParameter("typeCd"));
+		messageTxt = req.getParameter("messageTxt");
+		twitterTxt = req.getParameter("twitterTxt");
+		tweetFlg = Convert.formatInteger(Convert.formatBoolean(req.getParameter("tweetFlg")));
+		statusCd = req.getParameter("statusCd");
+		publishDt = Convert.formatDate(req.getParameter("publishDt"));
+		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
+		emailFlg = Convert.formatInteger(req.getParameter("emailFlg"), 1);
 		if (req.hasParameter("sectionId")) {
-			String [] s = req.getParameterValues("sectionId");
-			for (String sec : s) {
+			String [] arr = req.getParameterValues("sectionId");
+			for (String sec : arr)
 				sections.add(new UpdateXRVO(updateId, sec));
-			}
 		}
 	}
 
@@ -121,28 +118,46 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
 	public String getDocumentUrl() {
 		StringBuilder url = new StringBuilder(50);
-		if (!StringUtil.isEmpty(marketId)) {
-			url.append(Section.MARKET.getURLToken()).append("qs/").append(marketId);
-		} else if (!StringUtil.isEmpty(productId)) {
-			url.append(Section.PRODUCT.getURLToken()).append("qs/").append(productId);
+		if (!StringUtil.isEmpty(productId)) {
+			url.append(Section.PRODUCT.getPageURL()).append(qsPath).append(productId);
 		} else if (!StringUtil.isEmpty(companyId)) {
-			url.append(Section.COMPANY.getURLToken()).append("qs/").append(companyId);
+			url.append(Section.COMPANY.getPageURL()).append(qsPath).append(companyId);
+		} else if (!StringUtil.isEmpty(marketId)) {
+			url.append(Section.MARKET.getPageURL()).append(qsPath).append(marketId);
 		}
-
 		return url.toString();
 	}
 
 	@Override
 	@SolrField(name=SearchDocumentHandler.CONTENT_TYPE)
 	public String getContentType() {
-		if (!StringUtil.isEmpty(marketId)) {
-			super.setContentType(Section.MARKET.toString());
-		} else if (!StringUtil.isEmpty(productId)) {
-			super.setContentType(Section.PRODUCT.toString());
+		if (!StringUtil.isEmpty(productId)) {
+			super.setContentType(Section.PRODUCT.toString()); 
 		} else if (!StringUtil.isEmpty(companyId)) {
 			super.setContentType(Section.COMPANY.toString());
+		} else if (!StringUtil.isEmpty(marketId)) {
+			super.setContentType(Section.MARKET.toString());
 		}
 		return super.getContentType();
+	}
+
+	/**
+	 * display title encapsulates the logic for which label we put on displayed URLs in the html.
+	 * If the update is for a market, URL will be /markets and display text will be market short name.
+	 * if the update is for a company, URL will be /companies and display text will be company short name.
+	 * if the update is for a product, URL will be /products and display text will be "product short name - company short name" (w/two URLs)
+	 */
+	@SolrField(name="display_title_s")
+	public String getDisplayTitle() {
+		if (!StringUtil.isEmpty(productId)) {
+			return this.getProductNm();
+		} else if (!StringUtil.isEmpty(companyId)) {
+			return this.getCompanyNm();
+		} else if (!StringUtil.isEmpty(marketId)) {
+			return this.getMarketNm();
+		} else {
+			return getTitle();
+		}
 	}
 
 	/**
@@ -197,17 +212,20 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @return the companyNm
 	 */
 	@Column(name="company_nm", isReadOnly=true)
+	@SolrField(name="companyShortName_s")
 	public String getCompanyNm() {
 		return companyNm;
 	}
 
 	/**
+	 * @override so we could add the DB annotation
 	 * @return the titleTxt
 	 */
+	@Override
 	@Column(name="title_txt")
 	@SolrField(name=SearchDocumentHandler.TITLE)
-	public String getTitleTxt() {
-		return titleTxt;
+	public String getTitle() {
+		return super.getTitle();
 	}
 
 	/**
@@ -290,31 +308,37 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	}
 
 	@SolrField(name="companyLink_s")
-	public String getCompanyLink(){
-
-		if (StringUtil.isEmpty(this.productId)) {
-			return "";
-		}else{
-			return companyLink;
-		}
+	public String getCompanyLink() {
+		if (StringUtil.isEmpty(companyId)) return "";
+		
+		return AdminControllerAction.Section.COMPANY.getPageURL() + qsPath + getCompanyId();
 	}
-
+	
+	/**
+	 * @deprecated this should not be done, URL is built dynamically, just set companyId
+	 * @return
+	 */
+	@Deprecated
 	public void setCompanyLink(String link){
-		this.companyLink = link;
+		//does nothing
 	}
 
-	@SolrField(name="companyShortName_s")
-	public String getCompanyShortName(){
-
-		if (StringUtil.isEmpty(this.productId)) {
-			return "";
-		}else{
-			return companyShortName;
-		}
+	/**
+	 * @deprecated use overlapping getCompanyNm()
+	 * @return
+	 */
+	@Deprecated
+	public String getCompanyShortName() {
+		return getCompanyNm();
 	}
 
+	/**
+	 * @deprecated use overlapping setCompanyNm()
+	 * @return
+	 */
+	@Deprecated
 	public void setCompanyShortName(String shortNm){
-		this.companyShortName = shortNm;
+		setCompanyNm(shortNm);
 	}
 
 	@SolrField(name="publishTime_s")
@@ -344,6 +368,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	public int getEmailFlg() {
 		return emailFlg;
 	}
+
 	@SolrField(name="order_i")
 	@Column(name="order_no")
 	public int getOrderNo() {
@@ -405,12 +430,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 
 	public void setCompanyNm(String companyNm) {
 		this.companyNm = companyNm;
-	}
-	/**
-	 * @param titleTxt the titleTxt to set.
-	 */
-	public void setTitleTxt(String titleTxt) {
-		this.titleTxt = titleTxt;
 	}
 
 	/**
@@ -563,7 +582,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 */
 	@Override
 	public String getItemName() {
-		return titleTxt;
+		return getTitle();
 	}
 
 
@@ -595,11 +614,29 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	public int getTweetFlg() {
 		return tweetFlg;
 	}
+	
+	/**
+	 * @deprecated - use getTitle
+	 * @return
+	 */
+	@Deprecated
+	public String getTitleTxt() {
+		return getTitle();
+	}
 
 	/**
 	 * @param tweetFlg the tweetFlg to set
 	 */
 	public void setTweetFlg(int tweetFlg) {
 		this.tweetFlg = tweetFlg;
+	}
+
+	@Column(name="qs_path", isReadOnly=true)
+	public String getQsPath() {
+		return qsPath;
+	}
+	
+	public void setQsPath(String qsPath) {
+		this.qsPath = qsPath;
 	}
 }

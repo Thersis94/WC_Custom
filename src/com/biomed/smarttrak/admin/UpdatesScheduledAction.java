@@ -92,10 +92,12 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 	  */
 	 protected String fetchScheduledSQL(String schema, String timeRangeCd) {		
 		 final String innerJoin = "inner join ";
+		 final String leftJoin = "left outer join ";
 		 StringBuilder sql = new StringBuilder(800);
 		 sql.append("select distinct up.update_id, up.title_txt, up.message_txt, up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
 		 sql.append("c.short_nm_txt as company_nm, prod.short_nm as product_nm, ");
-		 sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id ");
+		 sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
+		 sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id ");
 		 sql.append("from profile p ");
 		 sql.append(innerJoin).append(schema).append("biomedgps_user u on p.profile_id=u.profile_id ");
 		 sql.append(innerJoin).append(schema).append("biomedgps_account a on a.account_id=u.account_id ");
@@ -103,8 +105,9 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		 sql.append(innerJoin).append(schema).append("biomedgps_section s on s.section_id=sec.section_id ");
 		 sql.append(innerJoin).append(schema).append("biomedgps_update_section us on us.section_id=s.parent_id ");
 		 sql.append(innerJoin).append(schema).append("biomedgps_update up on up.update_id=us.update_id ");
-		 sql.append("left outer join ").append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
-		 sql.append("left outer join ").append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (prod.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
+		 sql.append(leftJoin).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
+		 sql.append(leftJoin).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (prod.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
+		 sql.append(leftJoin).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
 		 sql.append("where p.profile_id=? ");
 		 if (UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd)) {
 			 //updates for previous week
