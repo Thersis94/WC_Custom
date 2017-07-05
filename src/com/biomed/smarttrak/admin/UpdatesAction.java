@@ -186,7 +186,6 @@ public class UpdatesAction extends AuthorAction {
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
-		addProductCompanyData(updates);
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
@@ -194,6 +193,7 @@ public class UpdatesAction extends AuthorAction {
 	/**
 	 * takes the current list of updates and adds the company information to any product updates
 	 * @param updates
+	 * TODO remove this method
 	 */
 	private void addProductCompanyData(List<Object> updates) {
 		log.debug("adding company short name and id "); 
@@ -226,20 +226,26 @@ public class UpdatesAction extends AuthorAction {
 
 	/**
 	 * Generates Query for getting all records/single record.  Used by Solr Indexer.
+	 * Note: This query closely compliments what we use in UpdatesScheduledAction (for a real-time load of Updates)
 	 * @param updateId
 	 * @param schema
 	 * @return
 	 */
-	public String formatRetrieveAllQuery(String schema, String updateId) {
+	protected String formatRetrieveAllQuery(String schema, String updateId) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id, b.update_section_xr_id ");
-		sql.append("from ").append(schema).append("biomedgps_update a ");
-		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section b on a.update_id=b.update_id ");
+		sql.append("select up.update_id, up.title_txt, up.message_txt, up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
+		sql.append("c.short_nm_txt as company_nm, prod.short_nm as product_nm, ");
+		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
+		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, ");
+		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path "); //need to pass this through for building URLs
+		sql.append("from ").append(schema).append("biomedgps_update up ");
+		sql.append("inner join profile p on up.creator_profile_id=p.profile_id ");
+		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section us on up.update_id=us.update_id ");
+		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
+		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (prod.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
+		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
 		if (!StringUtil.isEmpty(updateId))
-			sql.append("where a.update_id = ? ");
-
-		sql.append("order by a.create_dt");
+			sql.append("where up.update_id = ? ");
 
 		log.debug(sql);
 		return sql.toString();
