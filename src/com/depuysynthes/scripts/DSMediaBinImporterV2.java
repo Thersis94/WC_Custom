@@ -816,7 +816,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				} else {
 					//no legacy#, use eCopy
 					tn = StringUtil.checkVal(row.get("eCopy Tracking Number"));
-					pkId = tn;
+					pkId = splitTrackingNo(tn);
 				}
 
 				//for INTL, use the file name as a tracking number (final fallback).
@@ -921,6 +921,20 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		dataCounts.put("exp-eligible", records.size());
 		log.info(records.size() + " total VOs created from EXP data");
 		return records;
+	}
+
+
+	/**
+	 * tokenizes the tracking# on a comma.  ADAPTIV introduced support for mulitple, but only the first one is the primary.
+	 * @param tn
+	 * @return
+	 */
+	private String splitTrackingNo(String tn) {
+		if (StringUtil.isEmpty(tn) || tn.indexOf(",") == -1) {
+			return tn;
+		} else {
+			return tn.split(",")[0];
+		}
 	}
 
 

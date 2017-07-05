@@ -42,6 +42,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since May 28, 2014<p/>
  * <b>Changes: </b>
  ****************************************************************************/
+
+// TODO - Move functionality, in favor of the new portal controller
+
+@Deprecated
 public class AJAXUtilAction extends SBActionAdapter {
 
 	/**
