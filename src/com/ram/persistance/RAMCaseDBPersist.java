@@ -1,12 +1,24 @@
 package com.ram.persistance;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.ram.action.or.RAMCaseManager;
+import com.ram.action.or.vo.RAMCaseItemVO;
+import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
+import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
+import com.ram.action.or.vo.RAMSignatureVO;
+import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.filter.fileupload.Constants;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseDBPersist.java
@@ -22,6 +34,8 @@ import com.siliconmtn.exception.InvalidDataException;
 public class RAMCaseDBPersist extends AbstractPersist<Connection, RAMCaseVO> {
 
 	private DBProcessor dbp;
+	private Connection conn;
+	private String schema;
 	public RAMCaseDBPersist() {
 		super();
 	}
@@ -32,35 +46,188 @@ public class RAMCaseDBPersist extends AbstractPersist<Connection, RAMCaseVO> {
 	@Override
 	public RAMCaseVO load() {
 		String caseId = (String) attributes.get(RAMCaseManager.RAM_CASE_ID);
-		RAMCaseVO cVo = initialize();
-		cVo.setCaseId(caseId);
-		try {
-			dbp.getByPrimaryKey(cVo);
-		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Error Retrieving CaseVO for: " + caseId, e);
-		}
+		RAMCaseVO cVo = null;
+		List<Object> params = new ArrayList<>();
+		params.add(caseId);
+		cVo = (RAMCaseVO) dbp.executeSelect(loadCaseSql(), params, initialize());
 
 		return cVo;
 	}
 
 
-	/* (non-Javadoc)
-	 * @see com.ram.persistance.PersistanceIntfc#save()
+	/**
+	 * Helper method that builds the case load query.  Retrieves all signatures,
+	 * items and kits related to a given case_id.
+	 * @return
+	 */
+	private String loadCaseSql() {
+		StringBuilder sql = new StringBuilder(525);
+		sql.append("select * from ").append(schema).append("RAM_CASE c ");
+		sql.append("left outer join ").append(schema).append("RAM_CASE_SIGNATURE s ");
+		sql.append("on c.case_id = s.case_id ");
+		sql.append("left outer join ").append(schema).append("RAM_CASE_ITEM i ");
+		sql.append("on c.case_id = i.case_id ");
+		sql.append("left outer join ").append(schema).append("RAM_CASE_KIT k ");
+		sql.append("on c.case_id = k.case_id and k.case_kit_id = i.case_kit_it ");
+		sql.append("where c.case_id = ? ");
+		return sql.toString();
+	}
+
+	/**
+	 * DB Persist Save method saves the Case and Signatures, drops all existing
+	 * items and kits then re-inserts them using the same Ids they had from
+	 * before.  Saves us having to track what items were added, removed,
+	 * updated etc.  Entire method is wrapped in a manual commit transaction
+	 * so that any errors can be immediately rolled back.
 	 */
 	@Override
 	public RAMCaseVO save() {
 		RAMCaseVO cVo = (RAMCaseVO)attributes.get(RAMCaseManager.RAM_CASE_VO);
 		try {
+			//Set Autocommit False.
+			conn.setAutoCommit(false);
+
+			//Save Case.
 			dbp.save(cVo);
+
+			//Update Case Pkid
 			if(dbp.getGeneratedPKId() != null) {
 				cVo.setCaseId(dbp.getGeneratedPKId());
 			}
-		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Error Processing Code", e);
+
+			//Add Signatures.
+			saveSignatures(cVo);
+
+			//Flush and insert Items/Kits.
+			deleteChildren(cVo);
+			insertItems(cVo);
+			insertKits(cVo);
+
+			//Commit transaction.
+			conn.commit();
+		} catch (InvalidDataException | DatabaseException | SQLException e) {
+			log.error("Error Saving Case, rolling back changes.", e);
+			try {
+				conn.rollback();
+			} catch(SQLException sqle) {
+				log.error("Problem Rolling back DB.", sqle);
+			}
+			
+		} finally {
+			try {
+				conn.setAutoCommit(true);
+			} catch(SQLException sqle) {
+				log.error("Probleming setting AutoCommit back to true.", sqle);
+			}
 		}
+
 		return cVo;
 	}
 
+
+	/**
+	 * Helper method removes all Items and Kits from the Case.  They will be
+	 * re-inserted immediately following this invocation.
+	 * @param cVo
+	 * @throws SQLException
+	 */
+	public void deleteChildren(RAMCaseVO cVo) throws SQLException {
+		//Delete All Items on the Case.
+		try(PreparedStatement ps = conn.prepareStatement(getItemDelSql())) {
+			ps.setString(1, cVo.getCaseId());
+			ps.executeUpdate();
+		}
+
+		//Delete All Kits on the Case.
+		try(PreparedStatement ps = conn.prepareStatement(getKitDelSql())) {
+			ps.setString(1, cVo.getCaseId());
+			ps.executeUpdate();
+		}
+	}
+
+	/**
+	 * Helper method that builds the Kit Deletion Query.
+	 * @return
+	 */
+	private String getKitDelSql() {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("delete from ").append(schema).append("RAM_CASE_KIT where case_id = ? ");
+		return sql.toString();
+	}
+
+	/**
+	 * Helper method that builds the Item Deleting Query.
+	 * @return
+	 */
+	private String getItemDelSql() {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("delete from ").append(schema).append("RAM_CASE_ITEM where case_id = ? ");
+		return sql.toString();
+	}
+
+	/**
+	 * Helper method iterates over given RAMCaseVO Kits and saves them all.
+	 * @param cVo
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private void insertKits(RAMCaseVO cVo) throws InvalidDataException, DatabaseException {
+		for(Entry<String, RAMCaseKitVO> kit : cVo.getKits().entrySet()) {
+			RAMCaseKitVO k = kit.getValue();
+
+			//Ensure CaseId is set correctly.
+			k.setCaseId(cVo.getCaseId());
+
+			dbp.insert(k);
+			if(dbp.getGeneratedPKId() != null) {
+				k.setCaseKitId(dbp.getGeneratedPKId());
+			}
+		}
+	}
+
+	/**
+	 * Helper method iterates over given RAMCaseVO Items and saves them all.
+	 * @param cVo
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private void insertItems(RAMCaseVO cVo) throws InvalidDataException, DatabaseException {
+		for(Entry<RAMCaseType, Map<String, RAMCaseItemVO>> items : cVo.getItems().entrySet()) {
+			for(Entry<String, RAMCaseItemVO> e : items.getValue().entrySet()) {
+				RAMCaseItemVO i = e.getValue();
+
+				//Ensure CaseId is set correctly.
+				i.setCaseId(cVo.getCaseId());
+
+				dbp.insert(i);
+				if(dbp.getGeneratedPKId() != null) {
+					i.setCaseItemId(dbp.getGeneratedPKId());
+				}
+			}
+		}
+	}
+
+	/**
+	 * Helper method iterates over RAMCaseVO Signatures and saves them all.
+	 * @param cVo
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private void saveSignatures(RAMCaseVO cVo) throws InvalidDataException, DatabaseException {
+		for(Entry<SignatureType, Map<String, RAMSignatureVO>> sigs : cVo.getSignatures().entrySet()) {
+			for(Entry<String, RAMSignatureVO> e : sigs.getValue().entrySet()) {
+				RAMSignatureVO s = e.getValue();
+
+				//Ensure CaseId is set correctly.
+				s.setCaseId(cVo.getCaseId());
+
+				dbp.save(s);
+				if(dbp.getGeneratedPKId() != null) {
+					s.setSignatureId(dbp.getGeneratedPKId());
+				}
+			}
+		}
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ram.persistance.PersistanceIntfc#flush()
@@ -84,6 +251,13 @@ public class RAMCaseDBPersist extends AbstractPersist<Connection, RAMCaseVO> {
 	 */
 	@Override
 	public void setPersistanceSource(Connection source) {
-		this.dbp = new DBProcessor(source);
+		this.conn = source;
+		this.dbp = new DBProcessor(conn, schema);
+	}
+
+	@Override
+	public void setAttributes(Map<String, Object> attributes) {
+		super.setAttributes(attributes);
+		schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 	}
 }

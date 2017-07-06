@@ -15,7 +15,7 @@ import org.apache.log4j.Logger;
  * @version 3.3.1
  * @since Jul 3, 2017
  ****************************************************************************/
-public abstract class AbstractPersist<T, S> implements PersistanceIntfc<T, S> {
+public abstract class AbstractPersist<T, S> implements PersistenceIntfc<T, S> {
 
 	//Pass Req/DB on attributes.
 	protected Map<String, Object> attributes;

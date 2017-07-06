@@ -11,7 +11,7 @@ package com.ram.persistance;
  * @version 3.3.1
  * @since Jul 3, 2017
  ****************************************************************************/
-public interface PersistanceIntfc<T extends Object, S extends Object> {
+public interface PersistenceIntfc<T extends Object, S extends Object> {
 
 	public S load();
 	public S save();

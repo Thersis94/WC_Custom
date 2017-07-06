@@ -2,6 +2,7 @@ package com.ram.action.or.vo;
 
 import java.util.Date;
 
+import com.ram.action.or.RAMCaseManager;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -36,7 +37,9 @@ public class RAMCaseKitVO {
 	}
 
 	public void setData(ActionRequest req) {
-		
+		caseKitId = req.getParameter("caseKitId");
+		locationItemMasterId = req.getParameter("locationItemMasterId");
+		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
 	}
 
 	/**

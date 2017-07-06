@@ -1,10 +1,12 @@
 package com.ram.http;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Map;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionEvent;
@@ -14,7 +16,7 @@ import javax.sql.DataSource;
 import org.apache.log4j.Logger;
 
 import com.ram.action.or.vo.RAMCaseVO;
-import com.ram.persistance.RAMCasePersistanceManager;
+import com.ram.persistance.RAMCasePersistenceManager;
 import com.siliconmtn.common.constants.GlobalConfig;
 
 /****************************************************************************
@@ -56,18 +58,22 @@ public class RamCaseSessionListener implements HttpSessionListener {
 			ServletContext sc = session.getServletContext();
 			Map<Object, Object> attributes = (Map<Object, Object>) sc.getAttribute(GlobalConfig.KEY_ALL_CONFIG);
 
-			RAMCaseVO cVo = (RAMCaseVO) session.getAttribute(RAMCasePersistanceManager.CASE_DATA_KEY);
+			RAMCaseVO cVo = (RAMCaseVO) session.getAttribute(RAMCasePersistenceManager.CASE_DATA_KEY);
 
-			DataSource ds = sc.setAttribute(GlobalConfig.KEY_DB_CONN, ds);
+			try {
+				Connection conn = getDBConnection();
+			} catch (NamingException | SQLException e) {
+				log.error("Error Processing Code", e);
+			}
 		}
 	}
 
 	//getConnection
-	private Connection getDBConnection() {
+	private Connection getDBConnection() throws NamingException, SQLException {
 		// Get the datasource for the Init Name
         Context initContext = new InitialContext();
         Context ctx  = (Context)initContext.lookup(CTX_COMP_ENV);
-		DataSource ds = (DataSource) ctx.lookup(dbName);
+		DataSource ds = (DataSource) ctx.lookup("dbcon");
 		return ds.getConnection();
 	}
 }

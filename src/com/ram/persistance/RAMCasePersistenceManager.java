@@ -12,7 +12,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 
 /****************************************************************************
- * <b>Title:</b> RAMCasePersistanceManager.java
+ * <b>Title:</b> RAMCasePersistenceManager.java
  * <b>Project:</b> WC_Custom
  * <b>Description:</b> Class manages RAM Case Persistance on both Session and DB
  * Levels.
@@ -23,7 +23,7 @@ import com.siliconmtn.exception.InvalidDataException;
  * @version 3.3.1
  * @since Jun 28, 2017
  ****************************************************************************/
-public class RAMCasePersistanceManager {
+public class RAMCasePersistenceManager {
 
 	public static final String CASE_DATA_KEY = "ramCaseData";
 	//Pass Req/DB on attributes.
@@ -38,11 +38,11 @@ public class RAMCasePersistanceManager {
 	private boolean isNewCart;
 
 	//Possibly pass case on constructor.
-	public RAMCasePersistanceManager() {
+	public RAMCasePersistenceManager() {
 		log = Logger.getLogger(getClass());
 	}
 
-	public RAMCasePersistanceManager(Map<String, Object> attributes, Connection conn) {
+	public RAMCasePersistenceManager(Map<String, Object> attributes, Connection conn) {
 		this();
 		this.attributes = attributes;
 		setConnection(conn);
@@ -70,11 +70,11 @@ public class RAMCasePersistanceManager {
 	 */
 	public void save(ActionRequest req, RAMCaseVO cVo) throws InvalidDataException, DatabaseException {
 		//Base The Decision off RAMCaseVO Type.
-		if(useDb) {
-			dbp.save(cVo);
-		} else if(req != null) {
-			req.getSession().setAttribute(CASE_DATA_KEY, cVo);
-		}
+//		if(useDb) {
+//			dbp.save(cVo);
+//		} else if(req != null) {
+//			req.getSession().setAttribute(CASE_DATA_KEY, cVo);
+//		}
 	}
 
 	public void flush(ActionRequest req) {
