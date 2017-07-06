@@ -149,7 +149,7 @@ public class RAMCaseManager {
 	 * @param serialId
 	 * @return
 	 */
-	private RAMCaseKitVO loadLocationKitData(RAMProductVO p, String serialId) {
+	private RAMCaseKitVO loadLocationKitData(String serialId) {
 		DBProcessor db = new DBProcessor(conn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		List<Object> params = new ArrayList<>();
 		params.add(serialId);
@@ -215,7 +215,7 @@ public class RAMCaseManager {
 		 * build a case KitVO.
 		 */
 		if(StringUtil.isEmpty(req.getParameter("caseKitId")) && p != null && Integer.valueOf(1).equals(p.getKitFlag())) {
-			kvo = loadLocationKitData(p, serialId);
+			kvo = loadLocationKitData(serialId);
 			kvo.setCaseId(cVo.getCaseId());
 			kvo.setCaseKitId(new UUIDGenerator().getUUID());
 			req.setParameter("caseKitId", kvo.getCaseKitId());
