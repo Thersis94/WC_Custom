@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
@@ -22,6 +23,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.solr.AccessControlQuery;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -93,6 +95,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String sectionId = req.getParameter("sectionId");
+		ModuleVO origMod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
 		Tree t;
 
@@ -108,7 +111,8 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 			t.calculateTotalChildren(t.getRootNode());
 			t.buildNodePaths();
 			
-			super.writeToCache(t, "SMARTTRAK", "SECTION");
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			super.writeToCache(t, AdminControllerAction.BIOMED_ORG_ID, origMod.getModuleType(), site.getSiteId(), site.getAliasPathParentId());
 		} else {
 			//Get the Tree off the actionData
 			t = (Tree) mod.getActionData();
