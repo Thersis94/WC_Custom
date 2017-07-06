@@ -52,10 +52,10 @@ public class LegacyImageInserter extends CommandLineUtil {
 	 */
 	@Override
 	public void run() {
-		//run graphics, then run attachments.
+		//run graphics, then run attachments, then run charts
 		//processGraphics(); //two writes here - partially in content, partially in leftColumn
-		//processAttachments();
-		processCharts();
+		//processAttachments(); //run this second
+		processCharts(); //run this third
 	}
 
 	protected void processGraphics() {
