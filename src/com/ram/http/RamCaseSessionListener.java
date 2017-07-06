@@ -15,14 +15,16 @@ import javax.sql.DataSource;
 
 import org.apache.log4j.Logger;
 
-import com.ram.action.or.vo.RAMCaseVO;
-import com.ram.persistance.RAMCasePersistenceManager;
+import com.ram.persistance.AbstractPersist;
+import com.ram.persistance.RAMCasePersistenceFactory;
+import com.ram.persistance.RAMCasePersistenceFactory.PersistenceType;
 import com.siliconmtn.common.constants.GlobalConfig;
 
 /****************************************************************************
  * <b>Title:</b> RamCaseSessionListener.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> SessionListener for the RAMCase Framework that attempts
+ * to persist a RAMCaseVO to the Database if the Session is terminated.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -43,7 +45,8 @@ public class RamCaseSessionListener implements HttpSessionListener {
 	 * @see javax.servlet.http.HttpSessionListener#sessionCreated(javax.servlet.http.HttpSessionEvent)
 	 */
 	@Override
-	public void sessionCreated(HttpSessionEvent arg0) {
+	public void sessionCreated(HttpSessionEvent sessionEvent) {
+		//Not implemented.
 	}
 
 
@@ -56,13 +59,13 @@ public class RamCaseSessionListener implements HttpSessionListener {
 		synchronized(this) {
 			HttpSession session = sessionEvent.getSession();
 			ServletContext sc = session.getServletContext();
-			Map<Object, Object> attributes = (Map<Object, Object>) sc.getAttribute(GlobalConfig.KEY_ALL_CONFIG);
+			Map<String, Object> attributes = (Map<String, Object>) sc.getAttribute(GlobalConfig.KEY_ALL_CONFIG);
 
-			RAMCaseVO cVo = (RAMCaseVO) session.getAttribute(RAMCasePersistenceManager.CASE_DATA_KEY);
-
-			try {
-				Connection conn = getDBConnection();
-			} catch (NamingException | SQLException e) {
+			//Attempt to Persist the Case to the Database.
+			try(Connection conn = getDBConnection()) {
+				AbstractPersist<?,?> ap = RAMCasePersistenceFactory.loadPersistenceObject(PersistenceType.DB, conn, attributes);
+				ap.save();
+			} catch (Exception e) {
 				log.error("Error Processing Code", e);
 			}
 		}

@@ -7,7 +7,8 @@ import org.apache.log4j.Logger;
 /****************************************************************************
  * <b>Title:</b> AbstractPersist.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Abstract Persist Class that provides default functionality
+ * to the Concrete Persist Classes.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
