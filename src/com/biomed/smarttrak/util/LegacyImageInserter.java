@@ -53,10 +53,11 @@ public class LegacyImageInserter extends CommandLineUtil {
 	@Override
 	public void run() {
 		//run graphics, then run attachments.
-		processGraphics();
+		//processGraphics(); //two writes here - partially in content, partially in leftColumn
 		//processAttachments();
+		processCharts();
 	}
-	
+
 	protected void processGraphics() {
 		Map<String,List<GenericVO>> recs = readGraphicRecords();
 		combineAndSaveGraphics(recs);
@@ -65,15 +66,68 @@ public class LegacyImageInserter extends CommandLineUtil {
 			Thread.sleep(5000);
 		} catch (InterruptedException e) {
 			log.error("could not sleep", e);
+			Thread.currentThread().interrupt();
 		}
 		parseAndSaveContent(recs);
 	}
-	
+
 	protected void processAttachments() {
 		Map<String,List<String[]>> recs = readAttachmentRecords();
 		combineAndSaveAttachments(recs);
 	}
 
+	protected void processCharts() {
+		Map<String,List<String[]>> recs = readChartRecords();
+		combineAndSaveCharts(recs);
+	}
+
+
+	/**
+	 * writes the converted html back to the database using the getUpdateSql() query in the enum
+	 * @param records
+	 * @param t
+	 */
+	protected void saveRecord(String id, String html, int type) {
+		String sql;
+		if (type == 1) { 
+			sql = "update custom.biomedgps_insight set content_txt=? where insight_id=?";
+		} else {
+			sql = "update custom.biomedgps_insight set side_content_txt=coalesce(side_content_txt,'')+? where insight_id=?";
+		}
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, html);
+			ps.setString(2, id);
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			log.error("could not write record " + id, sqle);
+		}
+	}
+
+
+	/**
+	 * loads the Insight record from the DB
+	 * @param key
+	 * @return
+	 */
+	protected String getInsightContent(String key) {
+		String sql = "select content_txt from custom.biomedgps_insight where insight_id=?";
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1,  key);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				return rs.getString(1);
+
+		} catch (SQLException sqle) {
+			log.error("could not read content", sqle);
+		}
+		return "";
+	}
+
+
+	/*************************************************************************
+	 * 						INSIGHT GRAPHICS
+	 *************************************************************************/
 
 	/**
 	 * reads the key/value pairings from the database using the getSelectSql() query defined in the enum
@@ -96,7 +150,7 @@ public class LegacyImageInserter extends CommandLineUtil {
 			}
 
 		} catch (SQLException sqle) {
-			log.error("could not read records", sqle);
+			log.error("could not read graphics", sqle);
 		}
 		return records;
 	}
@@ -122,30 +176,7 @@ public class LegacyImageInserter extends CommandLineUtil {
 			html.append("\n</div></div>\n");
 
 			log.debug("insight " + entry.getKey() + " has " + entry.getValue().size() + " graphics");
-			saveRecord(entry.getKey(), html.toString(), false);
-		}
-	}
-
-
-	/**
-	 * writes the converted html back to the database using the getUpdateSql() query in the enum
-	 * @param records
-	 * @param t
-	 */
-	protected void saveRecord(String id, String html, boolean isContent) {
-		String sql;
-		if (isContent) { 
-			sql = "update custom.biomedgps_insight set content_txt=? where insight_id=?";
-		} else {
-			sql = "update custom.biomedgps_insight set side_content_txt=coalesce(side_content_txt,'')+? where insight_id=?";
-		}
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			ps.setString(1, html);
-			ps.setString(2, id);
-			ps.executeUpdate();
-		} catch (SQLException sqle) {
-			log.error("could not write record " + id, sqle);
+			saveRecord(entry.getKey(), html.toString(), 2);
 		}
 	}
 
@@ -176,31 +207,11 @@ public class LegacyImageInserter extends CommandLineUtil {
 				saveRecord = true;
 			}
 			if (saveRecord)
-				saveRecord(entry.getKey(), content, true);
+				saveRecord(entry.getKey(), content, 1);
 		}
 	}
 
 
-	/**
-	 * loads the Insight record from the DB
-	 * @param key
-	 * @return
-	 */
-	protected String getInsightContent(String key) {
-		String sql = "select content_txt from custom.biomedgps_insight where insight_id=?";
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			ps.setString(1,  key);
-			ResultSet rs = ps.executeQuery();
-			if (rs.next())
-				return rs.getString(1);
-
-		} catch (SQLException sqle) {
-			log.error("could not read content", sqle);
-		}
-		return "";
-	}
-	
-	
 	/*************************************************************************
 	 * 						INSIGHT ATTACHMENTS
 	 *************************************************************************/
@@ -211,8 +222,14 @@ public class LegacyImageInserter extends CommandLineUtil {
 	 */
 	protected Map<String,List<String[]>> readAttachmentRecords() {
 		Map<String,List<String[]>> records = new HashMap<>();
-		String sql = "select object_id,name,attachment,description from biomedgps.attachments_attachment where content_type_id=105 order by object_id,\"order\",name;";
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+		StringBuilder sql = new StringBuilder(200);
+		//get the images
+		sql.append("select object_id,name,attachment,description, order from biomedgps.attachments_attachment where content_type_id=105 ");
+		//union the charts
+		sql.append(" union ");
+		sql.append("select object_id,name,attachment,description, order from biomedgps.char where content_type_id=105 ");
+		sql.append("order by 1,5,2");
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				String objId = rs.getString(1);
@@ -251,19 +268,79 @@ public class LegacyImageInserter extends CommandLineUtil {
 			html.append("\n</div></div>\n");
 
 			log.debug("insight " + entry.getKey() + " has " + entry.getValue().size() + " attachments");
-			saveRecord(entry.getKey(), html.toString(), false);
+			saveRecord(entry.getKey(), html.toString(), 2);
 		}
+	}
 
 
-		//	
-		//		<! -- for each -->
-		//		<div class="insightAttachment">
-		//			<a name="[[file name]]" href="[[place a url to attached file here]]" target="_blank" >
-		//				[[human readable file name like  1st-quarter-sales.xls]]
-		//			</a>
-		//		</div>
-		//		<!-- end for each -->
-		//	</div>
-		//</div>
+	/*************************************************************************
+	 * 						INSIGHT CHARTS
+	 *************************************************************************/
+
+	/**
+	 * read the attachments from the attachments table
+	 * @return
+	 */
+	protected Map<String,List<String[]>> readChartRecords() {
+		Map<String,List<String[]>> records = new HashMap<>();
+		String sql = "select object_id,title,slug from biomedgps.charts_chart where content_type_id=105 and published='true' order by object_id,\"order\",title";
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				String objId = rs.getString(1);
+				if (StringUtil.isEmpty(objId) || StringUtil.isEmpty(rs.getString(3))) continue;
+
+				List<String[]> list = records.get(objId);
+				if (list == null) list = new ArrayList<>();
+				list.add(new String[]{ rs.getString(2), rs.getString(3)});
+				records.put(objId, list);
+			}
+
+		} catch (SQLException sqle) {
+			log.error("could not read charts", sqle);
+		}
+		log.info("loaded " + records.size() + " chart records");
+		return records;
+	}
+
+
+	/**
+	 * @param recs
+	 */
+	protected void combineAndSaveCharts(Map<String, List<String[]>> recs) {
+		for (Map.Entry<String, List<String[]>> entry : recs.entrySet()) {
+			if (entry.getValue().isEmpty()) continue;
+			boolean hasGraphics = doesInsightHaveGraphics(entry.getKey());
+			StringBuilder html = new StringBuilder(500);
+			//header wrapping html
+			if (!hasGraphics)
+				html.append("<!--GRAPHICS--><div class=\"insightGraphics\"><h4>Graphics</h4>\n<div class=\"sidebar-image\">\n");
+
+			int x=0;
+			for (String[] arr : entry.getValue()) {
+				//append each image, in the order given
+				html.append("<div class=\"insightGraphic insightChart c").append(++x).append("\">\n");
+				html.append("<a class=\"use-modal\" title=\"").append(StringUtil.checkVal(arr[0])).append("\" href=\"/secBinary/org/BMG_SMARTTRAK/resources/charts/").append(arr[1]).append("_img.png\">");
+				html.append("<img alt=\"").append(StringUtil.checkVal(arr[0])).append("\" src=\"/secBinary/org/BMG_SMARTTRAK/resources/charts/").append(arr[1]).append("_img.png\"/></a></div>");
+			}
+			//footer wrapping html
+			if (!hasGraphics)
+				html.append("\n</div></div>\n");
+
+			log.debug("insight " + entry.getKey() + " has " + entry.getValue().size() + " charts");
+			saveRecord(entry.getKey(), html.toString(), 3);
+		}
+	}
+
+	protected boolean doesInsightHaveGraphics(String insightId) {
+		String sql = "select 1 from custom.biomedgps_insight where side_content_txt like '%<h4>Graphics</h4>%' and insight_id=?";
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, insightId);
+			ResultSet rs = ps.executeQuery();
+			return rs.next();
+		} catch (SQLException sqle) {
+			log.error("could not check for existing graphics on insightId=" + insightId, sqle);
+		}
+		return false;
 	}
 }
