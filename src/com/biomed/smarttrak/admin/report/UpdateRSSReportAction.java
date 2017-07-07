@@ -50,6 +50,16 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	
 	/*
 	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException{
+		//call to super retrieve for admin registration
+		super.retrieve(req);
+	}
+	
+	/*
+	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
@@ -80,8 +90,8 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select * from ").append(schema).append("biomedgps_update ");
 		sql.append("where tweet_flg = 1 ");
-		sql.append("and create_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
-		sql.append("and create_dt < date_trunc('day', current_timestamp) ");
+		sql.append("and publish_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
+		sql.append("and publish_dt < date_trunc('day', current_timestamp) ");
 		sql.append("order by create_dt ");
 		log.debug(sql);
 		
@@ -111,7 +121,7 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 		for (UpdateVO update : updates) {
 			SearchVO vo = new SearchVO();
 			vo.setActionId(update.getUpdateId());
-	       	vo.setTitle(update.getTitleTxt());
+	       	vo.setTitle(update.getTitle());
 	        vo.setSummary(update.getTwitterTxt());
 	        vo.setCreateDate(update.getCreateDt());
 	        //ensure each document url is unique
