@@ -88,7 +88,10 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select * from ").append(schema).append("biomedgps_update ");
+		sql.append("select update_id, market_id, product_id, company_id, title_txt, type_cd, ");
+		sql.append("message_txt, twitter_txt, tweet_flg, publish_dt, create_dt, update_dt, ");
+		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path ");
+		sql.append("from ").append(schema).append("biomedgps_update ");
 		sql.append("where tweet_flg = 1 ");
 		sql.append("and publish_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
 		sql.append("and publish_dt < date_trunc('day', current_timestamp) ");
