@@ -267,7 +267,7 @@ public class VisionAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private List<KitLayerVO> loadKitLayers(RAMProductVO p) throws ActionException {
-		List<KitLayerVO> layers = new ArrayList<KitLayerVO>();
+		List<KitLayerVO> layers = new ArrayList<>();
 
 		//Build the Prepared Statement, set the params and Query for Kit Layers.
 		try(PreparedStatement ps = dbConn.prepareStatement(getLayerSql())) {
@@ -420,7 +420,6 @@ public class VisionAction extends SBActionAdapter {
 		try {
 			db.getByPrimaryKey(prod);
 		} catch (Exception e) {
-			e.printStackTrace();
 			log.error(e);
 		}
 

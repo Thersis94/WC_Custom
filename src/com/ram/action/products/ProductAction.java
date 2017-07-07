@@ -280,14 +280,13 @@ public class ProductAction extends SBActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		
 		//Instantiate necessary items
-		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
+		List<RAMProductVO> products = new ArrayList<>();
 		
 		//Pull relevant data off the request
 		RAMProductSearchVO svo = new RAMProductSearchVO(req);
-		PreparedStatement ps = null;
 		int index = 1, ctr = 0;
-		try{
-			ps = dbConn.prepareStatement(getProdList(svo));
+		try(PreparedStatement ps = dbConn.prepareStatement(getProdList(svo))){
+
 			if (svo.getCustomerId() > 0) ps.setInt(index++, svo.getCustomerId());
 			if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
 			else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
@@ -330,8 +329,6 @@ public class ProductAction extends SBActionAdapter {
 		} catch(Exception sqle) {
 			log.error("Error retrieving product list", sqle);
 			throw new ActionException(sqle);
-		} finally {
-			DBUtil.close(ps);
 		}
 		
 		//Return the data.

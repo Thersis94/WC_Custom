@@ -22,6 +22,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
 
@@ -73,7 +74,15 @@ public class RAMCaseManager {
 	 * @return
 	 * @throws Exception 
 	 */
-	public RAMCaseVO createCase() throws Exception {
+	public RAMCaseVO createCase(ActionRequest req) throws Exception {
+		SMTSession sess = req.getSession();
+
+		//If we already have a case in Session, Persist to the Database.
+		RAMCaseVO existingCase = (RAMCaseVO)sess.getAttribute(RAM_CASE_VO);
+		if(existingCase != null) {
+			finalizeCaseInfo(existingCase);
+		}
+
 		return (RAMCaseVO) buildPI(null, null, PersistenceType.DB).initialize();
 	}
 
@@ -312,6 +321,7 @@ public class RAMCaseManager {
 		} else if(!StringUtil.isEmpty(caseId)) {
 			attributes.put(RAM_CASE_ID, caseId);
 		}
+
 		AbstractPersist<?,?> pi = RAMCasePersistenceFactory.loadPersistenceObject(pt, conn, attributes);
 		pi.setAttributes(attributes);
 
