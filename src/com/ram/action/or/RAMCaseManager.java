@@ -57,24 +57,16 @@ public class RAMCaseManager {
 		log = Logger.getLogger(getClass());
 	}
 
-	public RAMCaseManager(Map<String, Object> attributes, Connection conn) {
+	public RAMCaseManager(Map<String, Object> attributes, Connection conn) throws InvalidDataException {
 		this();
 		this.attributes = attributes;
-		setConnection(conn);
-	}
-
-	/**
-	 * Helper method that sets the Managers DB connection.
-	 * @param conn
-	 * @throws Exception 
-	 */
-	public void setConnection(Connection conn) {
 		if(conn != null) {
 			this.conn = conn;
 		} else {
-			log.error("Provided Connection is Null.");
+			throw new InvalidDataException("Passed Connection was null.");
 		}
 	}
+
 
 	/**
 	 * Helper method manages creating a new RAMCaseVO.
