@@ -414,9 +414,26 @@ public class FinancialDashDataRowVO implements Serializable {
 			}
 			
 			// Each iteration signifies one year earlier
-			this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + (maxYear - i), cyTotal, pctChange);
-			this.addColumn(FinancialDashBaseAction.YEAR_TO_DATE + "-" + (maxYear - i), cyTotal, pctChange);
+			addCyYtdColumns(maxYear - i, cyTotal, pctChange);
 		}
+
+		// Add the last totals column, which has no py
+		int last = totals.size() - 1;
+		Integer cyTotal = totals.get(last);
+		Double pctChange = null;
+		addCyYtdColumns(maxYear - last, cyTotal, pctChange);
+	}
+	
+	/**
+	 * Adds a single set of CY & YTD summary columns
+	 * 
+	 * @param year
+	 * @param total
+	 * @param pctChange
+	 */
+	private void addCyYtdColumns(int year, Integer total, Double pctChange) {
+		addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + year, total, pctChange);
+		addColumn(FinancialDashBaseAction.YEAR_TO_DATE + "-" + year, total, pctChange);
 	}
 
 	/**
