@@ -67,16 +67,21 @@ public class AnalystPostProcessor extends SBActionAdapter {
 	private void submitTechTeamRequest(ActionRequest req) {
 		log.debug("Tech Team Request");
 		//These go into ZOHO.  Submit over email.
+		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 
 		StringBuilder subject = new StringBuilder(75);
 		subject.append("Smarttrak Bug Request - ").append(req.getParameter(SubmittalAction.CONTACT_SUBMITTAL_ID));
+
+		StringBuilder body = new StringBuilder(500);
+		body.append(req.getParameter((String)getAttribute(CFG_ASK_AN_ANALYST_MESSAGE_ID)));
+		body.append("/n User - ").append(user.getFullName()).append("\n Email Address: ").append(user.getEmailAddress());
 
 		try {
 			EmailMessageVO email = new EmailMessageVO();
 			email.addRecipient((String)getAttribute(CFG_ZOHO_TICKET_EMAIL));
 			email.setFrom((String)getAttribute(CFG_SMARTTRAK_EMAIL));
-			email.setTextBody(req.getParameter((String)getAttribute(CFG_ASK_AN_ANALYST_MESSAGE_ID)));
-			
+			email.setTextBody(body.toString());
+
 			email.setSubject(subject.toString());
 
 			new MessageSender(attributes, dbConn).sendMessage(email);
