@@ -12,6 +12,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.contact.SubmittalAction;
 import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
@@ -72,16 +73,16 @@ public class AnalystPostProcessor extends SBActionAdapter {
 		StringBuilder subject = new StringBuilder(75);
 		subject.append("Smarttrak Bug Request - ").append(req.getParameter(SubmittalAction.CONTACT_SUBMITTAL_ID));
 
-		StringBuilder body = new StringBuilder(500);
-		body.append(req.getParameter((String)getAttribute(CFG_ASK_AN_ANALYST_MESSAGE_ID)));
-		body.append("/n User - ").append(user.getFullName()).append("\n Email Address: ").append(user.getEmailAddress());
+		String msg = StringUtil.checkVal(req.getParameter((String)getAttribute(CFG_ASK_AN_ANALYST_MESSAGE_ID)));
+		StringBuilder body = new StringBuilder(150 + msg.length());
+		body.append("<p>User: ").append(user.getFullName()).append("</p><p>Email Address: ").append(user.getEmailAddress()).append("</p>");
+		body.append("<p>").append(msg).append("</p>");
 
 		try {
 			EmailMessageVO email = new EmailMessageVO();
 			email.addRecipient((String)getAttribute(CFG_ZOHO_TICKET_EMAIL));
 			email.setFrom((String)getAttribute(CFG_SMARTTRAK_EMAIL));
-			email.setTextBody(body.toString());
-
+			email.setHtmlBody(body.toString());
 			email.setSubject(subject.toString());
 
 			new MessageSender(attributes, dbConn).sendMessage(email);
