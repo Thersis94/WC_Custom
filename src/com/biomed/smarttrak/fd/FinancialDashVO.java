@@ -296,7 +296,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param calendarYear
 	 */
 	public void setColHeaders(String displayType, Integer calendarYear) {
-		this.colHeaders = new FinancialDashColumnSet(displayType, calendarYear);
+		this.colHeaders = new FinancialDashColumnSet(displayType, calendarYear, getCurrentQtr());
 	}
 
 	/**
