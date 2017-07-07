@@ -79,27 +79,6 @@ public class ProductCartAction extends SimpleActionAdapter {
 	public static final String DATE_PATTERN = "MM-dd-yyyy -- hh:mm";
 	public static final String SIGN_DATE_PATTERN = "MM/dd/yyyy hh:mm";
 	
-	private enum SearchFields {
-		productName("PRODUCT_NM"),
-		productDesc("DESC_TXT"),
-		productSKU("CUST_PRODUCT_ID"),
-		productGTIN("c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64))"),
-		surgeonName("SURGEON_NM"),
-		hospital("HOSPITAL_NM"),
-		repId("REP_ID"),
-		caseId("CASE_ID"),
-		surgeryDate("SURGERY_DT");
-		
-		private String cloumnNm;
-		SearchFields(String columnNm) {
-			this.cloumnNm = columnNm;
-		}
-		
-		public String getColumnName (){
-			return cloumnNm;
-		}
-	}
-
 	public ProductCartAction() {
 		super();
 	}
@@ -371,7 +350,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 		
 		if (req.hasParameter("buildFile")) {
 			buildReport(req);
-		} else if ("load".equals(req.getParameter("step")) && req.hasParameter("searchData")) {
+		} else if ("load".equals(req.getParameter("step")) && req.hasParameter("search")) {
 			searchProducts(req);
 		}
 	}
@@ -438,26 +417,21 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 */
 	private void searchProducts(ActionRequest req) throws ActionException {
 		List<RAMProductVO> products = new ArrayList<>();
-		String[] fields = req.getParameterValues("searchFields");
-		int searchType = Convert.formatInteger(req.getParameter("searchType"), 1);
-		// A search type greater than 2 means an exact search
-		String sql = getProductSearchSQL(req, fields, searchType);
+		String searchData = StringUtil.checkVal(req.getParameter("search")).toLowerCase();
+		String sql = getProductSearchSQL(req);
 		int count = 0;
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
-			if (req.hasParameter("searchCustomer")) ps.setString(i++, req.getParameter("searchCustomer"));
-			if (fields != null) {
-				String searchData =StringUtil.checkVal(req.getParameter("searchData")).toLowerCase();
-				for (int j=0; j<fields.length; j++) {
-					ps.setString(i++, (searchType == 3? "%":"") + searchData + (searchType > 1 ? "%":""));
-				}
+			for (int j = 0; j < 3; j++) {
+				ps.setString(i++, "%" + searchData + "%");
 			}
-			if (req.hasParameter("orgName")) ps.setString(i++, req.getParameter("orgName"));
 			
 			ResultSet rs = ps.executeQuery();
+			int page = Convert.formatInteger(req.getParameter("offset"), 0);
+			int rpp = Convert.formatInteger(req.getParameter("limit"));
+			rpp = rpp == 0 ? 10 : rpp;
 			
-			int page = Convert.formatInteger(req.getParameter("page"), 0);
-			int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
 			while(rs.next()) {
 				count++;
 				if (count <= rpp*page || count > rpp*(page+1)) continue;
@@ -483,27 +457,23 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * @param searchType
 	 * @return
 	 */
-	private String getProductSearchSQL (ActionRequest req, String[] fields, int searchType) {
+	private String getProductSearchSQL (ActionRequest req) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String searchComaparator = searchType > 1? " like ":" = ";
 		StringBuilder sql = new StringBuilder(300);
+
 		sql.append("SELECT p.PRODUCT_ID, p.CUST_PRODUCT_ID, c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64)) as GTIN_NUMBER_TXT, PRODUCT_NM, ");
 		sql.append("DESC_TXT, SHORT_DESC, c.CUSTOMER_NM, l.KIT_LAYER_ID FROM ").append(customDb).append("RAM_PRODUCT p ");
 		sql.append("LEFT JOIN ").append(customDb).append("RAM_CUSTOMER c on c.CUSTOMER_ID = p.CUSTOMER_ID ");
 		sql.append("left join ").append(customDb).append("RAM_KIT_LAYER l on l.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append("WHERE p.CUSTOMER_ID is not null and p.GTIN_PRODUCT_ID is not null AND  c.GTIN_NUMBER_TXT is not null ");
 		sql.append("AND p.CUSTOMER_ID > 0 AND p.GTIN_PRODUCT_ID != '' AND c.GTIN_NUMBER_TXT != '' ");
-		if (req.hasParameter("searchCustomer")) sql.append("AND p.CUSTOMER_ID > 0 ");
-		if (fields != null) {
-			// Add fail condition to allow for multiple OR clauses
-			sql.append("AND (1=2 ");
-			// Loop over the selected search fields and add each one to the query
-			for (String field : fields) {
-				sql.append("OR lower(").append(SearchFields.valueOf(field).getColumnName()).append(") ").append(searchComaparator).append("? ");
-			}
-			sql.append(") ");
-		}
-		if (req.hasParameter("orgName")) sql.append("AND p.CUSTOMER_ID = ? ");
+
+		sql.append("AND (");
+		sql.append("lower(PRODUCT_NM) like ? ");
+		sql.append("OR lower(CUST_PRODUCT_ID) like ? ");
+		sql.append("OR lower(c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64))) like ? ");
+		sql.append(") ");
+
 		log.debug(sql);
 		return sql.toString();
 	}
