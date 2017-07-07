@@ -1,4 +1,4 @@
-package com.ram.persistance;
+package com.ram.persistence;
 
 import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMCaseVO;

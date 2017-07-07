@@ -15,9 +15,10 @@ import javax.sql.DataSource;
 
 import org.apache.log4j.Logger;
 
-import com.ram.persistance.AbstractPersist;
-import com.ram.persistance.RAMCasePersistenceFactory;
-import com.ram.persistance.RAMCasePersistenceFactory.PersistenceType;
+import com.ram.action.or.RAMCaseManager;
+import com.ram.persistence.AbstractPersist;
+import com.ram.persistence.RAMCasePersistenceFactory;
+import com.ram.persistence.RAMCasePersistenceFactory.PersistenceType;
 import com.siliconmtn.common.constants.GlobalConfig;
 
 /****************************************************************************
@@ -61,12 +62,14 @@ public class RamCaseSessionListener implements HttpSessionListener {
 			ServletContext sc = session.getServletContext();
 			Map<String, Object> attributes = (Map<String, Object>) sc.getAttribute(GlobalConfig.KEY_ALL_CONFIG);
 
-			//Attempt to Persist the Case to the Database.
-			try(Connection conn = getDBConnection()) {
-				AbstractPersist<?,?> ap = RAMCasePersistenceFactory.loadPersistenceObject(PersistenceType.DB, conn, attributes);
-				ap.save();
-			} catch (Exception e) {
-				log.error("Error Processing Code", e);
+			if(attributes.containsKey(RAMCaseManager.RAM_CASE_VO)) {
+				//Attempt to Persist the Case to the Database.
+				try(Connection conn = getDBConnection()) {
+					AbstractPersist<?,?> ap = RAMCasePersistenceFactory.loadPersistenceObject(PersistenceType.DB, conn, attributes);
+					ap.save();
+				} catch (Exception e) {
+					log.error("Error Processing Code", e);
+				}
 			}
 		}
 	}

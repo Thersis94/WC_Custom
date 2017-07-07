@@ -1,4 +1,4 @@
-package com.ram.persistance;
+package com.ram.persistence;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -83,41 +83,43 @@ public class RAMCaseDBPersist extends AbstractPersist<Connection, RAMCaseVO> {
 	@Override
 	public RAMCaseVO save() {
 		RAMCaseVO cVo = (RAMCaseVO)attributes.get(RAMCaseManager.RAM_CASE_VO);
-		try {
-			//Set Autocommit False.
-			conn.setAutoCommit(false);
-
-			//Save Case.
-			dbp.save(cVo);
-
-			//Update Case Pkid
-			if(dbp.getGeneratedPKId() != null) {
-				cVo.setCaseId(dbp.getGeneratedPKId());
-			}
-
-			//Add Signatures.
-			saveSignatures(cVo);
-
-			//Flush and insert Items/Kits.
-			deleteChildren(cVo);
-			insertItems(cVo);
-			insertKits(cVo);
-
-			//Commit transaction.
-			conn.commit();
-		} catch (InvalidDataException | DatabaseException | SQLException e) {
-			log.error("Error Saving Case, rolling back changes.", e);
+		if(cVo != null) {
 			try {
-				conn.rollback();
-			} catch(SQLException sqle) {
-				log.error("Problem Rolling back DB.", sqle);
-			}
-			
-		} finally {
-			try {
-				conn.setAutoCommit(true);
-			} catch(SQLException sqle) {
-				log.error("Probleming setting AutoCommit back to true.", sqle);
+				//Set Autocommit False.
+				conn.setAutoCommit(false);
+
+				//Save Case.
+				dbp.save(cVo);
+
+				//Update Case Pkid
+				if(dbp.getGeneratedPKId() != null) {
+					cVo.setCaseId(dbp.getGeneratedPKId());
+				}
+
+				//Add Signatures.
+				saveSignatures(cVo);
+
+				//Flush and insert Items/Kits.
+				deleteChildren(cVo);
+				insertItems(cVo);
+				insertKits(cVo);
+
+				//Commit transaction.
+				conn.commit();
+			} catch (InvalidDataException | DatabaseException | SQLException e) {
+				log.error("Error Saving Case, rolling back changes.", e);
+				try {
+					conn.rollback();
+				} catch(SQLException sqle) {
+					log.error("Problem Rolling back DB.", sqle);
+				}
+
+			} finally {
+				try {
+					conn.setAutoCommit(true);
+				} catch(SQLException sqle) {
+					log.error("Probleming setting AutoCommit back to true.", sqle);
+				}
 			}
 		}
 

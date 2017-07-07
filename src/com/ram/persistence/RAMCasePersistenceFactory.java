@@ -1,4 +1,4 @@
-package com.ram.persistance;
+package com.ram.persistence;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
