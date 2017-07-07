@@ -1,16 +1,18 @@
 package com.ram.action.or.vo;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
+import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
+import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseVO.java
@@ -31,19 +33,18 @@ public class RAMCaseVO {
 	private String caseId;
 	private String hospitalId;
 	private String operatingRoomId;
-	private String surgeonId;
-	private String salesRepId;
-	private String hospitalRepId;
 	private Date createDt;
 	private Date updateDt;
 	private Date surgeryDt;
 	private Date spdDt;
-	private List<RAMSignatureVO> signatures;
+	private Map<SignatureType, Map<String, RAMSignatureVO>> signatures;
 	private Map<RAMCaseType, Map<String, RAMCaseItemVO>> items;
+	private Map<String, RAMCaseKitVO> kits;
 	private RAMCaseStatus caseStatus;
 
 	public RAMCaseVO() {
-		this.signatures = new ArrayList<>();
+		this.kits = new HashMap<>();
+		this.signatures = new EnumMap<>(SignatureType.class);
 		this.items = new EnumMap<>(RAMCaseType.class);
 	}
 
@@ -57,7 +58,12 @@ public class RAMCaseVO {
 	 * @param req
 	 */
 	public void setData(ActionRequest req) {
-		
+		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
+		hospitalId = req.getParameter("hospitalId");
+		operatingRoomId = req.getParameter("operatingRoomId");
+		surgeryDt = Convert.formatDate(req.getParameter("surgeryDt"));
+		spdDt = Convert.formatDate(req.getParameter("spdDt"));
+		setCaseStatusTxt(req.getParameter("caseStatus"));
 	}
 
 	/**
@@ -71,6 +77,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the hospitalId
 	 */
+	@Column(name="hospital_id")
 	public String getHospitalId() {
 		return hospitalId;
 	}
@@ -78,34 +85,15 @@ public class RAMCaseVO {
 	/**
 	 * @return the operatingRoomId
 	 */
+	@Column(name="or_id")
 	public String getOperatingRoomId() {
 		return operatingRoomId;
 	}
 
 	/**
-	 * @return the surgeonId
-	 */
-	public String getSurgeonId() {
-		return surgeonId;
-	}
-
-	/**
-	 * @return the salesRepId
-	 */
-	public String getSalesRepId() {
-		return salesRepId;
-	}
-
-	/**
-	 * @return the hospitalRepId
-	 */
-	public String getHospitalRepId() {
-		return hospitalRepId;
-	}
-
-	/**
 	 * @return the createDt
 	 */
+	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDt() {
 		return createDt;
 	}
@@ -113,6 +101,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the updateDt
 	 */
+	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDt;
 	}
@@ -120,6 +109,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the surgeryDt
 	 */
+	@Column(name="surgery_dt")
 	public Date getSurgeryDt() {
 		return surgeryDt;
 	}
@@ -127,6 +117,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the spdDt
 	 */
+	@Column(name="spd_dt")
 	public Date getSpdDt() {
 		return spdDt;
 	}
@@ -134,8 +125,23 @@ public class RAMCaseVO {
 	/**
 	 * @return the signatures
 	 */
-	public List<RAMSignatureVO> getSignatures() {
+	public Map<SignatureType, Map<String, RAMSignatureVO>> getSignatures() {
 		return signatures;
+	}
+
+	/**
+	 * @param st
+	 * @return the Map of signatures for the given type.
+	 */
+	public Map<String, RAMSignatureVO> getSignatures(SignatureType st) {
+		return signatures.get(st);
+	}
+
+	/**
+	 * @return the kits
+	 */
+	public Map<String, RAMCaseKitVO> getKits() {
+		return kits;
 	}
 
 	/**
@@ -150,6 +156,13 @@ public class RAMCaseVO {
 	 */
 	public RAMCaseStatus getCaseStatus() {
 		return caseStatus;
+	}
+
+	/**
+	 * @return the caseStatusTxt
+	 */
+	public String getCaseStatusTxt() {
+		return caseStatus.toString();
 	}
 
 	/**
@@ -171,27 +184,6 @@ public class RAMCaseVO {
 	 */
 	public void setOperatingRoomId(String operatingRoomId) {
 		this.operatingRoomId = operatingRoomId;
-	}
-
-	/**
-	 * @param surgeonId the surgeonId to set.
-	 */
-	public void setSurgeonId(String surgeonId) {
-		this.surgeonId = surgeonId;
-	}
-
-	/**
-	 * @param salesRepId the salesRepId to set.
-	 */
-	public void setSalesRepId(String salesRepId) {
-		this.salesRepId = salesRepId;
-	}
-
-	/**
-	 * @param hospitalRepId the hospitalRepId to set.
-	 */
-	public void setHospitalRepId(String hospitalRepId) {
-		this.hospitalRepId = hospitalRepId;
 	}
 
 	/**
@@ -225,8 +217,15 @@ public class RAMCaseVO {
 	/**
 	 * @param signatures the signatures to set.
 	 */
-	public void setSignatures(List<RAMSignatureVO> signatures) {
+	public void setSignatures(Map<SignatureType, Map<String, RAMSignatureVO>> signatures) {
 		this.signatures = signatures;
+	}
+
+	/**
+	 * @param kits the kits to set.
+	 */
+	public void setKits(Map<String, RAMCaseKitVO> kits) {
+		this.kits = kits;
 	}
 
 	/**
@@ -243,11 +242,38 @@ public class RAMCaseVO {
 		this.caseStatus = caseStatus;
 	}
 
-	public void addSignature(RAMSignatureVO signature) {
-		if(signature != null)
-			signatures.add(signature);
+	/**
+	 * @param caseStatus the caseStatusTxt to set.
+	 */
+	public void setCaseStatusTxt(String caseStatus) {
+		try {
+			this.caseStatus = RAMCaseStatus.valueOf(caseStatus);
+		} catch(Exception e) {
+			//Throw away exception.
+		}
 	}
 
+	@BeanSubElement
+	public void addSignature(RAMSignatureVO signature) {
+		if(signature != null) {
+			SignatureType st = signature.getSignatureType();
+			Map<String, RAMSignatureVO> sigs = signatures.get(st);
+			if(sigs == null) {
+				sigs = new HashMap<>();
+			}
+			sigs.put(signature.getProfileId(), signature);
+			signatures.put(st, sigs);
+		}
+	}
+
+	@BeanSubElement
+	public void addCaseKit(RAMCaseKitVO kit) {
+		if(kit != null) {
+			kits.put(kit.getCaseKitId(), kit);
+		}
+	}
+
+	@BeanSubElement
 	public void addItem(RAMCaseItemVO item) {
 		if(item != null) {
 			Map<String, RAMCaseItemVO> imap = items.get(item.getCaseType());
@@ -255,10 +281,10 @@ public class RAMCaseVO {
 				imap = new HashMap<>();
 			}
 
-			if(imap.containsKey(item.getProductId())) {
-				imap.get(item.getProductId()).addQty(item.getQtyNo());
+			if(imap.containsKey(item.getCaseItemId())) {
+				imap.get(item.getCaseItemId()).addQty(item.getQtyNo());
 			} else {
-				imap.put(item.getProductId(), item);
+				imap.put(item.getCaseItemId(), item);
 			}
 
 			items.put(item.getCaseType(), imap);
@@ -268,6 +294,12 @@ public class RAMCaseVO {
 	public void removeItem(RAMCaseItemVO item) {
 		if(item != null && items.containsKey(item.getCaseType())) {
 			items.get(item.getCaseType()).remove(item.getProductId());
+		}
+	}
+
+	public void removeKit(RAMCaseKitVO kit) {
+		if(kit != null && kits.containsKey(kit.getCaseKitId())) {
+			kits.remove(kit.getCaseKitId());
 		}
 	}
 }

@@ -1,22 +1,19 @@
 package com.ram.action.products;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.ram.action.or.RAMCaseManager;
 import com.ram.action.report.vo.ProductCartReport;
 import com.ram.datafeed.data.RAMProductVO;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -27,13 +24,13 @@ import com.siliconmtn.commerce.cart.storage.StorageFactory;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
@@ -79,27 +76,6 @@ public class ProductCartAction extends SimpleActionAdapter {
 	public static final String DATE_PATTERN = "MM-dd-yyyy -- hh:mm";
 	public static final String SIGN_DATE_PATTERN = "MM/dd/yyyy hh:mm";
 	
-	private enum SearchFields {
-		productName("PRODUCT_NM"),
-		productDesc("DESC_TXT"),
-		productSKU("CUST_PRODUCT_ID"),
-		productGTIN("c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64))"),
-		surgeonName("SURGEON_NM"),
-		hospital("HOSPITAL_NM"),
-		repId("REP_ID"),
-		caseId("CASE_ID"),
-		surgeryDate("SURGERY_DT");
-		
-		private String cloumnNm;
-		SearchFields(String columnNm) {
-			this.cloumnNm = columnNm;
-		}
-		
-		public String getColumnName (){
-			return cloumnNm;
-		}
-	}
-
 	public ProductCartAction() {
 		super();
 	}
@@ -115,15 +91,24 @@ public class ProductCartAction extends SimpleActionAdapter {
 	
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		RAMCaseManager rcm;
+		try {
+			rcm = new RAMCaseManager(attributes, dbConn);
+		} catch (InvalidDataException e) {
+			log.error("Error Creating RAMCaseMananger", e);
+			throw new ActionException(e);
+		}
 		// Check the request object for triggers that determine
 		// what we are going to do with it
 		if (req.hasParameter("deleteKit")) {
 			deleteCart(req);
 		} else if (req.hasParameter("editAttr")) {
-			editAttr(req);
-			// After each attribute change save the cart in order 
-			// to prevent potential loss of data from user error
-			saveCart(req, 0);
+			try {
+				rcm.addSignature(req);
+			} catch (Exception e) {
+				log.error("Error Saving Signature", e);
+				throw new ActionException(e);
+			}
 		} else if(req.hasParameter("newCart")) {
 			newKit(req);
 		} else if (req.hasParameter("loadCart")){
@@ -156,38 +141,8 @@ public class ProductCartAction extends SimpleActionAdapter {
 			saveCart(req, 0);
 		}
 	}
-	
-	
-	/**
-	 * Add the supplied parameter to the user's session.
-	 * These values are sent along via post parameters in order to get around
-	 * the character limit in get requests and allow 64-bit image strings to be
-	 * added
-	 * @param req
-	 * @throws ActionException
-	 */
-	private void editAttr(ActionRequest req) throws ActionException {
-		StringBuilder postParam = new StringBuilder(500);
-		BufferedReader reader;
-		try {
-			reader = req.getReader();
-			String line;
-			while((line = reader.readLine()) != null) postParam.append(line);
-			
-			req.getSession().setAttribute(req.getParameter("editAttr"), postParam.toString());
-			if (SALES_SIGNATURE.equals(req.getParameter("editAttr"))) {
-				req.getSession().setAttribute(SALES_SIGNATURE_DT, new SimpleDateFormat(SIGN_DATE_PATTERN).format(new Date()));
-				log.debug(req.getSession().getAttribute(SALES_SIGNATURE_DT));
-			} else if (ADMIN_SIGNATURE.equals(req.getParameter("editAttr"))) {
-				req.getSession().setAttribute(ADMIN_SIGNATURE_DT,  new SimpleDateFormat(SIGN_DATE_PATTERN).format(new Date()));
-				log.debug(req.getSession().getAttribute(ADMIN_SIGNATURE_DT));
-			} 
-		} catch (IOException e) {
-			throw new ActionException(e);
-		}
-	}
-	
-	
+
+
 	/**
 	 * Deals with the various actions that a user can enact that affect their cart
 	 * @param req
@@ -198,7 +153,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 		ShoppingCartVO cart = store.load();
 		if (Convert.formatBoolean(req.getParameter("clearCart"))) {
 			deleteItem(cart, req);
-		} else  {
+		} else {
 			List<GenericVO> addedItems = new ArrayList<>();
 			for (int i = 0; i < req.getParameterValues("productId").length; i++) {
 				String[] oldLots = req.getParameterValues("oldLot");
@@ -281,7 +236,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 */
 	private ShoppingCartItemVO buildProduct(ActionRequest req, int pos) {
 		ProductVO product = new ProductVO();
-		
+
 		product.setProductId(req.getParameterValues("productId")[pos]);
 		product.setProductName(req.getParameterValues("productName")[pos]);
 		product.addProdAttribute("customer", req.getParameterValues("customer")[pos]);
@@ -294,7 +249,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 		ShoppingCartItemVO item = new ShoppingCartItemVO(product);
 		item.setProductId(product.getProductId()+product.getProdAttributes().get(LOT_NO));
 		item.setQuantity(Convert.formatInteger(req.getParameter("qty"),1));
-		
+
 		return item;
 	}
 
@@ -371,7 +326,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 		
 		if (req.hasParameter("buildFile")) {
 			buildReport(req);
-		} else if ("load".equals(req.getParameter("step")) && req.hasParameter("searchData")) {
+		} else if ("load".equals(req.getParameter("step")) && req.hasParameter("search")) {
 			searchProducts(req);
 		}
 	}
@@ -438,26 +393,21 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 */
 	private void searchProducts(ActionRequest req) throws ActionException {
 		List<RAMProductVO> products = new ArrayList<>();
-		String[] fields = req.getParameterValues("searchFields");
-		int searchType = Convert.formatInteger(req.getParameter("searchType"), 1);
-		// A search type greater than 2 means an exact search
-		String sql = getProductSearchSQL(req, fields, searchType);
+		String searchData = StringUtil.checkVal(req.getParameter("search")).toLowerCase();
+		String sql = getProductSearchSQL(req);
 		int count = 0;
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
-			if (req.hasParameter("searchCustomer")) ps.setString(i++, req.getParameter("searchCustomer"));
-			if (fields != null) {
-				String searchData =StringUtil.checkVal(req.getParameter("searchData")).toLowerCase();
-				for (int j=0; j<fields.length; j++) {
-					ps.setString(i++, (searchType == 3? "%":"") + searchData + (searchType > 1 ? "%":""));
-				}
+			for (int j = 0; j < 3; j++) {
+				ps.setString(i++, "%" + searchData + "%");
 			}
-			if (req.hasParameter("orgName")) ps.setString(i++, req.getParameter("orgName"));
 			
 			ResultSet rs = ps.executeQuery();
+			int page = Convert.formatInteger(req.getParameter("offset"), 0);
+			int rpp = Convert.formatInteger(req.getParameter("limit"));
+			rpp = rpp == 0 ? 10 : rpp;
 			
-			int page = Convert.formatInteger(req.getParameter("page"), 0);
-			int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
 			while(rs.next()) {
 				count++;
 				if (count <= rpp*page || count > rpp*(page+1)) continue;
@@ -483,27 +433,23 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * @param searchType
 	 * @return
 	 */
-	private String getProductSearchSQL (ActionRequest req, String[] fields, int searchType) {
+	private String getProductSearchSQL (ActionRequest req) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String searchComaparator = searchType > 1? " like ":" = ";
 		StringBuilder sql = new StringBuilder(300);
+
 		sql.append("SELECT p.PRODUCT_ID, p.CUST_PRODUCT_ID, c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64)) as GTIN_NUMBER_TXT, PRODUCT_NM, ");
 		sql.append("DESC_TXT, SHORT_DESC, c.CUSTOMER_NM, l.KIT_LAYER_ID FROM ").append(customDb).append("RAM_PRODUCT p ");
 		sql.append("LEFT JOIN ").append(customDb).append("RAM_CUSTOMER c on c.CUSTOMER_ID = p.CUSTOMER_ID ");
 		sql.append("left join ").append(customDb).append("RAM_KIT_LAYER l on l.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append("WHERE p.CUSTOMER_ID is not null and p.GTIN_PRODUCT_ID is not null AND  c.GTIN_NUMBER_TXT is not null ");
 		sql.append("AND p.CUSTOMER_ID > 0 AND p.GTIN_PRODUCT_ID != '' AND c.GTIN_NUMBER_TXT != '' ");
-		if (req.hasParameter("searchCustomer")) sql.append("AND p.CUSTOMER_ID > 0 ");
-		if (fields != null) {
-			// Add fail condition to allow for multiple OR clauses
-			sql.append("AND (1=2 ");
-			// Loop over the selected search fields and add each one to the query
-			for (String field : fields) {
-				sql.append("OR lower(").append(SearchFields.valueOf(field).getColumnName()).append(") ").append(searchComaparator).append("? ");
-			}
-			sql.append(") ");
-		}
-		if (req.hasParameter("orgName")) sql.append("AND p.CUSTOMER_ID = ? ");
+
+		sql.append("AND (");
+		sql.append("lower(PRODUCT_NM) like ? ");
+		sql.append("OR lower(CUST_PRODUCT_ID) like ? ");
+		sql.append("OR lower(c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64))) like ? ");
+		sql.append(") ");
+
 		log.debug(sql);
 		return sql.toString();
 	}
