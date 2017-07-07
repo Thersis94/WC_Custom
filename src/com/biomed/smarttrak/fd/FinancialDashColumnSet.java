@@ -20,6 +20,7 @@ public class FinancialDashColumnSet implements Serializable {
 	private static final long serialVersionUID = -7706158396915419770L;
 
 	private Integer calendarYear;
+	private int currentQtr;
 	private DisplayType displayType;
 	private Map<String, String> columns;
 	
@@ -43,9 +44,10 @@ public class FinancialDashColumnSet implements Serializable {
 		}
 	}
 
-	public FinancialDashColumnSet(String displayType, Integer calendarYear) {
+	public FinancialDashColumnSet(String displayType, Integer calendarYear, int currentQtr) {
 		this.displayType = DisplayType.valueOf(displayType);
 		this.calendarYear = calendarYear;
+		this.currentQtr = currentQtr;
 		this.columns = new LinkedHashMap<>();
 	}
 	
@@ -70,23 +72,39 @@ public class FinancialDashColumnSet implements Serializable {
 	}
 
 	/**
-	 * TODO: Need the business rules for this display type.
 	 * Adds all columns for a six quarter running display type.
 	 */
 	private void addSixQuarterColumns() {
-		Integer lastYrTwoDigit = (calendarYear - 1) % 100;
-		Integer twoDigitYr = calendarYear % 100;
+		int numColumns = 6;
+
+		// This represents the earliest possible in a six quarter running
+		int quarter = 3;
+		int year = calendarYear - 2;
 		
-		this.addColumn(FinancialDashBaseAction.QUARTER_3 + "-" + (calendarYear - 1), FinancialDashBaseAction.QUARTER_3 + lastYrTwoDigit);
-		this.addColumn(FinancialDashBaseAction.QUARTER_4 + "-" + (calendarYear - 1), FinancialDashBaseAction.QUARTER_4 + lastYrTwoDigit);
-		this.addColumn(FinancialDashBaseAction.QUARTER_1 + "-" + calendarYear, FinancialDashBaseAction.QUARTER_1 + twoDigitYr);
-		this.addColumn(FinancialDashBaseAction.QUARTER_2 + "-" + calendarYear, FinancialDashBaseAction.QUARTER_2  + twoDigitYr);
-		this.addColumn(FinancialDashBaseAction.QUARTER_3 + "-" + calendarYear, FinancialDashBaseAction.QUARTER_3 + twoDigitYr);
-		this.addColumn(FinancialDashBaseAction.QUARTER_4 + "-" + calendarYear, FinancialDashBaseAction.QUARTER_4 + twoDigitYr);
+		boolean isCurrentQtr = false;
+		while (!isCurrentQtr) {
+			// Increment the year and quarter
+			quarter += 1;
+			if (quarter == 5) {
+				quarter = 1;
+				year += 1;
+			}
+
+			// Adds the column to the map
+			int twoDigitYr = year % 100;
+			this.addColumn(FinancialDashBaseAction.QUARTER + quarter + "-" + year, FinancialDashBaseAction.QUARTER + quarter + twoDigitYr);
+			
+			// If this is the current quarter, we're done
+			if (quarter == currentQtr && year == calendarYear)
+				isCurrentQtr = true;
+
+			// If there are too many columns, remove the first one
+			if (columns.size() > numColumns)
+				columns.remove(columns.entrySet().iterator().next().getKey());
+		}
 	}
 
 	/**
-	 * TODO: Need the business rules for this display type.
 	 * Adds all columns for a four-year comparison display type.
 	 */
 	private void addFourYearColumns() {
@@ -97,14 +115,13 @@ public class FinancialDashColumnSet implements Serializable {
 	}
 
 	/**
-	 * TODO: Need the business rules for this display type.
 	 * Adds all columns for a year-over-year display type.
 	 */
 	private void addYearOverYearColumns() {
 		Integer twoDigitYr = calendarYear % 100;
 		
-		this.addColumn(FinancialDashBaseAction.QUARTER_4 + "-" + (calendarYear - 1), FinancialDashBaseAction.QUARTER_4 + (twoDigitYr - 1));
-		this.addColumn(FinancialDashBaseAction.QUARTER_4 + "-" + calendarYear, FinancialDashBaseAction.QUARTER_4 + twoDigitYr);
+		this.addColumn(FinancialDashBaseAction.QUARTER + currentQtr + "-" + (calendarYear - 1), FinancialDashBaseAction.QUARTER + currentQtr + (twoDigitYr - 1));
+		this.addColumn(FinancialDashBaseAction.QUARTER + currentQtr + "-" + calendarYear, FinancialDashBaseAction.QUARTER + currentQtr + twoDigitYr);
 		this.addColumn(FinancialDashBaseAction.YEAR_TO_DATE + "-" + (calendarYear - 1), FinancialDashBaseAction.YEAR_TO_DATE + (calendarYear - 1));
 		this.addColumn(FinancialDashBaseAction.YEAR_TO_DATE + "-" + calendarYear, FinancialDashBaseAction.YEAR_TO_DATE + calendarYear);
 	}
@@ -145,6 +162,13 @@ public class FinancialDashColumnSet implements Serializable {
 	}
 
 	/**
+	 * @return the currentQtr
+	 */
+	public int getCurrentQtr() {
+		return currentQtr;
+	}
+
+	/**
 	 * @return the displayType
 	 */
 	public DisplayType getDisplayType() {
@@ -163,6 +187,13 @@ public class FinancialDashColumnSet implements Serializable {
 	 */
 	public void setCalendarYear(Integer calendarYear) {
 		this.calendarYear = calendarYear;
+	}
+
+	/**
+	 * @param currentQtr the currentQtr to set
+	 */
+	public void setCurrentQtr(int currentQtr) {
+		this.currentQtr = currentQtr;
 	}
 
 	/**

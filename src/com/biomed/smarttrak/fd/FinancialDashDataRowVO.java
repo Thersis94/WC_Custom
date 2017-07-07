@@ -158,8 +158,6 @@ public class FinancialDashDataRowVO implements Serializable {
 		
 		try {
 			int maxYear = util.getIntVal("YEAR_NO", rs);
-			boolean isCurrent = false;
-			if (display != null && display == DisplayType.CURYR) isCurrent = true;
 			
 			Map<Integer, Integer> totals = new HashMap<>();
 			
@@ -178,7 +176,7 @@ public class FinancialDashDataRowVO implements Serializable {
 					case FinancialDashBaseAction.QUARTER_3:
 					case FinancialDashBaseAction.QUARTER_4:
 						addColumn(qtr, yearIdx, maxYear, util, rs);
-						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs), isCurrent, qtr + "-" + maxYear);
+						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + maxYear);
 						calculateInactivity(qtr, yearIdx, util, rs);
 						break;
 					default:
@@ -428,12 +426,15 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param key
 	 * @param dollarValue
 	 */
-	protected void incrementTotal(Map<Integer, Integer> totals, int key, int dollarValue, 
-			boolean isCurrent, String colId) {
+	protected void incrementTotal(Map<Integer, Integer> totals, int key, int dollarValue, String colId) {
 		if (totals.get(key) == null) {
 			totals.put(key, 0);
 		}
 		
+		boolean adjustForDisplay = false;
+		if (display != null && (display == DisplayType.CURYR || display == DisplayType.YOY))
+			adjustForDisplay = true;
+
 		// Run through a series of checks to see if the current 
 		// quarter should be added to the totals.  This prevents two
 		// quarters of sales in the current year from being compared
@@ -442,7 +443,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		// 2 - Check to see if we are building the total
 		// 3 - Check to see if there is a value for the corresponding quarter
 		boolean add = true;
-		if (isCurrent && key == 1 && 
+		if (adjustForDisplay && key > 0 && 
 				columns.get(colId).getDollarValue() == 0) {
 			add = false;
 		}
