@@ -22,7 +22,7 @@ import com.siliconmtn.util.Convert;
 @Table(name="ram_case_item")
 public class RAMCaseItemVO {
 
-	public enum RAMCaseType {}
+	public enum RAMCaseType {OR, SPD}
 
 	private String caseItemId;
 	private String productId;
