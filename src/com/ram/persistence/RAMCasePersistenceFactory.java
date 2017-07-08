@@ -64,7 +64,7 @@ public class RAMCasePersistenceFactory {
 	public static AbstractPersist<?, ?> loadPersistenceObject(PersistenceType pt, Object source, Map<String, Object> attributes) throws Exception {
 		AbstractPersist<Object, Object> pi = null;
 		Class<? extends Object> sourceType = pt != null ? pt.getSourceType() : null;
-		if(pt != null && source != null && source.getClass().getName().equals(sourceType.getName())) {
+		if(pt != null && source != null && source.getClass().isAssignableFrom(sourceType)) {
 			Class<?> c = pt.getClassNm();
 			if (c == null) {
 				throw new Exception("unknown persistance type:" + pt.toString());
