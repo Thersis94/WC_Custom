@@ -52,7 +52,9 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		params.add(caseId);
 		List<Object> cvos = dbp.executeSelect(loadCaseSql(), params, initialize());
 		if(cvos != null)
-		return (RAMCaseVO) cvos.get(0);
+			cVo = (RAMCaseVO)cvos.get(0);
+
+		return cVo;
 	}
 
 
