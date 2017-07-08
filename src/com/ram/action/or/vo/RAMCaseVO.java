@@ -257,6 +257,9 @@ public class RAMCaseVO {
 	public void addSignature(RAMSignatureVO signature) {
 		if(signature != null) {
 			SignatureType st = signature.getSignatureType();
+			if(st == null) {
+				return;
+			}
 			Map<String, RAMSignatureVO> sigs = signatures.get(st);
 			if(sigs == null) {
 				sigs = new HashMap<>();
