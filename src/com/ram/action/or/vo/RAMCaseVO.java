@@ -31,11 +31,13 @@ public class RAMCaseVO {
 	public enum RAMCaseStatus {}
 
 	private String caseId;
-	private String hospitalId;
-	private String operatingRoomId;
+	private String customerId;
+	private String hospitalCaseId;
+	private String orRoomId;
+	private String surgeonId;
 	private Date createDt;
 	private Date updateDt;
-	private Date surgeryDt;
+	private Date surgeryDate;
 	private Date spdDt;
 	private Map<SignatureType, Map<String, RAMSignatureVO>> signatures;
 	private Map<RAMCaseType, Map<String, RAMCaseItemVO>> items;
@@ -59,11 +61,19 @@ public class RAMCaseVO {
 	 */
 	public void setData(ActionRequest req) {
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
-		hospitalId = req.getParameter("hospitalId");
-		operatingRoomId = req.getParameter("operatingRoomId");
-		surgeryDt = Convert.formatDate(req.getParameter("surgeryDt"));
+		customerId = req.getParameter("customerId");
+		hospitalCaseId = req.getParameter("hospitalCaseId");
+		orRoomId = req.getParameter("orRoomId");
+		surgeonId = req.getParameter("surgeonId");
+		surgeryDate = Convert.formatDate(req.getParameter("surgeryDate"));
 		spdDt = Convert.formatDate(req.getParameter("spdDt"));
 		setCaseStatusTxt(req.getParameter("caseStatus"));
+		
+		RAMSignatureVO svo = new RAMSignatureVO();
+		svo.setProfileId(req.getParameter("providerProfileId"));
+		svo.setCaseId(caseId);
+		svo.setSignatureType(SignatureType.PROVIDER);
+		addSignature(svo);
 	}
 
 	/**
@@ -75,19 +85,35 @@ public class RAMCaseVO {
 	}
 
 	/**
-	 * @return the hospitalId
+	 * @return the customerId
 	 */
-	@Column(name="hospital_id")
-	public String getHospitalId() {
-		return hospitalId;
+	@Column(name="customer_id")
+	public String getCustomerId() {
+		return customerId;
 	}
 
 	/**
-	 * @return the operatingRoomId
+	 * @return the hospitalCaseId
 	 */
-	@Column(name="or_id")
-	public String getOperatingRoomId() {
-		return operatingRoomId;
+	@Column(name="hospital_case_id")
+	public String getHospitalCaseId() {
+		return hospitalCaseId;
+	}
+
+	/**
+	 * @return the orRoomId
+	 */
+	@Column(name="or_room_id")
+	public String getOrRoomId() {
+		return orRoomId;
+	}
+
+	/**
+	 * @return the surgeonId
+	 */
+	@Column(name="surgeon_id")
+	public String getSurgeonId() {
+		return surgeonId;
 	}
 
 	/**
@@ -107,11 +133,11 @@ public class RAMCaseVO {
 	}
 
 	/**
-	 * @return the surgeryDt
+	 * @return the surgeryDate
 	 */
 	@Column(name="surgery_dt")
-	public Date getSurgeryDt() {
-		return surgeryDt;
+	public Date getSurgeryDate() {
+		return surgeryDate;
 	}
 
 	/**
@@ -173,17 +199,31 @@ public class RAMCaseVO {
 	}
 
 	/**
-	 * @param hospitalId the hospitalId to set.
+	 * @param customerId the customerId to set.
 	 */
-	public void setHospitalId(String hospitalId) {
-		this.hospitalId = hospitalId;
+	public void setCustomerId(String customerId) {
+		this.customerId = customerId;
 	}
 
 	/**
-	 * @param operatingRoomId the operatingRoomId to set.
+	 * @param hospitalCaseId the hospitalCaseId to set
 	 */
-	public void setOperatingRoomId(String operatingRoomId) {
-		this.operatingRoomId = operatingRoomId;
+	public void setHospitalCaseId(String hospitalCaseId) {
+		this.hospitalCaseId = hospitalCaseId;
+	}
+
+	/**
+	 * @param orRoomId the orRoomId to set.
+	 */
+	public void setOrRoomId(String orRoomId) {
+		this.orRoomId = orRoomId;
+	}
+
+	/**
+	 * @param surgeonId the surgeonId to set
+	 */
+	public void setSurgeonId(String surgeonId) {
+		this.surgeonId = surgeonId;
 	}
 
 	/**
@@ -201,10 +241,10 @@ public class RAMCaseVO {
 	}
 
 	/**
-	 * @param surgeryDt the surgeryDt to set.
+	 * @param surgeryDate the surgeryDate to set.
 	 */
-	public void setSurgeryDt(Date surgeryDt) {
-		this.surgeryDt = surgeryDt;
+	public void setSurgeryDate(Date surgeryDate) {
+		this.surgeryDate = surgeryDate;
 	}
 
 	/**

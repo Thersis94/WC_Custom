@@ -21,7 +21,7 @@ import com.siliconmtn.db.orm.Table;
  ****************************************************************************/
 @Table(name="RAM_CASE_SIGNATURE")
 public class RAMSignatureVO {
-	public enum SignatureType {}
+	public enum SignatureType {PROVIDER}
 
 	private String signatureId;
 	private String caseId;

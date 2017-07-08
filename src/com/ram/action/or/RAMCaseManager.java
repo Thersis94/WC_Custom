@@ -97,11 +97,12 @@ public class RAMCaseManager {
 	 * Helper method manages saving a RAMCaseVO.
 	 * @throws Exception 
 	 */
-	public void saveCase(ActionRequest req) throws Exception {
+	public RAMCaseVO saveCase(ActionRequest req) throws Exception {
 		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
 		cVo.setData(req);
 
 		updateCaseInfo(cVo);
+		return cVo;
 	}
 
 	/**
@@ -118,7 +119,7 @@ public class RAMCaseManager {
 	 * @param req
 	 * @throws Exception
 	 */
-	public void updateItem(ActionRequest req) throws Exception {
+	public RAMCaseItemVO updateItem(ActionRequest req) throws Exception {
 		RAMCaseItemVO item;
 		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
 
@@ -132,6 +133,7 @@ public class RAMCaseManager {
 
 		//Save Case.
 		this.updateCaseInfo(cVo);
+		return item;
 	}
 
 	/**
