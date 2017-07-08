@@ -24,7 +24,6 @@ import com.siliconmtn.commerce.cart.storage.StorageFactory;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
@@ -91,13 +90,8 @@ public class ProductCartAction extends SimpleActionAdapter {
 	
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		RAMCaseManager rcm;
-		try {
-			rcm = new RAMCaseManager(attributes, dbConn);
-		} catch (InvalidDataException e) {
-			log.error("Error Creating RAMCaseMananger", e);
-			throw new ActionException(e);
-		}
+		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
+
 		// Check the request object for triggers that determine
 		// what we are going to do with it
 		if (req.hasParameter("deleteKit")) {

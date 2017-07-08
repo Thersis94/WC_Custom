@@ -7,7 +7,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
@@ -15,6 +17,7 @@ import net.sf.json.JSONObject;
 
 import com.ram.action.data.RAMProductSearchVO;
 import com.ram.action.or.vo.RAMCaseItemVO;
+import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.ram.action.util.KitBOMPdfReport;
 import com.ram.action.util.RAMFabricParser;
 import com.ram.datafeed.data.KitLayerProductVO;
@@ -269,12 +272,40 @@ public class VisionAction extends SBActionAdapter {
 	 * updates the KitLayerData on the ModuleVO to match.
 	 * @param mod
 	 */
+	@SuppressWarnings("unchecked")
 	private void markConsumed(ModuleVO mod, List<RAMCaseItemVO> items) {
-		/*
-		 * TODO - Iterate over mod actionData List<KitLayerVO> and the passed
-		 * RAMCaseItemVOs and update Quantites to match on the KitLayer Product
-		 * Records. 
-		 */
+		List<KitLayerVO> layers = (List<KitLayerVO>) mod.getActionData();
+
+		for(KitLayerVO l : layers) {
+			for (Entry<Integer, KitLayerProductVO> p : l.getProducts().entrySet()) {
+				checkQty(p.getValue(), items);
+			}
+		}
+	}
+
+	/**
+	 * Helper method that checks QtyNo on the 
+	 * @param p
+	 * @param items
+	 * @return
+	 */
+	private void checkQty(KitLayerProductVO p, List<RAMCaseItemVO> items) {
+
+		Iterator<RAMCaseItemVO> iter = items.iterator();
+		while(iter.hasNext()) {
+			RAMCaseItemVO i = iter.next();
+
+			/*
+			 * If this kitProd matched the item ProdId, update the QtyOnHand
+			 * for the KitProd.  Look into removing from the list in future
+			 * as well as impacts to Session Object.
+			 */
+			if(i.getProductId().equals(p.getProductId())) {
+				int incOrDec = i.getCaseType() == RAMCaseType.OR ? -1 : 1;
+				p.addQtyOnHand(i.getQtyNo() * incOrDec);
+				break;
+			}
+		}
 	}
 
 	/**

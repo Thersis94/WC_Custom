@@ -17,9 +17,8 @@ import com.ram.action.provider.VisionAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -33,7 +32,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 3.3.1
  * @since Jul 7, 2017
  ****************************************************************************/
-public class SPDAction extends SBActionAdapter {
+public class SPDAction extends SimpleActionAdapter {
 
 	public SPDAction() {
 		super();
@@ -59,6 +58,7 @@ public class SPDAction extends SBActionAdapter {
 
 	@Override
 	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
 		//Get List of Cases with Kits for SPD.
 		//TODO - Camire work in here.
 	}
@@ -73,7 +73,7 @@ public class SPDAction extends SBActionAdapter {
 	private void loadCaseDataByProduct(ActionRequest req) throws ActionException {
 		try{
 			String [] res = getRamCaseId(req);
-			RAMCaseVO cVo = getCaseManager().retrieveCase(res[0]);
+			RAMCaseVO cVo = getCaseManager(req).retrieveCase(res[0]);
 	
 			/*
 			 * Get list of consumed RAMCaseItemVOs off the RAMCaseVO with the
@@ -87,7 +87,6 @@ public class SPDAction extends SBActionAdapter {
 			 * result will automatically be placed in the attributes ModuleData.
 			 */
 			loadKitData(req, items);
-
 
 		} catch(Exception e) {
 			log.error("Could not find Case Info", e);
@@ -163,16 +162,8 @@ public class SPDAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	public RAMCaseManager getCaseManager() throws ActionException {
-		RAMCaseManager rcm;
-		try {
-			rcm = new RAMCaseManager(attributes, dbConn);
-		} catch(InvalidDataException ide) {
-			log.error("RAMCaseManager couldn't be instantiated.", ide);
-			throw new ActionException(ide);
-		}
-
-		return rcm;
+	public RAMCaseManager getCaseManager(ActionRequest req) {
+		return new RAMCaseManager(attributes, dbConn, req);
 	}
 
 	/**
