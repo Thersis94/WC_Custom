@@ -24,9 +24,8 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-
-import opennlp.tools.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseManager.java
@@ -52,20 +51,18 @@ public class RAMCaseManager {
 
 	private Logger log;
 	private Map<String, Object> attributes;
-
+	private ActionRequest req;
 	private Connection conn;
-	public RAMCaseManager() {
+
+	private RAMCaseManager() {
 		log = Logger.getLogger(getClass());
 	}
 
-	public RAMCaseManager(Map<String, Object> attributes, Connection conn) throws InvalidDataException {
+	public RAMCaseManager(Map<String, Object> attributes, Connection conn, ActionRequest req) {
 		this();
 		this.attributes = attributes;
-		if(conn != null) {
-			this.conn = conn;
-		} else {
-			throw new InvalidDataException("Passed Connection was null.");
-		}
+		this.req = req;
+		this.conn = conn;
 	}
 
 
@@ -118,7 +115,17 @@ public class RAMCaseManager {
 	 * @throws Exception 
 	 */
 	public RAMCaseVO retrieveCase(String ramCaseId) throws Exception {
-		return (RAMCaseVO) buildPI(null, ramCaseId).load();
+		RAMCaseVO cVo = (RAMCaseVO) buildPI(null, ramCaseId).load();
+
+		if(cVo == null) {
+			cVo = (RAMCaseVO) buildPI(null, ramCaseId, PersistenceType.DB).load();
+		}
+
+		if(cVo == null) {
+			cVo = (RAMCaseVO) buildPI(null, ramCaseId).initialize();
+		}
+
+		return cVo; 
 	}
 
 	/**
@@ -306,9 +313,11 @@ public class RAMCaseManager {
 	 * @throws Exception
 	 */
 	private AbstractPersist<?, ?> buildPI(RAMCaseVO cVo, String caseId) throws Exception {
-		PersistenceType pt = PersistenceType.valueOf((String)attributes.get(RAM_PERSISTENCE_TYPE));
+		String pts = (String)attributes.get(RAM_PERSISTENCE_TYPE);
+		PersistenceType pt = PersistenceType.valueOf(pts);
 		return buildPI(cVo, caseId, pt);
 	}
+
 	/**
 	 * Helper method retrieves the AbstractPersistManager for persisting RAMCase
 	 * Data.
@@ -322,7 +331,13 @@ public class RAMCaseManager {
 			attributes.put(RAM_CASE_ID, caseId);
 		}
 
-		AbstractPersist<?,?> pi = RAMCasePersistenceFactory.loadPersistenceObject(pt, conn, attributes);
+		AbstractPersist<?,?> pi;
+		if(pt.equals(PersistenceType.SESSION)) {
+			pi = RAMCasePersistenceFactory.loadPersistenceObject(pt, req, attributes);
+		} else {
+			pi = RAMCasePersistenceFactory.loadPersistenceObject(pt, conn, attributes);
+		}
+
 		pi.setAttributes(attributes);
 
 		return pi;

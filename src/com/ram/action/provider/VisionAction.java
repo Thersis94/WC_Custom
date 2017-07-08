@@ -7,13 +7,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 
 import com.ram.action.data.RAMProductSearchVO;
+import com.ram.action.or.vo.RAMCaseItemVO;
+import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.ram.action.util.KitBOMPdfReport;
 import com.ram.action.util.RAMFabricParser;
 import com.ram.datafeed.data.KitLayerProductVO;
@@ -59,7 +63,7 @@ public class VisionAction extends SBActionAdapter {
 
 	public static final String CACHE_PREFIX = "VISION_ACTION_";
 	private static final String LAYER_ID = "Kit_Layer_";
-
+	public static final String CONSUMED_ITEMS = "consumedKitItems";
 	/**
 	 * 
 	 */
@@ -106,7 +110,7 @@ public class VisionAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	private void processAjaxRequest(RAMProductSearchVO svo) throws ActionException {
-		List<RAMProductVO> prods = new ArrayList<RAMProductVO>();
+		List<RAMProductVO> prods = new ArrayList<>();
 
 		//Get the Cached Data Object.
 		ModuleVO mod = getVisionData(svo);
@@ -175,7 +179,7 @@ public class VisionAction extends SBActionAdapter {
 		if(p != null && p.getKitFlag() == 1) {
 
 			//Instantiate the Parser
-			FabricParserInterface<LayerCoordinateVO> fp = new RAMFabricParser<LayerCoordinateVO>();
+			FabricParserInterface<LayerCoordinateVO> fp = new RAMFabricParser<>();
 
 			//Load Kit Layer Json
 			List<KitLayerVO> layers = loadKitLayers(p);
@@ -229,6 +233,7 @@ public class VisionAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unchecked")
 	private ModuleVO getVisionData(RAMProductSearchVO svo) throws ActionException {
 
 		ModuleVO mod = super.readFromCache(CACHE_PREFIX + svo.getProductId());
@@ -255,7 +260,52 @@ public class VisionAction extends SBActionAdapter {
 				log.error("No Product found for productId: " + svo.getProductId());
 			}
 		}
+
+		if(attributes.containsKey(CONSUMED_ITEMS)) {
+			markConsumed(mod, (List<RAMCaseItemVO>) attributes.get(CONSUMED_ITEMS));
+		}
 		return mod;
+	}
+
+	/**
+	 * Method that looks at given Consumed Items on the attributes map and 
+	 * updates the KitLayerData on the ModuleVO to match.
+	 * @param mod
+	 */
+	@SuppressWarnings("unchecked")
+	private void markConsumed(ModuleVO mod, List<RAMCaseItemVO> items) {
+		List<KitLayerVO> layers = (List<KitLayerVO>) mod.getActionData();
+
+		for(KitLayerVO l : layers) {
+			for (Entry<Integer, KitLayerProductVO> p : l.getProducts().entrySet()) {
+				checkQty(p.getValue(), items);
+			}
+		}
+	}
+
+	/**
+	 * Helper method that checks QtyNo on the 
+	 * @param p
+	 * @param items
+	 * @return
+	 */
+	private void checkQty(KitLayerProductVO p, List<RAMCaseItemVO> items) {
+
+		Iterator<RAMCaseItemVO> iter = items.iterator();
+		while(iter.hasNext()) {
+			RAMCaseItemVO i = iter.next();
+
+			/*
+			 * If this kitProd matched the item ProdId, update the QtyOnHand
+			 * for the KitProd.  Look into removing from the list in future
+			 * as well as impacts to Session Object.
+			 */
+			if(i.getProductId().equals(p.getProductId())) {
+				int incOrDec = i.getCaseType() == RAMCaseType.OR ? -1 : 1;
+				p.addQtyOnHand(i.getQtyNo() * incOrDec);
+				break;
+			}
+		}
 	}
 
 	/**

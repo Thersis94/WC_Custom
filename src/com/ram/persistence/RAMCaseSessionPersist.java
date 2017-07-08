@@ -29,11 +29,7 @@ public class RAMCaseSessionPersist extends AbstractPersist<ActionRequest, RAMCas
 	 */
 	@Override
 	public RAMCaseVO load() {
-		RAMCaseVO cVo = (RAMCaseVO) req.getSession().getAttribute(RAMCaseManager.RAM_CASE_VO); 
-		if(cVo == null) {
-			cVo = initialize();
-		}
-		return cVo;
+		return (RAMCaseVO) req.getSession().getAttribute(RAMCaseManager.RAM_CASE_VO);
 	}
 
 
