@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.ram.action.or.RAMCaseManager;
+import com.ram.action.or.vo.RAMCaseItemVO;
+import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.report.vo.ProductCartReport;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
@@ -75,23 +77,76 @@ public class ProductCartAction extends SimpleActionAdapter {
 	public static final String DATE_PATTERN = "MM-dd-yyyy -- hh:mm";
 	public static final String SIGN_DATE_PATTERN = "MM/dd/yyyy hh:mm";
 	
+	private enum SearchFields {
+		productName("PRODUCT_NM"),
+		customerName("c.CUSTOMER_NM"),
+		gtinProductId("c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64))");
+		
+		private String cloumnNm;
+		
+		SearchFields(String columnNm) {
+			this.cloumnNm = columnNm;
+		}
+		
+		public String getColumnName (){
+			return cloumnNm;
+		}
+	}
+	
+	/**
+	 * Actions this widget can perform, sent by the request.
+	 * 
+	 * @author tim
+	 */
+	private enum WidgetAction {saveCaseInfo, addProduct}
+	
 	public ProductCartAction() {
 		super();
 	}
 
+	/**
+	 * @param avo
+	 */
 	public ProductCartAction(ActionInitVO avo) {
 		super(avo);
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
+		WidgetAction wa = WidgetAction.valueOf(req.getParameter("widgetAction"));
 
+		try {
+			switch (wa) {
+				case saveCaseInfo:
+					RAMCaseVO cvo = rcm.saveCase(req);
+					putModuleData(cvo);
+				case addProduct:
+					RAMCaseItemVO civo = rcm.updateItem(req);
+					putModuleData(civo);
+				//case clearCart:
+				//case addSignature:
+				//case finalize:
+				//case sendEmails:
+			}
+		} catch (Exception e) {
+			log.error("Error managing case", e);
+			throw new ActionException(e);
+		}
+		
+		
+		/*
 		// Check the request object for triggers that determine
 		// what we are going to do with it
 		if (req.hasParameter("deleteKit")) {
@@ -129,13 +184,14 @@ public class ProductCartAction extends SimpleActionAdapter {
 			populateCart(req);
 			sendEmails(req);
 		} else {
+			
 			editCart(req);
 			// After each change to the products in the cart it must be saved
 			// to prevent potential loss of data from user error
 			saveCart(req, 0);
 		}
+		*/
 	}
-
 
 	/**
 	 * Deals with the various actions that a user can enact that affect their cart
@@ -443,6 +499,21 @@ public class ProductCartAction extends SimpleActionAdapter {
 		sql.append("OR lower(CUST_PRODUCT_ID) like ? ");
 		sql.append("OR lower(c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64))) like ? ");
 		sql.append(") ");
+		
+		sql.append("ORDER BY ");
+		
+		if (req.hasParameter("sort")) {
+			sql.append(SearchFields.valueOf(req.getParameter("sort")).getColumnName());
+			
+			String order = StringUtil.checkVal(req.getParameter("order"));
+			if ("desc".equalsIgnoreCase(order)) {
+				sql.append(" DESC ");
+			} else {
+				sql.append(" ASC ");
+			}
+		} else {
+			sql.append("PRODUCT_NM ");
+		}
 
 		log.debug(sql);
 		return sql.toString();
