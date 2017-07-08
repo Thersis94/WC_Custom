@@ -280,14 +280,13 @@ public class ProductAction extends SBActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		
 		//Instantiate necessary items
-		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
+		List<RAMProductVO> products = new ArrayList<>();
 		
 		//Pull relevant data off the request
 		RAMProductSearchVO svo = new RAMProductSearchVO(req);
-		PreparedStatement ps = null;
 		int index = 1, ctr = 0;
-		try{
-			ps = dbConn.prepareStatement(getProdList(svo));
+		try(PreparedStatement ps = dbConn.prepareStatement(getProdList(svo))){
+
 			if (svo.getCustomerId() > 0) ps.setInt(index++, svo.getCustomerId());
 			if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
 			else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
@@ -330,8 +329,6 @@ public class ProductAction extends SBActionAdapter {
 		} catch(Exception sqle) {
 			log.error("Error retrieving product list", sqle);
 			throw new ActionException(sqle);
-		} finally {
-			DBUtil.close(ps);
 		}
 		
 		//Return the data.
@@ -397,11 +394,9 @@ public class ProductAction extends SBActionAdapter {
 		
 		//Providers filter by inventoryItems that are related to their customerId
 		if(svo.getProviderId() > 0) {
-			sb.append("and a.product_id in (select c.product_id from ");
-			sb.append(schema).append("ram_inventory_item c ");
-			sb.append("inner join ").append(schema).append("ram_inventory_event_auditor_xr d on c.inventory_event_auditor_xr_id = d.inventory_event_auditor_xr_id ");
-			sb.append("inner join ").append(schema).append("ram_inventory_event e on e.inventory_event_id = d.inventory_event_id ");
-			sb.append("inner join ").append(schema).append("ram_customer_location f on e.customer_location_id = f.customer_location_id and f.customer_id = ?) ");
+			sb.append("and a.product_id in (select i.product_id from ");
+			sb.append(schema).append("ram_location_item_master i ");
+			sb.append("inner join ").append(schema).append("ram_customer_location f on i.customer_location_id = f.customer_location_id and f.customer_id = ?) ");
 		}
 		
 		return sb;

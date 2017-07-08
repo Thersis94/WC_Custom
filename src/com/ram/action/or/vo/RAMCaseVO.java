@@ -28,7 +28,7 @@ import com.siliconmtn.util.Convert;
 @Table(name="RAM_CASE")
 public class RAMCaseVO {
 
-	public enum RAMCaseStatus {}
+	public enum RAMCaseStatus {OR_READY, OR_IN_PROGRESS, OR_COMPLETE, SPD_IN_PROGRESS, SPD_COMPLETE}
 
 	private String caseId;
 	private String customerId;
@@ -297,6 +297,9 @@ public class RAMCaseVO {
 	public void addSignature(RAMSignatureVO signature) {
 		if(signature != null) {
 			SignatureType st = signature.getSignatureType();
+			if(st == null) {
+				return;
+			}
 			Map<String, RAMSignatureVO> sigs = signatures.get(st);
 			if(sigs == null) {
 				sigs = new HashMap<>();

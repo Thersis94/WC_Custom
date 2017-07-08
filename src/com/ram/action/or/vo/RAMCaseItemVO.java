@@ -22,10 +22,10 @@ import com.siliconmtn.util.Convert;
 @Table(name="ram_case_item")
 public class RAMCaseItemVO {
 
-	public enum RAMCaseType {}
+	public enum RAMCaseType {OR, SPD}
 
 	private String caseItemId;
-	private String productId;
+	private Integer productId;
 	private String caseKitId;
 	private String caseId;
 	private int qtyNo;
@@ -44,7 +44,7 @@ public class RAMCaseItemVO {
 
 	private void setData(ActionRequest req) {
 		caseItemId = req.getParameter("caseItemId");
-		productId = req.getParameter("productId");
+		productId = Convert.formatInteger(req.getParameter("productId"));
 		caseKitId = req.getParameter("caseKitId");
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
 		qtyNo = Convert.formatInteger("qtyNo");
@@ -63,7 +63,7 @@ public class RAMCaseItemVO {
 	 * @return the productId
 	 */
 	@Column(name="product_id")
-	public String getProductId() {
+	public Integer getProductId() {
 		return productId;
 	}
 
@@ -132,7 +132,7 @@ public class RAMCaseItemVO {
 	/**
 	 * @param productId the productId to set.
 	 */
-	public void setProductId(String productId) {
+	public void setProductId(Integer productId) {
 		this.productId = productId;
 	}
 
