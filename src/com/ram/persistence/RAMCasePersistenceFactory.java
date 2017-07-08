@@ -28,8 +28,10 @@ public class RAMCasePersistenceFactory {
 
 			//Get the SourceType Generic Parameter.
 			ParameterizedType parameterizedType = findParameterizedTypes(classNm);
-		    Type[] typeArguments = parameterizedType.getActualTypeArguments();
-		    sourceType = (Class<?>) typeArguments[0];
+			if(parameterizedType != null) {
+			    Type[] typeArguments = parameterizedType.getActualTypeArguments();
+			    sourceType = (Class<?>) typeArguments[0];
+			}
 		}
 
 		@SuppressWarnings("unchecked")
