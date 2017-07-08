@@ -115,7 +115,17 @@ public class RAMCaseManager {
 	 * @throws Exception 
 	 */
 	public RAMCaseVO retrieveCase(String ramCaseId) throws Exception {
-		return (RAMCaseVO) buildPI(null, ramCaseId).load();
+		RAMCaseVO cVo = (RAMCaseVO) buildPI(null, ramCaseId).load();
+
+		if(cVo == null) {
+			cVo = (RAMCaseVO) buildPI(null, ramCaseId, PersistenceType.DB).load();
+		}
+
+		if(cVo == null) {
+			cVo = (RAMCaseVO) buildPI(null, ramCaseId).initialize();
+		}
+
+		return cVo; 
 	}
 
 	/**

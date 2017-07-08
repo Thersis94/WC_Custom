@@ -16,6 +16,7 @@ import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.or.vo.RAMSignatureVO;
 import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
@@ -31,7 +32,7 @@ import com.siliconmtn.http.filter.fileupload.Constants;
  * @version 3.3.1
  * @since Jul 3, 2017
  ****************************************************************************/
-public class RAMCaseDBPersist extends AbstractPersist<Connection, RAMCaseVO> {
+public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO> {
 
 	private DBProcessor dbp;
 	private Connection conn;
@@ -68,7 +69,7 @@ public class RAMCaseDBPersist extends AbstractPersist<Connection, RAMCaseVO> {
 		sql.append("left outer join ").append(schema).append("RAM_CASE_ITEM i ");
 		sql.append("on c.case_id = i.case_id ");
 		sql.append("left outer join ").append(schema).append("RAM_CASE_KIT k ");
-		sql.append("on c.case_id = k.case_id and k.case_kit_id = i.case_kit_it ");
+		sql.append("on c.case_id = k.case_id and k.case_kit_id = i.case_kit_id ");
 		sql.append("where c.case_id = ? ");
 		return sql.toString();
 	}
@@ -252,7 +253,7 @@ public class RAMCaseDBPersist extends AbstractPersist<Connection, RAMCaseVO> {
 	 * @see com.ram.persistance.PersistanceIntfc#setPersistanceSource(java.lang.Object)
 	 */
 	@Override
-	public void setPersistanceSource(Connection source) {
+	public void setPersistanceSource(SMTDBConnection source) {
 		this.conn = source;
 		this.dbp = new DBProcessor(conn, schema);
 	}
