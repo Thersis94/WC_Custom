@@ -52,10 +52,6 @@ import com.smt.sitebuilder.util.MessageSender;
  * 		June 30, 2017 - Moved case search functionality to CaseSearchAction
  ****************************************************************************/
 
-/**
- * @author tim
- *
- */
 public class ProductCartAction extends SimpleActionAdapter {
 
 	// Names for the request parameters related to this action
@@ -129,18 +125,21 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		RAMCaseManager rcm = getRamCaseManager();
+		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 		WidgetAction wa = WidgetAction.valueOf(req.getParameter("widgetAction"));
-		log.debug("widget action: " + wa);
+
 		try {
 			switch (wa) {
 				case saveCaseInfo:
 					RAMCaseVO cvo = rcm.saveCase(req);
 					putModuleData(cvo);
 				case addProduct:
-					log.debug("adding item");
 					RAMCaseItemVO civo = rcm.updateItem(req);
 					putModuleData(civo);
+				//case clearCart:
+				//case addSignature:
+				//case finalize:
+				//case sendEmails:
 			}
 		} catch (Exception e) {
 			log.error("Error managing case", e);
@@ -193,25 +192,6 @@ public class ProductCartAction extends SimpleActionAdapter {
 			saveCart(req, 0);
 		}
 		*/
-	}
-
-	/**
-	 * Manages creation of a RAMCaseManager
-	 * 
-	 * @return
-	 * @throws ActionException
-	 */
-	protected RAMCaseManager getRamCaseManager() throws ActionException {
-		RAMCaseManager rcm;
-		
-		try {
-			rcm = new RAMCaseManager(attributes, dbConn);
-		} catch (InvalidDataException e) {
-			log.error("Error Creating RAMCaseMananger", e);
-			throw new ActionException(e);
-		}
-		
-		return rcm;
 	}
 
 	/**
