@@ -394,11 +394,9 @@ public class ProductAction extends SBActionAdapter {
 		
 		//Providers filter by inventoryItems that are related to their customerId
 		if(svo.getProviderId() > 0) {
-			sb.append("and a.product_id in (select c.product_id from ");
-			sb.append(schema).append("ram_inventory_item c ");
-			sb.append("inner join ").append(schema).append("ram_inventory_event_auditor_xr d on c.inventory_event_auditor_xr_id = d.inventory_event_auditor_xr_id ");
-			sb.append("inner join ").append(schema).append("ram_inventory_event e on e.inventory_event_id = d.inventory_event_id ");
-			sb.append("inner join ").append(schema).append("ram_customer_location f on e.customer_location_id = f.customer_location_id and f.customer_id = ?) ");
+			sb.append("and a.product_id in (select i.product_id from ");
+			sb.append(schema).append("ram_location_item_master i ");
+			sb.append("inner join ").append(schema).append("ram_customer_location f on i.customer_location_id = f.customer_location_id and f.customer_id = ?) ");
 		}
 		
 		return sb;
