@@ -4,6 +4,7 @@ package com.ram.action.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ram.action.or.vo.RAMCaseKitVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -11,7 +12,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.session.SMTSession;
-
+import com.siliconmtn.util.StringUtil;
 // WC Libs 3.2
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -64,6 +65,9 @@ public class LookupAction extends SimpleActionAdapter {
 			case "orRooms":
 				getORRooms(role);
 				break;
+			case "kits":
+				getKits(req);
+				break;
 			default:
 				log.debug("can't find list type");
 			
@@ -88,6 +92,32 @@ public class LookupAction extends SimpleActionAdapter {
 		params.add(role.getAttribute(0));
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		List<?> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
+		this.putModuleData(data);
+	}
+	
+	/**
+	 * Gets a list of or rooms for a given provider
+	 * @param role
+	 * @param req 
+	 */
+	public void getKits(ActionRequest req) {
+		
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select ck.case_kit_id, ck.case_id, p.product_id, p.product_nm, ck.processed_flg, lm.serial_no_txt from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_case_kit ck ");
+		sql.append("inner join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_location_item_master lm on ck.location_item_master_id = lm.location_item_master_id ");
+		sql.append("inner join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_product p on lm.product_id = p.product_id ");
+		sql.append("where case_id = ? and processed_flg = 0 ");
+		
+		log.debug(sql + "|" + req.getParameter("caseId"));
+
+		String caseID = StringUtil.checkVal(req.getParameter("caseId"));
+		List<Object> params = new ArrayList<>();
+		params.add(caseID);
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		List<?> data = dbp.executeSelect(sql.toString(), params, new RAMCaseKitVO());
 		this.putModuleData(data);
 	}
 	

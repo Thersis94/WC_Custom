@@ -60,6 +60,7 @@ public class RAMCaseVO implements Serializable {
 	private String orRoomName;
 	private String surgeonName;
 	private int numProductsCase;
+	private int numKitsCase;
 	private UserDataVO hospitalRep;
 
 	public RAMCaseVO() {
@@ -411,6 +412,21 @@ public class RAMCaseVO implements Serializable {
 	}
 
 	/**
+	 * @return the numKitsCase
+	 */
+	@Column(name="num_kit_case", isReadOnly=true)
+	public int getNumKitsCase() {
+		return numKitsCase;
+	}
+
+	/**
+	 * @param numKitsCase the numKitsCase to set
+	 */
+	public void setNumKitsCase(int numKitsCase) {
+		this.numKitsCase = numKitsCase;
+	}
+
+	 /**
 	 * @return the profileId
 	 */
 	@Column(name="profileId")

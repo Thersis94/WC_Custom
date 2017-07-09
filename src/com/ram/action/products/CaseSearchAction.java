@@ -40,6 +40,7 @@ public class CaseSearchAction extends SimpleActionAdapter {
 
 	// Names for the request parameters related to this action
 	public static final String SEARCH = "search";
+	public static final String SPD_REQUEST = "SPDRequest";
 	public static final String START_DATE = "startDate";
 	public static final String END_DATE = "endDate";
 	public static final String STATUS = "status";
@@ -151,7 +152,7 @@ public class CaseSearchAction extends SimpleActionAdapter {
 	 * @param sql
 	 */
 	private void buildSelectSQL(StringBuilder sql) {
-		sql.append("select i.num_prod_case, p.customer_nm || ', ' || or_name as customer_nm, c.hospital_case_id, ");
+		sql.append("select i.num_prod_case, k.num_kit_case, p.customer_nm || ', ' || or_name as customer_nm, c.hospital_case_id, ");
 		sql.append("c.surgery_dt, c.case_status_cd, c.customer_id, c.profile_id, c.case_id ");
 	}
 	
@@ -170,6 +171,11 @@ public class CaseSearchAction extends SimpleActionAdapter {
 		sql.append("from ").append(customDb).append("ram_case_item ");
 		sql.append("group by case_id ");
 		sql.append(") i on c.case_id = i.case_id  ");
+		sql.append("left outer join ( ");
+		sql.append("select case_id, cast(count(*) as int) as num_kit_case ");
+		sql.append("from ").append(customDb).append("ram_case_kit where processed_flg = 0 ");
+		sql.append("group by case_id ");
+		sql.append(") k on c.case_id = k.case_id  ");
 		sql.append("where c.customer_id = cast(? as int) ");
 		
 		// Add the search params
@@ -177,6 +183,7 @@ public class CaseSearchAction extends SimpleActionAdapter {
 		if (req.hasParameter(START_DATE)) sql.append("and c.surgery_dt > ? ");
 		if (req.hasParameter(END_DATE)) sql.append("and c.surgery_dt < ? ");
 		if (req.hasParameter(STATUS)) sql.append("and c.case_status_cd in ('").append(req.getParameter(STATUS)).append("') ");
+		if (req.hasParameter(SPD_REQUEST)) sql.append("and num_kit_case > 0 ");
 		
 		if(isList) {
 			sql.append("order by ");
