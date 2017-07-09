@@ -143,8 +143,8 @@ public class ProductCartAction extends SimpleActionAdapter {
 					putModuleData(civo);
 					break;
 				case deleteProduct:
-					Integer productId = rcm.removeCaseItem(req);
-					putModuleData(productId);
+					String caseItemId = rcm.removeCaseItem(req);
+					putModuleData(caseItemId);
 					break;
 				case addSignature:
 					rcm.addSignature(req);
