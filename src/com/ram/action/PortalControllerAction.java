@@ -68,6 +68,7 @@ public class PortalControllerAction extends SimpleActionAdapter {
 		ACTIONS = new HashMap<>(1);
 		ACTIONS.put("RAM_OR", ProductCartFacadeAction.class);
 		ACTIONS.put("UTIL", LookupAction.class);
+		ACTIONS.put("SPD", SPDAction.class);
 	}
 
 	/* (non-Javadoc)
