@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.ram.action.provider;
 
 import java.sql.PreparedStatement;
@@ -16,33 +13,32 @@ import java.util.Set;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.barcode.BarcodeItemVO;
 import com.siliconmtn.barcode.BarcodeItemVO.BarcodeType;
 import com.siliconmtn.barcode.BarcodeManager;
 import com.siliconmtn.barcode.BarcodeOEM;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.action.ActionRequest;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
- * <b>Title</b>: VSBarcodeLookupAction.java
- * <b>Project</b>: WC_Custom
- * <b>Description: </b> Class that manages taking a Barcode input from the RAM
- * VisionSystem scanner lookup, decoding it, and performing a lookup for a
- * product.  If the product exists then we return information related to the
+ * <b>Title:</b> SPDBarcodeLookupAction.java
+ * <b>Project:</b> WC_Custom
+ * <b>Description:</b> Class that manages taking a Barcode input from the RAM
+ * SPD scanner lookup, decoding it, and performing a lookup for a
+ * product.  If the product exists and is part of then we return information related to the
  * scan.
- * <b>Copyright:</b> Copyright (c) 2015
+ * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
- * @version 1.0
- * @since Jun 25, 2015
- *        <b>Changes: </b>
+ * @author Billy Larsen
+ * @version 3.3.1
+ * @since Jul 9, 2017
  ****************************************************************************/
-public class VSBarcodeLookupAction extends SBActionAdapter {
+public class SPDBarcodeLookupAction extends SimpleActionAdapter {
 
 	public static final String CUSTOMER_CACHE_KEY = "RAM_CUSTOMER_OEM_LIST";
 
@@ -54,13 +50,13 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	/**
 	 * 
 	 */
-	public VSBarcodeLookupAction() {
+	public SPDBarcodeLookupAction() {
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public VSBarcodeLookupAction(ActionInitVO actionInit) {
+	public SPDBarcodeLookupAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 
@@ -107,19 +103,12 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	private List<BarcodeOEM> getOems(SBUserRole r) throws ActionException {
-		List<BarcodeOEM> results = new ArrayList<BarcodeOEM>();
+		List<BarcodeOEM> results = new ArrayList<>();
 
 		//Retrieve entire map of scannable customers.
 		Map<String, BarcodeOEM> barcodes = loadOems();
 
-		/*
-		 * If this customer is already bound to a center, 
-		 */
-		if(r != null && r.hasRoleAttribute("roleAttributeKey_1")) {
-			results.add(barcodes.get(r.getAttribute("roleAttributeKey_1")));
-		} else {
-			results.addAll(barcodes.values());
-		}
+		results.addAll(barcodes.values());
 
 		return results;
 	}
@@ -159,7 +148,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	private ModuleVO buildCustomerMap() throws ActionException {
 
 		//Create Map for Barcodes.
-		Map<String, BarcodeOEM> barcodes = new HashMap<String, BarcodeOEM>();
+		Map<String, BarcodeOEM> barcodes = new HashMap<>();
 
 		//Create ModuleVO for caching.
 		ModuleVO mod = new ModuleVO();
@@ -232,7 +221,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected RAMProductVO retrieveProduct(BarcodeItemVO barcode) throws ActionException {
+	protected RAMProductVO retrieveProduct(BarcodeItemVO barcode) {
 		RAMProductVO p = null;
 		log.info("Performing lookup on productId: " + barcode.getProductId());
 		try(PreparedStatement ps = dbConn.prepareStatement(getProductSql(barcode.getBarcodeType()))) {
@@ -267,7 +256,8 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 		return sql.toString();
 	}
 
+	@Override
 	public void list(ActionRequest req) throws ActionException {
-		super.list(req);
+		super.retrieve(req);
 	}
 }

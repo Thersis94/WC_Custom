@@ -97,7 +97,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * Build actions this widget can perform, sent by the request.
 	 * 
 	 */
-	private enum WidgetBuildAction {saveCaseInfo, addProduct, addSignature, finalize, sendEmails}
+	private enum WidgetBuildAction {saveCaseInfo, addProduct, deleteProduct, addSignature, finalize, sendEmails}
 	
 	/**
 	 * Retrieve actions this widget can perform, sent by the request.
@@ -141,6 +141,10 @@ public class ProductCartAction extends SimpleActionAdapter {
 				case addProduct:
 					RAMCaseItemVO civo = rcm.updateItem(req);
 					putModuleData(civo);
+					break;
+				case deleteProduct:
+					Integer productId = rcm.removeCaseItem(req);
+					putModuleData(productId);
 					break;
 				case addSignature:
 					rcm.addSignature(req);
@@ -329,7 +333,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 		WidgetRetrieveAction wa = WidgetRetrieveAction.valueOf(req.getParameter("widgetAction"));
 		String caseId = req.getParameter("caseId");
-		log.debug("widget retrieve action: " + wa);
+		
 		try {
 			switch (wa) {
 				case loadCase:
