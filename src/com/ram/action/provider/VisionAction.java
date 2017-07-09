@@ -246,7 +246,8 @@ public class VisionAction extends SBActionAdapter {
 	 */
 	private ModuleVO getVisionData(RAMProductSearchVO svo) throws ActionException {
 
-		ModuleVO mod = null;//super.readFromCache(CACHE_PREFIX + svo.getProductId());
+		//If the request is for spd, don't use cached value.
+		ModuleVO mod = !svo.isSpd() ? super.readFromCache(CACHE_PREFIX + svo.getProductId()) : null;
 
 		//If not found in cache Load data.
 		if(mod == null) {
@@ -255,7 +256,7 @@ public class VisionAction extends SBActionAdapter {
 			mod = loadVisionObject(svo.getProductId());
 
 			//If we could load Kit Data, Update Cache Groups and store it.
-			if(mod != null) {
+			if(mod.getActionData() != null) {
 				mod.setCacheable(true);
 
 				//Common Cache Group for all Vision System Items.

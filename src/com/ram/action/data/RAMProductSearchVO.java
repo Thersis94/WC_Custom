@@ -39,6 +39,7 @@ public class RAMProductSearchVO extends EXTJSDataVO {
 	private int customerId = 0;
 	private int productId = 0;
 	private int layoutDepthNo = 0;
+	private boolean isSpd = false;
 
 	/**
 	 * @param req 
@@ -57,7 +58,7 @@ public class RAMProductSearchVO extends EXTJSDataVO {
 
 		advFilter = Convert.formatInteger(req.getParameter("advFilter"), -1);
 		term = StringUtil.checkVal(req.getParameter("term"));
-		
+		isSpd = Convert.formatBoolean(req.getParameter("isSpd"));
 		activeOnly = Convert.formatBoolean(req.getParameter("activeFlag"));
 		productId = Convert.formatInteger(req.getParameter("productId"));
 		layoutDepthNo = Convert.formatInteger(req.getParameter("layoutDepthNo"));
@@ -73,7 +74,7 @@ public class RAMProductSearchVO extends EXTJSDataVO {
 	//Getters
 	public int getAdvFilter() {return advFilter;}
 	public String getTerm() {return term;}
-	
+	public boolean isSpd() {return isSpd;}
 	public boolean isActiveOnly() {return activeOnly;}
 	public int getProviderId() {return providerId;}
 	public int getCustomerId() {return customerId;}
@@ -84,7 +85,7 @@ public class RAMProductSearchVO extends EXTJSDataVO {
 	//Setters
 	public void setAdvFilter(int advFilter) {this.advFilter = advFilter;}
 	public void setTerm(String term) {this.term = term;}
-	
+	public void setIsSpd(boolean isSpd) {this.isSpd = isSpd;}
 	public void setActiveOnly(boolean activeOnly) {this.activeOnly = activeOnly;}
 	public void setProviderId(int providerId) {this.providerId = providerId;}
 	public void setCustomerId(int customerId) {this.customerId = customerId;}
