@@ -5,8 +5,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.mortbay.log.Log;
-
 import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
 import com.siliconmtn.action.ActionRequest;
