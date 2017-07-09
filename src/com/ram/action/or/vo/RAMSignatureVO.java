@@ -1,6 +1,7 @@
 package com.ram.action.or.vo;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
@@ -19,7 +20,12 @@ import com.siliconmtn.db.orm.Table;
  * @since Jun 28, 2017
  ****************************************************************************/
 @Table(name="RAM_CASE_SIGNATURE")
-public class RAMSignatureVO {
+public class RAMSignatureVO implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	public enum SignatureType {PROVIDER, REP}
 
 	private String signatureId;

@@ -2,6 +2,7 @@ package com.ram.http;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Enumeration;
 import java.util.Map;
 
 import javax.naming.Context;
@@ -16,10 +17,12 @@ import javax.sql.DataSource;
 import org.apache.log4j.Logger;
 
 import com.ram.action.or.RAMCaseManager;
+import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.persistence.AbstractPersist;
 import com.ram.persistence.RAMCasePersistenceFactory;
 import com.ram.persistence.RAMCasePersistenceFactory.PersistenceType;
 import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> RamCaseSessionListener.java
@@ -61,15 +64,20 @@ public class RamCaseSessionListener implements HttpSessionListener {
 			HttpSession session = sessionEvent.getSession();
 			ServletContext sc = session.getServletContext();
 			Map<String, Object> attributes = (Map<String, Object>) sc.getAttribute(GlobalConfig.KEY_ALL_CONFIG);
-
-			if(attributes.containsKey(RAMCaseManager.RAM_CASE_VO)) {
-				//Attempt to Persist the Case to the Database.
-				try(Connection conn = getDBConnection()) {
-					AbstractPersist<?,?> ap = RAMCasePersistenceFactory.loadPersistenceObject(PersistenceType.DB, conn, attributes);
-					ap.save();
-				} catch (Exception e) {
-					log.error("Error Processing Code", e);
+			Enumeration<String> e = session.getAttributeNames();
+			
+			try(Connection conn = getDBConnection()) {
+				AbstractPersist<?,?> ap = RAMCasePersistenceFactory.loadPersistenceObject(PersistenceType.DB, conn, attributes);
+				while(e.hasMoreElements()) {
+					String key = (String) e.nextElement();
+					if (StringUtil.isEmpty(key)) continue;
+					
+					if (key.startsWith(RAMCaseManager.STORAGE_SUFFIX)) {
+						ap.save((RAMCaseVO)session.getAttribute(key));
+					}
 				}
+			} catch (Exception ex) {
+				log.error("Error Processing Code", ex);
 			}
 		}
 	}

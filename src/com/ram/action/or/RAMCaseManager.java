@@ -2,6 +2,7 @@ package com.ram.action.or;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +23,6 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
-import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -48,12 +48,17 @@ public class RAMCaseManager {
 	public static final String ADMIN_SIGNATURE_DT = "adminDt";
 	public static final String SIGN_DATE_PATTERN = "MM/dd/yyyy hh:mm";
 	public static final String RAM_PERSISTENCE_TYPE = "ramPersistenceType";
-
+	public static final String CASE_STORAGE_ITEM = "caseStorageitem";
+	public static final String STORAGE_SUFFIX = "CASE_SUFFIX_";
+	
 	private Logger log;
 	private Map<String, Object> attributes;
 	private ActionRequest req;
 	private Connection conn;
-
+	private Map<PersistenceType, AbstractPersist<?, ?>> pTypes = new LinkedHashMap<>(4);
+	private PersistenceType defaultPType;
+	private PersistenceType permPType;
+	
 	private RAMCaseManager() {
 		log = Logger.getLogger(getClass());
 	}
@@ -63,24 +68,16 @@ public class RAMCaseManager {
 		this.attributes = attributes;
 		this.req = req;
 		this.conn = conn;
-	}
-
-
-	/**
-	 * Helper method manages creating a new RAMCaseVO.
-	 * @return
-	 * @throws Exception 
-	 */
-	public RAMCaseVO createCase(ActionRequest req) throws Exception {
-		SMTSession sess = req.getSession();
-
-		//If we already have a case in Session, Persist to the Database.
-		RAMCaseVO existingCase = (RAMCaseVO)sess.getAttribute(RAM_CASE_VO);
-		if(existingCase != null) {
-			finalizeCaseInfo();
+		
+		//Load the persistence Types
+		defaultPType = PersistenceType.valueOf((String)attributes.get(RAM_PERSISTENCE_TYPE));
+		permPType = (PersistenceType.DB.equals(defaultPType)) ? PersistenceType.SESSION : PersistenceType.DB;
+		try {
+			pTypes.put(PersistenceType.SESSION, RAMCasePersistenceFactory.loadPersistenceObject(PersistenceType.SESSION, req, attributes));
+			pTypes.put(PersistenceType.DB, RAMCasePersistenceFactory.loadPersistenceObject(PersistenceType.DB, conn, attributes));
+		} catch(Exception e) {
+			log.error("Unable to load persistence typse:", e);
 		}
-
-		return (RAMCaseVO) buildPI(null, null, PersistenceType.DB).initialize();
 	}
 
 	/**
@@ -95,7 +92,7 @@ public class RAMCaseManager {
 		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
 		RAMSignatureVO s = new RAMSignatureVO(req);
 		cVo.addSignature(s);
-		persistCase(cVo, null);
+		persistCaseDefault(cVo);
 		return cVo;
 	}
 
@@ -104,26 +101,50 @@ public class RAMCaseManager {
 	 * @throws Exception 
 	 */
 	public RAMCaseVO saveCase(ActionRequest req) throws Exception {
-		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
+		String caseId = req.getParameter(RAM_CASE_ID);
+		RAMCaseVO cVo = null;
+		AbstractPersist<?,?> ap = pTypes.get(defaultPType);
+		
+		if (StringUtil.isEmpty(caseId)) {
+			
+			cVo = (RAMCaseVO) ap.initialize();
+			req.setParameter(RAM_CASE_ID, new UUIDGenerator().getUUID());
+			log.info("**** Creating new case: " + req.getParameter(RAM_CASE_ID));
+			cVo.setNewCase(true);
+		} else {
+			// Load the case form the default location
+			cVo = (RAMCaseVO) ap.load(req.getParameter(RAM_CASE_ID));
+			
+			// Otherwise load from the database
+			if (cVo == null) {
+				AbstractPersist<?,?> apdb = pTypes.get(permPType);
+				cVo = (RAMCaseVO) apdb.load(req.getParameter(RAM_CASE_ID));
+				
+				if (cVo == null) throw new Exception("Can't find case for caseId: " + caseId);
+			}
+		}
+		
+		// Update the data and persists
 		cVo.setData(req);
-
-		updateCaseInfo(cVo);
+		log.info("Case Daata:" + cVo);
+		ap.save(cVo);
+		
 		return cVo;
 	}
 
 	/**
-	 * Helper method mangages retrieving a RAMCaseVO.
+	 * Helper method manages retrieving a RAMCaseVO.
 	 * @throws Exception 
 	 */
-	public RAMCaseVO retrieveCase(String ramCaseId) throws Exception {
-		RAMCaseVO cVo = (RAMCaseVO) buildPI(null, ramCaseId).load();
-
-		if(cVo == null) {
-			cVo = (RAMCaseVO) buildPI(null, ramCaseId, PersistenceType.DB).load();
-		}
-
-		if(cVo == null) {
-			cVo = (RAMCaseVO) buildPI(null, ramCaseId).initialize();
+	public RAMCaseVO retrieveCase(String caseId) throws Exception {
+		AbstractPersist<?,?> ap = pTypes.get(defaultPType);
+		RAMCaseVO cVo = (RAMCaseVO) ap.load(caseId);
+		
+		if (cVo == null) {
+			AbstractPersist<?,?> apdb = pTypes.get(permPType);
+			cVo = (RAMCaseVO) apdb.load(req.getParameter(RAM_CASE_ID));
+			
+			if (cVo == null) throw new Exception("Can't find case for caseId: " + caseId);
 		}
 
 		return cVo; 
@@ -138,7 +159,6 @@ public class RAMCaseManager {
 	public RAMCaseItemVO updateItem(ActionRequest req) throws Exception {
 		RAMCaseItemVO item;
 		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
-
 		if(req.hasParameter("caseItemId")) {
 			item = getCaseItem(cVo, req);
 		} else {
@@ -146,7 +166,7 @@ public class RAMCaseManager {
 		}
 
 		cVo.addItem(item);
-
+		
 		//Save Case.
 		this.updateCaseInfo(cVo);
 		return item;
@@ -236,7 +256,7 @@ public class RAMCaseManager {
 		RAMCaseItemVO civo = new RAMCaseItemVO(req);
 		civo.setProductNm(p.getProductName());
 		civo.setGtinProductId(p.getGtinProductId());
-		
+		civo.setCaseItemId(new UUIDGenerator().getUUID());
 		return civo;
 	}
 
@@ -246,7 +266,7 @@ public class RAMCaseManager {
 	 * @param item
 	 * @throws Exception 
 	 */
-	public Integer removeCaseItem(ActionRequest req) throws Exception {
+	public String removeCaseItem(ActionRequest req) throws Exception {
 		//Get the Case
 		RAMCaseVO cVo = retrieveCase(req.getParameter("caseId"));
 
@@ -259,7 +279,7 @@ public class RAMCaseManager {
 		//Persist the Case.
 		updateCaseInfo(cVo);
 		
-		return item.getProductId();
+		return item.getCaseItemId();
 	}
 
 	/**
@@ -268,7 +288,7 @@ public class RAMCaseManager {
 	 * @throws Exception 
 	 */
 	public void updateCaseInfo(RAMCaseVO cVo) throws Exception {
-		persistCase(cVo, null);
+		persistCaseDefault(cVo);
 	}
 
 	/**
@@ -277,10 +297,12 @@ public class RAMCaseManager {
 	 * @throws Exception
 	 */
 	public RAMCaseVO finalizeCaseInfo() throws Exception {
-		String caseId = req.getParameter("caseId");
-		RAMCaseVO cVo = retrieveCase(caseId);
-		
-		return (RAMCaseVO) buildPI(cVo, null, PersistenceType.DB).save();
+		String caseId = req.getParameter(RAM_CASE_ID);
+		AbstractPersist<?,?> ap = pTypes.get(defaultPType);
+		RAMCaseVO cVo = (RAMCaseVO)ap.load(caseId);
+		persistCasePerm(cVo);
+
+		return cVo;
 	}
 
 	/**
@@ -290,8 +312,21 @@ public class RAMCaseManager {
 	 * @return
 	 * @throws Exception
 	 */
-	public RAMCaseVO persistCase(RAMCaseVO cVo, String caseId) throws Exception {
-		return (RAMCaseVO) buildPI(cVo, caseId).save();
+	public void persistCasePerm(RAMCaseVO cVo) throws Exception {
+		AbstractPersist<?,?> apdb = pTypes.get(permPType);
+		apdb.save(cVo);
+	}
+	
+	/**
+	 * Persistence method that Persists to configured Persistence Type.
+	 * @param cVo
+	 * @param caseId
+	 * @return
+	 * @throws Exception
+	 */
+	public void persistCaseDefault(RAMCaseVO cVo) throws Exception {
+		AbstractPersist<?,?> apdb = pTypes.get(defaultPType);
+		apdb.save(cVo);
 	}
 
 	/**
@@ -313,43 +348,5 @@ public class RAMCaseManager {
 			}
 		}
 		return cVo;
-	}
-
-	/**
-	 * Helper method that retrieves a Persistence Instance based on config value. 
-	 * @param cVo
-	 * @param caseId
-	 * @return
-	 * @throws Exception
-	 */
-	private AbstractPersist<?, ?> buildPI(RAMCaseVO cVo, String caseId) throws Exception {
-		String pts = (String)attributes.get(RAM_PERSISTENCE_TYPE);
-		PersistenceType pt = PersistenceType.valueOf(pts);
-		return buildPI(cVo, caseId, pt);
-	}
-
-	/**
-	 * Helper method retrieves the AbstractPersistManager for persisting RAMCase
-	 * Data.
-	 * @return
-	 * @throws Exception
-	 */
-	private AbstractPersist<?, ?> buildPI(RAMCaseVO cVo, String caseId, PersistenceType pt) throws Exception {
-		if(cVo != null) {
-			attributes.put(RAM_CASE_VO, cVo);
-		} else if(!StringUtil.isEmpty(caseId)) {
-			attributes.put(RAM_CASE_ID, caseId);
-		}
-
-		AbstractPersist<?,?> pi;
-		if(pt.equals(PersistenceType.SESSION)) {
-			pi = RAMCasePersistenceFactory.loadPersistenceObject(pt, req, attributes);
-		} else {
-			pi = RAMCasePersistenceFactory.loadPersistenceObject(pt, conn, attributes);
-		}
-
-		pi.setAttributes(attributes);
-
-		return pi;
 	}
 }

@@ -1,5 +1,7 @@
 package com.ram.persistence;
 
+import com.ram.action.or.vo.RAMCaseVO;
+
 /****************************************************************************
  * <b>Title:</b> PersistanceIntfc.java
  * <b>Project:</b> WC_Custom
@@ -13,9 +15,9 @@ package com.ram.persistence;
  ****************************************************************************/
 public interface PersistenceIntfc<T extends Object, S extends Object> {
 
-	public S load();
-	public S save();
-	public void  flush();
+	public S load(String caseId);
+	public S save(RAMCaseVO rCase);
+	public void  flush(String caseId);
 	public S initialize();
 	/**
 	 * @param source
