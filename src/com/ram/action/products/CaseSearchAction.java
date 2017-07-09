@@ -114,7 +114,7 @@ public class CaseSearchAction extends SimpleActionAdapter {
 		
 		// Get the hospital
 		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
-		params.add(role.getAttribute(0));
+		params.add(Convert.formatInteger((String)role.getAttribute(0)));
 
 		// Get the search params
 		if (req.hasParameter(SEARCH)) {
@@ -131,7 +131,6 @@ public class CaseSearchAction extends SimpleActionAdapter {
 		int start = page * rpp;
 		int end = rpp * (page + 1);
 		
-		log.info(params);
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		List<?> kits = null;
 		if ( Convert.formatBoolean(req.getParameter("loadAll")))
@@ -152,12 +151,14 @@ public class CaseSearchAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
-		sql.append("select i.prod_total, p.customer_nm, c.hospital_case_id, c.surgery_dt, c.case_status_cd, c.customer_id, c.profile_id ");
-		sql.append("from custom.ram_case c ");
-		sql.append("inner join ram_customer p on c.customer_id = p.customer_id ");
+		sql.append("select i.num_prod_case, p.customer_nm || ', ' || or_name as customer_nm, c.hospital_case_id, ");
+		sql.append("c.surgery_dt, c.case_status_cd, c.customer_id, c.profile_id, c.case_id from ");
+		sql.append(customDb).append("ram_case c ");
+		sql.append("inner join ").append(customDb).append("ram_customer p on c.customer_id = p.customer_id ");
+		sql.append("inner join ").append(customDb).append("ram_or_room r on c.or_room_id = r.or_room_id ");
 		sql.append("left outer join ( ");
-		sql.append("select case_id, sum(qty_no) as prod_total ");
-		sql.append("from custom.ram_case_item ");
+		sql.append("select case_id, cast(sum(qty_no) as int) as num_prod_case ");
+		sql.append("from ").append(customDb).append("ram_case_item ");
 		sql.append("group by case_id ");
 		sql.append(") i on c.case_id = i.case_id  ");
 		sql.append("where c.customer_id = cast(? as int) ");
@@ -183,7 +184,8 @@ public class CaseSearchAction extends SimpleActionAdapter {
 		} else {
 			sql.append("case_status_cd, SURGERY_DT DESC");
 		}
-		log.info(sql);
+		
+		log.debug(sql);
 		return sql.toString();
 	}
 	

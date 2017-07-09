@@ -30,7 +30,7 @@ public class RAMCaseVO {
 	public enum RAMCaseStatus {OR_READY, OR_IN_PROGRESS, OR_COMPLETE, SPD_IN_PROGRESS, SPD_COMPLETE}
 
 	private String caseId;
-	private String customerId;
+	private int customerId;
 	private String hospitalCaseId;
 	private String orRoomId;
 	private String surgeonId;
@@ -42,6 +42,10 @@ public class RAMCaseVO {
 	private Map<String, Map<String, RAMCaseItemVO>> items;
 	private Map<String, RAMCaseKitVO> kits;
 	private RAMCaseStatus caseStatus;
+	
+	// Extra fields for display purposes
+	private String customerName;
+	private int numProductsCase;
 
 	public RAMCaseVO() {
 		this.kits = new HashMap<>();
@@ -60,7 +64,7 @@ public class RAMCaseVO {
 	 */
 	public void setData(ActionRequest req) {
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
-		customerId = req.getParameter("customerId");
+		customerId = Convert.formatInteger(req.getParameter("customerId"));
 		hospitalCaseId = req.getParameter("hospitalCaseId");
 		orRoomId = req.getParameter("orRoomId");
 		surgeonId = req.getParameter("surgeonId");
@@ -87,7 +91,7 @@ public class RAMCaseVO {
 	 * @return the customerId
 	 */
 	@Column(name="customer_id")
-	public String getCustomerId() {
+	public int getCustomerId() {
 		return customerId;
 	}
 
@@ -201,7 +205,7 @@ public class RAMCaseVO {
 	/**
 	 * @param customerId the customerId to set.
 	 */
-	public void setCustomerId(String customerId) {
+	public void setCustomerId(int customerId) {
 		this.customerId = customerId;
 	}
 
@@ -318,7 +322,7 @@ public class RAMCaseVO {
 
 	@BeanSubElement
 	public void addItem(RAMCaseItemVO item) {
-		if(item != null) {
+		if(item != null && item.getCaseType() != null) {
 			Map<String, RAMCaseItemVO> imap = items.get(item.getCaseType().toString());
 			if(imap == null) {
 				imap = new HashMap<>();
@@ -344,5 +348,35 @@ public class RAMCaseVO {
 		if(kit != null && kits.containsKey(kit.getCaseKitId())) {
 			kits.remove(kit.getCaseKitId());
 		}
+	}
+
+	/**
+	 * @return the customerName
+	 */
+	@Column(name="customer_nm", isReadOnly=true)
+	public String getCustomerName() {
+		return customerName;
+	}
+
+	/**
+	 * @param customerName the customerName to set
+	 */
+	public void setCustomerName(String customerName) {
+		this.customerName = customerName;
+	}
+
+	/**
+	 * @return the numProductsCase
+	 */
+	@Column(name="num_prod_case", isReadOnly=true)
+	public int getNumProductsCase() {
+		return numProductsCase;
+	}
+
+	/**
+	 * @param numProductsCase the numProductsCase to set
+	 */
+	public void setNumProductsCase(int numProductsCase) {
+		this.numProductsCase = numProductsCase;
 	}
 }
