@@ -35,7 +35,6 @@ public class RAMCaseVO {
 	private int customerId;
 	private String hospitalCaseId;
 	private String profileId;
-	private UserDataVO hospitalRep;
 	private String orRoomId;
 	private String surgeonId;
 	private Date createDt;
@@ -49,7 +48,10 @@ public class RAMCaseVO {
 	
 	// Extra fields for display purposes
 	private String customerName;
+	private String orRoomName;
+	private String surgeonName;
 	private int numProductsCase;
+	private UserDataVO hospitalRep;
 
 	public RAMCaseVO() {
 		this.kits = new HashMap<>();
@@ -421,5 +423,35 @@ public class RAMCaseVO {
 	 */
 	public void setHospitalRep(UserDataVO hospitalRep) {
 		this.hospitalRep = hospitalRep;
+	}
+
+	/**
+	 * @return the orRoomName
+	 */
+	@Column(name="or_name", isReadOnly=true)
+	public String getOrRoomName() {
+		return orRoomName;
+	}
+
+	/**
+	 * @param orRoomName the orRoomName to set
+	 */
+	public void setOrRoomName(String orRoomName) {
+		this.orRoomName = orRoomName;
+	}
+
+	/**
+	 * @return the surgeonName
+	 */
+	@Column(name="surgeon_nm", isReadOnly=true)
+	public String getSurgeonName() {
+		return surgeonName;
+	}
+
+	/**
+	 * @param surgeonName the surgeonName to set
+	 */
+	public void setSurgeonName(String surgeonName) {
+		this.surgeonName = surgeonName;
 	}
 }
