@@ -94,11 +94,16 @@ public class ProductCartAction extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * Actions this widget can perform, sent by the request.
+	 * Build actions this widget can perform, sent by the request.
 	 * 
-	 * @author tim
 	 */
-	private enum WidgetAction {saveCaseInfo, addProduct}
+	private enum WidgetBuildAction {saveCaseInfo, addProduct, clearCart, addSignature, finalize, sendEmails}
+	
+	/**
+	 * Retrieve actions this widget can perform, sent by the request.
+	 */
+	private enum WidgetRetrieveAction {loadCase, loadReport, searchProducts}
+	
 	
 	public ProductCartAction() {
 		super();
@@ -125,72 +130,35 @@ public class ProductCartAction extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
-		WidgetAction wa = WidgetAction.valueOf(req.getParameter("widgetAction"));
+		WidgetBuildAction wa = WidgetBuildAction.valueOf(req.getParameter("widgetAction"));
 
 		try {
 			switch (wa) {
 				case saveCaseInfo:
 					RAMCaseVO cvo = rcm.saveCase(req);
 					putModuleData(cvo);
+					break;
 				case addProduct:
 					RAMCaseItemVO civo = rcm.updateItem(req);
 					putModuleData(civo);
-				//case clearCart:
-				//case addSignature:
-				//case finalize:
-				//case sendEmails:
+					break;
+				case addSignature:
+					rcm.addSignature(req);
+					break;
+				case finalize:
+					rcm.finalizeCaseInfo();
+					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+					req.setParameter("emails", user.getEmailAddress());
+					sendEmails(req);
+					break;
+				case sendEmails:
+					sendEmails(req);
+					break;
 			}
 		} catch (Exception e) {
 			log.error("Error managing case", e);
 			throw new ActionException(e);
 		}
-		
-		
-		/*
-		// Check the request object for triggers that determine
-		// what we are going to do with it
-		if (req.hasParameter("deleteKit")) {
-			deleteCart(req);
-		} else if (req.hasParameter("editAttr")) {
-			try {
-				rcm.addSignature(req);
-			} catch (Exception e) {
-				log.error("Error Saving Signature", e);
-				throw new ActionException(e);
-			}
-		} else if(req.hasParameter("newCart")) {
-			newKit(req);
-		} else if (req.hasParameter("loadCart")){
-			// Check if there is a kit in particular that needs to be loaded,
-			// if so then load it, if not load them all.
-			if (req.hasParameter("kitId")) {
-				populateCart(req);
-			} else {
-				CaseSearchAction cs = new CaseSearchAction(actionInit);
-				cs.setDBConnection(dbConn);
-				cs.setAttributes(attributes);
-				cs.loadKits(req);
-			}
-		} else if (Convert.formatBoolean(req.getParameter("finalize"))) {
-			// Finalized carts need to be saved as such, be updated on the
-			// user's end to reflect that change, and the finalized documents
-			// be sent out to the the user and the hospital
-			saveCart(req, 1);
-			req.getSession().setAttribute(FINALIZED, true);
-			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-			req.setParameter("emails", user.getEmailAddress());
-			sendEmails(req);
-		}else if (Convert.formatBoolean(req.getParameter("sendEmails"))) {
-			populateCart(req);
-			sendEmails(req);
-		} else {
-			
-			editCart(req);
-			// After each change to the products in the cart it must be saved
-			// to prevent potential loss of data from user error
-			saveCart(req, 0);
-		}
-		*/
 	}
 
 	/**
@@ -358,83 +326,29 @@ public class ProductCartAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		// If a kitId has been passed along we need to load the kit first.
-		if (req.hasParameter(KIT_ID))populateCart(req);
-		
-		// If no reseller name has been set we default to the logged in user's name
-		if (req.getSession().getAttribute(RESELLER) == null) {
-			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-			req.getSession().setAttribute(RESELLER, user.getFullName());
-		}
-		
-		if (req.getSession().getAttribute("companies") == null) getCompanies(req);
-		if (req.getSession().getAttribute("hospitals") == null) getHospitals(req);
-		
-		// Load the cart first since it is always needed
-		ShoppingCartVO cart = retrieveContainer(req).load();
-		req.setAttribute("cart", cart.getItems());
-		
-		if (req.hasParameter("buildFile")) {
-			buildReport(req);
-		} else if ("load".equals(req.getParameter("step")) && req.hasParameter("search")) {
-			searchProducts(req);
-		}
-	}
-	
-	
-	
-	/**
-	 * Get a list of companies from the customer table in the database with valid products
-	 * @param req
-	 */
-	private void getCompanies(ActionRequest req) {
-		StringBuilder sql = new StringBuilder(200);
-		
-		sql.append("SELECT CUSTOMER_ID, CUSTOMER_NM FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_CUSTOMER WHERE GTIN_NUMBER_TXT is not null and GTIN_NUMBER_TXT != '' and CUSTOMER_TYPE_ID = ?");
-		
-		List<GenericVO> companies = new ArrayList<>();
-		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, "OEM");
-			
-			ResultSet rs = ps.executeQuery();
-			
-			while(rs.next()) {
-				companies.add(new GenericVO(rs.getString("CUSTOMER_ID"), rs.getString("CUSTOMER_NM")));
+		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
+		WidgetRetrieveAction wa = WidgetRetrieveAction.valueOf(req.getParameter("widgetAction"));
+		String caseId = req.getParameter("caseId");
+		log.debug("widget retrieve action: " + wa);
+		try {
+			switch (wa) {
+				case loadCase:
+					RAMCaseVO cvo = rcm.retrieveCase(caseId);
+					putModuleData(cvo);
+					break;
+				case loadReport:
+					buildReport(req);
+					break;
+				case searchProducts:
+					if (!StringUtil.isEmpty(req.getParameter("search")))
+						searchProducts(req);
+					break;
 			}
-		} catch (SQLException e) {
-			log.error("Unable to get list of hospitals", e);
-		} 
-		req.getSession().setAttribute("companies", companies);
-	}
-	
-	
-	/**
-	 * Get the valid hospitals that can be part of the OR module
-	 * @param req
-	 * @throws ActionException
-	 */
-	private void getHospitals(ActionRequest req) throws ActionException {
-		StringBuilder sql = new StringBuilder(150);
-		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT CUSTOMER_NM FROM ").append(customDb).append("RAM_CUSTOMER c ");
-		sql.append("inner join ").append(customDb).append("");
-		sql.append("RAM_CUSTOMER_PROFILE_XR xr on xr.CUSTOMER_ID = c.CUSTOMER_ID ");
-		sql.append("ORDER BY CUSTOMER_NM ASC ");
-		List<String> hospitals = new ArrayList<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ResultSet rs = ps.executeQuery();
-			
-			while(rs.next()) {
-				hospitals.add(rs.getString("CUSTOMER_NM"));
-			}
-		} catch (SQLException e) {
+		} catch (Exception e) {
+			log.error("Error retrieving case", e);
 			throw new ActionException(e);
 		}
-		req.getSession().setAttribute("hospitals", hospitals);
 	}
-	
 	
 	/**
 	 * Search for products that match the supplied search crteria

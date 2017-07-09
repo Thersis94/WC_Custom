@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.ram.action.or.RAMCaseManager;
-import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -40,14 +39,14 @@ public class RAMCaseVO {
 	private Date surgeryDate;
 	private Date spdDt;
 	private Map<SignatureType, Map<String, RAMSignatureVO>> signatures;
-	private Map<RAMCaseType, Map<String, RAMCaseItemVO>> items;
+	private Map<String, Map<String, RAMCaseItemVO>> items;
 	private Map<String, RAMCaseKitVO> kits;
 	private RAMCaseStatus caseStatus;
 
 	public RAMCaseVO() {
 		this.kits = new HashMap<>();
 		this.signatures = new EnumMap<>(SignatureType.class);
-		this.items = new EnumMap<>(RAMCaseType.class);
+		this.items = new HashMap<>();
 	}
 
 	public RAMCaseVO(ActionRequest req) {
@@ -173,7 +172,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the items
 	 */
-	public Map<RAMCaseType, Map<String, RAMCaseItemVO>> getItems() {
+	public Map<String, Map<String, RAMCaseItemVO>> getItems() {
 		return items;
 	}
 
@@ -272,7 +271,7 @@ public class RAMCaseVO {
 	/**
 	 * @param items the items to set.
 	 */
-	public void setItems(Map<RAMCaseType, Map<String, RAMCaseItemVO>> items) {
+	public void setItems(Map<String, Map<String, RAMCaseItemVO>> items) {
 		this.items = items;
 	}
 
@@ -320,7 +319,7 @@ public class RAMCaseVO {
 	@BeanSubElement
 	public void addItem(RAMCaseItemVO item) {
 		if(item != null) {
-			Map<String, RAMCaseItemVO> imap = items.get(item.getCaseType());
+			Map<String, RAMCaseItemVO> imap = items.get(item.getCaseType().toString());
 			if(imap == null) {
 				imap = new HashMap<>();
 			}
@@ -331,7 +330,7 @@ public class RAMCaseVO {
 				imap.put(item.getCaseItemId(), item);
 			}
 
-			items.put(item.getCaseType(), imap);
+			items.put(item.getCaseType().toString(), imap);
 		}
 	}
 

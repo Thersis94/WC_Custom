@@ -77,7 +77,7 @@ public class RAMCaseManager {
 		//If we already have a case in Session, Persist to the Database.
 		RAMCaseVO existingCase = (RAMCaseVO)sess.getAttribute(RAM_CASE_VO);
 		if(existingCase != null) {
-			finalizeCaseInfo(existingCase);
+			finalizeCaseInfo();
 		}
 
 		return (RAMCaseVO) buildPI(null, null, PersistenceType.DB).initialize();
@@ -231,9 +231,13 @@ public class RAMCaseManager {
 			req.setParameter("caseKitId", kvo.getCaseKitId());
 			cVo.addCaseKit(kvo);
 		}
-
+		
 		//Build RAMCaseItem
-		return new RAMCaseItemVO(req);
+		RAMCaseItemVO civo = new RAMCaseItemVO(req);
+		civo.setProductNm(p.getProductName());
+		civo.setGtinProductId(p.getGtinProductId());
+		
+		return civo;
 	}
 
 	/**
@@ -267,11 +271,13 @@ public class RAMCaseManager {
 
 	/**
 	 * Persistence method that Persists to the Database.
-	 * @param cVo
 	 * @return
 	 * @throws Exception
 	 */
-	public RAMCaseVO finalizeCaseInfo(RAMCaseVO cVo) throws Exception {
+	public RAMCaseVO finalizeCaseInfo() throws Exception {
+		String caseId = req.getParameter("caseId");
+		RAMCaseVO cVo = retrieveCase(caseId);
+		
 		return (RAMCaseVO) buildPI(cVo, null, PersistenceType.DB).save();
 	}
 
@@ -299,7 +305,7 @@ public class RAMCaseManager {
 		if(st != null) {
 			cVo.setCaseStatus(st);
 			if(st.toString().toLowerCase().contains("complete")) {
-				cVo = finalizeCaseInfo(cVo);
+				cVo = finalizeCaseInfo();
 			} else {
 				updateCaseInfo(cVo);
 			}

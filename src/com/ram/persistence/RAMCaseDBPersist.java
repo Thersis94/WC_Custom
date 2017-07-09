@@ -10,7 +10,6 @@ import java.util.Map.Entry;
 
 import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMCaseItemVO;
-import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.or.vo.RAMSignatureVO;
@@ -70,6 +69,8 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		sql.append("on c.case_id = s.case_id ");
 		sql.append("left outer join ").append(schema).append("RAM_CASE_ITEM i ");
 		sql.append("on c.case_id = i.case_id ");
+		sql.append("left outer join ").append(schema).append("RAM_PRODUCT p ");
+		sql.append("on i.product_id = p.product_id ");
 		sql.append("left outer join ").append(schema).append("RAM_CASE_KIT k ");
 		sql.append("on c.case_id = k.case_id and k.case_kit_id = i.case_kit_id ");
 		sql.append("where c.case_id = ? ");
@@ -197,7 +198,7 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 * @throws InvalidDataException 
 	 */
 	private void insertItems(RAMCaseVO cVo) throws InvalidDataException, DatabaseException {
-		for(Entry<RAMCaseType, Map<String, RAMCaseItemVO>> items : cVo.getItems().entrySet()) {
+		for(Entry<String, Map<String, RAMCaseItemVO>> items : cVo.getItems().entrySet()) {
 			for(Entry<String, RAMCaseItemVO> e : items.getValue().entrySet()) {
 				RAMCaseItemVO i = e.getValue();
 
