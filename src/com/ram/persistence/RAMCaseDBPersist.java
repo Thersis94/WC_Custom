@@ -71,6 +71,8 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		sql.append("on c.case_id = i.case_id ");
 		sql.append("left outer join ").append(schema).append("RAM_PRODUCT p ");
 		sql.append("on i.product_id = p.product_id ");
+		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER cust ");
+		sql.append("on cust.customer_id = p.customer_id ");
 		sql.append("left outer join ").append(schema).append("RAM_CASE_KIT k ");
 		sql.append("on c.case_id = k.case_id and k.case_kit_id = i.case_kit_id ");
 		sql.append("where c.case_id = ? ");
