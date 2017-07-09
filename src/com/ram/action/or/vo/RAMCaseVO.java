@@ -42,6 +42,10 @@ public class RAMCaseVO {
 	private Map<String, Map<String, RAMCaseItemVO>> items;
 	private Map<String, RAMCaseKitVO> kits;
 	private RAMCaseStatus caseStatus;
+	
+	// Extra fields for display purposes
+	private String customerName;
+	private int numProductsCase;
 
 	public RAMCaseVO() {
 		this.kits = new HashMap<>();
@@ -186,6 +190,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the caseStatusTxt
 	 */
+	@Column(name="case_status_cd")
 	public String getCaseStatusTxt() {
 		return caseStatus.toString();
 	}
@@ -317,7 +322,7 @@ public class RAMCaseVO {
 
 	@BeanSubElement
 	public void addItem(RAMCaseItemVO item) {
-		if(item != null) {
+		if(item != null && item.getCaseType() != null) {
 			Map<String, RAMCaseItemVO> imap = items.get(item.getCaseType().toString());
 			if(imap == null) {
 				imap = new HashMap<>();
@@ -343,5 +348,35 @@ public class RAMCaseVO {
 		if(kit != null && kits.containsKey(kit.getCaseKitId())) {
 			kits.remove(kit.getCaseKitId());
 		}
+	}
+
+	/**
+	 * @return the customerName
+	 */
+	@Column(name="customer_nm", isReadOnly=true)
+	public String getCustomerName() {
+		return customerName;
+	}
+
+	/**
+	 * @param customerName the customerName to set
+	 */
+	public void setCustomerName(String customerName) {
+		this.customerName = customerName;
+	}
+
+	/**
+	 * @return the numProductsCase
+	 */
+	@Column(name="num_prod_case", isReadOnly=true)
+	public int getNumProductsCase() {
+		return numProductsCase;
+	}
+
+	/**
+	 * @param numProductsCase the numProductsCase to set
+	 */
+	public void setNumProductsCase(int numProductsCase) {
+		this.numProductsCase = numProductsCase;
 	}
 }
