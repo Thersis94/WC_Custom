@@ -1,6 +1,5 @@
 package com.ram.action.or.vo;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Date;
 
@@ -21,7 +20,7 @@ import com.siliconmtn.db.orm.Table;
  ****************************************************************************/
 @Table(name="RAM_CASE_SIGNATURE")
 public class RAMSignatureVO {
-	public enum SignatureType {PROVIDER}
+	public enum SignatureType {PROVIDER, REP}
 
 	private String signatureId;
 	private String caseId;
@@ -48,16 +47,7 @@ public class RAMSignatureVO {
 		caseId = req.getParameter("caseId");
 		profileId = req.getParameter("profileId");
 		setSignatureTypeTxt(req.getParameter("signatureType"));
-
-		//Extract the Signature data from the request.
-		StringBuilder postParam = new StringBuilder(500);
-		try(BufferedReader reader = req.getReader()) {
-			String line;
-			while((line = reader.readLine()) != null) {
-				postParam.append(line);
-			}
-			signatureTxt = postParam.toString();
-		}
+		signatureTxt = req.getParameter("signatureTxt");
 	}
 
 	/**
