@@ -15,6 +15,7 @@ import com.ram.workflow.data.vo.LocationItemMasterVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -56,7 +57,7 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 
 		//Check for locationId
-		String locationId = req.getParameter("locationId");
+		Integer locationId = Convert.formatInteger(req.getParameter("locationId"));
 		String locationNm = req.getParameter("locationNm");
 
 		//Get the SBUserRole
@@ -72,7 +73,7 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 			List<LocationItemMasterVO> data = getInventoryStatusReportList(locationId, role);
 
 			if(req.hasParameter("generateExcel")) {
-				LocationInventoryReport gr = new LocationInventoryReport(locationId, locationNm);
+				LocationInventoryReport gr = new LocationInventoryReport(locationId.toString(), locationNm);
 				gr.setData(data);
 
 				AbstractSBReportVO rpt = new WebCrescendoReport(gr);
@@ -96,7 +97,7 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 	 * @return
 	 */
 	private List<CustomerLocationVO> getCustomerLocations(SBUserRole role) {
-		String customerId = StringUtil.checkVal(role.getAttribute("roleAttributeKey_1"));
+		int customerId = Convert.formatInteger((String)role.getAttribute("roleAttributeKey_1"));
 		List<CustomerLocationVO> cls = new ArrayList<CustomerLocationVO>();
 
 		/*
@@ -124,7 +125,7 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 		if(sql != null) {
 			try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
 				if(role.getRoleLevel() != 100) {
-					ps.setString(1, customerId);
+					ps.setInt(1, customerId);
 				}
 				
 				ResultSet rs = ps.executeQuery();
@@ -146,19 +147,19 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 	 * @param role 
 	 * @return
 	 */
-	private List<LocationItemMasterVO> getInventoryStatusReportList(String locationId, SBUserRole role) {
+	private List<LocationItemMasterVO> getInventoryStatusReportList(int locationId, SBUserRole role) {
 
 		//Get Control Variables Ready.
-		String customerId = StringUtil.checkVal(role.getAttribute("roleAttributeKey_1"));
+		Integer customerId = Convert.formatInteger((String)role.getAttribute("roleAttributeKey_1"));
 		boolean filterByOem = role.getRoleLevel() == 20;
 
 		List<LocationItemMasterVO> items = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(getLocationItemMasterSql(filterByOem))) {
-			ps.setString(1, locationId);
+			ps.setInt(1, locationId);
 
 			//Oems should only see their products in the report.
 			if(filterByOem) {
-				ps.setString(2, customerId);
+				ps.setInt(2, customerId);
 			}
 			ResultSet rs = ps.executeQuery();
 
