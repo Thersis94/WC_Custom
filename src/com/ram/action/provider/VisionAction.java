@@ -231,9 +231,8 @@ public class VisionAction extends SBActionAdapter {
 			//Set the Title
 			s.setTitle(title);
 
-			boolean shaded = kp.getQtyOnHand() != kp.getQuantity().intValue();
-			if(shaded == true)
-				s.setShaded(shaded);
+			//Set Shaded Status
+			s.setShaded(kp.getQtyOnHand() != kp.getQuantity().intValue());
 		}
 	}
 
