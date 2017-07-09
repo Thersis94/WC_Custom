@@ -26,10 +26,17 @@ public class RAMCaseItemVO {
 
 	private String caseItemId;
 	private Integer productId;
+	private String productNm;
 	private String caseKitId;
 	private String caseId;
 	private int qtyNo;
 	private RAMCaseType caseType;
+	private String lotNumberTxt;
+	private int billableFlg;
+	private int wastedFlg;
+	private String productFromTxt;
+	private String customerNm;
+	private String gtinProductId;
 	private Date createDt;
 	private Date updateDt;
 
@@ -48,6 +55,11 @@ public class RAMCaseItemVO {
 		caseKitId = req.getParameter("caseKitId");
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
 		qtyNo = Convert.formatInteger("qtyNo");
+		lotNumberTxt = req.getParameter("lotNumberTxt");
+		billableFlg = Convert.formatInteger("billableFlg");
+		wastedFlg = Convert.formatInteger("wastedFlg");
+		productFromTxt = req.getParameter("productFromTxt");
+		customerNm = req.getParameter("customerNm");
 		setCaseTypeTxt(req.getParameter("caseTypeCd"));
 	}
 
@@ -65,6 +77,14 @@ public class RAMCaseItemVO {
 	@Column(name="product_id")
 	public Integer getProductId() {
 		return productId;
+	}
+
+	/**
+	 * @return the productNm
+	 */
+	@Column(name="product_nm", isReadOnly=true)
+	public String getProductNm() {
+		return productNm;
 	}
 
 	/**
@@ -107,6 +127,52 @@ public class RAMCaseItemVO {
 	}
 
 	/**
+	 * @return the lotNumberTxt
+	 */
+	@Column(name="lot_number_txt")
+	public String getLotNumberTxt() {
+		return lotNumberTxt;
+	}
+
+	/**
+	 * @return the billableFlg
+	 */
+	@Column(name="billable_flg")
+	public int getBillableFlg() {
+		return billableFlg;
+	}
+
+	/**
+	 * @return the wastedFlg
+	 */
+	@Column(name="wasted_flg")
+	public int getWastedFlg() {
+		return wastedFlg;
+	}
+
+	/**
+	 * @return the productFromTxt
+	 */
+	@Column(name="product_from_txt")
+	public String getProductFromTxt() {
+		return productFromTxt;
+	}
+
+	/**
+	 * @return the customerNm
+	 */
+	public String getCustomerNm() {
+		return customerNm;
+	}
+
+	/**
+	 * @return the gtinProductId
+	 */
+	public String getGtinProductId() {
+		return gtinProductId;
+	}
+
+	/**
 	 * @return the createDt
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
@@ -134,6 +200,13 @@ public class RAMCaseItemVO {
 	 */
 	public void setProductId(Integer productId) {
 		this.productId = productId;
+	}
+
+	/**
+	 * @param productNm the productNm to set
+	 */
+	public void setProductNm(String productNm) {
+		this.productNm = productNm;
 	}
 
 	/**
@@ -173,6 +246,48 @@ public class RAMCaseItemVO {
 		} catch(Exception e) {
 			//Throw away exception.
 		}
+	}
+
+	/**
+	 * @param lotNumberTxt the lotNumberTxt to set
+	 */
+	public void setLotNumberTxt(String lotNumberTxt) {
+		this.lotNumberTxt = lotNumberTxt;
+	}
+
+	/**
+	 * @param billableFlg the billableFlg to set
+	 */
+	public void setBillableFlg(int billableFlg) {
+		this.billableFlg = billableFlg;
+	}
+
+	/**
+	 * @param wastedFlg the wastedFlg to set
+	 */
+	public void setWastedFlg(int wastedFlg) {
+		this.wastedFlg = wastedFlg;
+	}
+
+	/**
+	 * @param productFromTxt the productFromTxt to set
+	 */
+	public void setProductFromTxt(String productFromTxt) {
+		this.productFromTxt = productFromTxt;
+	}
+
+	/**
+	 * @param customerNm the customerNm to set
+	 */
+	public void setCustomerNm(String customerNm) {
+		this.customerNm = customerNm;
+	}
+
+	/**
+	 * @param gtinProductId the gtinProductId to set
+	 */
+	public void setGtinProductId(String gtinProductId) {
+		this.gtinProductId = gtinProductId;
 	}
 
 	/**
