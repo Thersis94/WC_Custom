@@ -129,6 +129,7 @@ public class RAMCaseItemVO {
 	/**
 	 * @return the lotNumberTxt
 	 */
+	@Column(name="lot_number_txt")
 	public String getLotNumberTxt() {
 		return lotNumberTxt;
 	}
@@ -136,6 +137,7 @@ public class RAMCaseItemVO {
 	/**
 	 * @return the billableFlg
 	 */
+	@Column(name="billable_flg")
 	public int getBillableFlg() {
 		return billableFlg;
 	}
@@ -143,6 +145,7 @@ public class RAMCaseItemVO {
 	/**
 	 * @return the wastedFlg
 	 */
+	@Column(name="wasted_flg")
 	public int getWastedFlg() {
 		return wastedFlg;
 	}
@@ -150,6 +153,7 @@ public class RAMCaseItemVO {
 	/**
 	 * @return the productFromTxt
 	 */
+	@Column(name="product_from_txt")
 	public String getProductFromTxt() {
 		return productFromTxt;
 	}
