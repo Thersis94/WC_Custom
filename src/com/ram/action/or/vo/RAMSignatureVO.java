@@ -1,10 +1,7 @@
 package com.ram.action.or.vo;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Date;
-
-import org.mortbay.log.Log;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
