@@ -2,8 +2,6 @@ package com.ram.action.or.vo;
 
 import java.util.Date;
 
-import org.mortbay.log.Log;
-
 import com.ram.action.or.RAMCaseManager;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
