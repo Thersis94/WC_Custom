@@ -308,6 +308,7 @@ public class VisionAction extends SBActionAdapter {
 			if(i.getProductId().equals(p.getProductId())) {
 				int incOrDec = i.getCaseType() == RAMCaseType.OR ? -1 : 1;
 				p.addQtyOnHand(i.getQtyNo() * incOrDec);
+				p.setCaseItemId(i.getCaseItemId());
 				break;
 			}
 		}
