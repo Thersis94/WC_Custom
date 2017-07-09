@@ -6,7 +6,7 @@ import java.util.Map;
 
 // WC Custom Libs
 import com.ram.action.products.ProductCartFacadeAction;
-
+import com.ram.action.util.LookupAction;
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -67,6 +67,7 @@ public class PortalControllerAction extends SimpleActionAdapter {
 	static {
 		ACTIONS = new HashMap<>(1);
 		ACTIONS.put("RAM_OR", ProductCartFacadeAction.class);
+		ACTIONS.put("UTIL", LookupAction.class);
 	}
 
 	/* (non-Javadoc)
