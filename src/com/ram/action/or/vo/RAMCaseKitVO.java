@@ -1,5 +1,6 @@
 package com.ram.action.or.vo;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import com.ram.action.or.RAMCaseManager;
@@ -19,8 +20,12 @@ import com.siliconmtn.db.orm.Table;
  * @since Jun 30, 2017
  ****************************************************************************/
 @Table(name="RAM_CASE_KIT")
-public class RAMCaseKitVO {
+public class RAMCaseKitVO implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private String caseKitId;
 	private String locationItemMasterId;
 	private String caseId;

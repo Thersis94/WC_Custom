@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.ram.action.or.RAMCaseManager;
+import org.apache.log4j.Logger;
+
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
@@ -32,7 +33,7 @@ import com.siliconmtn.http.filter.fileupload.Constants;
  * @since Jul 3, 2017
  ****************************************************************************/
 public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO> {
-
+	private static final Logger log = Logger.getLogger(RAMCaseDBPersist.class);
 	private DBProcessor dbp;
 	private Connection conn;
 	private String schema;
@@ -44,8 +45,7 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 * @see com.ram.persistance.PersistanceIntfc#load()
 	 */
 	@Override
-	public RAMCaseVO load() {
-		String caseId = (String) attributes.get(RAMCaseManager.RAM_CASE_ID);
+	public RAMCaseVO load(String caseId) {
 		RAMCaseVO cVo = null;
 		List<Object> params = new ArrayList<>();
 		params.add(caseId);
@@ -64,18 +64,25 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 */
 	private String loadCaseSql() {
 		StringBuilder sql = new StringBuilder(525);
-		sql.append("select * from ").append(schema).append("RAM_CASE c ");
-		sql.append("left outer join ").append(schema).append("RAM_CASE_SIGNATURE s ");
+		sql.append("select cu.customer_nm, su.first_nm || ' ' || su.last_nm as surgeon_nm, o.or_name ,c.*, i.*, p.*, k.* ");
+		sql.append("from ").append(schema).append("ram_case c ");
+		sql.append("left outer join ").append(schema).append("ram_case_signature s ");
 		sql.append("on c.case_id = s.case_id ");
-		sql.append("left outer join ").append(schema).append("RAM_CASE_ITEM i ");
+		sql.append("left outer join ").append(schema).append("ram_case_item i ");
 		sql.append("on c.case_id = i.case_id ");
-		sql.append("left outer join ").append(schema).append("RAM_PRODUCT p ");
+		sql.append("left outer join ").append(schema).append("ram_product p ");
 		sql.append("on i.product_id = p.product_id ");
-		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER cust ");
-		sql.append("on cust.customer_id = p.customer_id ");
 		sql.append("left outer join ").append(schema).append("RAM_CASE_KIT k ");
 		sql.append("on c.case_id = k.case_id and k.case_kit_id = i.case_kit_id ");
+		sql.append("left outer join ").append(schema).append("ram_customer cu ");
+		sql.append("on c.customer_id = cu.customer_id ");
+		sql.append("left outer join ").append(schema).append("ram_surgeon su ");
+		sql.append("on c.surgeon_id = su.surgeon_id ");
+		sql.append("left outer join ").append(schema).append("ram_or_room o ");
+		sql.append("on c.or_room_id = o.or_room_id ");
 		sql.append("where c.case_id = ? ");
+		
+		log.info(sql);
 		return sql.toString();
 	}
 
@@ -88,8 +95,8 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 * so that any errors can be immediately rolled back.
 	 */
 	@Override
-	public RAMCaseVO save() {
-		RAMCaseVO cVo = (RAMCaseVO)attributes.get(RAMCaseManager.RAM_CASE_VO);
+	public RAMCaseVO save(RAMCaseVO cVo) {
+		//RAMCaseVO cVo = (RAMCaseVO)attributes.get(RAMCaseManager.RAM_CASE_VO);
 		if(cVo != null) {
 			try {
 				//Set Autocommit False.
@@ -242,7 +249,7 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 * @see com.ram.persistance.PersistanceIntfc#flush()
 	 */
 	@Override
-	public void flush() {
+	public void flush(String caseId) {
 		//Not necessary for DB.
 	}
 

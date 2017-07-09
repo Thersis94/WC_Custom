@@ -19,17 +19,27 @@ public class RAMCaseSessionPersist extends AbstractPersist<ActionRequest, RAMCas
 
 	private ActionRequest req = null;
 	public static final String CASE_DATA_KEY = "ramCaseData";
+	
 
 	public RAMCaseSessionPersist() {
 		super();
 	}
-
+	
+	/**
+	 * Creates the key for the session
+	 * @param caseId
+	 * @return
+	 */
+	private String key(String caseId) {
+		return RAMCaseManager.STORAGE_SUFFIX + caseId;
+	}
+	
 	/* (non-Javadoc)
 	 * @see com.ram.persistance.PersistanceIntfc#load()
 	 */
 	@Override
-	public RAMCaseVO load() {
-		return (RAMCaseVO) req.getSession().getAttribute(RAMCaseManager.RAM_CASE_VO);
+	public RAMCaseVO load(String caseId) {
+		return (RAMCaseVO)req.getSession().getAttribute(key(caseId));
 	}
 
 
@@ -37,11 +47,10 @@ public class RAMCaseSessionPersist extends AbstractPersist<ActionRequest, RAMCas
 	 * @see com.ram.persistance.PersistanceIntfc#save()
 	 */
 	@Override
-	public RAMCaseVO save() {
-		RAMCaseVO cVo = (RAMCaseVO) attributes.get(RAMCaseManager.RAM_CASE_VO); 
-		if(cVo == null) {
-			req.getSession().setAttribute(RAMCaseManager.RAM_CASE_VO, cVo);
-		}
+	public RAMCaseVO save(RAMCaseVO cVo) {
+		log.info("Saving case: " + cVo.getItems().size());
+		req.getSession().setAttribute(key(cVo.getCaseId()),  cVo);
+
 		return cVo;
 	}
 
@@ -50,8 +59,8 @@ public class RAMCaseSessionPersist extends AbstractPersist<ActionRequest, RAMCas
 	 * @see com.ram.persistance.PersistanceIntfc#flush()
 	 */
 	@Override
-	public void flush() {
-		req.getSession().setAttribute(RAMCaseManager.RAM_CASE_VO, null);
+	public void flush(String caseId) {
+		req.getSession().removeAttribute(key(caseId));
 	}
 
 
