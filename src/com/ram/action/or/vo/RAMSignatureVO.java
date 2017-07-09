@@ -1,6 +1,5 @@
 package com.ram.action.or.vo;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Date;
@@ -27,7 +26,7 @@ public class RAMSignatureVO implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public enum SignatureType {PROVIDER}
+	public enum SignatureType {PROVIDER, REP}
 
 	private String signatureId;
 	private String caseId;
@@ -54,16 +53,7 @@ public class RAMSignatureVO implements Serializable {
 		caseId = req.getParameter("caseId");
 		profileId = req.getParameter("profileId");
 		setSignatureTypeTxt(req.getParameter("signatureType"));
-
-		//Extract the Signature data from the request.
-		StringBuilder postParam = new StringBuilder(500);
-		try(BufferedReader reader = req.getReader()) {
-			String line;
-			while((line = reader.readLine()) != null) {
-				postParam.append(line);
-			}
-			signatureTxt = postParam.toString();
-		}
+		signatureTxt = req.getParameter("signatureTxt");
 	}
 
 	/**

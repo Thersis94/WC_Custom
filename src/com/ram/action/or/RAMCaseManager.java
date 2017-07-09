@@ -266,7 +266,7 @@ public class RAMCaseManager {
 	 * @param item
 	 * @throws Exception 
 	 */
-	public void removeCaseItem(ActionRequest req) throws Exception {
+	public Integer removeCaseItem(ActionRequest req) throws Exception {
 		//Get the Case
 		RAMCaseVO cVo = retrieveCase(req.getParameter("caseId"));
 
@@ -278,6 +278,8 @@ public class RAMCaseManager {
 
 		//Persist the Case.
 		updateCaseInfo(cVo);
+		
+		return item.getProductId();
 	}
 
 	/**
