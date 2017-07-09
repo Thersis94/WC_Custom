@@ -1,21 +1,22 @@
 package com.ram.action.products;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+// JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ram.action.data.ORKitVO;
+// RAM Custom
 import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.report.vo.KitExcelReport;
+
+// SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
+
+// WC Libs 3.2
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -41,14 +42,13 @@ public class CaseSearchAction extends SimpleActionAdapter {
 	public static final String SEARCH = "search";
 	public static final String START_DATE = "startDate";
 	public static final String END_DATE = "endDate";
-	public static final String FINALIZED = "finalized";
+	public static final String STATUS = "status";
 	
 	private enum SearchFields {
-		repId("REP_ID"),
-		caseId("CASE_ID"),
-		surgeryDate("SURGERY_DT"),
-		numProducts("COUNT(k.RAM_CASE_INFO_ID)"),
-		finalized("FINALIZED_FLG");
+		caseId("case_id"),
+		surgeryDate("surgery_dt"),
+		numProducts("num_prod_case"),
+		status("case_status_cd");
 		
 		private String cloumnNm;
 		
@@ -110,50 +110,59 @@ public class CaseSearchAction extends SimpleActionAdapter {
 	 */
 	protected void loadKits(ActionRequest req) throws ActionException {
 		List<Object> params = new ArrayList<>();
-		String sql = buildKitSearchSQL(req);
+		StringBuilder sql = new StringBuilder(512);
+		StringBuilder tSql = new StringBuilder(512);
+		tSql.append("select count(*) as key ");
+		buildSelectSQL(sql);
+		buildKitSearchSQL(req, sql, true);
+		buildKitSearchSQL(req, tSql, false);
 		
 		// Get the hospital
 		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
 		params.add(Convert.formatInteger((String)role.getAttribute(0)));
 
 		// Get the search params
-		if (req.hasParameter(SEARCH)) {
-			params.add("%" + req.getParameter(SEARCH).toLowerCase() + "%");
-			params.add("%" + req.getParameter(SEARCH).toLowerCase() + "%");
+		if (req.hasParameter(SEARCH)) params.add("%" + req.getParameter(SEARCH).toLowerCase() + "%");
+		if (req.hasParameter(START_DATE)) params.add(Convert.parseDateUnknownPattern(req.getParameter(START_DATE)));
+		if (req.hasParameter(END_DATE)) params.add(Convert.parseDateUnknownPattern(req.getParameter(END_DATE)));
+		if (! Convert.formatBoolean(req.getParameter("loadAll"))) {
+			params.add(Convert.formatInteger(req.getParameter("limit")));
+			params.add(Convert.formatInteger(req.getParameter("offset"), 0));
 		}
 		
-		if (req.hasParameter(START_DATE)) params.add(Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter(START_DATE)), false));
-		if (req.hasParameter(END_DATE)) params.add(Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter(END_DATE)), false));
-		
-		int page = Convert.formatInteger(req.getParameter("offset"), 0);
-		int rpp = Convert.formatInteger(req.getParameter("limit"));
-		rpp = rpp == 0 ? 10 : rpp;
-		int start = page * rpp;
-		int end = rpp * (page + 1);
-		
+		// Query the database
 		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<?> kits = null;
-		if ( Convert.formatBoolean(req.getParameter("loadAll")))
-			 kits = dbp.executeSelect(sql.toString(), params, new RAMCaseVO());
-		else
-			 kits = dbp.executeSelect(sql.toString(), params, new RAMCaseVO(), null, start, end);
+		List<?> kits = dbp.executeSelect(sql.toString(), params, new RAMCaseVO());
+		int size = kits.size();
 		
-		putModuleData(kits, kits.size(), false);
+		// Add search for overall count
+		if (! Convert.formatBoolean(req.getParameter("loadAll"))) {
+			params.remove(params.size() - 1);
+			params.remove(params.size() - 1);
+			List<?> count = dbp.executeSelect(tSql.toString(), params, new GenericVO());
+			size = Convert.formatInteger(((GenericVO)count.get(0)).getKey().toString());
+		}
+		
+		putModuleData(kits, size, false);
 	}
 	
+	/**
+	 * Separates out the Select form the body so a count can be performed
+	 * @param sql
+	 */
+	private void buildSelectSQL(StringBuilder sql) {
+		sql.append("select i.num_prod_case, p.customer_nm || ', ' || or_name as customer_nm, c.hospital_case_id, ");
+		sql.append("c.surgery_dt, c.case_status_cd, c.customer_id, c.profile_id, c.case_id ");
+	}
 	
 	/**
 	 * Build the kit search sql query
 	 * @param req
 	 * @return
 	 */
-	private String buildKitSearchSQL(ActionRequest req) {
-		StringBuilder sql = new StringBuilder(300);
+	private void buildKitSearchSQL(ActionRequest req, StringBuilder sql, boolean isList) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		
-		sql.append("select i.num_prod_case, p.customer_nm || ', ' || or_name as customer_nm, c.hospital_case_id, ");
-		sql.append("c.surgery_dt, c.case_status_cd, c.customer_id, c.profile_id, c.case_id from ");
-		sql.append(customDb).append("ram_case c ");
+		sql.append("from ").append(customDb).append("ram_case c ");
 		sql.append("inner join ").append(customDb).append("ram_customer p on c.customer_id = p.customer_id ");
 		sql.append("inner join ").append(customDb).append("ram_or_room r on c.or_room_id = r.or_room_id ");
 		sql.append("left outer join ( ");
@@ -163,30 +172,24 @@ public class CaseSearchAction extends SimpleActionAdapter {
 		sql.append(") i on c.case_id = i.case_id  ");
 		sql.append("where c.customer_id = cast(? as int) ");
 		
-		if (req.hasParameter(SEARCH)) {
-			sql.append("and (lower(rep_id)").append(" like ? ");
-			sql.append("or lower(case_id)").append(" like ?) ");
-		}
-		if (req.hasParameter(START_DATE)) sql.append("and k.surgery_dt > ? ");
-		if (req.hasParameter(END_DATE)) sql.append("and k.surgery_dt < ? ");
+		// Add the search params
+		if (req.hasParameter(SEARCH)) sql.append("and lower(hospital_case_id) like ? ");
+		if (req.hasParameter(START_DATE)) sql.append("and c.surgery_dt > ? ");
+		if (req.hasParameter(END_DATE)) sql.append("and c.surgery_dt < ? ");
+		if (req.hasParameter(STATUS)) sql.append("and c.case_status_cd in ('").append(req.getParameter(STATUS)).append("') ");
 		
-		sql.append("order by ");
-		
-		if (req.hasParameter("sort")) {
-			sql.append(SearchFields.valueOf(req.getParameter("sort")).getColumnName());
-			
-			String order = StringUtil.checkVal(req.getParameter("order"));
-			if ("desc".equalsIgnoreCase(order)) {
-				sql.append(" DESC ");
+		if(isList) {
+			sql.append("order by ");
+			if (req.hasParameter("sort")) {
+				sql.append(SearchFields.valueOf(req.getParameter("sort")).getColumnName());
+				sql.append(" ").append(req.getParameter("order")).append(" ");
 			} else {
-				sql.append(" ASC ");
+				sql.append("case_status_cd, surgery_dt desc ");
 			}
-		} else {
-			sql.append("case_status_cd, SURGERY_DT DESC");
 		}
 		
-		log.debug(sql);
-		return sql.toString();
+		// add the paging
+		if (isList && ! Convert.formatBoolean(req.getParameter("loadAll"))) sql.append(" limit ? offset ? ");
 	}
 	
 	/**
