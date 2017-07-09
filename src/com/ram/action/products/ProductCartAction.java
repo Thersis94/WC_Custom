@@ -97,7 +97,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * Build actions this widget can perform, sent by the request.
 	 * 
 	 */
-	private enum WidgetBuildAction {saveCaseInfo, addProduct, clearCart, addSignature, finalize, sendEmails}
+	private enum WidgetBuildAction {saveCaseInfo, addProduct, addSignature, finalize, sendEmails}
 	
 	/**
 	 * Retrieve actions this widget can perform, sent by the request.
