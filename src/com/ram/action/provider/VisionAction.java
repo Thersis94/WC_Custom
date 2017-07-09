@@ -11,10 +11,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONException;
-import net.sf.json.JSONObject;
-
 import com.ram.action.data.RAMProductSearchVO;
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
@@ -26,8 +22,8 @@ import com.ram.datafeed.data.LayerCoordinateVO;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.imageMap.FabricParserInterface;
@@ -36,6 +32,10 @@ import com.siliconmtn.util.imageMap.ImageMapVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONException;
+import net.sf.json.JSONObject;
 
 /****************************************************************************
  * <b>Title</b>: VisionAction.java
@@ -163,6 +163,7 @@ public class VisionAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unchecked")
 	private ModuleVO loadVisionObject(Integer prodId) throws ActionException {
 
 		//Use a new ModuleVO so as to prevent issues with cache.
@@ -186,6 +187,10 @@ public class VisionAction extends SBActionAdapter {
 
 			ImageMapVO map = null;
 
+			if(attributes.containsKey(CONSUMED_ITEMS)) {
+				markConsumed(layers, (List<RAMCaseItemVO>) attributes.get(CONSUMED_ITEMS));
+			}
+
 			//Parse each Layer
 			for(KitLayerVO k : layers) {
 				map = fp.getImageMap(JSONObject.fromObject(k.getJsonData()));
@@ -196,7 +201,6 @@ public class VisionAction extends SBActionAdapter {
 			}
 
 			//Set Proper ModuleVO Data
-			
 			mod.setActionData(layers);
 			mod.setDataSize(layers.size());
 
@@ -220,8 +224,16 @@ public class VisionAction extends SBActionAdapter {
 			//Obtain the related ProductId from the Shape.
 			int id = Convert.formatInteger(s.getId().substring(s.getId().indexOf('-') + 1));
 
-			//Lookup the Product and set the Title based on ProductName.
-			s.setTitle(k.getProducts().get(id).getProductName());
+			//Lookup the Product.
+			KitLayerProductVO kp = k.getProducts().get(id); 
+			String title = kp.getProductName();
+
+			//Set the Title
+			s.setTitle(title);
+
+			boolean shaded = kp.getQtyOnHand() != kp.getQuantity().intValue();
+			if(shaded == true)
+				s.setShaded(shaded);
 		}
 	}
 
@@ -233,10 +245,9 @@ public class VisionAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unchecked")
 	private ModuleVO getVisionData(RAMProductSearchVO svo) throws ActionException {
 
-		ModuleVO mod = super.readFromCache(CACHE_PREFIX + svo.getProductId());
+		ModuleVO mod = null;//super.readFromCache(CACHE_PREFIX + svo.getProductId());
 
 		//If not found in cache Load data.
 		if(mod == null) {
@@ -261,9 +272,6 @@ public class VisionAction extends SBActionAdapter {
 			}
 		}
 
-		if(attributes.containsKey(CONSUMED_ITEMS)) {
-			markConsumed(mod, (List<RAMCaseItemVO>) attributes.get(CONSUMED_ITEMS));
-		}
 		return mod;
 	}
 
@@ -272,10 +280,7 @@ public class VisionAction extends SBActionAdapter {
 	 * updates the KitLayerData on the ModuleVO to match.
 	 * @param mod
 	 */
-	@SuppressWarnings("unchecked")
-	private void markConsumed(ModuleVO mod, List<RAMCaseItemVO> items) {
-		List<KitLayerVO> layers = (List<KitLayerVO>) mod.getActionData();
-
+	private void markConsumed(List<KitLayerVO> layers, List<RAMCaseItemVO> items) {
 		for(KitLayerVO l : layers) {
 			for (Entry<Integer, KitLayerProductVO> p : l.getProducts().entrySet()) {
 				checkQty(p.getValue(), items);

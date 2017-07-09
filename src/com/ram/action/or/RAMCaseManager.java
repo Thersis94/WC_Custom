@@ -300,7 +300,7 @@ public class RAMCaseManager {
 	 * @return
 	 * @throws Exception
 	 */
-	public RAMCaseVO updateStatus(ActionRequest req, RAMCaseStatus st) throws Exception {
+	public RAMCaseVO updateStatus(RAMCaseStatus st) throws Exception {
 		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
 		if(st != null) {
 			cVo.setCaseStatus(st);

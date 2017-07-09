@@ -41,6 +41,7 @@ import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 public class KitLayerProductAction extends SBActionAdapter {
 
 	public static final String PRODUCT_KIT_ID = "productKitIds";
+	public static final String KIT_LAYER_ID = "kitLayerId";
 	/**
 	 * Default Constructor
 	 */
@@ -84,13 +85,14 @@ public class KitLayerProductAction extends SBActionAdapter {
 	 * Retrieve the product layer xr bound to a given kitLayer with 
 	 * associated product information.
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		
 		//Fast fail if kitLayerId is missing.
-		if(!req.hasParameter("kitLayerId"))
+		if(!req.hasParameter(KIT_LAYER_ID))
 			return;
 		
-		List<KitLayerProductVO> layers = new ArrayList<KitLayerProductVO>();
+		List<KitLayerProductVO> layers = new ArrayList<>();
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 
 		//Build Query
@@ -101,13 +103,13 @@ public class KitLayerProductAction extends SBActionAdapter {
 		sb.append("where a.KIT_LAYER_ID = ?");
 		
 		//Log sql Statement for verification
-		log.info("sql: " + sb.toString() + "|" + req.getParameter("kitLayerId"));
+		log.info("sql: " + sb.toString() + "|" + req.getParameter(KIT_LAYER_ID));
 		
 		PreparedStatement ps = null;
 		
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setInt(1, Convert.formatInteger(req.getParameter("kitLayerId")));
+			ps.setInt(1, Convert.formatInteger(req.getParameter(KIT_LAYER_ID)));
 			ResultSet rs = ps.executeQuery();
 			
 			while(rs.next()) 
@@ -153,9 +155,9 @@ public class KitLayerProductAction extends SBActionAdapter {
 	private Map<String, List<KitLayerProductVO>> getChanges(ActionRequest req) {
 		
 		//Build Containers
-		Map<String, List<KitLayerProductVO>> changes = new HashMap<String, List<KitLayerProductVO>>();
-		List<KitLayerProductVO> inserts = new ArrayList<KitLayerProductVO>();
-		List<KitLayerProductVO> updates = new ArrayList<KitLayerProductVO>();
+		Map<String, List<KitLayerProductVO>> changes = new HashMap<>();
+		List<KitLayerProductVO> inserts = new ArrayList<>();
+		List<KitLayerProductVO> updates = new ArrayList<>();
 		KitLayerProductVO vo = null;
 		String [] values = null;
 
@@ -169,7 +171,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 				vo.setProductKitId(Convert.formatInteger(values[0]));
 				vo.setProductId(Convert.formatInteger(values[1]));
 				vo.setKitLayerId(Convert.formatInteger(values[2]));
-				vo.setCoordinateType(values[3]);
+				vo.setCoordinateTypeVal(values[3]);
 				vo.setActiveFlag(Convert.formatInteger(values[4]));
 				vo.setQuantity(Convert.formatInteger(values[5]));
 				
@@ -179,7 +181,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 				 * on the vo then add it to updates.  Otherwise add the
 				 * vo to the inserts list.
 				 */
-				if(!(vo.getProductId() > 0)) {
+				if(vo.getProductId() <= 0) {
 					//Ignore these ones.
 				}
 				else if(vo.getProductKitId() > 0)

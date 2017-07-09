@@ -150,10 +150,11 @@ public class SPDAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	private void loadKitData(ActionRequest req, List<RAMCaseItemVO> items) throws ActionException {
+		attributes.put(VisionAction.CONSUMED_ITEMS, items);
+
 		VisionAction va = new VisionAction(actionInit);
 		va.setDBConnection(dbConn);
 		va.setAttributes(attributes);
-		attributes.put(VisionAction.CONSUMED_ITEMS, items);
 		va.retrieve(req);
 	}
 

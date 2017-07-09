@@ -30,7 +30,7 @@ public class RAMCaseVO {
 	public enum RAMCaseStatus {OR_READY, OR_IN_PROGRESS, OR_COMPLETE, SPD_IN_PROGRESS, SPD_COMPLETE}
 
 	private String caseId;
-	private String customerId;
+	private int customerId;
 	private String hospitalCaseId;
 	private String orRoomId;
 	private String surgeonId;
@@ -60,7 +60,7 @@ public class RAMCaseVO {
 	 */
 	public void setData(ActionRequest req) {
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
-		customerId = req.getParameter("customerId");
+		customerId = Convert.formatInteger(req.getParameter("customerId"));
 		hospitalCaseId = req.getParameter("hospitalCaseId");
 		orRoomId = req.getParameter("orRoomId");
 		surgeonId = req.getParameter("surgeonId");
@@ -87,7 +87,7 @@ public class RAMCaseVO {
 	 * @return the customerId
 	 */
 	@Column(name="customer_id")
-	public String getCustomerId() {
+	public int getCustomerId() {
 		return customerId;
 	}
 
@@ -200,7 +200,7 @@ public class RAMCaseVO {
 	/**
 	 * @param customerId the customerId to set.
 	 */
-	public void setCustomerId(String customerId) {
+	public void setCustomerId(int customerId) {
 		this.customerId = customerId;
 	}
 
