@@ -1,5 +1,6 @@
 package com.ram.action.or.vo;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import com.ram.action.or.RAMCaseManager;
@@ -20,7 +21,12 @@ import com.siliconmtn.util.Convert;
  * @since Jun 28, 2017
  ****************************************************************************/
 @Table(name="ram_case_item")
-public class RAMCaseItemVO {
+public class RAMCaseItemVO implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
 	public enum RAMCaseType {OR, SPD}
 

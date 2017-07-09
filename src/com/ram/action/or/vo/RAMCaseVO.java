@@ -1,9 +1,12 @@
 package com.ram.action.or.vo;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.mortbay.log.Log;
 
 import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
@@ -27,7 +30,12 @@ import com.siliconmtn.util.StringUtil;
  * @since Jun 28, 2017
  ****************************************************************************/
 @Table(name="RAM_CASE")
-public class RAMCaseVO {
+public class RAMCaseVO implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
 	public enum RAMCaseStatus {OR_READY, OR_IN_PROGRESS, OR_COMPLETE, SPD_IN_PROGRESS, CLOSED}
 
@@ -45,6 +53,7 @@ public class RAMCaseVO {
 	private Map<String, Map<String, RAMCaseItemVO>> items;
 	private Map<String, RAMCaseKitVO> kits;
 	private RAMCaseStatus caseStatus;
+	private boolean newCase;
 	
 	// Extra fields for display purposes
 	private String customerName;
@@ -80,9 +89,12 @@ public class RAMCaseVO {
 	public void setData(ActionRequest req) {
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
 		customerId = Convert.formatInteger(req.getParameter("customerId"));
+		customerName = req.getParameter("customerName");
 		hospitalCaseId = req.getParameter("hospitalCaseId");
 		orRoomId = req.getParameter("orRoomId");
+		orRoomName = req.getParameter("orRoomName");
 		surgeonId = req.getParameter("surgeonId");
+		surgeonName = req.getParameter("surgeonName");
 		surgeryDate = Convert.formatDate(req.getParameter("surgeryDate"));
 		spdDt = Convert.formatDate(req.getParameter("spdDt"));
 		setCaseStatusTxt(req.getParameter("caseStatus"));
@@ -92,6 +104,8 @@ public class RAMCaseVO {
 		svo.setCaseId(caseId);
 		svo.setSignatureType(SignatureType.PROVIDER);
 		addSignature(svo);
+		
+		Log.info("VO: " + this);
 	}
 
 	/**
@@ -453,5 +467,19 @@ public class RAMCaseVO {
 	 */
 	public void setSurgeonName(String surgeonName) {
 		this.surgeonName = surgeonName;
+	}
+
+	/**
+	 * @return the newCase
+	 */
+	public boolean isNewCase() {
+		return newCase;
+	}
+
+	/**
+	 * @param newCase the newCase to set
+	 */
+	public void setNewCase(boolean newCase) {
+		this.newCase = newCase;
 	}
 }

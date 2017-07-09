@@ -10,7 +10,6 @@ import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
-import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
@@ -46,8 +45,7 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 * @see com.ram.persistance.PersistanceIntfc#load()
 	 */
 	@Override
-	public RAMCaseVO load() {
-		String caseId = (String) attributes.get(RAMCaseManager.RAM_CASE_ID);
+	public RAMCaseVO load(String caseId) {
 		RAMCaseVO cVo = null;
 		List<Object> params = new ArrayList<>();
 		params.add(caseId);
@@ -97,8 +95,8 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 * so that any errors can be immediately rolled back.
 	 */
 	@Override
-	public RAMCaseVO save() {
-		RAMCaseVO cVo = (RAMCaseVO)attributes.get(RAMCaseManager.RAM_CASE_VO);
+	public RAMCaseVO save(RAMCaseVO cVo) {
+		//RAMCaseVO cVo = (RAMCaseVO)attributes.get(RAMCaseManager.RAM_CASE_VO);
 		if(cVo != null) {
 			try {
 				//Set Autocommit False.
@@ -251,7 +249,7 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 * @see com.ram.persistance.PersistanceIntfc#flush()
 	 */
 	@Override
-	public void flush() {
+	public void flush(String caseId) {
 		//Not necessary for DB.
 	}
 
