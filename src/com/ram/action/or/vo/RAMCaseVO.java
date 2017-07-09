@@ -187,6 +187,7 @@ public class RAMCaseVO {
 	/**
 	 * @return the caseStatusTxt
 	 */
+	@Column(name="case_status_cd")
 	public String getCaseStatusTxt() {
 		return caseStatus.toString();
 	}

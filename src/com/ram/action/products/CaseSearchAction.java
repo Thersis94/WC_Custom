@@ -7,10 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.ram.action.data.ORKitVO;
+import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.report.vo.KitExcelReport;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -18,6 +20,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>CaseSearchAction.java<p/>
@@ -106,38 +109,37 @@ public class CaseSearchAction extends SimpleActionAdapter {
 	 * @param finalized
 	 */
 	protected void loadKits(ActionRequest req) throws ActionException {
-		List<ORKitVO> kits = new ArrayList<>();
+		List<Object> params = new ArrayList<>();
 		String sql = buildKitSearchSQL(req);
-		int count = 0;
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-			int i =1;
-			ps.setString(i++, user.getProfileId());
-			if (req.hasParameter(SEARCH)) {
-				ps.setString(i++, "%" + req.getParameter(SEARCH).toLowerCase() + "%");
-				ps.setString(i++, "%" + req.getParameter(SEARCH).toLowerCase() + "%");
-			}
-			if (req.hasParameter(START_DATE)) ps.setTimestamp(i++, Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter(START_DATE)), false));
-			if (req.hasParameter(END_DATE)) ps.setTimestamp(i++, Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter(END_DATE)), false));
-			if (req.hasParameter(FINALIZED)) ps.setInt(i++, Convert.formatInteger(req.getParameter("finalized")));
-			
-			ResultSet rs = ps.executeQuery();
-			int page = Convert.formatInteger(req.getParameter("offset"), 0);
-			int rpp = Convert.formatInteger(req.getParameter("limit"));
-			rpp = rpp == 0 ? 10 : rpp;
-			int start = page * rpp;
-			int end = rpp * (page + 1);
-			boolean loadAll = Convert.formatBoolean(req.getParameter("loadAll"));
-			while(rs.next()) {
-				count++;
-				if ((count <= start || count > end) && !loadAll) continue; 
-				kits.add(new ORKitVO(rs));
-			}
-		} catch (SQLException e) {
-			throw new ActionException(e);
+		
+		// Get the hospital
+		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
+		params.add(role.getAttribute(0));
+
+		// Get the search params
+		if (req.hasParameter(SEARCH)) {
+			params.add("%" + req.getParameter(SEARCH).toLowerCase() + "%");
+			params.add("%" + req.getParameter(SEARCH).toLowerCase() + "%");
 		}
 		
-		super.putModuleData(kits, count, false);
+		if (req.hasParameter(START_DATE)) params.add(Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter(START_DATE)), false));
+		if (req.hasParameter(END_DATE)) params.add(Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter(END_DATE)), false));
+		
+		int page = Convert.formatInteger(req.getParameter("offset"), 0);
+		int rpp = Convert.formatInteger(req.getParameter("limit"));
+		rpp = rpp == 0 ? 10 : rpp;
+		int start = page * rpp;
+		int end = rpp * (page + 1);
+		
+		log.info(params);
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		List<?> kits = null;
+		if ( Convert.formatBoolean(req.getParameter("loadAll")))
+			 kits = dbp.executeSelect(sql.toString(), params, new RAMCaseVO());
+		else
+			 kits = dbp.executeSelect(sql.toString(), params, new RAMCaseVO(), null, start, end);
+		
+		putModuleData(kits, kits.size(), false);
 	}
 	
 	
@@ -150,22 +152,24 @@ public class CaseSearchAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
-		sql.append("SELECT HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, REP_ID, OTHER_ID, CASE_ID, RESELLER_NM, k.ram_case_info_id, COUNT(k.ram_case_info_ID) as NUM_PRODUCTS, FINALIZED_FLG ");
-		sql.append("FROM ").append(customDb).append("ram_case_info k ");
-		sql.append("LEFT JOIN ").append(customDb).append("ram_case_product xr ");
-		sql.append("on k.ram_case_info_ID = xr.ram_case_info_ID ");
-		sql.append("WHERE k.PROFILE_ID = ? ");
+		sql.append("select i.prod_total, p.customer_nm, c.hospital_case_id, c.surgery_dt, c.case_status_cd, c.customer_id, c.profile_id ");
+		sql.append("from custom.ram_case c ");
+		sql.append("inner join ram_customer p on c.customer_id = p.customer_id ");
+		sql.append("left outer join ( ");
+		sql.append("select case_id, sum(qty_no) as prod_total ");
+		sql.append("from custom.ram_case_item ");
+		sql.append("group by case_id ");
+		sql.append(") i on c.case_id = i.case_id  ");
+		sql.append("where c.customer_id = cast(? as int) ");
 		
 		if (req.hasParameter(SEARCH)) {
-			sql.append("AND (lower(REP_ID)").append(" like ? ");
-			sql.append("OR lower(CASE_ID)").append(" like ?) ");
+			sql.append("and (lower(rep_id)").append(" like ? ");
+			sql.append("or lower(case_id)").append(" like ?) ");
 		}
-		if (req.hasParameter(START_DATE)) sql.append("AND k.SURGERY_DT > ? ");
-		if (req.hasParameter(END_DATE)) sql.append("AND k.SURGERY_DT < ? ");
-		if (req.hasParameter(FINALIZED)) sql.append("AND k.FINALIZED_FLG = ? ");
+		if (req.hasParameter(START_DATE)) sql.append("and k.surgery_dt > ? ");
+		if (req.hasParameter(END_DATE)) sql.append("and k.surgery_dt < ? ");
 		
-		sql.append("GROUP BY HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, CASE_ID, RESELLER_NM, k.ram_case_info_ID, FINALIZED_FLG, REP_ID, OTHER_ID ");
-		sql.append("ORDER BY ");
+		sql.append("order by ");
 		
 		if (req.hasParameter("sort")) {
 			sql.append(SearchFields.valueOf(req.getParameter("sort")).getColumnName());
@@ -177,9 +181,9 @@ public class CaseSearchAction extends SimpleActionAdapter {
 				sql.append(" ASC ");
 			}
 		} else {
-			sql.append("FINALIZED_FLG, SURGERY_DT DESC");
+			sql.append("case_status_cd, SURGERY_DT DESC");
 		}
-		
+		log.info(sql);
 		return sql.toString();
 	}
 	

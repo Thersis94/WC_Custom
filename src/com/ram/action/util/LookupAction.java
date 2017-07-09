@@ -1,16 +1,18 @@
 package com.ram.action.util;
 
-
+// JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
 
+// SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.session.SMTSession;
-import com.siliconmtn.util.Convert;
+
+// WC Libs 3.2
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -46,6 +48,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String type = req.getParameter("type", "none");
 		SMTSession ses = req.getSession();
@@ -59,7 +62,7 @@ public class LookupAction extends SimpleActionAdapter {
 				getSurgeons(role);
 				break;
 			case "orRooms":
-				getORRooms(role, Convert.formatInteger(req.getParameter("selected")));
+				getORRooms(role);
 				break;
 			default:
 				log.debug("can't find list type");
@@ -72,7 +75,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * Gets a list of or rooms for a given provider
 	 * @param role
 	 */
-	public void getORRooms(SBUserRole role, int customerId) {
+	public void getORRooms(SBUserRole role) {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select or_room_id as key, or_name as value from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("ram_or_room a ");
