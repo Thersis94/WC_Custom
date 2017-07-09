@@ -408,6 +408,7 @@ public class RAMCaseVO {
 	 */
 	public void setNumKitsCase(int numKitsCase) {
 		this.numKitsCase = numKitsCase;
+	}
 
 	 /**
 	 * @return the profileId
