@@ -54,10 +54,10 @@ public class RAMCaseItemVO {
 		productId = Convert.formatInteger(req.getParameter("productId"));
 		caseKitId = req.getParameter("caseKitId");
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
-		qtyNo = Convert.formatInteger("qtyNo");
+		qtyNo = Convert.formatInteger(req.getParameter("qtyNo"));
 		lotNumberTxt = req.getParameter("lotNumberTxt");
-		billableFlg = Convert.formatInteger("billableFlg");
-		wastedFlg = Convert.formatInteger("wastedFlg");
+		billableFlg = Convert.formatInteger(req.getParameter("billableFlg"));
+		wastedFlg = Convert.formatInteger(req.getParameter("wastedFlg"));
 		productFromTxt = req.getParameter("productFromTxt");
 		customerNm = req.getParameter("customerNm");
 		setCaseTypeTxt(req.getParameter("caseTypeCd"));
@@ -161,6 +161,7 @@ public class RAMCaseItemVO {
 	/**
 	 * @return the customerNm
 	 */
+	@Column(name="customer_nm", isReadOnly=true)
 	public String getCustomerNm() {
 		return customerNm;
 	}
@@ -168,6 +169,7 @@ public class RAMCaseItemVO {
 	/**
 	 * @return the gtinProductId
 	 */
+	@Column(name="gtin_product_id", isReadOnly=true)
 	public String getGtinProductId() {
 		return gtinProductId;
 	}
