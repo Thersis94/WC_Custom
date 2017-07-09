@@ -132,7 +132,7 @@ public class SPDAction extends SimpleActionAdapter {
 	private List<RAMCaseItemVO> extractConsumedKitData(RAMCaseVO cVo, String caseKitId) {
 		List<RAMCaseItemVO> kitItems = new ArrayList<>();
 
-		Map<String, RAMCaseItemVO> items = cVo.getItems().get(RAMCaseType.OR);
+		Map<String, RAMCaseItemVO> items = cVo.getItems().get(RAMCaseType.OR.toString());
 
 		for(Entry<String, RAMCaseItemVO> item : items.entrySet()) {
 			RAMCaseItemVO i = item.getValue();
@@ -150,10 +150,11 @@ public class SPDAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	private void loadKitData(ActionRequest req, List<RAMCaseItemVO> items) throws ActionException {
+		attributes.put(VisionAction.CONSUMED_ITEMS, items);
+		req.setParameter("isSpd", "true");
 		VisionAction va = new VisionAction(actionInit);
 		va.setDBConnection(dbConn);
 		va.setAttributes(attributes);
-		attributes.put(VisionAction.CONSUMED_ITEMS, items);
 		va.retrieve(req);
 	}
 

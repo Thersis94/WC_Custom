@@ -77,6 +77,7 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		return sql.toString();
 	}
 
+
 	/**
 	 * DB Persist Save method saves the Case and Signatures, drops all existing
 	 * items and kits then re-inserts them using the same Ids they had from
