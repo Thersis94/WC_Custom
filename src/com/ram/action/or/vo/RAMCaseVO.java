@@ -27,7 +27,7 @@ import com.siliconmtn.util.Convert;
 @Table(name="RAM_CASE")
 public class RAMCaseVO {
 
-	public enum RAMCaseStatus {OR_READY, OR_IN_PROGRESS, OR_COMPLETE, SPD_IN_PROGRESS, SPD_COMPLETE}
+	public enum RAMCaseStatus {OR_READY, OR_IN_PROGRESS, OR_COMPLETE, SPD_IN_PROGRESS, CLOSED}
 
 	private String caseId;
 	private int customerId;
