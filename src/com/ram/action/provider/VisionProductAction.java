@@ -70,7 +70,7 @@ public class VisionProductAction extends ProductAction {
 			sb.append("a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, ");
 			sb.append("a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, ");
 			sb.append("a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG, ");
-			sb.append("a.MANUAL_ENTRY_FLG, COUNT(c.KIT_LAYER_ID) as 'LAYOUT_DEPTH_NO' from ").append(schema);
+			sb.append("a.MANUAL_ENTRY_FLG, COUNT(c.KIT_LAYER_ID) as LAYOUT_DEPTH_NO from ").append(schema);
 		}
 
 		//Build Initial Query

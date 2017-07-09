@@ -27,9 +27,30 @@ public class RAMCasePersistenceFactory {
 			this.classNm = classNm;
 
 			//Get the SourceType Generic Parameter.
-			ParameterizedType parameterizedType = (ParameterizedType) classNm.getGenericInterfaces()[0];
-		    Type[] typeArguments = parameterizedType.getActualTypeArguments();
-		    sourceType = (Class<?>) typeArguments[0];
+			ParameterizedType parameterizedType = findParameterizedTypes(classNm);
+			if(parameterizedType != null) {
+			    Type[] typeArguments = parameterizedType.getActualTypeArguments();
+			    sourceType = (Class<?>) typeArguments[0];
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		private ParameterizedType findParameterizedTypes(Class<? extends PersistenceIntfc<?, ?>> classNm) {
+			boolean search = true;
+			ParameterizedType pt = null;
+			while(search) {
+				try {
+					pt = (ParameterizedType) classNm.getGenericSuperclass();
+					search = false;
+				} catch(ClassCastException cce) {
+					if(classNm.getSuperclass() != Object.class) {
+						classNm = (Class<? extends PersistenceIntfc<?, ?>>) classNm.getSuperclass();
+					} else {
+						break;
+					}
+				}
+			}
+			return pt;
 		}
 
 		public Class<? extends Object> getSourceType() {
@@ -45,7 +66,7 @@ public class RAMCasePersistenceFactory {
 	public static AbstractPersist<?, ?> loadPersistenceObject(PersistenceType pt, Object source, Map<String, Object> attributes) throws Exception {
 		AbstractPersist<Object, Object> pi = null;
 		Class<? extends Object> sourceType = pt != null ? pt.getSourceType() : null;
-		if(pt != null && source != null && source.getClass().isInstance(sourceType)) {
+		if(pt != null && source != null && source.getClass().isAssignableFrom(sourceType)) {
 			Class<?> c = pt.getClassNm();
 			if (c == null) {
 				throw new Exception("unknown persistance type:" + pt.toString());
