@@ -46,6 +46,7 @@ public class RAMCaseVO {
 	// Extra fields for display purposes
 	private String customerName;
 	private int numProductsCase;
+	private int numKitsCase;
 
 	public RAMCaseVO() {
 		this.kits = new HashMap<>();
@@ -378,5 +379,20 @@ public class RAMCaseVO {
 	 */
 	public void setNumProductsCase(int numProductsCase) {
 		this.numProductsCase = numProductsCase;
+	}
+
+	/**
+	 * @return the numKitsCase
+	 */
+	@Column(name="num_kit_case", isReadOnly=true)
+	public int getNumKitsCase() {
+		return numKitsCase;
+	}
+
+	/**
+	 * @param numKitsCase the numKitsCase to set
+	 */
+	public void setNumKitsCase(int numKitsCase) {
+		this.numKitsCase = numKitsCase;
 	}
 }

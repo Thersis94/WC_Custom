@@ -26,6 +26,11 @@ public class RAMCaseKitVO {
 	private String caseId;
 	private Date createDt;
 	private Date updateDt;
+	private int productId;
+	private String productNm;
+	private String serialNoTxt;
+	
+		
 
 	public RAMCaseKitVO() {
 		
@@ -115,5 +120,50 @@ public class RAMCaseKitVO {
 	 */
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
+	}
+
+	/**
+	 * @return the productId
+	 */
+	@Column(name="product_id", isReadOnly=true)
+	public int getProductId() {
+		return productId;
+	}
+
+	/**
+	 * @param productId the productId to set
+	 */
+	public void setProductId(int productId) {
+		this.productId = productId;
+	}
+
+	/**
+	 * @return the productNm
+	 */
+	@Column(name="product_nm", isReadOnly=true)
+	public String getProductNm() {
+		return productNm;
+	}
+
+	/**
+	 * @param productNm the productNm to set
+	 */
+	public void setProductNm(String productNm) {
+		this.productNm = productNm;
+	}
+
+	/**
+	 * @return the serialNoTxt
+	 */
+	@Column(name="serial_no_txt", isReadOnly=true)
+	public String getSerialNoTxt() {
+		return serialNoTxt;
+	}
+
+	/**
+	 * @param serialNoTxt the serialNoTxt to set
+	 */
+	public void setSerialNoTxt(String serialNoTxt) {
+		this.serialNoTxt = serialNoTxt;
 	}
 }
