@@ -11,7 +11,9 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseVO.java
@@ -32,6 +34,8 @@ public class RAMCaseVO {
 	private String caseId;
 	private int customerId;
 	private String hospitalCaseId;
+	private String profileId;
+	private UserDataVO hospitalRep;
 	private String orRoomId;
 	private String surgeonId;
 	private Date createDt;
@@ -57,7 +61,16 @@ public class RAMCaseVO {
 		this();
 		setData(req);
 	}
-
+	
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this);
+	}
+	
 	/**
 	 * Helper method that pulls data off the Request to populate the bean.
 	 * @param req
@@ -192,6 +205,7 @@ public class RAMCaseVO {
 	 */
 	@Column(name="case_status_cd")
 	public String getCaseStatusTxt() {
+		if (caseStatus == null) return null; 
 		return caseStatus.toString();
 	}
 
@@ -378,5 +392,34 @@ public class RAMCaseVO {
 	 */
 	public void setNumProductsCase(int numProductsCase) {
 		this.numProductsCase = numProductsCase;
+	}
+
+	/**
+	 * @return the profileId
+	 */
+	@Column(name="profileId")
+	public String getProfileId() {
+		return profileId;
+	}
+
+	/**
+	 * @param profileId the profileId to set
+	 */
+	public void setProfileId(String profileId) {
+		this.profileId = profileId;
+	}
+
+	/**
+	 * @return the hospitalRep
+	 */
+	public UserDataVO getHospitalRep() {
+		return hospitalRep;
+	}
+
+	/**
+	 * @param hospitalRep the hospitalRep to set
+	 */
+	public void setHospitalRep(UserDataVO hospitalRep) {
+		this.hospitalRep = hospitalRep;
 	}
 }

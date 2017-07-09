@@ -333,7 +333,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 		WidgetRetrieveAction wa = WidgetRetrieveAction.valueOf(req.getParameter("widgetAction"));
 		String caseId = req.getParameter("caseId");
-		log.debug("widget retrieve action: " + wa);
+		
 		try {
 			switch (wa) {
 				case loadCase:
