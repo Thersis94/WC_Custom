@@ -106,10 +106,9 @@ public class RAMCaseManager {
 		AbstractPersist<?,?> ap = pTypes.get(defaultPType);
 		
 		if (StringUtil.isEmpty(caseId)) {
-			
 			cVo = (RAMCaseVO) ap.initialize();
 			req.setParameter(RAM_CASE_ID, new UUIDGenerator().getUUID());
-			log.info("**** Creating new case: " + req.getParameter(RAM_CASE_ID));
+			cVo.setCaseStatus(RAMCaseStatus.OR_IN_PROGRESS);
 			cVo.setNewCase(true);
 		} else {
 			// Load the case form the default location
@@ -126,7 +125,6 @@ public class RAMCaseManager {
 		
 		// Update the data and persists
 		cVo.setData(req);
-		log.info("Case Daata:" + cVo);
 		ap.save(cVo);
 		
 		return cVo;
@@ -185,7 +183,7 @@ public class RAMCaseManager {
 		params.add(serialId);
 		LocationItemMasterVO lim = (LocationItemMasterVO) db.executeSelect(getLocationKitDataSql(), params, new LocationItemMasterVO());
 		RAMCaseKitVO kit = new RAMCaseKitVO();
-		kit.setLocationItemMasterId(lim.getLocationItemMasterId());
+		kit.setLocationItemMasterId(Convert.formatInteger(lim.getLocationItemMasterId()));
 		return kit;
 	}
 
@@ -300,9 +298,19 @@ public class RAMCaseManager {
 		String caseId = req.getParameter(RAM_CASE_ID);
 		AbstractPersist<?,?> ap = pTypes.get(defaultPType);
 		RAMCaseVO cVo = (RAMCaseVO)ap.load(caseId);
+		setORFinalStatusCode(cVo);
 		persistCasePerm(cVo);
 
 		return cVo;
+	}
+	
+	/**
+	 * Sets the status code upon competing the dase
+	 * @param cVo
+	 */
+	private void setORFinalStatusCode(RAMCaseVO cVo) {
+		if (cVo.getKits().isEmpty()) cVo.setCaseStatus(RAMCaseStatus.CLOSED);
+		else cVo.setCaseStatus(RAMCaseStatus.OR_COMPLETE);
 	}
 
 	/**

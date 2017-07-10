@@ -48,7 +48,6 @@ public class RAMCaseSessionPersist extends AbstractPersist<ActionRequest, RAMCas
 	 */
 	@Override
 	public RAMCaseVO save(RAMCaseVO cVo) {
-		log.info("Saving case: " + cVo.getItems().size());
 		req.getSession().setAttribute(key(cVo.getCaseId()),  cVo);
 
 		return cVo;

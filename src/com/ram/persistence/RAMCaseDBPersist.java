@@ -96,28 +96,23 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 */
 	@Override
 	public RAMCaseVO save(RAMCaseVO cVo) {
-		//RAMCaseVO cVo = (RAMCaseVO)attributes.get(RAMCaseManager.RAM_CASE_VO);
 		if(cVo != null) {
 			try {
 				//Set Autocommit False.
 				conn.setAutoCommit(false);
-
+				
 				//Save Case.
-				dbp.save(cVo);
-
-				//Update Case Pkid
-				if(dbp.getGeneratedPKId() != null) {
-					cVo.setCaseId(dbp.getGeneratedPKId());
-				}
-
+				if (cVo.isNewCase()) dbp.insert(cVo);
+				else dbp.save(cVo);
+				
 				//Add Signatures.
 				saveSignatures(cVo);
-
+				
 				//Flush and insert Items/Kits.
 				deleteChildren(cVo);
 				insertItems(cVo);
 				insertKits(cVo);
-
+				
 				//Commit transaction.
 				conn.commit();
 			} catch (InvalidDataException | DatabaseException | SQLException e) {
@@ -190,7 +185,9 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	private void insertKits(RAMCaseVO cVo) throws InvalidDataException, DatabaseException {
 		for(Entry<String, RAMCaseKitVO> kit : cVo.getKits().entrySet()) {
 			RAMCaseKitVO k = kit.getValue();
-
+			// TODO Hard coded this for the kit product. Needs to be changed
+			if (k.getLocationItemMasterId() == 0) k.setLocationItemMasterId(7896543);
+			
 			//Ensure CaseId is set correctly.
 			k.setCaseId(cVo.getCaseId());
 
@@ -233,7 +230,6 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		for(Entry<SignatureType, Map<String, RAMSignatureVO>> sigs : cVo.getSignatures().entrySet()) {
 			for(Entry<String, RAMSignatureVO> e : sigs.getValue().entrySet()) {
 				RAMSignatureVO s = e.getValue();
-
 				//Ensure CaseId is set correctly.
 				s.setCaseId(cVo.getCaseId());
 
