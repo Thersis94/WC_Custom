@@ -32,7 +32,9 @@ import com.siliconmtn.util.StringUtil;
  * @since Apr 10, 2017
  ****************************************************************************/
 public class UpdatesScheduledAction extends SBActionAdapter {
-
+	private Date startDt;
+	private Date endDt;
+	
 	/**
 	 * No-arg constructor for initialization
 	 */
@@ -62,31 +64,59 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		if (StringUtil.isEmpty(profileId)) return;
 
 		//the end date is where we start subtracting from (base)
-		Date endDt = !StringUtil.isEmpty(emailDate) ? Convert.formatDate(Convert.DATE_SLASH_PATTERN, emailDate) : null;
+		endDt = !StringUtil.isEmpty(emailDate) ? Convert.formatDate(Convert.DATE_SLASH_PATTERN, emailDate) : null;
 		if (endDt == null) endDt = Calendar.getInstance().getTime();
 
 		int days = UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd) ? 7 : 1;
-
-		//subtract X days from the base date for start date
-		Calendar start = Calendar.getInstance();
-		start.setTime(endDt);
-		start.add(Calendar.DATE, 0-days);
-
-		//if today is monday and the range is 1 (daily), rollback to Friday as a start date
-		if (days == 1 && Calendar.MONDAY == start.get(Calendar.DAY_OF_WEEK)+1) {
-			days = 3;
-			start.add(Calendar.DATE, -2); //already on Sunday, go back Saturday & Friday.
-		}
+		
+		//establish the date ranges
+		days = establishDateRanges(days);
 
 		//get list of updates
-		List<Object> updates = getUpdates(profileId, start.getTime(), endDt);
+		List<Object> updates = getUpdates(profileId, startDt, endDt);
 
 		//set cosmetic label
-		String label = Convert.formatDate(start.getTime(), days == 1 ? "MMM dd, YYYY" : "MMM dd");
+		String label = Convert.formatDate(startDt, days == 1 ? "MMM dd, YYYY" : "MMM dd");
 		if (days > 1) label += " - " + Convert.formatDate(endDt, "MMM dd, YYYY");
 		req.setAttribute("dateRange", label);
 
 		putModuleData(updates);
+	}
+	
+	/**
+	 * Helper method that establishes the appropriate days
+	 * @param days
+	 * @return
+	 */
+	protected int establishDateRanges(int days){
+		if(days == 1){
+			//subtract X days from the base date for start date
+			Calendar start = Calendar.getInstance();
+			start.setTime(endDt);
+			start.add(Calendar.DATE, 0-days);
+			
+			//if today is monday and the range is 1 (daily), rollback to Friday as a start date
+			if (days == 1 && Calendar.MONDAY == start.get(Calendar.DAY_OF_WEEK)+1) {
+				days = 3;
+				start.add(Calendar.DATE, -2); //already on Sunday, go back Saturday & Friday.
+			}
+			startDt = start.getTime();
+			return days;
+		}else{
+			Calendar cal = Calendar.getInstance();
+			//set the first day to monday
+			cal.setFirstDayOfWeek(Calendar.MONDAY);
+			cal.setTime(endDt);
+			//subtract that from the end date to get start range. Then go back a week(previous week)
+			cal.add(Calendar.DATE, -(cal.get(Calendar.DAY_OF_WEEK) - cal.getFirstDayOfWeek()));
+			cal.add(Calendar.DATE, -7);
+			startDt = cal.getTime();
+			
+			//go seven days out to get the end range (index starts at 0)
+			cal.add(Calendar.DATE, 6); 
+			endDt = cal.getTime();			
+		}
+		return days;
 	}
 
 
