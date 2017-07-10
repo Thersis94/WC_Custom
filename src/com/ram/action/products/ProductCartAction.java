@@ -14,6 +14,7 @@ import java.util.Map;
 import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseVO;
+import com.ram.action.or.vo.RAMSignatureVO;
 import com.ram.action.report.vo.ProductCartReport;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
@@ -332,16 +333,15 @@ public class ProductCartAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 		WidgetRetrieveAction wa = WidgetRetrieveAction.valueOf(req.getParameter("widgetAction"));
-		String caseId = req.getParameter("caseId");
-		
+		String caseId = req.getParameter(CASE_ID);
 		try {
+		RAMCaseVO cvo = rcm.retrieveCase(caseId);
 			switch (wa) {
 				case loadCase:
-					RAMCaseVO cvo = rcm.retrieveCase(caseId);
 					putModuleData(cvo);
 					break;
 				case loadReport:
-					buildReport(req);
+					buildReport(cvo, req);
 					break;
 				case searchProducts:
 					if (!StringUtil.isEmpty(req.getParameter("search")))
@@ -442,14 +442,14 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * Build the requested report based off of the request servlet and the 
 	 * shopping cart
 	 * @param cart
-	 * @param req
+	 * @param cvo
+	 * @param req 
 	 * @throws ActionException 
 	 */
-	private void buildReport(ActionRequest req) throws ActionException {
-		ShoppingCartVO cart = retrieveContainer(req).load();
+	private void buildReport(RAMCaseVO cvo, ActionRequest req) throws ActionException {;
 		AbstractSBReportVO report;
 		String filename;
-		String caseId = StringUtil.checkVal(req.getAttribute(CASE_ID));
+		String caseId = StringUtil.checkVal(cvo.getCaseId());
 		if (caseId.length() != 0) {
 			filename = "case-" + caseId;
 		} else {
@@ -459,21 +459,17 @@ public class ProductCartAction extends SimpleActionAdapter {
 		report.setFileName(filename + ".pdf");
 		
 		Map<String, Object> data = new HashMap<>();
-		SMTSession sess = req.getSession();
-		data.put("cart", cart.getItems().values());
-		data.put(HOSPITAL,StringUtil.checkVal(sess.getAttribute(HOSPITAL)));
-		data.put(ROOM, StringUtil.checkVal(sess.getAttribute(ROOM)));
-		data.put(SURGEON, StringUtil.checkVal(sess.getAttribute(SURGEON)));
-		data.put(TIME, StringUtil.checkVal(sess.getAttribute(TIME)));
-		data.put(CASE_ID, StringUtil.checkVal(sess.getAttribute(CASE_ID)));
-		data.put(SALES_SIGNATURE, StringUtil.checkVal(sess.getAttribute(SALES_SIGNATURE)));
-		data.put(ADMIN_SIGNATURE, StringUtil.checkVal(sess.getAttribute(ADMIN_SIGNATURE)));
-		data.put(SALES_SIGNATURE_DT, StringUtil.checkVal(sess.getAttribute(SALES_SIGNATURE_DT)));
-		data.put(ADMIN_SIGNATURE_DT, StringUtil.checkVal(sess.getAttribute(ADMIN_SIGNATURE_DT)));
-		data.put(RESELLER, StringUtil.checkVal(sess.getAttribute(RESELLER)));
-		data.put(OTHER_ID, StringUtil.checkVal(sess.getAttribute(OTHER_ID)));
-		data.put(REP_ID, StringUtil.checkVal(sess.getAttribute(REP_ID)));
-		data.put(COMPLETE_DT, sess.getAttribute(COMPLETE_DT));
+
+		data.put("cart", cvo.getItems().get(StringUtil.checkVal(req.getParameter("caseType"))).values());
+		data.put(HOSPITAL,StringUtil.checkVal(cvo.getCustomerName()));
+		data.put(ROOM, StringUtil.checkVal(cvo.getOrRoomName()));
+		data.put(SURGEON, StringUtil.checkVal(cvo.getSurgeonName()));
+		data.put(TIME, StringUtil.checkVal(cvo.getSurgeryDate()));
+		data.put(CASE_ID, StringUtil.checkVal(cvo.getHospitalCaseId()));
+		
+		if (cvo.getSignatures().get(RAMSignatureVO.SignatureType.PROVIDER) != null){
+		data.put("signatures", cvo.getSignatures().get(RAMSignatureVO.SignatureType.PROVIDER).values());
+		}
 		data.put("baseDomain", req.getHostName());
 		data.put("format", req.getParameter("format"));
 		
@@ -762,7 +758,11 @@ public class ProductCartAction extends SimpleActionAdapter {
 			}
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			mail.setFrom(site.getAdminEmail());
-			buildReport(req);
+			
+			//TODO check this later
+			RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
+			RAMCaseVO cvo = rcm.retrieveCase(StringUtil.checkVal(req.getParameter(CASE_ID)));
+			buildReport(cvo, req);
 	
 			AbstractSBReportVO report = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
 			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, false);
