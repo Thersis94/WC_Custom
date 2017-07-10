@@ -7,6 +7,7 @@ import com.ram.action.or.RAMCaseManager;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseKit.java
@@ -34,8 +35,7 @@ public class RAMCaseKitVO implements Serializable {
 	private int productId;
 	private String productNm;
 	private String serialNoTxt;
-	
-		
+	private int processedFlg;
 
 	public RAMCaseKitVO() {
 		
@@ -90,6 +90,15 @@ public class RAMCaseKitVO implements Serializable {
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDt;
+	}
+
+	@Column(name="processed_flg")
+	public int getProcessedFlg() {
+		return processedFlg;
+	}
+
+	public boolean isProcessed() {
+		return Convert.formatBoolean(processedFlg);
 	}
 
 	/**
@@ -170,5 +179,12 @@ public class RAMCaseKitVO implements Serializable {
 	 */
 	public void setSerialNoTxt(String serialNoTxt) {
 		this.serialNoTxt = serialNoTxt;
+	}
+
+	/**
+	 * @param processedFlg the processedFlg to sed
+	 */
+	public void setProcessedFlg(int processedFlg) {
+		this.processedFlg = processedFlg;
 	}
 }

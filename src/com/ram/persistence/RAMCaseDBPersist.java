@@ -20,6 +20,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseDBPersist.java
@@ -64,7 +65,8 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 */
 	private String loadCaseSql() {
 		StringBuilder sql = new StringBuilder(525);
-		sql.append("select cu.customer_nm, su.first_nm || ' ' || su.last_nm as surgeon_nm, o.or_name ,c.*, i.*, p.*, k.* ");
+		sql.append("select cu.customer_nm, su.first_nm || ' ' || su.last_nm as surgeon_nm, o.or_name ,c.*, i.*, p.*, k.*, ");
+		sql.append("pcu.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_number_txt ");
 		sql.append("from ").append(schema).append("ram_case c ");
 		sql.append("left outer join ").append(schema).append("ram_case_signature s ");
 		sql.append("on c.case_id = s.case_id ");
@@ -76,6 +78,8 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		sql.append("on c.case_id = k.case_id and k.case_kit_id = i.case_kit_id ");
 		sql.append("left outer join ").append(schema).append("ram_customer cu ");
 		sql.append("on c.customer_id = cu.customer_id ");
+		sql.append("left outer join ").append(schema).append("ram_customer pcu ");
+		sql.append("on p.customer_id = pcu.customer_id ");
 		sql.append("left outer join ").append(schema).append("ram_surgeon su ");
 		sql.append("on c.surgeon_id = su.surgeon_id ");
 		sql.append("left outer join ").append(schema).append("ram_or_room o ");
@@ -96,28 +100,23 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 */
 	@Override
 	public RAMCaseVO save(RAMCaseVO cVo) {
-		//RAMCaseVO cVo = (RAMCaseVO)attributes.get(RAMCaseManager.RAM_CASE_VO);
 		if(cVo != null) {
 			try {
 				//Set Autocommit False.
 				conn.setAutoCommit(false);
-
+				
 				//Save Case.
-				dbp.save(cVo);
-
-				//Update Case Pkid
-				if(dbp.getGeneratedPKId() != null) {
-					cVo.setCaseId(dbp.getGeneratedPKId());
-				}
-
+				if (cVo.isNewCase()) dbp.insert(cVo);
+				else dbp.save(cVo);
+				
 				//Add Signatures.
 				saveSignatures(cVo);
-
+				
 				//Flush and insert Items/Kits.
 				deleteChildren(cVo);
-				insertItems(cVo);
 				insertKits(cVo);
-
+				insertItems(cVo);
+				
 				//Commit transaction.
 				conn.commit();
 			} catch (InvalidDataException | DatabaseException | SQLException e) {
@@ -190,7 +189,9 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	private void insertKits(RAMCaseVO cVo) throws InvalidDataException, DatabaseException {
 		for(Entry<String, RAMCaseKitVO> kit : cVo.getKits().entrySet()) {
 			RAMCaseKitVO k = kit.getValue();
-
+			// TODO Hard coded this for the kit product. Needs to be changed
+			if (StringUtil.isEmpty(k.getLocationItemMasterId())) k.setLocationItemMasterId("7896543");
+			
 			//Ensure CaseId is set correctly.
 			k.setCaseId(cVo.getCaseId());
 
@@ -233,7 +234,6 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		for(Entry<SignatureType, Map<String, RAMSignatureVO>> sigs : cVo.getSignatures().entrySet()) {
 			for(Entry<String, RAMSignatureVO> e : sigs.getValue().entrySet()) {
 				RAMSignatureVO s = e.getValue();
-
 				//Ensure CaseId is set correctly.
 				s.setCaseId(cVo.getCaseId());
 

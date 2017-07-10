@@ -7,6 +7,7 @@ import java.util.Date;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> RAMSignatureVO.java
@@ -36,7 +37,7 @@ public class RAMSignatureVO implements Serializable {
 	private Date createDt;
 
 	public RAMSignatureVO() {
-		
+		super();
 	}
 
 	/**
@@ -47,7 +48,21 @@ public class RAMSignatureVO implements Serializable {
 		this();
 		setData(req);
 	}
-
+	
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this);
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @throws IOException
+	 */
 	public void setData(ActionRequest req) throws IOException {
 		signatureId = req.getParameter("signatureId");
 		caseId = req.getParameter("caseId");

@@ -55,9 +55,10 @@ public class RAMCaseItemVO implements Serializable {
 		setData(req);
 	}
 
-	private void setData(ActionRequest req) {
+	public void setData(ActionRequest req) {
 		caseItemId = req.getParameter("caseItemId");
 		productId = Convert.formatInteger(req.getParameter("productId"));
+		productNm = req.getParameter("productNm");
 		caseKitId = req.getParameter("caseKitId");
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
 		qtyNo = Convert.formatInteger(req.getParameter("qtyNo"));
@@ -175,7 +176,7 @@ public class RAMCaseItemVO implements Serializable {
 	/**
 	 * @return the gtinProductId
 	 */
-	@Column(name="gtin_product_id", isReadOnly=true)
+	@Column(name="gtin_number_txt", isReadOnly=true)
 	public String getGtinProductId() {
 		return gtinProductId;
 	}

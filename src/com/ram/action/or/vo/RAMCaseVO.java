@@ -6,9 +6,8 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.mortbay.log.Log;
-
 import com.ram.action.or.RAMCaseManager;
+import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -67,6 +66,8 @@ public class RAMCaseVO implements Serializable {
 		this.kits = new HashMap<>();
 		this.signatures = new EnumMap<>(SignatureType.class);
 		this.items = new HashMap<>();
+		items.put(RAMCaseType.OR.toString(), new HashMap<>());
+		items.put(RAMCaseType.SPD.toString(), new HashMap<>());
 	}
 
 	public RAMCaseVO(ActionRequest req) {
@@ -96,17 +97,16 @@ public class RAMCaseVO implements Serializable {
 		orRoomName = req.getParameter("orRoomName");
 		surgeonId = req.getParameter("surgeonId");
 		surgeonName = req.getParameter("surgeonName");
-		surgeryDate = Convert.formatDate(req.getParameter("surgeryDate"));
+		surgeryDate = Convert.parseDateUnknownPattern(req.getParameter("surgeryDate"));
 		spdDt = Convert.formatDate(req.getParameter("spdDt"));
 		setCaseStatusTxt(req.getParameter("caseStatus"));
+		profileId = req.getParameter("providerProfileId");
 		
 		RAMSignatureVO svo = new RAMSignatureVO();
 		svo.setProfileId(req.getParameter("providerProfileId"));
 		svo.setCaseId(caseId);
 		svo.setSignatureType(SignatureType.PROVIDER);
 		addSignature(svo);
-		
-		Log.info("VO: " + this);
 	}
 
 	/**
@@ -370,8 +370,8 @@ public class RAMCaseVO implements Serializable {
 	}
 
 	public void removeItem(RAMCaseItemVO item) {
-		if(item != null && items.containsKey(item.getCaseType())) {
-			items.get(item.getCaseType()).remove(item.getProductId());
+		if(item != null && items.containsKey(item.getCaseType().toString())) {
+			items.get(item.getCaseType().toString()).remove(item.getCaseItemId());
 		}
 	}
 
@@ -429,7 +429,7 @@ public class RAMCaseVO implements Serializable {
 	 /**
 	 * @return the profileId
 	 */
-	@Column(name="profileId")
+	@Column(name="profile_Id")
 	public String getProfileId() {
 		return profileId;
 	}
