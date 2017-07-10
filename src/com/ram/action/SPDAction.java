@@ -69,24 +69,13 @@ public class SPDAction extends SimpleActionAdapter {
 			//Update Kit Status
 			kVo.setProcessedFlg(1);
 
-			//Check All Kits for Complete Status
-			boolean allKitsComplete = true;
-			for(RAMCaseKitVO k : cVo.getKits().values()) {
-				if(k.getCaseKitId() != null && !k.isProcessed()) {
-					allKitsComplete = false;
-				}
-			}
-
-			//If all kits are complete, close the case.
-			if(allKitsComplete) {
-				cVo.setCaseStatus(RAMCaseStatus.CLOSED);
-			}
-
 			//Save the Case
 			//rcm.saveCase(req);
 
 			//Finalize it to the DB.
-			rcm.persistCasePerm(cVo);
+			rcm.persistCaseDefault(cVo);
+			rcm.finalizeCaseInfo();
+
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}

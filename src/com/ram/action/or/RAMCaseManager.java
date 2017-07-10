@@ -184,7 +184,7 @@ public class RAMCaseManager {
 		params.add(serialId);
 		LocationItemMasterVO lim = (LocationItemMasterVO) db.executeSelect(getLocationKitDataSql(), params, new LocationItemMasterVO());
 		RAMCaseKitVO kit = new RAMCaseKitVO();
-		kit.setLocationItemMasterId(Convert.formatInteger(lim.getLocationItemMasterId()));
+		kit.setLocationItemMasterId(lim.getLocationItemMasterId());
 		return kit;
 	}
 
@@ -304,14 +304,34 @@ public class RAMCaseManager {
 
 		return cVo;
 	}
-	
+
 	/**
 	 * Sets the status code upon competing the dase
 	 * @param cVo
 	 */
 	private void setORFinalStatusCode(RAMCaseVO cVo) {
-		if (cVo.getKits().isEmpty()) cVo.setCaseStatus(RAMCaseStatus.CLOSED);
-		else cVo.setCaseStatus(RAMCaseStatus.OR_COMPLETE);
+		if (cVo.getKits().isEmpty()) {
+			cVo.setCaseStatus(RAMCaseStatus.CLOSED);
+		} else if(allKitsProcessed(cVo)) {
+			cVo.setCaseStatus(RAMCaseStatus.CLOSED);
+		} else {
+			cVo.setCaseStatus(RAMCaseStatus.OR_COMPLETE);
+		}
+	}
+
+	/**
+	 * @param cVo
+	 * @return
+	 */
+	private boolean allKitsProcessed(RAMCaseVO cVo) {
+		boolean allKitsComplete = true;
+		for(RAMCaseKitVO k : cVo.getKits().values()) {
+			if(k.getCaseKitId() != null && !k.isProcessed()) {
+				allKitsComplete = false;
+			}
+		}
+
+		return allKitsComplete;
 	}
 
 	/**

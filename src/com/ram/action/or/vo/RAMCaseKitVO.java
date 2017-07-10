@@ -28,7 +28,7 @@ public class RAMCaseKitVO implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 	private String caseKitId;
-	private int locationItemMasterId;
+	private String locationItemMasterId;
 	private String caseId;
 	private Date createDt;
 	private Date updateDt;
@@ -36,7 +36,6 @@ public class RAMCaseKitVO implements Serializable {
 	private String productNm;
 	private String serialNoTxt;
 	private int processedFlg;
-		
 
 	public RAMCaseKitVO() {
 		
@@ -49,7 +48,7 @@ public class RAMCaseKitVO implements Serializable {
 
 	public void setData(ActionRequest req) {
 		caseKitId = req.getParameter("caseKitId");
-		locationItemMasterId = Convert.formatInteger(req.getParameter("locationItemMasterId"));
+		locationItemMasterId = req.getParameter("locationItemMasterId");
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
 	}
 
@@ -73,7 +72,7 @@ public class RAMCaseKitVO implements Serializable {
 	 * @return the itemMasterId
 	 */
 	@Column(name="location_item_master_id")
-	public int getLocationItemMasterId() {
+	public String getLocationItemMasterId() {
 		return locationItemMasterId;
 	}
 
@@ -119,7 +118,7 @@ public class RAMCaseKitVO implements Serializable {
 	/**
 	 * @param itemMasterId the itemMasterId to set.
 	 */
-	public void setLocationItemMasterId(int locationItemMasterId) {
+	public void setLocationItemMasterId(String locationItemMasterId) {
 		this.locationItemMasterId = locationItemMasterId;
 	}
 

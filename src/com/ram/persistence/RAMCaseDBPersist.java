@@ -20,6 +20,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseDBPersist.java
@@ -110,8 +111,8 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 				
 				//Flush and insert Items/Kits.
 				deleteChildren(cVo);
-				insertItems(cVo);
 				insertKits(cVo);
+				insertItems(cVo);
 				
 				//Commit transaction.
 				conn.commit();
@@ -186,7 +187,7 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		for(Entry<String, RAMCaseKitVO> kit : cVo.getKits().entrySet()) {
 			RAMCaseKitVO k = kit.getValue();
 			// TODO Hard coded this for the kit product. Needs to be changed
-			if (k.getLocationItemMasterId() == 0) k.setLocationItemMasterId(7896543);
+			if (StringUtil.isEmpty(k.getLocationItemMasterId())) k.setLocationItemMasterId("7896543");
 			
 			//Ensure CaseId is set correctly.
 			k.setCaseId(cVo.getCaseId());
