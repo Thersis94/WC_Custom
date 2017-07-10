@@ -20,8 +20,6 @@ import com.ram.persistence.RAMCasePersistenceFactory.PersistenceType;
 import com.ram.workflow.data.vo.LocationItemMasterVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.db.util.DatabaseException;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -205,13 +203,21 @@ public class RAMCaseManager {
 	 * @return
 	 */
 	private RAMProductVO lookupProduct(int productId) {
-		RAMProductVO p = new RAMProductVO();
-		p.setProductId(productId);
-		try {
-			new DBProcessor(conn).getByPrimaryKey(p);
-		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Error Processing Code", e);
-		}
+		DBProcessor db = new DBProcessor(conn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select p.*, c.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_number_txt ");
+		sql.append("from ram_product p left join ram_customer c on p.customer_id = c.customer_id ");
+		sql.append("where p.product_id = ? ");
+		
+		List<Object> params = new ArrayList<>();
+		params.add(productId);
+		
+		RAMProductVO p = (RAMProductVO) db.executeSelect(sql.toString(), params, new RAMProductVO()).get(0);
+		
+		if (p == null)
+			p = new RAMProductVO();
+		
 		return p;
 	}
 
@@ -254,7 +260,7 @@ public class RAMCaseManager {
 		//Build RAMCaseItem
 		RAMCaseItemVO civo = new RAMCaseItemVO(req);
 		civo.setProductNm(p.getProductName());
-		civo.setGtinProductId(p.getGtinProductId());
+		civo.setGtinProductId(p.getGtinProductNumber());
 		civo.setCaseItemId(new UUIDGenerator().getUUID());
 		return civo;
 	}

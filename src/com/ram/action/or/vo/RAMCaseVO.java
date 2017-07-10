@@ -370,8 +370,8 @@ public class RAMCaseVO implements Serializable {
 	}
 
 	public void removeItem(RAMCaseItemVO item) {
-		if(item != null && items.containsKey(item.getCaseType())) {
-			items.get(item.getCaseType()).remove(item.getProductId());
+		if(item != null && items.containsKey(item.getCaseType().toString())) {
+			items.get(item.getCaseType().toString()).remove(item.getCaseItemId());
 		}
 	}
 
