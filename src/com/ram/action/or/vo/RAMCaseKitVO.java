@@ -7,6 +7,7 @@ import com.ram.action.or.RAMCaseManager;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseKit.java
@@ -27,7 +28,7 @@ public class RAMCaseKitVO implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 	private String caseKitId;
-	private String locationItemMasterId;
+	private int locationItemMasterId;
 	private String caseId;
 	private Date createDt;
 	private Date updateDt;
@@ -48,7 +49,7 @@ public class RAMCaseKitVO implements Serializable {
 
 	public void setData(ActionRequest req) {
 		caseKitId = req.getParameter("caseKitId");
-		locationItemMasterId = req.getParameter("locationItemMasterId");
+		locationItemMasterId = Convert.formatInteger(req.getParameter("locationItemMasterId"));
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
 	}
 
@@ -72,7 +73,7 @@ public class RAMCaseKitVO implements Serializable {
 	 * @return the itemMasterId
 	 */
 	@Column(name="location_item_master_id")
-	public String getLocationItemMasterId() {
+	public int getLocationItemMasterId() {
 		return locationItemMasterId;
 	}
 
@@ -109,7 +110,7 @@ public class RAMCaseKitVO implements Serializable {
 	/**
 	 * @param itemMasterId the itemMasterId to set.
 	 */
-	public void setLocationItemMasterId(String locationItemMasterId) {
+	public void setLocationItemMasterId(int locationItemMasterId) {
 		this.locationItemMasterId = locationItemMasterId;
 	}
 

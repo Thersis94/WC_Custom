@@ -94,6 +94,7 @@ public class CaseSearchAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		
 		if (!req.hasParameter("json"))
 			return;
 		
@@ -206,6 +207,7 @@ public class CaseSearchAction extends SimpleActionAdapter {
 	 */
 	private void buildKitSummaryReport(ActionRequest req) throws ActionException {
 		loadKits(req);
+		
 		AbstractSBReportVO report = new KitExcelReport();
 		report.setData(((ModuleVO)attributes.get(Constants.MODULE_DATA)).getActionData());
 		report.setFileName("kit_summary_report.xls");
