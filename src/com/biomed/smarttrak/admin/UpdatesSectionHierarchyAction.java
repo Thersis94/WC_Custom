@@ -358,7 +358,10 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 * Sets the appropriate time range value to the request
 	 * @param req
 	 */
-	protected void setDateRange(ActionRequest req){
+	protected void setDateRange(ActionRequest req) {
+		//leave the data alone if set by another action (UpdatesScheduledAction)
+		if (req.getAttribute("dateRange") != null) return;
+		
 		String timeRangeCd = StringUtil.checkVal(req.getParameter("timeRangeCd"));
 		String dateRange = null;
 
