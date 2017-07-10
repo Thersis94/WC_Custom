@@ -309,9 +309,17 @@ public class VisionAction extends SBActionAdapter {
 				
 				int incOrDec = i.getCaseType() == RAMCaseType.OR ? -1 : 1;
 				p.addQtyOnHand(i.getQtyNo() * incOrDec);
+
+				/*
+				 * Update CaseItem Id.  If this is an OR Product, set a
+				 * caseItemId on the product so the tool knows this is a hard
+				 * ceiling on update quantity.  If this is SPD, and the
+				 * qtyOnHand and total Qty are the same (we've replenished this
+				 * piece entirely already.), remove the caseItemId.
+				 */
 				if(i.getCaseType().equals(RAMCaseType.OR)) {
 					p.setCaseItemId(i.getCaseItemId());
-				} else if(i.getCaseType().equals(RAMCaseType.SPD)) {
+				} else if(i.getCaseType().equals(RAMCaseType.SPD) && p.getQtyOnHand() == p.getQuantity().intValue()) {
 					p.setCaseItemId(null);
 				}
 			}
@@ -351,6 +359,7 @@ public class VisionAction extends SBActionAdapter {
 				layer.setKitName(p.getProductName());
 				//Build Kit Layer PRoduct XR VO
 				lpxr = new KitLayerProductVO(rs, false);
+				lpxr.setCompositeId(rs.getString("KIT_LAYER_ID") + "-" + rs.getString("PRODUCT_KIT_ID"));
 
 				//Build ProductVO
 				prod = new RAMProductVO(rs);
@@ -388,6 +397,7 @@ public class VisionAction extends SBActionAdapter {
 
 					//Build Kit Layer PRoduct XR VO
 					lpxr = new KitLayerProductVO(rs, false);
+					lpxr.setCompositeId(rs.getString("KIT_LAYER_ID") + "-" + rs.getString("PRODUCT_KIT_ID"));
 
 					//Build ProductVO
 					prod = new RAMProductVO(rs);

@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 
 import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMCaseItemVO;
+import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.or.vo.RAMCaseVO.RAMCaseStatus;
@@ -19,6 +20,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -68,9 +70,6 @@ public class SPDAction extends SimpleActionAdapter {
 
 			//Update Kit Status
 			kVo.setProcessedFlg(1);
-
-			//Save the Case
-			//rcm.saveCase(req);
 
 			//Finalize it to the DB.
 			rcm.persistCaseDefault(cVo);
@@ -129,14 +128,24 @@ public class SPDAction extends SimpleActionAdapter {
 	 */
 	private void loadCaseDataByProduct(ActionRequest req) throws ActionException {
 		try{
-			//String [] res = getRamCaseId(req);
-			RAMCaseVO cVo = getCaseManager(req).retrieveCase(req.getParameter("caseId"));
-	
+			String caseId = req.getParameter("caseId");
+			String caseKitId = req.getParameter("caseKitId");
+
+			if(StringUtil.isEmpty(caseId) || StringUtil.isEmpty(caseKitId)) {
+				String [] res = getRamCaseId(req);
+				caseId = res[0];
+				caseKitId = res[1];
+				req.setParameter("caseId", caseId);
+				req.setParameter("caseKitId", caseKitId);
+			}
+
+			RAMCaseVO cVo = getCaseManager(req).retrieveCase(caseId);
+
 			/*
 			 * Get list of consumed RAMCaseItemVOs off the RAMCaseVO with the
 			 * given CaseKitId.
 			 */
-			List<RAMCaseItemVO> items = extractConsumedKitData(cVo, req.getParameter("caseKitId"));
+			List<RAMCaseItemVO> items = extractConsumedKitData(cVo, caseKitId);
 
 			/*
 			 * Load Full Kit Data for the given Product Id and pass the list
@@ -182,23 +191,39 @@ public class SPDAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Extract List of Consumed RAMCaseItemVOs for the given caseKitId.
+	 * Extract List of Consumed RAMCaseItemVOs for the given caseKitId.  Need
+	 * to get OR Items for consumption first and then add SPD Items for
+	 * restock after so that we update KitLayerProductXrVos correctly in VS.
 	 * @param cVo
 	 * @return
 	 */
 	private List<RAMCaseItemVO> extractConsumedKitData(RAMCaseVO cVo, String caseKitId) {
 		List<RAMCaseItemVO> kitItems = new ArrayList<>();
 
-		for(Map<String, RAMCaseItemVO> items : cVo.getItems().values()) {
-			for(Entry<String, RAMCaseItemVO> item : items.entrySet()) {
+		//Aet all OR Items
+		addItems(cVo.getItems().get(RAMCaseType.OR.toString()), kitItems, caseKitId);
+
+		//Add all SPD Items
+		addItems(cVo.getItems().get(RAMCaseType.SPD.toString()), kitItems, caseKitId);
+
+		return kitItems;
+	}
+
+	/*
+	 * Get All the Items off the given caseItems Map that match the given
+	 * caseKitId and add to the kitItems List.
+	 */
+	private void addItems(Map<String, RAMCaseItemVO> caseItems, List<RAMCaseItemVO> kitItems, String caseKitId) {
+		if(caseItems != null && !caseItems.isEmpty()) {
+			for(Entry<String, RAMCaseItemVO> item : caseItems.entrySet()) {
 				RAMCaseItemVO i = item.getValue();
 				if(caseKitId.equals(i.getCaseKitId())) {
 					kitItems.add(i);
 				}
 			}
 		}
-		return kitItems;
 	}
+
 
 	/**
 	 * Helper method that calls out to VisionAction to load the Kit Vision Data.
@@ -230,12 +255,12 @@ public class SPDAction extends SimpleActionAdapter {
 	public String getCaseIdLookupSql() {
 		StringBuilder sql = new StringBuilder(275);
 		String custom = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("select * from ").append(custom).append("ram_case c ");
+		sql.append("select c.case_id, k.case_kit_id from ").append(custom).append("ram_case c ");
 		sql.append("inner join ").append(custom).append("ram_case_kit k ");
 		sql.append("on c.case_id = k.case_id ");
 		sql.append("inner join ").append(custom).append("ram_location_item_master i ");
 		sql.append("on k.location_item_master_id = i.location_item_master_id ");
-		sql.append("where i.product_id = ? and c.case_status_cd = ?");
+		sql.append("where i.product_id = ? and c.case_status_cd = ? ");
 		return sql.toString();
 	}
 }
