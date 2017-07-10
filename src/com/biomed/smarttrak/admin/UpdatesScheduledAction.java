@@ -132,14 +132,16 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		sql.append("from profile p ");
 		sql.append(innerJoin).append(schema).append("biomedgps_user u on p.profile_id=u.profile_id ");
 		sql.append(innerJoin).append(schema).append("biomedgps_account a on a.account_id=u.account_id ");
-		sql.append(innerJoin).append(schema).append("biomedgps_account_acl sec on sec.account_id=a.account_id and sec.updates_no=1 ");
-		sql.append(innerJoin).append(schema).append("biomedgps_section s on s.section_id=sec.section_id ");
-		sql.append(innerJoin).append(schema).append("biomedgps_update_section us on us.section_id=s.parent_id ");
+		sql.append(innerJoin).append(schema).append("biomedgps_account_acl acl on acl.account_id=a.account_id and acl.updates_no=1 ");
+		sql.append(innerJoin).append(schema).append("biomedgps_section s on s.section_id=acl.section_id "); //lvl3 hierarchy
+		sql.append(leftJoin).append(schema).append("biomedgps_section s2 on s.parent_id=s2.section_id "); //lvl2 hierarchy
+		sql.append(leftJoin).append(schema).append("biomedgps_section s3 on s2.parent_id=s3.section_id "); //lvl1 hierarchy
+		sql.append(innerJoin).append(schema).append("biomedgps_update_section us on us.section_id=s.section_id or us.section_id=s2.section_id or us.section_id=s3.section_id "); //update attached to either of the 3 hierarchy levels; acl, acl-parent, acl-grandparent
 		sql.append(innerJoin).append(schema).append("biomedgps_update up on up.update_id=us.update_id ");
 		sql.append(leftJoin).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
 		sql.append(leftJoin).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (up.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
 		sql.append(leftJoin).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
-		sql.append("where p.profile_id=? and up.email_flg=1 and up.status_cd in ('A','N') and up.publish_dt >= ? and publish_dt < ? ");
+		sql.append("where p.profile_id=? and up.email_flg=1 and up.status_cd in ('R','N') and up.publish_dt >= ? and publish_dt < ? ");
 		sql.append("order by up.type_cd, up.publish_dt desc ");
 		return sql.toString();
 	}
