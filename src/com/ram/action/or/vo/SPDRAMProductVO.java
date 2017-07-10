@@ -7,7 +7,8 @@ import com.ram.datafeed.data.RAMProductVO;
 /****************************************************************************
  * <b>Title:</b> SPDRAMProductVO.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> RAMProductVO with additional case Data for when SPD Scan
+ * is initiated for a lookup.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
