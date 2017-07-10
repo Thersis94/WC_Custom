@@ -55,9 +55,10 @@ public class RAMCaseItemVO implements Serializable {
 		setData(req);
 	}
 
-	private void setData(ActionRequest req) {
+	public void setData(ActionRequest req) {
 		caseItemId = req.getParameter("caseItemId");
 		productId = Convert.formatInteger(req.getParameter("productId"));
+		productNm = req.getParameter("productNm");
 		caseKitId = req.getParameter("caseKitId");
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
 		qtyNo = Convert.formatInteger(req.getParameter("qtyNo"));

@@ -28,15 +28,14 @@ public class RAMCaseKitVO implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 	private String caseKitId;
-	private int locationItemMasterId;
+	private String locationItemMasterId;
 	private String caseId;
 	private Date createDt;
 	private Date updateDt;
 	private int productId;
 	private String productNm;
 	private String serialNoTxt;
-	
-		
+	private int processedFlg;
 
 	public RAMCaseKitVO() {
 		
@@ -49,7 +48,7 @@ public class RAMCaseKitVO implements Serializable {
 
 	public void setData(ActionRequest req) {
 		caseKitId = req.getParameter("caseKitId");
-		locationItemMasterId = Convert.formatInteger(req.getParameter("locationItemMasterId"));
+		locationItemMasterId = req.getParameter("locationItemMasterId");
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
 	}
 
@@ -73,7 +72,7 @@ public class RAMCaseKitVO implements Serializable {
 	 * @return the itemMasterId
 	 */
 	@Column(name="location_item_master_id")
-	public int getLocationItemMasterId() {
+	public String getLocationItemMasterId() {
 		return locationItemMasterId;
 	}
 
@@ -93,6 +92,15 @@ public class RAMCaseKitVO implements Serializable {
 		return updateDt;
 	}
 
+	@Column(name="processed_flg")
+	public int getProcessedFlg() {
+		return processedFlg;
+	}
+
+	public boolean isProcessed() {
+		return Convert.formatBoolean(processedFlg);
+	}
+
 	/**
 	 * @param caseKitId the caseKitId to set.
 	 */
@@ -110,7 +118,7 @@ public class RAMCaseKitVO implements Serializable {
 	/**
 	 * @param itemMasterId the itemMasterId to set.
 	 */
-	public void setLocationItemMasterId(int locationItemMasterId) {
+	public void setLocationItemMasterId(String locationItemMasterId) {
 		this.locationItemMasterId = locationItemMasterId;
 	}
 
@@ -171,5 +179,12 @@ public class RAMCaseKitVO implements Serializable {
 	 */
 	public void setSerialNoTxt(String serialNoTxt) {
 		this.serialNoTxt = serialNoTxt;
+	}
+
+	/**
+	 * @param processedFlg the processedFlg to sed
+	 */
+	public void setProcessedFlg(int processedFlg) {
+		this.processedFlg = processedFlg;
 	}
 }

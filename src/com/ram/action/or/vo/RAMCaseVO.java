@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.ram.action.or.RAMCaseManager;
+import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -65,6 +66,8 @@ public class RAMCaseVO implements Serializable {
 		this.kits = new HashMap<>();
 		this.signatures = new EnumMap<>(SignatureType.class);
 		this.items = new HashMap<>();
+		items.put(RAMCaseType.OR.toString(), new HashMap<>());
+		items.put(RAMCaseType.SPD.toString(), new HashMap<>());
 	}
 
 	public RAMCaseVO(ActionRequest req) {
