@@ -11,8 +11,10 @@ import java.util.Map.Entry;
 import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
+import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.or.vo.RAMCaseVO.RAMCaseStatus;
+import com.ram.action.products.ProductCartFacadeAction;
 import com.ram.action.provider.VisionAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -44,7 +46,65 @@ public class SPDAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		
+		log.debug("Incoming Request Logged");
+		if(Convert.formatBoolean("isComplete")) {
+			completeCase(req);
+		} else if(Convert.formatBoolean("updateItem")) {
+			updateCaseItemRecord(req);
+		}
+	}
+
+	private void completeCase(ActionRequest req) throws ActionException {
+		RAMCaseManager rcm = getCaseManager(req);
+
+		try {
+			RAMCaseVO cVo = rcm.retrieveCase(req.getParameter("caseId"));
+			RAMCaseKitVO kVo = cVo.getKits().get(req.getParameter("caseKitId"));
+
+			//Update Kit Status
+
+			//Check All Kits for Complete Status
+			boolean caseComplete = true;
+			for(RAMCaseKitVO k : cVo.getKits().values()) {
+//				if(!k.isComplete()) {
+//					caseComplete = false;
+//				}
+			}
+
+			if(caseComplete) 
+				cVo.setCaseStatus(RAMCaseStatus.CLOSED);
+
+			rcm.saveCase(req);
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+	}
+
+	private void updateCaseItemRecord(ActionRequest req) throws ActionException {
+		RAMCaseManager rcm = getCaseManager(req);
+
+		try {
+			RAMCaseVO cVo = rcm.retrieveCase(req.getParameter("caseId"));
+			RAMCaseItemVO cIo = rcm.updateItem(req);
+			RAMCaseKitVO kVo = cVo.getKits().get(req.getParameter("caseKitId"));
+
+			//Update Kit Status
+
+			//Check All Kits for Complete Status
+			boolean caseComplete = true;
+			for(RAMCaseKitVO k : cVo.getKits().values()) {
+//				if(!k.isComplete()) {
+//					caseComplete = false;
+//				}
+			}
+
+			if(caseComplete) 
+				cVo.setCaseStatus(RAMCaseStatus.CLOSED);
+
+			rcm.saveCase(req);
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
 	}
 
 	@Override
@@ -52,8 +112,19 @@ public class SPDAction extends SimpleActionAdapter {
 		if(req.hasParameter("productId")) {
 			loadCaseDataByProduct(req);
 		} else {
-			list(req);
+			loadProductCartAction(req);
 		}
+	}
+
+	/**
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void loadProductCartAction(ActionRequest req) throws ActionException {
+		ProductCartFacadeAction pca = new ProductCartFacadeAction(this.actionInit);
+		pca.setAttributes(attributes);
+		pca.setDBConnection(dbConn);
+		pca.retrieve(req);
 	}
 
 	@Override
