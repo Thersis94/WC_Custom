@@ -176,7 +176,7 @@ public class RAMCaseItemVO implements Serializable {
 	/**
 	 * @return the gtinProductId
 	 */
-	@Column(name="gtin_product_id", isReadOnly=true)
+	@Column(name="gtin_number_txt", isReadOnly=true)
 	public String getGtinProductId() {
 		return gtinProductId;
 	}

@@ -65,7 +65,8 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 */
 	private String loadCaseSql() {
 		StringBuilder sql = new StringBuilder(525);
-		sql.append("select cu.customer_nm, su.first_nm || ' ' || su.last_nm as surgeon_nm, o.or_name ,c.*, i.*, p.*, k.* ");
+		sql.append("select cu.customer_nm, su.first_nm || ' ' || su.last_nm as surgeon_nm, o.or_name ,c.*, i.*, p.*, k.*, ");
+		sql.append("pcu.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_number_txt ");
 		sql.append("from ").append(schema).append("ram_case c ");
 		sql.append("left outer join ").append(schema).append("ram_case_signature s ");
 		sql.append("on c.case_id = s.case_id ");
@@ -77,6 +78,8 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		sql.append("on c.case_id = k.case_id and k.case_kit_id = i.case_kit_id ");
 		sql.append("left outer join ").append(schema).append("ram_customer cu ");
 		sql.append("on c.customer_id = cu.customer_id ");
+		sql.append("left outer join ").append(schema).append("ram_customer pcu ");
+		sql.append("on p.customer_id = pcu.customer_id ");
 		sql.append("left outer join ").append(schema).append("ram_surgeon su ");
 		sql.append("on c.surgeon_id = su.surgeon_id ");
 		sql.append("left outer join ").append(schema).append("ram_or_room o ");
