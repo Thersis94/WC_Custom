@@ -65,7 +65,7 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 */
 	private String loadCaseSql() {
 		StringBuilder sql = new StringBuilder(525);
-		sql.append("select cu.customer_nm, su.first_nm || ' ' || su.last_nm as surgeon_nm, o.or_name ,c.*, i.*, p.*, k.*, ");
+		sql.append("select cu.customer_nm, su.first_nm || ' ' || su.last_nm as surgeon_nm, o.or_name ,c.*, i.*, p.*, k.*, s.*, ");
 		sql.append("pcu.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_number_txt ");
 		sql.append("from ").append(schema).append("ram_case c ");
 		sql.append("left outer join ").append(schema).append("ram_case_signature s ");
