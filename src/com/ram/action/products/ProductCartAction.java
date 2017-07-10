@@ -335,13 +335,15 @@ public class ProductCartAction extends SimpleActionAdapter {
 		WidgetRetrieveAction wa = WidgetRetrieveAction.valueOf(req.getParameter("widgetAction"));
 		String caseId = req.getParameter(CASE_ID);
 		try {
-		RAMCaseVO cvo = rcm.retrieveCase(caseId);
+		
 			switch (wa) {
 				case loadCase:
+					RAMCaseVO cvo = rcm.retrieveCase(caseId);
 					putModuleData(cvo);
 					break;
 				case loadReport:
-					buildReport(cvo, req);
+					RAMCaseVO cvo2 = rcm.retrieveCase(caseId);
+					buildReport(cvo2, req);
 					break;
 				case searchProducts:
 					if (!StringUtil.isEmpty(req.getParameter("search")))
