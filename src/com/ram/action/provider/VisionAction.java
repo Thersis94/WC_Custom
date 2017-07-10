@@ -306,10 +306,14 @@ public class VisionAction extends SBActionAdapter {
 			 * as well as impacts to Session Object.
 			 */
 			if(i.getProductId().equals(p.getProductId())) {
+				
 				int incOrDec = i.getCaseType() == RAMCaseType.OR ? -1 : 1;
 				p.addQtyOnHand(i.getQtyNo() * incOrDec);
-				p.setCaseItemId(i.getCaseItemId());
-				break;
+				if(i.getCaseType().equals(RAMCaseType.OR)) {
+					p.setCaseItemId(i.getCaseItemId());
+				} else if(i.getCaseType().equals(RAMCaseType.SPD)) {
+					p.setCaseItemId(null);
+				}
 			}
 		}
 	}

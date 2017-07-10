@@ -159,12 +159,13 @@ public class RAMCaseManager {
 		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
 		if(req.hasParameter("caseItemId")) {
 			item = getCaseItem(cVo, req);
+			if(item != null)
+				item.setData(req);
 		} else {
 			item = buildCaseItem(cVo, req);
+			cVo.addItem(item);
 		}
 
-		cVo.addItem(item);
-		
 		//Save Case.
 		this.updateCaseInfo(cVo);
 		return item;

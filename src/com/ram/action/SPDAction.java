@@ -10,7 +10,6 @@ import java.util.Map.Entry;
 
 import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMCaseItemVO;
-import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.or.vo.RAMCaseVO.RAMCaseStatus;
@@ -47,14 +46,20 @@ public class SPDAction extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("Incoming Request Logged");
-		if(Convert.formatBoolean("isComplete")) {
-			completeCase(req);
-		} else if(Convert.formatBoolean("updateItem")) {
+		if(Convert.formatBoolean(req.getParameter("isComplete"))) {
+			completeKit(req);
+		} else if(Convert.formatBoolean(req.getParameter("updateItem"))) {
 			updateCaseItemRecord(req);
 		}
 	}
 
-	private void completeCase(ActionRequest req) throws ActionException {
+	/**
+	 * Helper method that manages completing a kit.  If all kits are completed,
+	 * close the case.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void completeKit(ActionRequest req) throws ActionException {
 		RAMCaseManager rcm = getCaseManager(req);
 
 		try {
@@ -62,46 +67,40 @@ public class SPDAction extends SimpleActionAdapter {
 			RAMCaseKitVO kVo = cVo.getKits().get(req.getParameter("caseKitId"));
 
 			//Update Kit Status
+			kVo.setProcessedFlg(1);
 
 			//Check All Kits for Complete Status
-			boolean caseComplete = true;
+			boolean allKitsComplete = true;
 			for(RAMCaseKitVO k : cVo.getKits().values()) {
-//				if(!k.isComplete()) {
-//					caseComplete = false;
-//				}
+				if(k.getCaseKitId() != null && !k.isProcessed()) {
+					allKitsComplete = false;
+				}
 			}
 
-			if(caseComplete) 
+			//If all kits are complete, close the case.
+			if(allKitsComplete) {
 				cVo.setCaseStatus(RAMCaseStatus.CLOSED);
+			}
 
-			rcm.saveCase(req);
+			//Save the Case
+			//rcm.saveCase(req);
+
+			//Finalize it to the DB.
+			rcm.persistCasePerm(cVo);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 	}
 
+	/**
+	 * Helper method that manages creating/updated a case Item Record.
+	 * @param req
+	 * @throws ActionException
+	 */
 	private void updateCaseItemRecord(ActionRequest req) throws ActionException {
-		RAMCaseManager rcm = getCaseManager(req);
-
 		try {
-			RAMCaseVO cVo = rcm.retrieveCase(req.getParameter("caseId"));
-			RAMCaseItemVO cIo = rcm.updateItem(req);
-			RAMCaseKitVO kVo = cVo.getKits().get(req.getParameter("caseKitId"));
-
-			//Update Kit Status
-
-			//Check All Kits for Complete Status
-			boolean caseComplete = true;
-			for(RAMCaseKitVO k : cVo.getKits().values()) {
-//				if(!k.isComplete()) {
-//					caseComplete = false;
-//				}
-			}
-
-			if(caseComplete) 
-				cVo.setCaseStatus(RAMCaseStatus.CLOSED);
-
-			rcm.saveCase(req);
+			RAMCaseItemVO civo = getCaseManager(req).updateItem(req);
+			putModuleData(civo);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
@@ -130,8 +129,6 @@ public class SPDAction extends SimpleActionAdapter {
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
-		//Get List of Cases with Kits for SPD.
-		//TODO - Camire work in here.
 	}
 	
 	/**
@@ -143,14 +140,14 @@ public class SPDAction extends SimpleActionAdapter {
 	 */
 	private void loadCaseDataByProduct(ActionRequest req) throws ActionException {
 		try{
-			String [] res = getRamCaseId(req);
-			RAMCaseVO cVo = getCaseManager(req).retrieveCase(res[0]);
+			//String [] res = getRamCaseId(req);
+			RAMCaseVO cVo = getCaseManager(req).retrieveCase(req.getParameter("caseId"));
 	
 			/*
 			 * Get list of consumed RAMCaseItemVOs off the RAMCaseVO with the
 			 * given CaseKitId.
 			 */
-			List<RAMCaseItemVO> items = extractConsumedKitData(cVo, res[1]);
+			List<RAMCaseItemVO> items = extractConsumedKitData(cVo, req.getParameter("caseKitId"));
 
 			/*
 			 * Load Full Kit Data for the given Product Id and pass the list
@@ -203,15 +200,14 @@ public class SPDAction extends SimpleActionAdapter {
 	private List<RAMCaseItemVO> extractConsumedKitData(RAMCaseVO cVo, String caseKitId) {
 		List<RAMCaseItemVO> kitItems = new ArrayList<>();
 
-		Map<String, RAMCaseItemVO> items = cVo.getItems().get(RAMCaseType.OR.toString());
-
-		for(Entry<String, RAMCaseItemVO> item : items.entrySet()) {
-			RAMCaseItemVO i = item.getValue();
-			if(caseKitId.equals(i.getCaseKitId())) {
-				kitItems.add(i);
+		for(Map<String, RAMCaseItemVO> items : cVo.getItems().values()) {
+			for(Entry<String, RAMCaseItemVO> item : items.entrySet()) {
+				RAMCaseItemVO i = item.getValue();
+				if(caseKitId.equals(i.getCaseKitId())) {
+					kitItems.add(i);
+				}
 			}
 		}
-
 		return kitItems;
 	}
 
