@@ -3,7 +3,6 @@ package com.ram.action.report.vo;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -100,14 +99,9 @@ public class ProductCartReport  extends AbstractSBReportVO {
 			}
 			html.append("</table></div>");
 		}
-		
-		log.debug("!!! data time " + data.get(ProductCartAction.TIME) );
-		log.debug("!! data time class " + data.get(ProductCartAction.TIME).getClass() );
 
 		String dateString = Convert.formatDate(Convert.formatDate(Convert.DATE_TIME_DASH_PATTERN, (String)data.get(ProductCartAction.TIME)), Convert.DATE_TIME_SLASH_PATTERN_12HR);
-		
-		log.debug("!!! formatted data time " + dateString );
-		
+				
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%;'><tbody>");
 		html.append("<tr><td style='width:48%'><img alt='RAM Healthcare' style='width:200px' src='/binary/themes/CUSTOM/RAMGRP/MAIN/images/ramgrouplogo.png' />");
 		html.append("</td><td colspan='2' style='text-align:right;'>");
