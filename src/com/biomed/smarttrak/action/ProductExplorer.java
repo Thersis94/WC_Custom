@@ -148,19 +148,13 @@ public class ProductExplorer extends SBActionAdapter {
 	/**
 	 * Build a text representation of the filters applied to the search
 	 */
-	private void buildFilterList(ActionRequest req, SolrResponseVO resp) {
+	private void buildFilterList(ActionRequest req) {
 		StringBuilder text = new StringBuilder(512);
 		buildQueryFilters(text, req);
 		if (req.hasParameter("selNodes")) {
 			text.append(buildHierarchyFilters(req));
 		} else {
-			text.append("Any hierarchy section. ");
-		}
-		if (resp.getTotalResponses() > 0) {
-			text.append(" ").append(resp.getTotalResponses()).append(" products/brands and ");
-			text.append(resp.getFacetByName("company_s").size()).append(" companies found.");
-		} else {
-			text.append(" Nothing was found.");
+			text.append("All Markets.");
 		}
 		req.getSession().setAttribute("filterList", text.toString());
 	}
@@ -178,13 +172,14 @@ public class ProductExplorer extends SBActionAdapter {
 		Tree t = c.loadDefaultTree();
 
 		StringBuilder part = new StringBuilder(128);
-		for (String s : req.getParameterValues("selNodes")) {
+		String nodes = req.getParameter("selNodes");
+		for (String s : nodes.split(",")) {
 			Node n = t.findNode(s);
-			if (n == null) continue;
+			if (n == null || n.getDepthLevel() == 2) continue;
 			if (part.length() < 2) {
-				part.append("Hierarchy Sections are ");
+				part.append("in ");
 			} else {
-				part.append(" or ");
+				part.append(", ");
 			}
 			part.append(n.getNodeName());
 		}
@@ -270,7 +265,7 @@ public class ProductExplorer extends SBActionAdapter {
 		SolrResponseVO vo = sqp.processQuery(qData);
 
 		if (!req.hasParameter("compare") && !req.hasParameter("textCompare"))
-			buildFilterList(req, vo);
+			buildFilterList(req);
 		return vo;
 	}
 
@@ -316,7 +311,8 @@ public class ProductExplorer extends SBActionAdapter {
 	protected void buildNodeParams(ActionRequest req, SolrActionVO qData) {
 		StringBuilder selected = new StringBuilder(50);
 		selected.append("(");
-		for (String s : req.getParameterValues("selNodes")) {
+		String nodes = req.getParameter("selNodes");
+		for (String s : nodes.split(",")) {
 			if (selected.length() > 2) selected.append(" OR ");
 			selected.append(s.replace("~", "\\~").replace(" ", "\\ ")).append("*");
 		}
@@ -538,23 +534,8 @@ public class ProductExplorer extends SBActionAdapter {
 				url.append("&").append(name).append("=").append(value);
 			}
 		}
-
-		if (req.hasParameter("selNodes")) {
-			buildHierarchyUrl(req, url);
-		}
+		url.append("&selNodes=").append(req.getParameter("selNodes"));
 
 		return url.toString();
-	}
-
-
-	/**
-	 * Append the selected hierarchy nodes to the url
-	 * @param req
-	 * @param url
-	 */
-	protected void buildHierarchyUrl(ActionRequest req, StringBuilder url) {
-		for (String s : req.getParameterValues("selNodes")) {
-			url.append("&selNodes=").append(s);
-		}
 	}
 }

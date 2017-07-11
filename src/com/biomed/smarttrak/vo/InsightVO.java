@@ -21,6 +21,7 @@ import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
 import com.smt.sitebuilder.changelog.ChangeLogIntfc;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 //WebCrescendo
@@ -65,6 +66,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	private String sideContentTxt;
 	private int featuredFlg;
 	private String featuredImageTxt;
+	private String featuredProfileDocId;
 	private String profileImg;
 	private String statusCd;
 	private int orderNo;
@@ -73,6 +75,8 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	private Date updateDt;
 	private long countNumber = 0;
 	private List<InsightXRVO> sections;
+	private List<ProfileDocumentVO> profileDocuments;
+	private String userId;
 
 	public enum InsightType {
 		CLINICAL(12, "Clinical"),
@@ -131,10 +135,8 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	 */
 	@Override
 	protected void setData(ActionRequest req) {
-		//don't default creator_profile_id to current user, for insights
-		setCreatorProfileId(req.getParameter("creatorProfileId"));
+		super.setData(req);
 		setInsightId(req.getParameter("insightId"));
-		setCreatorProfileId(req.getParameter("creatorProfileId"));
 		if (StringUtil.isEmpty(insightId)) setInsightId(req.getParameter("pkId"));
 		setTitleTxt(req.getParameter("titleTxt"));
 		setTypeCd(Convert.formatInteger(req.getParameter("typeCd")));
@@ -143,7 +145,13 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 		setContentTxt(req.getParameter("contentTxt"));
 		setSideContentTxt(req.getParameter("sideContentTxt"));
 		setFeaturedFlg(Convert.formatInteger(req.getParameter("featuredFlg")));
-		setFeaturedImageTxt(req.getParameter("featuredImageTxt"));
+				
+		if (!StringUtil.isEmpty(req.getParameter("filePathText")))
+			setFeaturedImageTxt(req.getParameter("filePathText"));
+		
+		if (!StringUtil.isEmpty(req.getParameter("featuredImageTxt")))
+			setFeaturedImageTxt(req.getParameter("featuredImageTxt"));
+		
 		setProfileImg(req.getParameter("profileImg"));
 		setStatusCd(req.getParameter("statusCd"));
 		setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
@@ -626,5 +634,51 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	 */
 	public void setCountNumber(long countNumber) {
 		this.countNumber = countNumber;
+	}
+
+	/**
+	 * @return the userId
+	 */
+	public String getUserId() {
+		return userId;
+	}
+
+	/**
+	 * @param userId the userId to set
+	 */
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	/**
+	 * @return the profileDocuments
+	 */
+	public List<ProfileDocumentVO> getProfileDocuments() {
+		return profileDocuments;
+	}
+
+	/**
+	 * @param profileDocuments the profileDocuments to set
+	 */
+	public void setProfileDocuments(List<ProfileDocumentVO> profileDocuments) {
+		if(profileDocuments != null && !profileDocuments.isEmpty())
+			this.setFeaturedProfileDocId(profileDocuments.get(0).getProfileDocumentId());
+		
+		this.profileDocuments = profileDocuments;
+	}
+
+	/**
+	 * @return the featuredProfileDocId
+	 */
+	@SolrField(name="featuredProfileDocId_s")
+	public String getFeaturedProfileDocId() {
+		return featuredProfileDocId;
+	}
+
+	/**
+	 * @param featuredProfileDocId the featuredProfileDocId to set
+	 */
+	public void setFeaturedProfileDocId(String featuredProfileDocId) {
+		this.featuredProfileDocId = featuredProfileDocId;
 	}
 }

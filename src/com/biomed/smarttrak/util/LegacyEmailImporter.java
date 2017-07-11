@@ -58,7 +58,7 @@ public class LegacyEmailImporter extends CommandLineUtil {
 	public void run() {
 		List<EmailLogVO> data;
 		int rowCnt = getDataCount();
-		log.debug("need to insert: " + rowCnt);
+		log.info("need to insert: " + rowCnt);
 		int start = 0;
 		int limit = 5000; //batch 5k at a time - avoids stack overflow issues
 		do {
@@ -67,7 +67,7 @@ public class LegacyEmailImporter extends CommandLineUtil {
 			saveSendParams(data);
 			saveEmailOpens(data);
 			start += limit;
-			log.debug("finished " + start);
+			log.info("finished " + start);
 
 		} while (start < rowCnt);
 	}

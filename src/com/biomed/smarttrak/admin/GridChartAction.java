@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 // App Libs
+import static com.biomed.smarttrak.action.GridDisplayAction.GRID_ID;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 
@@ -23,6 +24,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -74,14 +76,14 @@ public class GridChartAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		// Get the DB Schema
 		String schema = getAttribute(Constants.CUSTOM_DB_SCHEMA) + "";
-		String gridId = req.getParameter("gridId");
+		String gridId = req.getParameter(GRID_ID);
 		
 		if (StringUtil.isEmpty(gridId)) {
 			retrieveList(req, schema);
 		} else if ("column".equalsIgnoreCase(req.getParameter("type"))) {
 			getColumnList(schema, gridId);
 		} else if (! "ADD".equalsIgnoreCase(gridId)){
-			retrieveData(req.getParameter("gridId"), schema, false);
+			retrieveData(gridId, schema, false);
 		}
 	}
 	
@@ -220,7 +222,7 @@ public class GridChartAction extends SBActionAdapter {
 		
 		// Return the data
 		Map<String, Object> response = new HashMap<>(8);
-		response.put("gridId", grid.getGridId());
+		response.put(GRID_ID, grid.getGridId());
 		response.put(GlobalConfig.SUCCESS_KEY, !error);
 		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
 		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
@@ -319,9 +321,9 @@ public class GridChartAction extends SBActionAdapter {
 		sql.append("select * from ").append(schema).append("biomedgps_grid a ");
 		sql.append("inner join ").append(schema).append("biomedgps_grid_detail b ");
 		sql.append("on a.grid_id = b.grid_id where a.grid_id in ( ");
-		for (int i=0; i < gridIds.size(); i++) sql.append((i > 0) ? "," : "").append("?");			
+		DBUtil.preparedStatmentQuestion(gridIds.size(), sql);			
 		sql.append(") or slug_txt in ( ");
-		for (int i=0; i < gridIds.size(); i++) sql.append((i > 0) ? "," : "").append("?");	
+		DBUtil.preparedStatmentQuestion(gridIds.size(), sql);	
 		sql.append(") order by a.grid_id ");
 		log.debug(sql);
 		
@@ -350,7 +352,8 @@ public class GridChartAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> params = Arrays.asList(new Object[]{gridId, gridId});
 		List<?> data = db.executeSelect(sql.toString(), params, new GridVO(), null);
-		log.debug("Data: " + data);
+		if (log.isDebugEnabled())
+			log.debug("Data: " + data);
 		
 		// Add the vo only.  Add a blank bean if nothing found
 		putModuleData(data.isEmpty() ? new GridVO() : data.get(0));

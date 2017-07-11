@@ -36,6 +36,17 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 		super(actionInit);
 	}
 
+	/** 
+	 * Get the cc addresses off the action request and store it in
+	 * the attributes before passing everything up to the superclass.
+	 */
+	@Override
+	public void buildCallback(ActionRequest req, TicketActivityVO item) throws ActionException {
+		attributes.put("ccAddresses", req.getParameter("ccAddresses"));
+		super.buildCallback(req, item);
+	}
+	
+	
 	/**
 	 * Helper method that sends an email built off the TicketActivityVO.
 	 * @param message

@@ -85,15 +85,6 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		sai.retrieve(req);
-		/*
-		 * Using Retreival for ChangeLogs we don't need anything here.  If we 
-		 * need Session Storage, use the following.
-		 * if(req.hasParameter(UPDATE_ID) && updates.size() == 1) {
-		 * 	ChangeLogUtil.setChangeLogSess(req, (ChangeLogIntfc) updates.get(0), UPDATE_TYPE_CD, true);
-		 * } else if(req.hasParameter(UPDATE_ID)){
-		 * 	ChangeLogUtil.cleanupChangeLog(req);
-		 * }
-		 */
 	}
 
 	@Override
@@ -130,7 +121,8 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 
 			//Default to Non-Zero Diff value.
 			int dNo = -1;
-			String origTxt = null, diffTxt = diff.getDiffText();
+			String origTxt = null;
+			String diffTxt = diff.getDiffText();
 
 			//Neither is null, then check for equality.  No Update.
 			if(original != null) {
