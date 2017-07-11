@@ -138,9 +138,9 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		//zero-out end date before adding
 		Calendar endDate = Calendar.getInstance();
 		endDate.setTime(endDt);
-		endDate.set(Calendar.HOUR,23);
-		endDate.set(Calendar.MINUTE,59);
-		endDate.set(Calendar.SECOND,59);
+		endDate.set(Calendar.HOUR,0);
+		endDate.set(Calendar.MINUTE,0);
+		endDate.set(Calendar.SECOND,0);
 		
 		//add the start/end dates and daysToGoBack to collection.
 		dailyDateRange.add(start.getTime());
