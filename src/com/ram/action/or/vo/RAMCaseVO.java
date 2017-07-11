@@ -347,7 +347,8 @@ public class RAMCaseVO implements Serializable {
 	@BeanSubElement
 	public void addCaseKit(RAMCaseKitVO kit) {
 		if(kit != null) {
-			kits.put(kit.getCaseKitId(), kit);
+			//TODO fix this to use caseKitId
+			kits.put(Integer.toString(kit.getProductId()), kit);
 		}
 	}
 
@@ -376,11 +377,18 @@ public class RAMCaseVO implements Serializable {
 	}
 
 	public void removeKit(RAMCaseKitVO kit) {
-		if(kit != null && kits.containsKey(kit.getCaseKitId())) {
-			kits.remove(kit.getCaseKitId());
+		if(kit != null && kits.containsKey(Integer.toString(kit.getProductId()))) {
+			kits.remove(Integer.toString(kit.getProductId()));
 		}
 	}
 
+	public RAMCaseKitVO getKit(String productId) {
+		if(!StringUtil.isEmpty(productId) && kits.containsKey(productId)) {
+			return kits.get(productId);
+		} else {
+			return null;
+		}
+	}
 	/**
 	 * @return the customerName
 	 */
