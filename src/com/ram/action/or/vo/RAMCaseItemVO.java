@@ -8,6 +8,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> RamCaseItemVO.java
@@ -59,7 +60,7 @@ public class RAMCaseItemVO implements Serializable {
 		caseItemId = req.getParameter("caseItemId");
 		productId = Convert.formatInteger(req.getParameter("productId"));
 		productNm = req.getParameter("productNm");
-		caseKitId = req.getParameter("caseKitId");
+		caseKitId = StringUtil.checkVal(req.getParameter("caseKitId"), null);
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
 		qtyNo = Convert.formatInteger(req.getParameter("qtyNo"));
 		lotNumberTxt = req.getParameter("lotNumberTxt");
