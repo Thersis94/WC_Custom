@@ -92,7 +92,7 @@ public class ProductCartReport  extends AbstractSBReportVO {
 				if (StringUtil.checkVal(sig.getSignatureTxt()).startsWith("data")) {
 					html.append("<img alt='Signature' style='height:50px;' src='").append(sig.getSignatureTxt()).append("'/>");
 				} else {
-					html.append("<p style='font-family: \"Great Vibes\", cursive;font-size:20px;'>").append(sig.getSignatureTxt()).append("</p>");
+					html.append("<p style='font-family: \"Great Vibes\", cursive;font-size:20px;'>").append(StringUtil.checkVal(sig.getSignatureTxt())).append("</p>");
 				}
 				
 				html.append("</td><td style='font-size:10px;'>").append(Convert.formatDate(sig.getCreateDt(), Convert.DATE_TIME_SLASH_PATTERN_12HR)).append("</td></tr>");
