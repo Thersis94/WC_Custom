@@ -87,7 +87,6 @@ public class EmailFriendAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("**********************");
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 
 		String[] addys = req.getParameter("rcptEml").split(",");
@@ -125,7 +124,7 @@ public class EmailFriendAction extends SimpleActionAdapter {
 		@SuppressWarnings("unchecked")
 		Map<String, ShareVO> shareMap = (Map<String, ShareVO>) req.getAttribute("shareMap");
 		for (ShareVO vo : shareMap.values()) {
-			if (StringUtil.checkVal(vo.getUrl()).startsWith("/docs/") || "DMS".equals(vo.getType())) {
+			if (StringUtil.checkVal(vo.getUrl()).startsWith("/docs/") || "CMS".equals(vo.getType()) || "DMS".equals(vo.getType())) {
 				url = site.getFullSiteAlias() + vo.getUrl();
 			} else {
 				url = mbBase + vo.getId();
