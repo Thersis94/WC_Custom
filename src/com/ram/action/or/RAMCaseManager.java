@@ -161,7 +161,7 @@ public class RAMCaseManager {
 				item.setData(req);
 		} else {
 			item = buildCaseItem(cVo, req);
-			cVo.addItem(item);
+			cVo.incrementItem(item);
 		}
 
 		//Save Case.
@@ -252,14 +252,17 @@ public class RAMCaseManager {
 		if(!StringUtil.isEmpty(req.getParameter("kitProductId"))) {
 			kp = lookupProduct(kitProductId);
 		}
+
 		/*
 		 * If we don't have a caseKitId and this product is a kit,
 		 * build a case KitVO.
 		 */
 		if(StringUtil.isEmpty(req.getParameter("caseKitId")) && kp != null && Integer.valueOf(1).equals(kp.getKitFlag())) {
-			kvo = cVo.getKit(Integer.valueOf(kitProductId).toString());
+			RAMCaseKitVO t = loadLocationKitData(kitProductId); 
+			kvo = cVo.lookupKitByLim(t.getLocationItemMasterId());
+
 			if(kvo == null) {
-				kvo = loadLocationKitData(kitProductId);
+				kvo = t;
 				kvo.setCaseId(cVo.getCaseId());
 				kvo.setCaseKitId(new UUIDGenerator().getUUID());
 				cVo.addCaseKit(kvo);
@@ -318,7 +321,7 @@ public class RAMCaseManager {
 		RAMCaseVO cVo = (RAMCaseVO)ap.load(caseId);
 		setORFinalStatusCode(cVo);
 		persistCasePerm(cVo);
-
+		persistCaseDefault(cVo);
 		return cVo;
 	}
 

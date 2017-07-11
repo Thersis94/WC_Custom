@@ -104,21 +104,22 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 			try {
 				//Set Autocommit False.
 				conn.setAutoCommit(false);
-				
+
 				//Save Case.
 				if (cVo.isNewCase()) dbp.insert(cVo);
 				else dbp.save(cVo);
-				
+
 				//Add Signatures.
 				saveSignatures(cVo);
-				
+
 				//Flush and insert Items/Kits.
 				deleteChildren(cVo);
 				insertKits(cVo);
 				insertItems(cVo);
-				
+
 				//Commit transaction.
 				conn.commit();
+				cVo.setNewCase(false);
 			} catch (InvalidDataException | DatabaseException | SQLException e) {
 				log.error("Error Saving Case, rolling back changes.", e);
 				try {
