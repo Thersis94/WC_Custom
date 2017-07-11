@@ -19,6 +19,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -290,22 +291,16 @@ public class ProductAction extends SBActionAdapter {
 			if (svo.getCustomerId() > 0) ps.setInt(index++, svo.getCustomerId());
 			if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
 			else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
-			if(svo.getTerm().length() > 0) {
+			if(!StringUtil.isEmpty(svo.getTerm())) {
 				ps.setString(index++, "%" + svo.getTerm() + "%");
 				ps.setString(index++, "%" + svo.getTerm() + "%");
 			}
-			
+
 			/*
 			 * Providers use an intersect to get the correct products
 			 * so we need to set the same attributes again.
 			 */
 			if(svo.getProviderId() > 0) {
-				if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
-				else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
-				if(svo.getTerm().length() > 0) {
-					ps.setString(index++, "%" + svo.getTerm() + "%");
-					ps.setString(index++, "%" + svo.getTerm() + "%");
-				}
 				ps.setInt(index++, svo.getProviderId());
 			}
 			ps.setInt(index++, svo.getStart());
@@ -349,17 +344,11 @@ public class ProductAction extends SBActionAdapter {
 		if (svo.getCustomerId() > 0) ps.setInt(index++, svo.getCustomerId());
 		if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
 		else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
-		if(svo.getTerm().length() > 0) {
+		if(!StringUtil.isEmpty(svo.getTerm())) {
 			ps.setString(index++, "%" + svo.getTerm() + "%");
 			ps.setString(index++, "%" + svo.getTerm() + "%");
 		}
 		if(svo.getProviderId() > 0) {
-			if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
-			else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
-			if(svo.getTerm().length() > 0) {
-				ps.setString(index++, "%" + svo.getTerm() + "%");
-				ps.setString(index++, "%" + svo.getTerm() + "%");
-			}
 			ps.setInt(index++, svo.getProviderId());
 		}
 		int cnt = 0;
