@@ -65,7 +65,7 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		if (StringUtil.isEmpty(profileId)) return;
 
 		//the end date is where we start subtracting from (base)
-		Date endDt = !StringUtil.isEmpty(emailDate) ? Convert.formatDate(Convert.DATE_SLASH_PATTERN, emailDate) : null;
+		Date endDt = !StringUtil.isEmpty(emailDate) ? Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, emailDate) : null;
 		if (endDt == null) endDt = Calendar.getInstance().getTime();
 
 		int days = UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd) ? 7 : 1;
