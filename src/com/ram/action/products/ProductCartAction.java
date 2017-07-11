@@ -13,6 +13,7 @@ import java.util.Map;
 
 import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMCaseItemVO;
+import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.or.vo.RAMSignatureVO;
 import com.ram.action.report.vo.ProductCartReport;
@@ -462,7 +463,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 		
 		Map<String, Object> data = new HashMap<>();
 
-		data.put("cart", cvo.getItems().get(StringUtil.checkVal(req.getParameter("caseType"))).values());
+		data.put("cart", cvo.getItems().get(StringUtil.checkVal(req.getParameter("caseType"), RAMCaseType.OR.toString())).values());
 		data.put(HOSPITAL,StringUtil.checkVal(cvo.getCustomerName()));
 		data.put(ROOM, StringUtil.checkVal(cvo.getOrRoomName()));
 		data.put(SURGEON, StringUtil.checkVal(cvo.getSurgeonName()));
@@ -761,7 +762,6 @@ public class ProductCartAction extends SimpleActionAdapter {
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			mail.setFrom(site.getAdminEmail());
 			
-			//TODO check this later
 			RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 			RAMCaseVO cvo = rcm.retrieveCase(StringUtil.checkVal(req.getParameter(CASE_ID)));
 			buildReport(cvo, req);
