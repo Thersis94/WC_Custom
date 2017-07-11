@@ -155,7 +155,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			log.debug("starting " + entry.getKey());
 			Tree t = entry.getValue();
 			String rootSectionId = t.getRootNode().getNodeName();
-
+			
 			//Create a brand new collection for each tree for tracking updates
 			masterCollection = new HashMap<>();
 
@@ -171,7 +171,8 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 
 				//add to final collection
 				updatesHierarchyMap.put(rootSectionId, subSectionMap);
-			}	
+			}				
+			
 		}
 		return updatesHierarchyMap;
 	}
@@ -189,6 +190,9 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			//locate the related updates and add to map
 			List<UpdateVO> data = locateSectionUpdates(node, updates);
 			if(!data.isEmpty()) {
+				if(node.getDepthLevel() > 3){
+					node.setNodeName(node.getParentName());
+				}
 				//associate sub sub level updates
 				subSectionMap.put(node, data);
 				log.debug("added " + data.size() + "  to  " + node.getNodeName());
