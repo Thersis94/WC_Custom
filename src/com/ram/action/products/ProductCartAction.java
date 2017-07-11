@@ -449,7 +449,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * @param req 
 	 * @throws ActionException 
 	 */
-	private void buildReport(RAMCaseVO cvo, ActionRequest req) throws ActionException {;
+	private void buildReport(RAMCaseVO cvo, ActionRequest req) throws ActionException {
 		AbstractSBReportVO report;
 		String filename;
 		String caseId = StringUtil.checkVal(cvo.getCaseId());
