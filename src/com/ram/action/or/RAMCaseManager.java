@@ -321,7 +321,7 @@ public class RAMCaseManager {
 		RAMCaseVO cVo = (RAMCaseVO)ap.load(caseId);
 		setORFinalStatusCode(cVo);
 		persistCasePerm(cVo);
-		persistCaseDefault(cVo);
+		ap.flush(caseId);
 		return cVo;
 	}
 
