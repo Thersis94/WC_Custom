@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
@@ -22,6 +23,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.solr.AccessControlQuery;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -93,6 +95,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String sectionId = req.getParameter("sectionId");
+		ModuleVO origMod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
 		Tree t;
 
@@ -108,7 +111,8 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 			t.calculateTotalChildren(t.getRootNode());
 			t.buildNodePaths();
 			
-			super.writeToCache(t, "SMARTTRAK", "SECTION");
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			super.writeToCache(t, AdminControllerAction.BIOMED_ORG_ID, origMod.getModuleType(), site.getSiteId(), site.getAliasPathParentId());
 		} else {
 			//Get the Tree off the actionData
 			t = (Tree) mod.getActionData();
@@ -121,8 +125,16 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 			List<Node> sections = new ArrayList<>();
 			sections.add(n);
 
-			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-			sections = checkPermissions(sections, role);
+			if(req.hasParameter("amid") && !"smarttrakAdmin".equals(req.getParameter("amid"))) {
+				SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+			
+				// Attempt to limit sections by the user's permissions
+				try {
+					sections = checkPermissions(sections, role);
+				} catch (CloneNotSupportedException e) {
+					throw new ActionException(e);
+				}
+			}
 			
 			this.putModuleData(sections);
 		} else {
@@ -136,8 +148,9 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	 * Loop over the sections and make sure that the user has permission to access them
 	 * @param sections
 	 * @param role
+	 * @throws CloneNotSupportedException 
 	 */
-	protected List<Node> checkPermissions(List<Node> sections, SmarttrakRoleVO role) {
+	protected List<Node> checkPermissions(List<Node> sections, SmarttrakRoleVO role) throws CloneNotSupportedException {
 		if (sections == null || sections.isEmpty()) return Collections.emptyList();
 		
 		String[] roleAcl = role.getAuthorizedSections();
@@ -148,8 +161,9 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 				// Do nothing. This section cannot be seen by the current user
 				// and there is nothing left for the loop to do
 			} else {
-				n.setChildren(checkPermissions(n.getChildren(), role));
-				allowed.add(n);
+				Node n2 = n.clone();
+				n2.setChildren(checkPermissions(n.getChildren(), role));
+				allowed.add(n2);
 			}
 		}
 		return allowed;

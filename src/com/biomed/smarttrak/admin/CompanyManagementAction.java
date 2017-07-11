@@ -48,6 +48,7 @@ public class CompanyManagementAction extends AuthorAction {
 	public static final String COMPANY_ID = "companyId";
 	public static final String CONTENT_ATTRIBUTE_ID = "LVL1_1";
 	
+	
 	private enum ActionType {
 		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW
 	}
@@ -181,7 +182,7 @@ public class CompanyManagementAction extends AuthorAction {
 		CompanyAction ca = new CompanyAction(actionInit);
 		ca.setDBConnection(dbConn);
 		ca.setAttributes(attributes);
-		super.putModuleData(ca.retrieveCompany(req.getParameter("companyId"), role));
+		super.putModuleData(ca.retrieveCompany(req.getParameter("companyId"), role, true));
 	}
 	
 	
@@ -434,6 +435,13 @@ public class CompanyManagementAction extends AuthorAction {
 			sql.append("and lower(COMPANY_NM) like ?");
 			params.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
+		
+		// If this is a request for the dashboard an author id will be provided
+		if (req.hasParameter("authorId")) {
+			sql.append("and creator_profile_id = ? ");
+			params.add(req.getParameter("authorId"));
+		}
+		
 		sql.append("group by c.COMPANY_NM, c.COMPANY_ID, INVESTED_FLG ");
 		
 		SortField s = SortField.getFromString(req.getParameter("sort"));
@@ -452,7 +460,7 @@ public class CompanyManagementAction extends AuthorAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> companies = db.executeSelect(sql.toString(), params, new CompanyVO());
 		
-		super.putModuleData(companies, getCompanyCount(req.getParameter("search"), !req.hasParameter("inactive")), false);
+		super.putModuleData(companies, getCompanyCount(req.getParameter("search"), !req.hasParameter("inactive"), req.getParameter("authorId")), false);
 	}
 
 	
@@ -461,7 +469,7 @@ public class CompanyManagementAction extends AuthorAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected int getCompanyCount(String searchData, boolean active) throws ActionException {
+	protected int getCompanyCount(String searchData, boolean active, String authorId) throws ActionException {
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select count(*) FROM ").append(customDb).append("BIOMEDGPS_COMPANY c where 1=1 ");
@@ -474,10 +482,16 @@ public class CompanyManagementAction extends AuthorAction {
 			sql.append("and (c.STATUS_NO = '").append(Status.P.toString()).append("' ");
 			sql.append("or c.STATUS_NO = '").append(Status.E.toString()).append("') ");
 		}
+		
+		if (!StringUtil.isEmpty(authorId)) {
+			sql.append("and creator_profile_id = ? ");
+		}
 	
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			if (!StringUtil.isEmpty(searchData)) ps.setString(1, "%" + searchData.toLowerCase() + "%");
+			int i =1;
+			if (!StringUtil.isEmpty(searchData)) ps.setString(i++, "%" + searchData.toLowerCase() + "%");
+			if (!StringUtil.isEmpty(authorId)) ps.setString(i, authorId);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				return rs.getInt(1);
@@ -509,7 +523,8 @@ public class CompanyManagementAction extends AuthorAction {
 		
 		req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		req.getSession().setAttribute("companyName", company.getCompanyName());
-
+		req.getSession().setAttribute("companyShortName", company.getShortName());
+		
 		addInvestors(company);
 		
 		if ("location".equals(req.getParameter("jsonType")))
@@ -663,7 +678,7 @@ public class CompanyManagementAction extends AuthorAction {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = cax.REL_COMPANY_ID ");
 		sql.append("WHERE cax.COMPANY_ID = ? ");
-		sql.append("ORDER BY c.COMPANY_NM ");
+		sql.append("ORDER BY cax.ORDER_NO ");
 		
 		List<Object> params = new ArrayList<>();
 		params.add(company.getCompanyId());
@@ -1049,22 +1064,82 @@ public class CompanyManagementAction extends AuthorAction {
 
 
 	/**
-	 * Alter the order of the supplied attribute
+	 * Determine what is being reordered and call the proper method.
 	 * @param req
 	 * @throws ActionException
 	 */
 	protected void updateOrder(ActionRequest req) throws ActionException {
+		ActionType action = ActionType.valueOf(req.getParameter(ACTION_TYPE));
+		
+		switch (action) {
+		case ALLIANCE:
+			updateAllianceOrder(req);
+			break;
+		case COMPANYATTACH:
+		case COMPANYLINK:
+			updateAttributeOrder(req);
+			break;
+		default:
+			break;
+		}
+	}
+
+
+	/**
+	 * Alter the order of the supplied allainces
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void updateAllianceOrder(ActionRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_COMPANY_ALLIANCE_XR SET ORDER_NO = ? WHERE COMPANY_ALLIANCE_XR_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			populateReorderBatch(ps, req, "allianceId");
+			
+			ps.executeBatch();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * Alter the order of the supplied attributes
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void updateAttributeOrder(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR SET ORDER_NO = ? WHERE COMPANY_ATTRIBUTE_ID = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setInt(1, Convert.formatInteger(req.getParameter("orderNo")));
-			ps.setString(2, req.getParameter("companyAttributeId"));
+			populateReorderBatch(ps, req, "companyAttributeId");
 			
-			ps.executeUpdate();
+			ps.executeBatch();
 		} catch (SQLException e) {
 			throw new ActionException(e);
+		}
+	}
+	
+	
+	/**
+	 * Loop over the orders and id field supplied in the action request
+	 * and add them to the batch statement
+	 * @param ps
+	 * @param req
+	 * @param idField
+	 * @throws SQLException
+	 */
+	protected void populateReorderBatch(PreparedStatement ps, ActionRequest req, String idField) throws SQLException {
+		String[] order = req.getParameterValues("orderNo");
+		String[] ids = req.getParameterValues(idField);
+		for (int i=0; i < order.length || i < ids.length; i++) {
+			ps.setInt(1, Convert.formatInteger(order[i]));
+			ps.setString(2, ids[i]);
+			ps.addBatch();
 		}
 	}
 
