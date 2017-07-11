@@ -124,7 +124,18 @@ public class MarketVO extends AuthorVO {
 	}
 	
 
+	@Override
 	@SolrField(name=SearchDocumentHandler.META_KEYWORDS)
+	public String getMetaKeywords() {
+		StringBuilder sb = new StringBuilder(100);
+		sb.append(StringUtil.checkVal(getShortName()));
+		if (sb.length() > 0) sb.append(", ");
+		sb.append(StringUtil.checkVal(getAliasName()));
+		
+		return sb.toString();
+	}
+	
+	
 	@Column(name="short_nm")
 	public String getShortName() {
 		return shortName;
