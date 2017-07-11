@@ -301,7 +301,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			ps.setInt(x++, Convert.formatInteger(req.getParameter("postcardQuantity"), 0));
 			ps.setString(x++, req.getParameter("postcardMailingAddress"));
 			ps.setString(x++, label);
-			ps.setString(x++, req.getParameter("contentNo"));
+			ps.setInt(x++, Convert.formatInteger(req.getParameter("contentNo")));
 			ps.setInt(x++, Convert.formatInteger(req.getParameter("territoryNumber")));
 			ps.setString(x++, StringUtil.checkVal(req.getParameter("languageCode"), "en") );
 			ps.setString(x++, req.getParameter("postcardTypeText"));
