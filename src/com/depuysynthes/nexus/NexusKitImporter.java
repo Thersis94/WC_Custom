@@ -318,7 +318,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 */
 	private void deleteBlankKits() throws SQLException {
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("DELETE ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
+		sql.append("DELETE FROM ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
 		sql.append("WHERE ORGANIZATION_ID != 'Custom' AND (DESCRIPTION_TXT is null ");
 		sql.append("OR DESCRIPTION_TXT = '')");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -499,7 +499,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 */
 	private void deleteKitProducts(String kitId) {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("DELETE ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_ITEM ");
+		sql.append("DELETE FROM ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_ITEM ");
 		sql.append("WHERE LAYER_ID = ?");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -614,7 +614,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	private void flushJDEKits() throws Exception {
 		StringBuilder sql = new StringBuilder(125);
 		
-		sql.append("DELETE ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
+		sql.append("DELETE FROM ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
 		sql.append("WHERE SOURCE = 'JDE'");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
