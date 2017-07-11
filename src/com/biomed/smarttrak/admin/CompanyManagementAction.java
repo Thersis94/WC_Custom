@@ -1077,6 +1077,7 @@ public class CompanyManagementAction extends AuthorAction {
 			break;
 		case COMPANYATTACH:
 		case COMPANYLINK:
+		case COMPANYATTRIBUTE:
 			updateAttributeOrder(req);
 			break;
 		default:
