@@ -3,8 +3,6 @@
  */
 package com.ram.action.provider;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
