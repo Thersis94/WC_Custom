@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.vo.ProductExplorerReportVO;
@@ -139,7 +140,7 @@ public class ProductExplorer extends SBActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		putModuleData(retrieveProducts(req));
+		putModuleData(retrieveProducts(req, false));
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
 			retrieveSavedQueries(req);
 	}
@@ -247,7 +248,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected SolrResponseVO retrieveProducts(ActionRequest req) throws ActionException {
+	protected SolrResponseVO retrieveProducts(ActionRequest req, boolean getAll) throws ActionException {
 		SolrActionVO qData = buildSolrAction(req);
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
 
@@ -263,12 +264,38 @@ public class ProductExplorer extends SBActionAdapter {
 		addFacetFields(req, qData);
 		
 		SolrResponseVO vo = sqp.processQuery(qData);
+		
+		// Check to see if all the results should be returned instead of the current page
+		if (getAll) {
+			getRemainingDocuments(vo, sqp, qData);
+		}
 
 		if (!req.hasParameter("compare") && !req.hasParameter("textCompare"))
 			buildFilterList(req);
 		return vo;
 	}
 
+
+	/**
+	 * Get all results for the supplied search
+	 * @param vo
+	 * @param sqp
+	 * @param qData
+	 */
+	private void getRemainingDocuments(SolrResponseVO vo, SolrQueryProcessor sqp, SolrActionVO qData) {
+		int totals = 0;
+		List<SolrDocument> docs = new ArrayList<>();
+		docs.addAll(vo.getResultDocuments());
+		
+		while (totals < vo.getTotalResponses()) {
+			totals += 100;
+			qData.setStartLocation(totals);
+			SolrResponseVO currentResponse = sqp.processQuery(qData);
+			docs.addAll(currentResponse.getResultDocuments());
+		}
+		
+		vo.setResultDocuments(docs, 0, docs.size());
+	}
 
 	/**
 	 * Add the facet filters to the qData. 
@@ -446,7 +473,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 */
 	protected void exportResults(ActionRequest req) throws ActionException {
 		AbstractSBReportVO report = new ProductExplorerReportVO();
-		report.setData(retrieveProducts(req).getResultDocuments());
+		report.setData(retrieveProducts(req, true).getResultDocuments());
 		report.setFileName("Product Set " + Convert.getCurrentTimestamp() + ".xls");
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
