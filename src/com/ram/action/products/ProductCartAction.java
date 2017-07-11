@@ -762,10 +762,8 @@ public class ProductCartAction extends SimpleActionAdapter {
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			mail.setFrom(site.getAdminEmail());
 			
-			//TODO check this later
 			RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 			RAMCaseVO cvo = rcm.retrieveCase(StringUtil.checkVal(req.getParameter(CASE_ID)));
-			if (cvo != null)
 			buildReport(cvo, req);
 	
 			AbstractSBReportVO report = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
