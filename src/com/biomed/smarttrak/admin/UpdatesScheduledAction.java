@@ -124,6 +124,9 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		Calendar start = Calendar.getInstance();
 		start.setTime(endDt);
 		start.add(Calendar.DATE, 0-days);
+		start.set(Calendar.HOUR,0);
+		start.set(Calendar.MINUTE,0);
+		start.set(Calendar.SECOND,0);
 		
 		//if today is monday and the range is 1 (daily), rollback to Friday as a start date
 		int daysToGoBack = days;
@@ -132,9 +135,16 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 			start.add(Calendar.DATE, -2); //already on Sunday, go back Saturday & Friday.
 		}
 		
+		//zero-out end date before adding
+		Calendar endDate = Calendar.getInstance();
+		endDate.setTime(endDt);
+		endDate.set(Calendar.HOUR,0);
+		endDate.set(Calendar.MINUTE,0);
+		endDate.set(Calendar.SECOND,0);
+		
 		//add the start/end dates and daysToGoBack to collection.
 		dailyDateRange.add(start.getTime());
-		dailyDateRange.add(endDt);
+		dailyDateRange.add(endDate.getTime());
 		dailyRangeMap.put(daysToGoBack, dailyDateRange);
 		
 		return dailyRangeMap;
@@ -154,6 +164,9 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		//set the first day to monday
 		cal.setFirstDayOfWeek(Calendar.MONDAY);
 		cal.setTime(endDt);
+		cal.set(Calendar.HOUR,0);
+		cal.set(Calendar.MINUTE,0);
+		cal.set(Calendar.SECOND,0);
 		
 		//subtract that from the end date to get start range. Then go back a week(previous week)
 		cal.add(Calendar.DATE, -(cal.get(Calendar.DAY_OF_WEEK) - cal.getFirstDayOfWeek()));
