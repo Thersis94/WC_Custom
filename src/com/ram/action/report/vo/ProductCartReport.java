@@ -13,8 +13,9 @@ import org.xhtmlrenderer.pdf.ITextRenderer;
 import com.depuysynthes.nexus.NexusCartExcelReport;
 import com.depuysynthes.nexus.NexusSolrCartAction;
 import com.lowagie.text.pdf.BaseFont;
+import com.ram.action.or.vo.RAMCaseItemVO;
+import com.ram.action.or.vo.RAMSignatureVO;
 import com.ram.action.products.ProductCartAction;
-import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.pdf.Base64ImageReplacer;
@@ -80,34 +81,37 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		html.append("@media print{div.sig-footer{position:absolute; bottom:-50px;}}");
 		html.append("</style>");
 		html.append("</head><body>");
-		html.append("<div class='sig-footer'><table><tr><td><p>Manufacturer Rep:</p></td><td>");
-		if (StringUtil.checkVal(data.get("sales")).startsWith("data")) {
-			html.append("<img alt='Signature' style='height:50px;' src='").append(data.get("sales")).append("'/>");
-		} else {
-			html.append("<p style='font-family: \"Great Vibes\", cursive;font-size:20px;'>").append(data.get(ProductCartAction.SALES_SIGNATURE)).append("</p>");
-		}
-		html.append("</td><td style='font-size:10px;'>").append(data.get(ProductCartAction.SALES_SIGNATURE_DT)).append("</td>");
-		html.append("<td><p>Hospital Administrator:</p></td><td>");
-		if (StringUtil.checkVal(data.get("sales")).startsWith("data")) {
-			html.append("<img alt='Signature' style='height:50px;' src='").append(data.get("admin")).append("'/>");
-		} else {
-			html.append("<p style='font-family: \"Great Vibes\", cursive;font-size:20px;'>").append(data.get(ProductCartAction.ADMIN_SIGNATURE)).append("</p>");
-			
-		}
 		
-		html.append("</td><td style='font-size:10px;'>").append(data.get(ProductCartAction.ADMIN_SIGNATURE_DT)).append("</td>").append("</tr></table></div>");
-		
+		//generate the signature tables
+		if (data.containsKey("signatures")){
+			html.append("<div class='sig-footer'><table>");
+			@SuppressWarnings("unchecked")
+			Collection<RAMSignatureVO> sigList = (Collection<RAMSignatureVO>) data.get("signatures");
+			for  ( RAMSignatureVO sig : sigList) {
+				html.append("<tr><td><p>Signed By:</p></td><td>");
+				if (StringUtil.checkVal(sig.getSignatureTxt()).startsWith("data")) {
+					html.append("<img alt='Signature' style='height:50px;' src='").append(sig.getSignatureTxt()).append("'/>");
+				} else {
+					html.append("<p style='font-family: \"Great Vibes\", cursive;font-size:20px;'>").append(sig.getSignatureTxt()).append("</p>");
+				}
+				
+				html.append("</td><td style='font-size:10px;'>").append(Convert.formatDate(sig.getCreateDt(), Convert.DATE_TIME_SLASH_PATTERN_12HR)).append("</td></tr>");
+			}
+			html.append("</table></div>");
+		}
+
+		String dateString = Convert.formatDate(Convert.formatDate(Convert.DATE_TIME_DASH_PATTERN, (String)data.get(ProductCartAction.TIME)), Convert.DATE_TIME_SLASH_PATTERN_12HR);
+				
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%;'><tbody>");
-		html.append("<tr><td style='width:48%'><img alt='RAM Healthcare' style='width:200px' src='/binary/themes/CUSTOM/RAMGRP/MAIN/images/ramgrouplogo.png' /><span style='float:right'>");
-		if (data.get(ProductCartAction.COMPLETE_DT) != null) html.append(data.get(ProductCartAction.COMPLETE_DT));
-		html.append("</span></td><td colspan='2' style='text-align:right;'>");
+		html.append("<tr><td style='width:48%'><img alt='RAM Healthcare' style='width:200px' src='/binary/themes/CUSTOM/RAMGRP/MAIN/images/ramgrouplogo.png' />");
+		html.append("</td><td colspan='2' style='text-align:right;'>");
 		html.append("</td></tr>");
 		html.append("<tr><td rowspan='8'>");
 		if (StringUtil.checkVal(data.get(NexusSolrCartAction.CASE_ID)).length() > 0)
 			html.append("<span style='font-size:20px;'>Case Report (ID: ").append(data.get(ProductCartAction.CASE_ID)).append(")</span>");
 		html.append("</td>");
 		html.append("<td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Surgery Date and Time:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.TIME)).append("</td></tr>");
+		html.append("<td style='font-size:14px;'>").append(dateString).append("</td></tr>");
 		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Surgeon Name:</td>");
 		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.SURGEON)).append("</td></tr>");
 		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Hospital Name:</td>");
@@ -116,12 +120,7 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.ROOM)).append("</td></tr>");
 		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Case ID:</td>");
 		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.CASE_ID)).append("</td></tr>");
-		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Other ID:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.OTHER_ID)).append("</td></tr>");
-		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Reseller Name:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.RESELLER)).append("</td></tr>");
-		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Reseller ID:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.REP_ID)).append("</td></tr></tbody></table>");
+		html.append("</tbody></table>");
 		html.append("<span style='font-size:24px; color:#636363;'>Products</span>");
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%'>");
 		html.append("<tbody><tr style='margin-bottom:10px;'><th style='width:2%'>&nbsp;</th><th style='width:15%'>Product Name</th>");
@@ -134,29 +133,29 @@ public class ProductCartReport  extends AbstractSBReportVO {
 
 		// Loop over all the items in the cart
 		@SuppressWarnings("unchecked")
-		Collection<ShoppingCartItemVO> cart = (Collection<ShoppingCartItemVO>) data.get("cart");
+		Collection<RAMCaseItemVO> cart = (Collection<RAMCaseItemVO>) data.get("cart");
 		int i=1;
 		String border="border-bottom:1px solid black;";
-		for(ShoppingCartItemVO item : cart){
+		for(RAMCaseItemVO item : cart){
 			if (i == cart.size()) border="";
 			html.append("<tr style='height:60px;page-break-inside: avoid;'><td style='font-size:12px;'>").append(i).append(".</td>");
-			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(item.getProduct().getProductName()).append("</td>");
-			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(item.getProduct().getProdAttributes().get("customer")).append("</td>");
-			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(item.getProduct().getProdAttributes().get("gtin")).append("</td>");
-			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(item.getProduct().getProdAttributes().get("lotNo")).append("</td>");
-			html.append("<td style='font-size:12px; text-align:center;margin-bottom:20px;").append(border).append("'>").append(item.getQuantity()).append("</td>");
+			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(StringUtil.checkVal(item.getProductNm())).append("</td>");
+			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(StringUtil.checkVal(item.getCustomerNm())).append("</td>");
+			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(StringUtil.checkVal(item.getGtinProductId())).append("</td>");
+			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(StringUtil.checkVal(item.getLotNumberTxt())).append("</td>");
+			html.append("<td style='font-size:12px; text-align:center;margin-bottom:20px;").append(border).append("'>").append(item.getQtyNo()).append("</td>");
 			html.append("<td style='font-size:12px; text-align:center;margin-bottom:20px;").append(border).append("'>");
-			if (Convert.formatBoolean(item.getProduct().getProdAttributes().get("billable"))) html.append("<i class='fa'>&#xf00c;</i>");
+			if (Convert.formatBoolean(item.getBillableFlg())) html.append("<i class='fa'>&#xf00c;</i>");
 			html.append("</td>");
 			html.append("<td style='font-size:12px; text-align:center;margin-bottom:20px;").append(border).append("'>");
-			if (Convert.formatBoolean(item.getProduct().getProdAttributes().get("wasted"))) html.append("<i class='fa'>&#xf00c;</i>");
+			if (Convert.formatBoolean(item.getWastedFlg())) html.append("<i class='fa'>&#xf00c;</i>");
 			html.append("</td>");
 			// This ends off without closing the tag so that the single barcode option can add in a rowspan attribute
 			html.append("<td style='font-size:12px; width:400px; text-align:right;margin-bottom:20px;").append(border);
 			StringBuilder barcodeData = new StringBuilder(50);
-			barcodeData.append("011").append(item.getProduct().getProdAttributes().get("gtin"));
-			if (StringUtil.checkVal(item.getProduct().getProdAttributes().get("lotNo")).length() > 0) {
-				barcodeData.append("17").append(item.getProduct().getProdAttributes().get("lotNo"));
+			barcodeData.append("011").append(item.getGtinProductId());
+			if (StringUtil.checkVal(item.getLotNumberTxt()).length() > 0 ) {
+				barcodeData.append("17").append(item.getLotNumberTxt());
 			}
 			
 			html.append("'><span><img style='float:right' alt='").append(barcodeData).append("' src='/barcodeGenerator?format=DM&amp;barcodeData=011").append(barcodeData);
