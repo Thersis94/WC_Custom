@@ -346,14 +346,12 @@ public class RAMCaseVO implements Serializable {
 
 	@BeanSubElement
 	public void addCaseKit(RAMCaseKitVO kit) {
-		if(kit != null) {
-			//TODO fix this to use caseKitId
-			kits.put(Integer.toString(kit.getProductId()), kit);
+		if(kit != null && !StringUtil.isEmpty(kit.getCaseKitId())) {
+			kits.put(kit.getCaseKitId(), kit);
 		}
 	}
 
-	@BeanSubElement
-	public void addItem(RAMCaseItemVO item) {
+	public void incrementItem(RAMCaseItemVO item) {
 		if(item != null && item.getCaseType() != null) {
 			Map<String, RAMCaseItemVO> imap = items.get(item.getCaseType().toString());
 			if(imap == null) {
@@ -370,6 +368,19 @@ public class RAMCaseVO implements Serializable {
 		}
 	}
 
+	@BeanSubElement
+	public void addItem(RAMCaseItemVO item) {
+		if(item != null && item.getCaseType() != null) {
+			Map<String, RAMCaseItemVO> imap = items.get(item.getCaseType().toString());
+			if(imap == null) {
+				imap = new HashMap<>();
+			}
+			imap.put(item.getCaseItemId(), item);
+
+			items.put(item.getCaseType().toString(), imap);
+		}
+	}
+
 	public void removeItem(RAMCaseItemVO item) {
 		if(item != null && items.containsKey(item.getCaseType().toString())) {
 			items.get(item.getCaseType().toString()).remove(item.getCaseItemId());
@@ -377,18 +388,19 @@ public class RAMCaseVO implements Serializable {
 	}
 
 	public void removeKit(RAMCaseKitVO kit) {
-		if(kit != null && kits.containsKey(Integer.toString(kit.getProductId()))) {
-			kits.remove(Integer.toString(kit.getProductId()));
+		if(kit != null && kits.containsKey(kit.getCaseKitId())) {
+			kits.remove(kit.getCaseKitId());
 		}
 	}
 
-	public RAMCaseKitVO getKit(String productId) {
-		if(!StringUtil.isEmpty(productId) && kits.containsKey(productId)) {
-			return kits.get(productId);
+	public RAMCaseKitVO getKit(String caseKitId) {
+		if(!StringUtil.isEmpty(caseKitId) && kits.containsKey(caseKitId)) {
+			return kits.get(caseKitId);
 		} else {
 			return null;
 		}
 	}
+
 	/**
 	 * @return the customerName
 	 */
@@ -505,5 +517,20 @@ public class RAMCaseVO implements Serializable {
 	 */
 	public void setNewCase(boolean newCase) {
 		this.newCase = newCase;
+	}
+
+	/**
+	 * @param string
+	 * @return
+	 */
+	public RAMCaseKitVO lookupKitByLim(String locationItemMasterId) {
+		if(!StringUtil.isEmpty(locationItemMasterId)) {
+			for(RAMCaseKitVO k : kits.values()){
+				if(k.getLocationItemMasterId().equalsIgnoreCase(locationItemMasterId)) {
+					return k;
+				}
+			}
+		}
+		return null;
 	}
 }

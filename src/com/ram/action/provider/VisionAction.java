@@ -295,7 +295,8 @@ public class VisionAction extends SBActionAdapter {
 	 * @return
 	 */
 	private void checkQty(KitLayerProductVO p, List<RAMCaseItemVO> items) {
-
+		boolean usedOR = false;
+		boolean usedSPD = false;
 		Iterator<RAMCaseItemVO> iter = items.iterator();
 		while(iter.hasNext()) {
 			RAMCaseItemVO i = iter.next();
@@ -306,10 +307,12 @@ public class VisionAction extends SBActionAdapter {
 			 * as well as impacts to Session Object.
 			 */
 			if(i.getProductId().equals(p.getProductId())) {
-				
+				if(i.getCaseType().equals(RAMCaseType.OR) && usedOR || i.getCaseType().equals(RAMCaseType.SPD) && usedSPD) {
+					continue;
+				}
 				int incOrDec = i.getCaseType() == RAMCaseType.OR ? -1 : 1;
 				p.addQtyOnHand(i.getQtyNo() * incOrDec);
-
+				iter.remove();
 				/*
 				 * Update CaseItem Id.  If this is an OR Product, set a
 				 * caseItemId on the product so the tool knows this is a hard
@@ -319,8 +322,11 @@ public class VisionAction extends SBActionAdapter {
 				 */
 				if(i.getCaseType().equals(RAMCaseType.OR)) {
 					p.setCaseItemId(i.getCaseItemId());
+					usedOR = true;
 				} else if(i.getCaseType().equals(RAMCaseType.SPD) && p.getQtyOnHand() == p.getQuantity().intValue()) {
 					p.setCaseItemId(null);
+					usedSPD = true;
+					
 				}
 			}
 		}
