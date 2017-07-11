@@ -4,15 +4,15 @@ package com.biomed.smarttrak.admin;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
-//WC libs
-import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.constants.Constants;
-import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
 //WC_Custom libs
+import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.vo.UpdateVO;
-
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -20,6 +20,9 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+//WC libs
+import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * Title: UpdatesScheduledAction.java <p/>
@@ -66,29 +69,108 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		if (endDt == null) endDt = Calendar.getInstance().getTime();
 
 		int days = UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd) ? 7 : 1;
+		
+		//establish the date ranges
+		Map<Integer, List<Date>> dateRangeMap = establishDateRanges(endDt, days);
+		
+		Set<Entry<Integer, List<Date>>> entryRange = dateRangeMap.entrySet();
+		for (Entry<Integer, List<Date>> entry : entryRange) {
+			//pull values from map
+			int daysToGoBack = entry.getKey();
+			List<Date> dateRanges = entry.getValue();
+			Date startDate = dateRanges.get(0);
+			Date endDate = dateRanges.get(1);
+			
+			//get list of updates
+			List<Object> updates = getUpdates(profileId, startDate, endDate);
 
+			//set cosmetic label
+			String label = Convert.formatDate(startDate, daysToGoBack == 1 ? "MMM dd, YYYY" : "MMM dd");
+			if (daysToGoBack > 1) label += " - " + Convert.formatDate(endDt, "MMM dd, YYYY");
+			req.setAttribute("dateRange", label);
+
+			putModuleData(updates);			
+		}
+
+	}
+	
+	/**
+	 * Helper method that establishes the appropriate days
+	 * @param days
+	 * @return
+	 */
+	protected Map<Integer, List<Date>> establishDateRanges(Date endDt, int days){
+		Map<Integer, List<Date>> dateRanges;
+		if(days == 1){
+			dateRanges = makeDailyDateRange(endDt, days);
+		}else{
+			dateRanges = makeWeeklyDateRange(endDt, days);
+		}
+		
+		return dateRanges;
+	}
+	
+	/**
+	 * Returns the daily date range of Dates
+	 * @param endDt
+	 * @param daysToGoBack
+	 * @return
+	 */
+	protected Map<Integer, List<Date>> makeDailyDateRange(Date endDt, int days){
+		Map<Integer, List<Date>> dailyRangeMap = new HashMap<>();
+		List<Date> dailyDateRange = new ArrayList<>();
+		
 		//subtract X days from the base date for start date
 		Calendar start = Calendar.getInstance();
 		start.setTime(endDt);
 		start.add(Calendar.DATE, 0-days);
-
+		
 		//if today is monday and the range is 1 (daily), rollback to Friday as a start date
+		int daysToGoBack = days;
 		if (days == 1 && Calendar.MONDAY == start.get(Calendar.DAY_OF_WEEK)+1) {
-			days = 3;
+			daysToGoBack = 3;
 			start.add(Calendar.DATE, -2); //already on Sunday, go back Saturday & Friday.
 		}
-
-		//get list of updates
-		List<Object> updates = getUpdates(profileId, start.getTime(), endDt);
-
-		//set cosmetic label
-		String label = Convert.formatDate(start.getTime(), days == 1 ? "MMM dd, YYYY" : "MMM dd");
-		if (days > 1) label += " - " + Convert.formatDate(endDt, "MMM dd, YYYY");
-		req.setAttribute("dateRange", label);
-
-		putModuleData(updates);
+		
+		//add the start/end dates and daysToGoBack to collection.
+		dailyDateRange.add(start.getTime());
+		dailyDateRange.add(endDt);
+		dailyRangeMap.put(daysToGoBack, dailyDateRange);
+		
+		return dailyRangeMap;
 	}
-
+	
+	/**
+	 *  Returns the weekly date range of Dates
+	 * @param endDt
+	 * @param daysToGoBack
+	 * @return
+	 */
+	protected Map<Integer, List<Date>> makeWeeklyDateRange(Date endDt, int days){
+		Map<Integer, List<Date>> weeklyRangeMap = new HashMap<>();
+		List<Date> weeklyDateRange = new ArrayList<>();
+		
+		Calendar cal = Calendar.getInstance();
+		//set the first day to monday
+		cal.setFirstDayOfWeek(Calendar.MONDAY);
+		cal.setTime(endDt);
+		
+		//subtract that from the end date to get start range. Then go back a week(previous week)
+		cal.add(Calendar.DATE, -(cal.get(Calendar.DAY_OF_WEEK) - cal.getFirstDayOfWeek()));
+		cal.add(Calendar.DATE, -days);
+		Date startDt = cal.getTime();
+		
+		//go seven days out to get the end range (index starts at 0)
+		cal.add(Calendar.DATE, 6); 
+		Date weekEndDt = cal.getTime();				
+	
+		//add the start/end dates and daysToGoBack to collection.
+		weeklyDateRange.add(startDt);
+		weeklyDateRange.add(weekEndDt);
+		weeklyRangeMap.put(days, weeklyDateRange);
+		
+		return weeklyRangeMap;	
+	}
 
 	/**
 	 * Returns a list of scheduled updates for a specified profile
