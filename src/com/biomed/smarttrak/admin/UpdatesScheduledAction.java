@@ -174,7 +174,7 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		Date startDt = cal.getTime();
 		
 		//go seven days out to get the end range (index starts at 0)
-		cal.add(Calendar.DATE, 6); 
+		cal.add(Calendar.DATE, 7); 
 		Date weekEndDt = cal.getTime();				
 	
 		//add the start/end dates and daysToGoBack to collection.
