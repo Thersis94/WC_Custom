@@ -99,7 +99,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * Build actions this widget can perform, sent by the request.
 	 * 
 	 */
-	private enum WidgetBuildAction {saveCaseInfo, addProduct, deleteProduct, addSignature, finalize, sendEmails}
+	private enum WidgetBuildAction {saveCaseInfo, deleteCase, addProduct, deleteProduct, addSignature, finalize, sendEmails}
 	
 	/**
 	 * Retrieve actions this widget can perform, sent by the request.
@@ -139,6 +139,9 @@ public class ProductCartAction extends SimpleActionAdapter {
 				case saveCaseInfo:
 					RAMCaseVO cvo = rcm.saveCase(req);
 					putModuleData(cvo);
+					break;
+				case deleteCase:
+					// TODO: not implemented yet, needs further discussion
 					break;
 				case addProduct:
 					RAMCaseItemVO civo = rcm.updateItem(req);
