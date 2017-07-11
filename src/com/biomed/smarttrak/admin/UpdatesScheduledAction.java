@@ -86,7 +86,7 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 
 			//set cosmetic label
 			String label = Convert.formatDate(startDate, daysToGoBack == 1 ? "MMM dd, YYYY" : "MMM dd");
-			if (daysToGoBack > 1) label += " - " + Convert.formatDate(endDt, "MMM dd, YYYY");
+			if (daysToGoBack > 1) label += " - " + Convert.formatDate(endDate, "MMM dd, YYYY");
 			req.setAttribute("dateRange", label);
 
 			putModuleData(updates);			
