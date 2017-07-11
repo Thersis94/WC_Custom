@@ -3,6 +3,8 @@
  */
 package com.ram.action.provider;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,6 +16,7 @@ import java.util.Map.Entry;
 import com.ram.action.data.RAMProductSearchVO;
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
+import com.ram.action.products.KitLayerAction;
 import com.ram.action.util.KitBOMPdfReport;
 import com.ram.action.util.RAMFabricParser;
 import com.ram.datafeed.data.KitLayerProductVO;
@@ -193,6 +196,8 @@ public class VisionAction extends SBActionAdapter {
 
 			//Parse each Layer
 			for(KitLayerVO k : layers) {
+				new KitLayerAction().fixSrc(k);
+				log.debug(k.getJsonData());
 				map = fp.getImageMap(JSONObject.fromObject(k.getJsonData()));
 				map.setName(LAYER_ID + k.getDepthNumber());
 				updateMapData(map, k);
