@@ -295,7 +295,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	/**
 	 * @return the publishDt
 	 */
-	@SolrField(name=SearchDocumentHandler.PUBLISH_DATE)
 	@Column(name="publish_dt")
 	public Date getPublishDt() {
 		return getPublishDate();
