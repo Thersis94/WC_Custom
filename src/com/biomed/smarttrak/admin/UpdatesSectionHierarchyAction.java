@@ -3,20 +3,18 @@ package com.biomed.smarttrak.admin;
 //jdk 1.8.x
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
 //wc_custom libs
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
+import com.biomed.smarttrak.admin.UpdatesAction.UpdateType;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
 import com.biomed.smarttrak.vo.UserVO;
-
 //smt base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -76,7 +74,6 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException{		
 		log.debug("Retrieving updates section hierarchy listing...");
@@ -119,8 +116,6 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		//We'll them attach the updates themselves, as the lowest level.
 		t = marryUpdatesToNodes(t, updates);
 		
-		//sortNodes(t.getRootNode());
-		
 		if (log.isDebugEnabled()) {
 			for (Node n : t.preorderList())
 				log.debug(n);
@@ -148,19 +143,6 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			log.debug(n.getNodeName() + " =" +  n.getTotalChildren());
 		}
 		putModuleData(counts, counts.size(), false);
-	}
-
-	/**
-	 * recursively traverses the levels of the Tree, and at each one sorts the items by Update Type.
-	 * @param t
-	 */
-	private void sortNodes(Node r) {
-		if(!r.isLeaf()) {
-			Collections.sort(r.getChildren());
-			for(Node n : r.getChildren()) {
-				sortNodes(n);
-			}
-		}
 	}
 
 	/**
@@ -208,10 +190,10 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			List<UpdateVO> data = (List<UpdateVO>) par.getUserObject();
 			if (data == null) data = new ArrayList<>();
 			data.addAll(secUpds);
-			par.setUserObject(data);
+			par.setUserObject(sortData(data));
 			par.setTotalChildren(data.size());
 		} else {
-			n.setUserObject(secUpds);
+			n.setUserObject(sortData(secUpds));
 			n.setTotalChildren(secUpds.size());
 		}
 		log.debug("saved " + n.getNodeName() + " has " + n.getTotalChildren());
@@ -222,6 +204,22 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 
 	}
 
+	/**
+	 * Sort the Updates given into order determined by the UpdateType Enum.
+	 * @param data
+	 * @return
+	 */
+	private List<UpdateVO> sortData(List<UpdateVO> data) {
+		List<UpdateVO> newOrder = new ArrayList<>();
+		for(UpdateType ut : UpdateType.values()) {
+			for(UpdateVO u : data) {
+				if(u.getType().equals(ut)) {
+					newOrder.add(u);
+				}
+			}
+		}
+		return newOrder;
+	}
 
 	/**
 	 * Retrieves the correct updates, either scheduled or general list of updates
