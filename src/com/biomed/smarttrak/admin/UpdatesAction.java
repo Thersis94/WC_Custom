@@ -329,7 +329,7 @@ public class UpdatesAction extends AuthorAction {
 		if (!isCount) {
 			sql.append("order by ").append(StringUtil.checkVal(sortMapper.get(req.getParameter(SORT)), "publish_dt"));
 			sql.append(" ").append(StringUtil.checkVal(req.getParameter(ORDER), "asc"));
-			sql.append(" limit ? offset ? ");
+			sql.append(", create_dt asc limit ? offset ? ");
 		}
 
 		log.debug(sql);
