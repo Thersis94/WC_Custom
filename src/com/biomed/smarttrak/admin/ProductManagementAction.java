@@ -1265,6 +1265,7 @@ public class ProductManagementAction extends AuthorAction {
 			break;
 		case PRODUCTATTACH:
 		case PRODUCTLINK:
+		case PRODUCTATTRIBUTE:
 			updateAttributeOrder(req);
 			break;
 		default:

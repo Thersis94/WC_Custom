@@ -200,12 +200,14 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 
 		//Filter results by the past day or within in the current week.
 		if(timeRangeCd != null && timeRangeCd.equalsIgnoreCase(TIME_RANGE_DAILY)){
-			sql.append("a.create_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
-			sql.append("and a.create_dt < date_trunc('day', current_timestamp) ");
+			sql.append("a.publish_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
+			sql.append("and a.publish_dt < date_trunc('day', current_timestamp) ");
+			sql.append("and a.status_cd in ('R','N') ");
 		}else if(emailUpdates){//updates for email use previous week range
-			sql.append("a.create_dt >= cast(date_trunc('week', current_date) as date) - 8 ");
-			sql.append("and a.create_dt < cast(date_trunc('week', current_date) as date) - 2 ");
-		}else{//default to weekly
+			sql.append("a.publish_dt >= cast(date_trunc('week', current_date) as date) - 7 ");
+			sql.append("and a.publish_dt < cast(date_trunc('week', current_date) as date) - 1 ");
+			sql.append("and a.status_cd in ('R','N') ");
+		}else{//default to weekly(these are the updates that are under review(/manage) based from create dt)
 			sql.append("a.create_dt >= cast(date_trunc('week', current_date) as date) - 1 ");
 			sql.append("and a.create_dt < cast(date_trunc('week', current_date) as date) + 5 ");
 		}

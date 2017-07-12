@@ -462,6 +462,13 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		SmarttrakSolrUtil.setSearchField(rs.getString("short_nm"), "shortNm", product);
 		SmarttrakSolrUtil.setSearchField(rs.getString("short_nm_txt"), "companyShortNm", product);
 
+		//concat some fields into meta-keywords
+		StringBuilder sb = new StringBuilder(100);
+		sb.append(StringUtil.checkVal(rs.getString("short_nm")));
+		if (sb.length() > 0) sb.append(", ");
+		sb.append(StringUtil.checkVal(rs.getString("alias_nm")));
+		product.setMetaKeywords(sb.toString());
+
 		if (rs.getTimestamp("UPDATE_DT") != null) {
 			product.setUpdateDt(rs.getDate("UPDATE_DT"));
 		} else {

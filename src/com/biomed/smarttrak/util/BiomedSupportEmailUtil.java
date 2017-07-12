@@ -228,8 +228,8 @@ public class BiomedSupportEmailUtil {
 	protected List<AccountVO> getAdminEmails() throws EncryptionException {
 
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.email_address_txt as owner_email_addr, a.first_nm, a.last_nm, a.profile_id as owner_profile_id from profile a ");
-		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=?");
+		sql.append("select newid() as account_id, a.email_address_txt as owner_email_addr, a.first_nm, a.last_nm, a.profile_id as owner_profile_id from profile a ");
+		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=? ");
 		sql.append("and b.site_id=? and b.role_id=?");
 		log.debug(sql);
 
