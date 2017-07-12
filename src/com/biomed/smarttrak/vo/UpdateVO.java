@@ -36,7 +36,7 @@ import com.smt.sitebuilder.security.SecurityController;
  * @since Feb 14, 2017
  ****************************************************************************/
 @Table(name="biomedgps_update")
-public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc, Serializable {
+public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc, Serializable, Comparable<UpdateVO> {
 
 	private static final long serialVersionUID = 5149725371008749427L;
 
@@ -309,10 +309,10 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	@SolrField(name="companyLink_s")
 	public String getCompanyLink() {
 		if (StringUtil.isEmpty(companyId)) return "";
-		
+
 		return AdminControllerAction.Section.COMPANY.getPageURL() + qsPath + getCompanyId();
 	}
-	
+
 	/**
 	 * @deprecated this should not be done, URL is built dynamically, just set companyId
 	 * @return
@@ -613,7 +613,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	public int getTweetFlg() {
 		return tweetFlg;
 	}
-	
+
 	/**
 	 * @deprecated - use getTitle
 	 * @return
@@ -634,8 +634,21 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	public String getQsPath() {
 		return qsPath;
 	}
-	
+
 	public void setQsPath(String qsPath) {
 		this.qsPath = qsPath;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 */
+	@Override
+	public int compareTo(UpdateVO vo) {
+		int typeComp = Convert.formatInteger(getTypeCd()).compareTo(vo.getTypeCd());
+		if (typeComp == 0) {
+			//look at publish date if type is the same.
+			return getPublishDt().compareTo(vo.getPublishDt());
+		}
+		return typeComp;
 	}
 }

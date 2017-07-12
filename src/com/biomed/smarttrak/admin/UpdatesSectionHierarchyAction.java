@@ -3,8 +3,11 @@ package com.biomed.smarttrak.admin;
 //jdk 1.8.x
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -77,7 +80,6 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException{		
 		log.debug("Retrieving updates section hierarchy listing...");
-		//String sectionNm = StringUtil.checkVal(req.getParameter("sectionNm"));
 
 		//load the core section hierarchy
 		Tree t = loadDefaultTree();
@@ -85,12 +87,13 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		//load the updates that should be displayed
 		List<UpdateVO> updates = fetchUpdates(req);
 		log.debug("Number of updates retrieved: " + updates.size());
-		
+
 		//loop the updates and create a Node on the hierarchy for each of their parent levels (Update Type)
 		for (UpdateVO vo : updates) {
 			List<UpdateXRVO> secs = vo.getUpdateSections();
 			if (secs == null || secs.isEmpty()) continue;
 			for (UpdateXRVO xrvo : secs) {
+				log.debug("sec=" + vo.getTitle() + " " + xrvo.getSectionId());
 				//find at deepest a section level 3 node.  We may be dealing with a level 4 here
 				Node secNode = t.findNode(xrvo.getSectionId());
 				while (secNode.getDepthLevel() > 3) {
@@ -115,11 +118,48 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		//while there, add a 4th level that equates to the Update Types.
 		//We'll them attach the updates themselves, as the lowest level.
 		t = marryUpdatesToNodes(t, updates);
+		
+		sortNodes(t.getRootNode());
+		
+		if (log.isDebugEnabled()) {
+			for (Node n : t.preorderList())
+				log.debug(n);
+		}
 
 		//set the appropriate time range onto request for view
 		setDateRange(req);
 
 		putModuleData(t, updates.size(), false);
+		
+		//if this is for the email, format the data as a Map<String, Integer>() containing the root levels
+		if (req.getAttribute("isWebpage") == null) {
+			formatDataMap(t);
+		}
+	}
+
+	/**
+	 * @param t
+	 */
+	private void formatDataMap(Tree t) {
+		Map<String, Integer> counts = new HashMap<>();
+		for (Node n : t.getRootNode().getChildren()) {
+			counts.put(n.getNodeName(), n.getTotalChildren());
+			log.debug(n.getNodeName() + " =" +  n.getTotalChildren());
+		}
+		putModuleData(counts, counts.size(), false);
+	}
+
+	/**
+	 * recursively traverses the levels of the Tree, and at each one sorts the items by Update Type.
+	 * @param t
+	 */
+	private void sortNodes(Node r) {
+		if(!r.isLeaf()) {
+			Collections.sort(r.getChildren());
+			for(Node n : r.getChildren()) {
+				sortNodes(n);
+			}
+		}
 	}
 
 	/**
@@ -174,135 +214,12 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			n.setTotalChildren(secUpds.size());
 		}
 		log.debug("saved " + n.getNodeName() + " has " + n.getTotalChildren());
-		
+
 		//dive deeper into this node's children
 		for (Node child : n.getChildren())
 			this.iterateUpdatesForNode(child, t, updates, exclusions);
 
 	}
-
-
-	/**
-	 * Retrieves a tree collection of nodes based on the sub-root sections. Each
-	 * tree contains each sub-root section's hierarchy.
-	 * @return
-	 
-	protected Map<String, Tree> retrieveTreeCollection(String sectionName){
-		Map<String, Tree> collection = new LinkedHashMap<>();
-
-		//load the tree once
-		Tree t = loadDefaultTree();
-
-		for (Node node : t.getRootNode().getChildren()) {
-			//if section name is valid, retrieve only that section of tree
-			if(!sectionName.isEmpty()){
-				if(node.getNodeName().equalsIgnoreCase(sectionName)){
-					addSectionTree(node, collection);
-					break;					
-				}
-			}else{
-				addSectionTree(node, collection);
-			}
-		}
-		return collection;
-	}*/
-
-	/**
-	 * Helper method that assigns a new section Tree to the given collection
-	 * @param node
-	 * @param collection
-	
-	protected void addSectionTree(Node node, Map<String, Tree> collection){
-		Tree sectionTree = new Tree(node.getChildren());
-		sectionTree.setRootNode(node);
-		collection.put(node.getNodeId(), sectionTree);
-	} */
-	//
-	//	/**
-	//	 * Builds a proper collection of updates with their corresponding section(s)
-	//	 * that they belong to.
-	//	 * @param req
-	//	 * @param treeCollection
-	//	 * @return
-	//	 * @throws ActionException
-	//	 */
-	//	protected Map<String, Map<Node, List<UpdateVO>>> buildUpdatesHierarchy(ActionRequest req, Tree t) throws ActionException{
-	//		Map<String, Map<Node, List<UpdateVO>>> updatesHierarchyMap = new LinkedHashMap<>();
-	//
-	//
-	//		//Create a brand new collection for each tree for tracking updates
-	//		masterCollection = new HashMap<>();
-	//
-	//		//iterate through each section tree hierarchy and add the corresponding update(s)
-	//		for (Node n : t.getRootNode().getChildren()) {
-	//			log.debug("starting " + n.getNodeId());
-	//			String rootSectionId = n.getNodeName();
-	//
-	//			//add root section id, with sub-section/updates, to the final collection
-	//			//only if it's sub-section map is not empty
-	//			Map<Node, List<UpdateVO>> subSectionMap = getSubSectionUpdates(n.getChildren(), updates);
-	//			if (!subSectionMap.isEmpty()) {
-	//				//prune the sub section map of any "meaningfully" similar updates
-	//				pruneSection(subSectionMap);
-	//
-	//				//add to final collection
-	//				updatesHierarchyMap.put(rootSectionId, subSectionMap);
-	//			}
-	//
-	//		}
-	//		return updatesHierarchyMap;
-	//	}
-	//
-	//	/**
-	//	 * Returns a mapping of a sub section with it's associated updates.
-	//	 * @param nodes
-	//	 * @param updates
-	//	 * @return
-	//	 */
-	//	protected Map<Node, List<UpdateVO>> getSubSectionUpdates(List<Node> nodes, List<UpdateVO> updates) {
-	//		Map<Node, List<UpdateVO>> subSecUpdates = new LinkedHashMap<>();
-	//
-	//		for (Node node : nodes) { //level 2 nodes - OrthoGPS, RegenGPS, etc.
-	//			List<UpdateVO> data = findSectionUpdates(node, updates);
-	//			if (data == null || data.isEmpty()) continue;
-	//
-	//			if (node.getDepthLevel() > 3){
-	//				node.setNodeName(node.getParentName());
-	//			}
-	//			//associate sub sub level updates
-	//			subSecUpdates.put(node, data);
-	//			log.debug("added " + data.size() + "  to  " + node.getNodeName());
-	//		}
-	//
-	//		return subSecUpdates;
-	//	}
-	//
-	//	/***
-	//	 * Helper method that returns a list of related updates for a specific section 
-	//	 * hierarchy
-	//	 * @param updateSections
-	//	 * @param node
-	//	 * @param update
-	//	 * @return
-	//	 */
-	//	private List<UpdateVO> findSectionUpdates(Node node, List<UpdateVO> updates){
-	//		List<UpdateVO> data = new ArrayList<>();
-	//
-	//		//for each section that each update is tied to - pinpoint the ones which correspond to this Node.
-	//		Iterator<UpdateVO> iter = updates.iterator();
-	//		while (iter.hasNext()) {
-	//			UpdateVO update = iter.next();
-	//			for (UpdateXRVO xrvo : update.getUpdateSections()) {
-	//				if (node.getNodeId().equals(xrvo.getSectionId())) {
-	//					//track any applicable updates
-	//					data.add(update);
-	//					iter.remove(); //remove it from the list of updates - we only want to display it once.
-	//				}
-	//			}
-	//		}
-	//
-	//		return data;
-	//	}
 
 
 	/**
@@ -355,51 +272,13 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 				profileId = user.getProfileId();
 				req.setParameter(PROFILE_ID, profileId); //place on request for downstream
 				//set their status code on request
-				req.setAttribute("statusCode", user.getStatusCode());				
+				req.setAttribute("statusCode", user.getStatusCode());
+				req.setAttribute("isWebpage", "1");
 			}	
 		}
 		return profileId;
 	}
-	//
-	//	/**
-	//	 * Searches over the section map for similar updates for relevant hierarchy sections
-	//	 * @param sectionUpdates
-	//	 */
-	//	private void pruneSection(Map<Node, List<UpdateVO>> sectionUpdates) {	
-	//		for (Entry<Node, List<UpdateVO>> entry : sectionUpdates.entrySet()) {
-	//			Node currentNode = entry.getKey();
-	//
-	//			/*Do NOT prune updates from any entry with depth level 3. This is currently 
-	//			 *the only depth level that will display unique headings(view-wise) 
-	//			 *and allows contextually similar updates */
-	//			if (currentNode.getDepthLevel() != UNIQUE_DEPTH_LEVEL)
-	//				pruneUpdates(entry.getValue());
-	//		}
-	//	}
-	//
-	//	/**
-	//	 * Removes any updates from the passed collection based on associated depth level
-	//	 * @param updateCollection
-	//	 */
-	//	private void pruneUpdates(List<UpdateVO> updateCollection){
-	//		log.debug("size=" + updateCollection.size());
-	//		for (int i =0; i < updateCollection.size(); i++) {
-	//			UpdateVO update = updateCollection.get(i);
-	//
-	//			//grab the update from the master collection
-	//			UpdateTrackerVO tracker = masterCollection.get(update.getUpdateId());
-	//
-	//			//determine if update a unique level, if so prune it from ALL other sections
-	//			if (tracker.isUniqueLevel()) {
-	//				updateCollection.remove(update);
-	//			} else if (tracker.getTrackingCount() > 1) {
-	//				/*otherwise only remove it up to (x)number of additional times it repeats
-	//				 * throughout all other sections. Leaving only one occurrence.*/
-	//				updateCollection.remove(update);
-	//				tracker.setTrackingCount(tracker.getTrackingCount() - 1);
-	//			}
-	//		}
-	//	}
+
 
 	/**
 	 * Sets the appropriate time range value to the request
