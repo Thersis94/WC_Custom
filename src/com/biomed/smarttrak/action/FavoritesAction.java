@@ -118,8 +118,12 @@ public class FavoritesAction extends SBActionAdapter {
 
 		PageViewVO fav = new PageViewVO();
 		fav.setReferenceCode(collKey);
-		// Favoritable items exist in solr with section cd_id, not just id
-		fav.setPageId(collKey + "_" + pkId);
+		// Old favoritable items exist in solr with section cd_id, not just id
+		if(pkId.length() < AdminControllerAction.DOC_ID_MIN_LEN){
+			fav.setPageId(collKey + "_" + pkId);
+		}else {
+			fav.setPageId(pkId);
+		}
 		fav.setRequestUri(req.getParameter(QuickLinksAction.PARAM_KEY_URI_TXT));
 		fav.setPageDisplayName(req.getParameter(QuickLinksAction.PARAM_KEY_NAME));
 
