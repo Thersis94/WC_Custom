@@ -7,19 +7,22 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 //WC_Custom libs
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.vo.UpdateVO;
+import com.biomed.smarttrak.vo.UpdateXRVO;
+
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 //WC libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -69,57 +72,55 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		if (endDt == null) endDt = Calendar.getInstance().getTime();
 
 		int days = UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd) ? 7 : 1;
-		
-		//establish the date ranges
-		Map<Integer, List<Date>> dateRangeMap = establishDateRanges(endDt, days);
-		
-		Set<Entry<Integer, List<Date>>> entryRange = dateRangeMap.entrySet();
-		for (Entry<Integer, List<Date>> entry : entryRange) {
-			//pull values from map
-			int daysToGoBack = entry.getKey();
-			List<Date> dateRanges = entry.getValue();
-			Date startDate = dateRanges.get(0);
-			Date endDate = dateRanges.get(1);
-			
-			//get list of updates
-			List<Object> updates = getUpdates(profileId, startDate, endDate);
 
-			//set cosmetic label
-			String label = Convert.formatDate(startDate, daysToGoBack == 1 ? "MMM dd, YYYY" : "MMM dd");
-			if (daysToGoBack > 1) label += " - " + Convert.formatDate(endDate, "MMM dd, YYYY");
-			req.setAttribute("dateRange", label);
-
-			putModuleData(updates);			
+		//if today is monday and the range is 1 (daily), we'll need to rollback to Friday as a start date (days=3)
+		if (days == 1) {
+			Calendar end = Calendar.getInstance();
+			end.setTime(endDt);
+			if (Calendar.MONDAY == end.get(Calendar.DAY_OF_WEEK)) days = 3;
 		}
 
+		//establish the date ranges
+		Date[] endpoints = establishDateRanges(endDt, days);
+		//pull values from map
+		Date startDate = endpoints[0];
+		Date endDate = endpoints[1];
+
+		//get list of updates
+		List<UpdateVO> updates = getUpdates(profileId, startDate, endDate);
+
+		//set cosmetic label
+		Calendar dt = Calendar.getInstance();
+		dt.setTime(endDate);
+		dt.add(Calendar.SECOND, -1); //rollback one second before midnight, so the date label looks correct
+		String label = Convert.formatDate(startDate, days == 1 ? "MMM dd, YYYY" : "MMM dd");
+		if (days > 1) label += " - " + Convert.formatDate(dt.getTime(), "MMM dd, YYYY");
+		req.setAttribute("dateRange", label);
+
+		putModuleData(updates);
 	}
-	
+
+
 	/**
 	 * Helper method that establishes the appropriate days
 	 * @param days
 	 * @return
 	 */
-	protected Map<Integer, List<Date>> establishDateRanges(Date endDt, int days){
-		Map<Integer, List<Date>> dateRanges;
-		if(days == 1){
-			dateRanges = makeDailyDateRange(endDt, days);
-		}else{
-			dateRanges = makeWeeklyDateRange(endDt, days);
+	protected Date[] establishDateRanges(Date endDt, int days) {
+		if (days == 7) {
+			return makeWeeklyDateRange(endDt, days);
+		} else {
+			return makeDailyDateRange(endDt, days);
 		}
-		
-		return dateRanges;
 	}
-	
+
 	/**
 	 * Returns the daily date range of Dates
 	 * @param endDt
 	 * @param daysToGoBack
 	 * @return
 	 */
-	protected Map<Integer, List<Date>> makeDailyDateRange(Date endDt, int days){
-		Map<Integer, List<Date>> dailyRangeMap = new HashMap<>();
-		List<Date> dailyDateRange = new ArrayList<>();
-		
+	protected Date[] makeDailyDateRange(Date endDt, int days) {
 		//subtract X days from the base date for start date
 		Calendar start = Calendar.getInstance();
 		start.setTime(endDt);
@@ -127,39 +128,27 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		start.set(Calendar.HOUR,0);
 		start.set(Calendar.MINUTE,0);
 		start.set(Calendar.SECOND,0);
-		
-		//if today is monday and the range is 1 (daily), rollback to Friday as a start date
-		int daysToGoBack = days;
-		if (days == 1 && Calendar.MONDAY == start.get(Calendar.DAY_OF_WEEK)+1) {
-			daysToGoBack = 3;
-			start.add(Calendar.DATE, -2); //already on Sunday, go back Saturday & Friday.
-		}
-		
-		//zero-out end date before adding
+
+		//zero-out end date
 		Calendar endDate = Calendar.getInstance();
 		endDate.setTime(endDt);
 		endDate.set(Calendar.HOUR,0);
 		endDate.set(Calendar.MINUTE,0);
 		endDate.set(Calendar.SECOND,0);
-		
+
 		//add the start/end dates and daysToGoBack to collection.
-		dailyDateRange.add(start.getTime());
-		dailyDateRange.add(endDate.getTime());
-		dailyRangeMap.put(daysToGoBack, dailyDateRange);
-		
-		return dailyRangeMap;
+		return new Date[]{ start.getTime(), endDate.getTime()};
 	}
-	
+
+
 	/**
 	 *  Returns the weekly date range of Dates
 	 * @param endDt
 	 * @param daysToGoBack
 	 * @return
 	 */
-	protected Map<Integer, List<Date>> makeWeeklyDateRange(Date endDt, int days){
-		Map<Integer, List<Date>> weeklyRangeMap = new HashMap<>();
-		List<Date> weeklyDateRange = new ArrayList<>();
-		
+	protected Date[] makeWeeklyDateRange(Date endDt, int days){
+
 		Calendar cal = Calendar.getInstance();
 		//set the first day to monday
 		cal.setFirstDayOfWeek(Calendar.MONDAY);
@@ -167,22 +156,17 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		cal.set(Calendar.HOUR,0);
 		cal.set(Calendar.MINUTE,0);
 		cal.set(Calendar.SECOND,0);
-		
+
 		//subtract that from the end date to get start range. Then go back a week(previous week)
 		cal.add(Calendar.DATE, -(cal.get(Calendar.DAY_OF_WEEK) - cal.getFirstDayOfWeek()));
 		cal.add(Calendar.DATE, -days);
 		Date startDt = cal.getTime();
-		
-		//go seven days out to get the end range (index starts at 0)
-		cal.add(Calendar.DATE, 7); 
-		Date weekEndDt = cal.getTime();				
-	
+
+		//go seven days out to get the end range
+		cal.add(Calendar.DATE, 7);
+
 		//add the start/end dates and daysToGoBack to collection.
-		weeklyDateRange.add(startDt);
-		weeklyDateRange.add(weekEndDt);
-		weeklyRangeMap.put(days, weeklyDateRange);
-		
-		return weeklyRangeMap;	
+		return new Date[]{ startDt, cal.getTime()};
 	}
 
 	/**
@@ -191,23 +175,53 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 	 * @param timeRangeCd
 	 * @return
 	 */
-	protected  List<Object> getUpdates(String profileId, Date startDt, Date endDt) {
+	protected  List<UpdateVO> getUpdates(String profileId, Date startDt, Date endDt) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		//build the query
 		String sql = buildMyUpdatesSQL(schema);
-		log.debug(sql + "|" + profileId + "|" + startDt + "|" + endDt);
+		log.debug(sql + "|" + profileId + "|" + Convert.formatSQLDate(startDt) + "|" + Convert.formatSQLDate(endDt));
 
-		//build params
-		List<Object> params = new ArrayList<>();
-		params.add(profileId);
-		params.add(startDt);
-		params.add(endDt);
+		UpdateVO vo = null;
+		Map<String, UpdateVO>  updates = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, profileId);
+			ps.setDate(2, Convert.formatSQLDate(startDt));
+			ps.setDate(3, Convert.formatSQLDate(endDt));
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				vo = updates.get(rs.getString("update_id"));
 
-		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
+				if (vo == null) {
+					vo = new UpdateVO();
+					vo.setUpdateId(rs.getString("update_id"));
+					vo.setTitle(rs.getString("title_txt"));
+					vo.setMessageTxt(rs.getString("message_txt"));
+					vo.setPublishDt(rs.getDate("publish_dt"));
+					vo.setTypeCd(rs.getInt("type_cd"));
+					vo.setCompanyId(rs.getString("company_id"));
+					vo.setCompanyNm(rs.getString("company_nm"));
+					vo.setProductId(rs.getString("product_id"));
+					vo.setProductNm(rs.getString("product_nm"));
+					vo.setMarketId(rs.getString("market_id"));
+					vo.setMarketNm(rs.getString("market_nm"));
+					log.debug("loaded update: " + vo.getUpdateId());
+				}
+
+				//add the new section to it
+				UpdateXRVO xrvo = new UpdateXRVO(vo.getUpdateId(), rs.getString("section_id"));
+				xrvo.setUpdateSectionXrId(rs.getString("update_section_xr_id"));
+				vo.addUpdateXrVO(xrvo);
+
+				updates.put(vo.getUpdateId(), vo);
+			}
+
+		} catch (SQLException sqle) {
+			log.error("could not load updates", sqle);
+		}
+
 		log.debug("loaded " + updates.size() + " updates");
-		return updates;
+		return new ArrayList<>(updates.values());
 	}
 
 

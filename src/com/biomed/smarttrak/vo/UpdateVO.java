@@ -67,7 +67,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private String lastNm;
 	private String statusCd;
 	private String historyId;
-	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
 	private transient List<UpdateXRVO> sections; //UpdateXRVO is not serializable, so this List must be transient -JM- 7.03.2017
@@ -104,7 +103,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		twitterTxt = req.getParameter("twitterTxt");
 		tweetFlg = Convert.formatInteger(Convert.formatBoolean(req.getParameter("tweetFlg")));
 		statusCd = req.getParameter("statusCd");
-		publishDt = Convert.formatDate(req.getParameter("publishDt"));
+		setPublishDate(Convert.formatDate(req.getParameter("publishDt")));
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		emailFlg = Convert.formatInteger(req.getParameter("emailFlg"), 1);
 		if (req.hasParameter("sectionId")) {
@@ -299,12 +298,12 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	@SolrField(name=SearchDocumentHandler.PUBLISH_DATE)
 	@Column(name="publish_dt")
 	public Date getPublishDt() {
-		return publishDt;
+		return getPublishDate();
 	}
 
 	@SolrField(name="publishDtNoTime_s")
 	public String getPublishDtNoTime() {
-		return Convert.formatDate(publishDt, Convert.DATE_DASH_PATTERN);
+		return Convert.formatDate(getPublishDate(), Convert.DATE_DASH_PATTERN);
 	}
 
 	@SolrField(name="companyLink_s")
@@ -343,7 +342,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 
 	@SolrField(name="publishTime_s")
 	public String getPublishTime() {
-		return Convert.formatDate(publishDt, Convert.TIME_LONG_PATTERN);
+		return Convert.formatDate(getPublishDate(), Convert.TIME_LONG_PATTERN);
 	}
 
 	/**
@@ -464,7 +463,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @param publishDt the publishDt to set.
 	 */
 	public void setPublishDt(Date publishDt) {
-		this.publishDt = publishDt;
+		setPublishDate(publishDt);
 	}
 
 	/**
