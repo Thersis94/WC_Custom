@@ -81,21 +81,23 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Returns the SQL of updates with twitter text with yesterday's date
+	 * Returns list of updates with twitter messages and publish dates of today  
 	 * @return
 	 */
 	protected List<UpdateVO> getTwitterUpdates(){
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String endOfDayInterval = "interval '1' day - interval '1' second "; //rollback a second from tomorrow
 		
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select update_id, market_id, product_id, company_id, title_txt, type_cd, ");
 		sql.append("message_txt, twitter_txt, tweet_flg, publish_dt, create_dt, update_dt, ");
 		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path ");
 		sql.append("from ").append(schema).append("biomedgps_update ");
-		sql.append("where tweet_flg = 1 ");
-		sql.append("and publish_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
-		sql.append("and publish_dt < date_trunc('day', current_timestamp) ");
-		sql.append("order by create_dt ");
+		sql.append("where tweet_flg = 1 and email_flg = 1 and status_cd in ('R','N') ");
+		sql.append("and publish_dt >= date_trunc('day', current_timestamp) ");
+		sql.append("and publish_dt < date_trunc('day', current_timestamp) + ").append(endOfDayInterval);
+		sql.append("and create_dt + (interval '1 hour') <= current_timestamp "); //allow at least one hour before submitting live
+		sql.append("order by publish_dt desc, create_dt desc ");
 		log.debug(sql);
 		
 		//execute the query
@@ -118,7 +120,6 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	 */
 	private List<SearchVO> buildSearchItems(List<UpdateVO> updates){
 		List<SearchVO> searchItems = new ArrayList<>();
-		UUIDGenerator uuid = new UUIDGenerator();
 		
 		//add the relevant pieces to create the search vo
 		for (UpdateVO update : updates) {
@@ -128,11 +129,30 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	        vo.setSummary(update.getTwitterTxt());
 	        vo.setCreateDate(update.getCreateDt());
 	        //ensure each document url is unique
-	        vo.setDocumentUrl(update.getDocumentUrl() +"?"+ uuid.getUUID());        
+	        vo.setDocumentUrl(buildRSSDocumentUrl(update));   
+	        vo.setLinkOmitted(true); //omit the link for each item
 	        searchItems.add(vo); //add the item
 		}
 		
 		return searchItems;
+	}
+	
+	/**
+	 * builds the update RSS feed url
+	 * @param update
+	 * @return
+	 */
+	private String buildRSSDocumentUrl(UpdateVO update){
+        StringBuilder docUrl = new StringBuilder(50);
+        docUrl.append(update.getDocumentUrl()).append("?");
+        
+        if(docUrl.length() == 1){
+        	docUrl.append("updateNm="+update.getTitle());
+        }else{
+    		UUIDGenerator uuid = new UUIDGenerator();
+        	docUrl.append(uuid.getUUID()); 
+        }
+        return docUrl.toString();
 	}
 	
 	/**
