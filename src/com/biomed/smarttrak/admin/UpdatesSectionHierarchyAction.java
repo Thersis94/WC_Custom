@@ -119,7 +119,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		//We'll them attach the updates themselves, as the lowest level.
 		t = marryUpdatesToNodes(t, updates);
 		
-		sortNodes(t.getRootNode());
+		//sortNodes(t.getRootNode());
 		
 		if (log.isDebugEnabled()) {
 			for (Node n : t.preorderList())
@@ -143,7 +143,8 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	private void formatDataMap(Tree t) {
 		Map<String, Integer> counts = new HashMap<>();
 		for (Node n : t.getRootNode().getChildren()) {
-			counts.put(n.getNodeName(), n.getTotalChildren());
+			if (n.getTotalChildren() > 0)
+				counts.put(n.getNodeName(), n.getTotalChildren());
 			log.debug(n.getNodeName() + " =" +  n.getTotalChildren());
 		}
 		putModuleData(counts, counts.size(), false);
