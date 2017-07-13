@@ -3,6 +3,7 @@ package com.biomed.smarttrak.admin.report;
 import java.util.ArrayList;
 import java.util.List;
 
+
 //wc custom libs
 import com.biomed.smarttrak.vo.UpdateVO;
 //smt base libs
@@ -11,6 +12,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.rss.RSSCreatorReport;
@@ -86,7 +88,6 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	 */
 	protected List<UpdateVO> getTwitterUpdates(){
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String endOfDayInterval = "interval '1' day - interval '1' second "; //rollback a second from tomorrow
 		
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select update_id, market_id, product_id, company_id, title_txt, type_cd, ");
@@ -94,8 +95,7 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path ");
 		sql.append("from ").append(schema).append("biomedgps_update ");
 		sql.append("where tweet_flg = 1 and email_flg = 1 and status_cd in ('R','N') ");
-		sql.append("and publish_dt >= date_trunc('day', current_timestamp) ");
-		sql.append("and publish_dt < date_trunc('day', current_timestamp) + ").append(endOfDayInterval);
+		sql.append("and publish_dt = current_date ");
 		sql.append("and create_dt + (interval '1 hour') <= current_timestamp "); //allow at least one hour before submitting live
 		sql.append("order by publish_dt desc, create_dt desc ");
 		log.debug(sql);
@@ -144,13 +144,13 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	 */
 	private String buildRSSDocumentUrl(UpdateVO update){
         StringBuilder docUrl = new StringBuilder(50);
-        docUrl.append(update.getDocumentUrl()).append("?");
+        docUrl.append(update.getDocumentUrl());
         
-        if(docUrl.length() == 1){
-        	docUrl.append("updateNm="+update.getTitle());
-        }else{
+        if(docUrl.length() == 0){
+        	docUrl.append("?rss=1&searchData="+ StringEncoder.urlEncode(update.getTitle()));
+        }else{        	
     		UUIDGenerator uuid = new UUIDGenerator();
-        	docUrl.append(uuid.getUUID()); 
+        	docUrl.append("/" +uuid.getUUID()); 
         }
         return docUrl.toString();
 	}
