@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
 //wc custom libs
 import com.biomed.smarttrak.vo.UpdateVO;
 //smt base libs
@@ -13,6 +14,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.rss.RSSCreatorReport;
@@ -144,7 +146,7 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	 */
 	private String buildRSSDocumentUrl(UpdateVO update){
         StringBuilder docUrl = new StringBuilder(100);
-        String updateUrl = update.getDocumentUrl();
+        String updateUrl = StringUtil.checkVal(update.getDocumentUrl());
         
         if(updateUrl.isEmpty()){
         	docUrl.append(updateUrl);
