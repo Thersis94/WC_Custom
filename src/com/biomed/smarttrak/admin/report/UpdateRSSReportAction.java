@@ -146,10 +146,9 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	 */
 	private String buildRSSDocumentUrl(UpdateVO update){
         StringBuilder docUrl = new StringBuilder(100);
-        String updateUrl = StringUtil.checkVal(update.getDocumentUrl());
+        String updateUrl = update.getDocumentUrl();
         
-        if(updateUrl.isEmpty()){
-        	docUrl.append(updateUrl);
+        if(StringUtil.isEmpty(updateUrl)){
         	docUrl.append("?rss=1&searchData=").append(StringEncoder.urlEncode(update.getTitle()));
         }else{        	
         	//remove the beginning slash, as the RSSCreatorReport will add one for us
