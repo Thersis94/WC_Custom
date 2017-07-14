@@ -21,7 +21,6 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Jun 13, 2017
  ****************************************************************************/
-
 public class DashboardAction extends SBActionAdapter {
 
 	public DashboardAction() {
@@ -31,23 +30,27 @@ public class DashboardAction extends SBActionAdapter {
 	public DashboardAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		// Pass along the proper information for a search to be done.
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		req.setParameter("pmid", mod.getPageModuleId());
 		String search = StringUtil.checkVal(req.getParameter("searchData"));
-		
+
 		req.setParameter("searchData", search.toLowerCase());
-		
+
 		// Build the solr action
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		sa.retrieve(req);
-		
+
 		req.setParameter("searchData", search);
 	}
-
 }
