@@ -46,8 +46,12 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 	/**
 	 * Smarttrak status levels not permitted to login.
 	 */
-	protected static final List<String> blockedStatuses = new ArrayList<>(Arrays.asList("U", "T", "I"));
-
+	protected static final List<String> blockedStatuses = new ArrayList<>(Arrays.asList("I"));
+	/**
+	 * Smarttrak status levels only permitted login to view updates
+	 */
+	protected static final List<String> updatesOnlyStatuses = new ArrayList<>(Arrays.asList("U", "T"));
+	
 	public SmartTRAKRoleModule() {
 		super();
 	}
@@ -77,7 +81,16 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 	 * @throws AuthorizationException 
 	 */
 	protected void loadSmarttrakRoles(SmarttrakRoleVO role) throws AuthorizationException {
-		UserVO user = (UserVO) getAttribute(Constants.USER_DATA);
+		UserVO user;
+		/* 2017-06-21 DBargerhuff: In case of 'forgot password' request, the user data on the
+		 * attributes map will be a UserDataVO instead of a SmartTRAK UserVO.  We try/catch
+		 * here to handle the CCE that results from the former case. */
+		try {
+			user = (UserVO) getAttribute(Constants.USER_DATA);
+		} catch (ClassCastException cce) {
+			// logging not required.
+			return;
+		}
 		ActionRequest req = (ActionRequest) getAttribute(HTTP_REQUEST);
 
 		if (user == null || StringUtil.isEmpty(user.getAccountId()) || req == null)
@@ -89,7 +102,9 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 		//if status is EU Reports, redirect them to the markets page
 		if ("M".equals(user.getStatusCode())) {
 			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.MARKET.getPageURL());
-		} else if (blockedStatuses.contains(user.getStatusCode())) {
+		}else if (updatesOnlyStatuses.contains(user.getStatusCode())){
+			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.UPDATES_EDITION.getPageURL());
+		}else if (blockedStatuses.contains(user.getStatusCode())) {
 			throw new AuthorizationException("user not authorized to login according to status");
 		}
 

@@ -1,4 +1,5 @@
 package com.biomed.smarttrak.admin;
+
 //java 8
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -16,6 +17,7 @@ import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
 import com.biomed.smarttrak.vo.InsightXRVO;
 import com.biomed.smarttrak.vo.UserVO;
+
 //SMT baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -23,14 +25,19 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.filter.fileupload.ProfileDocumentFileManagerStructureImpl;
+import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
+
 //WebCrescendo
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -44,16 +51,24 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class InsightAction extends AuthorAction {
+public class InsightAction extends ManagementAction {
 	protected static final String INSIGHT_ID = "insightId"; //req param
 	public static final String TITLE_BYPASS = "titleBypass"; //req param
+	
+	/**
+	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
+	 */
+	@Deprecated
 	public static final String ROOT_NODE_ID = AbstractTreeAction.MASTER_ROOT;
+	
+	public static final String INSIGHTS_DIRECTORY_PATH = "/featuredImage";
 	private Map<String, String> sortMapper;
 
 	protected enum Fields {
 		INSIGHT_ID, STATUS_CD, TYPE_CD, DATE_RANGE, START, RPP, SORT, ORDER,
-		SEARCH, ID_BYPASS, TITLE_BYPASS;
+		SEARCH, ID_BYPASS, TITLE_BYPASS, CREATOR_PROFILE_ID;
 	}
+
 
 	public InsightAction() {
 		super();
@@ -76,14 +91,34 @@ public class InsightAction extends AuthorAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("insight retrieve called");
-		
+		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+
 		if (req.hasParameter("loadData") || req.hasParameter(INSIGHT_ID) ) {
-			req.setParameter(TITLE_BYPASS, StringUtil.checkVal(true));
+			req.setParameter(TITLE_BYPASS, "true");
 			if (req.hasParameter(INSIGHT_ID)){
 				loadAuthors(req);
 			}
 			loadInsightsData(req);
 		}
+
+		setupAttributes(modVo);
+		setAttribute(Constants.MODULE_DATA, modVo);
+	}
+
+	/**
+	 * sets a file upload token to the class
+	 * @param modVo
+	 */
+	public void setupAttributes(ModuleVO modVo) {
+		String fileToken = null;
+		try {
+			fileToken = ProfileDocumentFileManagerStructureImpl.makeDocToken((String)getAttribute(Constants.ENCRYPT_KEY));
+		} catch (EncryptionException e) {
+			log.error("could not generate fileToken", e);
+		}
+		modVo.setAttribute("filePrefix", INSIGHTS_DIRECTORY_PATH);
+		modVo.setAttribute(ProfileDocumentFileManagerStructureImpl.DOC_TOKEN, fileToken );
+		log.debug("set doc token: " + fileToken);
 	}
 
 	/**
@@ -102,6 +137,8 @@ public class InsightAction extends AuthorAction {
 		if (req.hasParameter("typeCd")) insightParamsMap.put(Fields.TYPE_CD, req.getParameter("typeCd"));
 		if (req.hasParameter("dateRange")) insightParamsMap.put(Fields.DATE_RANGE, req.getParameter("dateRange"));
 		if (req.hasParameter(TITLE_BYPASS)) insightParamsMap.put(Fields.TITLE_BYPASS, req.getParameter(TITLE_BYPASS));
+		if (req.hasParameter("authorId")) insightParamsMap.put(Fields.CREATOR_PROFILE_ID, req.getParameter("authorId"));
+		log.debug(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
 		insightParamsMap.put(Fields.START, req.getParameter("offset", "0"));
 		insightParamsMap.put(Fields.RPP, req.getParameter("limit","10"));
 		insightParamsMap.put(Fields.SORT, StringUtil.checkVal(sortMapper.get(req.getParameter("sort")), "publish_dt"));
@@ -109,12 +146,8 @@ public class InsightAction extends AuthorAction {
 		insightParamsMap.put(Fields.SEARCH, StringUtil.checkVal(req.getParameter("search")).toUpperCase());
 		insightParamsMap.put(Fields.ID_BYPASS, "false");
 
-		List<Object> insights;
-		
-		insights = getInsights(insightParamsMap);
-
+		List<Object> insights = getInsights(insightParamsMap);
 		decryptNames(insights);
-
 		Long count = getCount(insightParamsMap);
 
 		log.debug(" total count is: " + count);
@@ -126,8 +159,7 @@ public class InsightAction extends AuthorAction {
 	 * @return
 	 */
 	private long getCount(EnumMap<Fields, String> insightParamsMap) {
-		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatCountQuery(insightParamsMap, schema);
+		String sql = formatCountQuery(insightParamsMap, customDbSchema);
 
 		//remove the sort and order fields so the total rows count is accurate
 		insightParamsMap.remove(Fields.RPP);
@@ -136,12 +168,10 @@ public class InsightAction extends AuthorAction {
 		insightParamsMap.remove(Fields.ORDER);
 
 		List<Object> params = loadSqlParams(insightParamsMap);
-
-		DBProcessor db = new DBProcessor(dbConn, schema);
-
+		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 		List<Object> insights = db.executeSelect(sql, params, new InsightVO());
 
-		if (!insights.isEmpty()){
+		if (!insights.isEmpty()) {
 			InsightVO ivo = (InsightVO) insights.get(0);
 			return ivo.getCountNumber();
 		} else {
@@ -155,15 +185,10 @@ public class InsightAction extends AuthorAction {
 	 * @return
 	 */
 	private String formatCountQuery(EnumMap<Fields, String> insightParamsMap, String schema) {
-
 		StringBuilder sql = new StringBuilder(400);
-
 		generateSelectCountQuery(sql, schema);
-
 		generateJoinSectionOfQuery(sql, schema, insightParamsMap);
-
 		generateWhereClauseOfQuery(sql, insightParamsMap );
-
 		return sql.toString();
 	}
 
@@ -187,7 +212,6 @@ public class InsightAction extends AuthorAction {
 	 * @return
 	 */
 	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
-
 		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
 		if (!StringUtil.isEmpty(insightId)) insightParamsMap.put(Fields.INSIGHT_ID, insightId );
 		if (!StringUtil.isEmpty(statusCd)) insightParamsMap.put(Fields.STATUS_CD, statusCd);
@@ -200,7 +224,7 @@ public class InsightAction extends AuthorAction {
 
 		return getInsights (insightParamsMap);
 	}
-	
+
 	/**
 	 * used to pull back a list of insights based on the codes and types. sets a id bypass to true
 	 * and will return all the insight data for each insight in the list, if you do not require 
@@ -212,7 +236,6 @@ public class InsightAction extends AuthorAction {
 	 * @return
 	 */
 	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange, boolean idBypass) {
-
 		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
 		if (!StringUtil.isEmpty(insightId)) insightParamsMap.put(Fields.INSIGHT_ID, insightId );
 		if (!StringUtil.isEmpty(statusCd)) insightParamsMap.put(Fields.STATUS_CD, statusCd);
@@ -223,7 +246,7 @@ public class InsightAction extends AuthorAction {
 		insightParamsMap.put(Fields.SORT, StringUtil.checkVal("publish_dt"));
 		insightParamsMap.put(Fields.ORDER, StringUtil.checkVal("desc"));
 
-		return getInsights (insightParamsMap);
+		return getInsights(insightParamsMap);
 	}
 
 	/**
@@ -237,34 +260,39 @@ public class InsightAction extends AuthorAction {
 	@SuppressWarnings("unchecked")
 	public List<Object> getInsights(Map<Fields, String> insightParamsMap) {
 		boolean tb = insightParamsMap.containsKey(Fields.TITLE_BYPASS) && Convert.formatBoolean(insightParamsMap.get(Fields.TITLE_BYPASS));
-		
+
 		Map<String, String> authorTitles = new HashMap<>();
 		if (!tb){
 			//Load Authors.
 			authorTitles = loadAuthorTitles();
 		}
 
-			
-		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatRetrieveQuery(insightParamsMap, schema);
-
+		String sql = formatRetrieveQuery(insightParamsMap, customDbSchema);
 		List<Object> params = loadSqlParams(insightParamsMap);
-
-		DBProcessor db = new DBProcessor(dbConn, schema);
+		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
 
-		
-		for (Object ob : insights){
+		for (Object ob : insights) {
 			InsightVO vo = (InsightVO)ob;
 			vo.setQsPath((String)getAttribute(Constants.QS_PATH));
 			if(!tb && authorTitles.containsKey(vo.getCreatorProfileId())) {
 				vo.setCreatorTitle(authorTitles.get(vo.getCreatorProfileId()));
 			}
-			
+
+			ProfileDocumentAction pda = new ProfileDocumentAction();
+			pda.setAttributes(attributes);
+			pda.setDBConnection(dbConn);
+			pda.setActionInit(actionInit);
+
+			try {
+				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getInsightId()));
+				log.debug(" doc size " + vo.getProfileDocuments().size());
+			} catch (ActionException e) {
+				log.error("error loading profile documents",e);
+			}
 		}
 
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
-
 		return insights;
 	}
 
@@ -274,15 +302,14 @@ public class InsightAction extends AuthorAction {
 	 */
 	private List<Object> loadSqlParams(Map<Fields, String> insightParamsMap) {
 		List<Object> params = new ArrayList<>();
-
 		if (insightParamsMap.containsKey(Fields.INSIGHT_ID)) params.add(insightParamsMap.get(Fields.INSIGHT_ID));
 		if (insightParamsMap.containsKey(Fields.STATUS_CD)) params.add(insightParamsMap.get(Fields.STATUS_CD));
 		if (insightParamsMap.containsKey(Fields.TYPE_CD)) params.add(Convert.formatInteger(insightParamsMap.get(Fields.TYPE_CD)));
-
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.SEARCH)))
 			params.add(StringUtil.checkVal("%"+insightParamsMap.get(Fields.SEARCH)+"%"));
-
-		if (insightParamsMap.containsKey(Fields.RPP) && insightParamsMap.containsKey(Fields.START)){
+		if (insightParamsMap.containsKey(Fields.CREATOR_PROFILE_ID)) 
+			params.add(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
+		if (insightParamsMap.containsKey(Fields.RPP) && Convert.formatInteger(insightParamsMap.get(Fields.RPP)) > 0 && insightParamsMap.containsKey(Fields.START)) {
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.RPP)));
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.START)));
 		}
@@ -320,7 +347,7 @@ public class InsightAction extends AuthorAction {
 
 		sql.append("order by ").append(insightParamsMap.get(Fields.SORT)).append(" ").append(insightParamsMap.get(Fields.ORDER));
 
-		if (insightParamsMap.containsKey(Fields.RPP) && insightParamsMap.containsKey(Fields.START)){
+		if (insightParamsMap.containsKey(Fields.RPP) && Convert.formatInteger(insightParamsMap.get(Fields.RPP)) > 0 && insightParamsMap.containsKey(Fields.START)){
 			sql.append(" limit ? offset ? ");
 		}
 	}
@@ -359,6 +386,9 @@ public class InsightAction extends AuthorAction {
 
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.SEARCH)))
 			sql.append("and upper(title_txt) like ? "); 
+
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.CREATOR_PROFILE_ID)))
+			sql.append("and a.creator_profile_id=? ");
 	}
 
 	/**
@@ -451,41 +481,84 @@ public class InsightAction extends AuthorAction {
 	 * @throws ActionException
 	 */
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
-		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		DBProcessor db = new DBProcessor(dbConn, (String)customDbSchema);
 		InsightVO ivo = new InsightVO(req);
 		populateAuthorData(req, ivo);
 
-		try {
-			if (isDelete) {
-				/*
-				 * Insights rely on status to determine deleting status.  They
-				 * are deleted from Solr, however the database record is simple
-				 * flagged InstightStatusCd.D
-				 */
-				log.debug("deleting " + ivo);
-				ivo.setStatusCd(InsightVO.InsightStatusCd.D.name());
+		if (isDelete) {
+			/*
+			 * Insights rely on status to determine deleting status.  They
+			 * are deleted from Solr, however the database record is simple
+			 * flagged InstightStatusCd.D
+			 */
+			log.debug("deleting " + ivo);
+			ivo.setStatusCd(InsightVO.InsightStatusCd.D.name());
+			updateStatus(db, ivo);
+			publishChangeToSolr(ivo);
 
-				updateStatus(db, ivo);
-
-				publishChangeToSolr(ivo);
-
+		} else {
+			if (req.hasParameter("listSave")) {
+				updateFeatureOrder(ivo, db);
+				//fill the vo up with the rest of the data so there is something to push to solr
+				ivo = loadInsight(ivo);
 			} else {
-
-				if (req.hasParameter("listSave")){
-					updateFeatureOrder(ivo, db);
-					//fill the vo up with the rest of the data so there is something to push to solr
-					ivo = loadInsight(ivo);
-				}else {
-					saveInsight(db, ivo);
-				}
-				
-				publishChangeToSolr(ivo);
+				saveInsight(db, ivo);
+				saveProfileDoc(req, ivo);
 			}
-			req.setParameter(INSIGHT_ID, ivo.getInsightId());
-		} catch (Exception e) {
-			throw new ActionException(e);
+			publishChangeToSolr(ivo);
+		}
+
+		req.setParameter(INSIGHT_ID, ivo.getInsightId());
+	}
+
+	/**
+	 * if there is a profile doc on the insight saves it
+	 * @param ivo 
+	 * @param req 
+	 */
+	private void saveProfileDoc(ActionRequest req, InsightVO ivo) {
+
+		if (StringUtil.isEmpty(ivo.getFeaturedImageTxt())) return;
+
+		SMTSession ses = req.getSession();
+		UserVO user = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		log.debug("user id = " + user.getUserId());
+		ivo.setUserId(user.getUserId());
+
+		processProfileDocumentCreation(ivo, req, user.getProfileId());
+
+	}
+
+	/**
+	 * this method will make and save a profile document entry for the new insight.
+	 * @param vo
+	 * @param req
+	 * @param profileId 
+	 */
+	protected void processProfileDocumentCreation(InsightVO vo, ActionRequest req, String profileId) {
+		log.debug("process profile document creation called ");
+		ProfileDocumentAction pda = new ProfileDocumentAction();
+		pda.setAttributes(attributes);
+		pda.setDBConnection(dbConn);
+		pda.setActionInit(actionInit);
+
+		String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
+
+		req.setParameter("profileId", profileId);
+		req.setParameter("featureId", vo.getInsightId());
+		req.setParameter("organizationId", orgId);
+		req.setParameter("actionId", actionInit.getActionId());
+
+		try {
+			//deletes all records and files related to this featured id
+			pda.deleteByFeaturedId(vo.getInsightId(), orgId);
+			//adds the new record and file
+			pda.build(req);
+		} catch (ActionException e) {
+			log.error("error occured during profile document generation " , e);
 		}
 	}
+
 
 	/**
 	 * Helper method loads Author Data.  Slightly Different for one case, we can
@@ -511,11 +584,12 @@ public class InsightAction extends AuthorAction {
 	 */
 	private InsightVO loadInsight(InsightVO ivo) {
 		List<Object> insights = getInsights(ivo.getInsightId(), null, null, null);
-		if(!insights.isEmpty()) ivo = (InsightVO) insights.get(0);
-		
+		if (!insights.isEmpty()) 
+			return (InsightVO) insights.get(0);
+
 		return ivo;
 	}
-	
+
 	/**
 	 * write to or removes from solr based on status code
 	 * @param ivo
@@ -539,9 +613,9 @@ public class InsightAction extends AuthorAction {
 	 * @param u
 	 */
 	protected void writeToSolr(InsightVO ivo) {
-		BiomedInsightIndexer bindx = BiomedInsightIndexer.makeInstance(getAttributes());
-		bindx.setDBConnection(dbConn);
-		bindx.addSingleItem(ivo.getInsightId());
+		BiomedInsightIndexer indexer = BiomedInsightIndexer.makeInstance(getAttributes());
+		indexer.setDBConnection(dbConn);
+		indexer.addSingleItem(ivo.getInsightId());
 	}
 
 	/**
@@ -564,20 +638,21 @@ public class InsightAction extends AuthorAction {
 	 * @throws Exception 
 	 * 
 	 */
-	private void saveInsight(DBProcessor db, InsightVO ivo) throws Exception {
-		db.save(ivo);
+	private void saveInsight(DBProcessor db, InsightVO ivo) throws ActionException {
+		try {
+			db.save(ivo);
+			setInsightIdOnInsert(ivo, db);
+			saveSections(ivo);
 
-		setInsightIdOnInsert(ivo, db);
-
-		//Save Insight Sections.
-		saveSections(ivo);
-
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
 	}
 
 	private void updateStatus(DBProcessor db, InsightVO ivo) throws ActionException {
 		log.debug("updating status code on insight");
 		StringBuilder sql = new StringBuilder(50);
-		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
+		sql.append("update ").append(customDbSchema).append("biomedgps_insight ");
 		sql.append("set status_cd = ? ");
 		sql.append("where insight_id = ? ");
 
@@ -603,7 +678,7 @@ public class InsightAction extends AuthorAction {
 	private void updateFeatureOrder(InsightVO ivo, DBProcessor db) throws ActionException {
 		log.debug("update featured ordered no");
 		StringBuilder sb = new StringBuilder(50);
-		sb.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
+		sb.append("update ").append(customDbSchema).append("biomedgps_insight ");
 		sb.append("set featured_flg= ?, order_no = ? ");
 		sb.append("where insight_id = ? ");
 
@@ -622,21 +697,21 @@ public class InsightAction extends AuthorAction {
 		}
 	}
 
+
 	/**
 	 * sets the new insight vo on insert
 	 * @param db 
 	 * @param u 
 	 */
 	private void setInsightIdOnInsert(InsightVO ivo, DBProcessor db) {
-
-		if(StringUtil.isEmpty(ivo.getInsightId())) {
+		if (StringUtil.isEmpty(ivo.getInsightId())) {
 			ivo.setInsightId(db.getGeneratedPKId());
 			for(InsightXRVO uxr : ivo.getInsightSections()) {
 				uxr.setInsightId(ivo.getInsightId());
 			}
 		}
-
 	}
+
 
 	/**
 	 * Delete old Insight Sections and save new ones.
@@ -646,13 +721,11 @@ public class InsightAction extends AuthorAction {
 	 * @throws DatabaseException
 	 */
 	protected void saveSections(InsightVO ivo) throws Exception {
-
 		//Delete old Insight Section XRs
 		deleteSections(ivo.getInsightId());
 
-		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-
 		//Save new Sections.
+		DBProcessor db = new DBProcessor(dbConn, (String)customDbSchema);
 		for(InsightXRVO uxr : ivo.getInsightSections()) {
 			db.save(uxr);
 		}
@@ -665,7 +738,7 @@ public class InsightAction extends AuthorAction {
 	 */
 	protected void deleteSections(String insightId) throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("delete from ").append(customDbSchema);
 		sql.append("biomedgps_insight_section where insight_id = ?");
 
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -680,21 +753,10 @@ public class InsightAction extends AuthorAction {
 	 * Load the Section Tree so that Hierarchies can be generated.
 	 * @param req
 	 * @throws ActionException
+	 * @deprecated - call the loadDefaultTree method directly.
 	 */
+	@Deprecated
 	public SmarttrakTree loadSections() {
-		//load the section hierarchy Tree from superclass
-		SmarttrakTree t = loadDefaultTree();
-
-		//Generate the Node Paths using Node Names.
-		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
-		return t;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
-	 */
-	@Override
-	public String getCacheKey() {
-		return null;
+		return super.loadDefaultTree();
 	}
 }

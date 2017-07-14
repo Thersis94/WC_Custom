@@ -17,21 +17,24 @@ public class GapColumnVO {
 
 	private List<GapColumnVO> columns;
 	private String name;
+	private String fullName;
 	private String id;
 	private boolean selected;
 	private int rowSpan = 1;
 	private int colSpan = 1;
 	private int colGroupNo;
-
+	private String sectionId;
 	/**
 	 * @param altCol
 	 * @param nodeId
 	 * @param nodeName
 	 */
-	public GapColumnVO(int colGroupNo, String nodeId, String nodeName) {
+	public GapColumnVO(String sectionId, int colGroupNo, String nodeId, String nodeName, String fullName) {
+		this.sectionId = sectionId;
 		this.id = nodeId;
 		this.name = nodeName;
 		this.colGroupNo = colGroupNo;
+		this.fullName = fullName;
 	}
 
 	/**
@@ -40,8 +43,13 @@ public class GapColumnVO {
 	 * @param nodeName
 	 * @param colSpan
 	 */
-	public GapColumnVO(int colGroupNo, String nodeId, String nodeName, int colSpan) {
-		this(colGroupNo, nodeId, nodeName);
+	public GapColumnVO(String sectionId, int colGroupNo, String nodeId, String nodeName, int colSpan, String fullName) {
+		this(sectionId, colGroupNo, nodeId, nodeName, fullName);
+		this.colSpan = colSpan;
+	}
+
+	public GapColumnVO(String sectionId, int colGroupNo, String nodeId, String nodeName, int colSpan) {
+		this(sectionId, colGroupNo, nodeId, nodeName, null);
 		this.colSpan = colSpan;
 	}
 
@@ -52,8 +60,13 @@ public class GapColumnVO {
 	 * @param colSpan
 	 * @param rowSpan
 	 */
-	public GapColumnVO(int colGroupNo, String nodeId, String nodeName, int colSpan, int rowSpan) {
-		this(colGroupNo, nodeId, nodeName, colSpan);
+	public GapColumnVO(String sectionId, int colGroupNo, String nodeId, String nodeName, int colSpan, int rowSpan) {
+		this(sectionId, colGroupNo, nodeId, nodeName, colSpan, null);
+		this.rowSpan = rowSpan;
+	}
+	
+	public GapColumnVO(String sectionId, int colGroupNo, String nodeId, String nodeName, int colSpan, int rowSpan, String fullName) {
+		this(sectionId, colGroupNo, nodeId, nodeName, colSpan, fullName);
 		this.rowSpan = rowSpan;
 	}
 
@@ -153,5 +166,21 @@ public class GapColumnVO {
 	 */
 	public boolean isSelected() {
 		return this.selected;
+	}
+
+	public String getFullName() {
+		return fullName;
+	}
+
+	public void setFullName(String fullName) {
+		this.fullName = fullName;
+	}
+
+	public String getSectionId() {
+		return sectionId;
+	}
+
+	public void setSectionId(String sectionId) {
+		this.sectionId = sectionId;
 	}
 }

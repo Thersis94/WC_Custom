@@ -14,14 +14,18 @@ import com.biomed.smarttrak.vo.TicketEmailVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
 
@@ -224,8 +228,8 @@ public class BiomedSupportEmailUtil {
 	protected List<AccountVO> getAdminEmails() throws EncryptionException {
 
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.email_address_txt as owner_email_addr, a.first_nm, a.last_nm, a.profile_id as owner_profile_id from profile a ");
-		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=?");
+		sql.append("select newid() as account_id, a.email_address_txt as owner_email_addr, a.first_nm, a.last_nm, a.profile_id as owner_profile_id from profile a ");
+		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=? ");
 		sql.append("and b.site_id=? and b.role_id=?");
 		log.debug(sql);
 
@@ -358,9 +362,49 @@ public class BiomedSupportEmailUtil {
 		if(!StringUtil.isEmpty(t.getReporterEmail())) {
 			recipients.put(t.getReporterId(), t.getReporterEmail());
 		}
-
+		
+		String ccAddresses = (String) attributes.get("ccAddresses");
+		if (!StringUtil.isEmpty(ccAddresses)) {
+			addCCRecipients(recipients, ccAddresses);
+		}
+		
 		return recipients;
 	}
+
+	
+	/**
+	 * Loop through the supplied cc addresses and get their profile id.
+	 * If they don't exist create a profile for them.
+	 * @param recipients
+	 * @param ccAddresses
+	 */
+	private void addCCRecipients(Map<String, String> recipients, String ccAddresses) {
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		List<UserDataVO> users = new ArrayList<>();
+		for (String address : ccAddresses.split(",")) {
+			try {
+				Map<String, String> searchMap = new HashMap<>();
+				searchMap.put("EMAIL_ADDRESS_TXT", address.trim());
+				List<UserDataVO> search = pm.searchProfile(dbConn, searchMap);
+			
+				if (search.isEmpty()) {
+					UserDataVO user = new UserDataVO();
+					user.setEmailAddress(address);
+					pm.updateProfile(user, dbConn);
+					users.add(user);
+				} else {
+					users.addAll(search);
+				}
+			} catch (DatabaseException e) {
+				log.error("Failed to add email address: " + address, e);
+			}
+		}
+		
+		for (UserDataVO user : users) {
+			recipients.put(user.getProfileId(), user.getEmailAddress());
+		}
+	}
+
 
 	/**
 	 * Helper method builds an email to the Requester containing message from

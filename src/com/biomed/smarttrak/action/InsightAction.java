@@ -9,22 +9,27 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 //WC customs
-import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.UserVO;
+
 //SMT Baselibs
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.DirectoryParser;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
+
 //WebCrescendo
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
@@ -48,7 +53,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 16, 2017
  ****************************************************************************/
-public class InsightAction extends AbstractTreeAction {
+public class InsightAction extends SimpleActionAdapter {
 	private static final String REQ_PARAM_1 = DirectoryParser.PARAMETER_PREFIX + "1";
 
 
@@ -58,7 +63,6 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-
 		// setting pmid for solr action check
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -70,10 +74,11 @@ public class InsightAction extends AbstractTreeAction {
 		sa.setAttributes(attributes);
 
 		if (req.hasParameter(REQ_PARAM_1)) {
-
+			// Public users can get a preview of the insights. Registered users need to confirm permissions.
+			PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
+			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 			
-			// Public users can get a preview of the insights. Registered users need to confirm permissions.
 			if (role == null) {
 				StringBuilder url = new StringBuilder(150);
 				url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
@@ -82,9 +87,7 @@ public class InsightAction extends AbstractTreeAction {
 			}
 
 			InsightVO vo = getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
-
 			if (vo == null) {
-				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				sbUtil.manualRedirect(req, page.getFullPath());
 				return;
 			}
@@ -94,9 +97,6 @@ public class InsightAction extends AbstractTreeAction {
 			// after the vo is build set the hierarchies and check authorization
 			vo.configureSolrHierarchies(loadSections());
 			SecurityController.getInstance(req).isUserAuthorized(vo, req);
-
-			PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
-			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 			page.setTitleName(vo.getTitleTxt() + " | " + site.getSiteName());
 
 			overrideSolrRequest(sa, vo, req);
@@ -105,14 +105,30 @@ public class InsightAction extends AbstractTreeAction {
 			transposeModData(mod, vo);
 
 		} else {
-			/*
-			 * transform some incoming reqParams to where Solr expects to see
-			 * them
-			 */
 			transposeRequest(req);
-
 			sa.retrieve(req);
+			mod = (ModuleVO) sa.getAttribute(Constants.MODULE_DATA);
+			sortFacets(mod.getActionData(), req);
 		}
+	}
+
+
+	/**
+	 * filter the faceted data based on the market sections the user is authorized to view.
+	 * leverage UpdatesAction here, which is reusable code that does the same thing.
+	 * @param actionData
+	 * @return
+	 */
+	private void sortFacets(Object actionData, ActionRequest req) {
+		SolrResponseVO resp = (SolrResponseVO) actionData;
+		if (resp == null || resp.getFacets() == null || resp.getFacetByName("hierarchy") == null) return;
+
+		ActionInitVO actionInit = new ActionInitVO(null, null, "SMARTRAK_INSIGHT_HIERARCHY");
+		UpdatesAction ia = new UpdatesAction(actionInit);
+		ia.setAttributes(getAttributes());
+		ia.setDBConnection(getDBConnection());
+		List<Node> sections = ia.loadSections(req);
+		ia.sortFacets(sections, resp);
 	}
 
 
@@ -129,7 +145,6 @@ public class InsightAction extends AbstractTreeAction {
 
 		// place insight vo data on req.
 		putModuleData(vo);
-
 	}
 
 
@@ -143,8 +158,7 @@ public class InsightAction extends AbstractTreeAction {
 	 * @throws ActionException
 	 */
 	private void overrideSolrRequest(SolrAction sa, InsightVO vo, ActionRequest req) throws ActionException {
-		// use the set up the custom query to get back top five of the same
-		// type.
+		// use the set up the custom query to get back top five of the same type.
 		req.setParameter("rpp", "5");
 		req.setParameter("fieldSort", "publish_dt", true);
 		req.setParameter("sortDirection", ORDER.desc.toString(), true);
@@ -154,8 +168,7 @@ public class InsightAction extends AbstractTreeAction {
 		data.add(SearchDocumentHandler.MODULE_TYPE + ":" + vo.getTypeCd());
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 
-		// have to temp remove the req param so it doesn't get picked up as an
-		// document id request
+		// have to temp remove the req param so it doesn't get picked up as an document id request
 		req.setParameter(REQ_PARAM_1, "");
 		sa.retrieve(req);
 		req.setParameter(REQ_PARAM_1, vo.getInsightId());
@@ -175,9 +188,8 @@ public class InsightAction extends AbstractTreeAction {
 		aua.setDBConnection(dbConn);
 		aua.setAttributes(attributes);
 		List<Object> authors = aua.loadAccountUsers(req, ivo.getCreatorProfileId());
-		if(authors != null && !authors.isEmpty()) {
+		if (authors != null && !authors.isEmpty())
 			ivo.setCreatorTitle(((UserVO) authors.get(0)).getTitle());
-		}
 	}
 
 
@@ -187,19 +199,7 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		log.debug("insights list called");
 		super.retrieve(req);
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void update(ActionRequest req) throws ActionException {
-		log.debug("insights update called");
-		super.update(req);
 	}
 
 
@@ -251,18 +251,14 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	@SuppressWarnings("unchecked")
 	protected InsightVO getInsightById(String insightId) {
-		log.debug("start get insight by id");
-
 		String schema = (String) getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-
 		StringBuilder sb = new StringBuilder(350);
 		sb.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
 		sb.append("from ").append(schema).append("biomedgps_insight a ");
 		sb.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		sb.append("left outer join ").append(schema).append("biomedgps_insight_section b on a.insight_id=b.insight_id ");
 		sb.append("where a.insight_id = ? ");
-
-		log.debug("sql: " + sb.toString() + "|" + insightId);
+		log.debug("sql: " + sb + "|" + insightId);
 
 		List<Object> params = new ArrayList<>();
 		params.add(insightId);
@@ -271,9 +267,8 @@ public class InsightAction extends AbstractTreeAction {
 		List<Object> insight = db.executeSelect(sb.toString(), params, new InsightVO());
 		log.debug("loaded " + insight.size() + " insight");
 
-		if (insight.isEmpty()) {
+		if (insight.isEmpty())
 			return null;
-		}
 
 		for (Object vo : insight) {
 			InsightVO ivo = (InsightVO) vo;
@@ -292,21 +287,14 @@ public class InsightAction extends AbstractTreeAction {
 	 * @throws ActionException
 	 */
 	public SmarttrakTree loadSections() {
-		// load the section hierarchy Tree from superclass
-		SmarttrakTree t = loadDefaultTree();
+		// load the section hierarchy Tree from the hierarchy action
+		SectionHierarchyAction sha = new SectionHierarchyAction();
+		sha.setAttributes(getAttributes());
+		sha.setDBConnection(getDBConnection());
+		SmarttrakTree t = sha.loadDefaultTree();
 
 		// Generate the Node Paths using Node Names.
 		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
 		return t;
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
-	 */
-	@Override
-	public String getCacheKey() {
-		return null;
 	}
 }

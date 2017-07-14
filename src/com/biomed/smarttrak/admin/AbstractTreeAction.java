@@ -16,7 +16,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -48,30 +47,6 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 
 
 	/**
-	 * Helper method that writes an object to cache with the given parameters.
-	 * @param o
-	 * @param orgId
-	 * @param cacheGroups
-	 */
-	protected void writeToCache(Object o, String orgId, String... cacheGroups) {
-		//Use a new ModuleVO so as to prevent issues with cache.
-		ModuleVO mod = new ModuleVO();
-
-		mod.setActionData(o);
-		mod.setDataSize(0);
-		mod.setCacheable(true);
-		mod.setOrganizationId(orgId);
-
-		//Common Cache Group for Content Hierarchy Data.
-		mod.setCacheGroups(cacheGroups);
-		mod.setPageModuleId(getCacheKey());
-
-		//Write to Cache.
-		super.writeToCache(mod);
-	}
-
-
-	/**
 	 * Helper method that returns the Sql Query for retrieving Segments. 
 	 * @return
 	 */
@@ -90,7 +65,7 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<Node> getHierarchy(String... params) {
-		return loadHierarchy(new SectionVO().getClass(), params);
+		return loadHierarchy(SectionVO.class, params);
 	}
 
 
@@ -149,7 +124,7 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 	 * @return
 	 */
 	public SmarttrakTree loadTree(String sectionId, String... params) {
-		return loadTree(sectionId, new SectionVO().getClass(), params);
+		return loadTree(sectionId, SectionVO.class, params);
 	}
 
 

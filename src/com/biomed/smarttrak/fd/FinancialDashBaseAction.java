@@ -28,9 +28,9 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -154,21 +154,25 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Gets the hierarchy starting from the passed sectionId
+	 * 
+	 * @param sectionId
+	 * @return
+	 */
+	protected SmarttrakTree getHierarchy(String sectionId) {
+		SectionHierarchyAction sha = getHierarchyAction();
+		return sha.loadTree(sectionId);
+	}
+	
+	/**
 	 * Gets the hierarchy for the requested level
 	 * 
 	 * @param req
 	 * @return
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unchecked")
-	protected SmarttrakTree getHierarchy(ActionRequest req) throws ActionException {
-		SectionHierarchyAction sha = getHierarchyAction();
-		sha.retrieve(req);
-		
-		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		List<Node> sections = (List<Node>) mod.getActionData();
-		
-		return new SmarttrakTree(sections, sections.get(0));
+	protected SmarttrakTree getHierarchy(ActionRequest req) {
+		return getHierarchy(req.getParameter("sectionId"));
 	}
 	
 	/**
@@ -177,8 +181,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected SmarttrakTree getFullHierarchy() {
-		SectionHierarchyAction sha = getHierarchyAction();
-		return sha.loadTree(null);
+		return getHierarchy((String) null);
 	}
 	
 	/**
@@ -331,7 +334,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		if (dt == DisplayType.YOY || dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
 			sql.append(", sum(r3.Q1_NO) as Q1_2, sum(r3.Q2_NO) as Q2_2, sum(r3.Q3_NO) as Q3_2, sum(r3.Q4_NO) as Q4_2 ");
 		}
-		if (dt == DisplayType.FOURYR) {
+		if (dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
 			sql.append(", sum(r4.Q1_NO) as Q1_3, sum(r4.Q2_NO) as Q2_3, sum(r4.Q3_NO) as Q3_3, sum(r4.Q4_NO) as Q4_3 ");
 			sql.append(", sum(r5.Q1_NO) as Q1_4, sum(r5.Q2_NO) as Q2_4, sum(r5.Q3_NO) as Q3_4, sum(r5.Q4_NO) as Q4_4 "); // Needed to get percent change from prior year in the fourth year
 		}
@@ -358,7 +361,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		if (dt == DisplayType.YOY || dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
 			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r3 on r.COMPANY_ID = r3.COMPANY_ID and r.REGION_CD = r3.REGION_CD and r.SECTION_ID = r3.SECTION_ID and r.YEAR_NO - 2 = r3.YEAR_NO ");
 		}
-		if (dt == DisplayType.FOURYR) {
+		if (dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
 			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r4 on r.COMPANY_ID = r4.COMPANY_ID and r.REGION_CD = r4.REGION_CD and r.SECTION_ID = r4.SECTION_ID and r.YEAR_NO - 3 = r4.YEAR_NO ");
 			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r5 on r.COMPANY_ID = r5.COMPANY_ID and r.REGION_CD = r5.REGION_CD and r.SECTION_ID = r5.SECTION_ID and r.YEAR_NO - 4 = r5.YEAR_NO ");
 		}
@@ -423,14 +426,19 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			}
 		}
 		
-		sql.append("order by ROW_NM ");
+		sql.append("order by ROW_NM").append(dash.getEditMode() ? ", CASE r.REGION_CD WHEN 'US' THEN 1 WHEN 'EU' THEN 2 ELSE 3 END" : "");
 		
 		return sql;
 	}
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		super.build(req);
+		String actionPerform = StringUtil.checkVal(req.getParameter("actionPerform"));
+		if ("markCurrent".equals(actionPerform)) {
+			markCurrentQuarter(req);
+			return;
+		}
+		
 		this.updateData(req);
 	}
 	
@@ -576,5 +584,46 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		sql.append("where r.SECTION_ID = ? and r.YEAR_NO = ? and r.REGION_CD = ? and so.SCENARIO_ID = ? ");
 		
 		return sql.toString();
+	}
+	
+	/**
+	 * Marks the current quarter for the selected section and all sections
+	 * in the tree below it.
+	 * 
+	 * @param req
+	 */
+	protected void markCurrentQuarter(ActionRequest req) {
+		SectionHierarchyAction sha = getHierarchyAction();
+
+		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"));
+		int yr = Convert.formatInteger(req.getParameter("currentYr"));
+		int qtr = Convert.formatInteger(req.getParameter("currentQtr"));
+		
+		log.debug("Marking the current quarter for " + sectionId);
+		
+		// Gets the tree starting at the selected level
+		SmarttrakTree tree = getHierarchy(sectionId);
+		Node n = tree.getRootNode();
+		
+		// Mark sections(s) current
+		setSectionCurrent(sha, n, yr, qtr);
+	}
+	
+	/**
+	 * Marks a section current to the specified quarter
+	 * 
+	 * @param sha
+	 * @param n
+	 * @param yr
+	 * @param qtr
+	 */
+	private void setSectionCurrent(SectionHierarchyAction sha, Node n, int yr, int qtr) {
+		// Update the section to the specified quarter
+		sha.updateFdPublish(n.getNodeId(), yr, qtr);
+		
+		// Set children to the current quarter
+		for (Node child : n.getChildren()) {
+			setSectionCurrent(sha, child, yr, qtr);
+		}
 	}
 }

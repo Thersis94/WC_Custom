@@ -16,6 +16,7 @@ import com.biomed.smarttrak.vo.UpdateXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -37,7 +38,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class UpdatesAction extends AuthorAction {
+public class UpdatesAction extends ManagementAction {
 	public static final String UPDATE_ID = "updateId"; //req param
 	public static final String SORT = "sort"; //req param
 	public static final String ORDER = "order"; //req param
@@ -45,12 +46,19 @@ public class UpdatesAction extends AuthorAction {
 	public static final String STATUS_CD = "statusCd"; //req param
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
-	public static final String ROOT_NODE_ID = MASTER_ROOT;
+	private static final String SECTION_ID = "filterSectionId[]";
+
+	/**
+	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
+	 */
+	@Deprecated
+	public static final String ROOT_NODE_ID = SectionHierarchyAction.MASTER_ROOT;
+
 	public static final int INIT_DISPLAY_LIMIT = 15; //initial display limit
 
 	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
 	public static final String UPDATE_TYPE_CD = "updates";
-	
+
 	public enum UpdateType {
 		MARKET(12, "Market"),
 		REVENUES(15, "Revenues"),
@@ -116,14 +124,16 @@ public class UpdatesAction extends AuthorAction {
 
 		decryptNames(data);
 
+		addProductCompanyData(data);
+
 		if(count > 0) {
 			putModuleData(data, count, false);
 		} else {
 			putModuleData(data);
 		}
-		
+
 		//when an add/edit form, load list of BiomedGPS Staff for the "Author" drop-down
-		if (req.getParameter("updateId") != null)
+		if (req.hasParameter(UPDATE_ID))
 			loadAuthors(req);
 	}
 
@@ -140,16 +150,20 @@ public class UpdatesAction extends AuthorAction {
 		if (rpp == 0) {//this is initial page load, set default for display listing  
 			rpp = INIT_DISPLAY_LIMIT;
 		}
-		Map<String, String> reqParams = getReqParams(req);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
-		String sql = formatRetrieveQuery(reqParams, schema, req.hasParameter("loadData"));
+		String sql = formatRetrieveQuery(req, schema, req.hasParameter("loadData"), false);
 
 		List<Object> params = new ArrayList<>();
-		if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) params.add(reqParams.get(UPDATE_ID));
-		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) params.add(reqParams.get(STATUS_CD));
-		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) params.add(Convert.formatInteger((String)reqParams.get(TYPE_CD)));
-		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) params.add("%" + reqParams.get(SEARCH).toLowerCase() + "%");
+		if (req.hasParameter(UPDATE_ID)) params.add(req.getParameter(UPDATE_ID));
+		if (req.hasParameter(STATUS_CD)) params.add(req.getParameter(STATUS_CD));
+		if (req.hasParameter(TYPE_CD)) params.add(Convert.formatInteger(req.getParameter(TYPE_CD)));
+		if (req.hasParameter(SEARCH)) params.add("%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%");
+		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
+		if (sectionIds != null) { //restrict to certain sections only
+			for (String s : sectionIds)
+				params.add(s);
+		}
 		params.add(rpp);
 		params.add(start);
 
@@ -157,38 +171,21 @@ public class UpdatesAction extends AuthorAction {
 		return db.executeSelect(sql, params, new UpdateVO());
 	}
 
+
 	/**
-	 * Helper method that extracts Params off the Request.
-	 * @param req
+	 * Retrieve all the updates - called by the Solr OOB indexer
+	 * @param updateId
+	 * @param statusCd
+	 * @param typeCd
+	 * @param dateRange
 	 * @return
 	 */
-	private Map<String, String> getReqParams(ActionRequest req) {
-		Map<String, String> reqParams = new HashMap<>();
-
-		reqParams.put(UPDATE_ID, req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null);
-		reqParams.put(SORT, StringUtil.checkVal(sortMapper.get(req.getParameter(SORT)), "publish_dt"));
-		reqParams.put(ORDER, StringUtil.checkVal(req.getParameter(ORDER), "asc"));
-		reqParams.put(SEARCH, StringUtil.checkVal(req.getParameter(SEARCH)).toUpperCase());
-		reqParams.put(STATUS_CD, req.getParameter(STATUS_CD));
-		reqParams.put(TYPE_CD, req.getParameter(TYPE_CD));
-		reqParams.put(DATE_RANGE, req.getParameter(DATE_RANGE));
-		return reqParams;
-	}
-
-	/**
-	* Retrieve all the updates
-	* @param updateId
-	* @param statusCd
-	* @param typeCd
-	* @param dateRange
-	* @return
-	*/
 	public List<Object> getAllUpdates(String updateId) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String sql = formatRetrieveAllQuery(schema, updateId);
 
 		List<Object> params = new ArrayList<>();
-		if(!StringUtil.isEmpty(updateId)) params.add(updateId);
+		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
@@ -197,22 +194,58 @@ public class UpdatesAction extends AuthorAction {
 	}
 
 	/**
+	 * takes the current list of updates and adds the company information to any product updates
+	 * @param updates
+	 *TODO change query to "in (1,2,3)" instead of looping outside the query - Zoho SC-232
+	 */
+	private void addProductCompanyData(List<Object> updates) {
+		log.debug("adding company short name and id ");
+		for (Object ob : updates) {
+			//loops all the updates and see if they have a product id
+			UpdateVO vo = (UpdateVO) ob;
+
+			if (StringUtil.isEmpty(vo.getProductId())) continue;
+
+			StringBuilder sb = new StringBuilder(161);
+			sb.append("select c.company_id, c.short_nm_txt from ").append(customDbSchema).append("biomedgps_product p ");
+			sb.append(INNER_JOIN).append(customDbSchema).append("biomedgps_company c on p.company_id = c.company_id ");
+			sb.append("where p.product_id=?");
+
+			try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
+				ps.setString(1, vo.getProductId());
+				ResultSet rs = ps.executeQuery();
+				if (rs.next()) {
+					vo.setCompanyId(rs.getString(1));
+					vo.setCompanyNm(rs.getString(2));
+				}
+			} catch(SQLException sqle) {
+				log.error("could not confirm security by id ", sqle);
+			}
+		}
+	}
+
+	/**
 	 * Generates Query for getting all records/single record.  Used by Solr Indexer.
+	 * Note: This query closely compliments what we use in UpdatesScheduledAction (for a real-time load of Updates)
 	 * @param updateId
 	 * @param schema
 	 * @return
 	 */
-	public static String formatRetrieveAllQuery(String schema, String updateId) {
+	protected String formatRetrieveAllQuery(String schema, String updateId) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id, b.update_section_xr_id ");
-		sql.append("from ").append(schema).append("biomedgps_update a ");
-		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
-		sql.append("on a.update_id=b.update_id ");
-		if(!StringUtil.isEmpty(updateId)) {
-			sql.append("where a.update_id = ? ");
-		}
-		sql.append("order by a.create_dt");
+		sql.append("select up.update_id, up.title_txt, up.message_txt, up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
+		sql.append("c.short_nm_txt as company_nm, prod.short_nm as product_nm, ");
+		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
+		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, ");
+		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path "); //need to pass this through for building URLs
+		sql.append("from ").append(schema).append("biomedgps_update up ");
+		sql.append("inner join profile p on up.creator_profile_id=p.profile_id ");
+		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section us on up.update_id=us.update_id ");
+		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
+		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (up.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
+		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
+		if (!StringUtil.isEmpty(updateId))
+			sql.append("where up.update_id = ? ");
 
 		log.debug(sql);
 		return sql.toString();
@@ -225,25 +258,27 @@ public class UpdatesAction extends AuthorAction {
 	 * @return
 	 */
 	protected int getUpdateCount(ActionRequest req, String schema) {
-		int count = 0;
-		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
-
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select count(*) from ").append(schema).append("biomedgps_update ");
-		if (search.length() > 0) sql.append("where upper(title_txt) like ? ");
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			if (search.length() > 0) {
-				ps.setString(1, "%" + search + "%");
+		String sql = formatRetrieveQuery(req, schema, true, true);
+		int i = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			if (req.hasParameter(UPDATE_ID)) ps.setString(++i, req.getParameter(UPDATE_ID));
+			if (req.hasParameter(STATUS_CD)) ps.setString(++i, req.getParameter(STATUS_CD));
+			if (req.hasParameter(TYPE_CD)) ps.setInt(++i, Convert.formatInteger(req.getParameter(TYPE_CD)));
+			if (req.hasParameter(SEARCH))  ps.setString(++i, "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%");
+			String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
+			if (sectionIds != null) { //restrict to certain sections only
+				for (String s : sectionIds)
+					ps.setString(++i, s);
 			}
 
 			ResultSet rs = ps.executeQuery();
-			rs.next();
-			count = rs.getInt(1);
+			if (rs.next()) 
+				return rs.getInt(1);
+
 		} catch (SQLException e) {
 			log.error(e);
 		}
-		return count;
+		return 0;
 	}
 
 	/**
@@ -285,52 +320,104 @@ public class UpdatesAction extends AuthorAction {
 	 * Formats the Update retrieval query.
 	 * @return
 	 */
-	public static String formatRetrieveQuery(Map<String, String> reqParams, String schema, boolean isList) {
+	public String formatRetrieveQuery(ActionRequest req, String schema, boolean isList, boolean isCount) {
 		StringBuilder sql = new StringBuilder(800);
-		sql.append("select a.*, p.first_nm, p.last_nm, ");
+		sql.append(buildSelectClause(isList, isCount));
+		sql.append(buildFromClause(isList, schema));
+		sql.append(buildWhereClause(req));
 
-		if(isList) {
-			sql.append("s.wc_sync_id ");
-		} else {
-			sql.append("m.market_nm, c.company_nm, pr.product_nm, b.section_id, b.update_section_xr_id ");
+		if (!isCount) {
+			sql.append("order by ").append(StringUtil.checkVal(sortMapper.get(req.getParameter(SORT)), "publish_dt"));
+			sql.append(" ").append(StringUtil.checkVal(req.getParameter(ORDER), "asc"));
+			sql.append(", create_dt desc limit ? offset ? ");
 		}
-
-		sql.append("from ").append(schema).append("biomedgps_update a ");
-		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		if(isList) {
-			sql.append("left outer join (select wc_sync_id, wc_key_id, row_number() ");
-			sql.append("over (partition by wc_key_id order by create_dt) as rn from wc_sync) s ");
-			sql.append("on s.wc_key_id = a.update_id and s.rn = 1 ");
-		} else {
-			sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
-			sql.append("on a.update_id=b.update_id ");
-			sql.append("left outer join ").append(schema).append("biomedgps_market m ");
-			sql.append("on a.market_id=m.market_id ");
-			sql.append("left outer join ").append(schema).append("biomedgps_company c ");
-			sql.append("on a.company_id=c.company_id ");
-			sql.append("left outer join ").append(schema).append("biomedgps_product pr ");
-			sql.append("on a.product_id=pr.product_id ");
-		}
-		sql.append("where 1=1 ");
-		if (!StringUtil.isEmpty(reqParams.get(UPDATE_ID))) sql.append("and a.update_id=? ");
-		if (!StringUtil.isEmpty(reqParams.get(STATUS_CD))) sql.append("and a.status_cd=? ");
-		if (!StringUtil.isEmpty(reqParams.get(TYPE_CD))) sql.append("and a.type_cd=? ");
-		if (!StringUtil.isEmpty(reqParams.get(SEARCH))) sql.append("and lower(a.title_txt) like ? ");
-		String dateRange = reqParams.get(DATE_RANGE);
-		if (!StringUtil.isEmpty(dateRange)) {
-			if ("1".equals(dateRange)) {
-				sql.append("and a.create_dt > CURRENT_DATE - INTERVAL '6 months' ");
-			} else if ("2".equals(dateRange)) {
-				sql.append("and a.create_dt < CURRENT_DATE - INTERVAL '6 months' ");
-			}
-		}
-		sql.append("order by ").append(reqParams.get(SORT)).append(" ").append(reqParams.get(ORDER));
-		sql.append(" limit ? offset ? ");
 
 		log.debug(sql);
 		return sql.toString();
 	}
 
+	/**
+	 * Build the select clause based on whether this is 
+	 * a list select and whether it is a count select.
+	 * @param isList
+	 * @param isCount
+	 * @return
+	 */
+	private String buildSelectClause(boolean isList, boolean isCount) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select ");
+		if (isCount) {
+			sql.append("count(distinct a.update_id) ");
+		} else {
+			sql.append("a.*, p.first_nm, p.last_nm, ");
+			if (isList) {
+				sql.append("s.wc_sync_id ");
+			} else {
+				sql.append("m.market_nm, c.company_nm, pr.product_nm, b.section_id, b.update_section_xr_id ");
+			}
+		}
+		return sql.toString();
+	}
+
+
+	/**
+	 * Build the from clause based on whether it is a list request or not.
+	 * @param isList
+	 * @param schema
+	 * @return
+	 */
+	private String buildFromClause(boolean isList, String schema) {
+		StringBuilder sql = new StringBuilder(300);
+		sql.append("from ").append(schema).append("biomedgps_update a ");
+		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
+		if (isList) {
+			sql.append(LEFT_OUTER_JOIN).append("(select wc_sync_id, wc_key_id, row_number() ");
+			sql.append("over (partition by wc_key_id order by create_dt) as rn from wc_sync) s ");
+			sql.append("on s.wc_key_id=a.update_id and s.rn=1 ");
+			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_type ut on ut.TYPE_CD=a.TYPE_CD ");
+			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section b ");
+			sql.append("on a.update_id=b.update_id ");
+		} else {
+			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section b ");
+			sql.append("on a.update_id=b.update_id ");
+			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_market m ");
+			sql.append("on a.market_id=m.market_id ");
+			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c ");
+			sql.append("on a.company_id=c.company_id ");
+			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_product pr ");
+			sql.append("on a.product_id=pr.product_id ");
+		}
+		return sql.toString();
+	}
+
+
+	/**
+	 * Build the where clause from the request parameters
+	 * @param reqParams
+	 * @return
+	 */
+	private String buildWhereClause(ActionRequest req) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("where 1=1 ");
+		if (req.hasParameter(UPDATE_ID)) sql.append("and a.update_id=? ");
+		if (req.hasParameter(STATUS_CD)) sql.append("and a.status_cd=? ");
+		if (req.hasParameter(TYPE_CD)) sql.append("and a.type_cd=? ");
+		if (req.hasParameter(SEARCH)) sql.append("and lower(a.title_txt) like ? ");
+		String dateRange = req.getParameter(DATE_RANGE);
+		if ("1".equals(dateRange)) {
+			sql.append("and a.create_dt > CURRENT_DATE - INTERVAL '6 months' ");
+		} else if ("2".equals(dateRange)) {
+			sql.append("and a.create_dt < CURRENT_DATE - INTERVAL '6 months' ");
+		}
+
+		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
+		if (sectionIds != null && sectionIds.length > 0) { //restrict to certain sections only
+			sql.append("and b.section_id in (");
+			DBUtil.preparedStatmentQuestion(sectionIds.length, sql);
+			sql.append(") ");
+		}
+		return sql.toString();
+	}
 
 	/**
 	 * loop and decrypt owner names, which came from the profile table
@@ -362,10 +449,31 @@ public class UpdatesAction extends AuthorAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		saveRecord(req, false);
+		if (Convert.formatBoolean(req.getParameter("markReviewed"))) {
+			markReviewed(req.getParameter(UPDATE_ID));
+		} else {
+			saveRecord(req, false);
+		}
 	}
 
 
+	/**
+	 * Change the supplied update's status code to Reviewed
+	 * @param updateId
+	 * @throws ActionException
+	 */
+	private void markReviewed(String updateId) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_UPDATE set status_cd = 'R' where UPDATE_ID = ?");
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, updateId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
@@ -385,6 +493,12 @@ public class UpdatesAction extends AuthorAction {
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		UpdateVO u = new UpdateVO(req);
+
+		// The form used to send this update can come from either the updates tool or 
+		// we need the updates review tool. If it has come from the review tool 
+		// the end redirect to send the user back there instead of the updates tool
+		if (Convert.formatBoolean(req.getParameter("reviewUpdate")))
+			req.setAttribute(Constants.REDIRECT_URL, "?actionType=uwr");
 
 		try {
 			if (isDelete) {
@@ -504,7 +618,7 @@ public class UpdatesAction extends AuthorAction {
 		sortMapper = new HashMap<>();
 		sortMapper.put("titleTxt", "title_txt");
 		sortMapper.put("publishDt", "publish_dt");
-		sortMapper.put("typeNm", "type_cd");
+		sortMapper.put("typeNm", "type_nm");
 		sortMapper.put("statusNm", "status_cd");
 	}
 }

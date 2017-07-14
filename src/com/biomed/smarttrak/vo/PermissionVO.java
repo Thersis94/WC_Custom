@@ -60,6 +60,7 @@ public class PermissionVO extends SectionVO {
 		super(req);
 	}
 
+	@Override
 	public void setData(ResultSet rs) throws SQLException {
 		super.setData(rs);
 		setBrowseAuth(1 == rs.getInt("browse_no"));
