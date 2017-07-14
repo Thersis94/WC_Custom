@@ -57,7 +57,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
@@ -106,7 +105,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.setSubject("Newspaper Options - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -144,7 +142,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 
@@ -186,7 +183,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
-			mail.addCC("ksmith49@its.jnj.com");
 
 			for (PersonVO p : sem.getPeople()) {
 				//Add only the sales rep
@@ -243,7 +239,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(consignee.getEmail());
-			mail.addBCC("ksmith49@its.jnj.com");
 			mail.addBCC("cmarcos1@its.jnj.com");
 			mail.addBCC("mroderic@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
@@ -297,7 +292,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addCC("Marsha.Leo@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 
@@ -353,7 +347,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -389,7 +382,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.setTextBody(msg.toString());
 
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("amy.zimmerman@hmktgroup.com");
