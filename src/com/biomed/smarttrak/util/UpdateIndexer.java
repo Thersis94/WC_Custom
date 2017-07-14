@@ -22,7 +22,6 @@ import com.biomed.smarttrak.vo.UpdateVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 
 // WC Core
-import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
@@ -108,8 +107,8 @@ public class UpdateIndexer extends SMTAbstractIndex {
 		UpdatesAction ua = new UpdatesAction();
 		ua.setDBConnection(new SMTDBConnection(dbConn));
 		Map<String, Object> attributes = new HashMap<>();
-		attributes.put(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
-		attributes.put(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
+		for (final String name: config.stringPropertyNames())
+			attributes.put(name, config.getProperty(name));
 		ua.setAttributes(attributes);
 		List<Object> list = ua.getAllUpdates(documentId);
 

@@ -92,9 +92,8 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 		InsightAction ia = new InsightAction();
 		ia.setDBConnection(new SMTDBConnection(dbConn));
 		Map<String, Object> attributes = new HashMap<>();
-		attributes.put(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
-		attributes.put(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
-		attributes.put(Constants.ENCRYPT_KEY, config.getProperty(Constants.ENCRYPT_KEY));
+		for (final String name: config.stringPropertyNames())
+			attributes.put(name, config.getProperty(name));
 		ia.setAttributes(attributes);
 		List<Object> list = ia.getInsights(documentId, InsightVO.InsightStatusCd.P.name(), null, null, true);
 
