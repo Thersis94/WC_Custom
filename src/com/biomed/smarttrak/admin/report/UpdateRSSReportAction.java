@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
 //wc custom libs
 import com.biomed.smarttrak.vo.UpdateVO;
 //smt base libs
@@ -13,6 +14,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.rss.RSSCreatorReport;
@@ -95,7 +97,7 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path ");
 		sql.append("from ").append(schema).append("biomedgps_update ");
 		sql.append("where tweet_flg = 1 and email_flg = 1 and status_cd in ('R','N') ");
-		sql.append("and publish_dt = current_date ");
+		sql.append("and cast(publish_dt as date) = current_date ");
 		sql.append("and create_dt + (interval '1 hour') <= current_timestamp "); //allow at least one hour before submitting live
 		sql.append("order by publish_dt desc, create_dt desc ");
 		log.debug(sql);
@@ -143,14 +145,19 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String buildRSSDocumentUrl(UpdateVO update){
-        StringBuilder docUrl = new StringBuilder(50);
-        docUrl.append(update.getDocumentUrl());
+        StringBuilder docUrl = new StringBuilder(100);
+        String updateUrl = update.getDocumentUrl();
         
-        if(docUrl.length() == 0){
-        	docUrl.append("?rss=1&searchData="+ StringEncoder.urlEncode(update.getTitle()));
+        if(StringUtil.isEmpty(updateUrl)){
+        	docUrl.append("?rss=1&searchData=").append(StringEncoder.urlEncode(update.getTitle()));
         }else{        	
+        	//remove the beginning slash, as the RSSCreatorReport will add one for us
+        	if(updateUrl.indexOf('/') == 0){
+        		updateUrl = updateUrl.substring(1);
+        	}
+        	
     		UUIDGenerator uuid = new UUIDGenerator();
-        	docUrl.append("/" +uuid.getUUID()); 
+    		docUrl.append(updateUrl).append("/").append(uuid.getUUID()); 
         }
         return docUrl.toString();
 	}
