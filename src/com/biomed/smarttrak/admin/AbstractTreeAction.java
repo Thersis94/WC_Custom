@@ -47,31 +47,6 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 
 
 	/**
-	 * Helper method that writes an object to cache with the given parameters.
-	 * @param o
-	 * @param orgId
-	 * @param cacheGroups
-	 * TODO fix cache poisoning so this can be turned on again. - ZOHO SC-165
-	 */
-	protected void writeToCache(Object o, String orgId, String... cacheGroups) {
-//		//Use a new ModuleVO so as to prevent issues with cache.
-//		ModuleVO mod = new ModuleVO();
-//
-//		mod.setActionData(o);
-//		mod.setDataSize(0);
-//		mod.setCacheable(true);
-//		mod.setOrganizationId(orgId);
-//
-//		//Common Cache Group for Content Hierarchy Data.
-//		mod.setCacheGroups(cacheGroups);
-//		mod.setPageModuleId(getCacheKey());
-//
-//		//Write to Cache.
-//		super.writeToCache(mod);
-	}
-
-
-	/**
 	 * Helper method that returns the Sql Query for retrieving Segments. 
 	 * @return
 	 */
