@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.action;
 
+// Java 8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -8,15 +9,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+//Solr core
 import org.apache.solr.common.SolrDocument;
 
-import com.biomed.smarttrak.admin.AbstractTreeAction;
+// WC_Custom
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeVO;
 import com.biomed.smarttrak.vo.MarketVO;
 import com.biomed.smarttrak.vo.SectionVO;
+
+// Base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionNotAuthorizedException;
@@ -25,6 +30,9 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
+
+//WC Core
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -48,7 +56,7 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
  * @since Feb 15, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-public class MarketAction extends AbstractTreeAction {
+public class MarketAction extends SimpleActionAdapter {
 
 	public MarketAction() {
 		super();
@@ -74,10 +82,10 @@ public class MarketAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-		
+
 		// Public users can get a preview of the market section. Registered users need to confirm permissions.
 		if (role != null) SecurityController.isMktAuth(req);
-		
+
 		if (req.hasParameter("reqParam_1")) {
 			if (role == null) {
 				// Null role means this is a public user.
@@ -86,7 +94,7 @@ public class MarketAction extends AbstractTreeAction {
 				new SiteBuilderUtil().manualRedirect(req, url.toString());
 				throw new ActionNotAuthorizedException("not authorized");
 			}
-			
+
 			MarketVO vo = retrieveFromDB(req.getParameter("reqParam_1"), req, true);
 
 			if (StringUtil.isEmpty(vo.getMarketName())){
@@ -95,8 +103,8 @@ public class MarketAction extends AbstractTreeAction {
 			} else {
 				//verify user has access to this market
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
-			    	PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
-			    	SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+				PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
+				SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 				page.setTitleName(vo.getMarketName() + " | " + site.getSiteName());
 				putModuleData(vo);
 			}
@@ -190,22 +198,24 @@ public class MarketAction extends AbstractTreeAction {
 				market.addMarketAttribute(attr);
 			}
 		}
-		
+
 		for (Entry<String, List<MarketAttributeVO>> entry : attrMap.entrySet()) {
 			for (MarketAttributeVO m : entry.getValue())
 				market.addMarketAttribute(m);
 		}
 	}
-	
+
 
 	/**
 	 * Add the link to the proper list, including specialized lists for attatchments
 	 * @param attrMap
 	 * @param attr
 	 */
-	private void addLink(Map<String, List<MarketAttributeVO>> attrMap,
-		MarketAttributeVO attr) {
-		if (attrMap.get(attr.getAttributeId()) == null) attrMap.put(attr.getAttributeId(), new ArrayList<MarketAttributeVO>());
+	private void addLink(Map<String, List<MarketAttributeVO>> attrMap, MarketAttributeVO attr) {
+		//make sure the list we're about to append to exists on the map first
+		if (attrMap.get(attr.getAttributeId()) == null) 
+			attrMap.put(attr.getAttributeId(), new ArrayList<MarketAttributeVO>());
+		
 		attrMap.get(attr.getAttributeId()).add(attr);
 	}
 
@@ -231,10 +241,10 @@ public class MarketAction extends AbstractTreeAction {
 			while(rs.next()) {
 				market.addSection(new SectionVO(rs));
 				Node n = null;
-				
+
 				if (!StringUtil.isEmpty(rs.getString("SECTION_ID"))) 
 					n = t.findNode(rs.getString("SECTION_ID"));
-				
+
 				if (n != null) {
 					SectionVO sec = (SectionVO) n.getUserObject();
 					market.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
@@ -246,6 +256,18 @@ public class MarketAction extends AbstractTreeAction {
 		}
 	}
 
+
+	/**
+	 * returns the default hierarchy built by the hierarchy action
+	 * @return
+	 */
+	private SmarttrakTree loadDefaultTree() {
+		// load the section hierarchy Tree from the hierarchy action
+		SectionHierarchyAction sha = new SectionHierarchyAction();
+		sha.setAttributes(getAttributes());
+		sha.setDBConnection(getDBConnection());
+		return sha.loadDefaultTree();
+	}
 
 	/**
 	 * Get all markets from the database
@@ -281,15 +303,9 @@ public class MarketAction extends AbstractTreeAction {
 			n.setUserObject(doc);
 			markets.add(n);
 		}
-		
-		Tree t = new Tree(markets);
-		
-		putModuleData(t.getRootNode().getChildren());
-	}
-	
 
-	@Override
-	public String getCacheKey() {
-		return null;
+		Tree t = new Tree(markets);
+
+		putModuleData(t.getRootNode().getChildren());
 	}
 }

@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
@@ -39,7 +38,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class UpdatesAction extends AuthorAction {
+public class UpdatesAction extends ManagementAction {
 	public static final String UPDATE_ID = "updateId"; //req param
 	public static final String SORT = "sort"; //req param
 	public static final String ORDER = "order"; //req param
@@ -48,13 +47,17 @@ public class UpdatesAction extends AuthorAction {
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
 	private static final String SECTION_ID = "filterSectionId[]";
-	//public static final String CREATOR_PROFILE_ID = "authorId"; //req param
-	public static final String ROOT_NODE_ID = MASTER_ROOT;
+
+	/**
+	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
+	 */
+	@Deprecated
+	public static final String ROOT_NODE_ID = SectionHierarchyAction.MASTER_ROOT;
+
 	public static final int INIT_DISPLAY_LIMIT = 15; //initial display limit
 
 	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
 	public static final String UPDATE_TYPE_CD = "updates";
-	private static final String LEFT_OUTER_JOIN = "left outer join ";
 
 	public enum UpdateType {
 		MARKET(12, "Market"),
@@ -193,30 +196,27 @@ public class UpdatesAction extends AuthorAction {
 	/**
 	 * takes the current list of updates and adds the company information to any product updates
 	 * @param updates
-	 * TODO remove this method
+	 *TODO change query to "in (1,2,3)" instead of looping outside the query - Zoho SC-232
 	 */
 	private void addProductCompanyData(List<Object> updates) {
-		log.debug("adding company short name and id "); 
-		String qs = (String) getAttribute(Constants.QS_PATH);
-
-		for(Object ob : updates){
+		log.debug("adding company short name and id ");
+		for (Object ob : updates) {
 			//loops all the updates and see if they have a product id
 			UpdateVO vo = (UpdateVO) ob;
 
 			if (StringUtil.isEmpty(vo.getProductId())) continue;
 
 			StringBuilder sb = new StringBuilder(161);
-
-			sb.append("select p.company_id, c.short_nm_txt from custom.biomedgps_product p ");
-			sb.append("inner join custom.biomedgps_company c on p.company_id = c.company_id ");
-			sb.append("where p.product_id = ? ");
+			sb.append("select c.company_id, c.short_nm_txt from ").append(customDbSchema).append("biomedgps_product p ");
+			sb.append(INNER_JOIN).append(customDbSchema).append("biomedgps_company c on p.company_id = c.company_id ");
+			sb.append("where p.product_id=?");
 
 			try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
 				ps.setString(1, vo.getProductId());
 				ResultSet rs = ps.executeQuery();
-				if (rs.next()){		
-					vo.setCompanyLink("/"+AdminControllerAction.Section.COMPANY.getURLToken()+qs+rs.getString("company_id"));
-					vo.setCompanyShortName(rs.getString("short_nm_txt"));
+				if (rs.next()) {
+					vo.setCompanyId(rs.getString(1));
+					vo.setCompanyNm(rs.getString(2));
 				}
 			} catch(SQLException sqle) {
 				log.error("could not confirm security by id ", sqle);
