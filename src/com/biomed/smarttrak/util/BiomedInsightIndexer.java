@@ -96,7 +96,7 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 		List<Object> list = ia.getInsights(documentId, InsightVO.InsightStatusCd.P.name(), null, null, true);
 
 		//Load the Section Tree and set all the Hierarchies.
-		SmarttrakTree t = ia.loadSections();
+		SmarttrakTree t = ia.loadDefaultTree();
 		for(Object o : list) {
 			InsightVO i = (InsightVO)o;
 			i.configureSolrHierarchies(t);

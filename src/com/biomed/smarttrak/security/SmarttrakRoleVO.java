@@ -72,7 +72,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 
 		Set<String> groups = new HashSet<>(accountRoles.size());
 		//back-trace the approved hierarchies and authorize all parent levels as well
-		for (PermissionVO vo : getAccountRoles()) {
+		for (PermissionVO vo : accountRoles) {
 			String[] tok = vo.getSolrTokenTxt().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
 			StringBuilder key = new StringBuilder(50);
 			for (int x=0; x < tok.length; x++) {

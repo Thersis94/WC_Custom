@@ -60,7 +60,6 @@ public class SectionVO implements Serializable {
 	 */
 	public void setData(ResultSet rs) throws SQLException {
 		DBUtil util = new DBUtil();
-		
 		setSectionId(util.getStringVal("SECTION_ID", rs));
 		setParentId(util.getStringVal("PARENT_ID", rs));
 		setSectionNm(util.getStringVal("SECTION_NM", rs));
