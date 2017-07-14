@@ -2,6 +2,7 @@ package com.biomed.smarttrak.util;
 
 // Java 8
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -21,7 +22,6 @@ import com.biomed.smarttrak.vo.UpdateVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 
 // WC Core
-import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
@@ -106,8 +106,10 @@ public class UpdateIndexer extends SMTAbstractIndex {
 	private List<SolrDocumentVO> getDocuments(String documentId) {
 		UpdatesAction ua = new UpdatesAction();
 		ua.setDBConnection(new SMTDBConnection(dbConn));
-		ua.setAttribute(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
-		ua.setAttribute(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
+		Map<String, Object> attributes = new HashMap<>();
+		for (final String name: config.stringPropertyNames())
+			attributes.put(name, config.getProperty(name));
+		ua.setAttributes(attributes);
 		List<Object> list = ua.getAllUpdates(documentId);
 
 		//Load the Section Tree and set all the Hierarchies.
