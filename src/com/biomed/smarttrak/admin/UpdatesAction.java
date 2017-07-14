@@ -25,7 +25,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -437,9 +436,6 @@ public class UpdatesAction extends ManagementAction {
 	public SmarttrakTree loadSections() {
 		//load the section hierarchy Tree from superclass
 		SmarttrakTree t = loadDefaultTree();
-
-		//Generate the Node Paths using Node Names.
-		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
 		return t;
 	}
 
