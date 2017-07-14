@@ -59,15 +59,17 @@ public class MediaBinMediaListQuery implements MediaListQueryIntfc {
 		if (Type.VIDEO.toString().equalsIgnoreCase(req.getParameter(MediaListAction.FILE_TYPE))) {
 			sql.append(" and lower(asset_type) in (");
 			for (int x=MediaBinAdminAction.VIDEO_ASSETS.length; x > 0; x--) {
-				sql.append( x > 0 ? ",?" : "?");
-				params.add(MediaBinAdminAction.VIDEO_ASSETS[x]);
+				sql.append( x == MediaBinAdminAction.VIDEO_ASSETS.length ? "?" : ",?");
+				params.add(MediaBinAdminAction.VIDEO_ASSETS[x-1]);
 			}
+			sql.append(")");
 		} else if  (linkFilter.contains(Filter.PDF.reqVal())) {
 			sql.append(" and lower(asset_type) in (");
 			for (int x=MediaBinAdminAction.PDF_ASSETS.length; x > 0; x--) {
-				sql.append( x > 0 ? ",?" : "?");
-				params.add(MediaBinAdminAction.PDF_ASSETS[x]);
+				sql.append( x == MediaBinAdminAction.PDF_ASSETS.length ? "?" : ",?");
+				params.add(MediaBinAdminAction.PDF_ASSETS[x-1]);
 			}
+			sql.append(")");
 		}
 
 		//filter by dist channel & opcoNm
