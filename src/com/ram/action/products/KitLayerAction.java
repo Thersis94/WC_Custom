@@ -1,5 +1,7 @@
 package com.ram.action.products;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,6 +21,7 @@ import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -273,6 +276,7 @@ public class KitLayerAction extends SBActionAdapter {
 			while(rs.next()) {
 				layer = new KitLayerVO(rs, false);
 				layer.setJsonData(rs.getString("JSON_DATA"));
+				fixSrc(layer);
 				layers.add(layer);
 			}
 		} catch(SQLException sqle) {
@@ -286,6 +290,19 @@ public class KitLayerAction extends SBActionAdapter {
 		this.putModuleData(layers, layers.size(), false);
 	}
 
+	@SuppressWarnings("unchecked")
+	public void fixSrc(KitLayerVO layer ) {
+		JSONObject j = JSONObject.fromObject(layer.getJsonData());
+		JSONObject b = j.getJSONObject("backgroundImage");
+		try {
+			URL src = new URL(StringUtil.checkVal(b.get("src")));
+			b.replace("src", src.getPath());
+
+		} catch (MalformedURLException e) {
+			log.error("Error Processing Code", e);
+		}
+		layer.setJsonData(j.toString());
+	}
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */

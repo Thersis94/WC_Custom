@@ -20,8 +20,6 @@ import com.ram.persistence.RAMCasePersistenceFactory.PersistenceType;
 import com.ram.workflow.data.vo.LocationItemMasterVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.db.util.DatabaseException;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -159,12 +157,13 @@ public class RAMCaseManager {
 		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
 		if(req.hasParameter("caseItemId")) {
 			item = getCaseItem(cVo, req);
+			if(item != null)
+				item.setData(req);
 		} else {
 			item = buildCaseItem(cVo, req);
+			cVo.incrementItem(item);
 		}
 
-		cVo.addItem(item);
-		
 		//Save Case.
 		this.updateCaseInfo(cVo);
 		return item;
@@ -177,13 +176,17 @@ public class RAMCaseManager {
 	 * @param serialId
 	 * @return
 	 */
-	private RAMCaseKitVO loadLocationKitData(String serialId) {
+	private RAMCaseKitVO loadLocationKitData(int kitProductId) {
 		DBProcessor db = new DBProcessor(conn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		List<Object> params = new ArrayList<>();
-		params.add(serialId);
-		LocationItemMasterVO lim = (LocationItemMasterVO) db.executeSelect(getLocationKitDataSql(), params, new LocationItemMasterVO());
+		params.add(kitProductId);
+		List<Object> lim = db.executeSelect(getLocationKitDataSql(), params, new LocationItemMasterVO());
+
 		RAMCaseKitVO kit = new RAMCaseKitVO();
-		kit.setLocationItemMasterId(Convert.formatInteger(lim.getLocationItemMasterId()));
+		kit.setProductId(kitProductId);
+		if(!lim.isEmpty()) {
+			kit.setLocationItemMasterId(((LocationItemMasterVO) lim.get(0)).getLocationItemMasterId());
+		}
 		return kit;
 	}
 
@@ -194,7 +197,7 @@ public class RAMCaseManager {
 	private String getLocationKitDataSql() {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select location_item_master_id from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_LOCATION_ITEM_MASTER where serial_no_txt = ? ");
+		sql.append("RAM_LOCATION_ITEM_MASTER where product_id = ? ");
 		return sql.toString();
 	}
 
@@ -204,13 +207,21 @@ public class RAMCaseManager {
 	 * @return
 	 */
 	private RAMProductVO lookupProduct(int productId) {
-		RAMProductVO p = new RAMProductVO();
-		p.setProductId(productId);
-		try {
-			new DBProcessor(conn).getByPrimaryKey(p);
-		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Error Processing Code", e);
-		}
+		DBProcessor db = new DBProcessor(conn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select p.*, c.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_number_txt ");
+		sql.append("from ram_product p left join ram_customer c on p.customer_id = c.customer_id ");
+		sql.append("where p.product_id = ? ");
+		
+		List<Object> params = new ArrayList<>();
+		params.add(productId);
+		
+		RAMProductVO p = (RAMProductVO) db.executeSelect(sql.toString(), params, new RAMProductVO()).get(0);
+		
+		if (p == null)
+			p = new RAMProductVO();
+		
 		return p;
 	}
 
@@ -234,26 +245,36 @@ public class RAMCaseManager {
 	 */
 	private RAMCaseItemVO buildCaseItem(RAMCaseVO cVo, ActionRequest req) throws Exception {
 		int productId = Convert.formatInteger(req.getParameter("productId"));
-		String serialId = req.getParameter("serialId");
+		int kitProductId = Convert.formatInteger(req.getParameter("kitProductId"));
 		RAMCaseKitVO kvo = null;
 		RAMProductVO p = lookupProduct(productId);
+		RAMProductVO kp = null;
+		if(!StringUtil.isEmpty(req.getParameter("kitProductId"))) {
+			kp = lookupProduct(kitProductId);
+		}
 
 		/*
 		 * If we don't have a caseKitId and this product is a kit,
 		 * build a case KitVO.
 		 */
-		if(StringUtil.isEmpty(req.getParameter("caseKitId")) && p != null && Integer.valueOf(1).equals(p.getKitFlag())) {
-			kvo = loadLocationKitData(serialId);
-			kvo.setCaseId(cVo.getCaseId());
-			kvo.setCaseKitId(new UUIDGenerator().getUUID());
-			req.setParameter("caseKitId", kvo.getCaseKitId());
-			cVo.addCaseKit(kvo);
+		if(StringUtil.isEmpty(req.getParameter("caseKitId")) && kp != null && Integer.valueOf(1).equals(kp.getKitFlag())) {
+			RAMCaseKitVO t = loadLocationKitData(kitProductId); 
+			kvo = cVo.lookupKitByLim(t.getLocationItemMasterId());
+
+			if(kvo == null) {
+				kvo = t;
+				kvo.setCaseId(cVo.getCaseId());
+				kvo.setCaseKitId(new UUIDGenerator().getUUID());
+				cVo.addCaseKit(kvo);
+			}
+
+			req.setParameter("caseKitId", kvo.getCaseKitId());			
 		}
-		
+
 		//Build RAMCaseItem
 		RAMCaseItemVO civo = new RAMCaseItemVO(req);
 		civo.setProductNm(p.getProductName());
-		civo.setGtinProductId(p.getGtinProductId());
+		civo.setGtinProductId(p.getGtinProductNumber());
 		civo.setCaseItemId(new UUIDGenerator().getUUID());
 		return civo;
 	}
@@ -300,17 +321,37 @@ public class RAMCaseManager {
 		RAMCaseVO cVo = (RAMCaseVO)ap.load(caseId);
 		setORFinalStatusCode(cVo);
 		persistCasePerm(cVo);
-
+		ap.flush(caseId);
 		return cVo;
 	}
-	
+
 	/**
 	 * Sets the status code upon competing the dase
 	 * @param cVo
 	 */
 	private void setORFinalStatusCode(RAMCaseVO cVo) {
-		if (cVo.getKits().isEmpty()) cVo.setCaseStatus(RAMCaseStatus.CLOSED);
-		else cVo.setCaseStatus(RAMCaseStatus.OR_COMPLETE);
+		if (cVo.getKits().isEmpty()) {
+			cVo.setCaseStatus(RAMCaseStatus.CLOSED);
+		} else if(allKitsProcessed(cVo)) {
+			cVo.setCaseStatus(RAMCaseStatus.CLOSED);
+		} else {
+			cVo.setCaseStatus(RAMCaseStatus.OR_COMPLETE);
+		}
+	}
+
+	/**
+	 * @param cVo
+	 * @return
+	 */
+	private boolean allKitsProcessed(RAMCaseVO cVo) {
+		boolean allKitsComplete = true;
+		for(RAMCaseKitVO k : cVo.getKits().values()) {
+			if(k.getCaseKitId() != null && !k.isProcessed()) {
+				allKitsComplete = false;
+			}
+		}
+
+		return allKitsComplete;
 	}
 
 	/**

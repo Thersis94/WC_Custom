@@ -264,6 +264,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 			sql.append("and CUST_PRODUCT_ID = ?");
 		}
 
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 

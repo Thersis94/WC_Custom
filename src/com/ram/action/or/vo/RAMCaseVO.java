@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.ram.action.or.RAMCaseManager;
+import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -65,6 +66,8 @@ public class RAMCaseVO implements Serializable {
 		this.kits = new HashMap<>();
 		this.signatures = new EnumMap<>(SignatureType.class);
 		this.items = new HashMap<>();
+		items.put(RAMCaseType.OR.toString(), new HashMap<>());
+		items.put(RAMCaseType.SPD.toString(), new HashMap<>());
 	}
 
 	public RAMCaseVO(ActionRequest req) {
@@ -343,13 +346,12 @@ public class RAMCaseVO implements Serializable {
 
 	@BeanSubElement
 	public void addCaseKit(RAMCaseKitVO kit) {
-		if(kit != null) {
+		if(kit != null && !StringUtil.isEmpty(kit.getCaseKitId())) {
 			kits.put(kit.getCaseKitId(), kit);
 		}
 	}
 
-	@BeanSubElement
-	public void addItem(RAMCaseItemVO item) {
+	public void incrementItem(RAMCaseItemVO item) {
 		if(item != null && item.getCaseType() != null) {
 			Map<String, RAMCaseItemVO> imap = items.get(item.getCaseType().toString());
 			if(imap == null) {
@@ -366,15 +368,36 @@ public class RAMCaseVO implements Serializable {
 		}
 	}
 
+	@BeanSubElement
+	public void addItem(RAMCaseItemVO item) {
+		if(item != null && item.getCaseType() != null) {
+			Map<String, RAMCaseItemVO> imap = items.get(item.getCaseType().toString());
+			if(imap == null) {
+				imap = new HashMap<>();
+			}
+			imap.put(item.getCaseItemId(), item);
+
+			items.put(item.getCaseType().toString(), imap);
+		}
+	}
+
 	public void removeItem(RAMCaseItemVO item) {
-		if(item != null && items.containsKey(item.getCaseType())) {
-			items.get(item.getCaseType()).remove(item.getProductId());
+		if(item != null && items.containsKey(item.getCaseType().toString())) {
+			items.get(item.getCaseType().toString()).remove(item.getCaseItemId());
 		}
 	}
 
 	public void removeKit(RAMCaseKitVO kit) {
 		if(kit != null && kits.containsKey(kit.getCaseKitId())) {
 			kits.remove(kit.getCaseKitId());
+		}
+	}
+
+	public RAMCaseKitVO getKit(String caseKitId) {
+		if(!StringUtil.isEmpty(caseKitId) && kits.containsKey(caseKitId)) {
+			return kits.get(caseKitId);
+		} else {
+			return null;
 		}
 	}
 
@@ -494,5 +517,20 @@ public class RAMCaseVO implements Serializable {
 	 */
 	public void setNewCase(boolean newCase) {
 		this.newCase = newCase;
+	}
+
+	/**
+	 * @param string
+	 * @return
+	 */
+	public RAMCaseKitVO lookupKitByLim(String locationItemMasterId) {
+		if(!StringUtil.isEmpty(locationItemMasterId)) {
+			for(RAMCaseKitVO k : kits.values()){
+				if(k.getLocationItemMasterId().equalsIgnoreCase(locationItemMasterId)) {
+					return k;
+				}
+			}
+		}
+		return null;
 	}
 }

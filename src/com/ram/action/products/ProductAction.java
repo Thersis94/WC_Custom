@@ -16,9 +16,9 @@ import com.ram.action.user.RamUserAction;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -77,7 +77,7 @@ public class ProductAction extends SBActionAdapter {
 			dbConn.setAutoCommit(false);
 			Map<String, Object> replaceVals = (Map<String, Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
 			if(replaceVals == null) {
-				replaceVals = new HashMap<String, Object>();
+				replaceVals = new HashMap<>();
 				attributes.put(RecordDuplicatorUtility.REPLACE_VALS, replaceVals);
 			}
 
@@ -129,17 +129,12 @@ public class ProductAction extends SBActionAdapter {
 		log.debug("sql: " + sb.toString());
 		
 		//Build Statement and execute
-		PreparedStatement ps = null;
-
-		try {
-			ps = dbConn.prepareStatement(sb.toString());
+		try(PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
 			ps.setString(1, req.getParameter("productId"));
 			ps.executeUpdate();
 		} catch(SQLException sqle) {
 			log.error("Error deactivating Product: " + req.getParameter("productId"), sqle);
 			throw new ActionException(sqle);
-		} finally {
-			DBUtil.close(ps);
 		}
 	}
 
@@ -164,7 +159,7 @@ public class ProductAction extends SBActionAdapter {
 	private void retrieveProducts(ActionRequest req) throws ActionException {			
 		
 		//Instantiate the products list for results and check for lookup type.
-		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
+		List<RAMProductVO> products = new ArrayList<>();
 		boolean isProductLookup = req.hasParameter("productId");
 
 		StringBuilder sb = new StringBuilder(150);
@@ -179,11 +174,8 @@ public class ProductAction extends SBActionAdapter {
 		//Log sql Statement for verification
 		log.debug("sql: " + sb.toString());
 		
-		//Build the Statement and execute
-		PreparedStatement ps = null;
-		
-		try {
-			ps = dbConn.prepareStatement(sb.toString());
+		//Build the Statement and execute		
+		try(PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
 			if(isProductLookup)
 				ps.setInt(1, Convert.formatInteger(req.getParameter("productId")));
 			else
@@ -196,8 +188,6 @@ public class ProductAction extends SBActionAdapter {
 		} catch(SQLException sqle) {
 			log.error("Error retrieving product list", sqle);
 			throw new ActionException(sqle);
-		} finally {
-			DBUtil.close(ps);
 		}
 		
 		//Return List to View
@@ -211,7 +201,7 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		Map<String, String> result = new HashMap<String, String>();
+		Map<String, String> result = new HashMap<>();
 		result.put("success", "true");
 		result.put("msg", "Data Successfully Updated");
 		
@@ -237,10 +227,8 @@ public class ProductAction extends SBActionAdapter {
 		
 		
 		//Build PreparedStatement and set Parameters
-		PreparedStatement ps = null;
 		int i = 1;
-		try {
-			ps = dbConn.prepareStatement(query);
+		try(PreparedStatement ps = dbConn.prepareStatement(query)) {
 			ps.setString(i++, req.getParameter("productNm"));
 			ps.setString(i++, req.getParameter("shortDesc"));
 			ps.setInt(i++, Convert.formatInteger(Convert.formatBoolean(req.getParameter("activeFlag"))));
@@ -263,8 +251,6 @@ public class ProductAction extends SBActionAdapter {
 			result.put("success", "false");
 			result.put("msg", "Problem Saving Record");
 			throw new ActionException(sqle);
-		} finally {
-			DBUtil.close(ps);
 		}
 
 		//Redirect User
@@ -284,28 +270,23 @@ public class ProductAction extends SBActionAdapter {
 		
 		//Pull relevant data off the request
 		RAMProductSearchVO svo = new RAMProductSearchVO(req);
-		int index = 1, ctr = 0;
+		int index = 1;
+		int ctr = 0;
 		try(PreparedStatement ps = dbConn.prepareStatement(getProdList(svo))){
 
 			if (svo.getCustomerId() > 0) ps.setInt(index++, svo.getCustomerId());
 			if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
 			else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
-			if(svo.getTerm().length() > 0) {
+			if(!StringUtil.isEmpty(svo.getTerm())) {
 				ps.setString(index++, "%" + svo.getTerm() + "%");
 				ps.setString(index++, "%" + svo.getTerm() + "%");
 			}
-			
+
 			/*
 			 * Providers use an intersect to get the correct products
 			 * so we need to set the same attributes again.
 			 */
 			if(svo.getProviderId() > 0) {
-				if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
-				else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
-				if(svo.getTerm().length() > 0) {
-					ps.setString(index++, "%" + svo.getTerm() + "%");
-					ps.setString(index++, "%" + svo.getTerm() + "%");
-				}
 				ps.setInt(index++, svo.getProviderId());
 			}
 			ps.setInt(index++, svo.getStart());
@@ -344,29 +325,25 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	protected int getRecordCount(RAMProductSearchVO svo) throws SQLException {
 		log.debug("Retrieving Total Counts");
-		PreparedStatement ps = dbConn.prepareStatement(getProdList(svo));
-		int index = 1;
-		if (svo.getCustomerId() > 0) ps.setInt(index++, svo.getCustomerId());
-		if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
-		else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
-		if(svo.getTerm().length() > 0) {
-			ps.setString(index++, "%" + svo.getTerm() + "%");
-			ps.setString(index++, "%" + svo.getTerm() + "%");
-		}
-		if(svo.getProviderId() > 0) {
+		int cnt = 0;
+		try(PreparedStatement ps = dbConn.prepareStatement(getProdList(svo))) {
+			int index = 1;
+			if (svo.getCustomerId() > 0) ps.setInt(index++, svo.getCustomerId());
 			if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
 			else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
-			if(svo.getTerm().length() > 0) {
+			if(!StringUtil.isEmpty(svo.getTerm())) {
 				ps.setString(index++, "%" + svo.getTerm() + "%");
 				ps.setString(index++, "%" + svo.getTerm() + "%");
 			}
-			ps.setInt(index++, svo.getProviderId());
+			if(svo.getProviderId() > 0) {
+				ps.setInt(index++, svo.getProviderId());
+			}
+			
+			//Get the count off the first row.
+			ResultSet rs = ps.executeQuery();
+			if(rs.next())
+				cnt = rs.getInt(1);
 		}
-		int cnt = 0;
-		//Get the count off the first row.
-		ResultSet rs = ps.executeQuery();
-		if(rs.next())
-			cnt = rs.getInt(1);
 
 		return cnt;
 	}
@@ -400,14 +377,6 @@ public class ProductAction extends SBActionAdapter {
 		}
 		
 		return sb;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void update(ActionRequest req) throws ActionException {
-		super.update(req);
 	}
 	
 	/**

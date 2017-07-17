@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.ram.datafeed.data.RAMProductVO;
+import com.ram.action.or.vo.SPDRAMProductVO;
+import com.ram.action.or.vo.RAMCaseVO.RAMCaseStatus;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -76,7 +77,7 @@ public class SPDBarcodeLookupAction extends SimpleActionAdapter {
 		scans.add(req.getParameter("barcode"));
 		scans.add(req.getParameter("barcode2"));
 
-		RAMProductVO product = null;
+		SPDRAMProductVO product = null;
 		String errorMsg = null;
 		try {
 			// Parse the barcodes
@@ -221,8 +222,8 @@ public class SPDBarcodeLookupAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected RAMProductVO retrieveProduct(BarcodeItemVO barcode) {
-		RAMProductVO p = null;
+	protected SPDRAMProductVO retrieveProduct(BarcodeItemVO barcode) {
+		SPDRAMProductVO p = null;
 		log.info("Performing lookup on productId: " + barcode.getProductId());
 		try(PreparedStatement ps = dbConn.prepareStatement(getProductSql(barcode.getBarcodeType()))) {
 			ps.setInt(1, Convert.formatInteger(barcode.getCustomerId()));
@@ -231,13 +232,53 @@ public class SPDBarcodeLookupAction extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 
 			if(rs.next()) {
-				p = new RAMProductVO(rs);
+				p = new SPDRAMProductVO(rs);
 				p.setLotNumber(barcode.getLotCodeNumber());
+
+				if(p.getKitFlag() == 1) {
+					performCaseLookup(p);
+				}
 			}
 		} catch (SQLException e) {
 			log.error(e);
 		}
 		return p;
+	}
+
+	/**
+	 * @param p
+	 */
+	private void performCaseLookup(SPDRAMProductVO p) {
+		try(PreparedStatement ps = dbConn.prepareStatement(getCaseLookupSql())) {
+			ps.setInt(1, p.getProductId());
+			ps.setString(2, RAMCaseStatus.OR_COMPLETE.toString());
+
+			ResultSet rs = ps.executeQuery();
+
+			if(rs.next()) {
+				p.setCaseId(rs.getString("case_id"));
+				p.setCaseKitId(rs.getString("case_kit_id"));
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	private String getCaseLookupSql() {
+		StringBuilder sql = new StringBuilder(275);
+		String custom = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select c.case_id, k.case_kit_id from ");
+		sql.append(custom).append("ram_case c ");
+		sql.append("inner join ").append(custom).append("ram_case_kit k ");
+		sql.append("on c.case_id = k.case_id ");
+		sql.append("inner join ").append(custom).append("ram_location_item_master i ");
+		sql.append("on k.location_item_master_id = i.location_item_master_id ");
+		sql.append("where i.product_id = ? and c.case_status_cd = ? ");
+		return sql.toString();
 	}
 
 	private String getProductSql(BarcodeType type) {

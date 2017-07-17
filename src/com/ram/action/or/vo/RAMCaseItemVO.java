@@ -8,6 +8,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> RamCaseItemVO.java
@@ -55,10 +56,11 @@ public class RAMCaseItemVO implements Serializable {
 		setData(req);
 	}
 
-	private void setData(ActionRequest req) {
+	public void setData(ActionRequest req) {
 		caseItemId = req.getParameter("caseItemId");
 		productId = Convert.formatInteger(req.getParameter("productId"));
-		caseKitId = req.getParameter("caseKitId");
+		productNm = req.getParameter("productNm");
+		caseKitId = StringUtil.checkVal(req.getParameter("caseKitId"), null);
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
 		qtyNo = Convert.formatInteger(req.getParameter("qtyNo"));
 		lotNumberTxt = req.getParameter("lotNumberTxt");
@@ -175,7 +177,7 @@ public class RAMCaseItemVO implements Serializable {
 	/**
 	 * @return the gtinProductId
 	 */
-	@Column(name="gtin_product_id", isReadOnly=true)
+	@Column(name="gtin_number_txt", isReadOnly=true)
 	public String getGtinProductId() {
 		return gtinProductId;
 	}

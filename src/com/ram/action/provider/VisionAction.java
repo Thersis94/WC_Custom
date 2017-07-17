@@ -3,6 +3,8 @@
  */
 package com.ram.action.provider;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,6 +16,7 @@ import java.util.Map.Entry;
 import com.ram.action.data.RAMProductSearchVO;
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
+import com.ram.action.products.KitLayerAction;
 import com.ram.action.util.KitBOMPdfReport;
 import com.ram.action.util.RAMFabricParser;
 import com.ram.datafeed.data.KitLayerProductVO;
@@ -193,6 +196,8 @@ public class VisionAction extends SBActionAdapter {
 
 			//Parse each Layer
 			for(KitLayerVO k : layers) {
+				new KitLayerAction().fixSrc(k);
+				log.debug(k.getJsonData());
 				map = fp.getImageMap(JSONObject.fromObject(k.getJsonData()));
 				map.setName(LAYER_ID + k.getDepthNumber());
 				updateMapData(map, k);
@@ -295,7 +300,8 @@ public class VisionAction extends SBActionAdapter {
 	 * @return
 	 */
 	private void checkQty(KitLayerProductVO p, List<RAMCaseItemVO> items) {
-
+		boolean usedOR = false;
+		boolean usedSPD = false;
 		Iterator<RAMCaseItemVO> iter = items.iterator();
 		while(iter.hasNext()) {
 			RAMCaseItemVO i = iter.next();
@@ -306,10 +312,27 @@ public class VisionAction extends SBActionAdapter {
 			 * as well as impacts to Session Object.
 			 */
 			if(i.getProductId().equals(p.getProductId())) {
+				if(i.getCaseType().equals(RAMCaseType.OR) && usedOR || i.getCaseType().equals(RAMCaseType.SPD) && usedSPD) {
+					continue;
+				}
 				int incOrDec = i.getCaseType() == RAMCaseType.OR ? -1 : 1;
 				p.addQtyOnHand(i.getQtyNo() * incOrDec);
-				p.setCaseItemId(i.getCaseItemId());
-				break;
+				iter.remove();
+				/*
+				 * Update CaseItem Id.  If this is an OR Product, set a
+				 * caseItemId on the product so the tool knows this is a hard
+				 * ceiling on update quantity.  If this is SPD, and the
+				 * qtyOnHand and total Qty are the same (we've replenished this
+				 * piece entirely already.), remove the caseItemId.
+				 */
+				if(i.getCaseType().equals(RAMCaseType.OR)) {
+					p.setCaseItemId(i.getCaseItemId());
+					usedOR = true;
+				} else if(i.getCaseType().equals(RAMCaseType.SPD) && p.getQtyOnHand() == p.getQuantity().intValue()) {
+					p.setCaseItemId(null);
+					usedSPD = true;
+					
+				}
 			}
 		}
 	}
@@ -347,6 +370,7 @@ public class VisionAction extends SBActionAdapter {
 				layer.setKitName(p.getProductName());
 				//Build Kit Layer PRoduct XR VO
 				lpxr = new KitLayerProductVO(rs, false);
+				lpxr.setCompositeId(rs.getString("KIT_LAYER_ID") + "-" + rs.getString("PRODUCT_KIT_ID"));
 
 				//Build ProductVO
 				prod = new RAMProductVO(rs);
@@ -384,6 +408,7 @@ public class VisionAction extends SBActionAdapter {
 
 					//Build Kit Layer PRoduct XR VO
 					lpxr = new KitLayerProductVO(rs, false);
+					lpxr.setCompositeId(rs.getString("KIT_LAYER_ID") + "-" + rs.getString("PRODUCT_KIT_ID"));
 
 					//Build ProductVO
 					prod = new RAMProductVO(rs);
