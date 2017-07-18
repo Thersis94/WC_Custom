@@ -5,8 +5,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
@@ -17,6 +19,8 @@ import com.biomed.smarttrak.vo.UpdateXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
@@ -117,6 +121,7 @@ public class UpdatesAction extends AuthorAction {
 
 			// Get the count
 			count = getUpdateCount(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+			log.debug("count " + count);
 		}
 
 		decryptNames(data);
@@ -151,14 +156,18 @@ public class UpdatesAction extends AuthorAction {
 
 		String sql = formatRetrieveQuery(req, schema, req.hasParameter("loadData"), false);
 
+		log.debug(" sql: " + sql);
+		
 		List<Object> params = new ArrayList<>();
 		if (req.hasParameter(UPDATE_ID)) params.add(req.getParameter(UPDATE_ID));
 		if (req.hasParameter(STATUS_CD)) params.add(req.getParameter(STATUS_CD));
 		if (req.hasParameter(TYPE_CD)) params.add(Convert.formatInteger(req.getParameter(TYPE_CD)));
 		if (req.hasParameter(SEARCH)) params.add("%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%");
+			
 		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
+			
 		if (sectionIds != null) { //restrict to certain sections only
-			for (String s : sectionIds)
+			for (String s : getSectionFamily(sectionIds))
 				params.add(s);
 		}
 		params.add(rpp);
@@ -168,6 +177,69 @@ public class UpdatesAction extends AuthorAction {
 		return db.executeSelect(sql, params, new UpdateVO());
 	}
 
+
+	/**
+	 * processes the section ides supplied and gets childern or granchildren as needed to mimic the data returned by the 
+	 * front public side search
+	 * @param sectionIds
+	 * @return
+	 */
+	private Set<String> getSectionFamily(String[] sectionIds) {
+		if (sectionIds == null) return new HashSet<>();
+		//set up a set to hold all the ids
+		Set<String> set = new HashSet<>();
+		
+		// load the section hierarchy Tree from superclass
+		Tree t = loadDefaultTree();
+
+		// Generate the Node Paths using Node Names.
+		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
+		
+		//process ids according to their depth level
+		for (String s : sectionIds){
+			int depth = t.findNode(s).getDepthLevel();
+			//if the id is already in the set its a child or grand child and we don't need to process it again
+			if (set.contains(s)) continue;
+			
+			if (depth < 3) {
+				set.add(s);
+				processTwoNodeLayers(set, t, s);
+			} else if (depth == 3){
+				set.add(s);
+				processOneNodeLayer(set, t, s);
+			}else {
+				set.add(s);
+			}
+		}
+
+		return set;
+	}
+
+	/**
+	 * adds the ids children from the tree to the set
+	 * @param set
+	 * @param t
+	 * @param s
+	 */
+	private void processOneNodeLayer(Set<String> set, Tree t, String s) {
+		for (Node n : t.findNode(s).getChildren()){
+			set.add(n.getNodeId());
+			}
+	}
+
+	/**
+	 * adds the ids children and grand children to the set.
+	 * @param set
+	 * @param t
+	 */
+	private void processTwoNodeLayers(Set<String> set, Tree t, String s) {
+		for (Node n : t.findNode(s).getChildren()){
+			set.add(n.getNodeId());
+			for (Node g : n.getChildren()){
+				set.add(g.getNodeId());
+			}
+		}
+	}
 
 	/**
 	 * Retrieve all the updates - called by the Solr OOB indexer
@@ -267,7 +339,7 @@ public class UpdatesAction extends AuthorAction {
 			if (req.hasParameter(SEARCH))  ps.setString(++i, "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%");
 			String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 			if (sectionIds != null) { //restrict to certain sections only
-				for (String s : sectionIds)
+				for (String s : getSectionFamily(sectionIds))
 					ps.setString(++i, s);
 			}
 
@@ -332,7 +404,7 @@ public class UpdatesAction extends AuthorAction {
 			sql.append(", create_dt asc limit ? offset ? ");
 		}
 
-		log.debug(sql);
+		log.debug(" sql "+sql);
 		return sql.toString();
 	}
 
@@ -413,7 +485,7 @@ public class UpdatesAction extends AuthorAction {
 		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 		if (sectionIds != null && sectionIds.length > 0) { //restrict to certain sections only
 			sql.append("and b.section_id in (");
-			DBUtil.preparedStatmentQuestion(sectionIds.length, sql);
+			DBUtil.preparedStatmentQuestion(getSectionFamily(sectionIds).size(), sql);
 			sql.append(") ");
 		}
 		return sql.toString();
