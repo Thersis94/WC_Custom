@@ -236,7 +236,7 @@ public class UpdatesAction extends ManagementAction {
 		sql.append("c.short_nm_txt as company_nm, prod.short_nm as product_nm, ");
 		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
 		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, ");
-		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path "); //need to pass this through for building URLs
+		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path, up.create_dt "); //need to pass this through for building URLs
 		sql.append("from ").append(schema).append("biomedgps_update up ");
 		sql.append("inner join profile p on up.creator_profile_id=p.profile_id ");
 		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section us on up.update_id=us.update_id ");
