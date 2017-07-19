@@ -39,6 +39,7 @@ public class SectionVO implements Serializable {
 	private Date updateDt;
 	private boolean isSelected;
 	private String groupNm;
+	private int isGapNo;
 
 	public SectionVO() {
 		super();
@@ -69,6 +70,7 @@ public class SectionVO implements Serializable {
 		// These values may not always be on a result set depending on where this is being set from
 		setFdPubYr(util.getIntVal("FD_PUB_YR", rs));
 		setFdPubQtr(util.getIntVal("FD_PUB_QTR", rs));
+		setIsGapNo(util.getIntegerVal("IS_GAP", rs));
 	}
 
 	/**
@@ -86,6 +88,7 @@ public class SectionVO implements Serializable {
 		//if this is an insert, randomly generate the solr token.  This only happens once, ever.
 		if (StringUtil.isEmpty(getSectionId()))
 			setSolrTokenTxt(RandomAlphaNumeric.generateRandom(5));
+		setIsGapNo(Convert.formatInteger("isGapNo"));
 	}
 
 	/**
@@ -155,6 +158,16 @@ public class SectionVO implements Serializable {
 	public Date getUpdateDt() {
 		return updateDt;
 	}
+
+	@Column(name="IS_GAP_NO")
+	public int getIsGapNo() {
+		return isGapNo;
+	}
+
+	public boolean isGapNo() {
+		return Convert.formatBoolean(isGapNo);
+	}
+
 	/**
 	 * @param sectionId the sectionId to set.
 	 */
@@ -228,5 +241,9 @@ public class SectionVO implements Serializable {
 
 	public void setGroupNm(String groupNm) {
 		this.groupNm = groupNm;
+	}
+
+	public void setIsGapNo(int isGapNo) {
+		this.isGapNo = isGapNo;
 	}
 }
