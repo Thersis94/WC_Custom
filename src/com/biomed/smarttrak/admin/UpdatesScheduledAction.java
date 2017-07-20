@@ -11,26 +11,31 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 //WC_Custom libs
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
 
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
+import com.siliconmtn.util.solr.AccessControlQuery;
 //WC libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * Title: UpdatesScheduledAction.java <p/>
  * Project: WC_Custom <p/>
- * Description: Handles retrieving the updates for a scheduled email send. "My Updates" - the user will login before seeing this page.<p/>
+ * Description: Handles retrieving the updates for a scheduled email send.
+ * "My Updates" - the user will login before seeing this page.<p/>
  * Copyright: Copyright (c) 2017<p/>
  * Company: Silicon Mountain Technologies<p/>
  * @author Devon Franklin
@@ -61,6 +66,10 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		String marketNm = req.getParameter("marketNm");
+		if(!StringUtil.isEmpty(marketNm)) {
+			checkUserHasMarketPermission(marketNm, req);
+		}
 		String emailDate = req.getParameter("date"); //the date the email was sent.  Prefer to use this to generate 'today's or "last week's" update list.
 		String timeRangeCd = StringUtil.checkVal(req.getParameter("timeRangeCd"));
 		String profileId = StringUtil.checkVal(req.getParameter("profileId"));
@@ -100,6 +109,70 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		putModuleData(updates);
 	}
 
+
+	/**
+	 * Verify if the user has permissions to view data attached to this market.
+	 * If not, redirect.
+	 * @param marketNm
+	 * @param req
+	 * @throws ActionNotAuthorizedException
+	 */
+	private void checkUserHasMarketPermission(String marketNm, ActionRequest req) throws ActionNotAuthorizedException {
+		SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+
+		//use the same mechanisms solr is using to verify data access permissions.
+		String assetAcl = getMarketAcl(marketNm);
+
+		String[] roleAcl = role.getAuthorizedSections();
+		log.debug("user ACL=" + StringUtil.getToString(roleAcl));
+
+		/*
+		 * Verify this user has acces to the generated solr token for this market.
+		 * If not, redirect them to the subscribe page.
+		 */
+		if (roleAcl == null || roleAcl.length == 0 || !AccessControlQuery.isAllowed(assetAcl, null, roleAcl)) {
+			log.debug("user is not authorized.  Setting up redirect, then throwing exception");
+			StringBuilder url = new StringBuilder(150);
+			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
+			new SiteBuilderUtil().manualRedirect(req, url.toString());
+			throw new ActionNotAuthorizedException("not authorized");
+		}
+
+		log.debug("user is authorized");
+	}
+
+	/**
+	 * Helper method builds a Solr like Token for a given marketNm by looking for
+	 * a section under the master root that matches the given marketNm.
+	 * @param marketNm
+	 * @return
+	 */
+	private String getMarketAcl(String marketNm) {
+		StringBuilder sql = new StringBuilder(400);
+		String custom = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select r.solr_token_txt as root_solr, ");
+		sql.append("s.solr_token_txt as gps_solr from ").append(custom);
+		sql.append("biomedgps_section r ");
+		sql.append("inner join ").append(custom).append("biomedgps_section s ");
+		sql.append("on r.section_id = s.parent_id ");
+		sql.append("where s.section_nm = ? and r.section_id = ?");
+
+		log.debug(sql.toString());
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, marketNm);
+			ps.setString(2, AbstractTreeAction.MASTER_ROOT);
+
+			ResultSet rs = ps.executeQuery();
+
+			//If we have a result, build the solr Token as it would appear for solr.
+			if(rs.next()) {
+				return "+g:" + rs.getString("root_solr") + "~" + rs.getString("gps_solr");
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+		return null;
+	}
 
 	/**
 	 * Helper method that establishes the appropriate days
