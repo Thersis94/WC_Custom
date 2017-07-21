@@ -15,6 +15,7 @@ import com.ram.workflow.data.vo.LocationItemMasterVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -97,7 +98,7 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 	 * @return
 	 */
 	private List<CustomerLocationVO> getCustomerLocations(SBUserRole role) {
-		int customerId = Convert.formatInteger((String)role.getAttribute("roleAttributeKey_1"));
+		int customerId = Convert.formatInteger((String)role.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1));
 		List<CustomerLocationVO> cls = new ArrayList<CustomerLocationVO>();
 
 		/*
@@ -150,7 +151,7 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 	private List<LocationItemMasterVO> getInventoryStatusReportList(int locationId, SBUserRole role) {
 
 		//Get Control Variables Ready.
-		Integer customerId = Convert.formatInteger((String)role.getAttribute("roleAttributeKey_1"));
+		Integer customerId = Convert.formatInteger((String)role.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1));
 		boolean filterByOem = role.getRoleLevel() == 20;
 
 		List<LocationItemMasterVO> items = new ArrayList<>();

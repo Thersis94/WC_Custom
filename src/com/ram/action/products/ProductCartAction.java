@@ -99,7 +99,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * Build actions this widget can perform, sent by the request.
 	 * 
 	 */
-	private enum WidgetBuildAction {saveCaseInfo, deleteCase, addProduct, deleteProduct, addSignature, finalize, sendEmails}
+	private enum WidgetBuildAction {saveCaseInfo, deleteCase, addProduct, deleteProduct, addSignature, finalize, sendEmails, saveNote}
 	
 	/**
 	 * Retrieve actions this widget can perform, sent by the request.
@@ -162,6 +162,9 @@ public class ProductCartAction extends SimpleActionAdapter {
 					break;
 				case sendEmails:
 					sendEmails(req);
+					break;
+				case saveNote:
+					rcm.saveNote(req);
 					break;
 			}
 		} catch (Exception e) {

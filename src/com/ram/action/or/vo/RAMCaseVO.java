@@ -39,11 +39,12 @@ public class RAMCaseVO implements Serializable {
 	public enum RAMCaseStatus {OR_READY, OR_IN_PROGRESS, OR_COMPLETE, SPD_IN_PROGRESS, CLOSED}
 
 	private String caseId;
-	private int customerId;
+	private int customerLocationId;
 	private String hospitalCaseId;
 	private String profileId;
 	private String orRoomId;
 	private String surgeonId;
+	private String caseNotes;
 	private Date createDt;
 	private Date updateDt;
 	private Date surgeryDate;
@@ -90,7 +91,7 @@ public class RAMCaseVO implements Serializable {
 	 */
 	public void setData(ActionRequest req) {
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
-		customerId = Convert.formatInteger(req.getParameter("customerId"));
+		customerLocationId = Convert.formatInteger(req.getParameter("customerLocationId"));
 		customerName = req.getParameter("customerName");
 		hospitalCaseId = req.getParameter("hospitalCaseId");
 		orRoomId = req.getParameter("orRoomId");
@@ -101,7 +102,7 @@ public class RAMCaseVO implements Serializable {
 		spdDt = Convert.formatDate(req.getParameter("spdDt"));
 		setCaseStatusTxt(req.getParameter("caseStatus"));
 		profileId = req.getParameter("providerProfileId");
-		
+		caseNotes = req.getParameter("caseNotes");
 		RAMSignatureVO svo = new RAMSignatureVO();
 		svo.setProfileId(req.getParameter("providerProfileId"));
 		svo.setCaseId(caseId);
@@ -120,9 +121,9 @@ public class RAMCaseVO implements Serializable {
 	/**
 	 * @return the customerId
 	 */
-	@Column(name="customer_id")
-	public int getCustomerId() {
-		return customerId;
+	@Column(name="customer_location_id")
+	public int getCustomerLocationId() {
+		return customerLocationId;
 	}
 
 	/**
@@ -236,8 +237,8 @@ public class RAMCaseVO implements Serializable {
 	/**
 	 * @param customerId the customerId to set.
 	 */
-	public void setCustomerId(int customerId) {
-		this.customerId = customerId;
+	public void setCustomerLocationId(int customerLocationId) {
+		this.customerLocationId = customerLocationId;
 	}
 
 	/**
@@ -532,5 +533,20 @@ public class RAMCaseVO implements Serializable {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * @return the caseNotes
+	 */
+	@Column(name="notes_txt")
+	public String getCaseNotes() {
+		return caseNotes;
+	}
+
+	/**
+	 * @param caseNotes the caseNotes to set
+	 */
+	public void setCaseNotes(String caseNotes) {
+		this.caseNotes = caseNotes;
 	}
 }

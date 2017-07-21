@@ -5,6 +5,7 @@ package com.ram.action.data;
 
 import com.ram.action.user.RamUserAction;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -64,10 +65,10 @@ public class RAMProductSearchVO extends EXTJSDataVO {
 		layoutDepthNo = Convert.formatInteger(req.getParameter("layoutDepthNo"));
 		if(r != null) {
 			//Check for providerId, providers are only allowed to see products at their locations.
-			providerId = r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER ? Convert.formatInteger((String) r.getAttribute("roleAttributeKey_1")) : 0;
+			providerId = r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER ? Convert.formatInteger((String) r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)) : 0;
 
 			//Check for oem, oem are only allowed to see their products.
-			customerId = r.getRoleLevel() == RamUserAction.ROLE_LEVEL_OEM ? Convert.formatInteger((String) r.getAttribute("roleAttributeKey_1")) : Convert.formatInteger(req.getParameter("customerId"));
+			customerId = r.getRoleLevel() == RamUserAction.ROLE_LEVEL_OEM ? Convert.formatInteger((String) r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)) : Convert.formatInteger(req.getParameter("customerId"));
 		}
 	}
 

@@ -63,7 +63,7 @@ public class LookupAction extends SimpleActionAdapter {
 				getSurgeons(role);
 				break;
 			case "orRooms":
-				getORRooms(role);
+				getORRooms(role, req.getParameter("selected"), req.getParameter("caseType"));
 				break;
 			case "kits":
 				getKits(req);
@@ -79,17 +79,25 @@ public class LookupAction extends SimpleActionAdapter {
 	 * Gets a list of or rooms for a given provider
 	 * @param role
 	 */
-	public void getORRooms(SBUserRole role) {
-		StringBuilder sql = new StringBuilder(128);
-		sql.append("select or_room_id as key, or_name as value from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("ram_or_room a ");
-		sql.append("inner join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("ram_customer_location b on a.customer_location_id = b.customer_location_id ");
-		sql.append("where customer_id = cast(? as int) ");
-		log.debug(sql + "|" + role.getAttribute(0));
-		
+	public void getORRooms(SBUserRole role, String selected, String caseType) {
 		List<Object> params = new ArrayList<>();
 		params.add(role.getAttribute(0));
+		
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select or_room_id as key, or_name as value from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_customer a ");
+		sql.append("inner join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_customer_location b on a.customer_id = b.customer_id ");
+		sql.append("inner join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_or_room c on b.customer_location_id = c.customer_location_id ");
+		sql.append("where a.customer_id = cast(? as int) ");
+		
+		if ("display".equalsIgnoreCase(caseType)) sql.append("and c.or_room_id = ? ");
+		else sql.append("and c.customer_location_id = cast(? as int) ");
+		sql.append("order by or_name ");
+		log.debug(sql + "|" + role.getAttribute(0) + "|" + selected);
+
+		params.add(selected);
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		List<?> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
 		this.putModuleData(data);
@@ -127,9 +135,10 @@ public class LookupAction extends SimpleActionAdapter {
 	 */
 	public void getProviders(SBUserRole role) {
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select customer_id as key, customer_nm as value from ");
-		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("ram_customer ");
+		sql.append("select customer_location_id as key, location_nm as value from ");
+		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("ram_customer_location ");
 		sql.append("where customer_id = cast(? as int) ");
+		log.debug(sql);
 		
 		List<Object> params = new ArrayList<>();
 		params.add(role.getAttribute(0));

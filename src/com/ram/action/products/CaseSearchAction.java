@@ -153,8 +153,8 @@ public class CaseSearchAction extends SimpleActionAdapter {
 	 * @param sql
 	 */
 	private void buildSelectSQL(StringBuilder sql) {
-		sql.append("select i.num_prod_case, k.num_kit_case, p.customer_nm || ', ' || or_name as customer_nm, c.hospital_case_id, ");
-		sql.append("c.surgery_dt, c.case_status_cd, c.customer_id, c.profile_id, c.case_id ");
+		sql.append("select i.num_prod_case, k.num_kit_case, p.location_nm || ', ' || or_name as customer_nm, c.hospital_case_id, ");
+		sql.append("c.surgery_dt, c.case_status_cd, c.customer_location_id, c.profile_id, c.case_id ");
 	}
 	
 	/**
@@ -165,7 +165,7 @@ public class CaseSearchAction extends SimpleActionAdapter {
 	private void buildKitSearchSQL(ActionRequest req, StringBuilder sql, boolean isList) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("from ").append(customDb).append("ram_case c ");
-		sql.append("inner join ").append(customDb).append("ram_customer p on c.customer_id = p.customer_id ");
+		sql.append("inner join ").append(customDb).append("ram_customer_location p on c.customer_location_id = p.customer_location_id ");
 		sql.append("inner join ").append(customDb).append("ram_or_room r on c.or_room_id = r.or_room_id ");
 		sql.append("left outer join ( ");
 		sql.append("select case_id, cast(sum(qty_no) as int) as num_prod_case ");
@@ -177,7 +177,7 @@ public class CaseSearchAction extends SimpleActionAdapter {
 		sql.append("from ").append(customDb).append("ram_case_kit where processed_flg = 0 ");
 		sql.append("group by case_id ");
 		sql.append(") k on c.case_id = k.case_id  ");
-		sql.append("where c.customer_id = cast(? as int) ");
+		sql.append("where p.customer_id = cast(? as int) ");
 		
 		// Add the search params
 		if (req.hasParameter(SEARCH)) sql.append("and lower(hospital_case_id) like ? ");

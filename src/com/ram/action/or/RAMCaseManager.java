@@ -127,6 +127,16 @@ public class RAMCaseManager {
 		
 		return cVo;
 	}
+	
+	/**
+	 * Saves the case notes as they are changed
+	 * @param req
+	 * @throws Exception
+	 */
+	public void saveNote(ActionRequest req) throws Exception {
+		RAMCaseVO rc = this.retrieveCase(req.getParameter(RAM_CASE_ID));
+		rc.setCaseNotes(req.getParameter("caseNotes"));
+	}
 
 	/**
 	 * Helper method manages retrieving a RAMCaseVO.
@@ -200,7 +210,7 @@ public class RAMCaseManager {
 		sql.append("RAM_LOCATION_ITEM_MASTER where product_id = ? ");
 		return sql.toString();
 	}
-
+	
 	/**
 	 * Helper method that looks up Product Data for the given productId
 	 * @param productId
@@ -276,6 +286,7 @@ public class RAMCaseManager {
 		civo.setProductNm(p.getProductName());
 		civo.setGtinProductId(p.getGtinProductNumber());
 		civo.setCaseItemId(new UUIDGenerator().getUUID());
+		civo.setCustomerProductId(p.getCustomerProductId());
 		return civo;
 	}
 
