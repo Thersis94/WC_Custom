@@ -52,6 +52,9 @@ public class GooglePieChartOptions extends GoogleBaseChartOptions {
 		chartArea.put("width", "85%");
 		chartArea.put("height", full ? "90%" : "100%");
 		chart.put("chartArea", chartArea);
+		Map<String, Object> tooltip = new HashMap<>();
+		tooltip.put("text", "percentage");
+		chart.put("tooltip", tooltip);
 		
 		if (! full) {
 	 		Map<String, Object> legend = (Map<String, Object>) chart.get("legend");
