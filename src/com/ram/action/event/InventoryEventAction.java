@@ -28,6 +28,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -285,7 +286,7 @@ public class InventoryEventAction extends SBActionAdapter {
 			ps.setDate(1, Convert.formatSQLDate(start));
 			ps.setDate(2, Convert.formatSQLDate(end));
 			if(r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER || r.getRoleLevel() == RamUserAction.ROLE_LEVEL_OEM)
-				ps.setInt(3, Convert.formatInteger((String)r.getAttribute("roleAttributeKey_1")));
+				ps.setInt(3, Convert.formatInteger((String)r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)));
 			ResultSet rs = ps.executeQuery();
 			int navStart = Convert.formatInteger(req.getParameter("start"), 0);
 			int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);

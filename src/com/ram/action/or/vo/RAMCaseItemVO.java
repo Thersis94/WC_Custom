@@ -33,6 +33,7 @@ public class RAMCaseItemVO implements Serializable {
 
 	private String caseItemId;
 	private Integer productId;
+	private String customerProductId;
 	private String productNm;
 	private String caseKitId;
 	private String caseId;
@@ -48,7 +49,7 @@ public class RAMCaseItemVO implements Serializable {
 	private Date updateDt;
 
 	public RAMCaseItemVO() {
-		
+		super();
 	}
 
 	public RAMCaseItemVO(ActionRequest req) {
@@ -319,5 +320,20 @@ public class RAMCaseItemVO implements Serializable {
 	 */
 	public void addQty(int qtyNo) {
 		this.qtyNo += qtyNo;
+	}
+
+	/**
+	 * @return the productSku
+	 */
+	@Column(name="cust_product_id", isReadOnly=true)
+	public String getCustomerProductId() {
+		return customerProductId;
+	}
+
+	/**
+	 * @param productSku the productSku to set
+	 */
+	public void setCustomerProductId(String customerProductId) {
+		this.customerProductId = customerProductId;
 	}
 }

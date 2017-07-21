@@ -18,6 +18,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.barcode.BarcodeItemVO;
 import com.siliconmtn.barcode.BarcodeItemVO.BarcodeType;
+import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.barcode.BarcodeManager;
 import com.siliconmtn.barcode.BarcodeOEM;
 import com.siliconmtn.util.Convert;
@@ -115,8 +116,8 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 		/*
 		 * If this customer is already bound to a center, 
 		 */
-		if(r != null && r.hasRoleAttribute("roleAttributeKey_1")) {
-			results.add(barcodes.get(r.getAttribute("roleAttributeKey_1")));
+		if(r != null && r.hasRoleAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)) {
+			results.add(barcodes.get(r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)));
 		} else {
 			results.addAll(barcodes.values());
 		}
