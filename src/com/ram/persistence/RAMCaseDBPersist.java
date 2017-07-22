@@ -76,8 +76,10 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		sql.append("on i.product_id = p.product_id ");
 		sql.append("left outer join ").append(schema).append("RAM_CASE_KIT k ");
 		sql.append("on c.case_id = k.case_id and k.case_kit_id = i.case_kit_id ");
+		sql.append("left outer join ").append(schema).append("ram_customer_location cl ");
+		sql.append("on c.customer_location_id = cl.customer_location_id  ");
 		sql.append("left outer join ").append(schema).append("ram_customer cu ");
-		sql.append("on c.customer_id = cu.customer_id ");
+		sql.append("on cl.customer_id = cu.customer_id ");
 		sql.append("left outer join ").append(schema).append("ram_customer pcu ");
 		sql.append("on p.customer_id = pcu.customer_id ");
 		sql.append("left outer join ").append(schema).append("ram_surgeon su ");
@@ -86,7 +88,7 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		sql.append("on c.or_room_id = o.or_room_id ");
 		sql.append("where c.case_id = ? ");
 		
-		log.info(sql);
+		log.debug(sql);
 		return sql.toString();
 	}
 
@@ -235,6 +237,10 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		for(Entry<SignatureType, Map<String, RAMSignatureVO>> sigs : cVo.getSignatures().entrySet()) {
 			for(Entry<String, RAMSignatureVO> e : sigs.getValue().entrySet()) {
 				RAMSignatureVO s = e.getValue();
+				
+				// ensure the signature exists
+				if (StringUtil.isEmpty(s.getSignatureTxt())) continue;
+				
 				//Ensure CaseId is set correctly.
 				s.setCaseId(cVo.getCaseId());
 

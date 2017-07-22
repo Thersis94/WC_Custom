@@ -192,7 +192,7 @@ public class CaseSearchAction extends SimpleActionAdapter {
 				sql.append(SearchFields.valueOf(req.getParameter("sort")).getColumnName());
 				sql.append(" ").append(req.getParameter("order")).append(" ");
 			} else {
-				sql.append("case_status_cd, surgery_dt desc ");
+				sql.append("surgery_dt desc, case_status_cd ");
 			}
 		}
 		

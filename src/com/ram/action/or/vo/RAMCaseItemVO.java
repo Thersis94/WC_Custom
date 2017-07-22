@@ -71,6 +71,15 @@ public class RAMCaseItemVO implements Serializable {
 		customerNm = req.getParameter("customerNm");
 		setCaseTypeTxt(req.getParameter("caseTypeCd"));
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this);
+	}
 
 	/**
 	 * @return the caseItemId
