@@ -13,9 +13,11 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
+import com.biomed.smarttrak.vo.ProductVO;
 import com.biomed.smarttrak.vo.RegulationVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
@@ -177,7 +179,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 */
 	protected void addProduct(SecureSolrDocumentVO product, Map<String, SecureSolrDocumentVO> products) {
 		if (product != null)
-			products.put(product.getDocumentId(), product);
+			products.put(product.getDocumentId().replace(Section.PRODUCT + "_", ""), product);
 	}
 
 
@@ -449,20 +451,23 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 */
 	protected SecureSolrDocumentVO buildSolrDocument(ResultSet rs) throws SQLException {
 		SecureSolrDocumentVO product = new SecureSolrDocumentVO(INDEX_TYPE);
-		product.setDocumentId(rs.getString(PRODUCT_ID));
+		ProductVO.setSolrId(product, rs.getString(PRODUCT_ID));
 		product.setTitle(rs.getString("PRODUCT_NM"));
-		String name = rs.getString("company_nm");
-		if (name != null) {
-			product.addAttribute("company", name);
-			product.addAttribute("companySearch", name.toLowerCase());
-		}
+		SmarttrakSolrUtil.setSearchField(rs.getString("company_nm"), "company", product);
 		product.addAttribute("companyId", rs.getString("COMPANY_ID"));
 		product.addAttribute("alias", rs.getString("ALIAS_NM"));
 		product.setDocumentUrl(AdminControllerAction.Section.PRODUCT.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString(PRODUCT_ID));
 		product.addAttribute("ownership", rs.getString("HOLDING_TXT"));
 		product.addAttribute("status", rs.getString("STATUS_NO"));
-		product.addAttribute("shortNm", rs.getString("SHORT_NM"));
-		product.addAttribute("companyShortNm", rs.getString("SHORT_NM_TXT"));
+		SmarttrakSolrUtil.setSearchField(rs.getString("short_nm"), "shortNm", product);
+		SmarttrakSolrUtil.setSearchField(rs.getString("short_nm_txt"), "companyShortNm", product);
+
+		//concat some fields into meta-keywords
+		StringBuilder sb = new StringBuilder(100);
+		sb.append(StringUtil.checkVal(rs.getString("short_nm")));
+		if (sb.length() > 0) sb.append(", ");
+		sb.append(StringUtil.checkVal(rs.getString("alias_nm")));
+		product.setMetaKeywords(sb.toString());
 
 		if (rs.getTimestamp("UPDATE_DT") != null) {
 			product.setUpdateDt(rs.getDate("UPDATE_DT"));

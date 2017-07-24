@@ -75,7 +75,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			if (sem.getTgmEmail() != null && sem.getTgmEmail().length() > 0)
@@ -118,7 +117,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("ksmith49@its.jnj.com"); // the DePuy intern in charge
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
@@ -171,7 +169,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.setSubject(subject.toString());
@@ -228,8 +225,8 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			msg.append(event.getAddress2Text()).append("\r");
 		msg.append(event.getCityName()).append(" ").append(event.getStateCode());
 		msg.append(", ").append(event.getZipCode()).append("\r\r");
-		msg.append("If you have any questions please contact Kristen Smith ");
-		msg.append("at  (508) 977-3873 or ksmith49@its.jnj.com\r\r");
+		msg.append("If you have any questions please contact Monica Roderic ");
+		msg.append("at  (508) 977-3873 or mroderic@its.jnj.com\r\r");
 
 		// build the attachment
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
@@ -238,7 +235,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -307,7 +303,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC(ownerEmail);
@@ -344,7 +339,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.setSubject(subject.toString());
@@ -379,7 +373,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
@@ -421,7 +414,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -474,7 +466,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 
 		try{
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.setSubject("Postcard Declined - Seminar "+sem.getRSVPCodes());
@@ -515,7 +506,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 
 			//Recipients
 			mail.addRecipient( sem.getOwner().getEmailAddress() );
-			mail.addCC( "ksmith49@its.jnj.com" );
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			//set the email content
@@ -552,7 +542,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.setTextBody(msg.toString());
 
 			//Recipients
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
@@ -588,7 +577,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 
 			//recipients
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 
@@ -622,7 +610,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 
 			//recipients
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addRecipient("mroderic@its.jnj.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
@@ -661,7 +648,6 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.setTextBody(msg.toString());
 
 			//recipients
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addRecipient("mroderic@its.jnj.com");
 

@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.util;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -90,13 +91,14 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 	private List<SolrDocumentVO> getDocuments(String documentId) {
 		InsightAction ia = new InsightAction();
 		ia.setDBConnection(new SMTDBConnection(dbConn));
-		ia.setAttribute(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
-		ia.setAttribute(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
-		ia.setAttribute(Constants.ENCRYPT_KEY, config.getProperty(Constants.ENCRYPT_KEY));
+		Map<String, Object> attributes = new HashMap<>();
+		for (final String name: config.stringPropertyNames())
+			attributes.put(name, config.getProperty(name));
+		ia.setAttributes(attributes);
 		List<Object> list = ia.getInsights(documentId, InsightVO.InsightStatusCd.P.name(), null, null, true);
 
 		//Load the Section Tree and set all the Hierarchies.
-		SmarttrakTree t = ia.loadSections();
+		SmarttrakTree t = ia.loadDefaultTree();
 		for(Object o : list) {
 			InsightVO i = (InsightVO)o;
 			i.configureSolrHierarchies(t);

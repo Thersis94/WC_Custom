@@ -164,7 +164,10 @@ public class MarketIndexer  extends SMTAbstractIndex {
 			// so as to match the path back up the tree.
 			order.insert(0, hierarchyOrder);
 		}
-
+		
+		// End with appending the market's order number for intra-section ordering
+		order.append(StringUtil.padLeft(StringUtil.checkVal(market.getOrderNo()), '0', 3));
+		
 		market.addAttribute("order", order.toString());
 	}
 

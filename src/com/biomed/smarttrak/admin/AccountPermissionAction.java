@@ -54,7 +54,7 @@ public class AccountPermissionAction extends AbstractTreeAction {
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
 		if (accountId == null) return;
 
-		SmarttrakTree t = loadTree(MASTER_ROOT, new PermissionVO().getClass(), accountId);
+		SmarttrakTree t = loadTree(MASTER_ROOT, PermissionVO.class, accountId);
 		putModuleData(t);
 	}
 

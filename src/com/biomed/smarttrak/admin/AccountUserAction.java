@@ -168,7 +168,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected List<Object> executeUserQuery(String sql, List<Object> params) throws ActionException {
+	protected List<Object> executeUserQuery(String sql, List<Object> params) {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
@@ -223,7 +223,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	protected void callProfileManager(UserVO user, ActionRequest req, boolean isSave) throws ActionException {
+	protected void callProfileManager(UserVO user, ActionRequest req, boolean isSave) {
 		//load the users profile data
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		try {
@@ -343,14 +343,10 @@ public class AccountUserAction extends SBActionAdapter {
 			if (isDelete) {
 				prm.removeRole(role.getProfileRoleId(), dbConn);
 				return;
-
-			} else if (UserVO.Status.EUREPORTS.getCode().equals(user.getStatusCode())) {
-				role.setRoleId(AdminControllerAction.EUREPORT_ROLE_ID);
-			} else if (UserVO.Status.STAFF.getCode().equals(user.getStatusCode())) {
-				role.setRoleId(AdminControllerAction.STAFF_ROLE_ID);
-			} else {
-				role.setRoleId(Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL));
 			}
+			//determine the role id to set
+			setRoleId(role, user);
+			
 			prm.addRole(role, dbConn);
 
 		} catch (com.siliconmtn.exception.DatabaseException e) {
@@ -358,6 +354,24 @@ public class AccountUserAction extends SBActionAdapter {
 		}
 	}
 
+	/**
+	 * Helper method that determines the role id to set for the UserRole
+	 * @param role
+	 * @param user
+	 */
+	protected void setRoleId(SBUserRole role, UserVO user){
+		//determine the role id
+		if (UserVO.Status.EUREPORTS.getCode().equals(user.getStatusCode())) {
+			role.setRoleId(AdminControllerAction.EUREPORT_ROLE_ID);
+		} else if(UserVO.Status.COMPUPDATES.getCode().equals(user.getStatusCode())
+				|| UserVO.Status.UPDATES.getCode().equals(user.getStatusCode())){
+					role.setRoleId(AdminControllerAction.UPDATES_USER_ID);
+		} else if (UserVO.Status.STAFF.getCode().equals(user.getStatusCode())) {
+			role.setRoleId(AdminControllerAction.STAFF_ROLE_ID);
+		} else {
+			role.setRoleId(Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL));
+		}
+	}
 
 	/**
 	 * Transposes the registration fields off the request into a list of Fields, and passes them to the 

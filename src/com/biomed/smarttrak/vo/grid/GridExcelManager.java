@@ -13,10 +13,10 @@ import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.hssf.usermodel.HSSFPalette;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.hssf.util.CellRangeAddress;
 import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.usermodel.Row;
 
 // App Libs
@@ -43,7 +43,7 @@ import com.siliconmtn.util.StringUtil;
 public class GridExcelManager {
 
 	private Logger log = Logger.getLogger(GridExcelManager.class);
-	
+
 	/**
 	 * 
 	 */
@@ -62,29 +62,29 @@ public class GridExcelManager {
 		try (HSSFWorkbook workbook = new HSSFWorkbook()) {
 			log.debug("Title: " + StringUtil.removeNonAlphaNumeric(grid.getTitle(), false));
 			HSSFSheet sheet = workbook.createSheet(StringUtil.removeNonAlphaNumeric(grid.getTitle(), false));
-			
+
 			List<GridDetailVO> details = grid.getDetails();
 			String[] series = grid.getSeries();
-			
+
 			int numberCols = grid.getNumberColumns();
 			log.debug("Number of columns: " + numberCols);
-			
+
 			// Create the columns first
 			int ctr = 1;
 			this.addHeadingLabel(workbook, sheet, numberCols, grid.getTitle());
-			
+
 			Row row = sheet.createRow(ctr++);
 			row.setHeightInPoints((int)(1.5 * sheet.getDefaultRowHeightInPoints()));
 			Cell cell = row.createCell(0);
 			cell.setCellValue("");
 			cell.setCellStyle(getHeaderStyle(workbook));
-			
+
 			for (int i=0; i < (numberCols); i++) {
 				cell = row.createCell(i+1);
 				cell.setCellValue(series[i]);
 				cell.setCellStyle(getHeaderStyle(workbook));
 			}
-			
+
 			// Add the rows of data
 			for (GridDetailVO detail : details ) {
 				row = sheet.createRow(ctr++);
@@ -94,39 +94,37 @@ public class GridExcelManager {
 				HSSFCellStyle style = getRowStyle(workbook, detail.getDetailType(), false);
 				style.setAlignment(HSSFCellStyle.ALIGN_LEFT);
 				cell.setCellStyle(style);
-				
+
 				for (int i=0; i < (numberCols); i++) {
 					cell = row.createCell(i + 1);
 					boolean neg = false;
 					if (Convert.formatDouble(detail.getValues()[i]) < 0) neg = true;
 					if (neg) log.info("Val: " + detail.getDetailType() + "|" + detail.getValues()[i] + "|" + Convert.formatDouble(detail.getValues()[i]));
-					
+
 					cell.setCellValue(detail.getValues()[i]);
 					cell.setCellStyle(getRowStyle(workbook, detail.getDetailType(), neg));
 				}
 			}
-			
+
 			// resize all of the columns
 			for (int i=0; i < numberCols; i++) sheet.autoSizeColumn(i);
-			
+
 			// Add the workbook to the stream and store to the byte[]
 			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 				workbook.write(baos);
 				data = baos.toByteArray();
 			} 
-			
+
 		} catch(Exception e) {
 			log.error("Unable to create excel file", e);
 			throw new ApplicationException("Unable to create excel file", e);
 		}
-		
+
 		return data;
 	}
-	
-	
-	@SuppressWarnings("deprecation")
+
+
 	public void addHeadingLabel(HSSFWorkbook workbook, HSSFSheet sheet, int numColumns, String name) {
-		
 		Row row = sheet.createRow(0);
 		Cell cell = row.createCell(0);
 		CellRangeAddress range = new CellRangeAddress(0, 0, 0, numColumns);
@@ -135,7 +133,7 @@ public class GridExcelManager {
 		row.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
 		cell.setCellStyle(getHeadingLabelStyle(workbook));
 	}
-	
+
 	/**
 	 * Sets the styles for the heading label row
 	 * @param workbook
@@ -156,10 +154,10 @@ public class GridExcelManager {
 		style.setFillForegroundColor(backColor);
 		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
 		style.setIndention((short) 1);
-		
+
 		return style;
 	}
-	
+
 	/**
 	 * Sets the styles for the header row
 	 * @param workbook
@@ -179,10 +177,10 @@ public class GridExcelManager {
 		style.setFillForegroundColor(backColor);
 		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
 		style.setIndention((short) 1);
-		
+
 		return style;
 	}
-	
+
 	/**
 	 * Determines the row style type (data, heading total, sub-total) and 
 	 * builds the appropriate styles for the sheet 
@@ -211,7 +209,7 @@ public class GridExcelManager {
 
 		return style;
 	}
-	
+
 	/**
 	 * Gets the styles for headings
 	 * @param workbook
@@ -223,15 +221,15 @@ public class GridExcelManager {
 		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
 		style.setBorderBottom((short)1);
 		style.setBorderTop((short)1);
-		
+
 		HSSFFont font = getBaseFont(workbook, neg);
 		style.setFont(font);
 		font.setColor(HSSFColor.BLACK.index);
 		font.setBold(true);
-		
+
 		return style;
 	}
-	
+
 	/**
 	 * Gets the styles for headings
 	 * @param workbook
@@ -243,16 +241,16 @@ public class GridExcelManager {
 		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
 		style.setBorderBottom((short)1);
 		style.setBorderTop((short)1);
-		
+
 		HSSFFont font = getBaseFont(workbook, neg);
 		if (! neg) font.setColor(HSSFColor.GREY_50_PERCENT.index);
 		font.setItalic(true);
 		font.setBold(true);
 		style.setFont(font);
-		
+
 		return style;
 	}
-	
+
 	/**
 	 * Gets the styles for Data elements
 	 * @param workbook
@@ -260,13 +258,13 @@ public class GridExcelManager {
 	 */
 	public HSSFCellStyle getDataStyle(HSSFWorkbook workbook, boolean neg) {
 		HSSFCellStyle style= getBaseStyle(workbook);
-		
+
 		HSSFFont font = getBaseFont(workbook, neg);
 		style.setFont(font);
-		
+
 		return style;
 	}
-	
+
 	/**
 	 * Gets the styles for headings
 	 * @param workbook
@@ -276,22 +274,22 @@ public class GridExcelManager {
 		HSSFCellStyle style= getBaseStyle(workbook);
 		HSSFPalette palette = workbook.getCustomPalette();
 		short backColor = palette.findSimilarColor(61, 120, 216).getIndex();
-		
+
 		style.setFillForegroundColor(backColor);
 		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
 		style.setBorderLeft((short)0);
 		style.setBorderRight((short)0);
 		style.setBorderBottom((short)1);
 		style.setBorderTop((short)1);
-		
+
 		HSSFFont font = getBaseFont(workbook, false);
 		font.setColor(HSSFColor.WHITE.index);
 		font.setBold(true);
 		style.setFont(font);
-		
+
 		return style;
 	}
-	
+
 	/**
 	 * Sets the base cell styles
 	 * @param workbook
@@ -302,10 +300,10 @@ public class GridExcelManager {
 		style.setAlignment(HSSFCellStyle.ALIGN_RIGHT);
 		style.setIndention((short) 1);
 		style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
-		
+
 		return style;
 	}
-	
+
 	/**
 	 * Creates the base fonts
 	 * @param workbook
@@ -317,10 +315,10 @@ public class GridExcelManager {
 		font.setFontName("Arial");
 		if (neg) font.setColor(HSSFColor.RED.index);
 		else font.setColor(HSSFColor.BLACK.index);
-		
+
 		font.setBold(false);
 		font.setItalic(false);
-		
+
 		return font;
 	}
 }

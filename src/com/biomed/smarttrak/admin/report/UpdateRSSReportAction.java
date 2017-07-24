@@ -3,6 +3,8 @@ package com.biomed.smarttrak.admin.report;
 import java.util.ArrayList;
 import java.util.List;
 
+
+
 //wc custom libs
 import com.biomed.smarttrak.vo.UpdateVO;
 //smt base libs
@@ -11,6 +13,8 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.rss.RSSCreatorReport;
@@ -50,6 +54,16 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	
 	/*
 	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException{
+		//call to super retrieve for admin registration
+		super.retrieve(req);
+	}
+	
+	/*
+	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
@@ -71,18 +85,21 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Returns the SQL of updates with twitter text with yesterday's date
+	 * Returns list of updates with twitter messages and publish dates of today  
 	 * @return
 	 */
 	protected List<UpdateVO> getTwitterUpdates(){
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select * from ").append(schema).append("biomedgps_update ");
-		sql.append("where tweet_flg = 1 ");
-		sql.append("and create_dt >= date_trunc('day', current_timestamp) - interval '1' day ");
-		sql.append("and create_dt < date_trunc('day', current_timestamp) ");
-		sql.append("order by create_dt ");
+		sql.append("select update_id, market_id, product_id, company_id, title_txt, type_cd, ");
+		sql.append("message_txt, twitter_txt, tweet_flg, publish_dt, create_dt, update_dt, ");
+		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path ");
+		sql.append("from ").append(schema).append("biomedgps_update ");
+		sql.append("where tweet_flg = 1 and email_flg = 1 and status_cd in ('R','N') ");
+		sql.append("and cast(publish_dt as date) = current_date ");
+		sql.append("and create_dt + (interval '1 hour') <= current_timestamp "); //allow at least one hour before submitting live
+		sql.append("order by publish_dt desc, create_dt desc ");
 		log.debug(sql);
 		
 		//execute the query
@@ -105,21 +122,44 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 	 */
 	private List<SearchVO> buildSearchItems(List<UpdateVO> updates){
 		List<SearchVO> searchItems = new ArrayList<>();
-		UUIDGenerator uuid = new UUIDGenerator();
 		
 		//add the relevant pieces to create the search vo
 		for (UpdateVO update : updates) {
 			SearchVO vo = new SearchVO();
 			vo.setActionId(update.getUpdateId());
-	       	vo.setTitle(update.getTitleTxt());
+	       	vo.setTitle(update.getTitle());
 	        vo.setSummary(update.getTwitterTxt());
 	        vo.setCreateDate(update.getCreateDt());
 	        //ensure each document url is unique
-	        vo.setDocumentUrl(update.getDocumentUrl() +"?"+ uuid.getUUID());        
+	        vo.setDocumentUrl(buildRSSDocumentUrl(update));   
+	        vo.setLinkOmitted(true); //omit the link for each item
 	        searchItems.add(vo); //add the item
 		}
 		
 		return searchItems;
+	}
+	
+	/**
+	 * builds the update RSS feed url
+	 * @param update
+	 * @return
+	 */
+	private String buildRSSDocumentUrl(UpdateVO update){
+        StringBuilder docUrl = new StringBuilder(100);
+        String updateUrl = update.getDocumentUrl();
+
+        if(StringUtil.isEmpty(updateUrl)){
+        	docUrl.append("?rss=1&amp;searchData=").append(StringEncoder.urlEncode(update.getTitle()));
+        }else{        	
+        	//remove the beginning slash, as the RSSCreatorReport will add one for us
+        	if(updateUrl.indexOf('/') == 0){
+        		updateUrl = updateUrl.substring(1);
+        	}
+        	
+    		UUIDGenerator uuid = new UUIDGenerator();
+    		docUrl.append(updateUrl).append("/").append(uuid.getUUID()); 
+        }
+        return docUrl.toString();
 	}
 	
 	/**

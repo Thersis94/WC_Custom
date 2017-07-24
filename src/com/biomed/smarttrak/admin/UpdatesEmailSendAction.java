@@ -33,6 +33,7 @@ import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 
 public class UpdatesEmailSendAction extends SBActionAdapter {
 	private String profileId; 
+	private String uniqueSendFlg= "0"; //use String due to cross tab query in datasource
 	protected enum KeyValueType {
 		SECTION_KEY_TYPE("SECTION"), MESSAGE_KEY_TYPE("MESSAGE"), 
 		TIME_RANGE_KEY_TYPE("TIME_RANGE");
@@ -67,12 +68,16 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException{
 		log.debug("Processing email send for updates...");
 		profileId = StringUtil.checkVal(req.getParameter("profileId"));
 		
 		//if user doesn't already have a profile, create one
-		if(profileId.isEmpty()) createUserProfile(req);
+		if(profileId.isEmpty()) {
+			uniqueSendFlg = "1";
+			createUserProfile(req);
+		}
 		
 		//send off "send now email"
 		processEmailSend(req);
@@ -137,6 +142,9 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 		for(KeyValueType type: KeyValueType.values()){
 			assignKeyValuePair(req, type, config);
 		}
+		
+		//add the unique send flag to config
+		config.put("uniqueSendFlg", uniqueSendFlg);
 
 		return config;
 	} 

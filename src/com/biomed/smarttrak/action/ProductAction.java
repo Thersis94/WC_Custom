@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.action;
 
+// Java 8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,7 +10,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
-import com.biomed.smarttrak.admin.AbstractTreeAction;
+// WC Custom
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
@@ -18,6 +20,8 @@ import com.biomed.smarttrak.vo.ProductAttributeVO;
 import com.biomed.smarttrak.vo.ProductVO;
 import com.biomed.smarttrak.vo.RegulationVO;
 import com.biomed.smarttrak.vo.SectionVO;
+
+// SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionNotAuthorizedException;
@@ -26,6 +30,9 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
+
+// WC Core
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -49,10 +56,9 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
  * @since Feb 15, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
-public class ProductAction extends AbstractTreeAction {
+public class ProductAction extends SimpleActionAdapter {
 	public static final String DETAILS_ID = "DETAILS_ROOT";
-	
+
 	public ProductAction() {
 		super();
 	}
@@ -60,12 +66,12 @@ public class ProductAction extends AbstractTreeAction {
 	public ProductAction(ActionInitVO init) {
 		super(init);
 	}
-	
+
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
-	
+
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
@@ -87,8 +93,8 @@ public class ProductAction extends AbstractTreeAction {
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
 				putModuleData(vo);
 			}
-		    	PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
-		    	SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+			PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
+			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 			page.setTitleName(vo.getProductName() + " | " + site.getSiteName());
 			putModuleData(vo);
 		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
@@ -104,7 +110,7 @@ public class ProductAction extends AbstractTreeAction {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
 		sql.append("WHERE PRODUCT_ID = ? ");
-		
+
 		List<Object> params = new ArrayList<>();
 		params.add(productId);
 		DBProcessor db = new DBProcessor(dbConn);
@@ -121,7 +127,7 @@ public class ProductAction extends AbstractTreeAction {
 		if (!StringUtil.isEmpty(product.getCompanyId()))
 			addRelatedProducts(product);
 
-		
+
 		return product;
 	}
 
@@ -138,10 +144,10 @@ public class ProductAction extends AbstractTreeAction {
 		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
 		sql.append("ON xr.SECTION_ID = s.SECTION_ID ");
 		sql.append("WHERE p.COMPANY_ID = ? ");
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, product.getCompanyId());
-			
+
 			ResultSet rs = ps.executeQuery();
 
 			DBProcessor db = new DBProcessor(dbConn);
@@ -152,13 +158,25 @@ public class ProductAction extends AbstractTreeAction {
 				db.executePopulate(p, rs);
 				addRelatedProduct(p, product, t, rs.getString("SECTION_ID"));
 			}
-			
+
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
 	}
 
-	
+
+	/**
+	 * returns the default hierarchy built by the hierarchy action
+	 * @return
+	 */
+	private SmarttrakTree loadDefaultTree() {
+		// load the section hierarchy Tree from the hierarchy action
+		SectionHierarchyAction sha = new SectionHierarchyAction();
+		sha.setAttributes(getAttributes());
+		sha.setDBConnection(getDBConnection());
+		return sha.loadDefaultTree();
+	}
+
 	/**
 	 * Add a related product to the main product
 	 * @param p
@@ -168,12 +186,12 @@ public class ProductAction extends AbstractTreeAction {
 	protected void addRelatedProduct(ProductVO p, ProductVO product,
 			SmarttrakTree t, String sectionId) {
 		Node n = t.findNode(sectionId);
-		
+
 		// If this product doesn't have any 
 		if (n == null) return;
-		
+
 		String[] path = n.getFullPath().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
-		
+
 		if (path.length < 2) {
 			product.addRelatedProduct(path[path.length-1], p);
 		} else {
@@ -181,14 +199,14 @@ public class ProductAction extends AbstractTreeAction {
 		}
 	}
 
-	
+
 	/**
 	 * Add all regulations to the product
 	 */
 	protected void addRegulatory(ProductVO product) {
 		StringBuilder sql = new StringBuilder(475);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		
+
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_REGULATORY r ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_STATUS s ");
 		sql.append("ON s.STATUS_ID = r.STATUS_ID ");
@@ -197,7 +215,7 @@ public class ProductAction extends AbstractTreeAction {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_PATH p ");
 		sql.append("ON p.PATH_ID = r.PATH_ID ");
 		sql.append("WHERE r.PRODUCT_ID = ? ");
-		
+
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> params = new ArrayList<>();
 		params.add(product.getProductId());
@@ -206,8 +224,8 @@ public class ProductAction extends AbstractTreeAction {
 			product.addRegulation((RegulationVO) o);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Get all attributes for a product
 	 * @param product
@@ -225,30 +243,30 @@ public class ProductAction extends AbstractTreeAction {
 		}
 		// Detail attributes never have a status number but shouldn't be skipped.
 		sql.append("'").append(AdminControllerAction.Status.P).append("') or STATUS_NO is null) "); 
-		
+
 		sql.append("ORDER BY a.ORDER_NO, xr.ORDER_NO ");
 		log.debug(sql+"|"+product.getProductId());
-		
+
 		List<Object> params = new ArrayList<>();
 		params.add(product.getProductId());
 		DBProcessor db = new DBProcessor(dbConn);
-		
+
 		List<Object> results = db.executeSelect(sql.toString(), params, new ProductAttributeVO());
 		Tree t = buildAttributeTree();
 		Map<String, List<ProductAttributeVO>> attrMap = new TreeMap<>();
 		for (Object o : results) {
 			addToAttributeMap(attrMap, t, (ProductAttributeVO)o, product);
 		}
-		
+
 		for (Entry<String, List<ProductAttributeVO>> e : attrMap.entrySet()) {
 			for (ProductAttributeVO attr : e.getValue()) {
 				product.addProductAttribute(attr);
 			}
 		}
-		
+
 	}
 
-	
+
 	/**
 	 * Build an attribute tree to get a complete listing of the attribute groups
 	 * @return
@@ -268,7 +286,7 @@ public class ProductAction extends AbstractTreeAction {
 				n.setNodeName(rs.getInt("ORDER_NO") + "|" + rs.getString("ATTRIBUTE_NM"));
 				attributes.add(n);
 			}
-			
+
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
@@ -276,8 +294,8 @@ public class ProductAction extends AbstractTreeAction {
 		t.buildNodePaths();
 		return t;
 	}
-	
-	
+
+
 	/**
 	 * Add an attribute to map properly groups attributes according to ancestry.
 	 * @param attrMap
@@ -285,19 +303,17 @@ public class ProductAction extends AbstractTreeAction {
 	 * @param attr
 	 * @param product
 	 */
-	protected void addToAttributeMap(Map<String, List<ProductAttributeVO>> attrMap, Tree attributeTree, ProductAttributeVO attr, ProductVO product) {
-		
+	protected void addToAttributeMap(Map<String, List<ProductAttributeVO>> attrMap, Tree attributeTree, 
+			ProductAttributeVO attr, ProductVO product) {
 		if ("LINK".equals(attr.getAttributeTypeCd()) ||
 				"ATTACH".equals(attr.getAttributeTypeCd())) {
 			addLink(attrMap, attr);
 			return;
 		}
-		
-		
+
 		Node n = attributeTree.findNode(attr.getAttributeId());
-		
 		String[] path = n.getFullPath().split("/");
-		
+
 		if (n.getFullPath().contains(DETAILS_ID)) {
 			Node head = attributeTree.findNode(path[1]);
 			String[] name = head.getNodeName().split("\\|");
@@ -310,22 +326,24 @@ public class ProductAction extends AbstractTreeAction {
 			attr.setGroupName(attr.getAttributeId());
 			attrMap.get(attr.getAttributeId()).add(attr);
 		}
-		
+
 	}
-	
+
 
 	/**
 	 * Add the link to the proper list, including specialized lists for attatchments
 	 * @param attrMap
 	 * @param attr
 	 */
-	private void addLink(Map<String, List<ProductAttributeVO>> attrMap,
-			ProductAttributeVO attr) {
-		if (attrMap.get(attr.getAttributeId()) == null) attrMap.put(attr.getAttributeId(), new ArrayList<ProductAttributeVO>());
+	private void addLink(Map<String, List<ProductAttributeVO>> attrMap, ProductAttributeVO attr) {
+		//make sure the list we're about to append to exists on the map first
+		if (!attrMap.containsKey(attr.getAttributeId())) 
+			attrMap.put(attr.getAttributeId(), new ArrayList<ProductAttributeVO>());
+		
 		attrMap.get(attr.getAttributeId()).add(attr);
 	}
-	
-	
+
+
 	/**
 	 * Returns a list of attributes for a product, excluding attributes that
 	 * fall under the Product Details tree of attributes.
@@ -346,12 +364,12 @@ public class ProductAction extends AbstractTreeAction {
 		params.add(productId);
 		params.add(DETAILS_ID);
 		DBProcessor db = new DBProcessor(dbConn);
-		
+
 		// DBProcessor returns a list of objects that need to be individually cast to attributes
 		return db.executeSelect(sql.toString(), params, new ProductAttributeVO());
 	}
-	
-	
+
+
 	/**
 	 * Get all the sections that are associated with the supplied product
 	 * @param product
@@ -367,19 +385,19 @@ public class ProductAction extends AbstractTreeAction {
 
 		SmarttrakTree t = loadDefaultTree();
 		t.buildNodePaths();
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, product.getProductId());
-			
+
 			ResultSet rs = ps.executeQuery();
-			
+
 			while(rs.next()) {
 				product.addProductSection(new SectionVO(rs));
 				Node n = null;
-				
+
 				if (!StringUtil.isEmpty(rs.getString("SECTION_ID"))) 
 					n = t.findNode(rs.getString("SECTION_ID"));
-				
+
 				if (n != null) {
 					SectionVO sec = (SectionVO) n.getUserObject();
 					product.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
@@ -389,8 +407,8 @@ public class ProductAction extends AbstractTreeAction {
 			throw new ActionException(e);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Get all alliances the supplied product is in and add them to the vo
 	 * @param product
@@ -406,11 +424,11 @@ public class ProductAction extends AbstractTreeAction {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = pax.COMPANY_ID ");
 		sql.append("WHERE pax.PRODUCT_ID = ? ");
-		
+
 		List<Object> params = new ArrayList<>();
 		params.add(product.getProductId());
 		DBProcessor db = new DBProcessor(dbConn);
-		
+
 		// DBProcessor returns a list of objects that need to be individually cast to alliances
 		List<Object> results = db.executeSelect(sql.toString(), params, new ProductAllianceVO());
 		for (Object o : results) {
@@ -418,31 +436,30 @@ public class ProductAction extends AbstractTreeAction {
 		}
 	}
 
-	
+
 	/**
 	 * Retrieve all products from solr according to the search terms
 	 * @param req
 	 * @throws ActionException
 	 */
 	protected void retrieveProducts(ActionRequest req) throws ActionException {
-
 		// Pass along the proper information for a search to be done.
-    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-    	req.setParameter("pmid", mod.getPageModuleId());
-    	String search = StringUtil.checkVal(req.getParameter("searchData"));
-    	
-    	req.setParameter("searchData", search.toLowerCase());
-	
-    	// Build the solr action
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		req.setParameter("pmid", mod.getPageModuleId());
+		String search = StringUtil.checkVal(req.getParameter("searchData"));
+
+		req.setParameter("searchData", search.toLowerCase());
+
+		// Build the solr action
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		sa.retrieve(req);
-		
-    	req.setParameter("searchData", search);
+
+		req.setParameter("searchData", search);
 	}
-	
+
 
 	/**
 	 * Get the solr information 
@@ -454,14 +471,8 @@ public class ProductAction extends AbstractTreeAction {
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		return sa.retrieveActionData(req);
 	}
-
-	@Override
-	public String getCacheKey() {
-		return null;
-	}
-
 }
