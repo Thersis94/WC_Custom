@@ -44,7 +44,8 @@ public class UserListReportVO extends AbstractSBReportVO {
 	private static final String ACCT_EXPIRE = "ACCT_EXPIRE";
 	private static final String ACCT_NM = "ACCT_NM";
 	private static final String ACCT_STATUS = "ACCT_STATUS";
-	
+	private static final String ACCT_ID = "ACCT_ID";
+
 	// profile fields
 	private static final String FIRST_NM = "FIRST_NM";
 	private static final String LAST_NM = "LAST_NM";
@@ -62,6 +63,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	private static final String USER_STATUS = "USER_STATUS";
 	private static final String USER_EXPIRE = "USER_EXPIRE";
 	private static final String HAS_FD = "HAS_FD";
+	private static final String USER_ID = "USER_ID";
 
 	// other fields
 	private static final String DATE_JOINED = "DATE_JOINED";
@@ -131,9 +133,11 @@ public class UserListReportVO extends AbstractSBReportVO {
 			// loop account users
 			for (UserVO user : acct.getUsers()) {
 				row = new HashMap<>();
+				row.put(ACCT_ID, acct.getAccountId());
 				row.put(ACCT_NM, acct.getAccountName());
 				row.put(ACCT_EXPIRE, formatDate(acct.getExpirationDate(),false));
 				row.put(ACCT_STATUS, acct.getStatusName());
+				row.put(USER_ID, user.getUserId());
 				row.put(USER_EXPIRE, formatDate(user.getExpirationDate(),false));
 				row.put(RegistrationMap.COMPANY.name(),user.getCompany());
 				row.put(RegistrationMap.TITLE.name(),user.getTitle());
@@ -235,9 +239,11 @@ public class UserListReportVO extends AbstractSBReportVO {
 	 */
 	protected HashMap<String, String> getHeader() {
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
+		headerMap.put(ACCT_ID, "Account Id");
 		headerMap.put(ACCT_NM,"Account Name");
 		headerMap.put(ACCT_EXPIRE,"Account Expiration");
 		headerMap.put(ACCT_STATUS,"Is Active");
+		headerMap.put(USER_ID, "User Id");
 		headerMap.put(USER_EXPIRE,"User Expiration");
 		headerMap.put(RegistrationMap.COMPANY.name(),"Company");
 		headerMap.put(RegistrationMap.TITLE.name(),"Title");

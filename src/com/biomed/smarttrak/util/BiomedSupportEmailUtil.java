@@ -48,11 +48,12 @@ public class BiomedSupportEmailUtil {
 	public static final String STAT_TICKET_CAMP_INST_ID = "statTicketCampInstId";
 	public static final String ACT_TICKET_CAMP_INST_ID = "actTicketCampInstId";
 	private Logger log;
-
+	private List<String> adminEmails;
 	public enum EmailType {PUBLIC, ADMIN}
 	private EmailCampaignBuilderUtil ecbu;
 	private SMTDBConnection dbConn = null;
 	private Map<String, Object> attributes = null;
+	public static final String SUPPORT_ADMIN_EMAILS = "supportAdminEmails";
 
 	/**
 	 * Constructor takes Connection and attributes Map for building emails.
@@ -66,8 +67,20 @@ public class BiomedSupportEmailUtil {
 		this.dbConn = conn;
 		this.attributes = attributes;
 		this.ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
+		loadAdminEmails();
 	}
 
+	/**
+	 * Load Support Emails from config so we can filter out the admins that
+	 * should receive the emails.
+	 */
+	private void loadAdminEmails() {
+		adminEmails = new ArrayList<>();
+		String [] emails = StringUtil.checkVal(attributes.get(SUPPORT_ADMIN_EMAILS)).split(",");
+		for(String e : emails) {
+			adminEmails.add(StringUtil.checkVal(e));
+		}
+	}
 
 	/**
 	 * Single point entry for sending emails.
@@ -282,9 +295,11 @@ public class BiomedSupportEmailUtil {
 		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
 			if(r.getKey().equals(EmailType.ADMIN)) {
-				//New Tickets get sent to All Admins.
+				//New Tickets get sent to admins withing the adminEmails List.
 				for(AccountVO a : admins) {
-					r.getValue().put(a.getOwnerProfileId(), a.getOwnerEmailAddr());
+					if(adminEmails.contains(a.getOwnerEmailAddr())) {
+						r.getValue().put(a.getOwnerProfileId(), a.getOwnerEmailAddr());
+					}
 				}
 			}
 

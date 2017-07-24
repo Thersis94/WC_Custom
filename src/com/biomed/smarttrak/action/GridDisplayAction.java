@@ -172,6 +172,11 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			// Parse pout the passed in data and format for calling each chart
 			ChartType ct = ChartType.valueOf(items.get(id).getKey() + "");
 			String columns = StringUtil.checkVal(items.get(id).getValue());
+			
+			if (!ChartType.TABLE.equals(ct)) {
+				pruneColumns(grid);
+			}
+			
 			if (columns.length() > 0) {
 				List<String> sCols = Arrays.asList(columns.split("\\,"));
 				cols = sCols.stream().map(Integer::parseInt).collect(Collectors.toList());
@@ -182,6 +187,21 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		}
 
 		return data;
+	}
+
+	
+	/**
+	 * The retrieve all grids method does not differentiate between grid types. 
+	 * Here all details that do not belong in a non-table display are removed.
+	 * @param grid
+	 */
+	private void pruneColumns(GridVO grid) {
+		List<GridDetailVO> details = new ArrayList<>();
+		for (GridDetailVO detail : grid.getDetails()) {
+			if (StringUtil.isEmpty(detail.getDetailType()) || "DATA".equals(detail.getDetailType()))
+				details.add(detail);
+		}
+		grid.setDetails(details);
 	}
 
 	/**
