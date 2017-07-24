@@ -196,7 +196,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 		sql.append("pf.profile_id, pf.authentication_id, pf.first_nm, pf.last_nm, pf.email_address_txt, ");
 		sql.append("pfa.address_txt, pfa.address2_txt, pfa.city_nm, pfa.state_cd, pfa.zip_cd, pfa.country_cd, ");
 		sql.append("ph.phone_number_txt, ph.phone_type_cd, ");
-		sql.append("rd.register_field_id, rd.value_txt ");
+		sql.append("rd.register_field_id, rd.value_txt, us.user_id ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us ");
 		sql.append("on ac.account_id = us.account_id ");
@@ -337,6 +337,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 	protected UserVO createBaseUser(StringEncrypter se, ResultSet rs) throws SQLException {
 		UserVO user = new UserVO();
 		// set unencrypted fields
+		user.setUserId(rs.getString("user_id"));
 		user.setAccountId(rs.getString("account_id"));
 		user.setProfileId(rs.getString("profile_id"));
 		user.setAuthenticationId(rs.getString("authentication_id"));

@@ -2,9 +2,11 @@ package com.biomed.smarttrak.util;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
@@ -46,10 +48,12 @@ public class BiomedSupportEmailUtil {
 	public static final String STAT_TICKET_CAMP_INST_ID = "statTicketCampInstId";
 	public static final String ACT_TICKET_CAMP_INST_ID = "actTicketCampInstId";
 	private Logger log;
-
+	private List<String> adminEmails;
+	public enum EmailType {PUBLIC, ADMIN}
 	private EmailCampaignBuilderUtil ecbu;
 	private SMTDBConnection dbConn = null;
 	private Map<String, Object> attributes = null;
+	public static final String SUPPORT_ADMIN_EMAILS = "supportAdminEmails";
 
 	/**
 	 * Constructor takes Connection and attributes Map for building emails.
@@ -63,8 +67,20 @@ public class BiomedSupportEmailUtil {
 		this.dbConn = conn;
 		this.attributes = attributes;
 		this.ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
+		loadAdminEmails();
 	}
 
+	/**
+	 * Load Support Emails from config so we can filter out the admins that
+	 * should receive the emails.
+	 */
+	private void loadAdminEmails() {
+		adminEmails = new ArrayList<>();
+		String [] emails = StringUtil.checkVal(attributes.get(SUPPORT_ADMIN_EMAILS)).split(",");
+		for(String e : emails) {
+			adminEmails.add(StringUtil.checkVal(e));
+		}
+	}
 
 	/**
 	 * Single point entry for sending emails.
@@ -78,7 +94,7 @@ public class BiomedSupportEmailUtil {
 		TicketEmailVO ticket = loadTicket(ticketId, null);
 		try {
 			sendEmails(ticket, type);
-		} catch (InvalidDataException | EncryptionException e) {
+		} catch (EncryptionException e) {
 			throw new ActionException("There was a problem building Biomed support email.", e);
 		}
 	}
@@ -132,7 +148,6 @@ public class BiomedSupportEmailUtil {
 		if(!ticket.isEmpty()) {
 			t = (TicketEmailVO)ticket.get(0);
 
-			t.setTicketLink(buildTicketLink(t));
 			//Decrypt ProfileData on Ticket.
 			decryptTicket(t);
 		}
@@ -145,11 +160,15 @@ public class BiomedSupportEmailUtil {
 	 * @param t
 	 * @return
 	 */
-	protected String buildTicketLink(TicketEmailVO t) {
+	protected String buildTicketLink(TicketEmailVO t, EmailType type) {
 		//Build Url
 		StringBuilder url = new StringBuilder(150);
-		url.append((String)attributes.get("smarttrakSupportUrl"));
-		url.append(attributes.get(Constants.QS_PATH));
+		if(type.equals(EmailType.PUBLIC)) {
+			url.append((String)attributes.get("smarttrakSupportUrl"));
+			url.append(attributes.get(Constants.QS_PATH));
+		} else { 
+			url.append((String)attributes.get("smarttrakAdminSupportUrl"));
+		}
 		url.append(t.getTicketId());
 
 		return url.toString();
@@ -198,7 +217,7 @@ public class BiomedSupportEmailUtil {
 	 * @throws EncryptionException 
 	 * @throws Exception 
 	 */
-	protected void sendEmails(TicketEmailVO ticket, ChangeType type) throws InvalidDataException, ActionException, EncryptionException {
+	protected void sendEmails(TicketEmailVO ticket, ChangeType type) throws EncryptionException {
 		switch(type) {
 			case ACTIVITY:
 				sendActivityEmails(ticket);
@@ -267,23 +286,32 @@ public class BiomedSupportEmailUtil {
 	 * @throws EncryptionException 
 	 * @throws Exception 
 	 */
-	protected void sendNewRequestEmails(TicketEmailVO t) throws InvalidDataException, EncryptionException {
+	protected void sendNewRequestEmails(TicketEmailVO t) throws EncryptionException {
 
 		//Get Admins
 		List<AccountVO> admins = getAdminEmails();
 
-		//Build Config
-		Map<String, Object> config = getBaseConfig(t);
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
-		//Get Recipients
-		Map<String, String> recipients = getBaseRecipients(t);
+			if(r.getKey().equals(EmailType.ADMIN)) {
+				//New Tickets get sent to admins withing the adminEmails List.
+				for(AccountVO a : admins) {
+					if(adminEmails.contains(a.getOwnerEmailAddr())) {
+						r.getValue().put(a.getOwnerProfileId(), a.getOwnerEmailAddr());
+					}
+				}
+			}
 
-		//New Tickets get sent to All Admins.
-		for(AccountVO a : admins) {
-			recipients.put(a.getOwnerProfileId(), a.getOwnerEmailAddr());
+			//Set Ticket Links.  These vary based on who is getting them.
+			t.setTicketLink(buildTicketLink(t, r.getKey()));
+
+			//Build Config
+			Map<String, Object> config = getBaseConfig(t);
+
+			//Get Emails
+			ecbu.sendMessage((String)attributes.get(NEW_TICKET_CAMP_INST_ID), r.getValue(), config);
 		}
-		ecbu.sendMessage((String)attributes.get(NEW_TICKET_CAMP_INST_ID), recipients, config);
-
 	}
 
 
@@ -297,18 +325,26 @@ public class BiomedSupportEmailUtil {
 	 * @throws ActionException 
 	 * @throws Exception 
 	 */
-	protected void sendAssignedEmails(TicketEmailVO t) throws InvalidDataException, ActionException {
+	protected void sendAssignedEmails(TicketEmailVO t) {
 
-		//Build Config
-		Map<String, Object> config = getBaseConfig(t);
-		config.put("firstName", t.getFirstName());
-		config.put("lastName", t.getLastName());
-		config.put("companyId", t.getCompanyId());
-		config.put("reporterEmail", t.getReporterEmail());
-		config.put("phoneNo", t.getPhoneNo());
-		config.put("createDtFmt", t.getCreateDtFmt());
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
-		ecbu.sendMessage((String)attributes.get(ASSN_TICKET_CAMP_INST_ID), getBaseRecipients(t), config);
+			//Set Ticket Links.  These vary based on who is getting them.
+			t.setTicketLink(buildTicketLink(t, r.getKey()));
+
+			//Build Config
+			Map<String, Object> config = getBaseConfig(t);
+			config.put("firstName", t.getFirstName());
+			config.put("lastName", t.getLastName());
+			config.put("companyId", t.getCompanyId());
+			config.put("reporterEmail", t.getReporterEmail());
+			config.put("phoneNo", t.getPhoneNo());
+			config.put("createDtFmt", t.getCreateDtFmt());
+
+			//Get Emails
+			ecbu.sendMessage((String)attributes.get(ASSN_TICKET_CAMP_INST_ID), r.getValue(), config);
+		}
 	}
 
 	/**
@@ -319,16 +355,23 @@ public class BiomedSupportEmailUtil {
 	 * @throws InvalidDataException
 	 * @throws ActionException
 	 */
-	protected void sendStatusEmails(TicketEmailVO t) throws InvalidDataException, ActionException {
+	protected void sendStatusEmails(TicketEmailVO t) {
 
-		//Build Config
-		Map<String, Object> config = getBaseConfig(t);
-		config.put("statusNm", t.getStatusNm());
-		config.put("assignedFirstNm", t.getAssignedFirstNm());
-		config.put("assignedLastNm", t.getAssignedLastNm());
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
-		//Get Emails
-		ecbu.sendMessage((String)attributes.get(STAT_TICKET_CAMP_INST_ID), getBaseRecipients(t), config);
+			//Set Ticket Links.  These vary based on who is getting them.
+			t.setTicketLink(buildTicketLink(t, r.getKey()));
+
+			//Build Config
+			Map<String, Object> config = getBaseConfig(t);
+			config.put("statusNm", t.getStatusNm());
+			config.put("assignedFirstNm", t.getAssignedFirstNm());
+			config.put("assignedLastNm", t.getAssignedLastNm());
+
+			//Get Emails
+			ecbu.sendMessage((String)attributes.get(STAT_TICKET_CAMP_INST_ID), r.getValue(), config);
+		}
 	}
 
 	/**
@@ -351,23 +394,29 @@ public class BiomedSupportEmailUtil {
 	 * @param config
 	 * @return
 	 */
-	protected Map<String, String> getBaseRecipients(TicketEmailVO t) {
-		Map<String, String> recipients = new HashMap<>();
+	protected Map<EmailType, Map<String, String>> getBaseRecipients(TicketEmailVO t) {
+		Map<EmailType, Map<String, String>> recipients = new EnumMap<>(EmailType.class);
+		Map<String, String> admins = new HashMap<>();
+		Map<String, String> pub = new HashMap<>();
+
 		//Add Assignee
 		if(!StringUtil.isEmpty(t.getAssignedEmail())) {
-			recipients.put(t.getAssignedId(), t.getAssignedEmail());
+			admins.put(t.getAssignedId(), t.getAssignedEmail());
 		}
 
 		//Add Reporter
 		if(!StringUtil.isEmpty(t.getReporterEmail())) {
-			recipients.put(t.getReporterId(), t.getReporterEmail());
+			pub.put(t.getReporterId(), t.getReporterEmail());
 		}
-		
+
 		String ccAddresses = (String) attributes.get("ccAddresses");
 		if (!StringUtil.isEmpty(ccAddresses)) {
-			addCCRecipients(recipients, ccAddresses);
+			addCCRecipients(pub, ccAddresses);
 		}
-		
+
+		recipients.put(EmailType.ADMIN, admins);
+		recipients.put(EmailType.PUBLIC, pub);
+
 		return recipients;
 	}
 
@@ -412,16 +461,22 @@ public class BiomedSupportEmailUtil {
 	 * @param t
 	 * @param ticketMsg
 	 * @return
-	 * @throws InvalidDataException
 	 */
-	protected void sendActivityEmails(TicketEmailVO t) throws InvalidDataException {
+	protected void sendActivityEmails(TicketEmailVO t) {
 
-		//Build Config
-		Map<String, Object> config = getBaseConfig(t);
-		config.put("ticketDesc", t.getActivities().get(0).getDescText());
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
-		//Get Emails
-		ecbu.sendMessage((String)attributes.get(ACT_TICKET_CAMP_INST_ID), getBaseRecipients(t), config);
+			//Set Ticket Links.  These vary based on who is getting them.
+			t.setTicketLink(buildTicketLink(t, r.getKey()));
+
+			//Build Config
+			Map<String, Object> config = getBaseConfig(t);
+			config.put("ticketDesc", t.getActivities().get(0).getDescText());
+
+			//Get Emails
+			ecbu.sendMessage((String)attributes.get(ACT_TICKET_CAMP_INST_ID), r.getValue(), config);
+		}
 	}
 
 
@@ -434,7 +489,7 @@ public class BiomedSupportEmailUtil {
 		TicketEmailVO t = loadTicket(act.getTicketId(), act.getActivityId());
 		try {
 			sendEmails(t, ChangeType.ACTIVITY);
-		} catch (InvalidDataException | EncryptionException e) {
+		} catch (EncryptionException e) {
 			throw new ActionException("There was a problem building Biomed support email.", e);
 		}
 	}

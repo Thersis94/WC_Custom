@@ -47,18 +47,22 @@ public class UserAccountSearchAction extends SBActionAdapter {
 		// This action exists to return a search.
 		// If no search data is provided return.
 		if (!req.hasParameter("searchData")) return;
-
-		String searchData = req.getParameter("searchData").toUpperCase();
+		
+		String[] splitSearchData = req.getParameter("searchData").toUpperCase().split(" ");
+		
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		
 		List<AccountVO> accounts = new ArrayList<>();
 		
-		try (PreparedStatement ps = dbConn.prepareStatement(buildSQL())) {
+		try (PreparedStatement ps = dbConn.prepareStatement(buildSQL(splitSearchData.length))) {
 			StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
-			ps.setString(1, "%" + searchData + "%");
-			ps.setString(2, pm.getEncValue("SEARCH_FIRST_NM", searchData));
-			ps.setString(3, pm.getEncValue("SEARCH_LAST_NM", searchData));
-			ps.setString(4, pm.getEncValue("SEARCH_EMAIL_TXT", searchData));
+			int pos = 1;
+			for (String searchData : splitSearchData) {
+				ps.setString(pos++, "%" + searchData + "%");
+				ps.setString(pos++, pm.getEncValue("SEARCH_FIRST_NM", searchData));
+				ps.setString(pos++, pm.getEncValue("SEARCH_LAST_NM", searchData));
+				ps.setString(pos++, pm.getEncValue("SEARCH_EMAIL_TXT", searchData));
+			}
 			
 			ResultSet rs = ps.executeQuery();
 			
@@ -110,7 +114,7 @@ public class UserAccountSearchAction extends SBActionAdapter {
 	 * Create an sql query to search both the accounts and the users in those accounts
 	 * @return
 	 */
-	protected String buildSQL() {
+	protected String buildSQL(int searchParams) {
 		StringBuilder sql = new StringBuilder(750);
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
@@ -125,10 +129,13 @@ public class UserAccountSearchAction extends SBActionAdapter {
 		sql.append("ON u.USER_ID = xr.USER_ID ");
 		sql.append("LEFT JOIN PROFILE p on p.PROFILE_ID = u.PROFILE_ID ");
 		
-		sql.append("WHERE UPPER(a.account_nm)  like ? ");
-		sql.append("OR p.search_first_nm = ? ");
-		sql.append("OR p.search_last_nm = ? ");
-		sql.append("OR p.search_email_txt = ? ");
+		sql.append("WHERE 1=2 ");
+		for (int i = 0; i < searchParams; i++) {
+			sql.append("OR UPPER(a.account_nm)  like ? ");
+			sql.append("OR p.search_first_nm = ? ");
+			sql.append("OR p.search_last_nm = ? ");
+			sql.append("OR p.search_email_txt = ? ");
+		}
 		
 		sql.append("GROUP BY a.ACCOUNT_ID, a.ACCOUNT_NM, p.FIRST_NM, p.LAST_NM, p.EMAIL_ADDRESS_TXT, u.USER_ID ");
 		

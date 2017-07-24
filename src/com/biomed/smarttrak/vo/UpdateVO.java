@@ -345,8 +345,11 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	}
 
 	/**
+	 * The Solr annotation here is used in order to ensure that the public side solr search
+	 * can return items in the same order as they are presented on the manage side.
 	 * @return the createDt
 	 */
+	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDt() {
 		return createDt;
@@ -355,7 +358,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	/**
 	 * @return the updateDt
 	 */
-	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	@Override
 	public Date getUpdateDt() {
