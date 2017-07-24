@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.util.MarketIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
@@ -80,8 +82,13 @@ public class MarketVO extends AuthorVO {
 		return marketId;
 	}
 	public void setMarketId(String marketId) {
-		super.setDocumentId(marketId);
 		this.marketId = marketId;
+
+		if(getMarketId().length() < AdminControllerAction.DOC_ID_MIN_LEN){
+			super.setDocumentId(Section.MARKET.name() + "_" +marketId);
+		}else {
+			super.setDocumentId(marketId);
+		}
 	}
 	@SolrField(name="parentId_s")
 	@Column(name="parent_id")
@@ -117,7 +124,18 @@ public class MarketVO extends AuthorVO {
 	}
 	
 
+	@Override
 	@SolrField(name=SearchDocumentHandler.META_KEYWORDS)
+	public String getMetaKeywords() {
+		StringBuilder sb = new StringBuilder(100);
+		sb.append(StringUtil.checkVal(getShortName()));
+		if (sb.length() > 0) sb.append(", ");
+		sb.append(StringUtil.checkVal(getAliasName()));
+		
+		return sb.toString();
+	}
+	
+	
 	@Column(name="short_nm")
 	public String getShortName() {
 		return shortName;
@@ -179,6 +197,28 @@ public class MarketVO extends AuthorVO {
 
 	public void addSection(SectionVO section) {
 		sections.add(section);
+	}
+
+	public void setSectionId (String id) {
+		if (marketSection == null)
+			marketSection = new SectionVO();
+		marketSection.setSectionId(id);
+	}
+	
+	@Column(name="section_id", isReadOnly=true)
+	public String getSectionId() {
+		return marketSection.getSectionId();
+	}
+
+	public void setSectionName (String name) {
+		if (marketSection == null)
+			marketSection = new SectionVO();
+		marketSection.setSectionNm(name);
+	}
+	
+	@Column(name="section_nm", isReadOnly=true)
+	public String getSectionName() {
+		return marketSection.getSectionNm();
 	}
 
 	/**

@@ -47,7 +47,7 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	 */
 	@Override
 	public byte[] generateReport() {
-		log.debug("generateReport...");
+		log.debug("generateReport..."); 
 
 		PDFReport rpt = new PDFReport(site.getFullSiteAlias());
 		rpt.setFileName(REPORT_TITLE);
@@ -66,7 +66,6 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 		getHeader(doc);
 		generateBody(doc);
 		doc.append("</html>");
-		log.debug(doc.toString());
 
 		return doc.toString();
 	}
@@ -76,25 +75,9 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	 * @param doc
 	 */
 	private void generateBody(StringBuilder doc) {
-		doc.append("<body><div id=\"gap_analysis\"><div id=\"tableBlock\">");
-		doc.append("<h1>SmartTRAK Gap Analysis</h1>");
-		doc.append("<div class=\"gapoffset\">");
-		doc.append("<table class='table gap_table' id='headTable'>");
-		generateHeadersTable(doc);
+		doc.append("<body>");
 		generateBodyTable(doc);
-		doc.append("</table>");
-		generateFooterTable(doc);
-		doc.append("</div></div></div></body>");
-	}
-
-	/**
-	 * Build the Footer for the Doc.
-	 * @param doc
-	 */
-	private void generateFooterTable(StringBuilder doc) {
-		doc.append("<p class='footer'>&#169; ").append(Calendar.getInstance().get(Calendar.YEAR));
-		doc.append(" SmartTRAK ");
-		doc.append("</p>");
+		doc.append("</body>");
 	}
 
 	/**
@@ -102,10 +85,18 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	private void generateBodyTable(StringBuilder doc) {
-		doc.append("<tbody>");
+		int count = 0;
+		generateHeader(doc);
 			for(Entry<String, GapCompanyVO> c : table.getCompanies().entrySet()) {
 				GapCompanyVO comp = c.getValue();
 				if(comp.getPortfolioNo() > 0) {
+					if (count >= 27) {
+						generateFooter(doc, false);
+						generateHeader(doc);
+						count = 0;
+					}
+					
+					
 					StringBuilder url = new StringBuilder();
 					url.append(site.getFullSiteAlias()).append(Section.COMPANY.getPageURL());
 					url.append(qs).append(comp.getCompanyId());
@@ -124,9 +115,41 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 						doc.append("\">").append("&nbsp;").append("</div></div></td>");
 					}
 					doc.append("</tr>");
+					count++;
 				}
 			}
+		generateFooter(doc, true);
+	}
+
+	private void generateFooter(StringBuilder doc, boolean finalFooter) {
 		doc.append("</tbody>");
+		doc.append("</table>");
+		doc.append("</div></div></div>");
+		doc.append("<div class='footer");
+		// Last footer should not cause a page break
+		if (finalFooter) {
+			doc.append(" no-break");
+		}
+		doc.append("'><span class='left'>SmartTRAK Business Intelligence</span>");
+		doc.append("<span class='right'>Copyright &copy; 2008-");
+		doc.append(Calendar.getInstance().get(Calendar.YEAR));
+		doc.append("BiomedGPS LLC</span></div>");
+	}
+
+	private void generateHeader(StringBuilder doc) {
+		doc.append("<div id=\"gap_analysis\"><div id=\"tableBlock\">");
+		doc.append("<h1 class='underline-full'>SmartTRAK Gap Analysis</h1>");
+		doc.append("");
+		doc.append("<div class=\"gapoffset\">");
+		doc.append("<table class='table gap_table headTable'>");
+		doc.append("<p>");
+		List<GapColumnVO> parents = table.getHeaderCols().get(ColumnKey.GPARENT.name());
+		for(int i = 0; i < parents.size(); i++) {
+			if (i > 0) doc.append(", ");
+			doc.append(parents.get(i).getName());
+		}
+		doc.append("</p>");
+		generateHeadersTable(doc);
 	}
 
 	/**
@@ -148,10 +171,8 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	 * @param doc
 	 */
 	private void buildChildRow(StringBuilder doc) {
-		doc.append("<tr><th class='fix'><div>Limit results by subsegment<i class='fa ");
-		doc.append("fa-long-arrow-right'>&nbsp;</i></div></th>");
+		doc.append("<tr>");
 		List<GapColumnVO> children = table.getHeaderCols().get(ColumnKey.CHILD.name());
-
 		for(GapColumnVO c : children) {
 			doc.append("<th class='colSort ");
 			doc.append("col-group-").append(c.getColGroupNo());
@@ -166,17 +187,25 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	 * @param doc
 	 */
 	private void buildParentRow(StringBuilder doc, boolean isGParent) {
-		doc.append("<tr><th class='fix'></th>");
-
+		doc.append("<tr>");
+		if (isGParent) {
+			doc.append("<th rowspan='3'>");
+			doc.append("<table class='legend pull-left'>");
+			doc.append("<tbody><tr><td class='pill'><div class='left_round usa'>US</div><div class='right_round ousa'>OUS</div></td><td><span>Available</span></td></tr>");
+			doc.append("<tr><td class='pill'><div class='left_round usid'>US</div><div class='right_round ousid'>OUS</div></td><td><span>Development</span></td></tr>");
+			doc.append("<tr><td class='pill'><div class='left_round usd'>US</div><div class='right_round ousd'>OUS</div></td><td><span>Discontinued</span></td></tr>");
+			doc.append("<tr><td class='pill'><div class='left_round usg'>US</div><div class='right_round ousg'>OUS</div></td><td><span>Product Gaps</span></td></tr>");
+			doc.append("</tbody></table>");
+			doc.append("</th>");
+		}
 		ColumnKey key = isGParent ? ColumnKey.GPARENT : ColumnKey.PARENT;
 		List<GapColumnVO> parents = table.getHeaderCols().get(key.name());
-
 		for(GapColumnVO g : parents) {
 			doc.append("<th ");
 			if(isGParent) {
 				doc.append("rowspan='").append(g.getRowSpan()).append("' ");
 			}
-			doc.append("colspan='").append(g.getColSpan()).append("' class='parents ");
+			doc.append("colspan='").append(g.getColSpan()).append("' class='parents col-group-").append(g.getColGroupNo());
 			doc.append("'><span class='wrap'>").append(se.encodeValue(StringUtil.checkVal(g.getName()))).append("</span></th>");
 		}
 		doc.append("</tr>");
@@ -205,6 +234,11 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 		sb.append("<meta http-equiv=\"content-type\" content=\"text/html;charset=UTF-8\">");
 		sb.append("<title>").append(REPORT_TITLE).append("</title>");
 		buildCssLinks(sb);
+		int width = 210;
+		List<GapColumnVO> children = table.getHeaderCols().get(ColumnKey.CHILD.name());
+		width += children.size() * 73;
+		
+		sb.append("<style>@page{size: ").append(width).append("px 1200px; margin:0mm;}</style>");
 		sb.append("</head>");
 	}
 
@@ -215,9 +249,8 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	private void buildCssLinks(StringBuilder sb) {
 		StringBuilder modCom = new StringBuilder(150);
 		modCom.append(site.getFullSiteAlias()).append("/binary/themes/");
-		modCom.append(site.getTheme().getPageLocationName()).append("/scripts/gap_report.css");
-		buildCSSLink(sb, "//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css");
 		buildCSSLink(sb, "//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css");
+		modCom.append(site.getTheme().getPageLocationName()).append("/scripts/gap_report.css");
 		buildCSSLink(sb, modCom.toString());
 	}
 

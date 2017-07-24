@@ -168,7 +168,7 @@ public class GapTableVO implements Serializable {
 		List<GapColumnVO> primChild = new ArrayList<>();
 		List<GapColumnVO> altChild = new ArrayList<>();
 		List<Node> pNodes = g.getChildren();
-
+		String sectionId = g.getNodeId();
 		boolean hasGrandKids = false;
 
 		if(pNodes != null && !pNodes.isEmpty()) {
@@ -177,14 +177,15 @@ public class GapTableVO implements Serializable {
 				List<Node> cNodes = p.getChildren();
 
 				if(cNodes != null && !cNodes.isEmpty()) {
-					numKids += buildChildrenColumns(cNodes, p, colGroupNo, primChild, altChild);
+					numKids += buildChildrenColumns(cNodes, p, colGroupNo, primChild, altChild, p.getNodeId());
 					hasGrandKids = true;
-					primParent.add(new GapColumnVO(colGroupNo, null, p.getNodeName(), cNodes.size()));
+					primParent.add(new GapColumnVO(sectionId, colGroupNo, null, p.getNodeName(), cNodes.size()));
 				} else {
+					com.biomed.smarttrak.admin.vo.GapColumnVO gap = (com.biomed.smarttrak.admin.vo.GapColumnVO)p.getUserObject();
 					numKids++;
-					primParent.add(new GapColumnVO(colGroupNo, null, null));
-					primChild.add(new GapColumnVO(colGroupNo, p.getNodeId(), p.getNodeName()));
-					altChild.add(new GapColumnVO(colGroupNo, p.getNodeId(), p.getNodeName()));
+					primParent.add(new GapColumnVO(sectionId, colGroupNo, null, null, null));
+					primChild.add(new GapColumnVO(sectionId, colGroupNo, p.getNodeId(), p.getNodeName(), gap.getColumnNm()));
+					altChild.add(new GapColumnVO(sectionId, colGroupNo, p.getNodeId(), p.getNodeName(), gap.getColumnNm()));
 				}
 			}
 		}
@@ -192,11 +193,11 @@ public class GapTableVO implements Serializable {
 		scaffolding += numKids;
 
 		if(hasGrandKids) {
-			gParent.add(new GapColumnVO(colGroupNo, null, g.getNodeName(), numKids));
+			gParent.add(new GapColumnVO(sectionId, colGroupNo, null, g.getNodeName(), numKids));
 			parent.addAll(primParent);
 			child.addAll(primChild);
 		} else {
-			gParent.add(new GapColumnVO(colGroupNo, null, g.getNodeName(), numKids, 2));
+			gParent.add(new GapColumnVO(sectionId, colGroupNo, null, g.getNodeName(), numKids, 2));
 			child.addAll(altChild);
 		}
 	}
@@ -208,14 +209,15 @@ public class GapTableVO implements Serializable {
 	 * @param altCol 
 	 * @param p 
 	 * @param cNodes 
+	 * @param sectionId 
 	 * 
 	 */
-	private int buildChildrenColumns(List<Node> cNodes, Node p, int colGroupNo, List<GapColumnVO> primChild, List<GapColumnVO> altChild) {
+	private int buildChildrenColumns(List<Node> cNodes, Node p, int colGroupNo, List<GapColumnVO> primChild, List<GapColumnVO> altChild, String sectionId) {
 		int numKids = 0;
 		for(int k = 0; k < cNodes.size(); k++) {
 			Node c = cNodes.get(k);
-			primChild.add(new GapColumnVO(colGroupNo, c.getNodeId(), c.getNodeName()));
-			altChild.add(new GapColumnVO(colGroupNo, p.getNodeId(), p.getNodeName()));
+			primChild.add(new GapColumnVO(sectionId, colGroupNo, c.getNodeId(), c.getNodeName(), null));
+			altChild.add(new GapColumnVO(sectionId, colGroupNo, p.getNodeId(), p.getNodeName(), null));
 			numKids++;
 		}
 

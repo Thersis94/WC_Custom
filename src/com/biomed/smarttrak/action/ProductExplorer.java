@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.vo.ProductExplorerReportVO;
@@ -139,7 +140,7 @@ public class ProductExplorer extends SBActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		putModuleData(retrieveProducts(req));
+		putModuleData(retrieveProducts(req, false));
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
 			retrieveSavedQueries(req);
 	}
@@ -148,19 +149,13 @@ public class ProductExplorer extends SBActionAdapter {
 	/**
 	 * Build a text representation of the filters applied to the search
 	 */
-	private void buildFilterList(ActionRequest req, SolrResponseVO resp) {
+	private void buildFilterList(ActionRequest req) {
 		StringBuilder text = new StringBuilder(512);
 		buildQueryFilters(text, req);
 		if (req.hasParameter("selNodes")) {
 			text.append(buildHierarchyFilters(req));
 		} else {
-			text.append("Any hierarchy section. ");
-		}
-		if (resp.getTotalResponses() > 0) {
-			text.append(" ").append(resp.getTotalResponses()).append(" products/brands and ");
-			text.append(resp.getFacetByName("company_s").size()).append(" companies found.");
-		} else {
-			text.append(" Nothing was found.");
+			text.append("All Markets.");
 		}
 		req.getSession().setAttribute("filterList", text.toString());
 	}
@@ -178,13 +173,14 @@ public class ProductExplorer extends SBActionAdapter {
 		Tree t = c.loadDefaultTree();
 
 		StringBuilder part = new StringBuilder(128);
-		for (String s : req.getParameterValues("selNodes")) {
+		String nodes = req.getParameter("selNodes");
+		for (String s : nodes.split(",")) {
 			Node n = t.findNode(s);
-			if (n == null) continue;
+			if (n == null || n.getDepthLevel() == 2) continue;
 			if (part.length() < 2) {
-				part.append("Hierarchy Sections are ");
+				part.append("in ");
 			} else {
-				part.append(" or ");
+				part.append(", ");
 			}
 			part.append(n.getNodeName());
 		}
@@ -252,7 +248,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected SolrResponseVO retrieveProducts(ActionRequest req) throws ActionException {
+	protected SolrResponseVO retrieveProducts(ActionRequest req, boolean getAll) throws ActionException {
 		SolrActionVO qData = buildSolrAction(req);
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
 
@@ -268,12 +264,38 @@ public class ProductExplorer extends SBActionAdapter {
 		addFacetFields(req, qData);
 		
 		SolrResponseVO vo = sqp.processQuery(qData);
+		
+		// Check to see if all the results should be returned instead of the current page
+		if (getAll) {
+			getRemainingDocuments(vo, sqp, qData);
+		}
 
 		if (!req.hasParameter("compare") && !req.hasParameter("textCompare"))
-			buildFilterList(req, vo);
+			buildFilterList(req);
 		return vo;
 	}
 
+
+	/**
+	 * Get all results for the supplied search
+	 * @param vo
+	 * @param sqp
+	 * @param qData
+	 */
+	private void getRemainingDocuments(SolrResponseVO vo, SolrQueryProcessor sqp, SolrActionVO qData) {
+		int totals = 0;
+		List<SolrDocument> docs = new ArrayList<>();
+		docs.addAll(vo.getResultDocuments());
+		
+		while (totals < vo.getTotalResponses()) {
+			totals += 100;
+			qData.setStartLocation(totals);
+			SolrResponseVO currentResponse = sqp.processQuery(qData);
+			docs.addAll(currentResponse.getResultDocuments());
+		}
+		
+		vo.setResultDocuments(docs, 0, docs.size());
+	}
 
 	/**
 	 * Add the facet filters to the qData. 
@@ -316,7 +338,8 @@ public class ProductExplorer extends SBActionAdapter {
 	protected void buildNodeParams(ActionRequest req, SolrActionVO qData) {
 		StringBuilder selected = new StringBuilder(50);
 		selected.append("(");
-		for (String s : req.getParameterValues("selNodes")) {
+		String nodes = req.getParameter("selNodes");
+		for (String s : nodes.split(",")) {
 			if (selected.length() > 2) selected.append(" OR ");
 			selected.append(s.replace("~", "\\~").replace(" ", "\\ ")).append("*");
 		}
@@ -450,7 +473,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 */
 	protected void exportResults(ActionRequest req) throws ActionException {
 		AbstractSBReportVO report = new ProductExplorerReportVO();
-		report.setData(retrieveProducts(req).getResultDocuments());
+		report.setData(retrieveProducts(req, true).getResultDocuments());
 		report.setFileName("Product Set " + Convert.getCurrentTimestamp() + ".xls");
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
@@ -538,23 +561,8 @@ public class ProductExplorer extends SBActionAdapter {
 				url.append("&").append(name).append("=").append(value);
 			}
 		}
-
-		if (req.hasParameter("selNodes")) {
-			buildHierarchyUrl(req, url);
-		}
+		url.append("&selNodes=").append(req.getParameter("selNodes"));
 
 		return url.toString();
-	}
-
-
-	/**
-	 * Append the selected hierarchy nodes to the url
-	 * @param req
-	 * @param url
-	 */
-	protected void buildHierarchyUrl(ActionRequest req, StringBuilder url) {
-		for (String s : req.getParameterValues("selNodes")) {
-			url.append("&selNodes=").append(s);
-		}
 	}
 }

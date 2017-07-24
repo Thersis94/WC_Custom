@@ -74,6 +74,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 				
 			case DMS:
 				String cmsType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
+				if (StringUtil.isEmpty(cmsType)) cmsType = StringUtil.checkVal(sd.getFieldValue("asset_type_s")).toLowerCase();
 				switch(cmsType) {
 					case "external site":
 						// External sites will contain full urls in the document url field to be used on the page.
@@ -136,6 +137,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		switch (type) {
 			case COURSE_CAL: return "EVENT";
 			case MEDIA_BIN: return "MEDIABIN";
+			case DMS: return "CMS";
 			default:
 				return type.toString();
 		}
@@ -174,6 +176,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	 */
 	public String getAssetType() {
 		String type = StringUtil.checkVal(sd.getFieldValue("assetType_s"));
+		if (StringUtil.isEmpty(type)) type = StringUtil.checkVal(sd.getFieldValue("asset_type_s"));
 		//if its a CMS file, derive type from the file name
 		if ("FILE (PDF, PPT, DOC, XLS, ZIP, ETC.)".equalsIgnoreCase(type)) {
 			type = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.FILE_EXTENSION), "FILE").toUpperCase();

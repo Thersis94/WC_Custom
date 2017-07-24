@@ -12,6 +12,7 @@ import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -27,16 +28,15 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since May 8, 2017
  ****************************************************************************/
+public class AuthorAction extends SimpleActionAdapter {
 
-public class AuthorAction extends AbstractTreeAction {
-	
 	/**
 	 * Default no-arg constructor
 	 */
 	public AuthorAction(){
 		super();
 	}
-	
+
 	/**
 	 * Takes ActionInitVO for initialization
 	 * @param init
@@ -45,13 +45,13 @@ public class AuthorAction extends AbstractTreeAction {
 		super(init);
 	}
 
-	
+
 	/**
 	 * loads a list of authors to the request. Defaults to not load author titles
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void loadAuthors(ActionRequest req) throws ActionException {
+	protected void loadAuthors(ActionRequest req) {
 		loadAuthors(req, false);
 	}
 
@@ -61,17 +61,16 @@ public class AuthorAction extends AbstractTreeAction {
 	 * @param loadTitles
 	 * @throws ActionException 
 	 */
-	protected void loadAuthors(ActionRequest req, boolean loadTitles) throws ActionException {
+	protected void loadAuthors(ActionRequest req, boolean loadTitles) {
 		log.debug("loaded authors");
-
 		AccountAction aa = new AccountAction();
 		aa.setActionInit(actionInit);
 		aa.setAttributes(attributes);
 		aa.setDBConnection(dbConn);
 		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA), loadTitles);
-		
 	}
-	
+
+
 	/**
 	 * Helper method that builds map of User Titles keyed by profileId.
 	 * @return
@@ -123,14 +122,5 @@ public class AuthorAction extends AbstractTreeAction {
 			log.error("There was a problem Loading Author Titles.", e);
 		}
 		return authorTitles;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
-	 */
-	@Override
-	public String getCacheKey() {
-		return null; //implemented for compliance 
-
 	}
 }
