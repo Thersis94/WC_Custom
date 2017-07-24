@@ -1,4 +1,5 @@
 package com.biomed.smarttrak.admin;
+
 //java 8
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -37,7 +38,6 @@ import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -51,10 +51,16 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class InsightAction extends AuthorAction {
+public class InsightAction extends ManagementAction {
 	protected static final String INSIGHT_ID = "insightId"; //req param
 	public static final String TITLE_BYPASS = "titleBypass"; //req param
+	
+	/**
+	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
+	 */
+	@Deprecated
 	public static final String ROOT_NODE_ID = AbstractTreeAction.MASTER_ROOT;
+	
 	public static final String INSIGHTS_DIRECTORY_PATH = "/featuredImage";
 	private Map<String, String> sortMapper;
 
@@ -153,8 +159,7 @@ public class InsightAction extends AuthorAction {
 	 * @return
 	 */
 	private long getCount(EnumMap<Fields, String> insightParamsMap) {
-		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatCountQuery(insightParamsMap, schema);
+		String sql = formatCountQuery(insightParamsMap, customDbSchema);
 
 		//remove the sort and order fields so the total rows count is accurate
 		insightParamsMap.remove(Fields.RPP);
@@ -163,12 +168,10 @@ public class InsightAction extends AuthorAction {
 		insightParamsMap.remove(Fields.ORDER);
 
 		List<Object> params = loadSqlParams(insightParamsMap);
-
-		DBProcessor db = new DBProcessor(dbConn, schema);
-
+		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 		List<Object> insights = db.executeSelect(sql, params, new InsightVO());
 
-		if (!insights.isEmpty()){
+		if (!insights.isEmpty()) {
 			InsightVO ivo = (InsightVO) insights.get(0);
 			return ivo.getCountNumber();
 		} else {
@@ -182,15 +185,10 @@ public class InsightAction extends AuthorAction {
 	 * @return
 	 */
 	private String formatCountQuery(EnumMap<Fields, String> insightParamsMap, String schema) {
-
 		StringBuilder sql = new StringBuilder(400);
-
 		generateSelectCountQuery(sql, schema);
-
 		generateJoinSectionOfQuery(sql, schema, insightParamsMap);
-
 		generateWhereClauseOfQuery(sql, insightParamsMap );
-
 		return sql.toString();
 	}
 
@@ -269,15 +267,12 @@ public class InsightAction extends AuthorAction {
 			authorTitles = loadAuthorTitles();
 		}
 
-		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatRetrieveQuery(insightParamsMap, schema);
-
+		String sql = formatRetrieveQuery(insightParamsMap, customDbSchema);
 		List<Object> params = loadSqlParams(insightParamsMap);
-
-		DBProcessor db = new DBProcessor(dbConn, schema);
+		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
 
-		for (Object ob : insights){
+		for (Object ob : insights) {
 			InsightVO vo = (InsightVO)ob;
 			vo.setQsPath((String)getAttribute(Constants.QS_PATH));
 			if(!tb && authorTitles.containsKey(vo.getCreatorProfileId())) {
@@ -298,7 +293,6 @@ public class InsightAction extends AuthorAction {
 		}
 
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
-
 		return insights;
 	}
 
@@ -487,7 +481,7 @@ public class InsightAction extends AuthorAction {
 	 * @throws ActionException
 	 */
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
-		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		DBProcessor db = new DBProcessor(dbConn, (String)customDbSchema);
 		InsightVO ivo = new InsightVO(req);
 		populateAuthorData(req, ivo);
 
@@ -658,7 +652,7 @@ public class InsightAction extends AuthorAction {
 	private void updateStatus(DBProcessor db, InsightVO ivo) throws ActionException {
 		log.debug("updating status code on insight");
 		StringBuilder sql = new StringBuilder(50);
-		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
+		sql.append("update ").append(customDbSchema).append("biomedgps_insight ");
 		sql.append("set status_cd = ? ");
 		sql.append("where insight_id = ? ");
 
@@ -684,7 +678,7 @@ public class InsightAction extends AuthorAction {
 	private void updateFeatureOrder(InsightVO ivo, DBProcessor db) throws ActionException {
 		log.debug("update featured ordered no");
 		StringBuilder sb = new StringBuilder(50);
-		sb.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
+		sb.append("update ").append(customDbSchema).append("biomedgps_insight ");
 		sb.append("set featured_flg= ?, order_no = ? ");
 		sb.append("where insight_id = ? ");
 
@@ -703,7 +697,7 @@ public class InsightAction extends AuthorAction {
 		}
 	}
 
-	
+
 	/**
 	 * sets the new insight vo on insert
 	 * @param db 
@@ -717,7 +711,7 @@ public class InsightAction extends AuthorAction {
 			}
 		}
 	}
-	
+
 
 	/**
 	 * Delete old Insight Sections and save new ones.
@@ -731,7 +725,7 @@ public class InsightAction extends AuthorAction {
 		deleteSections(ivo.getInsightId());
 
 		//Save new Sections.
-		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		DBProcessor db = new DBProcessor(dbConn, (String)customDbSchema);
 		for(InsightXRVO uxr : ivo.getInsightSections()) {
 			db.save(uxr);
 		}
@@ -744,7 +738,7 @@ public class InsightAction extends AuthorAction {
 	 */
 	protected void deleteSections(String insightId) throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("delete from ").append(customDbSchema);
 		sql.append("biomedgps_insight_section where insight_id = ?");
 
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -759,21 +753,10 @@ public class InsightAction extends AuthorAction {
 	 * Load the Section Tree so that Hierarchies can be generated.
 	 * @param req
 	 * @throws ActionException
+	 * @deprecated - call the loadDefaultTree method directly.
 	 */
+	@Deprecated
 	public SmarttrakTree loadSections() {
-		//load the section hierarchy Tree from superclass
-		SmarttrakTree t = loadDefaultTree();
-
-		//Generate the Node Paths using Node Names.
-		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
-		return t;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
-	 */
-	@Override
-	public String getCacheKey() {
-		return null;
+		return super.loadDefaultTree();
 	}
 }

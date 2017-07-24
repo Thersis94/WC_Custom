@@ -8,7 +8,6 @@ import java.util.List;
 //WC_Custom
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
-import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 //SMTBase libs
 import com.siliconmtn.action.ActionRequest;
@@ -201,10 +200,10 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	 * @param loadSections
 	 */
 	public void configureSolrHierarchies(Tree t) {
-		for(InsightXRVO uxr : sections) {
-			if (uxr.getSectionId() == null){
-				uxr.setSectionId(InsightAction.ROOT_NODE_ID);
-			}
+		for (InsightXRVO uxr : sections) {
+			if (StringUtil.isEmpty(uxr.getSectionId()))
+				continue;
+
 			Node n = t.findNode(uxr.getSectionId());
 			if(n != null && !StringUtil.isEmpty(n.getFullPath())) {
 				super.addHierarchies(n.getFullPath());

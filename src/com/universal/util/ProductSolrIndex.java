@@ -61,8 +61,9 @@ public class ProductSolrIndex extends SMTAbstractIndex {
 		super(config);
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
 	public void addIndexItems(SolrClient server) {
 		log.info("Indexing USA Products");

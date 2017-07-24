@@ -36,7 +36,7 @@ import com.smt.sitebuilder.security.SecurityController;
  * @since Feb 14, 2017
  ****************************************************************************/
 @Table(name="biomedgps_update")
-public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc, Serializable {
+public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc, Serializable, Comparable<UpdateVO> {
 
 	private static final long serialVersionUID = 5149725371008749427L;
 
@@ -67,7 +67,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private String lastNm;
 	private String statusCd;
 	private String historyId;
-	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
 	private transient List<UpdateXRVO> sections; //UpdateXRVO is not serializable, so this List must be transient -JM- 7.03.2017
@@ -104,7 +103,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		twitterTxt = req.getParameter("twitterTxt");
 		tweetFlg = Convert.formatInteger(Convert.formatBoolean(req.getParameter("tweetFlg")));
 		statusCd = req.getParameter("statusCd");
-		publishDt = Convert.formatDate(req.getParameter("publishDt"));
+		setPublishDate(Convert.formatDate(req.getParameter("publishDt")));
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		emailFlg = Convert.formatInteger(req.getParameter("emailFlg"), 1);
 		if (req.hasParameter("sectionId")) {
@@ -296,24 +295,23 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	/**
 	 * @return the publishDt
 	 */
-	@SolrField(name=SearchDocumentHandler.PUBLISH_DATE)
 	@Column(name="publish_dt")
 	public Date getPublishDt() {
-		return publishDt;
+		return getPublishDate();
 	}
 
 	@SolrField(name="publishDtNoTime_s")
 	public String getPublishDtNoTime() {
-		return Convert.formatDate(publishDt, Convert.DATE_DASH_PATTERN);
+		return Convert.formatDate(getPublishDate(), Convert.DATE_DASH_PATTERN);
 	}
 
 	@SolrField(name="companyLink_s")
 	public String getCompanyLink() {
 		if (StringUtil.isEmpty(companyId)) return "";
-		
+
 		return AdminControllerAction.Section.COMPANY.getPageURL() + qsPath + getCompanyId();
 	}
-	
+
 	/**
 	 * @deprecated this should not be done, URL is built dynamically, just set companyId
 	 * @return
@@ -343,12 +341,15 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 
 	@SolrField(name="publishTime_s")
 	public String getPublishTime() {
-		return Convert.formatDate(publishDt, Convert.TIME_LONG_PATTERN);
+		return Convert.formatDate(getPublishDate(), Convert.TIME_LONG_PATTERN);
 	}
 
 	/**
+	 * The Solr annotation here is used in order to ensure that the public side solr search
+	 * can return items in the same order as they are presented on the manage side.
 	 * @return the createDt
 	 */
+	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDt() {
 		return createDt;
@@ -357,7 +358,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	/**
 	 * @return the updateDt
 	 */
-	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	@Override
 	public Date getUpdateDt() {
@@ -464,7 +464,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @param publishDt the publishDt to set.
 	 */
 	public void setPublishDt(Date publishDt) {
-		this.publishDt = publishDt;
+		setPublishDate(publishDt);
 	}
 
 	/**
@@ -614,7 +614,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	public int getTweetFlg() {
 		return tweetFlg;
 	}
-	
+
 	/**
 	 * @deprecated - use getTitle
 	 * @return
@@ -635,8 +635,21 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	public String getQsPath() {
 		return qsPath;
 	}
-	
+
 	public void setQsPath(String qsPath) {
 		this.qsPath = qsPath;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 */
+	@Override
+	public int compareTo(UpdateVO vo) {
+		int typeComp = Convert.formatInteger(getTypeCd()).compareTo(vo.getTypeCd());
+		if (typeComp == 0) {
+			//look at publish date if type is the same.
+			return getPublishDt().compareTo(vo.getPublishDt());
+		}
+		return typeComp;
 	}
 }

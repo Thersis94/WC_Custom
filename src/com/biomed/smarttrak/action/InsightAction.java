@@ -9,13 +9,14 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 //WC customs
-import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.UserVO;
+
 //SMT Baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -27,6 +28,8 @@ import com.siliconmtn.http.parser.DirectoryParser;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
+
 //WebCrescendo
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
@@ -50,7 +53,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 16, 2017
  ****************************************************************************/
-public class InsightAction extends AbstractTreeAction {
+public class InsightAction extends SimpleActionAdapter {
 	private static final String REQ_PARAM_1 = DirectoryParser.PARAMETER_PREFIX + "1";
 
 
@@ -284,21 +287,14 @@ public class InsightAction extends AbstractTreeAction {
 	 * @throws ActionException
 	 */
 	public SmarttrakTree loadSections() {
-		// load the section hierarchy Tree from superclass
-		SmarttrakTree t = loadDefaultTree();
+		// load the section hierarchy Tree from the hierarchy action
+		SectionHierarchyAction sha = new SectionHierarchyAction();
+		sha.setAttributes(getAttributes());
+		sha.setDBConnection(getDBConnection());
+		SmarttrakTree t = sha.loadDefaultTree();
 
 		// Generate the Node Paths using Node Names.
 		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
 		return t;
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
-	 */
-	@Override
-	public String getCacheKey() {
-		return null;
 	}
 }

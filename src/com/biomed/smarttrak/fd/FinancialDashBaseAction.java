@@ -426,7 +426,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			}
 		}
 		
-		sql.append("order by ROW_NM ");
+		sql.append("order by ROW_NM").append(dash.getEditMode() ? ", CASE r.REGION_CD WHEN 'US' THEN 1 WHEN 'EU' THEN 2 ELSE 3 END" : "");
 		
 		return sql;
 	}

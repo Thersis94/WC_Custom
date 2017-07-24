@@ -5,10 +5,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
@@ -17,6 +18,8 @@ import com.biomed.smarttrak.vo.UpdateXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
@@ -39,7 +42,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class UpdatesAction extends AuthorAction {
+public class UpdatesAction extends ManagementAction {
 	public static final String UPDATE_ID = "updateId"; //req param
 	public static final String SORT = "sort"; //req param
 	public static final String ORDER = "order"; //req param
@@ -48,13 +51,17 @@ public class UpdatesAction extends AuthorAction {
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
 	private static final String SECTION_ID = "filterSectionId[]";
-	//public static final String CREATOR_PROFILE_ID = "authorId"; //req param
-	public static final String ROOT_NODE_ID = MASTER_ROOT;
+
+	/**
+	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
+	 */
+	@Deprecated
+	public static final String ROOT_NODE_ID = SectionHierarchyAction.MASTER_ROOT;
+
 	public static final int INIT_DISPLAY_LIMIT = 15; //initial display limit
 
 	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
 	public static final String UPDATE_TYPE_CD = "updates";
-	private static final String LEFT_OUTER_JOIN = "left outer join ";
 
 	public enum UpdateType {
 		MARKET(12, "Market"),
@@ -117,6 +124,7 @@ public class UpdatesAction extends AuthorAction {
 
 			// Get the count
 			count = getUpdateCount(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+			log.debug("count " + count);
 		}
 
 		decryptNames(data);
@@ -151,14 +159,18 @@ public class UpdatesAction extends AuthorAction {
 
 		String sql = formatRetrieveQuery(req, schema, req.hasParameter("loadData"), false);
 
+		log.debug(" sql: " + sql);
+		
 		List<Object> params = new ArrayList<>();
 		if (req.hasParameter(UPDATE_ID)) params.add(req.getParameter(UPDATE_ID));
 		if (req.hasParameter(STATUS_CD)) params.add(req.getParameter(STATUS_CD));
 		if (req.hasParameter(TYPE_CD)) params.add(Convert.formatInteger(req.getParameter(TYPE_CD)));
 		if (req.hasParameter(SEARCH)) params.add("%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%");
+			
 		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
+			
 		if (sectionIds != null) { //restrict to certain sections only
-			for (String s : sectionIds)
+			for (String s : getSectionFamily(sectionIds))
 				params.add(s);
 		}
 		params.add(rpp);
@@ -168,6 +180,69 @@ public class UpdatesAction extends AuthorAction {
 		return db.executeSelect(sql, params, new UpdateVO());
 	}
 
+
+	/**
+	 * processes the section ides supplied and gets childern or granchildren as needed to mimic the data returned by the 
+	 * front public side search
+	 * @param sectionIds
+	 * @return
+	 */
+	private Set<String> getSectionFamily(String[] sectionIds) {
+		if (sectionIds == null) return new HashSet<>();
+		//set up a set to hold all the ids
+		Set<String> set = new HashSet<>();
+		
+		// load the section hierarchy Tree from superclass
+		Tree t = loadDefaultTree();
+
+		// Generate the Node Paths using Node Names.
+		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
+		
+		//process ids according to their depth level
+		for (String s : sectionIds){
+			int depth = t.findNode(s).getDepthLevel();
+			//if the id is already in the set its a child or grand child and we don't need to process it again
+			if (set.contains(s)) continue;
+			
+			if (depth < 3) {
+				set.add(s);
+				processTwoNodeLayers(set, t, s);
+			} else if (depth == 3){
+				set.add(s);
+				processOneNodeLayer(set, t, s);
+			}else {
+				set.add(s);
+			}
+		}
+
+		return set;
+	}
+
+	/**
+	 * adds the ids children from the tree to the set
+	 * @param set
+	 * @param t
+	 * @param s
+	 */
+	private void processOneNodeLayer(Set<String> set, Tree t, String s) {
+		for (Node n : t.findNode(s).getChildren()){
+			set.add(n.getNodeId());
+			}
+	}
+
+	/**
+	 * adds the ids children and grand children to the set.
+	 * @param set
+	 * @param t
+	 */
+	private void processTwoNodeLayers(Set<String> set, Tree t, String s) {
+		for (Node n : t.findNode(s).getChildren()){
+			set.add(n.getNodeId());
+			for (Node g : n.getChildren()){
+				set.add(g.getNodeId());
+			}
+		}
+	}
 
 	/**
 	 * Retrieve all the updates - called by the Solr OOB indexer
@@ -193,30 +268,27 @@ public class UpdatesAction extends AuthorAction {
 	/**
 	 * takes the current list of updates and adds the company information to any product updates
 	 * @param updates
-	 * TODO remove this method
+	 *TODO change query to "in (1,2,3)" instead of looping outside the query - Zoho SC-232
 	 */
 	private void addProductCompanyData(List<Object> updates) {
-		log.debug("adding company short name and id "); 
-		String qs = (String) getAttribute(Constants.QS_PATH);
-
-		for(Object ob : updates){
+		log.debug("adding company short name and id ");
+		for (Object ob : updates) {
 			//loops all the updates and see if they have a product id
 			UpdateVO vo = (UpdateVO) ob;
 
 			if (StringUtil.isEmpty(vo.getProductId())) continue;
 
 			StringBuilder sb = new StringBuilder(161);
-
-			sb.append("select p.company_id, c.short_nm_txt from custom.biomedgps_product p ");
-			sb.append("inner join custom.biomedgps_company c on p.company_id = c.company_id ");
-			sb.append("where p.product_id = ? ");
+			sb.append("select c.company_id, c.short_nm_txt from ").append(customDbSchema).append("biomedgps_product p ");
+			sb.append(INNER_JOIN).append(customDbSchema).append("biomedgps_company c on p.company_id = c.company_id ");
+			sb.append("where p.product_id=?");
 
 			try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
 				ps.setString(1, vo.getProductId());
 				ResultSet rs = ps.executeQuery();
-				if (rs.next()){		
-					vo.setCompanyLink("/"+AdminControllerAction.Section.COMPANY.getURLToken()+qs+rs.getString("company_id"));
-					vo.setCompanyShortName(rs.getString("short_nm_txt"));
+				if (rs.next()) {
+					vo.setCompanyId(rs.getString(1));
+					vo.setCompanyNm(rs.getString(2));
 				}
 			} catch(SQLException sqle) {
 				log.error("could not confirm security by id ", sqle);
@@ -237,7 +309,7 @@ public class UpdatesAction extends AuthorAction {
 		sql.append("c.short_nm_txt as company_nm, prod.short_nm as product_nm, ");
 		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
 		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, ");
-		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path "); //need to pass this through for building URLs
+		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path, up.create_dt "); //need to pass this through for building URLs
 		sql.append("from ").append(schema).append("biomedgps_update up ");
 		sql.append("inner join profile p on up.creator_profile_id=p.profile_id ");
 		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section us on up.update_id=us.update_id ");
@@ -267,7 +339,7 @@ public class UpdatesAction extends AuthorAction {
 			if (req.hasParameter(SEARCH))  ps.setString(++i, "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%");
 			String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 			if (sectionIds != null) { //restrict to certain sections only
-				for (String s : sectionIds)
+				for (String s : getSectionFamily(sectionIds))
 					ps.setString(++i, s);
 			}
 
@@ -329,10 +401,10 @@ public class UpdatesAction extends AuthorAction {
 		if (!isCount) {
 			sql.append("order by ").append(StringUtil.checkVal(sortMapper.get(req.getParameter(SORT)), "publish_dt"));
 			sql.append(" ").append(StringUtil.checkVal(req.getParameter(ORDER), "asc"));
-			sql.append(" limit ? offset ? ");
+			sql.append(", create_dt desc limit ? offset ? ");
 		}
 
-		log.debug(sql);
+		log.debug(" sql "+sql);
 		return sql.toString();
 	}
 
@@ -413,7 +485,7 @@ public class UpdatesAction extends AuthorAction {
 		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 		if (sectionIds != null && sectionIds.length > 0) { //restrict to certain sections only
 			sql.append("and b.section_id in (");
-			DBUtil.preparedStatmentQuestion(sectionIds.length, sql);
+			DBUtil.preparedStatmentQuestion(getSectionFamily(sectionIds).size(), sql);
 			sql.append(") ");
 		}
 		return sql.toString();
@@ -437,9 +509,6 @@ public class UpdatesAction extends AuthorAction {
 	public SmarttrakTree loadSections() {
 		//load the section hierarchy Tree from superclass
 		SmarttrakTree t = loadDefaultTree();
-
-		//Generate the Node Paths using Node Names.
-		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
 		return t;
 	}
 
