@@ -650,7 +650,7 @@ public class GridVO extends BeanDataVO {
 		// Parse out the index from the field and store the data in the series array
 		String val = field.substring(field.lastIndexOf('_') + 1);
 		int index = Convert.formatInteger(val) - 1;
-		if(index == -1) seriesLabel = cTitle;
+		if(index - deletedRows.size() == -1) seriesLabel = cTitle;
 		else series[index - deletedRows.size()] = cTitle;
 	}
 	
@@ -681,13 +681,19 @@ public class GridVO extends BeanDataVO {
 		// Load up the details
 		GridDetailVO detail = new GridDetailVO();
 		detail.setOrder(ctr);
-		detail.setLabel(row.get("field_0") + "");
 		detail.setGridId(gridId);
 		detail.setGridDetailId(row.get("id") + "");
 		
 		detail.setDetailType(RowStyle.getEnumKey(row.get("class") + ""));
 		detail.setCreateDate(new Date());
 		detail.setUpdateDate(new Date());
+		
+		int currentLabel = 0;
+		if (deletedRows.contains(0)) {
+			currentLabel = getNewLabel();
+		}
+
+		detail.setLabel(row.get("field_" + currentLabel) + "");
 
 		String[] values = detail.getValues();
 		int offset = 0;
@@ -696,7 +702,7 @@ public class GridVO extends BeanDataVO {
 			// increment the offset to properly delete the data
 			if (deletedRows.contains(i+1)) {
 				offset++;
-			} else {
+			} else if (i+1 != currentLabel) {
 				// nulls are being inserted as a tring "null" value.  Make sure to remove
 				String val = StringUtil.checkVal(row.get("field_" + (i + 1)));
 				if (val.length() == 0 || "null".equalsIgnoreCase(val)) val = null;
@@ -707,6 +713,26 @@ public class GridVO extends BeanDataVO {
 		// Add to the local collection
 		details.add(detail);
 	}
+	
+	/**
+	 * If the first row has been deleted find the 
+	 * next, viable, row and set the label from that value.
+	 * @param row
+	 * @param detail
+	 */
+	private int getNewLabel() {
+		if (deletedRows.contains(0)) {
+			for (int i = 0; i< 10; i++) {
+				if (!deletedRows.contains(i)) {
+					return i;
+				}
+			}
+		}
+		// This will only occur when all the columns have been deleted
+		// at which point it no longer matters
+		return 0;
+	}
+
 	
 	/**
 	 * Converts the Grid into JSON tables formatted for Bootstrap
