@@ -721,13 +721,12 @@ public class GridVO extends BeanDataVO {
 	 * @param detail
 	 */
 	private int getNewLabel() {
-		if (deletedRows.contains(0)) {
-			for (int i = 0; i< 10; i++) {
-				if (!deletedRows.contains(i)) {
-					return i;
-				}
+		for (int i = 0; i< 10; i++) {
+			if (!deletedRows.contains(i)) {
+				return i;
 			}
 		}
+		
 		// This will only occur when all the columns have been deleted
 		// at which point it no longer matters
 		return 0;
