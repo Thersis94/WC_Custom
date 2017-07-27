@@ -122,7 +122,7 @@ public class FinancialDashVO extends SBModuleVO {
 		
 		try {
 			while (rs.next()) {
-				row = new FinancialDashDataRowVO(rs, getColHeaders().getDisplayType());
+				row = new FinancialDashDataRowVO(rs);
 
 				if (!row.isInactive()) {
 					row.setReportingPending(sections, currentQtr, currentYear);
