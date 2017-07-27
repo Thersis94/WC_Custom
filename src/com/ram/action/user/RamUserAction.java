@@ -5,18 +5,21 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 // RAMDataFeed libs
 import com.ram.datafeed.data.RAMUserVO;
+import com.ram.datafeed.data.CustomerVO;
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.action.ActionRequest;
@@ -77,109 +80,184 @@ public class RamUserAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("RamUserAction retrieve...");
 		// if this is an 'add user' operation, simply return.
 		if (StringUtil.checkVal(req.getParameter("addUser")).length() > 0) return;
-
+		
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		boolean isAdmin = (role.getRoleLevel() == 100);
-		List<RAMUserVO> data = new ArrayList<>();
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
-		String schema = (String)getAttribute("customDbSchema");
-
-		StringBuilder sql = new StringBuilder();
-		sql.append("select a.*, b.FIRST_NM, b.LAST_NM, b.EMAIL_ADDRESS_TXT, ");
-		sql.append("c.ROLE_ORDER_NO, c.ROLE_NM, d.PHONE_NUMBER_TXT, ");
-		sql.append("e.CUSTOMER_ID, e.CUSTOMER_NM, f.AUDITOR_ID, ");
-		sql.append("hc.CUSTOMER_NM as HOSPITAL_NM, hc.CUSTOMER_ID as HOSPITAL_ID ");
-		sql.append("from PROFILE_ROLE a ");
-		sql.append("inner join PROFILE b on a.PROFILE_ID = b.PROFILE_ID ");
-		sql.append("inner join ROLE c on a.ROLE_ID = c.ROLE_ID ");
-		sql.append("left outer join PHONE_NUMBER d on a.PROFILE_ID = d.PROFILE_ID and d.PHONE_TYPE_CD = 'HOME' ");
-		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER e ");
-		sql.append("on a.ATTRIB_TXT_1 = cast(e.CUSTOMER_ID as varchar) ");
-		sql.append("left outer join ").append(schema).append("RAM_AUDITOR f ");
-		sql.append("on a.PROFILE_ID = f.PROFILE_ID ");
-		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER_PROFILE_XR h ");
-		sql.append("on h.PROFILE_ID = a.PROFILE_ID ");
-		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER hc ");
-		sql.append("on hc.CUSTOMER_ID = h.CUSTOMER_ID where 1 = 1 ");
-
-		// filter by site ID
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		String siteId = site.getSiteId();
-		if (StringUtil.checkVal(site.getAliasPathParentId()).length() > 0) {
-			siteId = site.getAliasPathParentId();
+		if (req.hasParameter("edit")) {
+			retrieveUser(req, schema, role);
+		} else if (req.hasParameter("amid")){
+			retrieveList(req, role, schema, role.getRoleLevel() == 100);
 		}
-		sql.append("and a.SITE_ID = ? ");
 
-		String profileId = null;
-		// if admin, look for profileId passed in on request.
-		if (isAdmin) {
-			profileId = StringUtil.checkVal(req.getParameter("profileId"));
+	}
+	
+	/**
+	 * Returns the specific data for a user
+	 * @param req
+	 * @throws ActionException
+	 */
+	@SuppressWarnings("unchecked")
+	public void retrieveUser(ActionRequest req, String schema, SBUserRole role) 
+	throws ActionException {
+		// Make sure the user has permission to edit the user information
+		boolean siteAdmin = role.getRoleLevel() == 100;
+		boolean adminFlag = Convert.formatBoolean(role.getAttribute(RAMRoleModule.ADMIN_ROLE));
+		if (! siteAdmin && ! adminFlag && ! role.getProfileId().equals(req.getParameter("profileId"))) return;
+		Set<Object> customers = (Set<Object>)role.getAttributes().get(CustomerVO.CustomerType.PROVIDER.toString());
+		List<Object> params = new ArrayList<>();
+		params.add(Convert.formatInteger(req.getParameter("userRoleId")));
+		
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select a.user_role_id, c.profile_id, a.first_nm, a.last_nm, c.email_address_txt,");
+		sql.append("d.phone_number_txt, a.profile_role_id, b.role_id, b.status_id, b.site_id, a.admin_flg ");
+		sql.append("from custom.ram_user_role a "); 
+		sql.append("inner join profile_role b on a.profile_role_id = b.profile_role_id ");
+		sql.append("inner join profile c on b.profile_id = c.profile_id ");
+		sql.append("left outer join phone_number d on c.profile_id = d.profile_id and phone_type_cd = 'WORK' ");
+		
+		// Make sure the admin can only modify users in their prodvider locations
+		if (!siteAdmin && adminFlag) {
+			sql.append("inner join custom.ram_user_role_customer_xr xr on a.user_role_id = xr.user_role_id ");
+			sql.append("and a.user_role_id in (select user_role_id "); 
+			sql.append("from custom.ram_user_role_customer_xr  ");
+			sql.append("where user_role_id = ? and customer_id in (");
+			sql.append(StringUtil.getDelimitedList(customers.toArray(new String[customers.size()]), false, ",")).append(") ");
 		} else {
-			// otherwise, force filter by logged-in user's profile ID from session
-			profileId = retrieveNonAdminProfileId(req);
+			sql.append("where a.user_role_id = ? ");
 		}
-
-		if (profileId.length() > 0) sql.append("and a.PROFILE_ID = ? ");
-		sql.append("order by a.PROFILE_ID");
-		log.debug("RamUserAction retrieve SQL: " + sql.toString() + " | " + profileId);
-
-		int recCtr = 0;
-		PreparedStatement ps = null;
+		
+		log.debug(sql + "|" + params);
+		DBProcessor db = new DBProcessor(getDBConnection());
+		List<Object> data = db.executeSelect(sql.toString(), params, new RAMUserVO());
+		RAMUserVO user = (RAMUserVO) data.get(0);
+		
 		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			ps.setString(1, siteId);
-			if (profileId.length() > 0) ps.setString(2, profileId);
-			ResultSet rs = ps.executeQuery();
-
-			/*
-			 * Since we sort on userName, we need to retrieve all records each 
-			 * time to properly paginate the results.
-			 */
-			String currentProfile = "";
-			RAMUserVO user = null;
-			while (rs.next()) {
-				if (!currentProfile.equals(rs.getString("PROFILE_ID"))) {
-					if (user != null) {
-						recCtr++;
-						data.add(user);
-					}
-					user = new RAMUserVO(rs);
-					currentProfile = rs.getString("PROFILE_ID");
-				}
-				
-				if (rs.getString("HOSPITAL_ID") != null) {
-					log.debug("Added " + rs.getString("HOSPITAL_NM") + " to " + rs.getString("PROFILE_ID"));
-					user.addHospital(rs.getString("HOSPITAL_ID"), rs.getString("HOSPITAL_NM"));
-				}
-			}
-			
-			if (user != null) {
-				recCtr++;
-				data.add(user);
-			}
-
-		} catch (SQLException sqle) {
-			log.error("Error retrieving user data, ", sqle);
-		} finally {
-			if (ps != null) {
-				try {
-					ps.close();
-				} catch (Exception e) {log.error("Error closing PreparedStatement, ", e); }
-			}
+			StringEncrypter se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
+			user.setPhoneNumber(se.decrypt(user.getPhoneNumber()));
+			user.setEmailAddress(se.decrypt(user.getEmailAddress()));
+		} catch(Exception e) {
+			log.error("Unable to decrypt data", e);
 		}
+		
+		this.putModuleData(user);
+	}
+	
+	/**
+	 * Retrieves the list of users that may be managed in the tool
+	 * @param req
+	 * @param role
+	 * @param schema
+	 * @param admin
+	 * @throws ActionException
+	 */
+	public void retrieveList(ActionRequest req, SBUserRole role, String schema, boolean siteAdmin) {
+		// Build the SQL
+		List<Object> params = new ArrayList<>();
+		List<Object> cParams = new ArrayList<>();
+		
+		StringBuilder sql = new StringBuilder(512);
+		StringBuilder cSql = new StringBuilder(512);
+		cSql.append("select count(*) as key ");
+		buildSelect(sql);
 
-		formatUserData(data);
-
-		// sort collection by name
-		Collections.sort(data, new RAMUserComparator());
-
-		//Need to paginate the data after retrieving it.
-		data = paginateData(req, data);
-
-		putModuleData(data, recCtr, false, null);
+		// build the meat of the query
+		buildJoins(cSql, schema);
+		buildJoins(sql, schema);
+		
+		// Build the filters
+		buildFilter(sql, siteAdmin, req, role, params);
+		buildFilter(cSql, siteAdmin, req, role, cParams);
+		
+		// Add the order and offsets
+		buildOrder(sql, req, params);
+		
+		// Get the list of items
+		log.debug(sql + "|" + params);
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		List<Object> data = dbp.executeSelect(sql.toString(), params, new RAMUserVO());
+		
+		// Get the counts
+		List<Object> count = dbp.executeSelect(cSql.toString(), cParams, new GenericVO());
+		
+		// Add the data
+		putModuleData(data, Convert.formatInteger(((GenericVO)count.get(0)).getKey()+""), false, null);
+	}
+	
+	/**
+	 * Builds the ordering of the display
+	 * @param sql
+	 * @param req
+	 * @param params
+	 */
+	public void buildOrder(StringBuilder sql, ActionRequest req,List<Object> params) {
+		String sort = StringUtil.checkVal(req.getParameter("sort"), "last_nm asc ");
+		if (req.hasParameter("sort")) {
+			if("lastName".equalsIgnoreCase(sort)) sort = "last_nm ";
+			if("roleName".equalsIgnoreCase(sort)) sort = "role_nm ";
+			if("adminFlag".equalsIgnoreCase(sort)) sort = "admin_flg ";
+			
+			sort += StringUtil.checkVal(req.getParameter("order"), "asc");
+			sort += ", last_nm ";
+		}
+		
+		sql.append("order by ").append(sort).append(" limit ? offset ? ");
+		params.add(Convert.formatInteger(req.getParameter("limit"), 10));
+		params.add(Convert.formatInteger(req.getParameter("offset"), 0));
+	}
+	
+	/**
+	 * Builds the where clause
+	 * @param sql
+	 * @param siteAdmin
+	 * @param req
+	 * @param role
+	 */
+	@SuppressWarnings("unchecked")
+	public void buildFilter(StringBuilder sql, boolean siteAdmin, ActionRequest req, SBUserRole role, List<Object> params) {
+		if (! siteAdmin) {
+			List<Object> customers = (List<Object>)role.getAttributes().get(CustomerVO.CustomerType.PROVIDER.toString());
+			sql.append("and a.user_role_id in (select user_role_id ");
+			sql.append("from custom.ram_user_role_customer_xr where customer_id in (");
+			sql.append(StringUtil.getDelimitedList(customers.toArray(new String[customers.size()]), false, ",")).append(") ");
+		}
+		
+		// Add a filter for the search params
+		String search = req.getParameter("search");
+		if (! StringUtil.isEmpty(search)) {
+			sql.append("and (lower(last_nm) like ? or lower(first_nm) like ?) ");
+			params.add("%" + search.toLowerCase() + "%");
+			params.add("%" + search.toLowerCase() + "%");
+		}
+	}
+	
+	/**
+	 * Build the joins portion of the query
+	 * @param sql
+	 */
+	public void buildJoins(StringBuilder sql, String schema) {
+		sql.append("from ").append(schema).append("ram_user_role a  ");
+		sql.append("inner join profile_role pr on a.profile_role_id = pr.profile_role_id ");
+		sql.append("inner join role r on pr.role_id = r.role_id and pr.role_id not in ('0', '10') ");
+		sql.append("left outer join ( ");
+		sql.append("select user_role_id, count(*) as customer_count ");
+		sql.append("from ").append(schema).append("ram_user_role_customer_xr rcx ");
+		sql.append("inner join ").append(schema).append("ram_customer rc ");
+		sql.append("on rcx.customer_id = rc.customer_id and rc.customer_type_id = 'PROVIDER' ");
+		sql.append("group by user_role_id ");
+		sql.append(") as cc on a.user_role_id = cc.user_role_id ");
+		sql.append("where 1=1 ");
+	}
+	
+	/**
+	 * Builds the select portion of the query
+	 * @param sql
+	 */
+	public void buildSelect(StringBuilder sql) {
+		sql.append("select a.user_role_id, first_nm, last_nm, role_nm, cast(coalesce(cc.customer_count,0) as integer) as providers, ");
+		sql.append("status_id, a.profile_role_id, profile_id, admin_flg, pr.profile_id ");
 	}
 
 	/* (non-Javadoc)
@@ -431,7 +509,7 @@ public class RamUserAction extends SBActionAdapter {
 		String auditorId = checkAuditor(user.getProfileId());
 		if (origRoleLevel != -1 && origRoleLevel != userRole.getRoleLevel() && origRoleLevel == ROLE_LEVEL_AUDITOR) {
 				// changed FROM auditor so disable RAM_AUDITOR record
-				updateAuditor(user, auditorId, RamUserFacadeAction.PROFILE_STATUS_DISABLED);
+				//updateAuditor(user, auditorId, RamUserFacadeAction.PROFILE_STATUS_DISABLED);
 		} else {
 			updateAuditor(user, auditorId, userRole.getStatusId());
 		}
@@ -461,7 +539,7 @@ public class RamUserAction extends SBActionAdapter {
 
 		// set active/inactive, default to inactive
 		int activeFlg = 0;
-		if (newStatusId == RamUserFacadeAction.PROFILE_STATUS_ACTIVE) activeFlg = 1;
+		//if (newStatusId == RamUserFacadeAction.PROFILE_STATUS_ACTIVE) activeFlg = 1;
 
 		int index = 1;
 		PreparedStatement ps = null;
@@ -552,7 +630,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param users
 	 * @return
 	 */
-	private void formatUserData(List<RAMUserVO> users) {
+	protected void formatUserData(List<RAMUserVO> users) {
 		StringEncrypter se = null;
 		try {
 			se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
@@ -617,33 +695,5 @@ public class RamUserAction extends SBActionAdapter {
 		}
 		userRole.setStatusId(Convert.formatInteger(req.getParameter("statusId")));
 		return userRole;
-	}
-
-	/**
-	 * Loops the sorted list and returns a list containing the records for the page number that was requested.
-	 * @param req
-	 * @param sortedList
-	 * @return
-	 */
-	private List<RAMUserVO> paginateData(ActionRequest req, List<RAMUserVO> sortedList) {
-		int navStart = Convert.formatInteger(req.getParameter("start"), 0);
-		int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
-		int navEnd = navStart + navLimit;
-		int ctr = -1;
-		List<RAMUserVO> paginatedList = new ArrayList<>();
-		for (int i = 0; i < sortedList.size(); i++) {
-			ctr++;
-			// determine which records to add to the paginated list.
-			if (ctr >= navStart) {
-				if (ctr < navEnd) {
-					paginatedList.add(sortedList.get(i));
-				} else {
-					break;
-				}
-			} else {
-				continue;
-			}
-		}
-		return paginatedList;
 	}
 }

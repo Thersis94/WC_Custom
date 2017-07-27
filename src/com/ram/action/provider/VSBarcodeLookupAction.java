@@ -87,7 +87,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 			// Parse the barcodes
 			BarcodeManager bcm = new BarcodeManager(oems);
 			BarcodeItemVO barcode = bcm.parseBarCode(scans);
-			log.info("barcode: " + barcode);
+			log.debug("barcode: " + barcode);
 
 			// Call the SOLR Query to populate
 			if (barcode == null) throw new Exception("Invalid Barcode Recieved");
@@ -235,7 +235,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	 */
 	protected RAMProductVO retrieveProduct(BarcodeItemVO barcode) throws ActionException {
 		RAMProductVO p = null;
-		log.info("Performing lookup on productId: " + barcode.getProductId());
+		log.debug("Performing lookup on productId: " + barcode.getProductId());
 		try(PreparedStatement ps = dbConn.prepareStatement(getProductSql(barcode.getBarcodeType()))) {
 			ps.setInt(1, Convert.formatInteger(barcode.getCustomerId()));
 			ps.setString(2, barcode.getProductId());
@@ -245,6 +245,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 			if(rs.next()) {
 				p = new RAMProductVO(rs);
 				p.setLotNumber(barcode.getLotCodeNumber());
+				p.setExpiree(barcode.getExpirationDate());
 			}
 		} catch (SQLException e) {
 			log.error(e);
