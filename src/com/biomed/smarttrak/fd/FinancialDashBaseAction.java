@@ -115,7 +115,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		}
 		
 		if (req.hasParameter("isReport")) {
-			processReport(req, dash);
+			processReport(req, dash, sections);
 		}
 		
 		// Gets the company name for page display
@@ -133,9 +133,16 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @param req
 	 * @param dash
 	 */
-	protected void processReport(ActionRequest req, FinancialDashVO dash) {
+	protected void processReport(ActionRequest req, FinancialDashVO dash, SmarttrakTree sections) {
+		String sortField = StringUtil.checkVal(req.getParameter("sortField"));
+		int sortOrder = Convert.formatInteger(req.getParameter("sortOrder"));
+		
 		FinancialDashReportVO rpt = new FinancialDashReportVO();
 		rpt.setData(dash);
+		rpt.setSortField(sortField);
+		rpt.setSortOrder(sortOrder);
+		rpt.setSections(sections);
+		
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 	}
