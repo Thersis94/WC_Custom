@@ -115,7 +115,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		int scenarioJoins = 2;
 		if (DisplayType.YOY == dt) {
 			scenarioJoins = 3;
-		} else if (DisplayType.FOURYR == dt || DisplayType.SIXQTR == dt) {
+		} else if (DisplayType.FOURYR == dt || DisplayType.SIXQTR == dt || DisplayType.EIGHTQTR == dt) {
 			scenarioJoins = 5;
 		}
 		
@@ -203,10 +203,10 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		sql.append("sum(coalesce(o2.Q1_NO, r2.Q1_NO)) as Q1_1, sum(coalesce(o2.Q2_NO, r2.Q2_NO)) as Q2_1, sum(coalesce(o2.Q3_NO, r2.Q3_NO)) as Q3_1, sum(coalesce(o2.Q4_NO, r2.Q4_NO)) as Q4_1 "); // Needed for all column display types to get percent change from prior year
 		
 		// Columns needed only for specific display types
-		if (dt == DisplayType.YOY || dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
+		if (dt == DisplayType.YOY || dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR || dt == DisplayType.EIGHTQTR) {
 			sql.append(", sum(coalesce(o3.Q1_NO, r3.Q1_NO)) as Q1_2, sum(coalesce(o3.Q2_NO, r3.Q2_NO)) as Q2_2, sum(coalesce(o3.Q3_NO, r3.Q3_NO)) as Q3_2, sum(coalesce(o3.Q4_NO, r3.Q4_NO)) as Q4_2 ");
 		}
-		if (dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
+		if (dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR || dt == DisplayType.EIGHTQTR) {
 			sql.append(", sum(coalesce(o4.Q1_NO, r4.Q1_NO)) as Q1_3, sum(coalesce(o4.Q2_NO, r4.Q2_NO)) as Q2_3, sum(coalesce(o4.Q3_NO, r4.Q3_NO)) as Q3_3, sum(coalesce(o4.Q4_NO, r4.Q4_NO)) as Q4_3 ");
 			sql.append(", sum(coalesce(o5.Q1_NO, r5.Q1_NO)) as Q1_4, sum(coalesce(o5.Q2_NO, r5.Q2_NO)) as Q2_4, sum(coalesce(o5.Q3_NO, r5.Q3_NO)) as Q3_4, sum(coalesce(o5.Q4_NO, r5.Q4_NO)) as Q4_4 "); // Needed to get percent change from prior year in the fourth year
 		}
@@ -234,11 +234,11 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		sql.append("left join ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY o2 on r2.REVENUE_ID = o2.REVENUE_ID and o2.SCENARIO_ID = ? ");
 
 		// Joins to get columns that are needed only for specific display types
-		if (dt == DisplayType.YOY || dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
+		if (dt == DisplayType.YOY || dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR || dt == DisplayType.EIGHTQTR) {
 			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r3 on r.COMPANY_ID = r3.COMPANY_ID and r.REGION_CD = r3.REGION_CD and r.SECTION_ID = r3.SECTION_ID and r.YEAR_NO - 2 = r3.YEAR_NO ");
 			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY o3 on r3.REVENUE_ID = o3.REVENUE_ID and o3.SCENARIO_ID = ? ");
 		}
-		if (dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
+		if (dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR || dt == DisplayType.EIGHTQTR) {
 			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r4 on r.COMPANY_ID = r4.COMPANY_ID and r.REGION_CD = r4.REGION_CD and r.SECTION_ID = r4.SECTION_ID and r.YEAR_NO - 3 = r4.YEAR_NO ");
 			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY o4 on r4.REVENUE_ID = o4.REVENUE_ID and o4.SCENARIO_ID = ? ");
 
