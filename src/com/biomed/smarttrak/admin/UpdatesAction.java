@@ -421,7 +421,7 @@ public class UpdatesAction extends ManagementAction {
 		if (isCount) {
 			sql.append("count(distinct a.update_id) ");
 		} else {
-			sql.append("a.*, p.first_nm, p.last_nm, ");
+			sql.append("distinct a.*, p.first_nm, p.last_nm, ");
 			if (isList) {
 				sql.append("s.wc_sync_id ");
 			} else {
