@@ -36,7 +36,7 @@ public class FinancialDashColumnSet implements Serializable {
 	
 	protected enum DisplayType {
 		CURYR("Current Year", 2), SIXQTR("Six Quarter Running", 4), FOURYR("Four-Year Comparison", 5),
-		YOY("Year-Over-Year", 3), CALYR("Calendar Year", 2), EIGHTQTR("Eight Quarter Running", 3), ALL("All History", 0);
+		YOY("Year-Over-Year", 3), CALYR("Calendar Year", 2), EIGHTQTR("Eight Quarter Running", 4), ALL("All History", 0);
 		
 		private String name;
 		private int dataYears;
