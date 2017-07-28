@@ -31,7 +31,7 @@ public class FinancialDashColumnSet implements Serializable {
 	
 	protected enum DisplayType {
 		CURYR("Current Year"), SIXQTR("Six Quarter Running"), FOURYR("Four-Year Comparison"),
-		YOY("Year-Over-Year"), CALYR("Calendar Year"), EIGHTQTR("Eight Quarter");
+		YOY("Year-Over-Year"), CALYR("Calendar Year"), EIGHTQTR("Eight Quarter Running");
 		
 		private String name;
 		
@@ -54,10 +54,10 @@ public class FinancialDashColumnSet implements Serializable {
 	public Map<String, String> getColumns() {
 		switch(displayType) {
 			case SIXQTR:
-				this.addSixQuarterColumns();
+				this.addQuarterRunningColumns(6);
 				break;
 			case EIGHTQTR:
-				this.addEightQuarterWithYearColumns();
+				this.addQuarterRunningColumns(8);
 				break;
 			case FOURYR:
 				this.addFourYearColumns();
@@ -75,13 +75,11 @@ public class FinancialDashColumnSet implements Serializable {
 	}
 
 	/**
-	 * Adds all columns for a six quarter running display type.
+	 * Adds all columns for a quarter running display type.
 	 */
-	private void addSixQuarterColumns() {
-		int numColumns = 6;
-
+	private void addQuarterRunningColumns(int numColumns) {
 		// This represents the earliest possible in a six quarter running
-		int quarter = 3;
+		int quarter = 1;
 		int year = calendarYear - 2;
 		
 		boolean isCurrentQtr = false;
