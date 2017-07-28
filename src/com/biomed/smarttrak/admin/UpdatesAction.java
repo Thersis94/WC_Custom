@@ -256,6 +256,7 @@ public class UpdatesAction extends ManagementAction {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String sql = formatRetrieveAllQuery(schema, updateId);
 
+		log.debug(sql);
 		List<Object> params = new ArrayList<>();
 		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
 
@@ -421,7 +422,7 @@ public class UpdatesAction extends ManagementAction {
 		if (isCount) {
 			sql.append("count(distinct a.update_id) ");
 		} else {
-			sql.append("distinct a.*, p.first_nm, p.last_nm, ");
+			sql.append("a.*, p.first_nm, p.last_nm, ");
 			if (isList) {
 				sql.append("s.wc_sync_id ");
 			} else {
