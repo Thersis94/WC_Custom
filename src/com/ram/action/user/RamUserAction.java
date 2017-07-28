@@ -99,50 +99,95 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unchecked")
 	public void retrieveUser(ActionRequest req, String schema, SBUserRole role) 
 	throws ActionException {
 		// Make sure the user has permission to edit the user information
 		boolean siteAdmin = role.getRoleLevel() == 100;
 		boolean adminFlag = Convert.formatBoolean(role.getAttribute(RAMRoleModule.ADMIN_ROLE));
 		if (! siteAdmin && ! adminFlag && ! role.getProfileId().equals(req.getParameter("profileId"))) return;
-		Set<Object> customers = (Set<Object>)role.getAttributes().get(CustomerVO.CustomerType.PROVIDER.toString());
+		
+		// Build the SQL and params list
+		StringBuilder sql = new StringBuilder(256);
+		this.retrieveUserSQL(sql, siteAdmin, adminFlag, role);
 		List<Object> params = new ArrayList<>();
 		params.add(Convert.formatInteger(req.getParameter("userRoleId")));
-		
-		StringBuilder sql = new StringBuilder(256);
-		sql.append("select a.user_role_id, c.profile_id, a.first_nm, a.last_nm, c.email_address_txt,");
-		sql.append("d.phone_number_txt, a.profile_role_id, b.role_id, b.status_id, b.site_id, a.admin_flg ");
-		sql.append("from custom.ram_user_role a "); 
-		sql.append("inner join profile_role b on a.profile_role_id = b.profile_role_id ");
-		sql.append("inner join profile c on b.profile_id = c.profile_id ");
-		sql.append("left outer join phone_number d on c.profile_id = d.profile_id and phone_type_cd = 'WORK' ");
-		
-		// Make sure the admin can only modify users in their prodvider locations
-		if (!siteAdmin && adminFlag) {
-			sql.append("inner join custom.ram_user_role_customer_xr xr on a.user_role_id = xr.user_role_id ");
-			sql.append("and a.user_role_id in (select user_role_id "); 
-			sql.append("from custom.ram_user_role_customer_xr  ");
-			sql.append("where user_role_id = ? and customer_id in (");
-			sql.append(StringUtil.getDelimitedList(customers.toArray(new String[customers.size()]), false, ",")).append(") ");
-		} else {
-			sql.append("where a.user_role_id = ? ");
-		}
-		
 		log.debug(sql + "|" + params);
+
+		// Execute the lookup
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<Object> data = db.executeSelect(sql.toString(), params, new RAMUserVO());
 		RAMUserVO user = (RAMUserVO) data.get(0);
 		
 		try {
+			// Decrypt the values from the profile record
 			StringEncrypter se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
 			user.setPhoneNumber(se.decrypt(user.getPhoneNumber()));
 			user.setEmailAddress(se.decrypt(user.getEmailAddress()));
-		} catch(Exception e) {
-			log.error("Unable to decrypt data", e);
-		}
+		} catch(Exception e) { log.error("Unable to decrypt data", e); }
 		
+		// Get the user role attributes
+		assignUserAttributes(user, schema);
+		
+		// add the user to the req
 		this.putModuleData(user);
+	}
+	
+	/**
+	 * Gets the user role customer attributes
+	 * @param user
+	 * @param schema
+	 */
+	public void assignUserAttributes(RAMUserVO user, String schema) {
+		StringBuilder sql = new StringBuilder();
+		sql.append("select a.customer_id, customer_nm, customer_type_id ");
+		sql.append("from ").append(schema).append("ram_user_role_customer_xr a ");
+		sql.append("inner join ").append(schema).append("ram_customer b on a.customer_id = b.customer_id ");
+		sql.append("where user_role_id = ? order by customer_nm");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, user.getUserRoleId());
+			
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				GenericVO g = new GenericVO(rs.getInt(1), rs.getString(2));
+				
+				if ("OEM".equalsIgnoreCase(rs.getString(3))) user.setOem(g);
+				else user.addHospital(g);
+			}
+		} catch(Exception e) {
+			log.error("Unable to retireve ser permissions", e);
+		}
+	}
+	
+	/**
+	 * Retrieves the core user info
+	 * @param sql
+	 * @param siteAdmin
+	 * @param adminFlag
+	 * @param role
+	 */
+	@SuppressWarnings("unchecked")
+	public void retrieveUserSQL(StringBuilder sql, boolean siteAdmin, boolean adminFlag, SBUserRole role) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		Set<Object> customers = (Set<Object>)role.getAttributes().get(CustomerVO.CustomerType.PROVIDER.toString());
+		
+		sql.append("select a.user_role_id, c.profile_id, a.first_nm, a.last_nm, c.email_address_txt,");
+		sql.append("d.phone_number_txt, a.profile_role_id, b.role_id, b.status_id, b.site_id, a.admin_flg ");
+		sql.append("from ").append(schema).append("ram_user_role a "); 
+		sql.append("inner join profile_role b on a.profile_role_id = b.profile_role_id ");
+		sql.append("inner join profile c on b.profile_id = c.profile_id ");
+		sql.append("left outer join phone_number d on c.profile_id = d.profile_id and phone_type_cd = 'WORK' ");
+		
+		// Make sure the admin can only modify users in their provider locations
+		if (!siteAdmin && adminFlag) {
+			sql.append("inner join ").append(schema).append("ram_user_role_customer_xr xr on a.user_role_id = xr.user_role_id ");
+			sql.append("and a.user_role_id in (select user_role_id "); 
+			sql.append("from ").append(schema).append("ram_user_role_customer_xr  ");
+			sql.append("where user_role_id = ? and customer_id in (");
+			sql.append(StringUtil.getDelimitedList(customers.toArray(new String[customers.size()]), false, ",")).append(") ");
+		} else {
+			sql.append("where a.user_role_id = ? ");
+		}
 	}
 	
 	/**
@@ -217,10 +262,11 @@ public class RamUserAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	public void buildFilter(StringBuilder sql, boolean siteAdmin, ActionRequest req, SBUserRole role, List<Object> params) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		if (! siteAdmin) {
 			List<Object> customers = (List<Object>)role.getAttributes().get(CustomerVO.CustomerType.PROVIDER.toString());
 			sql.append("and a.user_role_id in (select user_role_id ");
-			sql.append("from custom.ram_user_role_customer_xr where customer_id in (");
+			sql.append("from ").append(schema).append("ram_user_role_customer_xr where customer_id in (");
 			sql.append(StringUtil.getDelimitedList(customers.toArray(new String[customers.size()]), false, ",")).append(") ");
 		}
 		
@@ -265,6 +311,33 @@ public class RamUserAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.info(req.getParameterMap());
+		
+		// Get user role
+		
+		
+		// Check security
+		
+		
+		// Create/update Profile
+		
+		
+		// Manage WC role
+		
+		
+		// Update/Add RAM User Role
+		
+		
+		// Delete Role Attributes
+		
+		
+		// Insert new Attributes
+		
+		
+		this.putModuleData("success");
+	}
+	
+	public void buildOrig(ActionRequest req) throws ActionException {
 		log.debug("RamUserAction build...");
 		Object msg = null;
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
