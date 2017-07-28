@@ -75,6 +75,7 @@ public class BiomedChangeLogUtil extends ChangeLogUtil {
 		if(!StringUtil.isEmpty(changeLogId)) sql.append("and a.change_log_id = ? ");
 		if(!StringUtil.isEmpty(orgId)) sql.append("and b.organization_id = ? ");
 
+		sql.append("and type_cd != 'UPDATE' "); //exclude updates from listing
 		sql.append("order by a.create_dt desc");
 		return sql.toString();
 	}
