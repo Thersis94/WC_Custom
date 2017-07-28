@@ -31,7 +31,7 @@ public class FinancialDashColumnSet implements Serializable {
 	
 	protected enum DisplayType {
 		CURYR("Current Year"), SIXQTR("Six Quarter Running"), FOURYR("Four-Year Comparison"),
-		YOY("Year-Over-Year"), CALYR("Calendar Year"), EIGHTQTR("Eight Quarter");
+		YOY("Year-Over-Year"), CALYR("Calendar Year");
 		
 		private String name;
 		
@@ -55,9 +55,6 @@ public class FinancialDashColumnSet implements Serializable {
 		switch(displayType) {
 			case SIXQTR:
 				this.addSixQuarterColumns();
-				break;
-			case EIGHTQTR:
-				this.addEightQuarterWithYearColumns();
 				break;
 			case FOURYR:
 				this.addFourYearColumns();
@@ -104,31 +101,6 @@ public class FinancialDashColumnSet implements Serializable {
 			// If there are too many columns, remove the first one
 			if (columns.size() > numColumns)
 				columns.remove(columns.entrySet().iterator().next().getKey());
-		}
-	}
-	
-	/**
-	 * Adds all columns for an eight quarter display type.
-	 */
-	private void addEightQuarterWithYearColumns() {
-		int quarter = 1;
-		int year = calendarYear - 1;
-		
-		for (int i = 1; i <= 8; i++) {
-			// Add the quarter column
-			int twoDigitYr = year % 100;
-			this.addColumn(FinancialDashBaseAction.QUARTER + quarter + "-" + year, FinancialDashBaseAction.QUARTER + quarter + twoDigitYr);
-			
-			quarter += 1;
-			if (quarter == 5) {
-				// Add the appropriate year column
-				String yearPrefix = year != calendarYear ? FinancialDashBaseAction.CALENDAR_YEAR : FinancialDashBaseAction.YEAR_TO_DATE;
-				this.addColumn(yearPrefix + "-" + year, yearPrefix + year);
-				
-				// Increment to the next quarter
-				quarter = 1;
-				year += 1;
-			}
 		}
 	}
 
