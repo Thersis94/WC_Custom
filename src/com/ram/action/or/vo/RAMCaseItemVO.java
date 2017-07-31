@@ -45,6 +45,7 @@ public class RAMCaseItemVO implements Serializable {
 	private String productFromTxt;
 	private String customerNm;
 	private String gtinProductId;
+	private Date expiree;
 	private Date createDt;
 	private Date updateDt;
 
@@ -70,6 +71,17 @@ public class RAMCaseItemVO implements Serializable {
 		productFromTxt = req.getParameter("productFromTxt");
 		customerNm = req.getParameter("customerNm");
 		setCaseTypeTxt(req.getParameter("caseTypeCd"));
+		if (!StringUtil.isEmpty(req.getParameter("expiree")))
+			setExpiree(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expiree")));
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this);
 	}
 
 	/**
@@ -335,5 +347,20 @@ public class RAMCaseItemVO implements Serializable {
 	 */
 	public void setCustomerProductId(String customerProductId) {
 		this.customerProductId = customerProductId;
+	}
+
+	/**
+	 * @return the expiree
+	 */
+	@Column(name="expiree_dt")
+	public Date getExpiree() {
+		return expiree;
+	}
+
+	/**
+	 * @param expiree the expiree to set
+	 */
+	public void setExpiree(Date expiree) {
+		this.expiree = expiree;
 	}
 }

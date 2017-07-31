@@ -110,21 +110,13 @@ public class RAMCaseManager {
 			cVo.setNewCase(true);
 		} else {
 			// Load the case form the default location
-			cVo = (RAMCaseVO) ap.load(req.getParameter(RAM_CASE_ID));
-			
-			// Otherwise load from the database
-			if (cVo == null) {
-				AbstractPersist<?,?> apdb = pTypes.get(permPType);
-				cVo = (RAMCaseVO) apdb.load(req.getParameter(RAM_CASE_ID));
-				
-				if (cVo == null) throw new Exception("Can't find case for caseId: " + caseId);
-			}
+			cVo = this.retrieveCase(caseId);
 		}
 		
 		// Update the data and persists
 		cVo.setData(req);
 		ap.save(cVo);
-		
+
 		return cVo;
 	}
 	
@@ -150,7 +142,11 @@ public class RAMCaseManager {
 			AbstractPersist<?,?> apdb = pTypes.get(permPType);
 			cVo = (RAMCaseVO) apdb.load(req.getParameter(RAM_CASE_ID));
 			
+			// Throw exception if no case found
 			if (cVo == null) throw new Exception("Can't find case for caseId: " + caseId);
+			
+			// Persist the case to the session
+			this.persistCaseDefault(cVo);
 		}
 
 		return cVo; 
