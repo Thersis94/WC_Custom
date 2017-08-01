@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import java.util.Set;
 
 // RAMDataFeed libs
 import com.ram.datafeed.data.RAMUserVO;
+import com.ram.action.util.SecurityUtil;
 import com.ram.datafeed.data.CustomerVO;
 
 // SMTBaseLibs 2.0
@@ -19,25 +21,26 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AbstractLoginModule;
-import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.SecurityModuleFactoryImpl;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.UUIDGenerator;
 
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
-import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -56,11 +59,6 @@ import com.smt.sitebuilder.security.SBUserRole;
  * May 28, 2014: David Bargerhuff: Created class.
  ****************************************************************************/
 public class RamUserAction extends SBActionAdapter {
-
-	public static final int ROLE_LEVEL_OR_MODULE = 10;
-	public static final int ROLE_LEVEL_AUDITOR = 15;
-	public static final int ROLE_LEVEL_OEM = 20;
-	public static final int ROLE_LEVEL_PROVIDER = 25;
 	/**
 	 * 
 	 */
@@ -87,9 +85,12 @@ public class RamUserAction extends SBActionAdapter {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		if (req.hasParameter("edit")) {
-			retrieveUser(req, schema, role);
+			putModuleData(retrieveUser(req, schema, role));
+			req.setAttribute("RAM_USER_OEM", this.getOemList(req, schema));
+			req.setAttribute("RAM_USER_PROV", this.getProviderList(req, schema, req.getParameter("userRoleId")));
 		} else if (req.hasParameter("amid")){
-			retrieveList(req, role, schema, role.getRoleLevel() == 100);
+			GenericVO data = retrieveList(req, schema, role.getRoleLevel() == 100);
+			this.putModuleData(data.getKey(), (Integer)data.getValue(), false);
 		}
 
 	}
@@ -99,12 +100,11 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	public void retrieveUser(ActionRequest req, String schema, SBUserRole role) 
-	throws ActionException {
+	public RAMUserVO retrieveUser(ActionRequest req, String schema, SBUserRole role) {
 		// Make sure the user has permission to edit the user information
 		boolean siteAdmin = role.getRoleLevel() == 100;
 		boolean adminFlag = Convert.formatBoolean(role.getAttribute(RAMRoleModule.ADMIN_ROLE));
-		if (! siteAdmin && ! adminFlag && ! role.getProfileId().equals(req.getParameter("profileId"))) return;
+		if (! siteAdmin && ! adminFlag && ! role.getProfileId().equals(req.getParameter("profileId"))) return null;
 		
 		// Build the SQL and params list
 		StringBuilder sql = new StringBuilder(256);
@@ -123,13 +123,14 @@ public class RamUserAction extends SBActionAdapter {
 			StringEncrypter se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
 			user.setPhoneNumber(se.decrypt(user.getPhoneNumber()));
 			user.setEmailAddress(se.decrypt(user.getEmailAddress()));
+			
 		} catch(Exception e) { log.error("Unable to decrypt data", e); }
 		
 		// Get the user role attributes
 		assignUserAttributes(user, schema);
 		
 		// add the user to the req
-		this.putModuleData(user);
+		return user;
 	}
 	
 	/**
@@ -140,8 +141,8 @@ public class RamUserAction extends SBActionAdapter {
 	public void assignUserAttributes(RAMUserVO user, String schema) {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.customer_id, customer_nm, customer_type_id ");
-		sql.append("from ").append(schema).append("ram_user_role_customer_xr a ");
-		sql.append("inner join ").append(schema).append("ram_customer b on a.customer_id = b.customer_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_user_role_customer_xr a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("ram_customer b on a.customer_id = b.customer_id ");
 		sql.append("where user_role_id = ? order by customer_nm");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -173,7 +174,7 @@ public class RamUserAction extends SBActionAdapter {
 		
 		sql.append("select a.user_role_id, c.profile_id, a.first_nm, a.last_nm, c.email_address_txt,");
 		sql.append("d.phone_number_txt, a.profile_role_id, b.role_id, b.status_id, b.site_id, a.admin_flg ");
-		sql.append("from ").append(schema).append("ram_user_role a "); 
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_user_role a "); 
 		sql.append("inner join profile_role b on a.profile_role_id = b.profile_role_id ");
 		sql.append("inner join profile c on b.profile_id = c.profile_id ");
 		sql.append("left outer join phone_number d on c.profile_id = d.profile_id and phone_type_cd = 'WORK' ");
@@ -182,7 +183,7 @@ public class RamUserAction extends SBActionAdapter {
 		if (!siteAdmin && adminFlag) {
 			sql.append("inner join ").append(schema).append("ram_user_role_customer_xr xr on a.user_role_id = xr.user_role_id ");
 			sql.append("and a.user_role_id in (select user_role_id "); 
-			sql.append("from ").append(schema).append("ram_user_role_customer_xr  ");
+			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_user_role_customer_xr  ");
 			sql.append("where user_role_id = ? and customer_id in (");
 			sql.append(StringUtil.getDelimitedList(customers.toArray(new String[customers.size()]), false, ",")).append(") ");
 		} else {
@@ -198,7 +199,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param admin
 	 * @throws ActionException
 	 */
-	public void retrieveList(ActionRequest req, SBUserRole role, String schema, boolean siteAdmin) {
+	public GenericVO retrieveList(ActionRequest req, String schema, boolean siteAdmin) {
 		// Build the SQL
 		List<Object> params = new ArrayList<>();
 		List<Object> cParams = new ArrayList<>();
@@ -213,8 +214,8 @@ public class RamUserAction extends SBActionAdapter {
 		buildJoins(sql, schema);
 		
 		// Build the filters
-		buildFilter(sql, siteAdmin, req, role, params);
-		buildFilter(cSql, siteAdmin, req, role, cParams);
+		buildFilter(sql, siteAdmin, req, params);
+		buildFilter(cSql, siteAdmin, req, cParams);
 		
 		// Add the order and offsets
 		buildOrder(sql, req, params);
@@ -227,8 +228,8 @@ public class RamUserAction extends SBActionAdapter {
 		// Get the counts
 		List<Object> count = dbp.executeSelect(cSql.toString(), cParams, new GenericVO());
 		
-		// Add the data
-		putModuleData(data, Convert.formatInteger(((GenericVO)count.get(0)).getKey()+""), false, null);
+		// return the data
+		return new GenericVO(data, Convert.formatInteger(((GenericVO)count.get(0)).getKey() + ""));
 	}
 	
 	/**
@@ -260,14 +261,13 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param req
 	 * @param role
 	 */
-	@SuppressWarnings("unchecked")
-	public void buildFilter(StringBuilder sql, boolean siteAdmin, ActionRequest req, SBUserRole role, List<Object> params) {
+	public void buildFilter(StringBuilder sql, boolean isAdmin, ActionRequest req, List<Object> params) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		if (! siteAdmin) {
-			List<Object> customers = (List<Object>)role.getAttributes().get(CustomerVO.CustomerType.PROVIDER.toString());
+		if(! isAdmin) {
 			sql.append("and a.user_role_id in (select user_role_id ");
-			sql.append("from ").append(schema).append("ram_user_role_customer_xr where customer_id in (");
-			sql.append(StringUtil.getDelimitedList(customers.toArray(new String[customers.size()]), false, ",")).append(") ");
+			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_user_role_customer_xr where 1=1 ");
+			sql.append(SecurityUtil.addCustomerFilter(req, "a"));
+			sql.append(") ");
 		}
 		
 		// Add a filter for the search params
@@ -284,12 +284,12 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param sql
 	 */
 	public void buildJoins(StringBuilder sql, String schema) {
-		sql.append("from ").append(schema).append("ram_user_role a  ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_user_role a  ");
 		sql.append("inner join profile_role pr on a.profile_role_id = pr.profile_role_id ");
 		sql.append("inner join role r on pr.role_id = r.role_id and pr.role_id not in ('0', '10') ");
 		sql.append("left outer join ( ");
 		sql.append("select user_role_id, count(*) as customer_count ");
-		sql.append("from ").append(schema).append("ram_user_role_customer_xr rcx ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_user_role_customer_xr rcx ");
 		sql.append("inner join ").append(schema).append("ram_customer rc ");
 		sql.append("on rcx.customer_id = rc.customer_id and rc.customer_type_id = 'PROVIDER' ");
 		sql.append("group by user_role_id ");
@@ -311,151 +311,129 @@ public class RamUserAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info(req.getParameterMap());
-		
-		// Get user role
-		
-		
-		// Check security
-		
-		
-		// Create/update Profile
-		
-		
-		// Manage WC role
-		
-		
-		// Update/Add RAM User Role
-		
-		
-		// Delete Role Attributes
-		
-		
-		// Insert new Attributes
-		
-		
-		this.putModuleData("success");
-	}
-	
-	public void buildOrig(ActionRequest req) throws ActionException {
-		log.debug("RamUserAction build...");
-		Object msg = null;
-		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		boolean isAdmin = (role.getRoleLevel() == 100);
-
-		UserDataVO user = new UserDataVO(req);
-		String profileId = null;
-		if (isAdmin) {
-			profileId = StringUtil.checkVal(req.getParameter("profileId"));
-		} else {
-			// otherwise, get logged-in user's profile ID from session
-			profileId = retrieveNonAdminProfileId(req);
-		}
-		boolean isProfileInsert = (StringUtil.checkVal(profileId).length() == 0);
-		log.debug("isProfileInsert: " + isProfileInsert);
-		user.setProfileId(profileId);
-
-		// manage profile
-		manageProfile(req, user, isProfileInsert, msg);
-
-		if (isAdmin) { // only admins can manipulate role/auth/auditor records
-			// manage role and auth
-			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			SBUserRole userRole = preformatUserRoleData(req, site, user);
-			manageRole(req, userRole, isProfileInsert, msg);
-
+		// Save the user data
+		if ("update".equalsIgnoreCase(req.getParameter("transType"))) {
 			try {
-				manageAuthentication(req, site, user, userRole);
-				msg = "You have successfully " + (isProfileInsert ? "created" : "updated") + " the user.";
-			} catch (Exception e) {
-				msg = "Error creating login for Ram user.";
-			}
-
-			// check for role change TO 'auditor' or FROM 'auditor'
-			int origRoleLevel = Convert.formatInteger(req.getParameter("origRoleLevel"), -1);
-			if (origRoleLevel == ROLE_LEVEL_AUDITOR || userRole.getRoleLevel() == ROLE_LEVEL_AUDITOR) {
-				manageAuditor(req, site, user, userRole, origRoleLevel);
-			} else if (origRoleLevel == ROLE_LEVEL_OR_MODULE) {
-				manageAssociatedHospitals(req, user.getProfileId());
-			}
-		} else {
-			// if non-admin and has changed email address, check auth record.
-		}
-
-        // Build the redirect and messages
-		// Setup the redirect.
-		StringBuilder url = new StringBuilder();
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		url.append(page.getRequestURI());
-		if (msg != null) {
-			String txt = (String) msg;
-			if (txt.toLowerCase().startsWith("you")) {
-				url.append("?editUser=true&profileId=").append(user.getProfileId());
-				url.append("&msg=").append(msg);
-			} else {
-				url.append("?msg=").append(msg);
+				this.saveUserData(req);
+				this.putModuleData("success");
+			} catch(Exception e) {
+				this.putModuleData(null, 0, false, "NOT_AUTHORIZED", true);
 			}
 		}
-
-		boolean isJson = Convert.formatBoolean(StringUtil.checkVal(req.getParameter("amid")).length() > 0);
-		if (isJson) {
-			Map<String, Object> res = new HashMap<>(); 
-			res.put("success", true);
-			putModuleData(res);
-		} else {
-			log.debug("RamUserAction redir: " + url);
-			putModuleData(msg);
-			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-			req.setAttribute(Constants.REDIRECT_URL, url.toString());
-		}
+		
+		
 	}
-
 	
 	/**
-	 * Add the hospitals the user is associated with.
+	 * Saves the data for the user
+	 * @param req
+	 * @param role
+	 * @param isAdmin
+	 * @throws ApplicationException 
 	 */
-	private void manageAssociatedHospitals(ActionRequest req,
-			String profileId) {
+	public void saveUserData(ActionRequest req) throws NotAuthorizedException, ApplicationException {
+		Integer oem = Convert.formatInteger(req.getParameter("manufacturerId"));
 		
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("INSERT INTO ").append(getAttribute("customDbSchema")).append("RAM_CUSTOMER_PROFILE_XR ");
-		sql.append("(CUSTOMER_PROFILE_XR_ID, PROFILE_ID, CUSTOMER_ID, CREATE_DT) ");
-		sql.append("VALUES(?,?,?,?)");
+		// Check security
+		if (! SecurityUtil.isAuthorized(req, oem, req.getParameterValues("customerIds")))
+			throw new NotAuthorizedException("Permission Check Failed");
 		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			// Delete the current hospitals associated with this user.
-			deleteCurrentHospitals(profileId);
-			String hospitals = StringUtil.checkVal(req.getParameter("associatedHospitals"));
-			for (String hospital : hospitals.split("\\|")) {
-				ps.setString(1, new UUIDGenerator().getUUID());
-				ps.setString(2, profileId);
-				ps.setString(3, hospital);
-				ps.setTimestamp(4, Convert.getCurrentTimestamp());
-				ps.addBatch();
-			}
+		// Create/update Profile and authentication
+		UserDataVO usr = new UserDataVO(req);
+		manageProfile(req, new UserDataVO(req));
+		
+		// Manage the auth info
+		if (! StringUtil.isEmpty(req.getParameter("password")))
+			manageAuthentication(req, (SiteVO)req.getAttribute(Constants.SITE_DATA), usr);
 
-			ps.executeBatch();
-		} catch (SQLException e) {
-			log.error("Unable to add hospitals for user " + profileId, e);
+		// Manage WC role
+		manageRole(req);
+		
+		// Update/Add RAM User Role
+		saveUserRole(req);
+		
+		// Delete Role Attributes
+		this.deleteCurrentCustomers(Convert.formatInteger(req.getParameter("userRoleId")));
+		
+		// Insert new Attributes
+		try {
+			addUserCustomers(req);
+		} catch(Exception e) {
+			log.error("Unable to add customers", e);
+			throw new ApplicationException(e);
 		}
 	}
 	
+	/**
+	 * Adds the customers (Provider and OEM) the the user role
+	 * 
+	 * @param req
+	 * @throws com.siliconmtn.db.util.DatabaseException 
+	 * @throws InvalidDataException 
+	 * @throws Exception
+	 */
+	protected void addUserCustomers(ActionRequest req) throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
+		Integer userRoleId = Convert.formatInteger(req.getParameter("userRoleId"));
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		UserRoleCustomerVO vo = new UserRoleCustomerVO();
+		String manufacturerId = req.getParameter("manufacturerId");
+		String roleId = req.getParameter("roleId");
+		
+		// Add the OEM if assigned
+		if (! StringUtil.isEmpty(manufacturerId) && SecurityUtil.isOEM(roleId)) {
+			vo.setUserRoleId(userRoleId);
+			vo.setCustomerId(Convert.formatInteger(manufacturerId));
+			vo.setCreateDate(new Date());
+			dbp.insert(vo);
+		}
+
+		// Loop the providers and add tot he db if they can be mapped
+		if (SecurityUtil.hasProviders(roleId) && req.getParameterValues("customerIds") != null) {
+			for(String customerId : req.getParameterValues("customerIds")) {
+				vo = new UserRoleCustomerVO();
+				vo.setUserRoleId(userRoleId);
+				vo.setCustomerId(Convert.formatInteger(customerId));
+				vo.setCreateDate(new Date());
+				dbp.insert(vo);
+			}
+		}
+	}
 	
+	/**
+	 * 
+	 * @param req
+	 * @throws ApplicationException
+	 */
+	public void saveUserRole(ActionRequest req) throws ApplicationException {
+		RAMUserVO user = new RAMUserVO(req);
+		user.setCreateDate(new Date());
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		try {
+			db.save(user);
+		} catch (Exception e) {
+			log.error("Unable to add user role", e);
+			throw new ApplicationException("Unable to add user role", e);
+		} 
+	}
+		
 	/**
 	 * Delete any hospital associations this user has at the moment in order
 	 * to make way for the new list of 
 	 * @param profileId
 	 * @throws SQLException
 	 */
-	private void deleteCurrentHospitals(String profileId) throws SQLException {
+	private void deleteCurrentCustomers(int userRoleId) throws ApplicationException {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("DELETE ").append(getAttribute("customDbSchema")).append("RAM_CUSTOMER_PROFILE_XR ");
-		sql.append("WHERE PROFILE_ID = ?");
+		sql.append("delete from ").append(getAttribute("customDbSchema")).append("ram_user_role_customer_xr ");
+		sql.append("where user_role_id = ?");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, profileId);
-			
+			ps.setInt(1, userRoleId);
 			ps.executeUpdate();
+		} catch(Exception e) {
+			log.error("Unable to delete user customers", e);
+			throw new ApplicationException("Unable to delete user customers", e);
 		}
 		
 	}
@@ -467,15 +445,17 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param isProfileInsert
 	 * @param msg
 	 */
-	private void manageProfile(ActionRequest req, UserDataVO user, boolean isProfileInsert, Object msg) {
+	private void manageProfile(ActionRequest req, UserDataVO user) {
 		log.debug("managing user profile...");
-		user.setMainPhone(StringUtil.removeNonNumeric(req.getParameter("phoneNumber")));
+		PhoneVO phone = new PhoneVO(PhoneVO.WORK_PHONE, StringUtil.removeNonNumeric(req.getParameter("phoneNumber")), "US");
+		user.addPhone(phone);
+		
+		log.debug("User: " + user);
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		try {
 			pm.updateProfile(user, dbConn);
 		} catch (DatabaseException de) {
-			msg = (isProfileInsert ? "Error creating " : "Error updating ") + "RAM user profile.";
-			log.error(msg, de);
+			log.error("unable to update profile", de);
 		}
 	}
 
@@ -483,22 +463,29 @@ public class RamUserAction extends SBActionAdapter {
 	 * Inserts or updates a user's role
 	 * @param req
 	 * @param userRole
-	 * @param isProfileInsert
-	 * @param msg
 	 */
-	private void manageRole(ActionRequest req, SBUserRole userRole, boolean isProfileInsert, Object msg) {
-		log.debug("managing user role...");
+	private void manageRole(ActionRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		SBUserRole role = new SBUserRole();
+		role.setOrganizationId(site.getOrganizationId());
+		role.setSiteId(site.getSiteId());
+		role.setRoleId(req.getParameter("roleId"));
+		role.setProfileId(req.getParameter("profileId"));
+		role.setProfileRoleId(req.getParameter("profileRoleId"));
+		role.setStatusId(Convert.formatInteger(req.getParameter("statusId")));
+		
+		log.debug("managing user role..." + role);
 		try {
 			ProfileRoleManager prm = new ProfileRoleManager();
-			// check to see if this user already has a role
-			String profileRoleId = prm.checkRole(userRole.getProfileId(), userRole.getSiteId(), dbConn);
-			if (StringUtil.checkVal(profileRoleId).length() > 0) userRole.setProfileRoleId(profileRoleId);
-			// insert or update role data
-			prm.addRole(userRole, dbConn);
 			
+			// check to see if this user already has a role
+			String profileRoleId = prm.checkRole(role.getProfileId(), role.getSiteId(), dbConn);
+			if (StringUtil.checkVal(profileRoleId).length() > 0) role.setProfileRoleId(profileRoleId);
+			
+			// insert or update role data
+			prm.addRole(role, dbConn);
 		} catch (DatabaseException de) {
-			msg = (isProfileInsert ? "Error creating " : "Error updating ") + "RAM user role.";
-			log.error(msg, de);
+			log.error("Unable to update role", de);
 		}
 	}
 
@@ -510,9 +497,9 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param msg
 	 * @throws ApplicationException 
 	 */
-	private void manageAuthentication(ActionRequest req, SiteVO site, UserDataVO user, SBUserRole userRole) 
-			throws ApplicationException {
-		log.debug("managing authentication...");
+	private void manageAuthentication(ActionRequest req, SiteVO site, UserDataVO user) 
+	throws ApplicationException {
+		log.info("managing authentication...");
 		String loginClass = site.getLoginModule();
 		Map<String, Object> lm = new HashMap<>();
 		lm.put(Constants.ENCRYPT_KEY, (String) getAttribute(Constants.ENCRYPT_KEY));
@@ -529,29 +516,20 @@ public class RamUserAction extends SBActionAdapter {
 			String authEmail = user.getEmailAddress();
 			// check for an 'old' email address which indicates an existing user
 			String oldEmail = StringUtil.checkVal(req.getParameter("oldEmailAddress"));
-			if (oldEmail.length() > 0) {
-				// existing user
-				if (! oldEmail.equalsIgnoreCase(user.getEmailAddress())) {
-					// email address changed, use old email address for auth lookup
-					authEmail = oldEmail;
-				}
+			if (oldEmail.length() > 0 && ! oldEmail.equalsIgnoreCase(user.getEmailAddress())) {
+				// email address changed, use old email address for auth lookup
+				authEmail = oldEmail;
 			}
 
 			// retrieve authID for this user if it exists.
 			authId = loginModule.retrieveAuthenticationId(authEmail);
-			log.debug("authId after check: " + authId);
 			boolean updateProfileAuthId = false;
 			String authPwd = StringUtil.checkVal(req.getParameter("password"));
-			log.debug("authPwd: " + authPwd);
 			if (StringUtil.checkVal(authId).length() == 0) {
 				// no existing auth record, so update profile with auth ID after auth
 				// record is created.
 				updateProfileAuthId = true;
 			}
-
-			// TODO 2014-08-01 DBargerhuff: commented out, verify that we are not
-			// generating passwords for a RAM user.
-			//managePassword(req, site, user);
 
 			// create or update the auth record.  We are depending upon the form
 			// for password and thus we are not setting the password reset flag to true.
@@ -566,112 +544,7 @@ public class RamUserAction extends SBActionAdapter {
 			throw new ApplicationException(e.getMessage());
 		}
 	}
-
-	/**
-	 * Manages the data record for a user of role 'Auditor'.
-	 * updated to ensure we always update theAuditor record as that has more data
-	 * on it than just active or inactive.  
-	 * @param req
-	 * @param site
-	 * @param user
-	 * @param userRole
-	 * @param origRoleLevel
-	 */
-	private void manageAuditor(ActionRequest req, SiteVO site, UserDataVO user, SBUserRole userRole, int origRoleLevel) {
-		log.debug("Managing auditor...");
-		String auditorId = checkAuditor(user.getProfileId());
-		if (origRoleLevel != -1 && origRoleLevel != userRole.getRoleLevel() && origRoleLevel == ROLE_LEVEL_AUDITOR) {
-				// changed FROM auditor so disable RAM_AUDITOR record
-				//updateAuditor(user, auditorId, RamUserFacadeAction.PROFILE_STATUS_DISABLED);
-		} else {
-			updateAuditor(user, auditorId, userRole.getStatusId());
-		}
-	}
-
-	/**
-	 * Inserts or updates a RAM_AUDITOR record
-	 * @param profileId
-	 * @param auditorId
-	 * @param newStatusId
-	 */
-	private void updateAuditor(UserDataVO user, String auditorId, int newStatusId) {
-		log.debug("updating auditor record...");
-		boolean isInsert = (StringUtil.checkVal(auditorId).length() == 0);
-		String schema = (String)getAttribute("customDbSchema");
-		StringBuilder sql = new StringBuilder();
-		if (isInsert) {
-			// insert
-			sql.append("insert into ").append(schema).append("RAM_AUDITOR ");
-			sql.append("(PROFILE_ID, FIRST_NM, LAST_NM, ACTIVE_FLG, CREATE_DT)").append("values (?,?,?,?,?)");
-		} else {
-			// update
-			sql.append("update ").append(schema).append("RAM_AUDITOR ");
-			sql.append("set PROFILE_ID = ?, FIRST_NM = ?, LAST_NM = ?, ACTIVE_FLG = ?, UPDATE_DT = ? ");
-			sql.append("where AUDITOR_ID = ?");
-		}
-
-		// set active/inactive, default to inactive
-		int activeFlg = 0;
-		//if (newStatusId == RamUserFacadeAction.PROFILE_STATUS_ACTIVE) activeFlg = 1;
-
-		int index = 1;
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			ps.setString(index++, user.getProfileId());
-			ps.setString(index++, user.getFirstName());
-			ps.setString(index++, user.getLastName());
-			ps.setInt(index++, activeFlg);
-			ps.setTimestamp(index++, Convert.getCurrentTimestamp());
-			if (! isInsert) {
-				ps.setString(index++, auditorId);
-			}
-
-			ps.executeUpdate();
-
-		} catch (SQLException sqle) {
-			log.error("Error retrieving RAM auditor ID, ", sqle);
-		} finally {
-			if (ps != null) {
-				try {
-					ps.close();
-				} catch (Exception e) {log.error("Error closing PreparedStatement, ", e);}
-			}
-		}
-	}
-
-	/**
-	 * Performs a lookup of the auditor ID associated with the profile ID passed in.
-	 * @param profileId
-	 * @return
-	 */
-	private String checkAuditor(String profileId) {
-		String auditorId = null;
-		String schema = (String)getAttribute("customDbSchema");
-		StringBuilder sql = new StringBuilder();
-		sql.append("select AUDITOR_ID from ").append(schema).append("RAM_AUDITOR ");
-		sql.append("where PROFILE_ID = ?");
-
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			ps.setString(1,profileId);
-			ResultSet rs = ps.executeQuery();
-			if (rs.next()) {
-				auditorId = rs.getString("AUDITOR_ID");
-			}
-		} catch (SQLException sqle) {
-			log.error("Error retrieving RAM auditor ID, ", sqle);
-		} finally {
-			if (ps != null) {
-				try {
-					ps.close();
-				} catch (Exception e) {log.error("Error closing PreparedStatement, ", e);}
-			}
-		}
-		return auditorId;
-	}
-
+	
 	/**
 	 * Updates user profile with the associated user's authentication ID.
 	 * @param user
@@ -687,7 +560,7 @@ public class RamUserAction extends SBActionAdapter {
 			ps.setString(2, user.getProfileId());
 			ps.execute();
 		} catch (SQLException sqle) {
-			
+			log.error("Unable to update profile auth", sqle);
 		} finally {
 			if (ps != null) {
 				try {
@@ -696,77 +569,43 @@ public class RamUserAction extends SBActionAdapter {
 			}
 		}
 	}
-
+	
 	/**
-	 * Instantiates StringEncrypter to decrypt encrypted user information and
-	 * sets the decrypted information on the user data.
-	 * @param users
+	 * Gets a selection list of providers for the view
+	 * @param role USer role
+	 * @param schema db schema
 	 * @return
 	 */
-	protected void formatUserData(List<RAMUserVO> users) {
-		StringEncrypter se = null;
-		try {
-			se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
-		} catch (EncryptionException ee) {
-			log.error("Error instantiating StringEncrypter, ", ee);
-			return;
-		}
-
-		for (RAMUserVO user : users) {
-			try {
-				user.setFirstName(se.decrypt(user.getFirstName()));
-			} catch (Exception e) {log.error("Error decrypting first name, " + e.getMessage());}
-			try {
-				user.setLastName(se.decrypt(user.getLastName()));
-			} catch (Exception e) {log.error("Error decrypting last name, " + e.getMessage());}
-			try {
-				user.setEmailAddress(se.decrypt(user.getEmailAddress()));
-			} catch (Exception e) {log.error("Error decrypting email address, " + e.getMessage());}
-			try {
-				user.setPhoneNumber(se.decrypt(user.getPhoneNumber()));
-			} catch (Exception e) {log.error("Error decrypting phone number, " + e.getMessage());}
-		}	
-		return;
+	public List<Object> getOemList(ActionRequest req, String schema) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select customer_id, customer_nm ");
+		sql.append("from ").append(schema).append("ram_customer ");
+		sql.append("where customer_type_id = 'OEM' ");
+		sql.append(SecurityUtil.addCustomerFilter(req, ""));
+		sql.append("order by customer_nm ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		return db.executeSelect(sql.toString(), null, new CustomerVO());
 	}
-
+	
 	/**
-	 * Returns the profile ID of the logged-in user from the user's session data.
-	 * @param req
+	 * Gets a selection list of providers for the view
+	 * @param role USer role
+	 * @param schema db schema
 	 * @return
 	 */
-	private String retrieveNonAdminProfileId(ActionRequest req) {
-		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-		return user.getProfileId(); 
-	}
-
-	/**
-	 * Formats an SBUserRole with role data from the request.
-	 * @param req
-	 * @param user
-	 * @return
-	 */
-	private SBUserRole preformatUserRoleData(ActionRequest req, SiteVO site, UserDataVO user) {
-		log.debug("formatUserRoleData...");
-		SBUserRole userRole = new SBUserRole();
-		userRole.setProfileId(user.getProfileId());
-		userRole.setProfileRoleId(req.getParameter("profileRoleId"));
-		userRole.setOrganizationId(site.getOrganizationId());
-		userRole.setSiteId(site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId());
-		userRole.setSiteName(site.getSiteName());
-		String roleId = StringUtil.checkVal(req.getParameter("roleId"));
-		userRole.setRoleId(roleId);
-		String roleLevelId = StringUtil.checkVal(req.getParameter("newRoleLevel"));
-		if (roleLevelId.length() > 0) {
-			userRole.setRoleLevel(Convert.formatInteger(roleLevelId));
-			if (userRole.getRoleLevel() == ROLE_LEVEL_OEM ||
-					userRole.getRoleLevel() == ROLE_LEVEL_PROVIDER) {
-				// if OEM or PROVIDER, set customer association
-				userRole.setAttrib1Txt(req.getParameter("customerId"));
-				// ...and for backwards compatibility
-				userRole.addAttribute("customerId", userRole.getAttrib1Txt());
-			}
-		}
-		userRole.setStatusId(Convert.formatInteger(req.getParameter("statusId")));
-		return userRole;
+	public List<Object> getProviderList(ActionRequest req, String schema, String userRoleId) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select customer_id, customer_nm from ").append("ram_customer "); 
+		sql.append("where customer_type_id = 'PROVIDER' and active_flg = 1 and customer_id not in ( ");
+		sql.append("select customer_id from ").append("ram_user_role_customer_xr ");
+		sql.append("where user_role_id = ?) ");
+		sql.append(SecurityUtil.addOEMFilter(req, ""));
+		sql.append("order by customer_nm; ");
+		
+		List<Object> params = new ArrayList<>();
+		params.add(Convert.formatInteger(userRoleId));
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		return db.executeSelect(sql.toString(), params, new CustomerVO());
 	}
 }
