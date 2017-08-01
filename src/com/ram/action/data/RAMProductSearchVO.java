@@ -68,7 +68,7 @@ public class RAMProductSearchVO extends EXTJSDataVO {
 			providerId = r.getRoleLevel() == SecurityUtil.RAMRoles.PROVIDER.getLevel() ? Convert.formatInteger((String) r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)) : 0;
 
 			//Check for oem, oem are only allowed to see their products.
-			customerId = r.getRoleLevel() == SecurityUtil.RAMRoles.PROVIDER.getLevel() ? Convert.formatInteger((String) r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)) : Convert.formatInteger(req.getParameter("customerId"));
+			customerId = r.getRoleLevel() == SecurityUtil.RAMRoles.OEM.getLevel() ? Convert.formatInteger((String) r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)) : Convert.formatInteger(req.getParameter("customerId"));
 		}
 	}
 

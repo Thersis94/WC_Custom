@@ -27,7 +27,7 @@ public class SecurityUtil {
 	 * Enum to hold the Role Information 
 	 */
 	public enum RAMRoles {
-		SITE_ADMINISRATOR("100", "Site Administrator", 100),
+		SITE_ADMINISTRATOR("100", "Site Administrator", 100),
 		AUDITOR("7f00010171808811df6cdad521171326", "Auditor", 15),
 		OEM("c0a80237c5fb9ed0bf6aa0dd5a44c26c", "OEM", 30),
 		PROVIDER("c0a80237c5fbdf399dfe510432b2f611", "Provider", 25),
@@ -154,7 +154,7 @@ public class SecurityUtil {
 	 * @return
 	 */
 	public static boolean hasProviders(String roleId) {
-		if (RAMRoles.SITE_ADMINISRATOR.getId().equalsIgnoreCase(roleId)) return false;
+		if (RAMRoles.SITE_ADMINISTRATOR.getId().equalsIgnoreCase(roleId)) return false;
 		if (RAMRoles.OEM.getId().equalsIgnoreCase(roleId)) return false;
 		
 		return true;
