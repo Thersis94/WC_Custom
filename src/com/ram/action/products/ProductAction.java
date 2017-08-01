@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.ram.action.data.RAMProductSearchVO;
-import com.ram.action.user.RamUserAction;
+import com.ram.action.util.SecurityUtil;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -206,7 +206,7 @@ public class ProductAction extends SBActionAdapter {
 		result.put("msg", "Data Successfully Updated");
 		
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if(r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER) {
+		if(r.getRoleLevel() == SecurityUtil.RAMRoles.PROVIDER.getLevel()) {
 			result.put("success", "false");
 			result.put("msg", "User has invalid permissions for this action.");
 			return;

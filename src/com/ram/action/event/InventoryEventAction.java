@@ -13,15 +13,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-
-
-
-
-import com.ram.action.user.RamUserAction;
 // RAM Data Feed Libs
 import com.ram.datafeed.data.InventoryEventVO;
 import com.ram.datafeed.data.InventoryEventAuditorVO;
 import com.ram.datafeed.data.InventoryEventReturnVO;
+import com.ram.action.util.SecurityUtil;
 
 //SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -220,7 +216,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (req.hasParameter("amid")) this.retrieveAll(req);
-		else if(inventoryEventId > 0 && r.getRoleLevel() != RamUserAction.ROLE_LEVEL_PROVIDER) 
+		else if(inventoryEventId > 0 && r.getRoleLevel() != SecurityUtil.RAMRoles.PROVIDER.getLevel()) 
 			this.retrieveEvent(inventoryEventId);
 	}
 	
@@ -285,7 +281,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setDate(1, Convert.formatSQLDate(start));
 			ps.setDate(2, Convert.formatSQLDate(end));
-			if(r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER || r.getRoleLevel() == RamUserAction.ROLE_LEVEL_OEM)
+			if(r.getRoleLevel() == SecurityUtil.RAMRoles.PROVIDER.getLevel() || r.getRoleLevel() ==SecurityUtil.RAMRoles.OEM.getLevel())
 				ps.setInt(3, Convert.formatInteger((String)r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)));
 			ResultSet rs = ps.executeQuery();
 			int navStart = Convert.formatInteger(req.getParameter("start"), 0);
@@ -334,7 +330,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		StringBuilder where = new StringBuilder();
 		
 		//If role is provider filter so it's only their locations.
-		if(r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER)
+		if(r.getRoleLevel() == SecurityUtil.RAMRoles.PROVIDER.getLevel())
 			where.append(" and cl.customer_id = ? ");
 		// Filter by the active flag
 		if (req.hasParameter("activeFlag"))
@@ -347,7 +343,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		}
 		
 		//If the user is an OEM, filter by locations by only those they have products at.
-		if(r.getRoleLevel() == RamUserAction.ROLE_LEVEL_OEM) {
+		if(r.getRoleLevel() == SecurityUtil.RAMRoles.OEM.getLevel()) {
 			where.append(" and cl.customer_location_id in ( ");
 			where.append("select z.customer_location_id from ").append(schema).append("RAM_CUSTOMER_LOCATION z ");
 			where.append("inner join ").append(schema).append("RAM_INVENTORY_EVENT ze on z.customer_location_id = ze.customer_location_id ");
