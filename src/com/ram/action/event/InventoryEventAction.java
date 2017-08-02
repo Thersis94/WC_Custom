@@ -318,7 +318,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		
 		Map<String, Object> data = new HashMap<>();
 		data.put("count", ctr + 1);
-		data.put("data", items);
+		data.put("actionData", items);
 		data.put(GlobalConfig.SUCCESS_KEY, Boolean.TRUE);
 		this.putModuleData(data, 3, false);
 	}
