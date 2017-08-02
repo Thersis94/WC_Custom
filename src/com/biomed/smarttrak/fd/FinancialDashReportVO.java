@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.fd;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -23,6 +24,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellRangeAddress;
 
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
@@ -49,6 +51,9 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
     private Row row;
     private int rowCount;
     private Map<CellStyleName, CellStyle> cellStyles;
+    private String sortField;
+    private int sortOrder;
+    SmarttrakTree sections;
 
     public FinancialDashReportVO() {
         super();
@@ -186,6 +191,10 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		
 		// Setup to increment totals for the totals row
 		Map<String, Integer> totals = initTotals(dash.getRows().get(0));
+		
+		// Sort according to specified sort order
+		FinancialDashDataRowComparator comparator = new FinancialDashDataRowComparator(sortField, sortOrder, sections, dash.getTableType());
+		Collections.sort(dash.getRows(), comparator);
 		
 		int i = 0;
 		for (FinancialDashDataRowVO fdRow : dash.getRows()) {
@@ -463,6 +472,48 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		font.setItalic(false);
 		
 		return font;
+	}
+
+	/**
+	 * @return the sortField
+	 */
+	public String getSortField() {
+		return sortField;
+	}
+
+	/**
+	 * @param sortField the sortField to set
+	 */
+	public void setSortField(String sortField) {
+		this.sortField = sortField;
+	}
+
+	/**
+	 * @return the sortOrder
+	 */
+	public int getSortOrder() {
+		return sortOrder;
+	}
+
+	/**
+	 * @param sortOrder the sortOrder to set
+	 */
+	public void setSortOrder(int sortOrder) {
+		this.sortOrder = sortOrder;
+	}
+
+	/**
+	 * @return the sections
+	 */
+	public SmarttrakTree getSections() {
+		return sections;
+	}
+
+	/**
+	 * @param sections the sections to set
+	 */
+	public void setSections(SmarttrakTree sections) {
+		this.sections = sections;
 	}
 	
 }

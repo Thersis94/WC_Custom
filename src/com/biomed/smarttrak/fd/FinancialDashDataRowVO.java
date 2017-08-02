@@ -288,10 +288,6 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param rs
 	 */
 	private void addColumn(String qtr, int yearIdx, int maxYear, DBUtil util, ResultSet rs) {
-		if (yearIdx >= FinancialDashBaseAction.MAX_DATA_YEARS) {
-			return;
-		}
-		
 		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
 		int pyDollarValue = util.getIntVal(qtr + "_" + (yearIdx + 1), rs);
 

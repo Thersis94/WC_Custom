@@ -75,6 +75,7 @@ import com.smt.sitebuilder.security.SecurityController;
 public class AdminControllerAction extends SimpleActionAdapter {
 
 	public static final String ACTION_TYPE = "actionType"; //reqParam this class executes around
+	public static final String DEFAULT_ACTION = "homepage";
 
 	// application constants  - these could be moved to sb_config if subject to change
 	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
@@ -198,6 +199,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("userAccountSearch", UserAccountSearchAction.class);
 		ACTIONS.put("feeds", CustomRSSFacadeAction.class);
 		ACTIONS.put("dashboard", DashboardAction.class);
+		ACTIONS.put(DEFAULT_ACTION, com.biomed.smarttrak.action.UpdatesAction.class);
 	}
 
 
@@ -254,8 +256,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		if (req.hasParameter(ACTION_TYPE)) {
 			loadAction(req.getParameter(ACTION_TYPE)).retrieve(req);
 		} else {
-			//go to view, display the content from the WYSWIYG in /admintool
-			super.retrieve(req);
+			loadAction(DEFAULT_ACTION).retrieve(req);
 		}
 	}
 

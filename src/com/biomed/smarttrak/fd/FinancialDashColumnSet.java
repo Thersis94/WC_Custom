@@ -18,6 +18,11 @@ import java.util.Map;
 public class FinancialDashColumnSet implements Serializable {
 
 	private static final long serialVersionUID = -7706158396915419770L;
+	
+	/**
+	 * First year of history
+	 */
+	public static final int BEGINNING_YEAR = 2012;
 
 	private Integer calendarYear;
 	private int currentQtr;
@@ -30,17 +35,23 @@ public class FinancialDashColumnSet implements Serializable {
 	public static final String DEFAULT_DISPLAY_TYPE = "CURYR";
 	
 	protected enum DisplayType {
-		CURYR("Current Year"), SIXQTR("Six Quarter Running"), FOURYR("Four-Year Comparison"),
-		YOY("Year-Over-Year"), CALYR("Calendar Year"), EIGHTQTR("Eight Quarter Running");
+		CURYR("Current Year", 2), SIXQTR("Six Quarter Running", 4), FOURYR("Four-Year Comparison", 5),
+		YOY("Year-Over-Year", 3), CALYR("Calendar Year", 2), EIGHTQTR("Eight Quarter Running", 4), ALL("All History", 0);
 		
 		private String name;
+		private int dataYears;
 		
-		DisplayType(String name) {
+		DisplayType(String name, int dataYears) {
 			this.name= name;
+			this.dataYears = dataYears;
 		}
 		
 		public String getName() {
 			return name;
+		}
+		
+		public int getDataYears() {
+			return dataYears;
 		}
 	}
 
@@ -55,6 +66,9 @@ public class FinancialDashColumnSet implements Serializable {
 		switch(displayType) {
 			case SIXQTR:
 				this.addQuarterRunningColumns(6);
+				break;
+			case ALL:
+				this.addPreviousAndCurrentYearColumns(calendarYear - BEGINNING_YEAR);
 				break;
 			case EIGHTQTR:
 				this.addQuarterRunningColumns(8);
@@ -106,13 +120,16 @@ public class FinancialDashColumnSet implements Serializable {
 	}
 	
 	/**
-	 * Adds all columns for an eight quarter display type.
+	 * Adds all columns for current year and all years previous,
+	 * based on number of years back needed.
+	 * 
+	 * @param yearsBack
 	 */
-	private void addEightQuarterWithYearColumns() {
+	private void addPreviousAndCurrentYearColumns(int yearsBack) {
 		int quarter = 1;
-		int year = calendarYear - 1;
+		int year = calendarYear - yearsBack;
 		
-		for (int i = 1; i <= 8; i++) {
+		for (int i = 1; i <= 4 * (yearsBack + 1); i++) {
 			// Add the quarter column
 			int twoDigitYr = year % 100;
 			this.addColumn(FinancialDashBaseAction.QUARTER + quarter + "-" + year, FinancialDashBaseAction.QUARTER + quarter + twoDigitYr);
