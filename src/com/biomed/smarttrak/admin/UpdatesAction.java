@@ -258,6 +258,7 @@ public class UpdatesAction extends ManagementAction {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String sql = formatRetrieveAllQuery(schema, updateId);
 
+		log.debug(sql);
 		List<Object> params = new ArrayList<>();
 		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
 
