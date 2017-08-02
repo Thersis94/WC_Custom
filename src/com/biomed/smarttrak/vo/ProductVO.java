@@ -3,6 +3,7 @@ package com.biomed.smarttrak.vo;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +65,7 @@ public class ProductVO extends AuthorVO implements Comparable<ProductVO> {
 		productSections = new ArrayList<>();
 		alliances = new ArrayList<>();
 		regulations = new ArrayList<>();
-		details = new HashMap<>();
+		details = new LinkedHashMap<>();
 		relatedProducts = new HashMap<>();
 	}
 	
