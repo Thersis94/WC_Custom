@@ -1,24 +1,25 @@
 package com.biomed.smarttrak.admin;
 
-//jdk 1.8
-import java.util.ArrayList;
+// Java 8
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-//base/email campaigns libs
+// SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+
+// WC
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.emailcampaign.DataFilterVO;
-import com.smt.sitebuilder.action.emailcampaign.embed.EmbedWidgetManager;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+
+// WC EmailCampaigns
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.smt.sitebuilder.action.emailcampaign.embed.EmbedWidgetManager;
 
 /****************************************************************************
  * Title: UpdatesEmailSendAction.java <p/>
@@ -95,7 +96,7 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 		//Create a user data vo and pass to the manager
 		UserDataVO user = new UserDataVO(req);
 		user.setAllowCommunication(1);
-		log.debug("user data: " + user.getEmailAddress());
+		log.debug("user emailAddress: " + user.getEmailAddress());
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		try {
 			//save profile record
@@ -118,16 +119,15 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	protected void processEmailSend(ActionRequest req) throws ActionException{		
+	protected void processEmailSend(ActionRequest req) {		
 		String campInstId = StringUtil.checkVal(req.getParameter("campaignInstanceId"));
-		List<DataFilterVO> dataFilters = new ArrayList<>();
 
 		//build the emailConfig
-		Map<String, Object> emailConfig = generateEmailConfig(req);
+		Map<String, Object> emailParams = makeEmailParams(req);
 
 		//perform the email send
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
-		ecbu.sendCampaignMessage(campInstId, profileId, emailConfig, dataFilters, true);
+		ecbu.sendMessage(campInstId, profileId, emailParams);
 	}
 	
 	
@@ -137,7 +137,7 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	protected Map<String, Object> generateEmailConfig(ActionRequest req){
+	protected Map<String, Object> makeEmailParams(ActionRequest req){
 		Map<String, Object> config = new HashMap<>();
 		
 		//assign the key/value for each config type
