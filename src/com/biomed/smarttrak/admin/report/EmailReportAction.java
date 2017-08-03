@@ -108,7 +108,7 @@ public class EmailReportAction extends SBActionAdapter {
 		String term = req.getParameter("search");
 		List<EmailLogVO> data = new ArrayList<>(50);
 
-		String sql = getGroupByQuery(campaignLogId, req.getParameter("sort"), StringUtil.checkVal(req.getParameter("order"), "asc"), term);
+		String sql = getGroupByQuery(campaignLogId, req.getParameter("sort"), StringUtil.checkVal(req.getParameter("order"), "desc"), term);
 		log.debug(sql);
 
 		int x=0;
@@ -122,7 +122,7 @@ public class EmailReportAction extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				EmailLogVO vo = new EmailLogVO();
-				vo.setSentDate(rs.getDate("attempt_dt"));
+				vo.setSentDate(rs.getTimestamp("attempt_dt"));
 				vo.setEmailAddress(rs.getString("email_address_txt"));
 				vo.setFirstName(rs.getString("first_nm"));
 				vo.setLastName(rs.getString("last_nm"));
@@ -163,7 +163,7 @@ public class EmailReportAction extends SBActionAdapter {
 	 */
 	protected String getGroupByQuery(String campaignLogId, String sort, String dir, String term) {
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select inst.campaign_instance_id, l.attempt_dt, l.success_flg, p.email_address_txt, p.profile_id, ");
+		sql.append("select inst.campaign_instance_id, coalesce(l.attempt_dt,l.create_dt) as attempt_dt, l.success_flg, p.email_address_txt, p.profile_id, ");
 		sql.append("p.first_nm, p.last_nm, l.campaign_log_id, count(resp.email_response_id) as cnt, ");
 		sql.append("case when inst.subject_txt = '${subject!\"Not Specified\"}' then sl.value_txt else inst.subject_txt end as subject_txt ");
 		sql.append("from email_campaign camp ");
@@ -181,7 +181,7 @@ public class EmailReportAction extends SBActionAdapter {
 		sql.append("left outer join SENT_EMAIL_PARAM sl on l.campaign_log_id=sl.campaign_log_id and sl.key_nm='subject' ");
 		sql.append("where camp.organization_id=? ");
 		if (campaignLogId != null) sql.append("and l.campaign_log_id=? ");
-		sql.append("and l.attempt_dt > ? ");
+		sql.append("and l.create_dt > ? ");
 		sql.append("group by inst.campaign_instance_id, l.attempt_dt, p.profile_id, p.email_address_txt, ");
 		sql.append("p.first_nm, p.last_nm, success_flg, l.campaign_log_id, subject_txt, sl.value_txt ");
 		sql.append("order by ").append(getOrderBy(sort, dir)).append(" limit ? offset ? ");
