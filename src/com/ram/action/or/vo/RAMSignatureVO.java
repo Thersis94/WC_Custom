@@ -27,7 +27,7 @@ public class RAMSignatureVO implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public enum SignatureType {PROVIDER, REP}
+	public enum SignatureType {PROVIDER, SALES_REP}
 
 	private String signatureId;
 	private String caseId;
@@ -115,6 +115,7 @@ public class RAMSignatureVO implements Serializable {
 	 */
 	@Column(name="signature_type_id")
 	public String getSignatureTypeTxt() {
+		if (type == null) return null;
 		return type.toString();
 	}
 

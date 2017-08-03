@@ -1,10 +1,15 @@
 package com.ram.action.or.vo;
 
-import java.io.Serializable;
+import java.sql.ResultSet;
+// JDK 1.7
 import java.util.Date;
 
+// RAM Libs
 import com.ram.action.or.RAMCaseManager;
+
+// SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
@@ -22,7 +27,7 @@ import com.siliconmtn.util.StringUtil;
  * @since Jun 28, 2017
  ****************************************************************************/
 @Table(name="ram_case_item")
-public class RAMCaseItemVO implements Serializable {
+public class RAMCaseItemVO extends BeanDataVO {
 
 	/**
 	 * 
@@ -56,6 +61,11 @@ public class RAMCaseItemVO implements Serializable {
 	public RAMCaseItemVO(ActionRequest req) {
 		this();
 		setData(req);
+	}
+	
+	public RAMCaseItemVO(ResultSet rs) {
+		this();
+		this.populateData(rs);
 	}
 
 	public void setData(ActionRequest req) {

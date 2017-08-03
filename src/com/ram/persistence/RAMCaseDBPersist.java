@@ -1,26 +1,35 @@
 package com.ram.persistence;
 
+// JDK 1.7
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.log4j.Logger;
-
+// RAM Libs
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.or.vo.RAMSignatureVO;
 import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
+
+// SMT Base Libs
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+
+// WC Libs
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.SBProfileManager;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseDBPersist.java
@@ -34,7 +43,6 @@ import com.siliconmtn.util.StringUtil;
  * @since Jul 3, 2017
  ****************************************************************************/
 public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO> {
-	private static final Logger log = Logger.getLogger(RAMCaseDBPersist.class);
 	private DBProcessor dbp;
 	private Connection conn;
 	private String schema;
@@ -47,16 +55,70 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 */
 	@Override
 	public RAMCaseVO load(String caseId) {
+		// Retrieve base case.  Return null if not found
 		RAMCaseVO cVo = null;
 		List<Object> params = new ArrayList<>();
 		params.add(caseId);
 		List<Object> cvos = dbp.executeSelect(loadCaseSql(), params, initialize());
-		if(cvos != null && ! cvos.isEmpty())
-			cVo = (RAMCaseVO)cvos.get(0);
-
+		if(cvos == null || cvos.isEmpty()) return null;
+		
+		// Get the case from the collection
+		cVo = (RAMCaseVO)cvos.get(0);
+		
+		// Get the hospital rep info
+		cVo.setHospitalRep(getUserByProfileId(cVo.getProfileId()));
+		
+		// Get the sales rep info
+		cVo.setSalesRep(getUserByProfileId(cVo.getSalesRepId()));
+		
+		// Get case items
+		getCaseItems(cVo);
+		log.info(cVo);
 		return cVo;
 	}
+	
+	/**
+	 * Loads all of the items in the Case.  SInce the items are stored as a map of maps,
+	 * it was easier to utilize an the existing case vo and store the items formatted properly
+	 * @param caseId
+	 */
+	public void getCaseItems(RAMCaseVO cvo ) {
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select i.*, p.*, c.customer_nm ");
+		sql.append(DBUtil.FROM_CLAUSE).append("custom.ram_case_item i ");
+		sql.append(DBUtil.INNER_JOIN).append("custom.ram_product p on i.product_id = p.product_id ");
+		sql.append(DBUtil.INNER_JOIN).append("custom.ram_customer c on p.customer_id = c.customer_id ");
+		sql.append("where i.case_id = ? ");
+		
+		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+			ps.setString(1, cvo.getCaseId());
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) {
+				cvo.addItem(new RAMCaseItemVO(rs));
+			}
+			
+		} catch(Exception e) {
+			log.error("unable to load case items", e);
+		}
+	}
 
+	/**
+	 * Retrieves a user based upon the profile id
+	 * @param profileId
+	 * @return
+	 */
+	public UserDataVO getUserByProfileId(String profileId) {
+	    ProfileManager pm = new SBProfileManager(this.attributes);
+		UserDataVO user = null;
+	    try {
+			user = pm.getProfile(profileId, conn, ProfileManager.PROFILE_ID_LOOKUP, null);
+		} catch (com.siliconmtn.exception.DatabaseException e) {
+			log.error("Unable to retrieve user rep", e);
+		}
+	    
+		return user;
+	}
 
 	/**
 	 * Helper method that builds the case load query.  Retrieves all signatures,
@@ -65,27 +127,20 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 */
 	private String loadCaseSql() {
 		StringBuilder sql = new StringBuilder(525);
-		sql.append("select cu.customer_nm, su.first_nm || ' ' || su.last_nm as surgeon_nm, o.or_name ,c.*, i.*, p.*, k.*, s.*, ");
-		sql.append("pcu.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_number_txt ");
-		sql.append("from ").append(schema).append("ram_case c ");
-		sql.append("left outer join ").append(schema).append("ram_case_signature s ");
+		sql.append("select cu.customer_nm, su.first_nm || ' ' || su.last_nm as surgeon_nm, o.or_name ,c.*, s.*, k.* ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_case c ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_case_signature s ");
 		sql.append("on c.case_id = s.case_id ");
-		sql.append("left outer join ").append(schema).append("ram_case_item i ");
-		sql.append("on c.case_id = i.case_id ");
-		sql.append("left outer join ").append(schema).append("ram_product p ");
-		sql.append("on i.product_id = p.product_id ");
-		sql.append("left outer join ").append(schema).append("RAM_CASE_KIT k ");
-		sql.append("on c.case_id = k.case_id and k.case_kit_id = i.case_kit_id ");
-		sql.append("left outer join ").append(schema).append("ram_customer_location cl ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_customer_location cl ");
 		sql.append("on c.customer_location_id = cl.customer_location_id  ");
-		sql.append("left outer join ").append(schema).append("ram_customer cu ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_customer cu ");
 		sql.append("on cl.customer_id = cu.customer_id ");
-		sql.append("left outer join ").append(schema).append("ram_customer pcu ");
-		sql.append("on p.customer_id = pcu.customer_id ");
-		sql.append("left outer join ").append(schema).append("ram_surgeon su ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_surgeon su ");
 		sql.append("on c.surgeon_id = su.surgeon_id ");
-		sql.append("left outer join ").append(schema).append("ram_or_room o ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_or_room o ");
 		sql.append("on c.or_room_id = o.or_room_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_case_kit k ");
+		sql.append("on c.case_id = k.case_id ");
 		sql.append("where c.case_id = ? ");
 		
 		log.debug(sql);
@@ -192,9 +247,7 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	private void insertKits(RAMCaseVO cVo) throws InvalidDataException, DatabaseException {
 		for(Entry<String, RAMCaseKitVO> kit : cVo.getKits().entrySet()) {
 			RAMCaseKitVO k = kit.getValue();
-			// TODO Hard coded this for the kit product. Needs to be changed
-			if (StringUtil.isEmpty(k.getLocationItemMasterId())) k.setLocationItemMasterId("7896543");
-			
+
 			//Ensure CaseId is set correctly.
 			k.setCaseId(cVo.getCaseId());
 

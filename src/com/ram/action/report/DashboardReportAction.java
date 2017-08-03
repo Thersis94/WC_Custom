@@ -139,7 +139,7 @@ public class DashboardReportAction extends SBActionAdapter {
 		sql.append("on aud.inventory_event_auditor_xr_id = rii.inventory_event_auditor_xr_id ");
 		sql.append("group by region_nm ");
 		sql.append("order by region_nm ");
-		log.info("******* SQL: " + sql);
+		log.debug("******* SQL: " + sql);
 		
 		// Get the data form the SQL
 		PreparedStatement ps = dbConn.prepareStatement(sql.toString());

@@ -61,7 +61,7 @@ public class RAMRoleModule extends DBRoleModule {
 		role.getAttributes().putAll(getUserInfo(role.getProfileRoleId()));
 		role.getAttributes().put(ADMIN_ROLE, hasAdmin(role));
 		
-		log.info(role.getAttributes());
+		log.debug(role.getAttributes());
 		return role;
 	}
 

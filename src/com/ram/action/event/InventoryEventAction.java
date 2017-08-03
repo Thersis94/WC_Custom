@@ -216,7 +216,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (req.hasParameter("amid")) this.retrieveAll(req);
-		else if(inventoryEventId > 0 && r.getRoleLevel() != SecurityUtil.RAMRoles.PROVIDER.getLevel()) 
+		else if(inventoryEventId > 0 && SecurityUtil.isProviderRole(r.getRoleId())) 
 			this.retrieveEvent(inventoryEventId);
 	}
 	
@@ -281,7 +281,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setDate(1, Convert.formatSQLDate(start));
 			ps.setDate(2, Convert.formatSQLDate(end));
-			if(r.getRoleLevel() == SecurityUtil.RAMRoles.PROVIDER.getLevel() || r.getRoleLevel() ==SecurityUtil.RAMRoles.OEM.getLevel())
+			if(SecurityUtil.isProviderRole(r.getRoleId()) || SecurityUtil.isOEMRole(r.getRoleId()))
 				ps.setInt(3, Convert.formatInteger((String)r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)));
 			ResultSet rs = ps.executeQuery();
 			int navStart = Convert.formatInteger(req.getParameter("start"), 0);
@@ -330,7 +330,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		StringBuilder where = new StringBuilder();
 		
 		//If role is provider filter so it's only their locations.
-		if(r.getRoleLevel() == SecurityUtil.RAMRoles.PROVIDER.getLevel())
+		if(SecurityUtil.isProviderRole(r.getRoleId()))
 			where.append(" and cl.customer_id = ? ");
 		// Filter by the active flag
 		if (req.hasParameter("activeFlag"))
@@ -343,7 +343,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		}
 		
 		//If the user is an OEM, filter by locations by only those they have products at.
-		if(r.getRoleLevel() == SecurityUtil.RAMRoles.OEM.getLevel()) {
+		if(SecurityUtil.isOEMRole(r.getRoleId())) {
 			where.append(" and cl.customer_location_id in ( ");
 			where.append("select z.customer_location_id from ").append(schema).append("RAM_CUSTOMER_LOCATION z ");
 			where.append("inner join ").append(schema).append("RAM_INVENTORY_EVENT ze on z.customer_location_id = ze.customer_location_id ");
