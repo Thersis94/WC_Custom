@@ -72,9 +72,7 @@ public class UpdatesAction extends ManagementAction {
 		PATENTS(35, "Patents"),
 		REIMBURSEMENT(37, "Reimbursement"),
 		ANNOUNCEMENTS(38, "Announcements"),
-		STUDIES(40, "Studies"),
-		POLICY(41, "HealthCare Policy"),
-		TRENDS(42, "HealthCare Trends");
+		STUDIES(40, "Studies");
 
 		private int val;
 		private String text;
