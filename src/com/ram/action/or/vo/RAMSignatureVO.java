@@ -61,7 +61,7 @@ public class RAMSignatureVO implements Serializable {
 		this();
 		setData(req);
 	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * @see java.lang.Object#toString()
@@ -70,7 +70,7 @@ public class RAMSignatureVO implements Serializable {
 	public String toString() {
 		return StringUtil.getToString(this);
 	}
-
+	
 	/**
 	 * 
 	 * @param req
@@ -128,6 +128,7 @@ public class RAMSignatureVO implements Serializable {
 	 */
 	@Column(name="signature_type_id")
 	public String getSignatureTypeTxt() {
+		if (type == null) return null;
 		return type.toString();
 	}
 

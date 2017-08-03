@@ -206,7 +206,7 @@ public class ProductAction extends SBActionAdapter {
 		result.put("msg", "Data Successfully Updated");
 		
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if(r.getRoleLevel() == SecurityUtil.RAMRoles.PROVIDER.getLevel()) {
+		if(SecurityUtil.isProviderRole(r.getRoleId())) {
 			result.put("success", "false");
 			result.put("msg", "User has invalid permissions for this action.");
 			return;
