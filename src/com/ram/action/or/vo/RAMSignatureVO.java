@@ -27,12 +27,25 @@ public class RAMSignatureVO implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public enum SignatureType {PROVIDER, SALES_REP}
+	public enum SignatureType {
+		PROVIDER ("Hospital Rep"), 
+		SALES_REP("OEM Sales Rep"), 
+		SURGEON("Surgeon");				
+		private String name;		
+
+		private SignatureType(String name) {			
+			this.name = name;		}				
+		public String getName() { 
+			return name; 
+		}	
+	}
 
 	private String signatureId;
 	private String caseId;
 	private String profileId;
 	private String signatureTxt;
+	private String firstNm;
+	private String lastNm;
 	private SignatureType type;
 	private Date createDt;
 
@@ -178,5 +191,40 @@ public class RAMSignatureVO implements Serializable {
 	 */
 	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
+	}
+
+	/**
+	 * @return the firstNm
+	 */
+	public String getFirstNm() {
+		return firstNm;
+	}
+
+	/**
+	 * @param firstNm the firstNm to set
+	 */
+	public void setFirstNm(String firstNm) {
+		this.firstNm = firstNm;
+	}
+
+	/**
+	 * @return the lastNm
+	 */
+	public String getLastNm() {
+		return lastNm;
+	}
+
+	/**
+	 * @param lastNm the lastNm to set
+	 */
+	public void setLastNm(String lastNm) {
+		this.lastNm = lastNm;
+	}
+	
+	/**
+	 * @return
+	 */
+	public String getFullName() {
+		return firstNm + " " + lastNm;
 	}
 }

@@ -1,10 +1,14 @@
 package com.ram.action.or.vo;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.apache.log4j.Logger;
 
 import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
@@ -38,6 +42,9 @@ public class RAMCaseVO implements Serializable {
 
 	public enum RAMCaseStatus {OR_READY, OR_IN_PROGRESS, OR_COMPLETE, SPD_IN_PROGRESS, CLOSED}
 
+	
+	protected static Logger log = Logger.getLogger(RAMCaseVO.class);
+	
 	private String caseId;
 	private int customerLocationId;
 	private String hospitalCaseId;
@@ -201,6 +208,22 @@ public class RAMCaseVO implements Serializable {
 	public Map<String, RAMSignatureVO> getSignatures(SignatureType st) {
 		return signatures.get(st);
 	}
+	
+	/**
+	 * returns aa list of all signatures on a case
+	 * @return
+	 */
+	public List<RAMSignatureVO> getAllSignatures(){
+		List <RAMSignatureVO> allSignatures = new ArrayList<>();
+		
+		for (Map<String, RAMSignatureVO> typeMap : getSignatures().values()){
+			for (RAMSignatureVO svo : typeMap.values()){
+				allSignatures.add(svo);
+			}
+		}
+		
+		return allSignatures;
+	}
 
 	/**
 	 * @return the kits
@@ -345,7 +368,7 @@ public class RAMCaseVO implements Serializable {
 			if(sigs == null) {
 				sigs = new HashMap<>();
 			}
-			sigs.put(signature.getProfileId(), signature);
+			sigs.put(signature.getSignatureId(), signature);
 			signatures.put(st, sigs);
 		}
 	}
