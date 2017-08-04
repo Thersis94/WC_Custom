@@ -200,18 +200,6 @@ public class AJAXUtilAction extends SBActionAdapter {
 				sai.setAttributes(getAttributes());
 				sai.retrieve(req);
 				break;
-			case VISION_SYSTEM:
-				sai = new VisionAction(getActionInit());
-				sai.setDBConnection(dbConn);
-				sai.setAttributes(getAttributes());
-				sai.retrieve(req);
-				break;
-			case VISION_SYSTEM_PRODUCTS:
-				sai = new VisionProductAction(getActionInit());
-				sai.setDBConnection(dbConn);
-				sai.setAttributes(getAttributes());
-				sai.retrieve(req);
-				break;
 		}
 	}
 	

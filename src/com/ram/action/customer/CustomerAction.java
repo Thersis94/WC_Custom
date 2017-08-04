@@ -17,6 +17,8 @@ import com.ram.datafeed.data.CustomerVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WebCrescendo 2.0
@@ -61,7 +63,7 @@ public class CustomerAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("CustomerAction retrieve...");
 		RAMCustomerSearchVO svo = new RAMCustomerSearchVO(req);
-		List<CustomerVO> data = null;
+		List<Object> data = null;
 
 		/*
 		 * Check if this is a DropDown request or not.  DropDown returns all
@@ -70,10 +72,10 @@ public class CustomerAction extends SBActionAdapter {
 		 * vo on the list.
 		 */
 		if (svo.isAddCustomer()) {
-			data = new ArrayList<CustomerVO>();
+			data = new ArrayList<>();
 			data.add(new CustomerVO());
 		} else if (svo.getCustomerId() > 0) {
-			data = new ArrayList<CustomerVO>();
+			data = new ArrayList<>();
 			data.add(getCustomerData(svo));
 		} else {
 			//Get filtered customer list for grid view.
@@ -94,7 +96,7 @@ public class CustomerAction extends SBActionAdapter {
 	 */
 	public CustomerVO getCustomerData(RAMCustomerSearchVO svo) {
 		CustomerVO c = null;
-		List<CustomerLocationVO> locs = new ArrayList<CustomerLocationVO>();
+		List<CustomerLocationVO> locs = new ArrayList<>();
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		//Build Query.
@@ -120,7 +122,9 @@ public class CustomerAction extends SBActionAdapter {
 			}
 
 			//Set the Locations on the CustomerVO.
-			c.setCustomerLocations(locs);
+			if(c != null) {
+				c.setCustomerLocations(locs);
+			}
 		} catch (SQLException e) {
 			log.error(e);
 		}
@@ -133,41 +137,41 @@ public class CustomerAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public List<CustomerVO> getCustomers(RAMCustomerSearchVO svo) {
-		List<CustomerVO> data = new ArrayList<>();
-		int index = 1;
+	public List<Object> getCustomers(RAMCustomerSearchVO svo) {
+		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 
-		//Build Prepared Statement and iterate the results.
-		try(PreparedStatement ps = dbConn.prepareStatement(getCustomerLookupQuery(svo));){
-			if (svo.getCustomerTypeId().length() > 0) {
-				ps.setString(index++, svo.getCustomerTypeId());
-			} else if (svo.getExcludeTypeId().length() > 0) {
-				ps.setString(index++, svo.getExcludeTypeId());
-			}
+		String sql = getCustomerLookupQuery(svo, schema);
 
-			//Add Kit Flag Value.
-			if(svo.isKitsOnly()) {
-				ps.setInt(index++, 1);
-			}
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		return dbp.executeSelect(sql.toString(), buildCustomerQueryParams(svo), new CustomerVO());
+	}
 
-			//Add Paginations.
-			if(svo.isPaginated()) {
-				ps.setInt(index++, svo.getStart());
-				ps.setInt(index++, svo.getLimit());
-			}
-			ResultSet rs = ps.executeQuery();
+	public static List<Object> buildCustomerQueryParams(RAMCustomerSearchVO svo) {
+		List<Object> params = new ArrayList<>();
 
-			//Add the CustomerVOs to the List.
-			while(rs.next())
-				data.add(new CustomerVO(rs, false));
-
-		} catch (SQLException e) {
-			log.error("Error retrieving RAM customer data, ", e);
+		if (!StringUtil.isEmpty(svo.getCustomerTypeId())) {
+			params.add(svo.getCustomerTypeId());
+		} else if (!StringUtil.isEmpty(svo.getExcludeTypeId())) {
+			params.add(svo.getExcludeTypeId());
 		}
 
-		return data;
+		if (svo.getCustomerId() > 0) {
+			params.add(svo.getCustomerId());
+		}
+
+		//Add Kit Flag Value.
+		if(svo.isKitsOnly()) {
+			params.add(1);
+		}
+
+		//Add Paginations.
+		if(svo.isPaginated()) {
+			params.add(svo.getStart());
+			params.add(svo.getLimit());
+		}
+
+		return params;
 	}
-	
 	/**
 	 * Gets the count of the records
 	 * @param customerId
@@ -178,7 +182,7 @@ public class CustomerAction extends SBActionAdapter {
 	protected int getRecordCount(RAMCustomerSearchVO svo) {
 		svo.setCount(true);
 		svo.setPaginated(false);
-		List<CustomerVO> customers = getCustomers(svo);
+		List<Object> customers = getCustomers(svo);
 
 		log.debug("Count: " + customers.size());
 		return customers.size();
@@ -217,7 +221,7 @@ public class CustomerAction extends SBActionAdapter {
 		}
 
 		//Check if this is an Ajax call and prepare appropriate response.
-		boolean isJson = Convert.formatBoolean(StringUtil.checkVal(req.getParameter("amid")).length() > 0);
+		boolean isJson = !StringUtil.isEmpty(req.getParameter("amid"));
 		if (isJson) {
 			Map<String, Object> res = new HashMap<>(); 
 			res.put("success", true);
@@ -263,8 +267,7 @@ public class CustomerAction extends SBActionAdapter {
 		}
 	}
 
-	public String getCustomerLookupQuery(RAMCustomerSearchVO svo) {
-		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+	public static String getCustomerLookupQuery(RAMCustomerSearchVO svo, String schema) {
 		StringBuilder sql = new StringBuilder(260);
 		if(svo.isPaginated()) {
 			sql.append("select * from (");
@@ -273,7 +276,7 @@ public class CustomerAction extends SBActionAdapter {
 		sql.append("as RowNum, a.* from ").append(schema).append("ram_customer a ");
 
 		//Add Where Clause
-		sql.append(getCustomerLookupWhereClause(svo));
+		sql.append(getCustomerLookupWhereClause(svo, schema));
 
 		//Limit Paginated Result Set.
 		if(svo.isPaginated()) {
@@ -285,11 +288,11 @@ public class CustomerAction extends SBActionAdapter {
 		return sql.toString();
 	}
 
-	public String getCustomerLookupWhereClause(RAMCustomerSearchVO svo) {
+	public static String getCustomerLookupWhereClause(RAMCustomerSearchVO svo, String dbSchema) {
 		StringBuilder sql = new StringBuilder(150);
 
 		//Build Where Clause based of req Params that were passed.
-		sql.append("where 1 = 1 ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
 
 		if (svo.getCustomerTypeId().length() > 0) {
 			sql.append("and customer_type_id = ? ");
@@ -297,10 +300,13 @@ public class CustomerAction extends SBActionAdapter {
 			sql.append("and customer_type_id != ? ");
 		}
 
+		if (svo.getCustomerId() > 0) {
+			sql.append("and customer_id = ? ");
+		}
 		if(svo.isKitsOnly()) {
-			sql.append("and customer_id in (select distinct CUSTOMER_ID from ");
-			sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("RAM_PRODUCT ");
-			sql.append("where KIT_FLG = ?) ");
+			sql.append("and customer_id in (select distinct CUSTOMER_ID ").append(DBUtil.FROM_CLAUSE);
+			sql.append(dbSchema).append("RAM_PRODUCT ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("KIT_FLG = ?) ");
 		}
 		return sql.toString();
 	}

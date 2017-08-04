@@ -50,12 +50,7 @@ public class VisionProductAction extends ProductAction {
 	 * Cleaned up the select query to perform the pagination in query.  Reduces
 	 * data returned and eliminates app server side looping to records we actually
 	 * care about.
-	 * @param customerId
-	 * @param term
-	 * @param kitFilter
-	 * @param providerId
-	 * @param isCount
-	 * @param limit
+	 * @param svo
 	 * @return
 	 */
 	@Override
@@ -94,7 +89,7 @@ public class VisionProductAction extends ProductAction {
 		if(!svo.isCount())
 			sb.append(") as paginatedResult where RowNum >= ? and RowNum < ? order by RowNum");
 
-		log.debug(svo.getCustomerId() + "|" + svo.getProviderId() + "|" + sb.toString());
+		log.info(svo.getCustomerId() + "|" + svo.getProviderId() + "|" + sb.toString());
 		return sb.toString();
 	}
 }
