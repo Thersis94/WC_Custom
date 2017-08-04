@@ -77,9 +77,10 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		try {
 			PdfWriter.getInstance(document, byteStream);
 			document.setPageSize(new Rectangle(792, 612));
-
+			document.addTitle(data.get(ProductCartAction.CASE_ID)+"");
+			document.setHtmlStyleClass("@page land {size: landscape;}");
 			document.open();
-
+			
 			PdfPTable table = new PdfPTable(10);
 			table.setWidthPercentage(100f);
 			table.setWidths(new float[] { 5,4,3 ,2,2, 3,3,2, 2,2 });
@@ -314,7 +315,7 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		table.addCell(getTableCell("Qty", true));
 		
 		table.addCell(getTableCell("Product From", true));
-		table.addCell(getTableCell("Expree", true));
+		table.addCell(getTableCell("Expiree", true));
 		table.addCell(getTableCell("Billable", true));
 
 		table.addCell(getTableCell("Wasted", true));
@@ -345,11 +346,11 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		String HospitalRepName = "";
 		
 		if (uvo != null) {
-			HospitalRepName = uvo.getFirstName();
+			HospitalRepName = uvo.getFullName();
 		}
 		
 		caseInfoLeft(table, "Hospital Rep Name: " , HospitalRepName );
-		caseInfoRight(table, "Sales Rep Name: " , StringUtil.checkVal(data.get(ProductCartAction.SALES_REP)));
+		caseInfoRight(table, "Sales Rep Name: " , ((UserDataVO) data.get(ProductCartAction.SALES_REP)).getFullName());
 
 		//base of table right left and bottom border and a row of spaced cells
 		caseInfoBottom(table);
