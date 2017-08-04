@@ -7,12 +7,13 @@ import java.util.List;
 // RAM Custom
 import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.report.vo.KitExcelReport;
-
+import com.ram.action.util.SecurityUtil;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 
@@ -21,7 +22,6 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>CaseSearchAction.java<p/>
@@ -118,10 +118,6 @@ public class CaseSearchAction extends SimpleActionAdapter {
 		buildSelectSQL(sql);
 		buildKitSearchSQL(req, sql, true);
 		buildKitSearchSQL(req, tSql, false);
-		
-		// Get the hospital
-		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
-		params.add(Convert.formatInteger((String)role.getAttribute(0)));
 
 		// Get the search params
 		if (req.hasParameter(SEARCH)) params.add("%" + req.getParameter(SEARCH).toLowerCase() + "%");
@@ -164,20 +160,18 @@ public class CaseSearchAction extends SimpleActionAdapter {
 	 */
 	private void buildKitSearchSQL(ActionRequest req, StringBuilder sql, boolean isList) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("from ").append(customDb).append("ram_case c ");
-		sql.append("inner join ").append(customDb).append("ram_customer_location p on c.customer_location_id = p.customer_location_id ");
-		sql.append("inner join ").append(customDb).append("ram_or_room r on c.or_room_id = r.or_room_id ");
-		sql.append("left outer join ( ");
-		sql.append("select case_id, cast(sum(qty_no) as int) as num_prod_case ");
-		sql.append("from ").append(customDb).append("ram_case_item ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customDb).append("ram_case c ");
+		sql.append(DBUtil.INNER_JOIN).append(customDb).append("ram_customer_location p on c.customer_location_id = p.customer_location_id ");
+		sql.append(DBUtil.INNER_JOIN).append(customDb).append("ram_or_room r on c.or_room_id = r.or_room_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("( select case_id, cast(sum(qty_no) as int) as num_prod_case ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customDb).append("ram_case_item ");
 		sql.append("group by case_id ");
 		sql.append(") i on c.case_id = i.case_id  ");
-		sql.append("left outer join ( ");
-		sql.append("select case_id, cast(count(*) as int) as num_kit_case ");
-		sql.append("from ").append(customDb).append("ram_case_kit where processed_flg = 0 ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("( select case_id, cast(count(*) as int) as num_kit_case ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customDb).append("ram_case_kit where processed_flg = 0 ");
 		sql.append("group by case_id ");
 		sql.append(") k on c.case_id = k.case_id  ");
-		sql.append("where p.customer_id = cast(? as int) ");
+		sql.append(DBUtil.WHERE_1_CLAUSE).append(SecurityUtil.addCustomerFilter(req, "p"));
 		
 		// Add the search params
 		if (req.hasParameter(SEARCH)) sql.append("and lower(hospital_case_id) like ? ");

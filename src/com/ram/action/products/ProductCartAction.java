@@ -28,6 +28,9 @@ import com.siliconmtn.commerce.cart.storage.StorageFactory;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
@@ -36,6 +39,8 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
@@ -55,6 +60,8 @@ import com.smt.sitebuilder.util.MessageSender;
 
 public class ProductCartAction extends SimpleActionAdapter {
 
+	//TODO appears to have unused methods and several large case switch statements that should be cleaned up.
+	
 	// Names for the request parameters related to this action
 	public static final String HOSPITAL = "hospital";
 	public static final String ROOM = "room";
@@ -78,35 +85,45 @@ public class ProductCartAction extends SimpleActionAdapter {
 	public static final String PRODUCT_SOURCE = "productSource";
 	public static final String DATE_PATTERN = "MM-dd-yyyy -- hh:mm";
 	public static final String SIGN_DATE_PATTERN = "MM/dd/yyyy hh:mm";
-	
+	public static final String CART = "cart";
+	public static final String NOTES = "notes";
+	public static final String HOSPITAL_REP = "hospitalRep";
+	public static final String SALES_REP = "salesRep";
+	public static final String SIGNATURES = "signatures";
+	public static final String BASE_DOMAIN = "baseDomain";
+	public static final String FORMAT = "format";
+	public static final String SURG_DATE = "surgDate";
+
 	private enum SearchFields {
-		productName("PRODUCT_NM"),
-		customerName("c.CUSTOMER_NM"),
-		gtinProductId("c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64))");
-		
+		productName("product_nm"),
+		customerName("c.customer_nm"),
+		customerProductId("cust_product_id"),
+		gtinProductNumber("c.gtin_number_txt || cast(p.gtin_product_id as varchar(64))"),
+		gtinProductId("c.gtin_number_txt || cast(p.gtin_product_id as varchar(64))");
+
 		private String cloumnNm;
-		
+
 		SearchFields(String columnNm) {
 			this.cloumnNm = columnNm;
 		}
-		
+
 		public String getColumnName (){
 			return cloumnNm;
 		}
 	}
-	
+
 	/**
 	 * Build actions this widget can perform, sent by the request.
 	 * 
 	 */
 	private enum WidgetBuildAction {saveCaseInfo, deleteCase, addProduct, deleteProduct, addSignature, finalize, sendEmails, saveNote, persistCase}
-	
+
 	/**
 	 * Retrieve actions this widget can perform, sent by the request.
 	 */
 	private enum WidgetRetrieveAction {loadCase, loadReport, searchProducts}
-	
-	
+
+
 	public ProductCartAction() {
 		super();
 	}
@@ -117,7 +134,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 	public ProductCartAction(ActionInitVO avo) {
 		super(avo);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
 	 */
@@ -125,7 +142,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
@@ -133,15 +150,12 @@ public class ProductCartAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 		WidgetBuildAction wa = WidgetBuildAction.valueOf(req.getParameter("widgetAction"));
-		
+
 		try {
 			switch (wa) {
 				case saveCaseInfo:
 					RAMCaseVO cvo = rcm.saveCase(req);
 					putModuleData(cvo);
-					break;
-				case deleteCase:
-					// TODO: not implemented yet, needs further discussion
 					break;
 				case addProduct:
 					RAMCaseItemVO civo = rcm.updateItem(req);
@@ -168,6 +182,9 @@ public class ProductCartAction extends SimpleActionAdapter {
 					break;
 				case persistCase:
 					rcm.persistCasePerm(rcm.retrieveCase(req.getParameter(RAMCaseManager.RAM_CASE_ID)));
+					break;
+				case deleteCase:
+					// put something here
 					break;
 			}
 		} catch (Exception e) {
@@ -200,16 +217,16 @@ public class ProductCartAction extends SimpleActionAdapter {
 				}
 
 			}
-			
+
 			// Put the added products onto the request object so the page can
 			// be updated accordingly.
 			super.putModuleData(addedItems);
 		}
-		
+
 		store.save(cart);
 	}
-	
-	
+
+
 	/**
 	 * Edits a product in the cart with information from the request object
 	 * @param req
@@ -232,20 +249,20 @@ public class ProductCartAction extends SimpleActionAdapter {
 
 		String[] edits = req.getParameterValues("editItem");
 		boolean edit = edits!=null && edits.length > pos? Convert.formatBoolean(edits[pos]) : false;
-		
+
 		if (!edit)qty += p.getQuantity();
 		p.setQuantity(qty > 99? 99:qty);
 		cart.add(p);
-		
+
 		// Remove the old product if we have changed the lot no
 		if (!oldLot.equals(p.getProduct().getProdAttributes().get(LOT_NO)) ) {
 			cart.remove(p.getProduct().getProductId()+oldLot);
 		}
-		
+
 		addedItems.add(new GenericVO("update", p));
 	}
-	
-	
+
+
 	/**
 	 * Deletes the requested item or clears the cart completely
 	 * @param cart
@@ -302,7 +319,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 		if (!oldLot.equals(item.getProduct().getProdAttributes().get(LOT_NO)) ) {
 			cart.remove(item.getProduct().getProductId()+oldLot);
 		}
-		
+
 		// Ensure that the map is properly ordered by product id
 		List<String> sortedKeys = new ArrayList<>(cart.getItems().keySet());
 		Collections.sort(sortedKeys);
@@ -327,9 +344,9 @@ public class ProductCartAction extends SimpleActionAdapter {
 		attrs.put(GlobalConfig.HTTP_REQUEST, req);
 		attrs.put(GlobalConfig.HTTP_RESPONSE, attributes.get(GlobalConfig.HTTP_RESPONSE));
 		attrs.put(GlobalConfig.KEY_DB_CONN, dbConn);
-		
+
 		Storage container = null;
-		
+
 		try {
 			container = StorageFactory.getInstance(StorageFactory.SESSION_STORAGE, attrs);
 		} catch (Exception ex) {
@@ -338,74 +355,90 @@ public class ProductCartAction extends SimpleActionAdapter {
 		return container;
 	}
 
-
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 		WidgetRetrieveAction wa = WidgetRetrieveAction.valueOf(req.getParameter("widgetAction"));
 		String caseId = req.getParameter(CASE_ID);
-		try {
 		
+		try {
+			RAMCaseVO cvo = rcm.retrieveCase(caseId);
+			
 			switch (wa) {
-				case loadCase:
-					RAMCaseVO cvo = rcm.retrieveCase(caseId);
-					putModuleData(cvo);
-					break;
-				case loadReport:
-					RAMCaseVO cvo2 = rcm.retrieveCase(caseId);
-					buildReport(cvo2, req);
-					break;
-				case searchProducts:
-					if (!StringUtil.isEmpty(req.getParameter("search")))
-						searchProducts(req);
-					break;
+			case loadCase:
+				
+				putModuleData(cvo);
+				break;
+			case loadReport:
+				buildReport(cvo, req);
+				break;
+			case searchProducts:
+				searchProducts(cvo, req);
+				break;
 			}
 		} catch (Exception e) {
 			log.error("Error retrieving case", e);
 			throw new ActionException(e);
 		}
 	}
-	
+
 	/**
 	 * Search for products that match the supplied search crteria
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void searchProducts(ActionRequest req) throws ActionException {
-		List<RAMProductVO> products = new ArrayList<>();
-		String searchData = StringUtil.checkVal(req.getParameter("search")).toLowerCase();
-		String sql = getProductSearchSQL(req);
-		int count = 0;
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			int i = 1;
-			for (int j = 0; j < 3; j++) {
-				ps.setString(i++, "%" + searchData + "%");
-			}
-			
-			ResultSet rs = ps.executeQuery();
-			int page = Convert.formatInteger(req.getParameter("offset"), 0);
-			int rpp = Convert.formatInteger(req.getParameter("limit"));
-			rpp = rpp == 0 ? 10 : rpp;
-			
-			while(rs.next()) {
-				count++;
-				if (count <= rpp*page || count > rpp*(page+1)) continue;
-				RAMProductVO p = new RAMProductVO(rs);
-				// Kits with layer ids can either come from kits or as a single
-				// product and must be marked as such.
-				if (!StringUtil.checkVal(rs.getString("KIT_LAYER_ID")).isEmpty())
-					p.setKitFlag(1);
-				products.add(p);
-			}
-		} catch (SQLException e) {
-			throw new ActionException(e);
+	private void searchProducts(RAMCaseVO cvo, ActionRequest req) throws ActionException {
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(256);
+		StringBuilder cSql = new StringBuilder(256);
+		List<Object> params = new ArrayList<>();
+		
+		// Build the select clause
+		cSql.append("select count(*) as key ");
+		getProductSearchSelect(sql);
+		
+		// Build the body and where clause
+		getProductSearchFilter(cSql, req, true);
+		getProductSearchFilter(sql, req, false);
+		
+		// Add the parameters to the queries if searching
+		params.add(cvo.getCustomerLocationId());
+		if (req.hasParameter("search")) {
+			String searchData = "%" + req.getParameter("search").toLowerCase() + "%";
+			params.add(searchData);
+			params.add(searchData);
+			params.add(searchData);
 		}
 		
-		super.putModuleData(products, count, false);
+		// Get the count
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		List<Object> prodCount = db.executeSelect(cSql.toString(), params, new GenericVO());
+		int size = Convert.formatInteger(((GenericVO)prodCount.get(0)).getKey()+"");
+		
+		// Add the nav params
+		params.add(Convert.formatInteger(req.getParameter("offset"), 0));
+		params.add(Convert.formatInteger(req.getParameter("limit"), 10));
+		
+		// Get the product list
+		List<Object> products = db.executeSelect(sql.toString(), params, new RAMProductVO());
+		
+		// Return the data
+		super.putModuleData(products, size, false);
 	}
-	
-	
+
+	/**
+	 * Builds the select clause for the product search
+	 * @param sql
+	 */
+	protected void getProductSearchSelect(StringBuilder sql) {
+		sql.append("select p.product_id, p.cust_product_id, desc_txt, short_desc, c.customer_nm, l.kit_layer_id, ");
+		sql.append("c.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_number_txt, product_nm ");
+	}
+
 	/**
 	 * Build the sql for the product search
 	 * @param req
@@ -413,43 +446,33 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * @param searchType
 	 * @return
 	 */
-	private String getProductSearchSQL (ActionRequest req) {
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(300);
-
-		sql.append("SELECT p.PRODUCT_ID, p.CUST_PRODUCT_ID, c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64)) as GTIN_NUMBER_TXT, PRODUCT_NM, ");
-		sql.append("DESC_TXT, SHORT_DESC, c.CUSTOMER_NM, l.KIT_LAYER_ID FROM ").append(customDb).append("RAM_PRODUCT p ");
-		sql.append("LEFT JOIN ").append(customDb).append("RAM_CUSTOMER c on c.CUSTOMER_ID = p.CUSTOMER_ID ");
-		sql.append("left join ").append(customDb).append("RAM_KIT_LAYER l on l.PRODUCT_ID = p.PRODUCT_ID ");
-		sql.append("WHERE p.CUSTOMER_ID is not null and p.GTIN_PRODUCT_ID is not null AND  c.GTIN_NUMBER_TXT is not null ");
-		sql.append("AND p.CUSTOMER_ID > 0 AND p.GTIN_PRODUCT_ID != '' AND c.GTIN_NUMBER_TXT != '' ");
-
-		sql.append("AND (");
-		sql.append("lower(PRODUCT_NM) like ? ");
-		sql.append("OR lower(CUST_PRODUCT_ID) like ? ");
-		sql.append("OR lower(c.GTIN_NUMBER_TXT || CAST(p.GTIN_PRODUCT_ID as VARCHAR(64))) like ? ");
-		sql.append(") ");
+	protected void getProductSearchFilter (StringBuilder sql, ActionRequest req, boolean count) {
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_product p ");
+		sql.append("item".equalsIgnoreCase(req.getParameter("productType")) ? DBUtil.INNER_JOIN : DBUtil.LEFT_OUTER_JOIN);
+		sql.append(schema).append("ram_location_item_master i on p.product_id = i.product_id and customer_location_id = ? ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_customer c on c.customer_id = p.customer_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_kit_layer l on l.product_id = p.product_id ");
+		sql.append("where p.active_flg = 1 ");
 		
-		sql.append("ORDER BY ");
+		// Add the search params
+		if (req.hasParameter("search")) {
+			sql.append("and (lower(product_nm) like ? or lower(cust_product_id) like ? ");
+			sql.append("or lower(c.gtin_number_txt || cast(p.gtin_product_id as varchar(64))) like ? )");
+		}
 		
-		if (req.hasParameter("sort")) {
-			sql.append(SearchFields.valueOf(req.getParameter("sort")).getColumnName());
-			
-			String order = StringUtil.checkVal(req.getParameter("order"));
-			if ("desc".equalsIgnoreCase(order)) {
-				sql.append(" DESC ");
-			} else {
-				sql.append(" ASC ");
-			}
-		} else {
-			sql.append("PRODUCT_NM ");
+		// Set the order
+		if (! count) {
+			sql.append("order by ");
+			sql.append(SearchFields.valueOf(req.getParameter("sort", "productName")).getColumnName()).append(" ");
+			sql.append(StringUtil.checkVal(req.getParameter("order"), "asc"));
+			sql.append(" offset ? limit ? ");
 		}
 
 		log.debug(sql);
-		return sql.toString();
 	}
-	
-	
+
+
 	/**
 	 * Build the requested report based off of the request servlet and the 
 	 * shopping cart
@@ -458,39 +481,60 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * @param req 
 	 * @throws ActionException 
 	 */
-	private void buildReport(RAMCaseVO cvo, ActionRequest req) throws ActionException {
+	private void buildReport(RAMCaseVO cvo, ActionRequest req) {
 		AbstractSBReportVO report;
 		String filename;
 		String caseId = StringUtil.checkVal(cvo.getCaseId());
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		SiteVO site = (SiteVO) req.getAttribute(com.smt.sitebuilder.common.constants.Constants.SITE_DATA);
 		if (caseId.length() != 0) {
-			filename = "case-" + caseId;
+			filename = "case-" + cvo.getHospitalCaseId();
 		} else {
 			filename = "RAM-" + new SimpleDateFormat("YYYYMMdd").format(Convert.getCurrentTimestamp());
 		}
 		report = new ProductCartReport();
+		report.setAttributes(attributes);
 		report.setFileName(filename + ".pdf");
-		
+
 		Map<String, Object> data = new HashMap<>();
 
-		data.put("cart", cvo.getItems().get(StringUtil.checkVal(req.getParameter("caseType"), RAMCaseType.OR.toString())).values());
+		data.put(CART, cvo.getItems().get(StringUtil.checkVal(req.getParameter("caseType"), RAMCaseType.OR.toString())).values());
 		data.put(HOSPITAL,StringUtil.checkVal(cvo.getCustomerName()));
 		data.put(ROOM, StringUtil.checkVal(cvo.getOrRoomName()));
 		data.put(SURGEON, StringUtil.checkVal(cvo.getSurgeonName()));
 		data.put(TIME, StringUtil.checkVal(cvo.getSurgeryDate()));
 		data.put(CASE_ID, StringUtil.checkVal(cvo.getHospitalCaseId()));
+		data.put(NOTES, StringUtil.checkVal(cvo.getCaseNotes()));
+		data.put(HOSPITAL_REP, cvo.getHospitalRep());
 		
-		if (cvo.getSignatures().get(RAMSignatureVO.SignatureType.PROVIDER) != null){
-		data.put("signatures", cvo.getSignatures().get(RAMSignatureVO.SignatureType.PROVIDER).values());
+		data.put(SURG_DATE, Convert.formatDate(cvo.getSurgeryDate(), Convert.DATE_TIME_SLASH_PATTERN_12HR)  );
+		data.put(SALES_REP, cvo.getSalesRep());
+
+		for (RAMSignatureVO svo : cvo.getAllSignatures()){
+			if (cvo.getHospitalRep() != null && svo.getProfileId().equalsIgnoreCase(cvo.getHospitalRep().getProfileId())) {
+				svo.setFirstNm(cvo.getHospitalRep().getFirstName());
+				svo.setLastNm(cvo.getHospitalRep().getLastName());
+				continue;
+			}
+			try {
+				UserDataVO uvo = pm.getProfile(svo.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId());
+				svo.setFirstNm(uvo.getFirstName());
+				svo.setLastNm(uvo.getLastName());
+			} catch (DatabaseException e) {
+				log.error("error getting profile for signature", e);
+			}
 		}
-		data.put("baseDomain", req.getHostName());
-		data.put("format", req.getParameter("format"));
-		
+
+		data.put(SIGNATURES, cvo.getAllSignatures());
+		data.put(BASE_DOMAIN, req.getHostName());
+		data.put(FORMAT, req.getParameter(FORMAT));
+
 		report.setData(data);
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 	}
-	
-	
+
+
 	/**
 	 * Delete a non finalized surgical case
 	 * @param req
@@ -502,21 +546,21 @@ public class ProductCartAction extends SimpleActionAdapter {
 		sql.append("DELETE from ").append(customDb).append("ram_case_info ");
 		// We will only ever delete non finalized kits
 		sql.append("WHERE FINALIZED_FLG = 0 AND ram_case_info_id = ? ");
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, req.getParameter(KIT_ID));
-			
+
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
-		
+
 		// Return the id of the kit that was deleted so that we know what to
 		// remove from the list after the call completes
 		super.putModuleData(req.getParameter(KIT_ID));
 	}
-	
-	
+
+
 	/**
 	 * Save the current cart and all products associated with it.
 	 * @param req
@@ -564,18 +608,18 @@ public class ProductCartAction extends SimpleActionAdapter {
 			ps.setString(i++, (String) sess.getAttribute(OTHER_ID));
 			ps.setString(i++, (String) sess.getAttribute(REP_ID));
 			ps.setString(i++, (String) sess.getAttribute(KIT_ID));
-			
+
 			ps.executeUpdate();
-			
+
 			saveProducts(req, (String)sess.getAttribute(KIT_ID));
-			
+
 		} catch (SQLException e) {
 			sess.setAttribute(KIT_ID,"");
 			throw new ActionException(e);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Get all products from the cart and save them to the database
 	 * @param req
@@ -587,12 +631,12 @@ public class ProductCartAction extends SimpleActionAdapter {
 		purgeProducts(kitId);
 
 		ShoppingCartVO cart = retrieveContainer(req).load();
-		
+
 		StringBuilder sql = new StringBuilder(175);
 		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("ram_case_product (case_product_id, product_id,ram_case_info_id,order_no,lot_no,qty,billable_flg,wasted_flg,product_from,create_dt, kit_flg) ");
 		sql.append("values(?,?,?,?,?,?,?,?,?,?,?)");
-		
+
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i=1;
 			for (String key : cart.getItems().keySet()) {
@@ -615,8 +659,8 @@ public class ProductCartAction extends SimpleActionAdapter {
 			throw new ActionException(e);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Delete all products associated with the supplied kit
 	 * @param kitId
@@ -626,16 +670,16 @@ public class ProductCartAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("DELETE from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("ram_case_product WHERE ram_case_info_id = ?");
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, kitId);
-			
+
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
 	}
-	
+
 	/**
 	 * Get all information and products associated with the current kit
 	 * @param req
@@ -645,7 +689,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		SMTSession sess = req.getSession();
-		
+
 		sql.append("SELECT * FROM ").append(customDb).append("ram_case_info k ");
 		sql.append("LEFT JOIN ").append(customDb).append("ram_case_product xr ");
 		sql.append("on k.ram_case_info_id = xr.ram_case_info_id ");
@@ -656,11 +700,11 @@ public class ProductCartAction extends SimpleActionAdapter {
 		sql.append("WHERE k.PROFILE_ID = ? and k.ram_case_info_ID = ?");
 		UserDataVO user = (UserDataVO) sess.getAttribute(Constants.USER_DATA);
 		log.debug(sql+"|"+req.getParameter(KIT_ID)+"|"+user.getProfileId());
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, user.getProfileId());
 			ps.setString(2, req.getParameter(KIT_ID));
-			
+
 			ResultSet rs = ps.executeQuery();
 
 			Storage store = retrieveContainer(req);
@@ -687,18 +731,18 @@ public class ProductCartAction extends SimpleActionAdapter {
 					if (rs.getTimestamp("UPDATE_DT") != null)
 						sess.setAttribute(COMPLETE_DT, new SimpleDateFormat("MM/dd/yyyy").format(rs.getTimestamp("UPDATE_DT")));
 				}
-				
+
 				cart.add(buildProduct(rs));
 			}
-			
+
 			store.save(cart);
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
-	
+
 	}
-	
-	
+
+
 	/**
 	 * Build a product from data in the result set
 	 * @param rs
@@ -719,11 +763,11 @@ public class ProductCartAction extends SimpleActionAdapter {
 		ShoppingCartItemVO item = new ShoppingCartItemVO(product);
 		item.setProductId(product.getProductId()+product.getProdAttributes().get(LOT_NO));
 		item.setQuantity(Convert.formatInteger(rs.getInt("QTY")));
-		
+
 		return item;
 	}
-	
-	
+
+
 	/**
 	 * Flush all paramters used to store kit information, flush the cart,
 	 * and save the empty cart in order to purge everything associated with
@@ -745,14 +789,14 @@ public class ProductCartAction extends SimpleActionAdapter {
 		sess.removeAttribute(OTHER_ID);
 		sess.removeAttribute(REP_ID);
 		sess.removeAttribute(RESELLER);
-		
+
 		Storage store = retrieveContainer(req);
 		ShoppingCartVO cart = store.load();
 		cart.flush();
 		store.save(cart);
 	}
-	
-	
+
+
 	/**
 	 * Send emails to the representative and the hospital
 	 * @param req
@@ -770,16 +814,16 @@ public class ProductCartAction extends SimpleActionAdapter {
 			}
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			mail.setFrom(site.getAdminEmail());
-			
+
 			RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 			RAMCaseVO cvo = rcm.retrieveCase(StringUtil.checkVal(req.getParameter(CASE_ID)));
 			buildReport(cvo, req);
-	
+
 			AbstractSBReportVO report = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
 			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, false);
 			mail.addAttachment(report.getFileName(), report.generateReport());
 			mail.setHtmlBody("Placeholder text for now");
-	
+
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
 		} catch (Exception e) {

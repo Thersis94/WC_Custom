@@ -1,25 +1,45 @@
 package com.ram.action.report.vo;
 
-import java.io.ByteArrayInputStream;
+//java 8
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-import org.w3c.dom.Document;
-import org.w3c.tidy.Tidy;
-import org.xhtmlrenderer.pdf.ITextRenderer;
 
-import com.depuysynthes.nexus.NexusCartExcelReport;
+//app libs itext
+import com.lowagie.text.BadElementException;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Image;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Rectangle;
+import com.lowagie.text.html.WebColors;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
+
+//WC custom
 import com.depuysynthes.nexus.NexusSolrCartAction;
-import com.lowagie.text.pdf.BaseFont;
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMSignatureVO;
 import com.ram.action.products.ProductCartAction;
+
+//WC base libs
+import com.siliconmtn.barcode.BarcodeImageWriter;
+import com.siliconmtn.http.filter.fileupload.Constants;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.pdf.Base64ImageReplacer;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
+
 
 /****************************************************************************
  * <b>Title</b>ProductCartReport.java<p/>
@@ -31,142 +51,504 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  * @version 1.0
  * @since September 6, 2016
  * <b>Changes: </b>
+ * 		changed from using itext rendered parsing xml/html to 
+ * 		using itext to make tables and cells.
  ****************************************************************************/
 
 public class ProductCartReport  extends AbstractSBReportVO {
 
 	private static final long serialVersionUID = 1L;
 
-	protected static Logger log = Logger.getLogger(NexusCartExcelReport.class);
+	private static final String IMG_SRC ="/themes/CUSTOM/RAMGRP/MAIN/images/ramgrouplogo.png";
+	private static final String CHECK_MARK_SRC = "/org/RAM/images/checkMark.png";
+
+	private static final String HEADER_GREY = "#e7e7e7";
+	private static final String TEXT_GREY = "#4e4e4e";
+
 
 	Map<String, Object> data;
 
 	@Override
 	public byte[] generateReport() {
-		ByteArrayOutputStream os = new ByteArrayOutputStream();
-		Tidy tidy = new Tidy(); // obtain a new Tidy instance
-		tidy.setXHTML(true);
+		log.debug("generating report");
+		final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+
+		final Document document = new Document();
 		try {
-			ByteArrayInputStream bais = new ByteArrayInputStream(getPageHtml());
-			Document doc = tidy.parseDOM(bais, new ByteArrayOutputStream());
-	
-			ITextRenderer renderer = new ITextRenderer();
-			log.debug(data.get("baseDomain"));
-			renderer.getFontResolver().addFont("http://"+data.get("baseDomain")+"/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/fonts/fontawesome-webfont.ttf", BaseFont.IDENTITY_H, true);
-			renderer.getFontResolver().addFont("http://"+data.get("baseDomain")+"/binary/common/fonts/GreatVibes-Regular.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-			renderer.setDocument(doc, "http://"+data.get("baseDomain")+"/");
-			// Add the replacer so that base64 images are rendered properly
-			renderer.getSharedContext().setReplacedElementFactory(new Base64ImageReplacer(renderer.getSharedContext().getReplacedElementFactory()));
-			renderer.layout();
-			renderer.createPDF(os);
-		} catch (Exception e) {
-			log.error("Error creating PDF File", e);
+			PdfWriter.getInstance(document, byteStream);
+			document.setPageSize(new Rectangle(792, 612));
+			document.addTitle(data.get(ProductCartAction.CASE_ID)+"");
+			document.setHtmlStyleClass("@page land {size: landscape;}");
+			document.open();
+			
+			PdfPTable table = new PdfPTable(10);
+			table.setWidthPercentage(100f);
+			table.setWidths(new float[] { 5,4,3 ,2,2, 3,3,2, 2,2 });
+			table.setHeaderRows(1);
+			table.setFooterRows(0);
+			table.getDefaultCell().setHorizontalAlignment(Element.ALIGN_CENTER);
+
+			generateTopTable(table);
+			generateProductSection(table);
+			generateSignatureSection(table);
+
+			document.add(table);
+			document.newPage();
+			document.close();
+
+			return byteStream.toByteArray();
+
+		} catch (DocumentException e) {
+			log.error("error while building case table  " , e);
 		}
-	
-		return os.toByteArray();
+
+		return new byte[0];
 	}
-	
+
 	/**
-	 * Create the html page that the pdf will be generated from
+	 * generates the section of the document that will hold names and signatures
+	 * @param table
+	 */
+	private void generateSignatureSection(PdfPTable table) {
+		table.addCell(getSectionSpacer());
+		
+		@SuppressWarnings("unchecked")
+		List<RAMSignatureVO> sigList = (List<RAMSignatureVO>) data.get("signatures");
+		if (sigList == null || sigList.isEmpty()) {return;}
+		
+		int index = 0;
+		int max = sigList.size();
+		
+		for  ( RAMSignatureVO sig : sigList) {
+			log.debug("index " +index+ " max " + max);
+			String imageSrc = null;
+			if (StringUtil.checkVal(sig.getSignatureTxt()).startsWith("data")) {
+				boolean isEven = ((index%2)==1);
+				imageSrc = sig.getSignatureTxt();
+				
+				StringBuilder nameDate = new StringBuilder(32);
+				nameDate.append(sig.getFirstNm()).append(" ");
+				nameDate.append(sig.getLastNm()).append(" (");
+				nameDate.append(Convert.formatDate(sig.getCreateDt(), Convert.DATE_TIME_SLASH_PATTERN_12HR));
+				nameDate.append(")");
+				
+				
+				table.addCell(getSigCell(sig.getSignatureType().getName(), nameDate.toString() , imageSrc, isEven));
+				index++;
+
+				//in order for the cells to be drawn in the pdf they must have a full row.  if the last cell drawn is
+				//on the left, and a spacer to the right.
+				if (index >= max && !isEven){
+					table.addCell(getSigSpacer());
+				}
+			} 
+		}
+	}
+
+	/**
+	 * used to fill up the black space that is sometimes needed in row on the pdf
 	 * @return
 	 */
-	private byte[] getPageHtml() {
-		StringBuilder html = new StringBuilder(3000);
-		html.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
-		html.append("<html><head><title>Case Summary</title>");
-		html.append("<link href='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/css/font-awesome.css' type='text/css' rel='stylesheet'>");
-		html.append("<link type='text/css'  href=\"https://fonts.googleapis.com/css?family=Great+Vibes\" rel=\"stylesheet\">");
-		html.append("<style type='text/css'>");
-		html.append("@page{margin-bottom:50px;}th{margin-bottom:10px;border-bottom:solid black 2px; font-size:12px;}");
-		html.append("@media print{div.sig-footer{position:absolute; bottom:-50px;}}");
-		html.append("</style>");
-		html.append("</head><body>");
-		
-		//generate the signature tables
-		if (data.containsKey("signatures")){
-			html.append("<div class='sig-footer'><table>");
-			@SuppressWarnings("unchecked")
-			Collection<RAMSignatureVO> sigList = (Collection<RAMSignatureVO>) data.get("signatures");
-			for  ( RAMSignatureVO sig : sigList) {
-				html.append("<tr><td><p>Signed By:</p></td><td>");
-				if (StringUtil.checkVal(sig.getSignatureTxt()).startsWith("data")) {
-					html.append("<img alt='Signature' style='height:50px;' src='").append(sig.getSignatureTxt()).append("'/>");
-				} else {
-					html.append("<p style='font-family: \"Great Vibes\", cursive;font-size:20px;'>").append(StringUtil.checkVal(sig.getSignatureTxt())).append("</p>");
-				}
-				
-				html.append("</td><td style='font-size:10px;'>").append(Convert.formatDate(sig.getCreateDt(), Convert.DATE_TIME_SLASH_PATTERN_12HR)).append("</td></tr>");
-			}
-			html.append("</table></div>");
+	private PdfPCell getSigSpacer() {
+		log.debug("making spacer");
+		PdfPCell cell = new PdfPCell(new Paragraph("", dataFont()));
+		cell.setBorder(0);
+		cell.setColspan(6);
+		cell.setPaddingBottom(10);
+		cell.setPaddingLeft(10);
+		return cell;
+	}
+
+	/**
+	 * a cell to hold a name and signature
+	 * @param imageSrc 
+	 * @param max 
+	 * @param isEven 
+	 * @param signatureType 
+	 * @param string 
+	 * @return
+	 */
+	private PdfPCell getSigCell(String sigTypeName, String name, String imageSrc, boolean isEven) {
+		PdfPCell cell = new PdfPCell();
+		String encoded = imageSrc.replace("data:image/png;base64,", "");
+		byte[] decoded = org.apache.commons.codec.binary.Base64.decodeBase64(encoded.getBytes());
+
+		try {
+			cell.addElement(new Paragraph(sigTypeName + ": " + name, dataFont()));
+			cell.addElement(new Paragraph(" ", smallFont()));
+			Image image = Image.getInstance( decoded );
+			image.setWidthPercentage(80);
+			cell.addElement(image);
+		} catch (BadElementException | IOException e) {
+			log.error("error producing signature image", e);
 		}
 
-		String dateString = Convert.formatDate(Convert.formatDate(Convert.DATE_TIME_DASH_PATTERN, (String)data.get(ProductCartAction.TIME)), Convert.DATE_TIME_SLASH_PATTERN_12HR);
-				
-		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%;'><tbody>");
-		html.append("<tr><td style='width:48%'><img alt='RAM Healthcare' style='width:200px' src='/binary/themes/CUSTOM/RAMGRP/MAIN/images/ramgrouplogo.png' />");
-		html.append("</td><td colspan='2' style='text-align:right;'>");
-		html.append("</td></tr>");
-		html.append("<tr><td rowspan='8'>");
-		if (StringUtil.checkVal(data.get(NexusSolrCartAction.CASE_ID)).length() > 0)
-			html.append("<span style='font-size:20px;'>Case Report (ID: ").append(data.get(ProductCartAction.CASE_ID)).append(")</span>");
-		html.append("</td>");
-		html.append("<td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Surgery Date and Time:</td>");
-		html.append("<td style='font-size:14px;'>").append(dateString).append("</td></tr>");
-		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Surgeon Name:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.SURGEON)).append("</td></tr>");
-		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Hospital Name:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.HOSPITAL)).append("</td></tr>");
-		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Operating Room:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.ROOM)).append("</td></tr>");
-		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Case ID:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.CASE_ID)).append("</td></tr>");
-		html.append("</tbody></table>");
-		html.append("<span style='font-size:24px; color:#636363;'>Products</span>");
-		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%'>");
-		html.append("<tbody><tr style='margin-bottom:10px;'><th style='width:2%'>&nbsp;</th><th style='width:15%'>Product Name</th>");
-		html.append("<th style='width:14%'>Company</th><th style='width:13%;'>GTIN</th><th style='width:10%'>LOT No.</th>");
-		html.append("<th style='width:5%; text-align:center;'>QTY</th>");
-		html.append("<th style='width:5%; text-align:center;'>Billable</th>");
-		html.append("<th style='width:5%; text-align:center;'>Wasted</th>");
-		html.append("<th style='text-align:center'>Barcode</th></tr>");
+		cell.setBorder(0);
+		if (isEven){
+			cell.setColspan(6);
+		}else {
+			cell.setColspan(4);
+		}
 
+		cell.setPaddingBottom(10);
+		cell.setPaddingLeft(10);
 
-		// Loop over all the items in the cart
+		return cell;
+	}
+
+	/**
+	 * this will produce a cell with a check or empty space depending on the int flag sent in
+	 * @param qtyNo
+	 * @return
+	 */
+	private PdfPCell getFlagCell(int flag) {
+		PdfPCell imageCell = null; 
+		try {
+			String imageUrl = attributes.get(Constants.PATH_TO_BINARY)+ CHECK_MARK_SRC;
+			Image image = Image.getInstance(imageUrl);
+
+			if (Convert.formatBoolean(flag)){
+				image.setWidthPercentage(25);
+				imageCell = new PdfPCell();
+				imageCell.addElement(image);
+			}else{
+				imageCell = new PdfPCell(new Paragraph(""));
+			}
+
+			imageCell.setBorder(0);
+			imageCell.setColspan(1);
+			imageCell.setBorderWidthBottom(0.25f);
+			imageCell.setPaddingTop(5);
+			imageCell.setBackgroundColor(WebColors.getRGBColor("white"));
+			imageCell.setPaddingBottom(10);
+			imageCell.setPaddingLeft(10);
+
+			return imageCell; 
+
+		} catch (IOException | BadElementException e) {
+			log.error("error while adding check image to pdf document ", e);
+		}
+		return  new PdfPCell();
+	}
+
+	/**
+	 * takes the information and puts it in barcode form.
+	 * @param item
+	 * @return
+	 */
+	private PdfPCell getBarcodeCell(RAMCaseItemVO item) {
+		BarcodeImageWriter biw = new BarcodeImageWriter();
+		PdfPCell imageCell = null; 
+		try {
+			
+			StringBuilder barcode = new StringBuilder(18);
+			barcode.append("011").append(StringUtil.checkVal(item.getGtinProductId()));
+			if (!item.getLotNumberTxt().isEmpty() && item.getExpiree() != null ){
+				Date expiree = item.getExpiree();
+				String exDateCode = Convert.formatDate(expiree, "yyMMdd");
+				barcode.append("17").append(exDateCode);
+				barcode.append("10").append(item.getLotNumberTxt());
+			}
+			
+			byte[] b = biw.getDataMatrix(barcode.toString(), 25);
+
+			Image image = Image.getInstance(b);
+			imageCell = new PdfPCell(image, false);
+			imageCell.setBorder(0);
+			imageCell.setColspan(1);
+			imageCell.setBorderWidthBottom(0.25f);
+			imageCell.setPaddingTop(5);
+			imageCell.setBackgroundColor(WebColors.getRGBColor("white"));
+			imageCell.setPaddingBottom(10);
+			imageCell.setPaddingLeft(10);
+
+			return imageCell; 
+
+		} catch (IOException | BadElementException e) {
+			log.error("error while adding image to pdf document ", e);
+		}
+		return  new PdfPCell();
+	}
+
+	/**
+	 * controls product section of the pdf
+	 * @param table
+	 */
+	private void generateProductSection(PdfPTable table) {
+		generateSectionHeader(table);
+		generateSectionBody(table);
+	}
+
+	/**
+	 * returns the body of the product section
+	 * @param table
+	 */
+	private void generateSectionBody(PdfPTable table) {
 		@SuppressWarnings("unchecked")
 		Collection<RAMCaseItemVO> cart = (Collection<RAMCaseItemVO>) data.get("cart");
-		int i=1;
-		String border="border-bottom:1px solid black;";
+
 		for(RAMCaseItemVO item : cart){
-			if (i == cart.size()) border="";
-			html.append("<tr style='height:60px;page-break-inside: avoid;'><td style='font-size:12px;'>").append(i).append(".</td>");
-			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(StringUtil.checkVal(item.getProductNm())).append("</td>");
-			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(StringUtil.checkVal(item.getCustomerNm())).append("</td>");
-			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(StringUtil.checkVal(item.getGtinProductId())).append("</td>");
-			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(StringUtil.checkVal(item.getLotNumberTxt())).append("</td>");
-			html.append("<td style='font-size:12px; text-align:center;margin-bottom:20px;").append(border).append("'>").append(item.getQtyNo()).append("</td>");
-			html.append("<td style='font-size:12px; text-align:center;margin-bottom:20px;").append(border).append("'>");
-			if (Convert.formatBoolean(item.getBillableFlg())) html.append("<i class='fa'>&#xf00c;</i>");
-			html.append("</td>");
-			html.append("<td style='font-size:12px; text-align:center;margin-bottom:20px;").append(border).append("'>");
-			if (Convert.formatBoolean(item.getWastedFlg())) html.append("<i class='fa'>&#xf00c;</i>");
-			html.append("</td>");
-			// This ends off without closing the tag so that the single barcode option can add in a rowspan attribute
-			html.append("<td style='font-size:12px; width:400px; text-align:right;margin-bottom:20px;").append(border);
-			StringBuilder barcodeData = new StringBuilder(50);
-			barcodeData.append("011").append(item.getGtinProductId());
-			if (StringUtil.checkVal(item.getLotNumberTxt()).length() > 0 ) {
-				barcodeData.append("17").append(item.getLotNumberTxt());
-			}
-			
-			html.append("'><span><img style='float:right' alt='").append(barcodeData).append("' src='/barcodeGenerator?format=DM&amp;barcodeData=011").append(barcodeData);
-			
-			html.append("&amp;height=40' /></span></td></tr>");
-			i++;
+			table.addCell(getTableCell(item.getProductNm()));
+			table.addCell(getTableCell(item.getCustomerNm()));
+			table.addCell(getTableCell(item.getCustomerProductId()));
+			table.addCell(getTableCell(item.getLotNumberTxt()));
+			table.addCell(getTableCell(StringUtil.checkVal(item.getQtyNo())));
+			table.addCell(getTableCell(item.getProductFromTxt()));
+			table.addCell(getTableCell(Convert.formatDate(item.getExpiree(), Convert.DATE_SLASH_PATTERN)));
+			table.addCell(getFlagCell(item.getBillableFlg()));
+			table.addCell(getFlagCell(item.getWastedFlg()));
+			table.addCell(getBarcodeCell(item));
+		}
+	}
+
+	/**
+	 * returns the header of the product section
+	 * @param table
+	 */
+	private void generateSectionHeader(PdfPTable table) {
+		//the product section has the most columns so it controls the number of cols in the table
+		table.addCell(getTableCell("Product Name", true));
+		table.addCell(getTableCell("Manufacturer", true));
+		table.addCell(getTableCell("SKU", true));
+
+		table.addCell(getTableCell("LOT No.", true));
+		table.addCell(getTableCell("Qty", true));
+		
+		table.addCell(getTableCell("Product From", true));
+		table.addCell(getTableCell("Expiree", true));
+		table.addCell(getTableCell("Billable", true));
+
+		table.addCell(getTableCell("Wasted", true));
+		table.addCell(getTableCell("Barcode", true));
+
+	}
+
+	/**
+	 * controls adding the top case section of the pdf
+	 * @param table
+	 */
+	private void generateTopTable(PdfPTable table) {
+		//logo and empty space
+		table.addCell(createLogoCell());
+		table.addCell(getSectionSpacer());
+
+		//top row of the 
+		table.addCell(getCaseInfoTop());
+
+		//case info cells bordered on right or left depending on location
+		caseInfoLeft(table, "Hostpital Name: " , StringUtil.checkVal(data.get(ProductCartAction.HOSPITAL)));
+		caseInfoRight(table, "OR Room: " , StringUtil.checkVal(data.get(ProductCartAction.ROOM)));
+
+		caseInfoLeft(table, "Surgery Date: " , StringUtil.checkVal(data.get(ProductCartAction.SURG_DATE)));
+		caseInfoRight(table, "Surgeon Name: " , StringUtil.checkVal(data.get(ProductCartAction.SURGEON)));
+
+		UserDataVO uvo = (UserDataVO) data.get(ProductCartAction.HOSPITAL_REP);
+		String HospitalRepName = "";
+		
+		if (uvo != null) {
+			HospitalRepName = uvo.getFullName();
 		}
 		
+		caseInfoLeft(table, "Hospital Rep Name: " , HospitalRepName );
+		caseInfoRight(table, "Sales Rep Name: " , ((UserDataVO) data.get(ProductCartAction.SALES_REP)).getFullName());
+
+		//base of table right left and bottom border and a row of spaced cells
+		caseInfoBottom(table);
+		table.addCell(getSectionSpacer());
+
+	}
+
+	/**
+	 * top of the case section
+	 * @return
+	 */
+	private PdfPCell getCaseInfoTop() {
+		String caseId = "";
+
+		if (StringUtil.checkVal(data.get(NexusSolrCartAction.CASE_ID)).length() > 0){
+			caseId = StringUtil.checkVal(data.get(NexusSolrCartAction.CASE_ID));
+		} 
+
+		PdfPCell cell = new PdfPCell(new Paragraph(("Case Report ID: " +caseId ), titleFont()));
+		cell.setBorder(Rectangle.NO_BORDER);
+		cell.setColspan(12);
+		cell.setBorderWidthBottom(0.25f);
+		cell.setBackgroundColor(WebColors.getRGBColor(HEADER_GREY));
+		cell.setPaddingBottom(10);
+		cell.setPaddingLeft(10);
+		return(cell);
+	}
+
+	/**
+	 * returns a times Roman font bold for titles and important headers
+	 * @return
+	 */
+	private Font titleFont() {
+		return FontFactory.getFont(FontFactory.TIMES_BOLD, 11, WebColors.getRGBColor("black"));
+	}
+	/**
+	 * returns a font for very small text
+	 * @return
+	 */
+	private Font smallFont() {
+		return FontFactory.getFont(FontFactory.TIMES_ROMAN, 5, WebColors.getRGBColor("black"));
+	}
+
+	/**
+	 * returns a times roman font for data
+	 * @return
+	 */
+	private Font dataFont() {
+		return FontFactory.getFont(FontFactory.TIMES_ROMAN, 11, WebColors.getRGBColor(TEXT_GREY));
+	}
+
+	/**
+	 * returns a font for use in the product table section
+	 * @return
+	 */
+	private Font productDataFont() {
+		return FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, WebColors.getRGBColor("black"));
+	}
+
+	/**
+	 * returns the last row of the case section
+	 * @param table 
+	 * @return
+	 */
+	private void caseInfoBottom(PdfPTable table) {
+
+		PdfPCell labelCell = new PdfPCell(new Paragraph("Case Note: ", titleFont()));
+		labelCell.setBorder(0);
+		labelCell.setColspan(10);
+		labelCell.setBackgroundColor(WebColors.getRGBColor("white"));
+		labelCell.setPaddingLeft(10);
+		table.addCell(labelCell);
 		
-		html.append("</tbody></table></body>");
-		return html.toString().getBytes();
+		PdfPCell noteCell = new PdfPCell(new Paragraph( StringUtil.checkVal(data.get("notes")), dataFont()));
+		noteCell.setBorder(0);
+		noteCell.setColspan(10);
+		noteCell.setBorderWidthBottom(0.25f);
+		noteCell.setBackgroundColor(WebColors.getRGBColor("white"));
+		noteCell.setPaddingBottom(10);
+		noteCell.setPaddingLeft(10);
+		table.addCell(noteCell);
+
+	}
+
+	/**
+	 * left half of the middle case section
+	 * @param string 
+	 * @param table 
+	 * @return
+	 */
+	private void caseInfoLeft(PdfPTable table, String cellLabel, String cellData) {
+
+		PdfPCell labelCell = new PdfPCell(new Paragraph(cellLabel, titleFont()));
+		labelCell.setBorder(0);
+		labelCell.setColspan(1);
+		labelCell.setBorderWidthBottom(0.25f);
+		labelCell.setBackgroundColor(WebColors.getRGBColor("white"));
+		labelCell.setPaddingBottom(10);
+		labelCell.setPaddingLeft(10);
+
+		table.addCell(labelCell);
+
+		PdfPCell dataCell = new PdfPCell(new Paragraph(cellData, dataFont()));
+		dataCell.setBorder(0);
+		dataCell.setColspan(3);
+		dataCell.setBorderWidthBottom(0.25f);
+		dataCell.setBackgroundColor(WebColors.getRGBColor("white"));
+		dataCell.setPaddingBottom(10);
+		dataCell.setPaddingLeft(10);
+
+		table.addCell(dataCell);
+	}
+	/**
+	 * right half of the middle case section
+	 * @return
+	 */
+	private void caseInfoRight(PdfPTable table, String cellLabel, String cellData) {
+
+		PdfPCell labelCell = new PdfPCell(new Paragraph(cellLabel, titleFont()));
+		labelCell.setBorder(0);
+		labelCell.setColspan(2);
+		labelCell.setBorderWidthBottom(0.25f);
+		labelCell.setBackgroundColor(WebColors.getRGBColor("white"));
+		labelCell.setPaddingBottom(10);
+		labelCell.setPaddingLeft(10);
+
+		table.addCell(labelCell);
+
+		PdfPCell dataCell = new PdfPCell(new Paragraph(cellData, dataFont()));
+		dataCell.setBorder(0);
+		dataCell.setColspan(4);
+		dataCell.setBorderWidthBottom(0.25f);
+		dataCell.setBackgroundColor(WebColors.getRGBColor("white"));
+		dataCell.setPaddingBottom(10);
+		dataCell.setPaddingLeft(10);
+
+		table.addCell(dataCell);
+	}
+	/**
+	 * a row of empty cells between table areas
+	 * @return
+	 */
+	private PdfPCell getSectionSpacer() {
+		PdfPCell cell = new PdfPCell(new Paragraph("", dataFont()));
+		cell.setBorder(0);
+		cell.setColspan(12);
+		cell.setPaddingBottom(10);
+		cell.setPaddingLeft(10);
+		return cell;
+	}
+
+	/**
+	 * cell containing the logo of the company
+	 * @return
+	 */
+	private PdfPCell createLogoCell() {
+		PdfPCell cell = null;
+		try {			
+			String imageUrl = attributes.get(Constants.PATH_TO_BINARY)+ IMG_SRC;
+			Image image = Image.getInstance( imageUrl );
+			cell = new PdfPCell(image, true);
+			cell.setBorder(0);
+			cell.setColspan(1);
+			cell.setPaddingBottom(10);
+			cell.setPaddingLeft(10);
+
+		} catch (IOException | BadElementException e) {
+			log.error("error while adding image to pdf document ", e);
+		}
+		return cell;
+	}
+
+	/**
+	 * generates one cell of table data 
+	 * @param string
+	 * @return
+	 */
+	private PdfPCell getTableCell(String cellContent) {
+		return getTableCell(cellContent, false);
+	}
+
+	/**
+	 * generates one cell of table data 
+	 * @param string
+	 * @return
+	 */
+	private PdfPCell getTableCell(String cellContent, boolean isHeader) {
+		PdfPCell cell = new PdfPCell(new Paragraph(cellContent , productDataFont()));
+		cell.setBorder(0);
+		cell.setBorderWidthBottom(0.25f);
+		cell.setPaddingBottom(10);
+		cell.setPaddingLeft(10);
+
+		if (isHeader) {
+			cell.setBackgroundColor(WebColors.getRGBColor(HEADER_GREY));
+		}
+
+		return cell;
 	}
 
 	@SuppressWarnings("unchecked")

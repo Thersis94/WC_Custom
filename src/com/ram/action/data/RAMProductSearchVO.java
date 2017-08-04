@@ -1,9 +1,7 @@
-/**
- *
- */
+
 package com.ram.action.data;
 
-import com.ram.action.user.RamUserAction;
+import com.ram.action.util.SecurityUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.util.Convert;
@@ -13,24 +11,17 @@ import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: ProductSearchVO.java
- * <p/>
  * <b>Project</b>: WC_Custom
- * <p/>
  * <b>Description: </b> Helper VO for managing Search and Query Params for
  * Product and Vision System Calls.
- * <p/>
  * <b>Copyright:</b> Copyright (c) 2015
- * <p/>
  * <b>Company:</b> Silicon Mountain Technologies
- * <p/>
- * 
- * @author raptor
- * @version 1.0
- * @since Jun 18, 2015
- *        <p/>
- *        <b>Changes: </b>
+ *
+ * @author Billy Larsen
+ * @version 3.3
+ * @since Aug 2, 2017
  ****************************************************************************/
-public class RAMProductSearchVO extends EXTJSDataVO {
+public class RAMProductSearchVO extends BSTableDataVO {
 
 	private int advFilter = 0;
 	private String term = null;
@@ -58,17 +49,19 @@ public class RAMProductSearchVO extends EXTJSDataVO {
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 
 		advFilter = Convert.formatInteger(req.getParameter("advFilter"), -1);
-		term = StringUtil.checkVal(req.getParameter("term"));
+		term = StringUtil.checkVal(req.getParameter("term")).toLowerCase();
 		isSpd = Convert.formatBoolean(req.getParameter("isSpd"));
 		activeOnly = Convert.formatBoolean(req.getParameter("activeFlag"));
 		productId = Convert.formatInteger(req.getParameter("productId"));
 		layoutDepthNo = Convert.formatInteger(req.getParameter("layoutDepthNo"));
-		if(r != null) {
+		if(StringUtil.isEmpty(req.getParameter("customerId")) || r != null) {
 			//Check for providerId, providers are only allowed to see products at their locations.
-			providerId = r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER ? Convert.formatInteger((String) r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)) : 0;
+			providerId = SecurityUtil.isProviderRole(r.getRoleId()) ? Convert.formatInteger((String) r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)) : 0;
 
 			//Check for oem, oem are only allowed to see their products.
-			customerId = r.getRoleLevel() == RamUserAction.ROLE_LEVEL_OEM ? Convert.formatInteger((String) r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)) : Convert.formatInteger(req.getParameter("customerId"));
+			customerId = SecurityUtil.isOEMRole(r.getRoleId()) ? Convert.formatInteger((String) r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)) : Convert.formatInteger(req.getParameter("customerId"));
+		} else {
+			customerId = Convert.formatInteger(StringUtil.checkVal(req.getParameter("customerId")), 0);
 		}
 	}
 
