@@ -21,7 +21,9 @@ import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.GapCompanyVO;
 import com.biomed.smarttrak.vo.GapProductVO;
 import com.biomed.smarttrak.vo.GapTableVO;
+import com.biomed.smarttrak.vo.GapTableVO.ColumnKey;
 import com.biomed.smarttrak.vo.SaveStateVO;
+import com.biomed.smarttrak.vo.SectionVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -65,7 +67,6 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	public static final String GAP_ROOT_ID = "GAP_ANALYSIS_ROOT";
 	public static final String GAP_CACHE_KEY = "GAP_ANALYSIS_TREE_CACHE_KEY";
 	private String[] selNodes;
-	private Map<String, String> sectionMap;
 	public GapAnalysisAction() {
 		super();
 	}
@@ -80,12 +81,12 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SecurityController.isGaAuth(req);
-		buildSectionMap();
 
 		if(req.hasParameter("selNodes")) {
 			//Instantiate GapTableVO to Store Data.
 			GapTableVO gtv = new GapTableVO();
 
+			req.setParameter("sectionId", null);
 			//Filter the List of Nodes to just the ones we want.
 			selNodes = req.getParameterValues("selNodes");
 			gtv.setHeaders(filterNodes(getColData(req)));
@@ -127,78 +128,6 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			String saveStateId = req.getParameter("saveStateId");
 			super.putModuleData(getSaveStates(userId, saveStateId));
 		}
-	}
-
-
-	/**
-	 * 
-	 */
-	private void buildSectionMap() {
-		sectionMap = new HashMap<>();
-		sectionMap.put("GA_ORTHOGPS_ROOT", "MASTER_319");
-		sectionMap.put("GAP_ANALYSIS_L3_1", "MASTER_289");
-		sectionMap.put("GAP_ANALYSIS_L3_10", "MASTER_379");
-		sectionMap.put("GAP_ANALYSIS_L3_11", "MASTER_332");
-		sectionMap.put("GAP_ANALYSIS_L3_2", "MASTER_364");
-		sectionMap.put("GAP_ANALYSIS_L3_4", "MASTER_365");
-		sectionMap.put("GAP_ANALYSIS_L3_5", "MASTER_338");
-		sectionMap.put("GAP_ANALYSIS_L3_7", "MASTER_326");
-		sectionMap.put("GAP_ANALYSIS_L3_8", "MASTER_329");
-		sectionMap.put("GAP_ANALYSIS_L3_9", "MASTER_361");
-		sectionMap.put("GAP_ANALYSIS_L4_1", "MASTER_365");
-		sectionMap.put("GAP_ANALYSIS_L4_10", "MASTER_355");
-		sectionMap.put("GAP_ANALYSIS_L4_12", "MASTER_351");
-		sectionMap.put("GAP_ANALYSIS_L4_13", "MASTER_278");
-		sectionMap.put("GAP_ANALYSIS_L4_14", "MASTER_18361");
-		sectionMap.put("GAP_ANALYSIS_L4_15", "MASTER_273");
-		sectionMap.put("GAP_ANALYSIS_L4_16", "MASTER_279");
-		sectionMap.put("GAP_ANALYSIS_L4_18", "MASTER_365");
-		sectionMap.put("GAP_ANALYSIS_L4_19", "MASTER_365");
-		sectionMap.put("GAP_ANALYSIS_L4_20", "MASTER_365");
-		sectionMap.put("GAP_ANALYSIS_L4_21", "MASTER_365");
-		sectionMap.put("GAP_ANALYSIS_L4_22", "MASTER_364");
-		sectionMap.put("GAP_ANALYSIS_L4_23", "MASTER_364");
-		sectionMap.put("GAP_ANALYSIS_L4_25", "MASTER_364");
-		sectionMap.put("GAP_ANALYSIS_L4_26", "MASTER_364");
-		sectionMap.put("GAP_ANALYSIS_L4_27", "MASTER_8293,MASTER_8320,MASTER_8347,MASTER_8374,MASTER_8401");
-		sectionMap.put("GAP_ANALYSIS_L4_28", "MASTER_8293,MASTER_8320,MASTER_8347,MASTER_8374,MASTER_8401");
-		sectionMap.put("GAP_ANALYSIS_L4_29", "MASTER_8293,MASTER_8320,MASTER_8347,MASTER_8374,MASTER_8401");
-		sectionMap.put("GAP_ANALYSIS_L4_3", "MASTER_365");
-		sectionMap.put("GAP_ANALYSIS_L4_30", "MASTER_361");
-		sectionMap.put("GAP_ANALYSIS_L4_31", "MASTER_361");
-		sectionMap.put("GAP_ANALYSIS_L4_32", "MASTER_361");
-		sectionMap.put("GAP_ANALYSIS_L4_33", "MASTER_361");
-		sectionMap.put("GAP_ANALYSIS_L4_34", "MASTER_379");
-		sectionMap.put("GAP_ANALYSIS_L4_35", "MASTER_379");
-		sectionMap.put("GAP_ANALYSIS_L4_36", "MASTER_379");
-		sectionMap.put("GAP_ANALYSIS_L4_37", "MASTER_379");
-		sectionMap.put("GAP_ANALYSIS_L4_38", "MASTER_361");
-		sectionMap.put("GAP_ANALYSIS_L4_39", "MASTER_341");
-		sectionMap.put("GAP_ANALYSIS_L4_4", "MASTER_365");
-		sectionMap.put("GAP_ANALYSIS_L4_40", "MASTER_347");
-		sectionMap.put("GAP_ANALYSIS_L4_41", "MASTER_297");
-		sectionMap.put("GAP_ANALYSIS_L4_42", "MASTER_361");
-		sectionMap.put("GAP_ANALYSIS_L4_43", "MASTER_379");
-		sectionMap.put("GAP_ANALYSIS_L4_44", "MASTER_365");
-		sectionMap.put("GAP_ANALYSIS_L4_5", "MASTER_365");
-		sectionMap.put("GAP_ANALYSIS_L4_6", "MASTER_365");
-		sectionMap.put("GAP_ANALYSIS_L4_7", "MASTER_356");
-		sectionMap.put("GAP_ANALYSIS_L4_8", "MASTER_357");
-		sectionMap.put("GAP_ANALYSIS_L4_9", "MASTER_359");
-		sectionMap.put("GAP_ANALYSIS_L5_15_AUG", "MASTER_273");
-		sectionMap.put("GAP_ANALYSIS_L5_15_TR", "MASTER_273");
-		sectionMap.put("GAP_ANALYSIS_L5_22_ANK", "MASTER_364");
-		sectionMap.put("GAP_ANALYSIS_L5_34_PRI", "MASTER_379");
-		sectionMap.put("GAP_ANALYSIS_L5_34_REV", "MASTER_379");
-		sectionMap.put("GAP_ANALYSIS_L5_40_NPWT", "MASTER_347");
-		sectionMap.put("GAP_ANALYSIS_L5_41_SKIN", "MASTER_297");
-		sectionMap.put("GAP_ANALYSIS_L5_7_CF", "MASTER_356");
-		sectionMap.put("GAP_ANALYSIS_L5_7_INT", "MASTER_356");
-		sectionMap.put("GAP_ANALYSIS_L5_7_MIS", "MASTER_356");
-		sectionMap.put("GAP_ANALYSIS_L5_7_TF", "MASTER_356");
-		sectionMap.put("GAP_ANALYSIS_ROOT", "");
-		sectionMap.put("GA_WOUNDGPS_ROOT", "MASTER_320");
-
 	}
 
 	/*
@@ -263,7 +192,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		List<Object> params = buildProductParams(aData, companyId, sectionId);
 
 		//Build the Product List Sql Query
-		String sql = getProductListSql(regionId.startsWith("u"), aData.getValue(), sectionMap.get(sectionId));
+		String sql = getProductListSql(regionId.startsWith("u"), aData.getValue(), sectionId);
 
 		//Retrieve Products
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
@@ -298,9 +227,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		params.add(aData.getKey());
 
 		//Add SectionId for Product
-		for(String s : sectionMap.get(sectionId).split(",")) {
-			params.add(s);
-		}
+		params.add(sectionId);
 
 		//Add Attribute Ids.
 		addAttributeParams(params, aData);
@@ -415,7 +342,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		Tree t = new OrderedTree(nodes);
 
 		//Filter down to the Gap Node and retrieve it's children.
-		Node n = t.findNode(GAP_ROOT_ID);
+		Node n = t.findNode(MASTER_ROOT);
 		if(n != null) {
 			nodes = n.getChildren();
 		} else {
@@ -436,8 +363,10 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		List<Node> filteredNodes = new ArrayList<>();
 		for(Node g : nodes) {
 			for(Node p : g.getChildren()) {
-				ListIterator<Node> nIter = p.getChildren().listIterator();
-				filteredNodes.addAll(filterChildNodes(nIter));
+				if(((SectionVO)p.getUserObject()).isGapNo()) {
+					ListIterator<Node> nIter = p.getChildren().listIterator();
+					filteredNodes.addAll(filterChildNodes(nIter));
+				}
 			}
 		}
 		return filteredNodes;
@@ -572,7 +501,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			int i = 1;
 			List<Object> params = new ArrayList<>();
 			addAttributeParams(params, aData);
-			String sectionId = sectionMap.get(gtv.getColumnMap().get(aData.getKey()).getParentId());
+			String sectionId = gtv.getHeaderCols().get(ColumnKey.CHILD.toString()).get(aData.getKey()).getSectionId();
 			try (PreparedStatement ps = dbConn.prepareStatement(getTableBuilderSql(aData.getValue(), sectionId))) {
 
 				for(String s : sectionId.split(",")) {
@@ -592,7 +521,6 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		}
 		return companies;
 	}
-
 
 	/**
 	 * Helper method iterates the loadCompanies ResultSet and builds Company
@@ -697,9 +625,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			sql.append("select distinct ip.product_id ");
 			sql.append(FROM).append(custom).append("biomedgps_product ip ");
 			sql.append(INNER_JOIN).append(custom).append("biomedgps_product_section ps ");
-			sql.append("on ip.product_id = ps.product_id and ps.section_id in ( ");
-			DBUtil.preparedStatmentQuestion(sectionId.split(",").length, sql);
-			sql.append(")");
+			sql.append("on ip.product_id = ps.product_id and ps.section_id = ? ");
 			for(AType a : AType.values()) {
 				if(colAttrs.containsKey(a)) {
 					sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr ").append(a.toString()).append(" ");
