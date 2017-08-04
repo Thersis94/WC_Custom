@@ -4,6 +4,8 @@ package com.ram.action.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ram.action.customer.CustomerAction;
+import com.ram.action.data.RAMCustomerSearchVO;
 import com.ram.action.or.vo.RAMCaseKitVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -72,11 +74,27 @@ public class LookupAction extends SimpleActionAdapter {
 			case "kits":
 				getKits(req);
 				break;
+			case "kitCustomers":
+				getKitCustomers(req);
+				break;
 			default:
 				log.debug("can't find list type");
-			
 		}
-		
+	}
+
+	public void getKitCustomers(ActionRequest req) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		RAMCustomerSearchVO csv = new RAMCustomerSearchVO(req);
+
+		StringBuilder sql = new StringBuilder();
+		sql.append("select customer_id as key, customer_nm as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_customer a ");
+		sql.append(CustomerAction.getCustomerLookupWhereClause(csv, schema));
+
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		List<?> data = dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
+		this.putModuleData(data);
 	}
 
 	/**
@@ -85,13 +103,13 @@ public class LookupAction extends SimpleActionAdapter {
 	 */
 	public void getORRooms(SBUserRole role, String selected, String caseType, ActionRequest req) {
 		List<Object> params = new ArrayList<>();
-		
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select or_room_id as key, or_name as value from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("select or_room_id as key, or_name as value from ").append(schema);
 		sql.append("ram_customer a ");
-		sql.append(DBUtil.INNER_JOIN).append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("ram_customer_location b on a.customer_id = b.customer_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("ram_or_room c on b.customer_location_id = c.customer_location_id ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		sql.append(SecurityUtil.addCustomerFilter(req, "a"));
