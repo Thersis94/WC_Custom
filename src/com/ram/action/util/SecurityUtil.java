@@ -170,6 +170,30 @@ public class SecurityUtil {
 		return !(UserRole.SITE_ADMINISTRATOR.getId().equalsIgnoreCase(roleId) || UserRole.OEM.getId().equalsIgnoreCase(roleId)); 
 	}
 	
+	/**
+	 * Creates a filter to filter the roles based upon role
+	 * @param req
+	 * @return
+	 */
+	public static String getRoleFilter(ActionRequest req) {
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		StringBuilder sql = new StringBuilder(64);
+		sql.append(" and role_order_no > 10 ");
+		
+		// No filter for aditors, asscoiates and admins
+		if (isAdministratorRole(role.getRoleId()) || isAssociateRole(role.getRoleId()) || isAuditorRole(role.getRoleId())) 
+			return sql.toString();
+		
+		// Limit to OEM Roles
+		if (isOEMGroup(role.getRoleId())) {
+			String[] roles = new String[] { UserRole.OEM.getId(), UserRole.OEM.getId() };
+			sql.append("and role_id in (").append(StringUtil.getDelimitedList(roles, true, ",")).append(") ");
+			return sql.toString();
+		}
+		
+		sql.append(" and role_id = ").append(StringUtil.checkVal(UserRole.PROVIDER.getId(), true));
+		return  sql.toString();
+	}
 	
 	// ******* Define wrappers for the various roles
 	/**

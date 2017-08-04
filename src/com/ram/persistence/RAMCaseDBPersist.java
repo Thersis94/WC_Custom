@@ -73,7 +73,7 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		
 		// Get case items
 		getCaseItems(cVo);
-		log.info(cVo);
+		
 		return cVo;
 	}
 	

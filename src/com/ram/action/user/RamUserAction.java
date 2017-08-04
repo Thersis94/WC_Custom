@@ -275,6 +275,18 @@ public class RamUserAction extends SBActionAdapter {
 			sql.append("and (lower(last_nm) like ? or lower(first_nm) like ?) ");
 			params.add("%" + search.toLowerCase() + "%");
 			params.add("%" + search.toLowerCase() + "%");
+		} 
+		
+		// Add the active filter
+		if (! StringUtil.isEmpty(req.getParameter("activeFilter"))) {
+			sql.append("and status_id = ? ");
+			params.add(Convert.formatInteger(req.getParameter("activeFilter")));
+		}
+		
+		// Add the role filter
+		if (! StringUtil.isEmpty(req.getParameter("roleFilter"))) {
+			sql.append("and r.role_id = ? ");
+			params.add(req.getParameter("roleFilter"));
 		}
 	}
 	

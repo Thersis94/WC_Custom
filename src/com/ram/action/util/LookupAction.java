@@ -16,6 +16,7 @@ import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.StringUtil;
 // WC Libs 3.2
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -55,27 +56,34 @@ public class LookupAction extends SimpleActionAdapter {
 		String type = req.getParameter("type", "none");
 		SMTSession ses = req.getSession();
 		SBUserRole role = (SBUserRole)ses.getAttribute(Constants.ROLE_DATA);
+		List<?> data = null;
 		
 		switch(type) {
 			case "providers":
-				getProviders(req);
+				data = getProviders(req);
 				break;
 			case "surgeons":
-				getSurgeons(req);
+				data = getSurgeons(req);
 				break;
 			case "salesReps":
-				getSalesReps(req);
+				data = getSalesReps(req);
 				break;
 			case "orRooms":
-				getORRooms(role, req.getParameter("selected"), req.getParameter("caseType"), req);
+				data = getORRooms(role, req.getParameter("selected"), req.getParameter("caseType"), req);
 				break;
 			case "kits":
-				getKits(req);
+				data = getKits(req);
+				break;
+			case "roles":
+				data = getRoleList(req);
 				break;
 			default:
 				log.debug("can't find list type");
 			
 		}
+		
+		// Return the data
+		this.putModuleData(data);
 		
 	}
 
@@ -83,7 +91,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * Gets a list of or rooms for a given provider
 	 * @param role
 	 */
-	public void getORRooms(SBUserRole role, String selected, String caseType, ActionRequest req) {
+	public List<?> getORRooms(SBUserRole role, String selected, String caseType, ActionRequest req) {
 		List<Object> params = new ArrayList<>();
 		
 		StringBuilder sql = new StringBuilder(128);
@@ -103,8 +111,7 @@ public class LookupAction extends SimpleActionAdapter {
 
 		params.add(selected);
 		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<?> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
-		this.putModuleData(data);
+		return dbp.executeSelect(sql.toString(), params, new GenericVO());
 	}
 	
 	/**
@@ -112,7 +119,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * @param role
 	 * @param req 
 	 */
-	public void getKits(ActionRequest req) {
+	public List<?> getKits(ActionRequest req) {
 		
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select ck.case_kit_id, ck.case_id, p.product_id, p.product_nm, ck.processed_flg, lm.serial_no_txt from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -129,15 +136,14 @@ public class LookupAction extends SimpleActionAdapter {
 		List<Object> params = new ArrayList<>();
 		params.add(caseID);
 		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<?> data = dbp.executeSelect(sql.toString(), params, new RAMCaseKitVO());
-		this.putModuleData(data);
+		return dbp.executeSelect(sql.toString(), params, new RAMCaseKitVO());
 	}
 	
 	/**
 	 * Gets a list of providers for a given user
 	 * @param role
 	 */
-	public void getProviders(ActionRequest req) {
+	public List<?> getProviders(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select customer_location_id as key, location_nm as value from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("ram_customer_location ");
@@ -146,15 +152,14 @@ public class LookupAction extends SimpleActionAdapter {
 		log.debug(sql);
 		
 		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<?> data = dbp.executeSelect(sql.toString(), null, new GenericVO());
-		this.putModuleData(data);
+		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
 	/**
 	 * Gets a list of sales reps for a given location
 	 * @param role
 	 */
-	public void getSalesReps(ActionRequest req) {
+	public List<?> getSalesReps(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select profile_id as key, coalesce(first_nm, '') || ' ' || coalesce(last_nm, '') as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("ram_user_role a ");
@@ -167,15 +172,14 @@ public class LookupAction extends SimpleActionAdapter {
 		log.debug(sql);
 		
 		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<?> data = dbp.executeSelect(sql.toString(), null, new GenericVO());
-		this.putModuleData(data);
+		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
 	/**
 	 * Gets a list of surgeons for a given customer
 	 * @param role
 	 */
-	public void getSurgeons(ActionRequest req) {
+	public List<?> getSurgeons(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select a.surgeon_id as key, coalesce(first_nm, '') || ' ' || coalesce(last_nm, '') as value from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("ram_surgeon a ");
@@ -184,10 +188,25 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append(SecurityUtil.addCustomerFilter(req, ""));
 		sql.append("order by last_nm, first_nm ");
 		
-		List<Object> params = new ArrayList<>();
 		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<?> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
+		return dbp.executeSelect(sql.toString(), null, new GenericVO());
+	}
+	
+	/**
+	 * Gets the role list for filtering searches by role. Only gets the roles
+	 * @param req
+	 * @return
+	 */
+	public List<?> getRoleList(ActionRequest req) {
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		
-		this.putModuleData(data);
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select role_id as key, role_nm as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append("role where (organization_id is null ");
+		sql.append("or organization_id = '").append(site.getOrganizationId()).append("') ");
+		sql.append(SecurityUtil.getRoleFilter(req));
+		sql.append(" order by role_nm ");
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 }
