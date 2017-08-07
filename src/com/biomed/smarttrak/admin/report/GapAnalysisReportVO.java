@@ -1,7 +1,7 @@
 package com.biomed.smarttrak.admin.report;
 
 import java.util.Calendar;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map.Entry;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
@@ -143,10 +143,12 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 		doc.append("<div class=\"gapoffset\">");
 		doc.append("<table class='table gap_table headTable'>");
 		doc.append("<p>");
-		List<GapColumnVO> parents = table.getHeaderCols().get(ColumnKey.GPARENT.name());
-		for(int i = 0; i < parents.size(); i++) {
+		Collection<GapColumnVO> parents = table.getHeaderCols().get(ColumnKey.GPARENT.name()).values();
+		int i = 0;
+		for(GapColumnVO g : parents) {
 			if (i > 0) doc.append(", ");
-			doc.append(parents.get(i).getName());
+			doc.append(g.getName());
+			i++;
 		}
 		doc.append("</p>");
 		generateHeadersTable(doc);
@@ -172,7 +174,7 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	 */
 	private void buildChildRow(StringBuilder doc) {
 		doc.append("<tr>");
-		List<GapColumnVO> children = table.getHeaderCols().get(ColumnKey.CHILD.name());
+		Collection<GapColumnVO> children = table.getHeaderCols().get(ColumnKey.CHILD.name()).values();
 		for(GapColumnVO c : children) {
 			doc.append("<th class='colSort ");
 			doc.append("col-group-").append(c.getColGroupNo());
@@ -199,7 +201,7 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 			doc.append("</th>");
 		}
 		ColumnKey key = isGParent ? ColumnKey.GPARENT : ColumnKey.PARENT;
-		List<GapColumnVO> parents = table.getHeaderCols().get(key.name());
+		Collection<GapColumnVO> parents = table.getHeaderCols().get(key.name()).values();
 		for(GapColumnVO g : parents) {
 			doc.append("<th ");
 			if(isGParent) {
@@ -235,7 +237,7 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 		sb.append("<title>").append(REPORT_TITLE).append("</title>");
 		buildCssLinks(sb);
 		int width = 210;
-		List<GapColumnVO> children = table.getHeaderCols().get(ColumnKey.CHILD.name());
+		Collection<GapColumnVO> children = table.getHeaderCols().get(ColumnKey.CHILD.name()).values();
 		width += children.size() * 73;
 		
 		sb.append("<style>@page{size: ").append(width).append("px 1200px; margin:0mm;}</style>");
