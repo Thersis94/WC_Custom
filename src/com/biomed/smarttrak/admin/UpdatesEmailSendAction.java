@@ -1,24 +1,25 @@
 package com.biomed.smarttrak.admin;
 
-//jdk 1.8
-import java.util.ArrayList;
+// Java 8
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-//base/email campaigns libs
+// SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+
+// WC
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.emailcampaign.DataFilterVO;
-import com.smt.sitebuilder.action.emailcampaign.embed.EmbedWidgetManager;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+
+// WC EmailCampaigns
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.smt.sitebuilder.action.emailcampaign.embed.EmbedWidgetManager;
 
 /****************************************************************************
  * Title: UpdatesEmailSendAction.java <p/>
@@ -72,13 +73,15 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException{
 		log.debug("Processing email send for updates...");
 		profileId = StringUtil.checkVal(req.getParameter("profileId"));
-		
+
 		//if user doesn't already have a profile, create one
 		if(profileId.isEmpty()) {
-			uniqueSendFlg = "1";
 			createUserProfile(req);
 		}
-		
+
+		//Updates Send Now Emails to always show all updates just like in the Scheduled Tasks.
+		uniqueSendFlg = "1";
+
 		//send off "send now email"
 		processEmailSend(req);
 	}
@@ -93,7 +96,7 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 		//Create a user data vo and pass to the manager
 		UserDataVO user = new UserDataVO(req);
 		user.setAllowCommunication(1);
-		log.debug("user data: " + user.getEmailAddress());
+		log.debug("user emailAddress: " + user.getEmailAddress());
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		try {
 			//save profile record
@@ -116,16 +119,15 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	protected void processEmailSend(ActionRequest req) throws ActionException{		
+	protected void processEmailSend(ActionRequest req) {		
 		String campInstId = StringUtil.checkVal(req.getParameter("campaignInstanceId"));
-		List<DataFilterVO> dataFilters = new ArrayList<>();
-		
+
 		//build the emailConfig
-		Map<String, Object> emailConfig = generateEmailConfig(req);
-		
+		Map<String, Object> emailParams = makeEmailParams(req);
+
 		//perform the email send
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
-		ecbu.sendCampaignMessage(campInstId, profileId, emailConfig, dataFilters, true);
+		ecbu.sendMessage(campInstId, profileId, emailParams);
 	}
 	
 	
@@ -135,7 +137,7 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	protected Map<String, Object> generateEmailConfig(ActionRequest req){
+	protected Map<String, Object> makeEmailParams(ActionRequest req){
 		Map<String, Object> config = new HashMap<>();
 		
 		//assign the key/value for each config type
@@ -162,7 +164,7 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 		case SECTION_KEY_TYPE: 
 			setSectionIdValue(req, type, config);
 			break;
-		case MESSAGE_KEY_TYPE: 
+		case MESSAGE_KEY_TYPE:
 			config.put(type.getKeyName(), StringUtil.checkVal(req.getParameter("emailMessageText")));
 			break;
 		case TIME_RANGE_KEY_TYPE:

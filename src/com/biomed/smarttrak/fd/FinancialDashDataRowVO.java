@@ -9,7 +9,6 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
@@ -36,7 +35,6 @@ public class FinancialDashDataRowVO implements Serializable {
 	private String companyId;
 	private String sectionId;
 	private String regionCd;
-	private DisplayType display;
 	private boolean inactiveFlg;
 	private int inactiveCnt; // internal value used to calculate overall inactivity
 	private Map<String, FinancialDashDataColumnVO> columns;
@@ -52,18 +50,8 @@ public class FinancialDashDataRowVO implements Serializable {
 		log = Logger.getLogger(getClass());
 	}
 	
-	public FinancialDashDataRowVO(DisplayType display) {
-		this();
-		this.display = display;
-	}
-	
 	public FinancialDashDataRowVO(ResultSet rs) {
 		this();
-		setData(rs);
-	}
-	
-	public FinancialDashDataRowVO(ResultSet rs, DisplayType display) {
-		this(display);
 		setData(rs);
 	}
 	
@@ -159,7 +147,8 @@ public class FinancialDashDataRowVO implements Serializable {
 		try {
 			int maxYear = util.getIntVal("YEAR_NO", rs);
 			
-			Map<Integer, Integer> totals = new HashMap<>();
+			Map<Integer, Integer> cyTotals = new HashMap<>(); // calendar year totals without adjustment
+			Map<Integer, Integer> ytdTotals = new HashMap<>(); // totals with adjustments when the current year is not complete
 			
 			ResultSetMetaData rsmd;
 			rsmd = rs.getMetaData();
@@ -176,14 +165,16 @@ public class FinancialDashDataRowVO implements Serializable {
 					case FinancialDashBaseAction.QUARTER_3:
 					case FinancialDashBaseAction.QUARTER_4:
 						addColumn(qtr, yearIdx, maxYear, util, rs);
-						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + maxYear);
+						incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
+						incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + maxYear);
 						calculateInactivity(qtr, yearIdx, util, rs);
 						break;
 					default:
 				}
 			}
 			
-			this.addSummaryColumns(totals, maxYear);
+			this.addSummaryColumns(cyTotals, maxYear, FinancialDashBaseAction.CALENDAR_YEAR);
+			this.addSummaryColumns(ytdTotals, maxYear, FinancialDashBaseAction.YEAR_TO_DATE);
 		} catch (SQLException sqle) {
 			log.error("Unable to set financial dashboard row data columns", sqle);
 		}
@@ -297,10 +288,6 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param rs
 	 */
 	private void addColumn(String qtr, int yearIdx, int maxYear, DBUtil util, ResultSet rs) {
-		if (yearIdx >= FinancialDashBaseAction.MAX_DATA_YEARS) {
-			return;
-		}
-		
 		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
 		int pyDollarValue = util.getIntVal(qtr + "_" + (yearIdx + 1), rs);
 
@@ -403,7 +390,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param totals
 	 * @param maxYear - the most recent year from the query
 	 */
-	private void addSummaryColumns(Map<Integer, Integer> totals, int maxYear) {
+	private void addSummaryColumns(Map<Integer, Integer> totals, int maxYear, String columnPrefix) {
 		for (int i = 0; i < totals.size() - 1; i++) {
 			Integer cyTotal = totals.get(i);
 			Integer pyTotal = totals.get(i + 1);
@@ -414,57 +401,40 @@ public class FinancialDashDataRowVO implements Serializable {
 			}
 			
 			// Each iteration signifies one year earlier
-			addCyYtdColumns(maxYear - i, cyTotal, pctChange);
+			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pctChange);
 		}
 
 		// Add the last totals column, which has no py
 		int last = totals.size() - 1;
 		Integer cyTotal = totals.get(last);
 		Double pctChange = null;
-		addCyYtdColumns(maxYear - last, cyTotal, pctChange);
+		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, pctChange);
 	}
 	
-	/**
-	 * Adds a single set of CY & YTD summary columns
-	 * 
-	 * @param year
-	 * @param total
-	 * @param pctChange
-	 */
-	private void addCyYtdColumns(int year, Integer total, Double pctChange) {
-		addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + year, total, pctChange);
-		addColumn(FinancialDashBaseAction.YEAR_TO_DATE + "-" + year, total, pctChange);
-	}
-
 	/**
 	 * Increments the totals for the summary YTD/CY columns.
 	 * 
 	 * @param totals
-	 * @param key
+	 * @param yearIdx
 	 * @param dollarValue
+	 * @param curYrColId - passed when you want to adjust totals for previous years based on current year
 	 */
-	protected void incrementTotal(Map<Integer, Integer> totals, int key, int dollarValue, String colId) {
-		if (totals.get(key) == null) {
-			totals.put(key, 0);
+	protected void incrementTotal(Map<Integer, Integer> totals, int yearIdx, int dollarValue, String curYrColId) {
+		if (totals.get(yearIdx) == null) {
+			totals.put(yearIdx, 0);
 		}
 		
-		boolean adjustForDisplay = false;
-		if (display != null && (display == DisplayType.CURYR || display == DisplayType.YOY))
-			adjustForDisplay = true;
+		boolean adjustForIncompleteYear = curYrColId != null;
 
 		// Run through a series of checks to see if the current 
-		// quarter should be added to the totals.  This prevents two
-		// quarters of sales in the current year from being compared
+		// quarter should be added to the totals. This prevents fewer than
+		// four quarters of sales in the current year from being compared
 		// to a previous year's full compliment of profits.
-		// 1 - Check to see if this is a report for current year view.
-		// 2 - Check to see if we are building the total
-		// 3 - Check to see if there is a value for the corresponding quarter
-		boolean add = true;
-		if (adjustForDisplay && key > 0 && 
-				columns.get(colId).getDollarValue() == 0) {
-			add = false;
+		int addDollarValue = dollarValue;
+		if (adjustForIncompleteYear && yearIdx > 0 && columns.get(curYrColId).getDollarValue() == 0) {
+			addDollarValue = 0;
 		}
 
-		if (add) totals.put(key, totals.get(key) + dollarValue);
+		totals.put(yearIdx, totals.get(yearIdx) + addDollarValue);
 	}
 }

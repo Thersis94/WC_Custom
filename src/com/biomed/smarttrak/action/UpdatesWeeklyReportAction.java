@@ -210,6 +210,7 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		}else{//default to weekly(these are the updates that are under review(/manage) based from create dt)
 			sql.append("a.create_dt >= cast(date_trunc('week', current_date) as date) - 1 ");
 			sql.append("and a.create_dt < cast(date_trunc('week', current_date) as date) + 5 ");
+			sql.append("and a.status_cd = 'N' ");
 		}
 		sql.append("order by a.type_cd, a.order_no, a.publish_dt desc");
 		
