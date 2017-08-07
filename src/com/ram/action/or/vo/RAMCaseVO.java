@@ -113,13 +113,6 @@ public class RAMCaseVO implements Serializable {
 		profileId = req.getParameter("providerProfileId");
 		salesRepId = req.getParameter("salesRepId");
 		caseNotes = req.getParameter("caseNotes");
-		
-		// TODO Why is this here?
-		RAMSignatureVO svo = new RAMSignatureVO();
-		svo.setProfileId(req.getParameter("providerProfileId"));
-		svo.setCaseId(caseId);
-		svo.setSignatureType(SignatureType.PROVIDER);
-		addSignature(svo);
 	}
 
 	/**
