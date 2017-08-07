@@ -329,7 +329,7 @@ public class CompanyAction extends SimpleActionAdapter {
 			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
 		}
 		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
-		sql.append("order by c.PARENT_ID desc, PRIMARY_LOCN_FLG asc ");
+		sql.append("order by PRIMARY_LOCN_FLG desc ");
 		log.debug(sql+"|"+company.getCompanyId());
 		List<Object> params = new ArrayList<>();
 		params.add(company.getCompanyId());

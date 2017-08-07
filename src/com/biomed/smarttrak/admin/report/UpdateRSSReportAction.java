@@ -98,7 +98,7 @@ public class UpdateRSSReportAction extends SBActionAdapter {
 		sql.append("from ").append(schema).append("biomedgps_update ");
 		sql.append("where tweet_flg = 1 and email_flg = 1 and status_cd in ('R','N') ");
 		sql.append("and cast(publish_dt as date) = current_date ");
-		sql.append("and create_dt + (interval '1 hour') <= current_timestamp "); //allow at least one hour before submitting live
+		sql.append("and COALESCE(update_dt, create_dt) + (interval '1 hour') <= current_timestamp "); //allow at least one hour before submitting live
 		sql.append("order by publish_dt desc, create_dt desc ");
 		log.debug(sql);
 		

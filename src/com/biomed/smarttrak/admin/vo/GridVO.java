@@ -127,6 +127,8 @@ public class GridVO extends BeanDataVO {
 	@Expose(serialize = false, deserialize = false)
 	private List<GridDetailVO> details;
 	
+	private List<Integer> deletedRows;
+	
 	/**
 	 * 
 	 */
@@ -134,6 +136,7 @@ public class GridVO extends BeanDataVO {
 		super();
 		series = new String[10];
 		details = new ArrayList<>(10);
+		deletedRows = new ArrayList<>(10);
 	}
 	
 	/**
@@ -616,8 +619,10 @@ public class GridVO extends BeanDataVO {
 			for (Object object : jArray) {
 				JsonArray jsonObject = (JsonArray) object;
 				
+				int column = 0;
 				for(Object data : jsonObject) {
-					updateColumn(g.fromJson(data.toString(), Map.class));
+					updateColumn(g.fromJson(data.toString(), Map.class), column);
+					column++;
 				}
 				
 			}
@@ -630,7 +635,13 @@ public class GridVO extends BeanDataVO {
 	 * Updates the appropriate series column information
 	 * @param column
 	 */
-	protected void updateColumn(Map<String, String> column) {
+	protected void updateColumn(Map<String, String> column, int columnNo) {
+		// If this column is not visible it has been deleted and should not be added
+		if (!Convert.formatBoolean(column.get("visible"))) {
+			deletedRows.add(columnNo);
+			return;
+		}
+		
 		// Get the data elements, make sure they are populated
 		String field = column.get("field");
 		String cTitle = column.get("title");
@@ -639,8 +650,8 @@ public class GridVO extends BeanDataVO {
 		// Parse out the index from the field and store the data in the series array
 		String val = field.substring(field.lastIndexOf('_') + 1);
 		int index = Convert.formatInteger(val) - 1;
-		if(index == -1) seriesLabel = cTitle;
-		else series[index] = cTitle;
+		if(index - deletedRows.size() == -1) seriesLabel = cTitle;
+		else series[index - deletedRows.size()] = cTitle;
 	}
 	
 	/**
@@ -670,26 +681,57 @@ public class GridVO extends BeanDataVO {
 		// Load up the details
 		GridDetailVO detail = new GridDetailVO();
 		detail.setOrder(ctr);
-		detail.setLabel(row.get("field_0") + "");
 		detail.setGridId(gridId);
 		detail.setGridDetailId(row.get("id") + "");
 		
 		detail.setDetailType(RowStyle.getEnumKey(row.get("class") + ""));
 		detail.setCreateDate(new Date());
 		detail.setUpdateDate(new Date());
+		
+		int currentLabel = 0;
+		if (deletedRows.contains(0)) {
+			currentLabel = getNewLabel();
+		}
+
+		detail.setLabel(row.get("field_" + currentLabel) + "");
 
 		String[] values = detail.getValues();
+		int offset = 0;
 		for(int i=0; i < 10; i++) {
-			
-			// nulls are being inserted as a tring "null" value.  Make sure to remove
-			String val = StringUtil.checkVal(row.get("field_" + (i + 1)));
-			if (val.length() == 0 || "null".equalsIgnoreCase(val)) val = null;
-			values[i] = val;
+			// If this column has been deleted skip this data and
+			// increment the offset to properly delete the data
+			if (deletedRows.contains(i+1)) {
+				offset++;
+			} else if (i+1 != currentLabel) {
+				// nulls are being inserted as a tring "null" value.  Make sure to remove
+				String val = StringUtil.checkVal(row.get("field_" + (i + 1)));
+				if (val.length() == 0 || "null".equalsIgnoreCase(val)) val = null;
+				values[i- offset] = val;
+			}
 		}
 		
 		// Add to the local collection
 		details.add(detail);
 	}
+	
+	/**
+	 * If the first row has been deleted find the 
+	 * next, viable, row and set the label from that value.
+	 * @param row
+	 * @param detail
+	 */
+	private int getNewLabel() {
+		for (int i = 0; i< 10; i++) {
+			if (!deletedRows.contains(i)) {
+				return i;
+			}
+		}
+		
+		// This will only occur when all the columns have been deleted
+		// at which point it no longer matters
+		return 0;
+	}
+
 	
 	/**
 	 * Converts the Grid into JSON tables formatted for Bootstrap
