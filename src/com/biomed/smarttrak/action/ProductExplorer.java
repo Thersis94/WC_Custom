@@ -508,7 +508,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 */
 	private List<Node> filterTree(Set<String> allowedSections, List<Node> fullList) {
 		List<Node> sections = new ArrayList<>();
-		sections.add(fullList.get(0));
+		
 		for (Node n : fullList) {
 			FilterNode(allowedSections, n, sections);
 		}
