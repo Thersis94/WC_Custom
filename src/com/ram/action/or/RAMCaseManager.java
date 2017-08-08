@@ -148,8 +148,6 @@ public class RAMCaseManager {
 	    	if (! StringUtil.isEmpty(cvo.getSalesRepId()) && cvo.getSalesRep() == null)
 	    		cvo.setSalesRep(pm.getProfile(cvo.getSalesRepId(), conn, ProfileManager.PROFILE_ID_LOOKUP, null));
 	    	
-	    	log.info("H Rep: " + cvo.getProfileId() + "|" + cvo.getHospitalRep());
-	    	log.info("S Rep: " + cvo.getSalesRepId() + "|" + cvo.getSalesRep());
 		} catch (com.siliconmtn.exception.DatabaseException e) {
 			log.error("Unable to retrieve user rep", e);
 		}
