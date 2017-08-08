@@ -44,7 +44,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	private static final long serialVersionUID = 1L;
 	protected static final Logger log = Logger.getLogger(GoogleChartVO.class);
 	private static final String COLUMN_NAME = "Column_";
-	
+
 	/**
 	 * Allowed datatypes for a column field
 	 */
@@ -77,6 +77,9 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	@Expose
 	private final Map<String, Object> options;
 
+	@SerializedName("disclaimer")
+	private String disclaimer;
+
 	/**
 	 * 
 	 */
@@ -93,7 +96,8 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	 */
 	public GoogleChartVO(GridVO grid, ChartType type, boolean full, List<Integer> columns) {
 		this();
-		
+
+		setDisclaimer(grid.getDisclaimer());
 		// Different charts require that the data be processed differently
 		switch(type) {
 			case PIE:
@@ -146,7 +150,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 				
 				// Determine if there is a columns filter and apply
 				if (fCols.contains(i + 1)) row.addCell(cell);
-				if (fCols.size() == 0)row.addCell(cell);
+				if (fCols.isEmpty())row.addCell(cell);
 				validRows.add(i);
 			}
 			
@@ -251,7 +255,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		GoogleChartColumnVO col = new GoogleChartColumnVO();
 		col.setId(COLUMN_NAME + ((char) val++));
 		col.setDataType(DataType.STRING.getName());
-		col.setLabel("");
+		col.setLabel(grid.getSeriesLabel());
 		addColumn(col);
 		
 		// Get the column data
@@ -324,5 +328,19 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 		return options;
 	}
 
-}
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.vo.grid.SMTGridIntfc#addDisclaimer(java.lang.String)
+	 */
+	@Override
+	public void setDisclaimer(String disclaimer) {
+		this.disclaimer = disclaimer;
+	}
 
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.vo.grid.SMTGridIntfc#getDisclaimer()
+	 */
+	@Override
+	public String getDisclaimer() {
+		return disclaimer;
+	}
+}

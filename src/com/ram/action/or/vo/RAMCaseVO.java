@@ -51,6 +51,7 @@ public class RAMCaseVO implements Serializable {
 	private String profileId;
 	private String orRoomId;
 	private String surgeonId;
+	private String salesRepId;
 	private String caseNotes;
 	private Date createDt;
 	private Date updateDt;
@@ -69,6 +70,7 @@ public class RAMCaseVO implements Serializable {
 	private int numProductsCase;
 	private int numKitsCase;
 	private UserDataVO hospitalRep;
+	private UserDataVO salesRep;
 
 	public RAMCaseVO() {
 		this.kits = new HashMap<>();
@@ -109,12 +111,8 @@ public class RAMCaseVO implements Serializable {
 		spdDt = Convert.formatDate(req.getParameter("spdDt"));
 		setCaseStatusTxt(req.getParameter("caseStatus"));
 		profileId = req.getParameter("providerProfileId");
+		salesRepId = req.getParameter("salesRepId");
 		caseNotes = req.getParameter("caseNotes");
-		RAMSignatureVO svo = new RAMSignatureVO();
-		svo.setProfileId(req.getParameter("providerProfileId"));
-		svo.setCaseId(caseId);
-		svo.setSignatureType(SignatureType.PROVIDER);
-		addSignature(svo);
 	}
 
 	/**
@@ -571,5 +569,34 @@ public class RAMCaseVO implements Serializable {
 	 */
 	public void setCaseNotes(String caseNotes) {
 		this.caseNotes = caseNotes;
+	}
+
+	/**
+	 * @return the salesRepId
+	 */
+	@Column(name="sales_rep_id")
+	public String getSalesRepId() {
+		return salesRepId;
+	}
+
+	/**
+	 * @param salesRepId the salesRepId to set
+	 */
+	public void setSalesRepId(String salesRepId) {
+		this.salesRepId = salesRepId;
+	}
+
+	/**
+	 * @return the salesRep
+	 */
+	public UserDataVO getSalesRep() {
+		return salesRep;
+	}
+
+	/**
+	 * @param salesRep the salesRep to set
+	 */
+	public void setSalesRep(UserDataVO salesRep) {
+		this.salesRep = salesRep;
 	}
 }

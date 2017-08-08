@@ -214,10 +214,9 @@ public class InventoryEventAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
-		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (req.hasParameter("amid")) this.retrieveAll(req);
-		else if(inventoryEventId > 0 && r.getRoleLevel() != SecurityUtil.RAMRoles.PROVIDER.getLevel()) 
-			this.retrieveEvent(inventoryEventId);
+		else if(inventoryEventId > 0) 
+			this.retrieveEvent(req, inventoryEventId);
 	}
 	
 	/**
@@ -226,7 +225,7 @@ public class InventoryEventAction extends SBActionAdapter {
 	 * @param id
 	 * @throws ActionException
 	 */
-	public void retrieveEvent(int id) throws ActionException {
+	public void retrieveEvent(ActionRequest req, int id) throws ActionException {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
 		sql.append("select * from ").append(schema).append("ram_inventory_event a ");
@@ -240,7 +239,9 @@ public class InventoryEventAction extends SBActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				this.putModuleData(new InventoryEventVO(rs, true, null));
+				String[] providers = new String[]{rs.getString("customer_id")};
+				if (SecurityUtil.isAuthorized(req, 0, providers))
+					this.putModuleData(new InventoryEventVO(rs, true, null));
 			}
 		} catch(SQLException sqle) {
 			throw new ActionException("Unable to retrieve event", sqle);
@@ -281,7 +282,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setDate(1, Convert.formatSQLDate(start));
 			ps.setDate(2, Convert.formatSQLDate(end));
-			if(r.getRoleLevel() == SecurityUtil.RAMRoles.PROVIDER.getLevel() || r.getRoleLevel() ==SecurityUtil.RAMRoles.OEM.getLevel())
+			if(SecurityUtil.isProviderRole(r.getRoleId()) || SecurityUtil.isOEMRole(r.getRoleId()))
 				ps.setInt(3, Convert.formatInteger((String)r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)));
 			ResultSet rs = ps.executeQuery();
 			int navStart = Convert.formatInteger(req.getParameter("start"), 0);
@@ -314,7 +315,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		
 		Map<String, Object> data = new HashMap<>();
 		data.put("count", ctr + 1);
-		data.put("data", items);
+		data.put("actionData", items);
 		data.put(GlobalConfig.SUCCESS_KEY, Boolean.TRUE);
 		this.putModuleData(data, 3, false);
 	}
@@ -330,7 +331,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		StringBuilder where = new StringBuilder();
 		
 		//If role is provider filter so it's only their locations.
-		if(r.getRoleLevel() == SecurityUtil.RAMRoles.PROVIDER.getLevel())
+		if(SecurityUtil.isProviderRole(r.getRoleId()))
 			where.append(" and cl.customer_id = ? ");
 		// Filter by the active flag
 		if (req.hasParameter("activeFlag"))
@@ -343,7 +344,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		}
 		
 		//If the user is an OEM, filter by locations by only those they have products at.
-		if(r.getRoleLevel() == SecurityUtil.RAMRoles.OEM.getLevel()) {
+		if(SecurityUtil.isOEMRole(r.getRoleId())) {
 			where.append(" and cl.customer_location_id in ( ");
 			where.append("select z.customer_location_id from ").append(schema).append("RAM_CUSTOMER_LOCATION z ");
 			where.append("inner join ").append(schema).append("RAM_INVENTORY_EVENT ze on z.customer_location_id = ze.customer_location_id ");
@@ -363,7 +364,7 @@ public class InventoryEventAction extends SBActionAdapter {
 	protected StringBuilder getBaseSQL() {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
-		sql.append("select cl.location_nm, schedule_dt, ie.active_flg, inventory_complete_dt, ");
+		sql.append("select cl.location_nm, cl.customer_id, schedule_dt, ie.active_flg, inventory_complete_dt, ");
 		sql.append("data_load_complete_dt, ie.inventory_event_id, ");
 		sql.append("inventory_event_group_id, count(distinct(d.event_return_id)) as returnProducts, ");
 		sql.append("count(distinct(e.customer_event_id)) as numberCustomers, ra.auditors ");
@@ -387,7 +388,7 @@ public class InventoryEventAction extends SBActionAdapter {
 	 */
 	protected StringBuilder getGroupBy() {
 		StringBuilder sql = new StringBuilder();
-		sql.append(" group by cl.location_nm, schedule_dt, ie.active_flg, inventory_complete_dt,  ");
+		sql.append(" group by cl.location_nm, cl.customer_id, schedule_dt, ie.active_flg, inventory_complete_dt,  ");
 		sql.append("data_load_complete_dt, ie.inventory_event_id, inventory_event_group_id, ra.auditors ");
 		
 		return sql;

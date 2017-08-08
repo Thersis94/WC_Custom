@@ -4,7 +4,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.solr.common.SolrDocument;
@@ -15,7 +17,6 @@ import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.exception.InvalidDataException;
@@ -58,7 +59,7 @@ public class ProductExplorer extends SBActionAdapter {
 	private static final String SAVED_QUERIES = "savedQueries";
 
 	private enum BuildType {
-		EXPORT, SAVE, SHARE
+		EXPORT, SAVE, SHARE, DELETE
 	}
 
 	/**
@@ -223,7 +224,7 @@ public class ProductExplorer extends SBActionAdapter {
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_EXPLORER_QUERY WHERE USER_ID = ? ");
 
-		List<GenericVO> queries = new ArrayList<>();
+		List<Map<String, String>> queries = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 			ps.setString(1, user.getUserId());
@@ -231,7 +232,11 @@ public class ProductExplorer extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 
 			while (rs.next()) {
-				queries.add(new GenericVO(rs.getString("QUERY_NM"), rs.getString("QUERY_TXT")));
+				Map<String, String> entry = new HashMap<>();
+				entry.put("id", rs.getString("EXPLORER_QUERY_ID"));
+				entry.put("name", rs.getString("QUERY_NM"));
+				entry.put("url", rs.getString("QUERY_TXT"));
+				queries.add(entry);
 			}
 
 		} catch (SQLException e) {
@@ -458,12 +463,55 @@ public class ProductExplorer extends SBActionAdapter {
 			case SAVE:
 				saveQuery(req);
 				break;
+			case DELETE:
+				deleteQuery(req);
+				break;
 			case SHARE:
 				sendEmail(req);
 				break;
 		}
 	}
 
+
+	/**
+	 * Delete the supplied saved query
+	 * @param req
+	 * @throws ActionException 
+	 */
+	@SuppressWarnings("unchecked")
+	private void deleteQuery(ActionRequest req) throws ActionException {
+		String id = req.getParameter("queryId");
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("DELETE FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_EXPLORER_QUERY WHERE EXPLORER_QUERY_ID = ? ");
+		log.debug(sql+"|"+id);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, id);
+			
+			ps.executeUpdate();
+			
+		} catch(SQLException e) {
+			log.error(e);
+			throw new ActionException(e);
+		}
+		
+		putModuleData(id);
+		List<Map<String, String>> saved = (List<Map<String, String>>)req.getSession().getAttribute(SAVED_QUERIES);
+		if (saved != null && id != null)
+			updateSessionQueries(id, saved, req);
+	}
+	
+
+	private void updateSessionQueries(String id, List<Map<String, String>> saved, ActionRequest req) {
+		List<Map<String, String>> newList = new ArrayList<>();
+		for (Map<String, String> entry : saved) {
+			if(!id.equals(entry.get("id")))
+				newList.add(entry);
+		}
+		
+		req.getSession().setAttribute(SAVED_QUERIES, newList);
+	}
 
 	/**
 	 * Create a report vo that can be used to return an excel document
@@ -517,26 +565,29 @@ public class ProductExplorer extends SBActionAdapter {
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_EXPLORER_QUERY (EXPLORER_QUERY_ID, USER_ID, QUERY_NM, QUERY_TXT, CREATE_DT) ");
 		sql.append("VALUES(?,?,?,?,?)");
-		String url = buildUrl(req);
+		Map<String, String> entry = new HashMap<>();
+		entry.put("id", new UUIDGenerator().getUUID());
+		entry.put("name", req.getParameter("queryName"));
+		entry.put("url", buildUrl(req));
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
-			ps.setString(1, new UUIDGenerator().getUUID());
+			ps.setString(1, entry.get("id"));
 			ps.setString(2, user.getUserId());
-			ps.setString(3, req.getParameter("queryName"));
-			ps.setString(4, url);
+			ps.setString(3, entry.get("name"));
+			ps.setString(4, entry.get("url"));
 			ps.setTimestamp(5, Convert.getCurrentTimestamp());
 
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
-		GenericVO vo = new GenericVO(req.getParameter("queryName"), url);
-		super.putModuleData(vo);
+		
+		super.putModuleData(entry);
 
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
-			req.getSession().setAttribute(SAVED_QUERIES, new ArrayList<GenericVO>());
+			req.getSession().setAttribute(SAVED_QUERIES, new ArrayList<Map<String, String>>());
 
-		((List<GenericVO>)req.getSession().getAttribute(SAVED_QUERIES)).add(vo);
+		((List<Map<String, String>>)req.getSession().getAttribute(SAVED_QUERIES)).add(entry);
 	}
 
 

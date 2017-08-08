@@ -19,6 +19,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -76,7 +77,7 @@ public class CustomerAction extends SBActionAdapter {
 			data = new ArrayList<>();
 			data.add(new CustomerVO());
 		} else if (svo.getCustomerId() > 0) {
-			data = new ArrayList<CustomerVO>();
+			data = new ArrayList<>();
 			data.add(getCustomerData(svo));
 		} else {
 			//Get filtered customer list for grid view.
@@ -97,7 +98,7 @@ public class CustomerAction extends SBActionAdapter {
 	 */
 	public CustomerVO getCustomerData(RAMCustomerSearchVO svo) {
 		CustomerVO c = null;
-		List<CustomerLocationVO> locs = new ArrayList<CustomerLocationVO>();
+		List<CustomerLocationVO> locs = new ArrayList<>();
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		//Build Query.
@@ -123,7 +124,9 @@ public class CustomerAction extends SBActionAdapter {
 			}
 
 			//Set the Locations on the CustomerVO.
-			c.setCustomerLocations(locs);
+			if(c != null) {
+				c.setCustomerLocations(locs);
+			}
 		} catch (SQLException e) {
 			log.error(e);
 		}
@@ -223,7 +226,7 @@ public class CustomerAction extends SBActionAdapter {
 		}
 
 		//Check if this is an Ajax call and prepare appropriate response.
-		boolean isJson = Convert.formatBoolean(StringUtil.checkVal(req.getParameter("amid")).length() > 0);
+		boolean isJson = !StringUtil.isEmpty(req.getParameter("amid"));
 		if (isJson) {
 			Map<String, Object> res = new HashMap<>(); 
 			res.put("success", true);
@@ -364,10 +367,11 @@ public class CustomerAction extends SBActionAdapter {
 	 * @return
 	 */
 	public String getCustomerLookupWhereClause(RAMCustomerSearchVO svo, ActionRequest req, List<Object> params) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 
 		//Build Where Clause based of req Params that were passed.
-		sql.append("where 1 = 1 ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
 
 		if (svo.getCustomerTypeId().length() > 0) {
 			sql.append("and customer_type_id = ? ");
@@ -377,13 +381,17 @@ public class CustomerAction extends SBActionAdapter {
 			params.add(svo.getExcludeTypeId());
 		}
 
+		if (svo.getCustomerId() > 0) {
+			sql.append("and customer_id = ? ");
+		}
 		if(svo.isKitsOnly()) {
-			sql.append("and customer_id in (select distinct CUSTOMER_ID from ");
-			sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("RAM_PRODUCT ");
-			sql.append("where KIT_FLG = ?) ");
+
+			sql.append("and customer_id in (select distinct CUSTOMER_ID ").append(DBUtil.FROM_CLAUSE);
+			sql.append(schema).append("RAM_PRODUCT ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("KIT_FLG = ?) ");
 			params.add(1);
 		}
-
+		
 		if (req.hasParameter("srchState")) {
 			String state = StringUtil.checkVal(req.getParameter("srchState"));
 			sql.append("and a.customer_id in (select customer_id from custom.ram_customer_location where lower (state_cd) = ? ) ) ");

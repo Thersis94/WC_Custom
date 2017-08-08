@@ -9,7 +9,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 // RAMDataFeed libs
 import com.ram.datafeed.data.RAMUserVO;
@@ -48,7 +47,7 @@ import com.smt.sitebuilder.security.SBUserRole;
 /****************************************************************************
  * <b>Title: </b>RamUserAction.java <p/>
  * <b>Project: </b>WC_Custom <p/>
- * <b>Description: </b>
+ * <b>Description: Manages RAM Users</b>
  * </p>
  * <b>Copyright: </b>Copyright (c) 2014<p/>
  * <b>Company: </b>Silicon Mountain Technologies<p/>
@@ -59,6 +58,12 @@ import com.smt.sitebuilder.security.SBUserRole;
  * May 28, 2014: David Bargerhuff: Created class.
  ****************************************************************************/
 public class RamUserAction extends SBActionAdapter {
+	
+	// Keys for Request Variables
+	public static final String OEM_KEY = "manufacturerId";
+	public static final String PROVIDER_KEY = "customerIds";
+	public static final String USER_ROLE_KEY = "userRoleId";
+	
 	/**
 	 * 
 	 */
@@ -78,16 +83,14 @@ public class RamUserAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		// if this is an 'add user' operation, simply return.
-		if (StringUtil.checkVal(req.getParameter("addUser")).length() > 0) return;
-		
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		if (req.hasParameter("edit")) {
-			putModuleData(retrieveUser(req, schema, role));
+			if (! req.hasParameter("addUser")) putModuleData(retrieveUser(req, schema));
 			req.setAttribute("RAM_USER_OEM", this.getOemList(req, schema));
-			req.setAttribute("RAM_USER_PROV", this.getProviderList(req, schema, req.getParameter("userRoleId")));
+			req.setAttribute("RAM_USER_PROV", this.getProviderList(req, schema, req.getParameter(USER_ROLE_KEY)));
+			
 		} else if (req.hasParameter("amid")){
 			GenericVO data = retrieveList(req, schema, role.getRoleLevel() == 100);
 			this.putModuleData(data.getKey(), (Integer)data.getValue(), false);
@@ -100,17 +103,16 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	public RAMUserVO retrieveUser(ActionRequest req, String schema, SBUserRole role) {
+	public RAMUserVO retrieveUser(ActionRequest req, String schema) {
 		// Make sure the user has permission to edit the user information
-		boolean siteAdmin = role.getRoleLevel() == 100;
-		boolean adminFlag = Convert.formatBoolean(role.getAttribute(RAMRoleModule.ADMIN_ROLE));
-		if (! siteAdmin && ! adminFlag && ! role.getProfileId().equals(req.getParameter("profileId"))) return null;
+		int oemId = Convert.formatInteger(req.getParameter(OEM_KEY));
+		if (! SecurityUtil.isAuthorized(req, oemId, req.getParameterValues(PROVIDER_KEY))) return null;
 		
 		// Build the SQL and params list
 		StringBuilder sql = new StringBuilder(256);
-		this.retrieveUserSQL(sql, siteAdmin, adminFlag, role);
+		this.retrieveUserSQL(req, sql);
 		List<Object> params = new ArrayList<>();
-		params.add(Convert.formatInteger(req.getParameter("userRoleId")));
+		params.add(Convert.formatInteger(req.getParameter(USER_ROLE_KEY)));
 		log.debug(sql + "|" + params);
 
 		// Execute the lookup
@@ -167,11 +169,8 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param adminFlag
 	 * @param role
 	 */
-	@SuppressWarnings("unchecked")
-	public void retrieveUserSQL(StringBuilder sql, boolean siteAdmin, boolean adminFlag, SBUserRole role) {
+	public void retrieveUserSQL(ActionRequest req, StringBuilder sql) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		Set<Object> customers = (Set<Object>)role.getAttributes().get(CustomerVO.CustomerType.PROVIDER.toString());
-		
 		sql.append("select a.user_role_id, c.profile_id, a.first_nm, a.last_nm, c.email_address_txt,");
 		sql.append("d.phone_number_txt, a.profile_role_id, b.role_id, b.status_id, b.site_id, a.admin_flg ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_user_role a "); 
@@ -180,12 +179,12 @@ public class RamUserAction extends SBActionAdapter {
 		sql.append("left outer join phone_number d on c.profile_id = d.profile_id and phone_type_cd = 'WORK' ");
 		
 		// Make sure the admin can only modify users in their provider locations
-		if (!siteAdmin && adminFlag) {
+		if (SecurityUtil.hasAdminFlag(req)) {
 			sql.append("inner join ").append(schema).append("ram_user_role_customer_xr xr on a.user_role_id = xr.user_role_id ");
 			sql.append("and a.user_role_id in (select user_role_id "); 
 			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_user_role_customer_xr  ");
-			sql.append("where user_role_id = ? and customer_id in (");
-			sql.append(StringUtil.getDelimitedList(customers.toArray(new String[customers.size()]), false, ",")).append(") ");
+			sql.append("where user_role_id = ? ");
+			sql.append(SecurityUtil.addCustomerFilter(req, ""));
 		} else {
 			sql.append("where a.user_role_id = ? ");
 		}
@@ -276,6 +275,18 @@ public class RamUserAction extends SBActionAdapter {
 			sql.append("and (lower(last_nm) like ? or lower(first_nm) like ?) ");
 			params.add("%" + search.toLowerCase() + "%");
 			params.add("%" + search.toLowerCase() + "%");
+		} 
+		
+		// Add the active filter
+		if (! StringUtil.isEmpty(req.getParameter("activeFilter"))) {
+			sql.append("and status_id = ? ");
+			params.add(Convert.formatInteger(req.getParameter("activeFilter")));
+		}
+		
+		// Add the role filter
+		if (! StringUtil.isEmpty(req.getParameter("roleFilter"))) {
+			sql.append("and r.role_id = ? ");
+			params.add(req.getParameter("roleFilter"));
 		}
 	}
 	
@@ -314,14 +325,12 @@ public class RamUserAction extends SBActionAdapter {
 		// Save the user data
 		if ("update".equalsIgnoreCase(req.getParameter("transType"))) {
 			try {
-				this.saveUserData(req);
-				this.putModuleData("success");
+				this.putModuleData(saveUserData(req));
 			} catch(Exception e) {
+				log.error("Unable to save user", e);
 				this.putModuleData(null, 0, false, "NOT_AUTHORIZED", true);
 			}
 		}
-		
-		
 	}
 	
 	/**
@@ -331,37 +340,38 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param isAdmin
 	 * @throws ApplicationException 
 	 */
-	public void saveUserData(ActionRequest req) throws NotAuthorizedException, ApplicationException {
-		Integer oem = Convert.formatInteger(req.getParameter("manufacturerId"));
+	public RAMUserVO saveUserData(ActionRequest req) throws NotAuthorizedException, ApplicationException {
+		Integer oem = Convert.formatInteger(req.getParameter(OEM_KEY));
 		
 		// Check security
-		if (! SecurityUtil.isAuthorized(req, oem, req.getParameterValues("customerIds")))
+		if (! SecurityUtil.isAuthorized(req, oem, req.getParameterValues(PROVIDER_KEY)))
 			throw new NotAuthorizedException("Permission Check Failed");
 		
 		// Create/update Profile and authentication
-		UserDataVO usr = new UserDataVO(req);
-		manageProfile(req, new UserDataVO(req));
+		UserDataVO usr = manageProfile(req);
 		
 		// Manage the auth info
 		if (! StringUtil.isEmpty(req.getParameter("password")))
 			manageAuthentication(req, (SiteVO)req.getAttribute(Constants.SITE_DATA), usr);
 
 		// Manage WC role
-		manageRole(req);
+		SBUserRole role = manageRole(req, usr.getProfileId());
 		
 		// Update/Add RAM User Role
-		saveUserRole(req);
+		RAMUserVO rUser = saveUserRole(req, role);
 		
 		// Delete Role Attributes
-		this.deleteCurrentCustomers(Convert.formatInteger(req.getParameter("userRoleId")));
+		this.deleteCurrentCustomers(rUser.getUserRoleId());
 		
 		// Insert new Attributes
 		try {
-			addUserCustomers(req);
+			addUserCustomers(req, rUser.getUserRoleId());
 		} catch(Exception e) {
 			log.error("Unable to add customers", e);
 			throw new ApplicationException(e);
 		}
+
+		return rUser;
 	}
 	
 	/**
@@ -372,15 +382,15 @@ public class RamUserAction extends SBActionAdapter {
 	 * @throws InvalidDataException 
 	 * @throws Exception
 	 */
-	protected void addUserCustomers(ActionRequest req) throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
-		Integer userRoleId = Convert.formatInteger(req.getParameter("userRoleId"));
+	protected void addUserCustomers(ActionRequest req, int id) throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
+		Integer userRoleId = Convert.formatInteger(req.getParameter(USER_ROLE_KEY), id);
 		DBProcessor dbp = new DBProcessor(getDBConnection(), (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		UserRoleCustomerVO vo = new UserRoleCustomerVO();
-		String manufacturerId = req.getParameter("manufacturerId");
+		String manufacturerId = req.getParameter(OEM_KEY);
 		String roleId = req.getParameter("roleId");
 		
 		// Add the OEM if assigned
-		if (! StringUtil.isEmpty(manufacturerId) && SecurityUtil.isOEM(roleId)) {
+		if (! StringUtil.isEmpty(manufacturerId) && SecurityUtil.isOEMGroup(roleId)) {
 			vo.setUserRoleId(userRoleId);
 			vo.setCustomerId(Convert.formatInteger(manufacturerId));
 			vo.setCreateDate(new Date());
@@ -388,8 +398,8 @@ public class RamUserAction extends SBActionAdapter {
 		}
 
 		// Loop the providers and add tot he db if they can be mapped
-		if (SecurityUtil.hasProviders(roleId) && req.getParameterValues("customerIds") != null) {
-			for(String customerId : req.getParameterValues("customerIds")) {
+		if (SecurityUtil.hasProviders(roleId) && req.getParameterValues(PROVIDER_KEY) != null) {
+			for(String customerId : req.getParameterValues(PROVIDER_KEY)) {
 				vo = new UserRoleCustomerVO();
 				vo.setUserRoleId(userRoleId);
 				vo.setCustomerId(Convert.formatInteger(customerId));
@@ -404,17 +414,29 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ApplicationException
 	 */
-	public void saveUserRole(ActionRequest req) throws ApplicationException {
+	public RAMUserVO saveUserRole(ActionRequest req, SBUserRole role) throws ApplicationException {
 		RAMUserVO user = new RAMUserVO(req);
+		if (StringUtil.isEmpty(user.getRoleId())) user.setRoleId(role.getRoleId());
+		if (StringUtil.isEmpty(user.getProfileRoleId())) user.setProfileRoleId(role.getProfileRoleId());
+		if (StringUtil.isEmpty(user.getProfileId())) user.setProfileId(role.getProfileId());
 		user.setCreateDate(new Date());
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
+			// Make sure the user role is null for an unsert
+			if (user.getUserRoleId() == 0) user.setUserRoleId(null);
+			
+			// Save the user role
 			db.save(user);
+			
+			// Update the role with the generated id
+			user.setUserRoleId(Convert.formatInteger(db.getGeneratedPKId()));
 		} catch (Exception e) {
 			log.error("Unable to add user role", e);
 			throw new ApplicationException("Unable to add user role", e);
-		} 
+		}
+		
+		return user;
 	}
 		
 	/**
@@ -445,8 +467,8 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param isProfileInsert
 	 * @param msg
 	 */
-	private void manageProfile(ActionRequest req, UserDataVO user) {
-		log.debug("managing user profile...");
+	private UserDataVO manageProfile(ActionRequest req) {
+		UserDataVO user = new UserDataVO(req);
 		PhoneVO phone = new PhoneVO(PhoneVO.WORK_PHONE, StringUtil.removeNonNumeric(req.getParameter("phoneNumber")), "US");
 		user.addPhone(phone);
 		
@@ -457,6 +479,8 @@ public class RamUserAction extends SBActionAdapter {
 		} catch (DatabaseException de) {
 			log.error("unable to update profile", de);
 		}
+		
+		return user;
 	}
 
 	/**
@@ -464,13 +488,16 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param req
 	 * @param userRole
 	 */
-	private void manageRole(ActionRequest req) {
+	private SBUserRole manageRole(ActionRequest req, String profileId) {
+		String id = StringUtil.checkVal(req.getParameter("profileId"), profileId);
+		
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		SBUserRole role = new SBUserRole();
+		role.setRoleName("");
 		role.setOrganizationId(site.getOrganizationId());
 		role.setSiteId(site.getSiteId());
 		role.setRoleId(req.getParameter("roleId"));
-		role.setProfileId(req.getParameter("profileId"));
+		role.setProfileId(id);
 		role.setProfileRoleId(req.getParameter("profileRoleId"));
 		role.setStatusId(Convert.formatInteger(req.getParameter("statusId")));
 		
@@ -487,6 +514,8 @@ public class RamUserAction extends SBActionAdapter {
 		} catch (DatabaseException de) {
 			log.error("Unable to update role", de);
 		}
+		
+		return role;
 	}
 
 	/**
@@ -499,7 +528,6 @@ public class RamUserAction extends SBActionAdapter {
 	 */
 	private void manageAuthentication(ActionRequest req, SiteVO site, UserDataVO user) 
 	throws ApplicationException {
-		log.info("managing authentication...");
 		String loginClass = site.getLoginModule();
 		Map<String, Object> lm = new HashMap<>();
 		lm.put(Constants.ENCRYPT_KEY, (String) getAttribute(Constants.ENCRYPT_KEY));
@@ -581,7 +609,7 @@ public class RamUserAction extends SBActionAdapter {
 		sql.append("select customer_id, customer_nm ");
 		sql.append("from ").append(schema).append("ram_customer ");
 		sql.append("where customer_type_id = 'OEM' ");
-		sql.append(SecurityUtil.addCustomerFilter(req, ""));
+		sql.append(SecurityUtil.addOEMFilter(req, ""));
 		sql.append("order by customer_nm ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
@@ -600,7 +628,7 @@ public class RamUserAction extends SBActionAdapter {
 		sql.append("where customer_type_id = 'PROVIDER' and active_flg = 1 and customer_id not in ( ");
 		sql.append("select customer_id from ").append("ram_user_role_customer_xr ");
 		sql.append("where user_role_id = ?) ");
-		sql.append(SecurityUtil.addOEMFilter(req, ""));
+		sql.append(SecurityUtil.addCustomerFilter(req, ""));
 		sql.append("order by customer_nm; ");
 		
 		List<Object> params = new ArrayList<>();

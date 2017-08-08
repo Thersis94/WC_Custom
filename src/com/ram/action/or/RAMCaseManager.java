@@ -1,13 +1,16 @@
 package com.ram.action.or;
 
+// JDK 1.8
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+// Log4j 1.2.17
 import org.apache.log4j.Logger;
 
+// WC Custom Libs
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
@@ -18,12 +21,18 @@ import com.ram.persistence.AbstractPersist;
 import com.ram.persistence.RAMCasePersistenceFactory;
 import com.ram.persistence.RAMCasePersistenceFactory.PersistenceType;
 import com.ram.workflow.data.vo.LocationItemMasterVO;
+
+// SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+
+// WC Libs 3.2
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.SBProfileManager;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseManager.java
@@ -109,15 +118,41 @@ public class RAMCaseManager {
 			cVo.setCaseStatus(RAMCaseStatus.OR_IN_PROGRESS);
 			cVo.setNewCase(true);
 		} else {
-			// Load the case form the default location
+			// Load the case from the default location
 			cVo = this.retrieveCase(caseId);
 		}
 		
-		// Update the data and persists
+		// Update the data 
 		cVo.setData(req);
+		
+		// Check to see if we need to load the user data for the reps
+		loadUserData(cVo);
+		
+		// and persist the case
 		ap.save(cVo);
 
 		return cVo;
+	}
+	
+	/**
+	 * Loads the data for the hospital rep and the sales rep
+	 * @param cvo
+	 */
+	public void loadUserData(RAMCaseVO cvo) {
+	    ProfileManager pm = new SBProfileManager(this.attributes);
+	    try {
+	    	// Load the user data for the hospital rep and the sales rep
+	    	if (! StringUtil.isEmpty(cvo.getProfileId()) && cvo.getHospitalRep() == null)
+	    		cvo.setHospitalRep(pm.getProfile(cvo.getProfileId(), conn, ProfileManager.PROFILE_ID_LOOKUP, null));
+	    	
+	    	if (! StringUtil.isEmpty(cvo.getSalesRepId()) && cvo.getSalesRep() == null)
+	    		cvo.setSalesRep(pm.getProfile(cvo.getSalesRepId(), conn, ProfileManager.PROFILE_ID_LOOKUP, null));
+	    	
+	    	log.info("H Rep: " + cvo.getProfileId() + "|" + cvo.getHospitalRep());
+	    	log.info("S Rep: " + cvo.getSalesRepId() + "|" + cvo.getSalesRep());
+		} catch (com.siliconmtn.exception.DatabaseException e) {
+			log.error("Unable to retrieve user rep", e);
+		}
 	}
 	
 	/**

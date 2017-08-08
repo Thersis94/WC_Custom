@@ -1,5 +1,8 @@
 package com.biomed.smarttrak.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 //Java 1.8
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -7,30 +10,30 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 //WC_Custom libs
 import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
+import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
-
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 //WC libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
 /****************************************************************************
  * Title: UpdatesScheduledAction.java <p/>
  * Project: WC_Custom <p/>
- * Description: Handles retrieving the updates for a scheduled email send. "My Updates" - the user will login before seeing this page.<p/>
+ * Description: Handles retrieving the updates for a scheduled email send.
+ * "My Updates" - the user will login before seeing this page.<p/>
  * Copyright: Copyright (c) 2017<p/>
  * Company: Silicon Mountain Technologies<p/>
  * @author Devon Franklin
@@ -61,6 +64,11 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		String marketNm = req.getParameter("marketNm");
+		if(!StringUtil.isEmpty(marketNm)) {
+			String marketAcl = getMarketAcl(marketNm);
+			checkUserHasMarketPermission(marketAcl, req);
+		}
 		String emailDate = req.getParameter("date"); //the date the email was sent.  Prefer to use this to generate 'today's or "last week's" update list.
 		String timeRangeCd = StringUtil.checkVal(req.getParameter("timeRangeCd"));
 		String profileId = StringUtil.checkVal(req.getParameter("profileId"));
@@ -100,6 +108,51 @@ public class UpdatesScheduledAction extends SBActionAdapter {
 		putModuleData(updates);
 	}
 
+	/**
+	 * Verify if the user has permissions to view data attached to this market.
+	 * If not, redirect.
+	 * @param marketNm
+	 * @param req
+	 * @throws ActionNotAuthorizedException
+	 */
+	public void checkUserHasMarketPermission(String assetAcl, ActionRequest req) throws ActionNotAuthorizedException {
+		SecureSolrDocumentVO svo = new SecureSolrDocumentVO(null);
+		svo.addACLGroup(Permission.GRANT, assetAcl);
+		SecurityController.getInstance(req).isUserAuthorized(svo, req);
+	}
+
+	/**
+	 * Helper method builds a Solr like Token for a given marketNm by looking for
+	 * a section under the master root that matches the given marketNm.
+	 * @param marketNm
+	 * @return
+	 */
+	private String getMarketAcl(String marketNm) {
+		StringBuilder sql = new StringBuilder(400);
+		String custom = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select r.solr_token_txt as root_solr, ");
+		sql.append("s.solr_token_txt as gps_solr from ").append(custom);
+		sql.append("biomedgps_section r ");
+		sql.append("inner join ").append(custom).append("biomedgps_section s ");
+		sql.append("on r.section_id = s.parent_id ");
+		sql.append("where s.section_nm = ? and r.section_id = ?");
+
+		log.debug(sql.toString());
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, marketNm);
+			ps.setString(2, AbstractTreeAction.MASTER_ROOT);
+
+			ResultSet rs = ps.executeQuery();
+
+			//If we have a result, build the token hierarchy String.
+			if(rs.next()) {
+				return rs.getString("root_solr") + "~" + rs.getString("gps_solr");
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+		return null;
+	}
 
 	/**
 	 * Helper method that establishes the appropriate days

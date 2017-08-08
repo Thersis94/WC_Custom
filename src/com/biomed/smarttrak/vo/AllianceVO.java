@@ -29,6 +29,7 @@ public class AllianceVO {
 	private String allianceTypeName;
 	private String allyId;
 	private String allyName;
+	private String allyShortName;
 	private String referenceText;
 	private int orderNo;
 	
@@ -111,5 +112,20 @@ public class AllianceVO {
 	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
 	@Column(name="CREATE_DT", isAutoGen=true)
 	public Date getCreateDate() {return null;}
+
+	/**
+	 * @return the allyShortName
+	 */
+	@Column(name="short_nm_txt", isReadOnly=true)
+	public String getAllyShortName() {
+		return allyShortName;
+	}
+
+	/**
+	 * @param allyShortName the allyShortName to set
+	 */
+	public void setAllyShortName(String allyShortName) {
+		this.allyShortName = allyShortName;
+	}
 
 }
