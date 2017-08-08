@@ -29,6 +29,7 @@ public class ProductAllianceVO {
 	private String allianceTypeName;
 	private String allyId;
 	private String allyName;
+	private String allyShortName;
 	private String referenceText;
 	private int orderNo;
 	private int gaFlag;
@@ -49,6 +50,7 @@ public class ProductAllianceVO {
 		allianceTypeName = req.getParameter("allianceTypeName");
 		allyId = req.getParameter("allyId");
 		allyName = req.getParameter("allyName");
+		allyName = req.getParameter("allyShortName");
 		referenceText = req.getParameter("referenceText");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 	}
@@ -95,6 +97,19 @@ public class ProductAllianceVO {
 	public void setAllyName(String allyName) {
 		this.allyName = allyName;
 	}
+	/**
+	 * @return the allyShortName
+	 */
+	@Column(name="short_nm_txt", isReadOnly=true)
+	public String getAllyShortName() {
+		return allyShortName;
+	}
+	/**
+	 * @param allyShortName the allyShortName to set
+	 */
+	public void setAllyShortName(String allyShortName) {
+		this.allyShortName = allyShortName;
+	}	
 	@Column(name="reference_txt")
 	public String getReferenceText() {
 		return referenceText;

@@ -50,11 +50,6 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	UserVO user;
 
 	/**
-	 * Maximum number of years to query data
-	 */
-	public static final int MAX_DATA_YEARS = 4;
-	
-	/**
 	 * Column prefixes
 	 */
 	public static final String CALENDAR_YEAR = "CY";
@@ -115,7 +110,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		}
 		
 		if (req.hasParameter("isReport")) {
-			processReport(req, dash);
+			processReport(req, dash, sections);
 		}
 		
 		// Gets the company name for page display
@@ -133,9 +128,16 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @param req
 	 * @param dash
 	 */
-	protected void processReport(ActionRequest req, FinancialDashVO dash) {
+	protected void processReport(ActionRequest req, FinancialDashVO dash, SmarttrakTree sections) {
+		String sortField = StringUtil.checkVal(req.getParameter("sortField"));
+		int sortOrder = Convert.formatInteger(req.getParameter("sortOrder"));
+		
 		FinancialDashReportVO rpt = new FinancialDashReportVO();
 		rpt.setData(dash);
+		rpt.setSortField(sortField);
+		rpt.setSortOrder(sortOrder);
+		rpt.setSections(sections);
+		
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 	}
@@ -264,6 +266,26 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Gets the number of years of data required for the display type, to
+	 * determine the number of joins in the sql query for previous years of data.
+	 * 
+	 * @param dt
+	 * @param currentYear
+	 * @return
+	 */
+	protected int getDataYears(DisplayType dt, int currentYear) {
+		int years = 0;
+		
+		if (DisplayType.ALL == dt) {
+			years = currentYear - FinancialDashColumnSet.BEGINNING_YEAR + 1;
+		} else {
+			years = dt.getDataYears();
+		}
+		
+		return years;
+	}
+	
+	/**
 	 * Returns the sql for retrieving financial data. 
 	 * @return
 	 */
@@ -330,13 +352,13 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		sql.append("sum(r.Q1_NO) as Q1_0, sum(r.Q2_NO) as Q2_0, sum(r.Q3_NO) as Q3_0, sum(r.Q4_NO) as Q4_0, ");
 		sql.append("sum(r2.Q1_NO) as Q1_1, sum(r2.Q2_NO) as Q2_1, sum(r2.Q3_NO) as Q3_1, sum(r2.Q4_NO) as Q4_1 "); // Needed for all column display types to get percent change from prior year
 		
-		// Columns needed only for specific display types
-		if (dt == DisplayType.YOY || dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
-			sql.append(", sum(r3.Q1_NO) as Q1_2, sum(r3.Q2_NO) as Q2_2, sum(r3.Q3_NO) as Q3_2, sum(r3.Q4_NO) as Q4_2 ");
-		}
-		if (dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
-			sql.append(", sum(r4.Q1_NO) as Q1_3, sum(r4.Q2_NO) as Q2_3, sum(r4.Q3_NO) as Q3_3, sum(r4.Q4_NO) as Q4_3 ");
-			sql.append(", sum(r5.Q1_NO) as Q1_4, sum(r5.Q2_NO) as Q2_4, sum(r5.Q3_NO) as Q3_4, sum(r5.Q4_NO) as Q4_4 "); // Needed to get percent change from prior year in the fourth year
+		// Add in additional years of data as required by the FD display type
+		int dataYears = getDataYears(dt, dash.getCurrentYear());
+		for (int yr = 3; yr <= dataYears; yr++) {
+			sql.append(", sum(r").append(yr).append(".Q1_NO) as Q1_").append(yr-1);
+			sql.append(", sum(r").append(yr).append(".Q2_NO) as Q2_").append(yr-1);
+			sql.append(", sum(r").append(yr).append(".Q3_NO) as Q3_").append(yr-1);
+			sql.append(", sum(r").append(yr).append(".Q4_NO) as Q4_").append(yr-1).append(" ");
 		}
 		
 		return sql;
@@ -357,13 +379,14 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		sql.append("from ").append(custom).append("BIOMEDGPS_FD_REVENUE r ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r2 on r.COMPANY_ID = r2.COMPANY_ID and r.REGION_CD = r2.REGION_CD and r.SECTION_ID = r2.SECTION_ID and r.YEAR_NO - 1 = r2.YEAR_NO ");
 
-		// Joins to get columns that are needed only for specific display types
-		if (dt == DisplayType.YOY || dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
-			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r3 on r.COMPANY_ID = r3.COMPANY_ID and r.REGION_CD = r3.REGION_CD and r.SECTION_ID = r3.SECTION_ID and r.YEAR_NO - 2 = r3.YEAR_NO ");
-		}
-		if (dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
-			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r4 on r.COMPANY_ID = r4.COMPANY_ID and r.REGION_CD = r4.REGION_CD and r.SECTION_ID = r4.SECTION_ID and r.YEAR_NO - 3 = r4.YEAR_NO ");
-			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r5 on r.COMPANY_ID = r5.COMPANY_ID and r.REGION_CD = r5.REGION_CD and r.SECTION_ID = r5.SECTION_ID and r.YEAR_NO - 4 = r5.YEAR_NO ");
+		// Add in additional years of data as required by the FD display type
+		int dataYears = getDataYears(dt, dash.getCurrentYear());
+		for (int yr = 3; yr <= dataYears; yr++) {
+			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r").append(yr).append(" ");
+			sql.append("on r.COMPANY_ID = r").append(yr).append(".COMPANY_ID ");
+			sql.append("and r.REGION_CD = r").append(yr).append(".REGION_CD ");
+			sql.append("and r.SECTION_ID = r").append(yr).append(".SECTION_ID ");
+			sql.append("and r.YEAR_NO - ").append(yr-1).append(" = r").append(yr).append(".YEAR_NO ");
 		}
 
 		return sql;

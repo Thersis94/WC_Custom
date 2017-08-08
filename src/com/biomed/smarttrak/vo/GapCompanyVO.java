@@ -252,8 +252,10 @@ public class GapCompanyVO {
 			StatusVal ousReg = this.getRegulation(col.getNodeId() + "-OUS");
 
 			//pull the cell's group and associate it
-			GapColumnVO gapVO = (com.biomed.smarttrak.admin.vo.GapColumnVO) col.getUserObject();
-			cells.add(new GapCellVO(usReg, ousReg, col.getNodeId(), gapVO.getColGroupNo()));
+			if(col.getUserObject() instanceof GapColumnVO) {
+				GapColumnVO gapVO = (GapColumnVO) col.getUserObject();
+				cells.add(new GapCellVO(usReg, ousReg, col.getNodeId(), gapVO.getColGroupNo()));
+			}
 		}
 	}
 

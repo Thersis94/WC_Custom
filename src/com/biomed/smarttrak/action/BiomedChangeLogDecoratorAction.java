@@ -137,7 +137,14 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 				EditPath e = getEditPath(req.getParameter("actionType"));
 				ApprovalVO app = buildApprovalRecord(req, diff, original, e);
 				ChangeLogVO clv = new ChangeLogVO(app.getWcSyncId(), origTxt, diffTxt, e.name());
-				new ChangeLogUtil(dbConn, attributes).saveChangeLog(clv);
+				ChangeLogUtil util = new ChangeLogUtil(dbConn, attributes);
+				try {//update any old records	
+					util.updateApprovalStatus(app);
+				} catch (Exception ex) {
+					log.error("Error attempting to update approval record: " + ex);
+				}
+				util.saveChangeLog(clv);
+			
 			}
 
 			/*

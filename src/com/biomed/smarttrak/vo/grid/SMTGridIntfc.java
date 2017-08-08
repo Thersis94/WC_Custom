@@ -23,13 +23,13 @@ public interface SMTGridIntfc {
 	 * @param column
 	 */
 	public void addColumn(SMTGridColumnIntfc column);
-	
+
 	/**
 	 * Adds a set of row data to the chart
 	 * @param row
 	 */
 	public void addRow(SMTGridRowIntfc row);
-	
+
 	/**
 	 * @param p the p to set
 	 */
@@ -39,7 +39,12 @@ public interface SMTGridIntfc {
 	 * @param p the p to set
 	 */
 	public void addCustomValues(Map<String, Object> values);
-	
+
+	/**
+	 * @param disclaimer
+	 */
+	public void setDisclaimer(String disclaimer);
+
 	/**
 	 * @return the cols
 	 */
@@ -54,6 +59,9 @@ public interface SMTGridIntfc {
 	 * @return the p
 	 */
 	public Map<String, Object> getCustomValue();
-	
-}
 
+	/**
+	 * @return
+	 */
+	public String getDisclaimer();
+}
