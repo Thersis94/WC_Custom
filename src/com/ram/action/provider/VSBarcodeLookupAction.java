@@ -21,7 +21,11 @@ import com.siliconmtn.barcode.BarcodeItemVO.BarcodeType;
 import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.barcode.BarcodeManager;
 import com.siliconmtn.barcode.BarcodeOEM;
+import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -236,8 +240,8 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	protected RAMProductVO retrieveProduct(BarcodeItemVO barcode) throws ActionException {
 		RAMProductVO p = null;
 		log.debug("Performing lookup on productId: " + barcode.getProductId());
-		try(PreparedStatement ps = dbConn.prepareStatement(getProductSql(barcode.getBarcodeType()))) {
-			ps.setInt(1, Convert.formatInteger(barcode.getCustomerId()));
+		try(PreparedStatement ps = dbConn.prepareStatement(getProductSql(barcode))) {
+			ps.setString(1,barcode.getVendorCode());
 			ps.setString(2, barcode.getProductId());
 	
 			ResultSet rs = ps.executeQuery();
@@ -246,31 +250,64 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 				p = new RAMProductVO(rs);
 				p.setLotNumber(barcode.getLotCodeNumber());
 				p.setExpiree(barcode.getExpirationDate());
+				p.setSerialNumber(barcode.getSerialNumber());
+				
+				// If the product is a kit and the serial number is present, get the item master id
+				if (p.getKitFlag() == 1 && ! StringUtil.isEmpty(barcode.getSerialNumber())) {
+					getKitItemMasterId(p);
+				}
 			}
 		} catch (SQLException e) {
 			log.error(e);
 		}
 		return p;
 	}
-
-	private String getProductSql(BarcodeType type) {
+	
+	/**
+	 * Retrieves the location item master id for a given kit
+	 * @param prod
+	 * @return
+	 */
+	protected void getKitItemMasterId(RAMProductVO prod) {
+		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder();
-		sql.append("select p.*, p.GTIN_PRODUCT_ID as GTIN_NUMBER_TXT, c.CUSTOMER_NM from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_PRODUCT p ");
-		sql.append("LEFT JOIN ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_CUSTOMER c on p.CUSTOMER_ID = p.CUSTOMER_ID ");
-		sql.append("where p.CUSTOMER_ID = ? ");
-		if(type.equals(BarcodeType.GTIN)) {
-			sql.append("and GTIN_PRODUCT_ID = ?");
+		sql.append("select location_item_master_id as key ");
+		sql.append(DBUtil.FROM_CLAUSE).append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("ram_location_item_master ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("product_id = ? and serial_no_txt = ? ");
+		log.debug("Getting kit: " + sql + "|" + prod.getProductId() + "|" + prod.getSerialNumber());
+		
+		// Add the params
+		List<Object> params = new ArrayList<>();
+		params.add(prod.getProductId());
+		params.add(prod.getSerialNumber());
+		
+		//Get the data
+		DBProcessor db = new DBProcessor(getDBConnection(), Constants.CUSTOM_DB_SCHEMA + "");
+		List<Object> res = db.executeSelect(sql.toString(), params, new GenericVO());
+		
+		// assign the id
+		if (! res.isEmpty()) prod.setLocationItemMasterId(Convert.formatInteger(((GenericVO)res.get(0)).getKey() + ""));
+	}
+	
+	/**
+	 * Retrieves a scanned product
+	 * @param bc
+	 * @return
+	 */
+	private String getProductSql(BarcodeItemVO bc) {
+		StringBuilder sql = new StringBuilder();
+		sql.append("select p.*, p.gtin_product_id as gtin_number_txt, c.customer_nm from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_product p ");
+		sql.append("inner join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_customer c on c.customer_id = p.customer_id and c.gtin_number_txt = ? ");
+		sql.append("where 1=1 ");
+		if(BarcodeType.GTIN.equals(bc.getBarcodeType())) {
+			sql.append("and gtin_product_id = ?");
 		} else {
-			sql.append("and CUST_PRODUCT_ID = ?");
+			sql.append("and cust_product_id = ?");
 		}
 
-		log.debug(sql.toString());
+		log.debug(sql.toString() + "|" + bc.getCustomerId() + "|" + bc.getProductId());
 		return sql.toString();
-	}
-
-	public void list(ActionRequest req) throws ActionException {
-		super.list(req);
 	}
 }
