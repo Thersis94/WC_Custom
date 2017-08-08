@@ -34,6 +34,7 @@ import com.biomed.smarttrak.admin.TeamMemberAction;
 import com.biomed.smarttrak.admin.UpdateListTitleAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.admin.UpdatesEmailSendAction;
+import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.admin.UserAccountSearchAction;
 import com.biomed.smarttrak.admin.report.EmailReportAction;
 import com.biomed.smarttrak.fd.FinancialDashAdminAction;

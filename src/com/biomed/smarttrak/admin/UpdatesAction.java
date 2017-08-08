@@ -63,7 +63,10 @@ public class UpdatesAction extends ManagementAction {
 	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
 	public static final String UPDATE_TYPE_CD = "updates";
 
+
 	public enum UpdateType {
+		//NOTE: The order of these UpdateType values impacts the compareTo() method.  Impacts UpdatesEditionSorter if you rearrange these.
+		// you cannot override the compareTo() method, but an order and "int compare(int i)" method could be added here.
 		MARKET(12, "Market"),
 		REVENUES(15, "Revenues"),
 		NEW_PRODUCTS(17, "New Products"),
@@ -509,8 +512,7 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	public SmarttrakTree loadSections() {
 		//load the section hierarchy Tree from superclass
-		SmarttrakTree t = loadDefaultTree();
-		return t;
+		return loadDefaultTree();
 	}
 
 
