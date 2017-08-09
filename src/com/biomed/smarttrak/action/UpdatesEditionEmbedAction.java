@@ -59,5 +59,6 @@ public class UpdatesEditionEmbedAction extends UpdatesEditionAction {
 	@Override
 	protected void setProfileId(ActionRequest req) {
 		req.setParameter(PROFILE_ID, null);
+		log.debug(req.getParameter(PROFILE_ID));
 	}
 }

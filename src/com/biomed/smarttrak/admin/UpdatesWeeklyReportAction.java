@@ -161,16 +161,4 @@ public class UpdatesWeeklyReportAction extends UpdatesEditionAction {
 		ModuleVO mod = (ModuleVO) loader.getAttribute(Constants.MODULE_DATA);
 		return (List<UpdateVO>) mod.getActionData();
 	}
-
-
-	/**
-	 * overwritten by subclass (embed action) - puts the data into a container useful to the View.
-	 * @param t
-	 * @param updates
-	 *TODO Billy - remove this method, the superclass will put a Tree into ModuleVO already
-	 */
-	@Override
-	protected void packageDataForDisplay(Tree t, List<UpdateVO> updates) {
-		putModuleData(updates, updates.size(), false);
-	}
 }

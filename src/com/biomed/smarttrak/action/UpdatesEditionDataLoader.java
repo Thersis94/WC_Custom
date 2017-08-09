@@ -15,15 +15,12 @@ import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
 //WC Custom
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
-
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 //WC libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -221,6 +218,8 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 					vo.setProductNm(rs.getString("product_nm"));
 					vo.setMarketId(rs.getString("market_id"));
 					vo.setMarketNm(rs.getString("market_nm"));
+					vo.setStatusCd(rs.getString("status_cd"));
+					vo.setEmailFlg(rs.getInt("email_flg"));
 					//log.debug("loaded update: " + vo.getUpdateId())
 				}
 
@@ -303,21 +302,11 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (up.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
 		sql.append("where coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
-		
+
 		//note this query ignores email_flg=1 (compared to the two above)
 
-		//If we have sectionId(s), filter results by section
-		if (sectionIds != null) {
-			//within a section show both status levels
-			sql.append("and up.status_cd in ('R','N') ");
-			
-			sql.append("and us.section_id in (");
-			DBUtil.preparedStatmentQuestion(sectionIds.length, sql);
-			sql.append(") ");
-		} else {
-			//without a section only show un-reviewed (New) status level
-			sql.append("and up.status_cd='N' ");
-		}
+		//without a section only show un-reviewed (New) status level
+		sql.append("and up.status_cd in ('N', 'R') ");
 
 		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
 		return sql.toString();
@@ -329,7 +318,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 * @param sql
 	 */
 	private void appendSelect(StringBuilder sql) {
-		sql.append("select distinct up.update_id, up.title_txt, up.message_txt, coalesce(up.publish_dt, up.create_dt) as publish_dt, ");
+		sql.append("select distinct up.update_id, up.title_txt, up.message_txt, coalesce(up.publish_dt, up.create_dt) as publish_dt, up.status_cd, up.email_flg, ");
 		sql.append("up.type_cd, coalesce(up.order_no,0) as order_no, us.update_section_xr_id, us.section_id, ");
 		sql.append("c.short_nm_txt as company_nm, prod.short_nm as product_nm, ");
 		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");

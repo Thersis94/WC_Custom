@@ -6,7 +6,8 @@ import com.biomed.smarttrak.vo.UpdateVO;
 
 /****************************************************************************
  * <b>Title:</b> UpdatesDateComparator.java<br/>
- * <b>Description:</b> Compares Updates on the Updates Edition page - withing a section we sort by Type, then date (newest first).
+ * <b>Description:</b> Compares Updates on the Updates Edition page - 
+ * 		within a section we sort by Type, then date (newest first).
  * <br/>
  * <b>Copyright:</b> Copyright (c) 2017<br/>
  * <b>Company:</b> Silicon Mountain Technologies<br/>

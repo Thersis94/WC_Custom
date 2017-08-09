@@ -9,17 +9,14 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.DatabaseException;
+// WC EmailCampaigns
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-
 // WC
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
-
-// WC EmailCampaigns
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
-import com.smt.sitebuilder.action.emailcampaign.embed.EmbedWidgetManager;
 
 /****************************************************************************
  * Title: UpdatesEmailSendAction.java <p/>
@@ -36,7 +33,7 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	private String profileId; 
 	private String uniqueSendFlg= "0"; //use String due to cross tab query in datasource
 	protected enum KeyValueType {
-		SECTION_KEY_TYPE("SECTION"), MESSAGE_KEY_TYPE("MESSAGE"), 
+		MESSAGE_KEY_TYPE("MESSAGE"), 
 		TIME_RANGE_KEY_TYPE("TIME_RANGE");
 		
 		private String keyName;
@@ -161,9 +158,6 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 			Map<String, Object> config){
 		//determine type
 		switch(type){
-		case SECTION_KEY_TYPE: 
-			setSectionIdValue(req, type, config);
-			break;
 		case MESSAGE_KEY_TYPE:
 			config.put(type.getKeyName(), StringUtil.checkVal(req.getParameter("emailMessageText")));
 			break;
@@ -171,24 +165,8 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 			setTimeRangeValue(req, type, config);
 			break;
 		}
-	}	
-	
-	/**
-	 * Helper method to section id value(s) to the passed campaign config vo
-	 * @param req
-	 * @param configVo
-	 */
-	private void setSectionIdValue(ActionRequest req, KeyValueType keyType,  Map<String, Object>emailConfig){
-		String[] sectionIds = req.getParameterValues("sectionId");
-		StringBuilder sections = new StringBuilder(50);
-		//store section id's delimited by special delimited token string
-		for (int i = 0; i< sectionIds.length; i++) {
-			if(i != 0) sections.append(EmbedWidgetManager.ARRAY_DELIMIT_TOKEN);
-			sections.append(sectionIds[i]);
-		}
-		emailConfig.put(keyType.getKeyName(), sections.toString());
 	}
-	
+
 	/**
 	 * Helper method to time range value to the passed campaign config vo
 	 * @param req
@@ -204,5 +182,4 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 			config.put(type.getKeyName(), "weekly");	
 		}
 	}
-	
 }
