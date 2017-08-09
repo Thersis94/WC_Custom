@@ -165,7 +165,11 @@ public class UpdatesAction extends ManagementAction {
 		if (req.hasParameter(UPDATE_ID)) params.add(req.getParameter(UPDATE_ID));
 		if (req.hasParameter(STATUS_CD)) params.add(req.getParameter(STATUS_CD));
 		if (req.hasParameter(TYPE_CD)) params.add(Convert.formatInteger(req.getParameter(TYPE_CD)));
-		if (req.hasParameter(SEARCH)) params.add("%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%");
+		if (req.hasParameter(SEARCH)) {
+			String searchData = "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%";
+			params.add(searchData);
+			params.add(searchData);
+		}
 			
 		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 			
@@ -337,7 +341,11 @@ public class UpdatesAction extends ManagementAction {
 			if (req.hasParameter(UPDATE_ID)) ps.setString(++i, req.getParameter(UPDATE_ID));
 			if (req.hasParameter(STATUS_CD)) ps.setString(++i, req.getParameter(STATUS_CD));
 			if (req.hasParameter(TYPE_CD)) ps.setInt(++i, Convert.formatInteger(req.getParameter(TYPE_CD)));
-			if (req.hasParameter(SEARCH))  ps.setString(++i, "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%");
+			if (req.hasParameter(SEARCH)) {
+				String searchData = "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%";
+				ps.setString(++i, searchData);
+				ps.setString(++i, searchData);
+			}
 			String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 			if (sectionIds != null) { //restrict to certain sections only
 				for (String s : getSectionFamily(sectionIds))
@@ -475,7 +483,10 @@ public class UpdatesAction extends ManagementAction {
 		if (req.hasParameter(UPDATE_ID)) sql.append("and a.update_id=? ");
 		if (req.hasParameter(STATUS_CD)) sql.append("and a.status_cd=? ");
 		if (req.hasParameter(TYPE_CD)) sql.append("and a.type_cd=? ");
-		if (req.hasParameter(SEARCH)) sql.append("and lower(a.title_txt) like ? ");
+		if (req.hasParameter(SEARCH)) {
+			sql.append("and (lower(a.title_txt) like ? ");
+			sql.append("or lower(a.message_txt) like ? ) ");
+		}
 		String dateRange = req.getParameter(DATE_RANGE);
 		if ("1".equals(dateRange)) {
 			sql.append("and a.create_dt > CURRENT_DATE - INTERVAL '6 months' ");
