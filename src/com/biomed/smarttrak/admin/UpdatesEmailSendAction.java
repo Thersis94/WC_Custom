@@ -77,10 +77,10 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 		//if user doesn't already have a profile, create one
 		if(profileId.isEmpty()) {
 			createUserProfile(req);
-		}
 
-		//Updates Send Now Emails to always show all updates just like in the Scheduled Tasks.
-		uniqueSendFlg = "1";
+			//Updates Send Now Emails to always show all updates just like in the Scheduled Tasks.
+			uniqueSendFlg = "1";
+		}
 
 		//send off "send now email"
 		processEmailSend(req);
