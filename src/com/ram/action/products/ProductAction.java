@@ -3,26 +3,34 @@
  */
 package com.ram.action.products;
 
+// JDK 1.8.x
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// WC Custom
 import com.ram.action.data.RAMProductSearchVO;
-import com.ram.action.util.SecurityUtil;
+
+// RAM Data Feed
 import com.ram.datafeed.data.RAMProductVO;
+
+// SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
+// WC Libs 3.3
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /****************************************************************************
@@ -47,6 +55,11 @@ import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 public class ProductAction extends SBActionAdapter {
 
 	public static final String CLONE_SUFFIX = "clone";
+	
+	// Constants for commonly used values
+	private static final String PRODUCT_ID = "product_id";
+	private static final String PRODUCTID = "productId";
+	
 	/**
 	 * Default Constructor
 	 */
@@ -83,11 +96,11 @@ public class ProductAction extends SBActionAdapter {
 			}
 
 			//Clone RAM_PRODUCT Record.
-			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "RAM_PRODUCT", "PRODUCT_ID", true);
+			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "ram_product", PRODUCT_ID, true);
 			rdu.setSchemaNm((String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
-			rdu.addWhereClause("PRODUCT_ID", req.getParameter("productId"));
+			rdu.addWhereClause(PRODUCT_ID, req.getParameter(PRODUCTID));
 			Map<String, String> productIds = rdu.copy();
-			replaceVals.put("PRODUCT_ID", productIds);
+			replaceVals.put(PRODUCT_ID, productIds);
 
 			//If this is a kit, then propagate through the KitAction Framework.
 			if(Convert.formatBoolean(req.getParameter("isKit"))) {
@@ -131,10 +144,10 @@ public class ProductAction extends SBActionAdapter {
 		
 		//Build Statement and execute
 		try(PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
-			ps.setString(1, req.getParameter("productId"));
+			ps.setString(1, req.getParameter(PRODUCTID));
 			ps.executeUpdate();
 		} catch(SQLException sqle) {
-			log.error("Error deactivating Product: " + req.getParameter("productId"), sqle);
+			log.error("Error deactivating Product: " + req.getParameter(PRODUCTID), sqle);
 			throw new ActionException(sqle);
 		}
 	}
@@ -145,7 +158,7 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if(req.hasParameter("productId"))
+		if(req.hasParameter(PRODUCTID))
 			retrieveProducts(req);
 		//Prevent double call at page load.  This ensures only the ajax call triggers load.
 		else if(req.hasParameter("amid"))
@@ -161,16 +174,16 @@ public class ProductAction extends SBActionAdapter {
 		
 		//Instantiate the products list for results and check for lookup type.
 		List<RAMProductVO> products = new ArrayList<>();
-		boolean isProductLookup = req.hasParameter("productId");
+		boolean isProductLookup = req.hasParameter(PRODUCTID);
 
 		StringBuilder sb = new StringBuilder(150);
 		sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("RAM_PRODUCT where ");
-		if(isProductLookup)
-			sb.append("PRODUCT_ID = ?");
-		else {
-			sb.append("CUSTOMER_ID = ?");
-		}
+		sb.append("ram_product a inner join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sb.append("ram_customer b on a.customer_id = b.customer_id ");
+		sb.append(DBUtil.WHERE_1_CLAUSE);
+		
+		if(isProductLookup) sb.append("and a.product_id = ?");
+		else sb.append("and a.customer_id = ?");
 		
 		//Log sql Statement for verification
 		log.debug("sql: " + sb.toString());
@@ -178,7 +191,7 @@ public class ProductAction extends SBActionAdapter {
 		//Build the Statement and execute		
 		try(PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
 			if(isProductLookup)
-				ps.setInt(1, Convert.formatInteger(req.getParameter("productId")));
+				ps.setInt(1, Convert.formatInteger(req.getParameter(PRODUCTID)));
 			else
 				ps.setInt(1, Convert.formatInteger(req.getParameter("customerId")));
 			
@@ -202,60 +215,24 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		Map<String, String> result = new HashMap<>();
-		result.put("success", "true");
-		result.put("msg", "Data Successfully Updated");
+		// Populate the data
+		RAMProductVO product = new RAMProductVO(req);
+		product.setCreateDate(new Date());
 		
-		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if(SecurityUtil.isProviderRole(r.getRoleId())) {
-			result.put("success", "false");
-			result.put("msg", "User has invalid permissions for this action.");
-			return;
-		}
-		
-		//Build Update Query.
-		String query = null;
-		boolean isInsert = !req.hasParameter("productId");
-		
-		if(isInsert) {
-			query = getProdInsert();
-		} else {
-			query = getProdUpdate();
-		}
-		
-		//Log sql Statement for verification
-		log.debug("sql: " + query);
-		
-		
-		//Build PreparedStatement and set Parameters
-		int i = 1;
-		try(PreparedStatement ps = dbConn.prepareStatement(query)) {
-			ps.setString(i++, req.getParameter("productNm"));
-			ps.setString(i++, req.getParameter("shortDesc"));
-			ps.setInt(i++, Convert.formatInteger(Convert.formatBoolean(req.getParameter("activeFlag"))));
-			ps.setInt(i++, Convert.formatInteger(Convert.formatBoolean(req.getParameter("lotCodeRequired"))));
-			ps.setInt(i++, Convert.formatInteger(Convert.formatBoolean(req.getParameter("kitFlag"))));
-			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
-			ps.setInt(i++, Convert.formatInteger(Convert.formatBoolean(req.getParameter("expireeRequired"))));
-			ps.setString(i++, req.getParameter("customerProductId"));
-			ps.setInt(i++, 1);
-			if(req.hasParameter("productId")) {
-				ps.setInt(i++, Convert.formatInteger(req.getParameter("productId")));
-			} else {
-				ps.setInt(i++, Convert.formatInteger(req.getParameter("customerId")));
-				ps.setString(i++, req.getParameter("gtinProductId"));
-			}
-			//Execute
-			ps.executeUpdate();
-		} catch(SQLException sqle) {
-			log.error("Error updating Product: " + req.getParameter("productId"), sqle);
-			result.put("success", "false");
-			result.put("msg", "Problem Saving Record");
-			throw new ActionException(sqle);
+		// Save the product info
+		try {
+			DBProcessor db = new DBProcessor(getDBConnection(), (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+			db.save(product);
+			
+			// Return the product info 
+			this.putModuleData(product, 1, false, "Product Successfully Saved", false);
+		} catch(Exception e) {
+			log.error("Unable to save product", e);
+			
+			// Set the error onto the message 
+			this.putModuleData(product, 1, false, "Unable to save product", true);
 		}
 
-		//Redirect User
-		super.putModuleData(result);
 	}
 
 	/**
@@ -267,7 +244,6 @@ public class ProductAction extends SBActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		//Pull relevant data off the request
 		RAMProductSearchVO svo = new RAMProductSearchVO(req);
-
 		List<Object> params = buildProductLookupParams(svo);
 		String sql = getProdList(svo);
 
@@ -297,9 +273,8 @@ public class ProductAction extends SBActionAdapter {
 		int cnt = 0;
 		try(PreparedStatement ps = dbConn.prepareStatement(getProdList(svo))) {
 			int index = 1;
+			if (svo.getActiveFlag() != null) ps.setInt(index++, svo.getActiveFlag());
 			if (svo.getCustomerId() > 0) ps.setInt(index++, svo.getCustomerId());
-			if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
-			else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
 			if(!StringUtil.isEmpty(svo.getTerm())) {
 				ps.setString(index++, "%" + svo.getTerm() + "%");
 				ps.setString(index++, "%" + svo.getTerm() + "%");
@@ -326,24 +301,15 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	public static List<Object> buildProductLookupParams(RAMProductSearchVO svo) {
 		List<Object> params = new ArrayList<>();
+		if (svo.getActiveFlag() != null) params.add(svo.getActiveFlag());
 		if (svo.getCustomerId() > 0) params.add(svo.getCustomerId());
-		if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) params.add(svo.getAdvFilter());
-		else if (svo.getAdvFilter() > 1) params.add((svo.getAdvFilter() == 2 ? 1 : 0));
 		if(!StringUtil.isEmpty(svo.getTerm())) {
 			params.add("%" + svo.getTerm() + "%");
 			params.add("%" + svo.getTerm() + "%");
 		}
-
-		/*
-		 * Providers use an intersect to get the correct products
-		 * so we need to set the same attributes again.
-		 */
-		if(svo.getProviderId() > 0) {
-			params.add(svo.getProviderId());
-		}
+		
 		params.add(svo.getStart());
 		params.add(svo.getLimit());
-
 		return params;
 	}
 
@@ -357,23 +323,18 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	protected StringBuilder getWhereClause(RAMProductSearchVO svo) {
 		StringBuilder sb = new StringBuilder(700);
-		String schema = attributes.get(Constants.CUSTOM_DB_SCHEMA) + "";
-
-		sb.append("where 1=1 ");
+		sb.append(DBUtil.WHERE_1_CLAUSE);
 		
 		//Add clauses depending on what is passed in.
-		if(svo.isActiveOnly()) sb.append("and a.ACTIVE_FLG = 1 ");
-		if (svo.getCustomerId() > 0) sb.append("and a.customer_id = ? ");
-		if(svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) sb.append("and kit_flg = ? ");
-		if(svo.getAdvFilter() > 1) sb.append("and manual_entry_flg = ? ");
-		if(svo.getTerm().length() > 0) sb.append("and (lower(product_nm) like ? or lower(cust_product_id) like ?) ");
+		if (svo.getActiveFlag() != null) sb.append("and a.active_flg = ? ");
+		else sb.append("and a.active_flg = 1 ");
 		
-		//Providers filter by inventoryItems that are related to their customerId
-		if(svo.getProviderId() > 0) {
-			sb.append("and a.product_id in (select i.product_id from ");
-			sb.append(schema).append("ram_location_item_master i ");
-			sb.append("inner join ").append(schema).append("ram_customer_location f on i.customer_location_id = f.customer_location_id and f.customer_id = ?) ");
-		}
+		if (svo.getCustomerId() > 0) sb.append("and a.customer_id = ? ");
+		if(svo.getAdvFilter().contains("5")) sb.append("and kit_flg = 1 ");
+		if(svo.getAdvFilter().contains("10")) sb.append("and (kit_flg = 0 or kit_flg is null) ");
+		if(svo.getAdvFilter().contains("15")) sb.append("and manual_entry_flg = 1 ");
+		if(svo.getAdvFilter().contains("20")) sb.append("and (manual_entry_flg = 0 or manual_entry_flg is null) ");
+		if(svo.getTerm().length() > 0) sb.append("and (lower(product_nm) like ? or lower(cust_product_id) like ?) ");
 		
 		return sb;
 	}
@@ -403,7 +364,8 @@ public class ProductAction extends SBActionAdapter {
 		if(svo.isCount()) {
 			sb.append("select count(a.product_id) from ").append(schema);
 		} else {
-			sb.append("select  a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG, a.MANUAL_ENTRY_FLG from ").append(schema);
+			sb.append("select  a.product_id, a.customer_id, a.cust_product_id, a.product_nm, a.desc_txt, a.short_desc, ");
+			sb.append("a.lot_code_flg, a.active_flg, a.expiree_req_flg, a.gtin_product_id, b.customer_nm, a.kit_flg, a.manual_entry_flg from ").append(schema);
 		}
 		//Build Initial Query
 
@@ -419,34 +381,7 @@ public class ProductAction extends SBActionAdapter {
 		log.debug(svo.getCustomerId() + "|" + svo.getProviderId() + "|" + sb.toString());
 		return sb.toString();
 	}
-
-	/**
-	 * Method for retrieving the insert clause for a product
-	 * @return
-	 */
-	public String getProdInsert() {
-		StringBuilder sb = new StringBuilder(300);
-		sb.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("RAM_PRODUCT (PRODUCT_NM, SHORT_DESC, ACTIVE_FLG, LOT_CODE_FLG, ");
-		sb.append("KIT_FLG, CREATE_DT, EXPIREE_REQ_FLG, CUST_PRODUCT_ID, ");
-		sb.append("MANUAL_ENTRY_FLG, CUSTOMER_ID, GTIN_PRODUCT_ID) ");
-		sb.append("values (?,?,?,?,?,?,?,?,?,?,?)");
-		return sb.toString();
-	}
-
-	/**
-	 * Method for retrieving the update clause for a product
-	 * @return
-	 */
-	public String getProdUpdate() {
-		StringBuilder sb = new StringBuilder(300);
-		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("RAM_PRODUCT set PRODUCT_NM = ?, SHORT_DESC = ?, ACTIVE_FLG = ?, ");
-		sb.append("LOT_CODE_FLG = ?, KIT_FLG = ?, UPDATE_DT = ?, ");
-		sb.append("EXPIREE_REQ_FLG = ?, CUST_PRODUCT_ID = ?, MANUAL_ENTRY_FLG = ? where PRODUCT_ID = ? ");
-		return sb.toString();
-	}
-
+	
 	/**
 	 * Helper method that updates the Product Name when it's copied.
 	 * @param ids

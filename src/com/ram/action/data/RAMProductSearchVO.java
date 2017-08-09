@@ -1,6 +1,10 @@
 
 package com.ram.action.data;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import com.ram.action.util.SecurityUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AbstractRoleModule;
@@ -23,15 +27,15 @@ import com.smt.sitebuilder.security.SBUserRole;
  ****************************************************************************/
 public class RAMProductSearchVO extends BSTableDataVO {
 
-	private int advFilter = 0;
+	private List<String> advFilter = new ArrayList<>();
 	private String term = null;
 	
-	private boolean activeOnly = false;
-	private int providerId = 0;
-	private int customerId = 0;
-	private int productId = 0;
-	private int layoutDepthNo = 0;
-	private boolean isSpd = false;
+	private Integer activeFlag = null;
+	private int providerId;
+	private int customerId;
+	private int productId;
+	private int layoutDepthNo;
+	private boolean isSpd;
 
 	/**
 	 * @param req 
@@ -48,10 +52,11 @@ public class RAMProductSearchVO extends BSTableDataVO {
 		super.setData(req);
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 
-		advFilter = Convert.formatInteger(req.getParameter("advFilter"), -1);
-		term = StringUtil.checkVal(req.getParameter("term")).toLowerCase();
+		if (req.hasParameter("advFilter[]")) advFilter = Arrays.asList(req.getParameterValues("advFilter[]"));
+		if (req.hasParameter("activeFlag")) activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
+		
+		term = StringUtil.checkVal(req.getParameter("search")).toLowerCase();
 		isSpd = Convert.formatBoolean(req.getParameter("isSpd"));
-		activeOnly = Convert.formatBoolean(req.getParameter("activeFlag"));
 		productId = Convert.formatInteger(req.getParameter("productId"));
 		layoutDepthNo = Convert.formatInteger(req.getParameter("layoutDepthNo"));
 		if(StringUtil.isEmpty(req.getParameter("customerId")) || r != null) {
@@ -66,10 +71,10 @@ public class RAMProductSearchVO extends BSTableDataVO {
 	}
 
 	//Getters
-	public int getAdvFilter() {return advFilter;}
+	public List<String> getAdvFilter() {return advFilter;}
 	public String getTerm() {return term;}
 	public boolean isSpd() {return isSpd;}
-	public boolean isActiveOnly() {return activeOnly;}
+	public Integer getActiveFlag() {return activeFlag;}
 	public int getProviderId() {return providerId;}
 	public int getCustomerId() {return customerId;}
 	public int getProductId() {return productId;}
@@ -77,10 +82,10 @@ public class RAMProductSearchVO extends BSTableDataVO {
 	
 
 	//Setters
-	public void setAdvFilter(int advFilter) {this.advFilter = advFilter;}
+	public void setAdvFilter(List<String> advFilter) {this.advFilter = advFilter;}
 	public void setTerm(String term) {this.term = term;}
 	public void setIsSpd(boolean isSpd) {this.isSpd = isSpd;}
-	public void setActiveOnly(boolean activeOnly) {this.activeOnly = activeOnly;}
+	public void setActiveFlag(Integer activeOnly) {this.activeFlag = activeOnly;}
 	public void setProviderId(int providerId) {this.providerId = providerId;}
 	public void setCustomerId(int customerId) {this.customerId = customerId;}
 	public void setProductId(int productId) {this.productId = productId;}
