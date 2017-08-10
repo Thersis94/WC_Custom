@@ -9,11 +9,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+//RAMDataFeed
 import com.ram.action.data.RAMCustomerSearchVO;
-// RAMDataFeed
 import com.ram.datafeed.data.CustomerLocationVO;
 import com.ram.datafeed.data.CustomerVO;
-import com.ram.datafeed.data.RAMUserVO;
+
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -23,6 +23,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -44,9 +45,6 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class CustomerAction extends SBActionAdapter {
 
-	/**
-	 * 
-	 */
 	public CustomerAction() {
 		super(new ActionInitVO());
 	}
@@ -164,7 +162,7 @@ public class CustomerAction extends SBActionAdapter {
 		StringBuilder cSql = new StringBuilder(512);
 		buildCountSelect(cSql,schema);
 		
-		cSql.append(getCustomerLookupWhereClause(svo, req, cParams));
+		cSql.append(getCustomerLookupWhereClause(svo, schema, req, cParams));
 		buildFilter(cSql, req, cParams);
 		return cSql.toString();
 	}
@@ -233,7 +231,6 @@ public class CustomerAction extends SBActionAdapter {
 			putModuleData(res);
 		} else {
 			// Build the redirect and messages
-
 			StringBuilder url = new StringBuilder(50);
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			url.append(page.getRequestURI());
@@ -288,7 +285,7 @@ public class CustomerAction extends SBActionAdapter {
 
 
 		//Add Where Clause
-		sql.append(getCustomerLookupWhereClause(svo, req, params));
+		sql.append(getCustomerLookupWhereClause(svo, schema, req,  params));
 		// Build the filters
 		buildFilter(sql, req, params);
 		buildOrder(sql, req, params);
@@ -309,8 +306,10 @@ public class CustomerAction extends SBActionAdapter {
 		String sort = null;
 		if (req.hasParameter("sort")) {
 			String sortParam = req.getParameter("sort");
+			
+			if("locationCount".equalsIgnoreCase(sortParam)) sort = "location_count_no ";
+			if("activeFlag".equalsIgnoreCase(sortParam)) sort = "active_flg ";
 			if("customerName".equalsIgnoreCase(sortParam)) sort = "customer_nm ";
-			if("statusId".equalsIgnoreCase(sortParam)) sort = "active_flg ";
 		}
 		
 		//if sort is still empty default back to customer name
@@ -362,12 +361,12 @@ public class CustomerAction extends SBActionAdapter {
 	/**
 	 * generates the where clause of the query
 	 * @param svo
+	 * @param req 
 	 * @param req
 	 * @param params
 	 * @return
 	 */
-	public String getCustomerLookupWhereClause(RAMCustomerSearchVO svo, ActionRequest req, List<Object> params) {
-		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+	public static String getCustomerLookupWhereClause(RAMCustomerSearchVO svo, String schema, ActionRequest req, List<Object> params) {
 		StringBuilder sql = new StringBuilder(150);
 
 		//Build Where Clause based of req Params that were passed.
@@ -384,28 +383,46 @@ public class CustomerAction extends SBActionAdapter {
 		if (svo.getCustomerId() > 0) {
 			sql.append("and customer_id = ? ");
 		}
+		
 		if(svo.isKitsOnly()) {
-
 			sql.append("and customer_id in (select distinct CUSTOMER_ID ").append(DBUtil.FROM_CLAUSE);
 			sql.append(schema).append("RAM_PRODUCT ");
 			sql.append(DBUtil.WHERE_CLAUSE).append("KIT_FLG = ?) ");
 			params.add(1);
 		}
 		
-		if (req.hasParameter("srchState")) {
+		generateParamFilters(req, sql, params, schema);
+		
+		return sql.toString();
+	}
+	/**
+	 * looks at the request object and sets filter queries and values
+	 * @param req
+	 * @param sql
+	 * @param params 
+	 */
+	private static void generateParamFilters(ActionRequest req, StringBuilder sql, List<Object> params, String schema) {
+		
+		if (req.hasParameter("srchState") && !req.getParameter("srchState").isEmpty()) {
 			String state = StringUtil.checkVal(req.getParameter("srchState"));
-			sql.append("and a.customer_id in (select customer_id from custom.ram_customer_location where lower (state_cd) = ? ) ) ");
-			params.add("%" + state.toLowerCase() + "%");
+			sql.append("and a.customer_id in (select customer_id from ").append(schema).append("ram_customer_location where state_cd = ?  ) ");
+			params.add(state.toUpperCase());
 		}
 
 		if (req.hasParameter("srchCity")) {
 			String city = StringUtil.checkVal(req.getParameter("srchCity"));
-			sql.append("and a.customer_id in (select customer_id from custom.ram_customer_location where lower(city_nm) like ? ) ");
+			sql.append("and a.customer_id in (select customer_id from ").append(schema).append("ram_customer_location where lower(city_nm) like ? ) ");
 			params.add("%" + city.toLowerCase() + "%");
 		}
 
-		return sql.toString();
+		if (req.hasParameter("srchActiveFlg")) {
+			Integer activeFlg = Convert.formatInteger(StringUtil.checkVal(req.getParameter("srchActiveFlg")));
+			sql.append("and a.active_flg = ?  ");
+			params.add( activeFlg );
+		}
+		
 	}
+
 	/**
 	 * Helper method that manages inserting and updating a Customer Record
 	 * in the Database.
@@ -446,4 +463,6 @@ public class CustomerAction extends SBActionAdapter {
 			ps.executeUpdate();
 		}
 	}
+
+
 }
