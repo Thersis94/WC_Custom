@@ -60,6 +60,7 @@ public class LookupAction extends SimpleActionAdapter {
 		SBUserRole role = (SBUserRole)ses.getAttribute(Constants.ROLE_DATA);
 		List<?> data = null;
 		
+		
 		switch(type) {
 			case "providers":
 				data = getProviders(req);
@@ -85,11 +86,56 @@ public class LookupAction extends SimpleActionAdapter {
 			case "kitCustomers":
 				data = getKitCustomers(req);
 				break;
+			case "providerTypes":
+				data = getProviderTypes(req);
+				break;
+			case "regions":
+				data = getRegions(req);
+				break;
 			default:
 				log.debug("can't find list type");
 		}
 		this.putModuleData(data);
 	}
+
+	/**
+	 * @param req
+	 * @return
+	 */
+	private List<?> getRegions(ActionRequest req) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		List<Object> params = new ArrayList<>();
+
+		StringBuilder sql = new StringBuilder();
+		sql.append("select region_id as key, region_nm as value  from ").append(schema).append("ram_region");
+		
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		List<?> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
+		this.putModuleData(data);
+		
+		// Return the data
+		return data;
+	}
+
+	/**
+	 * @param req
+	 * @return
+	 */
+	private List<?> getProviderTypes(ActionRequest req) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		List<Object> params = new ArrayList<>();
+
+		StringBuilder sql = new StringBuilder();
+		sql.append("select customer_type_id as key, type_nm as value  from ").append(schema).append("ram_customer_type");
+		
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		List<?> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
+		this.putModuleData(data);
+		
+		// Return the data
+		return data;
+	}
+
 	
 	/**
 	 * 
@@ -99,15 +145,16 @@ public class LookupAction extends SimpleActionAdapter {
 	public List<?> getKitCustomers(ActionRequest req) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		RAMCustomerSearchVO csv = new RAMCustomerSearchVO(req);
+		List<Object> params = new ArrayList<>();
 
 		StringBuilder sql = new StringBuilder();
 		sql.append("select customer_id as key, customer_nm as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("ram_customer a ");
-		sql.append(CustomerAction.getCustomerLookupWhereClause(csv, schema));
+		sql.append(CustomerAction.getCustomerLookupWhereClause(csv, schema, req, params));
 
 		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<?> data = dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
+		List<?> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
 		this.putModuleData(data);
 
 		// Return the data
@@ -121,7 +168,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 */
 	public List<?> getOEMs(ActionRequest req) {
 		RAMCustomerSearchVO csv = new RAMCustomerSearchVO(req);
-
+		
 		StringBuilder sql = new StringBuilder();
 		sql.append("select customer_id as key, customer_nm as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
