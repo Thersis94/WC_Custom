@@ -151,6 +151,33 @@ public class CustomerAction extends SBActionAdapter {
 		return customers;
 	}
 
+	public static List<Object> buildCustomerQueryParams(RAMCustomerSearchVO svo) {
+		List<Object> params = new ArrayList<>();
+
+		if (!StringUtil.isEmpty(svo.getCustomerTypeId())) {
+			params.add(svo.getCustomerTypeId());
+		} else if (!StringUtil.isEmpty(svo.getExcludeTypeId())) {
+			params.add(svo.getExcludeTypeId());
+		}
+
+		if (svo.getCustomerId() > 0) {
+			params.add(svo.getCustomerId());
+		}
+
+		//Add Kit Flag Value.
+		if(svo.isKitsOnly()) {
+			params.add(1);
+		}
+
+		//Add Paginations.
+		if(svo.isPaginated()) {
+			params.add(svo.getStart());
+			params.add(svo.getLimit());
+		}
+
+		return params;
+}
+	
 	/**
 	 * @param svo
 	 * @param req
@@ -196,6 +223,8 @@ public class CustomerAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.debug("Customer action build");
+		
 		//Gather Req Params.
 		CustomerVO vo = new CustomerVO(req);
 		boolean reactivate = (Convert.formatBoolean(req.getParameter("activate")));

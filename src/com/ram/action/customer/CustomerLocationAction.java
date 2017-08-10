@@ -117,6 +117,8 @@ public class CustomerLocationAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("CustomerLocationAction build...");
+		
+		
 		// instantiate a vo using the values on the request.
 		CustomerLocationVO vo = new CustomerLocationVO(req);
 		// geocode the location

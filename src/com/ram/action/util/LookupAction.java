@@ -168,7 +168,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 */
 	public List<?> getOEMs(ActionRequest req) {
 		RAMCustomerSearchVO csv = new RAMCustomerSearchVO(req);
-
+		
 		StringBuilder sql = new StringBuilder();
 		sql.append("select customer_id as key, customer_nm as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
