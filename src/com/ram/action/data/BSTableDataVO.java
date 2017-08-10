@@ -32,7 +32,7 @@ public class BSTableDataVO {
 	}
 	protected void setData(ActionRequest req) {
 		start = Convert.formatInteger(req.getParameter("offset") , 0);
-		limit = Convert.formatInteger(req.getParameter("limit"), 25) + start;
+		limit = Convert.formatInteger(req.getParameter("limit"), 10);
 		isPaginated = req.hasParameter("isPaginated") ? Convert.formatBoolean(req.getParameter("isPaginated")) : req.hasParameter("limit");
 		isAjax = req.hasParameter("amid");
 		isDropDown = Convert.formatBoolean(req.getParameter("isDropDown"));

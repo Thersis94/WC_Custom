@@ -89,7 +89,7 @@ public class VisionProductAction extends ProductAction {
 		if(!svo.isCount())
 			sb.append(") as paginatedResult where RowNum >= ? and RowNum < ? order by RowNum");
 
-		log.info(svo.getCustomerId() + "|" + svo.getProviderId() + "|" + sb.toString());
+		log.debug(svo.getCustomerId() + "|" + svo.getProviderId() + "|" + sb.toString());
 		return sb.toString();
 	}
 }

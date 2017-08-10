@@ -64,6 +64,9 @@ public class LookupAction extends SimpleActionAdapter {
 			case "providers":
 				data = getProviders(req);
 				break;
+			case "oems":
+				data = getOEMs(req);
+				break;
 			case "surgeons":
 				data = getSurgeons(req);
 				break;
@@ -87,7 +90,12 @@ public class LookupAction extends SimpleActionAdapter {
 		}
 		this.putModuleData(data);
 	}
-
+	
+	/**
+	 * 
+	 * @param req
+	 * @return
+	 */
 	public List<?> getKitCustomers(ActionRequest req) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		RAMCustomerSearchVO csv = new RAMCustomerSearchVO(req);
@@ -98,6 +106,28 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append("ram_customer a ");
 		sql.append(CustomerAction.getCustomerLookupWhereClause(csv, schema));
 
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		List<?> data = dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
+		this.putModuleData(data);
+
+		// Return the data
+		return data;
+	}
+	
+	/**
+	 * Gets a list of OEMS
+	 * @param req
+	 * @return
+	 */
+	public List<?> getOEMs(ActionRequest req) {
+		RAMCustomerSearchVO csv = new RAMCustomerSearchVO(req);
+
+		StringBuilder sql = new StringBuilder();
+		sql.append("select customer_id as key, customer_nm as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("ram_customer a where customer_type_id = 'OEM' ");
+		sql.append(SecurityUtil.addOEMFilter(req, "a"));
+		sql.append(" order by customer_nm asc ");
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		List<?> data = dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
 		this.putModuleData(data);
@@ -126,7 +156,6 @@ public class LookupAction extends SimpleActionAdapter {
 		if ("display".equalsIgnoreCase(caseType)) sql.append("and c.or_room_id = ? ");
 		else sql.append("and c.customer_location_id = cast(? as int) ");
 		sql.append("order by or_name ");
-		log.debug(sql + "|" + role.getAttribute(0) + "|" + selected);
 
 		params.add(selected);
 		DBProcessor dbp = new DBProcessor(getDBConnection());
