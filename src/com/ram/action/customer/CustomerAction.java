@@ -208,14 +208,11 @@ public class CustomerAction extends SBActionAdapter {
 		List<Object> cParams = new ArrayList<>();
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<Object> count = db.executeSelect(getCountQuery(svo, req, cParams ), cParams, new GenericVO());
-		if (count != null){
-			GenericVO gen = (GenericVO)count.get(0);
-			log.debug("count of records: " + gen.getKey());
-			return Convert.formatInteger(StringUtil.checkVal(gen.getKey()));
-		}else {
-			log.info("count is null there may be a problem");
-		}
-		return 0;
+		
+		GenericVO gen = (GenericVO)count.get(0);
+		log.debug("count of records: " + gen.getKey());
+		
+		return Convert.formatInteger(StringUtil.checkVal(gen.getKey()));
 	}
 
 	/* (non-Javadoc)
