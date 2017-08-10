@@ -1,5 +1,6 @@
 package com.ram.action.data;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 
@@ -20,8 +21,12 @@ import com.siliconmtn.util.StringUtil;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class ORKitVO {
+public class ORKitVO implements Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private String kitId;
 	private String hospitalName;
 	private String operatingRoom;

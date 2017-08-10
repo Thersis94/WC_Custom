@@ -15,7 +15,9 @@ import java.util.Map;
 
 // WC Custom
 import com.ram.action.data.RAMProductSearchVO;
-
+import com.ram.action.util.SecurityUtil;
+import com.ram.datafeed.data.ProductRecallItemVO;
+import com.ram.datafeed.data.RAMProductCategoryVO;
 // RAM Data Feed
 import com.ram.datafeed.data.RAMProductVO;
 
@@ -25,12 +27,15 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs 3.3
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /****************************************************************************
@@ -158,71 +163,129 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if(req.hasParameter(PRODUCTID))
-			retrieveProducts(req);
+		
+		if (req.hasParameter("product_recall")) {
+			this.putModuleData(getProductRecalls(req));
+			
+		} else if (req.hasParameter(PRODUCTID))
+			this.putModuleData(retrieveProduct(req));
+		
 		//Prevent double call at page load.  This ensures only the ajax call triggers load.
 		else if(req.hasParameter("amid"))
 			list(req);
 	}
-
+	
+	/**
+	 * Gets the gtin prefix number for the given customer id
+	 * @param req
+	 * @return
+	 */
+	public List<Object> getProductRecalls(ActionRequest req) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select * ");
+		sql.append(DBUtil.FROM_CLAUSE).append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("ram_product_recall_item ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("product_id = ? order by lot_number_txt ");
+		log.debug(sql + "|" + req.getParameter(PRODUCTID));
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		
+		List<Object> params = new ArrayList<>();
+		params.add(Convert.formatInteger(req.getParameter(PRODUCTID)));
+		return dbp.executeSelect(sql.toString(), params, new ProductRecallItemVO());
+	}
 	/**
 	 * Retrieve all the products that match either the given CustomerId or ProductId
 	 * on the request.
 	 * @param req
 	 */
-	private void retrieveProducts(ActionRequest req) throws ActionException {			
-		
+	private RAMProductVO retrieveProduct(ActionRequest req) {			
 		//Instantiate the products list for results and check for lookup type.
-		List<RAMProductVO> products = new ArrayList<>();
-		boolean isProductLookup = req.hasParameter(PRODUCTID);
+		RAMProductVO product = null;
 
 		StringBuilder sb = new StringBuilder(150);
-		sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("ram_product a inner join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sb.append("select * from ");
+		sb.append("ram_product a inner join ");
 		sb.append("ram_customer b on a.customer_id = b.customer_id ");
-		sb.append(DBUtil.WHERE_1_CLAUSE);
-		
-		if(isProductLookup) sb.append("and a.product_id = ?");
-		else sb.append("and a.customer_id = ?");
+		sb.append(DBUtil.LEFT_OUTER_JOIN).append("ram_product_category_xr x on a.product_id = x.product_id ");
+		sb.append(DBUtil.WHERE_1_CLAUSE).append("and a.product_id = ?");
 		
 		//Log sql Statement for verification
 		log.debug("sql: " + sb.toString());
+		List<Object> params = new ArrayList<>();
+		params.add(Convert.formatInteger(req.getParameter(PRODUCTID)));
+		DBProcessor db = new DBProcessor(getDBConnection(), attributes.get(Constants.CUSTOM_DB_SCHEMA) + "");
+		List<Object> data = db.executeSelect(sb.toString(), params, new RAMProductVO(), "product_id");
 		
-		//Build the Statement and execute		
-		try(PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
-			if(isProductLookup)
-				ps.setInt(1, Convert.formatInteger(req.getParameter(PRODUCTID)));
-			else
-				ps.setInt(1, Convert.formatInteger(req.getParameter("customerId")));
-			
-			//Loop the results and add to products list.
-			ResultSet rs = ps.executeQuery();
-			while(rs.next())
-				products.add(new RAMProductVO(rs));
-		} catch(SQLException sqle) {
-			log.error("Error retrieving product list", sqle);
-			throw new ActionException(sqle);
-		}
+		// Get the product from the list
+		if (data != null && ! data.isEmpty()) product = (RAMProductVO)data.get(0);
 		
 		//Return List to View
-		this.putModuleData(products);
+		return product;
 	}
 
-	/**
-	 * Make the decision to either insert a new product or update
-	 * and existing product based on presense of a productId on the
-	 * request.
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
+		if (!SecurityUtil.isAdministratorRole(role.getRoleId())) return;
+		
+		if (req.hasParameter("product_recall")) {
+			putModuleData(updateProductRecall(req), 1, false);			
+		} else {
+			saveProduct(req);
+		}
+	}
+	
+	/**
+	 * Updates the active status of the recall
+	 * @param req
+	 */
+	public ProductRecallItemVO updateProductRecall(ActionRequest req) throws ActionException{
+		// Populate the VO
+		ProductRecallItemVO item = new ProductRecallItemVO(req);
+		item.setCreateDate(new Date());
+		item.setUpdateDate(new Date());
+
+		// Save the data
+		DBProcessor db = new DBProcessor(getDBConnection(), (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		try {
+			db.save(item);
+			
+			// Update the recall id with the generated id (new products only)
+			String id = db.getGeneratedPKId();
+			if (! StringUtil.isEmpty(id)) item.setRecallItemId(Convert.formatInteger(id));
+		} catch(Exception e) {
+			throw new ActionException("Unable to update product recall information", e);
+		}
+		
+		return item;
+	}
+	
+	/**
+	 * Make the decision to either insert a new product or update
+	 * and existing product based on presence of a productId on the
+	 * request
+	 * @param req
+	 */
+	public void saveProduct(ActionRequest req) {
 		// Populate the data
 		RAMProductVO product = new RAMProductVO(req);
 		product.setCreateDate(new Date());
+		if (product.getProductId() == 0) product.setProductId(null);
 		
 		// Save the product info
 		try {
 			DBProcessor db = new DBProcessor(getDBConnection(), (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 			db.save(product);
+			
+			// Update the product id with the generated id (new products only)
+			String id = db.getGeneratedPKId();
+			if (! StringUtil.isEmpty(id)) product.setProductId(Convert.formatInteger(id));
+			
+			// Save the categories
+			this.saveCategories(req.getParameterValues("categoryCode"), product);
 			
 			// Return the product info 
 			this.putModuleData(product, 1, false, "Product Successfully Saved", false);
@@ -234,7 +297,31 @@ public class ProductAction extends SBActionAdapter {
 		}
 
 	}
-
+	
+	/**
+	 * Deletes the existing category mapping and adds the newly selected categories
+	 * @param cats
+	 * @param product
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	protected void saveCategories(String[] cats, RAMProductVO product) throws InvalidDataException, DatabaseException {
+		String sql = "delete from ram_product_category_xr where product_id = ? ";
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		List<String> fields = new ArrayList<>();
+		fields.add("product_id");
+		db.executeSqlUpdate(sql, product, fields);
+		
+		for(String val : cats) {
+			RAMProductCategoryVO vo = new RAMProductCategoryVO();
+			vo.setProductId(product.getProductId());
+			vo.setCategoryCode(val);
+			db.insert(vo);
+		}
+	}
+	
+	
 	/**
 	 * Retrieve an unfiltered list of products.
 	 * 
