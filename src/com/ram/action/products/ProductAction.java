@@ -365,6 +365,7 @@ public class ProductAction extends SBActionAdapter {
 			sb.append("select count(a.product_id) from ").append(schema);
 		} else {
 			sb.append("select  a.product_id, a.customer_id, a.cust_product_id, a.product_nm, a.desc_txt, a.short_desc, ");
+			sb.append("b.gtin_number_txt || cast(a.gtin_product_id as varchar(64)) as gtin_number_txt, ");
 			sb.append("a.lot_code_flg, a.active_flg, a.expiree_req_flg, a.gtin_product_id, b.customer_nm, a.kit_flg, a.manual_entry_flg from ").append(schema);
 		}
 		//Build Initial Query

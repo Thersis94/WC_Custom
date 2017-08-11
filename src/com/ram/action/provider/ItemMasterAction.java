@@ -191,7 +191,7 @@ public class ItemMasterAction extends SimpleActionAdapter {
 		// Build the results query
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(500);
-		sql.append("select * ").append(getBaseSQL());
+		sql.append("select *, c.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_product_number_txt ").append(getBaseSQL());
 		sql.append(getListWhere(req, params));
 		sql.append(getListOrder(req, params));
 		log.debug("Location Item Master SQL: " + sql.toString());
