@@ -510,7 +510,7 @@ public class ProductExplorer extends SBActionAdapter {
 		List<Node> sections = new ArrayList<>();
 		
 		for (Node n : fullList) {
-			FilterNode(allowedSections, n, sections);
+			filterNode(allowedSections, n, sections);
 		}
 		
 		return sections;
@@ -523,7 +523,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @param n
 	 * @param sections
 	 */
-	private void FilterNode(Set<String> allowedSections, Node n, List<Node> sections) {
+	private void filterNode(Set<String> allowedSections, Node n, List<Node> sections) {
 		if (n == null || !allowedSections.contains(n.getNodeName())) return;
 		
 		if (n.getNumberChildren() > 0) {
