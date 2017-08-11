@@ -190,7 +190,7 @@ public class ItemMasterAction extends SimpleActionAdapter {
 		
 		// Build the results query
 		List<Object> params = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(500);
+		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select *, c.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_product_number_txt ").append(getBaseSQL());
 		sql.append(getListWhere(req, params));
 		sql.append(getListOrder(req, params));
@@ -198,7 +198,7 @@ public class ItemMasterAction extends SimpleActionAdapter {
 		
 		// Build the count query
 		List<Object> countParams = new ArrayList<>();
-		StringBuilder countSql = new StringBuilder(500);
+		StringBuilder countSql = new StringBuilder(1000);
 		countSql.append("select count(*) as key ").append(getBaseSQL());
 		countSql.append(getListWhere(req, countParams));
 		
@@ -218,7 +218,7 @@ public class ItemMasterAction extends SimpleActionAdapter {
 	protected StringBuilder getBaseSQL() {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 
-		StringBuilder sql = new StringBuilder(450);
+		StringBuilder sql = new StringBuilder(400);
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("RAM_LOCATION_ITEM_MASTER lim ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("RAM_PRODUCT p on lim.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("RAM_CUSTOMER c on p.CUSTOMER_ID = c.CUSTOMER_ID ");
@@ -236,7 +236,7 @@ public class ItemMasterAction extends SimpleActionAdapter {
 	 */
 	public StringBuilder getListWhere(ActionRequest req, List<Object> params) {
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		StringBuilder where = new StringBuilder();
+		StringBuilder where = new StringBuilder(400);
 		
 		// Apply the customer location
 		where.append("where lim.CUSTOMER_LOCATION_ID = ? ");
@@ -274,7 +274,7 @@ public class ItemMasterAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public StringBuilder getListOrder(ActionRequest req, List<Object> params) {
-		StringBuilder order = new StringBuilder();
+		StringBuilder order = new StringBuilder(200);
 		
 		order.append("order by ").append(fieldMap.get(StringUtil.checkVal(req.getParameter("sort"), "productNm")));
 		order.append("desc".equalsIgnoreCase(req.getParameter("order")) ? " desc " : " asc ");
