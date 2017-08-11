@@ -213,7 +213,14 @@ public class UserActivityAction extends SimpleActionAdapter {
 				// first time through loop or we changed users
 				if (user != null) {
 					// close out prev user
-					userActivity.put(user.getProfileId(), user);
+					// Since results are ordered by visit date instead of profile id
+					// this user could already be in the map. If so add the pageviews to user
+					// otherwise add the entire user to the map.
+					if (userActivity.containsKey(user.getProfileId())) {
+						userActivity.get(user.getProfileId()).getPageViews().addAll(user.getPageViews());
+					} else {
+						userActivity.put(user.getProfileId(), user);
+					}
 				}
 				// capture new user
 				user = new UserActivityVO();
