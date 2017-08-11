@@ -9,6 +9,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title:</b> UpdatesEditionEmbedAction.java<br/>
@@ -58,6 +59,10 @@ public class UpdatesEditionEmbedAction extends UpdatesEditionAction {
 	 */
 	@Override
 	protected void setProfileId(ActionRequest req) {
-		req.setParameter(PROFILE_ID, null);
+		if(Convert.formatBoolean(req.getParameter("uniqueSendFlg"))) {
+			req.setParameter(PROFILE_ID, null);
+		}
+
+		log.debug(req.getParameter(PROFILE_ID));
 	}
 }
