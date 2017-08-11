@@ -16,7 +16,6 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WC Libs 3.2
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
@@ -24,7 +23,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 /********************************************************************
  * <b>Title: </b>LookupAction.java<br/>
- * <b>Description: </b>Utility action to manage data lookups for selects and other items<br/>
+ * <b>Description: </b>Utilit action to manage data lookups for selects and other items<br/>
  * <b>Copyright: </b>Copyright (c) 2017<br/>
  * <b>Company: </b>Silicon Mountain Technologies
  * @author James Camire
@@ -86,15 +85,59 @@ public class LookupAction extends SimpleActionAdapter {
 			case "categories":
 				data = getProductCategories();
 				break;
+			case "providerTypes":
+				data = getProviderTypes();
+				break;
 			case "gtin":
 				data = getCustomerGTINPrefix(req);
+				break;
+			case "regions":
+				data = getRegions();
 				break;
 			default:
 				log.debug("can't find list type");
 		}
-		
 		this.putModuleData(data);
 	}
+	
+	/**
+	 * @param req
+	 * @return
+	 */
+	private List<Object> getRegions() {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		List<Object> params = new ArrayList<>();
+
+		StringBuilder sql = new StringBuilder();
+		sql.append("select region_id as key, region_nm as value  from ").append(schema).append("ram_region");
+		
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		List<Object> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
+		this.putModuleData(data);
+		
+		// Return the data
+		return data;
+	}
+
+	/**
+	 * @param req
+	 * @return
+	 */
+	private List<Object> getProviderTypes() {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		List<Object> params = new ArrayList<>();
+
+		StringBuilder sql = new StringBuilder();
+		sql.append("select customer_type_id as key, type_nm as value  from ").append(schema).append("ram_customer_type");
+		
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		List<Object> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
+		this.putModuleData(data);
+		
+		// Return the data
+		return data;
+	}
+
 	
 	/**
 	 * 
@@ -104,15 +147,18 @@ public class LookupAction extends SimpleActionAdapter {
 	public List<Object> getKitCustomers(ActionRequest req) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		RAMCustomerSearchVO csv = new RAMCustomerSearchVO(req);
+		List<Object> params = new ArrayList<>();
 
 		StringBuilder sql = new StringBuilder();
 		sql.append("select customer_id as key, customer_nm as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("ram_customer a ");
-		sql.append(CustomerAction.getCustomerLookupWhereClause(csv, schema));
+		sql.append(CustomerAction.getCustomerLookupWhereClause(csv, schema, req, params));
 
-		DBProcessor dbp = new DBProcessor(getDBConnection());
-		
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		List<Object> data = dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
+		this.putModuleData(data);
+
 		// Return the data
 		return dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
 	}
@@ -131,7 +177,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append("ram_customer a where customer_type_id = 'OEM' ");
 		sql.append(SecurityUtil.addOEMFilter(req, "a"));
 		sql.append(" order by customer_nm asc ");
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 
 		// Return the data
 		return dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
@@ -162,7 +208,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append("order by or_name ");
 
 		params.add(selected);
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), params, new GenericVO());
 	}
 	
@@ -187,7 +233,7 @@ public class LookupAction extends SimpleActionAdapter {
 		String caseID = StringUtil.checkVal(req.getParameter("caseId"));
 		List<Object> params = new ArrayList<>();
 		params.add(caseID);
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), params, new RAMCaseKitVO());
 	}
 	
@@ -203,7 +249,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append(SecurityUtil.addCustomerFilter(req, ""));
 		log.debug(sql);
 		
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
@@ -223,7 +269,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append(") order by last_nm, first_nm ");
 		log.debug(sql);
 		
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
@@ -240,7 +286,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append(SecurityUtil.addCustomerFilter(req, ""));
 		sql.append("order by last_nm, first_nm ");
 		
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
@@ -258,7 +304,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append("or organization_id = '").append(site.getOrganizationId()).append("') ");
 		sql.append(SecurityUtil.getRoleFilter(req));
 		sql.append(" order by role_nm ");
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
@@ -272,7 +318,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append("select product_category_cd as key, category_desc as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append("ram_product_category ");
 		sql.append(" order by category_desc ");
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
@@ -286,7 +332,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append("select customer_id as key, gtin_number_txt as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append("ram_customer ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("customer_id = ? ");
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		
 		List<Object> params = new ArrayList<>();
 		params.add(Convert.formatInteger(req.getParameter("customerId")));
