@@ -78,7 +78,7 @@ public class UpdateListTitleAction extends ListAction {
 			mainUrl = Section.PRODUCT.getPageURL() + getAttribute(Constants.QS_PATH);
 			break;
 		case ACCOUNT:
-			sql = getAccountSql(hasSearchTerm);
+			sql = getAccountSql(hasSearchTerm, true);
 			break;
 		default:
 			throw new ActionException("Invalid List Type.");

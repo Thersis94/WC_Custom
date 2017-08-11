@@ -131,7 +131,7 @@ public class AccountUserAction extends SBActionAdapter {
 		boolean loadProfileData = false;
 
 		//Build Sql
-		String sql = formatRetrieveQuery(schema, userId, profileId);
+		String sql = formatRetrieveQuery(schema, userId, profileId, req.hasParameter("sendNow")); //for sendNow (Manage Updates) we only want active user accounts
 
 		//Build Params
 		List<Object> params = new ArrayList<>();
@@ -277,7 +277,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	protected String formatRetrieveQuery(String schema, String userId, String profileId) {
+	protected String formatRetrieveQuery(String schema, String userId, String profileId, boolean activeOnly) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, u.acct_owner_flg, ");
 		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, cast(max(al.login_dt) as date) as login_dt, ");
@@ -291,6 +291,10 @@ public class AccountUserAction extends SBActionAdapter {
 		} else {
 			sql.append("where p.profile_id=? ");
 		}
+		//only load active user accounts - used by Manage Updates 'send now' tool so we're not emailing users who can't login to ST.
+		if (activeOnly)
+			sql.append("and u.status_cd != 'I' and (u.expiration_dt is null or u.expiration_dt > CURRENT_DATE) ");
+		
 		sql.append("group by u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, ");
 		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, al.oper_sys_txt, al.browser_txt ");
 
@@ -365,7 +369,7 @@ public class AccountUserAction extends SBActionAdapter {
 			role.setRoleId(AdminControllerAction.EUREPORT_ROLE_ID);
 		} else if(UserVO.Status.COMPUPDATES.getCode().equals(user.getStatusCode())
 				|| UserVO.Status.UPDATES.getCode().equals(user.getStatusCode())){
-					role.setRoleId(AdminControllerAction.UPDATES_USER_ID);
+					role.setRoleId(AdminControllerAction.UPDATES_ROLE_ID);
 		} else if (UserVO.Status.STAFF.getCode().equals(user.getStatusCode())) {
 			role.setRoleId(AdminControllerAction.STAFF_ROLE_ID);
 		} else {
