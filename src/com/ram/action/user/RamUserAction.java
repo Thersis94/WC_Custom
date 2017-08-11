@@ -430,7 +430,9 @@ public class RamUserAction extends SBActionAdapter {
 			db.save(user);
 			
 			// Update the role with the generated id
-			user.setUserRoleId(Convert.formatInteger(db.getGeneratedPKId()));
+			String id = db.getGeneratedPKId();
+			if (! StringUtil.isEmpty(id))
+				user.setUserRoleId(Convert.formatInteger(id));
 		} catch (Exception e) {
 			log.error("Unable to add user role", e);
 			throw new ApplicationException("Unable to add user role", e);
@@ -449,7 +451,7 @@ public class RamUserAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("delete from ").append(getAttribute("customDbSchema")).append("ram_user_role_customer_xr ");
 		sql.append("where user_role_id = ?");
-		
+		log.info(sql + "|" + userRoleId);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setInt(1, userRoleId);
 			ps.executeUpdate();
