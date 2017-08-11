@@ -1,9 +1,12 @@
 package com.biomed.smarttrak.admin;
 
+import java.util.ArrayList;
 // Java 8
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.UpdatesEditionAction;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -12,9 +15,11 @@ import com.siliconmtn.exception.DatabaseException;
 // WC EmailCampaigns
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.emailcampaign.embed.EmbedWidgetManager;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 
@@ -30,11 +35,11 @@ import com.smt.sitebuilder.action.user.ProfileManagerFactory;
  ****************************************************************************/
 
 public class UpdatesEmailSendAction extends SBActionAdapter {
-	private String profileId; 
 	private String uniqueSendFlg= "0"; //use String due to cross tab query in datasource
 	protected enum KeyValueType {
+		SECTION_KEY_TYPE("SECTION"), 
 		MESSAGE_KEY_TYPE("MESSAGE"), 
-		TIME_RANGE_KEY_TYPE("TIME_RANGE");
+		TIME_RANGE_KEY_TYPE("timeRangeCd");
 		
 		private String keyName;
 		private KeyValueType(String keyName){
@@ -69,15 +74,14 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException{
 		log.debug("Processing email send for updates...");
-		profileId = StringUtil.checkVal(req.getParameter("profileId"));
+		String profileId = StringUtil.checkVal(req.getParameter(UpdatesEditionAction.PROFILE_ID));
 
 		//if user doesn't already have a profile, create one
 		if(profileId.isEmpty()) {
 			createUserProfile(req);
+			//Updates Send Now Emails to always show all updates just like in the Scheduled Tasks.
+			uniqueSendFlg = "1";
 		}
-
-		//Updates Send Now Emails to always show all updates just like in the Scheduled Tasks.
-		uniqueSendFlg = "1";
 
 		//send off "send now email"
 		processEmailSend(req);
@@ -100,8 +104,10 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 			pm.updateProfile(user, dbConn);
 			
 			//retrieve the user profile id
-			profileId = pm.checkProfile(user, dbConn);
-			
+			String profileId = pm.checkProfile(user, dbConn);
+
+			req.setParameter(UpdatesEditionAction.PROFILE_ID, profileId);
+
 			//add record for communication
 			String orgId = StringUtil.checkVal(req.getParameter("organizationId"));
 			pm.assignCommunicationFlg(orgId, profileId, user.getAllowCommunication(), dbConn);
@@ -124,10 +130,12 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 
 		//perform the email send
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
-		ecbu.sendMessage(campInstId, profileId, emailParams);
+		Map<String, String> recipients = new HashMap<>();
+		recipients.put((String)emailParams.get(UpdatesEditionAction.PROFILE_ID), (String)emailParams.get("emailAddress"));
+		ecbu.sendMessage(campInstId, recipients, emailParams);
 	}
-	
-	
+
+
 	/**
 	 * Sets the general information to profile config vo first, then sets the custom
 	 * key name and value text based on key type passed.
@@ -136,12 +144,32 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	 */
 	protected Map<String, Object> makeEmailParams(ActionRequest req){
 		Map<String, Object> config = new HashMap<>();
-		
+
 		//assign the key/value for each config type
 		for(KeyValueType type: KeyValueType.values()){
 			assignKeyValuePair(req, type, config);
 		}
+
+		UserDataVO u = new UserDataVO();
+
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		List<UserDataVO> userData = new ArrayList<>();
 		
+		u.setProfileId(req.getParameter(UpdatesEditionAction.PROFILE_ID));
+		userData.add(u);
+		try {
+			pm.populateRecords(dbConn, userData);
+		} catch (DatabaseException e) {
+			log.error("Error Processing Code", e);
+		}
+		u = userData.get(0);
+
+		config.put("firstName", u.getFirstName());
+		config.put("lastName", u.getLastName());
+		config.put("emailAddress", u.getEmailAddress());
+		config.put("createDt", Convert.getCurrentTimestamp());
+		config.put(UpdatesEditionAction.PROFILE_ID, req.getParameter(UpdatesEditionAction.PROFILE_ID));
+
 		//add the unique send flag to config
 		config.put("uniqueSendFlg", uniqueSendFlg);
 
@@ -158,6 +186,9 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 			Map<String, Object> config){
 		//determine type
 		switch(type){
+		case SECTION_KEY_TYPE:
+			setSectionIdValue(req, type, config);
+			break;
 		case MESSAGE_KEY_TYPE:
 			config.put(type.getKeyName(), StringUtil.checkVal(req.getParameter("emailMessageText")));
 			break;
@@ -166,6 +197,24 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 			break;
 		}
 	}
+
+	/**
+	 * Helper method to section id value(s) to the passed campaign config vo
+	 * @param req
+	 * @param configVo
+	 */
+	private void setSectionIdValue(ActionRequest req, KeyValueType keyType,  Map<String, Object>emailConfig){
+		String[] sectionIds = req.getParameterValues("sectionId");
+		StringBuilder sections = new StringBuilder(50);
+		//store section id's delimited by special delimited token string
+		for (int i = 0; i< sectionIds.length; i++) {
+			if(i != 0) {
+				sections.append(EmbedWidgetManager.ARRAY_DELIMIT_TOKEN);
+			}
+			sections.append(sectionIds[i]);
+		}
+		emailConfig.put(keyType.getKeyName(), sections.toString());
+	 }
 
 	/**
 	 * Helper method to time range value to the passed campaign config vo
