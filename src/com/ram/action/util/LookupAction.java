@@ -14,13 +14,12 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs 3.2
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.SBUserRole;
 
 /********************************************************************
  * <b>Title: </b>LookupAction.java<br/>
@@ -55,13 +54,10 @@ public class LookupAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String type = req.getParameter("type", "none");
-		SMTSession ses = req.getSession();
-		SBUserRole role = (SBUserRole)ses.getAttribute(Constants.ROLE_DATA);
-		List<?> data = null;
 		
+		List<Object> data = null;
 		
-		switch(type) {
+		switch(req.getParameter("type", "none")) {
 			case "providers":
 				data = getProviders(req);
 				break;
@@ -75,7 +71,7 @@ public class LookupAction extends SimpleActionAdapter {
 				data = getSalesReps(req);
 				break;
 			case "orRooms":
-				data = getORRooms(role, req.getParameter("selected"), req.getParameter("caseType"), req);
+				data = getORRooms(req);
 				break;
 			case "kits":
 				data = getKits(req);
@@ -86,31 +82,37 @@ public class LookupAction extends SimpleActionAdapter {
 			case "kitCustomers":
 				data = getKitCustomers(req);
 				break;
+			case "categories":
+				data = getProductCategories();
+				break;
 			case "providerTypes":
-				data = getProviderTypes(req);
+				data = getProviderTypes();
+				break;
+			case "gtin":
+				data = getCustomerGTINPrefix(req);
 				break;
 			case "regions":
-				data = getRegions(req);
+				data = getRegions();
 				break;
 			default:
 				log.debug("can't find list type");
 		}
 		this.putModuleData(data);
 	}
-
+	
 	/**
 	 * @param req
 	 * @return
 	 */
-	private List<?> getRegions(ActionRequest req) {
+	private List<Object> getRegions() {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		List<Object> params = new ArrayList<>();
 
 		StringBuilder sql = new StringBuilder();
 		sql.append("select region_id as key, region_nm as value  from ").append(schema).append("ram_region");
 		
-		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<?> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		List<Object> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
 		this.putModuleData(data);
 		
 		// Return the data
@@ -121,15 +123,15 @@ public class LookupAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private List<?> getProviderTypes(ActionRequest req) {
+	private List<Object> getProviderTypes() {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		List<Object> params = new ArrayList<>();
 
 		StringBuilder sql = new StringBuilder();
 		sql.append("select customer_type_id as key, type_nm as value  from ").append(schema).append("ram_customer_type");
 		
-		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<?> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		List<Object> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
 		this.putModuleData(data);
 		
 		// Return the data
@@ -142,7 +144,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public List<?> getKitCustomers(ActionRequest req) {
+	public List<Object> getKitCustomers(ActionRequest req) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		RAMCustomerSearchVO csv = new RAMCustomerSearchVO(req);
 		List<Object> params = new ArrayList<>();
@@ -153,12 +155,12 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append("ram_customer a ");
 		sql.append(CustomerAction.getCustomerLookupWhereClause(csv, schema, req, params));
 
-		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<?> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		List<Object> data = dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
 		this.putModuleData(data);
 
 		// Return the data
-		return data;
+		return dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
 	}
 	
 	/**
@@ -166,28 +168,29 @@ public class LookupAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public List<?> getOEMs(ActionRequest req) {
+	public List<Object> getOEMs(ActionRequest req) {
 		RAMCustomerSearchVO csv = new RAMCustomerSearchVO(req);
-		
+
 		StringBuilder sql = new StringBuilder();
 		sql.append("select customer_id as key, customer_nm as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("ram_customer a where customer_type_id = 'OEM' ");
 		sql.append(SecurityUtil.addOEMFilter(req, "a"));
 		sql.append(" order by customer_nm asc ");
-		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<?> data = dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
-		this.putModuleData(data);
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 
 		// Return the data
-		return data;
+		return dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
 	}
 
 	/**
 	 * Gets a list of or rooms for a given provider
 	 * @param role
 	 */
-	public List<?> getORRooms(SBUserRole role, String selected, String caseType, ActionRequest req) {
+	public List<Object> getORRooms(ActionRequest req) {
+		String selected = req.getParameter("selected");
+		String caseType = req.getParameter("caseType");
+		
 		List<Object> params = new ArrayList<>();
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(128);
@@ -205,7 +208,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append("order by or_name ");
 
 		params.add(selected);
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), params, new GenericVO());
 	}
 	
@@ -214,7 +217,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * @param role
 	 * @param req 
 	 */
-	public List<?> getKits(ActionRequest req) {
+	public List<Object> getKits(ActionRequest req) {
 		
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select ck.case_kit_id, ck.case_id, p.product_id, p.product_nm, ck.processed_flg, lm.serial_no_txt from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -230,7 +233,7 @@ public class LookupAction extends SimpleActionAdapter {
 		String caseID = StringUtil.checkVal(req.getParameter("caseId"));
 		List<Object> params = new ArrayList<>();
 		params.add(caseID);
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), params, new RAMCaseKitVO());
 	}
 	
@@ -238,7 +241,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * Gets a list of providers for a given user
 	 * @param role
 	 */
-	public List<?> getProviders(ActionRequest req) {
+	public List<Object> getProviders(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select customer_location_id as key, location_nm as value from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("ram_customer_location ");
@@ -246,7 +249,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append(SecurityUtil.addCustomerFilter(req, ""));
 		log.debug(sql);
 		
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
@@ -254,7 +257,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * Gets a list of sales reps for a given location
 	 * @param role
 	 */
-	public List<?> getSalesReps(ActionRequest req) {
+	public List<Object> getSalesReps(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select profile_id as key, coalesce(first_nm, '') || ' ' || coalesce(last_nm, '') as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("ram_user_role a ");
@@ -266,7 +269,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append(") order by last_nm, first_nm ");
 		log.debug(sql);
 		
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
@@ -274,7 +277,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * Gets a list of surgeons for a given customer
 	 * @param role
 	 */
-	public List<?> getSurgeons(ActionRequest req) {
+	public List<Object> getSurgeons(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select a.surgeon_id as key, coalesce(first_nm, '') || ' ' || coalesce(last_nm, '') as value from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("ram_surgeon a ");
@@ -283,7 +286,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append(SecurityUtil.addCustomerFilter(req, ""));
 		sql.append("order by last_nm, first_nm ");
 		
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
@@ -292,7 +295,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public List<?> getRoleList(ActionRequest req) {
+	public List<Object> getRoleList(ActionRequest req) {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		
 		StringBuilder sql = new StringBuilder(128);
@@ -301,7 +304,38 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append("or organization_id = '").append(site.getOrganizationId()).append("') ");
 		sql.append(SecurityUtil.getRoleFilter(req));
 		sql.append(" order by role_nm ");
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		return dbp.executeSelect(sql.toString(), null, new GenericVO());
+	}
+	
+	/**
+	 * Gets the role list for filtering searches by role. Only gets the roles
+	 * @param req
+	 * @return
+	 */
+	public List<Object> getProductCategories() {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select product_category_cd as key, category_desc as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append("ram_product_category ");
+		sql.append(" order by category_desc ");
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		return dbp.executeSelect(sql.toString(), null, new GenericVO());
+	}
+	
+	/**
+	 * Gets the gtin prefix number for the given customer id
+	 * @param req
+	 * @return
+	 */
+	public List<Object> getCustomerGTINPrefix(ActionRequest req) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select customer_id as key, gtin_number_txt as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append("ram_customer ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("customer_id = ? ");
+		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		
+		List<Object> params = new ArrayList<>();
+		params.add(Convert.formatInteger(req.getParameter("customerId")));
+		return dbp.executeSelect(sql.toString(), params, new GenericVO());
 	}
 }
