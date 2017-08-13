@@ -232,7 +232,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		sql.append("inner join ").append(schema).append("ram_customer_location b ");
 		sql.append("on a.customer_location_id = b.customer_location_id ");
 		sql.append("where a.inventory_event_id = ? ");
-		log.info("Inventory Event Retrieve: " + sql);
+		log.debug("Inventory Event Retrieve: " + sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setInt(1, id);
