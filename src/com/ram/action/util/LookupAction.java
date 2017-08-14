@@ -247,6 +247,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("ram_customer_location ");
 		sql.append("where active_flg = 1 ");
 		sql.append(SecurityUtil.addCustomerFilter(req, ""));
+		sql.append("order by location_nm ");
 		log.debug(sql);
 		
 		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
