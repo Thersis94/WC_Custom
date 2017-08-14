@@ -255,10 +255,10 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append(INNER_JOIN).append(schema).append("biomedgps_section s on s.section_id=acl.section_id "); //lvl3 hierarchy
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_section s2 on s.parent_id=s2.section_id "); //lvl2 hierarchy
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_section s3 on s2.parent_id=s3.section_id "); //lvl1 hierarchy
-		sql.append(INNER_JOIN).append(schema).append("biomedgps_update_section us on us.section_id=s.section_id or us.section_id=s2.section_id or us.section_id=s3.section_id "); //update attached to either of the 3 hierarchy levels; acl, acl-parent, acl-grandparent
+		sql.append(INNER_JOIN).append(schema).append("biomedgps_update_section us on us.section_id=coalesce(s.section_id,s2.section_id,s3.section_id) "); //update attached to either of the 3 hierarchy levels; acl, acl-parent, acl-grandparent
 		sql.append(INNER_JOIN).append(schema).append("biomedgps_update up on up.update_id=us.update_id ");
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
-		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (up.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on c.company_id=coalesce(up.company_id,prod.company_id) "); //join from the update, or from the product. Prefer company
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
 		sql.append("where p.profile_id=? and up.email_flg=1 and up.status_cd in ('R','N') ");
 		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
@@ -278,7 +278,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append("from ").append(schema).append("biomedgps_update_section us ");
 		sql.append(INNER_JOIN).append(schema).append("biomedgps_update up on up.update_id=us.update_id ");
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
-		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (up.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on c.company_id=coalesce(up.company_id,prod.company_id) "); //join from the update, or from the product. Prefer company
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
 		sql.append("where up.email_flg=1 and up.status_cd in ('R','N') ");
 		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
@@ -299,7 +299,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append("from ").append(schema).append("biomedgps_update_section us ");
 		sql.append(INNER_JOIN).append(schema).append("biomedgps_update up on up.update_id=us.update_id ");
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
-		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (up.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on c.company_id=coalesce(up.company_id,prod.company_id) "); //join from the update, or from the product. Prefer company
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
 		sql.append("where coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
 
