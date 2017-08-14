@@ -50,6 +50,7 @@ public class TeamMemberAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		AccountAction.loadAccount(req, dbConn, getAttributes());
 		//this action requires accountId & teamId.  If not present throw an exception
 		String accountId = req.getParameter(ACCOUNT_ID);
 		String teamId = req.hasParameter(TEAM_ID) ? req.getParameter(TEAM_ID) : null;
@@ -90,11 +91,12 @@ public class TeamMemberAction extends SBActionAdapter {
 	 */
 	protected String formatRetrieveQuery(String schema) {
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select p.first_nm, p.last_nm, u.user_id, x.team_id, newid() as user_team_xr_id, x.user_team_xr_id as pkid ");
+		sql.append("select p.first_nm, p.last_nm, u.user_id, x.team_id, newid() as user_team_xr_id, x.user_team_xr_id as pkid, ");
+		sql.append("(u.status_cd='I' or u.expiration_dt <= CURRENT_DATE) as expired ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("inner join profile p on p.profile_id=u.profile_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr x on u.user_id=x.user_id and x.team_id=? ");
-		sql.append("where u.account_id=? ");
+		sql.append("where u.account_id=? and ((u.status_cd='A' and (u.expiration_dt is null or u.expiration_dt > CURRENT_DATE)) or x.team_id is not null) ");
 		log.debug(sql);
 		return sql.toString();
 	}

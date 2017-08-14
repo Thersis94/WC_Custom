@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.vo;
 
+import java.io.Serializable;
 //Java 7
 import java.util.Date;
 
@@ -23,12 +24,15 @@ import com.siliconmtn.util.user.HumanNameIntfc;
  <b>Changes:</b> 
  ***************************************************************************/
 @Table(name="BIOMEDGPS_ACCOUNT")
-public class AccountVO implements HumanNameIntfc {
+public class AccountVO implements HumanNameIntfc, Serializable {
+	private static final long serialVersionUID = 6748640274663992918L;
 	private String accountId;
 	private String companyId;
+	private String companyUrl;
 	private String accountName;
 	private String typeId;
 	private String ownerProfileId;
+	private String coownerProfileId;
 	private String ownerEmailAddr;
 	private Location location;
 	private String statusNo;
@@ -81,8 +85,10 @@ public class AccountVO implements HumanNameIntfc {
 		setAccountId(req.getParameter("accountId"));
 		setAccountName(req.getParameter("accountName"));
 		setCompanyId(StringUtil.checkVal(req.getParameter("companyId"), null)); //nullable foreign key
+		setCompanyUrl(req.getParameter("companyUrl"));
 		setTypeId(req.getParameter("typeId"));
 		setOwnerProfileId(req.getParameter("ownerProfileId"));
+		setCoownerProfileId(req.getParameter("coownerProfileId"));
 		setStatusNo(req.getParameter("statusNo"));
 		setStartDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("startDate")));
 		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expirationDate")));
@@ -424,5 +430,23 @@ public class AccountVO implements HumanNameIntfc {
 	 */
 	public void setTitle(String title) {
 		this.title = title;
+	}
+
+	@Column(name="company_url")
+	public String getCompanyUrl() {
+		return companyUrl;
+	}
+
+	public void setCompanyUrl(String companyUrl) {
+		this.companyUrl = companyUrl;
+	}
+
+	@Column(name="coowner_profile_id")
+	public String getCoownerProfileId() {
+		return coownerProfileId;
+	}
+
+	public void setCoownerProfileId(String coownerProfileId) {
+		this.coownerProfileId = coownerProfileId;
 	}
 }

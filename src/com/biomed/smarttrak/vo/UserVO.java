@@ -1,5 +1,11 @@
 package com.biomed.smarttrak.vo;
 
+import static java.time.temporal.ChronoUnit.DAYS;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 // Java 7
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -36,6 +42,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private List<TeamVO> teams;
 	private Date expirationDate;
 	private Date loginDate;
+	private int loginAge = -1;
 	private Date createDate;
 	private int fdAuthFlg;
 	private int gaAuthFlg;
@@ -222,6 +229,14 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		this.updateDate = updateDate;
 	}
 
+	public String getStatusName() {
+		for (Status s : Status.values()) {
+			if (s.getCode().equals(getStatusCode()))
+				return s.getLabel();
+		}
+		return "";
+	}
+
 	@Column(name="status_cd")
 	public String getStatusCode() {
 		return statusCode;
@@ -239,7 +254,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public void setExpirationDate(Date expirationDate) {
 		this.expirationDate = expirationDate;
 	}
-	
+
 	public boolean isExpired() {
 		if (Status.INACTIVE.getCode().equals(statusCode)) {
 			return true;
@@ -262,6 +277,8 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	 *  SOME DECOUPLING OF FIELDS STORED IN REGISTRATION DATA
 	 *********************/
 
+
+	@Column(name="title_txt", isReadOnly=true)
 	public String getTitle() {
 		return (String)getAttribute(RegistrationMap.TITLE.getFieldId());
 	}
@@ -295,9 +312,15 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public String getOtherTrainingDate() {
 		return (String)getAttribute(RegistrationMap.OTHERTRAININGDT.getFieldId());
 	}
+
+	@Column(name="notes_txt", isReadOnly=true)
 	public String getNotes() {
 		return (String)getAttribute(RegistrationMap.NOTES.getFieldId());
 	}
+	public void setNotes(String note) {
+		getAttributes().put(RegistrationMap.NOTES.getFieldId(), note);
+	}
+
 	public String getJobCategory() {
 		return (String)getAttribute(RegistrationMap.JOBCATEGORY.getFieldId());
 	}
@@ -323,6 +346,23 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 			data = (List<String>) obj;
 		}
 		return data;
+	}
+
+	/**
+	 * According to Mike each user should have only one division, yet the data supports multiple.  Take the 1st as their primary.
+	 * @return
+	 */
+	@Column(name="division_txt", isReadOnly=true)
+	public String getPrimaryDivision() {
+		List<String> divs = getDivisions();
+		return divs != null && !divs.isEmpty() ? divs.get(0) : null;
+	}
+
+	/**
+	 * sets a title to the attributes list 
+	 **/
+	public void setPrimaryDivision(String div) {
+		getAttributes().put(RegistrationMap.DIVISIONS.getFieldId(), div);
 	}
 
 
@@ -433,5 +473,30 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public void setTitle(List<String> title) {
 		if (title != null && !title.isEmpty())
 			getAttributes().put(RegistrationMap.TITLE.getFieldId(), title.get(0));
+	}
+
+	/**
+	 * returns a constant int based on the last time the user logged-in to the website - used on Userrs list page (legend)
+	 * @param loginDate
+	 * @return
+	 */
+	public Integer getLoginAge() {
+		if (loginAge != -1) return loginAge;
+		
+		if (loginDate == null) {
+			loginAge = 0;
+		} else {
+			Instant instant = Instant.ofEpochMilli(loginDate.getTime());
+			LocalDate login = LocalDateTime.ofInstant(instant, ZoneId.systemDefault()).toLocalDate();
+			long days = DAYS.between(login, LocalDate.now());
+			if (days < 30) {
+				loginAge = 30;
+			} else if (days <= 90) {
+				loginAge = 60;
+			} else {
+				loginAge = 90;
+			}
+		}
+		return loginAge;
 	}
 }

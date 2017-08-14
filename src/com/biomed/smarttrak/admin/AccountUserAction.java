@@ -3,24 +3,32 @@ package com.biomed.smarttrak.admin;
 //Java 8
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
-import com.siliconmtn.util.user.NameComparator;
+import com.siliconmtn.util.user.LastNameComparator;
 
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -39,6 +47,7 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
 import com.smt.sitebuilder.security.WCUtil;
+
 //WC_Custom
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
@@ -80,16 +89,121 @@ public class AccountUserAction extends SBActionAdapter {
 			return;
 		}
 
-		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
-		//table into the view (which will come back for the data).
-		if (!req.hasParameter("loadData") && !req.hasParameter(USER_ID)) return;
-
 		List<Object> users = loadAccountUsers(req, null);
-
-		//do this last, because loading the registration actions will collide with ModuleVO.actionData
-		putModuleData(users);
+		//if we're not the edit page we can return the list, which should only have one record on it.
+		//for the list page we want to return a Map of lists, breaking out the users by Division (for display)
+		if (req.hasParameter(USER_ID) || req.hasParameter("view")) { //'view' is for JSON list loaders
+			putModuleData(users);
+		} else {
+			GenericVO vo = sortRecords(users);
+			summateLoginActivity(vo, req);
+			putModuleData(vo);
+		}
 	}
 
+
+	/**
+	 * Take the active user accounts (from sortRecords) and bucketize the users by login activity, according to time-table (legend)
+	 * @param req
+	 */
+	@SuppressWarnings("unchecked")
+	private void summateLoginActivity(GenericVO data, ActionRequest req) {
+		Map<Integer, Integer> counts = new HashMap<>();
+		counts.put(Integer.valueOf(0), Integer.valueOf(0));
+		counts.put(Integer.valueOf(30), Integer.valueOf(0));
+		counts.put(Integer.valueOf(60), Integer.valueOf(0));
+		counts.put(Integer.valueOf(90), Integer.valueOf(0));
+		
+		Map<String, List<UserVO>> active = (Map<String, List<UserVO>>) data.getKey();
+		for (Map.Entry<String, List<UserVO>> entry : active.entrySet()) {
+			for (UserVO user : entry.getValue()) {
+				Integer age = user.getLoginAge();
+				counts.put(age, 1+counts.get(age));
+			}
+		}
+		//help with debugging
+		if (log.isDebugEnabled()) {
+			for (Map.Entry<Integer, Integer> entry : counts.entrySet())
+				log.debug(entry.getValue() + " users in " + entry.getKey());
+		}
+		req.setAttribute("activtyMap", counts);
+	}
+
+
+	/**
+	 * sorts the List<UserVO> into buckets by Divsion - only used for display in the Manage tool.
+	 * @param users
+	 * @return
+	 */
+	private GenericVO sortRecords(List<Object> users) {
+		final String noDivision = "No Division Specified";
+		Map<Integer, String> divisions = loadDivisionList();
+		Map<String, List<UserVO>> active = new LinkedHashMap<>();
+		Map<String, List<UserVO>> inactive = new LinkedHashMap<>();
+		
+		//seed the data map using the sequence defined in the database
+		for (Map.Entry<Integer, String> entry : divisions.entrySet()) {
+			active.put(entry.getValue(), new ArrayList<>());
+			inactive.put(entry.getValue(), new ArrayList<>());
+		}
+		
+		//add a catch-all for users w/o a Division
+		active.put(noDivision, new ArrayList<>());
+		inactive.put(noDivision, new ArrayList<>());
+		
+		//put each user into their respective display bucket
+		for (Object obj : users) {
+			UserVO user = (UserVO) obj;
+			String divNm = divisions.get(Convert.formatInteger(user.getPrimaryDivision()));
+			//log.debug("div=" + divNm + " id=" + user.getPrimaryDivision())
+			if (StringUtil.isEmpty(divNm)) divNm = noDivision;
+			if ("I".equals(user.getStatusCode())) {
+				inactive.get(divNm).add(user);
+			} else {
+				active.get(divNm).add(user);
+			}
+		}
+		
+		//remove any emtpy entries from the map - Java 8
+		active.entrySet().removeIf(e-> e.getValue().isEmpty());
+		inactive.entrySet().removeIf(e-> e.getValue().isEmpty());
+		
+		//help with debugging
+		if (log.isDebugEnabled()) {
+			for (Map.Entry<String, List<UserVO>> entry : active.entrySet())
+				log.debug(entry.getValue().size() + " users in " + entry.getKey());
+
+			for (Map.Entry<String, List<UserVO>> entry : inactive.entrySet())
+				log.debug(entry.getValue().size() + " inactive users in " + entry.getKey());
+		}
+		
+
+		return new GenericVO(active, inactive);
+	}
+	
+
+	/**
+	 * loads the list of Divisions from the DB.  Easier and cleaner to isolate that try to include on the main query.  Also
+	 * allows us to control sort order, and rolls with any changes that get made to the data over time.
+	 * @return
+	 */
+	private Map<Integer, String> loadDivisionList() {
+		Map<Integer, String> data = new LinkedHashMap<>();
+		String sql = "select option_desc, option_value_txt from register_field_option where register_field_id=? order by order_no, option_desc";
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, RegistrationMap.DIVISIONS.getFieldId());
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
+				data.put(rs.getInt(2), rs.getString(1));
+			
+		} catch (SQLException sqle) {
+			log.error("could not load Division list", sqle);
+		}
+		
+		return data;
+	}
+	
 
 	/**
 	 * Flushes the users session, then logs them in as the passed profileId, then redirects to the homepage
@@ -125,6 +239,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	public List<Object> loadAccountUsers(ActionRequest req, String profileId) throws ActionException {
+		AccountAction.loadAccount(req, dbConn, getAttributes());
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
 		String userId = req.hasParameter(USER_ID) ? req.getParameter(USER_ID) : null;
@@ -136,7 +251,11 @@ public class AccountUserAction extends SBActionAdapter {
 		//Build Params
 		List<Object> params = new ArrayList<>();
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
-		if(StringUtil.isEmpty(profileId)) {
+		params.add(AdminControllerAction.PUBLIC_SITE_ID);
+		params.add(UserVO.RegistrationMap.TITLE.getFieldId());
+		params.add(UserVO.RegistrationMap.NOTES.getFieldId());
+		params.add(UserVO.RegistrationMap.DIVISIONS.getFieldId());
+		if (StringUtil.isEmpty(profileId)) {
 			params.add(accountId);
 			if (userId != null) {
 				params.add(userId);
@@ -152,9 +271,8 @@ public class AccountUserAction extends SBActionAdapter {
 
 		//get more information about this one user, so we can display the edit screen.
 		//If this is an ADD, we don't need the additional lookups
-		if (loadProfileData) {
+		if (loadProfileData)
 			loadRegistration(req, users);
-		}
 
 		return users;
 	}
@@ -177,7 +295,6 @@ public class AccountUserAction extends SBActionAdapter {
 
 		//decrypt the owner profiles
 		decryptNames(data);
-		Collections.sort(data, new NameComparator());
 
 		return data;
 	}
@@ -200,8 +317,8 @@ public class AccountUserAction extends SBActionAdapter {
 		sa.retrieve(req);
 		req.setAttribute("registrationForm", ((ModuleVO)sa.getAttribute(Constants.MODULE_DATA)).getActionData());
 
-		//fail-fast if there's no user to load responses for
-		if (users == null || users.isEmpty())
+		//fail-fast if there's no user to load responses for, or too many users
+		if (users == null || users.isEmpty() || users.size() != 1)
 			return;
 
 		//load the user's registration responses - these will go into the UserDataVO->attributes map
@@ -245,7 +362,9 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void decryptNames(List<Object> data) {
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+		LastNameComparator c = new LastNameComparator();
+		c.decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+		Collections.sort(data, c);
 	}
 
 
@@ -281,18 +400,24 @@ public class AccountUserAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, u.acct_owner_flg, ");
 		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, cast(max(al.login_dt) as date) as login_dt, ");
-		sql.append("al.oper_sys_txt, al.browser_txt, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg ");
+		sql.append("al.oper_sys_txt, al.browser_txt, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, ");
+		sql.append("title.value_txt as title_txt, notes.value_txt as notes_txt, division.value_txt as division_txt ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
-		sql.append("left outer join profile p on u.profile_id=p.profile_id ");
-		sql.append("left outer join authentication_log al on p.authentication_id=al.authentication_id and al.site_id=? and al.status_cd=1 ");
-		if(StringUtil.isEmpty(profileId)) {
+		sql.append("left join profile p on u.profile_id=p.profile_id ");
+		sql.append("left join authentication_log al on p.authentication_id=al.authentication_id and al.site_id=? and al.status_cd=1 ");
+		sql.append("left join register_submittal rs on p.profile_id=rs.profile_id and rs.site_id=? ");
+		sql.append("left join register_data title on rs.register_submittal_id=title.register_submittal_id and title.register_field_id=? ");
+		sql.append("left join register_data notes on rs.register_submittal_id=notes.register_submittal_id and notes.register_field_id=? ");
+		sql.append("left join register_data division on rs.register_submittal_id=division.register_submittal_id and division.register_field_id=? ");
+		if (StringUtil.isEmpty(profileId)) {
 			sql.append("where u.account_id=? ");
 			if (userId != null) sql.append("and u.user_id=? ");
 		} else {
-			sql.append("where p.profile_id=? ");
+			sql.append("and p.profile_id=? ");
 		}
 		sql.append("group by u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, ");
-		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, al.oper_sys_txt, al.browser_txt ");
+		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, al.oper_sys_txt, al.browser_txt, ");
+		sql.append("title_txt, notes_txt, division_txt ");
 
 		log.debug(sql);
 		return sql.toString();

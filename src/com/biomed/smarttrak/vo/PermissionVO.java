@@ -23,6 +23,8 @@ public class PermissionVO extends SectionVO {
 	private String accountId;
 	private boolean browseAuth;
 	private boolean updatesAuth;
+	private boolean peAuth;
+	private boolean anAuth;
 	private boolean fdAuth;
 	private boolean gaAuth;
 	private String roleToken;
@@ -65,6 +67,8 @@ public class PermissionVO extends SectionVO {
 		super.setData(rs);
 		setBrowseAuth(1 == rs.getInt("browse_no"));
 		setUpdatesAuth( 1 == rs.getInt("updates_no"));
+		setPeAuth(1 == rs.getInt("pe_no"));
+		setAnAuth(1 == rs.getInt("an_no"));
 		setFdAuth(1 == rs.getInt("fd_no"));
 		setGaAuth(1 == rs.getInt("ga_no"));
 		setAccountId(rs.getString("account_id"));
@@ -76,6 +80,14 @@ public class PermissionVO extends SectionVO {
 
 	public boolean isUpdatesAuth() {
 		return updatesAuth;
+	}
+
+	public boolean isAnAuth() {
+		return anAuth;
+	}
+
+	public boolean isPeAuth() {
+		return peAuth;
 	}
 
 	public boolean isFdAuth() {
@@ -92,6 +104,14 @@ public class PermissionVO extends SectionVO {
 
 	private void setUpdatesAuth(boolean updatesAuth) {
 		this.updatesAuth = updatesAuth;
+	}
+
+	public void setPeAuth(boolean peAuth) {
+		this.peAuth = peAuth;
+	}
+
+	public void setAnAuth(boolean anAuth) {
+		this.anAuth = anAuth;
 	}
 
 	private void setFdAuth(boolean fdAuth) {
@@ -117,7 +137,9 @@ public class PermissionVO extends SectionVO {
 	public void addSelection(String value) {
 		if (StringUtil.isEmpty(value)) return;
 		//depending on the value prefix, set the proper authentication component
-		if (value.startsWith("fd~")) setFdAuth(true);
+		if (value.startsWith("pe~")) setPeAuth(true);
+		else if (value.startsWith("an~")) setAnAuth(true);
+		else if (value.startsWith("fd~")) setFdAuth(true);
 		else if (value.startsWith("ga~")) setGaAuth(true);
 		else if (value.startsWith("updates~")) setUpdatesAuth(true);
 		else if (value.startsWith("browse~")) setBrowseAuth(true);
@@ -129,7 +151,7 @@ public class PermissionVO extends SectionVO {
 	 * @return true if permissions exist, false otherwise.
 	 */
 	public boolean isUnauthorized() {
-		return !isBrowseAuth() && !isUpdatesAuth() && !isFdAuth() && !isGaAuth();
+		return !isBrowseAuth() && !isUpdatesAuth() && !isFdAuth() && !isGaAuth() && !isPeAuth() && !isAnAuth();
 	}
 
 	public String getHierarchyToken() {
