@@ -124,14 +124,14 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		Calendar start = Calendar.getInstance();
 		start.setTime(endDt);
 		start.add(Calendar.DATE, 0-days);
-		start.set(Calendar.HOUR,0);
+		start.set(Calendar.HOUR_OF_DAY,0);
 		start.set(Calendar.MINUTE,0);
 		start.set(Calendar.SECOND,0);
 
 		//zero-out end date
 		Calendar endDate = Calendar.getInstance();
 		endDate.setTime(endDt);
-		endDate.set(Calendar.HOUR,0);
+		endDate.set(Calendar.HOUR_OF_DAY,0);
 		endDate.set(Calendar.MINUTE,0);
 		endDate.set(Calendar.SECOND,0);
 
@@ -151,7 +151,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		//set the first day to monday
 		cal.setFirstDayOfWeek(Calendar.MONDAY);
 		cal.setTime(endDt);
-		cal.set(Calendar.HOUR,0);
+		cal.set(Calendar.HOUR_OF_DAY,0);
 		cal.set(Calendar.MINUTE,0);
 		cal.set(Calendar.SECOND,0);
 
