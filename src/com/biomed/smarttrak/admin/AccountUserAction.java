@@ -395,11 +395,12 @@ public class AccountUserAction extends SBActionAdapter {
 	/**
 	 * Formats the account retrieval query.
 	 * @return
+	 * TODO getting duplicate rows from AL table when device/browser change.
 	 */
 	protected String formatRetrieveQuery(String schema, String userId, String profileId, boolean activeOnly) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, u.acct_owner_flg, ");
-		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, cast(max(al.login_dt) as date) as login_dt, ");
+		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, max(al.login_dt) as login_dt, ");
 		sql.append("al.oper_sys_txt, al.browser_txt, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, ");
 		sql.append("title.value_txt as title_txt, notes.value_txt as notes_txt, division.value_txt as division_txt ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
@@ -433,6 +434,12 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		//ajax hook for quick-saving notes:
+		if (req.hasParameter("saveNote")) {
+			saveNote(req);
+			return;
+		}
+		
 		UserVO user = new UserVO(req);
 
 		//save auth
@@ -453,6 +460,27 @@ public class AccountUserAction extends SBActionAdapter {
 		setupRedirect(req);
 	}
 
+
+	/**
+	 * Handles the onBlur ajax call to quick-save the user's notes textarea
+	 * @param req
+	 */
+	private void saveNote(ActionRequest req) {
+		req.setParameter("formFields", new String[]{ RegistrationMap.NOTES.getFieldId() } , Boolean.TRUE);
+		
+		//build a list of values to insert based on the ones we're going to delete
+		List<SubmittalDataVO> regData = new ArrayList<>();
+		SubmittalDataVO vo = new SubmittalDataVO(null); //encryption key=null, we don't need it.
+		vo.setRegisterFieldId(RegistrationMap.NOTES.getFieldId());
+		vo.setUserValue(req.getParameter("noteText"));
+		regData.add(vo);
+		
+		SubmittalAction sa = new SubmittalAction();
+		sa.setAttributes(getAttributes());
+		sa.setDBConnection(getDBConnection());
+		sa.updateRegisterData(req, null, req.getParameter("rsid"), regData, false);
+		
+	}
 
 	/**
 	 * checks and creates the profile_role record tied to the public site, if necessary
