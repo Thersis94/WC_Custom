@@ -56,9 +56,12 @@ public class UpdatesWeeklyReportDataLoader extends UpdatesEditionDataLoader {
 		//set the first day to monday
 		cal.setFirstDayOfWeek(Calendar.MONDAY);
 		cal.setTime(endDt);
-		cal.set(Calendar.HOUR,0);
+		cal.set(Calendar.HOUR_OF_DAY,0);
 		cal.set(Calendar.MINUTE,0);
 		cal.set(Calendar.SECOND,0);
+		
+		if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY)
+			cal.add(Calendar.DATE, 1);
 
 		//"The Monday after today" is the endDate we want to work against.  Advance the endDt to that date.
 		while (cal.get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY) {
@@ -71,6 +74,7 @@ public class UpdatesWeeklyReportDataLoader extends UpdatesEditionDataLoader {
 		cal.add(Calendar.DATE, 7);
 
 		//add the start/end dates and daysToGoBack to collection.
+		log.debug("dates: " + startDt + " " + cal.getTime());
 		return new Date[]{ startDt, cal.getTime()};
 	}
 }
