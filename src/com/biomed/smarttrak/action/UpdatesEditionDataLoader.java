@@ -95,7 +95,6 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		dt.add(Calendar.SECOND, -1); //rollback one second before midnight, so the date label looks correct
 		String label = Convert.formatDate(startDate, days == 1 ? "MMM dd, YYYY" : "MMM dd");
 		if (days > 1) label += " - " + Convert.formatDate(dt.getTime(), "MMM dd, YYYY");
-		log.debug("label=" + label);
 		req.setAttribute("dateRange", label);
 
 		putModuleData(updates);
@@ -165,7 +164,6 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		cal.add(Calendar.DATE, 7);
 
 		//add the start/end dates and daysToGoBack to collection.
-		log.debug("dates: " + startDt + " " + cal.getTime());
 		return new Date[]{ startDt, cal.getTime()};
 	}
 

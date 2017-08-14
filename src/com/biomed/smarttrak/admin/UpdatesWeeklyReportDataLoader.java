@@ -74,7 +74,6 @@ public class UpdatesWeeklyReportDataLoader extends UpdatesEditionDataLoader {
 		cal.add(Calendar.DATE, 7);
 
 		//add the start/end dates and daysToGoBack to collection.
-		log.debug("dates: " + startDt + " " + cal.getTime());
 		return new Date[]{ startDt, cal.getTime()};
 	}
 }
