@@ -1,7 +1,6 @@
 package com.ram.action.util;
 
 // JDK 1.8
-import java.util.List;
 import java.util.Set;
 
 // RAM Data Feed
@@ -134,7 +133,7 @@ public class SecurityUtil {
 		
 		// Add the filter for providers
 		Set<Object> customers = (Set<Object>)role.getAttributes().get(CustomerVO.CustomerType.PROVIDER.toString());
-		sql.append("and ").append(alias).append(StringUtil.isEmpty(alias) ? "" : ".").append("customer_id in (");
+		sql.append("and ").append(alias).append(StringUtil.isEmpty(alias) ? "" : ".").append("customer_id in (-1,");
 		sql.append(StringUtil.getToString(customers.toArray(new Object[customers.size()]), false, false,",")).append(") ");
 		
 		return sql.toString();
@@ -154,10 +153,10 @@ public class SecurityUtil {
 		if (isAdmin) return "";
 		
 		StringBuilder sql = new StringBuilder(128);
-		List<Object> oem = (List<Object>)role.getAttributes().get(CustomerVO.CustomerType.OEM.toString());
-		sql.append("and ").append(alias).append(".customer_id in (0").append(oem.isEmpty()? "," : "");
-		sql.append(StringUtil.getDelimitedList(oem.toArray(new String[oem.size()]), false, ",")).append(") ");
-		
+		Set<Object> oems = (Set<Object>)role.getAttributes().get(CustomerVO.CustomerType.OEM.toString());
+		sql.append("and ").append(alias).append(StringUtil.isEmpty(alias) ? "" : ".").append("customer_id in (-1,");
+		sql.append(StringUtil.getToString(oems.toArray(new Object[oems.size()]), false, false,",")).append(") ");
+
 		return sql.toString();
 	}
 	

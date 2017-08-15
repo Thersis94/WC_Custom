@@ -6,11 +6,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.ram.action.util.SecurityUtil;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -52,7 +55,6 @@ public class DashboardReportAction extends SBActionAdapter {
 	private static final String CATEGORIES = "categories";
 	private static final String COLORS = "colors";
 	private static final String REGIONS = "Regions";
-	private static final String CUSTOMER_WHERE = "where customer_id = ";
 	private static final String COLUMN = "column";
 	private static final String REGION_GROUP = "group by region_nm ";
 	private static final String REGION_ORDER = "order by region_nm ";
@@ -91,7 +93,7 @@ public class DashboardReportAction extends SBActionAdapter {
 		transactionType.put("region_ret", "getRegionReturns");
 		transactionType.put("prod_count_oem", "getProductCountOEM");
 		transactionType.put("prod_count_joint", "getProductCountJoint");
-		transactionType.put("event_upcoming", "getUpcomingEvent");
+		transactionType.put("surgery_month", "getProviderSurgeries");
 		transactionType.put("upcoming_expiry", "getUpcomingExpiry");
 	}
 	
@@ -122,10 +124,6 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * @param req
 	 */
 	public void getRegionLineItems(ActionRequest req) throws SQLException{
-		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
-		String customerId = StringUtil.checkVal(user.getAttribute(0));
-		
 		// Add the base chart information
 		Map<String, Object> data = new HashMap<>();
 		data.put(IS_SUCCESS, Boolean.TRUE);
@@ -139,32 +137,33 @@ public class DashboardReportAction extends SBActionAdapter {
 		// Build the SQL statement
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select region_nm, sum(coalesce(rii.quantity_no, 0)) as item_count, ");
-		sql.append("sum(coalesce(msrp_cost_no, 0)) as value from ").append(schema).append(RAM_REGION);
-		sql.append("left outer join  ").append(schema);
+		sql.append("sum(coalesce(msrp_cost_no, 0)) as value from ").append(customSchema()).append(RAM_REGION);
+		sql.append("left outer join  ").append(customSchema());
 		sql.append("ram_customer_location rcl on rr.region_id = rcl.region_id ");
 		sql.append("left outer join ( ");
 		sql.append("select inventory_event_id, customer_location_id, ");
 		sql.append("inventory_complete_dt, max(inventory_complete_dt) as inv_dt ");
-		sql.append("from  ").append(schema).append("ram_inventory_event ");
+		sql.append("from  ").append(customSchema()).append("ram_inventory_event ");
 		sql.append("where inventory_complete_dt is not null ");
 		sql.append("group by inventory_event_id,  customer_location_id, inventory_complete_dt ");
 		sql.append(") as rie on rcl.customer_location_id = rie.customer_location_id ");
 		sql.append("and rie.inventory_complete_dt = rie.inv_dt ");
-		sql.append("left outer join  ").append(schema);
+		sql.append("left outer join  ").append(customSchema());
 		sql.append("ram_inventory_event_auditor_xr aud on rie.inventory_event_id = aud.inventory_event_id ");
 		sql.append("left outer join ( ");
 		sql.append("select inventory_event_auditor_xr_id, ii.quantity_no, msrp_cost_no ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_inventory_item ii  ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("ram_product p ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customSchema()).append("ram_inventory_item ii  ");
+		sql.append(DBUtil.INNER_JOIN).append(customSchema()).append("ram_product p ");
 		sql.append("on ii.product_id = p.product_id ");
-		if (customerId.length() > 0) sql.append(CUSTOMER_WHERE).append(customerId);
+		sql.append("inner join custom.ram_customer rc on p.customer_id = rc.customer_id ");
+		sql.append(SecurityUtil.addOEMFilter(req, "rc"));
 		sql.append(" ) as rii ");
 		sql.append("on aud.inventory_event_auditor_xr_id = rii.inventory_event_auditor_xr_id ");
 		sql.append(REGION_GROUP);
 		sql.append(REGION_ORDER);
-		log.debug("******* SQL: " + sql);
+		log.debug("SQL: " + sql);
 		
-		// Get the data form the SQL
+		// Get the data from the SQL
 		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
 		ResultSet rs = ps.executeQuery();
 		SeriesDataVO existCol = new SeriesDataVO("Existing Hosp", COLUMN);
@@ -196,10 +195,6 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * @param req
 	 */
 	public void getEventScheduled(ActionRequest req) throws SQLException {
-		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
-		String customerId = StringUtil.checkVal(user.getAttribute(0));
-		
 		// Add the base chart information
 		Map<String, Object> data = new HashMap<>();
 		data.put(IS_SUCCESS, Boolean.TRUE);
@@ -213,20 +208,21 @@ public class DashboardReportAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(500);
 		sql.append("select region_nm, sum(case when schedule_dt is null then 0 else 1 end), ");
 		sql.append("sum(case when inventory_complete_dt is null then 0 else 1 end) ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(RAM_REGION);
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_customer_location rcl "); 
+		sql.append(DBUtil.FROM_CLAUSE).append(customSchema()).append(RAM_REGION);
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customSchema()).append("ram_customer_location rcl "); 
 		sql.append("on rr.region_id = rcl.region_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_inventory_event rie "); 
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customSchema()).append("ram_inventory_event rie "); 
 		sql.append("on rcl.customer_location_id = rie.customer_location_id "); 
 		sql.append("and date_part('week', schedule_dt) = ? ");
 		sql.append("and rie.inventory_event_id in ( ");
 		sql.append("select inventory_event_id ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_customer_event_xr ");
-		if (customerId.length() > 0) sql.append(CUSTOMER_WHERE + customerId);
+		sql.append(DBUtil.FROM_CLAUSE).append(customSchema()).append("ram_customer_event_xr ");
+		sql.append(DBUtil.WHERE_1_CLAUSE).append(SecurityUtil.addOEMFilter(req, ""));
 		sql.append(") ");
 		sql.append(REGION_GROUP);
 		sql.append(REGION_ORDER);
-
+		log.debug(sql);
+		
 		// Get the data from the SQL
 		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
 		ps.setInt(1, Convert.getCurrentWeek());
@@ -254,9 +250,6 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * @param req
 	 */
 	public void getWeeklyItemsScheduled(ActionRequest req) throws SQLException {
-		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
-		String customerId = StringUtil.checkVal(user.getAttribute(0));
 		
 		// Add the base chart information
 		Map<String, Object> data = new HashMap<>();
@@ -269,24 +262,27 @@ public class DashboardReportAction extends SBActionAdapter {
 		
 		// Build the sql statement
 		StringBuilder sql = new StringBuilder(500);
-		sql.append("select region_nm, sum(quantity_no) ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(RAM_REGION);
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_customer_location rcl "); 
-		sql.append("on rr.region_id = rcl.region_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_inventory_event rie "); 
+		sql.append("select region_nm, sum(coalesce(quantity_no, 0)) ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customSchema()).append(RAM_REGION);
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select region_id, rii.quantity_no ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customSchema()).append("ram_customer_location rcl "); 
+		sql.append(DBUtil.INNER_JOIN).append(customSchema()).append("ram_inventory_event rie "); 
 		sql.append("on rcl.customer_location_id = rie.customer_location_id "); 
 		sql.append("and date_part('week', schedule_dt) = ? ");
 		sql.append("and rie.inventory_event_id in ( ");
 		sql.append("select inventory_event_id ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_customer_event_xr ");
-		if (customerId.length() > 0) sql.append(CUSTOMER_WHERE + customerId);
+		sql.append(DBUtil.FROM_CLAUSE).append(customSchema()).append("ram_customer_event_xr ");
 		sql.append(") ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_inventory_event_auditor_xr aud ");
+		sql.append(DBUtil.INNER_JOIN).append(customSchema()).append("ram_inventory_event_auditor_xr aud ");
 		sql.append("on rie.inventory_event_id = aud.inventory_event_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_inventory_item rii ");
+		sql.append(DBUtil.INNER_JOIN).append(customSchema()).append("ram_inventory_item rii ");
 		sql.append("on aud.inventory_event_auditor_xr_id = rii.inventory_event_auditor_xr_id ");
+		sql.append(DBUtil.INNER_JOIN).append(customSchema()).append("ram_product rp on rii.product_id = rp.product_id ");
+		sql.append(DBUtil.WHERE_1_CLAUSE).append(SecurityUtil.addOEMFilter(req, "rp"));
+		sql.append(") j on rr.region_id = j.region_id ");
 		sql.append(REGION_GROUP);
 		sql.append(REGION_ORDER);
+		log.debug(sql);
 		
 		// Get the data from the SQL
 		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
@@ -312,10 +308,6 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * @param req
 	 */
 	public void getRegionReturns(ActionRequest req) throws SQLException {
-		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
-		String customerId = StringUtil.checkVal(user.getAttribute(0));
-		
 		// Add the base chart information
 		Map<String, Object> data = new HashMap<>();
 		data.put(IS_SUCCESS, Boolean.TRUE);
@@ -339,21 +331,23 @@ public class DashboardReportAction extends SBActionAdapter {
 		sql.append("when inventory_item_type_cd = 'TRANSFER'  then 1 ");
 		sql.append("else 0 ");
 		sql.append("end) as returned_items ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_product rp ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("ram_inventory_item rii ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customSchema()).append("ram_product rp ");
+		sql.append(DBUtil.INNER_JOIN).append(customSchema()).append("ram_customer rc ");
+		sql.append("on rp.customer_id = rc.customer_id ").append(SecurityUtil.addOEMFilter(req, "rc"));
+		sql.append(DBUtil.INNER_JOIN).append(customSchema()).append("ram_inventory_item rii ");
 		sql.append("on rii.product_id = rp.product_id ");
-		if (customerId.length() > 0) sql.append("and customer_id = ").append(customerId);
-		sql.append(" inner join ").append(schema).append("ram_inventory_event_auditor_xr aud "); 
+		sql.append(" inner join ").append(customSchema()).append("ram_inventory_event_auditor_xr aud "); 
 		sql.append("on rii.inventory_event_auditor_xr_id = aud.inventory_event_auditor_xr_id "); 
 		sql.append("and date_part('week', inventory_dt) = ? ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
+		sql.append(DBUtil.INNER_JOIN).append(customSchema());
 		sql.append("ram_inventory_event rie on rie.inventory_event_id = aud.inventory_event_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
+		sql.append(DBUtil.INNER_JOIN).append(customSchema());
 		sql.append("ram_customer_location rcl on rie.customer_location_id = rcl.customer_location_id ");
-		sql.append("right outer join ").append(schema);
+		sql.append("right outer join ").append(customSchema());
 		sql.append("ram_region rr on rcl.region_id = rr.region_id ");
 		sql.append(REGION_GROUP);
 		sql.append(REGION_ORDER);
+		log.debug(sql);
 		
 		// Execute and store the data
 		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
@@ -382,10 +376,6 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * @param req
 	 */
 	public void getProductCountOEM(ActionRequest req) throws SQLException {
-		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
-		Integer customerId = Convert.formatInteger(user.getAttribute(0) + "");
-		
 		// Add the base chart information
 		Map<String, Object> data = new HashMap<>();
 		data.put(IS_SUCCESS, Boolean.TRUE);
@@ -397,55 +387,33 @@ public class DashboardReportAction extends SBActionAdapter {
 		
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select customer_nm, sum(c.quantity_no) ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_customer a ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("ram_product b ");
-		sql.append("on a.customer_id = b.customer_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("ram_inventory_item c ");
-		sql.append("on b.product_id = c.product_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("ram_inventory_event_auditor_xr d ");
-		sql.append("on c.inventory_event_auditor_xr_id = d.inventory_event_auditor_xr_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("ram_inventory_event e ");
-		sql.append("on d.inventory_event_id = e.inventory_event_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("ram_customer_location f ");
-		sql.append("on e.customer_location_id = f.customer_location_id ");
-		sql.append("where f.customer_id = ? and inventory_item_type_cd in ('SHELF','REPLENISHMENT') ");
-		sql.append("and c.parent_id is null and inventory_complete_dt is not null ");
-		sql.append("group by customer_nm, d.inventory_event_id, inventory_complete_dt ");
-		sql.append("order by inventory_complete_dt desc");
+		sql.append("select customer_nm, sum(qty_on_hand_no), sum(qty_on_hand_no)/count(*) ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customSchema()).append("ram_location_item_master a ");
+		sql.append(DBUtil.INNER_JOIN).append(customSchema()).append("ram_product b ");
+		sql.append("on a.product_id = b.product_id ");
+		sql.append(DBUtil.INNER_JOIN).append(customSchema()).append("ram_customer c ");
+		sql.append("on b.customer_id = c.customer_id ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
+		sql.append(" and a.customer_location_id in (select customer_location_id ").append(DBUtil.FROM_CLAUSE);
+		sql.append(customSchema()).append("ram_customer_location ").append(DBUtil.WHERE_1_CLAUSE);
+		sql.append(SecurityUtil.addCustomerFilter(req, "")).append(") ");
+		sql.append("group by customer_nm ");
+		sql.append("order by customer_nm ");
 		log.debug("SQL: " + sql);
 		
 		// Get the data from the SQL
 		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setInt(1, customerId);
 		ResultSet rs = ps.executeQuery();
 		SeriesDataVO units = new SeriesDataVO("Current Units", COLUMN);
 		SeriesDataVO average = new SeriesDataVO("Average Units", SPLINE);
 
 		// Looping all of the events to grab the appropriate data
 		List<String> categories = new ArrayList<>(32);
-		int tot = 0;
-		int count = 0;
-		String name = "";
-		String currName = "";
 		while (rs.next()) {
-			name = rs.getString(1);
-			if (! name.equalsIgnoreCase(currName)) {
-				if (currName.length() > 0 && count > 0) {
-					average.addData(tot / count);
-				}
-				categories.add(rs.getString(1));
-				units.addData(rs.getInt(2));
-				tot = rs.getInt(2); count = 1;
-			} else {
-				count++;
-				tot += rs.getInt(2);
-			}
-			
-			currName = name;
+			average.addData(rs.getDouble(3));
+			units.addData(rs.getInt(2));
+			categories.add(rs.getString(1));
 		}
-		// Collect the average for the final entry
-		if (count > 0) average.addData(tot / count);
 		ps.close();
 		
 		//Add it to the list of series
@@ -470,8 +438,37 @@ public class DashboardReportAction extends SBActionAdapter {
 		data.put(Y_LABEL, "Units)");
 		data.put(X_LABEL, "OEM");
 		data.put(COLORS, new String[]{COLOR_1, COLOR_2, COLOR_3});
-		data.put(CATEGORIES, getCategories());
 		
+		// Looping all of the events to grab the appropriate data
+		List<String> categories = new ArrayList<>(32);
+		SeriesDataVO counts = new SeriesDataVO("On Hand", COLUMN);
+		
+		StringBuilder sql = new StringBuilder(768);
+		sql.append("select coalesce(e.category_nm, 'Unassigned'), sum(a.qty_on_hand_no) ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customSchema()).append("ram_location_item_master a ");
+		sql.append(DBUtil.INNER_JOIN).append(customSchema()).append("ram_product b on a.product_id = b.product_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customSchema()).append("ram_product_category_xr c on b.product_id = c.product_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customSchema()).append("ram_product_category d on c.product_category_cd = d.product_category_cd ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customSchema()).append("ram_product_category e on d.category_group_id = e.product_category_cd ");
+		sql.append("where 1=1 and a.customer_location_id in ( ");
+		sql.append("select customer_location_id ").append(DBUtil.FROM_CLAUSE).append(customSchema());
+		sql.append("ram_customer_location where 1=1 ");
+		sql.append(SecurityUtil.addCustomerFilter(req, "")); 
+		sql.append(") group by e.category_nm order by e.category_nm ");
+		log.debug(sql.length() + "|" + sql);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				counts.addData(rs.getInt(2));
+				categories.add(rs.getString(1));
+			}
+		}
+		
+		List<SeriesDataVO> series = new ArrayList<>();
+		series.add(counts);
+		data.put(SERIES, series);
+		data.put(CATEGORIES, categories);
 		this.putModuleData(data);
 	}
 	
@@ -479,46 +476,47 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * Retrieves a list of upcoming events for a provider
 	 * @param req
 	 */
-	public void getUpcomingEvent(ActionRequest req) throws SQLException {
-		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
-		Integer customerId = Convert.formatInteger(user.getAttribute(0) + "");
+	public void getProviderSurgeries(ActionRequest req) throws SQLException {
+		// Add the base chart information
+		Map<String, Object> data = new HashMap<>();
+		data.put(IS_SUCCESS, Boolean.TRUE);
+		data.put(TITLE, "Surgeries by Month");
+		data.put(Y_LABEL, "Surgeries");
+		data.put(X_LABEL, "Month and Year");
+		data.put(COLORS, new String[]{COLOR_1, COLOR_2, COLOR_3});
+		
+		// Looping all of the events to grab the appropriate data
+		List<String> categories = new ArrayList<>(8);
+		SeriesDataVO surgeries = new SeriesDataVO("Surgery", COLUMN);
 		
 		// Build the SQL Statement
-		StringBuilder sql = new StringBuilder(700);
-		sql.append("select a.inventory_event_id,location_nm, schedule_dt, ");
-		sql.append("count(c.customer_event_id) as oem_count, ");
-		sql.append("count(d.event_return_id) as return_count ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_inventory_event a ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("ram_customer_location b ");
-		sql.append("on a.customer_location_id = b.customer_location_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_customer_event_xr c  ");
-		sql.append("on a.inventory_event_id = c.inventory_event_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_event_return_xr d  ");
-		sql.append("on a.inventory_event_id = d.inventory_event_id ");
-		sql.append("where a.customer_location_id in ( ");
-		sql.append("select customer_location_id  ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_customer_location ");
-		sql.append("where customer_id = ?) ");
-		sql.append("and schedule_dt > ? ");
-		sql.append("and a.active_flg = 1 ");
-		sql.append("group by a.inventory_event_id,location_nm, schedule_dt ");
-		sql.append("order by schedule_dt asc, location_nm limit 25 ");
-		log.debug(sql);
+		StringBuilder sql = new StringBuilder(512);
+		sql.append("select count(*), to_char(date_trunc( 'month', surgery_dt ), 'Monthyyyy') as month_grp ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customSchema()).append("ram_case ");
+		sql.append("where case_status_cd in ('CLOSED', 'OR_COMPLETE', 'SPD_IN_PROGRESS') ");
+		sql.append("and surgery_dt > ? ");
+		sql.append("and customer_location_id in (select customer_location_id ").append(DBUtil.FROM_CLAUSE);
+		sql.append(customSchema()).append("ram_customer_location ").append(DBUtil.WHERE_1_CLAUSE);
+		sql.append(SecurityUtil.addCustomerFilter(req, "")); 
+		sql.append(") group by month_grp order by month_grp desc ");
+		log.debug(sql.length() + "|" + sql + "|" + Convert.formatSQLDate(Convert.formatDate(new Date(), Calendar.YEAR, -1)));
 		
 		// Get the data from the SQL
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setInt(1, customerId);
-		ps.setDate(2, Convert.formatSQLDate(Convert.formatDate("2014-06-01")));
-		ResultSet rs = ps.executeQuery();
-		
-		List<Object[]> data = new ArrayList<>();
-		while (rs.next()) {
-			String sched = Convert.formatDate(rs.getDate(3), Convert.DATE_DASH_PATTERN);
-			data.add(new Object[] {rs.getInt(1), rs.getString(2), sched, rs.getInt(4), rs.getInt(5)});
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setDate(1, Convert.formatSQLDate(Convert.formatDate(new Date(), Calendar.YEAR, -1)));
+			ResultSet rs = ps.executeQuery();
+	
+			while (rs.next()) {
+				surgeries.addData(rs.getInt(1));
+				categories.add(rs.getString(2));
+			}
 		}
 		
-		this.putModuleData(data, data.size(), false);
+		List<SeriesDataVO> series = new ArrayList<>();
+		series.add(surgeries);
+		data.put(SERIES, series);
+		data.put(CATEGORIES, categories);
+		this.putModuleData(data);
 	}
 	
 	/**
@@ -604,29 +602,4 @@ public class DashboardReportAction extends SBActionAdapter {
 		}
 		return cats;
 	}
-	
-	/**
-	 * Gets a list of categories for the provider report by type
-	 * @return
-	 * @throws SQLException
-	 */
-	private List<String> getCategories() throws SQLException {
-		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		List<String> cats = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("select category_nm ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_product_category a ");
-		sql.append("where (parent_cd is null or parent_cd = 'ORTHO') ");
-		sql.append("and a.product_category_cd != 'ORTHO' ");
-		sql.append("order by category_nm ");
-		
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ResultSet rs = ps.executeQuery();
-		while (rs.next()) {
-			cats.add(rs.getString("category_nm"));
-		}
-		return cats;
-	}	
-
-	
 }
