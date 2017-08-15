@@ -76,6 +76,7 @@ public class CustomerLocationAction extends SBActionAdapter {
 		sql.append("inner join ").append(schema).append("ram_region reg on b.region_id = reg.region_id ");
 		sql.append("where 1=1 ");
 		
+		if(req.hasParameter("customerActive")) sql.append("and c.active_flg = 1 ");
 		if (customerId > 0) sql.append("and b.customer_id = ? ");
 		if (customerLocationId > 0) sql.append("and b.customer_location_id = ? ");
 		if (customerTypeId.length() > 0) sql.append("and c.customer_type_id = ? ");

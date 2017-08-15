@@ -6,14 +6,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.ram.action.customer.CustomerAction;
 // RAM Data Feed Libs
+import com.ram.action.customer.CustomerAction;
 import com.ram.action.customer.CustomerLocationAction;
 import com.ram.action.customer.CustomerTypesAction;
 import com.ram.action.event.InventoryEventGroupAction;
 import com.ram.action.products.ProductAction;
-import com.ram.action.provider.VisionAction;
-import com.ram.action.provider.VisionProductAction;
 import com.ram.action.workflow.ServicesAction;
 import com.ram.action.workflow.TransactionStatusAction;
 import com.ram.action.workflow.WorkflowEventTypesAction;
@@ -199,6 +197,8 @@ public class AJAXUtilAction extends SBActionAdapter {
 				sai.setDBConnection(getDBConnection());
 				sai.setAttributes(getAttributes());
 				sai.retrieve(req);
+				break;
+			default:
 				break;
 		}
 	}
