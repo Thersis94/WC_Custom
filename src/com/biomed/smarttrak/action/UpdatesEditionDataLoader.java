@@ -255,7 +255,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append(INNER_JOIN).append(schema).append("biomedgps_section s on s.section_id=acl.section_id "); //lvl3 hierarchy
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_section s2 on s.parent_id=s2.section_id "); //lvl2 hierarchy
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_section s3 on s2.parent_id=s3.section_id "); //lvl1 hierarchy
-		sql.append(INNER_JOIN).append(schema).append("biomedgps_update_section us on us.section_id=coalesce(s.section_id,s2.section_id,s3.section_id) "); //update attached to either of the 3 hierarchy levels; acl, acl-parent, acl-grandparent
+		sql.append(INNER_JOIN).append(schema).append("biomedgps_update_section us on us.section_id in (s.section_id,s2.section_id,s3.section_id) "); //update attached to either of the 3 hierarchy levels; acl, acl-parent, acl-grandparent
 		sql.append(INNER_JOIN).append(schema).append("biomedgps_update up on up.update_id=us.update_id ");
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on c.company_id=coalesce(up.company_id,prod.company_id) "); //join from the update, or from the product. Prefer company
