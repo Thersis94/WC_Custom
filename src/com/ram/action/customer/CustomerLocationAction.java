@@ -70,9 +70,10 @@ public class CustomerLocationAction extends SBActionAdapter {
 		String customerTypeId = StringUtil.checkVal(req.getParameter("customerTypeId"));
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(320);
-		sql.append("select b.* from ").append(schema);
+		sql.append("select b.*, reg.region_nm from ").append(schema);
 		sql.append("ram_customer_location b ");
 		sql.append("inner join ").append(schema).append("ram_customer c on b.customer_id = c.customer_id ");
+		sql.append("inner join ").append(schema).append("ram_region reg on b.region_id = reg.region_id ");
 		sql.append("where 1=1 ");
 		
 		if (customerId > 0) sql.append("and b.customer_id = ? ");
