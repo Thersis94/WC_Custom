@@ -59,7 +59,7 @@ public class LookupAction extends SimpleActionAdapter {
 		
 		switch(req.getParameter("type", "none")) {
 			case "providers":
-				data = getProviders(req);
+				data = getProviderLocations(req);
 				break;
 			case "oems":
 				data = getOEMs(req);
@@ -88,6 +88,9 @@ public class LookupAction extends SimpleActionAdapter {
 			case "providerTypes":
 				data = getProviderTypes();
 				break;
+			case "providerCustomers":
+				data = getProviderCustomers(req);
+				break;
 			case "gtin":
 				data = getCustomerGTINPrefix(req);
 				break;
@@ -98,6 +101,30 @@ public class LookupAction extends SimpleActionAdapter {
 				log.debug("can't find list type");
 		}
 		this.putModuleData(data, data.size(), false);
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public List<Object> getProviderCustomers(ActionRequest req) {
+		RAMCustomerSearchVO csv = new RAMCustomerSearchVO(req);
+
+		StringBuilder sql = new StringBuilder();
+		sql.append("select customer_id as key, customer_nm as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("ram_customer a ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("active_flg = 1 and customer_type_id = 'PROVIDER' ");
+		sql.append(SecurityUtil.addCustomerFilter(req, "a"));
+		sql.append("order by customer_nm ");
+		
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<Object> data = dbp.executeSelect(sql.toString(), CustomerAction.buildCustomerQueryParams(csv), new GenericVO());
+		this.putModuleData(data);
+
+		// Return the data
+		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
 	/**
@@ -241,7 +268,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * Gets a list of providers for a given user
 	 * @param role
 	 */
-	public List<Object> getProviders(ActionRequest req) {
+	public List<Object> getProviderLocations(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select customer_location_id as key, location_nm as value from ");
 		sql.append(getCustomSchema()).append("ram_customer_location a ");
