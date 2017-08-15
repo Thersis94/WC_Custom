@@ -628,7 +628,7 @@ public class RamUserAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select customer_id, customer_nm from ").append("ram_customer "); 
 		sql.append("where customer_type_id = 'PROVIDER' and active_flg = 1 and customer_id not in ( ");
-		sql.append("select customer_id from ").append("ram_user_role_customer_xr ");
+		sql.append("select customer_id from ").append(getCustomSchema()).append("ram_user_role_customer_xr ");
 		sql.append("where user_role_id = ?) ");
 		sql.append(SecurityUtil.addCustomerFilter(req, ""));
 		sql.append("order by customer_nm; ");
