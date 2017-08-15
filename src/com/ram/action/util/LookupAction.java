@@ -248,6 +248,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(customSchema()).append("ram_customer b on a.customer_id = b.customer_id ");
 		sql.append("where a.active_flg = 1 and b.active_flg = 1 ");
 		sql.append(SecurityUtil.addCustomerFilter(req, ""));
+		sql.append("order by location_nm ");
 		log.debug(sql);
 		
 		DBProcessor dbp = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));

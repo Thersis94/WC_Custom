@@ -17,6 +17,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.barcode.BarcodeItemVO;
 import com.siliconmtn.barcode.BarcodeItemVO.BarcodeType;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.barcode.BarcodeManager;
 import com.siliconmtn.barcode.BarcodeOEM;
 import com.siliconmtn.util.Convert;
@@ -224,16 +225,18 @@ public class SPDBarcodeLookupAction extends SimpleActionAdapter {
 	 */
 	protected SPDRAMProductVO retrieveProduct(BarcodeItemVO barcode) {
 		SPDRAMProductVO p = null;
-		log.info("Performing lookup on productId: " + barcode.getProductId());
-		try(PreparedStatement ps = dbConn.prepareStatement(getProductSql(barcode.getBarcodeType()))) {
+		String sql = getProductSql(barcode.getBarcodeType());
+		log.debug(sql + "|" + barcode.getCustomerId() + "|" + barcode.getProductId());
+		try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setInt(1, Convert.formatInteger(barcode.getCustomerId()));
 			ps.setString(2, barcode.getProductId());
-	
+			ps.setString(3, barcode.getBarcodeType().toString());
 			ResultSet rs = ps.executeQuery();
 
 			if(rs.next()) {
 				p = new SPDRAMProductVO(rs);
 				p.setLotNumber(barcode.getLotCodeNumber());
+				p.setSerialNumber(barcode.getSerialNumber());
 
 				if(p.getKitFlag() == 1) {
 					performCaseLookup(p);
@@ -252,6 +255,8 @@ public class SPDBarcodeLookupAction extends SimpleActionAdapter {
 		try(PreparedStatement ps = dbConn.prepareStatement(getCaseLookupSql())) {
 			ps.setInt(1, p.getProductId());
 			ps.setString(2, RAMCaseStatus.OR_COMPLETE.toString());
+			ps.setInt(3, 0);
+			ps.setString(4, p.getSerialNumber().toUpperCase());
 
 			ResultSet rs = ps.executeQuery();
 
@@ -269,7 +274,7 @@ public class SPDBarcodeLookupAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	private String getCaseLookupSql() {
-		StringBuilder sql = new StringBuilder(275);
+		StringBuilder sql = new StringBuilder(400);
 		String custom = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select c.case_id, k.case_kit_id from ");
 		sql.append(custom).append("ram_case c ");
@@ -278,20 +283,24 @@ public class SPDBarcodeLookupAction extends SimpleActionAdapter {
 		sql.append("inner join ").append(custom).append("ram_location_item_master i ");
 		sql.append("on k.location_item_master_id = i.location_item_master_id ");
 		sql.append("where i.product_id = ? and c.case_status_cd = ? ");
+		sql.append("and processed_flg = ? and i.serial_no_txt = ?");
 		return sql.toString();
 	}
 
 	private String getProductSql(BarcodeType type) {
-		StringBuilder sql = new StringBuilder();
-		sql.append("select p.*, p.GTIN_PRODUCT_ID as GTIN_NUMBER_TXT, c.CUSTOMER_NM from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_PRODUCT p ");
-		sql.append("LEFT JOIN ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_CUSTOMER c on p.CUSTOMER_ID = p.CUSTOMER_ID ");
-		sql.append("where p.CUSTOMER_ID = ? ");
+		StringBuilder sql = new StringBuilder(300);
+		String custom = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select p.*, p.gtin_product_id as gtin_number_txt, c.customer_nm ").append(DBUtil.FROM_CLAUSE).append(custom);
+		sql.append("ram_product p ");
+		sql.append(DBUtil.INNER_JOIN).append(custom);
+		sql.append("ram_customer c on c.customer_id = p.customer_id ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("ram_customer_code cc ");
+		sql.append("on c.customer_id = cc.customer_id and c.customer_id = ? ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if(type.equals(BarcodeType.GTIN)) {
-			sql.append("and GTIN_PRODUCT_ID = ?");
+			sql.append("and gtin_product_id = ? and cc.code_type = ?");
 		} else {
-			sql.append("and CUST_PRODUCT_ID = ?");
+			sql.append("and cust_product_id = ? and cc.code_type = ?");
 		}
 
 		return sql.toString();

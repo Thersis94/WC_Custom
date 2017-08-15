@@ -243,7 +243,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 		try(PreparedStatement ps = dbConn.prepareStatement(getProductSql(barcode))) {
 			ps.setString(1,barcode.getVendorCode());
 			ps.setString(2, barcode.getProductId());
-	
+
 			ResultSet rs = ps.executeQuery();
 
 			if(rs.next()) {
@@ -251,7 +251,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 				p.setLotNumber(barcode.getLotCodeNumber());
 				p.setExpiree(barcode.getExpirationDate());
 				p.setSerialNumber(barcode.getSerialNumber());
-				
+
 				// If the product is a kit and the serial number is present, get the item master id
 				if (p.getKitFlag() == 1 && ! StringUtil.isEmpty(barcode.getSerialNumber())) {
 					getKitItemMasterId(p);
@@ -295,12 +295,15 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String getProductSql(BarcodeItemVO bc) {
-		StringBuilder sql = new StringBuilder();
-		sql.append("select p.*, p.gtin_product_id as gtin_number_txt, c.customer_nm from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		StringBuilder sql = new StringBuilder(300);
+		String custom = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select p.*, p.gtin_product_id as gtin_number_txt, c.customer_nm ").append(DBUtil.FROM_CLAUSE).append(custom);
 		sql.append("ram_product p ");
-		sql.append("inner join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("ram_customer c on c.customer_id = p.customer_id and c.gtin_number_txt = ? ");
-		sql.append("where 1=1 ");
+		sql.append(DBUtil.INNER_JOIN).append(custom);
+		sql.append("ram_customer c on c.customer_id = p.customer_id ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("ram_customer_code cc ");
+		sql.append("on c.customer_id = cc.customer_id and cc.customer_code_value = ? ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if(BarcodeType.GTIN.equals(bc.getBarcodeType())) {
 			sql.append("and gtin_product_id = ?");
 		} else {
