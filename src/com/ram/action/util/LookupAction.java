@@ -97,7 +97,7 @@ public class LookupAction extends SimpleActionAdapter {
 			default:
 				log.debug("can't find list type");
 		}
-		this.putModuleData(data);
+		this.putModuleData(data, data.size(), false);
 	}
 	
 	/**
@@ -244,8 +244,9 @@ public class LookupAction extends SimpleActionAdapter {
 	public List<Object> getProviders(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select customer_location_id as key, location_nm as value from ");
-		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("ram_customer_location ");
-		sql.append("where active_flg = 1 ");
+		sql.append(getCustomSchema()).append("ram_customer_location a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_customer b on a.customer_id = b.customer_id ");
+		sql.append("where a.active_flg = 1 and b.active_flg = 1 ");
 		sql.append(SecurityUtil.addCustomerFilter(req, ""));
 		sql.append("order by location_nm ");
 		log.debug(sql);
