@@ -4,6 +4,7 @@ package com.biomed.smarttrak.action;
 import java.util.List;
 import java.util.Map;
 
+
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -186,9 +187,16 @@ public class QuickLinksAction extends SBActionAdapter {
 		List<PageViewVO> section = data.get(sec);
 		// invalid section key, or empty list, no match.
 		if (section == null || section.isEmpty()) return false;
+		
+		// Previous favorited items exist in solr as combo of section and id, not just id
+		String primaryId = pkId;
+		if(pkId.length() < AdminControllerAction.DOC_ID_MIN_LEN){
+			primaryId = sec +"_"+ pkId;
+		}
+		
 		// loop pageviews looking for match.
 		for (PageViewVO page : section) {
-			if (pkId.equalsIgnoreCase(page.getPageId())) {
+			if (primaryId.equalsIgnoreCase(page.getPageId())) {
 				return true;
 			}
 		}
