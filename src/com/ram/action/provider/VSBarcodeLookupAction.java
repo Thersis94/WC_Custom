@@ -24,7 +24,6 @@ import com.siliconmtn.barcode.BarcodeOEM;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -75,7 +74,6 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 
 		oems = getOems(r);
@@ -97,6 +95,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 			if (barcode == null) throw new Exception("Invalid Barcode Recieved");
 
 			product = this.retrieveProduct(barcode);
+			log.debug("Product: " + product);
 		} catch(Exception e) {
 			errorMsg = e.getLocalizedMessage();
 		}
@@ -251,7 +250,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 				p.setLotNumber(barcode.getLotCodeNumber());
 				p.setExpiree(barcode.getExpirationDate());
 				p.setSerialNumber(barcode.getSerialNumber());
-
+				
 				// If the product is a kit and the serial number is present, get the item master id
 				if (p.getKitFlag() == 1 && ! StringUtil.isEmpty(barcode.getSerialNumber())) {
 					getKitItemMasterId(p);
@@ -286,7 +285,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 		List<Object> res = db.executeSelect(sql.toString(), params, new GenericVO());
 		
 		// assign the id
-		if (! res.isEmpty()) prod.setLocationItemMasterId(Convert.formatInteger(((GenericVO)res.get(0)).getKey() + ""));
+		if (! res.isEmpty()) prod.setLocationItemMasterId(((GenericVO)res.get(0)).getKey() + "");
 	}
 	
 	/**
@@ -297,7 +296,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	private String getProductSql(BarcodeItemVO bc) {
 		StringBuilder sql = new StringBuilder(300);
 		String custom = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("select p.*, p.gtin_product_id as gtin_number_txt, c.customer_nm ").append(DBUtil.FROM_CLAUSE).append(custom);
+		sql.append("select p.*, customer_code_value as gtin_number_txt, c.customer_nm ").append(DBUtil.FROM_CLAUSE).append(custom);
 		sql.append("ram_product p ");
 		sql.append(DBUtil.INNER_JOIN).append(custom);
 		sql.append("ram_customer c on c.customer_id = p.customer_id ");
@@ -310,7 +309,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 			sql.append("and cust_product_id = ?");
 		}
 
-		log.debug(sql.toString() + "|" + bc.getCustomerId() + "|" + bc.getProductId());
+		log.debug(sql.toString() + "|" + bc.getVendorCode() + "|" + bc.getProductId());
 		return sql.toString();
 	}
 }

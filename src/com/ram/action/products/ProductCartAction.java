@@ -855,11 +855,14 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 */
 	private String buildEmailBody(UserDataVO user, RAMCaseVO cvo) {
 		StringBuilder s = new StringBuilder(512);
-		s.append("<h3>").append(user.getFullName()).append(" has sent you a Surgical Case Report</h3>");
-		s.append("<p>The attached case report (").append(cvo.getHospitalCaseId()).append(") for ");
+		s.append("<h3>Attached is a Surgical Case Report for your Records</h3>");
+		s.append("<p>The attached case report <i><u>(").append(cvo.getHospitalCaseId()).append(")</u></i> ");
+		s.append("that was performed at <i><u>").append(cvo.getCustomerName()).append("</u></i> and scheduled for <i><u>");
 		s.append(Convert.formatDate(cvo.getSurgeryDate(), Convert.DATE_TIME_SLASH_PATTERN_12HR));
-		s.append(" was sent to you </p>");
-		s.append("<img src='http://www.ramgrp.com/binary/themes/CUSTOM/RAMGRP/MAIN/images/ramgrouplogo.png' />");
+		s.append("</u></i> has been sent to you for your record by <i><u>").append(user.getFullName()).append(" </u></i></p>");
+		s.append("<p>If you received this report in error, please contact ").append(user.getFullName());
+		s.append(" so we may update our system.  Thank you.</p>");
+		s.append("<img src='http://www.ramgrp.com/binary/themes/CUSTOM/RAMGRP/PORTAL/images/ramlogo-small.png' />");
 		
 		return s.toString();
 	}

@@ -68,7 +68,7 @@ public class SPDBarcodeLookupAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-
+		log.info("*****");
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 
 		oems = getOems(r);
