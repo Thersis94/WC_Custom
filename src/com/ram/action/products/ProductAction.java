@@ -333,7 +333,7 @@ public class ProductAction extends SBActionAdapter {
 		RAMProductSearchVO svo = new RAMProductSearchVO(req);
 		List<Object> params = buildProductLookupParams(svo);
 		String sql = getProdList(svo);
-
+		
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		List<Object> products = dbp.executeSelect(sql, params, new RAMProductVO());
 

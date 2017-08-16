@@ -46,10 +46,12 @@ public class CaseSearchAction extends SimpleActionAdapter {
 	public static final String STATUS = "status";
 	
 	private enum SearchFields {
-		caseId("case_id"),
+		hospitalCaseId("case_id"),
 		surgeryDate("surgery_dt"),
 		numProducts("num_prod_case"),
-		status("case_status_cd");
+		caseStatus("case_status_cd"),
+		numProductsCase("num_prod_case"),
+		customerName("customer_nm");
 		
 		private String cloumnNm;
 		
