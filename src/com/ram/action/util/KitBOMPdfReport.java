@@ -98,7 +98,7 @@ public class KitBOMPdfReport extends AbstractSBReportVO {
 				html.append("</tr></thead><tbody>");
 				for(KitLayerProductVO p: k.getProducts().values()) {
 					html.append("<tr>");
-					html.append("<td>").append(p.getProductName()).append("</td>");
+					html.append("<td>").append(p.getProductNm()).append("</td>");
 					html.append("<td>").append(p.getProduct().getCustomerProductId()).append("</td>");
 					html.append("<td>").append(p.getProduct().getCustomerName()).append("</td>");
 					html.append("<td>").append(Convert.formatDate(new Date())).append("</td>");
