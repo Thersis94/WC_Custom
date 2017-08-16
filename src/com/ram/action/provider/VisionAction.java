@@ -229,7 +229,7 @@ public class VisionAction extends SBActionAdapter {
 
 			//Lookup the Product.
 			KitLayerProductVO kp = k.getProducts().get(id); 
-			String title = kp.getProductName();
+			String title = kp.getProductNm();
 
 			//Set the Title
 			s.setTitle(title);
