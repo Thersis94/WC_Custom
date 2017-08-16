@@ -11,6 +11,7 @@ import java.util.Map;
 
 import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.admin.AbstractTreeAction;
+import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.fd.FinancialDashAction.DashType;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
@@ -148,7 +149,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected SectionHierarchyAction getHierarchyAction() {
-		SectionHierarchyAction sha = new SectionHierarchyAction(this.actionInit);
+		SectionHierarchyAction sha = new FinancialDashHierarchyAction(this.actionInit);
 		sha.setAttributes(this.attributes);
 		sha.setDBConnection(dbConn);
 		
