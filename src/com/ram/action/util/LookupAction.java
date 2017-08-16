@@ -11,9 +11,14 @@ import com.ram.action.or.vo.RAMCaseKitVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.gis.AbstractGeocoder;
+import com.siliconmtn.gis.GeocodeLocation;
+import com.siliconmtn.gis.Location;
+import com.siliconmtn.gis.SMTGeocoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs 3.2
@@ -82,6 +87,9 @@ public class LookupAction extends SimpleActionAdapter {
 			case "kitCustomers":
 				data = getKitCustomers(req);
 				break;
+			case "zipGeo":
+				data = getZipGeocode(req);
+				break;
 			case "categories":
 				data = getProductCategories();
 				break;
@@ -103,6 +111,31 @@ public class LookupAction extends SimpleActionAdapter {
 		this.putModuleData(data, data.size(), false);
 	}
 	
+	/**
+	 * get a zip code off the req object and returns location information
+	 * @param req
+	 * @return
+	 */
+	private List<Object> getZipGeocode(ActionRequest req) {
+		SMTGeocoder gc = new SMTGeocoder();
+		gc.setAttributes(attributes);
+		gc.addAttribute(AbstractGeocoder.CONNECT_URL, getAttribute(GlobalConfig.GEOCODER_URL));
+		gc.addAttribute(AbstractGeocoder.CASS_VALIDATE_FLG, Boolean.FALSE);
+
+		Location loc = new Location();
+		loc.setZipCode(StringUtil.checkVal(req.getParameter("zipCode")));
+		loc.setCountry("US");
+		
+		List<Object> locations = new ArrayList<>();
+		
+		for(GeocodeLocation locLoc : gc.geocodeLocation(loc)){
+			locations.add(locLoc);
+			log.debug("city " + locLoc.getCity());
+		}
+		
+		return locations;
+	}
+
 	/**
 	 * 
 	 * @param req
@@ -128,6 +161,7 @@ public class LookupAction extends SimpleActionAdapter {
 	}
 	
 	/**
+	 * returns a list of regions for display on the site
 	 * @param req
 	 * @return
 	 */
@@ -147,6 +181,7 @@ public class LookupAction extends SimpleActionAdapter {
 	}
 
 	/**
+	 * returns a list of providers for display
 	 * @param req
 	 * @return
 	 */
@@ -274,7 +309,7 @@ public class LookupAction extends SimpleActionAdapter {
 		sql.append(getCustomSchema()).append("ram_customer_location a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_customer b on a.customer_id = b.customer_id ");
 		sql.append("where a.active_flg = 1 and b.active_flg = 1 ");
-		sql.append(SecurityUtil.addCustomerFilter(req, ""));
+		sql.append(SecurityUtil.addCustomerFilter(req, "a"));
 		sql.append("order by location_nm ");
 		log.debug(sql);
 		

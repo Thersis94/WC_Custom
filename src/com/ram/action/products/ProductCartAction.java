@@ -184,12 +184,30 @@ public class ProductCartAction extends SimpleActionAdapter {
 					rcm.persistCasePerm(rcm.retrieveCase(req.getParameter(RAMCaseManager.RAM_CASE_ID)));
 					break;
 				case deleteCase:
-					// put something here
+					deleteCase(req);
 					break;
 			}
 		} catch (Exception e) {
 			log.error("Error managing case", e);
 			throw new ActionException(e);
+		}
+	}
+	
+	/**
+	 * Deletes a case form the database
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void deleteCase(ActionRequest req) throws ActionException {
+		RAMCaseVO cvo = new RAMCaseVO();
+		cvo.setCaseId(req.getParameter(CASE_ID));
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.delete(cvo);
+		} catch(Exception e) {
+			log.error("unable to delete case", e);
+			throw new ActionException("unable to delete case", e);
 		}
 	}
 
@@ -796,38 +814,53 @@ public class ProductCartAction extends SimpleActionAdapter {
 		store.save(cart);
 	}
 
-
 	/**
 	 * Send emails to the representative and the hospital
 	 * @param req
 	 */
 	private void sendEmails(ActionRequest req) throws ActionException {
-		try {
-			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipients(req.getParameterValues("emails"));
-			if (req.getSession().getAttribute(CASE_ID) != null) {
-				mail.setSubject("Product Summary for Case " + req.getSession().getAttribute(CASE_ID));
-			} else if (req.getSession().getAttribute(TIME) != null) {
-				mail.setSubject("Product Summary for Surgery on " + new SimpleDateFormat(DATE_PATTERN).format(req.getSession().getAttribute(TIME)));
-			} else {
-				mail.setSubject("RAM OR Case Summary");
-			}
-			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			mail.setFrom(site.getAdminEmail());
+		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		String fromEmail = StringUtil.isEmpty(user.getEmailAddress() ) ? "info@ramgrp.com" : user.getEmailAddress();
 
+		try {
+			// Get the case
 			RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 			RAMCaseVO cvo = rcm.retrieveCase(StringUtil.checkVal(req.getParameter(CASE_ID)));
+			
+			// Build the PDF
 			buildReport(cvo, req);
-
 			AbstractSBReportVO report = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
 			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, false);
-			mail.addAttachment(report.getFileName(), report.generateReport());
-			mail.setHtmlBody("Placeholder text for now");
 
+			// Send the email
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("Surgical Case Summary for Surgery ID: " + cvo.getHospitalCaseId());
+			mail.addRecipients(req.getParameterValues("emails[]"));
+			mail.setFrom(fromEmail);
+			mail.setReplyTo(fromEmail);
+			mail.addAttachment(report.getFileName(), report.generateReport());
+			mail.setHtmlBody(buildEmailBody(user, cvo));
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
+	}
+	
+	/**
+	 * builds the email body
+	 * @param user
+	 * @param cvo
+	 * @return
+	 */
+	private String buildEmailBody(UserDataVO user, RAMCaseVO cvo) {
+		StringBuilder s = new StringBuilder(512);
+		s.append("<h3>").append(user.getFullName()).append(" has sent you a Surgical Case Report</h3>");
+		s.append("<p>The attached case report (").append(cvo.getHospitalCaseId()).append(") for ");
+		s.append(Convert.formatDate(cvo.getSurgeryDate(), Convert.DATE_TIME_SLASH_PATTERN_12HR));
+		s.append(" was sent to you </p>");
+		s.append("<img src='http://www.ramgrp.com/binary/themes/CUSTOM/RAMGRP/MAIN/images/ramgrouplogo.png' />");
+		
+		return s.toString();
 	}
 }
