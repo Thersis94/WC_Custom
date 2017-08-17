@@ -315,7 +315,7 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		table.addCell(getTableCell("Qty", true));
 		
 		table.addCell(getTableCell("Product From", true));
-		table.addCell(getTableCell("Expiree", true));
+		table.addCell(getTableCell("Expiry", true));
 		table.addCell(getTableCell("Billable", true));
 
 		table.addCell(getTableCell("Wasted", true));

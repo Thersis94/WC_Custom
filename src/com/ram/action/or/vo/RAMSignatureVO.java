@@ -46,6 +46,7 @@ public class RAMSignatureVO implements Serializable {
 	private String signatureTxt;
 	private String firstNm;
 	private String lastNm;
+	private String emailAddressText;
 	private SignatureType type;
 	private Date createDt;
 
@@ -226,5 +227,19 @@ public class RAMSignatureVO implements Serializable {
 	 */
 	public String getFullName() {
 		return firstNm + " " + lastNm;
+	}
+
+	/**
+	 * @return the emailAddressText
+	 */
+	public String getEmailAddressText() {
+		return emailAddressText;
+	}
+
+	/**
+	 * @param emailAddressText the emailAddressText to set
+	 */
+	public void setEmailAddressText(String emailAddressText) {
+		this.emailAddressText = emailAddressText;
 	}
 }

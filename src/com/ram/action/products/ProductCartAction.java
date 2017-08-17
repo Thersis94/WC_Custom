@@ -15,7 +15,6 @@ import com.ram.action.or.RAMCaseManager;
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
 import com.ram.action.or.vo.RAMCaseVO;
-import com.ram.action.or.vo.RAMSignatureVO;
 import com.ram.action.report.vo.ProductCartReport;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
@@ -30,7 +29,6 @@ import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
@@ -39,8 +37,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.user.ProfileManager;
-import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
@@ -361,16 +357,17 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		setAttribute(Constants.SITE_DATA, site);
+		
 		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 		WidgetRetrieveAction wa = WidgetRetrieveAction.valueOf(req.getParameter("widgetAction"));
 		String caseId = req.getParameter(CASE_ID);
 		
 		try {
 			RAMCaseVO cvo = rcm.retrieveCase(caseId);
-			
 			switch (wa) {
 			case loadCase:
-				
 				putModuleData(cvo);
 				break;
 			case loadReport:
@@ -485,8 +482,6 @@ public class ProductCartAction extends SimpleActionAdapter {
 		AbstractSBReportVO report;
 		String filename;
 		String caseId = StringUtil.checkVal(cvo.getCaseId());
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		SiteVO site = (SiteVO) req.getAttribute(com.smt.sitebuilder.common.constants.Constants.SITE_DATA);
 		if (caseId.length() != 0) {
 			filename = "case-" + cvo.getHospitalCaseId();
 		} else {
@@ -509,21 +504,6 @@ public class ProductCartAction extends SimpleActionAdapter {
 		
 		data.put(SURG_DATE, Convert.formatDate(cvo.getSurgeryDate(), Convert.DATE_TIME_SLASH_PATTERN_12HR)  );
 		data.put(SALES_REP, cvo.getSalesRep());
-
-		for (RAMSignatureVO svo : cvo.getAllSignatures()){
-			if (cvo.getHospitalRep() != null && svo.getProfileId().equalsIgnoreCase(cvo.getHospitalRep().getProfileId())) {
-				svo.setFirstNm(cvo.getHospitalRep().getFirstName());
-				svo.setLastNm(cvo.getHospitalRep().getLastName());
-				continue;
-			}
-			try {
-				UserDataVO uvo = pm.getProfile(svo.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId());
-				svo.setFirstNm(uvo.getFirstName());
-				svo.setLastNm(uvo.getLastName());
-			} catch (DatabaseException e) {
-				log.error("error getting profile for signature", e);
-			}
-		}
 
 		data.put(SIGNATURES, cvo.getAllSignatures());
 		data.put(BASE_DOMAIN, req.getHostName());
@@ -813,6 +793,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 				mail.setSubject("RAM OR Case Summary");
 			}
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			setAttribute(Constants.SITE_DATA, site);
 			mail.setFrom(site.getAdminEmail());
 
 			RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);

@@ -29,7 +29,9 @@ import com.siliconmtn.util.StringUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.action.user.SBProfileManager;
+import com.smt.sitebuilder.common.SiteVO;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseDBPersist.java
@@ -71,12 +73,16 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		// Get the sales rep info
 		cVo.setSalesRep(getUserByProfileId(cVo.getSalesRepId()));
 		
+		// gets the case's signatures
+		getCaseSignatures(cVo);
+		
 		// Get case items
 		getCaseItems(cVo);
 		
 		return cVo;
 	}
 	
+
 	/**
 	 * Loads all of the items in the Case.  SInce the items are stored as a map of maps,
 	 * it was easier to utilize an the existing case vo and store the items formatted properly
@@ -104,6 +110,40 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	}
 
 	/**
+	 * takes the case vo and adds all the signatures to the object.
+	 * @param cVo
+	 */
+	private void getCaseSignatures(RAMCaseVO cVo) {
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		SiteVO site = (SiteVO) getAttributes().get(com.smt.sitebuilder.common.constants.Constants.SITE_DATA);
+		
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select * ");
+		sql.append(DBUtil.FROM_CLAUSE).append("custom.ram_case_signature ");
+		sql.append("where case_id = ? ");
+				
+		List<Object> params = new ArrayList<>();
+		params.add(cVo.getCaseId());
+		List<Object> signatures = dbp.executeSelect(sql.toString(), params, new RAMSignatureVO());
+		
+		for(Object ob : signatures){
+			
+			RAMSignatureVO sig = (RAMSignatureVO)ob; 
+			try {
+				UserDataVO uvo = pm.getProfile(sig.getProfileId(), conn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId());
+				sig.setFirstNm(StringUtil.checkVal(uvo.getFirstName()));
+				sig.setLastNm(StringUtil.checkVal(uvo.getLastName()));
+				sig.setEmailAddressText(StringUtil.checkVal(uvo.getEmailAddress()));
+			} catch (com.siliconmtn.exception.DatabaseException e) {
+				log.error("error getting name for signatures ", e);
+			}
+			
+			cVo.addSignature(sig);
+		}
+	}
+
+	
+	/**
 	 * Retrieves a user based upon the profile id
 	 * @param profileId
 	 * @return
@@ -127,10 +167,8 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 */
 	private String loadCaseSql() {
 		StringBuilder sql = new StringBuilder(525);
-		sql.append("select cu.customer_nm, su.first_nm || ' ' || su.last_nm as surgeon_nm, o.or_name ,c.*, s.*, k.* ");
+		sql.append("select cu.customer_nm, su.first_nm || ' ' || su.last_nm as surgeon_nm, o.or_name ,c.*,  k.* ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_case c ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_case_signature s ");
-		sql.append("on c.case_id = s.case_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_customer_location cl ");
 		sql.append("on c.customer_location_id = cl.customer_location_id  ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_customer cu ");
