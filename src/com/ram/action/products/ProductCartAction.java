@@ -357,8 +357,6 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		setAttribute(Constants.SITE_DATA, site);
 		
 		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 		WidgetRetrieveAction wa = WidgetRetrieveAction.valueOf(req.getParameter("widgetAction"));
@@ -793,7 +791,6 @@ public class ProductCartAction extends SimpleActionAdapter {
 				mail.setSubject("RAM OR Case Summary");
 			}
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			setAttribute(Constants.SITE_DATA, site);
 			mail.setFrom(site.getAdminEmail());
 
 			RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);

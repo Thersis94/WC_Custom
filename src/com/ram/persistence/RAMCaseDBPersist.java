@@ -115,7 +115,6 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 */
 	private void getCaseSignatures(RAMCaseVO cVo) {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		SiteVO site = (SiteVO) getAttributes().get(com.smt.sitebuilder.common.constants.Constants.SITE_DATA);
 		
 		StringBuilder sql = new StringBuilder(256);
 		sql.append("select * ");
@@ -130,7 +129,10 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 			
 			RAMSignatureVO sig = (RAMSignatureVO)ob; 
 			try {
-				UserDataVO uvo = pm.getProfile(sig.getProfileId(), conn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId());
+				List<String> sigProIds = new ArrayList<>();
+				sigProIds.add(sig.getProfileId());
+				UserDataVO uvo = pm.searchProfile(conn, sigProIds ).get(0);
+				
 				sig.setFirstNm(StringUtil.checkVal(uvo.getFirstName()));
 				sig.setLastNm(StringUtil.checkVal(uvo.getLastName()));
 				sig.setEmailAddressText(StringUtil.checkVal(uvo.getEmailAddress()));
