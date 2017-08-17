@@ -6,6 +6,7 @@ import java.util.Map;
 
 // WC Custom Libs
 import com.ram.action.products.ProductCartFacadeAction;
+import com.ram.action.products.ProductFacadeAction;
 import com.ram.action.provider.ItemMasterAction;
 import com.ram.action.provider.VisionAction;
 import com.ram.action.provider.VisionProductAction;
@@ -75,6 +76,7 @@ public class PortalControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("VS", VisionAction.class);
 		ACTIONS.put("VSP", VisionProductAction.class);
 		ACTIONS.put("LIM", ItemMasterAction.class);
+		ACTIONS.put("PROD", ProductFacadeAction.class);
 	}
 
 	/* (non-Javadoc)

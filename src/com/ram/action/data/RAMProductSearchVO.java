@@ -53,7 +53,7 @@ public class RAMProductSearchVO extends BSTableDataVO {
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 
 		if (req.hasParameter("advFilter[]")) advFilter = Arrays.asList(req.getParameterValues("advFilter[]"));
-		if (req.hasParameter("activeFlag")) activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
+		if (req.hasParameter("activeFlag")) activeFlag = Convert.formatInteger(req.getParameter("activeFlag"), null);
 		
 		term = StringUtil.checkVal(req.getParameter("search")).toLowerCase();
 		isSpd = Convert.formatBoolean(req.getParameter("isSpd"));

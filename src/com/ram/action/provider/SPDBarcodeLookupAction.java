@@ -256,7 +256,7 @@ public class SPDBarcodeLookupAction extends SimpleActionAdapter {
 			ps.setInt(1, p.getProductId());
 			ps.setString(2, RAMCaseStatus.OR_COMPLETE.toString());
 			ps.setInt(3, 0);
-			ps.setString(4, p.getSerialNumber().toUpperCase());
+			ps.setString(4, p.getSerialNumber().toLowerCase());
 
 			ResultSet rs = ps.executeQuery();
 
@@ -283,7 +283,7 @@ public class SPDBarcodeLookupAction extends SimpleActionAdapter {
 		sql.append("inner join ").append(custom).append("ram_location_item_master i ");
 		sql.append("on k.location_item_master_id = i.location_item_master_id ");
 		sql.append("where i.product_id = ? and c.case_status_cd = ? ");
-		sql.append("and processed_flg = ? and i.serial_no_txt = ?");
+		sql.append("and processed_flg = ? and lower(i.serial_no_txt) = ?");
 		return sql.toString();
 	}
 

@@ -1,7 +1,6 @@
 package com.ram.action.products;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,33 +10,24 @@ import java.util.Map;
 import com.ram.datafeed.data.KitLayerProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /****************************************************************************
- * <b>Title</b>: KitLayerProductAction.java
- * <p/>
- * <b>Project</b>: WC_Custom
- * <p/>
- * <b>Description: </b> Action that handles binding Products to a Kit Layer.
- * 
- * <p/>
+ * <b>Title:</b> KitLayerProductAction.java
+ * <b>Project:</b> WC_Custom
+ * <b>Description:</b> Action that handles binding Products to a Kit Layer.
  * <b>Copyright:</b> Copyright (c) 2014
- * <p/>
  * <b>Company:</b> Silicon Mountain Technologies
- * <p/>
- * 
- * @author raptor
- * @version 1.0
- * @since May 20, 2014
- *        <p/>
- *        <b>Changes: </b>
- ***************************************************************************
- */
+ * @author Billy Larsen
+ * @version 3.3
+ * @since Aug 15, 2017
+ * <b>Changes: </b>
+ ***************************************************************************/
 public class KitLayerProductAction extends SBActionAdapter {
 
 	public static final String PRODUCT_KIT_ID = "productKitIds";
@@ -47,7 +37,6 @@ public class KitLayerProductAction extends SBActionAdapter {
 	 */
 	public KitLayerProductAction() {
 		super();
-		
 	}
 
 	/**
@@ -56,7 +45,6 @@ public class KitLayerProductAction extends SBActionAdapter {
 	 */
 	public KitLayerProductAction(ActionInitVO actionInit) {
 		super(actionInit);
-		
 	}
 
 	/**
@@ -87,62 +75,49 @@ public class KitLayerProductAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
 		//Fast fail if kitLayerId is missing.
-		if(!req.hasParameter(KIT_LAYER_ID))
+		if(!req.hasParameter(KIT_LAYER_ID)) {
 			return;
-		
-		List<KitLayerProductVO> layers = new ArrayList<>();
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		} else {
+			loadKitLayerProductData(req);
+		}
+	}
 
+	/**
+	 * @param req
+	 */
+	private void loadKitLayerProductData(ActionRequest req) {
 		//Build Query
-		StringBuilder sb = new StringBuilder();
-		sb.append("select * from ").append(customDb).append("RAM_PRODUCT_LAYER_XR a ");
-		sb.append("inner join ").append(customDb).append("RAM_PRODUCT c ");
+		StringBuilder sb = new StringBuilder(300);
+		sb.append("select * from ").append(getCustomSchema()).append("RAM_PRODUCT_LAYER_XR a ");
+		sb.append("inner join ").append(getCustomSchema()).append("RAM_PRODUCT c ");
 		sb.append("on a.product_id = c.product_id ");
 		sb.append("where a.KIT_LAYER_ID = ?");
-		
-		//Log sql Statement for verification
-		log.info("sql: " + sb.toString() + "|" + req.getParameter(KIT_LAYER_ID));
-		
-		PreparedStatement ps = null;
-		
-		try {
-			ps = dbConn.prepareStatement(sb.toString());
-			ps.setInt(1, Convert.formatInteger(req.getParameter(KIT_LAYER_ID)));
-			ResultSet rs = ps.executeQuery();
-			
-			while(rs.next()) 
-				layers.add(new KitLayerProductVO(rs, false));
-			
-		} catch(SQLException sqle) {
-			log.error(sqle);
-			throw new ActionException(sqle);
-		} finally {
-			DBUtil.close(ps);
-		}
-		
+
+		List<Object> vals = new ArrayList<>();
+		vals.add(Convert.formatInteger(req.getParameter(KIT_LAYER_ID)));
+
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		List<Object> layers = dbp.executeSelect(sb.toString(), vals, new KitLayerProductVO());
+
 		this.putModuleData(layers, layers.size(), false);
 	}
-	
+
 	/**
 	 * Process the request object and pull the relevant data for Layer Products off it.  
 	 * Send the results of the processing through the relevant insert and update methods.
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		
-		//Get the CustomDb
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 
 		//Parse the request and get the map of Layer Products
 		Map<String, List<KitLayerProductVO>> changes = getChanges(req);
-		
+
 		//Process Kit Products requiring an insert
-		processInserts(changes.get("inserts"), customDb);
+		processInserts(changes.get("inserts"));
 
 		//Process Kit Products requiring an update
-		processUpdates(changes.get("updates"), customDb);
+		processUpdates(changes.get("updates"));
 	}
 
 	/**
@@ -153,7 +128,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 	 * @return
 	 */
 	private Map<String, List<KitLayerProductVO>> getChanges(ActionRequest req) {
-		
+
 		//Build Containers
 		Map<String, List<KitLayerProductVO>> changes = new HashMap<>();
 		List<KitLayerProductVO> inserts = new ArrayList<>();
@@ -174,7 +149,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 				vo.setCoordinateTypeVal(values[3]);
 				vo.setActiveFlag(Convert.formatInteger(values[4]));
 				vo.setQuantity(Convert.formatInteger(values[5]));
-				
+
 				/*
 				 * If the user saved and there were rows with empty
 				 * products, ignore them. Else if there is a productKitId
@@ -205,20 +180,17 @@ public class KitLayerProductAction extends SBActionAdapter {
 	 * @param list
 	 * @throws ActionException 
 	 */
-	private void processUpdates(List<KitLayerProductVO> updates, String customDb) throws ActionException {
-		
+	private void processUpdates(List<KitLayerProductVO> updates) throws ActionException {
+
 		//Build sql statement.
-		StringBuilder update = new StringBuilder();
-		update.append("update ").append(customDb).append("RAM_PRODUCT_LAYER_XR set PRODUCT_ID = ?, ");
+		StringBuilder update = new StringBuilder(200);
+		update.append("update ").append(getCustomSchema()).append("RAM_PRODUCT_LAYER_XR set PRODUCT_ID = ?, ");
 		update.append("COORDINATE_TYPE_CD = ?, UPDATE_DT = ?, ");
 		update.append("ACTIVE_FLG = ?, QUANTITY = ? where PRODUCT_KIT_ID = ?");
-		
-		PreparedStatement ps = null;
 
-		try {	
+		try(PreparedStatement ps = dbConn.prepareStatement(update.toString())) {
 			//Update Existing Records
 			log.debug(update.toString());
-			ps = dbConn.prepareStatement(update.toString());
 			for(KitLayerProductVO v : updates) {
 				ps.setInt(1, v.getProductId());
 				ps.setString(2, v.getCoordinateType().name());
@@ -232,8 +204,6 @@ public class KitLayerProductAction extends SBActionAdapter {
 		} catch(SQLException sqle) {
 			log.error("Problem inserting/updating Kit Layer Products.", sqle);
 			throw new ActionException(sqle);
-		} finally {
-			DBUtil.close(ps);
 		}
 	}
 
@@ -243,19 +213,17 @@ public class KitLayerProductAction extends SBActionAdapter {
 	 * @param list
 	 * @throws ActionException 
 	 */
-	private void processInserts(List<KitLayerProductVO> inserts, String customDb) throws ActionException {
-		
+	private void processInserts(List<KitLayerProductVO> inserts) throws ActionException {
+
 		//Build the Sql Statement
-		StringBuilder insert = new StringBuilder();
-		insert.append("insert into ").append(customDb).append("RAM_PRODUCT_LAYER_XR (PRODUCT_ID, ");
+		StringBuilder insert = new StringBuilder(200);
+		insert.append("insert into ").append(getCustomSchema()).append("RAM_PRODUCT_LAYER_XR (PRODUCT_ID, ");
 		insert.append("KIT_LAYER_ID, COORDINATE_TYPE_CD, CREATE_DT, ACTIVE_FLG, QUANTITY) ");
 		insert.append("values (?,?,?,?,?,?)");
-		
-		PreparedStatement ps = null;
-		try {
+
+		try(PreparedStatement ps = dbConn.prepareStatement(insert.toString())) {
 			//Insert new Records
 			log.debug(insert);
-			ps = dbConn.prepareStatement(insert.toString());
 			for(KitLayerProductVO v : inserts) {
 				ps.setInt(1, v.getProductId());
 				ps.setInt(2, v.getKitLayerId());
@@ -269,9 +237,6 @@ public class KitLayerProductAction extends SBActionAdapter {
 		} catch(SQLException sqle) {
 			log.debug("There was an error inserting new records.", sqle);
 			throw new ActionException(sqle);
-		} finally {
-			DBUtil.close(ps);
 		}
 	}
-	
 }
