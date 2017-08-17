@@ -165,8 +165,18 @@ public class MarketIndexer  extends SMTAbstractIndex {
 			order.insert(0, hierarchyOrder);
 		}
 		
-		// End with appending the market's order number for intra-section ordering
+		//Append the market's order number for intra-section ordering(overwrites region ordering)
 		order.append(StringUtil.padLeft(StringUtil.checkVal(market.getOrderNo()), '0', 3));
+		
+		//Add the market's region code for intra-region ordering
+		if(!StringUtil.isEmpty(market.getRegionCode())) {
+			try{
+				MarketVO.RegionOrder region = MarketVO.RegionOrder.valueOf(market.getRegionCode());
+				order.append(StringUtil.padLeft(StringUtil.checkVal(region.getOrderVal()), '0', 3));
+			}catch(IllegalArgumentException e) { 
+				log.error("Region code not found within enum: " + e);
+			} 	
+		}
 		
 		market.addAttribute("order", order.toString());
 	}

@@ -47,6 +47,24 @@ public class MarketVO extends AuthorVO {
 	private String regionCode;
 	private String regionName;
 	private int publicFlag;
+	
+	//used to specify the associated region for ordering within Solr
+	public enum RegionOrder{
+		WW("WorldWide", 1), US("United States", 2), EU("Europe", 3), DE("Germany", 4), 
+		CN("China", 5), FR("France", 6), IT("Italy", 7), ES("Spain", 8), GB("United Kingdom", 9);
+		
+		private String name;
+		private int orderVal;
+		private RegionOrder(String name, int orderVal){
+			this.name = name;
+			this.orderVal =orderVal;
+		}
+
+		/**====Getters====**/
+		public String getName() { return name; }
+		public int getOrderVal() { return orderVal; }
+
+	}
 
 	public MarketVO () {
 		super(MarketIndexer.INDEX_TYPE);
