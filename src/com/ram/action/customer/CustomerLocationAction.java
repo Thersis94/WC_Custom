@@ -18,9 +18,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.gis.AbstractGeocoder;
 import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.GeocodeLocation;
-import com.siliconmtn.gis.GeocodeType;
 import com.siliconmtn.gis.Location;
-import com.siliconmtn.gis.MatchCode;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -207,7 +205,7 @@ public class CustomerLocationAction extends SBActionAdapter {
 	 * Attempts to obtain a geocode for the referenced CustomerLocationVO passed in on the argument.  If the initial
 	 * matchcode of the CustomerLocationVO is 'state' or 'country', no geocode attempt is perfomed.  Otherwise geocode
 	 * retrieval is delegated to the SMTGeocoder service.  After geocoding has been performed, the latitude and longitude of the
-	 * CustomerLocationVO is updated unless the returned matchcode is one of 'county, 'state', 'country', or 'noMatch'.
+	 * CustomerLocationVO is updated.
 	 * 
 	 * @param cLoc
 	 */
@@ -217,36 +215,13 @@ public class CustomerLocationAction extends SBActionAdapter {
 		ag.addAttribute(AbstractGeocoder.CONNECT_URL, attributes.get(Constants.GEOCODE_URL));
 		ag.addAttribute(AbstractGeocoder.CASS_VALIDATE_FLG, Boolean.FALSE);
 		
-		Location loc = null;
-		loc = new Location();
-		loc.setAddress(cLoc.getAddress());
-		loc.setCity(cLoc.getCity());
-		loc.setState(cLoc.getState());
-		loc.setZipCode(cLoc.getZipCode());
-		loc.setCountry(cLoc.getCountry());
+		GeocodeLocation gLoc = ag.geocodeLocation((Location)cLoc).get(0);
 		
-		log.debug("Location info before geocoding: " + loc);
-		
-		if (loc.getGeocodeType().equals(GeocodeType.country) || loc.getGeocodeType().equals(GeocodeType.state)) {
-			//gl = new GeocodeLocation(loc.getFormattedLocation());
-			cLoc.setMatchCode(MatchCode.country);
-			if (loc.getGeocodeType().equals(GeocodeType.state)) cLoc.setMatchCode(MatchCode.state);
-		} else {
-			GeocodeLocation gl = ag.geocodeLocation(loc).get(0);
-			cLoc.setMatchCode(gl.getMatchCode());
-			log.debug("GeocodeLocation info after geocoding: " + gl);
-			// Set latitude/longitude depending upon the match code
-			switch (gl.getMatchCode()) {
-				case noMatch:
-				case country:
-				case state:
-				case county:
-					break;
-				default:
-					cLoc.setLatitude(gl.getLatitude());
-					cLoc.setLongitude(gl.getLongitude());
-					break;
-			}
+		if (gLoc != null){
+			cLoc.setMatchCode(gLoc.getMatchCode());
+			cLoc.setLatitude(gLoc.getLatitude());
+			cLoc.setLongitude(gLoc.getLongitude());
+			log.debug("location after geocode" + cLoc);
 		}
 	}
 
