@@ -31,7 +31,6 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.action.user.SBProfileManager;
-import com.smt.sitebuilder.common.SiteVO;
 
 /****************************************************************************
  * <b>Title:</b> RAMCaseDBPersist.java

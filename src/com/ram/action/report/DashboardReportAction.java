@@ -571,7 +571,7 @@ public class DashboardReportAction extends SBActionAdapter {
 		// Add the base chart information
 		Map<String, Object> data = new HashMap<>();
 		data.put(IS_SUCCESS, Boolean.TRUE);
-		data.put(TITLE, "Upcoming Expiree");
+		data.put(TITLE, "Upcoming Expiry");
 		data.put(Y_LABEL, UNITS);
 		data.put(X_LABEL, "Days");
 		data.put(COLORS, new String[]{COLOR_2, COLOR_2, COLOR_3});
