@@ -18,7 +18,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.http.session.SMTSession;
-import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -32,7 +31,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Feb 23, 2017
  ****************************************************************************/
-public class FinancialDashHierarchyAction extends SBActionAdapter {
+public class FinancialDashHierarchyAction extends SectionHierarchyAction {
 
 	/**
 	 * @param init
@@ -45,6 +44,22 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 		super(init);
 	}
 
+	/* 
+	 * Helper method that returns the Sql Query for retrieving FD sections only. 
+	 * 
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getFullHierarchySql()
+	 */
+	@Override
+	protected String getFullHierarchySql() {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select * from ");
+		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_SECTION a ");
+		sql.append("where section_id = '").append(MASTER_ROOT).append("' or (a.fd_pub_yr > 0 and a.fd_pub_qtr > 0) ");
+		sql.append("order by PARENT_ID, ORDER_NO, SECTION_NM");
+		return sql.toString();
+	}
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.ActionRequest)
 	 */
@@ -52,7 +67,7 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		// Get the data necessary to trim down the tree to only the nodes
 		// applicable for the user's subscription/permissions. 
-		SmarttrakTree tree = getTree(req);
+		SmarttrakTree tree = getTree();
 		List<String> dataSectionIds = getDataSectionIds();
 		List<String> permSectionIds = getPermittedSectionIds(req);
 		String rootId = req.getParameter("sectionId");
@@ -79,12 +94,8 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected SmarttrakTree getTree(ActionRequest req) throws ActionException {
-		SectionHierarchyAction sha = new SectionHierarchyAction(this.actionInit);
-		sha.setAttributes(this.attributes);
-		sha.setDBConnection(dbConn);
-		
-		SmarttrakTree tree = sha.loadTree(null);
+	protected SmarttrakTree getTree() throws ActionException {
+		SmarttrakTree tree = loadTree(null);
 		tree.calculateTotalChildren(tree.getRootNode());
 		
 		return tree;

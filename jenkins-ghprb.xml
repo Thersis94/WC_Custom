@@ -23,7 +23,7 @@
 	<property name="sonar.projectName" value="WebCrescendo Custom" />
 	<property name="sonar.projectVersion" value="2.0.0" />
 	<property name="sonar.sources" value="src" />
-	<property name="sonar.java.binaries" value="bin" />
+	<property name="sonar.java.binaries" value="" />
 	<property name="sonar.sourceEncoding" value="UTF-8" />
 
 	<!--<path id="sonar.java.libraries">

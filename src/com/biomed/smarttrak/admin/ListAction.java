@@ -31,7 +31,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ListAction extends DirectUrlManagerAction {
 
-	public enum ListType { COMPANY, PRODUCT, MARKET, ACCOUNT }
+	public enum ListType { COMPANY, PRODUCT, MARKET, ACCOUNT, ACTIVE_ACCOUNT }
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
@@ -133,7 +133,10 @@ public class ListAction extends DirectUrlManagerAction {
 				url = Section.PRODUCT.getPageURL() + getAttribute(Constants.QS_PATH);
 				break;
 			case ACCOUNT:
-				sql = getAccountSql(hasSearchTerm);
+				sql = getAccountSql(hasSearchTerm, false);
+				break;
+			case ACTIVE_ACCOUNT:
+				sql = getAccountSql(hasSearchTerm, true);
 				break;
 			default:
 				throw new ActionException("Invalid List Type.");
@@ -142,7 +145,7 @@ public class ListAction extends DirectUrlManagerAction {
 		List<GenericVO> vals = new ArrayList<>(2000);
 		try(PreparedStatement ps = dbConn.prepareCall(sql)) {
 			int i = 1;
-			if(hasSearchTerm) {
+			if (hasSearchTerm) {
 				ps.setString(i++, "%" + searchTerm.toLowerCase() + "%");
 			}
 			ResultSet rs = ps.executeQuery();
@@ -220,14 +223,17 @@ public class ListAction extends DirectUrlManagerAction {
 	 * Build account list sql
 	 * @return
 	 */
-	protected String getAccountSql(boolean hasSearchTerm) {
+	protected String getAccountSql(boolean hasSearchTerm, boolean activeOnly) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select account_id as id, account_nm as val from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_account ");
 		sql.append("where 1=1 ");
-		if(hasSearchTerm) {
+		if (hasSearchTerm)
 			sql.append("and lower(account_nm) like ? ");
-		}
+		//only include accounts in good stating that can actually login to ST
+		if (activeOnly)
+			sql.append("and (expiration_dt is null or expiration_dt >= CURRENT_DATE) and status_no='A' ");
+		
 		sql.append("order by account_nm");
 
 		return sql.toString();

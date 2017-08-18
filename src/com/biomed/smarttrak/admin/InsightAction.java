@@ -21,6 +21,7 @@ import com.biomed.smarttrak.vo.UserVO;
 //SMT baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
@@ -91,6 +92,12 @@ public class InsightAction extends ManagementAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("insight retrieve called");
+
+		if (Convert.formatBoolean(req.getParameter("preview"))) {
+			loadPreview(req);
+			return;
+		}
+		
 		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
 		if (req.hasParameter("loadData") || req.hasParameter(INSIGHT_ID) ) {
@@ -103,6 +110,20 @@ public class InsightAction extends ManagementAction {
 
 		setupAttributes(modVo);
 		setAttribute(Constants.MODULE_DATA, modVo);
+	}
+
+	/**
+	 * Call out to the public side insight action in 
+	 * order to simulate a standard page view.
+	 * @throws ActionException 
+	 */
+	private void loadPreview(ActionRequest req) throws ActionException {
+		ActionInterface ai = new com.biomed.smarttrak.action.InsightAction();
+		ai.setActionInit(actionInit);
+		ai.setDBConnection(dbConn);
+		ai.setAttributes(attributes);
+		
+		ai.retrieve(req);
 	}
 
 	/**
