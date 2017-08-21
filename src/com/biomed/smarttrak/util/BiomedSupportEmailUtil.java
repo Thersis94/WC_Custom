@@ -335,11 +335,11 @@ public class BiomedSupportEmailUtil {
 
 			//Build Config
 			Map<String, Object> config = getBaseConfig(t);
-			config.put("firstName", t.getFirstName());
-			config.put("lastName", t.getLastName());
-			config.put("companyId", t.getCompanyId());
-			config.put("reporterEmail", t.getReporterEmail());
-			config.put("phoneNo", t.getPhoneNo());
+			config.put("firstName", StringUtil.checkVal(t.getFirstName()));
+			config.put("lastName", StringUtil.checkVal(t.getLastName()));
+			config.put("companyId", StringUtil.checkVal(t.getCompanyId()));
+			config.put("reporterEmail", StringUtil.checkVal(t.getReporterEmail()));
+			config.put("phoneNo", StringUtil.checkVal(t.getPhoneNo()));
 			config.put("createDtFmt", t.getCreateDtFmt());
 
 			//Get Emails
@@ -365,9 +365,9 @@ public class BiomedSupportEmailUtil {
 
 			//Build Config
 			Map<String, Object> config = getBaseConfig(t);
-			config.put("statusNm", t.getStatusNm());
-			config.put("assignedFirstNm", t.getAssignedFirstNm());
-			config.put("assignedLastNm", t.getAssignedLastNm());
+			config.put("statusNm", StringUtil.checkVal(t.getStatusNm()));
+			config.put("assignedFirstNm", StringUtil.checkVal(t.getAssignedFirstNm()));
+			config.put("assignedLastNm", StringUtil.checkVal(t.getAssignedLastNm()));
 
 			//Get Emails
 			ecbu.sendMessage((String)attributes.get(STAT_TICKET_CAMP_INST_ID), r.getValue(), config);
@@ -381,9 +381,9 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected Map<String, Object> getBaseConfig(TicketEmailVO t) {
 		Map<String, Object> config = new HashMap<>();
-		config.put("ticketLink", t.getTicketLink());
-		config.put("ticketDesc", t.getDescText());
-		config.put("ticketNo", t.getTicketNo());
+		config.put("ticketLink", StringUtil.checkVal(t.getTicketLink()));
+		config.put("ticketDesc", StringUtil.checkVal(t.getDescText()));
+		config.put("ticketNo", StringUtil.checkVal(t.getTicketNo()));
 		return config;
 	}
 
@@ -472,7 +472,7 @@ public class BiomedSupportEmailUtil {
 
 			//Build Config
 			Map<String, Object> config = getBaseConfig(t);
-			config.put("ticketDesc", t.getActivities().get(0).getDescText());
+			config.put("ticketDesc", StringUtil.checkVal(t.getActivities().get(0).getDescText()));
 
 			//Get Emails
 			ecbu.sendMessage((String)attributes.get(ACT_TICKET_CAMP_INST_ID), r.getValue(), config);
