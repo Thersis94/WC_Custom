@@ -564,6 +564,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
 		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
 		if (id != null) sql.append("and p.PRODUCT_ID = ? ");
+		sql.append("ORDER BY p.PRODUCT_ID ");
 		log.info(sql);
 		return sql.toString();
 	}
