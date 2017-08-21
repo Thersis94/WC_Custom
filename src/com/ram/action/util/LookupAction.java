@@ -16,9 +16,8 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.gis.AbstractGeocoder;
-import com.siliconmtn.gis.GeocodeLocation;
+import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.Location;
-import com.siliconmtn.gis.SMTGeocoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs 3.2
@@ -116,8 +115,9 @@ public class LookupAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	private List<Object> getZipGeocode(ActionRequest req) {
-		SMTGeocoder gc = new SMTGeocoder();
+		AbstractGeocoder gc = GeocodeFactory.getInstance((String)attributes.get(Constants.GEOCODE_CLASS));
 		gc.setAttributes(attributes);
 		gc.addAttribute(AbstractGeocoder.CONNECT_URL, getAttribute(GlobalConfig.GEOCODER_URL));
 		gc.addAttribute(AbstractGeocoder.CASS_VALIDATE_FLG, Boolean.FALSE);
@@ -125,15 +125,8 @@ public class LookupAction extends SimpleActionAdapter {
 		Location loc = new Location();
 		loc.setZipCode(StringUtil.checkVal(req.getParameter("zipCode")));
 		loc.setCountry("US");
-		
-		List<Object> locations = new ArrayList<>();
-		
-		for(GeocodeLocation locLoc : gc.geocodeLocation(loc)){
-			locations.add(locLoc);
-			log.debug("city " + locLoc.getCity());
-		}
-		
-		return locations;
+		List<?> data = gc.geocodeLocation(loc);
+		return (List<Object>)data;
 	}
 
 	/**
