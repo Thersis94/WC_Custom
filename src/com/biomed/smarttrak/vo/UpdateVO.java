@@ -73,7 +73,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private transient List<UpdateXRVO> sections; //UpdateXRVO is not serializable, so this List must be transient -JM- 7.03.2017
 	private String qsPath;
 
-
 	public UpdateVO() {
 		super(UpdateIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
@@ -161,8 +160,9 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	}
 
 	public String getDisplayLink() {
-		String aTxt = "<a href=\"";
-		String targetClassTxt = " target=\"_blank\" style=\"color:#008ec9;\">";
+		qsPath = "qs/";
+		String aTxt = "<a href=\"https://app.smarttrak.com";
+		String targetClassTxt = "\" target=\"_blank\" style=\"color:#008ec9;\">";
 		StringBuilder displayLink = new StringBuilder(200);
 		String url = getDocumentUrl();
 		if(!StringUtil.isEmpty(productId)) {
