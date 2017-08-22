@@ -220,6 +220,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 					vo.setMarketNm(rs.getString("market_nm"));
 					vo.setStatusCd(rs.getString("status_cd"));
 					vo.setEmailFlg(rs.getInt("email_flg"));
+					vo.setQsPath((String)attributes.get(Constants.QS_PATH));
 					//log.debug("loaded update: " + vo.getUpdateId())
 				}
 

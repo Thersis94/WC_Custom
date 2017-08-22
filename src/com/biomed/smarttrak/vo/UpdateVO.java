@@ -159,9 +159,32 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		}
 	}
 
+	/**
+	 * Getter builds the display Link String without a concrete Domain.  This is
+	 * used on public and manage facing views.
+	 * @return
+	 */
+	public String getRelativeDisplayLink() {
+		return buildDisplayLink("");
+	}
+
+	/**
+	 * Getter builds the display Link String with a Concrete Domain.  This is
+	 * used by Email Campaigns.
+	 * @return
+	 */
 	public String getDisplayLink() {
-		qsPath = "qs/";
-		String aTxt = "<a href=\"https://app.smarttrak.com";
+		return buildDisplayLink("https://app.smarttrak.com");
+	}
+
+	/**
+	 * Helper method that accepts a domain string and builds the Update Link
+	 * Title Text for display.
+	 * @param domain
+	 * @return
+	 */
+	protected String buildDisplayLink(String domain) {
+		String aTxt = "<a href=\"" + StringUtil.checkVal(domain);
 		String targetClassTxt = "\" target=\"_blank\" style=\"color:#008ec9;\">";
 		StringBuilder displayLink = new StringBuilder(200);
 		String url = getDocumentUrl();
