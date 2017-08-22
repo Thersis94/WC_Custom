@@ -220,7 +220,13 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding check image to pdf document ", e);
 		}
-		return  flagCellFormatter(new PdfPCell());
+		//if there is an error getting the image use yes or blank to show the information.
+		if (Convert.formatBoolean(flag)){
+			return  flagCellFormatter(new PdfPCell(new Paragraph("Yes",dataFont())));
+		}else{
+			return  flagCellFormatter(new PdfPCell());
+		}
+		
 	}
 
 	/**
