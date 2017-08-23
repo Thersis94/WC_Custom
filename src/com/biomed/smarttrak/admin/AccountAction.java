@@ -202,8 +202,10 @@ public class AccountAction extends SBActionAdapter {
 		sql.append("a.start_dt, a.expiration_dt, a.owner_profile_id, a.address_txt, ");
 		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, a.company_url, a.coowner_profile_id, ");
 		sql.append("a.status_no, a.create_dt, a.update_dt, a.fd_auth_flg, a.ga_auth_flg, a.mkt_auth_flg, ");
-		sql.append("p.first_nm, p.last_nm from ").append(schema).append("biomedgps_account a ");
+		sql.append("p.first_nm, p.last_nm, c.company_nm ");
+		sql.append("from ").append(schema).append("biomedgps_account a ");
 		sql.append("left outer join profile p on a.owner_profile_id=p.profile_id ");
+		sql.append("left outer join ").append(schema).append("biomedgps_company c on a.company_id=c.company_id ");
 		sql.append("where 1=1 ");
 
 		if (accountId != null) {
@@ -306,7 +308,7 @@ public class AccountAction extends SBActionAdapter {
 		//make sure work needs to be done first - most runtime iterations will end here.
 		if (acct != null && acct.getAccountId().equals(accountId)) {
 			return;
-		} else if (acct != null) {
+		} else if (acct != null && StringUtil.isEmpty(accountId)) {
 			//set the missing reqParam from session
 			req.setParameter(ACCOUNT_ID, acct.getAccountId());
 			return;

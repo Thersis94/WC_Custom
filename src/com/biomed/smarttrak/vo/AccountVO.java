@@ -28,6 +28,7 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 	private static final long serialVersionUID = 6748640274663992918L;
 	private String accountId;
 	private String companyId;
+	private String companyName;
 	private String companyUrl;
 	private String accountName;
 	private String typeId;
@@ -448,5 +449,14 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 
 	public void setCoownerProfileId(String coownerProfileId) {
 		this.coownerProfileId = coownerProfileId;
+	}
+
+	@Column(name="company_nm", isReadOnly=true)
+	public String getCompanyName() {
+		return companyName;
+	}
+
+	public void setCompanyName(String companyName) {
+		this.companyName = companyName;
 	}
 }

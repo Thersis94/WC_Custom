@@ -101,16 +101,16 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 			throw new AuthorizationException("account is expired");
 
 		//if status is EU Reports, redirect them to the markets page
-		if ("M".equals(user.getStatusCode())) {
+		if ("M".equals(user.getLicenseType())) {
 			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.MARKET.getPageURL());
-		}else if (updatesOnlyStatuses.contains(user.getStatusCode())) {
+		}else if (updatesOnlyStatuses.contains(user.getLicenseType())) {
 			//limit the user to updates if their account is limited to updates
-			if ("4".equals(user.getStatusCode())) {
+			if ("4".equals(user.getLicenseType())) {
 				role.setRoleId(AdminControllerAction.UPDATES_ROLE_ID);
 				role.setRoleLevel(AdminControllerAction.UPDATES_ROLE_LVL);
 			}
 			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.UPDATES_EDITION.getPageURL());
-		}else if (blockedStatuses.contains(user.getStatusCode())) {
+		}else if (blockedStatuses.contains(user.getLicenseType())) {
 			throw new AuthorizationException("user not authorized to login according to status");
 		}
 
@@ -135,7 +135,9 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 		sql.append("BIOMEDGPS_ACCOUNT where account_id=?");
 		log.debug(sql);
 
-		int fdAuth = 0, gaAuth = 0, mktAuth = 0;
+		int fdAuth = 0;
+		int gaAuth = 0;
+		int mktAuth = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, user.getAccountId());
 			ResultSet rs = ps.executeQuery();

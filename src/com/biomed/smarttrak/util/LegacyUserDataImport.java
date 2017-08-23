@@ -268,7 +268,7 @@ public class LegacyUserDataImport extends CommandLineUtil {
 		user.setUserId((String)dataSet.get(ImportField.SMARTTRAK_ID.name()));
 		user.setPassword(StringUtil.checkVal(dataSet.get(ImportField.SMARTTRAK_PASSWORD_TXT.name()),null));
 		// ensure status code is set to a default or uppercase value.
-		user.setStatusCode(StringUtil.checkVal(dataSet.get(ImportField.STATUS.name()),UserVO.Status.INACTIVE.getCode()).toUpperCase());
+		user.setLicenseType(StringUtil.checkVal(dataSet.get(ImportField.STATUS.name()),UserVO.LicenseType.INACTIVE.getCode()).toUpperCase());
 		user.setCreateDate(Convert.formatDate(StringUtil.checkVal(dataSet.get(ImportField.DATE_JOINED.name()),null)));
 		user.setExpirationDate(Convert.formatDate(StringUtil.checkVal(dataSet.get(ImportField.DATE_EXPIRATION.name()),null)));
 		user.setAccountId(StringUtil.checkVal(dataSet.get(ImportField.ACCOUNT_ID.name()),null));
@@ -382,7 +382,7 @@ public class LegacyUserDataImport extends CommandLineUtil {
 			if (sUser.getCreateDate() != null) {
 				ps.setDate(++idx, Convert.formatSQLDate(sUser.getCreateDate()));
 			}
-			ps.setString(++idx, sUser.getStatusCode());
+			ps.setString(++idx, sUser.getLicenseType());
 			ps.execute();
 			log.debug("inserted source user record for user_id|profile_id: " + sUser.getUserId() + "|" + sUser.getProfileId());
 		} catch(SQLException sqle) {
