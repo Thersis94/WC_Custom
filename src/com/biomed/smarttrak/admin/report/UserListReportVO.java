@@ -99,7 +99,6 @@ public class UserListReportVO extends AbstractSBReportVO {
 		log.debug("generateReport...");
 
 		ExcelReport rpt = new ExcelReport(getHeader());
-		rpt.setTitleCell(REPORT_TITLE);
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
 		generateDataRows(rows);
@@ -139,6 +138,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(ACCT_EXPIRE, formatDate(acct.getExpirationDate(),false));
 				row.put(ACCT_STATUS, acct.getStatusName());
 				row.put(USER_STATUS, user.getStatusName());
+				row.put(LICENSE_TYPE, user.getLicenseName());
 				row.put(USER_ID, user.getUserId());
 				row.put(USER_EXPIRE, formatDate(user.getExpirationDate(),false));
 				row.put(RegistrationMap.COMPANY.name(),user.getCompany());
@@ -156,7 +156,6 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(STATE_CD,user.getState());
 				row.put(POSTAL_CD,user.getZipCode());
 				row.put(COUNTRY_CD,user.getCountryCode());
-				row.put(LICENSE_TYPE, user.getLicenseName());
 				row.put(RegistrationMap.SOURCE.name(), user.getSource());
 				row.put(RegistrationMap.UPDATES.name(), StringUtil.capitalize(user.getUpdates()));
 				row.put(RegistrationMap.FAVORITEUPDATES.name(), StringUtil.capitalize(user.getFavoriteUpdates()));
@@ -244,6 +243,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(ACCT_EXPIRE,"Account Expiration");
 		headerMap.put(ACCT_STATUS,"Account Status");
 		headerMap.put(USER_STATUS,"User Status");
+		headerMap.put(LICENSE_TYPE,"License Type");
 		headerMap.put(USER_ID, "User Id");
 		headerMap.put(USER_EXPIRE,"User Expiration");
 		headerMap.put(RegistrationMap.COMPANY.name(),"Company");
@@ -261,7 +261,6 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(STATE_CD,"State");
 		headerMap.put(POSTAL_CD,"Zip Code");
 		headerMap.put(COUNTRY_CD,"Country");
-		headerMap.put(LICENSE_TYPE,"License Type");
 		headerMap.put(RegistrationMap.SOURCE.name(),"Source");
 		headerMap.put(RegistrationMap.UPDATES.name(),"Updates");
 		headerMap.put(RegistrationMap.FAVORITEUPDATES.name(),"Watchlist Updates");
