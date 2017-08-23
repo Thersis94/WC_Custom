@@ -57,6 +57,7 @@ public class TeamAction extends SBActionAdapter {
 		//table into the view (which will come back for the data).
 		if (!req.hasParameter("loadData") && !req.hasParameter(TEAM_ID)) return;
 
+		AccountAction.loadAccount(req, dbConn, getAttributes());
 		String accountId = req.getParameter(ACCOUNT_ID);
 		//accountId is required
 		if (StringUtil.isEmpty(accountId)) throw new ActionException("No AccountId passed");

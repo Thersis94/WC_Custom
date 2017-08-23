@@ -230,7 +230,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		UserVO user = ses != null ? (UserVO) ses.getAttribute(Constants.USER_DATA) : null;
 		if (user != null) {
 			req.setParameter(PROFILE_ID, user.getProfileId()); //place on request for downstream
-			req.setAttribute("statusCode", user.getStatusCode()); //set their status code on request
+			req.setAttribute("statusCode", user.getLicenseType()); //set their status code on request
 		}
 	}
 

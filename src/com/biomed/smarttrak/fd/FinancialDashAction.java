@@ -5,14 +5,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.security.SecurityController;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
+
 import com.smt.sitebuilder.action.SBActionAdapter;
+
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: FinancialDashAction.java<p/>
@@ -24,24 +26,24 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  * @version 1.0
  * @since Feb 06, 2017
  ****************************************************************************/
-
 public class FinancialDashAction extends SBActionAdapter {
-	
+
 	private static final String FD = "fd";
 	public static final String DASH_TYPE = "dashType";
-	
+
 	// Default financial dashboard type
 	protected DashType dashType = DashType.COMMON;
-	
+
 	/**
 	 * Values for whether the dashboard is being viewed from admin or public
 	 */
 	public enum DashType {ADMIN, COMMON}
-	
+
 	/**
 	 * Map of financial dash classes
 	 */
 	public static final Map<String, String> FD_ACTIONS;
+	
 	static {
 		Map<String, String> fdActions = new HashMap<>();
 		fdActions.put("fd", "com.biomed.smarttrak.fd.FinancialDashBaseAction");
@@ -52,7 +54,7 @@ public class FinancialDashAction extends SBActionAdapter {
 
 		FD_ACTIONS = Collections.unmodifiableMap(fdActions);
 	}
-	
+
 	public FinancialDashAction() {
 		super();
 	}
@@ -70,20 +72,17 @@ public class FinancialDashAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SecurityController.isFdAuth(req);
-		
-		ActionInterface ai = getAction(req);
-		ai.retrieve(req);
+		getAction(req).retrieve(req);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		ActionInterface ai = getAction(req);
-		ai.build(req);
+		getAction(req).build(req);
 	}
-	
+
 	/**
 	 * Gets the appropriate action based on the passed data.
 	 * 
@@ -97,7 +96,7 @@ public class FinancialDashAction extends SBActionAdapter {
 	private ActionInterface getAction(ActionRequest req) throws ActionException {
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String actionType = StringUtil.checkVal(req.getParameter(AdminControllerAction.ACTION_TYPE), FD);
-		
+
 		// Set the dashboard type
 		req.setAttribute(DASH_TYPE, dashType);
 
@@ -108,7 +107,7 @@ public class FinancialDashAction extends SBActionAdapter {
 		} else {
 			action = FD_ACTIONS.get(actionType);
 		}
-		
+
 		log.debug("Starting FD Action: " + action);
 
 		// Forward to the appropriate action
@@ -124,7 +123,7 @@ public class FinancialDashAction extends SBActionAdapter {
 		// Set the appropriate attributes for the action
 		ai.setAttributes(this.attributes);
 		ai.setDBConnection(dbConn);
-		
+
 		// In case default was used
 		req.setParameter(AdminControllerAction.ACTION_TYPE, actionType);
 

@@ -9,8 +9,6 @@ import java.util.Map;
 
 //SMTBaseLibs
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.DjangoPasswordHasher;
 import com.siliconmtn.security.SHAEncrypt;
@@ -121,8 +119,8 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 
 		// use profile ID as that is all we have at the moment.
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, ");
-		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, a.type_id, ");
+		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, ");
+		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, u.active_flg, a.type_id, ");
 		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
@@ -142,15 +140,15 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					user.setRegisterSubmittalId(rs.getString("register_submittal_id"));
 					user.setFdAuthFlg(rs.getInt("fd_auth_flg"));
 					user.setGaAuthFlg(rs.getInt("ga_auth_flg"));
-					user.setMktAuthFlg(rs.getInt("mkt_auth_flg"));
 					user.setAcctOwnerFlg(rs.getInt("acct_owner_flg"));
 					user.setExpirationDate(rs.getDate("expiration_dt")); //used by the role module to block access to the site
-					user.setStatusCode(rs.getString("status_cd"));
+					user.setLicenseType(rs.getString("status_cd"));
+					user.setStatusFlg(rs.getInt("active_flg"));
 
-					// Account Type - used by the role module to restrict users to Updates Only (role)
+					// Account Type - used by the role module to restrict users to Updates Only (role) - just pass the "4" along to it.
 					String type = rs.getString("type_id");
 					if ("4".equals(type))
-						user.setStatusCode(type);
+						user.setLicenseType(type);
 
 					iter = 1;
 				}
@@ -198,26 +196,5 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		}
 
 		throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
-	}
-
-
-	/**
-	 * saves the auth record to the database.  Encrypts the user's password with the custom scheme first.
-	 * Does not currently preserve password history, but could be added off of this method.  Database field would need to be lengthened.
-	 */
-	@Override
-	public String saveAuthRecord(String authId, String userName, String password, Integer resetFlag) 
-			throws InvalidDataException {
-		if (StringUtil.isEmpty(userName) || StringUtil.isEmpty(password)) 
-			throw new InvalidDataException();
-
-		// Get the database Connection
-		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
-		UserLogin ul = new UserLogin(dbConn, getAttributes());
-		try {
-			return ul.saveAuthRecord(authId, userName, password, resetFlag);
-		} catch (DatabaseException de) {
-			throw new InvalidDataException(de);
-		}
 	}
 }

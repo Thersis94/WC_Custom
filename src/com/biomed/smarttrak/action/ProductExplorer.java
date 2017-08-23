@@ -15,6 +15,7 @@ import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.ProductExplorerReportVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
@@ -144,6 +145,8 @@ public class ProductExplorer extends SBActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SecurityController.isPeAuth(req);
+		
 		putModuleData(retrieveProducts(req, false));
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
 			retrieveSavedQueries(req);

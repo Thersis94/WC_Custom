@@ -101,16 +101,16 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 			throw new AuthorizationException("account is expired");
 
 		//if status is EU Reports, redirect them to the markets page
-		if ("M".equals(user.getStatusCode())) {
+		if ("M".equals(user.getLicenseType())) {
 			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.MARKET.getPageURL());
-		}else if (updatesOnlyStatuses.contains(user.getStatusCode())) {
+		} else if (updatesOnlyStatuses.contains(user.getLicenseType())) {
 			//limit the user to updates if their account is limited to updates
-			if ("4".equals(user.getStatusCode())) {
+			if ("4".equals(user.getLicenseType())) {
 				role.setRoleId(AdminControllerAction.UPDATES_ROLE_ID);
 				role.setRoleLevel(AdminControllerAction.UPDATES_ROLE_LVL);
 			}
 			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.UPDATES_EDITION.getPageURL());
-		}else if (blockedStatuses.contains(user.getStatusCode())) {
+		}else if (blockedStatuses.contains(user.getLicenseType())) {
 			throw new AuthorizationException("user not authorized to login according to status");
 		}
 
@@ -122,7 +122,7 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 
 
 	/**
-	 * calls for the AccountVO to be loaded, so we can see which features are enabled.
+	 * Check for SECTION authorization for our tools.  If no sections are defined, the sections should be considered 'not authorized'
 	 * @param req
 	 * @param role
 	 * @throws AuthorizationException
@@ -131,19 +131,24 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 		SMTDBConnection dbConn = (SMTDBConnection)getAttribute(DB_CONN);
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("select fd_auth_flg, ga_auth_flg, mkt_auth_flg from ").append(schema);
-		sql.append("BIOMEDGPS_ACCOUNT where account_id=?");
+		sql.append("select sum(fd_no) as fd, sum(ga_no) as ga, sum(pe_no) as pe, sum(an_no) as an from ").append(schema);
+		sql.append("BIOMEDGPS_ACCOUNT_ACL where account_id=?");
 		log.debug(sql);
 
-		int fdAuth = 0, gaAuth = 0, mktAuth = 0;
+		int fdAuth = 0;
+		int gaAuth = 0;
+		int anAuth = 0;
+		int peAuth = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, user.getAccountId());
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				//determine if the user is authorized for each tool, either at the account level or user (personal) level
-				fdAuth = rs.getInt("fd_auth_flg");
-				gaAuth = rs.getInt("ga_auth_flg");
-				mktAuth = rs.getInt("mkt_auth_flg");
+				//we need a 1/0 (Yes/No) - don't really care how many sections they're authorized for, only that some exist.
+				fdAuth = rs.getInt("fd") > 0 ? 1 : 0;
+				gaAuth = rs.getInt("ga") > 0 ? 1 : 0;
+				peAuth = rs.getInt("pe") > 0 ? 1 : 0;
+				anAuth = rs.getInt("an") > 0 ? 1 : 0;
 			}
 
 		} catch (SQLException sqle) {
@@ -153,7 +158,8 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 		//set the 3 section permissions into the role VO
 		role.setFdAuthorized(user.getFdAuthFlg(), fdAuth);
 		role.setGaAuthorized(user.getGaAuthFlg(), gaAuth);
-		role.setMktAuthorized(user.getMktAuthFlg(), mktAuth);
+		role.setPeAuthorized(0, peAuth); //not overrideable at the user level
+		role.setAnAuthorized(0, anAuth); //not overrideable at the user level
 		role.setAccountOwner(user.getAcctOwnerFlg());
 	}
 

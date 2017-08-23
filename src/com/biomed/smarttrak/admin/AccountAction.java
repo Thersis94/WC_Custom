@@ -1,32 +1,37 @@
 package com.biomed.smarttrak.admin;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 //Java 7
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
+import java.util.Map;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.action.AdminControllerAction;
+
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
+
 
 /*****************************************************************************
  <p><b>Title</b>: AccountAction.java</p>
@@ -42,6 +47,7 @@ public class AccountAction extends SBActionAdapter {
 
 	public static final String ACCOUNT_ID = "accountId"; //req param
 	public static final String MANAGERS = "managers";
+	public static final String SESS_ACCOUNT = "sesAccount";
 
 	public AccountAction() {
 		super();
@@ -57,14 +63,39 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
-		//table into the view (which will come back for the data).
-		if (!req.hasParameter("loadData") && !req.hasParameter(ACCOUNT_ID)) return;
+		if (req.hasParameter("changeAccount"))
+			req.getSession().removeAttribute(SESS_ACCOUNT);
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
-		String sql = formatRetrieveQuery(accountId, schema, req.getParameter("inactive"));
+		AccountVO acct = (AccountVO) req.getSession().getAttribute(SESS_ACCOUNT);
 
+		//pull accountId from session if we need it
+		if (StringUtil.isEmpty(accountId) && acct != null)
+			accountId = acct.getAccountId();
+
+		List<Object> accounts = loadAccounts(schema, accountId);
+
+		//hold the selected account in session for editing
+		if (acct == null && !accounts.isEmpty() && accounts.size() == 1)
+			setSelectedAccount((AccountVO) accounts.get(0), req);
+
+		//if this is the edit form, we need a list of BiomedGPS Staff for the "Manager" dropdown
+		if (accountId != null)
+			loadManagerList(req, schema);
+
+		putModuleData(accounts);
+	}
+
+
+	/**
+	 * loads a list of accounts from the DB.
+	 * @param schema
+	 * @param accountId
+	 * @return
+	 */
+	private List<Object> loadAccounts(String schema, String accountId) {
+		String sql = formatRetrieveQuery(accountId, schema);
 		List<Object> params = new ArrayList<>();
 		if (accountId != null) params.add(accountId);
 
@@ -75,11 +106,33 @@ public class AccountAction extends SBActionAdapter {
 		//decrypt the owner profiles
 		decryptNames(accounts);
 
-		//if this is the edit form, we need a list of BiomedGPS Staff for the "Manager" dropdown
-		if (accountId != null)
-			loadManagerList(req, schema);
+		return accounts;
+	}
 
-		putModuleData(accounts);
+
+	/**
+	 * helper method for other actions - like permissions, teams, and users, to say "load and put this account in session"
+	 * @param accountId
+	 * @param req
+	 */
+	protected void loadSelectedAccount(String accountId, ActionRequest req) {
+		List<Object> accts = loadAccounts((String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA), accountId);
+		if (accts == null || accts.isEmpty())
+			return;
+		
+		AccountVO  acct = (AccountVO) accts.get(0);
+		setSelectedAccount(acct, req);
+	}
+
+
+	/**
+	 * Puts the loaded account onto session.  Abstracted for reuse
+	 * @param acct
+	 * @param req
+	 */
+	protected void setSelectedAccount(AccountVO acct, ActionRequest req) {
+		req.setParameter(ACCOUNT_ID, acct.getAccountId());
+		req.getSession().setAttribute(SESS_ACCOUNT, acct);
 	}
 
 
@@ -143,21 +196,20 @@ public class AccountAction extends SBActionAdapter {
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	protected String formatRetrieveQuery(String accountId, String schema, String inactive) {
+	protected String formatRetrieveQuery(String accountId, String schema) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, ");
 		sql.append("a.start_dt, a.expiration_dt, a.owner_profile_id, a.address_txt, ");
-		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, a.seats_no, ");
+		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, a.company_url, a.coowner_profile_id, ");
 		sql.append("a.status_no, a.create_dt, a.update_dt, a.fd_auth_flg, a.ga_auth_flg, a.mkt_auth_flg, ");
-		sql.append("p.first_nm, p.last_nm from ").append(schema).append("biomedgps_account a ");
+		sql.append("p.first_nm, p.last_nm, c.company_nm ");
+		sql.append("from ").append(schema).append("biomedgps_account a ");
 		sql.append("left outer join profile p on a.owner_profile_id=p.profile_id ");
+		sql.append("left outer join ").append(schema).append("biomedgps_company c on a.company_id=c.company_id ");
 		sql.append("where 1=1 ");
 
 		if (accountId != null) {
 			sql.append("and a.account_id=? ");
-		} else if (StringUtil.isEmpty(inactive)) {
-			//conditionally include inactive accounts  (load all if inactive was passed)
-			sql.append("and a.status_no='A' ");
 		}
 		sql.append("order by a.type_id, a.account_nm");
 
@@ -172,6 +224,7 @@ public class AccountAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		saveRecord(req, false);
+		setupRedirect(req);
 	}
 
 
@@ -181,6 +234,7 @@ public class AccountAction extends SBActionAdapter {
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		saveRecord(req, true);
+		setupRedirect(req);
 	}
 
 
@@ -205,6 +259,18 @@ public class AccountAction extends SBActionAdapter {
 
 
 	/**
+	 * @param req
+	 */
+	private void setupRedirect(ActionRequest req) {
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		StringBuilder url = new StringBuilder(200);
+		url.append(page.getFullPath());
+		url.append("?").append(AdminControllerAction.ACTION_TYPE).append("=").append(req.getParameter(AdminControllerAction.ACTION_TYPE));
+		url.append("&").append(ACCOUNT_ID).append("=").append(req.getParameter(ACCOUNT_ID));
+		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+	}
+
+	/**
 	 * saves the 3-4 fields we store on the account record for global-scope overrides
 	 * @param req
 	 * @throws ActionException
@@ -227,5 +293,30 @@ public class AccountAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			throw new ActionException("could not save account ACLs", sqle);
 		}
+	}
+
+
+	/**
+	 * Creates an instance of this class, then uses it to check/load the selected accountVo into session and set reqParam if needed
+	 * @param req
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public static void loadAccount(ActionRequest req, SMTDBConnection dbConn, Map<String, Object> attributes) {
+		String accountId = req.getParameter(ACCOUNT_ID);
+		AccountVO acct = (AccountVO) req.getSession().getAttribute(SESS_ACCOUNT);
+		//make sure work needs to be done first - most runtime iterations will end here.
+		if (acct != null && acct.getAccountId().equals(accountId)) {
+			return;
+		} else if (acct != null && StringUtil.isEmpty(accountId)) {
+			//set the missing reqParam from session
+			req.setParameter(ACCOUNT_ID, acct.getAccountId());
+			return;
+		}
+
+		AccountAction aa = new AccountAction();
+		aa.setDBConnection(dbConn);
+		aa.setAttributes(attributes);
+		aa.loadSelectedAccount(accountId, req);
 	}
 }
