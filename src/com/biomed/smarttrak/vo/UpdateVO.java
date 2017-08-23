@@ -72,6 +72,8 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private Date updateDt;
 	private transient List<UpdateXRVO> sections; //UpdateXRVO is not serializable, so this List must be transient -JM- 7.03.2017
 	private String qsPath;
+	private int sslFlg;
+	private String siteAliasUrl;
 
 	public UpdateVO() {
 		super(UpdateIndexer.INDEX_TYPE);
@@ -174,7 +176,11 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @return
 	 */
 	public String getDisplayLink() {
-		return buildDisplayLink("https://app.smarttrak.com");
+		String domain = "http://";
+		if(sslFlg == 1) {
+			domain = "https://";
+		}
+		return buildDisplayLink(domain + siteAliasUrl);
 	}
 
 	/**
@@ -700,5 +706,22 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 			return getPublishDt().compareTo(vo.getPublishDt());
 		}
 		return typeComp;
+	}
+
+	/**
+	 * @param sslFlg
+	 */
+	public void setSSLFlg(int sslFlg) {
+		this.sslFlg = sslFlg;
+	}
+	public int getSSLFlg() {
+		return this.sslFlg;
+	}
+
+	public void setSiteAliasUrl(String siteAliasUrl) {
+		this.siteAliasUrl = siteAliasUrl;
+	}
+	public String getSiteAliasUrl() {
+		return this.siteAliasUrl;
 	}
 }

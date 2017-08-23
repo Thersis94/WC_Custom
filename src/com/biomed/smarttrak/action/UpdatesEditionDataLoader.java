@@ -194,6 +194,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		UpdateVO vo = null;
 		Map<String, UpdateVO>  updates = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(++x, AdminControllerAction.PUBLIC_SITE_ID);
 			if (!StringUtil.isEmpty(profileId)) ps.setString(++x, profileId);
 			ps.setDate(++x, Convert.formatSQLDate(startDt));
 			ps.setDate(++x, Convert.formatSQLDate(endDt));
@@ -221,6 +222,8 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 					vo.setStatusCd(rs.getString("status_cd"));
 					vo.setEmailFlg(rs.getInt("email_flg"));
 					vo.setQsPath((String)attributes.get(Constants.QS_PATH));
+					vo.setSSLFlg(rs.getInt("ssl_flg"));
+					vo.setSiteAliasUrl(rs.getString("site_alias_url"));
 					//log.debug("loaded update: " + vo.getUpdateId())
 				}
 
@@ -261,6 +264,8 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on c.company_id=coalesce(up.company_id,prod.company_id) "); //join from the update, or from the product. Prefer company
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
+		sql.append(LEFT_JOIN).append("site st on st.site_id = ?");
+		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1");
 		sql.append("where p.profile_id=? and up.email_flg=1 and up.status_cd in ('R','N') ");
 		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
 		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
@@ -281,6 +286,8 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on c.company_id=coalesce(up.company_id,prod.company_id) "); //join from the update, or from the product. Prefer company
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
+		sql.append(LEFT_JOIN).append("site st on st.site_id = ?");
+		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1");
 		sql.append("where up.email_flg=1 and up.status_cd in ('R','N') ");
 		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
 		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
@@ -302,6 +309,8 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on c.company_id=coalesce(up.company_id,prod.company_id) "); //join from the update, or from the product. Prefer company
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
+		sql.append(LEFT_JOIN).append("site st on st.site_id = ?");
+		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1");
 		sql.append("where coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
 
 		//note this query ignores email_flg=1 (compared to the two above)
@@ -323,6 +332,6 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append("up.type_cd, coalesce(up.order_no,0) as order_no, us.update_section_xr_id, us.section_id, ");
 		sql.append("c.short_nm_txt as company_nm, prod.short_nm as product_nm, ");
 		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
-		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id ");
+		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, sa.site_alias_url, st.ssl_flg ");
 	}
 }
