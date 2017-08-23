@@ -41,6 +41,7 @@ public class LeihsetAssetAction extends SBActionAdapter {
 	/**
 	 * Delete the supplied Leihset and redirect the user
 	 */
+	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String leihsetAssetId = req.getParameter("leihsetAssetId");
@@ -65,6 +66,7 @@ public class LeihsetAssetAction extends SBActionAdapter {
 	 * Builds a LeihsetVO from the request object and passes it along to the
 	 * vo specific update method and then redirects the user
 	 */
+	@Override
 	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
@@ -103,8 +105,8 @@ public class LeihsetAssetAction extends SBActionAdapter {
 	 * @param vo
 	 * @throws ActionException
 	 */
-	private void update(LeihsetVO vo) throws ActionException {
-		boolean isInsert = (StringUtil.checkVal(vo.getLeihsetAssetId()).length() == 0);
+	private void update(LeihsetVO vo) {
+		boolean isInsert = StringUtil.checkVal(vo.getLeihsetAssetId()).length() == 0;
 		if (isInsert) vo.setLeihsetAssetId(new UUIDGenerator().getUUID());
 		String sql = buildUpdateSql(isInsert);
 		log.debug(sql);

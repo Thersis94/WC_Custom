@@ -14,7 +14,11 @@ import com.smt.sitebuilder.security.SecurityController;
  * @since Jan 1, 2016
  ****************************************************************************/
 public class HTMLUtilsBean {
-	
+
+	public HTMLUtilsBean() {
+		//this is needed for JSTL!
+	}
+
 	/**
 	 * renders the 'share on' html dropdown menu
 	 * @param pageUrl
@@ -25,7 +29,7 @@ public class HTMLUtilsBean {
 		sb.append("<li><a href=\"javascript:;\" onclick=\"emailAFriend.shareEmail('").append(pageUrl).append("',").append(minRoleLevel).append(");\"><i class=\"fa fa-envelope\"></i> Share</a></li>");
 		return sb.toString();
 	}
-	
+
 	/**
 	 * overload -- defaults to public role level
 	 * @param pageUrl
@@ -34,7 +38,7 @@ public class HTMLUtilsBean {
 	public static String getShareOn(String pageUrl) {
 		return getShareOn(pageUrl, SecurityController.PUBLIC_ROLE_LEVEL);
 	}
-	
+
 	/**
 	 * overloaded.  In this case the page's URL will be picked up via 
 	 * javascript when the modal gets invoked.  Inclusive of queryString & hash
@@ -43,8 +47,8 @@ public class HTMLUtilsBean {
 	public static String getShareOn() {
 		return getShareOn("", SecurityController.PUBLIC_ROLE_LEVEL);
 	}
-	
-	
+
+
 	/**
 	 * renders the html for Event-to-calendar adding 
 	 * @param pageUrl

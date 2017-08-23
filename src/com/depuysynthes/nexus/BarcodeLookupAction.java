@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+// Solr 5.5
 import org.apache.solr.common.SolrDocument;
-
 
 // SMT BAse Libs
 import com.siliconmtn.action.ActionException;
@@ -20,8 +20,9 @@ import com.siliconmtn.barcode.BarcodeOEM;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
@@ -41,38 +42,37 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @since May 6, 2015<p/>
  * @updates:
  ****************************************************************************/
-public class BarcodeLookupAction extends SBActionAdapter {
-	
+public class BarcodeLookupAction extends SimpleActionAdapter {
+
 	/**
 	 * Creates a list of GTIN and HIBC codes for the barcode lookup
 	 */
-	protected List<BarcodeOEM> oems = new ArrayList<BarcodeOEM>() {
-		private static final long serialVersionUID = 1L; {
-			add(new BarcodeOEM("spine", "Spine", "", "H981"));
-			add(new BarcodeOEM("trauma", "Trauma", "", "H980"));
-			add(new BarcodeOEM("cmf", "CMF", "", "H679"));
-			add(new BarcodeOEM("mitek", "Mitek", "0886705", "H207"));
-			add(new BarcodeOEM("depuy", "DePuy", "038135", "H441"));
-			add(new BarcodeOEM("depuy_ireland", "DePuy Ireland", "038135", "H205"));
-			add(new BarcodeOEM("depuy_france", "France Ireland", "038135", "E181"));
-			add(new BarcodeOEM("depuy_intl", "DePuy International", "038135", "E085"));
-			add(new BarcodeOEM("depuy_intl", "DePuy International", "038135", "E513"));
-			add(new BarcodeOEM("depuy_cmw", "DePuy CMW", "038135", "E121"));
-			add(new BarcodeOEM("joint_recon", "Joint Recon", "0603295", "H441"));
-			add(new BarcodeOEM("depuy_spine", "Spine", "0705034", "H761"));
-			add(new BarcodeOEM("synthes_us", "Synthes US", "0886982", "E085"));
-			add(new BarcodeOEM("synthes_eu", "Synthes EU", "7612334", "E085"));
-			add(new BarcodeOEM("synthes_eu", "Synthes EU", "7612335", "E085"));
-			add(new BarcodeOEM("jnj_med", "JNJ Medical", "", "E555"));
-			add(new BarcodeOEM("medos", "Medos International", "", "H200"));
-		}
-	};
+	protected static final List<BarcodeOEM> OEMS;
 
-	/**
-	 * 
-	 */
+	static {
+		OEMS = new ArrayList<>(30);
+		OEMS.add(new BarcodeOEM("spine", "Spine", "", "H981"));
+		OEMS.add(new BarcodeOEM("trauma", "Trauma", "", "H980"));
+		OEMS.add(new BarcodeOEM("cmf", "CMF", "", "H679"));
+		OEMS.add(new BarcodeOEM("mitek", "Mitek", "0886705", "H207"));
+		OEMS.add(new BarcodeOEM("depuy", "DePuy", "038135", "H441"));
+		OEMS.add(new BarcodeOEM("depuy_ireland", "DePuy Ireland", "038135", "H205"));
+		OEMS.add(new BarcodeOEM("depuy_france", "France Ireland", "038135", "E181"));
+		OEMS.add(new BarcodeOEM("depuy_intl", "DePuy International", "038135", "E085"));
+		OEMS.add(new BarcodeOEM("depuy_intl", "DePuy International", "038135", "E513"));
+		OEMS.add(new BarcodeOEM("depuy_cmw", "DePuy CMW", "038135", "E121"));
+		OEMS.add(new BarcodeOEM("joint_recon", "Joint Recon", "0603295", "H441"));
+		OEMS.add(new BarcodeOEM("depuy_spine", "Spine", "0705034", "H761"));
+		OEMS.add(new BarcodeOEM("synthes_us", "Synthes US", "0886982", "E085"));
+		OEMS.add(new BarcodeOEM("synthes_eu", "Synthes EU", "7612334", "E085"));
+		OEMS.add(new BarcodeOEM("synthes_eu", "Synthes EU", "7612335", "E085"));
+		OEMS.add(new BarcodeOEM("jnj_med", "JNJ Medical", "", "E555"));
+		OEMS.add(new BarcodeOEM("medos", "Medos International", "", "H200"));
+	}
+
+
 	public BarcodeLookupAction() {
-		
+		super();
 	}
 
 	/**
@@ -80,39 +80,51 @@ public class BarcodeLookupAction extends SBActionAdapter {
 	 */
 	public BarcodeLookupAction(ActionInitVO actionInit) {
 		super(actionInit);
-		
 	}
+
 	
 	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#list(com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		// Get the barcode data
-		Set<String> scans = new HashSet<String>();
+		Set<String> scans = new HashSet<>();
 		scans.add(req.getParameter("barcode"));
 		scans.add(req.getParameter("barcode2"));
-		
+
 		ProductVO product = null;
 		String errorMsg = null;
 		try {
 			// Parse the barcodes
-			BarcodeManager bcm = new BarcodeManager(oems);
+			BarcodeManager bcm = new BarcodeManager(OEMS);
 			BarcodeItemVO barcode = bcm.parseBarCode(scans);
 			log.info("barcode: " + barcode);
-			
+
 			// Call the SOLR Query to populate
 			if (barcode == null) throw new Exception("Invalid Barcode Recieved");
-			
+
 			product = this.retrieveProduct(barcode);
 		} catch(Exception e) {
 			errorMsg = e.getLocalizedMessage();
 		}
-		
+
 		// Add the data to the collection for return to the view
 		this.putModuleData(product, 1, false, errorMsg, errorMsg == null ? false: true);
 	}
-	
+
+
 	/**
 	 * Retrieves the product information for the provided barcode
 	 * @param barcode
@@ -126,16 +138,16 @@ public class BarcodeLookupAction extends SBActionAdapter {
 		qData.setStartLocation(0);
 		qData.setOrganizationId("DPY_SYN_NEXUS");
 		qData.setRoleLevel(0);
-		qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
+		qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.SOLR_IDX));
 		Map<String, String> filter = new HashMap<>();
 		filter.put("gtin", "*"+barcode.getProductId()+" OR searchableName:*"+barcode.getProductId());
 		qData.setFilterQueries(filter);
 		SolrResponseVO resp = sqp.processQuery(qData);
-		
+
 		return buildProduct(resp, barcode);
 	}
 
-	
+
 	/**
 	 * Build a product from the supplied solr response
 	 * @param resp
@@ -145,7 +157,7 @@ public class BarcodeLookupAction extends SBActionAdapter {
 	 */
 	private ProductVO buildProduct(SolrResponseVO resp, BarcodeItemVO barcode) throws ActionException {
 		ProductVO prod = new ProductVO();
-		if (resp.getResultDocuments().size() == 0) {
+		if (resp.getResultDocuments().isEmpty()) {
 			throw new ActionException("No Product Found with Supplied Barcode.");
 		}
 		SolrDocument doc = resp.getResultDocuments().get(0);
@@ -157,7 +169,7 @@ public class BarcodeLookupAction extends SBActionAdapter {
 
 		Object[] gtin = doc.getFieldValues(NexusProductVO.GTIN).toArray();
 		Object[] uom = doc.getFieldValues(NexusProductVO.UOM_LVL).toArray();
-		
+
 		for (int i=0; i < gtin.length; i++) {
 			if (StringUtil.checkVal(gtin[i]).equals(prod.getProductGroupId())) {
 				prod.getProdAttributes().put("primaryUOM", uom[i]);
@@ -166,7 +178,7 @@ public class BarcodeLookupAction extends SBActionAdapter {
 				prod.getProdAttributes().put("uom", uom[i]);
 			}
 		}
-		
+
 		prod.getProdAttributes().put("lotNo", barcode.getLotCodeNumber());
 		return prod;
 	}

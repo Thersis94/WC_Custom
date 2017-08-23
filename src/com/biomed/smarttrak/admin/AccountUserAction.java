@@ -308,7 +308,7 @@ public class AccountUserAction extends SBActionAdapter {
 			String encProfileId = StringEncoder.urlEncode(se.encrypt(req.getParameter("loginAs")));
 
 			SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), getAttributes());
-			sc.loadUserFromCookie(encProfileId, encKey, dbConn, req, site);
+			sc.processCookieLogin(encProfileId, dbConn, req, site);
 
 			sendRedirect("/","", req);
 		} catch (Exception e) {
@@ -468,13 +468,13 @@ public class AccountUserAction extends SBActionAdapter {
 		if (StringUtil.isEmpty(user.getPassword()) && StringUtil.isEmpty(user.getAuthenticationId()))
 			user.setPassword(RandomAlphaNumeric.generateRandom(8));
 
-		UserLogin ul = new UserLogin(dbConn, (String)getAttribute(Constants.ENCRYPT_KEY));
+		UserLogin ul = new UserLogin(dbConn, getAttributes());
 		//save the record.  Flag it for password reset immediately.
 		try {
 			String authId = ul.checkAuth(user.getEmailAddress());
 			//if the user had an auth record already then don't change their password or flag them for reset
 			String pswd = !StringUtil.isEmpty(user.getPassword()) ? user.getPassword() : UserLogin.DUMMY_PSWD;
-			authId = ul.modifyUser(authId, user.getEmailAddress(), pswd, StringUtil.isEmpty(authId) ? 1 : 0);
+			authId = ul.saveAuthRecord(authId, user.getEmailAddress(), pswd, StringUtil.isEmpty(authId) ? 1 : 0);
 			user.setAuthenticationId(authId);
 		} catch (com.siliconmtn.exception.DatabaseException e) {
 			throw new ActionException(e);

@@ -168,17 +168,19 @@ public class LegacyUserDataImport extends CommandLineUtil {
 	protected void insertRecords(List<Map<String, Object>> records) throws Exception {
 		log.debug("inserting records..., records list size is: " + records.size());
 		if (records.isEmpty()) return;
-		
+
 		// create config map
 		Map<String, Object> config = new HashMap<>();
 		config.put(Constants.ENCRYPT_KEY, props.getProperty("encryptionKey"));
 		config.put(Constants.GEOCODE_CLASS, props.getProperty("geocodeClass"));
 		config.put(Constants.GEOCODE_URL, props.getProperty("geocodeUrl"));
+		config.put(Constants.ENCRYPT_KEY, props.getProperty("encryptionKey"));
+		config.put(Constants.CFG_PASSWORD_SALT, props.getProperty("passwordSalt"));
 
 		// init profile managers
 	    ProfileManager pm = new SBProfileManager(config);
 		ProfileRoleManager prm = new ProfileRoleManager();
-		UserLogin ul = new UserLogin(dbConn, props.getProperty("encryptionKey"));
+		UserLogin ul = new UserLogin(dbConn, config);
 
 		// load user divisions
 		Map<String,List<String>> userDivs = loadUserDivisions(dbConn);
@@ -475,7 +477,7 @@ public class LegacyUserDataImport extends CommandLineUtil {
 			/* We use the pwd passed in to the method, NOT the password on the user data VO
 			 * so that we can come along behind and update the user's auth record with 
 			 * the password that we set on the user data VO at a later time. */
-			user.setAuthenticationId(ul.modifyUser(user.getAuthenticationId(), 
+			user.setAuthenticationId(ul.saveAuthRecord(user.getAuthenticationId(), 
 					user.getEmailAddress(), password, 0));
 		}
 	}

@@ -34,27 +34,31 @@ import com.smt.sitebuilder.security.SecurityController;
  * @since Apr 28, 2013
  ****************************************************************************/
 public class DailyCaregiversEmailWrapper extends EmailWrapper {
-	
+
 	private static final String GATEKEEPER_QUEST_ID = "c0a80241a10d8161cd749175f14e2a9d"; //from database
 	private static final String FREE_SERIES = "c0a80241a143abeb8ff0e2bc206b9831"; //DiFC free trial campaign - 16 emails
 	private static final String MAIN_SERIES = "c0a80237a94882127e4d342eb3d66a4f"; // DiFC 365 email series
-	
+
 	public DailyCaregiversEmailWrapper() {
 		super();
 	}
-	
+
 	public DailyCaregiversEmailWrapper(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.willowgreen.action.EmailWrapper#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		String programNm = (actionInit.getName().toLowerCase().indexOf("free") > -1) ? "DIFC-FREE" : "DIFC";
 		req.setAttribute("series", programNm);
 		super.build(req);
 	}
-	
-	
+
+
 	/**
 	 * checks to see if the user has already recieved all of the emails in the series.
 	 * 
@@ -64,7 +68,7 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 	protected boolean isEnrolled(String emailAddress, String emailCampaignId) {
 		boolean isEnrolled = false;
 		String profileId = null;
-		
+
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		try {
 			UserDataVO user = new UserDataVO();
@@ -77,14 +81,14 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 		}
 		log.debug("profileId=" + profileId);
 		if (profileId == null) return isEnrolled;
-		
+
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select count(a.campaign_instance_id), count(b.campaign_instance_id) ");
 		sql.append("from email_campaign_instance b left outer join email_campaign_log a ");
 		sql.append("on a.campaign_instance_id=b.campaign_instance_id and a.profile_id=? ");
 		sql.append("where b.email_campaign_id=?");
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, profileId);
 			ps.setString(2, emailCampaignId);
@@ -94,11 +98,10 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 				//or they've opt-out and don't want to be a subscriber anyways!
 				if (MAIN_SERIES.equals(emailCampaignId)) {
 					//deduct the alternate intro email.  The user will only get one of the two (gatekeeper or main)
-					isEnrolled = (rs.getInt(1) > 0 && rs.getInt(1) < (rs.getInt(2)-1));
+					isEnrolled = rs.getInt(1) > 0 && rs.getInt(1) < (rs.getInt(2)-1);
 				} else {
-					isEnrolled = (rs.getInt(1) > 0 && rs.getInt(1) < rs.getInt(2));
+					isEnrolled = rs.getInt(1) > 0 && rs.getInt(1) < rs.getInt(2);
 				}
-				//log.debug("rcvd=" + rs.getInt(1) + " series=" + rs.getInt(2));
 			}
 		} catch (SQLException sqle) {
 			log.error("could not lookup email count", sqle);
@@ -106,15 +109,16 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 
 		return isEnrolled;
 	}
-	
-	
+
+
+	@Override
 	protected void loadReport(ActionRequest req, String contactActionId, String emailCampaignId) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		
-		Map<String, UserDataVO> profiles = new HashMap<String, UserDataVO>();
-		List<ReportVO> data = new LinkedList<ReportVO>();
-		
+
+		Map<String, UserDataVO> profiles = new HashMap<>();
+		List<ReportVO> data = new LinkedList<>();
+
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.profile_id, a.DEALER_LOCATION_ID, cast(e.value_txt as text) as is_gatekeeper, ");
 		sql.append("MIN(c.CREATE_DT) as first_dt, MAX(c.CREATE_DT) as last_dt, ");
@@ -131,38 +135,44 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 			sql.append("and a.DEALER_LOCATION_ID=? ");
 		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as text), record_no, a.create_dt ");
 		sql.append("order by record_no desc");
-		//log.debug(sql + "|" + role.getProfileId() + "|" + emailCampaignId + "|" + contactActionId);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, site.getOrganizationId());
 			ps.setString(2, emailCampaignId);
 			ps.setString(3, contactActionId);
 			if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL)
 				ps.setString(4, role.getProfileId());
-			
+
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				profiles.put(rs.getString(1), null);
-				
-				if (rs.getString(2) != null)
-					profiles.put(rs.getString(2), null);
-				
+				UserDataVO user = new UserDataVO();
+				user.setProfileId(rs.getString(1));
+				profiles.put(user.getProfileId(), user);
+
+				if (rs.getString(2) != null) {
+					UserDataVO user2 = new UserDataVO();
+					user2.setProfileId(rs.getString(2));
+					profiles.put(user2.getProfileId(), user2);
+				}
+
 				data.add(new ReportVO(rs));
 			}
-			
+
 		} catch (SQLException sqle) {
 			log.error("could not load report", sqle);
 		}
-		
+
 		//put a profile to all these peeps!
-		int activeCnt = 0, gatekeeperCnt = 0;
+		int activeCnt = 0;
+		int gatekeeperCnt = 0;
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		try {
-			profiles = pm.searchProfileMap(dbConn, new ArrayList<String>(profiles.keySet()));
+			pm.populateRecords(dbConn, new ArrayList<>(profiles.values()));
+
 			for (ReportVO rpt : data) {
 				rpt.setUser(profiles.get(rpt.getProfileId()));
 				rpt.setSubmitter(profiles.get(rpt.getDealerLocationId()));
-				
+
 				//determine if the user is currently getting emails
 				if (FREE_SERIES.equals(emailCampaignId)) { //free series
 					if (rpt.getEmailCnt() < 16 && rpt.getAllowCommFlg() == 1)
@@ -173,41 +183,42 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 					activeCnt++; 
 				}
 			}
-			
+
 		} catch (DatabaseException de) {
 			log.error("could not retrieve profiles", de);
 		} finally {
 			pm = null;
 		}
-		
+
 		req.setAttribute("gatekeeperNo", gatekeeperCnt);
 		req.setAttribute("activeNo", activeCnt);
 		req.setAttribute("enrolledNo", data.size());
 		super.putModuleData(data);
 	}
-	
-	
+
+
 
 	/**
 	 * converts a gatekeeper subscription  (62 emails) into a full (365 emails) one
 	 */
+	@Override
 	protected void convert(ActionRequest req) throws ActionException {
 		String msg = "";
 		String sql = "update contact_data set value_txt=0, update_dt=getDate() where contact_field_id=? and contact_submittal_id=?";
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, GATEKEEPER_QUEST_ID);
 			ps.setString(2, req.getParameter("convert"));
 			ps.executeUpdate();
 			msg = "Enrollment+convered+successfully";
-			
+
 		} catch (SQLException sqle) {
 			log.error("could not convert enrollment, csId=" + req.getParameter("del"), sqle);
 			msg = "Enrollment+could+not+be+convered";
 		}
-		
+
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		super.sendRedirect(page.getFullPath(), msg, req);
 	}
-	
+
 }

@@ -16,6 +16,7 @@ import org.apache.solr.common.SolrInputDocument;
 
 import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
 import com.depuysynthesinst.lms.FutureLeaderACGME;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
@@ -120,7 +121,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 			}
 		}
 		
-		if (docs.size() > 0) {
+		if (!docs.isEmpty()) {
 			try {
 				server.add(docs);
 			} catch (Exception e) {
@@ -155,7 +156,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		String sql = buildQuery("COURSE_CAL", eventIds);
 		log.debug(sql);
 
-		List<EventEntryVO> data = new ArrayList<EventEntryVO>();
+		List<EventEntryVO> data = new ArrayList<>();
 		try (PreparedStatement ps = conn.prepareStatement(sql)) {
 			ps.setString(1, organizationId);
 			ps.setTimestamp(2, Convert.getCurrentTimestamp());
@@ -247,7 +248,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	 * @return
 	 */
 	protected String buildQuery(String moduleTypeId, Set<String> eventIds) {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(400);
 		sql.append("select s.alias_path_nm, c.full_path_txt, et.type_nm, ee.* ");
 		sql.append("from event_entry ee ");
 		sql.append("inner join event_type et on ee.event_type_id=et.event_type_id ");
@@ -267,9 +268,8 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		
 		//limit the results to the new events we're adding - this scenario is invoked by the real-time indexer
 		if (eventIds != null) {
-			sql.append("and ee.event_entry_id in (''");
-			for (@SuppressWarnings("unused") String s : eventIds)
-				sql.append(",?");
+			sql.append("and ee.event_entry_id in (");
+			DBUtil.preparedStatmentQuestion(eventIds.size(), sql);
 			sql.append(") ");
 		}
 		return sql.toString();

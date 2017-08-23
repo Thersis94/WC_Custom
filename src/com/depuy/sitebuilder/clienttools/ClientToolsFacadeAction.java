@@ -51,8 +51,7 @@ public class ClientToolsFacadeAction extends SimpleActionAdapter {
     @Override
     public void retrieve(ActionRequest req) throws ActionException {
     	ActionInterface eg = null;
-    	String type = StringUtil.checkVal(req.getParameter("type"));
-
+    	String type;
 		ModuleVO modVO = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		log.debug("vo=" + modVO);
 		type = StringUtil.checkVal(modVO.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -60,9 +59,9 @@ public class ClientToolsFacadeAction extends SimpleActionAdapter {
 		
 		log.debug("name=" + modVO.getActionName());
     	
-    	if (type.equals("kneeReadinessQuiz")) {
+    	if ("kneeReadinessQuiz".equals(type)) {
     		eg = new KneeReadinessQuizAction(this.actionInit);
-    	} else if (type.equals("kneePainAssessment")) {
+    	} else if ("kneePainAssessment".equals(type)) {
     		eg = new KneePainAssessmentAction(this.actionInit);
     	}
     	

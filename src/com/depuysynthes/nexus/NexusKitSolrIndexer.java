@@ -26,27 +26,25 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @updates 
  * 
  ****************************************************************************/
-
 public class NexusKitSolrIndexer extends CommandLineUtil {
-	    
-    
-	/**
-	 * @param args
-	 * @throws Exception 
-	 */
-	public static void main(String[] args) throws Exception {       
-		NexusKitSolrIndexer ksi = new NexusKitSolrIndexer(args);
-		ksi.run();
-	}
-	
-	
+
 	public NexusKitSolrIndexer(String[] args) {
 		super(args);
 		loadProperties("scripts/Nexus.properties");
 		loadDBConnection(props);
 	}
 
-	
+
+	/**
+	 * @param args
+	 * @throws Exception
+	 */
+	public static void main(String[] args) {
+		NexusKitSolrIndexer ksi = new NexusKitSolrIndexer(args);
+		ksi.run();
+	}
+
+
 	/**
 	 * Load all kits and all users that have access to them
 	 * @return
@@ -54,16 +52,16 @@ public class NexusKitSolrIndexer extends CommandLineUtil {
 	 */
 	private List<SolrDocumentVO> loadKits() throws SQLException {
 		StringBuilder sql = new StringBuilder(250);
-		String customDb = (String) props.get("customDbSchema");
+		String customDb = (String) props.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT *, s.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO i ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE s ");
 		sql.append("ON s.SET_INFO_ID = i.SET_INFO_ID ");
 		sql.append("ORDER BY s.SET_INFO_ID");
-		
+
 		List<SolrDocumentVO> kits = new ArrayList<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
-			
+
 			NexusKitVO kit = null;
 			String kitId = "";
 			String solrIndex = props.getProperty("solrIndex");
@@ -72,11 +70,10 @@ public class NexusKitSolrIndexer extends CommandLineUtil {
 					if (kit != null) kits.add(kit);
 					kit = new NexusKitVO(rs, solrIndex);
 				}
-				kit.addPermision(rs.getString("SHARED_ID"), "");
+				if (kit != null) kit.addPermision(rs.getString("SHARED_ID"), "");
 			}
 			if (kit != null) kits.add(kit);
 		}
-		
 		return kits;
 	}
 
@@ -84,14 +81,15 @@ public class NexusKitSolrIndexer extends CommandLineUtil {
 	@SuppressWarnings("resource")
 	@Override
 	public void run() {
-		try (SolrClient server = SolrClientBuilder.build(props.getProperty(Constants.SOLR_BASE_URL), props.getProperty(Constants.SOLR_COLLECTION_NAME))) {
+		String serverUrl = props.getProperty(Constants.SOLR_BASE_URL);
+		String collection = props.getProperty(Constants.SOLR_COLLECTION_NAME);
+		try (SolrClient server = SolrClientBuilder.build(serverUrl, collection)) {
 			List<SolrDocumentVO> kits = loadKits();
 			SolrActionUtil solr = new SolrActionUtil(server);
-			System.out.println("Adding " + kits.size() + " Documents");
+			log.info("Adding " + kits.size() + " Documents");
 			solr.addDocuments(kits);
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("could not index nexus documents", e);
 		}
 	}
-	
 }

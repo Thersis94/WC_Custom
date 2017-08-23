@@ -44,6 +44,10 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		super();
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		if (req.hasParameter("dataMod")) {
 			ActionInterface sai = getAction(StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE), "ifu"));
@@ -54,6 +58,10 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#delete(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		ActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
 		if (sai != null) {
@@ -64,6 +72,10 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#update(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void update(ActionRequest req) throws ActionException {
 		ActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
 		if (sai != null) {
@@ -120,6 +132,10 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	}
 
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void copy(ActionRequest req) throws ActionException {
 		getAction(ActionType.ifu).copy(req);
 	}

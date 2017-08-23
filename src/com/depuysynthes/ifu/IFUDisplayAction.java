@@ -20,7 +20,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -39,8 +39,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since March 10, 2015<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
-public class IFUDisplayAction extends SBActionAdapter {
+public class IFUDisplayAction extends SimpleActionAdapter {
 	
 	private static final String DEFAULT_LANG = "en"; //we use this to load the list of IFUs
 
@@ -52,6 +51,21 @@ public class IFUDisplayAction extends SBActionAdapter {
 		super(init);
 	}
 
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {		
 		// Get the default language - give the user a list to choose from if one wasn't passed
 		String language = StringUtil.checkVal(req.getParameter("lang"), null);

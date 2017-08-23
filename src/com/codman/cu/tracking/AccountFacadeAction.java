@@ -1,5 +1,5 @@
 package com.codman.cu.tracking;
-
+//java
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+//WC custom
 import com.codman.cu.tracking.vo.AccountReportVO;
 import com.codman.cu.tracking.vo.AccountUnitReportVO;
 import com.codman.cu.tracking.vo.AccountVO;
@@ -18,6 +19,8 @@ import com.codman.cu.tracking.vo.RequestSearchVO;
 import com.codman.cu.tracking.vo.TransactionReportVO;
 import com.codman.cu.tracking.vo.TransactionVO;
 import com.codman.cu.tracking.vo.UnitVO;
+
+//SMT baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
@@ -26,6 +29,8 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -37,14 +42,14 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
- * <b>Title</b>: AccountFacadeAction.java<p/>
+ * <b>Title</b>: AccountFacadeAction.java
  * <b>Description: </b> 
- * <p/>
- * <b>Copyright:</b> Copyright (c) 2010<p/>
- * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * <b>Copyright:</b> Copyright (c) 2010
+ * <b>Company:</b> Silicon Mountain Technologies
  * @author Dave Bargerhuff
  * @version 1.0
  * @since Nov 03, 2010
+ * rjr code clean up may 29, 2017
  ****************************************************************************/
 public class AccountFacadeAction extends SBActionAdapter {
 	public static final String CODMAN_REPS = "codmanReps";
@@ -60,6 +65,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		String type = StringUtil.checkVal(req.getParameter("type"));
 		String prodCd = StringUtil.checkVal(req.getParameter("productType"),UnitVO.ProdType.MEDSTREAM.toString());
@@ -90,6 +96,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -353,7 +360,11 @@ public class AccountFacadeAction extends SBActionAdapter {
 		}
 	}
 	
-	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}

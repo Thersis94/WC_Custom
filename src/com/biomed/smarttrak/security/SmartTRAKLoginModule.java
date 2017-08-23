@@ -63,8 +63,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 
 		// call UserLogin to load the authentication record
 		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
-		String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
-		UserLogin ul = new UserLogin(dbConn, encKey);
+		UserLogin ul = new UserLogin(dbConn, getAttributes());
 		UserDataVO authUser = ul.getAuthRecord(null, username);
 
 		//getAuthRecord never returns null.  Test the VO for authenticationId, throw if not found
@@ -96,7 +95,6 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * Load their Smarttrak User account and their list of Teams.
 	 * @param user
 	 * @return
-	 * @throws AuthenticationException
 	 */
 	public UserVO loadSmarttrakUser(UserDataVO userData) {
 		UserVO stUser = new UserVO();
@@ -216,11 +214,9 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 
 		// Get the database Connection
 		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
-		String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
-		UserLogin ul = new UserLogin(dbConn, encKey);
-
+		UserLogin ul = new UserLogin(dbConn, getAttributes());
 		try {
-			return ul.modifyUser(authId, userName, password, resetFlag);
+			return ul.saveAuthRecord(authId, userName, password, resetFlag);
 		} catch (DatabaseException de) {
 			throw new InvalidDataException(de);
 		}

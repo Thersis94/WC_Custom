@@ -14,7 +14,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -32,7 +32,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Dec 09, 2015<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-public class LeihsetDisplayAction extends SBActionAdapter {
+public class LeihsetDisplayAction extends SimpleActionAdapter {
 
 	public LeihsetDisplayAction() {
 		super();
@@ -42,6 +42,19 @@ public class LeihsetDisplayAction extends SBActionAdapter {
 		super(init);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		
@@ -106,7 +119,7 @@ public class LeihsetDisplayAction extends SBActionAdapter {
 		
 
 		log.debug("loaded " + data.size() + " liehsets");
-		List<LeihsetVO> list = new ArrayList<LeihsetVO>(data.values());
+		List<LeihsetVO> list = new ArrayList<>(data.values());
 		Collections.sort(list);
 		return list;
 	}

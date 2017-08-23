@@ -27,19 +27,19 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 public class NexusProductVO extends SolrDocumentVO {
 
-	public final static String DEVICE_ID = "deviceId";
-	public final static String SEARCHABLE_NM = "searchableName";
-	public final static String ORGANIZATION_NM = "organizationName";
-	public final static String GTIN = "gtin";
-	public final static String GTIN_LVL = "gtinLvl";
-	public final static String UNIT = "unitOfUse";
-	public final static String DPM = "dpmGTIN";
-	public final static String QUANTITY = "quantity";
-	public final static String PKG_LVL = "packageLvl";
-	public final static String UOM_LVL = "uomLvl";
-	public final static String solrIndex = "DEPUY_NEXUS";
-	public final static String STATUS = "status";
-	public final static String SOURCE = "source";
+	public static final String DEVICE_ID = "deviceId";
+	public static final String SEARCHABLE_NM = "searchableName";
+	public static final String ORGANIZATION_NM = "organizationName";
+	public static final String GTIN = "gtin";
+	public static final String GTIN_LVL = "gtinLvl";
+	public static final String UNIT = "unitOfUse";
+	public static final String DPM = "dpmGTIN";
+	public static final String QUANTITY = "quantity";
+	public static final String PKG_LVL = "packageLvl";
+	public static final String UOM_LVL = "uomLvl";
+	public static final String SOLR_IDX = "DEPUY_NEXUS";
+	public static final String STATUS = "status";
+	public static final String SOURCE = "source";
 	private String productId;
 	private String orgId;
 	private String orgName ;
@@ -60,7 +60,7 @@ public class NexusProductVO extends SolrDocumentVO {
 
 	
 	public NexusProductVO() {
-		super(solrIndex);
+		super(SOLR_IDX);
 		gtin = new ArrayList<>();
 		packageLevel = new ArrayList<>();
 		gtinLevel = new ArrayList<>();

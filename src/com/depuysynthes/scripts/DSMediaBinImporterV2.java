@@ -207,7 +207,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select a.*, ");
 		//only include video chapters when they've changed, because the delta's coming out of the EXP file won't have these to compare against
-		sql.append("case when coalesce(b.update_dt, b.create_dt) > getDate()-1 then b.META_CONTENT_TXT else null end as META_CONTENT_TXT ");
+		sql.append("case when coalesce(b.update_dt, b.create_dt) > CURRENT_DATE - interval '1 day' then b.META_CONTENT_TXT else null end as META_CONTENT_TXT ");
 		sql.append("from ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("dpy_syn_mediabin a ");
 		sql.append("left join video_meta_content b on a.dpy_syn_mediabin_id=b.asset_id and b.asset_type='MEDIABIN' ");
@@ -566,7 +566,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		log.info("retrieving " + vo.getLimeLightUrl());
 		try {
 			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
-			InputStream is = conn.retrieveConnectionStream(vo.getLimeLightUrl(), null);				
+			InputStream is = conn.getConnectionStream(vo.getLimeLightUrl(), new HashMap<String, Object>());
 
 			if (404 == conn.getResponseCode())
 				throw new FileNotFoundException();
@@ -816,7 +816,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				} else {
 					//no legacy#, use eCopy
 					tn = StringUtil.checkVal(row.get("eCopy Tracking Number"));
-					pkId = tn;
+					pkId = splitTrackingNo(tn);
 				}
 
 				//for INTL, use the file name as a tracking number (final fallback).
@@ -921,6 +921,20 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		dataCounts.put("exp-eligible", records.size());
 		log.info(records.size() + " total VOs created from EXP data");
 		return records;
+	}
+
+
+	/**
+	 * tokenizes the tracking# on a comma.  ADAPTIV introduced support for mulitple, but only the first one is the primary.
+	 * @param tn
+	 * @return
+	 */
+	private String splitTrackingNo(String tn) {
+		if (StringUtil.isEmpty(tn) || tn.indexOf(",") == -1) {
+			return tn;
+		} else {
+			return tn.split(",")[0];
+		}
 	}
 
 

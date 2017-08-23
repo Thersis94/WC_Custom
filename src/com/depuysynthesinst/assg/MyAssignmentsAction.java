@@ -323,28 +323,26 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		sql.append("where res.profile_id=? and res.active_flg=1 ");
 		if (pendingOnly) sql.append("and res.invite_sent_dt is not null and res.consent_dt is null"); //invitation sent but not accepted
 		log.debug(sql);
-		
-		Map<String, String> residents = new HashMap<>();
+
+		Map<String,UserDataVO> resDirs = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, profileId);
 			ResultSet rs = ps.executeQuery();
-			while (rs.next())
-				residents.put(rs.getString(1), rs.getString(2));
+			while (rs.next()) {
+				UserDataVO user = new UserDataVO();
+				user.setProfileId(rs.getString(1));
+				resDirs.put(rs.getString(2), user);
+			}
 			
 		} catch (SQLException sqle) {
 			log.error("could not load pending ResDirs", sqle);
 		}
 		
-		if (residents.isEmpty()) return null;
+		if (resDirs.isEmpty()) return null;
 		
-		Map<String,UserDataVO> resDirs = new HashMap<>(residents.size());
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		try {
-			Map<String, UserDataVO> users = pm.searchProfileMap(dbConn, new ArrayList<String>(residents.keySet()));
-			//bind the two maps into one, keyed with residentId so we know which record to update when the user accepts.
-			for (String key : users.keySet())
-				resDirs.put(residents.get(key), users.get(key));
-
+			pm.populateRecords(dbConn, new ArrayList<>(resDirs.values()));
 		} catch (Exception e) {
 			log.error("could not load profiles for resDirs", e);
 		}
