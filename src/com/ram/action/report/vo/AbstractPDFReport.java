@@ -407,7 +407,9 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	}
 
 	public PdfPCell getBarcodeCell(RAMProductVO product) {
-		if (product.getGtinProductId() == null || product.getGtinProductId().isEmpty()){return barcodeCellFormater(new PdfPCell());}
+		if (product.getGtinProductId() == null || product.getGtinProductId().isEmpty()){
+			return barcodeCellFormater(new PdfPCell(new Paragraph("")));
+		}
 
 		StringBuilder barcode = new StringBuilder(18);
 		barcode.append("011").append(StringUtil.checkVal(product.getGtinProductId()));
@@ -424,7 +426,10 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	}
 
 	public PdfPCell getBarcodeCell(RAMCaseItemVO item) {
-		if (item.getGtinProductId() == null || item.getGtinProductId().isEmpty()){return barcodeCellFormater(new PdfPCell());}
+		if (item.getGtinProductId() == null || item.getGtinProductId().isEmpty()){
+			return barcodeCellFormater(new PdfPCell(new Paragraph("")));
+		}
+	
 
 		StringBuilder barcode = new StringBuilder(18);
 		barcode.append("011").append(StringUtil.checkVal(item.getGtinProductId()));
