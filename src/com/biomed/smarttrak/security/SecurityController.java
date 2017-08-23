@@ -82,7 +82,9 @@ public class SecurityController {
 	/**
 	 * is the user authorized to see the Market Reports (period)
 	 * @return
+	 * @deprecated no longer used -JM- 08.23.2017
 	 */
+	@Deprecated
 	public boolean isMktAuthorized() {
 		return role.isMktAuthorized();
 	}
@@ -123,12 +125,8 @@ public class SecurityController {
 	 */
 	public static void isFdAuth(ActionRequest req) throws ActionNotAuthorizedException {
 		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if (!role.isFdAuthorized()) {
-			StringBuilder url = new StringBuilder(150);
-			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-			new SiteBuilderUtil().manualRedirect(req, url.toString());
-			throw new ActionNotAuthorizedException("not authorized");
-		}
+		if (!role.isFdAuthorized())
+			throwAndRedirect(req);
 	}
 
 
@@ -141,12 +139,8 @@ public class SecurityController {
 	 */
 	public static void isGaAuth(ActionRequest req) throws ActionNotAuthorizedException {
 		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if (!role.isGaAuthorized()) {
-			StringBuilder url = new StringBuilder(150);
-			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-			new SiteBuilderUtil().manualRedirect(req, url.toString());
-			throw new ActionNotAuthorizedException("not authorized");
-		}
+		if (!role.isGaAuthorized())
+			throwAndRedirect(req);
 	}
 
 
@@ -155,15 +149,40 @@ public class SecurityController {
 	 * if they do not redirect them to the insufficient permissions page.
 	 * called from MarketAction
 	 * @param req
-	 * @throws ActionNotAuthorizedException 
+	 * @throws ActionNotAuthorizedException
+	 * @deprecated permissions are no longer set at this level. -JM- 08.23.2017
 	 */
+	@Deprecated
 	public static void isMktAuth(ActionRequest req) throws ActionNotAuthorizedException {
 		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if (!role.isMktAuthorized()) {
-			StringBuilder url = new StringBuilder(150);
-			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-			new SiteBuilderUtil().manualRedirect(req, url.toString());
-			throw new ActionNotAuthorizedException("not authorized");
-		}
+		if (!role.isMktAuthorized())
+			throwAndRedirect(req);
+	}
+
+
+	/**
+	 * tests the user's role object to see if they should have access to this tool.
+	 * if they do not redirect them to the insufficient permissions page.
+	 * called from ProductExplorerAction
+	 * @param req
+	 * @throws ActionNotAuthorizedException 
+	 */
+	public static void isPeAuth(ActionRequest req) throws ActionNotAuthorizedException {
+		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
+		if (!role.isPeAuthorized())
+			throwAndRedirect(req);
+	}
+
+
+	/**
+	 * Reused.  Calling this method sets the redirectUrl and throws the interrupt exception.  Use other methods to perform authorization tests.
+	 * @param req
+	 * @throws ActionNotAuthorizedException 
+	 */
+	public static void throwAndRedirect(ActionRequest req) throws ActionNotAuthorizedException {
+		StringBuilder url = new StringBuilder(150);
+		url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
+		new SiteBuilderUtil().manualRedirect(req, url.toString());
+		throw new ActionNotAuthorizedException("not authorized");
 	}
 }

@@ -459,11 +459,20 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		this.gaAuthFlg = gaAuthFlg;
 	}
 
+	/**
+	 * @deprecated no longer used for permissions -JM- 08.23.2017
+	 * @return
+	 */
+	@Deprecated
 	@Column(name="mkt_auth_flg")
 	public int getMktAuthFlg() {
 		return mktAuthFlg;
 	}
 
+	/**
+	 * @deprecated no longer used for permissions -JM- 08.23.2017
+	 */
+	@Deprecated
 	public void setMktAuthFlg(int mktAuthFlg) {
 		this.mktAuthFlg = mktAuthFlg;
 	}

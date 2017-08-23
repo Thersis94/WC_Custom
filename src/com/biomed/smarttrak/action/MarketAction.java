@@ -24,7 +24,6 @@ import com.biomed.smarttrak.vo.SectionVO;
 // Base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
@@ -37,7 +36,6 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
-import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -81,18 +79,11 @@ public class MarketAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-
-		// Public users can get a preview of the market section. Registered users need to confirm permissions.
-		if (role != null) SecurityController.isMktAuth(req);
-
 		if (req.hasParameter("reqParam_1")) {
+			//if the user is not logged in then cannot see market detail pages.
+			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 			if (role == null) {
-				// Null role means this is a public user.
-				StringBuilder url = new StringBuilder(150);
-				url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-				new SiteBuilderUtil().manualRedirect(req, url.toString());
-				throw new ActionNotAuthorizedException("not authorized");
+				SecurityController.throwAndRedirect(req);
 			}
 
 			MarketVO vo = retrieveFromDB(req.getParameter("reqParam_1"), req, true);

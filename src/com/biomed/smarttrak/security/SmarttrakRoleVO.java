@@ -34,6 +34,8 @@ public class SmarttrakRoleVO extends SBUserRole {
 	private boolean isFdAuth;
 	private boolean isGaAuth;
 	private boolean isMktAuth;
+	private boolean isPeAuth;
+	private boolean isAnAuth;
 	private boolean acctOwnerFlg;
 
 	/**
@@ -112,11 +114,12 @@ public class SmarttrakRoleVO extends SBUserRole {
 	/**
 	 * the user is authorized for FD if either their personal record or the account's record is authorized
 	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * -1 at user level is a BLOCK setting.  -1 means no access.
 	 * @param userAuth
 	 * @param acctAuth
 	 */
 	void setFdAuthorized(int userAuth, int acctAuth) {
-		this.isFdAuth = userAuth == 1 || acctAuth == 1;
+		this.isFdAuth = userAuth != -1 && acctAuth == 1;
 	}
 
 	public boolean isGaAuthorized() {
@@ -124,25 +127,61 @@ public class SmarttrakRoleVO extends SBUserRole {
 	}
 
 	/**
-	 * the user is authorized for FD if either their personal record or the account's record is authorized
+	 * the user is authorized for GA if either their personal record or the account's record is authorized
 	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * -1 at user level is a BLOCK setting.  -1 means no access.
 	 * @param userAuth
 	 * @param acctAuth
 	 */
 	void setGaAuthorized(int userAuth, int acctAuth) {
-		this.isGaAuth = userAuth == 1 || acctAuth == 1;
+		this.isGaAuth = userAuth != -1 && acctAuth == 1;
 	}
 
+	public boolean isPeAuthorized() {
+		return isPeAuth;
+	}
+
+	/**
+	 * the user is authorized for Product Explorer if the account's record is authorized
+	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * @param userAuth
+	 * @param acctAuth
+	 */
+	void setPeAuthorized(int userAuth, int acctAuth) {
+		this.isPeAuth = userAuth == 1 || acctAuth == 1;
+	}
+
+	public boolean isAnAuthorized() {
+		return isAnAuth;
+	}
+
+	/**
+	 * the user is authorized for ANalysis Articles if the account's record is authorized
+	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * @param userAuth
+	 * @param acctAuth
+	 */
+	void setAnAuthorized(int userAuth, int acctAuth) {
+		this.isAnAuth = userAuth == 1 || acctAuth == 1;
+	}
+
+	/**
+	 * @deprecated no longer used for managing permissions -JM- 08.23.2017
+	 * @return
+	 */
+	@Deprecated
 	public boolean isMktAuthorized() {
 		return isMktAuth;
 	}
 
 	/**
-	 * the user is authorized for FD if either their personal record or the account's record is authorized
+	 * the user is authorized for Markets if either their personal record or the account's record is authorized
 	 * package access modifier - only SmarttrakRoleModule should be setting this value
 	 * @param userAuth
 	 * @param acctAuth
+	 * @deprecated no longer used for managing permissions -JM- 08.23.2017
 	 */
+	@Deprecated
 	void setMktAuthorized(int userAuth, int acctAuth) {
 		this.isMktAuth = userAuth == 1 || acctAuth == 1;
 	}
