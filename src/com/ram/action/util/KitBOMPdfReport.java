@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.ram.action.util;
 
 import java.io.ByteArrayInputStream;
@@ -11,41 +8,31 @@ import org.w3c.dom.Document;
 import org.w3c.tidy.Tidy;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
+import com.ram.action.report.vo.AbstractPDFReport;
 import com.ram.datafeed.data.KitLayerProductVO;
 import com.ram.datafeed.data.KitLayerVO;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.util.Convert;
-import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /****************************************************************************
  * <b>Title</b>: KitBOMPdfReport.java
- * <p/>
  * <b>Project</b>: WC_Custom
- * <p/>
  * <b>Description: </b> Class is responsible for generating the Bill of Materials
- * report for Kits.
- * <p/>
+ * report for Kits. 
  * <b>Copyright:</b> Copyright (c) 2015
- * <p/>
  * <b>Company:</b> Silicon Mountain Technologies
- * <p/>
  * 
  * @author raptor
  * @version 1.0
  * @since Oct 9, 2015
- *        <p/>
- *        <b>Changes: </b>
+ * @updates:
+ * 		changed from HTML conversion to native PDF and changed formatting to match other
+ * 			PDFs.   Rjr 8/22/2017
  ****************************************************************************/
-public class KitBOMPdfReport extends AbstractSBReportVO {
+public class KitBOMPdfReport extends AbstractPDFReport {
 
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = 1L;
 
-	/**
-	 * 
-	 */
 	public KitBOMPdfReport() {
 	}
 
