@@ -202,33 +202,33 @@ public class ProductCartReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	private PdfPCell getFlagCell(int flag) {
-		PdfPCell imageCell = null; 
+		PdfPCell imageCell = null;
+		Image img = null;
 		try {
 			String imageUrl = attributes.get(Constants.PATH_TO_BINARY)+ CHECK_MARK_SRC;
-			Image image = Image.getInstance(imageUrl);
-
-			if (Convert.formatBoolean(flag)){
-				image.setWidthPercentage(25);
-				imageCell = new PdfPCell();
-				imageCell.addElement(image);
-			}else{
-				imageCell = new PdfPCell(new Paragraph(""));
-			}
-
-			imageCell.setBorder(0);
-			imageCell.setColspan(1);
-			imageCell.setBorderWidthBottom(0.25f);
-			imageCell.setPaddingTop(5);
-			imageCell.setBackgroundColor(WebColors.getRGBColor("white"));
-			imageCell.setPaddingBottom(10);
-			imageCell.setPaddingLeft(10);
-
-			return imageCell; 
-
+			img = Image.getInstance(imageUrl);
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding check image to pdf document ", e);
 		}
-		return  new PdfPCell();
+		if (Convert.formatBoolean(flag)){
+			imageCell = new PdfPCell();
+			if(img != null) {
+				img.setWidthPercentage(25);
+				imageCell.addElement(img);
+			}
+		}else{
+			imageCell = new PdfPCell(new Paragraph(""));
+		}
+
+		imageCell.setBorder(0);
+		imageCell.setColspan(1);
+		imageCell.setBorderWidthBottom(0.25f);
+		imageCell.setPaddingTop(5);
+		imageCell.setBackgroundColor(WebColors.getRGBColor("white"));
+		imageCell.setPaddingBottom(10);
+		imageCell.setPaddingLeft(10);
+
+		return imageCell; 
 	}
 
 	/**
@@ -507,19 +507,24 @@ public class ProductCartReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	private PdfPCell createLogoCell() {
-		PdfPCell cell = null;
+		PdfPCell cell = new PdfPCell();
+		Image img = null;
 		try {			
 			String imageUrl = attributes.get(Constants.PATH_TO_BINARY)+ IMG_SRC;
-			Image image = Image.getInstance( imageUrl );
-			cell = new PdfPCell(image, true);
-			cell.setBorder(0);
-			cell.setColspan(1);
-			cell.setPaddingBottom(10);
-			cell.setPaddingLeft(10);
-
+			img = Image.getInstance( imageUrl );
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding image to pdf document ", e);
 		}
+
+		//Gracefully allow report to render if image is missing.
+		if(img != null) {
+			cell = new PdfPCell(img, true);
+		}
+
+		cell.setBorder(0);
+		cell.setColspan(1);
+		cell.setPaddingBottom(10);
+		cell.setPaddingLeft(10);
 		return cell;
 	}
 
