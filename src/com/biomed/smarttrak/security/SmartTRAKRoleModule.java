@@ -22,6 +22,7 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.action.user.LoginAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 
 //WC Custom
@@ -50,7 +51,7 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 	/**
 	 * Smarttrak status levels only permitted login to view updates
 	 */
-	protected static final List<String> updatesOnlyStatuses = new ArrayList<>(Arrays.asList("U", "T"));
+	protected static final List<String> updatesOnlyStatuses = new ArrayList<>(Arrays.asList("U", "T", "4")); //4 comes from account->TypeID
 	
 	public SmartTRAKRoleModule() {
 		super();
@@ -102,7 +103,12 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 		//if status is EU Reports, redirect them to the markets page
 		if ("M".equals(user.getStatusCode())) {
 			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.MARKET.getPageURL());
-		}else if (updatesOnlyStatuses.contains(user.getStatusCode())){
+		}else if (updatesOnlyStatuses.contains(user.getStatusCode())) {
+			//limit the user to updates if their account is limited to updates
+			if ("4".equals(user.getStatusCode())) {
+				role.setRoleId(AdminControllerAction.UPDATES_ROLE_ID);
+				role.setRoleLevel(AdminControllerAction.UPDATES_ROLE_LVL);
+			}
 			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.UPDATES_EDITION.getPageURL());
 		}else if (blockedStatuses.contains(user.getStatusCode())) {
 			throw new AuthorizationException("user not authorized to login according to status");
