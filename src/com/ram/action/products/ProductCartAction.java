@@ -112,12 +112,16 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * Build actions this widget can perform, sent by the request.
 	 * 
 	 */
-	private enum WidgetBuildAction {saveCaseInfo, deleteCase, addProduct, deleteProduct, addSignature, finalize, sendEmails, saveNote, persistCase}
+	private enum WidgetBuildAction {
+		saveCaseInfo, deleteCase, addProduct, deleteProduct, addSignature, finalize, sendEmails, saveNote, persistCase
+	}
 
 	/**
 	 * Retrieve actions this widget can perform, sent by the request.
 	 */
-	private enum WidgetRetrieveAction {loadCase, loadReport, searchProducts}
+	private enum WidgetRetrieveAction {
+		loadCase, loadReport, searchProducts, searchProductsOrder
+	}
 
 
 	public ProductCartAction() {
@@ -375,23 +379,26 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
+		RAMCaseVO cvo =null;
 		RAMCaseManager rcm = new RAMCaseManager(attributes, dbConn, req);
 		WidgetRetrieveAction wa = WidgetRetrieveAction.valueOf(req.getParameter("widgetAction"));
 		String caseId = req.getParameter(CASE_ID);
 		
 		try {
-			RAMCaseVO cvo = rcm.retrieveCase(caseId);
+			if (! req.hasParameter("skipCase")) cvo = rcm.retrieveCase(caseId);
 			switch (wa) {
-			case loadCase:
-				putModuleData(cvo);
-				break;
-			case loadReport:
-				buildReport(cvo, req);
-				break;
-			case searchProducts:
-				searchProducts(cvo, req);
-				break;
+				case searchProductsOrder:
+					searchProducts(req.getIntegerParameter("customerLocationId"), req);
+					break;
+				case loadCase:
+					putModuleData(cvo);
+					break;
+				case loadReport:
+					buildReport(cvo, req);
+					break;
+				case searchProducts:
+					searchProducts(cvo, req);
+					break;
 			}
 		} catch (Exception e) {
 			log.error("Error retrieving case", e);
@@ -405,6 +412,17 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void searchProducts(RAMCaseVO cvo, ActionRequest req) throws ActionException {
+		searchProducts(cvo.getCustomerLocationId(), req);
+	}
+	
+	/**
+	 * Retrieves products using the customer location id directly.  This allows the product
+	 * search feature to be used without a caseId
+	 * @param customerLocationId
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void searchProducts(int customerLocationId, ActionRequest req) throws ActionException {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(256);
 		StringBuilder cSql = new StringBuilder(256);
@@ -419,7 +437,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 		getProductSearchFilter(sql, req, false);
 		
 		// Add the parameters to the queries if searching
-		params.add(cvo.getCustomerLocationId());
+		params.add(customerLocationId);
 		if (req.hasParameter("search")) {
 			String searchData = "%" + req.getParameter("search").toLowerCase() + "%";
 			params.add(searchData);
@@ -449,7 +467,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 */
 	protected void getProductSearchSelect(StringBuilder sql) {
 		sql.append("select p.product_id, p.cust_product_id, desc_txt, short_desc, c.customer_nm, l.kit_layer_id, ");
-		sql.append("c.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_number_txt, product_nm ");
+		sql.append("c.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_number_txt, product_nm, i.location_item_master_id ");
 	}
 
 	/**
@@ -471,7 +489,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 		// Add the search params
 		if (req.hasParameter("search")) {
 			sql.append("and (lower(product_nm) like ? or lower(cust_product_id) like ? ");
-			sql.append("or lower(c.gtin_number_txt || cast(p.gtin_product_id as varchar(64))) like ? )");
+			sql.append("or lower(c.gtin_number_txt || cast(p.gtin_product_id as varchar(64))) like ? ) ");
 		}
 		
 		// Set the order
