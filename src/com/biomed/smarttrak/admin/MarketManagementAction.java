@@ -10,6 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.SolrClient;
+
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.MarketAction;
 import com.biomed.smarttrak.util.MarketIndexer;
@@ -327,7 +329,8 @@ public class MarketManagementAction extends ManagementAction {
 	protected void retrieveMarkets(ActionRequest req) {
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select m.market_nm, m.market_id, s.section_nm, s.section_id FROM ").append(customDbSchema).append("BIOMEDGPS_MARKET m ");
+		sql.append("select m.market_nm, m.market_id, m.order_no, m.status_no, s.section_nm, s.section_id ");
+		sql.append("FROM ").append(customDbSchema).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = m.REGION_CD ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_MARKET_SECTION ms ");
 		sql.append("ON m.MARKET_ID = ms.MARKET_ID ");
@@ -844,14 +847,13 @@ public class MarketManagementAction extends ManagementAction {
 		String msg = StringUtil.capitalizePhrase(buildAction) + " completed successfully.";
 		String marketId = null;
 		try {
-			if ("update".equals(buildAction)) {			
+			if ("update".equals(buildAction)) {	
 				marketId = updateElement(req);
 			} else if ("delete".equals(buildAction)) {
 				deleteElement(req);
 			} else if ("orderUpdate".equals(buildAction)) {
 				updateOrder(req);
-				// We don't want to send redirects after an order update
-				return;
+				return; // We don't want to send redirects after an order update
 			}
 		} catch (Exception e) {
 			log.error("Error attempting to build: ", e);
@@ -868,13 +870,52 @@ public class MarketManagementAction extends ManagementAction {
 		redirectRequest(msg, buildAction, req);
 	}
 
+	/**
+	 * Updates the order for the appropriate type
+	 * @param req
+	 */
+	protected void updateOrder(ActionRequest req) throws ActionException{
+		ActionTarget target = ActionTarget.valueOf(req.getParameter(ACTION_TARGET));
+		
+		if(target == ActionTarget.MARKET){
+			updateMarketOrder(req);
+			writeToSolr(); //update records in Solr for public site
+		}else{
+			updateAttributeOrder(req);
+		}
+	}
+	
+	/**
+	 * Updates the order for markets
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void updateMarketOrder(ActionRequest req) throws ActionException{
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("UPDATE ").append(customDbSchema);
+		sql.append("BIOMEDGPS_MARKET SET ORDER_NO = ? WHERE MARKET_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			String[] order = req.getParameterValues("orderNo");
+			String[] ids = req.getParameterValues("marketId");
+			for (int i=0; i < order.length || i < ids.length; i++) {
+				ps.setInt(1, Convert.formatInteger(order[i]));
+				ps.setString(2, ids[i]);
+				ps.addBatch();
+			}
 
+			ps.executeBatch();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+	
 	/**
 	 * Alter the order of the supplied attribute
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void updateOrder(ActionRequest req) throws ActionException {
+	protected void updateAttributeOrder(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("UPDATE ").append(customDbSchema);
 		sql.append("BIOMEDGPS_MARKET_ATTRIBUTE_XR SET ORDER_NO = ? WHERE MARKET_ATTRIBUTE_ID = ? ");
@@ -940,6 +981,26 @@ public class MarketManagementAction extends ManagementAction {
 			}
 		} else {
 			idx.addSingleItem(marketId);
+		}
+	}
+	
+	/**
+	 * Re-indexes all market items back into Solr via MarketIndexer 
+	 */
+	protected void writeToSolr(){
+		MarketIndexer idx = MarketIndexer.makeInstance(getAttributes());
+		idx.setDBConnection(dbConn);
+		
+		SolrClient server = idx.getSolrServer();
+		try {
+			//remove all current items
+			idx.purgeIndexItems(server);
+			
+			//re-index markets
+			idx.addIndexItems(server);
+			
+		} catch (Exception e) {
+			log.error("Error attempting to re-index markets: " + e);
 		}
 	}
 

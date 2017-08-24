@@ -50,6 +50,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 
 	public static final String INDEX_TYPE = "BIOMEDGPS_MARKET";
 	private final String baseUrl;
+	private SolrClient server;
 
 	public MarketIndexer(Properties config) {
 		this.config = config;
@@ -85,8 +86,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 */
 	@Override
 	public void addSingleItem(String id) {
-		SolrClient server = makeServer();
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+		try (SolrActionUtil util = new SmarttrakSolrUtil(getSolrServer())) {
 			util.addDocuments(retrieveMarkets(id));
 			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
 		} catch (Exception e) {
@@ -313,7 +313,17 @@ public class MarketIndexer  extends SMTAbstractIndex {
 
 		return t;
 	}
-
+	
+	/**
+	 * Returns an instance of the SolrClient server
+	 * @return
+	 */
+	public SolrClient getSolrServer(){
+		if(server == null){
+			server = makeServer();
+		}
+		return server;
+	}
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
