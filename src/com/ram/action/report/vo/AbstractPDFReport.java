@@ -1,6 +1,7 @@
 package com.ram.action.report.vo;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.Date;
 
 import com.lowagie.text.BadElementException;
@@ -405,16 +406,22 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	private PdfPCell createLogoCell() {
+		PdfPCell imageCell = null; 
+		Image image = null;
 		try {			
 			String imageUrl = attributes.get(Constants.PATH_TO_BINARY)+ IMG_SRC;
-			Image image = Image.getInstance( imageUrl );
+			image = Image.getInstance( imageUrl );
 
-			return logoCellFormater(new PdfPCell(image, true));
-
+			imageCell = logoCellFormater(new PdfPCell(image, true));
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding image to pdf document ", e);
 		}
-		return logoCellFormater(new PdfPCell());
+		
+		if (imageCell == null){
+			imageCell = logoCellFormater(new PdfPCell());
+		}
+		
+		return imageCell;
 	}
 
 	/**
@@ -521,29 +528,63 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 */
 	public PdfPCell getFlagCell(int flag) {
 		PdfPCell imageCell = null; 
+		boolean bFlag = Convert.formatBoolean(flag);
+		
 		try {
-			String imageUrl = attributes.get(Constants.PATH_TO_BINARY)+ CHECK_MARK_SRC;
-			Image image = Image.getInstance(imageUrl);
-
-			if (Convert.formatBoolean(flag)){
-				image.setWidthPercentage(25);
-				imageCell = new PdfPCell();
-				imageCell.addElement(image);
-			}else{
-				imageCell = new PdfPCell(new Paragraph(""));
-			}
-
-			return flagCellFormatter(imageCell); 
-
+			imageCell = getGraphicFlagCell( bFlag);
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding check image to pdf document ", e);
 		}
-		//if there is an error getting the image use yes or blank to show the information.
-		if (Convert.formatBoolean(flag)){
-			return  flagCellFormatter(new PdfPCell(new Paragraph("Yes",getDataFont())));
-		}else{
-			return  flagCellFormatter(new PdfPCell());
+		
+		if (imageCell == null){
+			imageCell = getTextFlagCell( bFlag);
 		}
+		
+		return flagCellFormatter(imageCell);
+	}
+
+	/**
+	 * uses an image or no image to mark true or false
+	 * @param image
+	 * @param imageCell
+	 * @param bFlag
+	 * @throws IOException 
+	 * @throws MalformedURLException 
+	 * @throws BadElementException 
+	 */
+	private PdfPCell getGraphicFlagCell( boolean bFlag) throws BadElementException, MalformedURLException, IOException {
+		PdfPCell imageCell = null;
+		Image image = null;
+
+		String imageUrl = attributes.get(Constants.PATH_TO_BINARY)+ CHECK_MARK_SRC;
+		image = Image.getInstance(imageUrl);
+
+		if (bFlag){
+			image.setWidthPercentage(25);
+			imageCell = new PdfPCell();
+			imageCell.addElement(image);
+		}else{
+			imageCell = new PdfPCell(new Paragraph(""));
+		}
+		
+		return imageCell;
+	}
+
+	/**
+	 * uses the word yes and a blank cell to mark true or false.
+	 * @param imageCell
+	 * @param bFlag
+	 */
+	private PdfPCell getTextFlagCell(boolean bFlag) {
+		PdfPCell imageCell = null;
+		//if there is an error getting the image use yes or blank to show the information.
+		if (bFlag){
+			imageCell = new PdfPCell(new Paragraph("Yes",getDataFont()));
+		}else{
+			imageCell = new PdfPCell();
+		}
+		
+		return imageCell;
 	}
 
 	/**
