@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,6 +25,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellRangeAddress;
 
+import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
+import com.biomed.smarttrak.fd.FinancialDashVO.CountryType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -130,14 +133,25 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	protected void addTitleRow() {		
 		row = sheet.createRow(rowCount++);
 		row.setHeightInPoints((short) 24);
+		List<CountryType> countryTypes = dash.getSelectedCountryTypes();
+		
+		//construct the title
+		StringBuilder title = new StringBuilder(50);
+		title.append(reportTitle);
+		if(!countryTypes.isEmpty()){
+			String region = countryTypes.get(0).toString();
+			title.append(" - Region : ").append(region);
+		}
 		
 		Cell cell = row.createCell(0);
 		cell.setCellType(Cell.CELL_TYPE_STRING);
-		cell.setCellValue(reportTitle);
+		cell.setCellValue(title.toString());
 		cell.setCellStyle(cellStyles.get(CellStyleName.TITLE));
 
 		// Merge the title cell across additional cells to display full title
-		sheet.addMergedRegion(new CellRangeAddress(0,0,0,5));
+		int range = 5;
+		if(dash.getColHeaders().getDisplayType() == DisplayType.ALL) { range++; }
+		sheet.addMergedRegion(new CellRangeAddress(0,0,0,range));
 	}
 	
 	/**

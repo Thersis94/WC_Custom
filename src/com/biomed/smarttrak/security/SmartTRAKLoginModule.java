@@ -122,7 +122,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		// use profile ID as that is all we have at the moment.
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, ");
-		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, ");
+		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, a.type_id, ");
 		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
@@ -146,6 +146,12 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					user.setAcctOwnerFlg(rs.getInt("acct_owner_flg"));
 					user.setExpirationDate(rs.getDate("expiration_dt")); //used by the role module to block access to the site
 					user.setStatusCode(rs.getString("status_cd"));
+
+					// Account Type - used by the role module to restrict users to Updates Only (role)
+					String type = rs.getString("type_id");
+					if ("4".equals(type))
+						user.setStatusCode(type);
+
 					iter = 1;
 				}
 				user.addTeam(new TeamVO(rs));

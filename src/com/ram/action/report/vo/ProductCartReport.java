@@ -215,20 +215,63 @@ public class ProductCartReport  extends AbstractSBReportVO {
 				imageCell = new PdfPCell(new Paragraph(""));
 			}
 
-			imageCell.setBorder(0);
-			imageCell.setColspan(1);
-			imageCell.setBorderWidthBottom(0.25f);
-			imageCell.setPaddingTop(5);
-			imageCell.setBackgroundColor(WebColors.getRGBColor("white"));
-			imageCell.setPaddingBottom(10);
-			imageCell.setPaddingLeft(10);
-
-			return imageCell; 
+			return flagCellFormatter(imageCell); 
 
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding check image to pdf document ", e);
 		}
-		return  new PdfPCell();
+		//if there is an error getting the image use yes or blank to show the information.
+		if (Convert.formatBoolean(flag)){
+			return  flagCellFormatter(new PdfPCell(new Paragraph("Yes",dataFont())));
+		}else{
+			return  flagCellFormatter(new PdfPCell());
+		}
+		
+	}
+
+	/**
+	 * formats cells for inner table boolean responses
+	 * @param imageCell
+	 * @return
+	 */
+	private PdfPCell flagCellFormatter(PdfPCell imageCell) {
+		imageCell.setBorder(0);
+		imageCell.setColspan(1);
+		imageCell.setBorderWidthBottom(0.25f);
+		imageCell.setPaddingTop(5);
+		imageCell.setBackgroundColor(WebColors.getRGBColor("white"));
+		imageCell.setPaddingBottom(10);
+		imageCell.setPaddingLeft(10);
+		return imageCell;
+	}
+	
+	/**
+	 * formats the barcode cell
+	 * @param imageCell
+	 * @return
+	 */
+	private PdfPCell barcodeCellFormater(PdfPCell imageCell) {
+		imageCell.setBorder(0);
+		imageCell.setColspan(1);
+		imageCell.setBorderWidthBottom(0.25f);
+		imageCell.setPaddingTop(5);
+		imageCell.setBackgroundColor(WebColors.getRGBColor("white"));
+		imageCell.setPaddingBottom(10);
+		imageCell.setPaddingLeft(10);
+		return imageCell;
+	}
+	
+	/**
+	 * formats the cell for the logo area of the pdf
+	 * @param pdfPCell
+	 * @return
+	 */
+	private PdfPCell logoCellFormater(PdfPCell pdfPCell) {
+		pdfPCell.setBorder(0);
+		pdfPCell.setColspan(1);
+		pdfPCell.setPaddingBottom(10);
+		pdfPCell.setPaddingLeft(10);
+		return pdfPCell;
 	}
 
 	/**
@@ -238,7 +281,7 @@ public class ProductCartReport  extends AbstractSBReportVO {
 	 */
 	private PdfPCell getBarcodeCell(RAMCaseItemVO item) {
 		BarcodeImageWriter biw = new BarcodeImageWriter();
-		PdfPCell imageCell = null; 
+		 
 		try {
 			
 			StringBuilder barcode = new StringBuilder(18);
@@ -251,25 +294,16 @@ public class ProductCartReport  extends AbstractSBReportVO {
 			}
 			
 			byte[] b = biw.getDataMatrix(barcode.toString(), 25);
-
+			
 			Image image = Image.getInstance(b);
-			imageCell = new PdfPCell(image, false);
-			imageCell.setBorder(0);
-			imageCell.setColspan(1);
-			imageCell.setBorderWidthBottom(0.25f);
-			imageCell.setPaddingTop(5);
-			imageCell.setBackgroundColor(WebColors.getRGBColor("white"));
-			imageCell.setPaddingBottom(10);
-			imageCell.setPaddingLeft(10);
-
-			return imageCell; 
-
+			return barcodeCellFormater(new PdfPCell(image, false)); 
+			
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding image to pdf document ", e);
 		}
-		return  new PdfPCell();
+		return  barcodeCellFormater(new PdfPCell());
 	}
-
+	
 	/**
 	 * controls product section of the pdf
 	 * @param table
@@ -507,20 +541,15 @@ public class ProductCartReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	private PdfPCell createLogoCell() {
-		PdfPCell cell = null;
 		try {			
 			String imageUrl = attributes.get(Constants.PATH_TO_BINARY)+ IMG_SRC;
 			Image image = Image.getInstance( imageUrl );
-			cell = new PdfPCell(image, true);
-			cell.setBorder(0);
-			cell.setColspan(1);
-			cell.setPaddingBottom(10);
-			cell.setPaddingLeft(10);
 
+			return logoCellFormater(new PdfPCell(image, true));
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding image to pdf document ", e);
 		}
-		return cell;
+		return logoCellFormater(new PdfPCell());
 	}
 
 	/**
