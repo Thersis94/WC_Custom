@@ -563,8 +563,6 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 			image.setWidthPercentage(25);
 			imageCell = new PdfPCell();
 			imageCell.addElement(image);
-		}else{
-			imageCell = new PdfPCell(new Paragraph(""));
 		}
 		
 		return imageCell;
