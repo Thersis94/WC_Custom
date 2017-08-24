@@ -552,7 +552,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @throws MalformedURLException 
 	 * @throws BadElementException 
 	 */
-	private PdfPCell getGraphicFlagCell( boolean bFlag) throws BadElementException, MalformedURLException, IOException {
+	private PdfPCell getGraphicFlagCell( boolean bFlag) throws BadElementException, IOException {
 		PdfPCell imageCell = null;
 		Image image = null;
 
