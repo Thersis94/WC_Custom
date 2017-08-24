@@ -57,7 +57,7 @@ public class KitBOMPdfReport extends AbstractPDFReport {
 
 			PdfPTable table = new PdfPTable(6);
 			table.setWidthPercentage(100f);
-			table.setWidths(new float[] {  3,5 ,1,3,1,2 });
+			table.setWidths(new float[] {  3,5 ,2,3,1,2 });
 			table.setHeaderRows(1);
 			table.setFooterRows(0);
 			table.getDefaultCell().setHorizontalAlignment(Element.ALIGN_CENTER);
