@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.ram.datafeed.data.CustomerVO;
 import com.ram.action.data.RAMProductSearchVO;
 import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseItemVO.RAMCaseType;
@@ -466,7 +467,7 @@ public class VisionAction extends SBActionAdapter {
 		sql.append("a.KIT_LAYER_ID, a.IMAGE_PATH_URL, a.LAYOUT_DEPTH_NO, a.JSON_DATA, ");
 		sql.append("b.PRODUCT_KIT_ID, b.PRODUCT_ID, b.QUANTITY, b.COORDINATE_TYPE_CD, ");
 		sql.append("c.CUST_PRODUCT_ID, c.CUSTOMER_ID, c.PRODUCT_NM, c.GTIN_PRODUCT_ID, ");
-		sql.append("d.CUSTOMER_NM ");
+		sql.append("d.CUSTOMER_NM, d.gtin_number_txt || cast(c.gtin_product_id as varchar(64)) as gtin_number_txt ");
 		sql.append("from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("RAM_KIT_LAYER a ");
 		sql.append("inner join ");
@@ -494,10 +495,14 @@ public class VisionAction extends SBActionAdapter {
 	public RAMProductVO getProduct(Integer prodId) {
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		RAMProductVO prod = new RAMProductVO();
+		CustomerVO cust = new CustomerVO();
 		prod.setProductId(prodId);
-
 		try {
 			db.getByPrimaryKey(prod);
+			cust.setCustomerId(prod.getCustomerId());
+			//getting the customer name for pdf exports
+			db.getByPrimaryKey(cust);
+			prod.setCustomerName(cust.getCustomerName());
 		} catch (Exception e) {
 			log.error(e);
 		}
@@ -544,10 +549,10 @@ public class VisionAction extends SBActionAdapter {
 		}
 
 		report = new KitBOMPdfReport();
+		report.setAttributes(getAttributes());
 		String fileName = StringUtil.replace(p.getProductName(), " ", "_");
 		report.setFileName(fileName + "_bom_export.pdf");
 		report.setData(p);
-		report.setBaseDomain(req.getDomainUrl());
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);		
 	}

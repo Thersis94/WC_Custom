@@ -244,7 +244,7 @@ public class ProductCartReport  extends AbstractPDFReport {
 	 */
 	private void caseInfoBottom(PdfPTable table) {
 
-		table.addCell(noBorderCellFormater(new PdfPCell(new Paragraph("Case Note: ", titleFont())), 10));
+		table.addCell(noBorderCellFormater(new PdfPCell(new Paragraph("Case Note: ", getTitleFont())), 10));
 
 		table.addCell(getDataStyleCell(StringUtil.checkVal(data.get("notes")), 10));
 	}

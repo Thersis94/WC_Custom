@@ -44,6 +44,8 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	public static final String TEXT_GREY = "#4e4e4e";
 	public static final String BLACK = "black";
 	public static final String WHITE = "white";
+	public static final int DEFAULT_FONT_SIZE = 11;
+	public static final int DEFAULT_COLSPAN = 1;
 
 
 	/**
@@ -68,10 +70,19 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell barcodeCellFormater(PdfPCell imageCell) {
+		return barcodeCellFormater(imageCell, DEFAULT_COLSPAN);
+	}
+	/**
+	 * formats the barcode cell
+	 * @param imageCell
+	 * @return
+	 */
+	public PdfPCell barcodeCellFormater(PdfPCell imageCell, int colSpan) {
 		imageCell.setBorder(0);
-		imageCell.setColspan(1);
+		imageCell.setColspan(colSpan);
 		imageCell.setBorderWidthBottom(0.25f);
 		imageCell.setPaddingTop(5);
+		imageCell.setFixedHeight(41f);
 		imageCell.setBackgroundColor(WebColors.getRGBColor(WHITE));
 		imageCell.setPaddingBottom(10);
 		imageCell.setPaddingLeft(10);
@@ -85,7 +96,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell dataCellFormater(PdfPCell dataCell) {
-		return dataCellFormater(dataCell,1);
+		return dataCellFormater(dataCell,DEFAULT_COLSPAN);
 	}
 
 	/**
@@ -111,7 +122,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell spacerCellFormater(PdfPCell cell){
-		return spacerCellFormater(cell,1);
+		return spacerCellFormater(cell,DEFAULT_COLSPAN);
 	}
 
 	/**
@@ -135,7 +146,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell dataHeaderCellFormater(PdfPCell dataCell) {
-		return dataHeaderCellFormater(dataCell, 1);
+		return dataHeaderCellFormater(dataCell, DEFAULT_COLSPAN);
 	}
 
 	/**
@@ -161,7 +172,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell noBorderCellFormater(PdfPCell cell) {
-		return noBorderCellFormater(cell, 1);
+		return noBorderCellFormater(cell, DEFAULT_COLSPAN);
 	}
 
 	/**
@@ -185,7 +196,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell lableCellFormater(PdfPCell labelCell) {
-		return lableCellFormater(labelCell, 1);
+		return lableCellFormater(labelCell, DEFAULT_COLSPAN);
 	}
 
 	/**
@@ -225,7 +236,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell titleBarFormater(PdfPCell cell){
-		return titleBarFormater(cell, 1);
+		return titleBarFormater(cell, DEFAULT_COLSPAN);
 	}
 
 	/**
@@ -250,7 +261,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell getSectionSpacer(int colSpan) {
-		PdfPCell cell = new PdfPCell(new Paragraph("", dataFont()));
+		PdfPCell cell = new PdfPCell(new Paragraph("", getDataFont()));
 		cell.setBorder(0);
 		cell.setColspan(colSpan);
 		cell.setPaddingBottom(10);
@@ -263,15 +274,15 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * returns a times Roman font bold for titles and important headers 
 	 * @return
 	 */
-	public Font titleFont() {
-		return FontFactory.getFont(FontFactory.TIMES_BOLD, 11, WebColors.getRGBColor(BLACK));
+	public Font getTitleFont() {
+		return FontFactory.getFont(FontFactory.TIMES_BOLD, DEFAULT_FONT_SIZE, WebColors.getRGBColor(BLACK));
 	}
 
 	/**
 	 * returns a times Roman font bold for titles and important headers 
 	 * @return
 	 */
-	public Font titleFont(int fontSize) {
+	public Font getTitleFont(int fontSize) {
 		return FontFactory.getFont(FontFactory.TIMES_BOLD, fontSize, WebColors.getRGBColor(BLACK));
 	}
 
@@ -279,7 +290,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * returns a font for very small text
 	 * @return
 	 */
-	public Font smallFont() {
+	public Font getSmallFont() {
 		return FontFactory.getFont(FontFactory.TIMES_ROMAN, 5, WebColors.getRGBColor(BLACK));
 	}
 
@@ -287,15 +298,15 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * returns a times roman font for data
 	 * @return
 	 */
-	public Font dataFont(int size) {
+	public Font getDataFont(int size) {
 		return FontFactory.getFont(FontFactory.TIMES_ROMAN, size, WebColors.getRGBColor(TEXT_GREY));
 	}
 	/**
 	 * returns a times roman font for data
 	 * @return
 	 */
-	public Font dataFont() {
-		return FontFactory.getFont(FontFactory.TIMES_ROMAN, 11, WebColors.getRGBColor(TEXT_GREY));
+	public Font getDataFont() {
+		return FontFactory.getFont(FontFactory.TIMES_ROMAN, DEFAULT_FONT_SIZE, WebColors.getRGBColor(TEXT_GREY));
 	}
 
 	/**
@@ -305,7 +316,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell getHeadingStyleCell( String cellContent, int colSpan){
-		return dataHeaderCellFormater(new PdfPCell(new Paragraph(cellContent , dataFont())), colSpan);
+		return dataHeaderCellFormater(new PdfPCell(new Paragraph(cellContent , getDataFont())), colSpan);
 	}
 
 	/**
@@ -315,7 +326,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell getHeadingStyleCell( String cellContent, int colSpan, int fontSize){
-		return dataHeaderCellFormater(new PdfPCell(new Paragraph(cellContent , dataFont(fontSize))), colSpan);
+		return dataHeaderCellFormater(new PdfPCell(new Paragraph(cellContent , getDataFont(fontSize))), colSpan);
 	}
 
 	/**
@@ -325,7 +336,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell getDataStyleCell(String cellContent, int colSpan){
-		return dataCellFormater(new PdfPCell(new Paragraph(cellContent , dataFont())), colSpan);
+		return dataCellFormater(new PdfPCell(new Paragraph(cellContent , getDataFont())), colSpan);
 	}
 
 	/**
@@ -335,7 +346,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell getDataStyleCell(String cellContent, int colSpan, int fontSize){
-		return dataCellFormater(new PdfPCell(new Paragraph(cellContent , dataFont(fontSize))), colSpan);
+		return dataCellFormater(new PdfPCell(new Paragraph(cellContent , getDataFont(fontSize))), colSpan);
 	}
 	/**
 	 * returns a styled label cell
@@ -344,7 +355,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell getLabelCell(String cellContent, int colSpan){
-		return getLabelCell(cellContent, colSpan, 11);
+		return getLabelCell(cellContent, colSpan, DEFAULT_FONT_SIZE);
 	}
 
 	/**
@@ -355,7 +366,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell getLabelCell(String cellContent, int colSpan, int fontSize) {
-		return lableCellFormater(new PdfPCell(new Paragraph(cellContent, titleFont(fontSize))), colSpan);
+		return lableCellFormater(new PdfPCell(new Paragraph(cellContent, getTitleFont(fontSize))), colSpan);
 	}
 
 	/**
@@ -365,7 +376,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell getTitleCell(String cellContent, int colSpan) {
-		return getTitleCell(cellContent, colSpan, 11);
+		return getTitleCell(cellContent, colSpan, DEFAULT_FONT_SIZE);
 	}
 
 	/**
@@ -376,7 +387,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell getTitleCell(String cellContent, int colSpan, int fontSize) {
-		return titleBarFormater(new PdfPCell(new Paragraph(cellContent, titleFont(fontSize))),colSpan);
+		return titleBarFormater(new PdfPCell(new Paragraph(cellContent, getTitleFont(fontSize))),colSpan);
 	}
 
 	/**
@@ -406,31 +417,60 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 		return logoCellFormater(new PdfPCell());
 	}
 
+	/**
+	 * returns barcode image for related product
+	 * @param product
+	 * @param colSpan
+	 * @return
+	 */
 	public PdfPCell getBarcodeCell(RAMProductVO product) {
+		return getBarcodeCell(product, DEFAULT_COLSPAN);
+	}
+	
+	/**
+	 * returns barcode image for related product with dynamic col span
+	 * @param product
+	 * @param colSpan
+	 * @return
+	 */
+	public PdfPCell getBarcodeCell(RAMProductVO product, int colSpan) {
 		if (product.getGtinProductId() == null || product.getGtinProductId().isEmpty()){
 			return barcodeCellFormater(new PdfPCell(new Paragraph("")));
 		}
 
 		StringBuilder barcode = new StringBuilder(18);
-		barcode.append("011").append(StringUtil.checkVal(product.getGtinProductId()));
+		barcode.append("011").append(StringUtil.checkVal(product.getGtinProductNumber()));
 		if (product.getExpiree() != null ){
 			Date expiree = product.getExpiree();
 			String exDateCode = Convert.formatDate(expiree, "yyMMdd");
 			barcode.append("17").append(exDateCode);
 		}
-		if (!product.getLotNumber().isEmpty() ){
+		if (product.getLotNumber() != null && !product.getLotNumber().isEmpty() ){
 			barcode.append("10").append(product.getLotNumber());
 		}
 
-		return getBarcodeCell(barcode.toString());
+		return getBarcodeCell(barcode.toString(), colSpan);
 	}
 
+	/**
+	 * returns barcode image for related case item 
+	 * @param item
+	 * @return
+	 */
 	public PdfPCell getBarcodeCell(RAMCaseItemVO item) {
+		return getBarcodeCell(item, DEFAULT_COLSPAN);
+	}
+	
+	/**
+	 * returns barcode image for related case item with dynamic col span
+	 * @param item
+	 * @return
+	 */
+	public PdfPCell getBarcodeCell(RAMCaseItemVO item, int colSpan) {
 		if (item.getGtinProductId() == null || item.getGtinProductId().isEmpty()){
 			return barcodeCellFormater(new PdfPCell(new Paragraph("")));
 		}
-	
-
+		
 		StringBuilder barcode = new StringBuilder(18);
 		barcode.append("011").append(StringUtil.checkVal(item.getGtinProductId()));
 		if (item.getExpiree() != null ){
@@ -442,9 +482,8 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 			barcode.append("10").append(item.getLotNumberTxt());
 		}
 
-		return getBarcodeCell(barcode.toString());
+		return getBarcodeCell(barcode.toString(),colSpan);
 	}
-
 
 	/**
 	 * takes the information and puts it in barcode form.
@@ -452,18 +491,27 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	public PdfPCell getBarcodeCell(String barCodeText ) {
+		return getBarcodeCell(barCodeText, DEFAULT_COLSPAN);
+	}
+	
+	/**
+	 * takes the information and puts it in barcode form.
+	 * @param item
+	 * @return
+	 */
+	public PdfPCell getBarcodeCell(String barCodeText, int colSpan ) {
 		BarcodeImageWriter biw = new BarcodeImageWriter();
 		try {
 
 			byte[] b = biw.getDataMatrix(barCodeText, 25);
 
 			Image image = Image.getInstance(b);
-			return barcodeCellFormater(new PdfPCell(image, false)); 
+			return barcodeCellFormater(new PdfPCell(image, false), colSpan); 
 
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding image to pdf document ", e);
 		}
-		return  barcodeCellFormater(new PdfPCell());
+		return  barcodeCellFormater(new PdfPCell(new Paragraph("",getTitleFont())), colSpan);
 	}
 
 	/**
@@ -492,7 +540,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 		}
 		//if there is an error getting the image use yes or blank to show the information.
 		if (Convert.formatBoolean(flag)){
-			return  flagCellFormatter(new PdfPCell(new Paragraph("Yes",dataFont())));
+			return  flagCellFormatter(new PdfPCell(new Paragraph("Yes",getDataFont())));
 		}else{
 			return  flagCellFormatter(new PdfPCell());
 		}
@@ -514,8 +562,8 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 		}
 		byte[] decoded = org.apache.commons.codec.binary.Base64.decodeBase64(encoded.getBytes());
 		try {
-			cell.addElement(new Paragraph(sigTypeName + ": " + name, dataFont()));
-			cell.addElement(new Paragraph(" ", smallFont()));
+			cell.addElement(new Paragraph(sigTypeName + ": " + name, getDataFont()));
+			cell.addElement(new Paragraph(" ", getSmallFont()));
 			Image image = Image.getInstance( decoded );
 			image.setWidthPercentage(80);
 			cell.addElement(image);
