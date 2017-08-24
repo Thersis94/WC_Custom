@@ -21,6 +21,7 @@ import com.biomed.smarttrak.admin.EditorsDeskAction;
 import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.GridChartAction;
+import com.biomed.smarttrak.admin.FeaturedInsightsAction;
 import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.ManageAuthorAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
@@ -34,6 +35,7 @@ import com.biomed.smarttrak.admin.TeamMemberAction;
 import com.biomed.smarttrak.admin.UpdateListTitleAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.admin.UpdatesEmailSendAction;
+import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.admin.UserAccountSearchAction;
 import com.biomed.smarttrak.admin.report.EmailReportAction;
 import com.biomed.smarttrak.fd.FinancialDashAdminAction;
@@ -75,22 +77,32 @@ import com.smt.sitebuilder.security.SecurityController;
 public class AdminControllerAction extends SimpleActionAdapter {
 
 	public static final String ACTION_TYPE = "actionType"; //reqParam this class executes around
-
+	public static final String DEFAULT_ACTION = "homepage";
+	
 	// application constants  - these could be moved to sb_config if subject to change
 	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
 	public static final String PUBLIC_SITE_ID = "BMG_SMARTTRAK_1";
+	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
+	
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
 	public static final String EUREPORT_ROLE_ID = "6f5c869a9b0e9b640a001421bce81c9b";
-	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
-	public static final String UPDATES_USER_ID = "edf3243498c048ca82a2f1041fa4b92e";
+	public static final String UPDATES_ROLE_ID = "edf3243498c048ca82a2f1041fa4b92e";
+	
+	/**
+	 * @deprecated - use UPDATES_ROLE_ID for naming consistency -JM- 08.08.2017
+	 */
+	@Deprecated
+	public static final String UPDATES_USER_ID = UPDATES_ROLE_ID;
 
 	// All logged-in users are Registered Users or Site Administrators.  
 	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
 	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
 	public static final int EUREPORT_ROLE_LEVEL = 5;
+	public static final int UPDATES_ROLE_LVL = 5;
 	public static final int STAFF_ROLE_LEVEL = 90;
 
-	public static final int DOC_ID_MIN_LEN = 15;  //used to determine if a pkId will be globally unique if fed to Solr as documentId, 
+	//used to determine if a pkId will be globally unique if fed to Solr as documentId, (I.E. MARKET_113716)
+	public static final int DOC_ID_MIN_LEN = 13;
 
 	public static final String PUBLIC_401_PG = "/subscribe"; //where users get redirected when they're not authorized to view an asset
 
@@ -198,6 +210,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("userAccountSearch", UserAccountSearchAction.class);
 		ACTIONS.put("feeds", CustomRSSFacadeAction.class);
 		ACTIONS.put("dashboard", DashboardAction.class);
+		ACTIONS.put("feature", FeaturedInsightsAction.class);
+		ACTIONS.put(DEFAULT_ACTION, com.biomed.smarttrak.action.UpdatesAction.class);
 	}
 
 
@@ -254,8 +268,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		if (req.hasParameter(ACTION_TYPE)) {
 			loadAction(req.getParameter(ACTION_TYPE)).retrieve(req);
 		} else {
-			//go to view, display the content from the WYSWIYG in /admintool
-			super.retrieve(req);
+			loadAction(DEFAULT_ACTION).retrieve(req);
 		}
 	}
 
