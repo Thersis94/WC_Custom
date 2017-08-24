@@ -12,7 +12,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
