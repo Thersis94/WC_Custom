@@ -202,24 +202,39 @@ public class ProductCartReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	private PdfPCell getFlagCell(int flag) {
-		PdfPCell imageCell = null;
-		Image img = null;
+		PdfPCell imageCell = null; 
 		try {
 			String imageUrl = attributes.get(Constants.PATH_TO_BINARY)+ CHECK_MARK_SRC;
-			img = Image.getInstance(imageUrl);
+			Image image = Image.getInstance(imageUrl);
+
+			if (Convert.formatBoolean(flag)){
+				image.setWidthPercentage(25);
+				imageCell = new PdfPCell();
+				imageCell.addElement(image);
+			}else{
+				imageCell = new PdfPCell(new Paragraph(""));
+			}
+
+			return flagCellFormatter(imageCell); 
+
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding check image to pdf document ", e);
 		}
+		//if there is an error getting the image use yes or blank to show the information.
 		if (Convert.formatBoolean(flag)){
-			imageCell = new PdfPCell();
-			if(img != null) {
-				img.setWidthPercentage(25);
-				imageCell.addElement(img);
-			}
+			return  flagCellFormatter(new PdfPCell(new Paragraph("Yes",dataFont())));
 		}else{
-			imageCell = new PdfPCell(new Paragraph(""));
+			return  flagCellFormatter(new PdfPCell());
 		}
+		
+	}
 
+	/**
+	 * formats cells for inner table boolean responses
+	 * @param imageCell
+	 * @return
+	 */
+	private PdfPCell flagCellFormatter(PdfPCell imageCell) {
 		imageCell.setBorder(0);
 		imageCell.setColspan(1);
 		imageCell.setBorderWidthBottom(0.25f);
@@ -227,8 +242,36 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		imageCell.setBackgroundColor(WebColors.getRGBColor("white"));
 		imageCell.setPaddingBottom(10);
 		imageCell.setPaddingLeft(10);
-
-		return imageCell; 
+		return imageCell;
+	}
+	
+	/**
+	 * formats the barcode cell
+	 * @param imageCell
+	 * @return
+	 */
+	private PdfPCell barcodeCellFormater(PdfPCell imageCell) {
+		imageCell.setBorder(0);
+		imageCell.setColspan(1);
+		imageCell.setBorderWidthBottom(0.25f);
+		imageCell.setPaddingTop(5);
+		imageCell.setBackgroundColor(WebColors.getRGBColor("white"));
+		imageCell.setPaddingBottom(10);
+		imageCell.setPaddingLeft(10);
+		return imageCell;
+	}
+	
+	/**
+	 * formats the cell for the logo area of the pdf
+	 * @param pdfPCell
+	 * @return
+	 */
+	private PdfPCell logoCellFormater(PdfPCell pdfPCell) {
+		pdfPCell.setBorder(0);
+		pdfPCell.setColspan(1);
+		pdfPCell.setPaddingBottom(10);
+		pdfPCell.setPaddingLeft(10);
+		return pdfPCell;
 	}
 
 	/**
@@ -238,7 +281,7 @@ public class ProductCartReport  extends AbstractSBReportVO {
 	 */
 	private PdfPCell getBarcodeCell(RAMCaseItemVO item) {
 		BarcodeImageWriter biw = new BarcodeImageWriter();
-		PdfPCell imageCell = null; 
+		 
 		try {
 			
 			StringBuilder barcode = new StringBuilder(18);
@@ -251,25 +294,16 @@ public class ProductCartReport  extends AbstractSBReportVO {
 			}
 			
 			byte[] b = biw.getDataMatrix(barcode.toString(), 25);
-
+			
 			Image image = Image.getInstance(b);
-			imageCell = new PdfPCell(image, false);
-			imageCell.setBorder(0);
-			imageCell.setColspan(1);
-			imageCell.setBorderWidthBottom(0.25f);
-			imageCell.setPaddingTop(5);
-			imageCell.setBackgroundColor(WebColors.getRGBColor("white"));
-			imageCell.setPaddingBottom(10);
-			imageCell.setPaddingLeft(10);
-
-			return imageCell; 
-
+			return barcodeCellFormater(new PdfPCell(image, false)); 
+			
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding image to pdf document ", e);
 		}
-		return  new PdfPCell();
+		return  barcodeCellFormater(new PdfPCell());
 	}
-
+	
 	/**
 	 * controls product section of the pdf
 	 * @param table
@@ -507,25 +541,15 @@ public class ProductCartReport  extends AbstractSBReportVO {
 	 * @return
 	 */
 	private PdfPCell createLogoCell() {
-		PdfPCell cell = new PdfPCell();
-		Image img = null;
 		try {			
 			String imageUrl = attributes.get(Constants.PATH_TO_BINARY)+ IMG_SRC;
-			img = Image.getInstance( imageUrl );
+			Image image = Image.getInstance( imageUrl );
+
+			return logoCellFormater(new PdfPCell(image, true));
 		} catch (IOException | BadElementException e) {
 			log.error("error while adding image to pdf document ", e);
 		}
-
-		//Gracefully allow report to render if image is missing.
-		if(img != null) {
-			cell = new PdfPCell(img, true);
-		}
-
-		cell.setBorder(0);
-		cell.setColspan(1);
-		cell.setPaddingBottom(10);
-		cell.setPaddingLeft(10);
-		return cell;
+		return logoCellFormater(new PdfPCell());
 	}
 
 	/**
