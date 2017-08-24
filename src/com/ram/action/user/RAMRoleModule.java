@@ -11,10 +11,12 @@ import java.util.Map;
 import java.util.Set;
 
 import com.ram.datafeed.data.CustomerVO;
+import com.siliconmtn.db.DBUtil;
 // SMT Base Libs
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.security.AuthorizationException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.security.DBRoleModule;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -36,7 +38,15 @@ public class RAMRoleModule extends DBRoleModule {
 	 * Constant utilized for storing whether or not a user has the admin role assigned
 	 */
 	public static final String ADMIN_ROLE = "admin_role";
+	
+	/**
+	 * Key to storing the ram user role id in the role attributes map
+	 */
+	public static final String USER_ROLE_ID = "user_role_id";
 
+	// Member variable
+	private int userRoleId = 0;
+	
 	/**
 	 * 
 	 */
@@ -60,6 +70,7 @@ public class RAMRoleModule extends DBRoleModule {
 		SBUserRole role = super.getUserRole(profileId, siteId);
 		role.getAttributes().putAll(getUserInfo(role.getProfileRoleId()));
 		role.getAttributes().put(ADMIN_ROLE, hasAdmin(role));
+		role.getAttributes().put(USER_ROLE_ID, userRoleId);
 		
 		log.debug(role.getAttributes());
 		return role;
@@ -81,10 +92,10 @@ public class RAMRoleModule extends DBRoleModule {
 		
 		// Build the sql
 		StringBuilder sql = new StringBuilder(256);
-		sql.append("select b.customer_id, c.customer_type_id ");
-		sql.append("from ").append(schema).append("ram_user_role a ");
-		sql.append("inner join ").append(schema).append("ram_user_role_customer_xr b on a.user_role_id = b.user_role_id ");
-		sql.append("inner join ").append(schema).append("ram_customer c on b.customer_id = c.customer_id ");
+		sql.append("select b.customer_id, c.customer_type_id, a.user_role_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ram_user_role a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_user_role_customer_xr b on a.user_role_id = b.user_role_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("ram_customer c on b.customer_id = c.customer_id ");
 		sql.append("where profile_role_id = ? order by customer_type_id ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -92,7 +103,10 @@ public class RAMRoleModule extends DBRoleModule {
 			
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				data.get(rs.getString(2)).add(rs.getInt(1));
+				if (userRoleId == 0) userRoleId = rs.getInt(3);
+				
+				if (! StringUtil.isEmpty(rs.getString(2)))
+					data.get(rs.getString(2)).add(rs.getInt(1));
 			}
 		} catch(Exception e) {
 			log.info("Unable to retrieve user attributes", e);
