@@ -25,7 +25,6 @@ import com.biomed.smarttrak.vo.SectionVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -37,7 +36,6 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
-import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -67,22 +65,25 @@ public class CompanyAction extends SimpleActionAdapter {
 		super(init);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-			if (role == null) {
-				// Null role means this is a public user.
-				StringBuilder url = new StringBuilder(150);
-				url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-				new SiteBuilderUtil().manualRedirect(req, url.toString());
-				throw new ActionNotAuthorizedException("not authorized");
-			}
+			if (role == null)
+				SecurityController.throwAndRedirect(req);
 
 			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role, false);
 			if (StringUtil.isEmpty(vo.getCompanyId())){

@@ -78,15 +78,14 @@ public class SecurityController {
 	public boolean isGaAuthorized() {
 		return role.isGaAuthorized();
 	}
-
+	
+	
 	/**
-	 * is the user authorized to see the Market Reports (period)
+	 * is the user authorized to browser companies/markets/products.  True if any sections are toggled for their account.
 	 * @return
-	 * @deprecated no longer used -JM- 08.23.2017
 	 */
-	@Deprecated
-	public boolean isMktAuthorized() {
-		return role.isMktAuthorized();
+	public boolean isBrowseAuthorized() {
+		return role.isBrowseAuthorized();
 	}
 
 
@@ -104,13 +103,8 @@ public class SecurityController {
 		String[] roleAcl = role.getAuthorizedSections();
 		log.debug("user ACL=" + StringUtil.getToString(roleAcl));
 
-		if (roleAcl == null || roleAcl.length == 0 || !AccessControlQuery.isAllowed(assetAcl, null, roleAcl)) {
-			log.debug("user is not authorized.  Setting up redirect, then throwing exception");
-			StringBuilder url = new StringBuilder(150);
-			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-			new SiteBuilderUtil().manualRedirect(req, url.toString());
-			throw new ActionNotAuthorizedException("not authorized");
-		}
+		if (roleAcl == null || roleAcl.length == 0 || !AccessControlQuery.isAllowed(assetAcl, null, roleAcl))
+			throwAndRedirect(req);
 
 		log.debug("user is authorized");
 	}
@@ -147,22 +141,6 @@ public class SecurityController {
 	/**
 	 * tests the user's role object to see if they should have access to this tool.
 	 * if they do not redirect them to the insufficient permissions page.
-	 * called from MarketAction
-	 * @param req
-	 * @throws ActionNotAuthorizedException
-	 * @deprecated permissions are no longer set at this level. -JM- 08.23.2017
-	 */
-	@Deprecated
-	public static void isMktAuth(ActionRequest req) throws ActionNotAuthorizedException {
-		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if (!role.isMktAuthorized())
-			throwAndRedirect(req);
-	}
-
-
-	/**
-	 * tests the user's role object to see if they should have access to this tool.
-	 * if they do not redirect them to the insufficient permissions page.
 	 * called from ProductExplorerAction
 	 * @param req
 	 * @throws ActionNotAuthorizedException 
@@ -180,6 +158,7 @@ public class SecurityController {
 	 * @throws ActionNotAuthorizedException 
 	 */
 	public static void throwAndRedirect(ActionRequest req) throws ActionNotAuthorizedException {
+		log.debug("user is not authorized.  Setting up redirect, then throwing exception");
 		StringBuilder url = new StringBuilder(150);
 		url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
 		new SiteBuilderUtil().manualRedirect(req, url.toString());

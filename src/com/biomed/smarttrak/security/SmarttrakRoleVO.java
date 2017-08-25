@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
 //WC Custom
 import com.biomed.smarttrak.vo.PermissionVO;
 import com.siliconmtn.data.Node;
@@ -33,7 +32,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 
 	private boolean isFdAuth;
 	private boolean isGaAuth;
-	private boolean isMktAuth;
+	private boolean isBrowseAuth;
 	private boolean isPeAuth;
 	private boolean isAnAuth;
 	private boolean acctOwnerFlg;
@@ -164,26 +163,23 @@ public class SmarttrakRoleVO extends SBUserRole {
 	void setAnAuthorized(int userAuth, int acctAuth) {
 		this.isAnAuth = userAuth == 1 || acctAuth == 1;
 	}
+	
 
 	/**
-	 * @deprecated no longer used for managing permissions -JM- 08.23.2017
 	 * @return
 	 */
-	@Deprecated
-	public boolean isMktAuthorized() {
-		return isMktAuth;
+	public boolean isBrowseAuthorized() {
+		return isBrowseAuth;
 	}
 
 	/**
-	 * the user is authorized for Markets if either their personal record or the account's record is authorized
+	 * the user is authorized for any section in the 'Prof' heading, which is browseability of markets/companies/products
 	 * package access modifier - only SmarttrakRoleModule should be setting this value
 	 * @param userAuth
 	 * @param acctAuth
-	 * @deprecated no longer used for managing permissions -JM- 08.23.2017
 	 */
-	@Deprecated
-	void setMktAuthorized(int userAuth, int acctAuth) {
-		this.isMktAuth = userAuth == 1 || acctAuth == 1;
+	void setBrowseAuthorized(int userAuth, int acctAuth) {
+		this.isBrowseAuth = userAuth == 1 || acctAuth == 1;
 	}
 	
 	
@@ -192,7 +188,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 	 * @return
 	 */
 	public boolean isToolsAuthorized() {
-		return getRoleLevel() > AdminControllerAction.EUREPORT_ROLE_LEVEL || isFdAuth || isGaAuth;
+		return isFdAuth || isGaAuth || isPeAuth;
 	}
 
 
