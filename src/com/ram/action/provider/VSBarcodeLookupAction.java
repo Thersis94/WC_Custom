@@ -41,7 +41,7 @@ import com.smt.sitebuilder.security.SBUserRole;
  * <b>Copyright:</b> Copyright (c) 2015
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 1.0
  * @since Jun 25, 2015
  *        <b>Changes: </b>
@@ -95,6 +95,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 			if (barcode == null) throw new Exception("Invalid Barcode Recieved");
 
 			product = this.retrieveProduct(barcode);
+
 			log.debug("Product: " + product);
 		} catch(Exception e) {
 			errorMsg = e.getLocalizedMessage();
@@ -111,7 +112,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	private List<BarcodeOEM> getOems(SBUserRole r) throws ActionException {
-		List<BarcodeOEM> results = new ArrayList<BarcodeOEM>();
+		List<BarcodeOEM> results = new ArrayList<>();
 
 		//Retrieve entire map of scannable customers.
 		Map<String, BarcodeOEM> barcodes = loadOems();
@@ -163,7 +164,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	private ModuleVO buildCustomerMap() throws ActionException {
 
 		//Create Map for Barcodes.
-		Map<String, BarcodeOEM> barcodes = new HashMap<String, BarcodeOEM>();
+		Map<String, BarcodeOEM> barcodes = new HashMap<>();
 
 		//Create ModuleVO for caching.
 		ModuleVO mod = new ModuleVO();
@@ -236,11 +237,11 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected RAMProductVO retrieveProduct(BarcodeItemVO barcode) throws ActionException {
+	protected RAMProductVO retrieveProduct(BarcodeItemVO barcode) {
 		RAMProductVO p = null;
 		log.debug("Performing lookup on productId: " + barcode.getProductId());
 		try(PreparedStatement ps = dbConn.prepareStatement(getProductSql(barcode))) {
-			ps.setString(1,barcode.getVendorCode());
+			ps.setString(1,barcode.getVendorCode().toUpperCase());
 			ps.setString(2, barcode.getProductId());
 
 			ResultSet rs = ps.executeQuery();
@@ -254,6 +255,8 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 				// If the product is a kit and the serial number is present, get the item master id
 				if (p.getKitFlag() == 1 && ! StringUtil.isEmpty(barcode.getSerialNumber())) {
 					getKitItemMasterId(p);
+				} else {
+					p.setExpiree(barcode.getExpirationDate());
 				}
 			}
 		} catch (SQLException e) {
