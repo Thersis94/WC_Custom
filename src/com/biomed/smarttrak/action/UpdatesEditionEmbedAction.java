@@ -43,14 +43,25 @@ public class UpdatesEditionEmbedAction extends UpdatesEditionAction {
 	@Override
 	protected void packageDataForDisplay(Tree t, List<UpdateVO> updates) {
 		Map<String, Map<String, List<UpdateVO>>> dataMap = new LinkedHashMap<>();
+
 		for (Node n : t.getRootNode().getChildren()) {
+			boolean hasChildren = false;
 			Map<String, List<UpdateVO>> children = new LinkedHashMap<>();
-			for(Node c : n.getChildren()) {
-				children.put(c.getNodeName(), (List<UpdateVO>)c.getUserObject());
+			if(n.getTotalChildren() > 0) {
+				for(Node c : n.getChildren()) {
+					if(c.getTotalChildren() > 0) {
+						children.put(c.getNodeName(), (List<UpdateVO>)c.getUserObject());
+						hasChildren = true;
+					}
+				}
 			}
 
-			dataMap.put(n.getNodeName(), children);
+			//Only add Node if we actually have children.
+			if(hasChildren) {
+				dataMap.put(n.getNodeName(), children);
+			}
 		}
+
 		putModuleData(dataMap, dataMap.size(), false);
 	}
 
