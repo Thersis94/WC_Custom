@@ -108,6 +108,7 @@ public class AccountUserAction extends SBActionAdapter {
 		} else {
 			GenericVO vo = sortRecords(users);
 			summateLoginActivity(vo, req);
+			summateStatus(vo, req);
 			putModuleData(vo);
 		}
 	}
@@ -217,6 +218,35 @@ public class AccountUserAction extends SBActionAdapter {
 				log.debug(entry.getValue() + " users in " + entry.getKey());
 		}
 		req.setAttribute("activtyMap", counts);
+	}
+
+
+	/**
+	 * Take the active user accounts (from sortRecords) and bucketize the users by login activity, according to time-table (legend)
+	 * @param req
+	 */
+	@SuppressWarnings("unchecked")
+	private void summateStatus(GenericVO data, ActionRequest req) {
+		Map<Integer, Integer> counts = new HashMap<>();
+		for (Status s : UserVO.Status.values())
+			counts.put(s.getCode(), Integer.valueOf(0));
+
+		Map<String, List<UserVO>> users = (Map<String, List<UserVO>>) data.getKey();
+		for (Map.Entry<String, List<UserVO>> entry : users.entrySet()) {
+			for (UserVO user : entry.getValue()) {
+				Integer sts = user.getStatusFlg();
+				counts.put(sts, 1+counts.get(sts));
+			}
+		}
+		//combine inactive users
+		users = (Map<String, List<UserVO>>) data.getValue();
+		for (Map.Entry<String, List<UserVO>> entry : users.entrySet()) {
+			for (UserVO user : entry.getValue()) {
+				Integer sts = user.getStatusFlg();
+				counts.put(sts, 1+counts.get(sts));
+			}
+		}
+		req.setAttribute("statusMap", counts);
 	}
 
 
@@ -431,13 +461,13 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	protected void callProfileManager(UserVO user, ActionRequest req, boolean isSave) {
-		//load the users profile data
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		try {
 			if (isSave) {
 				pm.updateProfile(user, dbConn);
+				pm.assignCommunicationFlg(site.getOrganizationId(), user.getProfileId(), user.getAllowCommunication(), dbConn);
 			} else {
-				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 				UserDataVO vo = pm.getProfile(user.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId());
 				user.setData(vo.getDataMap());
 			}
