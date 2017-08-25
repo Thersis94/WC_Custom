@@ -304,7 +304,7 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	public static void loadAccount(ActionRequest req, SMTDBConnection dbConn, Map<String, Object> attributes) {
 		String accountId = req.getParameter(ACCOUNT_ID);
-		AccountVO acct = (AccountVO) req.getSession().getAttribute(SESS_ACCOUNT);
+		AccountVO acct = (AccountVO) req.getSession(true).getAttribute(SESS_ACCOUNT); //'true' for session create apeases Solr Indexer for Insights
 		//make sure work needs to be done first - most runtime iterations will end here.
 		if (acct != null && acct.getAccountId().equals(accountId)) {
 			return;
