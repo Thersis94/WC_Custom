@@ -74,9 +74,9 @@ public class ProductAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-			if (role == null) {
+			if (role == null)
 				SecurityController.throwAndRedirect(req);
-			}
+
 			ProductVO vo = retrieveProduct(req.getParameter("reqParam_1"), role.getRoleLevel());
 
 			if (StringUtil.isEmpty(vo.getProductId())) {
@@ -99,7 +99,7 @@ public class ProductAction extends SimpleActionAdapter {
 	public ProductVO retrieveProduct(String productId, int roleLevel) throws ActionException {
 		ProductVO product;
 		StringBuilder sql = new StringBuilder(100);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
@@ -130,7 +130,7 @@ public class ProductAction extends SimpleActionAdapter {
 	 */
 	protected void addRelatedProducts(ProductVO product) throws ActionException {
 		StringBuilder sql = new StringBuilder(375);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT p.PRODUCT_ID, p.PRODUCT_NM, s.SECTION_ID FROM ");
 		sql.append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION xr ");
@@ -199,7 +199,7 @@ public class ProductAction extends SimpleActionAdapter {
 	 */
 	protected void addRegulatory(ProductVO product) {
 		StringBuilder sql = new StringBuilder(475);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_REGULATORY r ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_STATUS s ");
@@ -227,7 +227,7 @@ public class ProductAction extends SimpleActionAdapter {
 	 */
 	protected void addAttributes(ProductVO product, int userLevel) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
@@ -269,7 +269,7 @@ public class ProductAction extends SimpleActionAdapter {
 	protected Tree buildAttributeTree() throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT ATTRIBUTE_ID, PARENT_ID, ATTRIBUTE_NM, ORDER_NO ");
-		sql.append("FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_PRODUCT_ATTRIBUTE ");
 		log.debug(sql);
 		List<Node> attributes = new ArrayList<>();
@@ -346,7 +346,7 @@ public class ProductAction extends SimpleActionAdapter {
 	 */
 	protected List<Object> getProductAttributes(String productId) {
 		StringBuilder sql = new StringBuilder(150);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR ");
 		sql.append("WHERE PRODUCT_ID = ? AND ATTRIBUTE_ID not in ( ");
 		sql.append("SELECT child.ATTRIBUTE_ID from ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE child ");
@@ -371,7 +371,7 @@ public class ProductAction extends SimpleActionAdapter {
 	 */
 	protected void addSections(ProductVO product) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT SECTION_NM, xr.PRODUCT_SECTION_XR_ID, s.SECTION_ID FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
 		sql.append("ON s.SECTION_ID = xr.SECTION_ID ");
@@ -409,7 +409,7 @@ public class ProductAction extends SimpleActionAdapter {
 	 */
 	protected void addAlliances(ProductVO product) {
 		StringBuilder sql = new StringBuilder(525);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR pax ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_ALLIANCE_TYPE at ");
 		sql.append("ON pax.ALLIANCE_TYPE_ID = at.ALLIANCE_TYPE_ID ");
@@ -438,7 +438,7 @@ public class ProductAction extends SimpleActionAdapter {
 	 */
 	protected void retrieveProducts(ActionRequest req) throws ActionException {
 		// Pass along the proper information for a search to be done.
-		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		req.setParameter("pmid", mod.getPageModuleId());
 		String search = StringUtil.checkVal(req.getParameter("searchData"));
@@ -465,7 +465,7 @@ public class ProductAction extends SimpleActionAdapter {
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
-		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		return sa.retrieveActionData(req);
 	}

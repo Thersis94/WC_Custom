@@ -82,9 +82,8 @@ public class MarketAction extends SimpleActionAdapter {
 		if (req.hasParameter("reqParam_1")) {
 			//if the user is not logged in then cannot see market detail pages.
 			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-			if (role == null) {
+			if (role == null)
 				SecurityController.throwAndRedirect(req);
-			}
 
 			MarketVO vo = retrieveFromDB(req.getParameter("reqParam_1"), req, true);
 
