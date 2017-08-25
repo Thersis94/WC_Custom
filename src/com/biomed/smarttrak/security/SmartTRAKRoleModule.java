@@ -45,13 +45,13 @@ import com.biomed.smarttrak.vo.UserVO;
 public class SmartTRAKRoleModule extends DBRoleModule {
 
 	/**
-	 * Smarttrak status levels not permitted to login.
+	 * Smarttrak licenseTypes levels not permitted to login.
 	 */
-	protected static final List<String> blockedStatuses = new ArrayList<>(Arrays.asList("I"));
+	protected static final List<String> blockedLicenses = new ArrayList<>(Arrays.asList("I"));
 	/**
-	 * Smarttrak status levels only permitted login to view updates
+	 * Smarttrak licenseTypes only permitted login to view updates
 	 */
-	protected static final List<String> updatesOnlyStatuses = new ArrayList<>(Arrays.asList("U", "T", "4")); //4 comes from account->TypeID
+	protected static final List<String> updatesOnlyLicenses = new ArrayList<>(Arrays.asList("U", "T", "4")); //4 comes from account->TypeID
 	
 	public SmartTRAKRoleModule() {
 		super();
@@ -103,14 +103,14 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 		//if status is EU Reports, redirect them to the markets page
 		if ("M".equals(user.getLicenseType())) {
 			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.MARKET.getPageURL());
-		} else if (updatesOnlyStatuses.contains(user.getLicenseType())) {
+		} else if (updatesOnlyLicenses.contains(user.getLicenseType())) {
 			//limit the user to updates if their account is limited to updates
 			if ("4".equals(user.getLicenseType())) {
 				role.setRoleId(AdminControllerAction.UPDATES_ROLE_ID);
 				role.setRoleLevel(AdminControllerAction.UPDATES_ROLE_LVL);
 			}
 			req.getSession().setAttribute(LoginAction.DESTN_URL, Section.UPDATES_EDITION.getPageURL());
-		}else if (blockedStatuses.contains(user.getLicenseType())) {
+		}else if (blockedLicenses.contains(user.getLicenseType())) {
 			throw new AuthorizationException("user not authorized to login according to status");
 		}
 

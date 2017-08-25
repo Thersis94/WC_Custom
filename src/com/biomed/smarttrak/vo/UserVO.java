@@ -79,7 +79,9 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 
 	public enum Status {
 		ACTIVE(1,"Active"),
-		INACTIVE(0,"Inactive");
+		INACTIVE(0,"Inactive"),
+		OPEN(-1,"Open Seat"),
+		DEMO(5,"Demo");
 		private int cd;
 		private String label;
 		private Status(int cd, String lbl) {
