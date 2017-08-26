@@ -10,7 +10,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-// RAM Libs
+//RAM Libs
+import com.ram.action.report.vo.ProductOrderReport;
 import com.ram.action.user.RAMRoleModule;
 import com.ram.action.util.SecurityUtil;
 import com.ram.datafeed.data.CustomerLocationVO;
@@ -28,9 +29,10 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-
+import com.smt.sitebuilder.action.AbstractSBReportVO;
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -90,8 +92,17 @@ public class OrderWidget extends SimpleActionAdapter {
 		} else if(req.hasParameter("pmid") && req.hasParameter("buildOrder")) {
 			OrderVO order = getOrder(req.getParameter("orderId"));
 			
+			
+			
+			AbstractSBReportVO report = new ProductOrderReport();
+			report.setAttributes(attributes);
+			report.setFileName("Order-" + order.getOrderId() + ".pdf");
+			report.setData(order);
+			req.setAttribute(Constants.BINARY_DOCUMENT, report);
+			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+			
 			// Add PDF Gen Data Here
-			putModuleData(order);
+			/*putModuleData(order);*/
 		}
 	}
 	
@@ -103,11 +114,12 @@ public class OrderWidget extends SimpleActionAdapter {
 	public OrderVO getOrder(String orderId) throws ActionException {
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(512);
-		sql.append("select * ");
+		sql.append("select rc.gtin_number_txt || cast(rp.gtin_product_id as varchar(64)) as gtin_number_txt, * ");
 		buildFullSQLBody(sql, orderId, params);
 
 		// Get most of the order data
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		log.debug("sql "+sql.toString());
 		List<Object> data = db.executeSelect(sql.toString(), params, new OrderVO());
 		if (data.isEmpty()) return null;
 		
@@ -157,10 +169,14 @@ public class OrderWidget extends SimpleActionAdapter {
 		sql.append("on a.customer_location_id = cl.customer_location_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_order_status s ");
 		sql.append("on a.order_status_cd = s.order_status_cd ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_user_role u ");
+		sql.append("on a.user_role_id = u.user_role_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ram_order_line_item li ");
 		sql.append("on a.order_id = li.order_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ram_product rp ");
 		sql.append("on li.product_id = rp.product_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ram_customer rc ");
+		sql.append("on rp.customer_id = rc.customer_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ram_order_line_item_receipt lir ");
 		sql.append("on li.order_line_item_id = lir.order_line_item_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ram_order_shipment os ");
@@ -291,7 +307,9 @@ public class OrderWidget extends SimpleActionAdapter {
 		if ("createOrder".equalsIgnoreCase(type)) {
 			SBUserRole role = (SBUserRole)ses.getAttribute(Constants.ROLE_DATA);
 			order = new OrderVO(req);
-			order.setOrderId(new UUIDGenerator().getUUID());
+			
+			order.setOrderId(RandomAlphaNumeric.generateRandom(6));
+			
 			order.setFulfillmentStrategyId(req.getParameter("fulfillmentStrategyId"));
 			order.setUserRoleId(Convert.formatInteger(role.getAttribute(RAMRoleModule.USER_ROLE_ID) + ""));
 			ses.setAttribute(RAM_ORDER_KEY, order);

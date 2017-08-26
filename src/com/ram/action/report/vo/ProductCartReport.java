@@ -178,19 +178,19 @@ public class ProductCartReport  extends AbstractPDFReport {
 	 */
 	private void generateSectionHeader(PdfPTable table) {
 		//the product section has the most columns so it controls the number of cols in the table
-		table.addCell(getTableCell("Product Name", true));
-		table.addCell(getTableCell("Manufacturer", true));
-		table.addCell(getTableCell("SKU", true));
+		table.addCell(getTableCell("Product Name", true, false));
+		table.addCell(getTableCell("Manufacturer", true, false));
+		table.addCell(getTableCell("SKU", true, false));
 
-		table.addCell(getTableCell("LOT No.", true));
-		table.addCell(getTableCell("Qty", true));
+		table.addCell(getTableCell("LOT No.", true, false));
+		table.addCell(getTableCell("Qty", true, false));
 
-		table.addCell(getTableCell("Product From", true));
-		table.addCell(getTableCell("Expiry", true));
-		table.addCell(getTableCell("Billable", true));
+		table.addCell(getTableCell("Product From", true, false));
+		table.addCell(getTableCell("Expiry", true, false));
+		table.addCell(getTableCell("Billable", true, false));
 
-		table.addCell(getTableCell("Wasted", true));
-		table.addCell(getTableCell("Barcode", true));
+		table.addCell(getTableCell("Wasted", true, false));
+		table.addCell(getTableCell("Barcode", true, false));
 
 	}
 
@@ -271,29 +271,6 @@ public class ProductCartReport  extends AbstractPDFReport {
 		table.addCell(getLabelCell(cellLabel, 2));
 
 		table.addCell(getDataStyleCell(cellData, 4));
-	}
-
-	/**
-	 * generates one cell of table data 
-	 * @param string
-	 * @return
-	 */
-	private PdfPCell getTableCell(String cellContent) {
-		return getTableCell(cellContent, false);
-	}
-
-	/**
-	 * generates one cell of table data 
-	 * @param string
-	 * @return
-	 */
-	private PdfPCell getTableCell(String cellContent, boolean isHeader) {
-
-		if (isHeader) {
-			return getHeadingStyleCell(cellContent, 1, 9);
-		} else {
-			return getDataStyleCell(cellContent, 1, 9);
-		}
 	}
 
 	@SuppressWarnings("unchecked")

@@ -8,7 +8,6 @@ import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
 import com.lowagie.text.Rectangle;
-import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import com.ram.action.report.vo.AbstractPDFReport;
@@ -117,35 +116,12 @@ public class KitBOMPdfReport extends AbstractPDFReport {
 	 */
 	private void generateSectionHeader(PdfPTable table) {
 		//the product section has the most columns so it controls the number of cols in the table
-		table.addCell(getTableCell("Manufacturer", true));
-		table.addCell(getTableCell("Product Name", true));
-		table.addCell(getTableCell("SKU", true));
-		table.addCell(getTableCell("GTIN", true));
-		table.addCell(getTableCell("Qty.", true));
-		table.addCell(getTableCell("Barcode", true));
-	}
-
-	/**
-	 * generates one cell of table data 
-	 * @param string
-	 * @return
-	 */
-	private PdfPCell getTableCell(String cellContent, boolean isHeader) {
-		if (isHeader) {
-			return getHeadingStyleCell(cellContent, 1, 9);
-		} else {
-			return getDataStyleCell(cellContent, 1, 9);
-		}
-	}
-
-
-	/**
-	 * generates one cell of table data 
-	 * @param string
-	 * @return
-	 */
-	private PdfPCell getTableCell(String cellContent) {
-		return getTableCell(cellContent, false);
+		table.addCell(getTableCell("Manufacturer", true, false));
+		table.addCell(getTableCell("Product Name", true, false));
+		table.addCell(getTableCell("SKU", true, false));
+		table.addCell(getTableCell("GTIN", true, false));
+		table.addCell(getTableCell("Qty.", true, false));
+		table.addCell(getTableCell("Barcode", true, false));
 	}
 
 	/**

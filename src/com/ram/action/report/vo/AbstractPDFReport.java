@@ -5,6 +5,7 @@ import java.net.MalformedURLException;
 import java.util.Date;
 
 import com.lowagie.text.BadElementException;
+import com.lowagie.text.Element;
 import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
 import com.lowagie.text.Image;
@@ -338,6 +339,7 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 */
 	public PdfPCell getDataStyleCell(String cellContent, int colSpan){
 		return dataCellFormater(new PdfPCell(new Paragraph(cellContent , getDataFont())), colSpan);
+		
 	}
 
 	/**
@@ -346,8 +348,20 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 	 * @param colSpan
 	 * @return
 	 */
-	public PdfPCell getDataStyleCell(String cellContent, int colSpan, int fontSize){
-		return dataCellFormater(new PdfPCell(new Paragraph(cellContent , getDataFont(fontSize))), colSpan);
+	public PdfPCell getDataStyleCell(String cellContent, int colSpan, int fontSize, boolean isCentered){
+		Paragraph ph = new Paragraph(cellContent , getDataFont(fontSize));
+		PdfPCell cell = new PdfPCell();
+		
+		
+		if (isCentered){
+			ph.setAlignment(Element.ALIGN_CENTER);
+			ph.setLeading(0f,1.5f);
+			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+			cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+		}
+		
+		cell.addElement(ph);
+		return dataCellFormater(cell, colSpan);
 	}
 	/**
 	 * returns a styled label cell
@@ -614,5 +628,28 @@ public abstract class AbstractPDFReport  extends AbstractSBReportVO {
 		cell.setPaddingBottom(10);
 		cell.setPaddingLeft(10);
 		return cell;
+	}
+	
+	/**
+	 * generates one cell of table data 
+	 * @param string
+	 * @return
+	 */
+	public PdfPCell getTableCell(String cellContent) {
+		return getTableCell(cellContent, false, false);
+	}
+
+	/**
+	 * generates one cell of table data 
+	 * @param string
+	 * @return
+	 */
+	public PdfPCell getTableCell(String cellContent, boolean isHeader, boolean isCentered) {
+
+		if (isHeader) {
+			return getHeadingStyleCell(cellContent, 1, 9);
+		} else {
+			return getDataStyleCell(cellContent, 1, 9, isCentered);
+		}
 	}
 }
