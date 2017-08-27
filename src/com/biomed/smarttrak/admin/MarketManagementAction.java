@@ -10,8 +10,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.SolrClient;
-
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.MarketAction;
 import com.biomed.smarttrak.util.MarketIndexer;
@@ -329,7 +327,7 @@ public class MarketManagementAction extends ManagementAction {
 	protected void retrieveMarkets(ActionRequest req) {
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select m.market_nm, m.market_id, m.order_no, m.status_no, s.section_nm, s.section_id ");
+		sql.append("select m.market_nm, m.market_id, m.order_no, m.status_no, m.update_dt, s.section_nm, s.section_id ");
 		sql.append("FROM ").append(customDbSchema).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = m.REGION_CD ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_MARKET_SECTION ms ");
@@ -354,7 +352,7 @@ public class MarketManagementAction extends ManagementAction {
 			params.add(req.getParameter("authorId"));
 		}
 
-		sql.append("ORDER BY MARKET_NM ");
+		sql.append("ORDER BY order_no, market_nm ");
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
@@ -879,7 +877,7 @@ public class MarketManagementAction extends ManagementAction {
 		
 		if(target == ActionTarget.MARKET){
 			updateMarketOrder(req);
-			writeToSolr(); //update records in Solr for public site
+			writeToSolr(req); //update records in Solr for public site
 		}else{
 			updateAttributeOrder(req);
 		}
@@ -984,24 +982,24 @@ public class MarketManagementAction extends ManagementAction {
 		}
 	}
 	
+	
 	/**
-	 * Re-indexes all market items back into Solr via MarketIndexer 
+	 * Saves multiple UpdateVO's to Solr
+	 * @param req
 	 */
-	protected void writeToSolr(){
+	protected void writeToSolr(ActionRequest req){
 		MarketIndexer idx = MarketIndexer.makeInstance(getAttributes());
 		idx.setDBConnection(dbConn);
 		
-		SolrClient server = idx.getSolrServer();
-		try {
-			//remove all current items
-			idx.purgeIndexItems(server);
-			
-			//re-index markets
-			idx.addIndexItems(server);
-			
-		} catch (Exception e) {
-			log.error("Error attempting to re-index markets: " + e);
-		}
+		//grab values from request
+		String[] ids = req.getParameterValues("marketId");
+		String[] statuses = req.getParameterValues("statusNo");
+		
+		//remove any markets from Solr if applicable
+		idx.purgeIndexItems(ids, statuses);
+		
+		//index the items to Solr
+		idx.addIndexItems(ids);
 	}
 
 
