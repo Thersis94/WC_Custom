@@ -1,6 +1,6 @@
 package com.biomed.smarttrak.action;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +15,8 @@ import com.siliconmtn.util.Convert;
  * <b>Title:</b> UpdatesEditionEmbedAction.java<br/>
  * <b>Description:</b> Referenced as the 'embed' action for Email Campaigns - Daily & Weekly.
  * Contains code customizations that apply to the EMAIL specifically, rather than the WEBPAGE.
+ * This Version packages the data in a format where all updates are included so
+ * the can be written out individually.
  * <br/>
  * <b>Copyright:</b> Copyright (c) 2017<br/>
  * <b>Company:</b> Silicon Mountain Technologies<br/>
@@ -22,16 +24,16 @@ import com.siliconmtn.util.Convert;
  * @version 1.0
  * @since Aug 7, 2017
  ****************************************************************************/
-public class UpdatesEditionEmbedAction extends UpdatesEditionAction {
+public class UpdatesEditionIndividualEmbedAction extends UpdatesEditionAction {
 
-	public UpdatesEditionEmbedAction() {
+	public UpdatesEditionIndividualEmbedAction() {
 		super();
 	}
 
 	/**
 	 * @param arg0
 	 */
-	public UpdatesEditionEmbedAction(ActionInitVO arg0) {
+	public UpdatesEditionIndividualEmbedAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 	
@@ -42,13 +44,27 @@ public class UpdatesEditionEmbedAction extends UpdatesEditionAction {
 	 */
 	@Override
 	protected void packageDataForDisplay(Tree t, List<UpdateVO> updates) {
-		Map<String, Integer> counts = new HashMap<>();
+		Map<String, Map<String, List<UpdateVO>>> dataMap = new LinkedHashMap<>();
+
 		for (Node n : t.getRootNode().getChildren()) {
-			if (n.getTotalChildren() > 0)
-				counts.put(n.getNodeName(), n.getTotalChildren());
-			log.debug(n.getNodeName() + " =" +  n.getTotalChildren());
+			boolean hasChildren = false;
+			Map<String, List<UpdateVO>> children = new LinkedHashMap<>();
+			if(n.getTotalChildren() > 0) {
+				for(Node c : n.getChildren()) {
+					if(c.getTotalChildren() > 0) {
+						children.put(c.getNodeName(), (List<UpdateVO>)c.getUserObject());
+						hasChildren = true;
+					}
+				}
+			}
+
+			//Only add Node if we actually have children.
+			if(hasChildren) {
+				dataMap.put(n.getNodeName(), children);
+			}
 		}
-		putModuleData(counts, counts.size(), false);
+
+		putModuleData(dataMap, dataMap.size(), false);
 	}
 
 	
