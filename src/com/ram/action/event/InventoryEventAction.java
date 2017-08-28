@@ -6,25 +6,23 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 // RAM Data Feed Libs
 import com.ram.datafeed.data.InventoryEventVO;
-import com.ram.datafeed.data.InventoryEventAuditorVO;
-import com.ram.datafeed.data.InventoryEventReturnVO;
+import com.ram.datafeed.data.InventoryItemVO;
 import com.ram.action.util.SecurityUtil;
 
 //SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.security.AbstractRoleModule;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.orm.SQLTotalVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -77,9 +75,9 @@ public class InventoryEventAction extends SBActionAdapter {
 		fieldMap.put("locationName", "location_nm");
 		fieldMap.put("scheduleDate", "schedule_dt");
 		fieldMap.put("activeFlag", "active_Flg");
-		fieldMap.put("inventoryCompleteDate", "location_nm");
-		fieldMap.put("dataLoadCompleteDate", "location_nm");
-		fieldMap.put("returnProducts", "location_nm");
+		fieldMap.put("inventoryCompleteDate", "inventory_complete_dt");
+		fieldMap.put("dataLoadCompleteDate", "data_load_complete_dt");
+		fieldMap.put("numberReturnedProducts", "returned_products_no");
 	}
 	
 	/*
@@ -206,17 +204,119 @@ public class InventoryEventAction extends SBActionAdapter {
 		}
 	}
 	
-	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+
 		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
-		if (req.hasParameter("amid")) this.retrieveAll(req);
-		else if(inventoryEventId > 0) 
-			this.retrieveEvent(req, inventoryEventId);
+		if ("event_list".equalsIgnoreCase(req.getParameter("actionType"))) {
+			GridDataVO data = retrieveAll(req);
+			this.putModuleData(data.getRowData(), data.getTotal(), false);
+		} else if ("item_list".equalsIgnoreCase(req.getParameter("actionType"))) {
+			
+			GridDataVO data = getInventoryItemsSummary(req);
+			putModuleData(data.getRowData(), data.getTotal(), false);
+		} else if ("item_info".equalsIgnoreCase(req.getParameter("actionType"))) {
+
+			putModuleData(getProductInfo(req.getParameter("customerProductId"), inventoryEventId));
+			
+		} else if(inventoryEventId > 0) { 
+			InventoryEventVO event = retrieveEvent(req, inventoryEventId);
+			event.setNumberReturnedProducts(getNumberItems(inventoryEventId, "DAMAGE_RETURN","EXPIREE_RETURN","RECALL","TRANSFER"));
+			event.setNumberReceivedProducts(getNumberItems(inventoryEventId, "REPLENISHMENT"));
+			event.setNumberTotalProducts(getNumberItems(inventoryEventId, "SHELF"));
+			
+			putModuleData(event);
+		}
+	}
+	
+	/**
+	 * Gets the list of products and their lot number/expiry for a given inventory event
+	 * @param customerProductId
+	 * @param inventoryEventId
+	 * @return
+	 */
+	public List<Object> getProductInfo(String customerProductId, int inventoryEventId) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select inventory_item_id, cust_product_id, lot_number_txt, expiration_dt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("ram_inventory_item a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_inventory_event_auditor_xr b ");
+		sql.append("on a.inventory_event_auditor_xr_id = b.inventory_event_auditor_xr_id " );
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_product c on a.product_id = c.product_id ");
+		sql.append("where cust_product_id = ? and inventory_event_id = ? order by expiration_dt asc ");
+		
+		List<Object> params = new ArrayList<>();
+		params.add(customerProductId);
+		params.add(inventoryEventId);
+		log.info(sql + "|" + params);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), params, new InventoryItemVO(), "inventory_item_id");
+	}
+	
+	/**
+	 * Gets the count of items received for an inventory
+	 * @param inventoryEventId
+	 * @return
+	 */
+	public int getNumberItems(int inventoryEventId, String... types) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append(DBUtil.SELECT_WITH_COUNT).append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("ram_inventory_item a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_inventory_event_auditor_xr b ");
+		sql.append("on a.inventory_event_auditor_xr_id = b.inventory_event_auditor_xr_id " );
+		sql.append("where inventory_event_id = ? and inventory_item_type_cd in (");
+		sql.append(DBUtil.preparedStatmentQuestion(types.length)).append(") ");
+		
+		List<Object> params = new ArrayList<>();
+		params.add(inventoryEventId);
+		for (String type : types) {
+			params.add(type);
+		}
+		
+		// Get the data
+		DBProcessor db = new DBProcessor(getDBConnection());
+		List<Object> data = db.executeSelect(sql.toString(), params, new SQLTotalVO());
+		
+		return ((SQLTotalVO) data.get(0)).getTotal();
+	}
+	
+	/**
+	 * Retrieves the list of inventory items
+	 * @param req
+	 * @return
+	 */
+	public GridDataVO getInventoryItemsSummary(ActionRequest req) {
+		// Add the sql params
+		List<Object> params = new ArrayList<>();
+		params.add(req.getIntegerParameter("inventoryEventId"));
+
+		// return the data
+		int limit = req.getIntegerParameter("limit", 10);
+		int offset = req.getIntegerParameter("offset", 0);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSQLWithCount(getItemSQL(), params, new InventoryItemVO(), "cust_product_id", limit, offset);
+	}
+
+	/**
+	 * SQL Body for the items query
+	 * @param sql
+	 */
+	public String getItemSQL() {
+		StringBuilder sql = new StringBuilder();
+		sql.append("select customer_nm, product_nm, cust_product_id, kit_flg, cast(sum(c.quantity_no) as int) as quantity_no ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("ram_inventory_event_auditor_xr b ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_inventory_item c on b.inventory_event_auditor_xr_id = c.inventory_event_auditor_xr_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_product d on c.product_id = d.product_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_customer e on d.customer_id = e.customer_id ");
+		sql.append("where b.inventory_event_id = ? and inventory_item_type_cd = 'SHELF' ");
+		sql.append("group by customer_nm, product_nm, cust_product_id, kit_flg ");
+		sql.append("order by product_nm ");
+		
+		return sql.toString();
 	}
 	
 	/**
@@ -225,11 +325,11 @@ public class InventoryEventAction extends SBActionAdapter {
 	 * @param id
 	 * @throws ActionException
 	 */
-	public void retrieveEvent(ActionRequest req, int id) throws ActionException {
+	public InventoryEventVO retrieveEvent(ActionRequest req, int id) throws ActionException {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
 		sql.append("select * from ").append(schema).append("ram_inventory_event a ");
-		sql.append("inner join ").append(schema).append("ram_customer_location b ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("ram_customer_location b ");
 		sql.append("on a.customer_location_id = b.customer_location_id ");
 		sql.append("where a.inventory_event_id = ? ");
 		log.debug("Inventory Event Retrieve: " + sql);
@@ -241,83 +341,47 @@ public class InventoryEventAction extends SBActionAdapter {
 			if (rs.next()) {
 				String[] providers = new String[]{rs.getString("customer_id")};
 				if (SecurityUtil.isAuthorized(req, 0, providers))
-					this.putModuleData(new InventoryEventVO(rs, true, null));
+					return new InventoryEventVO(rs, true, null);
 			}
 		} catch(SQLException sqle) {
 			throw new ActionException("Unable to retrieve event", sqle);
 		} 
+		
+		return null;
 	}
 	
 	/**
-	 * Retrieves all for the data for the Events grid 
+	 * 
 	 * @param req
 	 * @throws ActionException
 	 */
-	public void retrieveAll(ActionRequest req) throws ActionException {
-		List<InventoryEventVO> items = new ArrayList<>();
-		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-
-		// set the date start filter
-		Date start = Convert.formatStartDate(Convert.formatDate(new Date(), Calendar.DAY_OF_MONTH, -1));
-		if (StringUtil.checkVal(req.getParameter("from_date")).length() > 0) {
-			start = Convert.formatStartDate(req.getParameter("from_date"));
-		}
-		
-		// set the date end
-		Date end = Convert.formatEndDate(Convert.formatDate(new Date(), Calendar.DAY_OF_MONTH, 7));
-		if (StringUtil.checkVal(req.getParameter("to_date")).length() > 0) 
-			end = Convert.formatEndDate(req.getParameter("to_date"));
+	public GridDataVO retrieveAll(ActionRequest req) {
+		List<Object> params = new ArrayList<>();
 		
 		// Build the sql statement
-		StringBuilder sql = this.getBaseSQL();
-		sql.append(this.getListWhere(req));
-		sql.append(this.getGroupBy());
+		StringBuilder sql = new StringBuilder(512);
+		getSelectSQL(sql);
+		getBaseSQL(sql, req, params);
+		getListWhere(sql, req, params);
+		getSQLOrder(sql, req);
 		
-		String dir = StringUtil.checkVal(req.getParameter("dir"), "desc");
-		String sort = StringUtil.checkVal(req.getParameter("sort"), "scheduleDate");
-		sql.append("order by ").append(fieldMap.get(sort)).append(" " ).append(dir);
-		
-		log.info("SQL: " + sql);
-		int ctr = -1;
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setDate(1, Convert.formatSQLDate(start));
-			ps.setDate(2, Convert.formatSQLDate(end));
-			if(SecurityUtil.isProviderRole(r.getRoleId()) || SecurityUtil.isOEMRole(r.getRoleId()))
-				ps.setInt(3, Convert.formatInteger((String)r.getAttribute(AbstractRoleModule.ATTRIBUTE_KEY_1)));
-			ResultSet rs = ps.executeQuery();
-			int navStart = Convert.formatInteger(req.getParameter("start"), 0);
-			int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
-			int navEnd = navStart + navLimit;
-			
-			while(rs.next()) {
-				ctr ++;
-				if (! (ctr >= navStart && ctr < navEnd)) continue;
-				
-				InventoryEventVO vo = new InventoryEventVO(rs, true, (String)attributes.get(Constants.ENCRYPT_KEY));
-				String[] auditors = StringUtil.checkVal(rs.getString("auditors")).split(",");
-				for (String auditor : auditors) {
-					InventoryEventAuditorVO aud = new InventoryEventAuditorVO();
-					aud.setAuditorName(auditor);
-					vo.addAuditor(aud);
-				}
-				
-				int numTransfers = rs.getInt("returnProducts"); 
-				for (int i = 0; i < numTransfers; i++) {
-					vo.addReturnProduct(new InventoryEventReturnVO());
-				}
-				
-				items.add(vo);
-			}
-		} catch(SQLException sqle) {
-			throw new ActionException("", sqle);
-		} 
-		
-		
-		Map<String, Object> data = new HashMap<>();
-		data.put("count", ctr + 1);
-		data.put("actionData", items);
-		data.put(GlobalConfig.SUCCESS_KEY, Boolean.TRUE);
-		this.putModuleData(data, 3, false);
+		// Get the data
+		int limit = req.getIntegerParameter("limit", 10);
+		int offset = req.getIntegerParameter("offset", 0);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+
+		return db.executeSQLWithCount(sql.toString(), params, new InventoryEventVO(), limit, offset);
+	}
+	
+	/**
+	 * 
+	 * @param sql
+	 * @param req
+	 * @param params
+	 */
+	public void getSQLOrder(StringBuilder sql, ActionRequest req) {
+		sql.append("order by ").append(StringUtil.checkVal(fieldMap.get(req.getParameter("sort")), "location_nm"));
+		sql.append(" ").append(StringUtil.checkVal(req.getParameter("order"), "asc"));
 	}
 	
 	/**
@@ -325,35 +389,42 @@ public class InventoryEventAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public StringBuilder getListWhere(ActionRequest req) {
-		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+	public void getListWhere(StringBuilder where, ActionRequest req, List<Object> params) {
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		StringBuilder where = new StringBuilder();
 		
 		//If role is provider filter so it's only their locations.
-		if(SecurityUtil.isProviderRole(r.getRoleId()))
-			where.append(" and cl.customer_id = ? ");
+		where.append(SecurityUtil.addCustomerFilter(req, "cl"));
+		
 		// Filter by the active flag
 		if (req.hasParameter("activeFlag"))
 			where.append(" and ie.active_flg = ").append(req.getParameter("activeFlag"));
 		
 		// Filter by the customer location
-		if (Convert.formatInteger(req.getParameter("customerLocationId")) > 0) {
-			where.append(" and ie.customer_location_id = '");
-			where.append(req.getParameter("customerLocationId")).append("' ");
+		if (req.hasParameter("customerLocationId")) {
+			where.append(" and ie.customer_location_id = ? ");
+			params.add(req.getIntegerParameter("customerLocationId"));
 		}
 		
 		//If the user is an OEM, filter by locations by only those they have products at.
 		if(SecurityUtil.isOEMRole(r.getRoleId())) {
 			where.append(" and cl.customer_location_id in ( ");
-			where.append("select z.customer_location_id from ").append(schema).append("RAM_CUSTOMER_LOCATION z ");
-			where.append("inner join ").append(schema).append("RAM_INVENTORY_EVENT ze on z.customer_location_id = ze.customer_location_id ");
-			where.append("inner join ").append(schema).append("RAM_INVENTORY_EVENT_AUDITOR_XR za on ze.inventory_event_id = za.inventory_event_id ");
-			where.append("inner join ").append(schema).append("RAM_INVENTORY_ITEM zi on za.inventory_Event_auditor_xr_id = za.inventory_Event_auditor_xr_id ");
-			where.append("inner join ").append(schema).append("RAM_PRODUCT zp on zi.product_id = zp.product_id ");
+			where.append("select z.customer_location_id from ").append(getCustomSchema()).append("RAM_CUSTOMER_LOCATION z ");
+			where.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("RAM_INVENTORY_EVENT ze on z.customer_location_id = ze.customer_location_id ");
+			where.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("RAM_INVENTORY_EVENT_AUDITOR_XR za on ze.inventory_event_id = za.inventory_event_id ");
+			where.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("RAM_INVENTORY_ITEM zi on za.inventory_Event_auditor_xr_id = za.inventory_Event_auditor_xr_id ");
+			where.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("RAM_PRODUCT zp on zi.product_id = zp.product_id ");
 			where.append("and zp.customer_id = ?)");
 		}
-		return where;
+	}
+	
+	/**
+	 * Builds the sql statement independently
+	 * @param sql
+	 */
+	public void getSelectSQL(StringBuilder sql) {
+		sql.append("select cl.location_nm, cl.customer_id, schedule_dt, ie.active_flg, inventory_complete_dt, ");
+		sql.append("data_load_complete_dt, ie.inventory_event_id, ra.auditor_nm, ");
+		sql.append("inventory_event_group_id, cast(coalesce(returned_products_no, 0) as int) as returned_products_no ");
 	}
 	
 	/**
@@ -361,37 +432,24 @@ public class InventoryEventAction extends SBActionAdapter {
 	 * admintool
 	 * @return
 	 */
-	protected StringBuilder getBaseSQL() {
-		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
-		sql.append("select cl.location_nm, cl.customer_id, schedule_dt, ie.active_flg, inventory_complete_dt, ");
-		sql.append("data_load_complete_dt, ie.inventory_event_id, ");
-		sql.append("inventory_event_group_id, count(distinct(d.event_return_id)) as returnProducts, ");
-		sql.append("count(distinct(e.customer_event_id)) as numberCustomers, ra.auditors ");
-		sql.append("from ").append(schema).append("ram_inventory_event ie ");
-		sql.append("inner join ").append(schema).append("ram_customer_location cl on ie.customer_location_id = cl.customer_location_id ");
-		sql.append("left outer join ").append(schema).append("ram_event_return_xr d on ie.inventory_event_id = d.inventory_event_id ");
-		sql.append("left outer join ").append(schema).append("ram_customer_event_xr e on ie.inventory_event_id = e.inventory_event_id ");
+	protected StringBuilder getBaseSQL(StringBuilder sql, ActionRequest req, List<Object> params) {
+
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("ram_inventory_event ie ");
+		sql.append("inner join ").append(getCustomSchema()).append("ram_customer_location cl on ie.customer_location_id = cl.customer_location_id ");
 		sql.append("left outer join ( ");
-		sql.append("select inventory_event_id, array_to_string(array_agg(first_nm || ' ' || last_nm), ',') as auditors ");
-		sql.append("from ").append(schema).append("ram_inventory_event_auditor_xr a ");
-		sql.append("inner join ").append(schema).append("ram_auditor b on a.auditor_id = b.auditor_id ");
+		sql.append("select inventory_event_id, array_to_string(array_agg(first_nm || ' ' || last_nm), '<br/>') as auditor_nm ");
+		sql.append("from ").append(getCustomSchema()).append("ram_inventory_event_auditor_xr a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_auditor b on a.auditor_id = b.auditor_id ");
 		sql.append("group by inventory_event_id ) ra on ra.inventory_event_id = ie.inventory_event_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN);
+		sql.append("( select inventory_event_id,  sum(quantity_no) returned_products_no ");
+		sql.append("from ").append(getCustomSchema()).append("ram_event_return_xr ");
+		sql.append("group by inventory_event_id ) ret on ie.inventory_event_id = ret.inventory_event_id ");
 		sql.append("where schedule_dt between ? and ? ");
 		
-		return sql;
-	}
-	
-	/**
-	 * Builds the group by clause for the event list
-	 * @return
-	 */
-	protected StringBuilder getGroupBy() {
-		StringBuilder sql = new StringBuilder();
-		sql.append(" group by cl.location_nm, cl.customer_id, schedule_dt, ie.active_flg, inventory_complete_dt,  ");
-		sql.append("data_load_complete_dt, ie.inventory_event_id, inventory_event_group_id, ra.auditors ");
+		params.add(Convert.formatStartDate(Convert.formatDate(req.getParameter("from_date")), new Date()));
+		params.add(Convert.formatEndDate(Convert.formatDate(req.getParameter("to_date")), new Date()));
 		
 		return sql;
 	}
-	
 }
