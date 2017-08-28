@@ -24,16 +24,16 @@ import com.siliconmtn.util.Convert;
  * @version 1.0
  * @since Aug 7, 2017
  ****************************************************************************/
-public class UpdatesEditionIndividualEmbedAction extends UpdatesEditionAction {
+public class UpdatesEditionDetailedEmbedAction extends UpdatesEditionAction {
 
-	public UpdatesEditionIndividualEmbedAction() {
+	public UpdatesEditionDetailedEmbedAction() {
 		super();
 	}
 
 	/**
 	 * @param arg0
 	 */
-	public UpdatesEditionIndividualEmbedAction(ActionInitVO arg0) {
+	public UpdatesEditionDetailedEmbedAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 	
