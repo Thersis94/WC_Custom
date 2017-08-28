@@ -1,6 +1,6 @@
 package com.biomed.smarttrak.action;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,13 +42,27 @@ public class UpdatesEditionEmbedAction extends UpdatesEditionAction {
 	 */
 	@Override
 	protected void packageDataForDisplay(Tree t, List<UpdateVO> updates) {
-		Map<String, Integer> counts = new HashMap<>();
+		Map<String, Map<String, List<UpdateVO>>> dataMap = new LinkedHashMap<>();
+
 		for (Node n : t.getRootNode().getChildren()) {
-			if (n.getTotalChildren() > 0)
-				counts.put(n.getNodeName(), n.getTotalChildren());
-			log.debug(n.getNodeName() + " =" +  n.getTotalChildren());
+			boolean hasChildren = false;
+			Map<String, List<UpdateVO>> children = new LinkedHashMap<>();
+			if(n.getTotalChildren() > 0) {
+				for(Node c : n.getChildren()) {
+					if(c.getTotalChildren() > 0) {
+						children.put(c.getNodeName(), (List<UpdateVO>)c.getUserObject());
+						hasChildren = true;
+					}
+				}
+			}
+
+			//Only add Node if we actually have children.
+			if(hasChildren) {
+				dataMap.put(n.getNodeName(), children);
+			}
 		}
-		putModuleData(counts, counts.size(), false);
+
+		putModuleData(dataMap, dataMap.size(), false);
 	}
 
 	
