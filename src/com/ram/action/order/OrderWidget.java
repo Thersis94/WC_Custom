@@ -91,18 +91,12 @@ public class OrderWidget extends SimpleActionAdapter {
 			putModuleData(data.getValue(), Convert.formatInteger(data.getKey() + ""), false);
 		} else if(req.hasParameter("pmid") && req.hasParameter("buildOrder")) {
 			OrderVO order = getOrder(req.getParameter("orderId"));
-			
-			
-			
 			AbstractSBReportVO report = new ProductOrderReport();
 			report.setAttributes(attributes);
 			report.setFileName("Order-" + order.getOrderId() + ".pdf");
 			report.setData(order);
 			req.setAttribute(Constants.BINARY_DOCUMENT, report);
 			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
-			
-			// Add PDF Gen Data Here
-			/*putModuleData(order);*/
 		}
 	}
 	
