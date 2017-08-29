@@ -14,6 +14,7 @@ import java.util.Map;
 // RAM Data Feed Libs
 import com.ram.datafeed.data.InventoryEventVO;
 import com.ram.datafeed.data.InventoryItemVO;
+import com.ram.datafeed.data.RAMProductVO;
 import com.ram.action.util.SecurityUtil;
 
 //SMT Base Libs
@@ -298,14 +299,17 @@ public class InventoryEventAction extends SBActionAdapter {
 		int offset = req.getIntegerParameter("offset", 0);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSQLWithCount(getItemSQL(), params, new InventoryItemVO(), "cust_product_id", limit, offset);
+		return db.executeSQLWithCount(getItemSQL(req, params), params, new InventoryItemVO(), "cust_product_id", limit, offset);
 	}
 
 	/**
 	 * SQL Body for the items query
 	 * @param sql
 	 */
-	public String getItemSQL() {
+	public String getItemSQL(ActionRequest req, List<Object> params) {
+		String sort = StringUtil.checkVal(DBUtil.getColumn(req.getParameter("sort"),new RAMProductVO(),""), "product_nm");
+		String order = req.getParameter("order", "asc");
+		
 		StringBuilder sql = new StringBuilder();
 		sql.append("select customer_nm, product_nm, cust_product_id, kit_flg, cast(sum(c.quantity_no) as int) as quantity_no ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("ram_inventory_event_auditor_xr b ");
@@ -313,8 +317,15 @@ public class InventoryEventAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_product d on c.product_id = d.product_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_customer e on d.customer_id = e.customer_id ");
 		sql.append("where b.inventory_event_id = ? and inventory_item_type_cd = 'SHELF' ");
+		
+		if (req.hasParameter("search")) {
+			sql.append(" and (lower(product_nm) like ? or lower(cust_product_id) like ?) ");
+			params.add("%" + req.getParameter("search").toLowerCase() + "%");
+			params.add("%" + req.getParameter("search").toLowerCase() + "%");
+		}
+		
 		sql.append("group by customer_nm, product_nm, cust_product_id, kit_flg ");
-		sql.append("order by product_nm ");
+		sql.append("order by ").append(sort).append(" ").append(order);
 		
 		return sql.toString();
 	}
