@@ -140,6 +140,11 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		
 		sql.append("select r.REVENUE_ID as ROW_ID, ");
 		
+		DisplayType dt = dash.getColHeaders().getDisplayType();
+		for (int i = 1; i <= getDataYears(dt, dash.getCurrentYear()); i++) {
+			sql.append("r").append(i>1 ? i : "").append(".REVENUE_ID as REVENUE_ID_").append(i-1).append(", ");
+		}
+		
 		if (TableType.COMPANY == tt) {
 			sql.append("c.SHORT_NM_TXT as ROW_NM, r.COMPANY_ID, ");
 		} else {

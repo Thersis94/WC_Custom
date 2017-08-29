@@ -442,7 +442,14 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		sql.append("and r.YEAR_NO = ? ");
 		
 		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
+
+		// Handle edit mode specific columns in the group by
 		if (dash.getEditMode()) {
+			DisplayType dt = dash.getColHeaders().getDisplayType();
+			for (int i = 1; i <= getDataYears(dt, dash.getCurrentYear()); i++) {
+				sql.append(", REVENUE_ID_").append(i-1).append(" ");
+			}
+			
 			if (TableType.COMPANY == tt) {
 				sql.append(", r.COMPANY_ID, r.REGION_CD ");
 			} else {
