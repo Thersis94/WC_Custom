@@ -47,6 +47,7 @@ public class MarketVO extends AuthorVO {
 	private String regionCode;
 	private String regionName;
 	private int publicFlag;
+	private int indentNo;
 	
 	//used to specify the associated region for ordering within Solr
 	public enum RegionOrder{
@@ -79,7 +80,7 @@ public class MarketVO extends AuthorVO {
 		setData(req);
 	}
 
-
+	@Override
 	protected void setData(ActionRequest req) {
 		super.setData(req); //set the creator_profile_id
 		marketId = req.getParameter("marketId");
@@ -92,6 +93,7 @@ public class MarketVO extends AuthorVO {
 		setRegionCode(req.getParameter("regionCode"));
 		marketSection = new SectionVO(req);
 		setPublicFlag(Convert.formatInteger(req.getParameter("publicFlag")));
+		setIndentNo(Convert.formatInteger(req.getParameter("indentNo")));
 	}
 
 
@@ -268,7 +270,8 @@ public class MarketVO extends AuthorVO {
 	public Date getUpdateDt() {
 		return updateDate;
 	}
-
+	
+	@Override
 	public void setUpdateDt(Date updateDate) {
 		this.updateDate = updateDate;
 	}
@@ -330,5 +333,22 @@ public class MarketVO extends AuthorVO {
 
 	public void setPublicFlag(int publicFlag) {
 		this.publicFlag = publicFlag;
+	}
+
+
+	/**
+	 * @return the indentNo
+	 */
+	@Column(name="indent_no")
+	public int getIndentNo() {
+		return indentNo;
+	}
+
+
+	/**
+	 * @param indentNo the indentNo to set
+	 */
+	public void setIndentNo(int indentNo) {
+		this.indentNo = indentNo;
 	}
 }
