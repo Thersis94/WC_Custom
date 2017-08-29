@@ -571,18 +571,14 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	/**
 	 * Gets the existing base revenue data that is related to a specific scenario.
 	 * 
-	 * @param sectionId
-	 * @param countryType
-	 * @param year
-	 * @param scenarioId
+	 * @param dashVO
 	 * @return
 	 */
-	protected Map<String, FinancialDashRevenueVO> getBaseData(String sectionId, String countryType, int year, String scenarioId) {
+	protected Map<String, FinancialDashRevenueVO> getBaseData(FinancialDashVO dashVO) {
 		Map<String, FinancialDashRevenueVO> baseData = new HashMap<>();
 		
-		String sql = getRevenueSql();
 		List<Object> params = new ArrayList<>();
-		params.addAll(Arrays.asList(sectionId, year, countryType, scenarioId));
+		String sql = getRevenueSql(dashVO, params);
 		
 		List<?> revenueRecords = dbp.executeSelect(sql, params, new FinancialDashRevenueVO());
 		
@@ -597,15 +593,49 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	/**
 	 * Returns the sql required for getting all base data associated to a scenario.
 	 * 
+	 * @param dashVO - dashboard options to use in the record selection
+	 * @param params - params for db processor
 	 * @return
 	 */
-	private String getRevenueSql() {
+	private String getRevenueSql(FinancialDashVO dashVO, List<Object> params) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(300);
 		
 		sql.append("select r.* from ").append(custom).append("BIOMEDGPS_FD_REVENUE r ");
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY so on r.REVENUE_ID = so.REVENUE_ID ");
-		sql.append("where r.SECTION_ID = ? and r.YEAR_NO = ? and r.REGION_CD = ? and so.SCENARIO_ID = ? ");
+		sql.append("where r.YEAR_NO = ? and so.SCENARIO_ID = ? ");
+		params.addAll(Arrays.asList(dashVO.getCurrentYear(), dashVO.getScenarioId()));
+		
+		// If company id is passed, user is looking at a company, not a section
+		if (!StringUtil.isEmpty(dashVO.getCompanyId())) {
+			sql.append("and r.COMPANY_ID = ? ");
+			params.add(dashVO.getCompanyId());
+		} else {
+			sql.append("and r.SECTION_ID = ? ");
+			params.add(dashVO.getSectionId());
+		}
+		
+		sql.append("and ").append(getRegionSql(dashVO, params));
+		
+		return sql.toString();
+	}
+	
+	/**
+	 * Returns sql to filter by the selected region(s)
+	 * 
+	 * @param dashVO
+	 * @param params
+	 * @return
+	 */
+	protected String getRegionSql(FinancialDashVO dashVO, List<Object> params) {
+		StringBuilder sql = new StringBuilder(25);
+		
+		// In the case of WW, user is looking at multiple regions
+		List<CountryType> regions = dashVO.getCountryTypes();
+		sql.append("r.REGION_CD in (").append(DBUtil.preparedStatmentQuestion(regions.size())).append(") ");
+		for (CountryType region : regions) {
+			params.add(region.toString());
+		}
 		
 		return sql.toString();
 	}
