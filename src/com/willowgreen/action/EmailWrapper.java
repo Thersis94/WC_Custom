@@ -30,6 +30,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 
+import opennlp.tools.util.StringUtil;
+
 /****************************************************************************
  * <b>Title</b>: EmailWrapper.java<p/>
  * <b>Description: Facade around the email sign-up (Contact Us Portlet) and reporting
@@ -42,16 +44,21 @@ import com.smt.sitebuilder.security.SecurityController;
  * @since Oct 8, 2012
  ****************************************************************************/
 public class EmailWrapper extends SimpleActionAdapter {
-	
+
 	public EmailWrapper() {
 		super();
 	}
-	
+
 	public EmailWrapper(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
 
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#delete(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		super.delete(req);
 		String msg = "";
@@ -60,19 +67,23 @@ public class EmailWrapper extends SimpleActionAdapter {
 			ps.setString(1, req.getParameter("del"));
 			ps.executeUpdate();
 			msg = "Enrollment+deleted+successfully";
-			
+
 		} catch (SQLException sqle) {
 			log.error("could not delete enrollment, csId=" + req.getParameter("del"), sqle);
 		}
-		
+
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		super.sendRedirect(page.getFullPath(), msg, req);
 	}
-	
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		
+
 		if (mod.getDisplayPage().endsWith("report.jsp")) {
 			//handle deletions
 			if (req.hasParameter("del")) {
@@ -82,66 +93,69 @@ public class EmailWrapper extends SimpleActionAdapter {
 				convert(req);
 				return;
 			}
-			
+
 			//if the View is our report, load the report data.
 			loadReport(req, (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1), (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_2));
-			
+
 		} else {
 			String contactActionId = (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1);
 			actionInit.setActionId(contactActionId);
 			req.setParameter("actionGroupId", contactActionId);
-			
+
 			ActionInterface ai = new ContactFacadeAction(actionInit);
 			ai.setDBConnection(dbConn);
 			ai.setAttributes(attributes);
 			ai.retrieve(req);
-			
+
 			ModuleVO cMod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
 			cMod.setPageModuleId(mod.getPageModuleId());
 			cMod.setActionId(mod.getActionId());
 			super.setAttribute(Constants.MODULE_DATA, cMod);
 		}
 	}
-	
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		
-		if (req.hasParameter("pfl_EMAIL_ADDRESS_TXT") && 
-				!isEnrolled(req.getParameter("pfl_EMAIL_ADDRESS_TXT"), (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_2), (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1))) {
+		String email = req.getParameter("pfl_EMAIL_ADDRESS_TXT");
+		if (!StringUtil.isEmpty(email) && 
+				!isEnrolled(email, (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_2), (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1))) {
 			//bind the submitting user to this record via DealerLocationId
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			if (user != null)
 				req.setParameter(Constants.DEALER_LOCATION_ID_KEY, user.getProfileId());
-			
+
 			actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 			ActionInterface ai = new ContactFacadeAction(actionInit);
 			ai.setDBConnection(dbConn);
 			ai.setAttributes(attributes);
 			ai.build(req);
-			ai = null;
-			
+
 			//add the record to our 'counter' table.
 			String series = (req.getAttribute("series") != null) ? (String)req.getAttribute("series") : "100MSGS";
 			String cdId = (String)req.getAttribute(SubmittalAction.CONTACT_SUBMITTAL_ID);
 			incrementCounter(cdId, series);
-			
-			
+
+
 		} else {
 			//send a message back that the user is already enrolled
-			String msg = "The email address " + req.getParameter("pfl_EMAIL_ADDRESS_TXT") + " is already enrolled.";
+			String msg = "The email address " + email + " is already enrolled.";
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			super.sendRedirect(page.getFullPath(), msg, req);
 		}
 	}
-	
+
 	protected void loadReport(ActionRequest req, String contactActionId, String emailCampaignId) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		
+
 		Map<String, UserDataVO> profiles = new HashMap<>();
 		List<ReportVO> data = new LinkedList<>();
-		
+
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select a.profile_id, a.DEALER_LOCATION_ID, cast(e.value_txt as text) as home_nm, ");
 		sql.append("cast(f.value_txt as text) as gifter_nm, ");
@@ -160,55 +174,60 @@ public class EmailWrapper extends SimpleActionAdapter {
 			sql.append("and a.DEALER_LOCATION_ID=? ");
 		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as text), cast(f.value_txt as text), record_no, a.create_dt ");
 		sql.append("order by record_no desc");
-		//log.debug(sql + "|" + role.getProfileId() + "|" + emailCampaignId + "|" + contactActionId);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, site.getOrganizationId());
 			ps.setString(2, emailCampaignId);
 			ps.setString(3, contactActionId);
 			if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL)
 				ps.setString(4, role.getProfileId());
-			
+
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				profiles.put(rs.getString(1), null);
-				
-				if (rs.getString(2) != null)
-					profiles.put(rs.getString(2), null);
-				
+				UserDataVO user = new UserDataVO();
+				user.setProfileId(rs.getString(1));
+				profiles.put(user.getProfileId(), user);
+
+				if (rs.getString(2) != null) {
+					UserDataVO user2 = new UserDataVO();
+					user2.setProfileId(rs.getString(2));
+					profiles.put(user2.getProfileId(), user2);
+				}
+
 				data.add(new ReportVO(rs));
 			}
-			
+
 		} catch (SQLException sqle) {
 			log.error("could not load report", sqle);
 		}
-		
+
 		//put a profile to all these peeps!
 		int activeCnt = 0;
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		try {
-			profiles = pm.searchProfileMap(dbConn, new ArrayList<String>(profiles.keySet()));
+			pm.populateRecords(dbConn, new ArrayList<>(profiles.values()));
+
 			for (ReportVO rpt : data) {
 				rpt.setUser(profiles.get(rpt.getProfileId()));
 				rpt.setSubmitter(profiles.get(rpt.getDealerLocationId()));
-				
+
 				//determine if the user is current getting emails
 				if (rpt.getEmailCnt() < 100 && rpt.getAllowCommFlg() == 1)
 					activeCnt++;
 			}
-			
+
 		} catch (DatabaseException de) {
 			log.error("could not retrieve profiles", de);
 		} finally {
 			pm = null;
 		}
-		
+
 		req.setAttribute("activeNo", activeCnt);
 		req.setAttribute("enrolledNo", data.size());
 		super.putModuleData(data);
 	}
-	
-	
+
+
 	/**
 	 * checks to see if the user has already recieved all of the emails in the series.
 	 * 
@@ -218,7 +237,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 	protected boolean isEnrolled(String emailAddress, String emailCampaignId, String contactActionId) {
 		boolean isEnrolled = false;
 		String profileId = null;
-		
+
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		try {
 			UserDataVO user = new UserDataVO();
@@ -240,19 +259,19 @@ public class EmailWrapper extends SimpleActionAdapter {
 			ps.setString(2, contactActionId);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) isEnrolled = true;
-			
+
 		} catch (SQLException sqle) {
 			log.error("could not check contact_submittal table", sqle);
 		}
 		if (!isEnrolled) return isEnrolled;
-		
+
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select count(a.campaign_instance_id), count(b.campaign_instance_id) ");
 		sql.append("from email_campaign_instance b left outer join email_campaign_log a ");
 		sql.append("on a.campaign_instance_id=b.campaign_instance_id and a.profile_id=? ");
 		sql.append("where b.email_campaign_id=?");
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, profileId);
 			ps.setString(2, emailCampaignId);
@@ -260,20 +279,24 @@ public class EmailWrapper extends SimpleActionAdapter {
 			if (rs.next()) {
 				//if they have recieved emails, but not all of them, they're still enrolled.
 				//or they've opt-out and don't want to be a subscriber anyways!
-				isEnrolled = (rs.getInt(1) < rs.getInt(2) && rs.getInt(1) > 0);
-				//log.debug("rcvd=" + rs.getInt(1) + " series=" + rs.getInt(2));
+				isEnrolled = rs.getInt(1) < rs.getInt(2) && rs.getInt(1) > 0;
 			}
 		} catch (SQLException sqle) {
 			log.error("could not lookup email count", sqle);
 		}
-		
+
 		return isEnrolled;
 	}
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
-	
+
 	protected void incrementCounter(String csId, String series) {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select max(record_no)+1 from ");
@@ -288,14 +311,14 @@ public class EmailWrapper extends SimpleActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("could not increment counter", sqle);
 		}
-		
+
 		if (recordNo == 0) recordNo = 1;
-		
+
 		sql = new StringBuilder(200);
 		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("WILLOWGREEN_COUNTER (counter_id, series_txt, contact_submittal_id, ");
 		sql.append("record_no, create_dt) values (?,?,?,?,?)");
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, new UUIDGenerator().getUUID());
 			ps.setString(2, series);
@@ -307,7 +330,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 			log.error("could not increment counter", sqle);
 		}
 	}
-	
+
 	protected void convert(ActionRequest req) throws ActionException {
 		//stub to be overloaded in DailyCaregiversEmailWrapper
 	}

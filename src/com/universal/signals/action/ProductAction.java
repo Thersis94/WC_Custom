@@ -20,7 +20,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.NavManager;
@@ -68,14 +67,16 @@ public class ProductAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
+	@Override
 	public void build(ActionRequest req) throws ActionException {
-
+		// unused
 	}
 	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		String sitePrefix = site.getSiteId() + "_";
@@ -113,21 +114,21 @@ public class ProductAction extends SBActionAdapter {
 				
 			} else {
 				// retrieve the category
-				List<ProductCategoryVO> data = this.retrieveCat(req, catalogId, cat);
+				List<ProductCategoryVO> data = this.retrieveCat(catalogId, cat);
 				
-				if (data.size() == 0) {
+				if (data.isEmpty()) {
 					// no data found from retrieving category
-					if (cat.indexOf("|") > -1) {
+					if (cat.indexOf('|') > -1) {
 						// attempt to retrieve subcategories for this category
-						data = this.retrieveSubCat(req, catalogId, cat);
+						data = this.retrieveSubCat(catalogId, cat);
 						
-						if (data.size() == 0) {
+						if (data.isEmpty()) {
 							// no subcategory data found, so look for products belonging to this category
 							log.debug("retrieve product list info");
 							Collection<ProductVO> prods = this.retrieveProductList(req, catalogId, cat, true);
 							
 							// no products were found, look for group data
-							if (prods.size() == 0) {
+							if (prods.isEmpty()) {
 								prods = this.getGroupInfo(req, catalogId);
 							}
 							this.putModuleData(prods, prods.size(), false);
@@ -142,7 +143,7 @@ public class ProductAction extends SBActionAdapter {
 						// no subcategories exist, check for products
 						Collection<ProductVO> prods = this.retrieveProductList(req, catalogId, cat, true);
 						
-						if (prods.size() == 0) {
+						if (prods.isEmpty()) {
 							// no products were found, so check for group data
 							prods = this.getGroupInfo(req, catalogId);
 						}
@@ -166,6 +167,7 @@ public class ProductAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
@@ -195,7 +197,7 @@ public class ProductAction extends SBActionAdapter {
 			}
 		}
 		// remove the pipe if it is at position 0
-		if (cat.indexOf("|") == 0 && cat.length() > 0) cat = cat.substring(1);
+		if (cat.indexOf('|') == 0 && cat.length() > 0) cat = cat.substring(1);
 		return cat;
 	}
 	
@@ -209,11 +211,11 @@ public class ProductAction extends SBActionAdapter {
 	private Collection<ProductVO> getGroupInfo(ActionRequest req, String catalogId) 
 	throws SQLException {
 		String url = StringUtil.checkVal(req.getRequestURL().toString());
-		String cat = url.substring(url.lastIndexOf("/") + 1);
+		String cat = url.substring(url.lastIndexOf('/') + 1);
 		String s = "select * from product where parent_id = ? and product_catalog_id = ? AND PRODUCT_GROUP_ID IS NULL ";
 		log.debug("group info SQL: " + s + "|" + cat + "|" + catalogId);
-		Map<String, ProductVO>  data = new LinkedHashMap<String, ProductVO> ();
-		PreparedStatement ps = dbConn.prepareStatement(s.toString());
+		Map<String, ProductVO>  data = new LinkedHashMap<> ();
+		PreparedStatement ps = dbConn.prepareStatement(s);
 		ps.setString(1, cat);
 		ps.setString(2, catalogId);
 
@@ -245,7 +247,7 @@ public class ProductAction extends SBActionAdapter {
 	private ProductVO retrieveProductDetail(ActionRequest req, 
 			String catalogId, String sitePrefix) throws SQLException {
 		String siteProductId = sitePrefix + req.getParameter(ActionRequest.PARAMETER_KEY + "2");
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(300);
 		s.append("select * from product a ");
 		s.append("left outer join product_attribute_xr b on a.product_id = b.product_id ");
 		s.append("left outer join product_attribute c on b.attribute_id = c.attribute_id ");
@@ -253,12 +255,10 @@ public class ProductAction extends SBActionAdapter {
 		s.append("order by a.product_id, b.attribute_id, attrib2_txt, order_no");
 		log.debug("Product Detail SQL: " + s + "|" + siteProductId);
 		
-		PreparedStatement ps = null;
 		ProductVO product = null;
 		List<ProductAttributeVO> primaryAttributes = new ArrayList<>();
 		List<ProductAttributeVO> secondaryAttributes = new ArrayList<>();
-		try {
-			ps = dbConn.prepareStatement(s.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(s.toString())) {
 			ps.setString(1, catalogId);
 			// prefix product ID with site prefix as product IDs in the PRODUCT table
 			// are prefixed upon import to ensure uniqueness
@@ -285,7 +285,7 @@ public class ProductAction extends SBActionAdapter {
 							break;
 						case "2":
 							// add ONLY 1 of the level '2' attributes so we have a placeholder
-							if (secondaryAttributes.size() == 0) {
+							if (secondaryAttributes.isEmpty()) {
 								secondaryAttributes.add(new ProductAttributeVO(rs));
 								//log.debug("added secondary attribute: " + rs.getString("VALUE_TXT"));
 							}
@@ -299,8 +299,6 @@ public class ProductAction extends SBActionAdapter {
 						}
 				}
 			}
-		} finally {
-			DBUtil.close(ps);
 		}
 
 		// if we found no products for a category, initialize an empty ProductVO
@@ -342,7 +340,7 @@ public class ProductAction extends SBActionAdapter {
 		String currStd = null;
 		
 		for (ProductAttributeVO p : pAttributes) {
-			if (p.getAttributeName().equalsIgnoreCase("custom")) {
+			if ("custom".equalsIgnoreCase(p.getAttributeName())) {
 				custom.add(p);
 			} else {
 				currStd = p.getAttributeName();
@@ -364,7 +362,7 @@ public class ProductAction extends SBActionAdapter {
 		
 		// clean up any dangling standard attributes and add standard option to 
 		// product attribute map, attribute name is the key.
-		if (standard != null && standard.size() > 0) {
+		if (standard != null && ! standard.isEmpty()) {
 			product.addProdAttribute(prevStd, standard);
 			attrKeysList.add(prevStd);
 		}
@@ -377,7 +375,7 @@ public class ProductAction extends SBActionAdapter {
 		processSecondaryAttributes(product, sAttributes, attrKeysList);
 		
 		// ALWAYS LAST! : now add the custom list to the product attribute map using specified key
-		if (custom.size() > 0) {
+		if (! custom.isEmpty()) {
 			product.addProdAttribute("custom", custom);
 		}
 	}
@@ -439,7 +437,7 @@ public class ProductAction extends SBActionAdapter {
 		// set default status
 		String status = STATUS_AVAILABLE;
 		if (stockEle != null) {
-			if (! stockEle.getName().equalsIgnoreCase("Error")) {
+			if (! "Error".equalsIgnoreCase(stockEle.getName())) {
 				// get the ProductID child element
 				Element childEle = stockEle.element("ProductID");
 				if (childEle != null) {
@@ -476,7 +474,7 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	private Collection<ProductVO> retrieveProductList(ActionRequest req, String catalogId, String cat, boolean useNav) 
 	throws SQLException {
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(350);
 		s.append("select * from product a ");
 		s.append("inner join PRODUCT_CATEGORY_XR b on a.PRODUCT_ID = b.PRODUCT_ID ");
 		s.append("inner join PRODUCT_CATEGORY c on b.PRODUCT_CATEGORY_CD = c.PRODUCT_CATEGORY_CD ");
@@ -490,7 +488,7 @@ public class ProductAction extends SBActionAdapter {
 		int start = (page - 1) * rpp + 1;
 		int end = rpp * page;
 		
-		Map<String, ProductVO>  data = new LinkedHashMap<String, ProductVO> ();
+		Map<String, ProductVO>  data = new LinkedHashMap<> ();
 		PreparedStatement ps = dbConn.prepareStatement(s.toString());
 		ps.setString(1, catalogId);
 		ps.setInt(2, ProductCatalogAction.STATUS_LIVE);
@@ -532,11 +530,10 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private ProductCategoryVO retrieveCategoryProductList(ActionRequest req, String catalogId, String cat, boolean useNav) 
-			throws SQLException {
-
-		StringBuilder s = new StringBuilder();
-		s.append("select a.*, c.*, c.image_url as 'category_image_url' from product a ");
+	private ProductCategoryVO retrieveCategoryProductList(ActionRequest req, String catalogId, 
+			String cat, boolean useNav) throws SQLException {
+		StringBuilder s = new StringBuilder(400);
+		s.append("select a.*, c.*, c.image_url as category_image_url from product a ");
 		s.append("inner join PRODUCT_CATEGORY_XR b on a.PRODUCT_ID = b.PRODUCT_ID ");
 		s.append("inner join PRODUCT_CATEGORY c on b.PRODUCT_CATEGORY_CD = c.PRODUCT_CATEGORY_CD ");
 		s.append("inner join PRODUCT_CATALOG d on a.product_catalog_id=d.product_catalog_id and d.product_catalog_id = ? ");
@@ -586,7 +583,8 @@ public class ProductAction extends SBActionAdapter {
 			}
 		}
 		
-		if (pData.size() > 0) pCat.setProducts(pData);
+		if (pCat != null && ! pData.isEmpty()) 
+			pCat.setProducts(pData);
 		
 		// Get the attributes and add the nav piece
 		if (useNav) {
@@ -619,7 +617,7 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	private void getProductAttributes(Map<String, ProductVO> data, String inList)
 	throws SQLException {
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(200);
 		s.append("select * from product_attribute a inner join ");
 		s.append("product_attribute_xr b on a.attribute_id = b.attribute_id ");
 		s.append("where product_id in (").append(inList).append(") ");
@@ -639,10 +637,9 @@ public class ProductAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private List<ProductCategoryVO> retrieveCat(ActionRequest req, String catalogId, String cat) 
+	private List<ProductCategoryVO> retrieveCat(String catalogId, String cat) 
 	throws SQLException {
-		StringBuilder s = new StringBuilder();
-		
+		StringBuilder s = new StringBuilder(200);
 		if (cat.length() > 0) {
 			s.append("select * from PRODUCT_CATEGORY where PARENT_CD in ( ");
 			s.append("select PRODUCT_CATEGORY_CD from product_category  ");
@@ -654,7 +651,7 @@ public class ProductAction extends SBActionAdapter {
 		s.append("order by create_dt asc ");
 		log.debug("Prod Cat SQL: " + s + "|" + catalogId + "|" + cat);
 		
-		List<ProductCategoryVO>  data = new ArrayList<ProductCategoryVO> ();
+		List<ProductCategoryVO>  data = new ArrayList<> ();
 		PreparedStatement ps = dbConn.prepareStatement(s.toString());
 		int i = 0;
 		if (cat.length() > 0) ps.setString(++i, cat);
@@ -676,9 +673,9 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private List<ProductCategoryVO> retrieveSubCat(ActionRequest req, String catalogId, String cat) 
+	private List<ProductCategoryVO> retrieveSubCat(String catalogId, String cat) 
 	throws SQLException {
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(250);
 		
 		if (cat.length() > 0) {
 			s.append("select * from PRODUCT_CATEGORY where PARENT_CD in ( ");
@@ -689,7 +686,7 @@ public class ProductAction extends SBActionAdapter {
 		s.append("order by category_nm asc ");
 		log.debug("Prod sub cat SQL: " + s + "|" + cat + "|" + catalogId);
 		
-		List<ProductCategoryVO>  data = new ArrayList<ProductCategoryVO> ();
+		List<ProductCategoryVO>  data = new ArrayList<> ();
 		PreparedStatement ps = dbConn.prepareStatement(s.toString());
 		int i = 0;
 		ps.setString(++i, cat);

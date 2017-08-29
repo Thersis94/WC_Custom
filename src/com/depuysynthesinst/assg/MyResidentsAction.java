@@ -4,10 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import com.depuysynthesinst.DSIUserDataVO;
 import com.depuysynthesinst.DSIUserDataVO.RegField;
@@ -44,10 +41,8 @@ public class MyResidentsAction extends SBActionAdapter {
 
 	public static final int CONSENT_TIMEOUT  = 10; //days that must lapse before a new invite can be sent
 
-	/**
-	 * 
-	 */
 	public MyResidentsAction() {
+		super();
 	}
 
 	/**
@@ -58,11 +53,11 @@ public class MyResidentsAction extends SBActionAdapter {
 	}
 
 
-	/**
-	 * loads a list of Residents for the logged-in Director
+	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
@@ -79,11 +74,11 @@ public class MyResidentsAction extends SBActionAdapter {
 	}
 
 
-	/**
-	 * handles all the 'write' transactions related to managing Residents
+	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"), null);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -108,6 +103,7 @@ public class MyResidentsAction extends SBActionAdapter {
 			case "manageProctor":
 				this.manageMyDirector(resident, req);
 				break;
+			default:
 		}
 	}
 
@@ -150,7 +146,7 @@ public class MyResidentsAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private List<UserDataVO> searchResidents(String searchKywd, SiteVO site, int resDirId) throws ActionException {
+	private List<UserDataVO> searchResidents(String searchKywd, SiteVO site, int resDirId) {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		List<UserDataVO> users = new ArrayList<>();
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
@@ -173,10 +169,10 @@ public class MyResidentsAction extends SBActionAdapter {
 		log.debug(pm.getEncValue("SEARCH_EMAIL_TXT", searchKywd.toUpperCase()));
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, "" + SecurityController.PUBLIC_REGISTERED_LEVEL);
-			ps.setString(2, ((site.getAliasPathParentId() != null) ? site.getAliasPathParentId() : site.getSiteId())); //use parent's siteId
+			ps.setString(1, Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL));
+			ps.setString(2, site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId()); //use parent's siteId
 			ps.setInt(3, SecurityController.STATUS_ACTIVE);
-			ps.setString(4, ((site.getAliasPathParentId() != null) ? site.getAliasPathParentId() : site.getSiteId())); //use parent's siteId
+			ps.setString(4, site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId()); //use parent's siteId
 			ps.setString(5, RegField.c0a80241b71c9d40a59dbd6f4b621260.toString()); //Profession register_field_id
 			ps.setInt(6, resDirId); //do not include users who are already tied to this resident director
 			ps.setString(7, "RESIDENT"); //profession value
@@ -201,7 +197,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		}
 		
 		//this may be an email address of a new person, allow them to be invited
-		if (users.size() == 0 && StringUtil.isValidEmail(searchKywd)) {
+		if (users.isEmpty() && StringUtil.isValidEmail(searchKywd)) {
 			vo = new UserDataVO();
 			vo.setEmailAddress(searchKywd);
 			users.add(vo);
@@ -246,7 +242,6 @@ public class MyResidentsAction extends SBActionAdapter {
 	private ResidentGrouping loadResidentList(String directorProfileId, SiteVO site) throws ActionException {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		List<ResidentVO> data = new ArrayList<>();
-		List<String> profileIds = new ArrayList<>(50);
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select distinct r.resident_id, r.profile_id, regd.value_txt as pgy_id, ");
 		sql.append("r.consent_dt, r.invite_sent_dt ");
@@ -258,29 +253,24 @@ public class MyResidentsAction extends SBActionAdapter {
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, ((site.getAliasPathParentId() != null) ? site.getAliasPathParentId() : site.getSiteId())); //use parent's siteId
+			ps.setString(1, site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId()); //use parent's siteId
 			ps.setString(2, RegField.DSI_PGY.toString());
 			ps.setString(3, directorProfileId);
 			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
+			while (rs.next())
 				data.add(new ResidentVO(rs));
-				profileIds.add(rs.getString("profile_id"));
-			}
+			
 		} catch (SQLException sqle) {
 			log.error("could not load residents", sqle);
 		}
 
 		//no residents, no profile lookup needed.
-		if (profileIds.size() == 0) return new ResidentVO().new ResidentGrouping(data);
+		if (data.isEmpty()) return new ResidentVO().new ResidentGrouping(data);
 
 		//load profiles for all these residents
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		try {
-			Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, profileIds);
-
-			for (ResidentVO res : data)
-				res.setProfile(profiles.get(res.getProfileId()));
-
+			pm.populateRecords(dbConn, data);
 		} catch (DatabaseException de) {
 			log.error("could not load profiles for Residents", de);
 		}
@@ -313,7 +303,6 @@ public class MyResidentsAction extends SBActionAdapter {
 	 */
 	private void loadAssgResidents(AssignmentVO assg, SiteVO site, String residentId, boolean outerJoinAssg) {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		Set<String> profileIds = new HashSet<>(50);
 		StringBuilder sql = new StringBuilder(500);
 		sql.append("select distinct r.resident_id, r.profile_id, r.consent_dt, r.invite_sent_dt, ");
 		sql.append("regd.value_txt as pgy_id, ra.res_assg_id, raa.complete_dt, raa.assg_asset_id, ");
@@ -334,7 +323,7 @@ public class MyResidentsAction extends SBActionAdapter {
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, assg.getAssgId());
-			ps.setString(2, ((site.getAliasPathParentId() != null) ? site.getAliasPathParentId() : site.getSiteId())); //use parent's siteId
+			ps.setString(2, site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId()); //use parent's siteId
 			ps.setString(3, RegField.DSI_PGY.toString());
 			ps.setInt(4, assg.getResDirId());
 			if (residentId != null) ps.setString(5, residentId);
@@ -342,7 +331,6 @@ public class MyResidentsAction extends SBActionAdapter {
 			while (rs.next()) {
 				assg.addResident(new ResidentVO(rs));
 				assg.addResidentStats(rs.getString("resident_id"), rs.getInt("crsStat"));
-				profileIds.add(rs.getString("profile_id"));
 				if (residentId != null)
 					assg.setResidentAssetCompleted(rs.getString("assg_asset_id"), rs.getDate("complete_dt"));
 			}
@@ -352,16 +340,12 @@ public class MyResidentsAction extends SBActionAdapter {
 		}
 
 		//no residents, no profile lookup needed.
-		if (profileIds.size() == 0) return;
+		if (assg.getResidents() == null || assg.getResidents().isEmpty()) return;
 
 		//load profiles for all these residents
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		try {
-			Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, new ArrayList<String>(profileIds));
-
-			for (ResidentVO res : assg.getResidents())
-				res.setProfile(profiles.get(res.getProfileId()));
-
+			pm.populateRecords(dbConn, new ArrayList<>(assg.getResidents()));
 		} catch (DatabaseException de) {
 			log.error("could not load profiles for Residents", de);
 		}
@@ -390,8 +374,9 @@ public class MyResidentsAction extends SBActionAdapter {
 
 		//load a complete profile for the invitee so we can customize the email
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
+		UserDataVO res;
 		try {
-			resident.setProfile(pm.getProfile(resident.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId()));
+			res = pm.getProfile(resident.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId());
 		} catch (DatabaseException de) {
 			throw new ActionException("could not load user profile", de);
 		}
@@ -402,8 +387,8 @@ public class MyResidentsAction extends SBActionAdapter {
 		try {
 			InviteResidentVO mail = new InviteResidentVO();
 			mail.setFrom(site.getMainEmail());
-			mail.addRecipient(resident.getProfile().getEmailAddress());
-			mail.buildMessage(resident.getProfile(), resDir, site); //builds subject and message body automatically
+			mail.addRecipient(res.getEmailAddress());
+			mail.buildMessage(res, resDir, site); //builds subject and message body automatically
 
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
@@ -454,7 +439,7 @@ public class MyResidentsAction extends SBActionAdapter {
 	 * @param resident
 	 * @throws ActionException
 	 */
-	private void delete(ResidentVO resident) throws ActionException {
+	private void delete(ResidentVO resident) {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_INST_RESIDENT set active_flg=0, update_dt=? where resident_id=?");
@@ -550,7 +535,7 @@ public class MyResidentsAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void manageMyDirector(ResidentVO resident, ActionRequest req) throws ActionException {
+	private void manageMyDirector(ResidentVO resident, ActionRequest req) {
 		StringBuilder sql = new StringBuilder(100);
 		boolean isRevoke = Convert.formatBoolean(req.getParameter("revokeDirector"));
 		if (isRevoke) {

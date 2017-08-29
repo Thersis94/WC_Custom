@@ -49,6 +49,7 @@ public class PatentAction extends SimpleActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
 	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 
@@ -62,6 +63,7 @@ public class PatentAction extends SimpleActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
@@ -71,14 +73,16 @@ public class PatentAction extends SimpleActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//ensure we were given something to search for, otherwise a query is not needed (the search form is displayed)
 		if (!req.hasParameter("code")) return;
 
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("select top 1 item_txt, desc_txt, code_txt, patents_txt  from ");
+		sql.append("select item_txt, desc_txt, code_txt, patents_txt  from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_PATENT where code_txt=? and action_id=? ");
+		sql.append("limit 1 ");
 		log.debug(sql + "|" + req.getParameter("code") + "|" + actionInit.getActionId());
 
 		//note this lookup only returns one record, ever.  0 or 1 matching to the searched value.
@@ -179,7 +183,7 @@ public class PatentAction extends SimpleActionAdapter {
 	  * @throws ActionException
 	  */
 	 private void importBeans(ArrayList<Object> beanList) throws ActionException {
-		 if (beanList == null || beanList.size() == 0) return;
+		 if (beanList == null || beanList.isEmpty()) return;
 		 
 		String customDb = getAttribute(Constants.CUSTOM_DB_SCHEMA).toString();
 		 StringBuilder sql = new StringBuilder(150);

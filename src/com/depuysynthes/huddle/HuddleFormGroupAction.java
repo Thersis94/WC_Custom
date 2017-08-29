@@ -12,7 +12,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-import com.smt.sitebuilder.admin.action.SBModuleAction;
+import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -48,7 +48,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		//Get necessary information off request.
-		String formGroupId = StringUtil.checkVal(req.getParameter(SBModuleAction.SB_ACTION_ID));
+		String formGroupId = StringUtil.checkVal(req.getParameter(SBActionAdapter.SB_ACTION_ID));
 		String organizationId = StringUtil.checkVal(req.getParameter("organizationId"));
 
 		/*
@@ -66,7 +66,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 
 		//Get formIds and formGroupId off request
 		String [] formIds = req.getParameter("formGroupIds").trim().split(",");
-		String formGroupId = StringUtil.checkVal(req.getAttribute(SBModuleAction.SB_ACTION_ID));
+		String formGroupId = StringUtil.checkVal(req.getAttribute(SBActionAdapter.SB_ACTION_ID));
 
 		/*
 		 * If we have a formGroupId, remove all existing group records and
@@ -102,8 +102,6 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 		// Get the forms for this group id
 		HuddleGroupVO forms = getHuddleGroupVO(formGroupId, site.getOrganizationId(), page.isPreviewMode(), true);
 
-		if (forms == null) throw new ActionException("No forms found");
-
 		putModuleData(forms);
 	}
 
@@ -115,7 +113,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 		HuddleSolrFormIndexer indexer = new HuddleSolrFormIndexer(props);
 		indexer.setDBConnection(getDBConnection());
 
-		String formGroupId = StringUtil.checkVal(req.getParameter(SBModuleAction.SB_ACTION_ID));
+		String formGroupId = StringUtil.checkVal(req.getParameter(SBActionAdapter.SB_ACTION_ID));
 		indexer.clearByGroup(formGroupId);
 
 		super.delete(req);

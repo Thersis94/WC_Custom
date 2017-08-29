@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -29,7 +30,6 @@ import com.smt.sitebuilder.security.SecurityController;
  * @version 1.0
  * @since Oct 23, 2015
  ****************************************************************************/
-
 public class BriefcaseAction extends MyFavoritesAction {
 	public static final String API_KEY_NAME = "key";
 	public static final String GROUP_CD = "BRIEFCASE";
@@ -130,8 +130,8 @@ public class BriefcaseAction extends MyFavoritesAction {
 	
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("delete from PROFILE_FAVORITE where PROFILE_ID=? ");
-		sql.append("and SITE_ID=? and GROUPING_CD=? and PROFILE_FAVORITE_ID in (-1");
-		for (int i=0; i < assets.length; i++) sql.append(",?");
+		sql.append("and SITE_ID=? and GROUPING_CD=? and PROFILE_FAVORITE_ID in (");
+		DBUtil.preparedStatmentQuestion(assets.length, sql);
 		sql.append(") ");
 		log.debug(sql+"|"+user+"|"+site.getSiteId()+"|"+GROUP_CD);
 
@@ -211,7 +211,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 		sql.append("select rs.profile_id from register_submittal rs ");
 		sql.append("inner join register_data rd on rs.register_submittal_id=rd.register_submittal_id and rd.register_field_id=? ");
 		sql.append("inner join profile_role pr on rs.profile_id=pr.profile_id and rs.site_id=pr.site_id and pr.status_id=? ");
-		sql.append("where cast(rd.value_txt as nvarchar(20))=? and rs.site_id=?");
+		sql.append("where cast(rd.value_txt as varchar)=? and rs.site_id=?");
 		log.debug(sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

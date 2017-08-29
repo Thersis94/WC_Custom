@@ -116,7 +116,6 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	 */
 	private boolean isAdminToolPath(String destPg) {
 		String adminToolPath = StringUtil.checkVal(getAttribute(AdminConstants.ADMIN_TOOL_PATH),null);
-		if (adminToolPath != null && destPg.contains(adminToolPath)) return true;
-		return false;
+		return adminToolPath != null && destPg.contains(adminToolPath);
 	}
 }

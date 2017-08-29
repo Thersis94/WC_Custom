@@ -25,18 +25,12 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @version 1.0
  * @since Aug 9, 2015
  ****************************************************************************/
-
-
 public class NexusKitVO extends SolrDocumentVO implements Serializable {
-	
+	private static final long serialVersionUID = 2414243653179753113L;
+
 	public static final String KIT = "kit";
 	public static final String OWNER = "owner";
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 2414243653179753113L;
-	
 	private String kitGTIN;
 	private String ownerId;
 	private String orgName;
@@ -45,30 +39,34 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	private List<NexusKitLayerVO> layers;
 	private Source source;
 	private boolean shared = false;
-	
-	NexusKitVO(String solrIndex) {
+
+	public NexusKitVO() {
+		super();
+	}
+
+	public NexusKitVO(String solrIndex) {
 		super(solrIndex);
 		layers = new ArrayList<>();
 		sharedWith = new HashMap<>();
 	}
-	
-	NexusKitVO(ActionRequest req, String solrIndex) {
+
+	public NexusKitVO(ActionRequest req, String solrIndex) {
 		this(solrIndex);
 		setData(req);
 	}
-	
+
 	NexusKitVO(ResultSet rs, String solrIndex) {
 		this(solrIndex);
 		setData(rs);
 	}
-	
+
 	/**
 	 * Uses the string util to output a pipe delimited list of values
 	 */
 	public String toString() {
 		return StringUtil.getToString(this, false, 1, "|");
 	}
- 	
+
 	public void setData(ActionRequest req) {
 		super.setDocumentId(req.getParameter("kitId"));
 		super.setTitle(req.getParameter("kitSKU"));
@@ -76,9 +74,9 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		branchCode = req.getParameter("branchCode");
 		kitGTIN = req.getParameter("kitGTIN");
 		orgName = req.getParameter("orgName");
-		
+
 	}
-	
+
 	public void setData(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		super.setDocumentId(db.getStringVal("SET_INFO_ID", rs));
@@ -112,7 +110,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	public void setKitDesc(String kitDesc) {
 		super.setSummary(kitDesc);
 	}
-	
+
 	@SolrField(name=NexusProductVO.DEVICE_ID)
 	public String getKitGTIN() {
 		return kitGTIN;
@@ -141,11 +139,11 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		if (ownerId != null) s.add(ownerId);
 		return s;
 	}
-	
+
 	public void addPermision(String profileId, String name) {
 		sharedWith.put(profileId, name);
 	}
-	
+
 	public NexusKitLayerVO  findLayer(String layerId) {
 		for (NexusKitLayerVO layer : layers) {
 			if (layerId.equals(layer.getLayerId())) return layer;
@@ -155,7 +153,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		}
 		return null;
 	}
-	
+
 
 	public List<NexusKitLayerVO> getLayers() {
 		return layers;
@@ -188,12 +186,12 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		}
 		return productIds;
 	}
-	
+
 	public int getTotalProducts() {
 		int count = 0;
 		for (NexusKitLayerVO layer : layers) {
 			count += layer.getProducts().size();
-			
+
 			for (NexusKitLayerVO sublayer : layer.getSublayers())
 				count += sublayer.getProducts().size();
 		}
@@ -242,7 +240,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	public String getBranchCode() {
 		return branchCode;
 	}
-	
+
 
 	public void setBranchCode(String branchCode) {
 		this.branchCode = branchCode;
@@ -263,12 +261,12 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		auto.append(super.getSummary());
 		return auto.toString();
 	}
-	
+
 
 	//These functions exist solely to be called by the solr document creator
 	//in order to ensure that certain fields get properly populated for use 
 	//on the main site.
-	
+
 	@SolrField(name=KIT)
 	public boolean isKit() {
 		return true;

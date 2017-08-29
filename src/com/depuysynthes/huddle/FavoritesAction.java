@@ -34,5 +34,3 @@ public class FavoritesAction extends MyFavoritesAction {
 		super.retrieve(req);
 	}
 }
-
-

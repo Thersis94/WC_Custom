@@ -82,14 +82,12 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			mail.addCC("stephanie.balsley@hmktgroup.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
-			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
@@ -166,16 +164,14 @@ public class CoopAdsEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			mail.addCC("stephanie.balsley@hmktgroup.com");
 			if (! isCFSEM ){ //Additional recipients for DePuy Funded events
 				mail.addCC("Francisco.Gonzalez@umj3.com");
 				mail.addCC("Evan.Pring@umj3.com");
-				mail.addCC("Marsha.Leo@umj3.com");
+				mail.addCC("Devin.Carroll@umj3.com");
 				mail.addCC("Brianna.Victorio@umj3.com");
 				mail.addCC("kgeorge@mediaspace.com");
 				mail.addCC("krogalski@mediaspace.com");
@@ -345,26 +341,22 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			if (! isCFSEM ){ //different recipients for DePuy Funded events
-				mail.addRecipient("amy.spencerman@hmktgroup.com");
 				mail.addRecipient("Brittany.Neff@hmktgroup.com");
-				mail.addCC("stephanie.balsley@hmktgroup.com");
 				mail.addCC(sem.getOwner().getEmailAddress());
 				mail.addCC(site.getAdminEmail());
 				mail.addCC("kshull@ITS.JNJ.com");
 				mail.addCC("educationalseminars@dpyus.jnj.com");
 				mail.addCC("Francisco.Gonzalez@umj3.com");
 				mail.addCC("Evan.Pring@umj3.com");
-				mail.addCC("Marsha.Leo@umj3.com");
+				mail.addCC("Devin.Carroll@umj3.com");
 				mail.addCC("Brianna.Victorio@umj3.com");
 				mail.addCC("kgeorge@mediaspace.com");
 				mail.addCC("krogalski@mediaspace.com");
 			} else {
 				//CFSEM recipients
-				mail.addRecipient("amy.spencerman@hmktgroup.com");
 				mail.addRecipient("Brittany.Neff@hmktgroup.com");
 				mail.addCC(site.getAdminEmail());
 				mail.addCC("kshull@ITS.JNJ.com");
-				mail.addCC("stephanie.balsley@hmktgroup.com");
 			}
 
 			mail.setSubject(subject.toString());
@@ -441,12 +433,10 @@ public class CoopAdsEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			mail.addCC("stephanie.balsley@hmktgroup.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject(subject);
 			mail.setFrom(site.getMainEmail());
@@ -510,16 +500,14 @@ public class CoopAdsEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			mail.addCC("stephanie.balsley@hmktgroup.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
-			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
@@ -558,15 +546,13 @@ public class CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
-			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			mail.addCC("stephanie.balsley@hmktgroup.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
-			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
@@ -601,12 +587,10 @@ public class CoopAdsEmailer {
 			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
-			mail.addCC("stephanie.balsley@hmktgroup.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
-			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");

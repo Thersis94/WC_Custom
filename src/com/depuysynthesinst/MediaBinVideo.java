@@ -33,6 +33,7 @@ import com.smt.sitebuilder.security.SecurityController;
 public class MediaBinVideo extends SimpleActionAdapter {
 
 	public MediaBinVideo() {
+		super();
 	}
 
 	/**
@@ -41,50 +42,60 @@ public class MediaBinVideo extends SimpleActionAdapter {
 	public MediaBinVideo(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
-	
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		
+
 		//this portlet does not run when /qs/ is present - DSI Anatomy pages
 		if (req.hasParameter("reqParam_1")) return;
-		
+
 		//query Solr for the assets we need to display
 		//everything we need for the View is contained in the SolrDocument(s) returned.
 		SolrActionVO qData = new SolrActionVO();
-		
+
 		SolrFieldVO field = new SolrFieldVO();
 		field.setBooleanType(BooleanType.AND);
 		field.setFieldType(FieldType.SEARCH);
 		field.setFieldCode(SearchDocumentHandler.DOCUMENT_ID);
 		field.setValue((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		qData.addSolrField(field);
-		
+
 		SolrFieldVO field2 = new SolrFieldVO();
 		field2.setBooleanType(BooleanType.AND);
 		field2.setFieldType(FieldType.FILTER);
 		field2.setFieldCode(SearchDocumentHandler.INDEX_TYPE);
 		field2.setValue(MediaBinSolrIndex.INDEX_TYPE);
 		qData.addSolrField(field2);
-		
+
 		qData.setOrganizationId(site.getOrganizationId());
 		qData.setRoleLevel((role != null) ? role.getRoleLevel() : SecurityController.PUBLIC_ROLE_LEVEL);
 		qData.setNumberResponses(1);
-		
+
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes);
 		SolrResponseVO resp = sqp.processQuery(qData);
-		
+
 		SolrDocument doc = null;
-		if (resp.getResultDocuments() != null && resp.getResultDocuments().size() > 0)
+		if (resp.getResultDocuments() != null && !resp.getResultDocuments().isEmpty())
 			doc = resp.getResultDocuments().get(0);
-		
-		//log.debug(doc);
+
 		super.putModuleData(doc);
 	}
-
 }

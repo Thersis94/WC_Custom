@@ -100,16 +100,7 @@ public class TTLMSSolrIndexer extends SMTAbstractIndex {
 	public boolean isDBConnection() {
 		return false;
 	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#isCMSConnection()
-	 */
-	@Override
-	public boolean isCMSConnection() {
-		return false;
-	}
-
-
+	
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
 	 */

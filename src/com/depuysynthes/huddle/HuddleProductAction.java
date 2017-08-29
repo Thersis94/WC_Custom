@@ -45,7 +45,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  ****************************************************************************/
 
 public class HuddleProductAction extends SimpleActionAdapter {
-	
+
 	public HuddleProductAction() {
 		super();
 	}
@@ -61,15 +61,11 @@ public class HuddleProductAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		String param1 = StringUtil.checkVal(req.getParameter(ActionRequest.PARAMETER_KEY + "1"), null);
-
-		if (param1 != null) {
+		if (req.hasParameter(ActionRequest.PARAMETER_KEY + "1")) {
 			//load the details view for a single product
 			detailSearch(req);
 		} else {
-			listSearch(req, mod.getDisplayColumn().equals(page.getDefaultColumn()));
+			listSearch(req);
 		}
 	}
 
@@ -83,7 +79,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-		
+
 		//run a search for the PRODUCT using productAlias (documentUrl)
 		req.setAttribute("searchField", SearchDocumentHandler.DOCUMENT_URL);
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
@@ -112,22 +108,22 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		p.setTitle((String) doc.getFieldValue(SearchDocumentHandler.TITLE));
 		p.setDescText((String) doc.getFieldValue(SearchDocumentHandler.SUMMARY));
 		p.setCatalogId(sd.getFamilyName());
-		
+
 		//overwrite the browser title
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		page.setTitleName(p.getTitle());
-				
+
 		addProductAttributes(p, doc, req);
 
 		//get the product contacts as well.
 		//skip is passed from EmailFriendAction, where we don't need contacts
 		if (!req.hasParameter("skipContacts"))
 			addProductContacts(p, site.getOrganizationId(), role.getRoleLevel());
-		
+
 		super.putModuleData(p);
 	}
-	
-	
+
+
 	/**
 	 * parse the solr document's attributes to determine which are product attibutes.
 	 * do another Solr query if need, to load supporting information for the attributes.
@@ -137,27 +133,26 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 */
 	private void addProductAttributes(HuddleProductVO p, SolrDocument doc, ActionRequest req) {
 		Map<String, Collection<Object>> subqueryList = new HashMap<>();
-		
+
 		// Loop through all items on the document looking for any prefixed with attribute types
 		for (String key : doc.getFieldNames()) {
 			log.debug("found product attribute: " + key);
-			
+
 			//verify it's one of our custom product attributes; we don't want all of Solr's junk
 			if (!key.startsWith(HuddleUtils.PROD_ATTR_PREFIX)) continue;
-			
+
 			String name = HuddleUtils.makeProdAttrNmFromSolrNm(key);
 			String type = HuddleUtils.makeProdAttrTypeFromSolrNm(key).toUpperCase();
 			Integer order = HuddleUtils.makeProdAttrOrderFromSolrNm(key);
 			log.debug(name + " | " + type + " | " + order);
-			
+
 			switch (type) {
 				case HuddleUtils.PROD_ATTR_IMG_TYPE:
 					List<String> images = new ArrayList<>();
 					// keys starting with the image prefix are added to the ProductAttributeContainer
 					// and are used to create the product's image gallery.
 					for (Object o : doc.getFieldValues(key)) {
-						if (o == null) continue;
-						images.add(o.toString());
+						if (o != null) images.add(o.toString());
 					}
 					p.setImages(images);
 					break;
@@ -172,46 +167,46 @@ public class HuddleProductAction extends SimpleActionAdapter {
 			}
 			log.debug("saved attribute " + name);
 		}
-		
+
 		//now query for the dependent records (typically mediabin or CMS),  
 		// then marry them back to the attribute they belong to
 		if (subqueryList.size() > 0)
 			runAssetLookup(p, subqueryList, req);
-		
+
 	}
-	
-	
+
+
 	/**
 	 * sends a suplimental Solr query for assets tied to this product
 	 */
 	private void runAssetLookup(HuddleProductVO p, Map<String, Collection<Object>> subqueryList, ActionRequest req) {
 		//build a list of documentIds we need to lookup
 		Map<String, SolrDocument> solrDocs = new HashMap<>();
-		for (String name : subqueryList.keySet()) {
-			for (Object o : subqueryList.get(name))
+		for (Map.Entry<String, Collection<Object>> entry: subqueryList.entrySet()) {
+			for (Object o : entry.getValue())
 				solrDocs.put(o.toString(), null);
 		}
-		
+
 		//query solr once, for all the attributes, then turn it into a Map for each lookup
 		List<SolrDocument> solrResults = this.loadAttributeAssets(req, solrDocs.keySet());
 		for (SolrDocument sd : solrResults)
 			solrDocs.put(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID).toString(), sd);
-		
+
 		// perform the marriages
-		for (String name : subqueryList.keySet()) {
+		for (Map.Entry<String, Collection<Object>> entry: subqueryList.entrySet()) {
 			Collection<Object> myDocs = new ArrayList<>(50);
 			//loop the attributes objects, find each in the solr results, and add it to myDocs
-			for (Object o : subqueryList.get(name)) {
+			for (Object o : entry.getValue()) {
 				SolrDocument sd = solrDocs.get(o.toString());
 				if (sd != null) myDocs.add(sd);
 			}
 			//put myDocs into this attribute's record (replaces the list of documentIds), then move on to the next
-			log.debug("set " + myDocs.size() + " docs into " + name);
-			p.addProdAttribute(name, myDocs);
+			log.debug("set " + myDocs.size() + " docs into " + entry.getKey());
+			p.addProdAttribute(entry.getKey(), myDocs);
 		}
 	}
 
-	
+
 	/**
 	 * lookup the product contacts, which is another Solr query
 	 * @param product
@@ -224,7 +219,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		qData.setStartLocation(0);
 		qData.setRoleLevel(roleLevel);
 		qData.setOrganizationId(orgId);
-		
+
 		//bind by product name
 		SolrFieldVO field = new SolrFieldVO();
 		field.setBooleanType(BooleanType.AND);
@@ -232,7 +227,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		field.setFieldCode(SearchDocumentHandler.TITLE_LCASE);
 		field.setValue(product.getTitle().toLowerCase());
 		qData.addSolrField(field);
-		
+
 		//also bind by index_type
 		SolrFieldVO field2 = new SolrFieldVO();
 		field2.setBooleanType(BooleanType.AND);
@@ -240,7 +235,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		field2.setFieldCode(SearchDocumentHandler.INDEX_TYPE);
 		field2.setValue(HuddleUtils.IndexType.HUDDLE_PRODUCT_CONTACT.toString());
 		qData.addSolrField(field2);
-		
+
 		List<ProductContactVO> contacts = new ArrayList<>(15); //same count as above
 		SolrResponseVO solrResp =  sqp.processQuery(qData);
 		for (SolrDocument sd : solrResp.getResultDocuments())
@@ -250,7 +245,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		product.setContacts(contacts);
 		log.debug("added " + product.getContactCnt() + " contacts to " + product.getTitle().toLowerCase());
 	}
-	
+
 
 	/**
 	 * loads a list of assets for the product - we return SolrDocuments here so we can apply the SolrBusinessRules object in the view (consistent w/site)
@@ -288,7 +283,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 * @param mainCol
 	 * @throws ActionException
 	 */
-	private void listSearch(ActionRequest req, boolean mainCol) throws ActionException {
+	private void listSearch(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
@@ -305,26 +300,24 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		req.setParameter("fmid", "");
 	}
 
-	
+
 	/**
 	 * Prepare the filter queries for solr
 	 */
 	private void prepareFilterQueries(ActionRequest req) {
 		// honor category and specialty pre-filters coming off the section homepages
 		if (req.hasParameter("category")) {
-			//String cat = StringUtil.capitalizePhrase(req.getParameter("category"), 0, " -");
 			String cat = req.getParameter("category"); //above cleanup done in view
 			req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + cat);
 		} else if (req.hasParameter("specialty")) {
 			req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + req.getParameter("specialty"));
 		}
-		
+
 		HuddleUtils.determineSortParameters(req);
 
 		//called from the codman homepage ancilary view; the data is loaded via ajax, 
 		//so we don't need any responses, just the facets.
 		if (req.hasParameter("nr")) 
 			req.setParameter("rpp", "0");
-		
 	}
 }

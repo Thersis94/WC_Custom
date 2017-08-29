@@ -72,7 +72,7 @@ public class ThumbnailGenerator extends CommandLineUtil {
 		records = parseRecords(basePath, records);
 
 		//for each file still on the list, we need to create a thumbnail image
-		if (records.size() > 0)
+		if (!records.isEmpty())
 			createImages(basePath, props.getProperty("mediabinDir"), records);
 
 		//send a notification email
@@ -91,7 +91,7 @@ public class ThumbnailGenerator extends CommandLineUtil {
 	 * @throws MailException
 	 */
 	private void sendEmail() throws ApplicationException, InvalidDataException, MailException {
-		if (videos.size() > 0) {
+		if (!videos.isEmpty()) {
 			email.append("\n<h2>Videos that need your attention</h2>");
 			email.append("<table width=\"100%\" border='1'>");
 			email.append("<tr><th align='left'>Tracking Number</th><th align='left'>Folder</th><th align='left'>File Name</th><th align='left'>Video</th></tr>\n");
@@ -117,7 +117,7 @@ public class ThumbnailGenerator extends CommandLineUtil {
 	private Set<MediaBinAssetVO> getMediabinAssetList() {
 		Set<MediaBinAssetVO> records = new HashSet<>();
 		Calendar huddleCal = Calendar.getInstance();
-		boolean loadHuddle = (props.getProperty("dsHuddle") != null);
+		boolean loadHuddle = props.getProperty("dsHuddle") != null;
 
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select tracking_no_txt, asset_nm, asset_type from ");

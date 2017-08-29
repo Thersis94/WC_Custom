@@ -134,7 +134,7 @@ public class ProductAssetAction extends SimpleActionAdapter {
 		qData.setOrganizationId(organizationId);
 		SolrResponseVO resp = sqp.processQuery(qData);
 		
-		if (resp != null && resp.getResultDocuments().size() > 0) {
+		if (resp != null && !resp.getResultDocuments().isEmpty()) {
 			return resp.getResultDocuments().get(0);
 		} else {
 			return null;

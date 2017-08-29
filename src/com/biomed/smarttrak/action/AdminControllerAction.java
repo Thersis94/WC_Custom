@@ -101,7 +101,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	public static final int UPDATES_ROLE_LVL = 5;
 	public static final int STAFF_ROLE_LEVEL = 90;
 
-	public static final int DOC_ID_MIN_LEN = 15;  //used to determine if a pkId will be globally unique if fed to Solr as documentId, 
+	//used to determine if a pkId will be globally unique if fed to Solr as documentId, (I.E. MARKET_113716)
+	public static final int DOC_ID_MIN_LEN = 13;
 
 	public static final String PUBLIC_401_PG = "/subscribe"; //where users get redirected when they're not authorized to view an asset
 

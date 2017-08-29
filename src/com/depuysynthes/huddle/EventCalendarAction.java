@@ -18,8 +18,8 @@ import com.depuysynthes.huddle.solr.CalendarSolrIndexer;
 import com.depuysynthesinst.events.CourseCalendar;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.io.mail.CalendarEventMessageVO;
 import com.siliconmtn.io.mail.CalendarEventMessageVO.Method;
@@ -27,11 +27,11 @@ import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.MessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
-import com.smt.sitebuilder.admin.action.SBModuleAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -83,7 +83,7 @@ public class EventCalendarAction extends CourseCalendar {
 
 			if (Convert.formatBoolean(req.hasParameter("isBatch"))) {
 				req.setParameter("manMod", "true", true);
-				super.adminRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), req.getParameter(SBModuleAction.SB_ACTION_ID));
+				super.adminRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), req.getParameter(SBActionAdapter.SB_ACTION_ID));
 				//append to the above-created redirectURL
 				StringBuilder redirect = new StringBuilder((String)req.getAttribute(Constants.REDIRECT_URL));
 				redirect.append("&cPage=facade&facadeType=true");

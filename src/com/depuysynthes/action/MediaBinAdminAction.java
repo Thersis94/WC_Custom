@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.siliconmtn.action.ActionException;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -30,10 +29,11 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
 	public static final String[] VIDEO_ASSETS = { "multimedia file", "quicktime", "flash video" };
 	public static final String[] PDF_ASSETS = { "pdf", "adobe illustrator" };
 
-	
+
 	/* (non-Javadoc)
-     * @see com.siliconmtn.action.ActionController#list(com.siliconmtn.http.SMTServletRequest)
-     */
+	 * @see com.siliconmtn.action.ActionController#list(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		String orgId = req.getParameter("organizationId");
 		MediaBinDistChannels mb = new MediaBinDistChannels(orgId);
@@ -43,9 +43,6 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_MEDIABIN where import_file_cd=?");
-		if (req.hasParameter("sDivision")) sql.append(" and business_unit_nm like ?");
-		if (req.hasParameter("sProduct"))  sql.append(" and (prod_family like ? or prod_nm like ?)");
-		if (req.hasParameter("sTracking")) sql.append(" and tracking_no_txt like ?");
 		//DS and DSI need to be sub-filtered here, using opco_nm
 		if (typeCd == 1) sql.append(" and opco_nm like ?");
 
@@ -63,20 +60,12 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
 
 		log.debug(sql);
 
-		List<MediaBinAssetVO> data = new ArrayList<MediaBinAssetVO>();
-		PreparedStatement ps = null;
+		List<MediaBinAssetVO> data = new ArrayList<>();
 		int i=0;
-		try { 
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setInt(++i, typeCd); //organization/country
-			if (req.hasParameter("sDivision")) ps.setString(++i, "%" + req.getParameter("sDivision") + "%");
-			if (req.hasParameter("sProduct")) {
-				ps.setString(++i, req.getParameter("sProduct") + "%");
-				ps.setString(++i, req.getParameter("sProduct") + "%");
-			}
-			if (req.hasParameter("sTracking")) ps.setString(++i, req.getParameter("sTracking") + "%");
 			if (typeCd == 1) ps.setString(++i, "%" + opCoNm + "%");
-			
+
 			if ("quicktime".equalsIgnoreCase(assetType)) {
 				ps.setString(++i, "video");
 				for (String at: VIDEO_ASSETS) ps.setString(++i, at);
@@ -91,12 +80,9 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
 
 		} catch (SQLException sqle) {
 			throw new ActionException("Error loading MediaBin data", sqle);
-		} finally {
-			DBUtil.close(ps);
 		}
 
 		log.debug("size=" + data.size());
-		super.putModuleData(data, data.size(), true);
+		putModuleData(data, data.size(), true);
 	}
-
 }

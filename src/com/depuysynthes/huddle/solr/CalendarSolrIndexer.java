@@ -18,6 +18,7 @@ import org.apache.solr.common.SolrInputDocument;
 import com.depuysynthes.huddle.HuddleUtils;
 import com.depuysynthesinst.events.CourseCalendarSolrIndexer;
 import com.siliconmtn.common.html.state.USStateList;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
@@ -39,7 +40,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 
 	protected Map<Object, Object> states;
 	private static final int MIN_ROLE_LVL = SecurityController.PUBLIC_REGISTERED_LEVEL;
-	
+
 	/**
 	 * @param config
 	 */
@@ -50,10 +51,10 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		states = new HashMap<>();
 		//put together a state list for lookups from stateCode
 		for(Map.Entry<Object, Object> entry : new USStateList().getStateList().entrySet())
-		    states.put(entry.getValue(), entry.getKey());
+			states.put(entry.getValue(), entry.getKey());
 	}
-	
-	
+
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
 	 */
@@ -61,15 +62,16 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 	public String getIndexType() {
 		return HuddleUtils.IndexType.COURSE_CAL.toString();
 	}
-	
-	
+
+
 	/**
 	 * push the list of pased VOs into Solr.
 	 */
+	@Override
 	protected void indexEvents(SolrClient server, List<EventEntryVO> data) {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 		List<SolrInputDocument> docs = new ArrayList<>(data.size());
-		
+
 		for (EventEntryVO vo : data) {
 			SolrInputDocument doc = new SolrInputDocument();
 			try {
@@ -88,7 +90,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				doc.setField(SearchDocumentHandler.CONTENTS, StringUtil.getToString(vo));
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "EVENT");
 				doc.setField("eventType_s", StringUtil.checkVal(vo.getLocationDesc()));
-				
+
 				//add-ons for Huddle
 				doc.setField("status_i", vo.getStatusFlg());
 				doc.setField("externalUrl_s", vo.getEventFilePath()); //uploaded file or brochure
@@ -111,8 +113,8 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				log.error("Unable to index course: " + StringUtil.getToString(vo), e);
 			}
 		}
-		
-		if (docs.size() > 0) {
+
+		if (!docs.isEmpty()) {
 			try {
 				server.add(docs);
 			} catch (Exception e) {
@@ -121,7 +123,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		}
 	}
 
-	
+
 	/**
 	 * loads approved Events portlets that are attached to site pages,
 	 * for all orgs in this WC instance. 
@@ -134,7 +136,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		String sql = buildQuery("HUDDLE_COURSE_CAL", eventIds);
 		log.debug(sql);
 
-		List<EventEntryVO> data = new ArrayList<EventEntryVO>();
+		List<EventEntryVO> data = new ArrayList<>();
 		try (PreparedStatement ps = conn.prepareStatement(sql)) {
 			ps.setString(1, organizationId);
 			if (eventIds != null) {
@@ -148,11 +150,11 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				//ensure pages on subsites are aliased properly.
 				String subSiteAlias = StringUtil.checkVal(rs.getString(1));
 				if (subSiteAlias.length() > 0) url = "/" + subSiteAlias + url;
-				
+
 				EventEntryVO vo = new EventEntryVO(rs);
 				vo.setActionUrl(url + vo.getActionId());
 				vo.setOrganizationId(organizationId);
-				
+
 				log.info("loaded " + vo.getEventTypeCd() + " - " + vo.getEventName());
 				data.add(vo);
 			}
@@ -164,10 +166,10 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		log.info("loaded " + data.size() + " events");
 		return data;
 	}
-	
 
-	
-	
+
+
+
 	/**
 	 * returns the event lookup query used to load indexable events
 	 * @return
@@ -191,13 +193,12 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
 		sql.append("and a.module_type_id='").append(moduleTypeId);
 		sql.append("' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
-		sql.append("and coalesce(ee.end_dt, ee.start_dt) >= DATEADD(month, -6, CURRENT_TIMESTAMP) "); //only include -6mos of events - per business requirement
+		sql.append("and coalesce(ee.end_dt, ee.start_dt) >= CURRENT_DATE - interval '6 months' "); //only include -6mos of events - per business requirement
 
 		//limit the results to the new events we're adding - this scenario is invoked by the real-time indexer
 		if (eventIds != null) {
-			sql.append("and ee.event_entry_id in (''");
-			for (@SuppressWarnings("unused") String s : eventIds)
-				sql.append(",?");
+			sql.append("and ee.event_entry_id in (");
+			DBUtil.preparedStatmentQuestion(eventIds.size(), sql);
 			sql.append(") ");
 		}
 		return sql.toString();

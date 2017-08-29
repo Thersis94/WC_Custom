@@ -542,7 +542,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			}
 		}
 		log.info("found " + mediabinSOUSNames.size() + " unique SOUS names in Mediabin assets");
-		removeProductReferences(masterRecords, products);
+		removeProductReferences(products);
 	}
 
 
@@ -550,7 +550,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * trims the mediabinSOUSNames list of assets bound to products
 	 * @param masterRecords
 	 */
-	protected void removeProductReferences(Map<String, MediaBinDeltaVO> masterRecords, List<ProductVO> products) {
+	protected void removeProductReferences(List<ProductVO> products) {
 		String prodSousNm;
 		for (ProductVO prod : products) {
 			//remove mbSousName values if they match values at the product level
