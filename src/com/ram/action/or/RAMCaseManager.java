@@ -27,6 +27,7 @@ import com.ram.workflow.data.vo.LocationItemMasterVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.filter.fileupload.Constants;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -103,8 +104,9 @@ public class RAMCaseManager {
 		
 		SignatureType st = s.getSignatureType();
 		if (st != null && SignatureType.PROVIDER == st && cVo.getHospitalRep() != null) {
-			s.setFirstNm(cVo.getHospitalRep().getFirstName());
-			s.setLastNm(cVo.getHospitalRep().getLastName());
+			UserDataVO user = (UserDataVO)req.getSession().getAttribute(com.smt.sitebuilder.common.constants.Constants.USER_DATA);
+			s.setFirstNm(user.getFirstName());
+			s.setLastNm(user.getLastName());
 		}
 		
 		if (st != null && SignatureType.SALES_REP == st && cVo.getSalesRep() != null) {
