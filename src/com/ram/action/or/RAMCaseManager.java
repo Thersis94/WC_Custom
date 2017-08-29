@@ -15,6 +15,7 @@ import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.or.vo.RAMCaseVO.RAMCaseStatus;
+import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
 import com.ram.action.or.vo.RAMSignatureVO;
 import com.ram.datafeed.data.RAMProductVO;
 import com.ram.persistence.AbstractPersist;
@@ -98,6 +99,20 @@ public class RAMCaseManager {
 	public RAMCaseVO addSignature(ActionRequest req) throws Exception {
 		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
 		RAMSignatureVO s = new RAMSignatureVO(req);
+		log.debug("type: " + s.getSignatureTypeTxt());
+		
+		SignatureType st = s.getSignatureType();
+		if (st != null && SignatureType.PROVIDER == st && cVo.getHospitalRep() != null) {
+			s.setFirstNm(cVo.getHospitalRep().getFirstName());
+			s.setLastNm(cVo.getHospitalRep().getLastName());
+		}
+		
+		if (st != null && SignatureType.SALES_REP == st && cVo.getSalesRep() != null) {
+			s.setFirstNm(cVo.getSalesRep().getFirstName());
+			s.setLastNm(cVo.getSalesRep().getLastName());
+		}
+		
+		log.debug("name: " + s.getFullName());
 		cVo.addSignature(s);
 		persistCaseDefault(cVo);
 		return cVo;
