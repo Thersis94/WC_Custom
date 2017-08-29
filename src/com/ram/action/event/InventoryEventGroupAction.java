@@ -60,6 +60,7 @@ public class InventoryEventGroupAction extends SBActionAdapter {
 			InventoryEventGroupVO data = this.getGroupInfo(id);
 			//this date is the selected Event's schedule date, all recurring events we create will be from this date forwards.
 			data.setCreateDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("eventDate")));
+			log.info("DT: " + data.getCreateDate() + "|" + req.getParameter("eventDate"));
 			this.putModuleData(data);
 		} catch (SQLException e) {
 			throw new ActionException("unable to retrieve inventory group data", e);
