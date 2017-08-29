@@ -31,7 +31,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
@@ -266,9 +265,7 @@ public class ProductExplorer extends SBActionAdapter {
 		if (req.hasParameter("selNodes")) buildNodeParams(req, qData);
 
 		addFacetFields(req, qData);
-
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-		
 		SolrResponseVO vo = sqp.processQuery(qData);
 		
 		// Check to see if all the results should be returned instead of the current page
@@ -445,7 +442,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected SolrActionVO buildSolrAction(ActionRequest req, int start) throws ActionException {
-		SolrAction sa = new SolrAction(actionInit);
+		SmarttrakSolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
@@ -459,9 +456,16 @@ public class ProductExplorer extends SBActionAdapter {
 		qData.setAclTypeNo(10);
 		qData.setStartLocation(start);
 		
+		sa.includeRoleACL(req, qData);
+		
 		return qData;
 	}
+	
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		BuildType type = BuildType.valueOf(req.getParameter("buildType"));

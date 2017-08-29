@@ -70,7 +70,7 @@ public class AccountPermissionAction extends AbstractTreeAction {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select a.section_id, a.parent_id, a.section_nm, a.order_no, a.solr_token_txt, ");
-		sql.append("b.account_id, b.browse_no, b.updates_no, b.fd_no, b.ga_no, b.pe_no, b.an_no from ");
+		sql.append("b.account_id, b.browse_no, b.updates_no, b.fd_no, b.ga_no, b.pe_no, b.an_no, a.is_gap from ");
 		sql.append(schema).append("BIOMEDGPS_SECTION a ");
 		sql.append("left outer join ").append(schema).append("BIOMEDGPS_ACCOUNT_ACL b ");
 		sql.append("on a.section_id=b.section_id and b.account_id=? ");

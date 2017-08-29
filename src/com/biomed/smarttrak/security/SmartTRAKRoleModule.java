@@ -131,7 +131,8 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 		SMTDBConnection dbConn = (SMTDBConnection)getAttribute(DB_CONN);
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("select sum(fd_no) as fd, sum(ga_no) as ga, sum(pe_no) as pe, sum(an_no) as an, sum(browse_no) as prof from ").append(schema);
+		sql.append("select sum(fd_no) as fd, sum(ga_no) as ga, sum(pe_no) as pe, sum(an_no) as an, ");
+		sql.append("sum(browse_no) as prof, sum(updates_no) as upd from ").append(schema);
 		sql.append("BIOMEDGPS_ACCOUNT_ACL where account_id=?");
 		log.debug(sql);
 
@@ -140,6 +141,7 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 		int anAuth = 0;
 		int peAuth = 0;
 		int browseAuth = 0;
+		int upAuth = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, user.getAccountId());
 			ResultSet rs = ps.executeQuery();
@@ -151,6 +153,7 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 				peAuth = rs.getInt("pe") > 0 ? 1 : 0;
 				anAuth = rs.getInt("an") > 0 ? 1 : 0;
 				browseAuth = rs.getInt("prof") > 0 ? 1 : 0;
+				upAuth = rs.getInt("upd") > 0 ? 1 : 0;
 			}
 
 		} catch (SQLException sqle) {
@@ -163,6 +166,7 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 		role.setPeAuthorized(0, peAuth); //not overrideable at the user level
 		role.setAnAuthorized(0, anAuth); //not overrideable at the user level
 		role.setBrowseAuthorized(0, browseAuth);
+		role.setUpAuthorized(0, upAuth); //not overrideable at the user level
 		role.setAccountOwner(user.getAcctOwnerFlg());
 	}
 
