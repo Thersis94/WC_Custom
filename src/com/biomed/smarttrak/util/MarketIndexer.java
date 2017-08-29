@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.util;
 
 //Java 8
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,15 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-
-
 //Solr 5.5
 import org.apache.solr.client.solrj.SolrClient;
 
-
-
 // SMT base libs
 import com.siliconmtn.data.Node;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 
@@ -72,12 +70,25 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		// job or right to close it.
 		SolrActionUtil util = new SmarttrakSolrUtil(server);
 		try {
-			util.addDocuments(retrieveMarkets(null));
+			util.addDocuments(retrieveMarkets());
 		} catch (Exception e) {
 			log.error("Failed to index markets", e);
 		}
 	}
-
+	
+	/**
+	 * Takes a variable amount of market ids to add to Solr
+	 * @param ids
+	 */
+	public void addIndexItems(String...ids){
+		SolrClient server = makeServer();
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+			util.addDocuments(retrieveMarkets(ids));
+			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
+		} catch (Exception e) {
+			log.error("Failed to index markets", e);
+		}
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -85,31 +96,47 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 */
 	@Override
 	public void addSingleItem(String id) {
-		SolrClient server = makeServer();
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
-			util.addDocuments(retrieveMarkets(id));
-			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
-		} catch (Exception e) {
-			log.error("Failed to index market with id: " + id, e);
+		addIndexItems(id);
+	}
+	
+	/**
+	 * Purges multiple markets from Solr based on status
+	 * @param marketIds
+	 * @param statuses
+	 */
+	public void purgeIndexItems(String[] marketIds, String[] statuses){
+		if(marketIds == null || statuses == null) return; //quick fail
+			
+		for (int i = 0; i < marketIds.length; i++) {
+			String marketId = marketIds[i];
+			String status = statuses[i];
+			
+			//if status is archived or deleted remove it
+			if ("A".equals(status) || "D".equals(status)) {
+				try {
+					purgeSingleItem(marketId);
+				} catch (IOException e) {
+					log.warn("could not delete market from solr " + marketId, e);
+				}
+			}			
 		}
 	}
-
 
 	/**
 	 * Get all markets from the database
 	 * @param id
 	 * @return
 	 */
-	protected List<MarketVO> retrieveMarkets(String id) {
+	protected List<MarketVO> retrieveMarkets(String ...ids) {
 		List<MarketVO> markets = new ArrayList<>();
 		SmarttrakTree hierarchies = createHierarchies();
-		String sql = buildRetrieveSql(id);
+		String sql = buildRetrieveSql(ids);
 
 		String currentMarketId = "";
 		MarketVO market = null;
 		DBProcessor db = new DBProcessor(dbConn);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			if (id != null) ps.setString(1, id);
+			populateStatementMarks(ps, ids);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				if (!currentMarketId.equals(rs.getString("MARKET_ID"))) {
@@ -127,7 +154,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 			if (market != null) 
 				markets.add(market);
 
-			buildContent(markets, id);
+			buildContent(markets, ids);
 
 		} catch (SQLException e) {
 			log.error("could not load Market for Solr", e);
@@ -165,8 +192,18 @@ public class MarketIndexer  extends SMTAbstractIndex {
 			order.insert(0, hierarchyOrder);
 		}
 		
-		// End with appending the market's order number for intra-section ordering
+		//Append the market's order number for intra-section ordering(overwrites region ordering)
 		order.append(StringUtil.padLeft(StringUtil.checkVal(market.getOrderNo()), '0', 3));
+		
+		//Add the market's region code for intra-region ordering
+		if(!StringUtil.isEmpty(market.getRegionCode())) {
+			try{
+				MarketVO.RegionOrder region = MarketVO.RegionOrder.valueOf(market.getRegionCode());
+				order.append(StringUtil.padLeft(StringUtil.checkVal(region.getOrderVal()), '0', 3));
+			}catch(IllegalArgumentException e) { 
+				log.error("Region code not found within enum: " + e);
+			} 	
+		}
 		
 		market.addAttribute("order", order.toString());
 	}
@@ -179,21 +216,21 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 * @param id
 	 * @throws SQLException
 	 */
-	protected void buildContent(List<MarketVO> markets, String id) throws SQLException {
+	protected void buildContent(List<MarketVO> markets, String... ids) throws SQLException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT x.MARKET_ID, x.VALUE_TXT FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR x ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
 		sql.append("on a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
 		sql.append("WHERE a.TYPE_CD = 'HTML' ");
-		if (!StringUtil.isEmpty(id)) sql.append("and x.MARKET_ID = ? ");
+		addStatementMarks(sql, "x.MARKET_ID", ids);
 		sql.append("ORDER BY x.MARKET_ID ");
 
 		StringBuilder content = new StringBuilder(500);
 		String currentMarket = "";
 		Map<String, StringBuilder> contentMap = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
+			populateStatementMarks(ps, ids);
 
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
@@ -231,6 +268,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		db.executePopulate(vo, rs);
 		vo.setUpdateDt(rs.getTimestamp("mod_dt"));
 		vo.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
+		vo.addAttribute("indent", rs.getInt("indent_no"));
 
 		if (1 == rs.getInt("PUBLIC_FLG")) {
 			vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
@@ -261,7 +299,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 * @param id
 	 * @return
 	 */
-	protected String buildRetrieveSql(String id) {
+	protected String buildRetrieveSql(String ...ids) {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT m.*, coalesce(m.update_dt, m.create_dt) as mod_dt, ms.SECTION_ID, s.SOLR_TOKEN_TXT ");
@@ -269,7 +307,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_SECTION ms ON ms.MARKET_ID = m.MARKET_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ON ms.SECTION_ID = s.SECTION_ID ");
 		sql.append("WHERE m.status_no not in ('A','D') "); //do not push archived or deleted markets to Solr
-		if (id != null) sql.append("and m.MARKET_ID = ? ");
+		addStatementMarks(sql, "m.MARKET_ID", ids);
 		return sql.toString();
 	}
 
@@ -303,7 +341,34 @@ public class MarketIndexer  extends SMTAbstractIndex {
 
 		return t;
 	}
-
+	
+	/**
+	 * Helper method to add statement marks(?) into StringBuilder sql query
+	 * @param sql
+	 * @param ids
+	 */
+	private void addStatementMarks(StringBuilder sql, String primaryId, String... ids){
+		if (ids != null && ids.length > 0) {
+			sql.append("and ").append(primaryId).append(" in( ");
+			DBUtil.preparedStatmentQuestion(ids.length, sql);
+			sql.append(" ) ");
+		}
+	}
+	
+	/**
+	 * Helper method to set the values into the PreparedStatement for us
+	 * @param ps
+	 * @param ids
+	 * @throws SQLException
+	 */
+	private void populateStatementMarks(PreparedStatement ps, String... ids) throws SQLException{
+		if (ids != null && ids.length > 0){
+			int counter = 0;
+			for (String id : ids) {
+				ps.setString(++counter, id);
+			}
+		}		
+	}
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
