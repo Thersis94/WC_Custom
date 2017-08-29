@@ -42,6 +42,7 @@ public class UpdatesEditionDetailedEmbedAction extends UpdatesEditionAction {
 	 * (non-Javadoc)
 	 * @see com.biomed.smarttrak.action.UpdatesEditionAction#packageDataForDisplay(com.siliconmtn.data.Tree, java.util.List)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	protected void packageDataForDisplay(Tree t, List<UpdateVO> updates) {
 		Map<String, Map<String, List<UpdateVO>>> dataMap = new LinkedHashMap<>();
@@ -49,11 +50,19 @@ public class UpdatesEditionDetailedEmbedAction extends UpdatesEditionAction {
 		for (Node n : t.getRootNode().getChildren()) {
 			boolean hasChildren = false;
 			Map<String, List<UpdateVO>> children = new LinkedHashMap<>();
+
+			//Look for Updates tied to the Root Node.
+			Object o = n.getUserObject();
+			if(o != null && o instanceof List) {
+				hasChildren = addUpdates(children, "root", (List<UpdateVO>)o);
+			}
+
 			if(n.getTotalChildren() > 0) {
 				for(Node c : n.getChildren()) {
+
+					//Look for Updates on the Child Nodes.
 					if(c.getTotalChildren() > 0) {
-						children.put(c.getNodeName(), (List<UpdateVO>)c.getUserObject());
-						hasChildren = true;
+						hasChildren = addUpdates(children, c.getNodeName(), (List<UpdateVO>)c.getUserObject());
 					}
 				}
 			}
@@ -67,7 +76,18 @@ public class UpdatesEditionDetailedEmbedAction extends UpdatesEditionAction {
 		putModuleData(dataMap, dataMap.size(), false);
 	}
 
-	
+	/**
+	 * Moved Add elements to it's own method.
+	 * @param children
+	 * @param key
+	 * @param updates
+	 * @return
+	 */
+	public boolean addUpdates(Map<String, List<UpdateVO>> children, String key, List<UpdateVO> updates) {
+		children.put(key, updates);
+		return true;
+	}
+
 	/*
 	 * return the value loaded out of the EC data source, unless a suppress flag was also provided.
 	 * (non-Javadoc)
