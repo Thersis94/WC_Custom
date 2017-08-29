@@ -378,7 +378,7 @@ public class CompanyAction extends SimpleActionAdapter {
 	 * Filter supplied attributes based on thier sections and the user's acl 
 	 */
 	protected void filterAttributes(List<Object> results, CompanyVO company, SmarttrakRoleVO role) {
-		String[] roleAcl = role.getAuthorizedSections();
+		String[] roleAcl = role.getAuthorizedSections(SmarttrakSolrAction.BROWSE_SECTION);
 		Map<String, List<CompanyAttributeVO>> attrMap = new LinkedHashMap<>();
 		SmarttrakTree t = loadDefaultTree();
 		t.buildNodePaths();

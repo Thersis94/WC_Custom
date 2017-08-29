@@ -151,7 +151,8 @@ public class PermissionVO extends SectionVO {
 	 * @return true if permissions exist, false otherwise.
 	 */
 	public boolean isUnauthorized() {
-		return !isBrowseAuth() && !isUpdatesAuth() && !isFdAuth() && !isGaAuth() && !isPeAuth() && !isAnAuth();
+		boolean isToolAuth = isFdAuth() || isGaAuth() || isPeAuth();
+		return !isBrowseAuth() && !isToolAuth && !isAnAuth() && !isUpdatesAuth();
 	}
 
 	public String getHierarchyToken() {

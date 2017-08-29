@@ -249,7 +249,7 @@ public class LinkChecker extends CommandLineUtil {
 	 */
 	protected void checkLinks(List<LinkVO> links) {
 		for (LinkVO vo : links) {
-			if (vo.getUrl().matches("^https?://(www\\.)?smarttrak\\.(com|net)/(.*)") || vo.getUrl().matches("(?i)^/([A-Z]{1,})(.*)")) {
+			if (vo.getUrl().matches("^https?://(app\\.)?smarttrak\\.(com|net)/(.*)") || vo.getUrl().matches("(?i)^/([A-Z]{1,})(.*)")) {
 				testInternalLink(vo);
 				++intTested;
 			} else {
@@ -268,7 +268,7 @@ public class LinkChecker extends CommandLineUtil {
 	 * @param id
 	 */
 	protected void testInternalLink(LinkVO vo) {
-		String relaUrl = vo.getUrl().replaceAll("(?i)^https?://(www\\.)?smarttrak\\.(com|net)", ""); //remove FQDN
+		String relaUrl = vo.getUrl().replaceAll("(?i)^https?://(app\\.)?smarttrak\\.(com|net)", ""); //remove FQDN
 		log.debug(relaUrl + " from " + vo.getUrl());
 		String targetObjectId = relaUrl.replaceAll("(?i)//?([A-Z]+)/(qs/)?([A-Z0-9]+)/?/?$", "$3"); //get assetId
 		String urlSection = relaUrl.replaceAll("(?i)//?([A-Z]+)/(.*)?$", "$1"); //URI

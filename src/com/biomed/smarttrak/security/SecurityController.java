@@ -6,6 +6,10 @@ import org.apache.log4j.Logger;
 
 // SMTBaseLibs
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.action.SmarttrakSolrAction;
+import com.biomed.smarttrak.util.BiomedInsightIndexer;
+import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
@@ -100,8 +104,17 @@ public class SecurityController {
 			throws ActionNotAuthorizedException {
 		//use the same mechanisms solr is using to verify data access permissions.
 		String assetAcl = object.getACLPermissions();
-		String[] roleAcl = role.getAuthorizedSections();
-		log.debug("user ACL=" + StringUtil.getToString(roleAcl));
+		String indexType = object.getSolrIndex();
+		Section sec;
+		if (BiomedInsightIndexer.INDEX_TYPE.equals(indexType)) {
+			sec = Section.INSIGHT;
+		} else if (UpdateIndexer.INDEX_TYPE.equals(indexType)) {
+			sec = Section.UPDATES_EDITION;
+		} else {
+			sec = SmarttrakSolrAction.BROWSE_SECTION;
+		}
+		String[] roleAcl = role.getAuthorizedSections(sec);
+		log.debug("user ACL from " + sec + ": " + StringUtil.getToString(roleAcl));
 
 		if (roleAcl == null || roleAcl.length == 0 || !AccessControlQuery.isAllowed(assetAcl, null, roleAcl))
 			throwAndRedirect(req);

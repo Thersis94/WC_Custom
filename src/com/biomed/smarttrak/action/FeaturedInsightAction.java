@@ -14,6 +14,7 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrDocument;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 //Wc_custom
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 
@@ -192,7 +193,7 @@ public class FeaturedInsightAction extends InsightAction {
 	private void executeSolrRequest(ActionRequest req) throws ActionException {
 
 		//making a new solr action
-		SolrAction sa = new SolrAction(actionInit);
+		SolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 
@@ -208,7 +209,7 @@ public class FeaturedInsightAction extends InsightAction {
 	 */
 	private Set<String> getUsersRoles(ActionRequest req) {
 		SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-		String[] roleAcl = role.getAuthorizedSections();
+		String[] roleAcl = role.getAuthorizedSections(Section.INSIGHT);
 
 		//find all the two level ones and put in them in a set
 		Set<String> secondLevel = new HashSet<>();

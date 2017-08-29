@@ -270,7 +270,7 @@ public class MarketAction extends SimpleActionAdapter {
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 
 		// Build the solr action
-		SolrAction sa = new SolrAction(actionInit);
+		SolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		sa.retrieve(req);

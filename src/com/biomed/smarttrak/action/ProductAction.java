@@ -446,7 +446,7 @@ public class ProductAction extends SimpleActionAdapter {
 		req.setParameter("searchData", search.toLowerCase());
 
 		// Build the solr action
-		SolrAction sa = new SolrAction(actionInit);
+		SolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		sa.retrieve(req);
@@ -462,7 +462,7 @@ public class ProductAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	protected SolrActionVO buildSolrAction(ActionRequest req) throws ActionException {
-		SolrAction sa = new SolrAction(actionInit);
+		SolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
