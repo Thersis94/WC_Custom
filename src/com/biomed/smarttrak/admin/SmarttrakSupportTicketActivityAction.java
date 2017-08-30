@@ -75,11 +75,12 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 		pda.setDBConnection(dbConn);
 		pda.setActionInit(actionInit);
 		DocumentVO doc = pda.getDocumentByProfileDocumentId(req.getParameter(ProfileDocumentAction.PROFILE_DOC_ID));
+		FileInputStream fis = null;
 		try {
 			ProfileDocumentBinaryHandler handler = new ProfileDocumentBinaryHandler(doc.getFilePathUrl(), ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId(), "", dbConn, attributes, req);
 			File f = handler.getFile();
 			byte[] b = new byte[(int)f.length()];
-			FileInputStream fis = new FileInputStream(f);
+			fis = new FileInputStream(f);
 			fis.read(b); 
 			fis.close();
 			doc.setDocument(b);
@@ -91,6 +92,8 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 			item.addAttachment(a);
 		} catch (Exception e) {
 			log.error("Failed to get file data", e);
+		} finally {
+			try {fis.close();} catch(Exception e){}
 		}
 	}
 	
