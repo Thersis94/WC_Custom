@@ -9,10 +9,10 @@ import java.util.Map;
 
 //SMTBaseLibs
 import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.DjangoPasswordHasher;
 import com.siliconmtn.security.SHAEncrypt;
-import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -63,12 +63,13 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
 		UserLogin ul = new UserLogin(dbConn, getAttributes());
 		UserDataVO authUser = ul.getAuthRecord(null, username);
+		authUser.setEmailAddress(username);
 
 		//getAuthRecord never returns null.  Test the VO for authenticationId, throw if not found
 		if (StringUtil.isEmpty(authUser.getAuthenticationId()))
 			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
 
-		testUserPassword(authUser, password); //this will throw if the password can't be verified
+		authUser = testUserPassword(ul, authUser, password); //this will throw if the password can't be verified
 
 		// Return user authented user, after loading their Smarttrak data
 		return loadSmarttrakUser(loadUserData(null, authUser.getAuthenticationId()));
@@ -170,31 +171,27 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * @param proclaimedPassword
 	 * @throws AuthenticationException
 	 */
-	protected void testUserPassword(UserDataVO authUser, String allegedPswd) throws AuthenticationException {
-		//test the password against the Django scheme.  If it matches we're done
+	protected UserDataVO testUserPassword(UserLogin ul, UserDataVO authUser, String allegedPswd) 
+			throws AuthenticationException {
+		//test the password against the legacy/Django scheme.  If it matches we're done
 		DjangoPasswordHasher hasher = new DjangoPasswordHasher();
 		if (hasher.checkPassword(allegedPswd, authUser.getPassword()))
-			return;
+			return authUser;
 
-		//test the password against SHA1 - the legacy Smarttrak scheme.  if it matches we're done
+		//test the password against SHA1 - the "legacy-legacy" Smarttrak scheme!  if it matches we're done
 		SHAEncrypt sha = new SHAEncrypt();
 		try {
 			if (sha.encrypt(allegedPswd).equals(authUser.getPassword()))
-				return;
+				return authUser;
 		} catch (Exception e) {
 			log.warn("password is not SHA1, or didn't match the stored value", e);
 		}
 
-		//finally, test the password against SMT's 3DES encryption scheme
-		StringEncrypter se;
+		//finally, test the password using the WC core.  Any password created or changed after 7/1/2017 will fall into this scenario.
 		try {
-			se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
-			if (se.encrypt(allegedPswd).equals(authUser.getPassword()))
-				return;
-		} catch (Exception e) {
-			log.warn("password is not 3DES, or didn't match the stored value", e);
-		}
-
-		throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
+			return ul.checkExistingCredentials(authUser.getEmailAddress(), allegedPswd);
+		} catch (NotAuthorizedException e) {
+			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN, e);
+		}		
 	}
 }
