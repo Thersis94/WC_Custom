@@ -27,6 +27,7 @@ import com.ram.workflow.data.vo.LocationItemMasterVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.filter.fileupload.Constants;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -103,8 +104,9 @@ public class RAMCaseManager {
 		
 		SignatureType st = s.getSignatureType();
 		if (st != null && SignatureType.PROVIDER == st && cVo.getHospitalRep() != null) {
-			s.setFirstNm(cVo.getHospitalRep().getFirstName());
-			s.setLastNm(cVo.getHospitalRep().getLastName());
+			UserDataVO user = (UserDataVO)req.getSession().getAttribute(com.smt.sitebuilder.common.constants.Constants.USER_DATA);
+			s.setFirstNm(user.getFirstName());
+			s.setLastNm(user.getLastName());
 		}
 		
 		if (st != null && SignatureType.SALES_REP == st && cVo.getSalesRep() != null) {
@@ -409,6 +411,29 @@ public class RAMCaseManager {
 		return allKitsComplete;
 	}
 
+	/**
+	 * returns a string array of the important users on a case.
+	 * @param user 
+	 * @return
+	 * @throws Exception 
+	 */
+	public String[] getEmailAddresses() throws Exception {
+		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
+		List<String> emails = new ArrayList<>();
+		
+		if (cVo.getHospitalRep() != null)
+			emails.add(StringUtil.checkVal(cVo.getHospitalRep().getEmailAddress()));
+		
+		if(cVo.getSalesRep() != null)
+			emails.add(StringUtil.checkVal(cVo.getSalesRep().getEmailAddress()));
+		
+		//TODO when surgeon users are added to the case 
+		//emails.addAll( call to get all surgeon email addresses)
+		//
+		
+		return emails.toArray(new String[emails.size()]);
+	}
+	
 	/**
 	 * Persistence method that Persists to configured Persistence Type.
 	 * @param cVo
