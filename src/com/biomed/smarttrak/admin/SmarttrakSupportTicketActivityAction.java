@@ -1,5 +1,7 @@
 package com.biomed.smarttrak.admin;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.LinkedHashMap;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
@@ -7,11 +9,18 @@ import com.biomed.smarttrak.util.BiomedSupportEmailUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.DirectoryParser;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.content.DocumentVO;
+import com.smt.sitebuilder.action.content.ProfileDocumentBinaryHandler;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
 import com.smt.sitebuilder.action.support.SupportTicketAction;
 import com.smt.sitebuilder.action.support.SupportTicketActivityAction;
+import com.smt.sitebuilder.action.support.SupportTicketAttachmentAction;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
+import com.smt.sitebuilder.action.support.TicketAttachmentVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -43,7 +52,75 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 	@Override
 	public void buildCallback(ActionRequest req, TicketActivityVO item) throws ActionException {
 		attributes.put("ccAddresses", req.getParameter("ccAddresses"));
+		
+		if (req.hasParameter("fileName")) {
+			req.setParameter("moduleTypeId", "BMG_TICKET");
+			addAttachment(req);
+			addToItem(item, req);
+			createXrRecord(req);
+		}
+		
 		super.buildCallback(req, item);
+	}
+	
+	
+	/**
+	 * Get the file data in byte array format for the attachment and add it to the ticket
+	 * @param item
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void addToItem(TicketActivityVO item, ActionRequest req) throws ActionException {
+		ProfileDocumentAction pda = new ProfileDocumentAction();
+		pda.setAttributes(attributes);
+		pda.setDBConnection(dbConn);
+		pda.setActionInit(actionInit);
+		DocumentVO doc = pda.getDocumentByProfileDocumentId(req.getParameter(ProfileDocumentAction.PROFILE_DOC_ID));
+		try {
+			ProfileDocumentBinaryHandler handler = new ProfileDocumentBinaryHandler(doc.getFilePathUrl(), ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId(), "", dbConn, attributes, req);
+			File f = handler.getFile();
+			byte[] b = new byte[(int)f.length()];
+			FileInputStream fis = new FileInputStream(f);
+			fis.read(b); 
+			fis.close();
+			doc.setDocument(b);
+			
+			TicketAttachmentVO a = new TicketAttachmentVO();
+			a.setFileData(b);
+			a.setFileNm(doc.getFileName());
+			
+			item.addAttachment(a);
+		} catch (Exception e) {
+			log.error("Failed to get file data", e);
+		}
+	}
+	
+	/**
+	 * Create the attachment record from the request.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void addAttachment(ActionRequest req) throws ActionException {
+		SupportTicketAttachmentAction a = new SupportTicketAttachmentAction(this.actionInit);
+		a.setAttributes(getAttributes());
+		a.setDBConnection(getDBConnection());
+		a.build(req);
+	}
+	
+	
+	/**
+	 * Create an xr recored between this attachment and its ticket
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void createXrRecord(ActionRequest req) throws ActionException {
+		TicketAttachmentVO vo = new TicketAttachmentVO(req);
+		DBProcessor db = new DBProcessor(dbConn);
+		try {
+			db.save(vo);
+		} catch (Exception e) {
+			log.error("Failed to associate attachment with ticket", e);
+		}
 	}
 	
 	
