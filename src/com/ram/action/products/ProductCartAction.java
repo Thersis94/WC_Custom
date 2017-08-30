@@ -57,6 +57,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 	public static final String FORMAT = "format";
 	public static final String SURG_DATE = "surgDate";
 	public static final String SEARCH = "search";
+	public static final String EMAIL_ARRAY = "emails[]";
 
 	private enum SearchFields {
 		productName("product_nm"),
@@ -135,11 +136,12 @@ public class ProductCartAction extends SimpleActionAdapter {
 					break;
 				case addSignature:
 					rcm.addSignature(req);
+					rcm.persistCasePerm(rcm.retrieveCase(req.getParameter(RAMCaseManager.RAM_CASE_ID)));
 					break;
 				case finalize:
 					rcm.finalizeCaseInfo();
 					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-					req.setParameter("emails", user.getEmailAddress());
+					req.setParameter(EMAIL_ARRAY, user.getEmailAddress());
 					sendEmails(req);
 					break;
 				case sendEmails:
@@ -375,7 +377,13 @@ public class ProductCartAction extends SimpleActionAdapter {
 			// Send the email
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.setSubject("Surgical Case Summary for Surgery ID: " + cvo.getHospitalCaseId());
-			mail.addRecipients(req.getParameterValues("emails[]"));
+			
+			for(String s :req.getParameterValues(EMAIL_ARRAY) ){
+				log.debug("sssssssssssssss " + s);
+			}
+			
+			mail.addRecipients(req.getParameterValues(EMAIL_ARRAY));
+		
 			mail.setFrom(fromEmail);
 			mail.setReplyTo(fromEmail);
 			mail.addAttachment(report.getFileName(), report.generateReport());
@@ -383,6 +391,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
 		} catch (Exception e) {
+			log.debug("error ", e);
 			throw new ActionException(e);
 		}
 	}
