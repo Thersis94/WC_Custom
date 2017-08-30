@@ -140,8 +140,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 					break;
 				case finalize:
 					rcm.finalizeCaseInfo();
-					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-					req.setParameter(EMAIL_ARRAY, user.getEmailAddress());
+					req.setParameter(EMAIL_ARRAY, rcm.getEmailAddresses(), true);
 					sendEmails(req);
 					break;
 				case sendEmails:
@@ -321,6 +320,9 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * @throws ActionException 
 	 */
 	private void buildReport(RAMCaseVO cvo, ActionRequest req) {
+		//TODO clean this up so that the product case report takes a case object and not a map
+		//     make a second method named build report that returns the abstract report rather then sets it on the 
+		//     req object so it can be used in send emails.
 		AbstractSBReportVO report;
 		String filename;
 		String caseId = StringUtil.checkVal(cvo.getCaseId());
@@ -361,6 +363,8 @@ public class ProductCartAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void sendEmails(ActionRequest req) throws ActionException {
+		//TODO clean up this method set it up so that send emails does not require the req object and remove unneeded
+		//     binary document hooks and set up and generated the report.
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		String fromEmail = StringUtil.isEmpty(user.getEmailAddress() ) ? "info@ramgrp.com" : user.getEmailAddress();
 
@@ -377,10 +381,6 @@ public class ProductCartAction extends SimpleActionAdapter {
 			// Send the email
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.setSubject("Surgical Case Summary for Surgery ID: " + cvo.getHospitalCaseId());
-			
-			for(String s :req.getParameterValues(EMAIL_ARRAY) ){
-				log.debug("sssssssssssssss " + s);
-			}
 			
 			mail.addRecipients(req.getParameterValues(EMAIL_ARRAY));
 		

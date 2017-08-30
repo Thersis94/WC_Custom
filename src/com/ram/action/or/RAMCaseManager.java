@@ -412,6 +412,29 @@ public class RAMCaseManager {
 	}
 
 	/**
+	 * returns a string array of the important users on a case.
+	 * @param user 
+	 * @return
+	 * @throws Exception 
+	 */
+	public String[] getEmailAddresses() throws Exception {
+		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
+		List<String> emails = new ArrayList<>();
+		
+		if (cVo.getHospitalRep() != null)
+			emails.add(StringUtil.checkVal(cVo.getHospitalRep().getEmailAddress()));
+		
+		if(cVo.getSalesRep() != null)
+			emails.add(StringUtil.checkVal(cVo.getSalesRep().getEmailAddress()));
+		
+		//TODO when surgeon users are added to the case 
+		//emails.addAll( call to get all surgeon email addresses)
+		//
+		
+		return emails.toArray(new String[emails.size()]);
+	}
+	
+	/**
 	 * Persistence method that Persists to configured Persistence Type.
 	 * @param cVo
 	 * @param caseId
