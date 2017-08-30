@@ -57,7 +57,6 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 			req.setParameter("moduleTypeId", "BMG_TICKET");
 			addAttachment(req);
 			addToItem(item, req);
-			createXrRecord(req);
 		}
 		
 		super.buildCallback(req, item);
@@ -105,22 +104,6 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 		a.setAttributes(getAttributes());
 		a.setDBConnection(getDBConnection());
 		a.build(req);
-	}
-	
-	
-	/**
-	 * Create an xr recored between this attachment and its ticket
-	 * @param req
-	 * @throws ActionException
-	 */
-	private void createXrRecord(ActionRequest req) throws ActionException {
-		TicketAttachmentVO vo = new TicketAttachmentVO(req);
-		DBProcessor db = new DBProcessor(dbConn);
-		try {
-			db.save(vo);
-		} catch (Exception e) {
-			log.error("Failed to associate attachment with ticket", e);
-		}
 	}
 	
 	
