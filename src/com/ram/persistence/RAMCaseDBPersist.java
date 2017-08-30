@@ -1,7 +1,5 @@
 package com.ram.persistence;
 
-// JDK 1.7
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -16,7 +14,9 @@ import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.or.vo.RAMSignatureVO;
 import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
-
+import com.ram.action.or.vo.RAMSurgeonVO;
+import com.ram.action.user.SurgeonWidget;
+import com.siliconmtn.action.ActionInitVO;
 // SMT Base Libs
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -26,7 +26,6 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-
 // WC Libs
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -45,7 +44,7 @@ import com.smt.sitebuilder.action.user.SBProfileManager;
  ****************************************************************************/
 public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO> {
 	private DBProcessor dbp;
-	private Connection conn;
+	private SMTDBConnection conn;
 	private String schema;
 	public RAMCaseDBPersist() {
 		super();
@@ -71,7 +70,10 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		
 		// Get the sales rep info
 		cVo.setSalesRep(getUserByProfileId(cVo.getSalesRepId()));
-		
+
+		//Get the surgeon info
+		cVo.setSurgeon(getSurgeon(cVo.getSurgeonId()));
+
 		// gets the case's signatures
 		getCaseSignatures(cVo);
 		
@@ -161,6 +163,18 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 		}
 	    
 		return user;
+	}
+
+	/**
+	 * Helper emthod that loads a RAMSurgeonVO from the given Id
+	 * @param surgeonId
+	 * @return
+	 */
+	public RAMSurgeonVO getSurgeon(String surgeonId) {
+		SurgeonWidget sa = new SurgeonWidget(new ActionInitVO());
+		sa.setDBConnection(conn);
+		sa.setAttributes(attributes);
+		return sa.getSurgeonData(surgeonId);
 	}
 
 	/**
@@ -314,9 +328,6 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 				i.setCaseId(cVo.getCaseId());
 
 				dbp.insert(i);
-				if(dbp.getGeneratedPKId() != null) {
-					i.setCaseItemId(dbp.getGeneratedPKId());
-				}
 			}
 		}
 	}

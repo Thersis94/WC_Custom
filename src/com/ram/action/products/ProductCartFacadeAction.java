@@ -48,7 +48,7 @@ public class ProductCartFacadeAction extends SimpleActionAdapter {
 		} else {
 			action = new ProductCartAction(actionInit);
 		}
-		
+
 		action.setDBConnection(dbConn);
 		action.setAttributes(attributes);
 
