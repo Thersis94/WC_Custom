@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
+
 /****************************************************************************
  * <b>Title</b>: FinancialDashColumnSet.java<p/>
  * <b>Description: </b> 
@@ -55,6 +58,19 @@ public class FinancialDashColumnSet implements Serializable {
 		}
 	}
 
+	/**
+	 * New column set from request
+	 * 
+	 * @param req
+	 */
+	public FinancialDashColumnSet(ActionRequest req) {
+		this.displayType = DisplayType.valueOf(req.getParameter("displayType"));
+		this.calendarYear = Convert.formatInteger(req.getParameter("calendarYear"));
+		this.currentQtr = Convert.formatInteger(req.getParameter("currentQtr"));
+		this.columns = new LinkedHashMap<>();
+		setColumns();
+	}
+	
 	/**
 	 * New column set from required values
 	 * 

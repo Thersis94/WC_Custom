@@ -492,13 +492,24 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		List<String> companyIds = Arrays.asList(req.getParameterValues("companyId[]"));
 		List<CountryType> countryTypes = dashVO.getCountryTypes();
 		
-		// Add the records
+		// Get all of the years to iterate over
+		FinancialDashColumnSet columnSet = new FinancialDashColumnSet(req);
+		int startYear = columnSet.getCalendarYear();
+		int endYear = startYear - (getDataYears(columnSet.getDisplayType(), columnSet.getCalendarYear()) - 1); // Only need to add for what is visible in the dashboard
+		
+		// Add the records for every company selected
 		for (String companyId : companyIds) {
 			revenueVO.setCompanyId(companyId);
 			
+			// Add for every region selected
 			for (CountryType countryType : countryTypes) {
 				revenueVO.setRegionCd(countryType.toString());
-				addRevenueRecord(revenueVO);
+				
+				// Add for every year visible in the view
+				for (int year = startYear; year > endYear; year--) {
+					revenueVO.setYearNo(year);
+					addRevenueRecord(revenueVO);
+				}
 			}
 		}
 	}
