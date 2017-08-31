@@ -55,14 +55,25 @@ public class FinancialDashColumnSet implements Serializable {
 		}
 	}
 
+	/**
+	 * New column set from required values
+	 * 
+	 * @param displayType
+	 * @param calendarYear
+	 * @param currentQtr
+	 */
 	public FinancialDashColumnSet(String displayType, Integer calendarYear, int currentQtr) {
 		this.displayType = DisplayType.valueOf(displayType);
 		this.calendarYear = calendarYear;
 		this.currentQtr = currentQtr;
 		this.columns = new LinkedHashMap<>();
+		setColumns();
 	}
 	
-	public Map<String, String> getColumns() {
+	/**
+	 * Sets the list of columns
+	 */
+	private void setColumns() {
 		switch(displayType) {
 			case SIXQTR:
 				this.addQuarterRunningColumns(6);
@@ -84,7 +95,12 @@ public class FinancialDashColumnSet implements Serializable {
 				this.addCalendarYearColumns();
 				break;
 		}
-		
+	}
+	
+	/**
+	 * @return the columns
+	 */
+	public Map<String, String> getColumns() {		
 		return columns;
 	}
 

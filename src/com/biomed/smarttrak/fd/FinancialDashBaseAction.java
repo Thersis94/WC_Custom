@@ -581,11 +581,11 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @param dashVO
 	 * @return
 	 */
-	protected Map<String, FinancialDashRevenueVO> getBaseData(FinancialDashVO dashVO) {
+	protected Map<String, FinancialDashRevenueVO> getBaseData(FinancialDashVO dashVO, int yearCnt) {
 		Map<String, FinancialDashRevenueVO> baseData = new HashMap<>();
 		
 		List<Object> params = new ArrayList<>();
-		String sql = getRevenueSql(dashVO, params);
+		String sql = getRevenueSql(dashVO, yearCnt, params);
 		
 		List<?> revenueRecords = dbp.executeSelect(sql, params, new FinancialDashRevenueVO());
 		
@@ -604,14 +604,17 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @param params - params for db processor
 	 * @return
 	 */
-	private String getRevenueSql(FinancialDashVO dashVO, List<Object> params) {
+	private String getRevenueSql(FinancialDashVO dashVO, int yearCnt, List<Object> params) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(300);
 		
 		sql.append("select r.* from ").append(custom).append("BIOMEDGPS_FD_REVENUE r ");
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY so on r.REVENUE_ID = so.REVENUE_ID ");
-		sql.append("where r.YEAR_NO = ? and so.SCENARIO_ID = ? ");
-		params.addAll(Arrays.asList(dashVO.getCurrentYear(), dashVO.getScenarioId()));
+		sql.append("where so.SCENARIO_ID = ? ");
+		params.add(dashVO.getScenarioId());
+		
+		// Make sure to only get the years shown in the dashboard
+		sql.append("and ").append(getYearSql(dashVO, yearCnt, params, "r"));
 		
 		// If company id is passed, user is looking at a company, not a section
 		if (!StringUtil.isEmpty(dashVO.getCompanyId())) {
@@ -623,6 +626,27 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		}
 		
 		sql.append("and ").append(getRegionSql(dashVO, params));
+		
+		return sql.toString();
+	}
+	
+	/**
+	 * Returns sql to filter by the selected year(s)
+	 * 
+	 * @param dashVO
+	 * @param yearCnt
+	 * @param params
+	 * @param alias
+	 * @return
+	 */
+	protected String getYearSql(FinancialDashVO dashVO, int yearCnt, List<Object> params, String alias) {
+		StringBuilder sql = new StringBuilder(25);
+		
+		int year = dashVO.getColHeaders().getCalendarYear();
+		sql.append(alias).append(".YEAR_NO in (").append(DBUtil.preparedStatmentQuestion(yearCnt)).append(") ");
+		for (int i = 0; i < yearCnt; i++) {
+			params.add(year--);
+		}
 		
 		return sql.toString();
 	}
