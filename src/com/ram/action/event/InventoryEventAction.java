@@ -227,7 +227,7 @@ public class InventoryEventAction extends SBActionAdapter {
 			event.setNumberReceivedProducts(getNumberItems(inventoryEventId, "REPLENISHMENT"));
 			event.setNumberTotalProducts(getNumberItems(inventoryEventId, "SHELF"));
 
-			if (req.hasParameter("loadReport") && StringUtil.checkVal(req.getParameter("loadReport")).equalsIgnoreCase("pdf")){
+			if (req.hasParameter("loadReport") && "pdf".equalsIgnoreCase(StringUtil.checkVal(req.getParameter("loadReport")))){
 				List<Object> lines = getAllInventoryItemsSummary(req);
 				
 				for (Object o : lines){
