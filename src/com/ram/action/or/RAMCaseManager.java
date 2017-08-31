@@ -1,9 +1,7 @@
 package com.ram.action.or;
 
-// JDK 1.8
-import java.sql.Connection;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,22 +13,24 @@ import com.ram.action.or.vo.RAMCaseItemVO;
 import com.ram.action.or.vo.RAMCaseKitVO;
 import com.ram.action.or.vo.RAMCaseVO;
 import com.ram.action.or.vo.RAMCaseVO.RAMCaseStatus;
-import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
 import com.ram.action.or.vo.RAMSignatureVO;
+import com.ram.action.or.vo.RAMSignatureVO.SignatureType;
+import com.ram.action.user.SurgeonWidget;
 import com.ram.datafeed.data.RAMProductVO;
 import com.ram.persistence.AbstractPersist;
 import com.ram.persistence.RAMCasePersistenceFactory;
 import com.ram.persistence.RAMCasePersistenceFactory.PersistenceType;
 import com.ram.workflow.data.vo.LocationItemMasterVO;
-
+import com.siliconmtn.action.ActionInitVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.filter.fileupload.Constants;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-
 // WC Libs 3.2
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.SBProfileManager;
@@ -62,21 +62,21 @@ public class RAMCaseManager {
 	private Logger log;
 	private Map<String, Object> attributes;
 	private ActionRequest req;
-	private Connection conn;
-	private Map<PersistenceType, AbstractPersist<?, ?>> pTypes = new LinkedHashMap<>(4);
+	private SMTDBConnection conn;
+	private Map<PersistenceType, AbstractPersist<?, ?>> pTypes = new EnumMap<>(PersistenceType.class);
 	private PersistenceType defaultPType;
 	private PersistenceType permPType;
-	
+
 	private RAMCaseManager() {
 		log = Logger.getLogger(getClass());
 	}
 
-	public RAMCaseManager(Map<String, Object> attributes, Connection conn, ActionRequest req) {
+	public RAMCaseManager(Map<String, Object> attributes, SMTDBConnection conn, ActionRequest req) {
 		this();
 		this.attributes = attributes;
 		this.req = req;
 		this.conn = conn;
-		
+
 		//Load the persistence Types
 		defaultPType = PersistenceType.valueOf((String)attributes.get(RAM_PERSISTENCE_TYPE));
 		permPType = (PersistenceType.DB.equals(defaultPType)) ? PersistenceType.SESSION : PersistenceType.DB;
@@ -103,8 +103,9 @@ public class RAMCaseManager {
 		
 		SignatureType st = s.getSignatureType();
 		if (st != null && SignatureType.PROVIDER == st && cVo.getHospitalRep() != null) {
-			s.setFirstNm(cVo.getHospitalRep().getFirstName());
-			s.setLastNm(cVo.getHospitalRep().getLastName());
+			UserDataVO user = (UserDataVO)req.getSession().getAttribute(com.smt.sitebuilder.common.constants.Constants.USER_DATA);
+			s.setFirstNm(user.getFirstName());
+			s.setLastNm(user.getLastName());
 		}
 		
 		if (st != null && SignatureType.SALES_REP == st && cVo.getSalesRep() != null) {
@@ -114,7 +115,7 @@ public class RAMCaseManager {
 		
 		log.debug("name: " + s.getFullName());
 		cVo.addSignature(s);
-		persistCaseDefault(cVo);
+		updateCaseInfo(cVo);
 		return cVo;
 	}
 
@@ -142,7 +143,10 @@ public class RAMCaseManager {
 		
 		// Check to see if we need to load the user data for the reps
 		loadUserData(cVo);
-		
+
+		// Check to see if we need to load the surgeon data.
+		loadSurgeonData(cVo);
+
 		// and persist the case
 		ap.save(cVo);
 
@@ -159,15 +163,28 @@ public class RAMCaseManager {
 	    	// Load the user data for the hospital rep and the sales rep
 	    	if (! StringUtil.isEmpty(cvo.getProfileId()) && cvo.getHospitalRep() == null)
 	    		cvo.setHospitalRep(pm.getProfile(cvo.getProfileId(), conn, ProfileManager.PROFILE_ID_LOOKUP, null));
-	    	
+
 	    	if (! StringUtil.isEmpty(cvo.getSalesRepId()) && cvo.getSalesRep() == null)
 	    		cvo.setSalesRep(pm.getProfile(cvo.getSalesRepId(), conn, ProfileManager.PROFILE_ID_LOOKUP, null));
-	    	
+
 		} catch (com.siliconmtn.exception.DatabaseException e) {
 			log.error("Unable to retrieve user rep", e);
 		}
 	}
-	
+
+	/**
+	 * Loads data for the Surgeon.
+	 * @param cvo
+	 */
+	public void loadSurgeonData(RAMCaseVO cvo) {
+		if(!StringUtil.isEmpty(cvo.getSurgeonId()) && cvo.getSurgeon() == null) {
+			SurgeonWidget sw = new SurgeonWidget(new ActionInitVO());
+			sw.setAttributes(attributes);
+			sw.setDBConnection(conn);
+			cvo.setSurgeon(sw.getSurgeonData(cvo.getSurgeonId()));
+		}
+	}
+
 	/**
 	 * Saves the case notes as they are changed
 	 * @param req
@@ -194,7 +211,7 @@ public class RAMCaseManager {
 			if (cVo == null) throw new Exception("Can't find case for caseId: " + caseId);
 			
 			// Persist the case to the session
-			this.persistCaseDefault(cVo);
+			updateCaseInfo(cVo);
 		}
 
 		return cVo; 
@@ -219,7 +236,8 @@ public class RAMCaseManager {
 		}
 
 		//Save Case.
-		this.updateCaseInfo(cVo);
+		updateCaseInfo(cVo);
+
 		return item;
 	}
 
@@ -297,7 +315,7 @@ public class RAMCaseManager {
 	 * Helper method manages adding an item to a case
 	 * @throws Exception 
 	 */
-	private RAMCaseItemVO buildCaseItem(RAMCaseVO cVo, ActionRequest req) throws Exception {
+	private RAMCaseItemVO buildCaseItem(RAMCaseVO cVo, ActionRequest req) {
 		int productId = Convert.formatInteger(req.getParameter("productId"));
 		int kitProductId = Convert.formatInteger(req.getParameter("kitProductId"));
 		RAMCaseKitVO kvo = null;
@@ -409,6 +427,29 @@ public class RAMCaseManager {
 		return allKitsComplete;
 	}
 
+	/**
+	 * returns a string array of the important users on a case.
+	 * @param user 
+	 * @return
+	 * @throws Exception 
+	 */
+	public String[] getEmailAddresses() throws Exception {
+		RAMCaseVO cVo = retrieveCase(req.getParameter(RAM_CASE_ID));
+		List<String> emails = new ArrayList<>();
+		
+		if (cVo.getHospitalRep() != null)
+			emails.add(StringUtil.checkVal(cVo.getHospitalRep().getEmailAddress()));
+		
+		if(cVo.getSalesRep() != null)
+			emails.add(StringUtil.checkVal(cVo.getSalesRep().getEmailAddress()));
+
+		if(cVo.getSurgeon()!= null && Convert.formatBoolean(cVo.getSurgeon().getReceiveEmailFlag())) {
+			emails.add(StringUtil.checkVal(cVo.getSurgeon().getEmailAddress()));
+		}
+
+		return emails.toArray(new String[emails.size()]);
+	}
+	
 	/**
 	 * Persistence method that Persists to configured Persistence Type.
 	 * @param cVo

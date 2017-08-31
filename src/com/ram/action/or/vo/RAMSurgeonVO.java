@@ -42,6 +42,7 @@ public class RAMSurgeonVO extends BeanDataVO {
 	private String uniqueId;
 	private Integer birthYear;
 	private int activeFlag;
+	private int receiveEmailFlag;
 	private String gender;
 	private Date createDate;
 	private Date updateDate;
@@ -245,5 +246,20 @@ public class RAMSurgeonVO extends BeanDataVO {
 	 */
 	public void setActiveFlag(int activeFlag) {
 		this.activeFlag = activeFlag;
+	}
+
+	/**
+	 * @return the receiveEmailFlag
+	 */
+	@Column(name="receive_email_flg")
+	public int getReceiveEmailFlag() {
+		return receiveEmailFlag;
+	}
+
+	/**
+	 * @param receiveEmailFlag the receiveEmailFlag to set
+	 */
+	public void setReceiveEmailFlag(int receiveEmailFlag) {
+		this.receiveEmailFlag = receiveEmailFlag;
 	}
 }

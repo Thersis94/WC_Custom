@@ -71,6 +71,7 @@ public class RAMCaseVO implements Serializable {
 	private int numKitsCase;
 	private UserDataVO hospitalRep;
 	private UserDataVO salesRep;
+	private RAMSurgeonVO surgeon;
 
 	public RAMCaseVO() {
 		this.kits = new HashMap<>();
@@ -598,5 +599,19 @@ public class RAMCaseVO implements Serializable {
 	 */
 	public void setSalesRep(UserDataVO salesRep) {
 		this.salesRep = salesRep;
+	}
+
+	/**
+	 * @return the surgeon
+	 */
+	public RAMSurgeonVO getSurgeon() {
+		return surgeon;
+	}
+
+	/**
+	 * @param surgeon the surgeon to set.
+	 */
+	public void setSurgeon(RAMSurgeonVO surgeon) {
+		this.surgeon = surgeon;
 	}
 }
