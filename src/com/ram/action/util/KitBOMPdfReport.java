@@ -130,7 +130,11 @@ public class KitBOMPdfReport extends AbstractPDFReport {
 	 */
 	private void bomInfoSection(PdfPTable table) {
 		getLogoRow(table);
-		table.addCell(getTitleCell(data.getProductName(), 6));
+		StringBuilder sb = new StringBuilder(100);
+		sb.append(StringUtil.checkVal(data.getProductName()));
+		sb.append(" (Report Created Date: ").append(StringUtil.checkVal(Convert.formatDate(new Date(), Convert.DATE_SLASH_PATTERN )));
+		sb.append(")");
+		table.addCell(getTitleCell(sb.toString(), 6));
 
 		//case info cells bordered on right or left depending on location
 		bomInfoLeft(table, "Kit SKU: " , StringUtil.checkVal(data.getCustomerProductId()));
