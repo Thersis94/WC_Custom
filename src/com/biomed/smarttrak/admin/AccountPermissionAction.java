@@ -51,7 +51,7 @@ public class AccountPermissionAction extends AbstractTreeAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		AccountAction.loadAccount(req, dbConn, getAttributes());
-		
+
 		//accountId is required for this action
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
 		if (accountId == null) return;

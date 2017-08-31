@@ -20,6 +20,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
@@ -44,6 +45,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.PasswordComplexityFactory;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
@@ -129,7 +131,7 @@ public class AccountUserAction extends SBActionAdapter {
 		config.put(USER_ID, u.getUserId());
 		config.put(ACCOUNT_ID, u.getAccountId());
 		if (Convert.formatBoolean(req.getParameter("passwordReset")))
-			config.put("passwordResetUrl", makeResetUrl(req));
+			config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
 
 		config.put(UpdatesEditionAction.PROFILE_ID, u.getProfileId());
 
@@ -148,16 +150,17 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String makeResetUrl(ActionRequest req) {
+	private String makeResetKey(ActionRequest req, String email) {
+		long oneWeekMillis = 604800000;
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		StringBuilder url = new StringBuilder(300);
-		url.append(site.getFullSiteAlias());
-		url.append("/?loginEmailSubmitted=true&pmid=cc413c31a6cec2c1c0a80241bfe09df7&passPhrase=");
-		//TODO hard-coded PMID is ok since it is unlikely to change, but should be obtained via DB lookup, ideally. (parentSite+defaultPage+LOGIN module?)
-		//TODO finish this method once we move to v3.3, which drastically refactored password management.
-
-		log.debug(url);
-		return url.toString();
+		try {
+			return StringEncoder.urlEncode(PasswordComplexityFactory
+					.getInstance(site.getPasswordModule(), getAttributes())
+					.generateResetToken(site.getSiteAlias(), email, oneWeekMillis));
+		} catch (ApplicationException e) {
+			log.error("unable to generate password reset token", e);
+			return "";
+		}
 	}
 
 	/**
