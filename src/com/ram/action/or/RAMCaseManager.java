@@ -345,7 +345,7 @@ public class RAMCaseManager {
 
 		//Build RAMCaseItem
 		RAMCaseItemVO civo = new RAMCaseItemVO(req);
-		civo.setProductNm(p.getProductName());
+		civo.setProductName(p.getProductName());
 		civo.setGtinProductId(p.getGtinProductNumber());
 		civo.setCaseItemId(new UUIDGenerator().getUUID());
 		civo.setCustomerProductId(p.getCustomerProductId());

@@ -159,11 +159,11 @@ public class ProductCartReport  extends AbstractPDFReport {
 		Collection<RAMCaseItemVO> cart = (Collection<RAMCaseItemVO>) data.get("cart");
 
 		for(RAMCaseItemVO item : cart){
-			table.addCell(getTableCell(item.getProductNm()));
-			table.addCell(getTableCell(item.getCustomerNm()));
+			table.addCell(getTableCell(item.getProductName()));
+			table.addCell(getTableCell(item.getCustomerName()));
 			table.addCell(getTableCell(item.getCustomerProductId()));
 			table.addCell(getTableCell(item.getLotNumberTxt()));
-			table.addCell(getTableCell(StringUtil.checkVal(item.getQtyNo())));
+			table.addCell(getTableCell(StringUtil.checkVal(item.getQuantity())));
 			table.addCell(getTableCell(item.getProductFromTxt()));
 			table.addCell(getTableCell(Convert.formatDate(item.getExpiree(), Convert.DATE_SLASH_PATTERN)));
 			table.addCell(getFlagCell(item.getBillableFlg()));
