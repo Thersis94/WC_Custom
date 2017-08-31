@@ -30,6 +30,7 @@ import com.siliconmtn.util.user.HumanNameIntfc;
 public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private static final long serialVersionUID = -8619730513300299951L;
 	private String accountId;
+	private String accountName;
 	private String userId;
 	private String registerSubmittalId;
 	private String statusCode;
@@ -158,6 +159,15 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	 */
 	public void setAccountId(String accountId) {
 		this.accountId = accountId;
+	}
+
+	@Column(name="account_nm")
+	public String getAccountName() {
+		return accountName;
+	}
+
+	public void setAccountName(String accountName) {
+		this.accountName = accountName;
 	}
 
 	/**
