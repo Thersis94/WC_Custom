@@ -137,7 +137,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	protected void storeArticles(List<RSSArticleVO> articles) {
 		try {
 			new DBProcessor(dbConn, props.getProperty(Constants.CUSTOM_DB_SCHEMA)).executeBatch(getArticleInsertSql(), buildBatchVals(articles));
-		} catch (InvalidDataException | DatabaseException e) {
+		} catch (DatabaseException e) {
 			log.error("Error Processing Code", e);
 		}
 	}
