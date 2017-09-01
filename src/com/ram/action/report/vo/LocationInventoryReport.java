@@ -120,11 +120,11 @@ public class LocationInventoryReport extends AbstractReport {
 			int celNum = 0;
 			r = s.createRow(rowNum++);
 			c = r.createCell(celNum++);
-			c.setCellValue(l.getCustomerNm());
+			c.setCellValue(l.getCustomerName());
 			c = r.createCell(celNum++);
-			c.setCellValue(l.getCustProductId());
+			c.setCellValue(l.getCustomerProductId());
 			c = r.createCell(celNum++);
-			c.setCellValue(l.getProductNm());
+			c.setCellValue(l.getProductName());
 			c = r.createCell(celNum++);
 			if(l.getUpdateDt() != null) {
 				c.setCellValue(Convert.formatDate(l.getUpdateDt()));

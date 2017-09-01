@@ -74,7 +74,7 @@ public class ItemMasterAction extends SimpleActionAdapter {
 	private final void initFieldMap() {
 		fieldMap.put("productNm", "p.product_nm");
 		fieldMap.put("customerNm", "c.customer_nm");
-		fieldMap.put("custProductId", "p.cust_product_id");
+		fieldMap.put("customerProductId", "p.cust_product_id");
 		fieldMap.put("serialNoTxt", "lim.serial_no_txt");
 		fieldMap.put("qtyOnHand", "lim.qty_on_hand_no");
 		fieldMap.put("parValueNo", "lim.par_value_no");
