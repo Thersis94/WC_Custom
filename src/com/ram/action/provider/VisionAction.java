@@ -315,7 +315,7 @@ public class VisionAction extends SBActionAdapter {
 					continue;
 				}
 				int incOrDec = i.getCaseType() == RAMCaseType.OR ? -1 : 1;
-				p.addQtyOnHand(i.getQtyNo() * incOrDec);
+				p.addQtyOnHand(i.getQuantity() * incOrDec);
 				iter.remove();
 				/*
 				 * Update CaseItem Id.  If this is an OR Product, set a

@@ -382,7 +382,7 @@ public class RAMCaseVO implements Serializable {
 			}
 
 			if(imap.containsKey(item.getCaseItemId())) {
-				imap.get(item.getCaseItemId()).addQty(item.getQtyNo());
+				imap.get(item.getCaseItemId()).addQty(item.getQuantity());
 			} else {
 				imap.put(item.getCaseItemId(), item);
 			}
