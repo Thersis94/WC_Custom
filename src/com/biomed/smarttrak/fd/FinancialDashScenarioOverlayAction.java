@@ -140,6 +140,11 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		
 		sql.append("select r.REVENUE_ID as ROW_ID, ");
 		
+		DisplayType dt = dash.getColHeaders().getDisplayType();
+		for (int i = 1; i <= getDataYears(dt, dash.getCurrentYear()); i++) {
+			sql.append("r").append(i>1 ? i : "").append(".REVENUE_ID as REVENUE_ID_").append(i-1).append(", ");
+		}
+		
 		if (TableType.COMPANY == tt) {
 			sql.append("c.SHORT_NM_TXT as ROW_NM, r.COMPANY_ID, ");
 		} else {
@@ -264,13 +269,15 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		}
 		
 		// Get the remaining data from the revenue records to create new overlay(s) from
-		List<FinancialDashRevenueVO> rvos = getRevenueRecords(revenueIds);
-		
-		// Create scenario overlay vo's from revenue vo's
-		for (FinancialDashRevenueVO rvo : rvos) {
-			FinancialDashScenarioOverlayVO sovo = new FinancialDashScenarioOverlayVO(rvo);
-			sovo.setScenarioId(scenarioId);
-			sovos.add(sovo);
+		if (!revenueIds.isEmpty()) {
+			List<FinancialDashRevenueVO> rvos = getRevenueRecords(revenueIds);
+			
+			// Create scenario overlay vo's from revenue vo's
+			for (FinancialDashRevenueVO rvo : rvos) {
+				FinancialDashScenarioOverlayVO sovo = new FinancialDashScenarioOverlayVO(rvo);
+				sovo.setScenarioId(scenarioId);
+				sovos.add(sovo);
+			}
 		}
 		
 		// Set changed data in each vo
@@ -487,7 +494,9 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	}
 	
 	/**
-	 * Publishes data from a selected scenario/section/year/region combination.
+	 * Publishes data from a selected scenario/section/year/region/company/quarter combination.
+	 * Only updated data that is currently shown in the dashboard is published. i.e. Any quarter
+	 * that is not displayed, does not get published.
 	 * 
 	 * @param req
 	 * @throws ActionException 
@@ -495,21 +504,31 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	protected void publishScenario(ActionRequest req) throws ActionException {
 		log.debug("Publishing Scenario Overlay Records");
 
-		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"));
-		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
-		String countryType = StringUtil.checkVal(req.getParameter("pubCountryType"));
-		int year = Convert.formatInteger(StringUtil.checkVal(req.getParameter("calendarYear")));
+		// Get the relevant options selected on the dashboard
+		FinancialDashVO dashVO = new FinancialDashVO();
+		dashVO.setSectionId(StringUtil.checkVal(req.getParameter("sectionId")));
+		dashVO.setScenarioId(StringUtil.checkVal(req.getParameter("scenarioId")));
+		dashVO.addCountryType(StringUtil.checkVal(req.getParameter("pubCountryType")));
+		dashVO.setCompanyId(StringUtil.checkVal(req.getParameter("companyId")));
+		
+		// Get information about the columns to be published
+		String displayType = StringUtil.checkVal(req.getParameter("colDisplayType"));
+		int calendarYear = Convert.formatInteger(req.getParameter("colCalendarYear"));
+		int currentQtr = Convert.formatInteger(req.getParameter("colCurrentQtr"));
+		FinancialDashColumnSet columnSet = new FinancialDashColumnSet(displayType, calendarYear, currentQtr);
+		dashVO.setColHeaders(columnSet);
+		int yearCnt = getDataYears(columnSet.getDisplayType(), columnSet.getCalendarYear()) - 1; // Displayed data is 1 year less than what the dashboard uses for calculations
 		
 		// We pass scenarioId to the base data for efficiency, to get only the related records
 		// that are also in the scenario, rather than getting every record.
-		Map<String, FinancialDashRevenueVO> baseData = getBaseData(sectionId, countryType, year, scenarioId);
-		Map<String, FinancialDashScenarioOverlayVO> overlayData = getScenarioData(sectionId, countryType, year, scenarioId);
+		Map<String, FinancialDashRevenueVO> baseData = getBaseData(dashVO, yearCnt);
+		Map<String, FinancialDashScenarioOverlayVO> overlayData = getScenarioData(dashVO.getScenarioId(), dashVO, yearCnt);
 		
-		updateAllScenarios(baseData, overlayData, sectionId, countryType, year);
-		updateBaseData(baseData, overlayData);
+		updateAllScenarios(baseData, overlayData, dashVO, yearCnt);
+		updateBaseData(baseData, overlayData, dashVO.getColHeaders());
 		
 		// Handle option to set the section current to the specified value while publishing
-		if (req.hasParameter("currentQtr")) {
+		if (Convert.formatBoolean(req.getParameter("setCurrentQtr"))) {
 			setCurrentQtr(req);
 		}
 	}
@@ -517,18 +536,14 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	/**
 	 * Gets the existing overlay revenue data for a specific scenario.
 	 * 
-	 * @param sectionId
-	 * @param countryType
-	 * @param year
-	 * @param scenarioId
+	 * @param dashVO
 	 * @return
 	 */
-	protected Map<String, FinancialDashScenarioOverlayVO> getScenarioData(String sectionId, String countryType, int year, String scenarioId) {
+	protected Map<String, FinancialDashScenarioOverlayVO> getScenarioData(String sectionId, FinancialDashVO dashVO, int yearCnt) {
 		Map<String, FinancialDashScenarioOverlayVO> overlayData = new HashMap<>();
 		
-		String sql = getSectionOverlaySql();
 		List<Object> params = new ArrayList<>();
-		params.addAll(Arrays.asList(scenarioId, year, countryType, sectionId));
+		String sql = getSectionOverlaySql(sectionId, dashVO, yearCnt, params);
 		
 		List<Object> overlays = dbp.executeSelect(sql, params, new FinancialDashScenarioOverlayVO());
 		
@@ -544,15 +559,33 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * Returns the sql necessary for retrieving all overlay records
 	 * for a given scenario.
 	 * 
+	 * @param scenarioId - that is being requested, can be different from what is on the dashVO
+	 * @param dashVO - dashboard options to use in the record selection
+	 * @param params - params for db processor
 	 * @return
 	 */
-	private String getSectionOverlaySql() {
+	private String getSectionOverlaySql(String scenarioId, FinancialDashVO dashVO, int yearCnt, List<Object> params) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(300);
 		
 		sql.append("select so.* from ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY so ");
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_FD_REVENUE r on so.REVENUE_ID = r.REVENUE_ID ");
-		sql.append("where so.SCENARIO_ID = ? and so.YEAR_NO = ? and r.REGION_CD = ? and r.SECTION_ID = ? ");
+		sql.append("where so.SCENARIO_ID = ? ");
+		params.add(scenarioId);
+		
+		// Make sure to only get the years shown in the dashboard
+		sql.append("and ").append(getYearSql(dashVO, yearCnt, params, "so"));
+		
+		// Filter by company id when requested, otherwise by section id
+		if (!StringUtil.isEmpty(dashVO.getCompanyId())) {
+			sql.append("and so.company_id = ? ");
+			params.add(dashVO.getCompanyId());
+		} else {
+			sql.append("and r.section_id = ? ");
+			params.add(dashVO.getSectionId());
+		}
+		
+		sql.append("and ").append(getRegionSql(dashVO, params));
 		
 		return sql.toString();
 	}
@@ -564,23 +597,57 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * @param overlayData
 	 * @throws ActionException 
 	 */
-	protected void updateBaseData(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData) throws ActionException {
+	protected void updateBaseData(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData,
+			FinancialDashColumnSet columnSet) throws ActionException {
+		
 		for (Entry<String, FinancialDashScenarioOverlayVO> entry : overlayData.entrySet()) {
 			FinancialDashRevenueVO baseRecord = baseData.get(entry.getKey());
 			FinancialDashScenarioOverlayVO overlayRecord = overlayData.get(entry.getKey());
 			
-			// Update the corresponding base record with data from the overlay record
+			updateBaseDataRecord(baseRecord, overlayRecord, columnSet);
+		}
+	}
+	
+	/**
+	 * Handles updates of a base data record from an overlay record
+	 * 
+	 * @param baseRecord
+	 * @param overlayRecord
+	 * @param columns
+	 * @throws ActionException 
+	 */
+	protected void updateBaseDataRecord(FinancialDashRevenueVO baseRecord, FinancialDashScenarioOverlayVO overlayRecord,
+			FinancialDashColumnSet columnSet) throws ActionException {
+
+		// Quarters to update in the base data
+		List<String> quarters = new ArrayList<>();
+		quarters.addAll(Arrays.asList(FinancialDashBaseAction.QUARTER_1, FinancialDashBaseAction.QUARTER_2, FinancialDashBaseAction.QUARTER_3, FinancialDashBaseAction.QUARTER_4));
+		
+		// Only save records where data has changed
+		boolean saveRecord = false;
+		
+		try {
+			int year = baseRecord.getYearNo();
+			Map<String, String> columns = columnSet.getColumns();
+
+			// Update the corresponding base record quarter values with data from the overlay record
 			// Overlay records always tie back to an original base record
-			baseRecord.setQ1No(overlayRecord.getQ1No());
-			baseRecord.setQ2No(overlayRecord.getQ2No());
-			baseRecord.setQ3No(overlayRecord.getQ3No());
-			baseRecord.setQ4No(overlayRecord.getQ4No());
-			
-			try {
-				dbp.save(baseRecord);
-			} catch (Exception e) {
-				throw new ActionException("Couldn't save updated base data from overlay.", e);
+			for (String quarter : quarters) {
+				long baseQtrVal = (long) baseRecord.getClass().getMethod("get" + quarter + "No").invoke(baseRecord);
+				long overlayQtrVal = (long) overlayRecord.getClass().getMethod("get" + quarter + "No").invoke(overlayRecord);
+
+				if (baseQtrVal != overlayQtrVal && columns.containsKey(quarter + "-" + year)) {
+					Method baseSet = baseRecord.getClass().getMethod("set" + quarter + "No", long.class);
+					baseSet.invoke(baseRecord, overlayQtrVal);
+					saveRecord = true;
+				}
 			}
+			
+			if (saveRecord) {
+				dbp.save(baseRecord);
+			}
+		} catch (Exception e) {
+			throw new ActionException("Couldn't save updated base data from overlay.", e);
 		}
 	}
 
@@ -589,9 +656,10 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * 
 	 * @param baseData
 	 * @param overlayData
-	 * @throws ActionException 
+	 * @param dashVO
+	 * @throws ActionException
 	 */
-	protected void updateAllScenarios(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData, String sectionId, String countryType, int year) throws ActionException {
+	protected void updateAllScenarios(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData, FinancialDashVO dashVO, int yearCnt) throws ActionException {
 		// Get the overlay's scenario id so we can exclude it. It doesn't need to be updated
 		// since this is the one we're updating from.
 		Entry<String, FinancialDashScenarioOverlayVO> entry = overlayData.entrySet().iterator().next();
@@ -609,8 +677,10 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 				continue;
 			}
 			
-			Map<String, FinancialDashScenarioOverlayVO> scenarioData = getScenarioData(sectionId, countryType, year, scenario.getScenarioId());
-			updateScenario(baseData, overlayData, scenarioData);
+			Map<String, FinancialDashScenarioOverlayVO> scenarioData = getScenarioData(scenario.getScenarioId(), dashVO, yearCnt);
+			if (!scenarioData.isEmpty()) {
+				updateScenario(baseData, overlayData, scenarioData, dashVO.getColHeaders());	
+			}
 		}
 	}
 
@@ -625,7 +695,9 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * @param scenarioId
 	 * @throws ActionException 
 	 */
-	private void updateScenario(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData, Map<String, FinancialDashScenarioOverlayVO> scenarioData) throws ActionException {
+	private void updateScenario(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData,
+			Map<String, FinancialDashScenarioOverlayVO> scenarioData, FinancialDashColumnSet columnSet) throws ActionException {
+
 		// Loop through all the records available in the overlay data
 		// and add/update the scenario data as necessary
 		for (Entry<String, FinancialDashScenarioOverlayVO> entry : overlayData.entrySet()) {
@@ -634,7 +706,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			FinancialDashScenarioOverlayVO scenarioRecord = scenarioData.get(entry.getKey());
 			
 			if (scenarioRecord != null) {
-				updateScenarioRecord(baseRecord, overlayRecord, scenarioRecord);
+				updateScenarioRecord(baseRecord, overlayRecord, scenarioRecord, columnSet);
 			}
 		}
 	}
@@ -649,10 +721,15 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * @param quarters
 	 * @throws ActionException 
 	 */
-	private void updateScenarioRecord(FinancialDashRevenueVO baseRecord, FinancialDashScenarioOverlayVO overlayRecord, FinancialDashScenarioOverlayVO scenarioRecord) throws ActionException {
+	private void updateScenarioRecord(FinancialDashRevenueVO baseRecord, FinancialDashScenarioOverlayVO overlayRecord,
+			FinancialDashScenarioOverlayVO scenarioRecord, FinancialDashColumnSet columnSet) throws ActionException {
+		
 		// Quarters to check for changes
 		List<String> quarters = new ArrayList<>();
 		quarters.addAll(Arrays.asList(FinancialDashBaseAction.QUARTER_1, FinancialDashBaseAction.QUARTER_2, FinancialDashBaseAction.QUARTER_3, FinancialDashBaseAction.QUARTER_4));
+		
+		// Only save record if a change was made
+		boolean saveRecord = false;
 		
 		try {
 			for (String quarter : quarters) {
@@ -662,18 +739,20 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 
 				Method sovoGet = scenarioRecord.getClass().getMethod("get" + quarter + "No");
 				long scenarioVal = (long) sovoGet.invoke(scenarioRecord);
+				long overlayVal = (long) sovoGet.invoke(overlayRecord);
 
 				// if base record quarter value is same as scenario record quarter value
-				// then replace with overlay record quarter value
-				if (baseVal == scenarioVal) {
-					long overlayVal = (long) sovoGet.invoke(overlayRecord);
-
+				// then replace with overlay record quarter value if it is different and a quarter being updated
+				if (baseVal == scenarioVal && scenarioVal != overlayVal && columnSet.getColumns().containsKey(quarter + "-" + scenarioRecord.getYearNo())) {
 					Method sovoSet = scenarioRecord.getClass().getMethod("set" + quarter + "No", long.class);
 					sovoSet.invoke(scenarioRecord, overlayVal);
+					saveRecord = true;
 				}
 			}
 
-			dbp.save(scenarioRecord);
+			if (saveRecord) {
+				dbp.save(scenarioRecord);
+			}
 		} catch (Exception e) {
 			throw new ActionException("Couldn't save updated scenario data from overlay.", e);
 		}

@@ -21,6 +21,7 @@ public class FinancialDashDataColumnVO implements Serializable {
 	private Double pctDiff;
 	private ValueDisplayType valueDisplay;
 	private boolean delta;
+	private String revenueId;
 	
 	public enum ValueDisplayType {
 		REPORTING("Reporting"), PENDING("Pending");
@@ -130,5 +131,19 @@ public class FinancialDashDataColumnVO implements Serializable {
 	 */
 	public void setDelta(boolean delta) {
 		this.delta = delta;
+	}
+
+	/**
+	 * @return the revenueId
+	 */
+	public String getRevenueId() {
+		return revenueId;
+	}
+
+	/**
+	 * @param revenueId the revenueId to set
+	 */
+	public void setRevenueId(String revenueId) {
+		this.revenueId = revenueId;
 	}
 }
