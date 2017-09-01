@@ -20,6 +20,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
@@ -44,6 +45,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.PasswordComplexityFactory;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
@@ -69,7 +71,8 @@ import com.biomed.smarttrak.action.UpdatesEditionAction;
  ***************************************************************************/
 public class AccountUserAction extends SBActionAdapter {
 
-	protected static final String CFG_WELCOME_EML = "smarttrakWelcomeInstanceId";
+	protected static final String CFG_WELCOME_EML = "smarttrakWelcomeEmailInstanceId";
+	protected static final String CFG_PSWD_RESET_EML = "smarttrakPasswordResetEmailInstanceId";
 	protected static final String ACCOUNT_ID = AccountAction.ACCOUNT_ID; //req param
 	protected static final String USER_ID = "userId"; //req param
 	protected static final String PROFILE_ID = UpdatesEditionAction.PROFILE_ID;
@@ -98,6 +101,9 @@ public class AccountUserAction extends SBActionAdapter {
 		} else if (req.hasParameter("sendWelcomeEmail")) {
 			sendWelcomeEmail(req);
 			return;
+		} else if (req.hasParameter("sendPasswordEmail")) {
+			sendPasswordEmail(req);
+			return;
 		}
 
 		List<Object> users = loadAccountUsers(req, req.getParameter(PROFILE_ID));
@@ -115,6 +121,8 @@ public class AccountUserAction extends SBActionAdapter {
 
 
 	/**
+	 * Triggers the email campaign email for Welcome Msg. to be sent to the user
+	 * A password reset URL is conditionally supported (when needed)
 	 * @param req
 	 */
 	private void sendWelcomeEmail(ActionRequest req) {
@@ -129,11 +137,36 @@ public class AccountUserAction extends SBActionAdapter {
 		config.put(USER_ID, u.getUserId());
 		config.put(ACCOUNT_ID, u.getAccountId());
 		if (Convert.formatBoolean(req.getParameter("passwordReset")))
-			config.put("passwordResetUrl", makeResetUrl(req));
-
-		config.put(UpdatesEditionAction.PROFILE_ID, u.getProfileId());
+			config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
 
 		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_WELCOME_EML));
+		Map<String, String> recipients = new HashMap<>();
+		recipients.put(u.getProfileId(), (String)config.get("emailAddress"));
+
+		//perform the email send
+		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
+		ecbu.sendMessage(campInstId, recipients, config);
+	}
+
+
+	/**
+	 * Triggers the email campaign email for Password Reset to be sent to the user.
+	 * @param req
+	 */
+	private void sendPasswordEmail(ActionRequest req) {
+		//build the emailConfig
+		UserVO u = new UserVO(req);
+		Map<String, Object> config = new HashMap<>();
+		config.put("firstName", u.getFirstName());
+		config.put("lastName", u.getLastName());
+		config.put("emailAddress", u.getEmailAddress());
+		config.put("createDt", Convert.getCurrentTimestamp());
+		config.put(PROFILE_ID, u.getProfileId());
+		config.put(USER_ID, u.getUserId());
+		config.put(ACCOUNT_ID, u.getAccountId());
+		config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
+
+		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_PSWD_RESET_EML));
 		Map<String, String> recipients = new HashMap<>();
 		recipients.put(u.getProfileId(), (String)config.get("emailAddress"));
 
@@ -148,16 +181,17 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String makeResetUrl(ActionRequest req) {
+	private String makeResetKey(ActionRequest req, String email) {
+		long oneWeekMillis = 604800000;
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		StringBuilder url = new StringBuilder(300);
-		url.append(site.getFullSiteAlias());
-		url.append("/?loginEmailSubmitted=true&pmid=cc413c31a6cec2c1c0a80241bfe09df7&passPhrase=");
-		//TODO hard-coded PMID is ok since it is unlikely to change, but should be obtained via DB lookup, ideally. (parentSite+defaultPage+LOGIN module?)
-		//TODO finish this method once we move to v3.3, which drastically refactored password management.
-
-		log.debug(url);
-		return url.toString();
+		try {
+			return StringEncoder.urlEncode(PasswordComplexityFactory
+					.getInstance(site.getPasswordModule(), getAttributes())
+					.generateResetToken(site.getSiteAlias(), email, oneWeekMillis));
+		} catch (ApplicationException e) {
+			log.error("unable to generate password reset token", e);
+			return "";
+		}
 	}
 
 	/**
