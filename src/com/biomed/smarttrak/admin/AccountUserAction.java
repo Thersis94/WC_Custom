@@ -71,7 +71,8 @@ import com.biomed.smarttrak.action.UpdatesEditionAction;
  ***************************************************************************/
 public class AccountUserAction extends SBActionAdapter {
 
-	protected static final String CFG_WELCOME_EML = "smarttrakWelcomeInstanceId";
+	protected static final String CFG_WELCOME_EML = "smarttrakWelcomeEmailInstanceId";
+	protected static final String CFG_PSWD_RESET_EML = "smarttrakPasswordResetEmailInstanceId";
 	protected static final String ACCOUNT_ID = AccountAction.ACCOUNT_ID; //req param
 	protected static final String USER_ID = "userId"; //req param
 	protected static final String PROFILE_ID = UpdatesEditionAction.PROFILE_ID;
@@ -100,6 +101,9 @@ public class AccountUserAction extends SBActionAdapter {
 		} else if (req.hasParameter("sendWelcomeEmail")) {
 			sendWelcomeEmail(req);
 			return;
+		} else if (req.hasParameter("sendPasswordEmail")) {
+			sendPasswordEmail(req);
+			return;
 		}
 
 		List<Object> users = loadAccountUsers(req, req.getParameter(PROFILE_ID));
@@ -117,6 +121,8 @@ public class AccountUserAction extends SBActionAdapter {
 
 
 	/**
+	 * Triggers the email campaign email for Welcome Msg. to be sent to the user
+	 * A password reset URL is conditionally supported (when needed)
 	 * @param req
 	 */
 	private void sendWelcomeEmail(ActionRequest req) {
@@ -133,9 +139,34 @@ public class AccountUserAction extends SBActionAdapter {
 		if (Convert.formatBoolean(req.getParameter("passwordReset")))
 			config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
 
-		config.put(UpdatesEditionAction.PROFILE_ID, u.getProfileId());
-
 		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_WELCOME_EML));
+		Map<String, String> recipients = new HashMap<>();
+		recipients.put(u.getProfileId(), (String)config.get("emailAddress"));
+
+		//perform the email send
+		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
+		ecbu.sendMessage(campInstId, recipients, config);
+	}
+
+
+	/**
+	 * Triggers the email campaign email for Password Reset to be sent to the user.
+	 * @param req
+	 */
+	private void sendPasswordEmail(ActionRequest req) {
+		//build the emailConfig
+		UserVO u = new UserVO(req);
+		Map<String, Object> config = new HashMap<>();
+		config.put("firstName", u.getFirstName());
+		config.put("lastName", u.getLastName());
+		config.put("emailAddress", u.getEmailAddress());
+		config.put("createDt", Convert.getCurrentTimestamp());
+		config.put(PROFILE_ID, u.getProfileId());
+		config.put(USER_ID, u.getUserId());
+		config.put(ACCOUNT_ID, u.getAccountId());
+		config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
+
+		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_PSWD_RESET_EML));
 		Map<String, String> recipients = new HashMap<>();
 		recipients.put(u.getProfileId(), (String)config.get("emailAddress"));
 
