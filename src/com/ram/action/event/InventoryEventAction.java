@@ -16,6 +16,7 @@ import com.ram.datafeed.data.InventoryEventVO;
 import com.ram.datafeed.data.InventoryItemVO;
 import com.ram.datafeed.data.RAMProductVO;
 import com.ram.action.report.vo.InventoryEventPDFReport;
+import com.ram.action.report.vo.InventoryEventXLSReport;
 import com.ram.action.util.SecurityUtil;
 
 //SMT Base Libs
@@ -31,6 +32,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.WebCrescendoReport;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -52,11 +54,10 @@ public class InventoryEventAction extends SBActionAdapter {
 	 * Maps the extjs column names to the actual field names
 	 */
 	protected final Map<String, String> fieldMap = new LinkedHashMap<>();
+	public final String LOAD_REPORT = "loadReport";
+	public final String PDF = "pdf";
+	public final String XLS = "xls";
 	
-	
-	/**
-	 * 
-	 */
 	public InventoryEventAction() {
 		super();
 		initFieldMap();
@@ -227,20 +228,10 @@ public class InventoryEventAction extends SBActionAdapter {
 			event.setNumberReceivedProducts(getNumberItems(inventoryEventId, "REPLENISHMENT"));
 			event.setNumberTotalProducts(getNumberItems(inventoryEventId, "SHELF"));
 
-			if (req.hasParameter("loadReport") && "pdf".equalsIgnoreCase(StringUtil.checkVal(req.getParameter("loadReport")))){
-				List<Object> lines = getAllInventoryItemsSummary(req);
-				
-				for (Object o : lines){
-					InventoryItemVO vo = (InventoryItemVO) o;
-					event.addInventoryItem(vo);
-				}
-
-				String fileName = "Event-"+event.getInventoryEventId();
-				AbstractSBReportVO report = new InventoryEventPDFReport();
-				report.setAttributes(attributes);
-				report.setFileName(fileName + ".pdf");
-				report.setData(event);
-				req.setAttribute(Constants.BINARY_DOCUMENT, report);
+			if (req.hasParameter(LOAD_REPORT) ){
+				loadLineItemData(req,event);
+				String reportType = StringUtil.checkVal(req.getParameter(LOAD_REPORT));
+				req.setAttribute(Constants.BINARY_DOCUMENT, generateReport(reportType, event));
 				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 			}else{
 				putModuleData(event);
@@ -249,6 +240,46 @@ public class InventoryEventAction extends SBActionAdapter {
 		}
 	}
 	
+	/**
+	 * adds the line items to the main event vo for the reports
+	 * @param req
+	 * @param event
+	 */
+	private void loadLineItemData(ActionRequest req, InventoryEventVO event) {
+		List<Object> lines = getAllInventoryItemsSummary(req);
+		
+		for (Object o : lines){
+			InventoryItemVO vo = (InventoryItemVO) o;
+			event.addInventoryItem(vo);
+		}
+	}
+
+	/**
+	 * uses the report type string  to determine and build the requested type of report
+	 * @param reportType
+	 * @param event 
+	 * @return
+	 */
+	private Object generateReport(String reportType, InventoryEventVO event) {
+		AbstractSBReportVO report = null;
+		
+		if (PDF.equalsIgnoreCase(reportType)){
+			String fileName = "Event-"+event.getInventoryEventId();
+			report = new InventoryEventPDFReport();
+			report.setAttributes(attributes);
+			report.setFileName(fileName + ".pdf");
+			report.setData(event);
+		}
+		
+		if (XLS.equalsIgnoreCase(reportType)){
+			InventoryEventXLSReport eReport = new InventoryEventXLSReport();
+			eReport.setData(event);
+			report = new WebCrescendoReport(eReport);
+		}
+		
+		return report;
+	}
+
 	/**
 	 * Gets the list of products and their lot number/expiry for a given inventory event
 	 * @param customerProductId
