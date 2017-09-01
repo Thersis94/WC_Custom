@@ -116,8 +116,9 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		loadBusUnits();
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
 	@Override
 	public void addIndexItems(SolrClient server) {

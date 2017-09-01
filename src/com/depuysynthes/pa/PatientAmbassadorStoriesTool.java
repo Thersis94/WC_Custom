@@ -1,5 +1,5 @@
 package com.depuysynthes.pa;
-
+//java 8
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+//SMT base lib
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
@@ -18,6 +18,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
+//WebCrescendo
 import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormFacadeAction;
@@ -33,24 +34,20 @@ import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
- * <b>Title</b>: PatientAmbassadrStoriesTool.java
- * <p/>
+ * <b>Title</b>: PatientAmbassadorStoriesTool.java
  * <b>Project</b>: WC_Custom
- * <p/>
  * <b>Description: </b> Data Tool for managing Patient Ambassador Stories in the
  * admintool.  Works off the data provided by the Patient Ambassador Story Form.
- * <p/>
- * <b>Copyright:</b> Copyright (c) 2015
- * <p/>
+ * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
- * <p/>
  * 
  * @author raptor
- * @version 1.0
+ * @version 3.0
  * @since Jan 9, 2015
- *        <p/>
- *        <b>Changes: </b>
+ * @updates:
+ * 	RjR code clean up May 23, 2017
  ****************************************************************************/
+
 public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	public enum PAFConst {
 		JOINT_ID("c0a80241bba73b0a49493776bd9f999d"),
@@ -87,9 +84,6 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 	private static final String EXPORT_FILE_NAME = "PatientStories.xls";
 
-	/**
-	 * 
-	 */
 	public PatientAmbassadorStoriesTool() {
 		super();
 	}
@@ -102,6 +96,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * Calls out to solr to remove the story from the index and adds the hidden
 	 * flag to the FORM_DATA for the given submission.
 	 */
+	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		String msg = "Story successfuly removed.";
 		try {
@@ -189,7 +184,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {		
-
+		log.debug(" starting list");
 		/*
 		 * Choose whether we Export a report, retrieve a particular submission
 		 * or list all results of a search.
@@ -343,6 +338,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * @param req
 	 */
 	protected void retrieveSubmittalData(ActionRequest req) {
+		log.debug(" retrieveSubmittalData " );
 		FormFacadeAction ffa = new FormFacadeAction(actionInit);
 		ffa.setDBConnection(dbConn);
 		ffa.setAttributes(attributes);
@@ -360,7 +356,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 */
 	private List<FormTransactionVO> retreiveAllSubmissions(ActionRequest req, boolean filterHidden) {
 
-		List<FormTransactionVO> vos = new ArrayList<FormTransactionVO>();
+		List<FormTransactionVO> vos = new ArrayList<>();
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 
 		//Retrieve Search Params and build Query
@@ -371,10 +367,11 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		Date reportEnd = Convert.formatSQLDate(Convert.formatEndDate(req.getParameter("reportEnd")), true);
 		String srQuery = getSubmittalRecordQuery(stateId, cityNm, joint, filterHidden);
 		log.debug("Query = " + srQuery);
-
+			
 		//Retrieve Data from DB
 		int i = 1;
 		try (PreparedStatement ps = dbConn.prepareStatement(srQuery)) {
+			ps.setString(i++, PAFConst.JOINT_ID.getId());
 			ps.setString(i++, PAFConst.STATUS_ID.getId());
 			if(filterHidden)
 				ps.setString(i++, PAFConst.HIDDEN_ID.getId());
@@ -434,14 +431,14 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	private String getSubmittalRecordQuery(String state, String city, String joint, boolean filterHidden) {
 		StringBuilder sb = new StringBuilder(750);
 		sb.append("select distinct a.*, ");
-		sb.append("STUFF((SELECT distinct ', ' + replace(replace(cast(FD.VALUE_TXT as nvarchar), '").append(SearchDocumentHandler.HIERARCHY_DELIMITER);
-		sb.append("Left', ''), '").append(SearchDocumentHandler.HIERARCHY_DELIMITER).append("Right', '') FROM FORM_DATA FD ");
-		sb.append("WHERE (FD.FORM_SUBMITTAL_ID = a.FORM_SUBMITTAL_ID and FD.FORM_FIELD_ID = b.FORM_FIELD_ID) ");
-		sb.append("FOR XML PATH('')), 1, 1, '') Joints, cast(f.VALUE_TXT as nvarchar) as 'STATUS', f.FORM_DATA_ID as 'STATUS_ID' ");
+		sb.append("string_agg( distinct replace(replace(cast(FD.VALUE_TXT as varchar), '").append(SearchDocumentHandler.HIERARCHY_DELIMITER);
+		sb.append("Left', ''), '").append(SearchDocumentHandler.HIERARCHY_DELIMITER).append("Right', '') , ',')  as Joints, ");
+		sb.append("cast(f.VALUE_TXT as varchar) as STATUS, f.FORM_DATA_ID as STATUS_ID ");
 		if (filterHidden)
-			sb.append(", cast(e.VALUE_TXT as nvarchar) as 'HIDE' ");
+			sb.append(", cast(e.VALUE_TXT as varchar) as HIDE ");
 		sb.append("from FORM_SUBMITTAL a ");
 		sb.append("inner join FORM_DATA b on a.FORM_SUBMITTAL_ID = b.FORM_SUBMITTAL_ID ");
+		sb.append("left outer join form_data fd on a.FORM_SUBMITTAL_ID = fd.FORM_SUBMITTAL_ID and fd.FORM_FIELD_ID= ? ");
 		sb.append("left outer join FORM_DATA f on a.FORM_SUBMITTAL_ID = f.FORM_SUBMITTAL_ID and f.FORM_FIELD_ID= ? ");
 		if (filterHidden)
 			sb.append("left outer join FORM_DATA e on a.FORM_SUBMITTAL_ID = e.FORM_SUBMITTAL_ID and e.FORM_FIELD_ID= ? ");
@@ -459,7 +456,9 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 		//Add Ordering for newest first.
 		sb.append("and (a.robot_flg is null or a.robot_flg=0) ");
+		sb.append("group by a.FORM_SUBMITTAL_ID, f.value_txt, e.value_txt, f.form_data_id ");
 		sb.append("order by a.CREATE_DT desc");
+		
 		return sb.toString();
 	}
 
@@ -480,14 +479,14 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		 */
 		List<FormTransactionVO> fsids = null;
 		if(req.hasParameter("fsi")) {
-			fsids = new ArrayList<FormTransactionVO>();
+			fsids = new ArrayList<>();
 			FormTransactionVO f = new FormTransactionVO();
 			f.setFormSubmittalId(req.getParameter("fsi"));
 			fsids.add(f);
 		} else {
 			fsids = retreiveAllSubmissions(req, true);
 		}
-		Map<String, FormTransactionVO> t = new HashMap<String, FormTransactionVO>(fsids.size());
+		Map<String, FormTransactionVO> t = new HashMap<>(fsids.size());
 
 		//Iterate over list to get FormTransactionVOs
 

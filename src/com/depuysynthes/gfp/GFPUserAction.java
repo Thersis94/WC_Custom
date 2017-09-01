@@ -208,8 +208,8 @@ public class GFPUserAction extends SBActionAdapter {
 					}
 				}
 				
-				UserLogin ul = new UserLogin(dbConn, (String) attributes.get(Constants.ENCRYPT_KEY));
-				user.getProfile().setAuthenticationId(ul.modifyUser(user.getProfile().getAuthenticationId(), user.getProfile().getEmailAddress(), password, 0));
+				UserLogin ul = new UserLogin(dbConn, getAttributes());
+				user.getProfile().setAuthenticationId(ul.saveAuthRecord(user.getProfile().getAuthenticationId(), user.getProfile().getEmailAddress(), password, 0));
 				pm.updateProfile(user.getProfile(), dbConn);
 			}
 

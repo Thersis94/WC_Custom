@@ -42,7 +42,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 
 	@Override
 	public void notifyAdminOfAdDeclined(DePuyEventSeminarVO sem, SiteVO site, UserDataVO user, String reason, int cnt, CoopAdVO vo) {
-		String label = (Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1) ? "Online" : "Newspaper";
+		String label = Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1 ? "Online" : "Newspaper";
 		StringBuilder msg = new StringBuilder();
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has declined ");
@@ -57,15 +57,13 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
-			mail.addRecipient("Amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
-			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("mroderic@its.jnj.com");
 
@@ -107,7 +105,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.setSubject("Newspaper Options - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -145,7 +142,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 
@@ -187,7 +183,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
-			mail.addCC("ksmith49@its.jnj.com");
 
 			for (PersonVO p : sem.getPeople()) {
 				//Add only the sales rep
@@ -213,7 +208,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 	@Override
 	public void requestAdApprovalOfConsignee(DePuyEventSeminarVO sem, SiteVO site, boolean isHospital) {
 		EventEntryVO event = sem.getEvents().get(0);
-		ConsigneeVO consignee = sem.getConsignees().get((isHospital ? Long.valueOf(2) : Long.valueOf(1)));
+		ConsigneeVO consignee = sem.getConsignees().get(isHospital ? Long.valueOf(2) : Long.valueOf(1));
 		if (consignee == null) consignee = new ConsigneeVO();
 		Date approvalDt = addBusinessDays(6);
 
@@ -244,7 +239,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(consignee.getEmail());
-			mail.addBCC("ksmith49@its.jnj.com");
 			mail.addBCC("cmarcos1@its.jnj.com");
 			mail.addBCC("mroderic@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
@@ -266,13 +260,13 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			UserDataVO user, int cnt, CoopAdVO vo) {
 		//Determine if it's co-funded or DePuy funded (used for subject line and recipients)
 		String eventType = StringUtil.checkVal(sem.getEvents().get(0).getEventTypeCd());
-		boolean isCFSEM = ( eventType.toUpperCase().startsWith("CFSEM") );
+		boolean isCFSEM = eventType.toUpperCase().startsWith("CFSEM");
 		String label = (Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1) ? "Online" : "Newspaper";
 
 		//Build the subject text
 		StringBuilder subject = new StringBuilder();
 		subject.append(label + " Ad #" + cnt + " approved by Coordinator for ");
-		subject.append( (isCFSEM ? "Co-Funded" : "DePuy Funded") );
+		subject.append(isCFSEM ? "Co-Funded" : "DePuy Funded");
 		subject.append(" Seminar #").append(sem.getRSVPCodes());
 
 		StringBuilder msg = new StringBuilder(425);
@@ -295,10 +289,9 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
-			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 
@@ -354,12 +347,11 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
-			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
-			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.setTextBody(msg.toString());
 
@@ -390,14 +382,13 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.setTextBody(msg.toString());
 
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("amy.zimmerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
-			mail.addCC("Marsha.Leo@umj3.com");
+			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");

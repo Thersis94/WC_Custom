@@ -1,8 +1,6 @@
-/**
- * 
- */
 package com.depuysynthes.action;
 
+//java 8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+//SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -19,6 +18,8 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
@@ -28,38 +29,38 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: EMEACarouselAction.java
- * <p/>
  * <b>Project</b>: WC_Custom
- * <p/>
  * <b>Description: </b> Custom action to retrieve EMEA Products for Child sites.
  * Will provide Carousel like function on the landing pages but have no write
  * access to the product Catalog itself.
- * <p/>
  * <b>Copyright:</b> Copyright (c) 2014
- * <p/>
  * <b>Company:</b> Silicon Mountain Technologies
- * <p/>
  * 
  * @author Billy Larsen
- * @version 1.0
- * @since Dec 3, 2014
- *        <p/>
- *        <b>Changes: </b>
+ * @version 3.0
+ * @since Dec 3, 2014 
+ * @updates:
+ * RJR code clean up May 18, 2017
  ****************************************************************************/
+
 public class EMEACarouselAction extends SBActionAdapter {
 
 	public static final String CATALOG_ID ="DS_PRODUCTS_EMEA";
-	/**
-	 * 
-	 */
+
 	public EMEACarouselAction() {
 		super();
 	}
 	
+	/**
+	 * @param init
+	 */
 	public EMEACarouselAction(ActionInitVO init) {
 		super(init);
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//load the action's data via a quick call to list()
@@ -91,7 +92,7 @@ public class EMEACarouselAction extends SBActionAdapter {
 	 * @return
 	 */
 	private List<ProductVO>parseCatalog(Map<String, Long> orderedProdIds, List<Node> catalog) {
-		List<ProductVO> selProds = new ArrayList<ProductVO>(orderedProdIds.size());
+		List<ProductVO> selProds = new ArrayList<>(orderedProdIds.size());
 		Node parent = null;
 		ProductVO p = null;
 		
@@ -124,6 +125,9 @@ public class EMEACarouselAction extends SBActionAdapter {
 		return selProds;
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -168,12 +172,15 @@ public class EMEACarouselAction extends SBActionAdapter {
 		super.putModuleData(vo);
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 		
         // Build the sql
-        StringBuffer sql = new StringBuffer();
+        StringBuilder sql = new StringBuilder(120);
 		if (Convert.formatBoolean(req.getAttribute(INSERT_TYPE))) {
 			sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 	        sql.append("DPY_SYN_HCP_LANDING (create_dt, action_id) values (?,?)");
@@ -184,10 +191,8 @@ public class EMEACarouselAction extends SBActionAdapter {
 		}
 		
 		// perform the execute
-		PreparedStatement ps = null;
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
 			ps.setTimestamp(1, Convert.getCurrentTimestamp());
 			ps.setString(2, (String) req.getAttribute(SB_ACTION_ID));
 			
@@ -203,10 +208,7 @@ public class EMEACarouselAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
             msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
             log.error("Error Update HCP_LANDING_PG for EMEACarousel", sqle);
-		} finally {
-			try { ps.close(); } catch(Exception e) {}
-        }
-		
+		}		
 		
 		// Redirect after the update
         sbUtil.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));

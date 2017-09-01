@@ -31,6 +31,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
 
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 //WC Libs
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -289,7 +290,13 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			JSONArray arr = JSONArray.fromObject(jsonText);
 			for (int x=0; x < arr.size(); x++) {
 				if ("CMS".equals(((JSONObject)arr.get(x)).getString("type"))) {
-					values.add("CMS" + ((JSONObject)arr.get(x)).getString("id"));
+					String id = ((JSONObject)arr.get(x)).getString("id");
+					int legacyId = Convert.formatInteger(id);
+					if (legacyId == 0) {
+						values.add(id);
+					} else {
+						values.add("CMS" + id);
+					}
 				} else {
 					values.add(((JSONObject)arr.get(x)).getString("id"));
 				}
@@ -310,7 +317,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		log.debug("loading product for catalogId=" + catalogId);
 		ProductCatalogUtil util = new ProductCatalogUtil();
 		util.setDBConnection(new SMTDBConnection(dbConn));
-		Map<String, Object> attribs = new HashMap<String, Object>();
+		Map<String, Object> attribs = new HashMap<>();
 		attribs.put(Constants.MODULE_DATA, new ModuleVO());
 		attribs.put(Constants.QS_PATH, config.get(Constants.QS_PATH));
 		util.setAttributes(attribs);
@@ -344,7 +351,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param blogId
 	 */
 	@Override
-	public void addSingleItem(String productId) throws SolrException {
+	public void addSingleItem(String productId) {
 		log.debug("Indexing Single Huddle Product");
 		ProductCatalogAction pc = new ProductCatalogAction();
 		pc.setDBConnection((SMTDBConnection) dbConn);

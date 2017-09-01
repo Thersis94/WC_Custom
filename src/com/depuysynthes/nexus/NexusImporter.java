@@ -49,15 +49,15 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  ****************************************************************************/
 public class NexusImporter extends CommandLineUtil {
 	private static final int BUFFER_SIZE = 2048;
-	
+
 	private String DELIMITER;
-	
+
 	// Used to store variables that are used in the MessageSender constructor
 	private HashMap<String, Object> attributes;
-	
+
 	// Check if we are getting a local file
 	private boolean isLocal = false;
-	
+
 	// FTP variables
 	private String user;
 	private String password;
@@ -65,7 +65,7 @@ public class NexusImporter extends CommandLineUtil {
 	private String hostName;
 	private String directory;
 	private Source source;
-	
+
 	// Stores the organizations code mappings
 	public enum organizations {
 		DO("Orthopaedics"),
@@ -86,11 +86,11 @@ public class NexusImporter extends CommandLineUtil {
 			return name;
 		}
 	}
-	
+
 	public enum Source {
 		MDM, JDE
 	}
-	
+
 	private int org;
 	private int status;
 	private int region;
@@ -104,10 +104,10 @@ public class NexusImporter extends CommandLineUtil {
 	private int qty;
 	private int pkg;
 	private int uom;
-	
+
 	// Stores any errors that we run into throughout the import
 	private List<String> errors;
-	
+
 	public NexusImporter(String[] args) {
 		super(args);
 		loadProperties("scripts/Nexus.properties");
@@ -116,11 +116,11 @@ public class NexusImporter extends CommandLineUtil {
 		if (args.length > 0) {
 			isLocal = Convert.formatBoolean(args[0]);
 		}
-		
+
 		if (args.length > 1) {
 			source = Source.valueOf(args[1]);
 		}
-		
+
 		if (args.length == 4) {
 			directory = args[2];
 			fileName = args[3];
@@ -130,12 +130,12 @@ public class NexusImporter extends CommandLineUtil {
 		}
 		if (source == null) 
 			determineSource();
-		
+
 		prepareValues();
 		errors = new ArrayList<>();
 	}
-	
-	
+
+
 	/**
 	 * Set up the class values and determine which file headers we are going
 	 * to need to use in order get the product information from the supplied files
@@ -146,15 +146,15 @@ public class NexusImporter extends CommandLineUtil {
 		attributes.put("instanceName", props.get("instanceName"));
 		attributes.put("appName", props.get("appName"));
 		attributes.put("adminEmail", props.get("adminEmail"));
-		
+
 		DELIMITER = props.getProperty("delimiter");
 		user = props.getProperty("user");
 		password = props.getProperty("password");
 		hostName = props.getProperty("hostName");
-		
+
 	}
-    
-    
+
+
 	/**
 	 * @param args
 	 * @throws Exception 
@@ -164,8 +164,8 @@ public class NexusImporter extends CommandLineUtil {
 		NexusImporter dmb = new NexusImporter(args);
 		dmb.run();
 	}
-	
-	
+
+
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.util.CommandLineUtil#run()
 	 */
@@ -176,7 +176,7 @@ public class NexusImporter extends CommandLineUtil {
 		Map<String, NexusProductVO> products = new HashMap<>();
 		int fails = 0;
 		try (SolrClient server = SolrClientBuilder.build(props.getProperty(Constants.SOLR_BASE_URL), props.getProperty(Constants.SOLR_COLLECTION_NAME))){
-			
+
 			boolean mdm = fileName.contains(".zip") || fileName.contains("|");
 			// Get the files and parse them into products
 			if (isLocal) {
@@ -188,7 +188,7 @@ public class NexusImporter extends CommandLineUtil {
 			} else {
 				products = getProductsFromFile();
 			}
-			
+
 			SolrActionUtil solr = new SolrActionUtil(server);
 			List<SolrDocumentVO> docs = new ArrayList<>();
 			for (String key : products.keySet()) {
@@ -202,7 +202,7 @@ public class NexusImporter extends CommandLineUtil {
 						fails++;
 						continue;
 					}
-					
+
 					docs.add(p);
 					cnt++;
 					// Add these documents now so as to prevent overloading
@@ -215,7 +215,7 @@ public class NexusImporter extends CommandLineUtil {
 					log.error("Unable to add product to solr", e);
 				}
 			}
-			
+
 			// Add the remaining documents
 			if (docs.size() > 0)
 				solr.addDocuments(docs);
@@ -228,8 +228,8 @@ public class NexusImporter extends CommandLineUtil {
 		log.debug("Final Failures: " + fails);
 		log.debug("Ended at " + Convert.getCurrentTimestamp());
 	}
-	
-	
+
+
 	/**
 	 * Get the file from the mbox and create a map out of the contained data
 	 * @return
@@ -242,7 +242,7 @@ public class NexusImporter extends CommandLineUtil {
 		Map<String, NexusProductVO> products = new HashMap<>();
 		SFTPV3Client ftp = null;
 		try {
-			
+
 			ftp = new SFTPV3Client(hostName, user, password);
 			log.debug("Getting File " + directory + "/" + fileName + " at " + Convert.getCurrentTimestamp());
 			if (isZip) {
@@ -250,20 +250,20 @@ public class NexusImporter extends CommandLineUtil {
 			} else {
 				fileData.put(fileName, new String(ftp.getFileData(directory+"/"+fileName)));
 			}
-			
+
 			for (String key : fileData.keySet()) {
 				buildProducts(key, fileData.get(key), isZip, products);
 			}
-			
-			
+
+
 		} catch (IOException e) { 
 			log.error("Unable to get data from file", e);
 			throw new ActionException(e);
 		}
 		return products;
 	}
-	
-	
+
+
 	/**
 	 * Get all the files out of the supplied zip and 
 	 * @param fileData
@@ -277,7 +277,7 @@ public class NexusImporter extends CommandLineUtil {
 		ZipInputStream zis = new ZipInputStream(bais);
 
 		zis = new ZipInputStream(bais);
-		
+
 		try {
 			while ((ze = zis.getNextEntry()) != null) {
 				if (!ze.getName().contains(".OUT")) 
@@ -290,14 +290,14 @@ public class NexusImporter extends CommandLineUtil {
 					baos.write(b, 0, c);
 				}
 				fileData.put(ze.getName(), new String(baos.toByteArray(),"ISO-8859-15"));
-				
+
 			}
 		} catch (IOException e) {
 			log.error("Unable to parse zip contents", e);
 			throw new ActionException(e);
 		}
 	}
-	
+
 	/**
 	 * Gets the files from a local zip file instead of pulling it down from the mbox server
 	 * @return
@@ -330,7 +330,7 @@ public class NexusImporter extends CommandLineUtil {
 		}
 		return map;
 	}
-	
+
 	/**
 	 * Gets the files from a local file instead of pulling it down from the mbox server
 	 * @return
@@ -339,7 +339,7 @@ public class NexusImporter extends CommandLineUtil {
 	private Map<String, NexusProductVO> getLocalFile() throws ActionException {
 		Map<String, NexusProductVO> map = new HashMap<>();
 		String files[] = fileName.split("\\|");
-		
+
 		for (String file : files) {
 			try {
 				InputStream input = new FileInputStream(directory+""+file);
@@ -359,8 +359,8 @@ public class NexusImporter extends CommandLineUtil {
 		}
 		return map;
 	}
-	
-	
+
+
 	/**
 	 * Build a map of products out of the supplied files
 	 * @param fileDataList
@@ -381,10 +381,10 @@ public class NexusImporter extends CommandLineUtil {
 		log.debug(fileName +"|"+rows.length);
 		String[] headers = rows[0].split(DELIMITER, -1);
 		getColumns(Arrays.asList(headers));
-		
+
 		NexusProductVO p = null;
 		String[] cols;
-		
+
 		for (int i=1; i<rows.length; i++) {
 			cols = rows[i].split(DELIMITER, -1);
 			if (cols.length == 1) continue;
@@ -404,7 +404,7 @@ public class NexusImporter extends CommandLineUtil {
 				fails++;
 				continue;
 			}
-			
+
 			if (source == Source.MDM && code != -1) {
 				if (cols[code] == null) continue;
 				String[] sku = cols[code].split("-");
@@ -416,10 +416,10 @@ public class NexusImporter extends CommandLineUtil {
 						continue;
 					}
 				}
-				
+
 			}
-			
-			
+
+
 			if (products.get(cols[code]) != null) {
 				p = products.get(cols[code]);
 				updateProduct(p, cols);
@@ -441,8 +441,8 @@ public class NexusImporter extends CommandLineUtil {
 		log.debug("Fails: " + fails);
 		return products;
 	}
-	
-	
+
+
 	/**
 	 * Get the columns that contain the information that will be used during
 	 * the file processing.
@@ -479,8 +479,8 @@ public class NexusImporter extends CommandLineUtil {
 			uom=headerList.indexOf("UOM");
 		}
 	}
-	
-	
+
+
 	/**
 	 * Update the supplied product with information from a string array
 	 * @param p
@@ -508,7 +508,7 @@ public class NexusImporter extends CommandLineUtil {
 			} else {
 				p.addGtinLevel("");
 			}
-			
+
 			if (uom != -1 && cols[uom].length() > 0) {
 				p.addUOMLevel(cols[uom]);
 			} else {
@@ -528,7 +528,7 @@ public class NexusImporter extends CommandLineUtil {
 		if (StringUtil.checkVal(p.getQuantity()).length() == 0 && qty != -1)p.setQuantity(Convert.formatInteger(cols[qty]));
 		if (StringUtil.checkVal(p.getRegion()).length() == 0 && region != -1)p.setRegion(cols[region]);
 		if (StringUtil.checkVal(p.getStatus()).length() == 0 && status != -1)p.setStatus(cols[status]);
-		 
+
 		// If we have not received a primary device identifier
 		// but we have a GTIN of the valid level we use that instead
 		if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0 && ((pkg != -1 &&"1".equals(cols[pkg])) || ( gtinLvl != -1 &&"C".equals(cols[gtinLvl])))
@@ -536,8 +536,8 @@ public class NexusImporter extends CommandLineUtil {
 			p.setPrimaryDeviceId(cols[gtin]);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Create and send an email with information pertaining to what was uploaded
 	 * and any errors that were run into during the upload.
@@ -558,8 +558,8 @@ public class NexusImporter extends CommandLineUtil {
 			log.error("could not send contact email", ide);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Build the html body of the email
 	 * @param itemsAdded
@@ -568,7 +568,7 @@ public class NexusImporter extends CommandLineUtil {
 	 */
 	private String buildBody(int itemsAdded, int itemsProcessed) {
 		StringBuilder body = new StringBuilder(300);
-		
+
 		body.append("DePuy NeXus import has been completed for file").append(fileName).append(".\n");
 		body.append(itemsAdded).append(" products were succesfully added to the solr server out of ");
 		body.append(itemsProcessed).append(" total products processed from the file\n");
@@ -578,17 +578,17 @@ public class NexusImporter extends CommandLineUtil {
 				body.append(s).append("\n");
 			}
 		}
-		
+
 		return body.toString();
 	}
-	
+
 	/**
 	 * Set the source based on the filename
 	 * This is meant to be called when dealing with multiple files in a zip file.
 	 */
 	private void determineSource() {
 		if (fileName == null) {
-			
+
 		} else if (fileName.contains("MDM")) {
 			source = Source.MDM;
 		} else {

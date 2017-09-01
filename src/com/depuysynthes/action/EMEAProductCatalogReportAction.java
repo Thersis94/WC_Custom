@@ -1,5 +1,6 @@
 package com.depuysynthes.action;
 
+//Java 8
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -10,7 +11,10 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+//WC Custom
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
+
+//SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -22,29 +26,32 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: EMEAProductCatalogReportAction.java<p/>
- * <b>Description: Report/DataTool action for EMEA that returns an Excel representation
+ * <b>Title</b>: EMEAProductCatalogReportAction.java
+ * <b>Project</b>: WC_Custom
+ * <b>Description: </b> Report/DataTool action for EMEA that returns an Excel representation
  * of their product catalog married to MediaBin for assets.  They use it for QA and
- * auditing Showpad.</b> 
- * <p/>
- * <b>Copyright:</b> Copyright (c) 2017<p/>
- * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * auditing Showpad.
+ * <b>Copyright:</b> Copyright (c) 2017
+ * <b>Company:</b> Silicon Mountain Technologies
+ * 
  * @author James McKain
- * @version 1.0
- * @since Jan 14, 2017
- * @update
+ * @version 3.0
+ * @since Jan 14, 2017 
+ * @updates:
+ * RJR code clean up May 18, 2017
  ****************************************************************************/
 public class EMEAProductCatalogReportAction extends SimpleActionAdapter {
 
 	private List<EMEAProductCatalogReportVO> data;
 	private List<MediaBinAssetVO> mediabinAssets;
-
 
 	/*
 	 * The constant used for the MEDIABIN product attribute type - comes from the database
@@ -326,7 +333,7 @@ public class EMEAProductCatalogReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected Tree loadCatalog(ActionRequest req) throws ActionException {
+	protected Tree loadCatalog(ActionRequest req) {
 		String catalogId = req.getParameter("catalogId");
 
 		ProductCatalogAction act = new ProductCatalogAction();

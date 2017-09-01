@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
@@ -26,7 +27,7 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
@@ -46,8 +47,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since May 20, 2015
  * <b>Changes: </b>
  ****************************************************************************/
-
-public class NexusSolrCartAction extends SBActionAdapter {
+public class NexusSolrCartAction extends SimpleActionAdapter {
 
 	// Names for the cookies related to this action
 	public static final String HOSPITAL = "hospital";
@@ -55,7 +55,24 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	public static final String SURGEON = "surgeon";
 	public static final String TIME = "time";
 	public static final String CASE_ID = "caseId";
-	
+	private static final String DDMMMYYYY = "ddMMMyyyy";
+
+	public NexusSolrCartAction() {
+		super();
+	}
+
+	/**
+	 * @param actionInit
+	 */
+	public NexusSolrCartAction(ActionInitVO actionInit) {
+		super(actionInit);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		if (req.hasParameter("loadKit")) {
 			getKitProducts(req);
@@ -65,8 +82,8 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			editCart(req);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Get all information related to the supplied kit's products
 	 * @param req
@@ -77,14 +94,14 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		req.setParameter("moduleStore", "true");
 		req.setParameter("rpp", "5");
 		req.setParameter("page", "1");
-	    	ActionInterface sai = new NexusKitAction();
-	    	sai.setActionInit(actionInit);
-	    	sai.setDBConnection(dbConn);
-	    	sai.setAttributes(attributes);
+		ActionInterface sai = new NexusKitAction();
+		sai.setActionInit(actionInit);
+		sai.setDBConnection(dbConn);
+		sai.setAttributes(attributes);
 		sai.build(req);
 	}
-	
-	
+
+
 	/**
 	 * Loop through the supplied product information to create products
 	 * and add them to the cart
@@ -114,8 +131,8 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		}
 		store.save(cart);
 	}
-	
-	
+
+
 	/**
 	 * Deals with the various actions that a user can enact that affect thier cart
 	 * @param req
@@ -125,7 +142,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		Storage store = retrieveContainer(req);
 		ShoppingCartVO cart = store.load();
 		String dateLot = getDateLot(req);
-		
+
 		if (Convert.formatBoolean(req.getParameter("clearCart"))) {
 			deleteItem(cart, req);
 		} else if (Convert.formatBoolean(req.getParameter("lotChange"))) {
@@ -138,11 +155,11 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		} else {
 			addItem(cart, buildProduct(req), StringUtil.checkVal(req.getParameter("oldLot")));
 		}
-		
+
 		store.save(cart);
 	}
-	
-	
+
+
 	/**
 	 * Create the datelot from the request
 	 * @param req
@@ -152,13 +169,13 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		String dateLot;
 		if (getCookie(req, TIME).length() > 0) {
 			String time = getCookie(req, TIME);
-			dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),"ddMMMyyyy").toString();
+			dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),DDMMMYYYY);
 		} else {
-			dateLot = Convert.formatDate(Convert.getCurrentTimestamp(), "ddMMMyyyy");
+			dateLot = Convert.formatDate(Convert.getCurrentTimestamp(), DDMMMYYYY);
 		}
 		return dateLot;
 	}
-	
+
 
 	/**
 	 * Deletes the requested item or clears the cart completely
@@ -186,7 +203,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			ProductVO p = cart.getItems().get(key).getProduct();
 			if (Convert.formatBoolean(p.getProdAttributes().get("dateLot"))) {
 				String time = getCookie(req, TIME);
-				String dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),"ddMMMyyyy").toString();
+				String dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),DDMMMYYYY);
 				p.addProdAttribute("lotNo", StringUtil.checkVal(req.getParameter("lotNo"), dateLot));
 			}
 		}
@@ -212,7 +229,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		ShoppingCartItemVO item = new ShoppingCartItemVO(product);
 		item.setProductId(product.getProductId()+product.getProdAttributes().get("lotNo"));
 		item.setQuantity(Convert.formatInteger(req.getParameter("qty"),1));
-		
+
 		return item;
 	}
 
@@ -230,9 +247,9 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		if (!oldLot.equals(item.getProduct().getProdAttributes().get("lotNo")) ) {
 			cart.remove(item.getProduct().getProductId()+oldLot);
 		}
-		
+
 		// Ensure that the map is properly ordered by product id
-		List<String> sortedKeys = new ArrayList<String>(cart.getItems().keySet());
+		List<String> sortedKeys = new ArrayList<>(cart.getItems().keySet());
 		Collections.sort(sortedKeys);
 		Map<String, ShoppingCartItemVO> orderedCart = new LinkedHashMap<>();
 		for (String key : sortedKeys) {
@@ -249,44 +266,53 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private Storage retrieveContainer(ActionRequest req) 
-			throws ActionException {
+	private Storage retrieveContainer(ActionRequest req) throws ActionException {
 		Map<String, Object> attrs = new HashMap<>();
 		attrs.put(GlobalConfig.HTTP_REQUEST, req);
 		attrs.put(GlobalConfig.HTTP_RESPONSE, attributes.get(GlobalConfig.HTTP_RESPONSE));
-		
-		Storage container = null;
-		
+
 		try {
-			container = StorageFactory.getInstance(StorageFactory.SESSION_STORAGE, attrs);
+			return StorageFactory.getInstance(StorageFactory.SESSION_STORAGE, attrs);
 		} catch (Exception ex) {
 			throw new ActionException(ex);
 		}
-		return container;
 	}
 
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
 
-
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		// Load the cart first since it is always needed
 		ShoppingCartVO cart = retrieveContainer(req).load();
 		req.setAttribute("cart", cart.getItems());
-		
+
 		// Check if we are building a file, create the report generator and set the pertinent information
 		if (req.hasParameter("buildFile")) {
 			buildReport(cart, req);
 			return;
-		}
-		
-		if (req.hasParameter("kitId")) {
+
+		} else if (req.hasParameter("kitId")) {
 			getKitProducts(req);
+
 		} else if (!Convert.formatBoolean(req.getParameter("showCart"))) {
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			SolrAction sa = new SolrAction(actionInit);
 			sa.setDBConnection(dbConn);
 			sa.setAttributes(attributes);
-		    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 			SolrActionVO qData = sa.retrieveActionData(req);
 			SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, getCollection((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
 			qData.setNumberResponses(Convert.formatInteger(req.getParameter("rpp"), 10));
@@ -298,7 +324,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			String searchData = StringUtil.checkVal(req.getParameter("searchData"));
 			int searchType = Convert.formatInteger(req.getParameter("searchType"));
 			qData.setSearchData((searchType>2?"*":"")+searchData+(searchType>1?"*":""));
-			qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
+			qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.SOLR_IDX));
 			Map<String, String> filter = new HashMap<>();
 			// Build the filter that ensures users only see kits that they are allowed to see.
 			if (user != null) {
@@ -319,19 +345,19 @@ public class NexusSolrCartAction extends SBActionAdapter {
 					filter.remove("gtin");
 					filter.remove("-kit");
 					filter.put("kit", "true");
-					filter.put("owner", user.getProfileId());
+					filter.put("owner", user != null ? user.getProfileId() : null);
 				} else {
 					filter.put("organizationName", req.getParameter("orgName"));
 				}
 			}
 			qData.setFilterQueries(filter);
-			super.putModuleData(sqp.processQuery(qData));
-			
-		    	req.setParameter("searchData", searchData, true);
+			putModuleData(sqp.processQuery(qData));
+
+			req.setParameter("searchData", searchData, true);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Build the requested report based off of the request servlet and the 
 	 * shopping cart
@@ -345,9 +371,9 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		if (caseId.length() != 0) {
 			filename = "case-" + caseId;
 		} else {
-			filename = "DePuyUDI-" + new SimpleDateFormat("YYYYMMdd").format(Convert.getCurrentTimestamp());;
+			filename = "DePuyUDI-" + new SimpleDateFormat("YYYYMMdd").format(Convert.getCurrentTimestamp());
 		}
-		
+
 		if ("excel".equals(req.getParameter("buildFile"))) {
 			report = new NexusCartExcelReport();
 			report.setFileName(filename + ".xls");
@@ -364,7 +390,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		data.put("caseId", getCookie(req, CASE_ID));
 		data.put("baseDomain", req.getHostName());
 		data.put("format", req.getParameter("format"));
-		
+
 		report.setData(data);
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
@@ -377,11 +403,11 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 */
 	private String getCookie(ActionRequest req, String name) {
 		SMTCookie c = req.getCookie(name);
-		if (c == null) return "";
+		if (c == null || StringUtil.isEmpty(c.getValue())) return "";
 		return StringEncoder.urlDecode(c.getValue());
 	}
 
-	
+
 	/**
 	 * Get the solr collection associated with this particular portlet
 	 * @param actionId
@@ -393,12 +419,12 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		sql.append("SELECT SOLR_COLLECTION_PATH FROM SOLR_ACTION sa ");
 		sql.append("left join SOLR_COLLECTION sc on sa.SOLR_COLLECTION_ID = sc.SOLR_COLLECTION_ID ");
 		sql.append("WHERE ACTION_ID = ?");
-		
+
 		try (PreparedStatement ps = dbConn.prepareCall(sql.toString())) {
 			ps.setString(1, actionId);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
-				return rs.getString("SOLR_COLLECTION_PATH");
+				return rs.getString(1);
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}

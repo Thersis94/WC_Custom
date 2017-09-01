@@ -29,6 +29,7 @@ public class AbandonedCartVO {
 	 * 
 	 */
 	public AbandonedCartVO() {
+		super();
 	}
 
 	/**

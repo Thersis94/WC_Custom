@@ -1,10 +1,10 @@
 package com.depuysynthes.action;
-
+//Java 8
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+//Smt base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
@@ -17,6 +17,7 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
+//WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.menu.MenuBuilder;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -40,6 +41,7 @@ import com.smt.sitebuilder.security.SBUserRole;
  * 	James McKain, 09-23-13: 
  * 		added merging of Products into the Procedures catalog, aleviates 
  * 		secondary AJAX calls from mega-menu.
+ *  RJR code clean up 05/17/201
  ****************************************************************************/
 public class AjaxMenuLoader extends SimpleActionAdapter {
 
@@ -53,7 +55,10 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		super(arg0);
 	}
 	
-	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.info("Starting menu loader - retrieve");
@@ -68,7 +73,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 			return;
 		}
 
- 		Map<String, ProductCategoryContainer> catalogs = new HashMap<String, ProductCategoryContainer>();
+ 		Map<String, ProductCategoryContainer> catalogs = new HashMap<>();
  		ProductCatalogUtil pc = new ProductCatalogUtil(this.actionInit);
 		pc.setDBConnection(dbConn);
 		pc.setAttributes(attributes);
@@ -102,15 +107,18 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
    		setAttribute(Constants.MODULE_DATA, mod);
 	}
 	
+	/**
+	 * relates the procedures to products
+	 */
 	private Tree mergeProductsIntoProcedures(Tree prodTree, Tree procTree, String attributeId) {
-		
+		//TODO this method is large and complex, break down this method when possible
 		List<Node> procsList = procTree.preorderList(true);
 		List<Node> prodsList = prodTree.preorderList(true);
-		List<String> completedProcs = new ArrayList<String>();
+		List<String> completedProcs = new ArrayList<>();
 //		log.debug("procs =" + procsList.size());
 		
 		//turn the Products Collection into a Map we can grab-at easily using productId
-		Map<String, Node> products = new HashMap<String, Node>();
+		Map<String, Node> products = new HashMap<>();
 		for (Node n : prodsList) {
 			ProductCategoryVO vo = (ProductCategoryVO) n.getUserObject();
 			if (vo == null) continue;
@@ -236,7 +244,11 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 			ac = null;
 		}
 	}
-	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
