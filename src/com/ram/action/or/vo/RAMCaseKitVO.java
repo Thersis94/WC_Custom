@@ -33,7 +33,7 @@ public class RAMCaseKitVO implements Serializable {
 	private Date createDt;
 	private Date updateDt;
 	private int productId;
-	private String productNm;
+	private String productName;
 	private String serialNoTxt;
 	private int processedFlg;
 
@@ -155,15 +155,15 @@ public class RAMCaseKitVO implements Serializable {
 	 * @return the productNm
 	 */
 	@Column(name="product_nm", isReadOnly=true)
-	public String getProductNm() {
-		return productNm;
+	public String getProductName() {
+		return productName;
 	}
 
 	/**
 	 * @param productNm the productNm to set
 	 */
-	public void setProductNm(String productNm) {
-		this.productNm = productNm;
+	public void setProductName(String productName) {
+		this.productName = productName;
 	}
 
 	/**
