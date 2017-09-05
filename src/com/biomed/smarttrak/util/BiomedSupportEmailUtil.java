@@ -24,7 +24,7 @@ import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.NameComparator;
-import com.smt.sitebuilder.action.emailcampaign.embed.EmbedWidgetManager;
+import com.smt.sitebuilder.action.emailcampaign.embed.AttachmentManager;
 import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
 import com.smt.sitebuilder.action.support.TicketAttachmentVO;
@@ -493,7 +493,7 @@ public class BiomedSupportEmailUtil {
 			config.put("ticketDesc", StringUtil.checkVal(t.getActivities().get(0).getDescText()));
 			
 			for (TicketAttachmentVO a : t.getAttachments()) {
-				config.put(EmbedWidgetManager.ATTACH_PREFIX + a.getFileNm(), a.getFileData());
+				config.put(AttachmentManager.ATTACH_PREFIX + a.getFileNm(), a.getFileData());
 			}
 
 			//Get Emails

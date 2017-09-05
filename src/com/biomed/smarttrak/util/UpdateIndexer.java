@@ -2,17 +2,12 @@ package com.biomed.smarttrak.util;
 
 // Java 8
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-
-
 // Solr 5.5
 import org.apache.solr.client.solrj.SolrClient;
-
-
 
 //WC Custom
 import com.biomed.smarttrak.admin.UpdatesAction;
@@ -106,17 +101,14 @@ public class UpdateIndexer extends SMTAbstractIndex {
 	private List<SolrDocumentVO> getDocuments(String documentId) {
 		UpdatesAction ua = new UpdatesAction();
 		ua.setDBConnection(new SMTDBConnection(dbConn));
-		Map<String, Object> attributes = new HashMap<>();
-		for (final String name: config.stringPropertyNames())
-			attributes.put(name, config.getProperty(name));
-		ua.setAttributes(attributes);
+		ua.setAttributes(getAttributes());
 		List<Object> list = ua.getAllUpdates(documentId);
 
 		//Load the Section Tree and set all the Hierarchies.
 		SmarttrakTree tree = ua.loadSections();
 
 		//attach the section tree to each Update retrieved.  This will internally bind 'selected sections'
-		for(Object obj : list) {
+		for (Object obj : list) {
 			UpdateVO vo = (UpdateVO) obj;
 			vo.configureSolrHierarchies(tree);
 		}

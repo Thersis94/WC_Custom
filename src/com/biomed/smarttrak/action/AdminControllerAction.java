@@ -112,13 +112,13 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 */
 	public enum Section {
 		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("analysis/"), PRODUCT_EXPLOERER("explorer/"),
-		UPDATES_EDITION("updates-edition/");
+		UPDATES_EDITION("updates-edition/"), FINANCIAL_DASHBOARD("financial/"), GAP_ANALYSIS("analysis/");
 
 		private String path;
 		Section(String path) { this.path = path; }
 		public String getURLToken() { return path; }
-		public String getPageURL() { //reverses the slash to the front of the urlToken, making it a relative URL to the given page
-			return "/" + getURLToken().substring(0, getURLToken().length());
+		public String getPageURL() { //FQDN version
+			return "/" + getURLToken();
 		}
 	}
 	

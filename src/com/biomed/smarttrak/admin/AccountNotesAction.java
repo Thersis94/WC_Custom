@@ -47,6 +47,8 @@ public class AccountNotesAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		AccountAction.loadAccount(req, dbConn, getAttributes());
+		
 		String acctId = req.getParameter(ACCOUNT_ID);
 		NoteAction na = new NoteAction(actionInit);
 		na.setAttributes(getAttributes());
