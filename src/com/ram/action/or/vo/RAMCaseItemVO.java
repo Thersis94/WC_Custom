@@ -47,6 +47,7 @@ public class RAMCaseItemVO extends BeanDataVO {
 	private String lotNumberTxt;
 	private int billableFlg;
 	private int wastedFlg;
+	private String wastedReason;
 	private String productFromTxt;
 	private String customerName;
 	private String gtinProductId;
@@ -78,6 +79,9 @@ public class RAMCaseItemVO extends BeanDataVO {
 		lotNumberTxt = req.getParameter("lotNumberTxt");
 		billableFlg = Convert.formatInteger(req.getParameter("billableFlg"));
 		wastedFlg = Convert.formatInteger(req.getParameter("wastedFlg"));
+		if(wastedFlg == 1) {
+			wastedReason = req.getParameter("wastedReason");
+		}
 		productFromTxt = req.getParameter("productFromTxt");
 		customerName = req.getParameter("customerName");
 		setCaseTypeTxt(req.getParameter("caseTypeCd"));
@@ -179,6 +183,14 @@ public class RAMCaseItemVO extends BeanDataVO {
 	@Column(name="wasted_flg")
 	public int getWastedFlg() {
 		return wastedFlg;
+	}
+
+	/**
+	 * @return the wastedReason
+	 */
+	@Column(name="wasted_reason")
+	public String getWastedReason() {
+		return wastedReason;
 	}
 
 	/**
@@ -300,6 +312,13 @@ public class RAMCaseItemVO extends BeanDataVO {
 	 */
 	public void setWastedFlg(int wastedFlg) {
 		this.wastedFlg = wastedFlg;
+	}
+
+	/**
+	 * @param wastedReason the wastedReason
+	 */
+	public void setWastedReason(String wastedReason) {
+		this.wastedReason = wastedReason;
 	}
 
 	/**
