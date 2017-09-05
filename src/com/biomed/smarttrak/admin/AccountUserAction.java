@@ -115,6 +115,7 @@ public class AccountUserAction extends SBActionAdapter {
 			GenericVO vo = sortRecords(users);
 			summateLoginActivity(vo, req);
 			summateStatus(vo, req);
+			prepAddModal(vo, req);
 			putModuleData(vo);
 		}
 	}
@@ -242,8 +243,11 @@ public class AccountUserAction extends SBActionAdapter {
 		Map<String, List<UserVO>> active = (Map<String, List<UserVO>>) data.getKey();
 		for (Map.Entry<String, List<UserVO>> entry : active.entrySet()) {
 			for (UserVO user : entry.getValue()) {
-				Integer age = user.getLoginAge();
-				counts.put(age, 1+counts.get(age));
+				//exclude open seats
+				if (user.getStatusFlg() != Status.OPEN.getCode()) {
+					Integer age = user.getLoginAge();
+					counts.put(age, 1+counts.get(age));
+				}
 			}
 		}
 		//help with debugging
@@ -281,6 +285,27 @@ public class AccountUserAction extends SBActionAdapter {
 			}
 		}
 		req.setAttribute("statusMap", counts);
+	}
+	
+	
+	/**
+	 * Builds a Map used to offer options in the Add User modal - for resuing open seats by Division
+	 * @param vo
+	 * @param req
+	 */
+	@SuppressWarnings("unchecked")
+	private void prepAddModal(GenericVO vo, ActionRequest req) {
+		Map<String, String> data = new HashMap<>();
+
+		Map<String, List<UserVO>> users = (Map<String, List<UserVO>>) vo.getKey();
+		for (Map.Entry<String, List<UserVO>> entry : users.entrySet()) {
+			for (UserVO user : entry.getValue()) {
+				//capture the first Open Seat in each of the Divisions
+				if (Status.OPEN.getCode() == user.getStatusFlg() && data.get(entry.getKey()) == null)
+					data.put(entry.getKey(), user.getUserId());
+			}
+		}
+		req.setAttribute("addModalSpecs", data);
 	}
 
 
