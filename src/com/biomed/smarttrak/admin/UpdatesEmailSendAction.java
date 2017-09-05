@@ -226,9 +226,9 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	private void setTimeRangeValue(ActionRequest req, KeyValueType type, Map<String, Object> config){
 		String campaignInstanceId = StringUtil.checkVal(req.getParameter("campaignInstanceId"));
 		//compare the ids. Determine time range value to assign
-		if(attributes.get(UPDATE_DAILY_INSTANCE_ID).toString().equals(campaignInstanceId)){
+		if(attributes.get(UPDATE_DAILY_INSTANCE_ID).toString().contains(campaignInstanceId)){
 			config.put(type.getKeyName(), "daily");	
-		}else if(attributes.get(UPDATE_WEEKLY_INSTANCE_ID).toString().equals(campaignInstanceId)){
+		}else if(attributes.get(UPDATE_WEEKLY_INSTANCE_ID).toString().contains(campaignInstanceId)){
 			config.put(type.getKeyName(), "weekly");	
 		}
 	}

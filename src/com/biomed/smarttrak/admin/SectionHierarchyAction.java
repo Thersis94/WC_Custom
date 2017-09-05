@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.action.SmarttrakSolrAction;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
@@ -102,7 +104,9 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 				SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 
 				// Attempt to limit sections by the user's permissions
-				sections = checkPermissions(sections, role);
+				Section tool = SmarttrakSolrAction.determineSection(req);
+				sections = checkPermissions(sections, role, tool);
+				log.debug("secs=" + sections.size());
 			}
 		} else {
 			sections = t.preorderList();
@@ -116,8 +120,8 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	 * @param sections
 	 * @param role
 	 */
-	protected List<Node> checkPermissions(List<Node> sections, SmarttrakRoleVO role) {
-		String[] roleAcl = role != null ? role.getAuthorizedSections() : new String[0];
+	protected List<Node> checkPermissions(List<Node> sections, SmarttrakRoleVO role, Section tool) {
+		String[] roleAcl = role != null ? role.getAuthorizedSections(tool) : new String[0];
 		if (sections == null || sections.isEmpty() || roleAcl == null || roleAcl.length == 0) 
 			return Collections.emptyList();
 
@@ -125,7 +129,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		for (Node n : sections) {
 			SectionVO sec = (SectionVO) n.getUserObject();
 			if (AccessControlQuery.isAllowed("+g:" + sec.getSolrTokenTxt(), null, roleAcl)) {
-				n.setChildren(checkPermissions(n.getChildren(), role));
+				n.setChildren(checkPermissions(n.getChildren(), role, tool));
 				allowed.add(n);
 			}
 		}

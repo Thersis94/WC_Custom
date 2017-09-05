@@ -141,7 +141,7 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 
 		try {
 			new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA)).executeBatch(s.toString(), insertValues);
-		} catch (InvalidDataException | DatabaseException e) {
+		} catch (DatabaseException e) {
 			log.error("Couldn't save Filter Group XRs", e);
 		}
 	}
