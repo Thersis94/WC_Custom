@@ -6,6 +6,10 @@ import org.apache.log4j.Logger;
 
 // SMTBaseLibs
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.action.SmarttrakSolrAction;
+import com.biomed.smarttrak.util.BiomedInsightIndexer;
+import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
@@ -78,13 +82,14 @@ public class SecurityController {
 	public boolean isGaAuthorized() {
 		return role.isGaAuthorized();
 	}
-
+	
+	
 	/**
-	 * is the user authorized to see the Market Reports (period)
+	 * is the user authorized to browser companies/markets/products.  True if any sections are toggled for their account.
 	 * @return
 	 */
-	public boolean isMktAuthorized() {
-		return role.isMktAuthorized();
+	public boolean isBrowseAuthorized() {
+		return role.isBrowseAuthorized();
 	}
 
 
@@ -99,16 +104,20 @@ public class SecurityController {
 			throws ActionNotAuthorizedException {
 		//use the same mechanisms solr is using to verify data access permissions.
 		String assetAcl = object.getACLPermissions();
-		String[] roleAcl = role.getAuthorizedSections();
-		log.debug("user ACL=" + StringUtil.getToString(roleAcl));
-
-		if (roleAcl == null || roleAcl.length == 0 || !AccessControlQuery.isAllowed(assetAcl, null, roleAcl)) {
-			log.debug("user is not authorized.  Setting up redirect, then throwing exception");
-			StringBuilder url = new StringBuilder(150);
-			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-			new SiteBuilderUtil().manualRedirect(req, url.toString());
-			throw new ActionNotAuthorizedException("not authorized");
+		String indexType = object.getSolrIndex();
+		Section sec;
+		if (BiomedInsightIndexer.INDEX_TYPE.equals(indexType)) {
+			sec = Section.INSIGHT;
+		} else if (UpdateIndexer.INDEX_TYPE.equals(indexType)) {
+			sec = Section.UPDATES_EDITION;
+		} else {
+			sec = SmarttrakSolrAction.BROWSE_SECTION;
 		}
+		String[] roleAcl = role.getAuthorizedSections(sec);
+		log.debug("user ACL from " + sec + ": " + StringUtil.getToString(roleAcl));
+
+		if (roleAcl == null || roleAcl.length == 0 || !AccessControlQuery.isAllowed(assetAcl, null, roleAcl))
+			throwAndRedirect(req);
 
 		log.debug("user is authorized");
 	}
@@ -123,12 +132,8 @@ public class SecurityController {
 	 */
 	public static void isFdAuth(ActionRequest req) throws ActionNotAuthorizedException {
 		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if (!role.isFdAuthorized()) {
-			StringBuilder url = new StringBuilder(150);
-			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-			new SiteBuilderUtil().manualRedirect(req, url.toString());
-			throw new ActionNotAuthorizedException("not authorized");
-		}
+		if (!role.isFdAuthorized())
+			throwAndRedirect(req);
 	}
 
 
@@ -141,29 +146,35 @@ public class SecurityController {
 	 */
 	public static void isGaAuth(ActionRequest req) throws ActionNotAuthorizedException {
 		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if (!role.isGaAuthorized()) {
-			StringBuilder url = new StringBuilder(150);
-			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-			new SiteBuilderUtil().manualRedirect(req, url.toString());
-			throw new ActionNotAuthorizedException("not authorized");
-		}
+		if (!role.isGaAuthorized())
+			throwAndRedirect(req);
 	}
 
 
 	/**
 	 * tests the user's role object to see if they should have access to this tool.
 	 * if they do not redirect them to the insufficient permissions page.
-	 * called from MarketAction
+	 * called from ProductExplorerAction
 	 * @param req
 	 * @throws ActionNotAuthorizedException 
 	 */
-	public static void isMktAuth(ActionRequest req) throws ActionNotAuthorizedException {
+	public static void isPeAuth(ActionRequest req) throws ActionNotAuthorizedException {
 		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if (!role.isMktAuthorized()) {
-			StringBuilder url = new StringBuilder(150);
-			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-			new SiteBuilderUtil().manualRedirect(req, url.toString());
-			throw new ActionNotAuthorizedException("not authorized");
-		}
+		if (!role.isPeAuthorized())
+			throwAndRedirect(req);
+	}
+
+
+	/**
+	 * Reused.  Calling this method sets the redirectUrl and throws the interrupt exception.  Use other methods to perform authorization tests.
+	 * @param req
+	 * @throws ActionNotAuthorizedException 
+	 */
+	public static void throwAndRedirect(ActionRequest req) throws ActionNotAuthorizedException {
+		log.debug("user is not authorized.  Setting up redirect, then throwing exception");
+		StringBuilder url = new StringBuilder(150);
+		url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
+		new SiteBuilderUtil().manualRedirect(req, url.toString());
+		throw new ActionNotAuthorizedException("not authorized");
 	}
 }
