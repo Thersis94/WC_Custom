@@ -3,6 +3,9 @@ package com.biomed.smarttrak.action;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.util.BiomedInsightIndexer;
+import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -12,6 +15,7 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: BiomedSiteSearchAction.java
@@ -55,14 +59,25 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 		String searchData = StringUtil.checkVal(req.getParameter("searchData"));
 		req.setParameter("searchData", searchData.toLowerCase(), true);
 
+		req.setAttribute(SmarttrakSolrAction.SECTION, SmarttrakSolrAction.BROWSE_SECTION);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		req.setParameter("pmid", mod.getPageModuleId());
 		resp.add(getResults(req));
 
 		//skip the 2nd search if we're just doing an "MLT" on companies and products.
 		if (!req.hasParameter("amid")) {
+			req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + BiomedInsightIndexer.INDEX_TYPE);
+			req.setAttribute(SmarttrakSolrAction.SECTION, Section.INSIGHT);
 			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 			resp.add(getResults(req));
+
+			//query updates separtely from insights, because they use a different ACL
+			req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + UpdateIndexer.INDEX_TYPE);
+			req.setAttribute(SmarttrakSolrAction.SECTION, Section.UPDATES_EDITION);
+			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
+			resp.add(getResults(req));
+			//unclear why this is needed, but it is.  If we don't flush the FQ in gets picked-up by the 1st query.  yes, illogical!  -JM- 08.29.17
+			req.setParameter("fq", null);
 		}
 		
 		putModuleData(resp);
@@ -78,7 +93,7 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 	 */
 	private SolrResponseVO getResults(ActionRequest req) throws ActionException {
 		// Build the solr action
-		SolrAction sa = new SolrAction(actionInit);
+		SolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		sa.retrieve(req);
