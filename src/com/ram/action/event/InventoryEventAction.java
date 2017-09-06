@@ -98,6 +98,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		event.setComment(req.getParameter("comments"));
 		event.setActiveFlag(Convert.formatInteger(req.getParameter("activeFlag")));
 		event.setVendorEventId(req.getParameter("vendorEventId"));
+		event.setInventoryTypeCode(req.getParameter("inventoryTypeCode"));
 		
 		//if this is a global update, take the abive fields and populate them into all events in this eventGroup
 		if (isGlobal) {
@@ -131,13 +132,13 @@ public class InventoryEventAction extends SBActionAdapter {
 			if (event.getInventoryEventId() == 0) {
 				sql.append("insert into ").append(schema).append("ram_inventory_event ");
 				sql.append("(inventory_event_group_id, customer_location_id, comment_txt, ");
-				sql.append("schedule_dt, active_flg, vendor_event_id, create_dt) ");
-				sql.append("values (?,?,?,?,?,?,?) ");
+				sql.append("schedule_dt, active_flg, vendor_event_id, inventory_type_cd, create_dt) ");
+				sql.append("values (?,?,?,?,?,?,?,?) ");
 			} else {
 				sql.append("update ").append(schema).append("ram_inventory_event ");
 				sql.append("set inventory_event_group_id = ?, customer_location_id = ?,");
 				sql.append(" comment_txt = ?, schedule_dt = ?, active_flg = ?, ");
-				sql.append("vendor_event_id = ?, update_dt = ?  ");
+				sql.append("vendor_event_id = ?, inventory_type_cd, update_dt = ?  ");
 				sql.append("where inventory_event_id = ?");
 			}
 			
@@ -151,8 +152,9 @@ public class InventoryEventAction extends SBActionAdapter {
 				ps.setTimestamp(4, Convert.formatTimestamp(event.getScheduleDate()));
 				ps.setInt(5, event.getActiveFlag());
 				ps.setString(6, event.getVendorEventId());
-				ps.setTimestamp(7, Convert.getCurrentTimestamp());
-				if (event.getInventoryEventId() > 0) ps.setInt(8, event.getInventoryEventId());
+				ps.setString(7, event.getInventoryTypeCode());
+				ps.setTimestamp(8, Convert.getCurrentTimestamp());
+				if (event.getInventoryEventId() > 0) ps.setInt(9, event.getInventoryEventId());
 				ps.executeUpdate();
 				
 				// Get the identity column id on an insert
@@ -184,7 +186,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		sql.append("update ").append(schema).append("RAM_INVENTORY_EVENT ");
 		sql.append("set schedule_dt=cast(convert(varchar,schedule_dt, 1)+? as datetime), ");
 		sql.append("vendor_event_id=?, active_flg=?, comment_txt=?, ");
-		sql.append("update_dt=? where inventory_event_group_id=? and schedule_dt >=getDate()");
+		sql.append("update_dt=?, inventory_type_cd=? where inventory_event_group_id=? and schedule_dt >=getDate()");
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
@@ -194,7 +196,8 @@ public class InventoryEventAction extends SBActionAdapter {
 			ps.setInt(3, event.getActiveFlag());
 			ps.setString(4, event.getComment());
 			ps.setTimestamp(5, Convert.getCurrentTimestamp());
-			ps.setString(6, event.getInventoryEventGroupId());
+			ps.setString(6, event.getInventoryTypeCode());
+			ps.setString(7, event.getInventoryEventGroupId());
 			int cnt = ps.executeUpdate();
 			log.debug("updated " + cnt + " event records");
 			
@@ -211,14 +214,14 @@ public class InventoryEventAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-
+		
 		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
 		if ("event_list".equalsIgnoreCase(req.getParameter("actionType"))) {
-			GridDataVO data = retrieveAll(req);
+			GridDataVO<InventoryEventVO> data = retrieveAll(req);
 			this.putModuleData(data.getRowData(), data.getTotal(), false);
 		} else if ("item_list".equalsIgnoreCase(req.getParameter("actionType"))) {
 			
-			GridDataVO data = getInventoryItemsSummary(req);
+			GridDataVO<InventoryItemVO> data = getInventoryItemsSummary(req);
 			putModuleData(data.getRowData(), data.getTotal(), false);
 		} else if ("item_info".equalsIgnoreCase(req.getParameter("actionType"))) {
 
@@ -289,7 +292,7 @@ public class InventoryEventAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public GridDataVO getInventoryItemsSummary(ActionRequest req) {
+	public GridDataVO<InventoryItemVO> getInventoryItemsSummary(ActionRequest req) {
 		// Add the sql params
 		List<Object> params = new ArrayList<>();
 		params.add(req.getIntegerParameter("inventoryEventId"));
@@ -366,7 +369,7 @@ public class InventoryEventAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	public GridDataVO retrieveAll(ActionRequest req) {
+	public GridDataVO<InventoryEventVO> retrieveAll(ActionRequest req) {
 		List<Object> params = new ArrayList<>();
 		
 		// Build the sql statement
@@ -435,7 +438,8 @@ public class InventoryEventAction extends SBActionAdapter {
 	public void getSelectSQL(StringBuilder sql) {
 		sql.append("select cl.location_nm, cl.customer_id, schedule_dt, ie.active_flg, inventory_complete_dt, ");
 		sql.append("data_load_complete_dt, ie.inventory_event_id, ra.auditor_nm, ");
-		sql.append("inventory_event_group_id, cast(coalesce(returned_products_no, 0) as int) as returned_products_no ");
+		sql.append("inventory_event_group_id, cast(coalesce(returned_products_no, 0) as int) as returned_products_no, ");
+		sql.append("vendor_event_id ");
 	}
 	
 	/**

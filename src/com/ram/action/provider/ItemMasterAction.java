@@ -47,6 +47,9 @@ public class ItemMasterAction extends SimpleActionAdapter {
 	 */
 	protected final Map<String, String> fieldMap = new LinkedHashMap<>();
 	
+	// Constants for code
+	protected static final String LOCATION_ITEM_MASTER_ID = "LOCATION_ITEM_MASTER_ID";
+	
 	public ItemMasterAction() {
 		super();
 		initFieldMap();
@@ -112,10 +115,10 @@ public class ItemMasterAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("update ").append(schema).append("RAM_LOCATION_ITEM_MASTER ");
 		sql.append("set par_value_no = ?, safety_stock_no = ?, serial_no_txt = ?, update_dt = ? ");
-		sql.append("where location_item_master_id = ? ");
+		sql.append("where ").append(LOCATION_ITEM_MASTER_ID).append(" = ? ");
 		
 		List<String> fields = new ArrayList<>();
-		fields.addAll(Arrays.asList("PAR_VALUE_NO", "SAFETY_STOCK_NO", "SERIAL_NO_TXT", "UPDATE_DT", "LOCATION_ITEM_MASTER_ID"));
+		fields.addAll(Arrays.asList("PAR_VALUE_NO", "SAFETY_STOCK_NO", "SERIAL_NO_TXT", "UPDATE_DT", LOCATION_ITEM_MASTER_ID));
 		
 		DBProcessor dbp = new DBProcessor(dbConn);
 		try {
@@ -160,7 +163,7 @@ public class ItemMasterAction extends SimpleActionAdapter {
 		replaceVals.put("SERIAL_NO_TXT", newSerialNo);
 		
 		//Build our RecordDuplicatorUtility and set the where clause
-		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "RAM_LOCATION_ITEM_MASTER", "LOCATION_ITEM_MASTER_ID", false);
+		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "RAM_LOCATION_ITEM_MASTER", LOCATION_ITEM_MASTER_ID, false);
 		rdu.setReplaceVals(replaceVals);
 		rdu.setSchemaNm(schema);
 		rdu.addWhereClause("LOCATION_ITEM_MASTER_ID", sourceItemId);
@@ -175,8 +178,31 @@ public class ItemMasterAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if (req.hasParameter("amid"))
+		
+		if (req.hasParameter("amid") && ! req.getBooleanParameter("detail"))
 			this.retrieveAll(req);
+		else if (req.hasParameter("amid") && req.getBooleanParameter("detail")) {
+			putModuleData(getItemDetails(req.getParameter("locationItemMasterId")));
+		}
+			
+	}
+	
+	/**
+	 * 
+	 * @param locationItemMasterId
+	 * @return
+	 */
+	public List<GenericVO> getItemDetails(String locationItemMasterId) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select lot_number_txt as key, expiration_dt as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("ram_location_item_master_detail ");
+		sql.append("where location_item_master_id = ? ");
+		
+		List<Object> params = new ArrayList<>();
+		params.add(locationItemMasterId);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), params, new GenericVO());
 	}
 	
 	/**
