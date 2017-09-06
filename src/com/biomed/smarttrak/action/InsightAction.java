@@ -8,6 +8,7 @@ import java.util.List;
 //solrcore jar
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 //WC customs
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
@@ -20,7 +21,6 @@ import com.biomed.smarttrak.vo.UserVO;
 //SMT Baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -36,7 +36,6 @@ import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
-import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -69,7 +68,8 @@ public class InsightAction extends SimpleActionAdapter {
 		req.setParameter("pmid", mod.getPageModuleId());
 
 		// making a new solr action
-		SolrAction sa = new SolrAction(actionInit);
+		req.setAttribute(SmarttrakSolrAction.SECTION, Section.INSIGHT);
+		SolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 
@@ -78,13 +78,8 @@ public class InsightAction extends SimpleActionAdapter {
 			PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
 			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-			
-			if (role == null) {
-				StringBuilder url = new StringBuilder(150);
-				url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
-				new SiteBuilderUtil().manualRedirect(req, url.toString());
-				throw new ActionNotAuthorizedException("not authorized");
-			}
+			if (role == null)
+				SecurityController.throwAndRedirect(req);
 
 			InsightVO vo = getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
 			if (vo == null) {
@@ -172,7 +167,6 @@ public class InsightAction extends SimpleActionAdapter {
 		req.setParameter(REQ_PARAM_1, "");
 		sa.retrieve(req);
 		req.setParameter(REQ_PARAM_1, vo.getInsightId());
-
 	}
 
 

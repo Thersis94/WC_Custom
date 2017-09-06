@@ -17,7 +17,7 @@ import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.AccountVO.Type;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
-import com.biomed.smarttrak.vo.UserVO.Status;
+import com.biomed.smarttrak.vo.UserVO.LicenseType;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
@@ -30,7 +30,6 @@ import com.siliconmtn.util.StringUtil;
 // WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
@@ -74,12 +73,8 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		// 2. retrieve the user registration field IDs that we need to use in the accounts/users query
 		List<String> regFields = initUserRegistrationFields();
 		
-		// 3. ...and we need the appropriate site ID.
-		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-		String siteId = StringUtil.isEmpty(site.getAliasPathParentId()) ? site.getSiteId() : site.getAliasPathParentId();
-		
 		// 4. retrieve account/users
-		List<AccountUsersVO> accounts = retrieveAccountUsers(se,regFields,siteId);
+		List<AccountUsersVO> accounts = retrieveAccountUsers(se,regFields);
 
 		// 5. retrieve acct permissions for each account
 		retrieveAccountPermissions(req,accounts);
@@ -100,8 +95,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	 * @param siteId
 	 * @return
 	 */
-	protected List<AccountUsersVO> retrieveAccountUsers(StringEncrypter se, 
-			List<String> regFields, String siteId) {
+	protected List<AccountUsersVO> retrieveAccountUsers(StringEncrypter se, List<String> regFields) {
 		// 1. build query
 		StringBuilder sql = buildAccountsUsersQuery(regFields);
 
@@ -109,8 +103,8 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int idx = 0;
 			ps.setString(++idx, Type.FULL.getId());
-			ps.setString(++idx, Status.INACTIVE.getCode());
-			ps.setString(++idx, Status.INACTIVE.getCode());
+			ps.setString(++idx, LicenseType.INACTIVE.getCode());
+			ps.setString(++idx, LicenseType.INACTIVE.getCode());
 			for (int x = 0; x < regFields.size(); x++) {
 				ps.setString(++idx, regFields.get(x));
 			}
@@ -196,9 +190,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	protected List<AccountUsersVO> parseAccountUsers(StringEncrypter se, 
-			ResultSet rs) throws SQLException {
-		
+	protected List<AccountUsersVO> parseAccountUsers(StringEncrypter se, ResultSet rs) throws SQLException {
 		log.debug("parseAccountsUsers...");
 		String prevAcctId = null;
 		String prevPid = null;
@@ -208,9 +200,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		UserVO user = new UserVO();
 		AccountUsersVO account = new AccountUsersVO();
 		List<AccountUsersVO> accounts = new ArrayList<>();
-
 		while (rs.next()) {
-
 			currAcctId = rs.getString("account_id");
 			currPid = rs.getString("profile_id");
 
@@ -271,7 +261,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 				 * a user can belong to more than one division, we only want to 
 				 * count the user one time we do it here after we init the
 				 * user's division membership List.. */
-				acct.countUserStatus(user.getStatusCode());
+				acct.countLicenseType(user.getLicenseType());
 			} else {
 				divs = (List<String>)user.getAttribute(currFieldId);
 			}
@@ -331,7 +321,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		// set unencrypted fields
 		user.setAccountId(rs.getString("account_id"));
 		user.setProfileId(rs.getString("profile_id"));
-		user.setStatusCode(rs.getString("status_cd"));
+		user.setLicenseType(rs.getString("status_cd"));
 		user.setAcctOwnerFlg(Convert.formatInteger(rs.getString("acct_owner_flg")));
 		user.setCountryCode(rs.getString("country_cd"));
 		// decrypt encrypted fields and set.

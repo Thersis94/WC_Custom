@@ -11,7 +11,7 @@ import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.PermissionVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
-import com.biomed.smarttrak.vo.UserVO.Status;
+import com.biomed.smarttrak.vo.UserVO.LicenseType;
 
 //SMTBaseLibs
 import com.siliconmtn.data.Node;
@@ -163,12 +163,12 @@ public class AccountReportVO extends AbstractSBReportVO {
 		if (acct.getAddedCount() > 0) {
 			sb.append(" ");
 			sb.append(acct.getAddedCount());
-			sb.append(UserVO.Status.ACTIVE.getCode()); 
+			sb.append(UserVO.LicenseType.ACTIVE.getCode()); 
 		}
 		if (acct.getComplementaryCount() > 0) {
 			sb.append(" ");
 			sb.append(acct.getComplementaryCount());
-			sb.append(UserVO.Status.COMPLIMENTARY.getCode()); 
+			sb.append(UserVO.LicenseType.COMPLIMENTARY.getCode()); 
 		}
 		closeDiv(sb);
 		
@@ -350,7 +350,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 		}
 
 		// now append status code if appropriate.
-		addUserStatusCode(sb,user.getStatusCode());
+		addUserLicenseType(sb,user.getLicenseType());
 	}
 
 	/**
@@ -402,19 +402,19 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param sb
 	 * @param statCd
 	 */
-	protected void addUserStatusCode(StringBuilder sb, String statCd) {
-		if (statCd.equalsIgnoreCase(Status.COMPLIMENTARY.getCode()) ||
-				statCd.equalsIgnoreCase(Status.UPDATES.getCode()) ||
-				statCd.equalsIgnoreCase(Status.EXTRA.getCode()) ||
-				statCd.equalsIgnoreCase(Status.COMPUPDATES.getCode())) {
+	protected void addUserLicenseType(StringBuilder sb, String licenseType) {
+		if (licenseType.equalsIgnoreCase(LicenseType.COMPLIMENTARY.getCode()) ||
+				licenseType.equalsIgnoreCase(LicenseType.UPDATES.getCode()) ||
+				licenseType.equalsIgnoreCase(LicenseType.EXTRA.getCode()) ||
+				licenseType.equalsIgnoreCase(LicenseType.COMPUPDATES.getCode())) {
 
 			startSpan(sb,CSS_USER_STATUS_CD);
 			appendSpace(sb);
 
-			if (statCd.equalsIgnoreCase(Status.EXTRA.getCode())) {
-				sb.append(Status.ACTIVE.getCode());
+			if (licenseType.equalsIgnoreCase(LicenseType.EXTRA.getCode())) {
+				sb.append(LicenseType.ACTIVE.getCode());
 			} else {
-				sb.append(statCd);
+				sb.append(licenseType);
 			}
 
 			closeSpan(sb);

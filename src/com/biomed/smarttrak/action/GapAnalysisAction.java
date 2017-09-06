@@ -35,7 +35,6 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -82,7 +81,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		SecurityController.isGaAuth(req);
 
-		if(req.hasParameter("selNodes")) {
+		if (req.hasParameter("selNodes")) {
 			//Instantiate GapTableVO to Store Data.
 			GapTableVO gtv = new GapTableVO();
 
@@ -92,42 +91,50 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			gtv.setHeaders(filterNodes(getColData(req)));
 
 			//Get Table Body Data based on columns in the GTV.
-			if(!gtv.getColumns().isEmpty())
+			if (!gtv.getColumns().isEmpty())
 				loadGapTableData(gtv);
 
 			//forward to Report if parameter present.
-			if(req.hasParameter("buildReport")) {
-
-				//Set State on the GapTableVO.
-				gtv.setState(JSONObject.fromObject(req.getParameter("state")));
-
-				//Build Report
-				GapAnalysisReportVO rpt = new GapAnalysisReportVO((String) attributes.get(Constants.QS_PATH));
-				rpt.setData(gtv);
-				rpt.setSite((SiteVO)req.getAttribute(Constants.SITE_DATA));
-
-				//Set Report on Attributes Map.
-				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
-				req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+			if (req.hasParameter("buildReport")) {
+				buildReport(gtv, req);
 			} else {
-				super.putModuleData(gtv);
+				putModuleData(gtv);
 			}
 
-		} else if(req.hasParameter("getProducts")) {
+		} else if (req.hasParameter("getProducts")) {
 			String sectionId = req.getParameter("sectionId");
 			String regionId = req.getParameter("regionId");
 			String companyId = req.getParameter("companyId");
 			String columnId = req.getParameter("columnId");
-			super.putModuleData(getProductList(regionId, companyId, columnId, sectionId));
+			putModuleData(getProductList(regionId, companyId, columnId, sectionId));
 
-		} else if(req.hasParameter("getState")) {
-			SMTSession ses = req.getSession();
-			UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		} else if (req.hasParameter("getState")) {
+			UserVO vo = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 			String userId = StringUtil.checkVal(vo.getUserId());
 
 			String saveStateId = req.getParameter("saveStateId");
-			super.putModuleData(getSaveStates(userId, saveStateId));
+			putModuleData(getSaveStates(userId, saveStateId));
 		}
+	}
+	
+
+	/**
+	 * turns the GapTableVO into a report to download from WC.
+	 * @param gtv
+	 * @param req
+	 */
+	protected void buildReport(GapTableVO gtv, ActionRequest req) {
+		//Set State on the GapTableVO.
+		gtv.setState(JSONObject.fromObject(req.getParameter("state")));
+
+		//Build Report
+		GapAnalysisReportVO rpt = new GapAnalysisReportVO((String) attributes.get(Constants.QS_PATH));
+		rpt.setData(gtv);
+		rpt.setSite((SiteVO)req.getAttribute(Constants.SITE_DATA));
+
+		//Set Report on Attributes Map.
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 	}
 
 	/*
@@ -332,7 +339,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	private List<Node> getColData(ActionRequest req) throws ActionException {
 		//Get Sections from super.
 		super.retrieve(req);
-		ModuleVO mod = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		List<Node> nodes = (List<Node>) mod.getActionData();
 
 		//Get All the columns.

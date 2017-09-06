@@ -2,6 +2,7 @@ package com.biomed.smarttrak.vo;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -71,7 +72,8 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private Date updateDt;
 	private transient List<UpdateXRVO> sections; //UpdateXRVO is not serializable, so this List must be transient -JM- 7.03.2017
 	private String qsPath;
-
+	private int sslFlg;
+	private String siteAliasUrl;
 
 	public UpdateVO() {
 		super(UpdateIndexer.INDEX_TYPE);
@@ -159,6 +161,59 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		}
 	}
 
+	/**
+	 * Getter builds the display Link String without a concrete Domain.  This is
+	 * used on public and manage facing views.
+	 * @return
+	 */
+	public String getRelativeDisplayLink() {
+		return buildDisplayLink("");
+	}
+
+	/**
+	 * Getter builds the display Link String with a Concrete Domain.  This is
+	 * used by Email Campaigns.
+	 * @return
+	 */
+	public String getDisplayLink() {
+		String domain = "http://";
+		if(sslFlg == 1) {
+			domain = "https://";
+		}
+		return buildDisplayLink(domain + siteAliasUrl);
+	}
+
+	/**
+	 * Helper method that accepts a domain string and builds the Update Link
+	 * Title Text for display.
+	 * @param domain
+	 * @return
+	 */
+	protected String buildDisplayLink(String domain) {
+		String aTxt = "<a href=\"" + StringUtil.checkVal(domain);
+		String targetClassTxt = "\" target=\"_blank\" style=\"color:#008ec9;\">";
+		StringBuilder displayLink = new StringBuilder(200);
+		String url = getDocumentUrl();
+		if(!StringUtil.isEmpty(productId)) {
+			displayLink.append(aTxt).append(url).append(targetClassTxt);
+			displayLink.append(!StringUtil.isEmpty(productNm) ? productNm : getTitle()).append("</a>");
+			if(!StringUtil.isEmpty(companyNm)) {
+				displayLink.append("- ").append(aTxt).append(Section.COMPANY.getPageURL()).append(qsPath).append(companyId).append("\" target=\"_blank\" class=\"title\">").append(companyNm).append("</a>");
+			}
+		} else if(!StringUtil.isEmpty(companyId)) {
+			displayLink.append(aTxt).append(url).append(targetClassTxt);
+			displayLink.append(!StringUtil.isEmpty(companyNm) ? companyNm : getTitle()).append("</a>");
+		} else if(!StringUtil.isEmpty(marketId)) {
+			displayLink.append(aTxt).append(url).append(targetClassTxt);
+			displayLink.append(!StringUtil.isEmpty(marketNm) ? marketNm : getTitle()).append("</a>");
+		} else {
+			displayLink.append(getTitle());
+		}
+		SimpleDateFormat sdf = new SimpleDateFormat("MMM. dd, yyyy");
+		displayLink.append("&mdash; ").append(sdf.format(getPublishDt()));
+
+		return displayLink.toString();
+	}
 	/**
 	 * @return the updateId
 	 */
@@ -651,5 +706,22 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 			return getPublishDt().compareTo(vo.getPublishDt());
 		}
 		return typeComp;
+	}
+
+	/**
+	 * @param sslFlg
+	 */
+	public void setSSLFlg(int sslFlg) {
+		this.sslFlg = sslFlg;
+	}
+	public int getSSLFlg() {
+		return this.sslFlg;
+	}
+
+	public void setSiteAliasUrl(String siteAliasUrl) {
+		this.siteAliasUrl = siteAliasUrl;
+	}
+	public String getSiteAliasUrl() {
+		return this.siteAliasUrl;
 	}
 }
