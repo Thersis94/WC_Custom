@@ -50,6 +50,8 @@ public class AccountPermissionAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		AccountAction.loadAccount(req, dbConn, getAttributes());
+
 		//accountId is required for this action
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
 		if (accountId == null) return;
@@ -68,7 +70,7 @@ public class AccountPermissionAction extends AbstractTreeAction {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select a.section_id, a.parent_id, a.section_nm, a.order_no, a.solr_token_txt, ");
-		sql.append("b.account_id, b.browse_no, b.updates_no, b.fd_no, b.ga_no from ");
+		sql.append("b.account_id, b.browse_no, b.updates_no, b.fd_no, b.ga_no, b.pe_no, b.an_no, a.is_gap from ");
 		sql.append(schema).append("BIOMEDGPS_SECTION a ");
 		sql.append("left outer join ").append(schema).append("BIOMEDGPS_ACCOUNT_ACL b ");
 		sql.append("on a.section_id=b.section_id and b.account_id=? ");
@@ -90,7 +92,7 @@ public class AccountPermissionAction extends AbstractTreeAction {
 		String[] checkboxes = req.getParameterValues("permission");
 		if (checkboxes == null || checkboxes.length == 0) return;
 
-		Map<String, PermissionVO> data = new HashMap<>(checkboxes.length / 4); //4 columns, should get us closer than the default(12).
+		Map<String, PermissionVO> data = new HashMap<>(checkboxes.length / 6); //6 columns, should get us closer than the default(12).
 		for (String value : checkboxes) {
 			String[] tokens = value.split("~"); //authArea~sectionId
 			String sectionId = tokens[1];
@@ -132,8 +134,7 @@ public class AccountPermissionAction extends AbstractTreeAction {
 	public void delete(ActionRequest req) throws ActionException {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql  = new StringBuilder(200);
-		sql.append("delete from ").append(schema).append("BIOMEDGPS_ACCOUNT_ACL ");
-		sql.append("where account_id=?");
+		sql.append("delete from ").append(schema).append("BIOMEDGPS_ACCOUNT_ACL where account_id=?");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -157,8 +158,8 @@ public class AccountPermissionAction extends AbstractTreeAction {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("insert into ").append(schema).append("BIOMEDGPS_ACCOUNT_ACL ");
-		sql.append("(account_acl_id, section_id, account_id, browse_no, updates_no, fd_no, ga_no, create_dt) ");
-		sql.append("values (?,?,?,?,?,?,?,?)");
+		sql.append("(account_acl_id, section_id, account_id, browse_no, updates_no, pe_no, an_no, fd_no, ga_no, create_dt) ");
+		sql.append("values (?,?,?,?,?,?,?,?,?,?)");
 		log.debug(sql);
 
 		UUIDGenerator uuid = new UUIDGenerator();
@@ -169,9 +170,11 @@ public class AccountPermissionAction extends AbstractTreeAction {
 				ps.setString(3, vo.getAccountId());
 				ps.setInt(4,  vo.isBrowseAuth() ? 1 : 0);
 				ps.setInt(5,  vo.isUpdatesAuth() ? 1 : 0);
-				ps.setInt(6,  vo.isFdAuth() ? 1 : 0);
-				ps.setInt(7,  vo.isGaAuth() ? 1 : 0);
-				ps.setTimestamp(8, Convert.getCurrentTimestamp());
+				ps.setInt(6,  vo.isPeAuth() ? 1 : 0);
+				ps.setInt(7,  vo.isAnAuth() ? 1 : 0);
+				ps.setInt(8,  vo.isFdAuth() ? 1 : 0);
+				ps.setInt(9,  vo.isGaAuth() ? 1 : 0);
+				ps.setTimestamp(10, Convert.getCurrentTimestamp());
 				ps.addBatch();
 			}
 			ps.executeBatch();

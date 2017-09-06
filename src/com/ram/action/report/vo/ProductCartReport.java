@@ -3,6 +3,7 @@ package com.ram.action.report.vo;
 //java 8
 import java.io.ByteArrayOutputStream;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -159,11 +160,11 @@ public class ProductCartReport  extends AbstractPDFReport {
 		Collection<RAMCaseItemVO> cart = (Collection<RAMCaseItemVO>) data.get("cart");
 
 		for(RAMCaseItemVO item : cart){
-			table.addCell(getTableCell(item.getProductNm()));
-			table.addCell(getTableCell(item.getCustomerNm()));
+			table.addCell(getTableCell(item.getProductName()));
+			table.addCell(getTableCell(item.getCustomerName()));
 			table.addCell(getTableCell(item.getCustomerProductId()));
 			table.addCell(getTableCell(item.getLotNumberTxt()));
-			table.addCell(getTableCell(StringUtil.checkVal(item.getQtyNo())));
+			table.addCell(getTableCell(StringUtil.checkVal(item.getQuantity())));
 			table.addCell(getTableCell(item.getProductFromTxt()));
 			table.addCell(getTableCell(Convert.formatDate(item.getExpiree(), Convert.DATE_SLASH_PATTERN)));
 			table.addCell(getFlagCell(item.getBillableFlg()));
@@ -228,13 +229,13 @@ public class ProductCartReport  extends AbstractPDFReport {
 	 * @return
 	 */
 	private PdfPCell getCaseInfoTop() {
-		String caseId = "";
-
-		if (StringUtil.checkVal(data.get(NexusSolrCartAction.CASE_ID)).length() > 0){
-			caseId = StringUtil.checkVal(data.get(NexusSolrCartAction.CASE_ID));
-		} 
-
-		return(getTitleCell("Case Report ID: " +caseId, 12));
+		
+		StringBuilder sb = new StringBuilder(100);
+		sb.append("Case Report ID: ").append(StringUtil.checkVal(data.get(NexusSolrCartAction.CASE_ID)));
+		sb.append(" (Report Created Date: ").append(StringUtil.checkVal(Convert.formatDate(new Date(), Convert.DATE_SLASH_PATTERN )));
+		sb.append(")");
+		
+		return(getTitleCell(sb.toString(), 12));
 	}
 
 	/**

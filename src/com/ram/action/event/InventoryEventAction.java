@@ -15,6 +15,8 @@ import java.util.Map;
 import com.ram.datafeed.data.InventoryEventVO;
 import com.ram.datafeed.data.InventoryItemVO;
 import com.ram.datafeed.data.RAMProductVO;
+import com.ram.action.report.vo.InventoryEventPDFReport;
+import com.ram.action.report.vo.InventoryEventXLSReport;
 import com.ram.action.util.SecurityUtil;
 
 //SMT Base Libs
@@ -27,9 +29,10 @@ import com.siliconmtn.db.orm.SQLTotalVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
+import com.smt.sitebuilder.action.AbstractSBReportVO;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.WebCrescendoReport;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -51,11 +54,10 @@ public class InventoryEventAction extends SBActionAdapter {
 	 * Maps the extjs column names to the actual field names
 	 */
 	protected final Map<String, String> fieldMap = new LinkedHashMap<>();
+	public final String LOAD_REPORT = "loadReport";
+	public final String PDF = "pdf";
+	public final String XLS = "xls";
 	
-	
-	/**
-	 * 
-	 */
 	public InventoryEventAction() {
 		super();
 		initFieldMap();
@@ -214,7 +216,7 @@ public class InventoryEventAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
+
 		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
 		if ("event_list".equalsIgnoreCase(req.getParameter("actionType"))) {
 			GridDataVO<InventoryEventVO> data = retrieveAll(req);
@@ -232,9 +234,57 @@ public class InventoryEventAction extends SBActionAdapter {
 			event.setNumberReturnedProducts(getNumberItems(inventoryEventId, "DAMAGE_RETURN","EXPIREE_RETURN","RECALL","TRANSFER"));
 			event.setNumberReceivedProducts(getNumberItems(inventoryEventId, "REPLENISHMENT"));
 			event.setNumberTotalProducts(getNumberItems(inventoryEventId, "SHELF"));
+
+			if (req.hasParameter(LOAD_REPORT) ){
+				loadLineItemData(req,event);
+				String reportType = StringUtil.checkVal(req.getParameter(LOAD_REPORT));
+				req.setAttribute(Constants.BINARY_DOCUMENT, generateReport(reportType, event));
+				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+			}else{
+				putModuleData(event);
+			}
 			
-			putModuleData(event);
 		}
+	}
+	
+	/**
+	 * adds the line items to the main event vo for the reports
+	 * @param req
+	 * @param event
+	 */
+	private void loadLineItemData(ActionRequest req, InventoryEventVO event) {
+		List<Object> lines = getAllInventoryItemsSummary(req);
+		
+		for (Object o : lines){
+			InventoryItemVO vo = (InventoryItemVO) o;
+			event.addInventoryItem(vo);
+		}
+	}
+
+	/**
+	 * uses the report type string  to determine and build the requested type of report
+	 * @param reportType
+	 * @param event 
+	 * @return
+	 */
+	private Object generateReport(String reportType, InventoryEventVO event) {
+		AbstractSBReportVO report = null;
+		
+		if (PDF.equalsIgnoreCase(reportType)){
+			String fileName = "Event-"+event.getInventoryEventId();
+			report = new InventoryEventPDFReport();
+			report.setAttributes(attributes);
+			report.setFileName(fileName + ".pdf");
+			report.setData(event);
+		}
+		
+		if (XLS.equalsIgnoreCase(reportType)){
+			InventoryEventXLSReport eReport = new InventoryEventXLSReport();
+			eReport.setData(event);
+			report = new WebCrescendoReport(eReport);
+		}
+		
+		return report;
 	}
 	
 	/**
@@ -295,7 +345,6 @@ public class InventoryEventAction extends SBActionAdapter {
 	public GridDataVO<InventoryItemVO> getInventoryItemsSummary(ActionRequest req) {
 		// Add the sql params
 		List<Object> params = new ArrayList<>();
-		params.add(req.getIntegerParameter("inventoryEventId"));
 
 		// return the data
 		int limit = req.getIntegerParameter("limit", 10);
@@ -303,6 +352,19 @@ public class InventoryEventAction extends SBActionAdapter {
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSQLWithCount(getItemSQL(req, params), params, new InventoryItemVO(), "cust_product_id", limit, offset);
+	}
+
+	/**
+	 * Retrieves the list of inventory items
+	 * @param req
+	 * @return
+	 */
+	public List<Object> getAllInventoryItemsSummary(ActionRequest req) {
+		// Add the sql params
+		List<Object> params = new ArrayList<>();
+		// no limit no offset send back everything
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(getItemSQL(req, params), params, new InventoryItemVO(),"cust_product_id");
 	}
 
 	/**
@@ -320,6 +382,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_product d on c.product_id = d.product_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ram_customer e on d.customer_id = e.customer_id ");
 		sql.append("where b.inventory_event_id = ? and inventory_item_type_cd = 'SHELF' ");
+		params.add(req.getIntegerParameter("inventoryEventId"));
 		
 		if (req.hasParameter("search")) {
 			sql.append(" and (lower(product_nm) like ? or lower(cust_product_id) like ?) ");
@@ -383,7 +446,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		int limit = req.getIntegerParameter("limit", 10);
 		int offset = req.getIntegerParameter("offset", 0);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-
+		log.debug("sql " + sql.toString());
 		return db.executeSQLWithCount(sql.toString(), params, new InventoryEventVO(), limit, offset);
 	}
 	

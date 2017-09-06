@@ -23,7 +23,8 @@ import com.biomed.smarttrak.vo.UserVO;
  <b>Changes:</b> 
  ***************************************************************************/
 public class AccountUsersVO extends AccountVO {
-
+	private static final long serialVersionUID = 4170970409346569852L;
+	
 	/**
 	 * List of UserVO: The list of users belonging to this account.
 	 */
@@ -128,13 +129,19 @@ public class AccountUsersVO extends AccountVO {
 	/**
 	 * Increments the count for certain user status values.
 	 * @param statusCode
+	 * @deprecated - fixed naming convention.  status[active|inactive] is not the same as license type
 	 */
-	public void countUserStatus(String statusCode) {
-		if (statusCode.equals(UserVO.Status.COMPLIMENTARY.getCode())) {
+	@Deprecated
+	public void countUserStatus(String code) {
+		countLicenseType(code);
+	}
+	
+	public void countLicenseType(String statusCode) {
+		if (statusCode.equals(UserVO.LicenseType.COMPLIMENTARY.getCode())) {
 			compSeatsCnt++;
-		} else if (statusCode.equals(UserVO.Status.EXTRA.getCode())) {
+		} else if (statusCode.equals(UserVO.LicenseType.EXTRA.getCode())) {
 			addedSeatsCnt++;
-		} else if (statusCode.equals(UserVO.Status.UPDATES.getCode())) {
+		} else if (statusCode.equals(UserVO.LicenseType.UPDATES.getCode())) {
 			updatesOnlyCnt++;
 		}
 	}

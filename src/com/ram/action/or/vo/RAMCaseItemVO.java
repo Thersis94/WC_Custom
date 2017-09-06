@@ -39,16 +39,17 @@ public class RAMCaseItemVO extends BeanDataVO {
 	private String caseItemId;
 	private Integer productId;
 	private String customerProductId;
-	private String productNm;
+	private String productName;
 	private String caseKitId;
 	private String caseId;
-	private int qtyNo;
+	private int quantity;
 	private RAMCaseType caseType;
 	private String lotNumberTxt;
 	private int billableFlg;
 	private int wastedFlg;
+	private String wastedReason;
 	private String productFromTxt;
-	private String customerNm;
+	private String customerName;
 	private String gtinProductId;
 	private Date expiree;
 	private Date createDt;
@@ -71,15 +72,18 @@ public class RAMCaseItemVO extends BeanDataVO {
 	public void setData(ActionRequest req) {
 		caseItemId = req.getParameter("caseItemId");
 		productId = Convert.formatInteger(req.getParameter("productId"));
-		productNm = req.getParameter("productNm");
+		productName = req.getParameter("productName");
 		caseKitId = StringUtil.checkVal(req.getParameter("caseKitId"), null);
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
-		qtyNo = Convert.formatInteger(req.getParameter("qtyNo"));
+		quantity = Convert.formatInteger(req.getParameter("quantity"));
 		lotNumberTxt = req.getParameter("lotNumberTxt");
 		billableFlg = Convert.formatInteger(req.getParameter("billableFlg"));
 		wastedFlg = Convert.formatInteger(req.getParameter("wastedFlg"));
+		if(wastedFlg == 1) {
+			wastedReason = req.getParameter("wastedReason");
+		}
 		productFromTxt = req.getParameter("productFromTxt");
-		customerNm = req.getParameter("customerNm");
+		customerName = req.getParameter("customerName");
 		setCaseTypeTxt(req.getParameter("caseTypeCd"));
 		if (!StringUtil.isEmpty(req.getParameter("expiree")))
 			setExpiree(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expiree")));
@@ -114,8 +118,8 @@ public class RAMCaseItemVO extends BeanDataVO {
 	 * @return the productNm
 	 */
 	@Column(name="product_nm", isReadOnly=true)
-	public String getProductNm() {
-		return productNm;
+	public String getProductName() {
+		return productName;
 	}
 
 	/**
@@ -138,8 +142,8 @@ public class RAMCaseItemVO extends BeanDataVO {
 	 * @return the qtyNo
 	 */
 	@Column(name="qty_no")
-	public int getQtyNo() {
-		return qtyNo;
+	public int getQuantity() {
+		return quantity;
 	}
 
 	/**
@@ -182,6 +186,14 @@ public class RAMCaseItemVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the wastedReason
+	 */
+	@Column(name="wasted_reason")
+	public String getWastedReason() {
+		return wastedReason;
+	}
+
+	/**
 	 * @return the productFromTxt
 	 */
 	@Column(name="product_from_txt")
@@ -193,8 +205,8 @@ public class RAMCaseItemVO extends BeanDataVO {
 	 * @return the customerNm
 	 */
 	@Column(name="customer_nm", isReadOnly=true)
-	public String getCustomerNm() {
-		return customerNm;
+	public String getCustomerName() {
+		return customerName;
 	}
 
 	/**
@@ -238,8 +250,8 @@ public class RAMCaseItemVO extends BeanDataVO {
 	/**
 	 * @param productNm the productNm to set
 	 */
-	public void setProductNm(String productNm) {
-		this.productNm = productNm;
+	public void setProductName(String productName) {
+		this.productName = productName;
 	}
 
 	/**
@@ -259,8 +271,8 @@ public class RAMCaseItemVO extends BeanDataVO {
 	/**
 	 * @param qtyNo the qtyNo to set.
 	 */
-	public void setQtyNo(int qtyNo) {
-		this.qtyNo = qtyNo;
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
 	}
 
 	/**
@@ -303,6 +315,13 @@ public class RAMCaseItemVO extends BeanDataVO {
 	}
 
 	/**
+	 * @param wastedReason the wastedReason
+	 */
+	public void setWastedReason(String wastedReason) {
+		this.wastedReason = wastedReason;
+	}
+
+	/**
 	 * @param productFromTxt the productFromTxt to set
 	 */
 	public void setProductFromTxt(String productFromTxt) {
@@ -312,8 +331,8 @@ public class RAMCaseItemVO extends BeanDataVO {
 	/**
 	 * @param customerNm the customerNm to set
 	 */
-	public void setCustomerNm(String customerNm) {
-		this.customerNm = customerNm;
+	public void setCustomerName(String customerName) {
+		this.customerName = customerName;
 	}
 
 	/**
@@ -340,8 +359,8 @@ public class RAMCaseItemVO extends BeanDataVO {
 	/**
 	 * @param qtyNo2
 	 */
-	public void addQty(int qtyNo) {
-		this.qtyNo += qtyNo;
+	public void addQty(int quantity) {
+		this.quantity += quantity;
 	}
 
 	/**

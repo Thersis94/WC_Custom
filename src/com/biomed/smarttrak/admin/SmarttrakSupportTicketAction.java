@@ -111,10 +111,12 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 
 	}
 
-	/**
-	 * Override basic retrieval callback and additionally retrieve managers for
-	 * assignment.
+	/*
+	 * Override basic retrieval callback and additionally retrieve managers for assignment.
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.support.SupportTicketAction#retrieveCallback(com.siliconmtn.action.ActionRequest, java.util.List)
 	 */
+	@Override
 	public void retrieveCallback(ActionRequest req, List<Object> items) throws ActionException {
 		super.retrieveCallback(req, items);
 
@@ -127,36 +129,36 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void loadManagers(ActionRequest req) throws ActionException {
+	protected void loadManagers(ActionRequest req) {
 		AccountAction aa = new AccountAction(this.actionInit);
 		aa.setAttributes(getAttributes());
 		aa.setDBConnection(getDBConnection());
 		aa.loadManagerList(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 	}
 
-	/**
+	/*
 	 * Helper method that loads Profile Data for a Smarttrak User.
-	 * @param orgId 
-	 * @param profileId 
-	 * @param req
-	 * @return
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.support.SupportTicketAction#getProfileData(java.lang.String, java.lang.String, com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
 	protected UserDataVO getProfileData(String profileId, String orgId, ActionRequest req) throws ActionException {
-		UserDataVO u = null;
-	
 		//Get Profile Data for Ticket Reporter
 		AccountUserAction aua = new AccountUserAction(this.actionInit);
 		aua.setDBConnection(getDBConnection());
 		aua.setAttributes(getAttributes());
 		List<Object> users = aua.loadAccountUsers(req, profileId);
 
-		if(!users.isEmpty()) {
-			u = (UserDataVO) users.get(0);
-		}
+		if (!users.isEmpty())
+			return (UserDataVO) users.get(0);
 
-		return u;
+		return null;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.support.SupportTicketAction#sendEmail(com.smt.sitebuilder.action.support.TicketVO, com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType, java.lang.String)
+	 */
 	@Override
 	protected void sendEmail(TicketVO t, ChangeType type, String orgId) {
 		try {

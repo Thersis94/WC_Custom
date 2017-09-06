@@ -3,24 +3,34 @@ package com.biomed.smarttrak.admin;
 //Java 8
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
-import com.siliconmtn.util.user.NameComparator;
+import com.siliconmtn.util.user.LastNameComparator;
 
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -35,14 +45,18 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.PasswordComplexityFactory;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
 import com.smt.sitebuilder.security.WCUtil;
+
 //WC_Custom
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
+import com.biomed.smarttrak.vo.UserVO.Status;
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.UpdatesEditionAction;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountUserAction.java</p>
@@ -57,8 +71,11 @@ import com.biomed.smarttrak.action.AdminControllerAction;
  ***************************************************************************/
 public class AccountUserAction extends SBActionAdapter {
 
+	protected static final String CFG_WELCOME_EML = "smarttrakWelcomeEmailInstanceId";
+	protected static final String CFG_PSWD_RESET_EML = "smarttrakPasswordResetEmailInstanceId";
 	protected static final String ACCOUNT_ID = AccountAction.ACCOUNT_ID; //req param
 	protected static final String USER_ID = "userId"; //req param
+	protected static final String PROFILE_ID = UpdatesEditionAction.PROFILE_ID;
 
 	public AccountUserAction() {
 		super();
@@ -78,16 +95,267 @@ public class AccountUserAction extends SBActionAdapter {
 		if (req.hasParameter("loginAs")) {
 			loginAsUser(req);
 			return;
+		} else if (req.hasParameter("checkUserByEmail")) {
+			checkForExistingUser(req);
+			return;
+		} else if (req.hasParameter("sendWelcomeEmail")) {
+			sendWelcomeEmail(req);
+			return;
+		} else if (req.hasParameter("sendPasswordEmail")) {
+			sendPasswordEmail(req);
+			return;
 		}
 
-		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
-		//table into the view (which will come back for the data).
-		if (!req.hasParameter("loadData") && !req.hasParameter(USER_ID)) return;
+		List<Object> users = loadAccountUsers(req, req.getParameter(PROFILE_ID));
+		//if we're not the edit page we can return the list, which should only have one record on it.
+		//for the list page we want to return a Map of lists, breaking out the users by Division (for display)
+		if (req.hasParameter(USER_ID) || req.hasParameter("view")) { //'view' is for JSON list loaders
+			putModuleData(users);
+		} else {
+			GenericVO vo = sortRecords(users);
+			summateLoginActivity(vo, req);
+			summateStatus(vo, req);
+			putModuleData(vo);
+		}
+	}
 
-		List<Object> users = loadAccountUsers(req, null);
 
-		//do this last, because loading the registration actions will collide with ModuleVO.actionData
-		putModuleData(users);
+	/**
+	 * Triggers the email campaign email for Welcome Msg. to be sent to the user
+	 * A password reset URL is conditionally supported (when needed)
+	 * @param req
+	 */
+	private void sendWelcomeEmail(ActionRequest req) {
+		//build the emailConfig
+		UserVO u = new UserVO(req);
+		Map<String, Object> config = new HashMap<>();
+		config.put("firstName", u.getFirstName());
+		config.put("lastName", u.getLastName());
+		config.put("emailAddress", u.getEmailAddress());
+		config.put("createDt", Convert.getCurrentTimestamp());
+		config.put(PROFILE_ID, u.getProfileId());
+		config.put(USER_ID, u.getUserId());
+		config.put(ACCOUNT_ID, u.getAccountId());
+		if (Convert.formatBoolean(req.getParameter("passwordReset")))
+			config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
+
+		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_WELCOME_EML));
+		Map<String, String> recipients = new HashMap<>();
+		recipients.put(u.getProfileId(), (String)config.get("emailAddress"));
+
+		//perform the email send
+		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
+		ecbu.sendMessage(campInstId, recipients, config);
+	}
+
+
+	/**
+	 * Triggers the email campaign email for Password Reset to be sent to the user.
+	 * @param req
+	 */
+	private void sendPasswordEmail(ActionRequest req) {
+		//build the emailConfig
+		UserVO u = new UserVO(req);
+		Map<String, Object> config = new HashMap<>();
+		config.put("firstName", u.getFirstName());
+		config.put("lastName", u.getLastName());
+		config.put("emailAddress", u.getEmailAddress());
+		config.put("createDt", Convert.getCurrentTimestamp());
+		config.put(PROFILE_ID, u.getProfileId());
+		config.put(USER_ID, u.getUserId());
+		config.put(ACCOUNT_ID, u.getAccountId());
+		config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
+
+		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_PSWD_RESET_EML));
+		Map<String, String> recipients = new HashMap<>();
+		recipients.put(u.getProfileId(), (String)config.get("emailAddress"));
+
+		//perform the email send
+		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
+		ecbu.sendMessage(campInstId, recipients, config);
+	}
+
+
+	/**
+	 * generates a password reset URL for the user.
+	 * @param req
+	 * @return
+	 */
+	private String makeResetKey(ActionRequest req, String email) {
+		long oneWeekMillis = 604800000;
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		try {
+			return StringEncoder.urlEncode(PasswordComplexityFactory
+					.getInstance(site.getPasswordModule(), getAttributes())
+					.generateResetToken(site.getSiteAlias(), email, oneWeekMillis));
+		} catch (ApplicationException e) {
+			log.error("unable to generate password reset token", e);
+			return "";
+		}
+	}
+
+	/**
+	 * uses email address to see if a user is already in ST, or already in WC, before being added.
+	 * @param req
+	 */
+	private void checkForExistingUser(ActionRequest req) {
+		String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+
+		String email = req.getParameter("checkUserByEmail").toUpperCase();
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select a.user_id, b.profile_id, a.account_id from ").append(schema).append("biomedgps_user a ");
+		sql.append("right outer join profile b on a.profile_id=b.profile_id ");
+		sql.append("where b.search_email_txt=?");
+		log.debug(sql + " " + email);
+
+		Map<String, String> data = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			StringEncrypter se = new StringEncrypter(encKey);
+			ps.setString(1, se.encrypt(email));
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				data.put(USER_ID, rs.getString(1));
+				data.put(PROFILE_ID, rs.getString(2));
+				data.put(ACCOUNT_ID, rs.getString(3));
+			}
+		} catch (Exception e) {
+			log.error("could not search existing users by email", e);
+		}
+
+		putModuleData(data);
+	}
+
+
+	/**
+	 * Take the active user accounts (from sortRecords) and bucketize the users by login activity, according to time-table (legend)
+	 * @param req
+	 */
+	@SuppressWarnings("unchecked")
+	private void summateLoginActivity(GenericVO data, ActionRequest req) {
+		Map<Integer, Integer> counts = new HashMap<>();
+		counts.put(Integer.valueOf(0), Integer.valueOf(0));
+		counts.put(Integer.valueOf(30), Integer.valueOf(0));
+		counts.put(Integer.valueOf(60), Integer.valueOf(0));
+		counts.put(Integer.valueOf(90), Integer.valueOf(0));
+
+		Map<String, List<UserVO>> active = (Map<String, List<UserVO>>) data.getKey();
+		for (Map.Entry<String, List<UserVO>> entry : active.entrySet()) {
+			for (UserVO user : entry.getValue()) {
+				Integer age = user.getLoginAge();
+				counts.put(age, 1+counts.get(age));
+			}
+		}
+		//help with debugging
+		if (log.isDebugEnabled()) {
+			for (Map.Entry<Integer, Integer> entry : counts.entrySet())
+				log.debug(entry.getValue() + " users in " + entry.getKey());
+		}
+		req.setAttribute("activtyMap", counts);
+	}
+
+
+	/**
+	 * Take the active user accounts (from sortRecords) and bucketize the users by login activity, according to time-table (legend)
+	 * @param req
+	 */
+	@SuppressWarnings("unchecked")
+	private void summateStatus(GenericVO data, ActionRequest req) {
+		Map<Integer, Integer> counts = new HashMap<>();
+		for (Status s : UserVO.Status.values())
+			counts.put(s.getCode(), Integer.valueOf(0));
+
+		Map<String, List<UserVO>> users = (Map<String, List<UserVO>>) data.getKey();
+		for (Map.Entry<String, List<UserVO>> entry : users.entrySet()) {
+			for (UserVO user : entry.getValue()) {
+				Integer sts = user.getStatusFlg();
+				counts.put(sts, 1+counts.get(sts));
+			}
+		}
+		//combine inactive users
+		users = (Map<String, List<UserVO>>) data.getValue();
+		for (Map.Entry<String, List<UserVO>> entry : users.entrySet()) {
+			for (UserVO user : entry.getValue()) {
+				Integer sts = user.getStatusFlg();
+				counts.put(sts, 1+counts.get(sts));
+			}
+		}
+		req.setAttribute("statusMap", counts);
+	}
+
+
+	/**
+	 * sorts the List<UserVO> into buckets by Divsion - only used for display in the Manage tool.
+	 * @param users
+	 * @return
+	 */
+	private GenericVO sortRecords(List<Object> users) {
+		final String noDivision = "No Division Specified";
+		Map<Integer, String> divisions = loadDivisionList();
+		Map<String, List<UserVO>> active = new LinkedHashMap<>();
+		Map<String, List<UserVO>> inactive = new LinkedHashMap<>();
+
+		//seed the data map using the sequence defined in the database
+		for (Map.Entry<Integer, String> entry : divisions.entrySet()) {
+			active.put(entry.getValue(), new ArrayList<>());
+			inactive.put(entry.getValue(), new ArrayList<>());
+		}
+
+		//add a catch-all for users w/o a Division
+		active.put(noDivision, new ArrayList<>());
+		inactive.put(noDivision, new ArrayList<>());
+
+		//put each user into their respective display bucket
+		for (Object obj : users) {
+			UserVO user = (UserVO) obj;
+			String divNm = divisions.get(Convert.formatInteger(user.getPrimaryDivision()));
+			//log.debug("div=" + divNm + " id=" + user.getPrimaryDivision())
+			if (StringUtil.isEmpty(divNm)) divNm = noDivision;
+			if (Status.INACTIVE.getCode() == user.getStatusFlg()) {
+				inactive.get(divNm).add(user);
+			} else {
+				active.get(divNm).add(user);
+			}
+		}
+
+		//remove any emtpy entries from the map - Java 8
+		active.entrySet().removeIf(e-> e.getValue().isEmpty());
+		inactive.entrySet().removeIf(e-> e.getValue().isEmpty());
+
+		//help with debugging
+		if (log.isDebugEnabled()) {
+			for (Map.Entry<String, List<UserVO>> entry : active.entrySet())
+				log.debug(entry.getValue().size() + " users in " + entry.getKey());
+
+			for (Map.Entry<String, List<UserVO>> entry : inactive.entrySet())
+				log.debug(entry.getValue().size() + " inactive users in " + entry.getKey());
+		}
+
+
+		return new GenericVO(active, inactive);
+	}
+
+
+	/**
+	 * loads the list of Divisions from the DB.  Easier and cleaner to isolate that try to include on the main query.  Also
+	 * allows us to control sort order, and rolls with any changes that get made to the data over time.
+	 * @return
+	 */
+	private Map<Integer, String> loadDivisionList() {
+		Map<Integer, String> data = new LinkedHashMap<>();
+		String sql = "select option_desc, option_value_txt from register_field_option where register_field_id=? order by order_no, option_desc";
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, RegistrationMap.DIVISIONS.getFieldId());
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
+				data.put(rs.getInt(2), rs.getString(1));
+
+		} catch (SQLException sqle) {
+			log.error("could not load Division list", sqle);
+		}
+
+		return data;
 	}
 
 
@@ -125,6 +393,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	public List<Object> loadAccountUsers(ActionRequest req, String profileId) throws ActionException {
+		AccountAction.loadAccount(req, dbConn, getAttributes());
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
 		String userId = req.hasParameter(USER_ID) ? req.getParameter(USER_ID) : null;
@@ -136,7 +405,11 @@ public class AccountUserAction extends SBActionAdapter {
 		//Build Params
 		List<Object> params = new ArrayList<>();
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
-		if(StringUtil.isEmpty(profileId)) {
+		params.add(AdminControllerAction.PUBLIC_SITE_ID);
+		params.add(UserVO.RegistrationMap.TITLE.getFieldId());
+		params.add(UserVO.RegistrationMap.NOTES.getFieldId());
+		params.add(UserVO.RegistrationMap.DIVISIONS.getFieldId());
+		if (StringUtil.isEmpty(profileId)) {
 			params.add(accountId);
 			if (userId != null) {
 				params.add(userId);
@@ -152,9 +425,8 @@ public class AccountUserAction extends SBActionAdapter {
 
 		//get more information about this one user, so we can display the edit screen.
 		//If this is an ADD, we don't need the additional lookups
-		if (loadProfileData) {
+		if (loadProfileData)
 			loadRegistration(req, users);
-		}
 
 		return users;
 	}
@@ -170,14 +442,13 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	protected List<Object> executeUserQuery(String sql, List<Object> params) {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-
+		log.debug(params);
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  data = db.executeSelect(sql, params, new UserVO());
 		log.debug("loaded " + data.size() + " users");
 
 		//decrypt the owner profiles
 		decryptNames(data);
-		Collections.sort(data, new NameComparator());
 
 		return data;
 	}
@@ -200,8 +471,8 @@ public class AccountUserAction extends SBActionAdapter {
 		sa.retrieve(req);
 		req.setAttribute("registrationForm", ((ModuleVO)sa.getAttribute(Constants.MODULE_DATA)).getActionData());
 
-		//fail-fast if there's no user to load responses for
-		if (users == null || users.isEmpty())
+		//fail-fast if there's no user to load responses for, or too many users
+		if (users == null || users.isEmpty() || users.size() != 1)
 			return;
 
 		//load the user's registration responses - these will go into the UserDataVO->attributes map
@@ -224,13 +495,13 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	protected void callProfileManager(UserVO user, ActionRequest req, boolean isSave) {
-		//load the users profile data
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		try {
 			if (isSave) {
 				pm.updateProfile(user, dbConn);
+				pm.assignCommunicationFlg(site.getOrganizationId(), user.getProfileId(), user.getAllowCommunication(), dbConn);
 			} else {
-				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 				UserDataVO vo = pm.getProfile(user.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId());
 				user.setData(vo.getDataMap());
 			}
@@ -245,7 +516,9 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void decryptNames(List<Object> data) {
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+		LastNameComparator c = new LastNameComparator();
+		c.decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+		Collections.sort(data, c);
 	}
 
 
@@ -280,23 +553,30 @@ public class AccountUserAction extends SBActionAdapter {
 	protected String formatRetrieveQuery(String schema, String userId, String profileId, boolean activeOnly) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, u.acct_owner_flg, ");
-		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, cast(max(al.login_dt) as date) as login_dt, ");
-		sql.append("al.oper_sys_txt, al.browser_txt, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg ");
-		sql.append("from ").append(schema).append("biomedgps_user u ");
-		sql.append("left outer join profile p on u.profile_id=p.profile_id ");
-		sql.append("left outer join authentication_log al on p.authentication_id=al.authentication_id and al.site_id=? and al.status_cd=1 ");
-		if(StringUtil.isEmpty(profileId)) {
-			sql.append("where u.account_id=? ");
+		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, max(al.login_dt) as login_dt, ");
+		sql.append("u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, u.active_flg, u.create_dt, ");
+		sql.append("title.value_txt as title_txt, notes.value_txt as notes_txt, division.value_txt as division_txt ");
+		sql.append("from profile p ");
+		sql.append("left join ").append(schema).append("biomedgps_user u on u.profile_id=p.profile_id ");
+		sql.append("left join authentication_log al on p.authentication_id=al.authentication_id and al.site_id=? and al.status_cd=1 ");
+		sql.append("left join register_submittal rs on p.profile_id=rs.profile_id and rs.site_id=? ");
+		sql.append("left join register_data title on rs.register_submittal_id=title.register_submittal_id and title.register_field_id=? ");
+		sql.append("left join register_data notes on rs.register_submittal_id=notes.register_submittal_id and notes.register_field_id=? ");
+		sql.append("left join register_data division on rs.register_submittal_id=division.register_submittal_id and division.register_field_id=? ");
+		sql.append("where 1=1 ");
+		if (StringUtil.isEmpty(profileId)) {
+			sql.append("and u.account_id=? ");
 			if (userId != null) sql.append("and u.user_id=? ");
 		} else {
-			sql.append("where p.profile_id=? ");
+			sql.append("and p.profile_id=? ");
 		}
 		//only load active user accounts - used by Manage Updates 'send now' tool so we're not emailing users who can't login to ST.
 		if (activeOnly)
-			sql.append("and u.status_cd != 'I' and (u.expiration_dt is null or u.expiration_dt > CURRENT_DATE) ");
-		
+			sql.append("and u.active_flg=1 and (u.expiration_dt is null or u.expiration_dt > CURRENT_DATE) ");
+
 		sql.append("group by u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, ");
-		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, al.oper_sys_txt, al.browser_txt ");
+		sql.append("u.expiration_dt, u.active_flg, u.create_dt, p.first_nm, p.last_nm, p.email_address_txt, ");
+		sql.append("title_txt, notes_txt, division_txt ");
 
 		log.debug(sql);
 		return sql.toString();
@@ -308,6 +588,15 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		//ajax hook for quick-saving notes:
+		if (req.hasParameter("saveNote")) {
+			saveNote(req);
+			return;
+		} else if (req.hasParameter("saveStatus")) {
+			saveStatus(req);
+			return;
+		}
+
 		UserVO user = new UserVO(req);
 
 		//save auth
@@ -326,6 +615,46 @@ public class AccountUserAction extends SBActionAdapter {
 		saveRecord(user, false);
 
 		setupRedirect(req);
+	}
+
+
+	/**
+	 * Handles the onBlur ajax call to quick-save the user's notes textarea
+	 * @param req
+	 */
+	private void saveNote(ActionRequest req) {
+		req.setParameter("formFields", new String[]{ RegistrationMap.NOTES.getFieldId() } , Boolean.TRUE);
+
+		//build a list of values to insert based on the ones we're going to delete
+		List<SubmittalDataVO> regData = new ArrayList<>();
+		SubmittalDataVO vo = new SubmittalDataVO(null); //encryption key=null, we don't need it.
+		vo.setRegisterFieldId(RegistrationMap.NOTES.getFieldId());
+		vo.setUserValue(req.getParameter("noteText"));
+		regData.add(vo);
+
+		SubmittalAction sa = new SubmittalAction();
+		sa.setAttributes(getAttributes());
+		sa.setDBConnection(getDBConnection());
+		sa.updateRegisterData(req, null, req.getParameter("rsid"), regData, false);
+	}
+
+
+	/**
+	 * Handles the onClick ajax call to quick-save the user's status (change / toggle)
+	 * @param req
+	 */
+	private void saveStatus(ActionRequest req) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("update ").append((String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_user set active_flg=?, update_dt=CURRENT_TIMESTAMP where user_id=?");
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, Convert.formatInteger(req.getParameter("activeFlg")));
+			ps.setString(2, req.getParameter(USER_ID));
+			ps.executeUpdate();
+
+		} catch (SQLException sqle) {
+			log.error("could not update user status", sqle);
+		}
 	}
 
 
@@ -350,7 +679,7 @@ public class AccountUserAction extends SBActionAdapter {
 			}
 			//determine the role id to set
 			setRoleId(role, user);
-			
+
 			prm.addRole(role, dbConn);
 
 		} catch (com.siliconmtn.exception.DatabaseException e) {
@@ -365,12 +694,12 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	protected void setRoleId(SBUserRole role, UserVO user){
 		//determine the role id
-		if (UserVO.Status.EUREPORTS.getCode().equals(user.getStatusCode())) {
+		if (UserVO.LicenseType.EUREPORTS.getCode().equals(user.getLicenseType())) {
 			role.setRoleId(AdminControllerAction.EUREPORT_ROLE_ID);
-		} else if(UserVO.Status.COMPUPDATES.getCode().equals(user.getStatusCode())
-				|| UserVO.Status.UPDATES.getCode().equals(user.getStatusCode())){
-					role.setRoleId(AdminControllerAction.UPDATES_ROLE_ID);
-		} else if (UserVO.Status.STAFF.getCode().equals(user.getStatusCode())) {
+		} else if(UserVO.LicenseType.COMPUPDATES.getCode().equals(user.getLicenseType())
+				|| UserVO.LicenseType.UPDATES.getCode().equals(user.getLicenseType())){
+			role.setRoleId(AdminControllerAction.UPDATES_ROLE_ID);
+		} else if (UserVO.LicenseType.STAFF.getCode().equals(user.getLicenseType())) {
 			role.setRoleId(AdminControllerAction.STAFF_ROLE_ID);
 		} else {
 			role.setRoleId(Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL));
@@ -439,7 +768,7 @@ public class AccountUserAction extends SBActionAdapter {
 		StringBuilder url = new StringBuilder(200);
 		url.append(page.getFullPath());
 		url.append("?actionType=").append(req.getParameter("actionType"));
-		url.append("&accountId=").append(req.getParameter("accountId"));
+		url.append("&accountId=").append(req.getParameter(ACCOUNT_ID));
 		url.append("&accountName=").append(AdminControllerAction.urlEncode(req.getParameter("accountName")));
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
 	}
