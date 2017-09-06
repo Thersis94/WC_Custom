@@ -42,6 +42,7 @@ public class RAMCaseItemVO extends BeanDataVO {
 	private String productName;
 	private String caseKitId;
 	private String caseId;
+	private String locationItemMasterId;
 	private int quantity;
 	private RAMCaseType caseType;
 	private String lotNumberTxt;
@@ -75,6 +76,7 @@ public class RAMCaseItemVO extends BeanDataVO {
 		productName = req.getParameter("productName");
 		caseKitId = StringUtil.checkVal(req.getParameter("caseKitId"), null);
 		caseId = req.getParameter(RAMCaseManager.RAM_CASE_ID);
+		locationItemMasterId = StringUtil.checkVal(req.getParameter("locationItemMasterId"), null);
 		quantity = Convert.formatInteger(req.getParameter("quantity"));
 		lotNumberTxt = req.getParameter("lotNumberTxt");
 		billableFlg = Convert.formatInteger(req.getParameter("billableFlg"));
@@ -139,6 +141,14 @@ public class RAMCaseItemVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the locationItemMasterId
+	 */
+	@Column(name="location_item_master_id", isReadOnly=true)
+	public String getLocationItemMasterId() {
+		return locationItemMasterId;
+	}
+
+	/**
 	 * @return the qtyNo
 	 */
 	@Column(name="qty_no")
@@ -188,7 +198,7 @@ public class RAMCaseItemVO extends BeanDataVO {
 	/**
 	 * @return the wastedReason
 	 */
-	@Column(name="wasted_reason")
+	@Column(name="wasted_reason_txt")
 	public String getWastedReason() {
 		return wastedReason;
 	}
@@ -266,6 +276,13 @@ public class RAMCaseItemVO extends BeanDataVO {
 	 */
 	public void setCaseId(String caseId) {
 		this.caseId = caseId;
+	}
+
+	/**
+	 * @param locationItemMasterId the locationItemMasterId to set.
+	 */
+	public void setLocationItemMasterId(String locationItemMasterId) {
+		this.locationItemMasterId = locationItemMasterId;
 	}
 
 	/**

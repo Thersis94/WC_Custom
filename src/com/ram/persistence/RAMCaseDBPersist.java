@@ -91,16 +91,18 @@ public class RAMCaseDBPersist extends AbstractPersist<SMTDBConnection, RAMCaseVO
 	 */
 	public void getCaseItems(RAMCaseVO cvo ) {
 		StringBuilder sql = new StringBuilder(256);
-		sql.append("select i.*, p.*, c.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_number_txt , c.customer_nm ");
+		sql.append("select i.*, p.*, c.gtin_number_txt || cast(p.gtin_product_id as varchar(64)) as gtin_number_txt , c.customer_nm, cli.location_item_master_id ");
 		sql.append(DBUtil.FROM_CLAUSE).append("custom.ram_case_item i ");
 		sql.append(DBUtil.INNER_JOIN).append("custom.ram_product p on i.product_id = p.product_id ");
 		sql.append(DBUtil.INNER_JOIN).append("custom.ram_customer c on p.customer_id = c.customer_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("custom.ram_location_item_master cli on cli.customer_location_id = ? and cli.product_id = p.product_id ");
 		sql.append("where i.case_id = ? ");
 		
 		
 		log.debug("sql " + sql.toString());
 		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-			ps.setString(1, cvo.getCaseId());
+			ps.setInt(1, cvo.getCustomerLocationId());
+			ps.setString(2, cvo.getCaseId());
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
