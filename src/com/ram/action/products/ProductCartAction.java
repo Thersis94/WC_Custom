@@ -139,7 +139,7 @@ public class ProductCartAction extends SimpleActionAdapter {
 					rcm.persistCasePerm(rcm.retrieveCase(req.getParameter(RAMCaseManager.RAM_CASE_ID)));
 					break;
 				case finalize:
-					rcm.finalizeCaseInfo();
+					cvo = rcm.finalizeCaseInfo();
 					req.setParameter(EMAIL_ARRAY, rcm.getEmailAddresses(), true);
 					sendEmails(req);
 					break;
