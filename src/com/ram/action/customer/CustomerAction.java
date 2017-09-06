@@ -316,7 +316,7 @@ public class CustomerAction extends SBActionAdapter {
 		buildFilter(sql, req, params);
 		buildOrder(sql, req, params);
 
-		log.info("Customer retrieve SQL: " + sql.toString() + "|" + svo.getCustomerTypeId() + " | " + svo.getExcludeTypeId());
+		log.debug("Customer retrieve SQL: " + sql.toString() + "|" + svo.getCustomerTypeId() + " | " + svo.getExcludeTypeId());
 
 		return sql.toString();
 	}
