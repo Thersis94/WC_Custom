@@ -78,28 +78,27 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		pc.setDBConnection(dbConn);
 		pc.setAttributes(attributes);
 
-		// retrieve the product catalog from the DB
+		// retrieve the product catalog from the DB, pruned by prodRootNode
 		String[] tokens = pc.separateIds((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		mod.addCacheGroup(tokens[0]); //the catalogId
 		String prodRootNode = tokens[1];
-		Tree prodTree = pc.loadCatalog(tokens[0], null, true, req);
+		Tree prodTree = pc.loadCatalog(tokens[0], prodRootNode, true, req);
    		
-		// retrieve the procedure catalog from the DB
+		// retrieve the procedure catalog from the DB, pruned by procRootNode
    		tokens = pc.separateIds((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		mod.addCacheGroup(tokens[0]); //the catalogId
 		String procRootNode = tokens[1];
 		//the merge method will put this onto the Map for us...
-		Tree procTree = pc.loadCatalog(tokens[0], null, true, req);
+		Tree procTree = pc.loadCatalog(tokens[0], procRootNode, true, req);
 
 		String attributeId = "DS_PROC_TABS_PRODUCTS";
 		if (site.getOrganizationId().indexOf("_EMEA") > -1)
 			attributeId = "DS_PROC_TABS_PRODUCTS_EMEA";
-		
    		//merge products into the procedures they're assigned to
    		procTree = mergeProductsIntoProcedures(prodTree, procTree, attributeId);
-   		
-   		catalogs.put("procedures", new ProductCategoryContainer(pc.pruneCatalog(procTree, procRootNode)));
-   		catalogs.put("products", new ProductCategoryContainer(pc.pruneCatalog(prodTree, prodRootNode)));
+
+   		catalogs.put("procedures", new ProductCategoryContainer(procTree));
+   		catalogs.put("products", new ProductCategoryContainer(prodTree));
    		
    		
         //set catalogs/data onto the original module VO.
@@ -115,7 +114,6 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		List<Node> procsList = procTree.preorderList(true);
 		List<Node> prodsList = prodTree.preorderList(true);
 		List<String> completedProcs = new ArrayList<>();
-//		log.debug("procs =" + procsList.size());
 		
 		//turn the Products Collection into a Map we can grab-at easily using productId
 		Map<String, Node> products = new HashMap<>();
@@ -130,26 +128,26 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		//loop through the Procedures; only caring about the "product"-level nodes (not categories)
 		for (Node n : procsList) {
 			ProductCategoryVO vo = (ProductCategoryVO) n.getUserObject();
-			if (vo == null || vo.getProducts() == null || vo.getProducts().size() == 0) continue;
-			if (vo.getUrlAlias() == null || vo.getUrlAlias().length() == 0)	continue;
-			
+			if (vo == null || vo.getProducts() == null || vo.getProducts().isEmpty()) continue;
+			if (StringUtil.isEmpty(vo.getUrlAlias())) continue;
+
 			// After we complete the list it will be pruned and all the child parent relationships will be re-examined.
 			// If the same procedure has products assosiated with it in multiple branches we will end up with
 			// duplicates of every product for the procedure showing up on the site.
 			if (completedProcs.contains(n.getNodeId())) continue;
-			
+
 			//load the Procedure and it's attribute container
 			ProductVO proc = vo.getProducts().get(0);
+
 			ProductAttributeContainer attrs = proc.getAttributes();
 			if (attrs == null) continue; //no attributes whatsoever!
 			attrs.setCurrentAttributeId(attributeId);
-			Node attrNode = (Node) attrs.getCurrent();
+			Node attrNode = attrs.getCurrent();
 			if (attrNode == null) continue; //no products to merge for this one.
 			ProductAttributeVO attrib = (ProductAttributeVO) attrNode.getUserObject();
-			
+
 			//for each product bound to this procedure, tie a copy of that product to the Procedures Tree
 			String[] ids = StringUtil.checkVal(attrib.getValueText()).split(",");
-			//log.debug(ids);
 			for (String productId : ids) {
 				Node prodVo = products.get(productId);
 				if (prodVo == null) continue; //product no longer exists, or possibly inactive
@@ -166,16 +164,13 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 				if (prodPar != null) {
 					ProductCategoryVO parCatVo = (ProductCategoryVO) prodPar.getUserObject();
 					//if the parent has no URL it's probably a sub-category.  iterate up and grab it's parent (the Division!)
-					log.debug("found url " + parCatVo.getUrlAlias() + " for prod=" + prodVo.getNodeName());
-					if (parCatVo.getUrlAlias() == null || parCatVo.getUrlAlias().length() == 0) {
+					if (StringUtil.isEmpty(parCatVo.getUrlAlias())) {
 						prodPar = products.get(prodPar.getParentId());
 						parCatVo = (ProductCategoryVO) prodPar.getUserObject();
-						log.debug("found supl url " + parCatVo.getUrlAlias() + " for prod=" + prodVo.getNodeName());
 					}
-					if (parCatVo.getUrlAlias() == null || parCatVo.getUrlAlias().length() == 0) {
+					if (StringUtil.isEmpty(parCatVo.getUrlAlias())) {
 						prodPar = products.get(prodPar.getParentId());
 						parCatVo = (ProductCategoryVO) prodPar.getUserObject();
-						log.debug("found supl3 url " + parCatVo.getUrlAlias() + " for prod=" + prodVo.getNodeName());
 					}
 					catVo.setCategoryUrl(parCatVo.getUrlAlias()); //placeholder for the Division URL this product belongs in
 					
@@ -193,7 +188,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 			//if the node has no childen we don't want to display it
 			//set a name we can use in the JSPs to filter on, without removing it from the Tree which breaks things
 			//we can't key off the presence of children, because valid products (@lowest level) will have no children either.
-			if (n.getChildren() == null || n.getChildren().size() == 0)
+			if (n.getChildren() == null || n.getChildren().isEmpty())
 				n.setParentName("nodisplay");
 			
 			// Add this procedure to the list of procedures we have set up the products for
