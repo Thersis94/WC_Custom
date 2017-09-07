@@ -491,6 +491,7 @@ public class BiomedSupportEmailUtil {
 			//Build Config
 			Map<String, Object> config = getBaseConfig(t);
 			config.put("ticketDesc", StringUtil.checkVal(t.getActivities().get(0).getDescText()));
+			config.put("activityDesc", StringUtil.checkVal(t.getActivities().get(t.getActivities().size()-1).getDescText()));
 			
 			for (TicketAttachmentVO a : t.getAttachments()) {
 				config.put(AttachmentManager.ATTACH_PREFIX + a.getFileNm(), a.getFileData());
@@ -510,6 +511,7 @@ public class BiomedSupportEmailUtil {
 	public void sendEmail(TicketActivityVO act) throws ActionException {
 		TicketEmailVO t = loadTicket(act.getTicketId(), act.getActivityId());
 		t.setAttachments(act.getAttachments());
+		t.addActivity(act);
 		try {
 			sendEmails(t, ChangeType.ACTIVITY);
 		} catch (EncryptionException e) {
