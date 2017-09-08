@@ -495,17 +495,19 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	protected void publishScenario(ActionRequest req) throws ActionException {
 		log.debug("Publishing Scenario Overlay Records");
 
-		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"));
-		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
-		String countryType = StringUtil.checkVal(req.getParameter("pubCountryType"));
-		int year = Convert.formatInteger(StringUtil.checkVal(req.getParameter("calendarYear")));
+		FinancialDashVO dashVO = new FinancialDashVO();
+		dashVO.setSectionId(StringUtil.checkVal(req.getParameter("sectionId")));
+		dashVO.setScenarioId(StringUtil.checkVal(req.getParameter("scenarioId")));
+		dashVO.addCountryType(StringUtil.checkVal(req.getParameter("pubCountryType")));
+		dashVO.setCurrentYear(Convert.formatInteger(req.getParameter("calendarYear")));
+		dashVO.setCompanyId(StringUtil.checkVal(req.getParameter("companyId")));
 		
 		// We pass scenarioId to the base data for efficiency, to get only the related records
 		// that are also in the scenario, rather than getting every record.
-		Map<String, FinancialDashRevenueVO> baseData = getBaseData(sectionId, countryType, year, scenarioId);
-		Map<String, FinancialDashScenarioOverlayVO> overlayData = getScenarioData(sectionId, countryType, year, scenarioId);
+		Map<String, FinancialDashRevenueVO> baseData = getBaseData(dashVO);
+		Map<String, FinancialDashScenarioOverlayVO> overlayData = getScenarioData(dashVO.getScenarioId(), dashVO);
 		
-		updateAllScenarios(baseData, overlayData, sectionId, countryType, year);
+		updateAllScenarios(baseData, overlayData, dashVO);
 		updateBaseData(baseData, overlayData);
 		
 		// Handle option to set the section current to the specified value while publishing
@@ -517,18 +519,14 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	/**
 	 * Gets the existing overlay revenue data for a specific scenario.
 	 * 
-	 * @param sectionId
-	 * @param countryType
-	 * @param year
-	 * @param scenarioId
+	 * @param dashVO
 	 * @return
 	 */
-	protected Map<String, FinancialDashScenarioOverlayVO> getScenarioData(String sectionId, String countryType, int year, String scenarioId) {
+	protected Map<String, FinancialDashScenarioOverlayVO> getScenarioData(String sectionId, FinancialDashVO dashVO) {
 		Map<String, FinancialDashScenarioOverlayVO> overlayData = new HashMap<>();
 		
-		String sql = getSectionOverlaySql();
 		List<Object> params = new ArrayList<>();
-		params.addAll(Arrays.asList(scenarioId, year, countryType, sectionId));
+		String sql = getSectionOverlaySql(sectionId, dashVO, params);
 		
 		List<Object> overlays = dbp.executeSelect(sql, params, new FinancialDashScenarioOverlayVO());
 		
@@ -544,15 +542,30 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * Returns the sql necessary for retrieving all overlay records
 	 * for a given scenario.
 	 * 
+	 * @param scenarioId - that is being requested, can be different from what is on the dashVO
+	 * @param dashVO - dashboard options to use in the record selection
+	 * @param params - params for db processor
 	 * @return
 	 */
-	private String getSectionOverlaySql() {
+	private String getSectionOverlaySql(String scenarioId, FinancialDashVO dashVO, List<Object> params) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(300);
 		
 		sql.append("select so.* from ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY so ");
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_FD_REVENUE r on so.REVENUE_ID = r.REVENUE_ID ");
-		sql.append("where so.SCENARIO_ID = ? and so.YEAR_NO = ? and r.REGION_CD = ? and r.SECTION_ID = ? ");
+		sql.append("where so.SCENARIO_ID = ? and so.YEAR_NO = ? ");
+		params.addAll(Arrays.asList(scenarioId, dashVO.getCurrentYear()));
+		
+		// Filter by company id when requested, otherwise by section id
+		if (!StringUtil.isEmpty(dashVO.getCompanyId())) {
+			sql.append("and so.company_id = ? ");
+			params.add(dashVO.getCompanyId());
+		} else {
+			sql.append("and r.section_id = ? ");
+			params.add(dashVO.getSectionId());
+		}
+		
+		sql.append("and ").append(getRegionSql(dashVO, params));
 		
 		return sql.toString();
 	}
@@ -589,9 +602,10 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * 
 	 * @param baseData
 	 * @param overlayData
-	 * @throws ActionException 
+	 * @param dashVO
+	 * @throws ActionException
 	 */
-	protected void updateAllScenarios(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData, String sectionId, String countryType, int year) throws ActionException {
+	protected void updateAllScenarios(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData, FinancialDashVO dashVO) throws ActionException {
 		// Get the overlay's scenario id so we can exclude it. It doesn't need to be updated
 		// since this is the one we're updating from.
 		Entry<String, FinancialDashScenarioOverlayVO> entry = overlayData.entrySet().iterator().next();
@@ -609,7 +623,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 				continue;
 			}
 			
-			Map<String, FinancialDashScenarioOverlayVO> scenarioData = getScenarioData(sectionId, countryType, year, scenario.getScenarioId());
+			Map<String, FinancialDashScenarioOverlayVO> scenarioData = getScenarioData(scenario.getScenarioId(), dashVO);
 			updateScenario(baseData, overlayData, scenarioData);
 		}
 	}
