@@ -1,8 +1,5 @@
 package com.biomed.smarttrak.admin;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
@@ -12,15 +9,12 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.DirectoryParser;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.content.DocumentVO;
-import com.smt.sitebuilder.action.content.ProfileDocumentBinaryHandler;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
 import com.smt.sitebuilder.action.support.SupportTicketAction;
 import com.smt.sitebuilder.action.support.SupportTicketActivityAction;
 import com.smt.sitebuilder.action.support.SupportTicketAttachmentAction;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
 import com.smt.sitebuilder.action.support.TicketAttachmentVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -56,53 +50,12 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 		if (req.hasParameter("fileName")) {
 			req.setParameter("moduleTypeId", "BMG_TICKET");
 			addAttachment(req);
-			addToItem(item, req);
+			TicketAttachmentVO attach = new TicketAttachmentVO();
+			attach.setActionId(req.getParameter(ProfileDocumentAction.PROFILE_DOC_ID));
+			item.addAttachment(attach);
 		}
 		
 		super.buildCallback(req, item);
-	}
-	
-	
-	/**
-	 * Get the file data in byte array format for the attachment and add it to the ticket
-	 * @param item
-	 * @param req
-	 * @throws ActionException
-	 */
-	private void addToItem(TicketActivityVO item, ActionRequest req) throws ActionException {
-		ProfileDocumentAction pda = new ProfileDocumentAction();
-		pda.setAttributes(attributes);
-		pda.setDBConnection(dbConn);
-		pda.setActionInit(actionInit);
-		DocumentVO doc = pda.getDocumentByProfileDocumentId(req.getParameter(ProfileDocumentAction.PROFILE_DOC_ID));
-		try {
-			ProfileDocumentBinaryHandler handler = new ProfileDocumentBinaryHandler(doc.getFilePathUrl(), ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId(), "", dbConn, attributes, req);
-			item.addAttachment(createTicketAttachment(handler.getFile(), doc));
-		} catch (Exception e) {
-			log.error("Failed to get file data", e);
-		}
-	}
-	
-	
-	/**
-	 * Create a TicketAttachmentVO from the supplied file and document vo
-	 * @param f
-	 * @param doc
-	 * @return
-	 * @throws IOException
-	 */
-	private TicketAttachmentVO createTicketAttachment(File f, DocumentVO doc) throws IOException {
-		byte[] b = new byte[(int)f.length()];
-		try (FileInputStream fis = new FileInputStream(f)) {
-			fis.read(b); 
-			fis.close();
-			doc.setDocument(b);
-			
-			TicketAttachmentVO a = new TicketAttachmentVO();
-			a.setFileData(b);
-			a.setFileNm(doc.getFileName());
-			return a;
-		}
 	}
 	
 
