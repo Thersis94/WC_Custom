@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.fd;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -28,7 +29,9 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.fd.FinancialDashVO.CountryType;
 import com.biomed.smarttrak.util.SmarttrakTree;
+import com.siliconmtn.data.Node;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /*****************************************************************************
@@ -56,7 +59,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
     private Map<CellStyleName, CellStyle> cellStyles;
     private String sortField;
     private int sortOrder;
-    SmarttrakTree sections;
+    private SmarttrakTree sections;
 
     public FinancialDashReportVO() {
         super();
@@ -87,8 +90,14 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		
 		// Add the rows
 		addTitleRow();
-		addHeaderRow();
-		addDataRows();
+		
+		if (!StringUtil.isEmpty(dash.getCompanyId())) {
+			// Company view groups data by parent markets
+			addDataRowGroups();
+		} else {
+			// Market view lists sub-markets or companies
+			addDataRows(dash.getRows());
+		}
 		
 		// Format so everthing can be seen when opened
 		for (Cell cell : row)
@@ -189,40 +198,170 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * Adds the data rows of the Excel report.
+	 * Adds the group title rows to the excel report
+	 */
+	protected void addGroupTitleRow(String marketName) {
+		row = sheet.createRow(rowCount++);
+		row.setHeightInPoints((short) 20);
+		
+		Cell cell = row.createCell(0);
+		cell.setCellType(Cell.CELL_TYPE_STRING);
+		cell.setCellValue(marketName);
+		cell.setCellStyle(cellStyles.get(CellStyleName.TITLE));
+
+		// Merge across additional cells
+		int range = 5;
+		if(dash.getColHeaders().getDisplayType() == DisplayType.ALL) { range++; }
+		sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,0,range));
+	}
+	
+	/**
+	 * Returns the currency format used by the report
 	 * 
-	 * @param rows
 	 * @return
 	 */
-	protected void addDataRows() {
+	protected NumberFormat getCurrencyFormat() {
 		// All values are in US dollars
 		Locale usLocale = new Locale.Builder().setLanguage("en").setRegion("US").build();
 		NumberFormat curFormat = NumberFormat.getCurrencyInstance(usLocale);
 		curFormat.setMaximumFractionDigits(0);
-
+		
+		return curFormat;
+	}
+	
+	/**
+	 * Returns the percentage format used by the report
+	 * 
+	 * @return
+	 */
+	protected NumberFormat getPercentFormat() {
 		NumberFormat pctFormat = NumberFormat.getPercentInstance();
 		pctFormat.setMinimumFractionDigits(1);
 		
+		return pctFormat;
+	}
+	
+	/**
+	 * Adds the data rows of the Excel report.
+	 * 
+	 * @param dataRows
+	 * @return
+	 */
+	protected Map<String, Integer> addDataRows(List<FinancialDashDataRowVO> dataRows) {
+		// Adds the header for the rows in this group
+		addHeaderRow();
+		
+		// Get the required formatters
+		NumberFormat curFormat = getCurrencyFormat();
+		NumberFormat pctFormat = getPercentFormat();
+		
 		// Setup to increment totals for the totals row
-		Map<String, Integer> totals = initTotals(dash.getRows().get(0));
+		Map<String, Integer> totals = initTotals(dataRows.get(0));
 		
 		// Sort according to specified sort order
 		FinancialDashDataRowComparator comparator = new FinancialDashDataRowComparator(sortField, sortOrder, sections, dash.getTableType());
-		Collections.sort(dash.getRows(), comparator);
+		Collections.sort(dataRows, comparator);
 		
 		int i = 0;
-		for (FinancialDashDataRowVO fdRow : dash.getRows()) {
+		for (FinancialDashDataRowVO fdRow : dataRows) {
 			addExcelRowsFromFdRow(fdRow, totals, curFormat, pctFormat, i);
 			i++;
 		}
 		
 		// Generate the totals row
+		addTotalRow(totals);
+		
+		// Return the totals when needed for group summaries
+		return totals;
+	}
+	
+	/**
+	 * Adds a totals row to the report
+	 * 
+	 * @param totals
+	 */
+	protected void addTotalRow(Map<String, Integer> totals) {
 		Map<String, Object> totalRow = new HashMap<>();
 		totalRow.put(NAME, "Total");
+		
 		for (Entry<String, Integer> entry : totals.entrySet()) {
 			totalRow.put(entry.getKey(), entry.getValue());
 		}
-		addDollarRow(totalRow, curFormat, -1);
+		
+		addDollarRow(totalRow, getCurrencyFormat(), -1);
+	}
+	
+	/**
+	 * Groups data rows in the report based on market/section hierarchy
+	 */
+	protected void addDataRowGroups() {
+		// Process the groups of data for the report
+		Map<String, List<FinancialDashDataRowVO>> parentRows = new LinkedHashMap<>();
+		Map<String, List<Node>> parentGroups = new LinkedHashMap<>();
+		setupReportGroups(parentRows, parentGroups);
+		
+		// Add each upper level group of data to the report
+		for (Map.Entry<String, List<Node>> entry : parentGroups.entrySet()) {
+			Map<String, Integer> groupTotals = new LinkedHashMap<>();
+			Node groupNode = sections.findNode(entry.getKey());
+			addGroupTitleRow(groupNode.getNodeName());
+			
+			// Add every parent market
+			for (Node parentNode : entry.getValue()) {
+				addGroupTitleRow(parentNode.getNodeName());
+				
+				// Add the rows & generate the group totals
+				List<FinancialDashDataRowVO> rows = parentRows.get(parentNode.getNodeId());
+				Map<String, Integer> parentTotals = addDataRows(rows);
+				for (Entry<String, Integer> total : parentTotals.entrySet()) {
+					int groupTotal = Convert.formatInteger(groupTotals.get(total.getKey()));
+					groupTotals.put(total.getKey(), groupTotal + total.getValue());
+				}
+			}
+			
+			// Generate the totals row
+			addTotalRow(groupTotals);
+		}
+	}
+	
+	/**
+	 * Groups the raw rows of data into rows by market and further by an uppper level market
+	 * 
+	 * @param parentRows
+	 * @param parentGroups
+	 */
+	private void setupReportGroups(Map<String, List<FinancialDashDataRowVO>> parentRows, Map<String, List<Node>> parentGroups) {
+		// Group all rows by their parent in the hierarchy
+		for (FinancialDashDataRowVO fdRow : dash.getRows()) {
+			Node node = sections.findNode(fdRow.getPrimaryKey());
+			
+			List<FinancialDashDataRowVO> rows = parentRows.get(node.getParentId());
+			if (rows == null) {
+				rows = new ArrayList<>();
+				parentRows.put(node.getParentId(), rows);
+			}
+			
+			rows.add(fdRow);
+		}
+		
+		// Group all found parents by their corresponding third level in the hierarchy,
+		// which is where all parents are summarized in the report.
+		for (Map.Entry<String, List<FinancialDashDataRowVO>> entry : parentRows.entrySet()) {
+			Node parentNode = sections.findNode(entry.getKey());
+			
+			Node groupNode = sections.findNode(parentNode.getNodeId());
+			while (groupNode.getDepthLevel() > 3) {
+				groupNode = sections.findNode(groupNode.getParentId());
+			}
+			
+			List<Node> nodes = parentGroups.get(groupNode.getNodeId());
+			if (nodes == null) {
+				nodes = new ArrayList<>();
+				parentGroups.put(groupNode.getNodeId(), nodes);
+			}
+			
+			nodes.add(parentNode);
+		}
 	}
 	
 	/**
