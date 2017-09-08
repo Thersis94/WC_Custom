@@ -304,7 +304,7 @@ public class BiomedSupportEmailUtil {
 		//Get Admins
 		List<AccountVO> admins = getAdminEmails();
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.TICKET);
 		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
 			//Set Ticket Links.  These vary based on who is getting them.
@@ -341,7 +341,7 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected void sendAssignedEmails(TicketEmailVO t) {
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.ASSIGNMENT);
 		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
 			//Set Ticket Links.  These vary based on who is getting them.
@@ -371,7 +371,7 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected void sendStatusEmails(TicketEmailVO t) {
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.STATUS);
 		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
 			//Set Ticket Links.  These vary based on who is getting them.
@@ -410,10 +410,11 @@ public class BiomedSupportEmailUtil {
 	 * Helper method that builds normal emails for Assignee and Reporter.
 	 * @param campaignInstanceId
 	 * @param t
+	 * @param activity 
 	 * @param config
 	 * @return
 	 */
-	protected Map<EmailType, Map<String, String>> getBaseRecipients(TicketEmailVO t) {
+	protected Map<EmailType, Map<String, String>> getBaseRecipients(TicketEmailVO t, ChangeType activity) {
 		Map<EmailType, Map<String, String>> recipients = new EnumMap<>(EmailType.class);
 		Map<String, String> admins = new HashMap<>();
 		Map<String, String> pub = new HashMap<>();
@@ -423,8 +424,8 @@ public class BiomedSupportEmailUtil {
 			admins.put(t.getAssignedId(), t.getAssignedEmail());
 		}
 
-		//Add Reporter
-		if(!StringUtil.isEmpty(t.getReporterEmail())) {
+		//Add Reporter unless this is an assignment email
+		if(!StringUtil.isEmpty(t.getReporterEmail()) && activity != ChangeType.ASSIGNMENT) {
 			pub.put(t.getReporterId(), t.getReporterEmail());
 		}
 
@@ -483,7 +484,7 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected void sendActivityEmails(TicketEmailVO t) {
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.ACTIVITY);
 		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
 			//Set Ticket Links.  These vary based on who is getting them.
