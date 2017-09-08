@@ -442,7 +442,14 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		sql.append("and r.YEAR_NO = ? ");
 		
 		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
+
+		// Handle edit mode specific columns in the group by
 		if (dash.getEditMode()) {
+			DisplayType dt = dash.getColHeaders().getDisplayType();
+			for (int i = 1; i <= getDataYears(dt, dash.getCurrentYear()); i++) {
+				sql.append(", REVENUE_ID_").append(i-1).append(" ");
+			}
+			
 			if (TableType.COMPANY == tt) {
 				sql.append(", r.COMPANY_ID, r.REGION_CD ");
 			} else {
@@ -485,13 +492,24 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		List<String> companyIds = Arrays.asList(req.getParameterValues("companyId[]"));
 		List<CountryType> countryTypes = dashVO.getCountryTypes();
 		
-		// Add the records
+		// Get all of the years to iterate over
+		FinancialDashColumnSet columnSet = new FinancialDashColumnSet(req);
+		int startYear = columnSet.getCalendarYear();
+		int endYear = startYear - (getDataYears(columnSet.getDisplayType(), columnSet.getCalendarYear()) - 1); // Only need to add for what is visible in the dashboard
+		
+		// Add the records for every company selected
 		for (String companyId : companyIds) {
 			revenueVO.setCompanyId(companyId);
 			
+			// Add for every region selected
 			for (CountryType countryType : countryTypes) {
 				revenueVO.setRegionCd(countryType.toString());
-				addRevenueRecord(revenueVO);
+				
+				// Add for every year visible in the view
+				for (int year = startYear; year > endYear; year--) {
+					revenueVO.setYearNo(year);
+					addRevenueRecord(revenueVO);
+				}
 			}
 		}
 	}
@@ -574,11 +592,11 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @param dashVO
 	 * @return
 	 */
-	protected Map<String, FinancialDashRevenueVO> getBaseData(FinancialDashVO dashVO) {
+	protected Map<String, FinancialDashRevenueVO> getBaseData(FinancialDashVO dashVO, int yearCnt) {
 		Map<String, FinancialDashRevenueVO> baseData = new HashMap<>();
 		
 		List<Object> params = new ArrayList<>();
-		String sql = getRevenueSql(dashVO, params);
+		String sql = getRevenueSql(dashVO, yearCnt, params);
 		
 		List<?> revenueRecords = dbp.executeSelect(sql, params, new FinancialDashRevenueVO());
 		
@@ -597,14 +615,17 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @param params - params for db processor
 	 * @return
 	 */
-	private String getRevenueSql(FinancialDashVO dashVO, List<Object> params) {
+	private String getRevenueSql(FinancialDashVO dashVO, int yearCnt, List<Object> params) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(300);
 		
 		sql.append("select r.* from ").append(custom).append("BIOMEDGPS_FD_REVENUE r ");
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY so on r.REVENUE_ID = so.REVENUE_ID ");
-		sql.append("where r.YEAR_NO = ? and so.SCENARIO_ID = ? ");
-		params.addAll(Arrays.asList(dashVO.getCurrentYear(), dashVO.getScenarioId()));
+		sql.append("where so.SCENARIO_ID = ? ");
+		params.add(dashVO.getScenarioId());
+		
+		// Make sure to only get the years shown in the dashboard
+		sql.append("and ").append(getYearSql(dashVO, yearCnt, params, "r"));
 		
 		// If company id is passed, user is looking at a company, not a section
 		if (!StringUtil.isEmpty(dashVO.getCompanyId())) {
@@ -616,6 +637,27 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		}
 		
 		sql.append("and ").append(getRegionSql(dashVO, params));
+		
+		return sql.toString();
+	}
+	
+	/**
+	 * Returns sql to filter by the selected year(s)
+	 * 
+	 * @param dashVO
+	 * @param yearCnt
+	 * @param params
+	 * @param alias
+	 * @return
+	 */
+	protected String getYearSql(FinancialDashVO dashVO, int yearCnt, List<Object> params, String alias) {
+		StringBuilder sql = new StringBuilder(25);
+		
+		int year = dashVO.getColHeaders().getCalendarYear();
+		sql.append(alias).append(".YEAR_NO in (").append(DBUtil.preparedStatmentQuestion(yearCnt)).append(") ");
+		for (int i = 0; i < yearCnt; i++) {
+			params.add(year--);
+		}
 		
 		return sql.toString();
 	}
