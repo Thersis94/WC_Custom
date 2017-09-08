@@ -68,12 +68,12 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 				List<Node> baseList = branch.getChildren();
 				branch.setChildren(new ArrayList<Node>());
 				
-				List<Node> children = new ArrayList<Node>();
+				List<Node> children = new ArrayList<>();
 				Tree.createPreorder(baseList, children);
 				
 				//purge any references to other Nodes since the list has been flattened.
 				//This will get rebuild below in "new Tree()"
-				for (Node n : children) n.setChildren(new ArrayList<Node>());
+				for (Node n : children) n.setChildren(new ArrayList<>());
 				
 				//build a new Tree that reflects our newNode as the root, and all it's children
 				t = new Tree(children, branch);
@@ -103,12 +103,12 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 			List<Node> baseList = branch.getChildren();
 			branch.setChildren(new ArrayList<Node>());
 			
-			List<Node> children = new ArrayList<Node>();
+			List<Node> children = new ArrayList<>();
 			Tree.createPreorder(baseList, children);
 			
 			//purge any references to other Nodes since the list has been flattened.
 			//This will get rebuild below in "new Tree()"
-			for (Node n : children) n.setChildren(new ArrayList<Node>());
+			for (Node n : children) n.setChildren(new ArrayList<>());
 			
 			//build a new Tree that reflects our newNode as the root, and all it's children
 			t = new Tree(children, branch);
@@ -252,6 +252,7 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
+		// unused
 	}
 
 	/* (non-Javadoc)
@@ -259,6 +260,7 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
+		// unused
 	}
 
 	/* (non-Javadoc)
@@ -266,6 +268,7 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		// unused
 	}
 
 	/* (non-Javadoc)
@@ -273,6 +276,7 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		// unused
 	}
 
 	/* (non-Javadoc)
@@ -280,6 +284,7 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
+		// unused
 	}
 
 	/* (non-Javadoc)
@@ -287,5 +292,6 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	 */
 	@Override
 	public void copy(ActionRequest req) throws ActionException {
+		// unused
 	}
 }
