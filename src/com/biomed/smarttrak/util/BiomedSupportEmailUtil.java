@@ -25,6 +25,7 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.emailcampaign.embed.AttachmentManager;
+import com.smt.sitebuilder.action.emailcampaign.embed.AttachmentManager.AttachmentLoader;
 import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
 import com.smt.sitebuilder.action.support.TicketAttachmentVO;
@@ -491,9 +492,11 @@ public class BiomedSupportEmailUtil {
 			//Build Config
 			Map<String, Object> config = getBaseConfig(t);
 			config.put("ticketDesc", StringUtil.checkVal(t.getActivities().get(0).getDescText()));
+			config.put("activityDesc", StringUtil.checkVal(t.getActivities().get(t.getActivities().size()-1).getDescText()));
 			
+			AttachmentManager am = new AttachmentManager(dbConn, attributes);
 			for (TicketAttachmentVO a : t.getAttachments()) {
-				config.put(AttachmentManager.ATTACH_PREFIX + a.getFileNm(), a.getFileData());
+				am.addFileFromId(config, AttachmentLoader.PROFILE_DOCUMENT, a.getActionId());
 			}
 
 			//Get Emails
@@ -510,6 +513,7 @@ public class BiomedSupportEmailUtil {
 	public void sendEmail(TicketActivityVO act) throws ActionException {
 		TicketEmailVO t = loadTicket(act.getTicketId(), act.getActivityId());
 		t.setAttachments(act.getAttachments());
+		t.addActivity(act);
 		try {
 			sendEmails(t, ChangeType.ACTIVITY);
 		} catch (EncryptionException e) {
