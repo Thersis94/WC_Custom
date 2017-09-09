@@ -2,6 +2,7 @@ package com.depuysynthes.action;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +22,7 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -101,6 +102,8 @@ public class MIRSubmissionAction extends SimpleActionAdapter {
 			for (SolrDocument solrDoc : solrResponse.getResultDocuments())
 				data.add(new MIRProductVO(solrDoc));
 		}
+		log.debug("data=" + data);
+		Collections.sort(data);
 		putModuleData(data);
 	}
 
@@ -116,45 +119,16 @@ public class MIRSubmissionAction extends SimpleActionAdapter {
 		log.debug("submission: " + vo + "|files: " + req.getFiles().size());
 
 		//turn the vo into an email
-		EmailMessageVO msg = createEmail(vo, req);
+		EmailMessageVO msg = new MIREmailMessageVO(vo, req, getAttributes());
 
 		//send the email
 		new MessageSender(getAttributes(), getDBConnection()).sendMessage(msg);
-	}
-
-
-	/**
-	 * creates the email from the VO of data submitted.
-	 * This involves creating some type of report
-	 * @param vo
-	 * @param req
-	 * @return
-	 */
-	private EmailMessageVO createEmail(MIRSubmissionVO vo, ActionRequest req) {
-		EmailMessageVO msg = new EmailMessageVO();
-
-		//attach any uploaded files:
-		if (req.hasFiles()) {
-			for (FilePartDataBean file : req.getFiles())
-				msg.addAttachment(file.getFileName(), file.getFileData());
-		}
-
-		//determine recipient
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		msg.setSubject("MIR Submission");
-		msg.setInstance((String)getAttribute(AdminConstants.INSTANCE_NM));
-		try {
-			msg.addRecipient("");
-			msg.setFrom(site.getMainEmail());
-		} catch (InvalidDataException e) {
-			log.error("could not set recipient emails", e);
-		}
-
-		//build the report and attach it to the email
-
-
-		//return the email, ready to send
-		return msg;
+		
+		//redirect the user
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		StringBuilder url = new StringBuilder(150);
+		url.append(page.getRequestURI()).append("?complete=1");
+		sendRedirect(url.toString(), null, req);
 	}
 
 
@@ -164,6 +138,9 @@ public class MIRSubmissionAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
+		//save the widget
+		super.update(req);
+
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		int saveCnt = 0;
 
@@ -217,7 +194,7 @@ public class MIRSubmissionAction extends SimpleActionAdapter {
 				MIRProductVO vo = (MIRProductVO) o;
 
 				//weed out empty rows in the Excel file
-				if (vo.getName() == null) continue;
+				if (!vo.hasData()) continue;
 
 				vo.setDocumentId(uuid.getUUID());
 				vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);

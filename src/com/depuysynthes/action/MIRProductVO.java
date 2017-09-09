@@ -1,5 +1,9 @@
 package com.depuysynthes.action;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.solr.common.SolrDocument;
 
 import com.siliconmtn.annotations.DataType;
@@ -21,18 +25,14 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  ****************************************************************************/
 public class MIRProductVO extends SolrDocumentVO implements Comparable<MIRProductVO> {
 
-	private String name;
-	private String title;
-	private String email;
-	private String office;
-	private String mobile;
-	private String product;
+	private String[] terms;
 
 	public MIRProductVO() {
 		super(MIRSubmissionAction.MIR_INDEX_TYPE);
+		terms = new String[7];
 	}
 
-	
+
 	/**
 	 * Builder VO, used when retrieving from Solr to populate a list of beans
 	 * we can sort correctly.
@@ -40,52 +40,75 @@ public class MIRProductVO extends SolrDocumentVO implements Comparable<MIRProduc
 	 */
 	public MIRProductVO(SolrDocument sd) {
 		this();
-		setName(StringUtil.checkVal(sd.get("rep_first_nm_s")));
-		setTitle(StringUtil.checkVal(sd.get("rep_title_s")));
-		setEmail(StringUtil.checkVal(sd.get("rep_email_s")));
-		setOffice(StringUtil.checkVal(sd.get("rep_phone_s")));
-		setMobile(StringUtil.checkVal(sd.get("mgr_phone_s")));
-		setProduct(StringUtil.checkVal(sd.get(SearchDocumentHandler.TITLE)));
-	}
-	
-
-	/**********************************************************
-	 * 
-	 * We're intentionally re-using the dynamic fields also used by SalesConsultantVO
-	 * 
-	 **********************************************************/
-
-
-	@SolrField(name="rep_first_nm_s")
-	public String getName() {
-		return name;
+		parseHierarchies(sd);
 	}
 
-	@SolrField(name="rep_title_s")
-	public String getTitle() {
-		return title;
+
+	/**
+	 * @param sd
+	 */
+	private void parseHierarchies(SolrDocument sd) {
+		Collection<Object> hierarchies = sd.getFieldValues(SearchDocumentHandler.HIERARCHY);
+		if (hierarchies == null || hierarchies.isEmpty()) return;
+
+		for (Object o : hierarchies) { //note: this list is only ever one entry deep - otherwise the structure of this bean would be a bust.
+			if (o == null) continue;
+
+			terms = ((String)o).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+
+			setTitle(terms[terms.length -1]);
+		}
 	}
 
-	@SolrField(name="rep_email_s")
-	public String getEmail() {
-		return StringUtil.isValidEmail(email) ? email : "";
+
+	/**
+	 * Flattens the String[] into a hierarchy, adds it to the superclass' list, then returns the superclass' list.
+	 * @return
+	 */
+	@SolrField(name=SearchDocumentHandler.HIERARCHY)
+	@Override
+	public List<String> getHierarchies() {
+		//ensure the list is only built once.
+		if (!super.getHierarchies().isEmpty()) 
+			return super.getHierarchies();
+
+		StringBuilder sb = new StringBuilder(100);
+		for (String s : terms) {
+			if (StringUtil.isEmpty(s)) continue;
+			if (sb.length() > 0) sb.append(SearchDocumentHandler.HIERARCHY_DELIMITER);
+			sb.append(s);
+		}
+		super.addHierarchies(sb.toString());
+
+		return super.getHierarchies();
 	}
 
-	@SolrField(name="rep_phone_s")
-	public String getOffice() {
-		return StringUtil.removeNonNumeric(office);
-	}
-
-	@SolrField(name="mgr_phone_s")
-	public String getMobile() {
-		return StringUtil.removeNonNumeric(mobile);
-	}
 
 	@SolrField(name=SearchDocumentHandler.TITLE)
-	public String getProduct() {
-		return product;
+	@Override
+	public String getTitle() {
+		//return the first value from the bottom->up.  This is the product name
+		for (int x=terms.length-1; x > -1 ; x--) {
+			if (!StringUtil.isEmpty(terms[x])) {
+				return terms[x];
+			}
+		}
+		return super.getTitle();
 	}
 
+
+	/**
+	 * simple helper to tell the Action we pulled real data out of the Excel file
+	 * @return
+	 */
+	protected boolean hasData() {
+		if (terms == null || terms.length == 0) return false;
+		for (String s : terms) {
+			if (!StringUtil.isEmpty(s)) 
+				return true;
+		}
+		return false;
+	}
 
 
 	/**********************************************************
@@ -94,34 +117,39 @@ public class MIRProductVO extends SolrDocumentVO implements Comparable<MIRProduc
 	 * 
 	 **********************************************************/
 
-	@Importable(name = "Name", type = DataType.STRING)
-	public void setName(String name) {
-		this.name = name;
+	@Importable(name = "Level 1 Term", type = DataType.STRING)
+	public void setTerm1(String t) {
+		terms[0] = t;
 	}
 
-	@Importable(name = "Title", type = DataType.STRING)
-	public void setTitle(String title) {
-		this.title = title;
+	@Importable(name = "Level 2 Term", type = DataType.STRING)
+	public void setTerm2(String t) {
+		terms[1] = t;
 	}
 
-	@Importable(name = "Email", type = DataType.STRING)
-	public void setEmail(String email) {
-		this.email = email;
+	@Importable(name = "Level 3 Term", type = DataType.STRING)
+	public void setTerm3(String t) {
+		terms[2] = t;
 	}
 
-	@Importable(name = "Office", type = DataType.STRING)
-	public void setOffice(String office) {
-		this.office = office;
+	@Importable(name = "Level 4 Term", type = DataType.STRING)
+	public void setTerm4(String t) {
+		terms[3] = t;
 	}
 
-	@Importable(name = "Mobile", type = DataType.STRING)
-	public void setMobile(String mobile) {
-		this.mobile = mobile;
+	@Importable(name = "Level 5 Term", type = DataType.STRING)
+	public void setTerm5(String t) {
+		terms[4] = t;
 	}
 
-	@Importable(name = "Product", type = DataType.STRING)
-	public void setProduct(String product) {
-		this.product = product;
+	@Importable(name = "Level 6 Term", type = DataType.STRING)
+	public void setTerm6(String t) {
+		terms[5] = t;
+	}
+
+	@Importable(name = "Level 7 Term", type = DataType.STRING)
+	public void setTerm7(String t) {
+		terms[6] = t;
 	}
 
 
@@ -129,7 +157,16 @@ public class MIRProductVO extends SolrDocumentVO implements Comparable<MIRProduc
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 */
 	@Override
-	public int compareTo(MIRProductVO vo) {
-		return StringUtil.checkVal(getName()).toLowerCase().compareTo(StringUtil.checkVal(vo.getName()).toLowerCase());
+	public int compareTo(MIRProductVO o) {
+		if (o == null || o.getTerms() == null) return -1;
+		return Arrays.toString(terms).compareTo(Arrays.toString(o.getTerms()));
+	}
+
+
+	/**
+	 * @return
+	 */
+	private String[] getTerms() {
+		return terms;
 	}
 }
