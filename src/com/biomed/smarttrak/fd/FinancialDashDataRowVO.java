@@ -259,11 +259,12 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param val
 	 * @param pctDiff
 	 */
-	public void addColumn(String colId, int val, Double pctDiff) {
+	public void addColumn(String colId, int val, Double pctDiff, String revenueId) {
 		FinancialDashDataColumnVO col = new FinancialDashDataColumnVO();
 		col.setDollarValue(val);
 		col.setPctDiff(pctDiff);
 		col.setColId(colId);
+		col.setRevenueId(revenueId);
 		
 		this.addColumn(colId, col);
 	}
@@ -300,7 +301,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		// gives the year for that column. One row in the returned data could
 		// represent data from more than one year.
 		String columnId = qtr + "-" + (maxYear - yearIdx);
-		addColumn(columnId, dollarValue, pctChange);
+		addColumn(columnId, dollarValue, pctChange, util.getStringVal("REVENUE_ID_" + yearIdx, rs));
 		
 		// Checks for potential delta between overlay and base data 
 		checkOverlayDelta(columnId, qtr, yearIdx, rs);
@@ -401,14 +402,14 @@ public class FinancialDashDataRowVO implements Serializable {
 			}
 			
 			// Each iteration signifies one year earlier
-			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pctChange);
+			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pctChange, null);
 		}
 
 		// Add the last totals column, which has no py
 		int last = totals.size() - 1;
 		Integer cyTotal = totals.get(last);
 		Double pctChange = null;
-		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, pctChange);
+		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, pctChange, null);
 	}
 	
 	/**
