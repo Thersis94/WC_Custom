@@ -80,8 +80,8 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public enum Status {
 		ACTIVE(1,"Active"),
 		INACTIVE(0,"Inactive"),
-		OPEN(-1,"Open Seat"),
-		DEMO(5,"Demo");
+		OPEN(-1,"Open License"),
+		DEMO(5,"Pilot");
 		private int cd;
 		private String label;
 		private Status(int cd, String lbl) {
@@ -217,7 +217,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return the createDate
 	 */
-	@Column(name="create_dt", isAutoGen=true, isReadOnly=true, isInsertOnly=true)
+	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {
 		return createDate;
 	}

@@ -56,8 +56,8 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 	public enum Type {
 		FULL("1","Full Access"),
 		STAFF("2","Staff"),
-		TRIAL("3","Trial"),
-		UPDATE("4", "Updates");
+		TRIAL("3","Pilot"),
+		UPDATE("4", "FastTRAK");
 
 		String id;
 		String label;
