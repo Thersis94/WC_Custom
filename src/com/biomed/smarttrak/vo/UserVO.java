@@ -185,7 +185,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		this.accountId = accountId;
 	}
 
-	@Column(name="account_nm")
+	@Column(name="account_nm", isReadOnly=true)
 	public String getAccountName() {
 		return accountName;
 	}
