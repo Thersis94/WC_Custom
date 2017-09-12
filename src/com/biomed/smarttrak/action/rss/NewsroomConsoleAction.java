@@ -7,12 +7,12 @@ import java.util.Collections;
 import java.util.List;
 
 import com.biomed.smarttrak.action.rss.vo.RSSFilterVO;
+import com.biomed.smarttrak.action.rss.vo.SmarttrakRssEntityVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.session.SMTCookie;
-import com.smt.sitebuilder.action.rss.RSSEntityVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -131,7 +131,7 @@ public class NewsroomConsoleAction extends NewsroomAction {
 		List<Object> vals = new ArrayList<>();
 		vals.add(feedGroupId);
 		DBProcessor dbp = new DBProcessor(dbConn);
-		this.putModuleData(dbp.executeSelect(loadFeedsSql(), vals, new RSSEntityVO()));
+		this.putModuleData(dbp.executeSelect(loadFeedsSql(), vals, new SmarttrakRssEntityVO()));
 	}
 
 	/**
@@ -141,9 +141,12 @@ public class NewsroomConsoleAction extends NewsroomAction {
 	private String loadFeedsSql() {
 		String scheme = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from rss_entity re ");
+		sql.append("select distinct on (re.rss_entity_id) * from rss_entity re ");
+		sql.append("left join ").append(scheme).append("biomedgps_rss_article a ");
+		sql.append("on a.rss_entity_id = re.rss_entity_id ");
 		sql.append("inner join ").append(scheme).append("biomedgps_feed_source_group_xr xr ");
 		sql.append("on re.rss_entity_id = xr.rss_entity_id where xr.feed_group_id = ?");
+		sql.append("order by re.rss_entity_id, a.publish_dt ");
 
 		return sql.toString();
 	}
