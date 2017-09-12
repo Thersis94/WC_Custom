@@ -81,7 +81,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		ACTIVE(1,"Active"),
 		INACTIVE(0,"Inactive"),
 		OPEN(-1,"Open License"),
-		DEMO(5,"Pilot");
+		DEMO(5,"Demo");
 		private int cd;
 		private String label;
 		private Status(int cd, String lbl) {

@@ -621,12 +621,18 @@ public class AccountUserAction extends SBActionAdapter {
 			saveStatus(req);
 			return;
 		}
+		
+		//insert fake first/last names if we're CREATING an open seat - these values are not disclosed in the UI but we need the profile to exist
+		if (!req.hasParameter("profileId") && UserVO.Status.OPEN.getCode() == Convert.formatInteger(req.getParameter("statusFlg")).intValue()) {
+			req.setParameter("firstName", "SMARTTRAK_" + RandomAlphaNumeric.generateRandom(10));
+			req.setParameter("lastName", "OPENSEAT_PLACEHOLDER");
+		}
 
 		UserVO user = new UserVO(req);
 
 		//save auth
 		saveAuthRecord(user);
-
+		
 		//save their WC profile
 		callProfileManager(user, req, true);
 
