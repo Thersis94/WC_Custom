@@ -6,15 +6,14 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.text.NumberFormat;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFDataFormat;
 import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.hssf.usermodel.HSSFPalette;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -25,8 +24,8 @@ import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellUtil;
 
-import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.fd.FinancialDashVO.CountryType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.siliconmtn.data.Node;
@@ -48,7 +47,8 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
     private static final long serialVersionUID = 1l;
     
     private static final String NAME = "NAME";
-    private enum CellStyleName {TITLE, HEADER, RIGHT, LEFT, PERCENT_POS, PERCENT_NEG, TOTAL_ROW_POS, TOTAL_ROW_NEG}
+    private enum CellStyleName {TITLE, HEADER, GROUP_TITLE, PARENT_TITLE, RIGHT, LEFT, CURRENCY, PERCENT, PERCENT_POS, PERCENT_NEG}
+    private enum DataRowType {STANDARD, TOTAL, GROUP_TOTAL}
     
     private String reportTitle = "SmartTRAK - Financial Dashboard"; 
     private FinancialDashVO dash;
@@ -128,12 +128,14 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		
 		cellStyles.put(CellStyleName.TITLE, setTitleStyle());
 		cellStyles.put(CellStyleName.HEADER, setHeaderStyle());
+		cellStyles.put(CellStyleName.GROUP_TITLE, setGroupingTitleStyle((short) 12, (short) 0));
+		cellStyles.put(CellStyleName.PARENT_TITLE, setGroupingTitleStyle((short) 11, (short) 1));
 		cellStyles.put(CellStyleName.RIGHT, setRightStyle());
 		cellStyles.put(CellStyleName.LEFT, setLeftStyle());
+		cellStyles.put(CellStyleName.CURRENCY, setCurrencyStyle());
+		cellStyles.put(CellStyleName.PERCENT, setPercentStyle(IndexedColors.BLACK.getIndex()));
 		cellStyles.put(CellStyleName.PERCENT_POS, setPercentStyle(IndexedColors.GREEN.getIndex()));
 		cellStyles.put(CellStyleName.PERCENT_NEG, setPercentStyle(IndexedColors.RED.getIndex()));
-		cellStyles.put(CellStyleName.TOTAL_ROW_NEG, setTotalNegStyle());
-		cellStyles.put(CellStyleName.TOTAL_ROW_POS, setTotalPosStyle());
 	}
 	
 	/**
@@ -158,8 +160,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		cell.setCellStyle(cellStyles.get(CellStyleName.TITLE));
 
 		// Merge the title cell across additional cells to display full title
-		int range = 5;
-		if(dash.getColHeaders().getDisplayType() == DisplayType.ALL) { range++; }
+		int range = dash.getColHeaders().getColumns().size();
 		sheet.addMergedRegion(new CellRangeAddress(0,0,0,range));
 	}
 	
@@ -198,47 +199,32 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * Adds the group title rows to the excel report
+	 * Adds the group/parent title rows to the excel report
+	 * 
+	 * @param marketName
+	 * @param isGroup
+	 * @param spacerRow
 	 */
-	protected void addGroupTitleRow(String marketName) {
+	protected void addGroupTitleRow(String marketName, boolean isOuterLevel, boolean blankRow) {
+		// Number of additional cells to merge across
+		int range = dash.getColHeaders().getColumns().size();
+
+		if (blankRow) {
+			row = sheet.createRow(rowCount++);
+			sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,0,range));
+		}
+		
 		row = sheet.createRow(rowCount++);
-		row.setHeightInPoints((short) 20);
+		sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,0,range));
 		
 		Cell cell = row.createCell(0);
 		cell.setCellType(Cell.CELL_TYPE_STRING);
 		cell.setCellValue(marketName);
-		cell.setCellStyle(cellStyles.get(CellStyleName.TITLE));
-
-		// Merge across additional cells
-		int range = 5;
-		if(dash.getColHeaders().getDisplayType() == DisplayType.ALL) { range++; }
-		sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,0,range));
-	}
-	
-	/**
-	 * Returns the currency format used by the report
-	 * 
-	 * @return
-	 */
-	protected NumberFormat getCurrencyFormat() {
-		// All values are in US dollars
-		Locale usLocale = new Locale.Builder().setLanguage("en").setRegion("US").build();
-		NumberFormat curFormat = NumberFormat.getCurrencyInstance(usLocale);
-		curFormat.setMaximumFractionDigits(0);
+		cell.setCellStyle(cellStyles.get(isOuterLevel ? CellStyleName.GROUP_TITLE : CellStyleName.PARENT_TITLE));
 		
-		return curFormat;
-	}
-	
-	/**
-	 * Returns the percentage format used by the report
-	 * 
-	 * @return
-	 */
-	protected NumberFormat getPercentFormat() {
-		NumberFormat pctFormat = NumberFormat.getPercentInstance();
-		pctFormat.setMinimumFractionDigits(1);
-		
-		return pctFormat;
+		// Set row height from the font height
+		HSSFCellStyle style = (HSSFCellStyle) cell.getCellStyle();
+		row.setHeightInPoints(style.getFont(wb).getFontHeightInPoints() + (float) 4);
 	}
 	
 	/**
@@ -247,29 +233,24 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * @param dataRows
 	 * @return
 	 */
-	protected Map<String, Integer> addDataRows(List<FinancialDashDataRowVO> dataRows) {
+	protected FinancialDashDataRowVO addDataRows(List<FinancialDashDataRowVO> dataRows) {
 		// Adds the header for the rows in this group
 		addHeaderRow();
 		
-		// Get the required formatters
-		NumberFormat curFormat = getCurrencyFormat();
-		NumberFormat pctFormat = getPercentFormat();
-		
 		// Setup to increment totals for the totals row
-		Map<String, Integer> totals = initTotals(dataRows.get(0));
+		FinancialDashDataRowVO totals = initTotals(dataRows.get(0), null);
 		
 		// Sort according to specified sort order
 		FinancialDashDataRowComparator comparator = new FinancialDashDataRowComparator(sortField, sortOrder, sections, dash.getTableType());
 		Collections.sort(dataRows, comparator);
 		
-		int i = 0;
+		// Add the data rows to the report
 		for (FinancialDashDataRowVO fdRow : dataRows) {
-			addExcelRowsFromFdRow(fdRow, totals, curFormat, pctFormat, i);
-			i++;
+			addExcelRowsFromFdRow(fdRow, totals);
 		}
 		
 		// Generate the totals row
-		addTotalRow(totals);
+		addTotalRow(totals, DataRowType.TOTAL);
 		
 		// Return the totals when needed for group summaries
 		return totals;
@@ -279,16 +260,28 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * Adds a totals row to the report
 	 * 
 	 * @param totals
+	 * @param rowType
 	 */
-	protected void addTotalRow(Map<String, Integer> totals) {
-		Map<String, Object> totalRow = new HashMap<>();
-		totalRow.put(NAME, "Total");
-		
-		for (Entry<String, Integer> entry : totals.entrySet()) {
-			totalRow.put(entry.getKey(), entry.getValue());
+	protected void addTotalRow(FinancialDashDataRowVO totals, DataRowType rowType) {
+		for (Entry<String, FinancialDashDataColumnVO> entry : totals.getColumns().entrySet()) {
+			int cyValue = entry.getValue().getDollarValue();
+			
+			// Get the key for the previous year data so we can calculate total percent difference
+			String[] keyParts = entry.getKey().split("-");
+			String pyKey = keyParts[0] + "-" + (Convert.formatInteger(keyParts[1]) - 1);
+			
+			// Calculate total percent difference from previous year
+			FinancialDashDataColumnVO pyData = totals.getColumns().get(pyKey);
+			if (pyData != null) {
+				int pyValue = pyData.getDollarValue();
+				if (pyValue > 0) {
+					entry.getValue().setPctDiff((double) (cyValue - pyValue) / pyValue);
+				}
+			}
 		}
 		
-		addDollarRow(totalRow, getCurrencyFormat(), -1);
+		addDollarRow(totals, rowType);
+		addPercentRow(totals, rowType);
 	}
 	
 	/**
@@ -304,28 +297,29 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		for (Map.Entry<String, List<Node>> entry : parentGroups.entrySet()) {
 			Map<String, Integer> groupTotals = new LinkedHashMap<>();
 			Node groupNode = sections.findNode(entry.getKey());
-			addGroupTitleRow(groupNode.getNodeName());
+			addGroupTitleRow(groupNode.getNodeName(), true, true);
 			
 			// Add every parent market
+			int index = 0;
 			for (Node parentNode : entry.getValue()) {
-				addGroupTitleRow(parentNode.getNodeName());
+				addGroupTitleRow(parentNode.getNodeName(), false, index++ > 0);
 				
 				// Add the rows & generate the group totals
 				List<FinancialDashDataRowVO> rows = parentRows.get(parentNode.getNodeId());
-				Map<String, Integer> parentTotals = addDataRows(rows);
-				for (Entry<String, Integer> total : parentTotals.entrySet()) {
-					int groupTotal = Convert.formatInteger(groupTotals.get(total.getKey()));
-					groupTotals.put(total.getKey(), groupTotal + total.getValue());
-				}
+				FinancialDashDataRowVO parentTotals = addDataRows(rows);
+				//for (Entry<String, Integer> total : parentTotals.entrySet()) {
+				//	int groupTotal = Convert.formatInteger(groupTotals.get(total.getKey()));
+				//	groupTotals.put(total.getKey(), groupTotal + total.getValue());
+				//}
 			}
 			
-			// Generate the totals row
-			addTotalRow(groupTotals);
+			// Generate the totals row for the upper level grouping
+			//addTotalRow(groupTotals, groupNode.getNodeName(), DataRowType.GROUP_TOTAL);
 		}
 	}
 	
 	/**
-	 * Groups the raw rows of data into rows by market and further by an uppper level market
+	 * Groups the raw rows of data into rows by market, and further by an upper (third) level market
 	 * 
 	 * @param parentRows
 	 * @param parentGroups
@@ -368,13 +362,15 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * Initializes a set of totals from data in an existing row.
 	 * 
 	 * @param fdRow
+	 * @param groupTitle
 	 * @return
 	 */
-	protected Map<String, Integer> initTotals(FinancialDashDataRowVO fdRow) {
-		Map<String, Integer> totals = new HashMap<>();
+	protected FinancialDashDataRowVO initTotals(FinancialDashDataRowVO fdRow, String groupTitle) {
+		FinancialDashDataRowVO totals = new FinancialDashDataRowVO();
+		totals.setName("Total " + StringUtil.checkVal(groupTitle));
 		
 		for (Entry<String, FinancialDashDataColumnVO> entry : fdRow.getColumns().entrySet()) {
-			totals.put(entry.getKey(), 0);
+			totals.addColumn(entry.getKey(), new FinancialDashDataColumnVO());
 		}
 		
 		return totals;
@@ -385,31 +381,25 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * 
 	 * @param fdRow
 	 * @param totals
-	 * @param curFormat
-	 * @param pctFormat
 	 * @return
 	 */
-	protected void addExcelRowsFromFdRow(FinancialDashDataRowVO fdRow, Map<String, Integer> totals, NumberFormat curFormat, NumberFormat pctFormat, int rowNum) {
-		Map<String, Object> dollarRow = new HashMap<>();
-		Map<String, Object> percentRow = new HashMap<>();
-		
-		dollarRow.put(NAME, fdRow.getName());
-		percentRow.put(NAME, "");
-
+	protected void addExcelRowsFromFdRow(FinancialDashDataRowVO fdRow, FinancialDashDataRowVO totals) {
 		for (Entry<String, FinancialDashDataColumnVO> entry : fdRow.getColumns().entrySet()) {
-			dollarRow.put(entry.getKey(), entry.getValue().getDollarValue());
-			percentRow.put(entry.getKey(), entry.getValue().getPctDiff());
-			totals.put(entry.getKey(), totals.get(entry.getKey()) + entry.getValue().getDollarValue());
+			FinancialDashDataColumnVO totalData = totals.getColumns().get(entry.getKey());
+			totalData.setDollarValue(totalData.getDollarValue() + entry.getValue().getDollarValue());
 		}
 	
-		addDollarRow(dollarRow, curFormat, rowNum);
-		addPercentRow(percentRow, pctFormat, rowNum);
+		addDollarRow(fdRow, DataRowType.STANDARD);
+		addPercentRow(fdRow, DataRowType.STANDARD);
 	}
 	
 	/**
 	 * Adds/formats the data in the dollar rows
+	 * 
+	 * @param fdRow
+	 * @param rowType
 	 */
-	protected void addDollarRow(Map<String, Object> dollarRow, NumberFormat curFormat, int rowNum) {
+	protected void addDollarRow(FinancialDashDataRowVO fdRow, DataRowType rowType) {
 		row = sheet.createRow(rowCount++);
 		
 		int cellCount = 0;
@@ -417,30 +407,26 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 			Cell cell = row.createCell(cellCount++);
 			cell.setCellType(Cell.CELL_TYPE_STRING);
 			
-			String value;
 			if (NAME.equals(key)) {
-				value = (String) dollarRow.get(key);
+				cell.setCellValue(fdRow.getName());
 			} else {
-				value = curFormat.format((int) dollarRow.get(key));
+				cell.setCellValue(fdRow.getColumns().get(key).getDollarValue());
 			}
 			
-			if (rowNum == -1) {
-				cell.setCellStyle(cellStyles.get(Convert.formatInteger(value) < 0? CellStyleName.TOTAL_ROW_NEG : CellStyleName.TOTAL_ROW_POS));
-			} else if (!NAME.equals(key)){
-				cell.setCellStyle(cellStyles.get(CellStyleName.RIGHT));
-			} else {
-				cell.setCellStyle(cellStyles.get(CellStyleName.LEFT));
-			}
-			
-			cell.setCellValue(value);
+			// Apply cell style, and additional styles
+			cell.setCellStyle(cellStyles.get(NAME.equals(key) ? CellStyleName.LEFT : CellStyleName.CURRENCY));
+			applyRowTypeStyle(cell, rowType);
 		}
 	}
 	
 	/**
 	 * Adds/formats the data in the percentage rows. The percentage rows have special formatting requirements such
 	 * that, negative values are red, positive values are green, and zero values are black.
+	 * 
+	 * @param fdRow
+	 * @param rowType
 	 */
-	protected void addPercentRow(Map<String, Object> percentRow, NumberFormat pctFormat, int rowNum) {
+	protected void addPercentRow(FinancialDashDataRowVO fdRow, DataRowType rowType) {
 		row = sheet.createRow(rowCount++);
 		
 		int cellCount = 0;
@@ -448,19 +434,40 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 			Cell cell = row.createCell(cellCount++);
 			cell.setCellType(Cell.CELL_TYPE_STRING);
 			
-			String value = "";
-			if (percentRow.get(key) != null && !NAME.equals(key)) {
-				Double dblValue = (Double) percentRow.get(key);
-				value = pctFormat.format(dblValue);
+			if (!NAME.equals(key) && fdRow.getColumns().get(key).getPctDiff() != null) {
+				Double value = fdRow.getColumns().get(key).getPctDiff();
+				cell.setCellValue(value);
 				
-				if (dblValue > 0) {
-					cell.setCellStyle(cellStyles.get(CellStyleName.PERCENT_POS));
-				} else if (dblValue < 0) {
-					cell.setCellStyle(cellStyles.get(CellStyleName.PERCENT_NEG));
+				if (value == 0) {
+					cell.setCellStyle(cellStyles.get(CellStyleName.PERCENT));
+				} else {
+					cell.setCellStyle(cellStyles.get(value > 0 ? CellStyleName.PERCENT_POS : CellStyleName.PERCENT_NEG));
 				}
+			} else {
+				cell.setCellValue("");
 			}
 			
-			cell.setCellValue(value);
+			// Apply additional styling to the cell
+			applyRowTypeStyle(cell, rowType);
+		}
+	}
+	
+	/**
+	 * Applies the specified row style to the cell
+	 * 
+	 * @param cell
+	 * @param rowType
+	 */
+	protected void applyRowTypeStyle(Cell cell, DataRowType rowType) {
+		switch (rowType) {
+			case TOTAL:
+				applyTotalRowStyle(cell);
+				break;
+			case GROUP_TOTAL:
+				applyGroupTotalRowStyle(cell);
+				break;
+			case STANDARD:
+				break;
 		}
 	}
 	
@@ -470,7 +477,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	protected CellStyle setTitleStyle() {
-		HSSFFont font = getBaseFont(wb, false);
+		HSSFFont font = getBaseFont(wb);
 		font.setColor(HSSFColor.BLACK.index);
 		font.setBold(true);
 		font.setFontHeightInPoints((short)14);
@@ -479,6 +486,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		style.setFont(font);
 		style.setAlignment(CellStyle.ALIGN_LEFT);
 		style.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+		
 		HSSFPalette palette = wb.getCustomPalette();
 		short backColor = palette.findSimilarColor(208, 208, 208).getIndex();
 		style.setFillForegroundColor(backColor);
@@ -494,7 +502,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	protected CellStyle setHeaderStyle() {
-		HSSFFont font = getBaseFont(wb, false);
+		HSSFFont font = getBaseFont(wb);
 		font.setColor(HSSFColor.WHITE.index);
 		font.setBold(true);
 		HSSFCellStyle style = getBaseStyle(wb);
@@ -512,6 +520,25 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
+	 * Creates the group style
+	 * 
+	 * @return
+	 */
+	protected CellStyle setGroupingTitleStyle(short fontHeight, short indentation) {
+		HSSFFont font = getBaseFont(wb);
+		font.setFontHeightInPoints(fontHeight);
+		font.setBold(true);
+		
+		HSSFCellStyle style = getBaseStyle(wb);
+		style.setFont(font);
+		style.setAlignment(CellStyle.ALIGN_LEFT);
+		style.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+		style.setIndention(indentation);
+		
+		return style;
+	}
+	
+	/**
 	 * Creates the Right Aligned style
 	 * 
 	 * @return
@@ -519,7 +546,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	protected CellStyle setRightStyle() {
 		HSSFCellStyle style= getBaseStyle(wb);
 		
-		HSSFFont font = getBaseFont(wb, false);
+		HSSFFont font = getBaseFont(wb);
 		style.setFont(font);
 		
 		return style;
@@ -533,8 +560,20 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	protected CellStyle setLeftStyle() {
 		HSSFCellStyle style= getBaseStyle(wb);
 		style.setAlignment(HSSFCellStyle.ALIGN_LEFT);
-		HSSFFont font = getBaseFont(wb, false);
+		HSSFFont font = getBaseFont(wb);
 		style.setFont(font);
+		
+		return style;
+	}
+	
+	/**
+	 * Creates a currency style
+	 * 
+	 * @return
+	 */
+	protected CellStyle setCurrencyStyle() {
+		CellStyle style = setRightStyle();
+		style.setDataFormat((short) 6);
 		
 		return style;
 	}
@@ -546,6 +585,10 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 */
 	protected CellStyle setPercentStyle(short color) {
 		CellStyle style = setRightStyle();
+		
+		HSSFDataFormat df = wb.createDataFormat();
+		style.setDataFormat(df.getFormat("#,##0.0%"));
+		
 		Font font = wb.createFont();
 		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
 		font.setColor(color);
@@ -555,45 +598,45 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
-	 * Create a style specifically for the totals row when negative
+	 * Applies additional cell formatting required by a totals row
 	 * 
-	 * @return
+	 * @param cell
 	 */
-	protected CellStyle setTotalNegStyle() {
-		HSSFCellStyle style= getBaseStyle(wb);
-		style.setFillForegroundColor(HSSFColor.GREY_25_PERCENT.index);
-		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
-		style.setBorderBottom((short)1);
-		style.setBorderTop((short)1);
-		
-		HSSFFont font = getBaseFont(wb, true);
-		style.setFont(font);
-		font.setColor(HSSFColor.BLACK.index);
-		font.setBold(true);
-		
-		return style;
+	protected void applyTotalRowStyle(Cell cell) {
+		// Create a bold font using the original font's color
+		HSSFCellStyle style = (HSSFCellStyle) cell.getCellStyle();
+		HSSFFont oldFont = style.getFont(wb);
+		HSSFFont newFont = getBaseFont(wb);
+		newFont.setColor(oldFont.getColor());
+		newFont.setBold(true);
+
+		// Apply the new properties
+		CellUtil.setCellStyleProperty(cell, wb, CellUtil.FILL_FOREGROUND_COLOR, HSSFColor.GREY_25_PERCENT.index);
+		CellUtil.setCellStyleProperty(cell, wb, CellUtil.FILL_PATTERN, CellStyle.SOLID_FOREGROUND);
+		CellUtil.setCellStyleProperty(cell, wb, CellUtil.BORDER_BOTTOM, (short) 1);
+		CellUtil.setCellStyleProperty(cell, wb, CellUtil.BORDER_TOP, (short) 1);
+		CellUtil.setFont(cell, wb, newFont);
 	}
 	
 	/**
-	 * Create a style specifically for the totals row when positive
+	 * Applies additional celll formatting required by a group total row
 	 * 
-	 * @return
+	 * @param cell
 	 */
-	protected CellStyle setTotalPosStyle() {
-		HSSFCellStyle style= getBaseStyle(wb);
-		style.setFillForegroundColor(HSSFColor.GREY_25_PERCENT.index);
-		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
-		style.setBorderBottom((short)1);
-		style.setBorderTop((short)1);
-		
-		HSSFFont font = getBaseFont(wb, false);
-		style.setFont(font);
-		font.setColor(HSSFColor.BLACK.index);
-		font.setBold(true);
-		
-		return style;
-	}
+	protected void applyGroupTotalRowStyle(Cell cell) {
+		// Create a bold font using the original font's color
+		// If color was black, reverse out to white
+		HSSFCellStyle style = (HSSFCellStyle) cell.getCellStyle();
+		HSSFFont oldFont = style.getFont(wb);
+		HSSFFont newFont = getBaseFont(wb);
+		newFont.setColor(oldFont.getColor() == HSSFColor.BLACK.index ? HSSFColor.WHITE.index : oldFont.getColor());
+		newFont.setBold(true);
 
+		// Apply the new properties
+		CellUtil.setCellStyleProperty(cell, wb, CellUtil.FILL_FOREGROUND_COLOR, HSSFColor.BLACK.index);
+		CellUtil.setCellStyleProperty(cell, wb, CellUtil.FILL_PATTERN, CellStyle.SOLID_FOREGROUND);
+		CellUtil.setFont(cell, wb, newFont);
+	}
 	
 	/**
 	 * Sets the base cell styles
@@ -614,13 +657,10 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * @param workbook
 	 * @return
 	 */
-	private HSSFFont getBaseFont(HSSFWorkbook workbook, boolean neg) {
+	private HSSFFont getBaseFont(HSSFWorkbook workbook) {
 		HSSFFont font = workbook.createFont();
 		font.setFontHeightInPoints((short)10);
 		font.setFontName("Arial");
-		if (neg) font.setColor(HSSFColor.RED.index);
-		else font.setColor(HSSFColor.BLACK.index);
-		
 		font.setBold(false);
 		font.setItalic(false);
 		
