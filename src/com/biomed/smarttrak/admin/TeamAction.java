@@ -8,7 +8,6 @@ import java.util.List;
 
 // WC_Custom
 import com.biomed.smarttrak.vo.TeamVO;
-import com.biomed.smarttrak.action.AdminControllerAction;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
@@ -55,11 +54,12 @@ public class TeamAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		AccountAction.loadAccount(req, dbConn, getAttributes());
+		
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
 		if (!req.hasParameter("loadData") && !req.hasParameter(TEAM_ID)) return;
 
-		AccountAction.loadAccount(req, dbConn, getAttributes());
 		String accountId = req.getParameter(ACCOUNT_ID);
 		//accountId is required
 		if (StringUtil.isEmpty(accountId)) throw new ActionException("No AccountId passed");
@@ -172,7 +172,7 @@ public class TeamAction extends SBActionAdapter {
 		url.append(page.getFullPath());
 		url.append("?actionType=").append(req.getParameter("actionType"));
 		url.append("&accountId=").append(req.getParameter("accountId"));
-		url.append("&accountName=").append(AdminControllerAction.urlEncode(req.getParameter("accountName")));
+		if (req.hasParameter("return")) url.append("&teamId=").append(req.getParameter(TEAM_ID));
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
 	}
 
@@ -193,6 +193,7 @@ public class TeamAction extends SBActionAdapter {
 				db.delete(new TeamVO(req));
 			} else {
 				db.save(new TeamVO(req));
+				req.setParameter(TEAM_ID, db.getGeneratedPKId());
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);

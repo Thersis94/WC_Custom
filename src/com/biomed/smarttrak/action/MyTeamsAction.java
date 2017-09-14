@@ -101,8 +101,11 @@ public class MyTeamsAction extends SimpleActionAdapter {
 		//redirect
 		StringBuilder sb = new StringBuilder(70);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		sb.append(page.getFullPath()).append("?msg=").append(msg);
-		sbUtil.manualRedirect(req, sb.toString());
+		sb.append(page.getFullPath());
+		if (req.hasParameter("return"))
+			sb.append("?actionType=teams&teamId=" + req.getParameter("teamId"));
+		
+		sendRedirect(sb.toString(), (String) msg, req);
 	}
 
 

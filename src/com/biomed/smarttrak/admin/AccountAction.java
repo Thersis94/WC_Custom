@@ -60,8 +60,11 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if (req.hasParameter("changeAccount"))
+		if (req.hasParameter("changeAccount")) {
 			req.getSession().removeAttribute(SESS_ACCOUNT);
+		} else { 
+			loadAccount(req, dbConn, getAttributes());
+		}
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;

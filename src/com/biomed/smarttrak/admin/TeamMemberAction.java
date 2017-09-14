@@ -51,6 +51,7 @@ public class TeamMemberAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		AccountAction.loadAccount(req, dbConn, getAttributes());
+		
 		//this action requires accountId & teamId.  If not present throw an exception
 		String accountId = req.getParameter(ACCOUNT_ID);
 		String teamId = req.hasParameter(TEAM_ID) ? req.getParameter(TEAM_ID) : null;
