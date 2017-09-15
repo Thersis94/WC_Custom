@@ -58,8 +58,6 @@ public class UpdatesAction extends ManagementAction {
 	@Deprecated
 	public static final String ROOT_NODE_ID = SectionHierarchyAction.MASTER_ROOT;
 
-	public static final int INIT_DISPLAY_LIMIT = 15; //initial display limit
-
 	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
 	public static final String UPDATE_TYPE_CD = "updates";
 
@@ -124,7 +122,7 @@ public class UpdatesAction extends ManagementAction {
 
 			//Get the Filtered Updates according to Request.
 			data = getFilteredUpdates(req);
-
+			
 			// Get the count
 			count = getUpdateCount(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 			log.debug("count " + count);
@@ -154,10 +152,7 @@ public class UpdatesAction extends ManagementAction {
 	private List<Object> getFilteredUpdates(ActionRequest req) {
 		//Get Relevant Params off Request.
 		int start = Convert.formatInteger(req.getParameter("offset"),0);
-		int rpp = Convert.formatInteger(req.getParameter("limit"),INIT_DISPLAY_LIMIT);
-		if (rpp == 0) {//this is initial page load, set default for display listing  
-			rpp = INIT_DISPLAY_LIMIT;
-		}
+		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		String sql = formatRetrieveQuery(req, schema, req.hasParameter("loadData"), false);
@@ -433,7 +428,7 @@ public class UpdatesAction extends ManagementAction {
 		if (isCount) {
 			sql.append("count(distinct a.update_id) ");
 		} else {
-			sql.append("a.*, p.first_nm, p.last_nm, ");
+			sql.append("distinct a.*, p.first_nm, p.last_nm, ");
 			if (isList) {
 				sql.append("s.wc_sync_id ");
 			} else {
