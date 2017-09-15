@@ -14,6 +14,7 @@ import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
@@ -23,6 +24,7 @@ import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
@@ -564,6 +566,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
 		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
 		if (id != null) sql.append("and p.PRODUCT_ID = ? ");
+		sql.append("ORDER BY p.PRODUCT_ID ");
 		log.info(sql);
 		return sql.toString();
 	}
@@ -574,25 +577,11 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * @return
 	 */
 	protected SmarttrakTree createHierarchies() {
-		StringBuilder sql = new StringBuilder(125);
-		sql.append("SELECT * FROM ").append(config.getProperty(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_SECTION ");
-		log.info(sql);
-		List<Node> markets = new ArrayList<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ResultSet rs = ps.executeQuery();
-			while(rs.next()) {
-				SectionVO sec = new SectionVO(rs);
-				Node n = new Node(sec.getSectionId(), sec.getParentId());
-				n.setNodeName(sec.getSectionNm());
-				n.setUserObject(sec);
-				markets.add(n);
-			}
-		} catch (SQLException e) {
-			log.error(e);
-		}
-
-		SmarttrakTree t = new SmarttrakTree(markets);
+		SectionHierarchyAction sha = new SectionHierarchyAction();
+		sha.setAttributes(getAttributes());
+		sha.setDBConnection(new SMTDBConnection(dbConn));
+		//building our own Tree here preserves the root node (as a parent of MASTER_ROOT) 
+		SmarttrakTree t = new SmarttrakTree(sha.getHierarchy());
 		t.buildNodePaths();
 		return t;
 	}

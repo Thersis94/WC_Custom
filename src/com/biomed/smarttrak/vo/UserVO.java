@@ -1,6 +1,11 @@
 package com.biomed.smarttrak.vo;
 
-// Java 7
+//Java 8
+import static java.time.temporal.ChronoUnit.DAYS;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -32,10 +37,11 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private String accountId;
 	private String userId;
 	private String registerSubmittalId;
-	private String statusCode;
+	private String licenseType;
 	private List<TeamVO> teams;
 	private Date expirationDate;
 	private Date loginDate;
+	private int loginAge = -1;
 	private Date createDate;
 	private int fdAuthFlg;
 	private int gaAuthFlg;
@@ -43,11 +49,12 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private int acctOwnerFlg;
 	private String loginOperSys;
 	private String loginBrowser;
+	private int statusFlg;
 
 	/**
 	 * Smarttrak status dropdowns - stored in the DB using code, label displayed on user mgmt screens.
 	 */
-	public enum Status {
+	public enum LicenseType {
 		COMPUPDATES("T","Comp Updates"),
 		ACTIVE("A","SmartTRAK User"),
 		EUREPORTS("M","EU Reports"),
@@ -62,11 +69,26 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 
 		private String cd;
 		private String label;
-		private Status(String cd, String lbl) {
+		private LicenseType(String cd, String lbl) {
 			this.cd = cd;
 			this.label = lbl;
 		}
 		public String getCode() { return cd; }
+		public String getLabel() { return label; }
+	}
+
+	public enum Status {
+		ACTIVE(1,"Active"),
+		INACTIVE(0,"Inactive"),
+		OPEN(-1,"Open License"),
+		DEMO(5,"Demo");
+		private int cd;
+		private String label;
+		private Status(int cd, String lbl) {
+			this.cd = cd;
+			this.label = lbl;
+		}
+		public int getCode() { return cd; }
 		public String getLabel() { return label; }
 	}
 
@@ -80,6 +102,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		TITLE("dd64d07fb37c2c067f0001012b4210ff", "title"),
 		UPDATES("9b079506b37cc0de7f0001014b63ad3c", "updates"),
 		FAVORITEUPDATES("d5ed674eb37da7fd7f000101d875b114", "favUpdates"),
+		PARENTCOMPANY("f6890a383eecc13f0a001421223e1a8c", "parentCompany"),
 		COMPANY("e6890a383eecc13f0a001421223e1a8b", "company"),
 		COMPANYURL("8e326f4c3ef49ae10a0014218aae436b", "companyUrl"),
 		//below are all on the 'sales' tab on the admin edit form
@@ -121,7 +144,8 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		setUserId(req.getParameter("userId"));
 		setAccountId(req.getParameter("accountId"));
 		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
-		setStatusCode(req.getParameter("statusCode"));
+		setLicenseType(req.getParameter("licenseType"));
+		setStatusFlg(Convert.formatInteger(req.getParameter("statusFlg")));
 		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expirationDate")));
 		setFdAuthFlg(Convert.formatInteger(req.getParameter("fdAuthFlg")));
 		setGaAuthFlg(Convert.formatInteger(req.getParameter("gaAuthFlg")));
@@ -222,13 +246,24 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		this.updateDate = updateDate;
 	}
 
-	@Column(name="status_cd")
-	public String getStatusCode() {
-		return statusCode;
+	public String getLicenseName() {
+		for (LicenseType s : LicenseType.values()) {
+			if (s.getCode().equals(getLicenseType()))
+				return s.getLabel();
+		}
+		return "";
 	}
 
-	public void setStatusCode(String statusCode) {
-		this.statusCode = statusCode;
+	/*
+	 * NOTE: status_cd on the back end is actually used as License Type in the UI.  This was an oversight in the v2.0 rebuild
+	 */
+	@Column(name="status_cd")
+	public String getLicenseType() {
+		return licenseType;
+	}
+
+	public void setLicenseType(String t) {
+		this.licenseType = t;
 	}
 
 	@Column(name="expiration_dt")
@@ -239,9 +274,9 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public void setExpirationDate(Date expirationDate) {
 		this.expirationDate = expirationDate;
 	}
-	
+
 	public boolean isExpired() {
-		if (Status.INACTIVE.getCode().equals(statusCode)) {
+		if (Status.INACTIVE.getCode() == statusFlg) {
 			return true;
 		} else if (expirationDate != null) {
 			return Calendar.getInstance().getTime().after(expirationDate);
@@ -258,54 +293,90 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		this.loginDate = loginDate;
 	}
 
+
 	/*********************
 	 *  SOME DECOUPLING OF FIELDS STORED IN REGISTRATION DATA
 	 *********************/
 
+	@Column(name="title_txt", isReadOnly=true)
 	public String getTitle() {
-		return (String)getAttribute(RegistrationMap.TITLE.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.TITLE.getFieldId()));
 	}
 	public String getUpdates() {
-		return (String)getAttribute(RegistrationMap.UPDATES.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.UPDATES.getFieldId()));
 	}
 	public String getFavoriteUpdates() {
-		return (String)getAttribute(RegistrationMap.FAVORITEUPDATES.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.FAVORITEUPDATES.getFieldId()));
 	}
 	public String getCompany() {
-		return (String)getAttribute(RegistrationMap.COMPANY.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.COMPANY.getFieldId()));
 	}
 	public String getCompanyUrl() {
-		return (String)getAttribute(RegistrationMap.COMPANYURL.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.COMPANYURL.getFieldId()));
+	}
+	public String getParentCompany() {
+		return getFirstFrom(getAttribute(RegistrationMap.PARENTCOMPANY.getFieldId()));
 	}
 	public String getSource() {
-		return (String)getAttribute(RegistrationMap.SOURCE.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.SOURCE.getFieldId()));
 	}
+
+	/**
+	 * @deprecated - removed from user edit form 8-16-17
+	 */
+	@Deprecated
 	public String getDemoDate() {
-		return (String)getAttribute(RegistrationMap.DEMODT.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.DEMODT.getFieldId()));
 	}
+
+	/**
+	 * @deprecated - removed from user edit form 8-16-17
+	 */
+	@Deprecated
 	public String getTrainingDate() {
-		return (String)getAttribute(RegistrationMap.TRAININGDT.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.TRAININGDT.getFieldId()));
 	}
+
+	/**
+	 * @deprecated - removed from user edit form 8-16-17
+	 */
+	@Deprecated
 	public String getInitialTrainingDate() {
-		return (String)getAttribute(RegistrationMap.INITTRAININGDT.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.INITTRAININGDT.getFieldId()));
 	}
+
+	/**
+	 * @deprecated - removed from user edit form 8-16-17
+	 */
+	@Deprecated
 	public String getAdvancedTrainingDate() {
-		return (String)getAttribute(RegistrationMap.ADVTRAININGDT.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.ADVTRAININGDT.getFieldId()));
 	}
+
+	/**
+	 * @deprecated - removed from user edit form 8-16-17
+	 */
+	@Deprecated
 	public String getOtherTrainingDate() {
-		return (String)getAttribute(RegistrationMap.OTHERTRAININGDT.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.OTHERTRAININGDT.getFieldId()));
 	}
+
+	@Column(name="notes_txt", isReadOnly=true)
 	public String getNotes() {
-		return (String)getAttribute(RegistrationMap.NOTES.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.NOTES.getFieldId()));
 	}
+	public void setNotes(String note) {
+		getAttributes().put(RegistrationMap.NOTES.getFieldId(), note);
+	}
+
 	public String getJobCategory() {
-		return (String)getAttribute(RegistrationMap.JOBCATEGORY.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.JOBCATEGORY.getFieldId()));
 	}
 	public String getJobLevel() {
-		return (String)getAttribute(RegistrationMap.JOBLEVEL.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.JOBLEVEL.getFieldId()));
 	}
 	public String getIndustry() {
-		return (String)getAttribute(RegistrationMap.INDUSTRY.getFieldId());
+		return getFirstFrom(getAttribute(RegistrationMap.INDUSTRY.getFieldId()));
 	}
 
 	/**
@@ -323,6 +394,38 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 			data = (List<String>) obj;
 		}
 		return data;
+	}
+
+	/**
+	 * separates whether registration has a List<String> or String saved internally from the methods above that only care about the data
+	 * @param obj
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	private String getFirstFrom(Object obj) {
+		if (obj == null || obj instanceof String) {
+			return (String) obj;
+		} else {
+			List<String> data = (List<String>) obj;
+			return data.isEmpty() ? null : data.get(0);
+		}
+	}
+
+	/**
+	 * According to Mike each user should have only one division, yet the data supports multiple.  Take the 1st as their primary.
+	 * @return
+	 */
+	@Column(name="division_txt", isReadOnly=true)
+	public String getPrimaryDivision() {
+		List<String> divs = getDivisions();
+		return divs != null && !divs.isEmpty() ? divs.get(0) : null;
+	}
+
+	/**
+	 * sets a title to the attributes list 
+	 **/
+	public void setPrimaryDivision(String div) {
+		getAttributes().put(RegistrationMap.DIVISIONS.getFieldId(), div);
 	}
 
 
@@ -358,11 +461,20 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		this.gaAuthFlg = gaAuthFlg;
 	}
 
+	/**
+	 * @deprecated no longer used for permissions -JM- 08.23.2017
+	 * @return
+	 */
+	@Deprecated
 	@Column(name="mkt_auth_flg")
 	public int getMktAuthFlg() {
 		return mktAuthFlg;
 	}
 
+	/**
+	 * @deprecated no longer used for permissions -JM- 08.23.2017
+	 */
+	@Deprecated
 	public void setMktAuthFlg(int mktAuthFlg) {
 		this.mktAuthFlg = mktAuthFlg;
 	}
@@ -433,5 +545,50 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public void setTitle(List<String> title) {
 		if (title != null && !title.isEmpty())
 			getAttributes().put(RegistrationMap.TITLE.getFieldId(), title.get(0));
+	}
+
+	/**
+	 * returns a constant int based on the last time the user logged-in to the website - used on Userrs list page (legend)
+	 * @param loginDate
+	 * @return
+	 */
+	public Integer getLoginAge() {
+		if (loginAge != -1) return loginAge;
+
+		if (loginDate == null) {
+			loginAge = 0;
+		} else {
+			Instant instant = Instant.ofEpochMilli(loginDate.getTime());
+			LocalDate login = LocalDateTime.ofInstant(instant, ZoneId.systemDefault()).toLocalDate();
+			long days = DAYS.between(login, LocalDate.now());
+			if (days < 30) {
+				loginAge = 30;
+			} else if (days <= 90) {
+				loginAge = 60;
+			} else {
+				loginAge = 90;
+			}
+		}
+		return loginAge;
+	}
+
+	@Column(name="active_flg")
+	public int getStatusFlg() {
+		return statusFlg;
+	}
+
+	public void setStatusFlg(int statusFlg) {
+		this.statusFlg = statusFlg;
+	}
+
+	/**
+	 * @return
+	 */
+	public String getStatusName() {
+		for (Status s : Status.values()) {
+			if (s.getCode() == getStatusFlg())
+				return s.getLabel();
+		}
+		return "";
 	}
 }

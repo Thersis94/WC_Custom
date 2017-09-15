@@ -5,13 +5,17 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.ProductExplorerReportVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
@@ -27,7 +31,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
@@ -59,7 +62,7 @@ public class ProductExplorer extends SBActionAdapter {
 	private static final String SAVED_QUERIES = "savedQueries";
 
 	private enum BuildType {
-		EXPORT, SAVE, SHARE, DELETE
+		EXPORT, SAVE, SHARE, DELETE, HIERARCHY
 	}
 
 	/**
@@ -141,6 +144,8 @@ public class ProductExplorer extends SBActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SecurityController.isPeAuth(req);
+		
 		putModuleData(retrieveProducts(req, false));
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
 			retrieveSavedQueries(req);
@@ -254,20 +259,13 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected SolrResponseVO retrieveProducts(ActionRequest req, boolean getAll) throws ActionException {
-		SolrActionVO qData = buildSolrAction(req);
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-
-		SBUserRole roles = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		qData.setRoleLevel(roles.getRoleLevel());
-		qData.setRoleACL(roles.getAccessControlList());
-		qData.setAclTypeNo(10);
-		qData.setStartLocation(100*Convert.formatInteger(req.getParameter("page")));
+		SolrActionVO qData = buildSolrAction(req, 100*Convert.formatInteger(req.getParameter("page")));
 
 		buildSearchParams(req, qData);
 		if (req.hasParameter("selNodes")) buildNodeParams(req, qData);
 
 		addFacetFields(req, qData);
-		
+		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
 		SolrResponseVO vo = sqp.processQuery(qData);
 		
 		// Check to see if all the results should be returned instead of the current page
@@ -438,20 +436,36 @@ public class ProductExplorer extends SBActionAdapter {
 
 
 	/**
-	 * Get the solr information 
+	 * Get the solr information and set the standard parameters
 	 * @param req
 	 * @return
 	 * @throws ActionException
 	 */
-	protected SolrActionVO buildSolrAction(ActionRequest req) throws ActionException {
-		SolrAction sa = new SolrAction(actionInit);
+	protected SolrActionVO buildSolrAction(ActionRequest req, int start) throws ActionException {
+		SmarttrakSolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		return sa.retrieveActionData(req);
+		
+		// Retrieve the VO and set the base parameters
+		SolrActionVO qData = sa.retrieveActionData(req);
+		SBUserRole roles = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		qData.setRoleLevel(roles.getRoleLevel());
+		qData.setRoleACL(roles.getAccessControlList());
+		qData.setAclTypeNo(10);
+		qData.setStartLocation(start);
+		
+		sa.includeRoleACL(req, qData);
+		
+		return qData;
 	}
+	
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		BuildType type = BuildType.valueOf(req.getParameter("buildType"));
@@ -469,9 +483,94 @@ public class ProductExplorer extends SBActionAdapter {
 			case SHARE:
 				sendEmail(req);
 				break;
+			case HIERARCHY:
+				getHierarchy(req);
+				break;
 		}
 	}
 
+
+	/**
+	 * Get the complete hierarchy list
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void getHierarchy(ActionRequest req) throws ActionException {
+		Set<String> allowedSections = getPopulatedHierarchies(req);
+		
+		SectionHierarchyAction sha = new SectionHierarchyAction();
+		sha.setAttributes(getAttributes());
+		sha.setDBConnection(getDBConnection());
+		Tree t = sha.loadTree(req.getParameter("sectionId"));
+		
+		putModuleData(filterTree(allowedSections, t.preorderList(true)));
+	}
+	
+	/**
+	 * Filter the list of sections by the list of sections that have content
+	 * and can be viewed by the logged in user.
+	 * @param allowedSections
+	 * @param fullList
+	 * @return
+	 */
+	private List<Node> filterTree(Set<String> allowedSections, List<Node> fullList) {
+		List<Node> sections = new ArrayList<>();
+		
+		for (Node n : fullList) {
+			filterNode(allowedSections, n, sections);
+		}
+		
+		return sections;
+	}
+	
+	/**
+	 * Determine whether the current node has associated products. 
+	 * If so do the same for the node's children
+	 * @param allowedSections
+	 * @param n
+	 * @param sections
+	 */
+	private void filterNode(Set<String> allowedSections, Node n, List<Node> sections) {
+		if (n == null || !allowedSections.contains(n.getNodeName())) return;
+		
+		if (n.getNumberChildren() > 0) {
+			List<Node> children = new ArrayList<>();
+			for (Node child : n.getChildren()) {
+				if (allowedSections.contains(child.getNodeName())) {
+					children.add(child);
+				}
+			}
+			n.setChildren(children);
+		}
+		
+		sections.add(n);
+	}
+
+	
+	/**
+	 * Query solr to get the hierarchies that have products associated with them.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private Set<String> getPopulatedHierarchies(ActionRequest req) throws ActionException {
+		SolrActionVO qData = buildSolrAction(req, 0);
+		
+		qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.HIERARCHY, null, null));
+
+		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
+		SolrResponseVO vo = sqp.processQuery(qData);
+		
+		Set<String> allowedSections = new HashSet<>();
+		for (Count c : vo.getFacetByName(SearchDocumentHandler.HIERARCHY)) {
+			if (c.getCount() == 0) continue;
+			
+			for (String section : c.getName().split(SearchDocumentHandler.HIERARCHY_DELIMITER)) {
+				allowedSections.add(section);
+			}
+		}
+		return allowedSections;
+	}
 
 	/**
 	 * Delete the supplied saved query

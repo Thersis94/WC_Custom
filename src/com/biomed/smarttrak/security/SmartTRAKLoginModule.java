@@ -9,12 +9,10 @@ import java.util.Map;
 
 //SMTBaseLibs
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.DjangoPasswordHasher;
 import com.siliconmtn.security.SHAEncrypt;
-import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -65,12 +63,13 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
 		UserLogin ul = new UserLogin(dbConn, getAttributes());
 		UserDataVO authUser = ul.getAuthRecord(null, username);
+		authUser.setEmailAddress(username);
 
 		//getAuthRecord never returns null.  Test the VO for authenticationId, throw if not found
 		if (StringUtil.isEmpty(authUser.getAuthenticationId()))
 			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
 
-		testUserPassword(authUser, password); //this will throw if the password can't be verified
+		authUser = testUserPassword(ul, authUser, password); //this will throw if the password can't be verified
 
 		// Return user authented user, after loading their Smarttrak data
 		return loadSmarttrakUser(loadUserData(null, authUser.getAuthenticationId()));
@@ -121,14 +120,14 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 
 		// use profile ID as that is all we have at the moment.
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, ");
-		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, ");
+		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, ");
+		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, u.active_flg, a.type_id, ");
 		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
-		sql.append("inner join ").append(schema).append("biomedgps_account a on u.account_id=a.account_id ");
-		sql.append("where u.profile_id=? order by t.team_nm");
+		sql.append("inner join ").append(schema).append("biomedgps_account a on a.status_no='A' and u.account_id=a.account_id ");
+		sql.append("where u.profile_id=? and u.active_flg > 0 order by t.team_nm"); //active > 0 includes Active and Demo.
 		log.debug(sql + user.getProfileId());
 
 		int iter = 0;
@@ -142,10 +141,16 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					user.setRegisterSubmittalId(rs.getString("register_submittal_id"));
 					user.setFdAuthFlg(rs.getInt("fd_auth_flg"));
 					user.setGaAuthFlg(rs.getInt("ga_auth_flg"));
-					user.setMktAuthFlg(rs.getInt("mkt_auth_flg"));
 					user.setAcctOwnerFlg(rs.getInt("acct_owner_flg"));
 					user.setExpirationDate(rs.getDate("expiration_dt")); //used by the role module to block access to the site
-					user.setStatusCode(rs.getString("status_cd"));
+					user.setLicenseType(rs.getString("status_cd"));
+					user.setStatusFlg(rs.getInt("active_flg"));
+
+					// Account Type - used by the role module to restrict users to Updates Only (role) - just pass the "4" along to it.
+					String type = rs.getString("type_id");
+					if ("4".equals(type))
+						user.setLicenseType(type);
+
 					iter = 1;
 				}
 				user.addTeam(new TeamVO(rs));
@@ -166,52 +171,27 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * @param proclaimedPassword
 	 * @throws AuthenticationException
 	 */
-	protected void testUserPassword(UserDataVO authUser, String allegedPswd) throws AuthenticationException {
-		//test the password against the Django scheme.  If it matches we're done
+	protected UserDataVO testUserPassword(UserLogin ul, UserDataVO authUser, String allegedPswd) 
+			throws AuthenticationException {
+		//test the password against the legacy/Django scheme.  If it matches we're done
 		DjangoPasswordHasher hasher = new DjangoPasswordHasher();
 		if (hasher.checkPassword(allegedPswd, authUser.getPassword()))
-			return;
+			return authUser;
 
-		//test the password against SHA1 - the legacy Smarttrak scheme.  if it matches we're done
+		//test the password against SHA1 - the "legacy-legacy" Smarttrak scheme!  if it matches we're done
 		SHAEncrypt sha = new SHAEncrypt();
 		try {
 			if (sha.encrypt(allegedPswd).equals(authUser.getPassword()))
-				return;
+				return authUser;
 		} catch (Exception e) {
 			log.warn("password is not SHA1, or didn't match the stored value", e);
 		}
 
-		//finally, test the password against SMT's 3DES encryption scheme
-		StringEncrypter se;
+		//finally, test the password using the WC core.  Any password created or changed after 7/1/2017 will fall into this scenario.
 		try {
-			se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
-			if (se.encrypt(allegedPswd).equals(authUser.getPassword()))
-				return;
-		} catch (Exception e) {
-			log.warn("password is not 3DES, or didn't match the stored value", e);
-		}
-
-		throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
-	}
-
-
-	/**
-	 * saves the auth record to the database.  Encrypts the user's password with the custom scheme first.
-	 * Does not currently preserve password history, but could be added off of this method.  Database field would need to be lengthened.
-	 */
-	@Override
-	public String saveAuthRecord(String authId, String userName, String password, Integer resetFlag) 
-			throws InvalidDataException {
-		if (StringUtil.isEmpty(userName) || StringUtil.isEmpty(password)) 
-			throw new InvalidDataException();
-
-		// Get the database Connection
-		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
-		UserLogin ul = new UserLogin(dbConn, getAttributes());
-		try {
-			return ul.saveAuthRecord(authId, userName, password, resetFlag);
-		} catch (DatabaseException de) {
-			throw new InvalidDataException(de);
-		}
+			return ul.checkExistingCredentials(authUser.getEmailAddress(), allegedPswd);
+		} catch (NotAuthorizedException e) {
+			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN, e);
+		}		
 	}
 }

@@ -3,14 +3,16 @@ package com.biomed.smarttrak.security;
 //Java 8
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
 //WC Custom
+import static com.biomed.smarttrak.action.SmarttrakSolrAction.BROWSE_SECTION;
 import com.biomed.smarttrak.vo.PermissionVO;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.util.solr.AccessControlListGenerator;
 import com.smt.sitebuilder.admin.action.data.RoleAttributeVO;
@@ -33,7 +35,10 @@ public class SmarttrakRoleVO extends SBUserRole {
 
 	private boolean isFdAuth;
 	private boolean isGaAuth;
-	private boolean isMktAuth;
+	private boolean isBrowseAuth;
+	private boolean isPeAuth;
+	private boolean isAnAuth;
+	private boolean isUpAuth;
 	private boolean acctOwnerFlg;
 
 	/**
@@ -46,13 +51,16 @@ public class SmarttrakRoleVO extends SBUserRole {
 	 */
 	private List<PermissionVO> accountRoles;
 
-	private String[] authorizedSections;
+	private Map<Section, String[]> authorizedSections;
+
+	private Map<Section, String> accessControlLists;
 
 	/**
 	 * @param role
 	 */
 	public SmarttrakRoleVO(SBUserRole role) {
 		super();
+		accessControlLists = new EnumMap<>(Section.class);
 		this.wcRole = role;
 	}
 
@@ -67,10 +75,17 @@ public class SmarttrakRoleVO extends SBUserRole {
 	 * @return
 	 */
 	private void buildACL() {
-		AccessControlListGenerator gen = new AccessControlListGenerator();
 		if (accountRoles == null || accountRoles.isEmpty()) return;
+		AccessControlListGenerator gen = new AccessControlListGenerator();
 
-		Set<String> groups = new HashSet<>(accountRoles.size());
+		Map<Section,Set<String>> groups = new EnumMap<>(Section.class);
+		groups.put(BROWSE_SECTION, new HashSet<String>());
+		groups.put(Section.FINANCIAL_DASHBOARD, new HashSet<String>());
+		groups.put(Section.GAP_ANALYSIS, new HashSet<String>());
+		groups.put(Section.PRODUCT_EXPLOERER, new HashSet<String>());
+		groups.put(Section.INSIGHT, new HashSet<String>());
+		groups.put(Section.UPDATES_EDITION, new HashSet<String>());
+
 		//back-trace the approved hierarchies and authorize all parent levels as well
 		for (PermissionVO vo : accountRoles) {
 			String[] tok = vo.getSolrTokenTxt().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
@@ -78,13 +93,24 @@ public class SmarttrakRoleVO extends SBUserRole {
 			for (int x=0; x < tok.length; x++) {
 				if (key.length() > 0) key.append(SearchDocumentHandler.HIERARCHY_DELIMITER);
 				key.append(tok[x]);
-				//System.err.println(key)
-				groups.add(key.toString());
+
+				String acl = key.toString();
+				addAclIf(vo.isBrowseAuth(), acl, groups.get(BROWSE_SECTION));
+				addAclIf(vo.isFdAuth(), acl, groups.get(Section.FINANCIAL_DASHBOARD));
+				addAclIf(vo.isGaAuth(), acl, groups.get(Section.GAP_ANALYSIS));
+				addAclIf(vo.isPeAuth(), acl, groups.get(Section.PRODUCT_EXPLOERER));
+				addAclIf(vo.isAnAuth(), acl, groups.get(Section.INSIGHT));
+				addAclIf(vo.isUpdatesAuth(), acl, groups.get(Section.UPDATES_EDITION));
 			}
 		}
 
-		authorizedSections = groups.toArray(new String[groups.size()]);
-		setAccessControlList(gen.getQueryACL(null, authorizedSections));
+		authorizedSections = new EnumMap<>(Section.class);
+		for (Map.Entry<Section, Set<String>> entry : groups.entrySet()) {
+			Section k = entry.getKey();
+			//System.err.println(k + " -> " + entry.getValue())
+			authorizedSections.put(k, entry.getValue().toArray(new String[entry.getValue().size()]));
+			setAccessControlList(k, gen.getQueryACL(null, authorizedSections.get(k)));
+		}
 	}
 
 	/**
@@ -105,6 +131,21 @@ public class SmarttrakRoleVO extends SBUserRole {
 		buildACL();
 	}
 
+
+	/**
+	 * adds the given accountRole to the list of authorized areas if the boolean condition given is true.
+	 * @param isAuth
+	 * @param n
+	 * @param vo
+	 * @param prefix
+	 */
+	private void addAclIf(boolean isAuth, String permission, Set<String> acl ) {
+		if (isAuth) {
+			acl.add(permission);
+		}
+	}
+
+
 	public boolean isFdAuthorized() {
 		return isFdAuth;
 	}
@@ -112,11 +153,12 @@ public class SmarttrakRoleVO extends SBUserRole {
 	/**
 	 * the user is authorized for FD if either their personal record or the account's record is authorized
 	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * -1 at user level is a BLOCK setting.  -1 means no access.
 	 * @param userAuth
 	 * @param acctAuth
 	 */
 	void setFdAuthorized(int userAuth, int acctAuth) {
-		this.isFdAuth = userAuth == 1 || acctAuth == 1;
+		this.isFdAuth = userAuth != -1 && acctAuth == 1;
 	}
 
 	public boolean isGaAuthorized() {
@@ -124,36 +166,83 @@ public class SmarttrakRoleVO extends SBUserRole {
 	}
 
 	/**
-	 * the user is authorized for FD if either their personal record or the account's record is authorized
+	 * the user is authorized for GA if either their personal record or the account's record is authorized
 	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * -1 at user level is a BLOCK setting.  -1 means no access.
 	 * @param userAuth
 	 * @param acctAuth
 	 */
 	void setGaAuthorized(int userAuth, int acctAuth) {
-		this.isGaAuth = userAuth == 1 || acctAuth == 1;
+		this.isGaAuth = userAuth != -1 && acctAuth == 1;
 	}
 
-	public boolean isMktAuthorized() {
-		return isMktAuth;
+	public boolean isPeAuthorized() {
+		return isPeAuth;
 	}
 
 	/**
-	 * the user is authorized for FD if either their personal record or the account's record is authorized
+	 * the user is authorized for Product Explorer if the account's record is authorized
 	 * package access modifier - only SmarttrakRoleModule should be setting this value
 	 * @param userAuth
 	 * @param acctAuth
 	 */
-	void setMktAuthorized(int userAuth, int acctAuth) {
-		this.isMktAuth = userAuth == 1 || acctAuth == 1;
+	void setPeAuthorized(int userAuth, int acctAuth) {
+		this.isPeAuth = userAuth == 1 || acctAuth == 1;
 	}
-	
-	
+
+	public boolean isAnAuthorized() {
+		return isAnAuth;
+	}
+
+	/**
+	 * the user is authorized for UPdates if the account's record is authorized
+	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * @param userAuth
+	 * @param acctAuth
+	 */
+	void setAnAuthorized(int userAuth, int acctAuth) {
+		this.isAnAuth = userAuth == 1 || acctAuth == 1;
+	}
+
+	public boolean isUpAuthorized() {
+		return isUpAuth;
+	}
+
+	/**
+	 * the user is authorized for UPdates if the account's record is authorized
+	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * @param userAuth
+	 * @param acctAuth
+	 */
+	void setUpAuthorized(int userAuth, int acctAuth) {
+		this.isUpAuth = userAuth == 1 || acctAuth == 1;
+	}
+
+
+	/**
+	 * @return
+	 */
+	public boolean isBrowseAuthorized() {
+		return isBrowseAuth;
+	}
+
+	/**
+	 * the user is authorized for any section in the 'Prof' heading, which is browseability of markets/companies/products
+	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * @param userAuth
+	 * @param acctAuth
+	 */
+	void setBrowseAuthorized(int userAuth, int acctAuth) {
+		this.isBrowseAuth = userAuth == 1 || acctAuth == 1;
+	}
+
+
 	/**
 	 * decides whether the 'tools' dropdown menu should visible at all.
 	 * @return
 	 */
 	public boolean isToolsAuthorized() {
-		return getRoleLevel() > AdminControllerAction.EUREPORT_ROLE_LEVEL || isFdAuth || isGaAuth;
+		return isFdAuth || isGaAuth || isPeAuth;
 	}
 
 
@@ -377,7 +466,63 @@ public class SmarttrakRoleVO extends SBUserRole {
 		return acctOwnerFlg;
 	}
 
+	/**
+	 * @deprecated pass a Section
+	 * @return
+	 */
+	@Deprecated
 	public String[] getAuthorizedSections() {
-		return authorizedSections;
+		return getAuthorizedSections(BROWSE_SECTION);
+	}
+
+	/**
+	 * Get the proper ACL for the Section being viewed - return the default if nothing more granular exists
+	 * @param sec
+	 * @return acl - Empty lists are okay (implies no access).  null is not (implies no rule - better to use the default than nothing)
+	 */
+	public String[] getAuthorizedSections(Section sec) {
+		String[] lst = authorizedSections.get(sec);
+		return lst != null ? lst : authorizedSections.get(BROWSE_SECTION);
+	}
+
+
+	/**
+	 * @deprecated not used in SmartTRAK.  Use setAccessControlList(Section, String)
+	 */
+	@Deprecated
+	@Override
+	public void setAccessControlList(String accessControlList) {
+		throw new RuntimeException("not supported");
+	}
+
+	/**
+	 * @param k
+	 * @param queryACL
+	 */
+	private void setAccessControlList(Section sec, String queryACL) {
+		accessControlLists.put(sec, queryACL);
+	}
+
+
+	/**
+	 * @deprecated use the getter that accepts a Section for specificity
+	 * This method overrides the default in the superclass.  Do not remove.
+	 * It uses the 'Browse' ACL for ST. (stored in Section.Product arbitrarily)
+	 */
+	@Deprecated
+	@Override
+	public String getAccessControlList() {
+		//get the proper ACL for the Section being viewed
+		return getAccessControlList(BROWSE_SECTION);
+	}
+
+	/**
+	 * Get the proper ACL for the Section being viewed - return the default if nothing more granular exists
+	 * @param sec
+	 * @return acl - Empty lists are okay (implies no access).  null is not (implies no rule - better to use the default than nothing)
+	 */
+	public String getAccessControlList(Section sec) {
+		String lst = accessControlLists.get(sec);
+		return lst != null ? lst : accessControlLists.get(BROWSE_SECTION);
 	}
 }

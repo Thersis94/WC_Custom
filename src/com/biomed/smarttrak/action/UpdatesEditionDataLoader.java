@@ -1,0 +1,337 @@
+package com.biomed.smarttrak.action;
+
+//Java 1.8
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
+//WC Custom
+import com.biomed.smarttrak.vo.UpdateVO;
+import com.biomed.smarttrak.vo.UpdateXRVO;
+//SMT base libs
+import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
+//WC libs
+import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+
+/****************************************************************************
+ * Title: UpdatesScheduledAction.java <p/>
+ * Project: WC_Custom <p/>
+ * Description: Handles retrieving the updates for a scheduled email send.
+ * "My Updates" - the user will login before seeing this page.<p/>
+ * Copyright: Copyright (c) 2017<p/>
+ * Company: Silicon Mountain Technologies<p/>
+ * @author Devon Franklin
+ * @version 1.0
+ * @since Apr 10, 2017
+ ****************************************************************************/
+public class UpdatesEditionDataLoader extends SimpleActionAdapter {
+
+	protected static final String INNER_JOIN = "inner join ";
+	protected static final String LEFT_JOIN = "left outer join ";
+
+	/**
+	 * No-arg constructor for initialization
+	 */
+	public UpdatesEditionDataLoader() {
+		super();
+	}
+
+	/**
+	 * 
+	 * @param init
+	 */
+	public UpdatesEditionDataLoader(ActionInitVO init) {
+		super(init);
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		String emailDate = req.getParameter("date"); //the date the email was sent.  Prefer to use this to generate 'today's or "last week's" update list.
+		String timeRangeCd = StringUtil.checkVal(req.getParameter("timeRangeCd"));
+		String profileId = StringUtil.checkVal(req.getParameter("profileId"));
+
+		//the end date is where we start subtracting from (base)
+		Date endDt = !StringUtil.isEmpty(emailDate) ? Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, emailDate) : null;
+		if (endDt == null) endDt = Calendar.getInstance().getTime();
+
+		int days = UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd) ? 7 : 1;
+
+		//if today is monday and the range is 1 (daily), we'll need to rollback to Friday as a start date (days=3)
+		if (days == 1) {
+			Calendar end = Calendar.getInstance();
+			end.setTime(endDt);
+			if (Calendar.MONDAY == end.get(Calendar.DAY_OF_WEEK)) days = 3;
+		}
+
+		//establish the date ranges
+		Date[] endpoints = establishDateRanges(endDt, days);
+		//pull values from map
+		Date startDate = endpoints[0];
+		Date endDate = endpoints[1];
+
+		//get list of updates
+		List<UpdateVO> updates = loadUpdates(req, profileId, startDate, endDate);
+
+		//set cosmetic label
+		Calendar dt = Calendar.getInstance();
+		dt.setTime(endDate);
+		dt.add(Calendar.SECOND, -1); //rollback one second before midnight, so the date label looks correct
+		String label = Convert.formatDate(startDate, days == 1 ? "MMM dd, YYYY" : "MMM dd");
+		if (days > 1) label += " - " + Convert.formatDate(dt.getTime(), "MMM dd, YYYY");
+		req.setAttribute("dateRange", label);
+
+		putModuleData(updates);
+	}
+
+	/**
+	 * Helper method that establishes the appropriate days
+	 * @param days
+	 * @return
+	 */
+	protected Date[] establishDateRanges(Date endDt, int days) {
+		if (days == 7) {
+			return makeWeeklyDateRange(endDt, days);
+		} else {
+			return makeDailyDateRange(endDt, days);
+		}
+	}
+
+	/**
+	 * Returns the daily date range of Dates
+	 * @param endDt
+	 * @param daysToGoBack
+	 * @return
+	 */
+	protected Date[] makeDailyDateRange(Date endDt, int days) {
+		//subtract X days from the base date for start date
+		Calendar start = Calendar.getInstance();
+		start.setTime(endDt);
+		start.add(Calendar.DATE, 0-days);
+		start.set(Calendar.HOUR_OF_DAY,0);
+		start.set(Calendar.MINUTE,0);
+		start.set(Calendar.SECOND,0);
+
+		//zero-out end date
+		Calendar endDate = Calendar.getInstance();
+		endDate.setTime(endDt);
+		endDate.set(Calendar.HOUR_OF_DAY,0);
+		endDate.set(Calendar.MINUTE,0);
+		endDate.set(Calendar.SECOND,0);
+
+		//add the start/end dates and daysToGoBack to collection.
+		return new Date[]{ start.getTime(), endDate.getTime()};
+	}
+
+
+	/**
+	 *  Returns the weekly date range of Dates
+	 * @param endDt
+	 * @param daysToGoBack
+	 * @return
+	 */
+	protected Date[] makeWeeklyDateRange(Date endDt, int days) {
+		Calendar cal = Calendar.getInstance();
+		//set the first day to monday
+		cal.setFirstDayOfWeek(Calendar.MONDAY);
+		cal.setTime(endDt);
+		cal.set(Calendar.HOUR_OF_DAY,0);
+		cal.set(Calendar.MINUTE,0);
+		cal.set(Calendar.SECOND,0);
+
+		//subtract that from the end date to get start range. Then go back a week(previous week)
+		cal.add(Calendar.DATE, -(cal.get(Calendar.DAY_OF_WEEK) - cal.getFirstDayOfWeek()));
+		cal.add(Calendar.DATE, -days);
+		Date startDt = cal.getTime();
+
+		//go seven days out to get the end range
+		cal.add(Calendar.DATE, 7);
+
+		//add the start/end dates and daysToGoBack to collection.
+		return new Date[]{ startDt, cal.getTime()};
+	}
+
+
+	/**
+	 * Returns a list of scheduled updates for a specified profile
+	 * @param profileId
+	 * @param timeRangeCd
+	 * @return
+	 */
+	protected  List<UpdateVO> loadUpdates(ActionRequest req, String profileId, Date startDt, Date endDt) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+
+		//build the query
+		String sql;
+		String[] sectionIds = null;
+		if (req.getAttribute("isManageTool") != null) { //set by the subclass
+			sectionIds = req.getParameterValues("sectionId");
+			if (sectionIds == null || sectionIds.length == 0 || "ALL".equalsIgnoreCase(sectionIds[0])) 
+				sectionIds = null; //consolidate alt scenarios
+			sql = buildManageUpdatesSQL(schema, sectionIds);
+		} else {
+			sql = StringUtil.isEmpty(profileId) ? buildAllUpdatesSQL(schema) : buildMyUpdatesSQL(schema);
+		}
+		log.debug(sql + "|" + profileId + "|" + Convert.formatSQLDate(startDt) + "|" + Convert.formatSQLDate(endDt));
+
+		int x=0;
+		UpdateVO vo = null;
+		Map<String, UpdateVO>  updates = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(++x, AdminControllerAction.PUBLIC_SITE_ID);
+			if (!StringUtil.isEmpty(profileId)) ps.setString(++x, profileId);
+			ps.setDate(++x, Convert.formatSQLDate(startDt));
+			ps.setDate(++x, Convert.formatSQLDate(endDt));
+			if (sectionIds != null) {
+				for (String sec : sectionIds)
+					ps.setString(++x, sec);
+			}
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				vo = updates.get(rs.getString("update_id"));
+
+				if (vo == null) {
+					vo = new UpdateVO();
+					vo.setUpdateId(rs.getString("update_id"));
+					vo.setTitle(rs.getString("title_txt"));
+					vo.setMessageTxt(rs.getString("message_txt"));
+					vo.setPublishDt(rs.getDate("publish_dt"));
+					vo.setTypeCd(rs.getInt("type_cd"));
+					vo.setCompanyId(rs.getString("company_id"));
+					vo.setCompanyNm(rs.getString("company_nm"));
+					vo.setProductId(rs.getString("product_id"));
+					vo.setProductNm(rs.getString("product_nm"));
+					vo.setMarketId(rs.getString("market_id"));
+					vo.setMarketNm(rs.getString("market_nm"));
+					vo.setStatusCd(rs.getString("status_cd"));
+					vo.setEmailFlg(rs.getInt("email_flg"));
+					vo.setQsPath((String)attributes.get(Constants.QS_PATH));
+					vo.setSSLFlg(rs.getInt("ssl_flg"));
+					vo.setSiteAliasUrl(rs.getString("site_alias_url"));
+					//log.debug("loaded update: " + vo.getUpdateId())
+				}
+
+				//add the new section to it
+				UpdateXRVO xrvo = new UpdateXRVO(vo.getUpdateId(), rs.getString("section_id"));
+				xrvo.setUpdateSectionXrId(rs.getString("update_section_xr_id"));
+				vo.addUpdateXrVO(xrvo);
+
+				updates.put(vo.getUpdateId(), vo);
+			}
+
+		} catch (SQLException sqle) {
+			log.error("could not load updates", sqle);
+		}
+
+		log.debug("loaded " + updates.size() + " updates");
+		return new ArrayList<>(updates.values());
+	}
+
+
+	/**
+	 * Builds the webpage query
+	 * @param schema
+	 * @return
+	 */
+	protected String buildMyUpdatesSQL(String schema) {
+		StringBuilder sql = new StringBuilder(800);
+		appendSelect(sql);
+		sql.append("from profile p ");
+		sql.append(INNER_JOIN).append(schema).append("biomedgps_user u on p.profile_id=u.profile_id ");
+		sql.append(INNER_JOIN).append(schema).append("biomedgps_account a on a.account_id=u.account_id ");
+		sql.append(INNER_JOIN).append(schema).append("biomedgps_account_acl acl on acl.account_id=a.account_id and acl.updates_no=1 ");
+		sql.append(INNER_JOIN).append(schema).append("biomedgps_section s on s.section_id=acl.section_id "); //lvl3 hierarchy
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_section s2 on s.parent_id=s2.section_id "); //lvl2 hierarchy
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_section s3 on s2.parent_id=s3.section_id "); //lvl1 hierarchy
+		sql.append(INNER_JOIN).append(schema).append("biomedgps_update_section us on us.section_id in (s.section_id,s2.section_id,s3.section_id) "); //update attached to either of the 3 hierarchy levels; acl, acl-parent, acl-grandparent
+		sql.append(INNER_JOIN).append(schema).append("biomedgps_update up on up.update_id=us.update_id ");
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on c.company_id=coalesce(up.company_id,prod.company_id) "); //join from the update, or from the product. Prefer company
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
+		sql.append(LEFT_JOIN).append("site st on st.site_id = ?");
+		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1");
+		sql.append("where p.profile_id=? and up.email_flg=1 and up.status_cd in ('R','N') ");
+		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
+		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		return sql.toString();
+	}
+
+	/**
+	 * Builds the scheduled email query
+	 * @param schema
+	 * @param req - used by subclasses
+	 * @return
+	 */
+	protected String buildAllUpdatesSQL(String schema) {
+		StringBuilder sql = new StringBuilder(800);
+		appendSelect(sql);
+		sql.append("from ").append(schema).append("biomedgps_update_section us ");
+		sql.append(INNER_JOIN).append(schema).append("biomedgps_update up on up.update_id=us.update_id ");
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on c.company_id=coalesce(up.company_id,prod.company_id) "); //join from the update, or from the product. Prefer company
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
+		sql.append(LEFT_JOIN).append("site st on st.site_id = ?");
+		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1");
+		sql.append("where up.email_flg=1 and up.status_cd in ('R','N') ");
+		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
+		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		return sql.toString();
+	}
+
+
+	/**
+	 * builds the /manage tool query (Manage Updates page)
+	 * @param schema
+	 * @param sectionIds
+	 * @return
+	 */
+	protected String buildManageUpdatesSQL(String schema, String[] sectionIds) {
+		StringBuilder sql = new StringBuilder(800);
+		appendSelect(sql);
+		sql.append("from ").append(schema).append("biomedgps_update_section us ");
+		sql.append(INNER_JOIN).append(schema).append("biomedgps_update up on up.update_id=us.update_id ");
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on c.company_id=coalesce(up.company_id,prod.company_id) "); //join from the update, or from the product. Prefer company
+		sql.append(LEFT_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
+		sql.append(LEFT_JOIN).append("site st on st.site_id = ?");
+		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1");
+		sql.append("where coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
+
+		//note this query ignores email_flg=1 (compared to the two above)
+
+		//without a section only show un-reviewed (New) status level
+		sql.append("and up.status_cd in ('N', 'R') ");
+
+		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		return sql.toString();
+	}
+
+
+	/**
+	 * The select columns for all 3 queries - ensures consistency.  If you change this make sure all 3 scenarios get tested!
+	 * @param sql
+	 */
+	private void appendSelect(StringBuilder sql) {
+		sql.append("select distinct up.update_id, up.title_txt, up.message_txt, coalesce(up.publish_dt, up.create_dt) as publish_dt, up.status_cd, up.email_flg, ");
+		sql.append("up.type_cd, coalesce(up.order_no,0) as order_no, us.update_section_xr_id, us.section_id, ");
+		sql.append("c.short_nm_txt as company_nm, prod.short_nm as product_nm, ");
+		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
+		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, sa.site_alias_url, st.ssl_flg ");
+	}
+}

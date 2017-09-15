@@ -1,73 +1,60 @@
-package com.biomed.smarttrak.admin;
+package com.biomed.smarttrak.action;
 
-//jdk 1.8.x
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-//wc_custom libs
-import com.biomed.smarttrak.action.UpdatesWeeklyReportAction;
-import com.biomed.smarttrak.admin.UpdatesAction.UpdateType;
+import com.biomed.smarttrak.admin.AbstractTreeAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
+import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
 import com.biomed.smarttrak.vo.UserVO;
-//smt base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.http.session.SMTSession;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.DateUtil;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
 /****************************************************************************
- * Title: UpdateSectionHierarchyAction.java <p/>
- * Project: WC_Custom <p/>
- * Description: Facade-like action responsible for combining the section hierarchy 
- * data along with the associated updates weekly reports data.<p/>
- * Copyright: Copyright (c) 2017<p/>
- * Company: Silicon Mountain Technologies<p/>
- * @author Devon Franklin
+ * <b>Title:</b> UpdatesEditionAction.java<br/>
+ * <b>Description:</b> Generates the email-accompanying webpage, /updates-edition. 
+ * <br/>
+ * <b>Copyright:</b> Copyright (c) 2017<br/>
+ * <b>Company:</b> Silicon Mountain Technologies<br/>
+ * @author James McKain
  * @version 1.0
- * @since Mar 9, 2017
- *   Updates - Included the root node in listing. Removed intended depth level value 
- *   to allow full hierarchy searching. 06/23/17
+ * @since Aug 7, 2017
  ****************************************************************************/
-public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
+public class UpdatesEditionAction extends SimpleActionAdapter {
 	public static final String PROFILE_ID = "profileId";
 
-	/**
-	 * No arg-constructor for initialization
-	 */
-	public UpdatesSectionHierarchyAction() {
+	public UpdatesEditionAction() {
 		super();
 	}
 
 	/**
-	 * Initializes class with ActionInitVO
-	 * @param init
+	 * @param arg0
 	 */
-	public UpdatesSectionHierarchyAction(ActionInitVO init) {
-		super(init);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see com.biomed.smarttrak.admin.SectionHierarchyAction#list(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void list(ActionRequest req) throws ActionException {
-		//pass to superclass for portlet registration (WC admintool)
-		super.retrieve(req);
+	public UpdatesEditionAction(ActionInitVO arg0) {
+		super(arg0);
 	}
 
 	/*
@@ -75,37 +62,44 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
-	public void retrieve(ActionRequest req) throws ActionException{		
-		log.debug("Retrieving updates section hierarchy listing...");
+	public void retrieve(ActionRequest req) throws ActionException {
+		log.debug("Retrieving Updates Edition listings");
+
+		//check section permissions by name.
+		//parent-level permissions are implied; if the user can see any child level they can see this section.
+		String marketNm = req.getParameter("marketNm");
+		if (!StringUtil.isEmpty(marketNm)) {
+			String marketAcl = getMarketAcl(marketNm);
+			checkUserHasMarketPermission(marketAcl, req); //this will throw ActionNotAuthorizedException when applicable
+		}
 
 		//load the core section hierarchy
 		Tree t = loadDefaultTree();
 
 		//load the updates that should be displayed
 		List<UpdateVO> updates = fetchUpdates(req);
-		log.debug("Number of updates retrieved: " + updates.size());
 
 		//loop the updates and create a Node on the hierarchy for each of their parent levels (Update Type)
 		for (UpdateVO vo : updates) {
 			List<UpdateXRVO> secs = vo.getUpdateSections();
 			if (secs == null || secs.isEmpty()) continue;
 			for (UpdateXRVO xrvo : secs) {
-				log.debug("sec=" + vo.getTitle() + " " + xrvo.getSectionId());
+				//log.debug("sec=" + vo.getTitle() + " " + xrvo.getSectionId())
 				//find at deepest a section level 3 node.  We may be dealing with a level 4 here
 				Node secNode = t.findNode(xrvo.getSectionId());
 				while (secNode.getDepthLevel() > 3) {
 					secNode = t.findNode(secNode.getParentId());
-					log.debug("found  parent " + secNode);
+					//log.debug("found  parent " + secNode)
 				}
 
-				log.debug("secNode =" + secNode.getNodeName() + " depth=" + secNode.getDepthLevel());
+				//log.debug("secNode =" + secNode.getNodeName() + " depth=" + secNode.getDepthLevel())
 				//add a node to the stack for the Type - NodeID must be unique (contextualize it w/sectionId)
 				Node typeNode = t.findNode(secNode.getNodeName()+vo.getTypeNm());
 				if (typeNode == null) {
 					typeNode = new Node(secNode.getNodeName()+vo.getTypeNm(), secNode.getNodeId());
 					typeNode.setNodeName(vo.getTypeNm());
 					typeNode.setOrderNo(vo.getTypeCd());
-					log.debug("adding node for type: " + typeNode);
+					//log.debug("adding node for type: " + typeNode)
 					t.findNode(typeNode.getParentId()).addChild(typeNode);
 				}
 			}
@@ -115,35 +109,24 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		//while there, add a 4th level that equates to the Update Types.
 		//We'll them attach the updates themselves, as the lowest level.
 		t = marryUpdatesToNodes(t, updates);
-		
-		if (log.isDebugEnabled()) {
-			for (Node n : t.preorderList())
-				log.debug(n);
-		}
 
 		//set the appropriate time range onto request for view
 		setDateRange(req);
 
-		putModuleData(t, updates.size(), false);
-		
-		//if this is for the email, format the data as a Map<String, Integer>() containing the root levels
-		if (req.getAttribute("isWebpage") == null) {
-			formatDataMap(t);
-		}
+		packageDataForDisplay(t, updates);
 	}
 
+
 	/**
-	 * @param t
+	 * @return
 	 */
-	private void formatDataMap(Tree t) {
-		Map<String, Integer> counts = new HashMap<>();
-		for (Node n : t.getRootNode().getChildren()) {
-			if (n.getTotalChildren() > 0)
-				counts.put(n.getNodeName(), n.getTotalChildren());
-			log.debug(n.getNodeName() + " =" +  n.getTotalChildren());
-		}
-		putModuleData(counts, counts.size(), false);
+	private Tree loadDefaultTree() {
+		SectionHierarchyAction sha = new SectionHierarchyAction();
+		sha.setDBConnection(getDBConnection());
+		sha.setAttributes(getAttributes());
+		return sha.loadDefaultTree();
 	}
+
 
 	/**
 	 * @param t
@@ -171,7 +154,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 */
 	@SuppressWarnings("unchecked")
 	private void iterateUpdatesForNode(Node n, Tree t, List<UpdateVO> updates, Set<String> exclusions) {
-		log.debug("depth= " + n.getDepthLevel() + " name=" + n.getNodeName());
+		//log.debug("depth= " + n.getDepthLevel() + " name=" + n.getNodeName())
 		List<UpdateVO> secUpds = new ArrayList<>();
 		for (UpdateVO vo : updates) {
 			List<UpdateXRVO> secs = vo.getUpdateSections();
@@ -179,11 +162,12 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			for (UpdateXRVO xrvo : secs) {
 				if (n.getNodeId().equals(xrvo.getSectionId())) {
 					secUpds.add(vo);
-					log.debug(vo.getUpdateId() + " is comitted to " + n.getNodeName() + " &par=" + n.getParentId());
+					//log.debug(vo.getUpdateId() + " is comitted to " + n.getNodeName() + " &par=" + n.getParentId())
 					exclusions.add(vo.getUpdateId());
 				}
 			}
 		}
+
 		//if depth is 4 then give these to our parent, level 3
 		if (4 == n.getDepthLevel()) {
 			Node par = t.findNode(n.getParentId());
@@ -196,7 +180,7 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 			n.setUserObject(sortData(secUpds));
 			n.setTotalChildren(secUpds.size());
 		}
-		log.debug("saved " + n.getNodeName() + " has " + n.getTotalChildren());
+		//log.debug("saved " + n.getNodeName() + " has " + n.getTotalChildren())
 
 		//dive deeper into this node's children
 		for (Node child : n.getChildren())
@@ -204,22 +188,17 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 
 	}
 
+
 	/**
 	 * Sort the Updates given into order determined by the UpdateType Enum.
 	 * @param data
 	 * @return
 	 */
 	private List<UpdateVO> sortData(List<UpdateVO> data) {
-		List<UpdateVO> newOrder = new ArrayList<>();
-		for(UpdateType ut : UpdateType.values()) {
-			for(UpdateVO u : data) {
-				if(u.getType().equals(ut)) {
-					newOrder.add(u);
-				}
-			}
-		}
-		return newOrder;
+		Collections.sort(data, new UpdatesEditionComparator());
+		return data;
 	}
+
 
 	/**
 	 * Retrieves the correct updates, either scheduled or general list of updates
@@ -228,20 +207,11 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	protected List<UpdateVO> fetchUpdates(ActionRequest req) throws ActionException{
-		ActionInterface actInf;
+	protected List<UpdateVO> fetchUpdates(ActionRequest req) throws ActionException {
+		//position the user's profileId where the data load can expect it.
+		setProfileId(req);
 
-		//grab the profile id from the request or session
-		String profileId = getProfileId(req);
-
-		//if profile id is present, return the list of scheduled updates
-
-		if (profileId != null) {
-			actInf =  new UpdatesScheduledAction();
-		} else { //retrieve the list of daily/weekly updates
-			req.setParameter(UpdatesWeeklyReportAction.EMAIL_UPDATES, "true");
-			actInf = new UpdatesWeeklyReportAction();
-		}
+		ActionInterface actInf = new UpdatesEditionDataLoader();
 		actInf.setAttributes(attributes);
 		actInf.setDBConnection(dbConn);
 		actInf.retrieve(req);
@@ -249,33 +219,19 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		return (List<UpdateVO>) mod.getActionData();
 	}
 
+
 	/**
 	 * Grabs the profileId from either the request or session if available
 	 * @param req
 	 * @return
 	 */
-	protected String getProfileId(ActionRequest req){
-		String profileId = null;
-
-		//This means that a unique send(no account was used) has occurred, simply return
-		if(Convert.formatBoolean(req.getParameter("uniqueSendFlg"))){
-			return profileId;
+	protected void setProfileId(ActionRequest req) {
+		SMTSession ses = req.getSession();
+		UserVO user = ses != null ? (UserVO) ses.getAttribute(Constants.USER_DATA) : null;
+		if (user != null) {
+			req.setParameter(PROFILE_ID, user.getProfileId()); //place on request for downstream
+			req.setAttribute("statusCode", user.getLicenseType()); //set their status code on request
 		}
-
-		if(req.hasParameter(PROFILE_ID)){
-			profileId = req.getParameter(PROFILE_ID);
-		}else{
-			SMTSession ses = req.getSession();
-			UserVO user = (UserVO) ses.getAttribute(Constants.USER_DATA);
-			if(user != null){
-				profileId = user.getProfileId();
-				req.setParameter(PROFILE_ID, profileId); //place on request for downstream
-				//set their status code on request
-				req.setAttribute("statusCode", user.getStatusCode());
-				req.setAttribute("isWebpage", "1");
-			}	
-		}
-		return profileId;
 	}
 
 
@@ -291,21 +247,79 @@ public class UpdatesSectionHierarchyAction extends AbstractTreeAction {
 		String dateRange = null;
 
 		//determine the date range
-		if(UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd)){
+		if (UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd)) {
 			dateRange = DateUtil.previousWeek(DateFormat.MEDIUM);
-		}else{
+		} else {
 			dateRange = DateUtil.getDate(-1, DateFormat.MEDIUM);
 		}
 
 		req.setAttribute("dateRange", dateRange);
 	}
 
+
+	/**
+	 * overwritten by subclass (embed action) - puts the data into a container useful to the View.
+	 * @param t
+	 * @param updates
+	 */
+	protected void packageDataForDisplay(Tree t, List<UpdateVO> updates) {
+		putModuleData(t, updates.size(), false);
+	}
+
+
+	/**
+	 * Verify if the user has permissions to view data attached to this market.
+	 * If not, redirect.
+	 * @param marketNm
+	 * @param req
+	 * @throws ActionNotAuthorizedException
+	 */
+	private void checkUserHasMarketPermission(String assetAcl, ActionRequest req) throws ActionNotAuthorizedException {
+		SecureSolrDocumentVO svo = new SecureSolrDocumentVO(null);
+		svo.addACLGroup(Permission.GRANT, assetAcl);
+		SecurityController.getInstance(req).isUserAuthorized(svo, req);
+	}
+
+
+	/**
+	 * Helper method builds a Solr like Token for a given marketNm by looking for
+	 * a section under the master root that matches the given marketNm.
+	 * @param marketNm
+	 * @return
+	 */
+	private String getMarketAcl(String marketNm) {
+		StringBuilder sql = new StringBuilder(400);
+		String custom = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select r.solr_token_txt as root_solr, s.solr_token_txt as gps_solr ");
+		sql.append("from ").append(custom);
+		sql.append("biomedgps_section r ");
+		sql.append("inner join ").append(custom).append("biomedgps_section s on r.section_id = s.parent_id ");
+		sql.append("where s.section_nm = ? and r.section_id = ?");
+
+		log.debug(sql.toString());
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, marketNm);
+			ps.setString(2, AbstractTreeAction.MASTER_ROOT);
+
+			ResultSet rs = ps.executeQuery();
+
+			//If we have a result, build the token hierarchy String.
+			if (rs.next()) {
+				return rs.getString("root_solr") + "~" + rs.getString("gps_solr");
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+		return null;
+	}
+
+
 	/*
 	 * (non-Javadoc)
-	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
-	public String getCacheKey() {
-		return null;
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
 	}
 }

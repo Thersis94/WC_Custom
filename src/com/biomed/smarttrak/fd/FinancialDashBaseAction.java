@@ -11,6 +11,7 @@ import java.util.Map;
 
 import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.admin.AbstractTreeAction;
+import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.fd.FinancialDashAction.DashType;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
@@ -148,7 +149,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected SectionHierarchyAction getHierarchyAction() {
-		SectionHierarchyAction sha = new SectionHierarchyAction(this.actionInit);
+		SectionHierarchyAction sha = new FinancialDashHierarchyAction(this.actionInit);
 		sha.setAttributes(this.attributes);
 		sha.setDBConnection(dbConn);
 		
@@ -441,7 +442,14 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		sql.append("and r.YEAR_NO = ? ");
 		
 		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
+
+		// Handle edit mode specific columns in the group by
 		if (dash.getEditMode()) {
+			DisplayType dt = dash.getColHeaders().getDisplayType();
+			for (int i = 1; i <= getDataYears(dt, dash.getCurrentYear()); i++) {
+				sql.append(", REVENUE_ID_").append(i-1).append(" ");
+			}
+			
 			if (TableType.COMPANY == tt) {
 				sql.append(", r.COMPANY_ID, r.REGION_CD ");
 			} else {
@@ -484,13 +492,24 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		List<String> companyIds = Arrays.asList(req.getParameterValues("companyId[]"));
 		List<CountryType> countryTypes = dashVO.getCountryTypes();
 		
-		// Add the records
+		// Get all of the years to iterate over
+		FinancialDashColumnSet columnSet = new FinancialDashColumnSet(req);
+		int startYear = columnSet.getCalendarYear();
+		int endYear = startYear - (getDataYears(columnSet.getDisplayType(), columnSet.getCalendarYear()) - 1); // Only need to add for what is visible in the dashboard
+		
+		// Add the records for every company selected
 		for (String companyId : companyIds) {
 			revenueVO.setCompanyId(companyId);
 			
+			// Add for every region selected
 			for (CountryType countryType : countryTypes) {
 				revenueVO.setRegionCd(countryType.toString());
-				addRevenueRecord(revenueVO);
+				
+				// Add for every year visible in the view
+				for (int year = startYear; year > endYear; year--) {
+					revenueVO.setYearNo(year);
+					addRevenueRecord(revenueVO);
+				}
 			}
 		}
 	}
@@ -570,18 +589,14 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	/**
 	 * Gets the existing base revenue data that is related to a specific scenario.
 	 * 
-	 * @param sectionId
-	 * @param countryType
-	 * @param year
-	 * @param scenarioId
+	 * @param dashVO
 	 * @return
 	 */
-	protected Map<String, FinancialDashRevenueVO> getBaseData(String sectionId, String countryType, int year, String scenarioId) {
+	protected Map<String, FinancialDashRevenueVO> getBaseData(FinancialDashVO dashVO, int yearCnt) {
 		Map<String, FinancialDashRevenueVO> baseData = new HashMap<>();
 		
-		String sql = getRevenueSql();
 		List<Object> params = new ArrayList<>();
-		params.addAll(Arrays.asList(sectionId, year, countryType, scenarioId));
+		String sql = getRevenueSql(dashVO, yearCnt, params);
 		
 		List<?> revenueRecords = dbp.executeSelect(sql, params, new FinancialDashRevenueVO());
 		
@@ -596,15 +611,73 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	/**
 	 * Returns the sql required for getting all base data associated to a scenario.
 	 * 
+	 * @param dashVO - dashboard options to use in the record selection
+	 * @param params - params for db processor
 	 * @return
 	 */
-	private String getRevenueSql() {
+	private String getRevenueSql(FinancialDashVO dashVO, int yearCnt, List<Object> params) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(300);
 		
 		sql.append("select r.* from ").append(custom).append("BIOMEDGPS_FD_REVENUE r ");
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY so on r.REVENUE_ID = so.REVENUE_ID ");
-		sql.append("where r.SECTION_ID = ? and r.YEAR_NO = ? and r.REGION_CD = ? and so.SCENARIO_ID = ? ");
+		sql.append("where so.SCENARIO_ID = ? ");
+		params.add(dashVO.getScenarioId());
+		
+		// Make sure to only get the years shown in the dashboard
+		sql.append("and ").append(getYearSql(dashVO, yearCnt, params, "r"));
+		
+		// If company id is passed, user is looking at a company, not a section
+		if (!StringUtil.isEmpty(dashVO.getCompanyId())) {
+			sql.append("and r.COMPANY_ID = ? ");
+			params.add(dashVO.getCompanyId());
+		} else {
+			sql.append("and r.SECTION_ID = ? ");
+			params.add(dashVO.getSectionId());
+		}
+		
+		sql.append("and ").append(getRegionSql(dashVO, params));
+		
+		return sql.toString();
+	}
+	
+	/**
+	 * Returns sql to filter by the selected year(s)
+	 * 
+	 * @param dashVO
+	 * @param yearCnt
+	 * @param params
+	 * @param alias
+	 * @return
+	 */
+	protected String getYearSql(FinancialDashVO dashVO, int yearCnt, List<Object> params, String alias) {
+		StringBuilder sql = new StringBuilder(25);
+		
+		int year = dashVO.getColHeaders().getCalendarYear();
+		sql.append(alias).append(".YEAR_NO in (").append(DBUtil.preparedStatmentQuestion(yearCnt)).append(") ");
+		for (int i = 0; i < yearCnt; i++) {
+			params.add(year--);
+		}
+		
+		return sql.toString();
+	}
+	
+	/**
+	 * Returns sql to filter by the selected region(s)
+	 * 
+	 * @param dashVO
+	 * @param params
+	 * @return
+	 */
+	protected String getRegionSql(FinancialDashVO dashVO, List<Object> params) {
+		StringBuilder sql = new StringBuilder(25);
+		
+		// In the case of WW, user is looking at multiple regions
+		List<CountryType> regions = dashVO.getCountryTypes();
+		sql.append("r.REGION_CD in (").append(DBUtil.preparedStatmentQuestion(regions.size())).append(") ");
+		for (CountryType region : regions) {
+			params.add(region.toString());
+		}
 		
 		return sql.toString();
 	}

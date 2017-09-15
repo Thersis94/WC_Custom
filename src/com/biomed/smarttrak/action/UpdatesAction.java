@@ -10,6 +10,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
@@ -71,7 +72,8 @@ public class UpdatesAction extends SBActionAdapter {
 		transposeRequest(req, docIds);
 
 		//Get SolrSearch ActionVO.
-		SolrAction sa = new SolrAction(actionInit);
+		req.setAttribute(SmarttrakSolrAction.SECTION, Section.UPDATES_EDITION);
+		SolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		sa.retrieve(req);
@@ -160,7 +162,7 @@ public class UpdatesAction extends SBActionAdapter {
 		//now filter the global hierarchy down to only the areas the user can view:
 		List<Node> masterList = (List<Node>)mod.getActionData();
 		List<Node> data = new ArrayList<>(masterList.size());
-		List<String> roles = Arrays.asList(role.getAuthorizedSections());
+		List<String> roles = Arrays.asList(role.getAuthorizedSections(Section.UPDATES_EDITION));
 		for (Node n : masterList) {
 			SectionVO vo = (SectionVO) n.getUserObject();
 			if (roles.contains(vo.getSolrTokenTxt()))

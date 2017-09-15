@@ -28,6 +28,7 @@ public class TeamMemberVO implements HumanNameIntfc {
 	private Date createDate;
 	private String firstName;
 	private String lastName;
+	private boolean expired;
 
 	public TeamMemberVO() {
 		super();
@@ -120,5 +121,14 @@ public class TeamMemberVO implements HumanNameIntfc {
 
 	public void setPkId(String pkId) {
 		this.pkId = pkId;
+	}
+
+	@Column(name="expired", isReadOnly=true)
+	public boolean isExpired() {
+		return expired;
+	}
+
+	public void setExpired(boolean expired) {
+		this.expired = expired;
 	}
 }
