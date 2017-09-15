@@ -64,11 +64,11 @@ public class UnitVO implements Serializable {
 	private ProdType productType = null;
 	private String productFamily = null;
 	private int refurbishedFlg = 0;
-	
+
 	//this is for UnitHistoryReportVO
 	private PhysicianVO phys = null;
 	private Integer transactionType = null;
-	
+
 	/**
 	 * Possible unit types
 	 */
@@ -76,7 +76,7 @@ public class UnitVO implements Serializable {
 		MEDSTREAM, //The original CU type
 		ICP_EXPRESS
 	}
-	
+
 	public UnitVO() {
 	}
 
@@ -88,10 +88,10 @@ public class UnitVO implements Serializable {
 		statusId = Convert.formatInteger(req.getParameter("unitStatusId"));
 		commentsText = req.getParameter("commentsText");
 		parentId = StringUtil.checkVal(req.getParameter("unitParentId"), null);
-		
+
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		organizationId = site.getOrganizationId();
-		
+
 		ifuArticleNo = req.getParameter("ifuArtNo");
 		ifuRevNo = req.getParameter("ifuRevNo");
 		programArticleNo = req.getParameter("progArtNo");
@@ -107,9 +107,9 @@ public class UnitVO implements Serializable {
 		setProductType(req.getParameter("prodCd"));
 		refurbishedFlg = Convert.formatInteger(req.getParameter("refurbishedFlg"));
 		setProductFamily(req.getParameter("productFamily"));
-		
+
 	}
-	
+
 	/**
 	 * @param rs
 	 */
@@ -133,7 +133,7 @@ public class UnitVO implements Serializable {
 		parentId = db.getStringVal("parent_id", rs);
 		createDate = db.getDateVal("update_dt", rs);
 		if (createDate == null) createDate = db.getDateVal("create_dt", rs);
-		
+
 		ifuArticleNo = db.getStringVal("ifu_art_no", rs);
 		ifuRevNo = db.getStringVal("ifu_rev_no", rs);
 		programArticleNo = db.getStringVal("prog_guide_art_no", rs);
@@ -148,8 +148,8 @@ public class UnitVO implements Serializable {
 		setProductType(db.getStringVal("product_cd",rs));
 		refurbishedFlg = db.getIntVal("refurbished_flg", rs);
 		setProductFamily(db.getStringVal("PRODUCT_FAMILY_TXT", rs));
-		
-		
+
+
 		setPhys(new PhysicianVO(rs));
 		db = null;
 	}
@@ -389,19 +389,19 @@ public class UnitVO implements Serializable {
 	public void setServiceDate(Date serviceDate) {
 		this.serviceDate = serviceDate;
 	}
-	
+
 	public String getModifyingUserId(){
 		return modifyingUserId;
 	}
-	
+
 	public void setModifyingUserId(String modifyingUserId){
 		this.modifyingUserId = modifyingUserId;
 	}
-	
+
 	public String getModifyingUserName(){
 		return modifyingUserName;
 	}
-	
+
 	public void setModifyingUserName(String modifyingUserName){
 		this.modifyingUserName = modifyingUserName;
 	}
@@ -446,9 +446,11 @@ public class UnitVO implements Serializable {
 	public void setProductType(String pt) {
 		try {
 			productType = ProdType.valueOf(pt);
-		} catch (Exception e) {}
+		} catch (Exception e) {
+			//ignoreable
+		}
 	}
-	
+
 	public String getProductCode() {
 		if ( productType == null)
 			return ProdType.MEDSTREAM.toString();
@@ -485,7 +487,7 @@ public class UnitVO implements Serializable {
 
 class UnitComparator implements Comparator<UnitVO> {
 	public static final long serialVersionUID = 1l;
-	
+
 	/**
 	 * Compares using the last name and then first name and then state
 	 */
@@ -495,6 +497,6 @@ class UnitComparator implements Comparator<UnitVO> {
 		if (o1 == null) return -1;
 		else if (o2 == null) return 1;
 		return o1.getSerialNo().compareToIgnoreCase(o2.getSerialNo());
-		
+
 	}
 }

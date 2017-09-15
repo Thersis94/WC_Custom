@@ -305,7 +305,7 @@ public class UserAction extends SimpleActionAdapter {
 		
 		//get the UserDataVOs for these people...
 		try {
-			Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, new ArrayList<String>(data.keySet()));
+			Map<String, UserDataVO> profiles = AccountFacadeAction.loadProfiles(attributes, dbConn, data.keySet());
 			log.debug("profileCnt=" + profiles.size());
 			for (String p : profiles.keySet()) {
 				PersonVO person = data.get(p);

@@ -33,8 +33,6 @@ import com.siliconmtn.util.UUIDGenerator;
 //WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.user.ProfileManager;
-import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -62,7 +60,7 @@ public class UnitAction extends SBActionAdapter {
 	public static final int STATUS_BEING_SERVICED = 110;
 	public static final int STATUS_DECOMMISSIONED = 100;
 	public static final int STATUS_RETURNED = 140;
-	
+
 	private Object msg = null;
 
 	//map storing possible sort fields for the retrieve query
@@ -257,7 +255,7 @@ public class UnitAction extends SBActionAdapter {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (role == null) role = new SBUserRole();
 		String prodCd = StringUtil.checkVal(mod.getAttribute(ModuleVO.ATTRIBUTE_1), UnitVO.ProdType.MEDSTREAM.toString());
-		
+
 		//this was a hack for the ICP team.  They want all their users to be able to see all units.  This doesn't apply to Medstream though.
 		boolean isICPOrAdmin = role.getRoleLevel() != 10 || prodCd.equals("ICP_EXPRESS");
 		String join = (isICPOrAdmin) ? "left outer join " : "inner join ";
@@ -270,7 +268,12 @@ public class UnitAction extends SBActionAdapter {
 		List<UnitVO> data = new ArrayList<>();
 		UnitSearchVO search = new UnitSearchVO(req, prodCd);
 		String unitId = req.getParameter("unitId");
-		boolean isReport = Convert.formatBoolean(req.getParameter("excel"));
+		boolean isExcelReport = Convert.formatBoolean(req.getParameter("excel"));
+		if (isExcelReport) {
+			//get all the records for Excel reports
+			search.setPage(1);
+			search.setRpp(Integer.MAX_VALUE);
+		}
 		log.debug("prod=" + prodCd);
 
 		StringBuilder sql = new StringBuilder(1000);
@@ -291,7 +294,7 @@ public class UnitAction extends SBActionAdapter {
 		sql.append("where a.organization_id='").append(site.getOrganizationId()).append("' ");
 
 		// add any search filters
-		if (search.getStatusId() != null) sql.append(" and a.unit_status_id=").append(search.getStatusId());  //unit status
+		if (search.getStatusId() != null) sql.append(" and a.unit_status_id=").append(StringUtil.checkVal(search.getStatusId(),true));  //unit status
 		if (search.getAccountName() != null) sql.append(" and d.account_nm like '").append(search.getAccountName()).append("%' ");
 		if (search.getSerialNoText() != null) sql.append(" and a.serial_no_txt like '").append(search.getSerialNoText()).append("%' ");
 		if (unitId != null) sql.append(" and a.unit_id='").append(unitId).append("' ");
@@ -308,7 +311,7 @@ public class UnitAction extends SBActionAdapter {
 		//are looked up in a separate process, the return value will be used to indicate
 		//which of them should be used to organize the unit vo's
 		//appendOrderBy(search, sql);
-		
+
 		//sql.append(") select * from qry where RowNumber between ").append(search.getStart()).append(" AND ").append(search.getEnd());
 
 		log.debug(sql);
@@ -331,7 +334,7 @@ public class UnitAction extends SBActionAdapter {
 				data.add(unit);
 			}
 			rs.close();
-			
+
 			//get the total RS size
 			rs = ps.executeQuery(qryBldr.buildCountQuery(sql));
 			if (rs.next())
@@ -350,7 +353,7 @@ public class UnitAction extends SBActionAdapter {
 		log.debug("loaded " + data.size() + " units");
 
 		//support exporting this data set to reports
-		if (isReport) {
+		if (isExcelReport) {
 			AbstractSBReportVO rpt = null;
 			//do a full report for non-sales-reps, do a limited report for Reps
 			if (role.getRoleLevel() > SecurityController.PUBLIC_REGISTERED_LEVEL) {
@@ -365,8 +368,8 @@ public class UnitAction extends SBActionAdapter {
 		}
 
 	}
-	
-	
+
+
 	/**
 	 * query ProfileManager for the encrypted personal information (names)
 	 * @param search
@@ -374,21 +377,20 @@ public class UnitAction extends SBActionAdapter {
 	 * @param data
 	 */
 	private List<UnitVO> attachProfiles(RequestSearchVO search, List<UnitVO> data) {
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		Set<String> profileIds = new HashSet<>();
 		for (UnitVO vo : data) {
 			profileIds.add(vo.getRepId());
 			profileIds.add(vo.getPhysicianId());
 			profileIds.add(vo.getModifyingUserId());
 		}
-		
+
 		List<UnitVO> newResults = new ArrayList<>(data.size());
 		try {
-			Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, new ArrayList<String>(profileIds));
+			Map<String, UserDataVO> profiles = AccountFacadeAction.loadProfiles(attributes, dbConn, profileIds);
 			for (UnitVO vo : data) {
 				//bind the Rep
 				UserDataVO user = profiles.get(vo.getRepId());
-				if (user != null) vo.setRepName(user.getFirstName() + " " + user.getLastName());
+				if (user != null) vo.setRepName(StringUtil.checkVal(user.getFirstName()) + " " + StringUtil.checkVal(user.getLastName()));
 
 				//strip out any results not matching the desired rep.  
 				//Since lastName is encrypted this has to be done here (post processing)
@@ -407,7 +409,7 @@ public class UnitAction extends SBActionAdapter {
 				//bind the Physician
 				user = profiles.get(vo.getPhysicianId());
 				if (user != null) {
-					vo.setPhysicianName(user.getFirstName() + " " + user.getLastName());
+					vo.setPhysicianName(StringUtil.checkVal(user.getFirstName()) + " " + StringUtil.checkVal(user.getLastName()));
 					vo.getPhysician().setData(user.getDataMap());
 				}
 				newResults.add(vo);
@@ -441,7 +443,7 @@ public class UnitAction extends SBActionAdapter {
 
 	private void historyReport(ActionRequest req, int roleLevel) throws ActionException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		List<String> profileIds = new ArrayList<>();
+		Set<String> profileIds = new HashSet<>();
 		List<UnitVO> data = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select a.*, d.account_nm, g.profile_id as phys_profile_id, ");
@@ -483,14 +485,13 @@ public class UnitAction extends SBActionAdapter {
 			throw new ActionException(sqle);
 		}
 
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		List<UnitVO> newResults = new ArrayList<>();
 		try {
-			Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, profileIds);
+			Map<String, UserDataVO> profiles = AccountFacadeAction.loadProfiles(attributes, dbConn, profileIds);
 			for (UnitVO vo : data) {
 				//bind the Rep
 				UserDataVO user = profiles.get(vo.getRepId());
-				if (user != null) vo.setRepName(user.getFirstName() + " " + user.getLastName());
+				if (user != null) vo.setRepName(StringUtil.checkVal(user.getFirstName()) + " " + StringUtil.checkVal(user.getLastName()));
 
 				//strip out any results not matching the desired rep.  
 				//Since lastName is encrypted this has to be done here (post processing)
@@ -508,7 +509,7 @@ public class UnitAction extends SBActionAdapter {
 				//bind the Physician
 				user = profiles.get(vo.getPhysicianId());
 				if (user != null) {
-					vo.setPhysicianName(user.getFirstName() + " " + user.getLastName());
+					vo.setPhysicianName(StringUtil.checkVal(user.getFirstName()) + " " + StringUtil.checkVal(user.getLastName()));
 					vo.getPhysician().setData(user.getDataMap());
 				}
 
