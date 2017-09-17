@@ -11,7 +11,6 @@ import org.apache.solr.common.SolrDocument;
 import com.depuysynthes.action.ProductCatalogUtil;
 import com.depuysynthes.lucene.MediaBinSolrIndex;
 import com.depuysynthesinst.SolrSearchWrapper;
-import com.depuysynthesinst.TTLMSSolrIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.action.ActionRequestBuilder;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -154,7 +153,6 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 		qData.setRoleLevel(SecurityController.PUBLIC_ROLE_LEVEL); //public assets only
 		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, MediaBinSolrIndex.INDEX_TYPE));
 		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, DocumentSolrIndexer.INDEX_TYPE));
-		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, TTLMSSolrIndexer.INDEX_TYPE));
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, solrCollectionPath);
 		SolrResponseVO resp = sqp.processQuery(qData);
 
