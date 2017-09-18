@@ -9,9 +9,12 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.DirectoryParser;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
 import com.smt.sitebuilder.action.support.SupportTicketAction;
 import com.smt.sitebuilder.action.support.SupportTicketActivityAction;
+import com.smt.sitebuilder.action.support.SupportTicketAttachmentAction;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
+import com.smt.sitebuilder.action.support.TicketAttachmentVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -43,7 +46,29 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 	@Override
 	public void buildCallback(ActionRequest req, TicketActivityVO item) throws ActionException {
 		attributes.put("ccAddresses", req.getParameter("ccAddresses"));
+		
+		if (req.hasParameter("fileName")) {
+			req.setParameter("moduleTypeId", "BMG_TICKET");
+			addAttachment(req);
+			TicketAttachmentVO attach = new TicketAttachmentVO();
+			attach.setActionId(req.getParameter(ProfileDocumentAction.PROFILE_DOC_ID));
+			item.addAttachment(attach);
+		}
+		
 		super.buildCallback(req, item);
+	}
+	
+
+	/**
+	 * Create the attachment record from the request.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void addAttachment(ActionRequest req) throws ActionException {
+		SupportTicketAttachmentAction a = new SupportTicketAttachmentAction(this.actionInit);
+		a.setAttributes(getAttributes());
+		a.setDBConnection(getDBConnection());
+		a.build(req);
 	}
 	
 	
