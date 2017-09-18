@@ -20,7 +20,9 @@ public class MIRSubmissionVO extends UserDataVO {
 	private static final long serialVersionUID = -8316947595121339926L;
 
 	private String region;
+	private String subregion;
 	private String requestType;
+	private String consentFlg;
 	private String hcpType;
 	private String hcpTypeOther;
 	private String hcpSpecialty;
@@ -34,13 +36,14 @@ public class MIRSubmissionVO extends UserDataVO {
 	private String[] products;
 	private String productOther;
 	private String partNumber;
-	private String productInquiry;
 	private String question;
 
 	public MIRSubmissionVO(ActionRequest req) {
 		super(req);
 		setRegion(req.getParameter("region"));
+		setSubregion(req.getParameter("subregion"));
 		setRequestType(req.getParameter("requestType"));
+		setConsentFlg(req.getParameter("consent"));
 		setHcpType(req.getParameter("hcpType"));
 		setHcpTypeOther(req.getParameter("hcpTypeOther"));
 		setHcpSpecialty(req.getParameter("hcpSpecialty"));
@@ -54,7 +57,6 @@ public class MIRSubmissionVO extends UserDataVO {
 		setProducts(req.getParameterValues("products"));
 		setProductOther(req.getParameter("productOther"));
 		setPartNumber(req.getParameter("partNumber"));
-		setProductInquiry(req.getParameter("productInquiry"));
 		setQuestion(req.getParameter("question"));
 	}
 
@@ -115,10 +117,6 @@ public class MIRSubmissionVO extends UserDataVO {
 		return partNumber;
 	}
 
-	public String getProductInquiry() {
-		return productInquiry;
-	}
-
 	public String getQuestion() {
 		return question;
 	}
@@ -175,10 +173,6 @@ public class MIRSubmissionVO extends UserDataVO {
 		this.partNumber = partNumber;
 	}
 
-	public void setProductInquiry(String productInquiry) {
-		this.productInquiry = productInquiry;
-	}
-
 	public void setQuestion(String question) {
 		this.question = question;
 	}
@@ -204,10 +198,6 @@ public class MIRSubmissionVO extends UserDataVO {
 				sb.append(s);
 			}
 		}
-		if (!StringUtil.isEmpty(productCompanyOther)) {
-			if (sb.length() > 0) sb.append("<br/>");
-			sb.append(productCompanyOther);
-		}
 		return sb.toString();
 	}
 
@@ -223,10 +213,6 @@ public class MIRSubmissionVO extends UserDataVO {
 				sb.append(s);
 			}
 		}
-		if (!StringUtil.isEmpty(productOther)) {
-			if (sb.length() > 0) sb.append("<br/>");
-			sb.append(productOther);
-		}
 		return sb.toString();
 	}
 
@@ -236,5 +222,23 @@ public class MIRSubmissionVO extends UserDataVO {
 
 	public void setRegion(String region) {
 		this.region = region;
+	}
+
+	public String getSubregion() {
+		return subregion;
+	}
+
+	public void setSubregion(String subregion) {
+		this.subregion = subregion;
+	}
+
+	public String getConsentFlg() {
+		if ("1".equals(consentFlg)) return "Submitted by HCP";
+		if ("2".equals(consentFlg)) return "Submitted by Other";
+		return "Consent not given";
+	}
+
+	public void setConsentFlg(String consentFlg) {
+		this.consentFlg = consentFlg;
 	}
 }
