@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -342,23 +341,8 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	protected int getUpdateCount(ActionRequest req, String schema) {
 		String sql = formatRetrieveQuery(req, schema, true, true);
-		int i = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			if (req.hasParameter(UPDATE_ID)) ps.setString(++i, req.getParameter(UPDATE_ID));
-			if (req.hasParameter(STATUS_CD)) ps.setString(++i, req.getParameter(STATUS_CD));
-			if (req.hasParameter(TYPE_CD)) ps.setInt(++i, Convert.formatInteger(req.getParameter(TYPE_CD)));
-			if (req.hasParameter(SEARCH)) {
-				String searchData = "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%";
-				ps.setString(++i, searchData);
-				ps.setString(++i, searchData);
-			}
-			addStatementDates(req, ps, i);
-			
-			String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
-			if (sectionIds != null) { //restrict to certain sections only
-				for (String s : getSectionFamily(sectionIds))
-					ps.setString(++i, s);
-			}
+			setStatementValues(ps, req);
 
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) 
@@ -369,27 +353,36 @@ public class UpdatesAction extends ManagementAction {
 		}
 		return 0;
 	}
-	
+
 	/**
-	 * Helper method to set start/end dates to prepared statement list
-	 * @param req
+	 * Helper method to set the values to the PreparedStatement
 	 * @param ps
-	 * @param count
+	 * @param req
 	 * @throws SQLException
 	 */
-	protected void addStatementDates(ActionRequest req, PreparedStatement ps, int count) throws SQLException{
-		int counter = count;
-		//check if dates were passed before adding to statement list		
-		if(req.hasParameter(START_DATE)){
-			Date startDt = Convert.formatDate(req.getParameter(START_DATE));
-			ps.setDate(++counter, new java.sql.Date(startDt.getTime()));
-		}		
-		if(req.hasParameter(END_DATE)){
-			Date endDt = Convert.formatDate(req.getParameter(END_DATE));
-			ps.setDate(++counter, new java.sql.Date(endDt.getTime()));
+	private void setStatementValues(PreparedStatement ps, ActionRequest req) throws SQLException{
+		int i = 0;
+		
+		if (req.hasParameter(UPDATE_ID)) ps.setString(++i, req.getParameter(UPDATE_ID));
+		if (req.hasParameter(STATUS_CD)) ps.setString(++i, req.getParameter(STATUS_CD));
+		if (req.hasParameter(TYPE_CD)) ps.setInt(++i, Convert.formatInteger(req.getParameter(TYPE_CD)));
+		if (req.hasParameter(SEARCH)) {
+			String searchData = "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%";
+			ps.setString(++i, searchData);
+			ps.setString(++i, searchData);
+		}
+		if(req.hasParameter(START_DATE))
+			ps.setDate(++i, Convert.formatSQLDate(req.getParameter(START_DATE)));
+		if(req.hasParameter(END_DATE))
+			ps.setDate(++i, Convert.formatSQLDate(req.getParameter(END_DATE)));
+		
+		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
+		if (sectionIds != null) { //restrict to certain sections only
+			for (String s : getSectionFamily(sectionIds))
+				ps.setString(++i, s);
 		}
 	}
-
+	
 	/**
 	 * Retrieve list of Updates containing historical Revisions.
 	 * @param parameter
