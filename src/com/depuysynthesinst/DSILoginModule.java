@@ -7,12 +7,9 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-import com.depuysynthesinst.DSIUserDataVO.RegField;
 import com.depuysynthesinst.assg.AssignmentVO;
 import com.depuysynthesinst.assg.MyAssignmentsAction;
 import com.depuysynthesinst.assg.MyAssignmentsAdminAction;
-import com.depuysynthesinst.lms.LMSWSClient;
-import com.siliconmtn.action.ActionException;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.action.ActionRequest;
@@ -62,10 +59,6 @@ public class DSILoginModule extends SAMLLoginModule {
 		} else if (dsiRoleMgr.isResident(dsiUser) || dsiRoleMgr.isFellow(dsiUser) || dsiRoleMgr.isChiefResident(dsiUser)) {
 			//flag the account as incomplete so we can prompt them to complete their registration data (and get a TTLMSID)
 			dsiUser.addAttribute("incomplete", true);
-		} else if (UserDataVO.AuthenticationType.SAML == dsiUser.getAuthType()) { 
-			//allow all J&J WWID users through, but they need to be given a TTLMS account first
-			ActionRequest req = (ActionRequest)getAttribute(GlobalConfig.ACTION_REQUEST);
-			makeLMSAccount(dsiUser, req);
 		}
 
 		if (dsiRoleMgr.isAssgUser(dsiUser))
@@ -106,14 +99,6 @@ public class DSILoginModule extends SAMLLoginModule {
 	 * @param dsiUser
 	 */
 	protected void loadLMSData(DSIUserDataVO dsiUser) {
-		try {
-			LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
-			dsiUser.setMyCourses(lms.getUserCourseList(dsiUser.getDsiId()));
-		} catch (ActionException ae) {
-			//ignore these errors; most users don't have courses to be concerned about and this doesn't impact functionality - JM 02.18.16
-			//log.warn("could not load user course list", ae);
-		}
-
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		//if this is a Resident or Chief Resident, see if they have any pending 
 		//resident director invitations they need to accept/decline
@@ -160,45 +145,6 @@ public class DSILoginModule extends SAMLLoginModule {
 				if (! vo.isComplete()) ++cnt;
 		}
 		user.addAttribute("myAssgCnt", cnt);	
-	}
-
-
-	/**
-	 * create an LMS account for this WWID user, but make sure they don't already have one
-	 * that we're not aware of first.
-	 * @param user
-	 */
-	protected void makeLMSAccount(DSIUserDataVO user, ActionRequest req) {
-		SMTDBConnection dbConn = new SMTDBConnection((Connection)getAttribute(GlobalConfig.KEY_DB_CONN));
-		RegistrationAction ra = new RegistrationAction();
-		ra.setAttributes(getAttributes());
-		ra.setDBConnection(dbConn);
-
-		try {
-			String rsId = loadRSId(user, req, dbConn);
-			if (rsId == null) return; //not a legitimately registered user
-			req.setAttribute("registerSubmittalId", rsId);
-			user.setCountryCode("US");
-			user.setHospital("WWID");
-			user.setProfession("PROF");
-			user.setSpecialty("AAWDS");
-			user.setEligible(false);
-			user.setVerified(false);
-			ra.saveUser(user);
-
-			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(), 
-					RegField.DSI_SYNTHES_ID.toString(), 
-					RegField.DSI_PROG_ELIGIBLE.toString(), 
-					RegField.DSI_VERIFIED.toString(),
-					RegField.DSI_ACAD_NM.toString(),
-					RegField.DSI_COUNTRY.toString(),
-					RegField.c0a80241b71c9d40a59dbd6f4b621260.toString(), //Prof
-					RegField.c0a80241b71d27b038342fcb3ab567a0.toString()}; //Spec
-
-			ra.captureLMSResponses(req, user, regFields);
-		} catch (Exception e) {
-			log.error("could not create LMS account for WWID user, profileId= " + user.getProfileId(), e);
-		}
 	}
 
 

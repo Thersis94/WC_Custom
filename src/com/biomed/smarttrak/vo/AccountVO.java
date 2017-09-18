@@ -29,9 +29,12 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 	private String accountId;
 	private String companyId;
 	private String companyName;
+	private String parentCompanyTxt;
 	private String companyUrl;
+	private String corpPhoneTxt;
 	private String accountName;
 	private String typeId;
+	private int classificationId;
 	private String ownerProfileId;
 	private String coownerProfileId;
 	private String ownerEmailAddr;
@@ -56,8 +59,8 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 	public enum Type {
 		FULL("1","Full Access"),
 		STAFF("2","Staff"),
-		TRIAL("3","Trial"),
-		UPDATE("4", "Updates");
+		TRIAL("3","Pilot"),
+		UPDATE("4", "FastTRAK");
 
 		String id;
 		String label;
@@ -75,6 +78,33 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 			return null;
 		}
 	}
+	
+	/*
+	 * Account Classification enum
+	 */
+	public enum Classification {
+		ORTHO(1,"Ortho"),
+		WOUND(2,"Wound"),
+		NEURO(3,"Neuro"),
+		REGEN(4, "Regen"),
+		COMBO(5, "Combo");
+
+		int id;
+		String label;
+		private Classification(int id, String label) {
+			this.id = id;
+			this.label = label;
+		}
+		public int getId() { return id; }
+		public String getLabel() { return label; }
+
+		public static Classification getFromId(int id) {
+			for (Classification t : Classification.values()) {
+				if (t.getId() == id) return t;
+			}
+			return null;
+		}
+	}
 
 	public AccountVO() {
 		super();
@@ -86,8 +116,11 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 		setAccountId(req.getParameter("accountId"));
 		setAccountName(req.getParameter("accountName"));
 		setCompanyId(StringUtil.checkVal(req.getParameter("companyId"), null)); //nullable foreign key
+		setCorpPhoneTxt(req.getParameter("corpPhoneTxt"));
+		setParentCompanyTxt(req.getParameter("parentCompanyTxt"));
 		setCompanyUrl(req.getParameter("companyUrl"));
 		setTypeId(req.getParameter("typeId"));
+		setClassificationId(Convert.formatInteger(req.getParameter("classificationId")));
 		setOwnerProfileId(req.getParameter("ownerProfileId"));
 		setCoownerProfileId(req.getParameter("coownerProfileId"));
 		setStatusNo(req.getParameter("statusNo"));
@@ -458,5 +491,37 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 
 	public void setCompanyName(String companyName) {
 		this.companyName = companyName;
+	}
+
+	@Column(name="parent_company_txt")
+	public String getParentCompanyTxt() {
+		return parentCompanyTxt;
+	}
+
+	public void setParentCompanyTxt(String parentCompanyTxt) {
+		this.parentCompanyTxt = parentCompanyTxt;
+	}
+
+	@Column(name="corp_phone_txt")
+	public String getCorpPhoneTxt() {
+		return corpPhoneTxt;
+	}
+
+	public void setCorpPhoneTxt(String corpPhoneTxt) {
+		this.corpPhoneTxt = corpPhoneTxt;
+	}
+
+	@Column(name="classification_id")
+	public int getClassificationId() {
+		return classificationId;
+	}
+
+	public String getClassificationName() {
+		Classification t = Classification.getFromId(getClassificationId());
+		return t != null ? t.getLabel() : null;
+	}
+
+	public void setClassificationId(int classificationId) {
+		this.classificationId = classificationId;
 	}
 }

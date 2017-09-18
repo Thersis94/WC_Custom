@@ -122,7 +122,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, ");
 		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, u.active_flg, a.type_id, ");
-		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg ");
+		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg, a.account_nm ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
@@ -145,6 +145,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					user.setExpirationDate(rs.getDate("expiration_dt")); //used by the role module to block access to the site
 					user.setLicenseType(rs.getString("status_cd"));
 					user.setStatusFlg(rs.getInt("active_flg"));
+					user.setAccountName(rs.getString("account_nm"));
 
 					// Account Type - used by the role module to restrict users to Updates Only (role) - just pass the "4" along to it.
 					String type = rs.getString("type_id");

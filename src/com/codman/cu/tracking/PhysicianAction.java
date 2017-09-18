@@ -6,8 +6,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.codman.cu.tracking.vo.PhysicianVO;
 import com.siliconmtn.action.ActionException;
@@ -41,18 +43,20 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class PhysicianAction extends SBActionAdapter {
 
 	private Object msg = null;
-	
+
 	public PhysicianAction() {
 		super();
 	}
-	
+
 	public PhysicianAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.ActionController#delete(com.siliconmtn.http.SMTServletRequest)
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
@@ -68,47 +72,44 @@ public class PhysicianAction extends SBActionAdapter {
 		sql.append("CODMAN_CU_UNIT_LEDGER b on a.TRANSACTION_ID=b.TRANSACTION_ID ");
 		sql.append("where a.PHYSICIAN_ID=? and b.ACTIVE_RECORD_FLG != 1)");
 		queries[0] = sql.toString();
-		
+
 		//delete the physician
-		sql = new StringBuilder();
+		sql = new StringBuilder(100);
 		sql.append("delete from ").append(customDb);
 		sql.append("codman_cu_physician where physician_id = ? ");
 		queries[1] = sql.toString();
-				
-		PreparedStatement ps = null;
-		try {
-			for (String s : queries) {
-				log.debug(s + physicianId);
-				ps = dbConn.prepareStatement(s);
+
+		for (String s : queries) {
+			log.debug(s + physicianId);
+			try (PreparedStatement ps = dbConn.prepareStatement(s)) {
 				ps.setString(1, physicianId);
 				ps.execute();
+			} catch (SQLException sqle) {
+				log.warn(sqle);  //we know these will be foriegn key dependency errors
+				msg = "This Physician cannot be deleted";
 			}
-		} catch (SQLException sqle) {
-			log.warn(sqle);  //we know these will be foriegn key dependency errors
-			msg = "This Physician cannot be deleted";
-		} finally {
-			try {
-				if (ps != null) ps.close();
-			} catch (Exception e) {}
 		}
 	}
-	
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.ActionController#update(com.siliconmtn.http.SMTServletRequest)
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.info("Starting PhysicianAction build...");
+		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		PhysicianVO pvo = new PhysicianVO(req);
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		
+
 		// create or update physician's profile
-       	this.checkPhysicianProfile(req, pm, pvo);
-		
-		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		checkPhysicianProfile(pm, pvo);
+
 		StringBuilder sql = new StringBuilder();
-		
+
 		if (StringUtil.checkVal(pvo.getPhysicianId()).length() == 0) {
 			//insert
 			pvo.setPhysicianId(new UUIDGenerator().getUUID());
@@ -123,11 +124,8 @@ public class PhysicianAction extends SBActionAdapter {
 			sql.append("where physician_id = ?");
 		}
 		log.debug(sql + pvo.getPhysicianId());
-		
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, pvo.getAccountId());
 			ps.setString(2, pvo.getProfileId());
 			ps.setTimestamp(3, Convert.getCurrentTimestamp());
@@ -135,61 +133,56 @@ public class PhysicianAction extends SBActionAdapter {
 			ps.setString(5, pvo.getCenterText());
 			ps.setString(6, pvo.getDepartmentText());
 			ps.setString(7, pvo.getPhysicianId());
-			
 			ps.executeUpdate();
+
 		} catch (SQLException sqle) {
 			log.error(sqle);
 			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-		} finally {
-			try {
-				ps.close();
-			} catch (Exception e) {}
 		}
-		
+
 
 		// Setup the redirect
-    	StringBuilder url = new StringBuilder();
-    	url.append(req.getRequestURI());
-    	url.append("?type=").append(req.getParameter("type"));
-    	url.append("&accountId=").append(req.getParameter("accountId"));
-    	url.append("&msg=").append(msg);
-    	url.append("&jsCallback=").append(StringUtil.checkVal(req.getParameter("jsCallback")));
-    	req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-    	req.setAttribute(Constants.REDIRECT_URL, url.toString());
-    	log.debug("redirUrl = " + url);
-		
+		StringBuilder url = new StringBuilder(150);
+		url.append(req.getRequestURI());
+		url.append("?type=").append(req.getParameter("type"));
+		url.append("&accountId=").append(req.getParameter("accountId"));
+		url.append("&msg=").append(msg);
+		url.append("&jsCallback=").append(StringUtil.checkVal(req.getParameter("jsCallback")));
+		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		log.debug("redirUrl = " + url);
 	}
 
 
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Starting PhysicianAction retrieve...");
-		if (req.getParameter("del") != null) 
+		if (req.hasParameter("del")) 
 			delete(req);
-			
+
 		String accountId = req.getParameter("accountId");
 		String physicianId = req.getParameter("physicianId");
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		StringBuilder sql = new StringBuilder();
-		
+
 		sql.append("select physician_id, account_id, profile_id, center_txt, department_txt, ");
 		sql.append("create_dt from ").append(customDb);
 		sql.append("codman_cu_physician b where account_id=? and organization_id=? ");
-		
+
 		if (physicianId != null)
 			sql.append("and physician_id = ? ");
-		
+
 		log.debug(sql + " | " + accountId + " | " + physicianId);
-		
-		List<PhysicianVO> data = new ArrayList<PhysicianVO>();
-		List<String> profileIds = new ArrayList<String>();
-		
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+
+		List<PhysicianVO> data = new ArrayList<>();
+		Set<String> profileIds = new HashSet<>();
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, accountId);
 			ps.setString(2, site.getOrganizationId());
 			if (physicianId != null) ps.setString(3, physicianId);
@@ -198,14 +191,12 @@ public class PhysicianAction extends SBActionAdapter {
 				data.add(new PhysicianVO(rs));
 				profileIds.add(rs.getString("profile_id"));
 			}
-			
+
 		} catch (SQLException sqle) {
 			log.error(sqle);
 			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
-		
+
 		// retrieve the physician profiles and merge with the physician VO(s)
 		try {
 			this.retrievePhysicianProfiles(data, profileIds);
@@ -213,38 +204,34 @@ public class PhysicianAction extends SBActionAdapter {
 			log.error(de);
 			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 		}
-		
+
 		//sort the list by last name
 		Collections.sort(data, new UserDataComparator());
-		
+
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		if (msg != null) mod.setErrorMessage(msg.toString());
-		//mod.setDataSize(data.size());
-		//mod.setActionData(data);
 		req.setAttribute("physicians", data);
 		log.debug("loaded " + data.size() + " physicians");
 	}
-	
+
 	/**
 	 * Leverages ProfileManager to retrieve profile data for each physician profile ID.
 	 * @param physicians
 	 * @param pIds
 	 * @throws DatabaseException
 	 */
-	private void retrievePhysicianProfiles(List<PhysicianVO> physicians, List<String> pIds)
-		throws DatabaseException {
-
+	private void retrievePhysicianProfiles(List<PhysicianVO> physicians, Set<String> pIds)
+			throws DatabaseException {
 		//get the UserDataVOs for each physician
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, pIds);
-		
+		Map<String, UserDataVO> profiles = AccountFacadeAction.loadProfiles(attributes, dbConn, pIds);
+
 		// loop the physician VO list
 		for (PhysicianVO pv : physicians) {
 			log.debug("pv=" + pv.getProfileId());
 			if (pv.getProfileId() != null && profiles.containsKey(pv.getProfileId())) 
 				pv.setData(profiles.get(pv.getProfileId()).getDataMap());
 		}
-		
+
 	}
 
 	/**
@@ -253,12 +240,12 @@ public class PhysicianAction extends SBActionAdapter {
 	 * @param pm
 	 * @param vo
 	 */
-	public void checkPhysicianProfile(ActionRequest req, ProfileManager pm, PhysicianVO vo) {
+	public void checkPhysicianProfile(ProfileManager pm, PhysicianVO vo) {
 		//save core PROFILE, PHONE_NO, & PROFILE_ADDRESS
 		try {
 			if (vo.getProfileId() == null || vo.getProfileId().length() == 0)
 				vo.setProfileId(pm.checkProfile(vo, dbConn));
-			
+
 			if (vo.getProfileId() == null) {
 				vo.setAllowCommunication(1); //opt-in new users only
 				pm.updateProfile(vo, dbConn);
@@ -269,6 +256,5 @@ public class PhysicianAction extends SBActionAdapter {
 			log.error(de);
 		}
 		log.debug("Physician profile saved");
-	}
-	
+	}	
 }
