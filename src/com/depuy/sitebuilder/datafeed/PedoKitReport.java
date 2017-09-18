@@ -40,7 +40,7 @@ public class PedoKitReport implements Report {
 	public PedoKitReport() {
 		log = Logger.getLogger(this.getClass());
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.depuy.sitebuilder.datafeed.Report#setAttibutes(java.util.Map)
 	 */
@@ -63,12 +63,12 @@ public class PedoKitReport implements Report {
 	@Override
 	public Object retrieveReport(ActionRequest req) throws DatabaseException, InvalidDataException {
 		log.info("Retrieving PedoKit Report");
-		
+
 		// Get the Dates - this campaign didn't start until Q1 2013, so don't bother going back farther than that.
 		java.sql.Date startDate = Convert.formatSQLDate(Convert.formatStartDate(req.getParameter("startDate"), "01/01/2013"));
 		java.sql.Date endDate = Convert.formatSQLDate(Convert.formatEndDate(req.getParameter("endDate")));
 
-		List<PedoKitVO> data = new ArrayList<PedoKitVO>();
+		List<PedoKitVO> data = new ArrayList<>();
 
 		//load the data from the data feed system  (submissions via BRC)
 		try {
@@ -76,20 +76,20 @@ public class PedoKitReport implements Report {
 
 			//now we have to load Profiles for all these users!
 			this.loadProfiles(data);
-			
+
 			//finally, load the most recent (previous) campaign tied to each profileId; with it's two "QUAL_*" responses.
-			this.loadPreviousCampaigns(data, startDate);
-			
+			this.loadPreviousCampaigns(data);
+
 		} catch (Exception e) {
 			log.error("unable to load PedoKit data", e);
 			throw new DatabaseException(e);
 		}
-		
+
 		log.debug("loaded " + data.size() + " records");
 		return data;
 	}
-	
-	
+
+
 	/**
 	 * This method queries the DePuy DATA_FEED database to load the submissions
 	 * for PedoKit Requests.  All BRC and Website submissions have been previously 
@@ -101,7 +101,7 @@ public class PedoKitReport implements Report {
 	private void loadDataFeedData(List<PedoKitVO> data, java.sql.Date startDate, java.sql.Date endDate)
 			throws SQLException {
 		String dfSchema = ReportFacadeAction.DF_SCHEMA;
-		
+
 		StringBuilder sql = new StringBuilder(1950);
 		sql.append("select a.CUSTOMER_ID, a.CALL_SOURCE_CD, a.PROFILE_ID, a.PRODUCT_CD, "); 
 		sql.append("a.ATTEMPT_DT, b.PROCESS_START_DT, b.PROCESS_FAILED_DT, "); 
@@ -127,12 +127,10 @@ public class PedoKitReport implements Report {
 		sql.append("where a.LEAD_TYPE_ID=15 and SKU_CD in ('DPYKNEPSL1','DPYHIPPSL1','DPYSHOPSL1') ");
 		sql.append("and a.attempt_dt between ? and ? order by attempt_dt");
 		log.debug(sql);
-		
+
 		String lastCustomerId = "";
 		PedoKitVO vo = null;
-		PreparedStatement ps = null;
-		try {
-			ps = conn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 			ps.setDate(1, startDate);
 			ps.setDate(2, endDate);
 			ResultSet rs = ps.executeQuery();
@@ -143,23 +141,17 @@ public class PedoKitReport implements Report {
 					vo = new PedoKitVO(rs);
 					lastCustomerId = rs.getString("customer_id");
 				}
-				
+
 				vo.addResponse(rs.getString("QUESTION_CD"), rs.getString("response_txt"));
 			}
-			
+
 			//add that trailing record to the results
 			if (vo != null)
 				data.add(vo);
-			
-		} finally {
-			try {
-				ps.close();
-			} catch(Exception e) {}
 		}
-		
 	}
-	
-	
+
+
 	/**
 	 * calls ProfileManager to load the user's personal information from WC
 	 * @param data
@@ -167,20 +159,9 @@ public class PedoKitReport implements Report {
 	 */
 	private void loadProfiles(List<PedoKitVO> data) throws Exception {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		List<String> profileIds = new ArrayList<String>();
-		
-		for (PedoKitVO vo : data) {
-			profileIds.add(vo.getProfileId());
-		}
-		
-		Map<String, UserDataVO> profiles = pm.searchProfileMap(conn, profileIds);
-		for (PedoKitVO vo : data) {
-			if (profiles.containsKey(vo.getProfileId())) {
-				vo.setProfile(profiles.get(vo.getProfileId()));
-			}
-		}
+		pm.populateRecords(conn, data);
 	}
-	
+
 	/**
 	 * loads the person's most recent data_feed communication, exclusive of the PEDOKIT one
 	 * (which is why they're in this report to begin with!)
@@ -188,7 +169,7 @@ public class PedoKitReport implements Report {
 	 * @param startDate
 	 * @throws Exception
 	 */
-	private void loadPreviousCampaigns(List<PedoKitVO> data, java.sql.Date startDate) throws Exception {
+	private void loadPreviousCampaigns(List<PedoKitVO> data) throws Exception {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select top 1 * from ").append(ReportFacadeAction.DF_SCHEMA);
 		sql.append("DPY_CAMPAIGN_SUBMISSIONS_VIEW  where ");
@@ -196,15 +177,13 @@ public class PedoKitReport implements Report {
 		sql.append("order by ATTEMPT_DT desc");
 		String sqlStr = sql.toString();
 		log.debug(sqlStr);
-		
-		PreparedStatement ps = null;
-		
+
+
 		//loop our results and grab the last (before 'this') campaign for each user.
 		//this could result in a lot of queries against the DB (large loop),
 		//but such a specific data-capture from such a large table should be quick and an acceptable tradeoff.
 		for (PedoKitVO row : data) {
-			try {
-				ps = conn.prepareStatement(sqlStr);
+			try (PreparedStatement ps = conn.prepareStatement(sqlStr)) {
 				ps.setString(1, row.getCustomerId());
 				ps.setString(2, row.getProfileId());
 				ps.setString(3, row.getProductCd());
@@ -216,18 +195,12 @@ public class PedoKitReport implements Report {
 					row.setLastQual02(rs.getString("qual_02"));
 					row.setLastAttemptDt(rs.getDate("attempt_dt"));
 				}
-					
-			} finally {
-				try {
-					ps.close();
-				} catch(Exception e) {}
 			}
 		}
-		
 	}
-		
-	
-	
+
+
+
 	/**
 	 * **************************************************************************
 	 * <b>Title</b>: PedoKitReport.PedoKitVO.java<p/>
@@ -240,34 +213,33 @@ public class PedoKitReport implements Report {
 	 * @since Mar 18, 2013
 	 ***************************************************************************
 	 */
-	public class PedoKitVO {
+	public class PedoKitVO extends UserDataVO {
+		private static final long serialVersionUID = 2494858538294665145L;
 		private String customerId = null;
 		private String callSourceCd = null;
-		private String IDCardCallSourceCd = null;
+		private String idCardCallSourceCd = null;
 		private String productCd = null;
-		private String IDCardProductCd = null;
+		private String idCardProductCd = null;
 		private Date attemptDt = null;
-		private String profileId = null;
 		private Date kitMailDt = null;
 		private Date kitFailDt = null;
 		private String kitFailTxt = null;
-		private String IDCardHospitalNm = null;
-		private String IDCardSurgeonNm = null;
-		private Map<String, String> responses = new HashMap<String, String>();
-		private UserDataVO profile = null;
+		private String idCardHospitalNm = null;
+		private String idCardSurgeonNm = null;
+		private Map<String, String> responses = new HashMap<>();
 		private int allowComm = 0;
-		
+
 		private String lastCampaign = null;
 		private String lastQual01 = null;
 		private String lastQual02 = null;
 		private Date lastAttemptDt = null;
-		
+
 		private String territory = null;
 		private String distributor = null;
 		private String ad = null;
 		private String region = null;
 		private String avp = null;
-		
+
 		public PedoKitVO(ResultSet rs) {
 			DBUtil util = new DBUtil();
 			customerId = util.getStringVal("customer_id", rs);
@@ -284,11 +256,11 @@ public class PedoKitReport implements Report {
 			region = util.getStringVal("REGION_NM", rs);
 			avp = util.getStringVal("AVP_NM", rs);
 			allowComm = util.getIntVal("ALLOW_COMM_FLG", rs);
-			IDCardHospitalNm = util.getStringVal("HOSPITAL_NM", rs);
-			IDCardSurgeonNm = util.getStringVal("SURGEON_NM", rs);
-			IDCardCallSourceCd = util.getStringVal("cardCallSourceCd", rs);
-			IDCardProductCd = util.getStringVal("cardProductCd", rs);
-			
+			idCardHospitalNm = util.getStringVal("HOSPITAL_NM", rs);
+			idCardSurgeonNm = util.getStringVal("SURGEON_NM", rs);
+			idCardCallSourceCd = util.getStringVal("cardCallSourceCd", rs);
+			idCardProductCd = util.getStringVal("cardProductCd", rs);
+
 		}
 
 		public String getCustomerId() {
@@ -323,14 +295,6 @@ public class PedoKitReport implements Report {
 			this.attemptDt = attemptDt;
 		}
 
-		public String getProfileId() {
-			return profileId;
-		}
-
-		public void setProfileId(String profileId) {
-			this.profileId = profileId;
-		}
-
 		public Date getKitMailDt() {
 			return kitMailDt;
 		}
@@ -362,17 +326,13 @@ public class PedoKitReport implements Report {
 		public void setResponses(Map<String, String> responses) {
 			this.responses = responses;
 		}
-		
+
 		public void addResponse(String k, String v) {
 			responses.put(k, v);
 		}
 
 		public UserDataVO getProfile() {
-			return profile;
-		}
-
-		public void setProfile(UserDataVO profile) {
-			this.profile = profile;
+			return this;
 		}
 
 		public String getLastCampaign() {
@@ -455,43 +415,43 @@ public class PedoKitReport implements Report {
 			this.allowComm = allowComm;
 		}
 
-		
+
 		/**
 		 * The following "IDCard" variables all come from the 2nd marketing campaign
 		 */
-			
+
 		public String getIDCardCallSourceCd() {
-			return IDCardCallSourceCd;
+			return idCardCallSourceCd;
 		}
 
 		public void setIDCardCallSourceCd(String iDCardCallSourceCd) {
-			IDCardCallSourceCd = iDCardCallSourceCd;
+			idCardCallSourceCd = iDCardCallSourceCd;
 		}
 
 		public String getIDCardHospitalNm() {
-			return IDCardHospitalNm;
+			return idCardHospitalNm;
 		}
 
 		public void setIDCardHospitalNm(String iDCardHospitalNm) {
-			IDCardHospitalNm = iDCardHospitalNm;
+			idCardHospitalNm = iDCardHospitalNm;
 		}
 
 		public String getIDCardProductCd() {
-			return IDCardProductCd;
+			return idCardProductCd;
 		}
 
 		public void setIDCardProductCd(String iDCardProductCd) {
-			IDCardProductCd = iDCardProductCd;
+			idCardProductCd = iDCardProductCd;
 		}
 
 		public String getIDCardSurgeonNm() {
-			return IDCardSurgeonNm;
+			return idCardSurgeonNm;
 		}
 
 		public void setIDCardSurgeonNm(String iDCardSurgeonNm) {
-			IDCardSurgeonNm = iDCardSurgeonNm;
+			idCardSurgeonNm = iDCardSurgeonNm;
 		}
-		
+
 	}
 }
 

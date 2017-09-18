@@ -16,6 +16,7 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import com.codman.cu.tracking.UnitAction;
 import com.codman.cu.tracking.vo.UnitVO.ProdType;
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -35,9 +36,10 @@ import com.smt.sitebuilder.common.SiteVO;
 public class UnitHistoryReportVO extends AbstractSBReportVO {
 
 	private static final long serialVersionUID = 1407073622234040274L;
-	protected List<UnitVO> data;
+	protected transient List<UnitVO> data;
 	protected SiteVO siteVo;
 	protected boolean isRepReport = false;
+	private transient StringEncoder se = new StringEncoder();
 
 	public UnitHistoryReportVO(SiteVO site) {
 		super();
@@ -54,7 +56,7 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 	@Override
 	public byte[] generateReport() {
 		log.debug("starting Unit History Report");
-		boolean isMedstream = (data != null && data.size() > 0 && data.get(0).getProductType() == ProdType.MEDSTREAM);
+		boolean isMedstream = (data != null && !data.isEmpty() && data.get(0).getProductType() == ProdType.MEDSTREAM);
 
 		//Create Excel Object
 		Workbook wb = new HSSFWorkbook();
@@ -67,7 +69,7 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 
 		//make the column headings row
 		r = s.createRow(rowNo++);
-		addHeaderRow(wb, s, r, isMedstream);
+		addHeaderRow(r, isMedstream);
 
 
 
@@ -76,8 +78,8 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 			r = s.createRow(rowNo++); //create a new row
 			formatUnit(v, r); //populate the row
 		}
-		
-	    // Auto-size the columns.
+
+		// Auto-size the columns.
 		int colCnt = isRepReport ? 24: 31;
 		for (int x=0; x < colCnt; x++)
 			s.autoSizeColumn(x);
@@ -95,7 +97,7 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 	 */
 	protected void addTitleRow(Workbook wb, Sheet s, Row r) {
 		int colCnt = isRepReport ? 24: 31;
-		
+
 		r.setHeight((short)(r.getHeight()*2));
 
 		//make a heading font for the title to be large and bold
@@ -121,7 +123,7 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 	 * @param r
 	 * @param isMedStream
 	 */
-	protected void addHeaderRow(Workbook wb, Sheet s, Row r, boolean isMedStream) {
+	protected void addHeaderRow(Row r, boolean isMedStream) {
 		int cellCnt = 0;
 		createStringCell(r, "Date", cellCnt++);
 		createStringCell(r, "Status", cellCnt++);
@@ -170,7 +172,7 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 		createStringCell(r, "City", cellCnt++);
 		createStringCell(r, "State", cellCnt++);
 		createStringCell(r, "Zip/Postal", cellCnt++);
-		createStringCell(r, "Country", cellCnt++);
+		createStringCell(r, "Country", cellCnt);
 	}
 
 
@@ -238,7 +240,7 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 		createStringCell(r, phys.getCity(), cellCnt++);
 		createStringCell(r, phys.getState(), cellCnt++);
 		createStringCell(r, phys.getZipCode(), cellCnt++);
-		createStringCell(r, phys.getCountryCode(), cellCnt++);
+		createStringCell(r, phys.getCountryCode(), cellCnt);
 	}
 
 
@@ -252,7 +254,7 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 	protected Cell createStringCell(Row r, Object value, int cellNo) {
 		Cell c = r.createCell(cellNo);
 		c.setCellType(Cell.CELL_TYPE_STRING);
-		c.setCellValue(StringUtil.checkVal(value));
+		c.setCellValue(se.decodeValue(StringUtil.checkVal(value)));
 		return c;
 	}
 
