@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.codman.cu.tracking.vo;
 
 import java.sql.ResultSet;
@@ -23,24 +20,24 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Nov 02, 2010
  ****************************************************************************/
 public class PhysicianVO extends UserDataVO {
-	
+
 	private static final long serialVersionUID = 1L;
 	private String physicianId = null;
 	private String accountId = null;
 	private String organizationId = null;
 	private String centerText = null;
 	private String departmentText = null;
-				
+
 	public PhysicianVO() {
 	}
-	
+
 	public PhysicianVO(ActionRequest req) {
 		super(req);
 		physicianId = req.getParameter("physicianId");
 		accountId = req.getParameter("accountId");
 		centerText = req.getParameter("centerText");
 		departmentText = req.getParameter("departmentText");
-		
+
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		organizationId = site.getOrganizationId();
 	}
@@ -53,13 +50,14 @@ public class PhysicianVO extends UserDataVO {
 		organizationId = util.getStringVal("organization_id", rs);
 		centerText = util.getStringVal("center_txt", rs);
 		departmentText = util.getStringVal("department_txt", rs);
-		
+
 		if (util.getStringVal("phys_profile_id", rs) != null)
 			setProfileId(util.getStringVal("phys_profile_id", rs));
-		
+
 		util = null;
 	}
 
+	@Override
 	public String toString() {
 		return StringUtil.getToString(this) + super.toString();
 	}

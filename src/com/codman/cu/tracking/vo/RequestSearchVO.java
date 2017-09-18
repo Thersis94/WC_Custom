@@ -20,7 +20,7 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 public class RequestSearchVO implements Serializable {
 	private static final long serialVersionUID = 5358729392488250434L;
-	
+
 	protected String accountName = null;
 	protected Integer statusId = null;
 	protected String serialNoText = null;
@@ -31,14 +31,14 @@ public class RequestSearchVO implements Serializable {
 	protected int rpp = 25;
 	protected int page = 1;
 	protected String sort = null;
-	private String SESSION_VAR = "CodmanCURequestSearchVO";
-	
+	private String sessionVar = "CodmanCURequestSearchVO";
+
 	public RequestSearchVO(ActionRequest req, String sessionVarNm) {
-		this.SESSION_VAR = sessionVarNm;
+		this.sessionVar = sessionVarNm;
 		this.init(req);
-		
+
 	}
-	
+
 	private void init(ActionRequest req) {
 		if (req.getParameter("sBtn") != null) { //indicates a search was performed
 			accountName = StringUtil.checkVal(req.getParameter("sAccountName"), null);
@@ -50,14 +50,14 @@ public class RequestSearchVO implements Serializable {
 			territoryId = StringUtil.checkVal(req.getParameter("sTerritoryId"), null);
 			sort = StringUtil.checkVal(req.getParameter("sort"), null);
 			rpp = Convert.formatInteger(req.getParameter("rpp"), Integer.valueOf(25)).intValue();
-			
-			req.getSession().setAttribute(SESSION_VAR, this);
-			
-		//the 'unfiltered' check gets passed from TransAction.  
-		//This is a bug fix when approving pending transactions 
-		//(they're no longer pending, so lookup query prior to email notifications fails) -JM 07-25-13
-		} else if (req.getSession().getAttribute(SESSION_VAR) != null && !req.hasParameter("unfiltered")) {
-			RequestSearchVO s = (RequestSearchVO) req.getSession().getAttribute(SESSION_VAR);
+
+			req.getSession().setAttribute(sessionVar, this);
+
+			//the 'unfiltered' check gets passed from TransAction.  
+			//This is a bug fix when approving pending transactions 
+			//(they're no longer pending, so lookup query prior to email notifications fails) -JM 07-25-13
+		} else if (req.getSession().getAttribute(sessionVar) != null && !req.hasParameter("unfiltered")) {
+			RequestSearchVO s = (RequestSearchVO) req.getSession().getAttribute(sessionVar);
 			accountName = s.getAccountName();
 			statusId = s.getStatusId();
 			serialNoText = s.getSerialNoText();
@@ -67,7 +67,6 @@ public class RequestSearchVO implements Serializable {
 			sort = s.getSort();
 			rpp = s.getRpp();
 			page = 1;
-			//orderBy = s.getOrderBy();
 		}
 
 		page = Convert.formatInteger(req.getParameter("page"), Integer.valueOf(1)).intValue();
@@ -76,9 +75,13 @@ public class RequestSearchVO implements Serializable {
 	public String getSort() {
 		return sort;
 	}
-	
+
 	public int getRpp() {
 		return rpp;
+	}
+
+	public void setRpp(int rpp) {
+		this.rpp = rpp;
 	}
 
 	public String getAccountName() {
@@ -120,16 +123,15 @@ public class RequestSearchVO implements Serializable {
 	public void setTerritoryId(String territoryId) {
 		this.territoryId = territoryId;
 	}
-	
+
 	public String getCriteria() {
-		StringBuffer val = new StringBuffer();
+		StringBuilder val = new StringBuilder(250);
 		if (accountName != null) val.append("Account Name like: ").append(accountName).append("<br/>");
 		if (statusId != null) val.append("Request Status: ").append(AbstractTransAction.getStatusName(statusId)).append("<br/>");
 		if (serialNoText != null) val.append("Unit Serial No.: ").append(serialNoText).append("<br/>");
 		if (repLastName != null) val.append("Rep Last Name: ").append(repLastName).append("<br/>");
 		if (territoryId != null) val.append("Territory: ").append(territoryId).append("<br/>");
 		if (repId != null) val.append("Rep: ").append(repName).append("<br/>");
-		
 		return val.toString();
 	}
 	public String getRepId() {
@@ -150,7 +152,7 @@ public class RequestSearchVO implements Serializable {
 	public void setPage(int page) {
 		this.page = page;
 	}
-	
+
 	public int getStart() {
 		if (page > 1) return (page-1) * rpp + 1;
 		return 1;
@@ -158,5 +160,5 @@ public class RequestSearchVO implements Serializable {
 	public int getEnd() {
 		return getStart() + rpp -1;
 	}
-	
+
 }

@@ -105,9 +105,6 @@ public class AccountPermissionAction extends AbstractTreeAction {
 		log.debug("loaded " + data.size() + " PermissionVOs to save");
 		savePermissions(data.values());
 
-		//don't alter the global-scope permissions if any of the above failed
-		saveAccountSettings(req);
-
 		setupRedirect(req);
 	}
 
@@ -181,19 +178,6 @@ public class AccountPermissionAction extends AbstractTreeAction {
 		} catch (SQLException sqle) {
 			throw new ActionException("could not save account ACLs", sqle);
 		}
-	}
-
-
-	/**
-	 * saves the 3-4 fields we store on the account record for global-scope overrides
-	 * @param req
-	 * @throws ActionException
-	 */
-	protected void saveAccountSettings(ActionRequest req) throws ActionException {
-		AccountAction aa = new AccountAction();
-		aa.setAttributes(getAttributes());
-		aa.setDBConnection(dbConn);
-		aa.saveGlobalPermissions(req);
 	}
 
 

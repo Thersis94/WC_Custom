@@ -24,8 +24,11 @@ import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.NameComparator;
+import com.smt.sitebuilder.action.emailcampaign.embed.AttachmentManager;
+import com.smt.sitebuilder.action.emailcampaign.embed.AttachmentManager.AttachmentLoader;
 import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
+import com.smt.sitebuilder.action.support.TicketAttachmentVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -44,6 +47,7 @@ import com.smt.sitebuilder.security.SecurityController;
  ****************************************************************************/
 public class BiomedSupportEmailUtil {
 	public static final String NEW_TICKET_CAMP_INST_ID = "newTicketCampInstId";
+	public static final String ADMIN_NEW_TICKET_CAMP_INST_ID = "adminNewTicketCampInstId";
 	public static final String ASSN_TICKET_CAMP_INST_ID = "assnTicketCampInstId";
 	public static final String STAT_TICKET_CAMP_INST_ID = "statTicketCampInstId";
 	public static final String ACT_TICKET_CAMP_INST_ID = "actTicketCampInstId";
@@ -105,16 +109,24 @@ public class BiomedSupportEmailUtil {
 	 * @return
 	 */
 	protected String getTicketSql(boolean getActivity) {
+		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(600);
 		sql.append("select a.*, b.first_nm as reporter_first_nm, ");
 		sql.append("b.last_nm as reporter_last_nm, ");
 		sql.append("b.email_address_txt as reporter_email, ");
 		sql.append("c.first_nm as assigned_first_nm, ");
 		sql.append("c.last_nm as assigned_last_nm, ");
-		sql.append("c.email_address_txt as assigned_email ");
+		sql.append("c.email_address_txt as assigned_email, ");
+		sql.append("p.phone_number_txt, ");
+		sql.append("acc.account_nm as company_nm ");
 		sql.append("from support_ticket a ");
 		sql.append("inner join profile b on a.reporter_id = b.profile_id ");
 		sql.append("left outer join profile c on a.assigned_id = c.profile_id ");
+		sql.append("left join ").append(customDb).append("biomedgps_user u ");
+		sql.append("on u.profile_id = b.profile_id ");
+		sql.append("left join ").append(customDb).append("biomedgps_account acc ");
+		sql.append("on u.account_id = acc.account_id ");
+		sql.append("left join phone_number p on b.profile_id = p.profile_id ");
 		if(getActivity) {
 			sql.append("left outer join support_activity sa on a.ticket_id = sa.ticket_id ");
 		}
@@ -188,6 +200,7 @@ public class BiomedSupportEmailUtil {
 			t.setReporterEmail(se.decrypt(t.getReporterEmail()));
 			t.setFirstName(se.decrypt(t.getFirstName()));
 			t.setLastName(se.decrypt(t.getLastName()));
+			t.setPhoneNo(se.decrypt(t.getPhoneNo()));
 		} catch (EncryptionException e) {
 			log.error(e);
 		}
@@ -291,17 +304,8 @@ public class BiomedSupportEmailUtil {
 		//Get Admins
 		List<AccountVO> admins = getAdminEmails();
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.TICKET);
 		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
-
-			if(r.getKey().equals(EmailType.ADMIN)) {
-				//New Tickets get sent to admins withing the adminEmails List.
-				for(AccountVO a : admins) {
-					if(adminEmails.contains(a.getOwnerEmailAddr())) {
-						r.getValue().put(a.getOwnerProfileId(), a.getOwnerEmailAddr());
-					}
-				}
-			}
 
 			//Set Ticket Links.  These vary based on who is getting them.
 			t.setTicketLink(buildTicketLink(t, r.getKey()));
@@ -311,6 +315,16 @@ public class BiomedSupportEmailUtil {
 
 			//Get Emails
 			ecbu.sendMessage((String)attributes.get(NEW_TICKET_CAMP_INST_ID), r.getValue(), config);
+
+			if(r.getKey().equals(EmailType.ADMIN)) {
+				//New Tickets get sent to admins withing the adminEmails List.
+				for(AccountVO a : admins) {
+					if(adminEmails.contains(a.getOwnerEmailAddr())) {
+						r.getValue().put(a.getOwnerProfileId(), a.getOwnerEmailAddr());
+					}
+				}
+				ecbu.sendMessage((String)attributes.get(ADMIN_NEW_TICKET_CAMP_INST_ID), r.getValue(), config);
+			}
 		}
 	}
 
@@ -327,7 +341,7 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected void sendAssignedEmails(TicketEmailVO t) {
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.ASSIGNMENT);
 		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
 			//Set Ticket Links.  These vary based on who is getting them.
@@ -357,7 +371,7 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected void sendStatusEmails(TicketEmailVO t) {
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.STATUS);
 		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
 			//Set Ticket Links.  These vary based on who is getting them.
@@ -384,6 +398,11 @@ public class BiomedSupportEmailUtil {
 		config.put("ticketLink", StringUtil.checkVal(t.getTicketLink()));
 		config.put("ticketDesc", StringUtil.checkVal(t.getDescText()));
 		config.put("ticketNo", StringUtil.checkVal(t.getTicketNo()));
+		config.put("submittalName", StringUtil.checkVal(t.getFirstName()) + " " + StringUtil.checkVal(t.getLastName()));
+		config.put("submittalAccount", StringUtil.checkVal(t.getCompanyNm()));
+		config.put("submittalEmail", StringUtil.checkVal(t.getReporterEmail()));
+		config.put("submittalPhone", StringUtil.checkVal(t.getPhoneNo()));
+		config.put("submittalTime", StringUtil.checkVal(t.getCreateDt()));
 		return config;
 	}
 
@@ -391,10 +410,11 @@ public class BiomedSupportEmailUtil {
 	 * Helper method that builds normal emails for Assignee and Reporter.
 	 * @param campaignInstanceId
 	 * @param t
+	 * @param activity 
 	 * @param config
 	 * @return
 	 */
-	protected Map<EmailType, Map<String, String>> getBaseRecipients(TicketEmailVO t) {
+	protected Map<EmailType, Map<String, String>> getBaseRecipients(TicketEmailVO t, ChangeType activity) {
 		Map<EmailType, Map<String, String>> recipients = new EnumMap<>(EmailType.class);
 		Map<String, String> admins = new HashMap<>();
 		Map<String, String> pub = new HashMap<>();
@@ -404,8 +424,8 @@ public class BiomedSupportEmailUtil {
 			admins.put(t.getAssignedId(), t.getAssignedEmail());
 		}
 
-		//Add Reporter
-		if(!StringUtil.isEmpty(t.getReporterEmail())) {
+		//Add Reporter unless this is an assignment email
+		if(!StringUtil.isEmpty(t.getReporterEmail()) && activity != ChangeType.ASSIGNMENT) {
 			pub.put(t.getReporterId(), t.getReporterEmail());
 		}
 
@@ -464,7 +484,7 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected void sendActivityEmails(TicketEmailVO t) {
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t);
+		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.ACTIVITY);
 		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
 
 			//Set Ticket Links.  These vary based on who is getting them.
@@ -473,6 +493,12 @@ public class BiomedSupportEmailUtil {
 			//Build Config
 			Map<String, Object> config = getBaseConfig(t);
 			config.put("ticketDesc", StringUtil.checkVal(t.getActivities().get(0).getDescText()));
+			config.put("activityDesc", StringUtil.checkVal(t.getActivities().get(t.getActivities().size()-1).getDescText()));
+			
+			AttachmentManager am = new AttachmentManager(dbConn, attributes);
+			for (TicketAttachmentVO a : t.getAttachments()) {
+				am.addFileFromId(config, AttachmentLoader.PROFILE_DOCUMENT, a.getActionId());
+			}
 
 			//Get Emails
 			ecbu.sendMessage((String)attributes.get(ACT_TICKET_CAMP_INST_ID), r.getValue(), config);
@@ -487,6 +513,8 @@ public class BiomedSupportEmailUtil {
 	 */
 	public void sendEmail(TicketActivityVO act) throws ActionException {
 		TicketEmailVO t = loadTicket(act.getTicketId(), act.getActivityId());
+		t.setAttachments(act.getAttachments());
+		t.addActivity(act);
 		try {
 			sendEmails(t, ChangeType.ACTIVITY);
 		} catch (EncryptionException e) {

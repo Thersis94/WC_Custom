@@ -35,6 +35,7 @@ import com.siliconmtn.util.user.HumanNameIntfc;
 public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private static final long serialVersionUID = -8619730513300299951L;
 	private String accountId;
+	private String accountName;
 	private String userId;
 	private String registerSubmittalId;
 	private String licenseType;
@@ -80,7 +81,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public enum Status {
 		ACTIVE(1,"Active"),
 		INACTIVE(0,"Inactive"),
-		OPEN(-1,"Open Seat"),
+		OPEN(-1,"Open License"),
 		DEMO(5,"Demo");
 		private int cd;
 		private String label;
@@ -184,6 +185,15 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		this.accountId = accountId;
 	}
 
+	@Column(name="account_nm", isReadOnly=true)
+	public String getAccountName() {
+		return accountName;
+	}
+
+	public void setAccountName(String accountName) {
+		this.accountName = accountName;
+	}
+
 	/**
 	 * @return the registerSubmittalId
 	 */
@@ -217,7 +227,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return the createDate
 	 */
-	@Column(name="create_dt", isAutoGen=true, isReadOnly=true, isInsertOnly=true)
+	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {
 		return createDate;
 	}

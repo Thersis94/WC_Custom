@@ -50,15 +50,17 @@ public class AccountUnitReportVO extends UnitReportVO {
 
 		//make column headings row
 		r = s.createRow(rowNo++);
-		addHeaderRow(wb, s, r);
+		addHeaderRow(r);
 
 		//loop the accounts, physians, units, and requests
 		for (AccountVO acct : data) {
 			for (TransactionVO t : acct.getTransactions()) {
 				for (UnitVO v : t.getUnits()) {
 					v.setAccountName(acct.getAccountName());
-					v.setRepName(StringUtil.checkVal(acct.getRep().getFirstName()) + " " + StringUtil.checkVal(acct.getRep().getLastName()));
-					v.setPhysicianName(StringUtil.checkVal(t.getPhysician().getFirstName()) + " " + StringUtil.checkVal(t.getPhysician().getLastName()));
+					if (acct.getRep() != null)
+						v.setRepName(StringUtil.checkVal(acct.getRep().getFirstName()) + " " + StringUtil.checkVal(acct.getRep().getLastName()));
+					if (t.getPhysician() != null)
+						v.setPhysicianName(StringUtil.checkVal(t.getPhysician().getFirstName()) + " " + StringUtil.checkVal(t.getPhysician().getLastName()));
 					r = s.createRow(rowNo++); //create a new row
 					formatUnit(v, r); //populate the row
 				}
