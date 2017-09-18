@@ -89,7 +89,7 @@ public class MIREmailMessageVO extends EmailMessageVO {
 	public String getHtmlBody() {
 		//use the html if already built.  We use rather than ignore the superclass body field so messages can be intercepted properly (which adds to the html body)
 		if (!StringUtil.isEmpty(super.getHtmlBody())) return super.getHtmlBody();
-		
+
 		StringBuilder html = new StringBuilder(5000);
 		html.append("<h4>A visitor to ").append(site.getSiteAlias()).append(" has submitted a ");
 		html.append("Medical Information Request.</h4>");
@@ -100,19 +100,23 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		// section 1 - HCP information
 		addHtmlRow(html, ++rowCnt, "Website", site.getSiteName());
 		addHtmlRow(html, ++rowCnt, "Region", vo.getRegion());
-		addHtmlRow(html, ++rowCnt, "HCP Type", StringUtil.checkVal(vo.getHcpTypeOther(), vo.getHcpType()));
+		addHtmlRow(html, ++rowCnt, "Subregion", vo.getSubregion());
+		addHtmlRow(html, ++rowCnt, "HCP Type", StringUtil.checkVal(vo.getHcpType()));
+		if (!StringUtil.isEmpty(vo.getHcpTypeOther())) addHtmlRow(html, ++rowCnt, "HCP Type (Other)", vo.getHcpTypeOther());
 		addHtmlRow(html, ++rowCnt, "HCP's Title", vo.getHcpTitle());
 		addHtmlRow(html, ++rowCnt, "HCP's First Name", vo.getFirstName());
 		addHtmlRow(html, ++rowCnt, "HCP's Last Name", vo.getLastName());
 		addHtmlRow(html, ++rowCnt, "HCP's Specialty", vo.getHcpSpecialty());
-		addHtmlRow(html, ++rowCnt, "HCP's Hospital / Institution / Office", vo.getHcpInstitution());
+		if (!StringUtil.isEmpty(vo.getHcpInstitution())) addHtmlRow(html, ++rowCnt, "HCP's Hospital / Institution / Office", vo.getHcpInstitution());
+		addHtmlRow(html, ++rowCnt, "Consent", vo.getConsentFlg());
 		// section 2 - Contact Information
-		addHtmlRow(html, ++rowCnt, "Desired Response Method", StringUtil.checkVal(vo.getResponseTypeOther(), vo.getResponseType()));
+		addHtmlRow(html, ++rowCnt, "Desired Response Method", StringUtil.checkVal(vo.getResponseType()));
+		if (!StringUtil.isEmpty(vo.getResponseTypeOther())) addHtmlRow(html, ++rowCnt, "Desired Response Method (Other)", vo.getResponseTypeOther());
 		addHtmlRow(html, ++rowCnt, "Street Address", vo.getAddress());
 		addHtmlRow(html, ++rowCnt, "City", vo.getCity());
 		addHtmlRow(html, ++rowCnt, "State / Province", vo.getState());
 		addHtmlRow(html, ++rowCnt, "ZIP / Postal Code", vo.getZipCode());
-		addHtmlRow(html, ++rowCnt, "Region", vo.getCounty());
+		addHtmlRow(html, ++rowCnt, "County", vo.getCounty());
 		addHtmlRow(html, ++rowCnt, "Country", vo.getCountryCode());
 		addHtmlRow(html, ++rowCnt, "Main Telephone", vo.getMainPhone());
 		addHtmlRow(html, ++rowCnt, "Mobile Phone", vo.getMobilePhone());
@@ -120,9 +124,10 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		addHtmlRow(html, ++rowCnt, "J&amp;J Contact / Sales Rep", vo.getJjRep());
 		// section 3 - Product Information
 		addHtmlRow(html, ++rowCnt, "Medical Device Company(s)", vo.getProductCompanies());
+		if (!StringUtil.isEmpty(vo.getProductCompanyOther())) addHtmlRow(html, ++rowCnt, "Medical Device Company (Other)", vo.getProductCompanyOther());
 		addHtmlRow(html, ++rowCnt, "Product(s)", vo.getMergedProducts());
+		if (!StringUtil.isEmpty(vo.getProductOther())) addHtmlRow(html, ++rowCnt, "Product (Other)", vo.getProductOther());
 		addHtmlRow(html, ++rowCnt, "Part Number(s)", vo.getPartNumber());
-		addHtmlRow(html, ++rowCnt, "Medical Information Request", vo.getProductInquiry());
 		addHtmlRow(html, ++rowCnt, "Question", vo.getQuestion());
 
 		html.append("</table><br/>");
