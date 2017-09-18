@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -46,7 +47,9 @@ public class UpdatesAction extends ManagementAction {
 	public static final String UPDATE_ID = "updateId"; //req param
 	public static final String SORT = "sort"; //req param
 	public static final String ORDER = "order"; //req param
-	public static final String DATE_RANGE = "dateRange"; //req param
+	public static final String START_DATE = "startDt"; //req param
+	public static final String END_DATE = "endDt"; //req param
+	
 	public static final String STATUS_CD = "statusCd"; //req param
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
@@ -168,6 +171,11 @@ public class UpdatesAction extends ManagementAction {
 			params.add(searchData);
 			params.add(searchData);
 		}
+		//check if dates were passed before adding to params list
+		if(req.hasParameter(START_DATE)) 
+			params.add(Convert.formatDate(req.getParameter(START_DATE)));
+		if(req.hasParameter(END_DATE)) 
+			params.add(Convert.formatDate(req.getParameter(END_DATE)));
 			
 		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 			
@@ -344,6 +352,8 @@ public class UpdatesAction extends ManagementAction {
 				ps.setString(++i, searchData);
 				ps.setString(++i, searchData);
 			}
+			addStatementDates(req, ps, i);
+			
 			String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 			if (sectionIds != null) { //restrict to certain sections only
 				for (String s : getSectionFamily(sectionIds))
@@ -358,6 +368,26 @@ public class UpdatesAction extends ManagementAction {
 			log.error(e);
 		}
 		return 0;
+	}
+	
+	/**
+	 * Helper method to set start/end dates to prepared statement list
+	 * @param req
+	 * @param ps
+	 * @param count
+	 * @throws SQLException
+	 */
+	protected void addStatementDates(ActionRequest req, PreparedStatement ps, int count) throws SQLException{
+		int counter = count;
+		//check if dates were passed before adding to statement list		
+		if(req.hasParameter(START_DATE)){
+			Date startDt = Convert.formatDate(req.getParameter(START_DATE));
+			ps.setDate(++counter, new java.sql.Date(startDt.getTime()));
+		}		
+		if(req.hasParameter(END_DATE)){
+			Date endDt = Convert.formatDate(req.getParameter(END_DATE));
+			ps.setDate(++counter, new java.sql.Date(endDt.getTime()));
+		}
 	}
 
 	/**
@@ -485,12 +515,9 @@ public class UpdatesAction extends ManagementAction {
 			sql.append("and (lower(a.title_txt) like ? ");
 			sql.append("or lower(a.message_txt) like ? ) ");
 		}
-		String dateRange = req.getParameter(DATE_RANGE);
-		if ("1".equals(dateRange)) {
-			sql.append("and a.create_dt > CURRENT_DATE - INTERVAL '6 months' ");
-		} else if ("2".equals(dateRange)) {
-			sql.append("and a.create_dt < CURRENT_DATE - INTERVAL '6 months' ");
-		}
+		//check if dates were passed before appending to query
+		if(req.hasParameter(START_DATE)) sql.append("and a.create_dt >= ? ");
+		if(req.hasParameter(END_DATE)) sql.append("and a.create_dt <= ? ");
 
 		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 		if (sectionIds != null && sectionIds.length > 0) { //restrict to certain sections only
