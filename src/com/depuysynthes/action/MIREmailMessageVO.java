@@ -116,10 +116,9 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		addHtmlRow(html, ++rowCnt, "City", vo.getCity());
 		addHtmlRow(html, ++rowCnt, "State / Province", vo.getState());
 		addHtmlRow(html, ++rowCnt, "ZIP / Postal Code", vo.getZipCode());
-		addHtmlRow(html, ++rowCnt, "County", vo.getCounty());
 		addHtmlRow(html, ++rowCnt, "Country", vo.getCountryCode());
-		addHtmlRow(html, ++rowCnt, "Main Telephone", vo.getMainPhone());
-		addHtmlRow(html, ++rowCnt, "Mobile Phone", vo.getMobilePhone());
+		addHtmlRow(html, ++rowCnt, "Telephone", StringUtil.checkVal(vo.getMainPhone()));
+		addHtmlRow(html, ++rowCnt, "Fax", vo.getMobilePhone());
 		addHtmlRow(html, ++rowCnt, "Email Address", vo.getEmailAddress());
 		addHtmlRow(html, ++rowCnt, "J&amp;J Contact / Sales Rep", vo.getJjRep());
 		// section 3 - Product Information
