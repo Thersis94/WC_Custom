@@ -40,6 +40,7 @@ public class MIRSubmissionVO extends UserDataVO {
 
 	public MIRSubmissionVO(ActionRequest req) {
 		super(req);
+		super.setMobilePhone(req.getParameter("fax")); //a little stuffing to avoid extra code
 		setRegion(req.getParameter("region"));
 		setSubregion(req.getParameter("subregion"));
 		setRequestType(req.getParameter("requestType"));
