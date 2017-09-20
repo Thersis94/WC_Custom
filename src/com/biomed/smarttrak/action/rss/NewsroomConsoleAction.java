@@ -13,6 +13,9 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.session.SMTCookie;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.UUIDGenerator;
+import com.smt.sitebuilder.action.rss.RSSEntityVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -45,14 +48,43 @@ public class NewsroomConsoleAction extends NewsroomAction {
 			this.putModuleData(loadNonGroupedFilters(req));
 		} else {
 			req.setAttribute("filters", loadNonGroupedFilters(req));
+			req.setAttribute("sources", loadSources(req));
 			loadSegmentGroupArticles(req);
 		}
 	}
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		if(req.hasParameter("feedGroupId") && req.hasParameter("filterId")) {
+		if (!req.hasParameter("feedGroupId")) return;
+		
+		if(req.hasParameter("filterId")) {
 			addFilterGroupXR(req.getParameter("feedGroupId"), req.getParameter("filterId"));
+		} else if (req.hasParameter("sourceId")) {
+			addSourceGroupXR(req.getParameter("feedGroupId"), req.getParameter("sourceId"));
+		}
+	}
+
+	
+	/**
+	 * Add the supplied source to the current feed group
+	 * @param feedGroupId
+	 * @param sourceId
+	 * @throws ActionException
+	 */
+	private void addSourceGroupXR(String feedGroupId, String sourceId) throws ActionException {
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_feed_source_group_xr ");
+		sql.append("(source_group_id, feed_group_id, rss_entity_id, create_dt)");
+		sql.append("values(?,?,?,?)");
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, new UUIDGenerator().getUUID());
+			ps.setString(2, feedGroupId);
+			ps.setString(3, sourceId);
+			ps.setTimestamp(4, Convert.getCurrentTimestamp());
+			
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new ActionException(e);
 		}
 	}
 
@@ -89,6 +121,42 @@ public class NewsroomConsoleAction extends NewsroomAction {
 		} catch (SQLException e) {
 			log.error("Error Deleting Filter Group Xr", e);
 		}
+	}
+
+	
+	/**
+	 * Load sources not already assigned to the current feed group
+	 * @param req
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	private List<RSSEntityVO> loadSources(ActionRequest req) {
+		SMTCookie c = req.getCookie("ACTIVE_FEED_GROUP");
+		if(c != null) {
+			String feedGroupId = c.getValue();
+			List<Object> vals = new ArrayList<>();
+			vals.add(feedGroupId);
+			
+			DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+			return (List<RSSEntityVO>)(List<?>)dbp.executeSelect(buildSourceRetrieve(), vals, new RSSEntityVO());
+		}
+		return Collections.emptyList();
+	}
+
+	
+	/**
+	 * Build the sql to retrieve no assigned sources
+	 */
+	private String buildSourceRetrieve() {
+		StringBuilder sql = new StringBuilder(350);
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select * from ").append(schema).append("biomedgps_rss_entity br ");
+		sql.append("left join rss_entity r on r.rss_entity_id = br.rss_entity_id ");
+		sql.append("where br.rss_entity_id not in (select rss_entity_id from ");
+		sql.append(schema).append("biomedgps_feed_source_group_xr xr ");
+		sql.append("where xr.feed_group_id = ?) ");
+		sql.append("order by rss_feed_nm");
+		return sql.toString();
 	}
 
 	/**
