@@ -138,7 +138,9 @@ public class ShowpadTagManager {
 
 		//add what's left on the "need to add" list as new tags; both to the Asset, and to the Division in Showpad if they don't already exist
 		for (String tagNm : tagsToAdd) {
-			if (StringUtil.isEmpty(tagNm)) continue;
+			//do not create or bind empty tags
+			if (StringUtil.checkVal(tagNm).trim().isEmpty()) continue;
+			
 			tagNm = tagNm.trim();
 			log.info("asset needs tag " + tagNm);
 			ShowpadTagVO tagVo = showpadTags.get(tagNm);
@@ -389,6 +391,9 @@ public class ShowpadTagManager {
 	 */
 	protected void linkAssetToTags(String showpadAssetId, Collection<ShowpadTagVO> tags) {
 		for (ShowpadTagVO tag : tags) {
+			//do not create or bind empty tags
+			if (StringUtil.checkVal(tag.getName()).trim().isEmpty()) continue;
+			
 			//if we don't know this tag by ID, get it from the Division's list if it already exists there
 			if (tag.getId() == null && showpadTags.containsKey(tag.getName()))
 				tag = showpadTags.get(tag.getName());
