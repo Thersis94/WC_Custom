@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.action.rss;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +17,10 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.session.SMTCookie;
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -37,6 +42,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since May 15, 2017
  ****************************************************************************/
 public class SmarttrakRSSFeedAction extends SBActionAdapter {
+	
+	public final String FEEDBACK_ADMIN_EMAIL = "feedbackAdminEmail";
+	public final String FEEDBACK_EMAIL_SLUG = "BMG_RSS_FEEDBACK";
 
 	public SmarttrakRSSFeedAction() {
 		super();
@@ -65,7 +73,9 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		if(req.hasParameter("rssArticleId")) {
+		if (Convert.formatBoolean(req.getParameter("feedback"))) {
+			sendFeedback(req);
+		} else if(req.hasParameter("rssArticleId")) {
 			NewsroomAction nra = new NewsroomAction(this.actionInit);
 			nra.setAttributes(attributes);
 			nra.setDBConnection(dbConn);
@@ -73,6 +83,76 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 		} else {
 			update(req);
 		}
+		
+	}
+
+	
+	/**
+	 * Gather feedback information and send an email to the feedback admin.
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void sendFeedback(ActionRequest req) throws ActionException {
+		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
+		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);	
+
+		Map<String, Object> config = new HashMap<>();
+		config.put("request", req.getParameter("request"));
+		config.put("feedGroup", getFeedGroup(req));
+		config.put("submittalName", user.getFullName());
+		config.put("articleName", req.getParameter("articleName"));
+		
+		ecbu.sendMessage(config, getAdminEmail(), FEEDBACK_EMAIL_SLUG);
+	}
+	
+	
+	/**
+	 * Get the current feed group's name
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private String getFeedGroup(ActionRequest req) throws ActionException {
+		SMTCookie c = req.getCookie("ACTIVE_FEED_GROUP");
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select feed_group_nm from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_feed_group where feed_group_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, c.getValue());
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) return rs.getString("feed_group_nm");
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		return "";
+	}
+	
+	/**
+	 * Get the profile id of the supplied admin email
+	 * @return
+	 */
+	private Map<String, String> getAdminEmail() {
+		String sql = "SELECT profile_id from profile where search_email_txt = ? ";
+		String emailAddress = StringUtil.checkVal(attributes.get(FEEDBACK_ADMIN_EMAIL));
+		Map<String, String> recipient = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
+			StringEncrypter se = new StringEncrypter(encKey);
+			ps.setString(1, se.encrypt(emailAddress.toUpperCase()));
+			log.debug(sql+"|"+se.encrypt(emailAddress.toUpperCase()));
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				recipient.put(rs.getString("profile_id"), emailAddress);
+			}
+			
+		} catch (Exception e) {
+			log.error("Failed to get profile id for email address " + emailAddress);
+		}
+		return recipient;
 		
 	}
 
