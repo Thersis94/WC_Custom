@@ -1,4 +1,4 @@
-package com.depuysynthes.lucene;
+package com.depuysynthes.solr;
 
 // JDK 1.6.x
 import java.io.IOException;
@@ -16,7 +16,7 @@ import org.apache.solr.client.solrj.SolrClient;
 
 // SMT Base Libs
 import com.depuysynthes.action.ProductCatalogUtil;
-import com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO;
+import com.depuysynthes.solr.data.ProductCatalogSolrDocumentVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
