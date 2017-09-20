@@ -65,7 +65,7 @@ public class NewsroomAction extends SBActionAdapter {
 
 			//Load Managers for assigning rss articles.
 			loadManagers(req);
-		} else {
+		} else if (!req.hasParameter("statusCd")) {
 			loadSegmentGroupArticles(req);
 		}
 	}
