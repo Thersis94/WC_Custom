@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.vo;
 
+import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.smt.sitebuilder.action.support.TicketVO;
@@ -41,6 +42,7 @@ public class TicketEmailVO extends TicketVO {
 	/**
 	 * @return the phoneNo
 	 */
+	@Column(name="phone_number_txt")
 	public String getPhoneNo() {
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
 		pnf.setCountryCode(countryCd);
@@ -51,6 +53,7 @@ public class TicketEmailVO extends TicketVO {
 	/**
 	 * @return the companyNm
 	 */
+	@Column(name="company_nm")
 	public String getCompanyNm() {
 		return companyNm;
 	}
