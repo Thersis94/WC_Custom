@@ -31,6 +31,7 @@ public class MIRSubmissionVO extends UserDataVO {
 	private String responseType;
 	private String responseTypeOther;
 	private String jjRep;
+	private String jjRepEmail;
 	private String[] productCompany;
 	private String productCompanyOther;
 	private String[] products;
@@ -53,6 +54,7 @@ public class MIRSubmissionVO extends UserDataVO {
 		setResponseType(req.getParameter("responseType"));
 		setResponseTypeOther(req.getParameter("responseTypeOther"));
 		setJjRep(req.getParameter("jjRep"));
+		setJjRepEmail(req.getParameter("jjRepEmail"));
 		setProductCompany(req.getParameterValues("productCompany"));
 		setProductCompanyOther(req.getParameter("productCompanyOther"));
 		setProducts(req.getParameterValues("products"));
@@ -241,5 +243,13 @@ public class MIRSubmissionVO extends UserDataVO {
 
 	public void setConsentFlg(String consentFlg) {
 		this.consentFlg = consentFlg;
+	}
+
+	public String getJjRepEmail() {
+		return jjRepEmail;
+	}
+
+	public void setJjRepEmail(String jjRepEmail) {
+		this.jjRepEmail = jjRepEmail;
 	}
 }

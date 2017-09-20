@@ -121,6 +121,7 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		addHtmlRow(html, ++rowCnt, "Fax", vo.getMobilePhone());
 		addHtmlRow(html, ++rowCnt, "Email Address", vo.getEmailAddress());
 		addHtmlRow(html, ++rowCnt, "J&amp;J Contact / Sales Rep", vo.getJjRep());
+		addHtmlRow(html, ++rowCnt, "Contact's Email Address", vo.getJjRepEmail());
 		// section 3 - Product Information
 		addHtmlRow(html, ++rowCnt, "Medical Device Company(s)", vo.getProductCompanies());
 		if (!StringUtil.isEmpty(vo.getProductCompanyOther())) addHtmlRow(html, ++rowCnt, "Medical Device Company (Other)", vo.getProductCompanyOther());
