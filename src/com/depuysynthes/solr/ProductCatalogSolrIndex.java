@@ -51,14 +51,14 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * 		Copied the file and modified for the Solr Indexer
  ****************************************************************************/
 public class ProductCatalogSolrIndex extends SMTAbstractIndex {
-
-	protected String organizationId = null;
-
 	/**
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
-	public static String INDEX_TYPE = "DS_PRODUCTS";
-	protected static String SOLR_DOC_CLASS = ProductCatalogSolrDocumentVO.class.getName();
+	public static final String INDEX_TYPE = "DS_PRODUCTS";
+	protected static final String SOLR_DOC_CLASS = ProductCatalogSolrDocumentVO.class.getName();
+
+	protected String organizationId;
+
 
 	/**
 	 * @param config
@@ -96,7 +96,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 		String countryNodeId = null;
 		String country = "";
 		String lastCategoryName = null;
-		
+
 		for (Node n : nodes) {
 			ProductCategoryVO vo = (ProductCategoryVO)n.getUserObject();
 
@@ -113,7 +113,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 				continue; //these are child categories, not products (to index)
 			}
 
-			if (StringUtil.checkVal(vo.getCategoryUrl()).length() == 0 || vo.getProducts().size() == 0) {
+			if (StringUtil.isEmpty(vo.getCategoryUrl()) || vo.getProducts().isEmpty()) {
 				log.debug("not a product: " + vo.getCategoryName());
 				lastCategoryName = divisionNm + " " + vo.getCategoryName();
 				continue;
@@ -124,20 +124,16 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 
 			String imagePath = null;
 			ProductVO pVo = null;
-			if (vo.getProducts() != null && vo.getProducts().size() > 0) {
+			if (vo.getProducts() != null && !vo.getProducts().isEmpty()) {
 				try {
 					pVo = vo.getProducts().get(0);
-					//log.debug("product= " + StringUtil.getToString(pVo));
 					if (vo.getCategoryDesc() == null || vo.getCategoryDesc().length() == 0)
 						vo.setCategoryDesc(pVo.getDescText());
 
 					ProductAttributeContainer attrs = pVo.getAttributes();
-					//log.debug("#attribs=" + attrs.getRootAttributes().size());
 					for (Node an : attrs.getRootAttributes()) {
 						ProductAttributeVO attr = (ProductAttributeVO) an.getUserObject();
-						//log.debug("attr=" + attr.getAttributeId() + " par=" + attr.getParentId());
 						if (attr.getAttributeId().startsWith("DS_IMAGE")) {
-							//log.debug("found image for " + attr.getAttributeId());
 							imagePath = attr.getValueText();
 							break;
 						}
@@ -173,7 +169,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	private List<Node> getProductData(String catalogId) {
 		ProductCatalogUtil util = new ProductCatalogUtil();
 		util.setDBConnection(new SMTDBConnection(dbConn));
-		Map<String, Object> attribs = new HashMap<String, Object>();
+		Map<String, Object> attribs = new HashMap<>();
 		attribs.put(Constants.MODULE_DATA, new ModuleVO());
 		attribs.put(Constants.QS_PATH, config.get(Constants.QS_PATH));
 		util.setAttributes(attribs);
@@ -203,26 +199,22 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 
 		//add the CategoryVO
 		txt.append(catVo.toString()).append("\r");
-		//log.debug("cat=" + catVo.toString());
 
 		//add the ProductVO
 		if (prodVo != null) {
 			txt.append(prodVo.toString()).append("\r");
-			//log.debug("prod=" + prodVo.toString());
 
 			//add each of the ProductAttributeVOs
 			try {
 				for (Node n : prodVo.getAttributes().getAllAttributes()) {
 					txt.append(((ProductAttributeVO)n.getUserObject()).toString()).append("\r");
-					//	log.debug("added attrib: " + n);
 				}
 
 			} catch (Exception e) {
-				//log.warn("could not add attributes to product: " + prodVo.getProductId(), e);
+				//ignoreable
 			}
 		}
 
-		//log.debug(txt);
 		solrDoc.setContents(txt.toString());
 		return solrDoc;
 	}
@@ -233,7 +225,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 			StringBuilder solrQuery = new StringBuilder(60);
 			solrQuery.append(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType() + " AND ");
 			solrQuery.append(SearchDocumentHandler.ORGANIZATION + ":" + organizationId);
-			
+
 			server.deleteByQuery(solrQuery.toString());
 		} catch (Exception e) {
 			throw new IOException(e);
