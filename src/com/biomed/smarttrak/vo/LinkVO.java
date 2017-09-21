@@ -22,6 +22,7 @@ public class LinkVO {
 	private int outcome;
 	private String adminUrl;
 	private String publicUrl;
+	private int reviewFlag;
 
 	public LinkVO(String section, String id, String html) {
 		this.setSection(section);
@@ -102,5 +103,19 @@ public class LinkVO {
 
 	public void setPublicUrl(String publicUrl) {
 		this.publicUrl = publicUrl;
+	}
+
+	/**
+	 * @return the reviewFlag
+	 */
+	public int getReviewFlag() {
+		return reviewFlag;
+	}
+
+	/**
+	 * @param reviewFlag the reviewFlag to set
+	 */
+	public void setReviewFlag(int reviewFlag) {
+		this.reviewFlag = reviewFlag;
 	}
 }

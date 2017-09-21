@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+
 //WC custom
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.vo.LinkVO;
@@ -34,6 +35,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  <b>Changes:</b> 
  ***************************************************************************/
 public class LinkReportAction extends SimpleActionAdapter {
+	public static final String LINK_ID = "linkId"; //req param
 
 	/**
 	 * Constructor
@@ -61,6 +63,20 @@ public class LinkReportAction extends SimpleActionAdapter {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		return loadLinks(site);
 	}
+	
+	@Override
+	public void build(ActionRequest req) throws ActionException{
+		if(req.hasParameter("markedReview")){
+			markedReview(StringUtil.checkVal(req.getParameter(LINK_ID)));
+		}		
+	}
+	
+	protected void markedReview(String linkId){
+		log.debug("***Method called");
+		//build the query
+		
+		//execute and return
+	}
 
 
 	/**
@@ -78,7 +94,7 @@ public class LinkReportAction extends SimpleActionAdapter {
 		sql.append("case when company_id is not null then 'COMPANY' when product_id is not null then 'PRODUCT' ");
 		sql.append("when insight_id is not null then 'INSIGHT' when market_id is not null then 'MARKET' else 'UPDATE' end as section ");
 		sql.append("from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_link ");
-		sql.append("where status_no=404 order by section, id");
+		sql.append("where status_no=404 and review_flg=0 order by section, id");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

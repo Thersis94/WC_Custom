@@ -8,7 +8,7 @@ import com.biomed.smarttrak.admin.report.AccountsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
 import com.biomed.smarttrak.admin.report.LinkReportAction;
-import com.biomed.smarttrak.admin.report.LinkReportVO;
+import com.biomed.smarttrak.admin.report.LinkWebReportVO;
 import com.biomed.smarttrak.admin.report.SupportReportAction;
 import com.biomed.smarttrak.admin.report.SupportReportVO;
 import com.biomed.smarttrak.admin.report.UserActivityAction;
@@ -20,7 +20,6 @@ import com.biomed.smarttrak.admin.report.UserPermissionsReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationDailyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationMonthlyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
-
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -28,7 +27,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.util.StringUtil;
-
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -47,7 +45,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  <b>Changes:</b> 
  ***************************************************************************/
 public class ReportFacadeAction extends SBActionAdapter {
-
+	public static final String REPORT_TYPE = "reportType";
+	
 	public enum ReportType {
 		ACCOUNT_REPORT,
 		ACTIVITY_LOG,
@@ -79,7 +78,10 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if (! req.hasParameter("reportType")) return;
+		if (! req.hasParameter(REPORT_TYPE) || //bootstrap will come back for data for the link report
+				("LINK".equals(req.getParameter(REPORT_TYPE)) && !req.hasParameter(REPORT_TYPE))){
+			return;
+		}
 
 		ReportType rType = checkReportType(req.getParameter("reportType"));
 		AbstractSBReportVO rpt = null;
@@ -112,6 +114,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 				break;
 			case LINK:
 				rpt = generateLinkReport(req);
+				doRedirect = false;
 				break;
 			default:
 				break;
@@ -133,12 +136,13 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected AbstractSBReportVO generateLinkReport(ActionRequest req) 
-			throws ActionException {
+			throws ActionException {		
 		log.debug("generating Link Report...");
 		LinkReportAction ara = new LinkReportAction();
 		ara.setDBConnection(getDBConnection());
 		ara.setAttributes(getAttributes());
-		LinkReportVO rpt = new LinkReportVO();
+		
+		AbstractSBReportVO rpt = new LinkWebReportVO();
 		rpt.setData(ara.retrieveData(req));
 		return rpt;
 	}
