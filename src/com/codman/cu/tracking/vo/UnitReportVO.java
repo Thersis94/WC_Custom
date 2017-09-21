@@ -15,6 +15,7 @@ import org.apache.poi.ss.util.CellRangeAddress;
 
 import com.codman.cu.tracking.UnitAction;
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -37,6 +38,7 @@ public class UnitReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 1407073622024040274L;
 	private List<UnitVO> data;
 	protected SiteVO siteVo;
+	private transient StringEncoder se = new StringEncoder();
 
 	public UnitReportVO(SiteVO site) {
 		super();
@@ -62,18 +64,18 @@ public class UnitReportVO extends AbstractSBReportVO {
 		int rowNo = 0;
 		Row r = s.createRow(rowNo++);
 		addTitleRow(wb, s, r);
-		
+
 		//make column headings row
 		r = s.createRow(rowNo++);
-		addHeaderRow(wb, s, r);
+		addHeaderRow(r);
 
 		//loop the accounts, physians, units, and requests
 		for (UnitVO v : data) {
 			r = s.createRow(rowNo++); //create a new row
 			formatUnit(v, r); //populate the row
 		}
-		
-	    // Auto-size the columns.
+
+		// Auto-size the columns.
 		for (int x=0; x < 11; x++)
 			s.autoSizeColumn(x);
 
@@ -90,7 +92,7 @@ public class UnitReportVO extends AbstractSBReportVO {
 	 */
 	protected void addTitleRow(Workbook wb, Sheet s, Row r) {
 		r.setHeight((short)(r.getHeight()*2));
-		
+
 		//make a heading font for the title to be large and bold
 		CellStyle headingStyle = wb.createCellStyle();
 		Font font = wb.createFont();
@@ -113,7 +115,7 @@ public class UnitReportVO extends AbstractSBReportVO {
 	 * @param s
 	 * @param r
 	 */
-	protected void addHeaderRow(Workbook wb, Sheet s, Row r) {
+	protected void addHeaderRow(Row r) {
 		int cellCnt = 0;
 		createStringCell(r, "Account", cellCnt++);
 		createStringCell(r, "Rep Name", cellCnt++);
@@ -126,7 +128,7 @@ public class UnitReportVO extends AbstractSBReportVO {
 		createStringCell(r, "Hardware Rev No.", cellCnt++);
 		createStringCell(r, "City", cellCnt++);
 		createStringCell(r, "Country", cellCnt++);
-		createStringCell(r, "Comments", cellCnt++);
+		createStringCell(r, "Comments", cellCnt);
 	}
 
 
@@ -149,7 +151,7 @@ public class UnitReportVO extends AbstractSBReportVO {
 		createStringCell(r, u.getHardwareRevNo(), cellCnt++);
 		createStringCell(r, u.getAccountCity(), cellCnt++);
 		createStringCell(r, u.getAccountCountry(), cellCnt++);
-		createStringCell(r, u.getCommentsText(), cellCnt++);
+		createStringCell(r, u.getCommentsText(), cellCnt);
 	}
 
 
@@ -163,7 +165,7 @@ public class UnitReportVO extends AbstractSBReportVO {
 	protected Cell createStringCell(Row r, Object value, int cellNo) {
 		Cell c = r.createCell(cellNo);
 		c.setCellType(Cell.CELL_TYPE_STRING);
-		c.setCellValue(StringUtil.checkVal(value));
+		c.setCellValue(se.decodeValue(StringUtil.checkVal(value)));
 		return c;
 	}
 

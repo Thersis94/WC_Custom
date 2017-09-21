@@ -1135,6 +1135,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		languages.put("DANISH","dk");
 		languages.put("DUTCH","nl");
 		languages.put("ENGLISH","en");
+		languages.put("ESTONIAN","et");
 		languages.put("GREEK","gr");
 		languages.put("FINNISH","fl");
 		languages.put("FRENCH","fr");
