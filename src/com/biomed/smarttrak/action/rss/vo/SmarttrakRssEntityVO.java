@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.action.rss.vo;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.siliconmtn.action.ActionRequest;
@@ -28,6 +29,8 @@ public class SmarttrakRssEntityVO extends RSSEntityVO {
 	private List<RSSFeedGroupVO> groups;
 	private String configUrlTxt;
 	private String feedTypeId;
+	private Date lastChecked;
+	private String latestArticle;
 
 	public SmarttrakRssEntityVO() {
 		super();
@@ -75,5 +78,23 @@ public class SmarttrakRssEntityVO extends RSSEntityVO {
 	}
 	public void setGroups(List<RSSFeedGroupVO> groups) {
 		this.groups = groups;
+	}
+
+	@Column(name="publish_dt", isReadOnly=true)
+	public Date getLastChecked() {
+		return lastChecked;
+	}
+
+	public void setLastChecked(Date lastChecked) {
+		this.lastChecked = lastChecked;
+	}
+
+	@Column(name="title_txt", isReadOnly=true)
+	public String getLatestArticle() {
+		return latestArticle;
+	}
+
+	public void setLatestArticle(String latestArticle) {
+		this.latestArticle = latestArticle;
 	}
 }
