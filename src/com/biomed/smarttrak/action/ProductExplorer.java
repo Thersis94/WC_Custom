@@ -412,7 +412,7 @@ public class ProductExplorer extends SBActionAdapter {
 			finalTerm.append("*").append(editedTerm.toLowerCase()).append("*");
 			break;
 		case BEGIN_SEARCH:
-			finalTerm.append(editedTerm).append("*");
+			finalTerm.append(editedTerm.toLowerCase()).append("*");
 			break;
 		case EXACT_SEARCH:
 			finalTerm.append("\"").append(editedTerm).append("\"");
