@@ -43,8 +43,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class SmarttrakRSSFeedAction extends SBActionAdapter {
 	
-	public final String FEEDBACK_ADMIN_EMAIL = "feedbackAdminEmail";
-	public final String FEEDBACK_EMAIL_SLUG = "BMG_RSS_FEEDBACK";
+	public static final String FEEDBACK_ADMIN_EMAIL = "feedbackAdminEmail";
+	public static final String FEEDBACK_EMAIL_SLUG = "BMG_RSS_FEEDBACK";
 
 	public SmarttrakRSSFeedAction() {
 		super();
