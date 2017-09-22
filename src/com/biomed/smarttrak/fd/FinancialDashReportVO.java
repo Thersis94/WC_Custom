@@ -680,6 +680,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		font.setFontName("Arial");
 		font.setBold(false);
 		font.setItalic(false);
+		font.setColor(HSSFColor.BLACK.index);
 		
 		return font;
 	}
