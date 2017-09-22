@@ -53,7 +53,7 @@ public class UpdatesEditionDetailedEmbedAction extends UpdatesEditionAction {
 
 			//Look for Updates tied to the Root Node.
 			Object o = n.getUserObject();
-			if(o != null && o instanceof List && !((List)o).isEmpty()) {
+			if(o != null && o instanceof List && !((List<?>)o).isEmpty()) {
 				hasChildren = addUpdates(children, "root", (List<UpdateVO>)o);
 			}
 
