@@ -1,7 +1,5 @@
 package com.depuysynthesinst;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,19 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.siliconmtn.http.session.SMTSession;
-
-import com.depuysynthesinst.DSIUserDataVO.RegField;
 import com.depuysynthesinst.assg.MyAssignmentsAction;
 import com.depuysynthesinst.assg.MyResidentsAction;
-import com.depuysynthesinst.lms.LMSWSClient;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.registration.SubmittalAction;
@@ -29,7 +21,6 @@ import com.smt.sitebuilder.action.registration.RegistrationFacadeAction;
 import com.smt.sitebuilder.action.registration.SubmittalDataVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>: RegistrationAction.java<p/>
@@ -100,24 +91,6 @@ public class RegistrationAction extends SimpleActionAdapter {
 			dsiUser.setResDirs(resDirs);
 			req.getSession().setAttribute(Constants.USER_DATA, dsiUser.getUserDataVO());
 		}
-
-		//if page=3 and this is a new registration, probe to see if the user is eligible for migration
-		//all users getting page 3 are TTLMS eligible; decision is made in the View of which modal comes next.
-		if ("3".equals(req.getParameter("pg")) && req.hasParameter("newReg"))
-			checkHoldingUser(req);
-
-		//if there are no parameters on the request, this is the summary page/view.
-		//Reload the user's transcript each time so they always see their latest transcript
-		if (dsiUser.getTtLmsId() != null  && Convert.formatInteger(dsiUser.getTtLmsId()) > 0 && (req.hasParameter("coursesAjax") || StringUtil.checkVal(req.getQueryString()).length() == 0)) {
-			log.debug("loading transcript from LMS");
-			try {
-				LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
-				dsiUser.setMyCourses(lms.getUserCourseList(dsiUser.getDsiId()));
-			} catch (ActionException ae) {
-				log.warn("could not load user course list", ae);
-			}
-		}
-
 	}
 	
 
@@ -160,88 +133,11 @@ public class RegistrationAction extends SimpleActionAdapter {
 		mod.setActionId(actionInit.getActionId());
 		mod.setActionGroupId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		setAttribute(Constants.MODULE_DATA, mod);
-		SMTSession ses = (SMTSession) req.getSession();
 
-		//set a parameter to tell Registration to NOT dump the userVO if the user completes without logging in, we need it
-		boolean unloadSessionIfNoRole = false;
-		if (req.hasParameter("newReg")) {
-			unloadSessionIfNoRole = true;
-			req.setAttribute("dontUnloadSession", "true");
-		}
 		ActionInterface reg = new RegistrationFacadeAction(actionInit);
 		reg.setDBConnection(dbConn);
 		reg.setAttributes(getAttributes());
 		reg.build(req);
-
-		DSIUserDataVO user = new DSIUserDataVO((UserDataVO)ses.getAttribute(Constants.USER_DATA));
-		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
-
-		//if they're not using LMS, we're done:
-		if (!dsiRoleMgr.isLMSAuthorized(user)) {
-			return;
-		}
-
-		/*
-		 * If this is a Nurse and the the user is on page 3 of registration,
-		 * register them with LMS.
-		 */
-		if(dsiRoleMgr.isNurse(user) && "3".equals(req.getParameter("page"))) {
-			saveUser(user);
-
-			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString()};
-			captureLMSResponses(req, user, regFields);
-			return;
-		}
-
-		//if this is an edit, call the LMS after each modal saves 1,2 and 3.  
-		//Otherwise only when modal #3 is submitted (which is page=4 on the request).
-		if ("4".equals(req.getParameter("page")) && req.hasParameter("newReg")) {
-			user.setCountryCode(req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()));
-			log.warn("user passed country=" + req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()) + " we stored country=" + user.getCountryCode());
-			boolean migrated = migrateUser(req, user);
-
-			//if not migrated, call save (create||update)
-			if (!migrated) saveUser(user);
-
-			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(),
-															 RegField.DSI_SYNTHES_ID.toString(),
-															 RegField.DSI_PROG_ELIGIBLE.toString(),
-															 RegField.DSI_VERIFIED.toString() };
-			captureLMSResponses(req, user, regFields);
-			
-		} else if (!req.hasParameter("newReg")) {
-			String[] fieldList = new String[]{ RegField.DSI_TTLMS_ID.toString() };
-			
-			//if the user is submitting page 2, and has changed either their profession or specialty, reset Verified=no
-			log.debug(req.getParameter("oldProfession") + "=" + user.getProfession());
-			log.debug(req.getParameter("oldSpecialty") + "=" + user.getSpecialty());
-			if ("3".equals(req.getParameter("page"))) {
-				if (!StringUtil.checkVal(req.getParameter("oldProfession")).equals(user.getProfession()) || 
-						!StringUtil.checkVal(req.getParameter("oldSpecialty")).equals(user.getSpecialty())) {
-					user.setVerified(false);
-					fieldList = new String[]{ RegField.DSI_TTLMS_ID.toString(), RegField.DSI_VERIFIED.toString() };
-					log.debug("verified flag set false");
-				}
-			}
-
-			//existing user updating their data
-			if (user.getTtLmsId() != null && Convert.formatInteger(user.getTtLmsId()) > 0) {
-				saveUser(user);
-				captureLMSResponses(req, user, fieldList);
-			}
-		}
-		
-		boolean isFinalPage = "1".equals(req.getParameter("finalPage"));
-		log.debug("isFinalPage=" + isFinalPage + " " + req.getParameter("finalPage"));
-		if (isFinalPage && unloadSessionIfNoRole && ses.getAttribute(Constants.ROLE_DATA) == null) {
-			ses.removeAttribute(Constants.USER_DATA);
-		} else if (isFinalPage) {
-			log.debug("removing incomplete flag from UserDataVO");
-			user.addAttribute("incomplete",false); //this comes from rereg scenarios
-			ses.setAttribute(Constants.USER_DATA, user.getUserDataVO());
-		} else {
-			ses.setAttribute(Constants.USER_DATA, user.getUserDataVO());
-		}
 	}
 
 
@@ -285,137 +181,6 @@ public class RegistrationAction extends SimpleActionAdapter {
 		sa.setDBConnection(dbConn);
 		sa.updateRegisterData(req, user, registerSubmittalId, regData);
 	}
-	
-	
-	/**
-	 * Tests to see if the user has a migratable LMS account, and prepares for that 
-	 * transaction on the next modal save.
-	 * @param req
-	 */
-	private void checkHoldingUser(ActionRequest req) {
-		DSIUserDataVO user = new DSIUserDataVO((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
-		String pswd = getLegacyPassword(user.getEmailAddress());
-		log.debug("holdingPwd=" + pswd);
-		
-		if (pswd.length() > 0) {
-			//verify the user has an account on the LMS to migrate
-			boolean inHolding = false;
-			try {
-				LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
-				Map<Object,Object> data = lms.getUserHoldingIDByEmail(user.getEmailAddress());
-				user.setAttributesFromMap(data);
-				inHolding = Convert.formatInteger(user.getSynthesId()) > 0;
-				log.debug(user.getEmailAddress() + " inHolding? " + inHolding);
-			} catch (ActionException ae) {
-				log.error("could not query LMS for user holding", ae);
-			}
-			
-			if (inHolding) {
-				req.setAttribute("isLegacyUser", "true");
-				//save the responses onto UserDataVO for when the form is submitted
-				req.getSession().setAttribute(Constants.USER_DATA, user.getUserDataVO());
-			} else {
-				//email bradley, the LMS lied to us
-				String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") is on the holding list but their account was not In Holding on the LMS.  " +
-				"As a result they were not given the option to migrate, and a new LMS account was likely created.";
-				emailBradley("DSI duplicate account created - user not in holding", msg);
-			}
-		}
-	}
-	
-	
-	/**
-	 * migrate the LMS user out of the legacy LMS
-	 * returns false if the user could not be migrated - meaning must be inserted as new.
-	 * returns true if the user was migrated & updated - meaning transaction complete.
-	 * @param req
-	 * @return
-	 * @throws ActionException
-	 */
-	private boolean migrateUser(ActionRequest req, DSIUserDataVO user) {
-		log.debug("checking migrate");
-		
-		//do not migrate the user if they didn't consent to migration
-		if ("1".equals(req.getParameter("reg_||DSI_DSRP_TRANSFER_AUTH"))) { //submitted a Yes
-			//verify they gave us the correct legacy password
-			String pswd = getLegacyPassword(user.getEmailAddress());
-			if (pswd.length() > 0 && pswd.equalsIgnoreCase(req.getParameter("dsrpPassword")))  {
-				//migrate the user
-				LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
-				try {
-					double d = lms.migrateUser(user);
-					if (d < 1) throw new ActionException("could not migrate: " + d);
-					user.setTtLmsId(d);
-					log.debug("user migrated, TTLMSID=" + d);
-					return true; //if we're not successful here, the catch-all below is designed to strip any old TTLMSID before returning, so a new account can be created
-				} catch (ActionException e) {
-					log.warn("could not migrate user", e);
-					//email bradley
-					String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") wanted to migrate their LMS account but something went wrong.  A new account was likely created and should be considered duplicate.  Please use the SMT/EP Reconcile process to correct their account.";
-					StringWriter errors = new StringWriter();
-					e.printStackTrace(new PrintWriter(errors));
-					msg += "\r\n" + errors.toString();
-					emailBradley("DSI migration failed - needs reconciled", msg);
-				}
-			} else {
-				String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") did not submit the correct DSRP password, so the migration they desired did not occur.  Use the SMT/EP reconcile process to fix this.";
-				emailBradley("DSI duplicate account created - needs reconciled", msg);
-			}
-		} else if ("1".equals(req.getParameter("clickedYes"))) { //attempted a Yes but settled for No
-			log.debug("user did not provide the correct DSRP username, but wanted to " + user.getEmailAddress());
-			//email bradley
-			String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") seemingly tried to migrate their LMS account but could not provide the correct username, or changed their mind and did not want to migrate.  A new account was likely created and should be considered duplicate.  Please use the SMT/EP Reconcile process to correct their account.  You should confirm with the individual before doing so.  Their OLD account should be deleted if they do not desire migration.";
-			emailBradley("DSI duplicate account created - needs reconciled - user changed their mind", msg);
-		} else if (req.hasParameter("reg_||DSI_DSRP_TRANSFER_AUTH")) { //never clicked Yes, make sure the form field was actually presented though
-			log.debug("user chose not to migrate: " + user.getEmailAddress() + " " + user.getTtLmsId());
-			//email bradley
-			String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") DID NOT want to migrate their LMS account.  Please delete their old account from the LMS.";
-			emailBradley("DSI duplicate account created - no transfer requested", msg);
-		}
-		
-		//remove their 'old' TTLMSID, so a new account will be created for this user
-		user.setTtLmsId(0);
-		return false;
-	}
-	
-	
-	/**
-	 * transparently adds or updates the LMS user after performing a check to 
-	 * see if they already have an account.
-	 * Puts the user's TTLMSID onto their VO once returned from the LMS.
-	 * @param user
-	 * @throws ActionException 
-	 */
-	protected void saveUser(DSIUserDataVO user) throws ActionException {
-		log.debug("creating/updating user");
-		LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
-		Map<Object, Object> data = null;
-		
-		//check to see if the user has an active account if we don't already know
-		if (user.getTtLmsId() == null || Convert.formatInteger(user.getTtLmsId()) <= 0) {
-			try {
-				data = lms.getUserActiveIDByEmail(user.getEmailAddress());
-				user.setAttributesFromMap(data);
-				log.debug("activeId=" + data.get("TTLMSID"));
-			} catch (ActionException ae) {
-				log.error("could not get userActiveId from LMS", ae);
-			}
-		}
-		log.debug("TTLMSID=" + user.getTtLmsId());
-		
-		double d;
-		if (Convert.formatInteger(user.getTtLmsId()) > 0) {
-			//call update
-			d= lms.updateUser(user);
-			log.debug("LMS user updated: " + d);
-		} else {
-			//call create
-			d = lms.createUser(user);
-			//save the newly created TTLMSID to their UserDataVO
-			log.debug("LMS user created: " + d);
-			user.setTtLmsId(Convert.formatInteger(Double.toString(d)).toString());
-		}
-	}
 
 	
 	/**
@@ -439,24 +204,5 @@ public class RegistrationAction extends SimpleActionAdapter {
 		}
 		
 		return "";
-	}
-	
-	
-	/**
-	 * this is an emergency patch put in place at the launch of DSI Phase 2 to resolve LMS issues
-	 * @param subject
-	 * @param msg
-	 */
-	private void emailBradley(String subject, String body) {
-		try {
-			EmailMessageVO msg = new EmailMessageVO();
-			msg.setFrom("no-reply@depuysynthesinstitute.com");
-			msg.addRecipient("MagellanDSI2@gmail.com");
-			msg.setSubject(subject);
-			msg.setTextBody(body);
-			new MessageSender(getAttributes(), dbConn).sendMessage(msg);
-		} catch (Exception e) {
-			log.error("could not email bradley", e);
-		}
 	}
 }

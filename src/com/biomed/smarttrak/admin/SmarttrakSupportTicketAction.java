@@ -60,13 +60,16 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 	 */
 	@Override
 	public String formatRetrieveQuery(Map<String, Object> params) {
+		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(500);
-		sql.append("select a.*, b.first_nm as reporter_first_nm, ");
+		sql.append("select acc.account_nm as organization_id, a.*, b.first_nm as reporter_first_nm, ");
 		sql.append("b.last_nm as reporter_last_nm, c.first_nm as assigned_first_nm, ");
 		sql.append("c.last_nm as assigned_last_nm ");
 		sql.append("from support_ticket a ");
 		sql.append("left outer join profile b on a.reporter_id = b.profile_id ");
 		sql.append("left outer join profile c on a.assigned_id = c.profile_id ");
+		sql.append("left outer join ").append(schema).append("biomedgps_user u on u.profile_id = a.reporter_id ");
+		sql.append("left outer join ").append(schema).append("biomedgps_account acc on acc.account_id = u.account_id ");
 		sql.append("where a.organization_id = ? ");
 
 		if(params.containsKey(TICKET_ID)) {
@@ -78,6 +81,7 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 		}
 
 		sql.append("order by a.create_dt desc ");
+		log.debug(sql);
 		return sql.toString();
 	}
 
