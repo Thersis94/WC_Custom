@@ -1,4 +1,4 @@
-package com.depuysynthes.lucene.data;
+package com.depuysynthes.solr.data;
 
 import java.util.Calendar;
 import java.util.HashSet;
@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import com.depuysynthes.lucene.ProductCatalogSolrIndex;
+import com.depuysynthes.solr.ProductCatalogSolrIndex;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.data.Node;

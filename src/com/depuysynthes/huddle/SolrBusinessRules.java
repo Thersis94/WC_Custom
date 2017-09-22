@@ -3,7 +3,7 @@ package com.depuysynthes.huddle;
 import java.util.Collection;
 
 import com.depuysynthes.huddle.HuddleUtils.IndexType;
-import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
+import com.depuysynthes.solr.MediaBinSolrIndex.MediaBinField;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SecurityController;
@@ -78,7 +78,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 				switch(cmsType) {
 					case "external site":
 						// External sites will contain full urls in the document url field to be used on the page.
-						pageUrl = StringUtil.checkVal(sd.getFieldValue("asset_url_s"));
+						pageUrl = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL), (String) sd.getFieldValue("asset_url_s"));
 						break indexType;
 					//case "app":
 						//let these go to the CMS document /docs/, which can explain the app and apply the link text as static html

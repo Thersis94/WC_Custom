@@ -405,8 +405,8 @@ public class ProductVO extends AuthorVO implements Comparable<ProductVO> {
 
 	@Override
 	public int compareTo(ProductVO o) {
-		String comparer = StringUtil.checkVal(o.getProductName()).toUpperCase();
-		String compared = StringUtil.checkVal(getProductName()).toUpperCase();
+		String comparer = StringUtil.checkVal(o.getShortName()).toUpperCase();
+		String compared = StringUtil.checkVal(getShortName()).toUpperCase();
 		return compared.compareTo(comparer);
 	}
 	
