@@ -143,6 +143,9 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			LocationVO loc = locationMap.get(companyId);
 			if (loc == null) continue;
 			product.getValue().setState(loc.getStateCode());
+			// Since the state search used in the product explorer is a text input 
+			// instead of a dropdown we add a search feild for the state here as well.
+			product.getValue().addAttribute("search_state", StringUtil.checkVal(loc.getStateCode()).toLowerCase());
 			product.getValue().setCountry(loc.getCountryName());
 		}
 	}
