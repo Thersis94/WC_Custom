@@ -67,7 +67,7 @@ public class InsightAction extends ManagementAction {
 
 	protected enum Fields {
 		INSIGHT_ID, STATUS_CD, TYPE_CD, DATE_RANGE, START, RPP, SORT, ORDER,
-		SEARCH, ID_BYPASS, TITLE_BYPASS, CREATOR_PROFILE_ID;
+		SEARCH, ID_BYPASS, TITLE_BYPASS, CREATOR_PROFILE_ID, FEATURED_FLG;
 	}
 
 
@@ -159,6 +159,7 @@ public class InsightAction extends ManagementAction {
 		if (req.hasParameter("dateRange")) insightParamsMap.put(Fields.DATE_RANGE, req.getParameter("dateRange"));
 		if (req.hasParameter(TITLE_BYPASS)) insightParamsMap.put(Fields.TITLE_BYPASS, req.getParameter(TITLE_BYPASS));
 		if (req.hasParameter("authorId")) insightParamsMap.put(Fields.CREATOR_PROFILE_ID, req.getParameter("authorId"));
+		if (req.hasParameter("featuredFlg")) insightParamsMap.put(Fields.FEATURED_FLG, req.getParameter("featuredFlg"));
 		log.debug(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
 		insightParamsMap.put(Fields.START, req.getParameter("offset", "0"));
 		insightParamsMap.put(Fields.RPP, req.getParameter("limit","10"));
@@ -330,6 +331,7 @@ public class InsightAction extends ManagementAction {
 			params.add(StringUtil.checkVal("%"+insightParamsMap.get(Fields.SEARCH)+"%"));
 		if (insightParamsMap.containsKey(Fields.CREATOR_PROFILE_ID)) 
 			params.add(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
+		if (insightParamsMap.containsKey(Fields.FEATURED_FLG)) params.add(Convert.formatInteger(insightParamsMap.get(Fields.FEATURED_FLG)));
 		if (insightParamsMap.containsKey(Fields.RPP) && Convert.formatInteger(insightParamsMap.get(Fields.RPP)) > 0 && insightParamsMap.containsKey(Fields.START)) {
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.RPP)));
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.START)));
@@ -410,6 +412,9 @@ public class InsightAction extends ManagementAction {
 
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.CREATOR_PROFILE_ID)))
 			sql.append("and a.creator_profile_id=? ");
+		
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.FEATURED_FLG)))
+			sql.append("and a.featured_flg=? ");
 	}
 
 	/**
@@ -442,7 +447,7 @@ public class InsightAction extends ManagementAction {
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS))){
 			sql.append("a.* ");
 		}else{
-			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt, a.featured_flg, a.order_no ");
+			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt, a.featured_flg, a.slider_flg, a.section_flg, a.order_no ");
 		}
 
 		sql.append(", p.first_nm, p.last_nm, p.profile_img ");
