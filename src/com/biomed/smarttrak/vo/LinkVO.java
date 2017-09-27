@@ -1,5 +1,7 @@
 package com.biomed.smarttrak.vo;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -16,7 +18,8 @@ import java.util.Date;
 public class LinkVO {
 	private String url;
 	private String section;
-	private String objectId;
+	private String linkId;
+	private String objectId; //used for the associated section's id(company, product, update, etc.)
 	private String html;
 	private Date lastChecked;
 	private int outcome;
@@ -29,10 +32,33 @@ public class LinkVO {
 		this.setObjectId(id);
 		this.html = html;
 	}
+	
+	public LinkVO() {
+		//no-arg constructor for simple instantiation
+	}
 
 	public static LinkVO makeForUrl(String section, String id, String url) {
 		LinkVO vo = new LinkVO(section, id, null);
 		vo.setUrl(url);
+		return vo;
+	}
+	
+	/**
+	 * Generates a new LinkVO and sets relevant values via ResultSet
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	public static LinkVO makeForUrl(ResultSet rs) throws SQLException{
+		LinkVO vo = new LinkVO();
+		vo.setLinkId(rs.getString("link_id"));
+		vo.setObjectId(rs.getString("id"));
+		vo.setSection(rs.getString("section"));
+		vo.setUrl(rs.getString("url_txt"));
+		vo.setLastChecked(rs.getDate("check_dt"));
+		vo.setOutcomeNo(rs.getInt("status_no"));
+		vo.setReviewFlag(rs.getInt("review_flg"));
+		
 		return vo;
 	}
 
@@ -117,5 +143,19 @@ public class LinkVO {
 	 */
 	public void setReviewFlag(int reviewFlag) {
 		this.reviewFlag = reviewFlag;
+	}
+
+	/**
+	 * @return the linkId
+	 */
+	public String getLinkId() {
+		return linkId;
+	}
+
+	/**
+	 * @param linkId the linkId to set
+	 */
+	public void setLinkId(String linkId) {
+		this.linkId = linkId;
 	}
 }

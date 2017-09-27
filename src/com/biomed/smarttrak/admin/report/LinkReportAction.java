@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
 //WC custom
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.vo.LinkVO;
@@ -16,6 +17,7 @@ import com.biomed.smarttrak.vo.LinkVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
@@ -61,7 +63,8 @@ public class LinkReportAction extends SimpleActionAdapter {
 	 */
 	public List<LinkVO> retrieveData(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-		return loadLinks(site);
+		boolean reviewFlg = Convert.formatBoolean(req.getParameter("reviewFlag"));
+		return loadLinks(site, reviewFlg);
 	}
 	
 	@Override
@@ -71,44 +74,59 @@ public class LinkReportAction extends SimpleActionAdapter {
 		}		
 	}
 	
-	protected void markedReview(String linkId){
-		log.debug("***Method called");
+	/**
+	 *	Updates LinkVO's status to reviewed in db
+	 * @param linkId
+	 */
+	protected void markedReview(String linkId) throws ActionException{
 		//build the query
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_LINK set review_flg = 1 where link_id = ?");
+		log.debug(sql);
 		
-		//execute and return
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+			ps.setString(1, linkId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error attempting to update record: " + e);
+			throw new ActionException(e);
+		}
 	}
 
 
 	/**
 	 * @param site
-	 * @param hasParameter
+	 * @param reviewFlag
 	 * @return
+	 * @throws ActionException 
 	 */
-	private List<LinkVO> loadLinks(SiteVO site) {
+	private List<LinkVO> loadLinks(SiteVO site, boolean reviewFlag) throws ActionException {
 		String qsPath = (String) getAttribute(Constants.QS_PATH);
 		List<LinkVO> data = new ArrayList<>(5000);
-
+		
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select url_txt, status_no, check_dt, ");
+		sql.append("select link_id, url_txt, status_no, check_dt, review_flg, ");
 		sql.append("coalesce(company_id,product_id,insight_id,update_id,market_id) as id, ");
 		sql.append("case when company_id is not null then 'COMPANY' when product_id is not null then 'PRODUCT' ");
 		sql.append("when insight_id is not null then 'INSIGHT' when market_id is not null then 'MARKET' else 'UPDATE' end as section ");
 		sql.append("from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_link ");
-		sql.append("where status_no=404 and review_flg=0 order by section, id");
+		sql.append("where status_no=404 ");
+		if(!reviewFlag) sql.append("and review_flg=0 ");
+		sql.append("order by section, id");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				LinkVO vo = LinkVO.makeForUrl(rs.getString("section"),rs.getString("id"),rs.getString("url_txt"));
-				vo.setLastChecked(rs.getDate("check_dt"));
-				vo.setOutcomeNo(rs.getInt("status_no"));
+				LinkVO vo = LinkVO.makeForUrl(rs);
 				setUrls(site.getFullSiteAlias(), vo, qsPath);
 				data.add(vo);
 			}
 
 		} catch (SQLException sqle) {
 			log.error("could not load links list", sqle);
+			throw new ActionException(sqle);
 		}
 
 		return data;

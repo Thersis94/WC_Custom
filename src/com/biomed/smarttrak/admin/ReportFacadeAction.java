@@ -79,11 +79,11 @@ public class ReportFacadeAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (! req.hasParameter(REPORT_TYPE) || //bootstrap will come back for data for the link report
-				("LINK".equals(req.getParameter(REPORT_TYPE)) && !req.hasParameter(REPORT_TYPE))){
+				("LINK".equals(req.getParameter(REPORT_TYPE)) && !req.hasParameter("loadData"))){
 			return;
 		}
 
-		ReportType rType = checkReportType(req.getParameter("reportType"));
+		ReportType rType = checkReportType(req.getParameter(REPORT_TYPE));
 		AbstractSBReportVO rpt = null;
 		boolean doRedirect = true;
 		switch (rType) {
@@ -127,6 +127,18 @@ public class ReportFacadeAction extends SBActionAdapter {
 		HttpServletResponse resp = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
 		CookieUtil.add(resp, "reportLoadingCookie", "", "/", 0);
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void build(ActionRequest req) throws ActionException{
+		ReportType rType = checkReportType(req.getParameter(REPORT_TYPE));
+		if(rType.equals(ReportType.LINK)){
+			updateLinkReport(req);
+		}
+	}
 
 
 	/**
@@ -145,6 +157,19 @@ public class ReportFacadeAction extends SBActionAdapter {
 		AbstractSBReportVO rpt = new LinkWebReportVO();
 		rpt.setData(ara.retrieveData(req));
 		return rpt;
+	}
+	
+	/**
+	 * Updates the link report data
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void updateLinkReport(ActionRequest req) throws ActionException{
+		LinkReportAction ara = new LinkReportAction();
+		ara.setActionInit(actionInit);
+		ara.setAttributes(attributes);
+		ara.setDBConnection(dbConn);
+		ara.build(req);
 	}
 
 
