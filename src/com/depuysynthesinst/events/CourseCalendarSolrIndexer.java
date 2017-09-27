@@ -14,7 +14,7 @@ import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
-import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
+import com.depuysynthes.solr.MediaBinSolrIndex.MediaBinField;
 import com.depuysynthesinst.lms.FutureLeaderACGME;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
