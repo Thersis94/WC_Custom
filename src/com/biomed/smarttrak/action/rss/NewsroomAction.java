@@ -37,7 +37,7 @@ public class NewsroomAction extends SBActionAdapter {
 
 	public static final String GROUP_DATA = "groupData";
 	public static final String BUCKET_DATA = "bucketData";
-
+	public static final String BUCKET_ID = "bucketId";
 	/**
 	 * 
 	 */
@@ -54,7 +54,7 @@ public class NewsroomAction extends SBActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if(req.hasParameter("isBucket") && req.hasParameter("bucketId")) {
+		if(req.hasParameter("isBucket") && req.hasParameter(BUCKET_ID)) {
 			loadBucketArticles(req);
 			loadManagers(req);
 		} else if(req.hasParameter("isBucket")) {
@@ -112,7 +112,7 @@ public class NewsroomAction extends SBActionAdapter {
 		if(hasStatusCd) {
 			sql.append("and a.article_status_cd = ? ");
 		}
-		sql.append("order by COALESCE(publish_dt, create_dt) desc ");
+		sql.append("order by create_dt desc ");
 		return sql.toString();
 	}
 
@@ -163,8 +163,8 @@ public class NewsroomAction extends SBActionAdapter {
 	private void loadBucketArticles(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
 		vals.add(ArticleStatus.F.name());
-		if(req.hasParameter("bucketId")) {
-			vals.add(req.getParameter("bucketId"));
+		if(req.hasParameter(BUCKET_ID)) {
+			vals.add(req.getParameter(BUCKET_ID));
 		} else {
 			vals.add(((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA)).getProfileId());
 		}
@@ -180,7 +180,7 @@ public class NewsroomAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_rss_article where article_status_cd = ? and bucket_id = ? ");
-		sql.append("order by COALESCE(publish_dt, create_dt) desc ");
+		sql.append("order by create_dt desc ");
 
 		log.debug(sql.toString());
 		return sql.toString();
@@ -230,7 +230,7 @@ public class NewsroomAction extends SBActionAdapter {
 	 */
 	private void updateArticle(ActionRequest req) throws ActionException {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		boolean hasBucketId = req.hasParameter("bucketId");
+		boolean hasBucketId = req.hasParameter(BUCKET_ID);
 		RSSArticleVO rss = new RSSArticleVO(req);
 		try {
 			List<String> fields = new ArrayList<>();
@@ -239,7 +239,7 @@ public class NewsroomAction extends SBActionAdapter {
 			//BucketId may be present on the request for updating.
 			if(hasBucketId) {
 				fields.add("bucket_id");
-				rss.setBucketId(StringUtil.checkVal(req.getParameter("bucketId"), null));
+				rss.setBucketId(StringUtil.checkVal(req.getParameter(BUCKET_ID), null));
 
 				//Articles can be removed from a bucket.  Allow for removal here.
 				if("null".equals(rss.getBucketId())) {
