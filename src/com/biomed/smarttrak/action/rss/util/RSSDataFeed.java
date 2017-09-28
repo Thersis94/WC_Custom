@@ -100,10 +100,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		byte[] results = getDataViaHTTP(url, null);
 
 		//Process XML
-		if(results != null)
-			return processArticleResult(results);
-
-		else return Collections.emptyList();
+		return results != null ? processArticleResult(results) : Collections.emptyList();
 	}
 
 	/**
@@ -141,17 +138,30 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 
 		Set<String> existsIds = getExistingArticles(buildArticleIdsList(articles), f.getRssEntityId());
 
-		/**
-		 * Iterate over each Message in the Feed and apply all filters in the
-		 * related groups to the message.
-		 */
+		List<RSSArticleVO> nArticles = getNewArticles(f, articles, existsIds);
+
+		//Save Articles.
+		storeArticles(nArticles);
+	}
+
+
+	/**
+	 * Iterate over each Message in the Feed and apply all filters in the
+	 * related groups to the message.
+	 * @param f
+	 * @param articles
+	 * @param existsIds
+	 * @return
+	 */
+	private List<RSSArticleVO> getNewArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Set<String> existsIds) {
 		List<RSSArticleVO> nArticles = new ArrayList<>();
 		for(RSSArticleVO a : articles) {
 			if(!existsIds.contains(a.getArticleGuid())) {
 				a.setRssEntityId(f.getRssEntityId());
 				a.setPublicationName(f.getFeedName());
-				if(a.getPublishDt() == null)
+				if(a.getPublishDt() == null) {
 					a.setPublishDt(Calendar.getInstance().getTime());
+				}
 				for(RSSFeedGroupVO fg : f.getGroups()) {
 					matchArticle(a, fg.getFeedGroupId());
 					if(!StringUtil.isEmpty(a.getFeedGroupId())) {
@@ -163,8 +173,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 			}
 		}
 
-		//Save Articles.
-		storeArticles(nArticles);
+		return nArticles;
 	}
 
 

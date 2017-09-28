@@ -112,7 +112,7 @@ public class NewsroomAction extends SBActionAdapter {
 		if(hasStatusCd) {
 			sql.append("and a.article_status_cd = ? ");
 		}
-		sql.append("order by COALESCE(create_dt, publish_dt) desc ");
+		sql.append("order by create_dt desc ");
 		return sql.toString();
 	}
 
@@ -180,7 +180,7 @@ public class NewsroomAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_rss_article where article_status_cd = ? and bucket_id = ? ");
-		sql.append("order by COALESCE(create_dt, publish_dt) desc ");
+		sql.append("order by create_dt desc ");
 
 		log.debug(sql.toString());
 		return sql.toString();
