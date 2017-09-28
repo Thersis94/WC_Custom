@@ -32,6 +32,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class NewsroomConsoleAction extends NewsroomAction {
 
+	public static final String FEED_GROUP_ID = "feedGroupId";
+
 	public NewsroomConsoleAction() {
 		super();
 	}
@@ -43,7 +45,7 @@ public class NewsroomConsoleAction extends NewsroomAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("loadFeeds")) {
-			loadFeeds(req.getParameter("feedGroupId"));
+			loadFeeds(req.getParameter(FEED_GROUP_ID));
 		} else if(req.hasParameter("omitFilters")) {
 			this.putModuleData(loadNonGroupedFilters(req));
 		} else {
@@ -55,12 +57,12 @@ public class NewsroomConsoleAction extends NewsroomAction {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		if (!req.hasParameter("feedGroupId")) return;
+		if (!req.hasParameter(FEED_GROUP_ID)) return;
 		
 		if(req.hasParameter("filterId")) {
-			addFilterGroupXR(req.getParameter("feedGroupId"), req.getParameter("filterId"));
+			addFilterGroupXR(req.getParameter(FEED_GROUP_ID), req.getParameter("filterId"));
 		} else if (req.hasParameter("sourceId")) {
-			addSourceGroupXR(req.getParameter("feedGroupId"), req.getParameter("sourceId"));
+			addSourceGroupXR(req.getParameter(FEED_GROUP_ID), req.getParameter("sourceId"));
 		}
 	}
 

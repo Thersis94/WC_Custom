@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -83,7 +84,6 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 					List<RSSArticleVO> articles = retrieveArticles(f.getRssUrl());
 					filterArticles(f, articles);
 				} catch (Exception e) {
-					log.info("Deactivating Feed: " + f.getRssEntityId());
 					log.error("Problem Processing Feed", e);
 					updateFeed(f);
 				}
@@ -100,7 +100,10 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		byte[] results = getDataViaHTTP(url, null);
 
 		//Process XML
-		return processArticleResult(results);
+		if(results != null)
+			return processArticleResult(results);
+
+		else return Collections.emptyList();
 	}
 
 	/**
@@ -118,7 +121,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 			saxParser.parse(is, handler);
 			articles = handler.getVos();
 		} catch(SAXException | IOException se) {
-			log.error("Problem Processing Pubmed Articles", se);
+			log.error("Response was malformed.");
 		}
 		return articles;
 	}
@@ -131,6 +134,11 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private void filterArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles) {
 		//Query if any of the retrieved articles are already processed.
+
+		if(articles == null) {
+			return;
+		}
+
 		Set<String> existsIds = getExistingArticles(buildArticleIdsList(articles), f.getRssEntityId());
 
 		/**

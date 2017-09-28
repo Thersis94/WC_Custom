@@ -109,7 +109,6 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 
 		//Call to Quertle for each Classification
 		for (String c : classifications) {
-			log.info("Loading Classification: " + c);
 
 			//Load Results for the Classification
 			List<ResultAttributes> results = queryResults(port, sp, c);
@@ -134,7 +133,6 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private List<RSSArticleVO> processResults(List<ResultAttributes> results, String searchType) {
 		List<RSSArticleVO> articles = new ArrayList<>(results.size() + 1);
-		log.info("Loaded " + results.size() + " results.");
 
 		//Load existing Article Ids for Quertle.
 		Set<String> ids = getExistingIds(searchType, results);
