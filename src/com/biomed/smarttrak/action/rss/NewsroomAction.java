@@ -56,6 +56,7 @@ public class NewsroomAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("isBucket") && req.hasParameter("bucketId")) {
 			loadBucketArticles(req);
+			loadManagers(req);
 		} else if(req.hasParameter("isBucket")) {
 			loadBuckets(req);
 			loadSegmentGroupArticles(req);
@@ -64,7 +65,7 @@ public class NewsroomAction extends SBActionAdapter {
 
 			//Load Managers for assigning rss articles.
 			loadManagers(req);
-		} else {
+		} else if (!req.hasParameter("statusCd")) {
 			loadSegmentGroupArticles(req);
 		}
 	}

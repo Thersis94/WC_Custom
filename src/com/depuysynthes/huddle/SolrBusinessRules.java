@@ -3,7 +3,7 @@ package com.depuysynthes.huddle;
 import java.util.Collection;
 
 import com.depuysynthes.huddle.HuddleUtils.IndexType;
-import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
+import com.depuysynthes.solr.MediaBinSolrIndex.MediaBinField;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SecurityController;
