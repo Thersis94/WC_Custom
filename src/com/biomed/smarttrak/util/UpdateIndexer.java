@@ -74,7 +74,7 @@ public class UpdateIndexer extends SMTAbstractIndex {
 		SolrClient server = makeServer();
 		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
 			util.addDocuments(getDocuments(itemId));
-			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
+			server.commit(true, true);
 		} catch (Exception e) {
 			log.error("Failed to index Update with id=" + itemId, e);
 		}
