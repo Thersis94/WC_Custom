@@ -4,6 +4,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +14,7 @@ import java.util.Map;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import com.depuysynthes.huddle.solr.HuddleProductCatalogSolrIndex;
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -22,6 +26,8 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.session.SMTCookie;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.tools.PageViewReportingAction;
@@ -32,7 +38,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: ProductCatalogAction.java<p/>
+ * <b>Title</b>: DSProductCatalogAction.java<p/>
  * <b>Description: cacheable action that loads an entire product catalog.
  * The Views for this action are basically search/results modules, so they need the entire catalog.</b> 
  * <p/>
@@ -56,8 +62,9 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	}
 
 
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.ActionController#list(com.siliconmtn.http.SMTServletRequest)
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
@@ -66,7 +73,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
@@ -83,7 +90,6 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 				// Otherwise we make use of the cache as normal.
 				cachedMod.setCacheable(!isPreview);
 				cachedMod.setPageModuleId(cacheKey);
-				//log.debug("writing to cache, groups=" + StringUtil.getToString(mod.getCacheGroups(), false, false,",") + " id=" + mod.getPageModuleId());
 
 				//If we are in preview mode we do not cache this 
 				if (!isPreview)
@@ -91,9 +97,122 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 			}
 		}
 
+		req.setAttribute("products", filterTree(cachedMod.getActionData(), req));
+
 		mod.setActionData(cachedMod.getActionData());
 		updatePageData(req, mod, page);
 		setAttribute(Constants.MODULE_DATA, mod);
+	}
+
+
+	/**
+	 * based on sorting, filtering, and RPP, return a list of products to display in the main column.
+	 * @param actionData
+	 * @param req
+	 * @return
+	 */
+	private List<ProductCategoryVO> filterTree(Object actionData, ActionRequest req) {
+		Tree t = (Tree) actionData;
+		if (t == null) return Collections.emptyList();
+
+		req.setValidateInput(Boolean.FALSE); //turn off html encoding for things like "Hip & Pelvis"
+		String[] filters = req.getParameterValues("fq");
+		if (filters == null) filters = new String[0];
+		for (String f : filters)
+			log.debug("applying filter : " + f);
+		req.setValidateInput(Boolean.TRUE);
+
+
+		//find all the products that match the hierarchy filter
+		List<ProductCategoryVO> data = filterRecords(filters, t);
+
+		//sort the data
+		Comparator<ProductCategoryVO> sorter = makeComparator(req);
+		Collections.sort(data, sorter);
+
+		log.debug("loaded products=" + data.size());
+		return pruneList(data, req);
+	}
+
+
+	/**
+	 * returns a list of products/categories matching the filter restrictions
+	 * @param filters
+	 * @param t
+	 * @return
+	 */
+	private List<ProductCategoryVO> filterRecords(String[] filters, Tree t) {
+		//using a map here automatically weeds-out duplicates (when the same product appears in multiple categories)
+		Map<String, ProductCategoryVO> data = new HashMap<>();
+		for (Node n : t.getPreorderList()) {
+			ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
+			List<ProductVO> prods = cat.getProducts();
+			if (prods == null || prods.isEmpty()) continue;
+
+			//test if this categories hierarchy matches the filters
+			boolean passes = filters.length == 0; //no filters = everything passes
+			for (String f : filters) {
+				if (n.getFullPath().indexOf('~') > -1) f +="~"; //use tokenizers as needed
+				if (n.getFullPath().startsWith(f)) {
+					passes = true;
+					log.debug(n.getFullPath() + " matched " + f);
+					break;
+				}
+			}
+
+			if (passes)
+				data.put(n.getNodeId(), cat);
+		}
+		return new ArrayList<>(data.values());
+	}
+
+
+	/**
+	 * returns a comparator fitted for sorting the list of products
+	 * @param req
+	 * @return
+	 */
+	private Comparator<ProductCategoryVO> makeComparator(ActionRequest req) {
+		SMTCookie c = req.getCookie("dsSort");
+		String type = c != null ? c.getValue() : req.getParameter("dsSort");
+		if ("titleZA".equals(type)) {
+			return new ZAComparator();
+		} else if ("recentlyAdded".equals(type)) {
+			return new RecentComparator();
+		}
+		//a-z is the default
+		return new AZComparator();
+	}
+
+
+	/**
+	 * returns a subset of the list considering RPP and page#
+	 * @param data
+	 * @param req
+	 * @return
+	 */
+	private List<ProductCategoryVO> pruneList(List<ProductCategoryVO> data, ActionRequest req) {
+		req.setAttribute("resultCnt", data.size());
+
+		//isolate the 'page' of results being requested (rpp * page#)
+		SMTCookie rppCook = req.getCookie("dsRpp");
+		int rpp = Convert.formatInteger(rppCook != null ? rppCook.getValue() : req.getParameter("rpp"), 12); //cookie->request->default
+		int page = Convert.formatInteger(req.getParameter("page"), 0);
+		int start = page * rpp;
+		if (start < 0 || start > data.size()) start = 0;
+		int end = start + rpp;
+		if (end > data.size()) end = data.size();
+
+		//set prev & next URLs for the view
+		if (start > 0) {
+			req.setAttribute("prev", page-1);
+		}
+		if (end < data.size()) {
+			req.setAttribute("next", page+1);
+		}
+
+		log.debug("returning " + (end-start) + " products from idx=" + start);
+		return data.subList(start, end);
 	}
 
 
@@ -119,6 +238,14 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 		//process dynamic attributes - goes to Solr for data
 		processDynamicAttributes(site.getOrganizationId(), t);
 
+		//sort the tree and bind hierarchy levels
+		t.buildNodePaths("~", true);
+
+		//asset nodes and leafs based on the use-case of this tool:
+		setLeafs(t.getRootNode());
+
+		//sort the list alphabetically
+		sortTreeAlphabetically(t);
 
 		mod.setActionData(t);
 		mod.setCacheTimeout(86400*2); //refresh every 48hrs
@@ -126,6 +253,57 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 		return mod;
 	}
 
+
+	/**
+	 * @param t
+	 */
+	protected void sortTreeAlphabetically(Tree t) {
+		sortBranchNodes(t.getRootNode(), new AZNodeComparator());
+	}
+
+	/**
+	 * @param rootNode
+	 */
+	private void sortBranchNodes(Node node, Comparator<Node> comp) {
+		//sort all the leafs at this level
+		Collections.sort(node.getChildren(), comp);
+		//for each leaf that's actually a branch, traverse down it 
+		for (Node c : node.getChildren())
+			sortBranchNodes(c, comp);
+	}
+
+	/**
+	 * asserts who's who at the branch/leaf levels - helper to bootstrap2 theme.
+	 * @param rootNode
+	 */
+	private void setLeafs(Node baseNode) {
+		for (Node n : baseNode.getChildren()) {
+			ProductCategoryVO vo = (ProductCategoryVO)n.getUserObject();
+			//its a leaf if it's CHILDREN have products and no children.
+			n.setLeaf(!vo.getProducts().isEmpty() && n.getNumberChildren() == 0);
+			if (n.isLeaf()) n.setDepthLevel(10000); //this is a product!
+
+			if (n.getNumberChildren() > 0) {
+				setLeafs(n);
+				assignParentLeaf(n);
+			}
+		}
+	}
+
+
+	/**
+	 * Sets the parent to be a leaf if it's offspring are all products
+	 * @param n
+	 */
+	private void assignParentLeaf(Node n) {
+		for (Node x : n.getChildren()) {
+			//move the leaf designator up a level.
+			if (x.getDepthLevel() == 10000) {
+				n.setLeaf(true);
+				x.setLeaf(false);
+			}
+		}
+	}
 
 	/**
 	 * iterates the product catalog and attaches pageview #s to each of the products.
@@ -149,7 +327,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 			//NOTE: these method calls are what also assign the URLs to each product, 
 			//we must always call into them, even when there are no pageViews.  -JM 03.31.14
 			//added support for DS-Select subsite.  -JM 05.20.14
-			if (page.getDepthLevel() > 2 || page.getFullPath().equals("/asc/products")) {
+			if (page.getDepthLevel() > 2 || "/asc/products".equals(page.getFullPath())) {
 				//these are 'this' page plus a query string
 				pc.assignPageviewsToCatalog(t.getPreorderList(), pageViews, page.getFullPath() + "/" + attributes.get(Constants.QS_PATH));
 			} else {
@@ -272,7 +450,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 			while (rs.next()) {
 				if (!isExactSousMatch(sousProductName, rs.getString(4))) 
 					continue;
-				
+
 				vo = new MediaBinAssetVO();
 				vo.setDpySynMediaBinId(rs.getString(1));
 				vo.setFileNm(rs.getString(2));
@@ -418,14 +596,14 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 		 */
 		for (Node n : nodes) {
 			ProductCategoryVO p = (ProductCategoryVO) n.getUserObject();
-			if (p.getProducts().isEmpty()) continue;
-
-			ProductVO pr = p.getProducts().get(0);
-			//Set Page Data and request object
-			if (reqParam1.equalsIgnoreCase(pr.getUrlAlias())) {
-				this.updatePageVO(page, pr, p);
-				req.setAttribute("prodCatVo",  p);
-				break;
+			if (!p.getProducts().isEmpty()) {
+				ProductVO pr = p.getProducts().get(0);
+				//Set Page Data and request object
+				if (reqParam1.equalsIgnoreCase(pr.getUrlAlias())) {
+					this.updatePageVO(page, pr, p);
+					req.setAttribute("prodCatVo",  p);
+					break;
+				}
 			}
 		}
 	}
@@ -469,21 +647,40 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @return List<String> values
 	 * @throws InvalidDataException
 	 */
-	//TODO duplicated in HuddleProductCatalogSolrIndex - from ds-huddle branch
 	public static List<String> convertFromJSON(String jsonText) throws InvalidDataException {
-		List<String> values = new ArrayList<>();
-		try {
-			JSONArray arr = JSONArray.fromObject(jsonText);
-			for (int x=0; x < arr.size(); x++) {
-				if ("CMS".equals(((JSONObject)arr.get(x)).getString("type"))) {
-					values.add("CMS" + ((JSONObject)arr.get(x)).getString("id"));
-				} else {
-					values.add(((JSONObject)arr.get(x)).getString("id"));
-				}
-			}
-		} catch (Exception e) {
-			throw new InvalidDataException(e);
+		return HuddleProductCatalogSolrIndex.convertFromJSON(jsonText);
+	}
+
+
+
+	/***************************************************************************
+	 * <b>Title:</b> Product Comparators<br/>
+	 * <b>Description:</b> Comparators used by this action for view/cosmetics 
+	 * <br/>
+	 * <b>Copyright:</b> Copyright (c) 2017<br/>
+	 * <b>Company:</b> Silicon Mountain Technologies<br/>
+	 * @author James McKain
+	 * @version 1.0
+	 * @since Sep 28, 2017
+	 ***************************************************************************/
+	public class AZComparator implements Comparator<ProductCategoryVO> {
+		public int compare(ProductCategoryVO o1, ProductCategoryVO o2) {
+			return StringUtil.checkVal(o1.getCategoryName()).compareToIgnoreCase(o2.getCategoryName());
 		}
-		return values;
+	}
+	public class ZAComparator implements Comparator<ProductCategoryVO> {
+		public int compare(ProductCategoryVO o1, ProductCategoryVO o2) {
+			return StringUtil.checkVal(o2.getCategoryName()).compareToIgnoreCase(o1.getCategoryName());
+		}
+	}
+	public class RecentComparator implements Comparator<ProductCategoryVO> {
+		public int compare(ProductCategoryVO o1, ProductCategoryVO o2) {
+			return o1.getLastUpdate().compareTo(o2.getLastUpdate());
+		}
+	}
+	public class AZNodeComparator implements Comparator<Node> {
+		public int compare(Node o1, Node o2) {
+			return StringUtil.checkVal(o1.getNodeName()).compareToIgnoreCase(o2.getNodeName());
+		}
 	}
 }
