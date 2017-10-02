@@ -1,4 +1,4 @@
-package com.depuysynthes.lucene;
+package com.depuysynthes.solr;
 
 // JDK 1.7.x
 import java.io.BufferedInputStream;

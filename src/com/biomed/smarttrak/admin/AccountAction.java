@@ -60,31 +60,48 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
+		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
+		
+		//if this is the add form, no account information to fetch
+		if( (accountId != null && !"ADD".equals(accountId)) || req.hasParameter("changeAccount")){
+			List<Object> accounts = fetchAccounts(req, accountId, schema);
+			putModuleData(accounts);
+		}
+
+		//if this is the edit/add form, we need a list of BiomedGPS Staff for the "Manager" dropdown
+		if (accountId != null)
+			loadManagerList(req, schema);
+	}
+	
+	/**
+	 * Handles loading of account(s) for either a listing or an individual(edit) account
+	 * @param req
+	 * @param accountId
+	 * @param schema
+	 * @return
+	 */
+	protected List<Object> fetchAccounts(ActionRequest req, String accountId, String schema){
+		List<Object> accounts = null;
 		if (req.hasParameter("changeAccount")) {
 			req.getSession().removeAttribute(SESS_ACCOUNT);
 		} else { 
 			loadAccount(req, dbConn, getAttributes());
 		}
 
-		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
 		AccountVO acct = (AccountVO) req.getSession().getAttribute(SESS_ACCOUNT);
 
 		//pull accountId from session if we need it
 		if (StringUtil.isEmpty(accountId) && acct != null)
 			accountId = acct.getAccountId();
 
-		List<Object> accounts = loadAccounts(schema, accountId);
+		accounts = loadAccounts(schema, accountId);
 
 		//hold the selected account in session for editing
 		if (acct == null && !accounts.isEmpty() && accounts.size() == 1)
-			setSelectedAccount((AccountVO) accounts.get(0), req);
-
-		//if this is the edit form, we need a list of BiomedGPS Staff for the "Manager" dropdown
-		if (accountId != null)
-			loadManagerList(req, schema);
-
-		putModuleData(accounts);
+			setSelectedAccount((AccountVO) accounts.get(0), req);			
+		
+		return accounts;
 	}
 
 
@@ -253,6 +270,9 @@ public class AccountAction extends SBActionAdapter {
 				db.delete(new AccountVO(req));
 			} else {
 				db.save(new AccountVO(req));
+				//if an insert, set the generated ID on request for redirect
+				if(db.getGeneratedPKId() != null) 
+					req.setParameter(ACCOUNT_ID, db.getGeneratedPKId());
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);

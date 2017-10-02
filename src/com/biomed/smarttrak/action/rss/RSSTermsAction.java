@@ -101,7 +101,7 @@ public class RSSTermsAction extends SBActionAdapter {
 			return;
 		}
 
-		this.putModuleData(loadTerms(req.getParameter(FILTER_TERM_ID)));
+		this.putModuleData(loadTerms(req.getParameter(FILTER_TERM_ID), req.getParameter("filterTypeCode"), req.getParameter("feedGroupCode")));
 	}
 
 	/**
@@ -109,12 +109,19 @@ public class RSSTermsAction extends SBActionAdapter {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public List<RSSFilterTerm> loadTerms(String filterTermId) {
+	public List<RSSFilterTerm> loadTerms(String filterTermId, String filterTypeCode, String feedGroupCd) {
 		List<Object> vals = new ArrayList<>();
 		if(!StringUtil.isEmpty(filterTermId)) {
 			vals.add(filterTermId);
 		}
-		return(List<RSSFilterTerm>)(List<?>) new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA)).executeSelect(loadFilterTermTypeSql(!StringUtil.isEmpty(filterTermId)), vals, new RSSFilterTerm());
+		if(!StringUtil.isEmpty(filterTypeCode)) {
+			vals.add(filterTypeCode);
+		}
+		if (!StringUtil.isEmpty(feedGroupCd)) {
+			vals.add(feedGroupCd);
+		}
+		return(List<RSSFilterTerm>)(List<?>) new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA)).executeSelect(
+				loadFilterTermTypeSql(!StringUtil.isEmpty(filterTermId), !StringUtil.isEmpty(filterTypeCode), !StringUtil.isEmpty(feedGroupCd)), vals, new RSSFilterTerm());
 	}
 
 	/**
@@ -122,7 +129,7 @@ public class RSSTermsAction extends SBActionAdapter {
 	 * type and Group.
 	 * @return
 	 */
-	private String loadFilterTermTypeSql(boolean hasGroupTypeCd) {
+	private String loadFilterTermTypeSql(boolean hasGroupTypeCd, boolean hasFilterTypeCd, boolean hasFeedGroupCd) {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(450);
 		sql.append("select * from ").append(schema);
@@ -131,8 +138,15 @@ public class RSSTermsAction extends SBActionAdapter {
 		sql.append("on a.filter_type_cd = t.filter_type_cd ");
 		sql.append("inner join ").append(schema).append("BIOMEDGPS_FEED_GROUP g ");
 		sql.append("on a.feed_group_id = g.feed_group_id ");
+		sql.append("where 1=1 ");
 		if(hasGroupTypeCd) {
-			sql.append("where filter_term_id = ?");
+			sql.append("and filter_term_id = ? ");
+		}
+		if(hasFilterTypeCd) {
+			sql.append("and a.filter_type_cd = ? ");
+		}
+		if(hasFeedGroupCd) {
+			sql.append("and g.feed_group_id = ? ");
 		}
 
 		sql.append("order by filter_term_id");
