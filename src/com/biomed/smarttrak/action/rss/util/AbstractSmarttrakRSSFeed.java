@@ -73,7 +73,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			ps.setString(2, f.getRssEntityId());
 			ps.executeUpdate();
 		} catch (SQLException e) {
-			log.error("Error Processing Code", e);
+			log.error("Error Updating Feed", e);
 		}
 	}
 
@@ -126,7 +126,6 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		sql.append("BIOMEDGPS_RSS_ARTICLE where rss_entity_id = ? and article_guid in (");
 		DBUtil.preparedStatmentQuestion(size, sql);
 		sql.append(") ");
-		log.info(sql.toString());
 		return sql.toString();
 	}
 
@@ -138,7 +137,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		try {
 			new DBProcessor(dbConn, props.getProperty(Constants.CUSTOM_DB_SCHEMA)).executeBatch(getArticleInsertSql(), buildBatchVals(articles));
 		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Error Processing Code", e);
+			log.error("Error Saving Articles", e);
 		}
 	}
 
@@ -171,8 +170,8 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			String xrId = uuid.getUUID();
 			List<Object> insertData = new ArrayList<>();
 			insertData.addAll(Arrays.asList(xrId, a.getArticleStatusCd(), a.getFeedGroupId(), a.getRssEntityId()));
-			insertData.addAll(Arrays.asList(a.getArticleGuid(), a.getArticleTxt(), a.getFilterArticleTxt(), a.getTitleTxt()));
-			insertData.addAll(Arrays.asList(a.getFilterTitleTxt(), a.getArticleUrl(), a.getPublishDt(), Convert.getCurrentTimestamp()));
+			insertData.addAll(Arrays.asList(a.getArticleGuid(), a.getArticleTxt(), a.getFilterArticleTxt(), StringUtil.checkVal(a.getTitleTxt(), "Untitled")));
+			insertData.addAll(Arrays.asList(StringUtil.checkVal(a.getFilterTitleTxt(), "Untitled"), a.getArticleUrl(), a.getPublishDt(), Convert.getCurrentTimestamp()));
 			insertData.addAll(Arrays.asList(a.getPublicationName(), a.getArticleSourceTypeNm(), a.getAttribute1Txt(), a.getAttribute2Txt()));
 			insertValues.put(xrId, insertData);
 		}
@@ -188,7 +187,6 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * @return
 	 */
 	protected byte [] getDataViaHTTP(String url, Map<String, Object> queryParams) {
-		log.info("retrieving " + url);
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
 		byte[] data = null;
 		try {
@@ -204,7 +202,9 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			}
 
 		} catch (IOException e) {
-			log.error("Error Processing Code", e);
+			StringBuilder err = new StringBuilder(100);
+			err.append("Could not retrieve Feed: ").append(url).append(", Connection Response: ").append(conn.getResponseCode());
+			log.error(err.toString());
 		}
 		return data;
 	}
@@ -270,9 +270,12 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * @param filters
 	 */
 	protected void matchArticle(RSSArticleVO article, String feedGroupId) {
-		for(RSSFilterVO filter: filters.get(FilterType.O).get(feedGroupId)) {
-			if(checkOmitMatch(article, filter)) {
-				article.setFeedGroupId(feedGroupId);
+		Map<String, List<RSSFilterVO>> oFilter = filters.get(FilterType.O);
+		if(oFilter != null && oFilter.containsKey(feedGroupId)) {
+			for(RSSFilterVO filter: oFilter.get(feedGroupId)) {
+				if(checkOmitMatch(article, filter)) {
+					article.setFeedGroupId(feedGroupId);
+				}
 			}
 		}
 
@@ -280,8 +283,10 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		 * If we haven't marked the article as omitted, check if we pass required
 		 * filters.
 		 */
-		if(!ArticleStatus.R.equals(article.getArticleStatus())) {
-			for(RSSFilterVO filter: filters.get(FilterType.R).get(feedGroupId)) {
+		Map<String, List<RSSFilterVO>> rFilter = filters.get(FilterType.R);
+
+		if(!ArticleStatus.R.equals(article.getArticleStatus()) && rFilter != null && rFilter.containsKey(feedGroupId)) {
+			for(RSSFilterVO filter: rFilter.get(feedGroupId)) {
 				if(checkReqMatch(article, filter)) {
 					article.setFeedGroupId(feedGroupId);
 				}
