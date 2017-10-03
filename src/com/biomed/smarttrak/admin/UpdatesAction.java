@@ -53,6 +53,8 @@ public class UpdatesAction extends ManagementAction {
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
 	private static final String SECTION_ID = "filterSectionId[]";
+	
+	private static final String HTML_REGEX = "(<\\/?[uo]l[ a-zA-Z0-9\"'=]*>)|(<p>&nbsp;<\\/p>)|(<\\/?li[ a-zA-Z0-9\"'=]*>)|(<\\/?s(trong)?>)";
 
 	/**
 	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
@@ -611,6 +613,8 @@ public class UpdatesAction extends ManagementAction {
 				//Delete from Solr.
 				deleteFromSolr(u);
 			} else {
+				filterText(u);
+				
 				db.save(u);
 
 				fixPkids(u, db.getGeneratedPKId());
@@ -628,6 +632,17 @@ public class UpdatesAction extends ManagementAction {
 		}
 	}
 
+
+
+	/**
+	 * Filter out prohibited html tags from the message text
+	 * @param u
+	 */
+	private void filterText(UpdateVO u) {
+		if (StringUtil.isEmpty(u.getMessageTxt())) return;
+		
+		u.setMessageTxt(u.getMessageTxt().replaceAll(HTML_REGEX, ""));
+	}
 
 	/**
 	 * Manages updating given UpdatesVO with generated PKID and updates sections
