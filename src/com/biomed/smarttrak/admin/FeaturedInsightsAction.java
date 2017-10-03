@@ -3,18 +3,24 @@ package com.biomed.smarttrak.admin;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
 import com.biomed.smarttrak.action.FeaturedInsightAction;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
+import com.biomed.smarttrak.vo.InsightVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -67,6 +73,8 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 	private void loadFromDb(ActionRequest req) throws ActionException {
 		ActionInterface ai = new InsightAction();
 		req.setParameter("featuredFlg", "1");
+		req.setParameter("sort", "orderNo");
+		req.setParameter("order", "asc");
 		ai.setActionInit(actionInit);
 		ai.setAttributes(attributes);
 		ai.setDBConnection(dbConn);
@@ -90,7 +98,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 		fia.setAttributes(attributes);
 		fia.setDBConnection(dbConn);
 		
-		if (userRoles.isEmpty()) {
+		if (!userRoles.isEmpty()) {
 			fia.simulatedFeaturedRequest(req, userRoles);
 		} else {
 			fia.retrieve(req);
@@ -157,19 +165,21 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("UPDATE ").append(customDbSchema);
 		sql.append("BIOMEDGPS_INSIGHT SET ORDER_NO = ? WHERE INSIGHT_ID = ? ");
-		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			String[] order = req.getParameterValues("orderNo");
-			String[] ids = req.getParameterValues(INSIGHT_ID);
-			for (int i=0; i < order.length || i < ids.length; i++) {
-				ps.setInt(1, Convert.formatInteger(order[i]));
-				ps.setString(2, ids[i]);
-				ps.addBatch();
-				log.debug("Setting " + ids[i] + " to " + order[i]);
-			}
+		DBProcessor db = new DBProcessor(dbConn);
+		Map<String, List<Object>> psValues = new HashMap<>();
 
-			ps.executeBatch();
-		} catch (SQLException e) {
+		String[] order = req.getParameterValues("orderNo");
+		String[] ids = req.getParameterValues(INSIGHT_ID);
+		for (int i=0; i < order.length; i++) {
+			List<Object> values = new ArrayList<>();
+			values.add(Convert.formatInteger(order[i]));
+			values.add(ids[i]);
+			psValues.put(ids[i], values);
+		}
+		
+		try {
+			db.executeBatch(sql.toString(), psValues);
+		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 		
@@ -200,15 +210,17 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 		
 		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_INSIGHT ");
 		sql.append("SET FEATURED_FLG = ?, SLIDER_FLG = ?, SECTION_FLG = ? WHERE INSIGHT_ID = ? ");
+
+		DBProcessor db = new DBProcessor(dbConn);
+		List<String> params = new ArrayList<>();
+		params.add("featured_flg");
+		params.add("slider_flg");
+		params.add("section_flg");
+		params.add("insight_id");
 		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setInt(1, Convert.formatInteger(req.getParameter("featuredFlg")));
-			ps.setInt(2, Convert.formatInteger(req.getParameter("sliderFlg")));
-			ps.setInt(3, Convert.formatInteger(req.getParameter("sectionFlg")));
-			ps.setString(4, req.getParameter(INSIGHT_ID));
-			
-			ps.executeUpdate();
-		} catch (SQLException e) {
+		try {
+			db.executeSqlUpdate(sql.toString(), new InsightVO(req), params);
+		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 
