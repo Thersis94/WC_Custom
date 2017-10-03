@@ -246,6 +246,25 @@ public class InsightAction extends ManagementAction {
 
 		return getInsights (insightParamsMap);
 	}
+	
+	/**
+	 * Load all supplied insights for solr.
+	 * @param insightIds
+	 * @return
+	 */
+	public List<Object> loadForSolr(String ...insightIds) {
+		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
+		insightParamsMap.put(Fields.STATUS_CD,  InsightVO.InsightStatusCd.P.name());
+		insightParamsMap.put(Fields.ID_BYPASS, "true");
+
+		String sql = formatSolrRetrieveQuery(insightIds.length, customDbSchema, insightParamsMap);
+		List<Object> params = new ArrayList<>();
+		for (String id : insightIds) params.add(id);
+		params.add(InsightVO.InsightStatusCd.P.name());
+		List<Object>  insights = getFromDatabase(params, sql, false);
+		
+		return insights;
+	}
 
 	/**
 	 * used to pull back a list of insights based on the codes and types. sets a id bypass to true
@@ -281,7 +300,26 @@ public class InsightAction extends ManagementAction {
 	 */
 	@SuppressWarnings("unchecked")
 	public List<Object> getInsights(Map<Fields, String> insightParamsMap) {
+		
 		boolean tb = insightParamsMap.containsKey(Fields.TITLE_BYPASS) && Convert.formatBoolean(insightParamsMap.get(Fields.TITLE_BYPASS));
+
+		String sql = formatRetrieveQuery(insightParamsMap, customDbSchema);
+		List<Object> params = loadSqlParams(insightParamsMap);
+		List<Object>  insights = getFromDatabase(params, sql, tb);
+
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
+		return insights;
+	}
+	
+
+	/**
+	 * Get insights from the database
+	 * @param params
+	 * @param sql
+	 * @param tb
+	 * @return
+	 */
+	private List<Object> getFromDatabase(List<Object> params, String sql, boolean tb) {
 
 		Map<String, String> authorTitles = new HashMap<>();
 		if (!tb){
@@ -289,9 +327,8 @@ public class InsightAction extends ManagementAction {
 			authorTitles = loadAuthorTitles();
 		}
 
-		String sql = formatRetrieveQuery(insightParamsMap, customDbSchema);
-		List<Object> params = loadSqlParams(insightParamsMap);
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
+
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
 
 		for (Object ob : insights) {
@@ -313,8 +350,6 @@ public class InsightAction extends ManagementAction {
 				log.error("error loading profile documents",e);
 			}
 		}
-
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
 		return insights;
 	}
 
@@ -355,6 +390,24 @@ public class InsightAction extends ManagementAction {
 		generateWhereClauseOfQuery(sql, insightParamsMap );
 
 		generatePaginationClauseOfQuery(sql, insightParamsMap);
+
+		log.debug(sql);
+		return sql.toString();
+	}
+
+	/**
+	 * Formats the account retrieval query.
+	 * @param schema 
+	 * @return
+	 */
+	private static String formatSolrRetrieveQuery(int numIds, String schema, Map<Fields, String> insightParamsMap) {
+		StringBuilder sql = new StringBuilder(400);
+
+		generateSelectSectionOfQuery(sql, schema, insightParamsMap);
+
+		generateJoinSectionOfQuery(sql, schema, insightParamsMap);
+
+		generateSolrWhereClauseOfQuery(sql, numIds );
 
 		log.debug(sql);
 		return sql.toString();
@@ -415,6 +468,17 @@ public class InsightAction extends ManagementAction {
 		
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.FEATURED_FLG)))
 			sql.append("and a.featured_flg=? ");
+	}
+
+	/**
+	 * Build the where clause specific to the solr's needs.
+	 * @param sql
+	 * @param numIds
+	 */
+	private static void generateSolrWhereClauseOfQuery(StringBuilder sql, int numIds) {
+		sql.append("where a.insight_id in ( ?");
+		for (int i = 1; i < numIds; i++) sql.append(", ?");
+		sql.append(") and a.status_cd=?");
 	}
 
 	/**
@@ -641,7 +705,7 @@ public class InsightAction extends ManagementAction {
 	protected void writeToSolr(InsightVO ivo) {
 		BiomedInsightIndexer indexer = BiomedInsightIndexer.makeInstance(getAttributes());
 		indexer.setDBConnection(dbConn);
-		indexer.addSingleItem(ivo.getInsightId());
+		indexer.indexItems(ivo.getInsightId());
 	}
 
 	/**
