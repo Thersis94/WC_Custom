@@ -37,7 +37,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 	 * ACL level used for documents that are available to everyone
 	 * regardless of their subscriptions
 	 */
-	public final static String PUBLIC_ACL = "public";
+	public static final String PUBLIC_ACL = "public";
 	
 	private boolean isFdAuth;
 	private boolean isGaAuth;

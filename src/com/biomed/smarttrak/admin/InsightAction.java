@@ -261,9 +261,7 @@ public class InsightAction extends ManagementAction {
 		List<Object> params = new ArrayList<>();
 		for (String id : insightIds) params.add(id);
 		params.add(InsightVO.InsightStatusCd.P.name());
-		List<Object>  insights = getFromDatabase(params, sql, false);
-		
-		return insights;
+		return getFromDatabase(params, sql, false);
 	}
 
 	/**

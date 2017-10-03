@@ -3,6 +3,7 @@ package com.biomed.smarttrak.admin;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -34,6 +35,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class FeaturedInsightsAction extends SBActionAdapter {
+	
+	private static final String INSIGHT_ID = "insightId";
 
 	public FeaturedInsightsAction() {
 		super();
@@ -87,7 +90,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 		fia.setAttributes(attributes);
 		fia.setDBConnection(dbConn);
 		
-		if (userRoles != null) {
+		if (userRoles.isEmpty()) {
 			fia.simulatedFeaturedRequest(req, userRoles);
 		} else {
 			fia.retrieve(req);
@@ -123,7 +126,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 	 * @return
 	 */
 	private Set<String> buildSimulatedRole(ActionRequest req) {
-		if (!req.hasParameter("sectionTxt")) return null;
+		if (!req.hasParameter("sectionTxt")) return Collections.emptySet();
 		
 		Set<String> solrPermissions = new HashSet<>();
 		for (String solrTxt : req.getParameterValues("sectionTxt")) {
@@ -157,7 +160,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			String[] order = req.getParameterValues("orderNo");
-			String[] ids = req.getParameterValues("insightId");
+			String[] ids = req.getParameterValues(INSIGHT_ID);
 			for (int i=0; i < order.length || i < ids.length; i++) {
 				ps.setInt(1, Convert.formatInteger(order[i]));
 				ps.setString(2, ids[i]);
@@ -170,7 +173,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 			throw new ActionException(e);
 		}
 		
-		updateSolr(req.getParameterValues("insightId"));
+		updateSolr(req.getParameterValues(INSIGHT_ID));
 	}
 	
 	/**
@@ -202,13 +205,13 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 			ps.setInt(1, Convert.formatInteger(req.getParameter("featuredFlg")));
 			ps.setInt(2, Convert.formatInteger(req.getParameter("sliderFlg")));
 			ps.setInt(3, Convert.formatInteger(req.getParameter("sectionFlg")));
-			ps.setString(4, req.getParameter("insightId"));
+			ps.setString(4, req.getParameter(INSIGHT_ID));
 			
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
 
-		updateSolr(req.getParameterValues("insightId"));
+		updateSolr(req.getParameterValues(INSIGHT_ID));
 	}
 }
