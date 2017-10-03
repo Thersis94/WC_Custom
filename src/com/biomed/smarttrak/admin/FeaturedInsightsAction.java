@@ -184,9 +184,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 		BiomedInsightIndexer indexer = new BiomedInsightIndexer(props);
 		indexer.setDBConnection(dbConn);
 		
-		for (String id : ids) {
-			indexer.addSingleItem(id);
-		}
+		indexer.indexItems(ids);
 	}
 
 	/**
