@@ -91,9 +91,9 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		if (!StringUtil.isEmpty(super.getHtmlBody())) return super.getHtmlBody();
 
 		StringBuilder html = new StringBuilder(5000);
-		html.append("<h4 style=\"font-family:‘Times New Roman’, Times, serif\">A visitor to ").append(site.getSiteAlias()).append(" has submitted a ");
+		html.append("<h4 style=\"font-family:'Times New Roman', Times, serif\">A visitor to ").append(site.getSiteAlias()).append(" has submitted a ");
 		html.append("Medical Information Request.</h4>");
-		html.append("<table  style=\"font-family:‘Times New Roman’, Times, serif;font-size:12pt;width:100%;min-width:100%;border:solid 1px black;\">");
+		html.append("<table  style=\"font-family:'Times New Roman', Times, serif;font-size:12pt;width:100%;min-width:100%;border:solid 1px black;\">");
 		html.append("<tr><th colspan='2'>Medical Information Request</th></tr>");
 
 		int rowCnt = 0;
@@ -145,7 +145,7 @@ public class MIREmailMessageVO extends EmailMessageVO {
 	 */
 	private void addHtmlRow(StringBuilder html, int x, String colName, String colValue) {
 		String color = (x % 2 == 0) ? "#C0D2EC" : "#E1EAFE";
-		html.append("<tr style=\"background:").append(color).append(";\"><td style=\"padding-right:10px;font-size:12pt;font-family:‘Times New Roman’, Times, serif\">").append(colName);
-		html.append("</td><td style=\"font-size:12pt;font-family:‘Times New Roman’, Times, serif\">").append(StringUtil.checkVal(colValue)).append("</td></tr>");
+		html.append("<tr style=\"background:").append(color).append(";\"><td style=\"padding-right:10px;font-size:12pt;font-family:'Times New Roman', Times, serif\">").append(colName);
+		html.append("</td><td style=\"font-size:12pt;font-family:'Times New Roman', Times, serif\">").append(StringUtil.checkVal(colValue)).append("</td></tr>");
 	}
 }
