@@ -18,7 +18,6 @@ import com.siliconmtn.http.parser.DirectoryParser;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.support.SupportTicketAction;
-import com.smt.sitebuilder.action.support.SupportTicketAttachmentAction;
 import com.smt.sitebuilder.action.support.TicketVO;
 import com.smt.sitebuilder.admin.action.OrganizationAction;
 import com.smt.sitebuilder.common.SiteVO;
