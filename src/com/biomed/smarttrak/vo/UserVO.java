@@ -2,6 +2,7 @@ package com.biomed.smarttrak.vo;
 
 //Java 8
 import static java.time.temporal.ChronoUnit.DAYS;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,6 +19,7 @@ import com.siliconmtn.db.orm.Table;
 // SMTBaseLibs
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
@@ -106,6 +108,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		PARENTCOMPANY("f6890a383eecc13f0a001421223e1a8c", "parentCompany"),
 		COMPANY("e6890a383eecc13f0a001421223e1a8b", "company"),
 		COMPANYURL("8e326f4c3ef49ae10a0014218aae436b", "companyUrl"),
+		ASSIGNEESECTIONS("88f0f6b8e452d9b77f0000019ca5e182", "assigneeSections"),
 		//below are all on the 'sales' tab on the admin edit form
 		SOURCE("9cc5d1003ef592210a001421ccb8df2e", "source"),
 		DEMODT("63347a903ef637ee0a001421c0d224c9", "demoDate"),
@@ -390,12 +393,31 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	}
 
 	/**
-	 * this is a multi-select, it could be returned from responseloader as a String or List depending on the values stored.
+	 * Returns a collection of division(s) that the user is assigned to
+	 * @return
+	 */
+	public List<String> getDivisions() {
+		return getFormFieldData(RegistrationMap.DIVISIONS.getFieldId());
+	}
+	
+	/**
+	 * Returns a collection of "assignee sections" that the user has opted in to
+	 * @return
+	 */
+	public List<String> getAssigneeSections(){
+		return getFormFieldData(RegistrationMap.ASSIGNEESECTIONS.getFieldId());
+	}
+	
+	/**
+	 * Used for multi-select and checkboxes, and returns the form field data back as 
+	 * a collection of String values. 
+	 * @param fieldId
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public List<String> getDivisions() {
-		Object obj = getAttribute(RegistrationMap.DIVISIONS.getFieldId());
+	protected List<String> getFormFieldData(String fieldId){
+		//The responseloader may return data back as a  String or List depending on the values stored.
+		Object obj = getAttribute(fieldId);
 		List<String> data;
 		if (obj instanceof String) {
 			data = new ArrayList<>();
@@ -403,7 +425,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		} else {
 			data = (List<String>) obj;
 		}
-		return data;
+		return data;	
 	}
 
 	/**
