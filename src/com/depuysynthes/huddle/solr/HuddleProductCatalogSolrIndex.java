@@ -43,7 +43,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
 // WC Custom libs
 import com.depuysynthes.action.ProductCatalogUtil;
 import com.depuysynthes.huddle.HuddleUtils;
-import com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO;
+import com.depuysynthes.solr.data.ProductCatalogSolrDocumentVO;
 
 
 /****************************************************************************

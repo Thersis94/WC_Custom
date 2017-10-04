@@ -215,7 +215,7 @@ public class CompanyAction extends SimpleActionAdapter {
 			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
 		}
 		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
-		sql.append("order by p.PRODUCT_NM ");
+		sql.append("order by p.SHORT_NM ");
 		log.debug(sql+"|"+company.getCompanyId());
 		List<ProductVO> products = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

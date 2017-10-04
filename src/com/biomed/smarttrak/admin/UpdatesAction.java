@@ -46,7 +46,9 @@ public class UpdatesAction extends ManagementAction {
 	public static final String UPDATE_ID = "updateId"; //req param
 	public static final String SORT = "sort"; //req param
 	public static final String ORDER = "order"; //req param
-	public static final String DATE_RANGE = "dateRange"; //req param
+	public static final String START_DATE = "startDt"; //req param
+	public static final String END_DATE = "endDt"; //req param
+	
 	public static final String STATUS_CD = "statusCd"; //req param
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
@@ -57,8 +59,6 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	@Deprecated
 	public static final String ROOT_NODE_ID = SectionHierarchyAction.MASTER_ROOT;
-
-	public static final int INIT_DISPLAY_LIMIT = 15; //initial display limit
 
 	//ChangeLog TypeCd.  Using the key we swap on for actionType in AdminControllerAction so we can get back.
 	public static final String UPDATE_TYPE_CD = "updates";
@@ -124,7 +124,7 @@ public class UpdatesAction extends ManagementAction {
 
 			//Get the Filtered Updates according to Request.
 			data = getFilteredUpdates(req);
-
+			
 			// Get the count
 			count = getUpdateCount(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 			log.debug("count " + count);
@@ -154,10 +154,7 @@ public class UpdatesAction extends ManagementAction {
 	private List<Object> getFilteredUpdates(ActionRequest req) {
 		//Get Relevant Params off Request.
 		int start = Convert.formatInteger(req.getParameter("offset"),0);
-		int rpp = Convert.formatInteger(req.getParameter("limit"),INIT_DISPLAY_LIMIT);
-		if (rpp == 0) {//this is initial page load, set default for display listing  
-			rpp = INIT_DISPLAY_LIMIT;
-		}
+		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		String sql = formatRetrieveQuery(req, schema, req.hasParameter("loadData"), false);
@@ -173,6 +170,11 @@ public class UpdatesAction extends ManagementAction {
 			params.add(searchData);
 			params.add(searchData);
 		}
+		//check if dates were passed before adding to params list
+		if(req.hasParameter(START_DATE)) 
+			params.add(Convert.formatDate(req.getParameter(START_DATE)));
+		if(req.hasParameter(END_DATE)) 
+			params.add(Convert.formatDate(req.getParameter(END_DATE)));
 			
 		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 			
@@ -339,21 +341,8 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	protected int getUpdateCount(ActionRequest req, String schema) {
 		String sql = formatRetrieveQuery(req, schema, true, true);
-		int i = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			if (req.hasParameter(UPDATE_ID)) ps.setString(++i, req.getParameter(UPDATE_ID));
-			if (req.hasParameter(STATUS_CD)) ps.setString(++i, req.getParameter(STATUS_CD));
-			if (req.hasParameter(TYPE_CD)) ps.setInt(++i, Convert.formatInteger(req.getParameter(TYPE_CD)));
-			if (req.hasParameter(SEARCH)) {
-				String searchData = "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%";
-				ps.setString(++i, searchData);
-				ps.setString(++i, searchData);
-			}
-			String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
-			if (sectionIds != null) { //restrict to certain sections only
-				for (String s : getSectionFamily(sectionIds))
-					ps.setString(++i, s);
-			}
+			setStatementValues(ps, req);
 
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) 
@@ -365,6 +354,35 @@ public class UpdatesAction extends ManagementAction {
 		return 0;
 	}
 
+	/**
+	 * Helper method to set the values to the PreparedStatement
+	 * @param ps
+	 * @param req
+	 * @throws SQLException
+	 */
+	private void setStatementValues(PreparedStatement ps, ActionRequest req) throws SQLException{
+		int i = 0;
+		
+		if (req.hasParameter(UPDATE_ID)) ps.setString(++i, req.getParameter(UPDATE_ID));
+		if (req.hasParameter(STATUS_CD)) ps.setString(++i, req.getParameter(STATUS_CD));
+		if (req.hasParameter(TYPE_CD)) ps.setInt(++i, Convert.formatInteger(req.getParameter(TYPE_CD)));
+		if (req.hasParameter(SEARCH)) {
+			String searchData = "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%";
+			ps.setString(++i, searchData);
+			ps.setString(++i, searchData);
+		}
+		if(req.hasParameter(START_DATE))
+			ps.setDate(++i, Convert.formatSQLDate(req.getParameter(START_DATE)));
+		if(req.hasParameter(END_DATE))
+			ps.setDate(++i, Convert.formatSQLDate(req.getParameter(END_DATE)));
+		
+		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
+		if (sectionIds != null) { //restrict to certain sections only
+			for (String s : getSectionFamily(sectionIds))
+				ps.setString(++i, s);
+		}
+	}
+	
 	/**
 	 * Retrieve list of Updates containing historical Revisions.
 	 * @param parameter
@@ -433,7 +451,7 @@ public class UpdatesAction extends ManagementAction {
 		if (isCount) {
 			sql.append("count(distinct a.update_id) ");
 		} else {
-			sql.append("a.*, p.first_nm, p.last_nm, ");
+			sql.append("distinct a.*, p.first_nm, p.last_nm, ");
 			if (isList) {
 				sql.append("s.wc_sync_id ");
 			} else {
@@ -490,12 +508,9 @@ public class UpdatesAction extends ManagementAction {
 			sql.append("and (lower(a.title_txt) like ? ");
 			sql.append("or lower(a.message_txt) like ? ) ");
 		}
-		String dateRange = req.getParameter(DATE_RANGE);
-		if ("1".equals(dateRange)) {
-			sql.append("and a.create_dt > CURRENT_DATE - INTERVAL '6 months' ");
-		} else if ("2".equals(dateRange)) {
-			sql.append("and a.create_dt < CURRENT_DATE - INTERVAL '6 months' ");
-		}
+		//check if dates were passed before appending to query
+		if(req.hasParameter(START_DATE)) sql.append("and a.create_dt >= ? ");
+		if(req.hasParameter(END_DATE)) sql.append("and a.create_dt <= ? ");
 
 		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 		if (sectionIds != null && sectionIds.length > 0) { //restrict to certain sections only

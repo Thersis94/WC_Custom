@@ -2,7 +2,7 @@ package com.depuysynthesinst;
 
 import org.apache.solr.common.SolrDocument;
 
-import com.depuysynthes.lucene.MediaBinSolrIndex;
+import com.depuysynthes.solr.MediaBinSolrIndex;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
