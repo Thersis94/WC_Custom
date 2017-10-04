@@ -1,4 +1,4 @@
-package com.depuysynthes.lucene;
+package com.depuysynthes.solr;
 
 import java.util.Properties;
 

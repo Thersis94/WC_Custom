@@ -173,7 +173,6 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 		List<RSSArticleVO> results = retrieveArticles(vo);
 
 		for(RSSArticleVO r : results) {
-			log.info(r.getArticleGuid());
 			if(!existingIds.contains(r.getArticleGuid())) {
 				r.setArticleUrl(props.getProperty(PUBMED_ARTICLE_URL) + r.getArticleGuid());
 				r.setRssEntityId(props.getProperty(PUBMED_ENTITY_ID));

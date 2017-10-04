@@ -40,8 +40,8 @@ import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
 import com.depuysynthes.action.MediaBinDistChannels;
 import com.depuysynthes.action.MediaBinLinkAction;
-import com.depuysynthes.lucene.MediaBinSolrIndex;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
+import com.depuysynthes.solr.MediaBinSolrIndex;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.mail.EmailMessageVO;
@@ -1135,6 +1135,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		languages.put("DANISH","dk");
 		languages.put("DUTCH","nl");
 		languages.put("ENGLISH","en");
+		languages.put("ESTONIAN","et");
 		languages.put("GREEK","gr");
 		languages.put("FINNISH","fl");
 		languages.put("FRENCH","fr");
