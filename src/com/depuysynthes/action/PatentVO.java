@@ -26,6 +26,8 @@ public class PatentVO extends SBModuleVO {
 	public String item;
 	public String desc;
 	public String patents;
+	private String redirectAddress;
+	private String redirectName;
 
 	public PatentVO() {
 		super();
@@ -39,6 +41,8 @@ public class PatentVO extends SBModuleVO {
 		this.item = dbUtil.getStringVal("item_txt", rs);
 		this.desc = dbUtil.getStringVal("desc_txt", rs);
 		this.patents = dbUtil.getStringVal("patents_txt", rs);
+		this.redirectAddress = dbUtil.getStringVal("redirect_address_txt", rs);
+		this.redirectName = dbUtil.getStringVal("redirect_nm", rs);
 	}
 
 	public String getCompany() {
@@ -59,6 +63,20 @@ public class PatentVO extends SBModuleVO {
 
 	public String getPatents() {
 		return patents;
+	}
+	
+	/**
+	 * @return the redirectAddress
+	 */
+	public String getRedirectAddress() {
+		return redirectAddress;
+	}
+
+	/**
+	 * @return the redirectName
+	 */
+	public String getRedirectName() {
+		return redirectName;
 	}
 
 	@Importable(name = "Operating Company", type = DataType.STRING)
@@ -85,4 +103,15 @@ public class PatentVO extends SBModuleVO {
 	public void setPatents(String patents) {
 		this.patents = patents;
 	}
+	
+	@Importable(name = "Redirect Address", type = DataType.STRING)
+	public void setRedirectAddress(String redirectAddress) {
+		this.redirectAddress = redirectAddress;
+	}
+	
+	@Importable(name = "Redirect Name", type = DataType.STRING)
+	public void setRedirectName(String redirectName) {
+		this.redirectName = redirectName;
+	}
+	
 }
