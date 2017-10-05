@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -83,7 +84,6 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 					List<RSSArticleVO> articles = retrieveArticles(f.getRssUrl());
 					filterArticles(f, articles);
 				} catch (Exception e) {
-					log.info("Deactivating Feed: " + f.getRssEntityId());
 					log.error("Problem Processing Feed", e);
 					updateFeed(f);
 				}
@@ -100,7 +100,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		byte[] results = getDataViaHTTP(url, null);
 
 		//Process XML
-		return processArticleResult(results);
+		return results != null ? processArticleResult(results) : Collections.emptyList();
 	}
 
 	/**
@@ -118,7 +118,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 			saxParser.parse(is, handler);
 			articles = handler.getVos();
 		} catch(SAXException | IOException se) {
-			log.error("Problem Processing Pubmed Articles", se);
+			log.error("Response was malformed.");
 		}
 		return articles;
 	}
@@ -131,19 +131,37 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private void filterArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles) {
 		//Query if any of the retrieved articles are already processed.
+
+		if(articles == null) {
+			return;
+		}
+
 		Set<String> existsIds = getExistingArticles(buildArticleIdsList(articles), f.getRssEntityId());
 
-		/**
-		 * Iterate over each Message in the Feed and apply all filters in the
-		 * related groups to the message.
-		 */
+		List<RSSArticleVO> nArticles = getNewArticles(f, articles, existsIds);
+
+		//Save Articles.
+		storeArticles(nArticles);
+	}
+
+
+	/**
+	 * Iterate over each Message in the Feed and apply all filters in the
+	 * related groups to the message.
+	 * @param f
+	 * @param articles
+	 * @param existsIds
+	 * @return
+	 */
+	private List<RSSArticleVO> getNewArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Set<String> existsIds) {
 		List<RSSArticleVO> nArticles = new ArrayList<>();
 		for(RSSArticleVO a : articles) {
 			if(!existsIds.contains(a.getArticleGuid())) {
 				a.setRssEntityId(f.getRssEntityId());
 				a.setPublicationName(f.getFeedName());
-				if(a.getPublishDt() == null)
+				if(a.getPublishDt() == null) {
 					a.setPublishDt(Calendar.getInstance().getTime());
+				}
 				for(RSSFeedGroupVO fg : f.getGroups()) {
 					matchArticle(a, fg.getFeedGroupId());
 					if(!StringUtil.isEmpty(a.getFeedGroupId())) {
@@ -155,8 +173,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 			}
 		}
 
-		//Save Articles.
-		storeArticles(nArticles);
+		return nArticles;
 	}
 
 
