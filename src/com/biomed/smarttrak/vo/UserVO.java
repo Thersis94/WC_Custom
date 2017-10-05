@@ -15,11 +15,9 @@ import java.util.List;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-
 // SMTBaseLibs
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
@@ -95,7 +93,29 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		public String getLabel() { return label; }
 	}
 
+	/**
+	 * Enum that represents the possible assignable lists that the user can assigned
+	 * a item/task from the corresponding section
+	 */
+	public enum AssigneeSection{
+		DIRECT_ACCESS("Direct Access", "1"), NEWS_ROOM("News Room", "2"), 
+		AUDIT_LOG("Audit Log", "3");
 
+		private String label;
+		private String optionValue;
+		private AssigneeSection(String label, String optionValue){
+			this.label = label;
+			this.optionValue = optionValue;
+		}
+		//===getters===
+		public String getLabel() {
+			return label;
+		}
+		public String getOptionValue() {
+			return optionValue;
+		}
+	}
+	
 	/**
 	 * Static mapping to the registration fields stored in the database.
 	 * The reqParam value is what we use on our forms, so we know what to expect on the incoming request 

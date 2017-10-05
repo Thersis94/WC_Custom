@@ -10,6 +10,7 @@ import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedSegment;
 import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -81,7 +82,7 @@ public class NewsroomAction extends SBActionAdapter {
 		AccountAction aa = new AccountAction(this.actionInit);
 		aa.setAttributes(getAttributes());
 		aa.setDBConnection(getDBConnection());
-		aa.loadManagerList(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		aa.loadManagerList(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA), AssigneeSection.NEWS_ROOM);
 	}
 
 	/**
