@@ -69,6 +69,11 @@ public class PatentVO extends SBModuleVO {
 	 * @return the redirectAddress
 	 */
 	public String getRedirectAddress() {
+		if (redirectAddress != null) {
+			if (! redirectAddress.toLowerCase().startsWith("http")) {
+				return "http://" + redirectAddress;
+			}
+		}
 		return redirectAddress;
 	}
 
