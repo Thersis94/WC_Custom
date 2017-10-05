@@ -5,9 +5,9 @@ import java.sql.ResultSet;
 import com.siliconmtn.annotations.DataType;
 import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 
-import opennlp.tools.util.StringUtil;
 
 /**
  * **************************************************************************
