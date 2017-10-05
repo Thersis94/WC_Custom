@@ -7,6 +7,8 @@ import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.db.DBUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 
+import opennlp.tools.util.StringUtil;
+
 /**
  * **************************************************************************
  * <b>Title</b>: PatentAction.PatentVO.java<p/>
@@ -69,10 +71,9 @@ public class PatentVO extends SBModuleVO {
 	 * @return the redirectAddress
 	 */
 	public String getRedirectAddress() {
-		if (redirectAddress != null) {
-			if (! redirectAddress.toLowerCase().startsWith("http")) {
+		if (StringUtil.isEmpty(redirectAddress)) return null;
+		if (! redirectAddress.toLowerCase().startsWith("http")) {
 				return "http://" + redirectAddress;
-			}
 		}
 		return redirectAddress;
 	}
