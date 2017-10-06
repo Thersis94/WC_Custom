@@ -112,7 +112,9 @@ public class UpdatesAction extends SBActionAdapter {
 		//fail fast if we can't perform our duty here
 		if (fOld == null) return;
 		
-		FacetField fNew = new FacetField(fOld.getName(), fOld.getGap(), fOld.getEnd());
+		//TODO address this before Solr 6.6 releases! - Zoho V3-114
+		//FacetField fNew = new FacetField(fOld.getName(), fOld.getGap(), fOld.getEnd());
+		FacetField fNew = new FacetField(fOld.getName());
 
 		/*
 		 * Iterate over Section Nodes first as they have the order.  Iterate
