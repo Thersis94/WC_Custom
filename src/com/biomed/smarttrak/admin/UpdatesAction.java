@@ -54,7 +54,7 @@ public class UpdatesAction extends ManagementAction {
 	public static final String SEARCH = "search"; //req param
 	private static final String SECTION_ID = "filterSectionId[]";
 	
-	private static final String HTML_REGEX = "(<\\/?[uo]l[ a-zA-Z0-9\"'=]*>)|(<p>&nbsp;<\\/p>)|(<\\/?li[ a-zA-Z0-9\"'=]*>)|(<\\/?s(trong)?>)";
+	private static final String HTML_REGEX = "(<\\/?(([uo]l)|(li)|(s((trong)|(ub))?)|(d((etails)|(iv))?)|(u)|(img)|(hr)|(font))^(up)[ a-zA-Z0-9\\\"\\-:;'=]*\\/?>)|(<p>&nbsp;<\\/p>)";
 
 	/**
 	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
