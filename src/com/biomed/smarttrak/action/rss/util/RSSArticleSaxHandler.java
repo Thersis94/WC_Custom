@@ -11,7 +11,6 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.siliconmtn.util.Convert;
@@ -88,7 +87,6 @@ public class RSSArticleSaxHandler extends DefaultHandler {
 		if(d == null) d = Calendar.getInstance().getTime();
 
 		data.put(SearchType.F_DATE, Convert.formatDate(d, Convert.DATE_TIME_DASH_PATTERN_12HR));
-		rss.setArticleStatus(ArticleStatus.O);
 		rss.setArticleSourceType(ArticleSourceType.RSS);
 		rss.setArticleGuid(data.get(SearchType.GUID));
 		rss.setArticleTxt(StringUtil.checkVal(data.get(SearchType.DESCRIPTION)));
