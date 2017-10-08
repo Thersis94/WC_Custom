@@ -50,6 +50,38 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		UpdateStatusCd (String statusName) { this.statusName = statusName; }
 		public String getStatusName() { return statusName; }
 	}
+	
+	public enum AnnouncementType {
+		NON("Not an Announcemenet", 0),
+		ANNOUNCEMENT("SmartTRAK Announcement", 1),
+		POLICY("Healthcare Policy", 2),
+		TREND("Healthcare Trend", 3);
+		
+		private String name;
+		private int value;
+		
+		AnnouncementType(String name, int value) {
+			this.name = name;
+			this.value = value;
+		}
+		
+		public String getName() {
+			return name;
+		}
+		
+		public int getValue() {
+			return value;
+		}
+		
+		public static AnnouncementType getFromValue(int value) {
+			switch (value) {
+				case 1:return AnnouncementType.ANNOUNCEMENT;
+				case 2:return AnnouncementType.POLICY;
+				case 3:return AnnouncementType.TREND;
+				default:return AnnouncementType.NON;
+			}
+		}
+	}
 
 	private String updateId;
 	private String marketId;
@@ -74,6 +106,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private String qsPath;
 	private int sslFlg;
 	private String siteAliasUrl;
+	private int announcementType;
 
 	public UpdateVO() {
 		super(UpdateIndexer.INDEX_TYPE);
@@ -108,6 +141,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		setPublishDate(Convert.formatDate(req.getParameter("publishDt")));
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		emailFlg = Convert.formatInteger(req.getParameter("emailFlg"), 1);
+		announcementType = Convert.formatInteger(req.getParameter("announcementType"), 0);
 		if (req.hasParameter("sectionId")) {
 			String [] arr = req.getParameterValues("sectionId");
 			for (String sec : arr)
@@ -714,6 +748,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	public void setSSLFlg(int sslFlg) {
 		this.sslFlg = sslFlg;
 	}
+	@Column(name="ssl_flg", isReadOnly=true)
 	public int getSSLFlg() {
 		return this.sslFlg;
 	}
@@ -721,7 +756,18 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	public void setSiteAliasUrl(String siteAliasUrl) {
 		this.siteAliasUrl = siteAliasUrl;
 	}
+	@Column(name="site_alias_url", isReadOnly=true)
 	public String getSiteAliasUrl() {
 		return this.siteAliasUrl;
+	}
+
+	@SolrField(name="announcement_type_i")
+	@Column(name="announcement_type")
+	public int getAnnouncementType() {
+		return announcementType;
+	}
+
+	public void setAnnouncementType(int announcementType) {
+		this.announcementType = announcementType;
 	}
 }
