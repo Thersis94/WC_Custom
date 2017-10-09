@@ -15,6 +15,7 @@ import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.UpdateVO;
+import com.biomed.smarttrak.vo.UpdateVO.AnnouncementType;
 import com.biomed.smarttrak.vo.UpdateXRVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
@@ -109,6 +110,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		//while there, add a 4th level that equates to the Update Types.
 		//We'll them attach the updates themselves, as the lowest level.
 		t = marryUpdatesToNodes(t, updates);
+		addAnnouncements(t, updates);
 
 		//set the appropriate time range onto request for view
 		setDateRange(req);
@@ -117,6 +119,56 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 	}
 
 
+	/**
+	 * Add the announcements to the tree in thier own branch
+	 * @param t
+	 * @param updates
+	 */
+	private void addAnnouncements(Tree t, List<UpdateVO> updates) {
+		// Create the announcement root node
+		Node announcementNode = new Node("ALL_ANNOUNCEMENTS", t.getRootNode().getNodeId());
+		announcementNode.setNodeName("Announcements");
+		AnnouncementType type = AnnouncementType.NON;
+		List<UpdateVO> selUpdates = Collections.emptyList();
+		Node n = null;
+		for (UpdateVO up : updates) {
+			if (type.getValue() != up.getAnnouncementType()) {
+				addNode(n, selUpdates, announcementNode);
+				type = AnnouncementType.getFromValue(up.getAnnouncementType());
+				n = new Node(type.toString(), announcementNode.getNodeId());
+				n.setNodeName(type.getName());
+				selUpdates = new ArrayList<>();
+			}
+			
+			// Skip the updates that are not announcements.
+			if (type != AnnouncementType.NON) {
+				selUpdates.add(up);
+			}
+		}
+		
+		// Add the straggler
+		addNode(n, selUpdates, announcementNode);
+		
+		announcementNode.setTotalChildren(announcementNode.getNumberChildren());
+		// Place the announcements in front of the other items.
+		t.getRootNode().getChildren().add(0, announcementNode);
+	}
+	
+	/**
+	 * Check to see if the current node is null and, if not,
+	 * add it the the announcement root node.
+	 * @param n
+	 * @param selUpdates
+	 * @param announcementNode
+	 */
+	private void addNode(Node n, List<UpdateVO> selUpdates, Node announcementNode) {
+		if (n != null && !selUpdates.isEmpty()) {
+			n.setUserObject(selUpdates);
+			n.setTotalChildren(1);
+			announcementNode.addChild(n);
+		}
+	}
+	
 	/**
 	 * @return
 	 */
@@ -158,7 +210,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		List<UpdateVO> secUpds = new ArrayList<>();
 		for (UpdateVO vo : updates) {
 			List<UpdateXRVO> secs = vo.getUpdateSections();
-			if (exclusions.contains(vo.getUpdateId()) || secs == null || secs.isEmpty()) continue;
+			if (secs == null || secs.isEmpty()) continue;
 			for (UpdateXRVO xrvo : secs) {
 				if (n.getNodeId().equals(xrvo.getSectionId())) {
 					secUpds.add(vo);
