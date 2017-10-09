@@ -23,6 +23,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -474,9 +475,13 @@ public class InsightAction extends ManagementAction {
 	 * @param numIds
 	 */
 	private static void generateSolrWhereClauseOfQuery(StringBuilder sql, int numIds) {
-		sql.append("where a.insight_id in ( ?");
-		for (int i = 1; i < numIds; i++) sql.append(", ?");
-		sql.append(") and a.status_cd=?");
+		sql.append("where ");
+		if (numIds > 0) {
+			sql.append("a.insight_id in (");
+			DBUtil.preparedStatmentQuestion(numIds, sql);
+			sql.append(") and ");
+		}
+		sql.append("a.status_cd=?");
 	}
 
 	/**
