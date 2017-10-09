@@ -474,9 +474,13 @@ public class InsightAction extends ManagementAction {
 	 * @param numIds
 	 */
 	private static void generateSolrWhereClauseOfQuery(StringBuilder sql, int numIds) {
-		sql.append("where a.insight_id in ( ?");
-		for (int i = 1; i < numIds; i++) sql.append(", ?");
-		sql.append(") and a.status_cd=?");
+		sql.append("where ");
+		if (numIds > 1) {
+			sql.append("a.insight_id in ( ?");
+			for (int i = 1; i < numIds; i++) sql.append(", ?");
+			sql.append(") and ");
+		}
+		sql.append("a.status_cd=?");
 	}
 
 	/**
