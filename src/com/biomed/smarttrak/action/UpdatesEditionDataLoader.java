@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -180,19 +180,20 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		//build the query
 		String sql;
 		String[] sectionIds = null;
+		boolean orderSort = Convert.formatBoolean(req.getParameter("orderSort"));
 		if (req.getAttribute("isManageTool") != null) { //set by the subclass
 			sectionIds = req.getParameterValues("sectionId");
 			if (sectionIds == null || sectionIds.length == 0 || "ALL".equalsIgnoreCase(sectionIds[0])) 
 				sectionIds = null; //consolidate alt scenarios
-			sql = buildManageUpdatesSQL(schema, sectionIds);
+			sql = buildManageUpdatesSQL(schema, sectionIds, orderSort);
 		} else {
-			sql = StringUtil.isEmpty(profileId) ? buildAllUpdatesSQL(schema) : buildMyUpdatesSQL(schema);
+			sql = StringUtil.isEmpty(profileId) ? buildAllUpdatesSQL(schema, orderSort) : buildMyUpdatesSQL(schema, orderSort);
 		}
 		log.debug(sql + "|" + profileId + "|" + Convert.formatSQLDate(startDt) + "|" + Convert.formatSQLDate(endDt));
 
 		int x=0;
 		UpdateVO vo = null;
-		Map<String, UpdateVO>  updates = new HashMap<>();
+		Map<String, UpdateVO>  updates = new LinkedHashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(++x, AdminControllerAction.PUBLIC_SITE_ID);
 			if (!StringUtil.isEmpty(profileId)) ps.setString(++x, profileId);
@@ -249,7 +250,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 * @param schema
 	 * @return
 	 */
-	protected String buildMyUpdatesSQL(String schema) {
+	protected String buildMyUpdatesSQL(String schema, boolean orderSort) {
 		StringBuilder sql = new StringBuilder(800);
 		appendSelect(sql);
 		sql.append("from profile p ");
@@ -268,7 +269,12 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1");
 		sql.append("where p.profile_id=? and up.email_flg=1 and up.status_cd in ('R','N') ");
 		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
-		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		// Determine whether order no or publish dt has priority in the sort.
+		if (orderSort) {
+			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) ");
+		} else {
+			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		}
 		return sql.toString();
 	}
 
@@ -278,7 +284,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 * @param req - used by subclasses
 	 * @return
 	 */
-	protected String buildAllUpdatesSQL(String schema) {
+	protected String buildAllUpdatesSQL(String schema, boolean orderSort) {
 		StringBuilder sql = new StringBuilder(800);
 		appendSelect(sql);
 		sql.append("from ").append(schema).append("biomedgps_update_section us ");
@@ -290,7 +296,13 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1");
 		sql.append("where up.email_flg=1 and up.status_cd in ('R','N') ");
 		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
-		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		sql.append("order by up.type_cd, ");
+		// Determine whether order no or publish dt has priority in the sort.
+		if (orderSort) {
+			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) ");
+		} else {
+			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		}
 		return sql.toString();
 	}
 
@@ -301,7 +313,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 * @param sectionIds
 	 * @return
 	 */
-	protected String buildManageUpdatesSQL(String schema, String[] sectionIds) {
+	protected String buildManageUpdatesSQL(String schema, String[] sectionIds, boolean orderSort) {
 		StringBuilder sql = new StringBuilder(800);
 		appendSelect(sql);
 		sql.append("from ").append(schema).append("biomedgps_update_section us ");
@@ -317,8 +329,13 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 
 		//without a section only show un-reviewed (New) status level
 		sql.append("and up.status_cd in ('N', 'R') ");
+		sql.append("order by up.type_cd, ");
 
-		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		if (orderSort) {
+			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) desc ");
+		} else {
+			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		}
 		return sql.toString();
 	}
 
