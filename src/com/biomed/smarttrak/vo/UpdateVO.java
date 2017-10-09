@@ -10,6 +10,7 @@ import java.util.List;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.UpdatesAction.UpdateType;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionRequest;
@@ -654,6 +655,9 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 				}
 			}
 		}
+		// Add the public acl for announcements since they are visible to anyone
+		if (announcementType > 0)
+			super.addACLGroup(Permission.GRANT, SmarttrakRoleVO.PUBLIC_ACL);
 	}
 
 
