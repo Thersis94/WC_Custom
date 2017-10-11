@@ -116,9 +116,9 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 		rss.setPublicationName("PubMed");
 		rss.setArticleSourceType(ArticleSourceType.PUBMED);
 		rss.setArticleGuid(data.get(SearchType.PMID));
-		rss.setArticleTxt(StringUtil.checkVal(data.get(SearchType.ABSTRACT_TEXT)));
+		rss.setArticleTxt(StringUtil.checkVal(data.get(SearchType.ABSTRACT_TEXT)).replace("\u00a0"," "));
 		rss.setPublishDt(d);
-		rss.setTitleTxt(StringUtil.checkVal(data.get(SearchType.ARTICLE_TITLE), data.get(SearchType.TITLE)));
+		rss.setTitleTxt(StringUtil.checkVal(data.get(SearchType.ARTICLE_TITLE), data.get(SearchType.TITLE)).replace("\u00a0"," "));
 		rss.setPublicationName(data.get(SearchType.TITLE));
 		rss.setAttribute1Txt(data.get(SearchType.PUB_TYPE));
 		return rss;

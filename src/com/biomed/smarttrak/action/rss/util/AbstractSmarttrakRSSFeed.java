@@ -165,8 +165,19 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 
 	protected Map<String, List<Object>> buildArticleFilterVals(RSSArticleVO a) {
 		Map<String, List<Object>> insertValues = new HashMap<>();
+		int n = 0;
+		int r = 0;
+		int o = 0;
 
 		for (RSSArticleFilterVO af : a.getFilterVOs().values()) {
+			if(af.getArticleStatus().equals(ArticleStatus.N)) {
+				n++;
+			} else if (af.getArticleStatus().equals(ArticleStatus.R)) {
+				r++;
+			} else if (af.getArticleStatus().equals(ArticleStatus.O)) {
+				o++;
+			}
+
 			String afId = uuid.getUUID();
 			List<Object> insertData = new ArrayList<>();
 			insertData.addAll(Arrays.asList(afId, af.getFeedGroupId(), af.getArticleStatus().name()));
@@ -174,6 +185,8 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			insertData.addAll(Arrays.asList(StringUtil.checkVal(af.getFilterArticleTxt(), "No Article Available"), Convert.getCurrentTimestamp()));
 			insertValues.put(afId, insertData);
 		}
+
+		log.info("Number of New: " + n + "\nNumber of Rejected: " + r + "\nNumber of Omitted: " + o);
 
 		return insertValues;
 	}

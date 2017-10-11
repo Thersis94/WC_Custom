@@ -79,6 +79,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		//Load the filters
 		loadFilters(props.getProperty(QUERTLE_ENTITY_ID));
 
+		log.info("filters loaded.");
 		//Build the configured Port
 		SearchingSEI port = buildPort();
 
@@ -90,9 +91,11 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 
 		//Load Patent Applications
 		getPatentsFromQuertle(port, props.getProperty(PATENT_APPLICATION_TYPE));
+		log.info("loaded Patent Applications.");
 
 		//Load Patent Grants
 		getPatentsFromQuertle(port, props.getProperty(PATENT_GRANT_TYPE));
+		log.info("loaded Patent Grants.");
 	}
 
 
@@ -114,6 +117,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			//Load Results for the Classification
 			List<ResultAttributes> results = queryResults(port, sp, c);
 
+			log.info("Retrieved Articles, size: " + results.size());
 			//If we have results, process them.
 			if (results != null && !results.isEmpty()) {
 
@@ -138,6 +142,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		//Load existing Article Ids for Quertle.
 		Map<String, Set<String>> ids = getExistingIds(searchType, results);
 
+		log.info("Found Existing Records: " + ids.size());
 		RSSArticleVO a = null;
 		//Iterate Results and Builds Article VOs.
 		for (ResultAttributes r : results) {
@@ -178,8 +183,8 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 
 		//Instantiate the Article and set common fields.
 		RSSArticleVO a = new RSSArticleVO();
-		a.setTitleTxt(r.getTitle());
-		a.setArticleTxt(r.getAbstractText());
+		a.setTitleTxt(r.getTitle().replace("\u00a0"," "));
+		a.setArticleTxt(r.getAbstractText().replace("\u00a0"," "));
 		a.setPublishDt(getPubDate(r.getPubDate()));
 		a.setArticleGuid(id);
 		a.setRssEntityId(props.getProperty(QUERTLE_ENTITY_ID));
@@ -240,7 +245,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private List<ResultAttributes> queryResults(SearchingSEI port, SearchParams sp, String c) {
-		List<ResultAttributes> results = null;
+		List<ResultAttributes> results = Collections.emptyList();
 		int cnt = Convert.formatInteger(props.getProperty(HITS_PER_QUERY));
 
 		//Set the passed classification.
