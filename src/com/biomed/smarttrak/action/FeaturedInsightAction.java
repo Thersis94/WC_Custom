@@ -184,6 +184,8 @@ public class FeaturedInsightAction extends InsightAction {
 			acceptedDocs.add(doc);
 		}
 		
+		if (acceptedDocs.size() == currentDocs.size()) return acceptedDocs;
+		
 		randomDocs = currentDocs.subList(acceptedDocs.size(), currentDocs.size()-1);
 		
 		Set<Integer> docLocs = getRandomDocuments(randomDocs.size(), maxResults - acceptedDocs.size());
