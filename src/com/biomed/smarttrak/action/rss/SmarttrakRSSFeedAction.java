@@ -75,7 +75,7 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		if (Convert.formatBoolean(req.getParameter("feedback"))) {
 			sendFeedback(req);
-		} else if(req.hasParameter("rssArticleId")) {
+		} else if(req.hasParameter("articleFilterId")) {
 			NewsroomAction nra = new NewsroomAction(this.actionInit);
 			nra.setAttributes(attributes);
 			nra.setDBConnection(dbConn);
