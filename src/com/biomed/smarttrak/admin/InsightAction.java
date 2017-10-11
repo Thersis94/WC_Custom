@@ -523,7 +523,7 @@ public class InsightAction extends ManagementAction {
 				//fill the vo up with the rest of the data so there is something to push to solr
 				ivo = loadInsight(ivo);
 			} else {
-				saveInsight(db, ivo);
+				saveInsight(db, ivo, StringUtil.isEmpty(req.getParameter(INSIGHT_ID)));
 				saveProfileDoc(req, ivo);
 			}
 			publishChangeToSolr(ivo);
@@ -656,13 +656,14 @@ public class InsightAction extends ManagementAction {
 	 * uses db util to do a full update or insert on the passed vo
 	 * @param u 
 	 * @param db 
-	 * @throws Exception 
+	 * @param isInsert
+	 * @throws ActionException 
 	 * 
 	 */
-	private void saveInsight(DBProcessor db, InsightVO ivo) throws ActionException {
+	private void saveInsight(DBProcessor db, InsightVO ivo, boolean isInsert) throws ActionException {
 		try {
 			db.save(ivo);
-			setInsightIdOnInsert(ivo, db);
+			setInsightIdOnInsert(ivo, db, isInsert);
 			saveSections(ivo);
 
 		} catch (Exception e) {
@@ -723,14 +724,17 @@ public class InsightAction extends ManagementAction {
 	 * sets the new insight vo on insert
 	 * @param db 
 	 * @param u 
+	 * @param isInsert
 	 */
-	private void setInsightIdOnInsert(InsightVO ivo, DBProcessor db) {
-		if (StringUtil.isEmpty(ivo.getInsightId())) {
-			ivo.setInsightId(db.getGeneratedPKId());
-			for(InsightXRVO uxr : ivo.getInsightSections()) {
-				uxr.setInsightId(ivo.getInsightId());
-			}
+	private void setInsightIdOnInsert(InsightVO ivo, DBProcessor db, boolean isInsert) {
+		if (!isInsert) return; //nothing to do if this is not an insert
+		
+		String insightId = ivo.getInsightId() != null ? ivo.getInsightId() : db.getGeneratedPKId();
+		ivo.setInsightId(db.getGeneratedPKId());
+		for(InsightXRVO uxr : ivo.getInsightSections()) {
+			uxr.setInsightId(insightId);
 		}
+		
 	}
 
 
