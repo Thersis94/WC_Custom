@@ -95,10 +95,11 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private List<RSSArticleVO> retrieveArticles(String url) {
+		log.info("Retrieving Url: " + url);
 		byte[] results = getDataViaHTTP(url, null);
 
 		//Process XML
-		return results != null ? processArticleResult(results) : Collections.emptyList();
+		return processArticleResult(results);
 	}
 
 	/**
@@ -108,7 +109,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private List<RSSArticleVO> processArticleResult(byte[] results) {
-		List<RSSArticleVO> articles = null;
+		List<RSSArticleVO> articles = Collections.emptyList();
 
 		try {
 			InputStream is = new ByteArrayInputStream(results);
@@ -118,6 +119,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		} catch(SAXException | IOException se) {
 			log.error("Response was malformed.");
 		}
+		log.info("Loaded " + articles.size() + " articles.");
 		return articles;
 	}
 
@@ -130,7 +132,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	private void filterArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles) {
 		//Query if any of the retrieved articles are already processed.
 
-		if(articles == null) {
+		if(articles.isEmpty()) {
 			return;
 		}
 

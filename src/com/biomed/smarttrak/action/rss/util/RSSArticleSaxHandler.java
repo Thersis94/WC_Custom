@@ -89,13 +89,13 @@ public class RSSArticleSaxHandler extends DefaultHandler {
 		data.put(SearchType.F_DATE, Convert.formatDate(d, Convert.DATE_TIME_DASH_PATTERN_12HR));
 		rss.setArticleSourceType(ArticleSourceType.RSS);
 		rss.setArticleGuid(data.get(SearchType.GUID));
-		rss.setArticleTxt(StringUtil.checkVal(data.get(SearchType.DESCRIPTION)));
+		rss.setArticleTxt(StringUtil.checkVal(data.get(SearchType.DESCRIPTION)).replace("\u00a0"," "));
 		rss.setPublishDt(d);
 		rss.setArticleUrl(data.get(SearchType.LINK));
 		if(StringUtil.isEmpty(rss.getArticleGuid())) {
 			rss.setArticleGuid(rss.getArticleUrl());
 		}
-		rss.setTitleTxt(StringUtil.checkVal(data.get(SearchType.TITLE)));
+		rss.setTitleTxt(StringUtil.checkVal(data.get(SearchType.TITLE)).replace("\u00a0"," "));
 		rss.setPublicationName(data.get(SearchType.TITLE));
 		return rss;
 	}
