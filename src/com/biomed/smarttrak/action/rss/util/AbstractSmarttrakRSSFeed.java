@@ -397,8 +397,11 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	protected boolean checkMatch(RSSArticleFilterVO af, RSSFilterVO filter) {
 		boolean isMatch = false;
 
-		af.setFilterArticleTxt(af.getArticleTxt().replaceAll(filter.getFilterExpression(), props.getProperty(REPLACE_SPAN)));
-		af.setFilterTitleTxt(af.getTitleTxt().replaceAll(filter.getFilterExpression(), props.getProperty(REPLACE_SPAN)));
+		StringBuilder regex = new StringBuilder(filter.getFilterExpression().length() + 10);
+		regex.append("(?i)(").append(filter.getFilterExpression()).append(")");
+
+		af.setFilterArticleTxt(af.getArticleTxt().replaceAll(regex.toString(), props.getProperty(REPLACE_SPAN)));
+		af.setFilterTitleTxt(af.getTitleTxt().replaceAll(regex.toString(), props.getProperty(REPLACE_SPAN)));
 
 		//Build Matchers.
 		if(af.getFilterArticleTxt().contains("<span class='hit'>")) {
