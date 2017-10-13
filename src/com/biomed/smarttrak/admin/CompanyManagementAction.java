@@ -454,7 +454,7 @@ public class CompanyManagementAction extends ManagementAction {
 		SortField s = SortField.getFromString(req.getParameter("sort"));
 
 		sql.append("ORDER BY ").append(s.getDbField());
-		sql.append(" ").append(req.hasParameter("order")? req.getParameter("order"):"desc").append(" ");
+		sql.append(" ").append(req.hasParameter("order")? req.getParameter("order"):"asc").append(" ");
 
 		int limit  = Convert.formatInteger(req.getParameter("limit"));
 		if (limit != 0) {
