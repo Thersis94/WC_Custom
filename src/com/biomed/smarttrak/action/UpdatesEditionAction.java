@@ -210,7 +210,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		List<UpdateVO> secUpds = new ArrayList<>();
 		for (UpdateVO vo : updates) {
 			List<UpdateXRVO> secs = vo.getUpdateSections();
-			if (secs == null || secs.isEmpty()) continue;
+			if (exclusions.contains(vo.getUpdateId()) || secs == null || secs.isEmpty()) continue;
 			for (UpdateXRVO xrvo : secs) {
 				if (n.getNodeId().equals(xrvo.getSectionId())) {
 					secUpds.add(vo);
