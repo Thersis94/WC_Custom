@@ -511,8 +511,8 @@ public class UpdatesAction extends ManagementAction {
 			sql.append("or lower(a.message_txt) like ? ) ");
 		}
 		//check if dates were passed before appending to query
-		if(req.hasParameter(START_DATE)) sql.append("and a.create_dt >= ? ");
-		if(req.hasParameter(END_DATE)) sql.append("and a.create_dt <= ? ");
+		if(req.hasParameter(START_DATE)) sql.append("and a.publish_dt >= ? ");
+		if(req.hasParameter(END_DATE)) sql.append("and a.publish_dt <= ? ");
 
 		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 		if (sectionIds != null && sectionIds.length > 0) { //restrict to certain sections only
