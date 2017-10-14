@@ -316,6 +316,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append("where p.profile_id=? and up.email_flg=1 and up.status_cd in ('R','N') ");
 		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
 		// Determine whether order no or publish dt has priority in the sort.
+		sql.append("order by ");
 		if (orderSort) {
 			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) ");
 		} else {
