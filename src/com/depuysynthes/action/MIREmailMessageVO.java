@@ -100,7 +100,7 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		// section 1 - HCP information
 		addHtmlRow(html, ++rowCnt, "Website", site.getSiteName());
 		addHtmlRow(html, ++rowCnt, "Region", vo.getRegion());
-		addHtmlRow(html, ++rowCnt, "Subregion", vo.getSubregion());
+		addHtmlRow(html, ++rowCnt, "Sub-Region", vo.getSubregion());
 		addHtmlRow(html, ++rowCnt, "HCP Type", StringUtil.checkVal(vo.getHcpType()));
 		addHtmlRow(html, ++rowCnt, "HCP Type (Other)", vo.getHcpTypeOther());
 		addHtmlRow(html, ++rowCnt, "HCP's Title", vo.getHcpTitle());
