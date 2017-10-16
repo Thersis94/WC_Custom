@@ -110,14 +110,6 @@ public class SmarttrakRoleVO extends SBUserRole {
 			}
 		}
 
-		// Add the public acls
-		groups.get(BROWSE_SECTION).add(PUBLIC_ACL);
-		groups.get(Section.FINANCIAL_DASHBOARD).add(PUBLIC_ACL);
-		groups.get(Section.GAP_ANALYSIS).add(PUBLIC_ACL);
-		groups.get(Section.PRODUCT_EXPLOERER).add(PUBLIC_ACL);
-		groups.get(Section.INSIGHT).add(PUBLIC_ACL);
-		groups.get(Section.UPDATES_EDITION).add(PUBLIC_ACL);
-
 		authorizedSections = new EnumMap<>(Section.class);
 		for (Map.Entry<Section, Set<String>> entry : groups.entrySet()) {
 			Section k = entry.getKey();
