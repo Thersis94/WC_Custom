@@ -329,7 +329,7 @@ public class InsightAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
-
+		decryptNames(insights);
 		for (Object ob : insights) {
 			InsightVO vo = (InsightVO)ob;
 			vo.setQsPath((String)getAttribute(Constants.QS_PATH));
