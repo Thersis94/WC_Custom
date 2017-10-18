@@ -37,7 +37,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 	 * ACL level used for documents that are available to everyone
 	 * regardless of their subscriptions
 	 */
-	public final static String PUBLIC_ACL = "public";
+	public static final String PUBLIC_ACL = "public";
 	
 	private boolean isFdAuth;
 	private boolean isGaAuth;
@@ -109,14 +109,6 @@ public class SmarttrakRoleVO extends SBUserRole {
 				addAclIf(vo.isUpdatesAuth(), acl, groups.get(Section.UPDATES_EDITION));
 			}
 		}
-
-		// Add the public acls
-		groups.get(BROWSE_SECTION).add(PUBLIC_ACL);
-		groups.get(Section.FINANCIAL_DASHBOARD).add(PUBLIC_ACL);
-		groups.get(Section.GAP_ANALYSIS).add(PUBLIC_ACL);
-		groups.get(Section.PRODUCT_EXPLOERER).add(PUBLIC_ACL);
-		groups.get(Section.INSIGHT).add(PUBLIC_ACL);
-		groups.get(Section.UPDATES_EDITION).add(PUBLIC_ACL);
 
 		authorizedSections = new EnumMap<>(Section.class);
 		for (Map.Entry<Section, Set<String>> entry : groups.entrySet()) {
