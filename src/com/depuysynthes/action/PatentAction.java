@@ -79,9 +79,9 @@ public class PatentAction extends SimpleActionAdapter {
 		if (!req.hasParameter("code")) return;
 
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("select item_txt, desc_txt, code_txt, patents_txt  from ");
+		sql.append("select item_txt, desc_txt, code_txt, patents_txt, redirect_nm, redirect_address_txt from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("DPY_SYN_PATENT where code_txt=? and action_id=? ");
+		sql.append("dpy_syn_patent where code_txt=? and action_id=? ");
 		sql.append("limit 1 ");
 		log.debug(sql + "|" + req.getParameter("code") + "|" + actionInit.getActionId());
 
@@ -160,7 +160,7 @@ public class PatentAction extends SimpleActionAdapter {
 	private void deleteByCompany(String actionId, String companyNm) throws ActionException {
 		String customDb = getAttribute(Constants.CUSTOM_DB_SCHEMA).toString();
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("delete from ").append(customDb).append("DPY_SYN_PATENT ");
+		sql.append("delete from ").append(customDb).append("dpy_syn_patent ");
 		sql.append("where company_nm=? and action_id=?");
 		log.debug(sql);
 		
@@ -187,10 +187,10 @@ public class PatentAction extends SimpleActionAdapter {
 		 
 		String customDb = getAttribute(Constants.CUSTOM_DB_SCHEMA).toString();
 		 StringBuilder sql = new StringBuilder(150);
-		 sql.append("insert into ").append(customDb).append("DPY_SYN_PATENT ");
-		 sql.append("(ACTION_ID, ORGANIZATION_ID, COMPANY_NM, CODE_TXT, ");
-		 sql.append("ITEM_TXT, DESC_TXT, PATENTS_TXT, CREATE_DT) ");
-		 sql.append("values (?,?,?,?,?,?,?,?)");
+		 sql.append("insert into ").append(customDb).append("dpy_syn_patent ");
+		 sql.append("(action_id, organization_id, company_nm, code_txt, ");
+		 sql.append("item_txt, desc_txt, patents_txt, redirect_nm, redirect_address_txt, create_dt) ");
+		 sql.append("values (?,?,?,?,?,?,?,?,?,?)");
 		 log.debug(sql);
 
 		 try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -208,7 +208,9 @@ public class PatentAction extends SimpleActionAdapter {
 				 ps.setString(5, vo.getItem());
 				 ps.setString(6, vo.getDesc());
 				 ps.setString(7, StringUtil.replace(vo.getPatents(), "|","; ")); //clean up the tokenized data and store it the way we'll need it for display
-				 ps.setTimestamp(8, Convert.getCurrentTimestamp());
+				 ps.setString(8, vo.getRedirectName());
+				 ps.setString(9, vo.getRedirectAddress());
+				 ps.setTimestamp(10, Convert.getCurrentTimestamp());
 				 ps.addBatch();
 				 log.debug("added to batch: "+ vo.getCode());
 			 }

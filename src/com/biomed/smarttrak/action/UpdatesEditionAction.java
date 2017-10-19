@@ -15,6 +15,7 @@ import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.UpdateVO;
+import com.biomed.smarttrak.vo.UpdateVO.AnnouncementType;
 import com.biomed.smarttrak.vo.UpdateXRVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
@@ -25,6 +26,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.DateUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -108,7 +110,8 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		//iterate the hierarchy and set an easy-to-reference full path we can use to merge the data.
 		//while there, add a 4th level that equates to the Update Types.
 		//We'll them attach the updates themselves, as the lowest level.
-		t = marryUpdatesToNodes(t, updates);
+		t = marryUpdatesToNodes(t, updates, Convert.formatBoolean(req.getParameter("orderSort")));
+		addAnnouncements(t, updates);
 
 		//set the appropriate time range onto request for view
 		setDateRange(req);
@@ -117,6 +120,56 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 	}
 
 
+	/**
+	 * Add the announcements to the tree in thier own branch
+	 * @param t
+	 * @param updates
+	 */
+	private void addAnnouncements(Tree t, List<UpdateVO> updates) {
+		// Create the announcement root node
+		Node announcementNode = new Node("ALL_ANNOUNCEMENTS", t.getRootNode().getNodeId());
+		announcementNode.setNodeName("Announcements");
+		AnnouncementType type = AnnouncementType.NON;
+		List<UpdateVO> selUpdates = Collections.emptyList();
+		Node n = null;
+		for (UpdateVO up : updates) {
+			if (type.getValue() != up.getAnnouncementType()) {
+				addNode(n, selUpdates, announcementNode);
+				type = AnnouncementType.getFromValue(up.getAnnouncementType());
+				n = new Node(type.toString(), announcementNode.getNodeId());
+				n.setNodeName(type.getName());
+				selUpdates = new ArrayList<>();
+			}
+			
+			// Skip the updates that are not announcements.
+			if (type != AnnouncementType.NON) {
+				selUpdates.add(up);
+			}
+		}
+		
+		// Add the straggler
+		addNode(n, selUpdates, announcementNode);
+		
+		announcementNode.setTotalChildren(announcementNode.getNumberChildren());
+		// Place the announcements in front of the other items.
+		t.getRootNode().getChildren().add(0, announcementNode);
+	}
+	
+	/**
+	 * Check to see if the current node is null and, if not,
+	 * add it the the announcement root node.
+	 * @param n
+	 * @param selUpdates
+	 * @param announcementNode
+	 */
+	private void addNode(Node n, List<UpdateVO> selUpdates, Node announcementNode) {
+		if (n != null && !selUpdates.isEmpty()) {
+			n.setUserObject(selUpdates);
+			n.setTotalChildren(1);
+			announcementNode.addChild(n);
+		}
+	}
+	
 	/**
 	 * @return
 	 */
@@ -132,13 +185,13 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 	 * @param t
 	 * @param updates
 	 */
-	private Tree marryUpdatesToNodes(Tree t, List<UpdateVO> updates) {
+	private Tree marryUpdatesToNodes(Tree t, List<UpdateVO> updates, boolean orderSort) {
 		//iterate the node tree.  At each level look for updates that belong there.  
 		//Compile a list and attach it to the given Node.  Then, preclude that Update from being re-displayed in the same top-level section
 		for (Node n : t.getRootNode().getChildren()) {
 			//maintain a list of updates already tied to this root section - they cannot appear here twice.
 			Set<String> exclusions = new HashSet<>();
-			iterateUpdatesForNode(n, t, updates, exclusions);
+			iterateUpdatesForNode(n, t, updates, exclusions, orderSort);
 			n.setTotalChildren(exclusions.size());
 			log.debug("root " + n.getNodeName() + " has " + n.getTotalChildren());
 		}
@@ -153,7 +206,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 	 * @param secUpds
 	 */
 	@SuppressWarnings("unchecked")
-	private void iterateUpdatesForNode(Node n, Tree t, List<UpdateVO> updates, Set<String> exclusions) {
+	private void iterateUpdatesForNode(Node n, Tree t, List<UpdateVO> updates, Set<String> exclusions, boolean orderSort) {
 		//log.debug("depth= " + n.getDepthLevel() + " name=" + n.getNodeName())
 		List<UpdateVO> secUpds = new ArrayList<>();
 		for (UpdateVO vo : updates) {
@@ -174,17 +227,21 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 			List<UpdateVO> data = (List<UpdateVO>) par.getUserObject();
 			if (data == null) data = new ArrayList<>();
 			data.addAll(secUpds);
-			par.setUserObject(sortData(data));
+			// Ensure ordering only if we are not relying on the db's ordering
+			if (!orderSort) data = sortData(data);
+			par.setUserObject(data);
 			par.setTotalChildren(data.size());
 		} else {
-			n.setUserObject(sortData(secUpds));
+			// Ensure ordering only if we are not relying on the db's ordering
+			if (!orderSort) secUpds = sortData(secUpds);
+			n.setUserObject(secUpds);
 			n.setTotalChildren(secUpds.size());
 		}
 		//log.debug("saved " + n.getNodeName() + " has " + n.getTotalChildren())
 
 		//dive deeper into this node's children
 		for (Node child : n.getChildren())
-			this.iterateUpdatesForNode(child, t, updates, exclusions);
+			this.iterateUpdatesForNode(child, t, updates, exclusions, orderSort);
 
 	}
 

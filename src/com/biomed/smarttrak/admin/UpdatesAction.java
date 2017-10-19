@@ -53,6 +53,8 @@ public class UpdatesAction extends ManagementAction {
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
 	private static final String SECTION_ID = "filterSectionId[]";
+	
+	private static final String HTML_REGEX = "(<\\/?(([uo]l)|(b)|(li)|(s((trong)|(ub))?)|(d((etails)|(iv))?)|(u)|(img)|(hr)|(font))(?!up)[^<>]*\\/?>)|(<p>&nbsp;<\\/p>)";
 
 	/**
 	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
@@ -316,7 +318,7 @@ public class UpdatesAction extends ManagementAction {
 	protected String formatRetrieveAllQuery(String schema, String updateId) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select up.update_id, up.title_txt, up.message_txt, up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
-		sql.append("c.short_nm_txt as company_nm, prod.short_nm as product_nm, ");
+		sql.append("up.announcement_type, c.short_nm_txt as company_nm, prod.short_nm as product_nm, up.order_no, ");
 		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
 		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, ");
 		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path, up.create_dt "); //need to pass this through for building URLs
@@ -509,8 +511,8 @@ public class UpdatesAction extends ManagementAction {
 			sql.append("or lower(a.message_txt) like ? ) ");
 		}
 		//check if dates were passed before appending to query
-		if(req.hasParameter(START_DATE)) sql.append("and a.create_dt >= ? ");
-		if(req.hasParameter(END_DATE)) sql.append("and a.create_dt <= ? ");
+		if(req.hasParameter(START_DATE)) sql.append("and a.publish_dt >= ? ");
+		if(req.hasParameter(END_DATE)) sql.append("and a.publish_dt <= ? ");
 
 		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
 		if (sectionIds != null && sectionIds.length > 0) { //restrict to certain sections only
@@ -611,6 +613,8 @@ public class UpdatesAction extends ManagementAction {
 				//Delete from Solr.
 				deleteFromSolr(u);
 			} else {
+				filterText(u);
+				
 				db.save(u);
 
 				fixPkids(u, db.getGeneratedPKId());
@@ -628,6 +632,17 @@ public class UpdatesAction extends ManagementAction {
 		}
 	}
 
+
+
+	/**
+	 * Filter out prohibited html tags from the message text
+	 * @param u
+	 */
+	private void filterText(UpdateVO u) {
+		if (StringUtil.isEmpty(u.getMessageTxt())) return;
+		
+		u.setMessageTxt(u.getMessageTxt().replaceAll(HTML_REGEX, ""));
+	}
 
 	/**
 	 * Manages updating given UpdatesVO with generated PKID and updates sections

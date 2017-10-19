@@ -16,6 +16,7 @@ import javax.xml.ws.BindingProvider;
 import javax.xml.ws.handler.MessageContext;
 
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
+import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
@@ -78,6 +79,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		//Load the filters
 		loadFilters(props.getProperty(QUERTLE_ENTITY_ID));
 
+		log.info("filters loaded.");
 		//Build the configured Port
 		SearchingSEI port = buildPort();
 
@@ -89,9 +91,11 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 
 		//Load Patent Applications
 		getPatentsFromQuertle(port, props.getProperty(PATENT_APPLICATION_TYPE));
+		log.info("loaded Patent Applications.");
 
 		//Load Patent Grants
 		getPatentsFromQuertle(port, props.getProperty(PATENT_GRANT_TYPE));
+		log.info("loaded Patent Grants.");
 	}
 
 
@@ -109,11 +113,11 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 
 		//Call to Quertle for each Classification
 		for (String c : classifications) {
-			log.info("Loading Classification: " + c);
 
 			//Load Results for the Classification
 			List<ResultAttributes> results = queryResults(port, sp, c);
 
+			log.info("Retrieved Articles, size: " + results.size());
 			//If we have results, process them.
 			if (results != null && !results.isEmpty()) {
 
@@ -134,28 +138,33 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private List<RSSArticleVO> processResults(List<ResultAttributes> results, String searchType) {
 		List<RSSArticleVO> articles = new ArrayList<>(results.size() + 1);
-		log.info("Loaded " + results.size() + " results.");
 
 		//Load existing Article Ids for Quertle.
-		Set<String> ids = getExistingIds(searchType, results);
+		Map<String, Set<String>> ids = getExistingIds(searchType, results);
 
+		log.info("Found Existing Records: " + ids.size());
+		RSSArticleVO a = null;
 		//Iterate Results and Builds Article VOs.
 		for (ResultAttributes r : results) {
 			String id = searchType + r.getApplicationNumber();
 
-			//Check if we've already got this id in the system.
-			if(!ids.contains(id)) {
+			a = buildArticleVO(id, searchType, r);
 
-				/*
-				 * Iterate over the FeedGroups and create an article VO for each.
-				 * Quertle results can appear in multiple groups per business
-				 * requirements.
-				 */
-				for(RSSFeedGroupVO g : groups) {
+			/*
+			 * Iterate over the FeedGroups and create an article VO for each.
+			 * Quertle results can appear in multiple groups per business
+			 * requirements.
+			 */
+			for(RSSFeedGroupVO g : groups) {
 
-					//Add Article to List for saving.
-					articles.add(buildArticleVO(id, searchType, r, g));
+				if(!articleExists(a.getArticleGuid(), g.getFeedGroupId(), ids)) {
+					//Apply Matching Filters to article.
+					applyFilter(a, g.getFeedGroupId());
 				}
+			}
+
+			if(!a.getFilterVOs().isEmpty()) {
+				articles.add(a);
 			}
 		}
 
@@ -170,18 +179,16 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param g
 	 * @return
 	 */
-	private RSSArticleVO buildArticleVO(String id, String searchType, ResultAttributes r, RSSFeedGroupVO g) {
+	private RSSArticleVO buildArticleVO(String id, String searchType, ResultAttributes r) {
 
 		//Instantiate the Article and set common fields.
 		RSSArticleVO a = new RSSArticleVO();
-		a.setTitleTxt(r.getTitle());
-		a.setArticleTxt(r.getAbstractText());
+		a.setTitleTxt(r.getTitle().replace("\u00a0"," "));
+		a.setArticleTxt(r.getAbstractText().replace("\u00a0"," "));
 		a.setPublishDt(getPubDate(r.getPubDate()));
 		a.setArticleGuid(id);
 		a.setRssEntityId(props.getProperty(QUERTLE_ENTITY_ID));
 		a.setArticleSourceType(ArticleSourceType.QUERTLE);
-		a.setArticleStatus(ArticleStatus.O);
-		a.setFeedGroupId(g.getFeedGroupId());
 
 		//Set special attributes based on Application or Grant Type.
 		if(searchType.equals(props.get(PATENT_APPLICATION_TYPE))) {
@@ -195,9 +202,6 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			//Set Patent No
 			a.setAttribute1Txt(r.getPatentNumber());
 		}
-
-		//Apply Matching Filters to article.
-		matchArticle(a, g.getFeedGroupId());
 
 		return a;
 	}
@@ -223,7 +227,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param results
 	 * @return
 	 */
-	private Set<String> getExistingIds(String searchType, List<ResultAttributes> results) {
+	private Map<String, Set<String>> getExistingIds(String searchType, List<ResultAttributes> results) {
 		List<String> ids = new ArrayList<>(results.size());
 		for(ResultAttributes r : results) {
 			ids.add(searchType + r.getApplicationNumber());
@@ -241,7 +245,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private List<ResultAttributes> queryResults(SearchingSEI port, SearchParams sp, String c) {
-		List<ResultAttributes> results = null;
+		List<ResultAttributes> results = Collections.emptyList();
 		int cnt = Convert.formatInteger(props.getProperty(HITS_PER_QUERY));
 
 		//Set the passed classification.
@@ -384,11 +388,11 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param filter
 	 */
 	@Override
-	protected boolean checkReqMatch(RSSArticleVO article, RSSFilterVO filter) {
-		boolean isMatch = checkMatch(article, filter);
+	protected boolean checkReqMatch(RSSArticleFilterVO af, RSSFilterVO filter) {
+		boolean isMatch = checkMatch(af, filter);
 
-		if(isMatch && !ArticleStatus.R.name().equals(article.getArticleStatusCd())) {
-			article.setArticleStatus(ArticleStatus.N);
+		if(isMatch && !ArticleStatus.R.equals(af.getArticleStatus())) {
+			af.setArticleStatus(ArticleStatus.N);
 			return true;
 		}
 
@@ -396,13 +400,13 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		 * If we didn't match the Required Field but we aren't rejected,
 		 * download the link and check the result.
 		 */
-		else if(!isMatch && !ArticleStatus.R.name().equals(article.getArticleStatusCd())) {
-			String newArticleTxt = loadArticle(article.getArticleUrl());
+		else if(!isMatch && !ArticleStatus.R.equals(af.getArticleStatus())) {
+			String newArticleTxt = loadArticle(af.getArticleUrl());
 			if(newArticleTxt != null && newArticleTxt.replaceAll(filter.getFilterExpression(), props.getProperty(REPLACE_SPAN)).contains("<span class='hit'>")) {
-				article.setArticleStatusCd(ArticleStatus.N.name());
+				af.setArticleStatus(ArticleStatus.N);
 				return true;
 			} else {
-				article.setArticleStatusCd(ArticleStatus.R.name());
+				af.setArticleStatus(ArticleStatus.R);
 				return false;
 			}
 		}
