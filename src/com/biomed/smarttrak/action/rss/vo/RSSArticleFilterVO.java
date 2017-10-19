@@ -40,6 +40,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	//Temp Variables
 	private String articleUrl;
 	private String articleTxt;
+	private String fullArticleTxt;
 	private String titleTxt;
 
 	public RSSArticleFilterVO() {
@@ -205,5 +206,16 @@ public class RSSArticleFilterVO extends BeanDataVO {
 
 	public void setTitleTxt(String titleTxt) {
 		this.titleTxt = titleTxt;
+	}
+
+	/**
+	 * @return
+	 */
+	public String getFullArticleTxt() {
+		return fullArticleTxt;
+	}
+
+	public void setFullArticleTxt(String fullArticleTxt) {
+		this.fullArticleTxt = fullArticleTxt;
 	}
 }
