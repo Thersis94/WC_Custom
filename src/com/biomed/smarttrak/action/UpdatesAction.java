@@ -194,8 +194,7 @@ public class UpdatesAction extends SBActionAdapter {
 			ps.setString(i++, AdminControllerAction.Section.COMPANY.toString());
 			ps.setString(i++, AdminControllerAction.Section.COMPANY.toString() + "_");
 			ps.setString(i++, vo.getProfileId());
-			log.debug(vo.getProfileId()+"|"+AdminControllerAction.Section.MARKET.toString()+"|"+AdminControllerAction.Section.PRODUCT.toString()+"|"+AdminControllerAction.Section.COMPANY.toString());
-
+			
 			ResultSet rs = ps.executeQuery();
 
 			//Convert Update Id to DocumentId
@@ -235,7 +234,6 @@ public class UpdatesAction extends SBActionAdapter {
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
 		sql.append("on replace(a.rel_id, ?, '') = b.company_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append(") as update_id order by publish_dt desc ");
-		log.debug(sql);
 		return sql.toString();
 	}
 
