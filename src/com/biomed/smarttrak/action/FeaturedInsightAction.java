@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 
 //app libs 
 import org.apache.commons.lang.StringUtils;
@@ -21,6 +23,7 @@ import com.biomed.smarttrak.security.SmarttrakRoleVO;
 //baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.solr.AccessControlQuery;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
@@ -60,7 +63,8 @@ public class FeaturedInsightAction extends InsightAction {
 		if (!StringUtil.isEmpty(profileDocumentId)) {
 			processProfileDocumentRequest(profileDocumentId);
 		} else {
-			processFeaturedRequest(req);
+			// Get the featured documents for the logged in user
+			processFeaturedRequest(req, getUsersRoles(req));
 		}
 	}
 
@@ -116,6 +120,18 @@ public class FeaturedInsightAction extends InsightAction {
 			log.error("could not load or verify profile document ", sqle);
 		}
 	}
+	
+	
+	/**
+	 * Gets the featured documents for a simulated user in order to mimic the 
+	 * results the supplied hypothetical user would recieve if they visited the site.
+	 * @param req
+	 * @param userRoles
+	 * @throws ActionException 
+	 */
+	public void simulatedFeaturedRequest(ActionRequest req, Set<String> userRoles) throws ActionException {
+		processFeaturedRequest(req, userRoles);
+	}
 
 
 	/**
@@ -123,13 +139,10 @@ public class FeaturedInsightAction extends InsightAction {
 	 * @throws ActionException 
 	 * 
 	 */
-	private void processFeaturedRequest(ActionRequest req) throws ActionException {
+	private void processFeaturedRequest(ActionRequest req, Set<String> userRoles) throws ActionException {
 		//setting pmid for solr action check
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-
-		//get the users roles
-		Set<String> userRoles = getUsersRoles(req);
 
 		//build the solr action
 		executeSolrRequest(req);
@@ -146,7 +159,61 @@ public class FeaturedInsightAction extends InsightAction {
 			checkDocumentForAuthorization(solDoc, userRoles, authorizedFeatures);
 		}
 		//change out results sets
-		transposeResults(solVo, authorizedFeatures);
+		transposeResults(solVo, prepareResults(authorizedFeatures, Convert.formatInteger((String) mod.getAttribute(ModuleVO.ATTRIBUTE_2),10)));
+	}
+	
+	
+	/**
+	 * Get the desired number of documents from the solr result set. This includes a number
+	 * of documents that are present regardless as well as a collection of documents randomly
+	 * chosen from the remaining featured documents.
+	 * @param currentDocs
+	 * @param maxResults
+	 * @return
+	 */
+	private List<SolrDocument> prepareResults(List<SolrDocument> currentDocs, int maxResults) {
+		if (currentDocs.isEmpty()) return new ArrayList<>();
+		
+		List<SolrDocument> acceptedDocs = new ArrayList<>(maxResults);
+		List<SolrDocument> randomDocs = null;
+		for (int i=0; i < currentDocs.size() && acceptedDocs.size() < maxResults; i++) {
+			SolrDocument doc = currentDocs.get(i);
+			// If this document does not have the always present flag present
+			// break the loop as we have all static documents
+			if (!Convert.formatBoolean(doc.getFieldValue("sliderFlg_i"))) break;
+			acceptedDocs.add(doc);
+		}
+		
+		if (acceptedDocs.size() == currentDocs.size()) return acceptedDocs;
+		
+		randomDocs = currentDocs.subList(acceptedDocs.size(), currentDocs.size()-1);
+		
+		Set<Integer> docLocs = getRandomDocuments(randomDocs.size(), maxResults - acceptedDocs.size());
+		
+		for (Integer loc : docLocs) {
+			acceptedDocs.add(randomDocs.get(loc));
+		}
+		return acceptedDocs;
+	}
+	
+
+	/**
+	 * Get a set of random numbers
+	 * @param size
+	 * @param maxResults
+	 * @return
+	 */
+	private Set<Integer> getRandomDocuments(int size, int maxResults) {
+		Set<Integer> randomNumbers = new TreeSet<>();
+		Random rng = new Random();
+		
+		// Add random numbers until we reach the desired number of 
+		// results or reach the number of documents available
+		while (randomNumbers.size() < maxResults && randomNumbers.size() < size) {
+			randomNumbers.add(rng.nextInt(size));
+		}
+		
+		return randomNumbers;
 	}
 
 	/**

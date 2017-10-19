@@ -33,6 +33,12 @@ import com.smt.sitebuilder.security.SBUserRole;
 public class SmarttrakRoleVO extends SBUserRole {
 	private static final long serialVersionUID = 5759752076778089016L;
 
+	/**
+	 * ACL level used for documents that are available to everyone
+	 * regardless of their subscriptions
+	 */
+	public static final String PUBLIC_ACL = "public";
+	
 	private boolean isFdAuth;
 	private boolean isGaAuth;
 	private boolean isBrowseAuth;

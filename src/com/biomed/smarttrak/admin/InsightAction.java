@@ -23,6 +23,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -67,7 +68,7 @@ public class InsightAction extends ManagementAction {
 
 	protected enum Fields {
 		INSIGHT_ID, STATUS_CD, TYPE_CD, DATE_RANGE, START, RPP, SORT, ORDER,
-		SEARCH, ID_BYPASS, TITLE_BYPASS, CREATOR_PROFILE_ID;
+		SEARCH, ID_BYPASS, TITLE_BYPASS, CREATOR_PROFILE_ID, FEATURED_FLG;
 	}
 
 
@@ -159,6 +160,7 @@ public class InsightAction extends ManagementAction {
 		if (req.hasParameter("dateRange")) insightParamsMap.put(Fields.DATE_RANGE, req.getParameter("dateRange"));
 		if (req.hasParameter(TITLE_BYPASS)) insightParamsMap.put(Fields.TITLE_BYPASS, req.getParameter(TITLE_BYPASS));
 		if (req.hasParameter("authorId")) insightParamsMap.put(Fields.CREATOR_PROFILE_ID, req.getParameter("authorId"));
+		if (req.hasParameter("featuredFlg")) insightParamsMap.put(Fields.FEATURED_FLG, req.getParameter("featuredFlg"));
 		log.debug(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
 		insightParamsMap.put(Fields.START, req.getParameter("offset", "0"));
 		insightParamsMap.put(Fields.RPP, req.getParameter("limit","10"));
@@ -245,6 +247,23 @@ public class InsightAction extends ManagementAction {
 
 		return getInsights (insightParamsMap);
 	}
+	
+	/**
+	 * Load all supplied insights for solr.
+	 * @param insightIds
+	 * @return
+	 */
+	public List<Object> loadForSolr(String ...insightIds) {
+		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
+		insightParamsMap.put(Fields.STATUS_CD,  InsightVO.InsightStatusCd.P.name());
+		insightParamsMap.put(Fields.ID_BYPASS, "true");
+
+		String sql = formatSolrRetrieveQuery(insightIds.length, customDbSchema, insightParamsMap);
+		List<Object> params = new ArrayList<>();
+		for (String id : insightIds) params.add(id);
+		params.add(InsightVO.InsightStatusCd.P.name());
+		return getFromDatabase(params, sql, false);
+	}
 
 	/**
 	 * used to pull back a list of insights based on the codes and types. sets a id bypass to true
@@ -280,7 +299,26 @@ public class InsightAction extends ManagementAction {
 	 */
 	@SuppressWarnings("unchecked")
 	public List<Object> getInsights(Map<Fields, String> insightParamsMap) {
+		
 		boolean tb = insightParamsMap.containsKey(Fields.TITLE_BYPASS) && Convert.formatBoolean(insightParamsMap.get(Fields.TITLE_BYPASS));
+
+		String sql = formatRetrieveQuery(insightParamsMap, customDbSchema);
+		List<Object> params = loadSqlParams(insightParamsMap);
+		List<Object>  insights = getFromDatabase(params, sql, tb);
+
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
+		return insights;
+	}
+	
+
+	/**
+	 * Get insights from the database
+	 * @param params
+	 * @param sql
+	 * @param tb
+	 * @return
+	 */
+	private List<Object> getFromDatabase(List<Object> params, String sql, boolean tb) {
 
 		Map<String, String> authorTitles = new HashMap<>();
 		if (!tb){
@@ -288,11 +326,10 @@ public class InsightAction extends ManagementAction {
 			authorTitles = loadAuthorTitles();
 		}
 
-		String sql = formatRetrieveQuery(insightParamsMap, customDbSchema);
-		List<Object> params = loadSqlParams(insightParamsMap);
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
-		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
 
+		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
+		decryptNames(insights);
 		for (Object ob : insights) {
 			InsightVO vo = (InsightVO)ob;
 			vo.setQsPath((String)getAttribute(Constants.QS_PATH));
@@ -312,8 +349,6 @@ public class InsightAction extends ManagementAction {
 				log.error("error loading profile documents",e);
 			}
 		}
-
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
 		return insights;
 	}
 
@@ -330,6 +365,7 @@ public class InsightAction extends ManagementAction {
 			params.add(StringUtil.checkVal("%"+insightParamsMap.get(Fields.SEARCH)+"%"));
 		if (insightParamsMap.containsKey(Fields.CREATOR_PROFILE_ID)) 
 			params.add(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
+		if (insightParamsMap.containsKey(Fields.FEATURED_FLG)) params.add(Convert.formatInteger(insightParamsMap.get(Fields.FEATURED_FLG)));
 		if (insightParamsMap.containsKey(Fields.RPP) && Convert.formatInteger(insightParamsMap.get(Fields.RPP)) > 0 && insightParamsMap.containsKey(Fields.START)) {
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.RPP)));
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.START)));
@@ -353,6 +389,24 @@ public class InsightAction extends ManagementAction {
 		generateWhereClauseOfQuery(sql, insightParamsMap );
 
 		generatePaginationClauseOfQuery(sql, insightParamsMap);
+
+		log.debug(sql);
+		return sql.toString();
+	}
+
+	/**
+	 * Formats the account retrieval query.
+	 * @param schema 
+	 * @return
+	 */
+	private static String formatSolrRetrieveQuery(int numIds, String schema, Map<Fields, String> insightParamsMap) {
+		StringBuilder sql = new StringBuilder(400);
+
+		generateSelectSectionOfQuery(sql, schema, insightParamsMap);
+
+		generateJoinSectionOfQuery(sql, schema, insightParamsMap);
+
+		generateSolrWhereClauseOfQuery(sql, numIds );
 
 		log.debug(sql);
 		return sql.toString();
@@ -410,6 +464,24 @@ public class InsightAction extends ManagementAction {
 
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.CREATOR_PROFILE_ID)))
 			sql.append("and a.creator_profile_id=? ");
+		
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.FEATURED_FLG)))
+			sql.append("and a.featured_flg=? ");
+	}
+
+	/**
+	 * Build the where clause specific to the solr's needs.
+	 * @param sql
+	 * @param numIds
+	 */
+	private static void generateSolrWhereClauseOfQuery(StringBuilder sql, int numIds) {
+		sql.append("where ");
+		if (numIds > 0) {
+			sql.append("a.insight_id in (");
+			DBUtil.preparedStatmentQuestion(numIds, sql);
+			sql.append(") and ");
+		}
+		sql.append("a.status_cd=?");
 	}
 
 	/**
@@ -442,7 +514,7 @@ public class InsightAction extends ManagementAction {
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS))){
 			sql.append("a.* ");
 		}else{
-			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt, a.featured_flg, a.order_no ");
+			sql.append("a.insight_id,a.status_cd, a.type_cd, a.publish_dt, a.title_txt, a.featured_flg, a.slider_flg, a.section_flg, a.order_no ");
 		}
 
 		sql.append(", p.first_nm, p.last_nm, p.profile_img ");
@@ -636,7 +708,7 @@ public class InsightAction extends ManagementAction {
 	protected void writeToSolr(InsightVO ivo) {
 		BiomedInsightIndexer indexer = BiomedInsightIndexer.makeInstance(getAttributes());
 		indexer.setDBConnection(dbConn);
-		indexer.addSingleItem(ivo.getInsightId());
+		indexer.indexItems(ivo.getInsightId());
 	}
 
 	/**

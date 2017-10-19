@@ -60,6 +60,16 @@ public class ProductExplorer extends SBActionAdapter {
 
 	private static final List<String> enumNames = buildEnumList();
 	private static final String SAVED_QUERIES = "savedQueries";
+	private static final int CONTAINS_SEARCH = 1;
+	private static final int BEGIN_SEARCH = 2;
+	private static final int EXACT_SEARCH = 3;
+	
+	/**
+	 * The default list of excluded columns in the product explorer and its report
+	 * This is used when the user has not edited thier viewed columns during this session.
+	 */
+	private static final String DEFAULT_COLUMNS = "3|7|0|d";
+	
 
 	private enum BuildType {
 		EXPORT, SAVE, SHARE, DELETE, HIERARCHY
@@ -70,31 +80,31 @@ public class ProductExplorer extends SBActionAdapter {
 	 * solr equivalents
 	 */
 	private enum SearchField {
-		PRODUCT(true, SearchDocumentHandler.TITLE, "Product Name"),
-		STATE(true, SearchDocumentHandler.STATE, "State"),
-		COUNTRY(false, SearchDocumentHandler.COUNTRY, "Country"),
-		COMPANY(true, "companysearch_s", "Company Name"),
-		SEGMENT(false, SearchDocumentHandler.SECTION, "Segment"),
-		MARKET(false, "target_market_ss", "Target Market"),
-		INDICATION(false, "indication_ss", "Indication"),
-		TECH(false, "technology_ss", "Technology"),
-		APPROACH(false, "approach_ss", "Approach"),
-		CLASSIFICATION(false, "classification_ss", "Classification"),
-		INTREG(false, "intregionnm_ss", "International Region"),
-		INTPATH(false, "intpathnm_ss", "International Path"),
-		INTSTATUS(false, "intstatusnm_ss", "International Status"),
-		USPATH(false, "uspathnm_ss", "US Path"),
-		USSTATUS(false, "usstatusnm_ss", "US Status"),
-		ALLY(true, "allysearch_ss", "Ally"),
-		OWNERSHIP(false, "ownership_s", "Owner"),
-		ID(false, SearchDocumentHandler.DOCUMENT_ID, "Product Id");
+		PRODUCT(CONTAINS_SEARCH, SearchDocumentHandler.TITLE, "Product Name"),
+		STATE(BEGIN_SEARCH, "search_state_s", "State"),
+		COUNTRY(EXACT_SEARCH, SearchDocumentHandler.COUNTRY, "Country"),
+		COMPANY(CONTAINS_SEARCH, "companysearch_s", "Company Name"),
+		SEGMENT(EXACT_SEARCH, SearchDocumentHandler.SECTION, "Segment"),
+		MARKET(EXACT_SEARCH, "target_market_ss", "Target Market"),
+		INDICATION(EXACT_SEARCH, "indication_ss", "Indication"),
+		TECH(EXACT_SEARCH, "technology_ss", "Technology"),
+		APPROACH(EXACT_SEARCH, "approach_ss", "Approach"),
+		CLASSIFICATION(EXACT_SEARCH, "classification_ss", "Classification"),
+		INTREG(EXACT_SEARCH, "intregionnm_ss", "International Region"),
+		INTPATH(EXACT_SEARCH, "intpathnm_ss", "International Path"),
+		INTSTATUS(EXACT_SEARCH, "intstatusnm_ss", "International Status"),
+		USPATH(EXACT_SEARCH, "uspathnm_ss", "US Path"),
+		USSTATUS(EXACT_SEARCH, "usstatusnm_ss", "US Status"),
+		ALLY(CONTAINS_SEARCH, "allysearch_ss", "Ally"),
+		OWNERSHIP(EXACT_SEARCH, "ownership_s", "Owner"),
+		ID(EXACT_SEARCH, SearchDocumentHandler.DOCUMENT_ID, "Product Id");
 
-		private boolean contains;
+		private int searchType;
 		private String solrField;
 		private String fieldName;
 
-		SearchField(boolean contains, String solrField, String fieldName) {
-			this.contains = contains;
+		SearchField(int searchType, String solrField, String fieldName) {
+			this.searchType = searchType;
 			this.solrField = solrField;
 			this.fieldName = fieldName;
 		}
@@ -107,8 +117,8 @@ public class ProductExplorer extends SBActionAdapter {
 			return fieldName;
 		}
 
-		public boolean isContains() {
-			return contains;
+		public int getSearchType() {
+			return searchType;
 		}
 	}
 
@@ -364,7 +374,7 @@ public class ProductExplorer extends SBActionAdapter {
 			if (!enumNames.contains(name) || StringUtil.isEmpty(req.getParameter(name))) continue;
 
 			SearchField search = SearchField.valueOf(name);
-			String value = buildValues(req.getParameterValues(name), search.isContains());
+			String value = buildValues(req.getParameterValues(name), search.getSearchType());
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, search.getSolrField(), value, BooleanType.AND));
 		}
 	}
@@ -376,62 +386,40 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @param contains
 	 * @return
 	 */
-	protected String buildValues(String[] parameterValues, boolean contains) {
-
-		if (contains) {
-			return buildContainsValue(parameterValues);
-		} else {
-			return buildExactValue(parameterValues);
-		}
-	}
-
-
-	/**
-	 * Format the value for a proper contains search
-	 * @param parameterValues
-	 * @return
-	 */
-	protected String buildContainsValue(String[] parameterValues) {
-
+	protected String buildValues(String[] parameterValues, int searchType) {
 		StringBuilder value = new StringBuilder(50);
-		if (parameterValues.length == 1) {
-			String singleValue = parameterValues[0];
-			for (String s : singleValue.split(" ")) {
-				if (value.length() > 2) value.append(" and ");
-				value.append("*").append(StringEscapeUtils.unescapeHtml(s).replace(" ", "\\ ").toLowerCase()).append("*");
-			}
-			return value.toString();
-		}
-
 		value.append("(");
 		for (String s : parameterValues) {
 			if (value.length() > 2) value.append(" or ");
-			value.append("*").append(StringEscapeUtils.unescapeHtml(s).replace(" ", "\\ ").toLowerCase()).append("*");
+			value.append(getSearchValue(s, searchType));
 		}
 		value.append(")");
 
 		return value.toString();
 	}
-
-
+	
+	
 	/**
-	 * Format the parameter properly for an exact match search
-	 * @param parameterValues
-	 * @return
+	 * Create a solr search term from the supplied term.
 	 */
-	protected String buildExactValue(String[] parameterValues) {
-
-		if (parameterValues.length == 1) return "\"" + StringEscapeUtils.unescapeHtml(parameterValues[0]).replace("(", "\\(").replace(")", "\\)") + "\"";
-
-		StringBuilder value = new StringBuilder(50);
-		value.append("(");
-		for (String s : parameterValues) {
-			if (value.length() > 2) value.append(" or ");
-			value.append("\"").append(StringEscapeUtils.unescapeHtml(s).replace("(", "\\(").replace("(", "\\)")).append("\"");
+	protected String getSearchValue(String searchTerm, int searchType) {
+		StringBuilder finalTerm = new StringBuilder(searchTerm.length() + 2);
+		
+		String editedTerm = StringEscapeUtils.unescapeHtml(searchTerm).replace("(", "\\(").replace("(", "\\)");
+		
+		switch (searchType) {
+		case CONTAINS_SEARCH:
+			finalTerm.append("*").append(editedTerm.toLowerCase()).append("*");
+			break;
+		case BEGIN_SEARCH:
+			finalTerm.append(editedTerm.toLowerCase()).append("*");
+			break;
+		case EXACT_SEARCH:
+			finalTerm.append("\"").append(editedTerm).append("\"");
+			break;
 		}
-		value.append(")");
-
-		return value.toString();
+		
+		return finalTerm.toString();
 	}
 
 
@@ -620,7 +608,14 @@ public class ProductExplorer extends SBActionAdapter {
 	 */
 	protected void exportResults(ActionRequest req) throws ActionException {
 		AbstractSBReportVO report = new ProductExplorerReportVO();
-		report.setData(retrieveProducts(req, true).getResultDocuments());
+		Map<String, Object> data = new HashMap<>();
+		data.put("data", retrieveProducts(req, true).getResultDocuments());
+		if (req.getCookie("explorercolumns") != null) {
+			data.put("columns", req.getCookie("explorercolumns").getValue());
+		} else {
+			data.put("columns", DEFAULT_COLUMNS);
+		}
+		report.setData(data);
 		report.setFileName("Product Set " + Convert.getCurrentTimestamp() + ".xls");
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
