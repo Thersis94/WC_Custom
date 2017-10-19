@@ -228,12 +228,12 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 			if (data == null) data = new ArrayList<>();
 			data.addAll(secUpds);
 			// Ensure ordering only if we are not relying on the db's ordering
-			if (!orderSort) data = sortData(data);
+			data = sortData(data, orderSort);
 			par.setUserObject(data);
 			par.setTotalChildren(data.size());
 		} else {
 			// Ensure ordering only if we are not relying on the db's ordering
-			if (!orderSort) secUpds = sortData(secUpds);
+			secUpds = sortData(secUpds, orderSort);
 			n.setUserObject(secUpds);
 			n.setTotalChildren(secUpds.size());
 		}
@@ -251,8 +251,12 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 	 * @param data
 	 * @return
 	 */
-	private List<UpdateVO> sortData(List<UpdateVO> data) {
-		Collections.sort(data, new UpdatesEditionComparator());
+	private List<UpdateVO> sortData(List<UpdateVO> data, boolean orderSort) {
+		if (orderSort) {
+			Collections.sort(data, new UpdatesTypeComparator());
+		} else {
+			Collections.sort(data, new UpdatesEditionComparator());
+		}
 		return data;
 	}
 
