@@ -1,5 +1,6 @@
 package com.depuysynthes.action;
 
+// Java 8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,10 +9,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+// JSON
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+// WC_Custom
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
+
+// SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
@@ -22,10 +27,14 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
+// WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.tools.PageViewReportingAction;
 import com.smt.sitebuilder.action.tools.StatVO;
+import com.smt.sitebuilder.admin.action.OrganizationAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -61,7 +70,15 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		super.retrieve(req);
+		if (Convert.formatBoolean(req.getParameter("selectList"))) {
+			// admintool selectList request
+			processAdminSelectList(req);
+			return;
+		} else {
+			// default, retrieve widget data.
+			super.retrieve(req);
+		}
+		
 	}
 
 
@@ -485,5 +502,87 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 			throw new InvalidDataException(e);
 		}
 		return values;
+	}
+	
+	/**
+	 * Retrieves/builds select list data for the DS Product Catalog Widget
+	 * @param req
+	 */
+	private void processAdminSelectList(ActionRequest req) {
+		String catId = req.getParameter("productCatalogId");
+		StringBuilder sql = buildSelectListQuery(catId);
+		List<Node> items = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (StringUtil.isEmpty(catId)) {
+				ps.setString(1, req.getParameter(OrganizationAction.ORGANIZATION_ID));
+			} else {
+				ps.setString(1, catId);
+				ps.setString(2, catId);
+			}
+			// Use a ProductVO as generic VO for the data
+			ResultSet rs = ps.executeQuery();
+			items = parseSelectListResults(rs,catId);
+		} catch (SQLException sqle) {
+			log.error("Error retrieving product catalog items, ", sqle);
+		}
+		super.putModuleData(items);
+	}
+
+
+	/**
+	 * Builds query for list method.
+	 * @param catalogId
+	 * @return
+	 */
+	private StringBuilder buildSelectListQuery(String catalogId) {
+		StringBuilder sql;
+		if (StringUtil.isEmpty(catalogId)) {
+			sql = new StringBuilder(100);
+			sql.append("select product_catalog_id, catalog_nm from product_catalog ");
+			sql.append("where organization_id=? and status_no=5 order by catalog_nm ");
+		} else {
+			sql = new StringBuilder(500);
+			sql.append("select 1 as rank, product_catalog_id, category_nm, product_category_cd ");
+			sql.append("from PRODUCT_CATEGORY ");
+			sql.append("where PARENT_CD is null and PRODUCT_CATALOG_ID=? and category_group_id is null ");
+			sql.append("union ");
+			sql.append("select 2 as rank, a.product_catalog_id, a.category_nm, a.product_category_cd "); 
+			sql.append("from PRODUCT_CATEGORY a ");
+			sql.append("inner join product_category b on a.parent_cd=b.product_category_cd ");
+			sql.append("where b.PARENT_CD is null and b.PRODUCT_CATALOG_ID=? and a.category_group_id is null ");
+			sql.append("and b.category_group_id is null ");
+			sql.append("order by rank, category_nm ");
+		}
+		log.debug("prod cat util list query: " + sql);
+		return sql;
+	}
+
+
+	/**
+	 * Parses the result set into a List of Nodes
+	 * @param rs
+	 * @param catalogId
+	 * @return
+	 * @throws SQLException
+	 */
+	private List<Node> parseSelectListResults(ResultSet rs, String catalogId) 
+			throws SQLException {
+		Node item = null;
+		List<Node> items = new ArrayList<>();
+		while (rs.next()) {
+			item = new Node();
+			if (StringUtil.isEmpty(catalogId)) {
+				// is product catalog item
+				item.setNodeId(rs.getString("product_catalog_id"));
+				item.setNodeName(rs.getString("catalog_nm"));
+			} else {
+				// is product category item
+				item.setNodeId(rs.getString("product_category_cd"));
+				item.setNodeName(rs.getString("category_nm"));
+				item.setDepthLevel(rs.getInt("rank"));
+			}
+			items.add(item);
+		}
+		return items;
 	}
 }
