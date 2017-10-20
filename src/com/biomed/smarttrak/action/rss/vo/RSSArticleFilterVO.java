@@ -34,6 +34,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	private String filterTitleTxt;
 	private String feedGroupId;
 	private String bucketId;
+	private int matchCount;
 	private ArticleStatus articleStatus;
 	private Date createDt;
 
@@ -64,6 +65,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	public RSSArticleFilterVO(RSSArticleVO article, String feedGroupId) {
 		this.feedGroupId = feedGroupId;
 		this.rssArticleId = article.getRssArticleId();
+		this.fullArticleTxt = article.getFullArticleTxt();
 		this.titleTxt = article.getTitleTxt();
 		this.articleTxt = article.getArticleTxt();
 		this.articleStatus = ArticleStatus.O;
@@ -217,5 +219,14 @@ public class RSSArticleFilterVO extends BeanDataVO {
 
 	public void setFullArticleTxt(String fullArticleTxt) {
 		this.fullArticleTxt = fullArticleTxt;
+	}
+
+	@Column(name="match_no")
+	public int getMatchCount() {
+		return matchCount;
+	}
+
+	public void setMatchCount(int matchCount) {
+		this.matchCount = matchCount;
 	}
 }

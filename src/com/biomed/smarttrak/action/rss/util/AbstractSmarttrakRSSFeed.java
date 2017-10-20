@@ -159,7 +159,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		sql.append("insert into ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_rss_filtered_article (rss_article_filter_id, ");
 		sql.append("feed_group_id, article_status_cd, rss_article_id, filter_title_txt, ");
-		sql.append("filter_article_txt, create_dt) values(?,?,?,?,?,?,?)");
+		sql.append("filter_article_txt, create_dt, match_no) values(?,?,?,?,?,?,?,?)");
 		return sql.toString();
 	}
 
@@ -183,6 +183,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			insertData.addAll(Arrays.asList(afId, af.getFeedGroupId(), af.getArticleStatus().name()));
 			insertData.addAll(Arrays.asList(a.getRssArticleId(), StringUtil.checkVal(af.getFilterTitleTxt(), "Untitled")));
 			insertData.addAll(Arrays.asList(StringUtil.checkVal(af.getFilterArticleTxt(), "No Article Available"), Convert.getCurrentTimestamp()));
+			insertData.add(af.getMatchCount());
 			insertValues.put(afId, insertData);
 		}
 
@@ -328,6 +329,9 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			List<RSSFilterVO> ofs = oFilter.get(feedGroupId);
 			for(RSSFilterVO filter: ofs) {
 				if(checkOmitMatch(af, filter)) {
+
+					// Null out FullArticleTxt to lessen memory overhead
+					af.setFullArticleTxt(null);
 					article.addFilteredText(af);
 					return;
 				}
@@ -344,6 +348,9 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			List<RSSFilterVO> rfs = rFilter.get(feedGroupId);
 			for(RSSFilterVO filter: rfs) {
 				if(checkReqMatch(af, filter)) {
+
+					// Null out FullArticleTxt to lessen memory overhead
+					af.setFullArticleTxt(null);
 					article.addFilteredText(af);
 					return;
 				}
@@ -406,6 +413,12 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		//Build Matchers.
 		if(af.getFilterArticleTxt().contains("<span class='hit'>")) {
 			isMatch = true;
+		} else if (!StringUtil.isEmpty(af.getFullArticleTxt())) {
+			String filteredFull = af.getFullArticleTxt().replaceAll(regex.toString(), props.getProperty(REPLACE_SPAN));
+			if(filteredFull.contains("<span class='hit'>")) {
+				isMatch = true;
+				af.setMatchCount(filteredFull.split("<span class='hit'>").length - 1);
+			}
 		}
 		if(af.getFilterTitleTxt().contains("<span class='hit'>")) {
 			isMatch = true;
