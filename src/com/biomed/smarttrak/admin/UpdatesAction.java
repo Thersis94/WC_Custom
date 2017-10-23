@@ -280,7 +280,8 @@ public class UpdatesAction extends ManagementAction {
 
 		req.setParameter("fieldSort", order.getSolrField());
 		req.setParameter("sortDirection", dir);
-		log.debug(req.getParameter("fieldSort")+"|"+req.getParameter("sortDirection"));
+		req.setParameter("allowCustom", "true");
+		
 		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
 	}
 
