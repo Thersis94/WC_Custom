@@ -212,8 +212,6 @@ public class UpdatesAction extends ManagementAction {
 			}
 			params.add(id);
 		}
-		
-		for (Object o : params) log.debug(o);
 
 		DBProcessor db = new DBProcessor(dbConn);
 		return db.executeSelect(sql, params, new UpdateVO());
