@@ -283,8 +283,11 @@ public class UpdatesAction extends SBActionAdapter {
 			data.add(SearchDocumentHandler.PUBLISH_DATE + ":" + dates);
 
 		//Add a ModuleType filter if typeId was passed
-		if (req.hasParameter("typeId"))
-			data.add(SearchDocumentHandler.MODULE_TYPE + ":" + req.getParameter("typeId"));
+		if (req.hasParameter("typeId")) {
+			for(String s : req.getParameterValues("typeId")) {
+				data.add(SearchDocumentHandler.MODULE_TYPE + ":" + s);
+			}
+		}
 
 		//Custom Filtering for when looking at an Email View.
 		transposeEmailFilter(req);
