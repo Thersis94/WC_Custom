@@ -125,11 +125,11 @@ public class UpdatesAction extends ManagementAction {
 			if (order == null) return Order.PUBLISH_DT;
 			switch (order) {
 				case "titleTxt" : return Order.TITLE_TXT;
-				case "publishDt" : return Order.PUBLISH_DT;
 				case "statusNm" : return Order.STATUS_CD;
 				case "typeNm" : return Order.TYPE_CD;
+				case "publishDt" :
+				default : return Order.PUBLISH_DT;
 			}
-			return Order.PUBLISH_DT;
 		}
 	}
 
