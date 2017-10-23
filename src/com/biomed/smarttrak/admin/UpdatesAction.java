@@ -5,10 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrDocument;
@@ -103,18 +101,42 @@ public class UpdatesAction extends ManagementAction {
 			return this.text;
 		}
 	}
-
-	// Maps the table field name to the db field name for sorting purposes
-	private Map<String, String> sortMapper;
+	
+	// Enum for handling the ordering desired by the bootstrap table
+	private enum Order {
+		TITLE_TXT("title"), 
+		TYPE_CD("moduleType"), 
+		PUBLISH_DT("publishDate"),
+		STATUS_CD("status_cd_s");
+		
+		String solrField;
+		
+		private Order(String solrField) {
+			this.solrField = solrField;
+		}
+		
+		public String getSolrField() {
+			return solrField;
+		}
+		
+		public static Order getOrderFromString(String order) {
+			if (order == null) return Order.PUBLISH_DT;
+			switch (order) {
+				case "titleTxt" : return Order.TITLE_TXT;
+				case "statusNm" : return Order.STATUS_CD;
+				case "typeNm" : return Order.TYPE_CD;
+				case "publishDt" :
+				default : return Order.PUBLISH_DT;
+			}
+		}
+	}
 
 	public UpdatesAction() {
 		super();
-		buildSortMapper();
 	}
 
 	public UpdatesAction(ActionInitVO actionInit) {
 		super(actionInit);
-		buildSortMapper();
 	}
 
 	/*
@@ -132,14 +154,16 @@ public class UpdatesAction extends ManagementAction {
 		if(req.hasParameter("loadHistory")) {
 			data = getHistory(req.getParameter("historyId"));
 		} else {
-
+			Order order = Order.getOrderFromString(req.getParameter("sort"));
+			String dir = StringUtil.checkVal(req.getParameter("order"), "desc");
+			
 			//Get the Filtered Updates according to Request.
-			getFilteredUpdates(req);
+			getFilteredUpdates(req, order, dir);
 			
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
 			if (resp.getResultDocuments().size() > 0) {
-				data = loadDetails(resp.getResultDocuments());
+				data = loadDetails(resp.getResultDocuments(), order, dir);
 			} else {
 				data = Collections.emptyList();
 			}
@@ -170,8 +194,8 @@ public class UpdatesAction extends ManagementAction {
 	 * @param docs
 	 * @return
 	 */
-	private List<Object> loadDetails(List<SolrDocument> docs) {
-		String sql = formatDetailQuery(docs.size());
+	private List<Object> loadDetails(List<SolrDocument> docs, Order order, String dir) {
+		String sql = formatDetailQuery(docs.size(), order, dir);
 		List<Object> params = new ArrayList<>();
 		
 		for (SolrDocument doc : docs) {
@@ -191,13 +215,15 @@ public class UpdatesAction extends ManagementAction {
 	 * Ensure that the information pertaining to each update is up to date.
 	 * Even if solr has not finished processing the changes.
 	 * @param size
+	 * @param dir 
+	 * @param order
 	 * @return
 	 */
-	private String formatDetailQuery(int size) {
+	private String formatDetailQuery(int size, Order order, String dir) {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("SELECT * FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_UPDATE ");
-		sql.append("WHERE UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(")");
-		sql.append("order by publish_dt desc ");
+		sql.append("WHERE UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
+		sql.append("order by ").append(order).append(" ").append(dir);
 		
 		return sql.toString();
 	}
@@ -206,8 +232,10 @@ public class UpdatesAction extends ManagementAction {
 	/**
 	 * Set all paramters neccesary for solr to be able to properly search for the desired documents.
 	 * @param req
+	 * @param dir 
+	 * @param order
 	 */
-	private void setSolrParams(ActionRequest req) {
+	private void setSolrParams(ActionRequest req, Order order, String dir) {
 		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
 		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
 		req.setParameter("rpp", StringUtil.checkVal(rpp));
@@ -241,8 +269,9 @@ public class UpdatesAction extends ManagementAction {
 
 		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
 
-		req.setParameter("fieldSort", SearchDocumentHandler.PUBLISH_DATE);
-		req.setParameter("sortDirection", "desc");
+		req.setParameter("fieldSort", order.getSolrField());
+		req.setParameter("sortDirection", dir);
+		req.setParameter("allowCustom", "true");
 		
 		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
 	}
@@ -251,11 +280,13 @@ public class UpdatesAction extends ManagementAction {
 	 * Helper method that returns list of Updates filtered by ActionRequest
 	 * parameters.
 	 * @param req
+	 * @param dir 
+	 * @param order
 	 * @return
 	 * @throws ActionException 
 	 */
-	private void getFilteredUpdates(ActionRequest req) throws ActionException {
-		setSolrParams(req);
+	private void getFilteredUpdates(ActionRequest req, Order order, String dir) throws ActionException {
+		setSolrParams(req, order, dir);
 		// Pass along the proper information for a search to be done.
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -396,7 +427,7 @@ public class UpdatesAction extends ManagementAction {
 	protected String formatRetrieveAllQuery(String schema, String updateId) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select up.update_id, up.title_txt, up.message_txt, up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
-		sql.append("up.announcement_type, c.short_nm_txt as company_nm, prod.short_nm as product_nm, up.order_no, ");
+		sql.append("up.announcement_type, c.short_nm_txt as company_nm, prod.short_nm as product_nm, up.order_no, up.status_cd, ");
 		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
 		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, ");
 		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path, up.create_dt "); //need to pass this through for building URLs
@@ -645,17 +676,5 @@ public class UpdatesAction extends ManagementAction {
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
-	}
-
-	/**
-	 * Convert Bootstrap Table Column Names to db names. 
-	 * @return
-	 */
-	private void buildSortMapper() {
-		sortMapper = new HashMap<>();
-		sortMapper.put("titleTxt", "title_txt");
-		sortMapper.put("publishDt", "publish_dt");
-		sortMapper.put("typeNm", "type_nm");
-		sortMapper.put("statusNm", "status_cd");
 	}
 }
