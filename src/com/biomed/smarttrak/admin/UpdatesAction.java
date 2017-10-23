@@ -5,10 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrDocument;
@@ -133,17 +131,12 @@ public class UpdatesAction extends ManagementAction {
 		}
 	}
 
-	// Maps the table field name to the db field name for sorting purposes
-	private Map<String, String> sortMapper;
-
 	public UpdatesAction() {
 		super();
-		buildSortMapper();
 	}
 
 	public UpdatesAction(ActionInitVO actionInit) {
 		super(actionInit);
-		buildSortMapper();
 	}
 
 	/*
@@ -683,17 +676,5 @@ public class UpdatesAction extends ManagementAction {
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
-	}
-
-	/**
-	 * Convert Bootstrap Table Column Names to db names. 
-	 * @return
-	 */
-	private void buildSortMapper() {
-		sortMapper = new HashMap<>();
-		sortMapper.put("titleTxt", "title_txt");
-		sortMapper.put("publishDt", "publish_dt");
-		sortMapper.put("typeNm", "type_nm");
-		sortMapper.put("statusNm", "status_cd");
 	}
 }
