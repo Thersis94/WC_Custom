@@ -156,7 +156,7 @@ public class NewsroomAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select distinct bucket_id from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_rss_article where bucket_id is not null");
+		sql.append("biomedgps_rss_filtered_article where bucket_id is not null");
 		return sql.toString();
 	}
 
@@ -187,7 +187,7 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append("biomedgps_rss_article a ");
 		sql.append("inner join ").append(schema).append("biomedgps_rss_filtered_article fa ");
 		sql.append("on a.rss_article_id = fa.rss_article_id ");
-		sql.append("where article_status_cd = ? and bucket_id = ? ");
+		sql.append("where article_status_cd = ? and fa.bucket_id = ? ");
 		sql.append("order by a.create_dt desc ");
 
 		log.debug(sql.toString());
