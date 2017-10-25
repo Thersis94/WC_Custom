@@ -25,6 +25,7 @@ import com.siliconmtn.action.ActionNotAuthorizedException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.DateUtil;
@@ -65,6 +66,17 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		
+		// Check if this is a verification request from an email.
+		// If it is then the user must be logged in to reach this point
+		// and can be redirected out to the original link address here.
+		if (req.hasParameter(UpdatesEditionDataLoader.REDIRECT_DEST)) {
+			String redirect = StringEncoder.urlDecode(req.getParameter(UpdatesEditionDataLoader.REDIRECT_DEST));
+			sendRedirect(redirect, "", req);
+			return;
+		}
+		
+		
 		log.debug("Retrieving Updates Edition listings");
 
 		//check section permissions by name.
