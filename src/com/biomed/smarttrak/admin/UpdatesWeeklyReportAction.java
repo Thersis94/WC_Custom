@@ -141,7 +141,7 @@ public class UpdatesWeeklyReportAction extends UpdatesEditionAction {
 		//if reloadList is present, this is an ajax call. Flag for view.
 		if (req.hasParameter("reloadList"))
 			req.setAttribute("reload", req.getParameter("reloadList"));
-
+		req.setParameter("orderSort", "true");
 		super.retrieve(req);
 	}
 

@@ -46,6 +46,7 @@ public class FinancialDashVO extends SBModuleVO {
 	private int publishedYear;
 	private int currentQtr;
 	private int currentYear;
+	private boolean behindLatest;
 	
 	/**
 	 * The month offset from the current date, for the financial dashboard to display as current
@@ -282,6 +283,13 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
+	 * @return the behindLatest
+	 */
+	public boolean isBehindLatest() {
+		return behindLatest;
+	}
+
+	/**
 	 * @param colHeaders the colHeaders to set
 	 */
 	public void setColHeaders(FinancialDashColumnSet colHeaders) {
@@ -467,5 +475,25 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setCurrentYear(int currentYear) {
 		this.currentYear = currentYear;
+	}
+	
+	/**
+	 * @param behindLatest the behindLatest to set
+	 */
+	public void setBehindLatest(boolean behindLatest) {
+		this.behindLatest = behindLatest;
+	}
+
+	/**
+	 * Sets whether the viewed section's published year/qtr is behind the
+	 * latest system-wide published year/qtr across all sections.
+	 * 
+	 * @param data
+	 */
+	public void setBehindLatest(SectionVO data) {
+		if (getPublishedYear() < data.getFdPubYr() || (getPublishedYear() == data.getFdPubYr() && getPublishedQtr() < data.getFdPubQtr()))
+			setBehindLatest(true);
+		else
+			setBehindLatest(false);
 	}
 }

@@ -7,9 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
+import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedSegment;
 import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -37,7 +39,7 @@ public class NewsroomAction extends SBActionAdapter {
 
 	public static final String GROUP_DATA = "groupData";
 	public static final String BUCKET_DATA = "bucketData";
-
+	public static final String BUCKET_ID = "bucketId";
 	/**
 	 * 
 	 */
@@ -54,7 +56,7 @@ public class NewsroomAction extends SBActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if(req.hasParameter("isBucket") && req.hasParameter("bucketId")) {
+		if(req.hasParameter("isBucket") && req.hasParameter(BUCKET_ID)) {
 			loadBucketArticles(req);
 			loadManagers(req);
 		} else if(req.hasParameter("isBucket")) {
@@ -81,7 +83,7 @@ public class NewsroomAction extends SBActionAdapter {
 		AccountAction aa = new AccountAction(this.actionInit);
 		aa.setAttributes(getAttributes());
 		aa.setDBConnection(getDBConnection());
-		aa.loadManagerList(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		aa.loadManagerList(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA), AssigneeSection.NEWS_ROOM);
 	}
 
 	/**
@@ -108,11 +110,13 @@ public class NewsroomAction extends SBActionAdapter {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select * from ").append(schema).append("biomedgps_rss_article a ");
-		sql.append("where a.feed_group_id = ? ");
+		sql.append("inner join ").append(schema).append("biomedgps_rss_filtered_article af ");
+		sql.append("on a.rss_article_id = af.rss_article_id ");
+		sql.append("where af.feed_group_id = ? ");
 		if(hasStatusCd) {
-			sql.append("and a.article_status_cd = ? ");
+			sql.append("and af.article_status_cd = ? ");
 		}
-		sql.append("order by COALESCE(publish_dt, create_dt) desc ");
+		sql.append("order by a.create_dt desc ");
 		return sql.toString();
 	}
 
@@ -152,7 +156,7 @@ public class NewsroomAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select distinct bucket_id from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_rss_article where bucket_id is not null");
+		sql.append("biomedgps_rss_filtered_article where bucket_id is not null");
 		return sql.toString();
 	}
 
@@ -163,8 +167,8 @@ public class NewsroomAction extends SBActionAdapter {
 	private void loadBucketArticles(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
 		vals.add(ArticleStatus.F.name());
-		if(req.hasParameter("bucketId")) {
-			vals.add(req.getParameter("bucketId"));
+		if(req.hasParameter(BUCKET_ID)) {
+			vals.add(req.getParameter(BUCKET_ID));
 		} else {
 			vals.add(((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA)).getProfileId());
 		}
@@ -178,9 +182,13 @@ public class NewsroomAction extends SBActionAdapter {
 	 */
 	private String loadBucketArticlesSql() {
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_rss_article where article_status_cd = ? and bucket_id = ? ");
-		sql.append("order by COALESCE(publish_dt, create_dt) desc ");
+		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select * from ").append(schema);
+		sql.append("biomedgps_rss_article a ");
+		sql.append("inner join ").append(schema).append("biomedgps_rss_filtered_article fa ");
+		sql.append("on a.rss_article_id = fa.rss_article_id ");
+		sql.append("where article_status_cd = ? and fa.bucket_id = ? ");
+		sql.append("order by a.create_dt desc ");
 
 		log.debug(sql.toString());
 		return sql.toString();
@@ -210,10 +218,10 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append(schema).append("BIOMEDGPS_FEED_GROUP a ");
 		sql.append("inner join ").append(schema).append("BIOMEDGPS_FEED_SEGMENT b ");
 		sql.append("on a.FEED_SEGMENT_ID = b.FEED_SEGMENT_ID ");
-		sql.append("left outer join ").append(schema).append("biomedgps_rss_article d ");
+		sql.append("left outer join ").append(schema).append("biomedgps_rss_filtered_article d ");
 		sql.append("on a.feed_group_id = d.feed_group_id and d.article_status_cd = ? ");
 		sql.append("group by a.feed_segment_id, a.feed_group_id, a.feed_group_nm, b.feed_segment_id ");
-		sql.append("order by cast(b.FEED_SEGMENT_ID as int), FEED_GROUP_NM");
+		sql.append("order by b.order_no, FEED_GROUP_NM");
 		log.debug(sql.toString());
 		return sql.toString();
 	}
@@ -230,8 +238,8 @@ public class NewsroomAction extends SBActionAdapter {
 	 */
 	private void updateArticle(ActionRequest req) throws ActionException {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		boolean hasBucketId = req.hasParameter("bucketId");
-		RSSArticleVO rss = new RSSArticleVO(req);
+		boolean hasBucketId = req.hasParameter(BUCKET_ID);
+		RSSArticleFilterVO rss = new RSSArticleFilterVO(req);
 		try {
 			List<String> fields = new ArrayList<>();
 			fields.add("article_status_cd");
@@ -239,14 +247,14 @@ public class NewsroomAction extends SBActionAdapter {
 			//BucketId may be present on the request for updating.
 			if(hasBucketId) {
 				fields.add("bucket_id");
-				rss.setBucketId(StringUtil.checkVal(req.getParameter("bucketId"), null));
+				rss.setBucketId(StringUtil.checkVal(req.getParameter(BUCKET_ID), null));
 
 				//Articles can be removed from a bucket.  Allow for removal here.
 				if("null".equals(rss.getBucketId())) {
 					rss.setBucketId(null);
 				}
 			}
-			fields.add("rss_article_id");
+			fields.add("rss_article_filter_id");
 			dbp.executeSqlUpdate(getUpdateArticleSql(hasBucketId), rss, fields);
 		} catch (Exception e) {
 			log.error("Error updating article status Code", e);
@@ -261,10 +269,10 @@ public class NewsroomAction extends SBActionAdapter {
 	private String getUpdateArticleSql(boolean hasBucketId) {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_rss_article set article_status_cd = ? ");
+		sql.append("biomedgps_rss_filtered_article set article_status_cd = ? ");
 		if(hasBucketId)
 			sql.append(", bucket_id = ? ");
-		sql.append("where rss_article_id = ? ");
+		sql.append("where rss_article_filter_id = ? ");
 		return sql.toString();
 	}
 }

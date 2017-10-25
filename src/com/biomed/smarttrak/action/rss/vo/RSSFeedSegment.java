@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -22,7 +23,7 @@ import com.siliconmtn.db.orm.Table;
  * @since May 9, 2017
  ****************************************************************************/
 @Table(name="biomedgps_feed_segment")
-public class RSSFeedSegment implements Serializable {
+public class RSSFeedSegment extends BeanDataVO implements Serializable {
 
 	/**
 	 *
@@ -31,6 +32,7 @@ public class RSSFeedSegment implements Serializable {
 	private String segmentId;
 	private String segmentNm;
 	private String segmentDesc;
+	private int orderNo;
 	private Date createDt;
 	private Date updateDt;
 	private List<RSSFeedGroupVO> groups;
@@ -41,14 +43,9 @@ public class RSSFeedSegment implements Serializable {
 	}
 
 	public RSSFeedSegment(ActionRequest req) {
-		setData(req);
+		populateData(req);
 	}
 
-	protected void setData(ActionRequest req) {
-		segmentId = req.getParameter("segmentId");
-		segmentNm = req.getParameter("segmentNm");
-		segmentDesc = req.getParameter("segmentDesc");
-	}
 	/**
 	 * @return the segmentId
 	 */
@@ -71,6 +68,11 @@ public class RSSFeedSegment implements Serializable {
 	@Column(name="feed_segment_desc")
 	public String getSegmentDesc() {
 		return segmentDesc;
+	}
+
+	@Column(name="order_no")
+	public int getOrderNo() {
+		return orderNo;
 	}
 
 	/**
@@ -114,6 +116,9 @@ public class RSSFeedSegment implements Serializable {
 		this.segmentDesc = segmentDesc;
 	}
 
+	public void setOrderNo(int orderNo) {
+		this.orderNo = orderNo;
+	}
 	/**
 	 * @param createDt the createDt to set.
 	 */

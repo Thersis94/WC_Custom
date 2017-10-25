@@ -69,15 +69,15 @@ public class SearchUtilAction extends SBActionAdapter {
 		log.debug("Company Path: " + companyPath);
 		
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select '").append(companyPath).append("' + company_id, short_nm_txt from ").append(schema).append("biomedgps_company ");
+		sql.append("select '").append(companyPath).append("' + company_id, short_nm_txt, 'Companies:' as RESULT_TYPE from ").append(schema).append("biomedgps_company ");
 		sql.append("where lower(company_nm) like ? and status_no = 'P' ");
 		sql.append("union ");
-		sql.append("select '").append(productPath).append("' + product_id, short_nm from ").append(schema).append("biomedgps_product ");
+		sql.append("select '").append(productPath).append("' + product_id, short_nm, 'Products:' as RESULT_TYPE from ").append(schema).append("biomedgps_product ");
 		sql.append("where lower(product_nm) like ? and status_no = 'P' ");
 		sql.append("union ");
-		sql.append("select '").append(marketPath).append("' + market_id, market_nm from ").append(schema).append("biomedgps_market ");
+		sql.append("select '").append(marketPath).append("' + market_id, market_nm, 'Markets:' as RESULT_TYPE from ").append(schema).append("biomedgps_market ");
 		sql.append("where lower(market_nm) like ? and status_no = 'P' ");
-		sql.append("order by short_nm_txt ");
+		sql.append("order by RESULT_TYPE, short_nm_txt ");
 		log.debug("SQL: " + sql + "|" + searchData);
 		
 		List<GenericVO> data = new ArrayList<>();
@@ -86,7 +86,12 @@ public class SearchUtilAction extends SBActionAdapter {
 			ps.setString(2, searchData);
 			ps.setString(3, searchData);
 			ResultSet rs = ps.executeQuery();
+			String type = "";
 			while (rs.next()) {
+				if (!type.equals(rs.getString(3))) {
+					data.add(new GenericVO("", rs.getString(3)));
+					type = rs.getString(3);
+				}
 				data.add(new GenericVO(rs.getString(1), rs.getString(2)));
 			}
 			
