@@ -100,8 +100,10 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		DashType dashType = (DashType) req.getAttribute(FinancialDashAction.DASH_TYPE);
 		
 		FinancialDashVO dash = new FinancialDashVO();
-		dash.setCurrentQtrYear(dashType, getLatestPublish());
+		SectionVO latest = getLatestPublish();
+		dash.setCurrentQtrYear(dashType, latest);
 		dash.setData(req, sections);
+		dash.setBehindLatest(latest);
 		
 		// Filter out financial data requests (i.e initial page load vs. json call).
 		// Financial data is only needed on a json call or report request.
