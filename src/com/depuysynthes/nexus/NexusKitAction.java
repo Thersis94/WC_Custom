@@ -161,12 +161,6 @@ public class NexusKitAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		// If the user is not logged in they should not be able to edit kits.
-		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
-		if (user == null) {
-			super.putModuleData("You must be logged in to complete this action.");
-			return;
-		}
 		
 		KitAction action;
 		UUIDGenerator uuid = new UUIDGenerator();
@@ -175,6 +169,15 @@ public class NexusKitAction extends SimpleActionAdapter {
 		} catch (Exception e) {
 			throw new ActionException("unknown kit action: " + req.getParameter("kitAction"), e);
 		}
+		
+		// If the user is not logged in they should not be able to edit kits.
+		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		
+		if (user == null && action != KitAction.Load && action != KitAction.Print) {
+			super.putModuleData("You must be logged in to complete this action.");
+			return;
+		}
+		
 		List<NexusKitVO> kits;
 		try {
 			switch(action) {
