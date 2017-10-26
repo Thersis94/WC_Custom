@@ -41,6 +41,7 @@ public class UpdatesEditionDetailedEmbedAction extends UpdatesEditionAction {
 	
 	public void retrieve (ActionRequest req) throws ActionException {
 		req.setParameter("orderSort", "true");
+		req.setParameter("redirectLinks", "true");
 		super.retrieve(req);
 	}
 	
