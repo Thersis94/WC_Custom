@@ -286,13 +286,7 @@ public class UpdatesAction extends ManagementAction {
 	private void addProductCompanyData(List<Object> updates) {
 		log.debug("adding company short name and id ");
 		
-		int productCount = 0;
-		for (Object o : updates) {
-			UpdateVO up = (UpdateVO)o;
-			if (StringUtil.isEmpty(up.getProductId())) continue;
-			productCount++;
-		}
-		
+		int productCount = getProductCount(updates);
 		if (productCount == 0) return;
 		
 		StringBuilder sb = new StringBuilder(161);
@@ -316,7 +310,17 @@ public class UpdatesAction extends ManagementAction {
 		} catch(SQLException sqle) {
 			log.error("could not confirm security by id ", sqle);
 		}
+		
+		mergeResults(updates, companies);
+	}
 
+	
+	/**
+	 * Add company information to the products updates.
+	 * @param updates
+	 * @param companies
+	 */
+	private void mergeResults(List<Object> updates, Map<String, GenericVO> companies) {
 		for (Object o : updates) {
 			UpdateVO up = (UpdateVO)o;
 			if (StringUtil.isEmpty(up.getProductId())) continue;
@@ -324,6 +328,21 @@ public class UpdatesAction extends ManagementAction {
 			up.setCompanyId((String) company.getKey());
 			up.setCompanyNm((String) company.getValue());
 		}
+	}
+
+	/**
+	 * Get the count of how many updates refer to products
+	 * @param updates
+	 * @return
+	 */
+	private int getProductCount(List<Object> updates) {
+		int productCount = 0;
+		for (Object o : updates) {
+			UpdateVO up = (UpdateVO)o;
+			if (StringUtil.isEmpty(up.getProductId())) continue;
+			productCount++;
+		}
+		return productCount;
 	}
 
 	/**
