@@ -106,6 +106,26 @@ public class NewsroomConsoleAction extends NewsroomAction {
 	public void delete(ActionRequest req) throws ActionException {
 		if(req.hasParameter("delFilterGroupXr")) {
 			deleteGroupFilterXr(req.getParameter("pkId"));
+		} else if (req.hasParameter("rssEntityId")) {
+			deleteEntityGroupXr(req.getParameter("feedGroupId"), req.getParameter("rssEntityId"));
+		}
+	}
+
+	/**
+	 * @param parameter
+	 * @param parameter2
+	 */
+	private void deleteEntityGroupXr(String feedGroupId, String rssEntityId) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_feed_source_group_xr where feed_group_id = ? and rss_entity_id = ?");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, feedGroupId);
+			ps.setString(2, rssEntityId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error Deleting Feed Group Xr", e);
 		}
 	}
 
@@ -213,10 +233,10 @@ public class NewsroomConsoleAction extends NewsroomAction {
 	 */
 	private String loadFeedsSql() {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(800);
+		StringBuilder sql = new StringBuilder(825);
 
 		sql.append("select distinct on (re.rss_entity_id) re.rss_entity_id, ");
-		sql.append("rss_url, rss_feed_nm, ar.last_checked_dt, ar.title_txt ");
+		sql.append("rss_url, rss_feed_nm, re.use_filters_no, ar.last_checked_dt, ar.title_txt ");
 		sql.append("from rss_entity re ");
 		sql.append("inner join ").append(schema).append("biomedgps_feed_source_group_xr xr ");
 		sql.append("on re.rss_entity_id = xr.rss_entity_id ");
