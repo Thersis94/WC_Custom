@@ -221,8 +221,11 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	private String formatDetailQuery(int size, Order order, String dir) {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("SELECT * FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_UPDATE ");
-		sql.append("WHERE UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT * FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
+		sql.append("LEFT JOIN ").append(schema).append("BIOMEDGPS_UPDATE_SECTION xr ");
+		sql.append("on up.UPDATE_ID = xr.UPDATE_ID ");
+		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
 		sql.append("order by ").append(order).append(" ").append(dir);
 		
 		return sql.toString();
