@@ -185,14 +185,14 @@ public class UpdatesAction extends SBActionAdapter {
 		List<String> docIds = new ArrayList<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(getFavoriteUpdatesSql())) {
 			int i = 1;
-			ps.setString(i++, AdminControllerAction.Section.MARKET.toString());
 			ps.setString(i++, AdminControllerAction.Section.MARKET.toString() + "_");
+			ps.setString(i++, AdminControllerAction.Section.MARKET.toString());
 			ps.setString(i++, vo.getProfileId());
-			ps.setString(i++, AdminControllerAction.Section.PRODUCT.toString());
 			ps.setString(i++, AdminControllerAction.Section.PRODUCT.toString() + "_");
+			ps.setString(i++, AdminControllerAction.Section.PRODUCT.toString());
 			ps.setString(i++, vo.getProfileId());
-			ps.setString(i++, AdminControllerAction.Section.COMPANY.toString());
 			ps.setString(i++, AdminControllerAction.Section.COMPANY.toString() + "_");
+			ps.setString(i++, AdminControllerAction.Section.COMPANY.toString());
 			ps.setString(i++, vo.getProfileId());
 			
 			ResultSet rs = ps.executeQuery();
