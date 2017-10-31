@@ -20,6 +20,7 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.solr.AccessControlQuery;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -91,7 +92,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		String sectionId = req.getParameter("sectionId");
 		Tree t = loadTree(null);
 		t.calculateTotalChildren(t.getRootNode());
-		t.buildNodePaths();
+		t.buildNodePaths(Convert.formatBoolean(req.getParameter("useNames")));
 
 		//Place requested data on the request.
 		if (!StringUtil.isEmpty(sectionId)) {
