@@ -140,10 +140,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 
 		articles.stream().forEach(a -> this.populateFeed(a, f));
 
-		List<RSSArticleVO> nArticles = getNewArticles(f, articles, existsIds);
-
-		//Save Articles.
-		storeArticles(nArticles);
+		processArticles(f, articles, existsIds);
 	}
 
 	/**
@@ -167,8 +164,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param existsIds
 	 * @return
 	 */
-	private List<RSSArticleVO> getNewArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Map<String, Set<String>> existsIds) {
-		List<RSSArticleVO> nArticles = new ArrayList<>();
+	private void processArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Map<String, Set<String>> existsIds) {
 		for(RSSArticleVO a : articles) {
 			for(RSSFeedGroupVO fg : f.getGroups()) {
 				if(!articleExists(a.getArticleGuid(), fg.getFeedGroupId(), existsIds)) {
@@ -176,11 +172,10 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 				}
 			}
 			if(!a.getFilterVOs().isEmpty()) {
-				nArticles.add(a);
+				//Save Articles.
+				storeArticles(a);
 			}
 		}
-
-		return nArticles;
 	}
 
 

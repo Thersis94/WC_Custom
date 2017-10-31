@@ -22,6 +22,7 @@ import com.biomed.smarttrak.action.rss.vo.RSSFilterVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
@@ -140,15 +141,14 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * Method manages Saving a List of RSSArticles.
 	 * @param article
 	 */
-	protected void storeArticles(List<RSSArticleVO> articles) {
+	protected void storeArticles(RSSArticleVO a) {
 		DBProcessor dbp = new DBProcessor(dbConn, props.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		try {
-			dbp.executeBatch(getArticleInsertSql(), buildBatchVals(articles));
+			a.setRssArticleId(uuid.getUUID());
+			dbp.insert(a);
 			String sql = getArticleFilterSql();
-			for(RSSArticleVO a : articles) {
-				dbp.executeBatch(sql, buildArticleFilterVals(a));
-			}
-		} catch (DatabaseException e) {
+			dbp.executeBatch(sql, buildArticleFilterVals(a));
+		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Error Saving Articles", e);
 		}
 	}
@@ -187,45 +187,6 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		}
 
 		log.info("Number of New: " + n + "\nNumber of Rejected: " + r + "\nNumber of Omitted: " + o);
-
-		return insertValues;
-	}
-
-	/**
-	 * Method Manages building the Smarttrak RSS Article Batch Save Statement.
-	 * @return
-	 */
-	protected String getArticleInsertSql() {
-		StringBuilder sql = new StringBuilder(410);
-		sql.append("insert into ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_rss_article (rss_article_id, ");
-		sql.append("rss_entity_id, article_guid, article_txt, ");
-		sql.append("title_txt, article_url, ");
-		sql.append("publish_dt, create_dt, publication_nm, article_source_type, ");
-		sql.append("attribute1_txt) values (");
-		DBUtil.preparedStatmentQuestion(11, sql);
-		sql.append(")");
-		return sql.toString();
-	}
-
-	/**
-	 * Method manages building Map of RSSArticle values used in Batch Save Statement.
-	 * @param articles
-	 * @return
-	 */
-	protected Map<String, List<Object>> buildBatchVals(List<RSSArticleVO> articles) {
-		Map<String, List<Object>> insertValues = new HashMap<>();
-
-		for (RSSArticleVO a : articles) {
-			String aId = uuid.getUUID();
-			List<Object> insertData = new ArrayList<>();
-			insertData.addAll(Arrays.asList(aId, a.getRssEntityId()));
-			insertData.addAll(Arrays.asList(a.getArticleGuid(), a.getArticleTxt(), StringUtil.checkVal(a.getTitleTxt(), "Untitled")));
-			insertData.addAll(Arrays.asList(a.getArticleUrl(), a.getPublishDt(), Convert.getCurrentTimestamp()));
-			insertData.addAll(Arrays.asList(a.getPublicationName(), a.getArticleSourceTypeNm(), a.getAttribute1Txt()));
-			insertValues.put(aId, insertData);
-			a.setRssArticleId(aId);
-		}
 
 		return insertValues;
 	}
