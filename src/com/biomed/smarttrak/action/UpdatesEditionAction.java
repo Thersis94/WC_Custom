@@ -213,12 +213,13 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 			List<UpdateXRVO> secs = vo.getUpdateSections();
 			// Checks and storage are done with the parent id to allow updates to 
 			// appear in multiple groups while still only appearing once per group.
-			if (exclusions.contains(n.getParentId()+"_"+vo.getUpdateId()) || secs == null || secs.isEmpty()) continue;
+			String exclusionId = n.getDepthLevel() == 3? n.getNodeId() : n.getParentId();
+			if (exclusions.contains(exclusionId+"_"+vo.getUpdateId()) || secs == null || secs.isEmpty()) continue;
 			for (UpdateXRVO xrvo : secs) {
 				if (n.getNodeId().equals(xrvo.getSectionId())) {
 					secUpds.add(vo);
 					//log.debug(vo.getUpdateId() + " is comitted to " + n.getNodeName() + " &par=" + n.getParentId())
-					exclusions.add(n.getParentId()+"_"+vo.getUpdateId());
+					exclusions.add(exclusionId+"_"+vo.getUpdateId());
 				}
 			}
 		}
