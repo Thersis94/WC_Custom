@@ -271,6 +271,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 					vo.setQsPath((String)attributes.get(Constants.QS_PATH));
 					vo.setSSLFlg(rs.getInt("ssl_flg"));
 					vo.setSiteAliasUrl(rs.getString("site_alias_url"));
+					vo.setOrderNo(rs.getInt("order_no"));
 					//log.debug("loaded update: " + vo.getUpdateId())
 				}
 
