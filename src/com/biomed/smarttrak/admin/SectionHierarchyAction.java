@@ -92,7 +92,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		String sectionId = req.getParameter("sectionId");
 		Tree t = loadTree(null);
 		t.calculateTotalChildren(t.getRootNode());
-		t.buildNodePaths(Convert.formatBoolean(req.getParameter("useNames")));
+		t.buildNodePaths(Tree.DEFAULT_DELIMITER, Convert.formatBoolean(req.getParameter("useNames")));
 
 		//Place requested data on the request.
 		if (!StringUtil.isEmpty(sectionId)) {
