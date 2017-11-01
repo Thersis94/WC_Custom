@@ -564,7 +564,7 @@ public class NexusKitAction extends SimpleActionAdapter {
 			}
 
 			if (searchTerms.length() > 0) {
-				sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ? or s.GTIN_TXT like ?) ");
+				sql.append("and (LOWER(s.SET_SKU_TXT) like LOWER(?) or LOWER(s.DESCRIPTION_TXT) like LOWER(?) or s.GTIN_TXT like ?) ");
 			}
 
 			if ("loaner".equals(nexusFilter)) {
