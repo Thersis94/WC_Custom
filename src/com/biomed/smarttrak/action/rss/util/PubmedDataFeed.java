@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +16,9 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.SAXException;
 
+import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.RSSFilterAction.FilterType;
+import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFilterTerm;
@@ -78,7 +81,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 
 			if(results != null && !results.getIdList().isEmpty()) {
 				results.setQueryTerm(req);
-				processArticleList(results);
+				processArticleList(req.getFilterGroupId(), results);
 			}
 		}
 	}
@@ -136,8 +139,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	@SuppressWarnings("unchecked")
 	protected Map<String, List<RSSFilterTerm>> retrieveOmitTerms() {
 		Map<String, List<RSSFilterTerm>> terms = new HashMap<>();
-		List<Object> vals = new ArrayList<>();
-		vals.add(FilterType.O.name());
+		List<Object> vals =Arrays.asList(FilterType.O.name());
 
 		List<RSSFeedGroupVO> groups = (List<RSSFeedGroupVO>)(List<?>) new DBProcessor(dbConn, props.getProperty(Constants.CUSTOM_DB_SCHEMA)).executeSelect(getTermsSql(), vals, new RSSFeedGroupVO());
 
@@ -163,46 +165,60 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	/**
 	 * Method manages retrieving full article data for PubMed Articles contained
 	 * in the PubMedSearchResultVO.
+	 * @param feedGroupId
 	 * @param results
 	 */
-	protected void processArticleList(PubMedSearchResultVO vo) {
-		Set<String> existingIds = super.getExistingArticles(vo.getIdList(), props.getProperty(PUBMED_ENTITY_ID));
-		List<RSSArticleVO> articles = new ArrayList<>();
+	protected void processArticleList(String feedGroupId, PubMedSearchResultVO vo) {
+		Map<String, Set<String>> existsIds = getExistingArticles(vo.getIdList(), props.getProperty(PUBMED_ENTITY_ID));
 
 		//Retrieve Articles from Search.
 		List<RSSArticleVO> results = retrieveArticles(vo);
 
-		for(RSSArticleVO r : results) {
-			if(!existingIds.contains(r.getArticleGuid())) {
-				r.setArticleUrl(props.getProperty(PUBMED_ARTICLE_URL) + r.getArticleGuid());
-				r.setRssEntityId(props.getProperty(PUBMED_ENTITY_ID));
-				r.setFeedGroupId(vo.getReqTerm().getFilterGroupId());
-				articles.add(highlightMatch(r, vo.getReqTerm()));
+		for(RSSArticleVO a : results) {
+			if(!super.articleExists(a.getArticleGuid(), vo.getReqTerm().getFilterGroupId(), existsIds)) {
+				a.setArticleUrl(props.getProperty(PUBMED_ARTICLE_URL) + a.getArticleGuid());
+				a.setRssEntityId(props.getProperty(PUBMED_ENTITY_ID));
+				RSSArticleFilterVO af = buildArticleFilter(feedGroupId, a);
+				a.addFilteredText(highlightMatch(af, vo.getReqTerm()));
+				//Save Pubmed Article
+				storeArticles(a);
 			}
 		}
+	}
 
-		//Save Pubmed Article
-		super.storeArticles(articles);
+	/**
+	 * @param filterGroupId
+	 * @param a
+	 * @return
+	 */
+	private RSSArticleFilterVO buildArticleFilter(String feedGroupId, RSSArticleVO a) {
+		RSSArticleFilterVO af = new RSSArticleFilterVO();
+		af.setFeedGroupId(feedGroupId);
+		af.setArticleTxt(a.getArticleTxt());
+		af.setTitleTxt(a.getTitleTxt());
+		af.setArticleStatus(ArticleStatus.N);
+		af.setArticleUrl(a.getArticleUrl());
+		return af;
 	}
 
 	/**
 	 * Method manages highlighting the Matching Terms.
-	 * @param r
+	 * @param af
 	 * @param reqTerm
 	 */
-	private RSSArticleVO highlightMatch(RSSArticleVO r, RSSFilterTerm reqTerm) {
+	private RSSArticleFilterVO highlightMatch(RSSArticleFilterVO af, RSSFilterTerm reqTerm) {
 		StringBuilder filter = new StringBuilder(30);
 		filter.append("(?i)(").append(reqTerm.getFilterTerm()).append(")");
 
-		if(!StringUtil.isEmpty(r.getArticleTxt())) {
-			r.setFilterArticleTxt(r.getArticleTxt().replaceAll(filter.toString(), props.getProperty(REPLACE_SPAN)));
-			r.setFilterArticleTxt(r.getFilterArticleTxt().replaceAll("\n", "<br/>"));
+		if(!StringUtil.isEmpty(af.getArticleTxt())) {
+			af.setFilterArticleTxt(af.getArticleTxt().replaceAll(filter.toString(), props.getProperty(REPLACE_SPAN)));
+			af.setFilterArticleTxt(af.getFilterArticleTxt().replaceAll("\n", "<br/>"));
 		}
 
-		if(!StringUtil.isEmpty(r.getTitleTxt())) {
-			r.setFilterTitleTxt(r.getTitleTxt().replaceAll(filter.toString(), props.getProperty(REPLACE_SPAN)));
+		if(!StringUtil.isEmpty(af.getTitleTxt())) {
+			af.setFilterTitleTxt(af.getTitleTxt().replaceAll(filter.toString(), props.getProperty(REPLACE_SPAN)));
 		}
-		return r;
+		return af;
 	}
 
 	/**

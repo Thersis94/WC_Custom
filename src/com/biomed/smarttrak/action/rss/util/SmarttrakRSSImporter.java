@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.action.rss.util;
 
+import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.siliconmtn.util.CommandLineUtil;
 
 /****************************************************************************
@@ -32,11 +33,44 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 	 */
 	@Override
 	public void run() {
-		//Load Normal Feeds.
-		new RSSDataFeed(args).run();
-		//Load PubMed Feeds.
-		new PubmedDataFeed(args).run();
-		//Load Quertle Feeds.
-		new QuertleDataFeed(args).run();
+		if(args.length == 0) {
+			//Load Normal Feeds.
+			new RSSDataFeed(args).run();
+			//Load PubMed Feeds.
+			new PubmedDataFeed(args).run();
+			//Load Quertle Feeds.
+			new QuertleDataFeed(args).run();
+		} else { 
+			for(String s : args) {
+				processFeed(s);
+			}
+		}
+	}
+
+	/**
+	 * Determine the Feed we want based on the passed articleSourceType.
+	 * @param s
+	 */
+	private void processFeed(String articleSourceType) {
+		try {
+			ArticleSourceType ast = ArticleSourceType.valueOf(articleSourceType);
+			AbstractSmarttrakRSSFeed asf = null;
+			switch(ast) {
+				case PUBMED:
+					asf = new PubmedDataFeed(args);
+					break;
+				case QUERTLE:
+					asf = new QuertleDataFeed(args);
+					break;
+				case RSS:
+					asf = new RSSDataFeed(args);
+					break;
+			}
+			if(asf != null) {
+				asf.run();
+			}
+		} catch(Exception e) {
+			log.error(articleSourceType + " is not a valid Article Source Type.  Must be PUBMED, QUERTLE or RSS.");
+		}
 	}
 }

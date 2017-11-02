@@ -118,7 +118,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public Element retrieveTaxInfo(UserDataVO shippingInfo, Collection<ShoppingCartItemVO> prods, String promoCode) 
 	throws DocumentException {
-		boolean useSSL = false;
+		boolean useSSL = true;
 		if (shippingInfo == null || prods == null || prods.isEmpty()) return new DefaultElement("Tax");
 		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "tax", useSSL);
 		StringBuilder s = new StringBuilder(150);
@@ -186,7 +186,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public Element retrieveShippingInfo(String zip, Map<String, ShoppingCartItemVO> prods)
 			throws DocumentException {
-		boolean useSSL = false;
+		boolean useSSL = true;
 		// Build the URL
 		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "shipping", useSSL);
 		// Build the XML Request
@@ -208,7 +208,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public Element checkProductAvailability(ProductVO product) 
 			throws DocumentException {
-		boolean useSSL = false;
+		boolean useSSL = true;
 		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "stock", useSSL);
 		StringBuilder s = new StringBuilder();
 		s.append(BASE_XML_HEADER).append("<StockRequest>");
