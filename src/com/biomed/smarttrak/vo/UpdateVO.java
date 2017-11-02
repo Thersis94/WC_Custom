@@ -262,7 +262,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 */
 	@Column(name="market_id")
 	public String getMarketId() {
-		return marketId; 
+		return marketId;
 	}
 
 	/**
