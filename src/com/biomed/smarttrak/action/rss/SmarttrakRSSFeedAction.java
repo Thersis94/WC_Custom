@@ -221,7 +221,7 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 
 		try {
 			new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA)).executeBatch(s.toString(), insertValues);
-		} catch (InvalidDataException | DatabaseException e) {
+		} catch (DatabaseException e) {
 			log.error("Couldn't save Filter Group XRs", e);
 		}
 	}
@@ -259,7 +259,8 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 		try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, entity.getConfigUrlTxt());
 			ps.setString(2, entity.getFeedTypeId());
-			ps.setString(3, entity.getRssEntityId());
+			ps.setTimestamp(3, Convert.getCurrentTimestamp());
+			ps.setString(4, entity.getRssEntityId());
 			ps.executeUpdate();
 		}
 	}
@@ -271,8 +272,8 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 	protected String getCustomEntityUpdateSql() {
 		StringBuilder sql = new StringBuilder(175);
 		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_rss_entity set config_url_txt = ?, feed_type_id = ? ");
-		sql.append("where rss_entity_id = ? ");
+		sql.append("biomedgps_rss_entity set config_url_txt = ?, feed_type_id = ?, ");
+		sql.append("update_dt = ? where rss_entity_id = ? ");
 		return sql.toString();
 	}
 
@@ -283,8 +284,8 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 	protected String getCustomEntityInsertSql() {
 		StringBuilder sql = new StringBuilder(175);
 		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_rss_entity (config_url_txt, feed_type_id, ");
-		sql.append("rss_entity_id) values (?,?,?) ");
+		sql.append("biomedgps_rss_entity (config_url_txt, feed_type_id, create_dt, ");
+		sql.append("rss_entity_id) values (?,?,?,?) ");
 		return sql.toString();
 	}
 
