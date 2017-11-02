@@ -117,7 +117,6 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		return sb;
 	}
 
-	@SuppressWarnings("rawtypes")
 	protected StringBuilder formatDisplay(StringBuilder xml) throws Exception {
 		// Parse out the XML Data and create the root element
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();

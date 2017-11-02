@@ -116,11 +116,8 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			//If we have results, process them.
 			if (results != null && !results.isEmpty()) {
 
-				//Build Article VO's
-				List<RSSArticleVO> articles = processResults(results, searchType);
-
-				//Save Articles.
-				storeArticles(articles);
+				//Build and Save Article VO's
+				processResults(results, searchType);
 			}
 		}
 	}
@@ -131,8 +128,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * RSSArticleVOs.  Apply Filtering to VO before returning.
 	 * @param results
 	 */
-	private List<RSSArticleVO> processResults(List<ResultAttributes> results, String searchType) {
-		List<RSSArticleVO> articles = new ArrayList<>(results.size() + 1);
+	private void processResults(List<ResultAttributes> results, String searchType) {
 
 		//Load existing Article Ids for Quertle.
 		Map<String, Set<String>> ids = getExistingIds(searchType, results);
@@ -151,12 +147,11 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			a.setFullArticleTxt(null);
 
 			if(!a.getFilterVOs().isEmpty()) {
-				articles.add(a);
+				//Save Articles.
+				storeArticles(a);
 			}
 
 		}
-
-		return articles;
 	}
 
 
