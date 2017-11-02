@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.approval.AbstractApprover;
 import com.smt.sitebuilder.approval.ApprovalController.ModuleType;
@@ -69,7 +70,8 @@ public class LeihsetApprover extends AbstractApprover {
 						
 						executeQuery(activate, vo.getWcKeyId());
 						break;
-						
+					default:
+						//do nothing
 				}
 
 				vo.setSyncCompleteDt(Convert.getCurrentTimestamp());
@@ -134,7 +136,8 @@ public class LeihsetApprover extends AbstractApprover {
 			sql.append("and WC_SYNC_STATUS_CD in (?,?,?)");
 		}
 		log.debug(sql);
-		
+
+		StringEncrypter se = StringEncrypter.getInstance((String) getAttribute(Constants.ENCRYPT_KEY));
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, ModuleType.EMEALeihset.name());
 			if (status != null) {
@@ -148,10 +151,10 @@ public class LeihsetApprover extends AbstractApprover {
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next())
-				appItems.add(new ApprovalVO(rs, (String) getAttribute(Constants.ENCRYPT_KEY)));
+				appItems.add(new ApprovalVO(rs, se));
 			
 		} catch (SQLException e) {
-			log.error("Unable to get list of IFUs for approval status: " + status.toString(), e);
+			log.error("Unable to get list of IFUs for approval status: " + status, e);
 			throw new ApprovalException(e);
 		}
 		return appItems;
