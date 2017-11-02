@@ -48,9 +48,6 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 		/*Getters*/
 		public String getKeyName(){ return this.keyName; }
 	}
-	/*Instance ids for updates daily/weekly campaign*/
-	private static final String UPDATE_DAILY_INSTANCE_ID = "smarttrakUpdatesDailyInstanceId";
-	private static final String UPDATE_WEEKLY_INSTANCE_ID = "smarttrakUpdatesWeeklyInstanceId";
 	
 	/**
 	 * No-arg constructor for simple initialization
@@ -133,7 +130,7 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
 		Map<String, String> recipients = new HashMap<>();
 		recipients.put((String)emailParams.get(UpdatesEditionAction.PROFILE_ID), (String)emailParams.get("emailAddress"));
-		ecbu.sendMessage(campInstId, recipients, emailParams);
+		ecbu.sendMessage(emailParams, recipients, campInstId);
 	}
 
 
@@ -226,9 +223,9 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	private void setTimeRangeValue(ActionRequest req, KeyValueType type, Map<String, Object> config){
 		String campaignInstanceId = StringUtil.checkVal(req.getParameter("campaignInstanceId"));
 		//compare the ids. Determine time range value to assign
-		if(attributes.get(UPDATE_DAILY_INSTANCE_ID).toString().contains(campaignInstanceId)){
+		if(campaignInstanceId.contains("DAILY")){
 			config.put(type.getKeyName(), "daily");	
-		}else if(attributes.get(UPDATE_WEEKLY_INSTANCE_ID).toString().contains(campaignInstanceId)){
+		}else if(campaignInstanceId.contains("WEEKLY")){
 			config.put(type.getKeyName(), "weekly");	
 		}
 	}

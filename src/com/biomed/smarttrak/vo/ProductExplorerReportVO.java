@@ -40,6 +40,8 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 	
 	Collection<SolrDocument> data;
 	
+	private String excludeColumns;
+	
 	// Member Variables
 	Map<String, Object> solrAttribs = new HashMap<>();
 	CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder(); 
@@ -147,81 +149,124 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 		for (SolrDocument doc : data) {
 			Row row = sheet.createRow(i++);
 			int j = 0;
-			Cell cell = row.createCell(j++);
-			cell.setCellValue((String)doc.getFieldValue(SearchDocumentHandler.TITLE));
-			if (i%2 == 1)cell.setCellStyle(alternate);
+			Cell cell = null;
 			
-			cell = row.createCell(j++);
-			cell.setCellValue((String)doc.getFieldValue("company_s"));
-			if (i%2 == 1)cell.setCellStyle(alternate);
-
-			cell = row.createCell(j++);
-			cell.setCellValue(buildContentList(doc.getFieldValues("sectionname_ss")));
-			if (i%2 == 1)cell.setCellStyle(alternate);
-
-			cell = row.createCell(j++);
-			cell.setCellValue(buildContentList(doc.getFieldValues("target_market_ss")));
-			if (i%2 == 1)cell.setCellStyle(alternate);
-
-			cell = row.createCell(j++);
-			cell.setCellValue(buildContentList(doc.getFieldValues("indication_ss")));
-			if (i%2 == 1)cell.setCellStyle(alternate);
-
-			cell = row.createCell(j++);
-			cell.setCellValue(buildContentList(doc.getFieldValues("classification_ss")));
-			if (i%2 == 1)cell.setCellStyle(alternate);
-
-			cell = row.createCell(j++);
-			cell.setCellValue(buildContentList(doc.getFieldValues("technology_ss")));
-			if (i%2 == 1)cell.setCellStyle(alternate);
-
-			cell = row.createCell(j++);
-			cell.setCellValue(buildContentList(doc.getFieldValues("approach_ss")));
-			if (i%2 == 1)cell.setCellStyle(alternate);
-
-			cell = row.createCell(j++);
-			cell.setCellValue(buildContentList(doc.getFieldValues("uspathnm_ss")));
-			if (i%2 == 0) {
-				cell.setCellStyle(alternateGreen);
-			} else {
-				cell.setCellStyle(green);
+			if (!excludeColumns.contains("1")) {
+				cell = row.createCell(j++);
+				cell.setCellValue((String)doc.getFieldValue(SearchDocumentHandler.TITLE));
+				if (i%2 == 1)cell.setCellStyle(alternate);
 			}
 
-			cell = row.createCell(j++);
-			cell.setCellValue(buildContentList(doc.getFieldValues("usstatusnm_ss")));
-			if (i%2 == 0) {
-				cell.setCellStyle(alternateGreen);
-			} else {
-				cell.setCellStyle(green);
+			if (!excludeColumns.contains("2")) {
+				cell = row.createCell(j++);
+				cell.setCellValue((String)doc.getFieldValue("company_s"));
+				if (i%2 == 1)cell.setCellStyle(alternate);
 			}
 
-			cell = row.createCell(j++);
-			cell.setCellValue(buildContentList(doc.getFieldValues("intregionnm_ss")));
-			if (i%2 == 0) {
-				cell.setCellStyle(alternateBlue);
-			} else {
-				cell.setCellStyle(blue);
+			if (!excludeColumns.contains("b")) {
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("ownership_s")));
+				if (i%2 == 1)cell.setCellStyle(alternate);
 			}
 
-			cell = row.createCell(j++);
-			cell.setCellValue(buildContentList(doc.getFieldValues("intpathnm_ss")));
-			if (i%2 == 0) {
-				cell.setCellStyle(alternateBlue);
-			} else {
-				cell.setCellStyle(blue);
+
+			if (!excludeColumns.contains("3")) {
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("sectionname_ss")));
+				if (i%2 == 1)cell.setCellStyle(alternate);
 			}
 
-			cell = row.createCell(j++);
-			cell.setCellValue(buildContentList(doc.getFieldValues("intstatusnm_ss")));
-			if (i%2 == 0) {
-				cell.setCellStyle(alternateBlue);
-			} else {
-				cell.setCellStyle(blue);
+			if (!excludeColumns.contains("4")) {
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("target_market_ss")));
+				if (i%2 == 1)cell.setCellStyle(alternate);
 			}
 
-			cell = row.createCell(j++);
-			cell.setCellValue(buildAllyList(doc));
-			if (i%2 == 1)cell.setCellStyle(alternate);
+			if (!excludeColumns.contains("5")) {
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("indication_ss")));
+				if (i%2 == 1)cell.setCellStyle(alternate);
+			}
+
+			if (!excludeColumns.contains("6")) {
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("classification_ss")));
+				if (i%2 == 1)cell.setCellStyle(alternate);
+			}
+
+			if (!excludeColumns.contains("7")) {
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("technology_ss")));
+				if (i%2 == 1)cell.setCellStyle(alternate);
+			}
+
+			if (!excludeColumns.contains("8")) {
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("approach_ss")));
+				if (i%2 == 1)cell.setCellStyle(alternate);
+			}
+
+			if (!excludeColumns.contains("9")) {
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("uspathnm_ss")));
+				if (i%2 == 0) {
+					cell.setCellStyle(alternateGreen);
+				} else {
+					cell.setCellStyle(green);
+				}
+			}
+
+			if (!excludeColumns.contains("e")) {
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("usstatusnm_ss")));
+				if (i%2 == 0) {
+					cell.setCellStyle(alternateGreen);
+				} else {
+					cell.setCellStyle(green);
+				}
+				
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("intregionnm_ss")));
+				if (i%2 == 0) {
+					cell.setCellStyle(alternateBlue);
+				} else {
+					cell.setCellStyle(blue);
+				}
+				
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("intpathnm_ss")));
+				if (i%2 == 0) {
+					cell.setCellStyle(alternateBlue);
+				} else {
+					cell.setCellStyle(blue);
+				}
+				
+				cell = row.createCell(j++);
+				cell.setCellValue(buildContentList(doc.getFieldValues("intstatusnm_ss")));
+				if (i%2 == 0) {
+					cell.setCellStyle(alternateBlue);
+				} else {
+					cell.setCellStyle(blue);
+				}
+			}
+			
+			if (!excludeColumns.contains("c")) {
+				cell = row.createCell(j++);
+				cell.setCellValue((String)doc.getFieldValue(SearchDocumentHandler.COUNTRY));
+				if (i%2 == 1)cell.setCellStyle(alternate);
+			}
+			
+			if (!excludeColumns.contains("d")) {
+				cell = row.createCell(j++);
+				cell.setCellValue((String)doc.getFieldValue(SearchDocumentHandler.STATE));
+				if (i%2 == 1)cell.setCellStyle(alternate);
+			}
+
+			if (!excludeColumns.contains("a")) {
+				cell = row.createCell(j++);
+				cell.setCellValue(buildAllyList(doc));
+				if (i%2 == 1)cell.setCellStyle(alternate);
+			}
 		}
 	}
 	
@@ -281,20 +326,70 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 	 */
 	private void createHeader(Sheet sheet, Workbook wb) {
 		List<String> headers = new ArrayList<>();
-		headers.add("Product Name");
-		headers.add("Company");
-		headers.add("Segment");
-		headers.add("Target Market");
-		headers.add("Indication");
-		headers.add("Classification");
-		headers.add("Technology");
-		headers.add("Approach");
-		headers.add("Us Path");
-		headers.add("US Status");
-		headers.add("International Region");
-		headers.add("International Path");
-		headers.add("International Status");
-		headers.add("Strategic Alliances");
+		int count = 0;
+		int green = 0;
+		int blue = 0;
+		if (!excludeColumns.contains("1")){
+			count++;
+			headers.add("Product Name");
+		}
+		if (!excludeColumns.contains("2")){
+			count++;
+			headers.add("Company");
+		}
+		if (!excludeColumns.contains("b")){
+			count++;
+			headers.add("Ownership");
+		}
+		if (!excludeColumns.contains("3")){
+			count++;
+			headers.add("Segment");
+		}
+		if (!excludeColumns.contains("4")){
+			count++;
+			headers.add("Target Market");
+		}
+		if (!excludeColumns.contains("5")){
+			count++;
+			headers.add("Indication");
+		}
+		if (!excludeColumns.contains("6")){
+			count++;
+			headers.add("Classification");
+		}
+		if (!excludeColumns.contains("7")){
+			count++;
+			headers.add("Technology");
+		}
+		if (!excludeColumns.contains("8")){
+			count++;
+			headers.add("Approach");
+		}
+		if (!excludeColumns.contains("9")){
+			green = count;
+			count += 2;
+			headers.add("Us Path");
+			headers.add("US Status");
+		}
+		if (!excludeColumns.contains("e")){
+			blue = count;
+			count += 3;
+			headers.add("International Region");
+			headers.add("International Path");
+			headers.add("International Status");
+		}
+		if (!excludeColumns.contains("c")){
+			count++;
+			headers.add("Country");
+		}
+		if (!excludeColumns.contains("d")){
+			count++;
+			headers.add("State");
+		}
+		if (!excludeColumns.contains("a")){
+			count++;
+			headers.add("Strategic Alliances");
+		}
 		
 		Row row = sheet.createRow(0);
 		Cell cell;
@@ -307,11 +402,16 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 			cell.setCellStyle(header);
 		}
 
-		row.getCell(8).setCellStyle(headerGreen);
-		row.getCell(9).setCellStyle(headerGreen);
-		row.getCell(10).setCellStyle(headerBlue);
-		row.getCell(11).setCellStyle(headerBlue);
-		row.getCell(12).setCellStyle(headerBlue);
+		if(green != 0) {
+			row.getCell(green++).setCellStyle(headerGreen);
+			row.getCell(green).setCellStyle(headerGreen);
+		}
+
+		if(blue != 0) {
+			row.getCell(blue++).setCellStyle(headerBlue);
+			row.getCell(blue++).setCellStyle(headerBlue);
+			row.getCell(blue).setCellStyle(headerBlue);
+		}
 	}
 
 	
@@ -322,8 +422,9 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 	@Override
 	public void setData(Object o) {
 		if (o == null) return;
-		if (!(o instanceof Collection)) return;
-		data = (Collection<SolrDocument>) o;
+		if (!(o instanceof Map)) return;
+		excludeColumns = (String) ((Map<String, Object>)o).get("columns");
+		data = (Collection<SolrDocument>) ((Map<String, Object>)o).get("data");
 	}
 	
 	

@@ -12,6 +12,7 @@ import java.util.Map;
 
 import com.biomed.smarttrak.admin.vo.AuditLogVO;
 
+import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -140,7 +141,7 @@ public class AuditLogAction extends SBActionAdapter {
 		AccountAction acctAct = new AccountAction(this.actionInit);
 		acctAct.setAttributes(this.attributes);
 		acctAct.setDBConnection(dbConn);
-		acctAct.loadManagerList(req, custom);
+		acctAct.loadManagerList(req, custom, AssigneeSection.AUDIT_LOG);
 	}
 	
 	/**
