@@ -1,10 +1,14 @@
 package com.biomed.smarttrak.action.rss.vo;
 
 import java.io.Serializable;
+import java.sql.ResultSet;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
-import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -20,36 +24,37 @@ import com.siliconmtn.db.orm.Table;
  * @since May 19, 2017
  ****************************************************************************/
 @Table(name="biomedgps_rss_article")
-public class RSSArticleVO implements Serializable {
+public class RSSArticleVO extends BeanDataVO implements Serializable {
 
 	public enum ArticleSourceType {RSS, PUBMED, QUERTLE}
 	private static final long serialVersionUID = 3528944442225589967L;
+	private Map<String, RSSArticleFilterVO> filteredText;
 	private String rssArticleId;
-	private String feedGroupId;
 	private String rssEntityId;
 	private String articleGuid;
 	private String articleTxt;
-	private String filterArticleTxt;
+	private String fullArticleTxt;
 	private String titleTxt;
-	private String filterTitleTxt;
 	private String articleUrl;
 	private String publicationName;
-	private String bucketId;
 	private String attribute1Txt;
-	private String attribute2Txt;
 	private ArticleSourceType articleSourceType;
-	private ArticleStatus articleStatus;
 	private Date publishDt;
 	private Date createDt;
 
 	public RSSArticleVO() {
-		
+		super();
+		filteredText = new HashMap<>();
 	}
 
 	public RSSArticleVO(ActionRequest req) {
-		rssArticleId = req.getParameter("rssArticleId");
-		if(req.hasParameter("articleStatusCd"))
-			articleStatus = ArticleStatus.valueOf(req.getParameter("articleStatusCd"));
+		this();
+		populateData(req);
+	}
+
+	public RSSArticleVO(ResultSet rs) {
+		this();
+		populateData(rs);
 	}
 
 	/**
@@ -58,26 +63,6 @@ public class RSSArticleVO implements Serializable {
 	@Column(name="rss_article_id", isPrimaryKey = true)
 	public String getRssArticleId() {
 		return rssArticleId;
-	}
-
-	/**
-	 * @return the articleStatusCd
-	 */
-	@Column(name="article_status_cd")
-	public String getArticleStatusCd() {
-		return articleStatus.name();
-	}
-
-	public ArticleStatus getArticleStatus() {
-		return articleStatus;
-	}
-
-	/**
-	 * @return the feedGroupId
-	 */
-	@Column(name="feed_group_id")
-	public String getFeedGroupId() {
-		return feedGroupId;
 	}
 
 	/**
@@ -105,27 +90,11 @@ public class RSSArticleVO implements Serializable {
 	}
 
 	/**
-	 * @return the filterArticleTxt
-	 */
-	@Column(name="filter_article_txt")
-	public String getFilterArticleTxt() {
-		return filterArticleTxt;
-	}
-
-	/**
 	 * @return the titleTxt
 	 */
 	@Column(name="title_txt")
 	public String getTitleTxt() {
 		return titleTxt;
-	}
-
-	/**
-	 * @return the filterTitleTxt
-	 */
-	@Column(name="filter_title_txt")
-	public String getFilterTitleTxt() {
-		return filterTitleTxt;
 	}
 
 	/**
@@ -143,11 +112,6 @@ public class RSSArticleVO implements Serializable {
 
 	public ArticleSourceType getArticleSourceType() {
 		return articleSourceType;
-	}
-
-	@Column(name="bucket_id")
-	public String getBucketId() {
-		return bucketId;
 	}
 
 	/**
@@ -179,34 +143,22 @@ public class RSSArticleVO implements Serializable {
 		return attribute1Txt;
 	}
 
-	@Column(name="attribute2_txt")
-	public String getAttribute2Txt() {
-		return attribute2Txt;
+	public Map<String, RSSArticleFilterVO> getFilterVOs() {
+		return filteredText;
 	}
 
+	public RSSArticleFilterVO getFilterText() {
+		return filteredText.entrySet().iterator().next().getValue();
+	}
+
+	public String getFullArticleTxt() {
+		return fullArticleTxt;
+	}
 	/**
 	 * @param rssArticleId the rssArticleId to set.
 	 */
 	public void setRssArticleId(String rssArticleId) {
 		this.rssArticleId = rssArticleId;
-	}
-
-	/**
-	 * @param articleStatusCd the articleStatusCd to set.
-	 */
-	public void setArticleStatusCd(String articleStatusCd) {
-		this.articleStatus = ArticleStatus.valueOf(articleStatusCd);
-	}
-
-	public void setArticleStatus(ArticleStatus articleStatus) {
-		this.articleStatus = articleStatus;
-	}
-
-	/**
-	 * @param feedGroupId the feedGroupId to set.
-	 */
-	public void setFeedGroupId(String feedGroupId) {
-		this.feedGroupId = feedGroupId;
 	}
 
 	/**
@@ -231,24 +183,10 @@ public class RSSArticleVO implements Serializable {
 	}
 
 	/**
-	 * @param filterArticleTxt the filterArticleTxt to set.
-	 */
-	public void setFilterArticleTxt(String filterArticleTxt) {
-		this.filterArticleTxt = filterArticleTxt;
-	}
-
-	/**
 	 * @param titleTxt the titleTxt to set.
 	 */
 	public void setTitleTxt(String titleTxt) {
 		this.titleTxt = titleTxt;
-	}
-
-	/**
-	 * @param filterTitleTxt the filterTitleTxt to set.
-	 */
-	public void setFilterTitleTxt(String filterTitleTxt) {
-		this.filterTitleTxt = filterTitleTxt;
 	}
 
 	/**
@@ -264,10 +202,6 @@ public class RSSArticleVO implements Serializable {
 
 	public void setArticleSourceType(ArticleSourceType articleSourceType) {
 		this.articleSourceType = articleSourceType;
-	}
-
-	public void setBucketId(String bucketId) {
-		this.bucketId = bucketId;
 	}
 
 	/**
@@ -292,8 +226,19 @@ public class RSSArticleVO implements Serializable {
 		this.attribute1Txt = attribute1Txt;
 	}
 
-	public void setAttribute2Txt(String attribute2Txt) {
-		this.attribute2Txt = attribute2Txt;
+	public void setFilteredText(Map<String, RSSArticleFilterVO> filteredText) {
+		this.filteredText = filteredText;
 	}
 
+	@BeanSubElement
+	public void addFilteredText(RSSArticleFilterVO vo) {
+		this.filteredText.put(vo.getFeedGroupId(), vo);
+	}
+
+	/**
+	 * @param loadArticle
+	 */
+	public void setFullArticleTxt(String fullArticleTxt) {
+		this.fullArticleTxt = fullArticleTxt;
+	}
 }

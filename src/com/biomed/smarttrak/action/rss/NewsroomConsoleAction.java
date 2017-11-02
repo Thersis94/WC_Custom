@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.vo.RSSFilterVO;
 import com.biomed.smarttrak.action.rss.vo.SmarttrakRssEntityVO;
 import com.siliconmtn.action.ActionException;
@@ -105,6 +106,26 @@ public class NewsroomConsoleAction extends NewsroomAction {
 	public void delete(ActionRequest req) throws ActionException {
 		if(req.hasParameter("delFilterGroupXr")) {
 			deleteGroupFilterXr(req.getParameter("pkId"));
+		} else if (req.hasParameter("rssEntityId")) {
+			deleteEntityGroupXr(req.getParameter("feedGroupId"), req.getParameter("rssEntityId"));
+		}
+	}
+
+	/**
+	 * @param parameter
+	 * @param parameter2
+	 */
+	private void deleteEntityGroupXr(String feedGroupId, String rssEntityId) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_feed_source_group_xr where feed_group_id = ? and rss_entity_id = ?");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, feedGroupId);
+			ps.setString(2, rssEntityId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error Deleting Feed Group Xr", e);
 		}
 	}
 
@@ -200,6 +221,8 @@ public class NewsroomConsoleAction extends NewsroomAction {
 	private void loadFeeds(String feedGroupId) {
 		List<Object> vals = new ArrayList<>();
 		vals.add(feedGroupId);
+		vals.add(ArticleStatus.O.toString());
+		vals.add(feedGroupId);
 		DBProcessor dbp = new DBProcessor(dbConn);
 		this.putModuleData(dbp.executeSelect(loadFeedsSql(), vals, new SmarttrakRssEntityVO()));
 	}
@@ -209,14 +232,27 @@ public class NewsroomConsoleAction extends NewsroomAction {
 	 * @return
 	 */
 	private String loadFeedsSql() {
-		String scheme = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select distinct on (re.rss_entity_id) * from rss_entity re ");
-		sql.append("left join ").append(scheme).append("biomedgps_rss_article a ");
-		sql.append("on a.rss_entity_id = re.rss_entity_id ");
-		sql.append("inner join ").append(scheme).append("biomedgps_feed_source_group_xr xr ");
-		sql.append("on re.rss_entity_id = xr.rss_entity_id where xr.feed_group_id = ?");
-		sql.append("order by re.rss_entity_id, a.publish_dt ");
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(825);
+
+		sql.append("select distinct on (re.rss_entity_id) re.rss_entity_id, ");
+		sql.append("rss_url, rss_feed_nm, re.use_filters_no, ar.last_checked_dt, ar.title_txt ");
+		sql.append("from rss_entity re ");
+		sql.append("inner join ").append(schema).append("biomedgps_feed_source_group_xr xr ");
+		sql.append("on re.rss_entity_id = xr.rss_entity_id ");
+		sql.append("left outer join ( ");
+		sql.append("select fa.create_dt as last_checked_dt, a.title_txt, a.rss_entity_id, ");
+		sql.append("fa.feed_group_id, fa.article_status_cd ");
+		sql.append("from ").append(schema).append("biomedgps_rss_filtered_article fa ");
+		sql.append("inner join ").append(schema).append("biomedgps_rss_article a ");
+		sql.append("on a.rss_article_id = fa.rss_article_id ");
+		sql.append("where fa.feed_group_id = ? ");
+		sql.append("order by a.rss_entity_id, fa.create_dt desc ");
+		sql.append(") as ar ");
+		sql.append("on ar.rss_entity_id = re.rss_entity_id ");
+		sql.append("and xr.feed_group_id = ar.feed_group_id and ar.article_status_cd != ? ");
+		sql.append("where xr.feed_group_id = ? ");
+		sql.append("order by re.rss_entity_id");
 
 		return sql.toString();
 	}

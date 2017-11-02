@@ -80,7 +80,7 @@ public class SmarttrakRssEntityVO extends RSSEntityVO {
 		this.groups = groups;
 	}
 
-	@Column(name="publish_dt", isReadOnly=true)
+	@Column(name="last_checked_dt", isReadOnly=true)
 	public Date getLastChecked() {
 		return lastChecked;
 	}

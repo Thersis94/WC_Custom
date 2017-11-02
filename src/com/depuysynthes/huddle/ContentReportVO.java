@@ -57,7 +57,6 @@ public class ContentReportVO extends AbstractSBReportVO {
 	 * Build the report's content.  Loop the queries until all rows have been retrieved
 	 * @param sheet
 	 */
-	@SuppressWarnings("unchecked")
 	private void buildWorkbook(Sheet sheet) {
 		int rowNo = 0;
 		for (SolrDocument doc : data) {
