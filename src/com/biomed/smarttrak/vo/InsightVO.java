@@ -8,6 +8,7 @@ import java.util.List;
 //WC_Custom
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 //SMTBase libs
 import com.siliconmtn.action.ActionRequest;
@@ -64,6 +65,8 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	private String contentTxt;
 	private String sideContentTxt;
 	private int featuredFlg;
+	private int sectionFlg;
+	private int sliderFlg;
 	private String featuredImageTxt;
 	private String featuredProfileDocId;
 	private String profileImg;
@@ -144,6 +147,8 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 		setContentTxt(req.getParameter("contentTxt"));
 		setSideContentTxt(req.getParameter("sideContentTxt"));
 		setFeaturedFlg(Convert.formatInteger(req.getParameter("featuredFlg")));
+		setSliderFlg(Convert.formatInteger(req.getParameter("sliderFlg")));
+		setSectionFlg(Convert.formatInteger(req.getParameter("sectionFlg")));
 				
 		if (!StringUtil.isEmpty(req.getParameter("filePathText")))
 			setFeaturedImageTxt(req.getParameter("filePathText"));
@@ -211,6 +216,8 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 				super.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 			}
 		}
+		
+		if (sectionFlg == 1) super.addACLGroup(Permission.GRANT, SmarttrakRoleVO.PUBLIC_ACL);
 	}
 
 	/* (non-Javadoc)
@@ -679,5 +686,25 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	 */
 	public void setFeaturedProfileDocId(String featuredProfileDocId) {
 		this.featuredProfileDocId = featuredProfileDocId;
+	}
+
+	@Column(name="section_flg")
+	@SolrField(name="sectionFlg_i")
+	public int getSectionFlg() {
+		return sectionFlg;
+	}
+
+	public void setSectionFlg(int sectionFlg) {
+		this.sectionFlg = sectionFlg;
+	}
+
+	@Column(name="slider_flg")
+	@SolrField(name="sliderFlg_i")
+	public int getSliderFlg() {
+		return sliderFlg;
+	}
+
+	public void setSliderFlg(int visibleFlg) {
+		this.sliderFlg = visibleFlg;
 	}
 }

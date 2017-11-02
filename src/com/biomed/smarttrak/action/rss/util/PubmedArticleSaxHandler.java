@@ -11,7 +11,6 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.siliconmtn.util.Convert;
@@ -115,12 +114,11 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 
 		data.put(SearchType.F_DATE, Convert.formatDate(d, Convert.DATE_TIME_DASH_PATTERN_12HR));
 		rss.setPublicationName("PubMed");
-		rss.setArticleStatus(ArticleStatus.N);
 		rss.setArticleSourceType(ArticleSourceType.PUBMED);
 		rss.setArticleGuid(data.get(SearchType.PMID));
-		rss.setArticleTxt(StringUtil.checkVal(data.get(SearchType.ABSTRACT_TEXT)));
+		rss.setArticleTxt(StringUtil.checkVal(data.get(SearchType.ABSTRACT_TEXT)).replace("\u00a0"," "));
 		rss.setPublishDt(d);
-		rss.setTitleTxt(StringUtil.checkVal(data.get(SearchType.ARTICLE_TITLE), data.get(SearchType.TITLE)));
+		rss.setTitleTxt(StringUtil.checkVal(data.get(SearchType.ARTICLE_TITLE), data.get(SearchType.TITLE)).replace("\u00a0"," "));
 		rss.setPublicationName(data.get(SearchType.TITLE));
 		rss.setAttribute1Txt(data.get(SearchType.PUB_TYPE));
 		return rss;
