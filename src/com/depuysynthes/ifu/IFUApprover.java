@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.approval.AbstractApprover;
 import com.smt.sitebuilder.approval.ApprovalController.ModuleType;
@@ -76,7 +77,8 @@ public class IFUApprover extends AbstractApprover {
 							executeQuery(activate, vo.getWcKeyId());
 						}
 						break;
-						
+					default:
+						//do nothing
 				}
 
 				vo.setSyncCompleteDt(Convert.getCurrentTimestamp());
@@ -102,7 +104,8 @@ public class IFUApprover extends AbstractApprover {
 	 */
 	private boolean isNewVersion(ApprovalVO vo) throws ApprovalException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String newVer = "", oldVer = "";
+		String newVer = "";
+		String oldVer = "";
 		
 		StringBuilder sql = new StringBuilder(50);
 		sql.append("SELECT DEPUY_IFU_ID, VERSION_TXT FROM ").append(customDb).append("DEPUY_IFU ");
@@ -180,7 +183,8 @@ public class IFUApprover extends AbstractApprover {
 			sql.append("and WC_SYNC_STATUS_CD in (?,?,?)");
 		}
 		log.debug(sql);
-		
+
+		StringEncrypter se = StringEncrypter.getInstance((String) getAttribute(Constants.ENCRYPT_KEY));
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, ModuleType.DePuyIFU.name());
 			if (status != null) {
@@ -192,12 +196,11 @@ public class IFUApprover extends AbstractApprover {
 			}
 			
 			ResultSet rs = ps.executeQuery();
-			
 			while (rs.next())
-				appItems.add(new ApprovalVO(rs, (String) getAttribute(Constants.ENCRYPT_KEY)));
+				appItems.add(new ApprovalVO(rs, se));
 			
 		} catch (SQLException e) {
-			log.error("Unable to get list of IFUs for approval status: " + status.toString(), e);
+			log.error("Unable to get list of IFUs for approval status: " + status, e);
 			throw new ApprovalException(e);
 		}
 		return appItems;
