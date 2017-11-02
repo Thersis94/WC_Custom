@@ -170,7 +170,6 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	protected void processArticleList(String feedGroupId, PubMedSearchResultVO vo) {
 		Map<String, Set<String>> existsIds = getExistingArticles(vo.getIdList(), props.getProperty(PUBMED_ENTITY_ID));
-		List<RSSArticleVO> articles = new ArrayList<>();
 
 		//Retrieve Articles from Search.
 		List<RSSArticleVO> results = retrieveArticles(vo);
@@ -181,12 +180,10 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 				a.setRssEntityId(props.getProperty(PUBMED_ENTITY_ID));
 				RSSArticleFilterVO af = buildArticleFilter(feedGroupId, a);
 				a.addFilteredText(highlightMatch(af, vo.getReqTerm()));
-				articles.add(a);
+				//Save Pubmed Article
+				storeArticles(a);
 			}
 		}
-
-		//Save Pubmed Article
-		storeArticles(articles);
 	}
 
 	/**

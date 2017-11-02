@@ -141,16 +141,15 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * Method manages Saving a List of RSSArticles.
 	 * @param article
 	 */
-	protected void storeArticles(List<RSSArticleVO> articles) {
+	protected void storeArticles(RSSArticleVO a) {
 		DBProcessor dbp = new DBProcessor(dbConn, props.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		try {
-			dbp.executeBatch(getArticleInsertSql(), buildBatchVals(articles));
+			a.setRssArticleId(uuid.getUUID());
+			dbp.insert(a);
 			String sql = getArticleFilterSql();
-			for(RSSArticleVO a : articles) {
-				dbp.executeBatch(sql, buildArticleFilterVals(a));
-			}
-		} catch (DatabaseException e) {
-			log.error("Error Processing Code", e);
+			dbp.executeBatch(sql, buildArticleFilterVals(a));
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Error Saving Articles", e);
 		}
 	}
 
@@ -159,7 +158,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		sql.append("insert into ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_rss_filtered_article (rss_article_filter_id, ");
 		sql.append("feed_group_id, article_status_cd, rss_article_id, filter_title_txt, ");
-		sql.append("filter_article_txt, create_dt) values(?,?,?,?,?,?,?)");
+		sql.append("filter_article_txt, create_dt, match_no) values(?,?,?,?,?,?,?,?)");
 		return sql.toString();
 	}
 
@@ -183,49 +182,11 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			insertData.addAll(Arrays.asList(afId, af.getFeedGroupId(), af.getArticleStatus().name()));
 			insertData.addAll(Arrays.asList(a.getRssArticleId(), StringUtil.checkVal(af.getFilterTitleTxt(), "Untitled")));
 			insertData.addAll(Arrays.asList(StringUtil.checkVal(af.getFilterArticleTxt(), "No Article Available"), Convert.getCurrentTimestamp()));
+			insertData.add(af.getMatchCount());
 			insertValues.put(afId, insertData);
 		}
 
 		log.info("Number of New: " + n + "\nNumber of Rejected: " + r + "\nNumber of Omitted: " + o);
-
-		return insertValues;
-	}
-
-	/**
-	 * Method Manages building the Smarttrak RSS Article Batch Save Statement.
-	 * @return
-	 */
-	protected String getArticleInsertSql() {
-		StringBuilder sql = new StringBuilder(410);
-		sql.append("insert into ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_rss_article (rss_article_id, ");
-		sql.append("rss_entity_id, article_guid, article_txt, ");
-		sql.append("title_txt, article_url, ");
-		sql.append("publish_dt, create_dt, publication_nm, article_source_type, ");
-		sql.append("attribute1_txt) values (");
-		DBUtil.preparedStatmentQuestion(11, sql);
-		sql.append(")");
-		return sql.toString();
-	}
-
-	/**
-	 * Method manages building Map of RSSArticle values used in Batch Save Statement.
-	 * @param articles
-	 * @return
-	 */
-	protected Map<String, List<Object>> buildBatchVals(List<RSSArticleVO> articles) {
-		Map<String, List<Object>> insertValues = new HashMap<>();
-
-		for (RSSArticleVO a : articles) {
-			String aId = uuid.getUUID();
-			List<Object> insertData = new ArrayList<>();
-			insertData.addAll(Arrays.asList(aId, a.getRssEntityId()));
-			insertData.addAll(Arrays.asList(a.getArticleGuid(), a.getArticleTxt(), StringUtil.checkVal(a.getTitleTxt(), "Untitled")));
-			insertData.addAll(Arrays.asList(a.getArticleUrl(), a.getPublishDt(), Convert.getCurrentTimestamp()));
-			insertData.addAll(Arrays.asList(a.getPublicationName(), a.getArticleSourceTypeNm(), a.getAttribute1Txt()));
-			insertValues.put(aId, insertData);
-			a.setRssArticleId(aId);
-		}
 
 		return insertValues;
 	}
@@ -328,6 +289,9 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			List<RSSFilterVO> ofs = oFilter.get(feedGroupId);
 			for(RSSFilterVO filter: ofs) {
 				if(checkOmitMatch(af, filter)) {
+
+					// Null out FullArticleTxt to lessen memory overhead
+					af.setFullArticleTxt(null);
 					article.addFilteredText(af);
 					return;
 				}
@@ -344,6 +308,9 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			List<RSSFilterVO> rfs = rFilter.get(feedGroupId);
 			for(RSSFilterVO filter: rfs) {
 				if(checkReqMatch(af, filter)) {
+
+					// Null out FullArticleTxt to lessen memory overhead
+					af.setFullArticleTxt(null);
 					article.addFilteredText(af);
 					return;
 				}
@@ -406,6 +373,12 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		//Build Matchers.
 		if(af.getFilterArticleTxt().contains("<span class='hit'>")) {
 			isMatch = true;
+		} else if (!StringUtil.isEmpty(af.getFullArticleTxt())) {
+			String filteredFull = af.getFullArticleTxt().replaceAll(regex.toString(), props.getProperty(REPLACE_SPAN));
+			if(filteredFull.contains("<span class='hit'>")) {
+				isMatch = true;
+				af.setMatchCount(filteredFull.split("<span class='hit'>").length - 1);
+			}
 		}
 		if(af.getFilterTitleTxt().contains("<span class='hit'>")) {
 			isMatch = true;
