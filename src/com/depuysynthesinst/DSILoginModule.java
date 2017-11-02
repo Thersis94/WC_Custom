@@ -19,6 +19,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.DBLoginLockoutModule;
 import com.smt.sitebuilder.security.SAMLLoginModule;
 
 /****************************************************************************
@@ -50,7 +51,9 @@ public class DSILoginModule extends SAMLLoginModule {
 	 */
 	@Override
 	public UserDataVO authenticateUser(String user, String pwd) throws AuthenticationException {
-
+		//test for lockout.  Added per DePuy BPRA requirement  -JM- 10.27.2017
+		testForLockout(user);
+		
 		DSIUserDataVO dsiUser = new DSIUserDataVO(super.authenticateUser(user, pwd));
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 
@@ -66,6 +69,21 @@ public class DSILoginModule extends SAMLLoginModule {
 
 		log.debug("loaded dsiUser " + dsiUser.getEmailAddress());
 		return dsiUser.getUserDataVO();
+	}
+
+
+	/**
+	 * use the WC core to verify the user shouldn't be locked-out
+	 * @throws AuthenticationException 
+	 * 
+	 */
+	private void testForLockout(String username) throws AuthenticationException {
+		//allow SAML to slide through
+		ActionRequest req = (ActionRequest)getAttribute(GlobalConfig.ACTION_REQUEST);
+		if (req.hasParameter("initiateSSO") || req.hasParameter("SAMLResponse")) return;
+		
+		DBLoginLockoutModule lockoutMod = new DBLoginLockoutModule(getAttributes());
+		lockoutMod.testForLockout(username);
 	}
 
 

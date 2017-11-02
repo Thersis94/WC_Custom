@@ -526,11 +526,6 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		
 		updateAllScenarios(baseData, overlayData, dashVO, yearCnt);
 		updateBaseData(baseData, overlayData, dashVO.getColHeaders());
-		
-		// Handle option to set the section current to the specified value while publishing
-		if (Convert.formatBoolean(req.getParameter("setCurrentQtr"))) {
-			setCurrentQtr(req);
-		}
 	}
 	
 	/**

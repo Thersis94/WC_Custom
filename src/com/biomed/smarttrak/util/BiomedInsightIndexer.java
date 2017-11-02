@@ -52,7 +52,7 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 		// job or right to close it.
 		SolrActionUtil util = new SmarttrakSolrUtil(server);
 		try {
-			util.addDocuments(getDocuments(null));
+			util.addDocuments(getDocuments());
 		} catch (Exception e) {
 			throw new SolrException(ErrorCode.BAD_REQUEST, e);
 		}
@@ -64,11 +64,11 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addSingleItem(java.lang.String)
 	 */
 	@Override
-	public void addSingleItem(String itemId) {
-		log.debug("Adding single insight: " + itemId);
+	public void indexItems(String ...itemIds) {
+		log.debug("Adding single insight: " + itemIds);
 		SolrClient server = makeServer();
 		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
-			util.addDocuments(getDocuments(itemId));
+			util.addDocuments(getDocuments(itemIds));
 			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
 		} catch (Exception e) {
 			throw new SolrException(ErrorCode.BAD_REQUEST, e);
@@ -87,14 +87,14 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 
 
 	@SuppressWarnings("unchecked")
-	private List<SolrDocumentVO> getDocuments(String documentId) {
+	private List<SolrDocumentVO> getDocuments(String... documentIds) {
 		InsightAction ia = new InsightAction();
 		ia.setDBConnection(new SMTDBConnection(dbConn));
 		Map<String, Object> attributes = new HashMap<>();
 		for (final String name: config.stringPropertyNames())
 			attributes.put(name, config.getProperty(name));
 		ia.setAttributes(attributes);
-		List<Object> list = ia.getInsights(documentId, InsightVO.InsightStatusCd.P.name(), null, null, true);
+		List<Object> list = ia.loadForSolr(documentIds);
 
 		//Load the Section Tree and set all the Hierarchies.
 		SmarttrakTree t = ia.loadDefaultTree();
