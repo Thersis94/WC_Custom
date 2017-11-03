@@ -104,6 +104,7 @@ public class LeihsetAction extends SBActionAdapter {
 		//if we're loading a single Leihset, load the category tree
 		for (LeihsetVO vo : list) {
 			vo.setCategoryTree(ca.loadCategoryTree(vo.getLeihsetId()));
+			vo.parseBusinessUnitsFromCategoryTree();
 		}
 		if (list.isEmpty()) { //add form
 			req.setAttribute("categories",  ca.loadCategoryTree(null));
