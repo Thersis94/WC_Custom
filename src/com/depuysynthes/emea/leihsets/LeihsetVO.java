@@ -59,6 +59,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	private String categoryName;
 	private String parentCategoryName;
 	private Tree categoryTree;
+	private String businessUnits;
 
 	public LeihsetVO() {
 		assets = new LinkedHashMap<>();
@@ -191,11 +192,11 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	}
 
 	public List<LeihsetVO> getAssets() {
-		return new ArrayList<LeihsetVO>(assets.values());
+		return new ArrayList<>(assets.values());
 	}
 
 	public List<LeihsetVO> getMaterials() {
-		return new ArrayList<LeihsetVO>(materials.values());
+		return new ArrayList<>(materials.values());
 	}
 	
 	private void addAsset(LeihsetVO vo) {
@@ -336,9 +337,27 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 		this.categoryTree = categoryTree;
 	}
 
+	/**
+	 * @return the businessUnits
+	 */
 	public String getBusinessUnits() {
+		return businessUnits;
+	}
+
+	/**
+	 * @param businessUnits the businessUnits to set
+	 */
+	public void setBusinessUnits(String businessUnits) {
+		this.businessUnits = businessUnits;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public void parseBusinessUnitsFromCategoryTree() {
 		Tree t = getCategoryTree();
-		if (t == null || t.getRootNode() == null) return null;
+		if (t == null || t.getRootNode() == null) return;
 		
 		Set<String> bizUnits = new HashSet<>();
 		StringBuilder sb = new StringBuilder(100);
@@ -355,7 +374,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 			if (sb.length() > 0) sb.append(", ");
 			sb.append(s);
 		}
-		return sb.toString();
+		businessUnits = sb.toString();
 	}
 
 	public String getCategoryName() {
