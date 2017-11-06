@@ -6,9 +6,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.biomed.smarttrak.action.AdminControllerAction;
 
 // SMTBaseLibs
@@ -154,49 +156,95 @@ public class AccountAction extends SBActionAdapter {
 
 
 	/**
-	 * method overloading so only methods that want the managers titles get them.  
+	 * method overloading so callers receive an un-filtered list of Biomed Staff(managers)  
 	 * @param req
 	 * @param schema
-	 * @throws ActionException
 	 */
 	public void loadManagerList(ActionRequest req, String schema) {
 		loadManagerList(req, schema, false);
 	}
 
+	/**
+	 * method overloading so callers receive a list of Biomed Staff(managers). Pass 
+	 * true to ensure users have a title  
+	 * @param req
+	 * @param schema
+	 * @param loadTitles
+	 */
+	public void loadManagerList(ActionRequest req, String schema, boolean loadTitles) {
+		loadManagerList(req, schema, loadTitles, null);
+	}
+	
+	/**
+	 * method overloading so callers receive a list of Biomed Staff(managers). Takes 
+	 * an AssigneeSection to load managers from that appropriate section only
+	 * @param req
+	 * @param schema
+	 * @param section
+	 */
+	public void loadManagerList(ActionRequest req, String schema, AssigneeSection section) {
+		loadManagerList(req, schema, false, section);
+	}
 
 	/**
 	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
 	 * @param req
-	 * @throws ActionException
+	 * @param schema
+	 * @param loadTitles - Set to true to ensure managers have a title
+	 * @param section - AssigneeSection enum constant to filter list down to members with that assignee flag
 	 */
-	protected void loadManagerList(ActionRequest req, String schema, boolean loadTitles) {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select newid() as account_id, a.profile_id as owner_profile_id, a.first_nm, a.last_nm ");
-		if (loadTitles) sql.append(", rd.value_txt as title ");
-		sql.append("from profile a ");
-		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=? ");
-		sql.append("inner join ").append(schema).append("biomedgps_user u on a.profile_id=u.profile_id and u.active_flg=1 "); //only active users
-		if (loadTitles)  {
-			sql.append("inner join register_submittal rsub on rsub.profile_id=a.profile_id ");
-			sql.append("inner join register_data rd on rd.register_submittal_id=rsub.register_submittal_id and rd.register_field_id=? ");
-		}
-		sql.append("and b.site_id=? and b.role_id=?");
-		log.debug(sql);
+	public void loadManagerList(ActionRequest req, String schema, boolean loadTitles, AssigneeSection section) {
+		//build the query
+		String sql = buildManagerSQL(schema, loadTitles, section);
 
 		List<Object> params = new ArrayList<>();
 		params.add(SecurityController.STATUS_ACTIVE);
 		if (loadTitles) params.add(UserVO.RegistrationMap.TITLE.getFieldId());
+		if (section != null){
+			params.add(UserVO.RegistrationMap.ASSIGNEESECTIONS.getFieldId());
+			params.add(section.getOptionValue());
+		}
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
 		params.add(AdminControllerAction.STAFF_ROLE_ID);
-
+		
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  accounts = db.executeSelect(sql.toString(), params, new AccountVO());
+		List<Object>  accounts = db.executeSelect(sql, params, new AccountVO());
 		log.debug("loaded " + accounts.size() + " managers");
 
 		//decrypt the owner profiles
 		decryptNames(accounts);
 		Collections.sort(accounts, new NameComparator());
 		req.setAttribute(MANAGERS, accounts);
+	}
+	
+	/**
+	 * Builds the manager list sql to be executed
+	 * @param schema
+	 * @param loadTitles
+	 * @param section
+	 * @return
+	 */
+	protected String buildManagerSQL(String schema, boolean loadTitles, AssigneeSection section){
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select newid() as account_id, a.profile_id as owner_profile_id, a.first_nm, a.last_nm ");
+		if (loadTitles) sql.append(", rd.value_txt as title ");
+		sql.append("from profile a ");
+		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=? ");
+		sql.append("inner join ").append(schema).append("biomedgps_user u on a.profile_id=u.profile_id and u.active_flg=1 "); //only active users
+		if (loadTitles || section != null)  {
+			sql.append("inner join register_submittal rsub on rsub.profile_id=a.profile_id ");			
+			sql.append("inner join register_data rd on rd.register_submittal_id=rsub.register_submittal_id and rd.register_field_id=? ");
+			if(loadTitles && section != null){ //if both values are present, re-join back onto the register_data table for the additional data
+				sql.append("inner join register_data rd2 on rd2.register_submittal_id=rsub.register_submittal_id and rd2.register_field_id=? ");
+				sql.append("and rd2.value_txt = ? ");
+			}else if(section != null){
+				sql.append("and rd.value_txt = ? ");
+			}
+		}
+		sql.append("and b.site_id=? and b.role_id=? ");
+		log.debug(sql);
+		
+		return sql.toString();
 	}
 
 

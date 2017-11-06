@@ -161,6 +161,7 @@ public class NexusKitAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		
 		KitAction action;
 		UUIDGenerator uuid = new UUIDGenerator();
 		try {
@@ -168,6 +169,15 @@ public class NexusKitAction extends SimpleActionAdapter {
 		} catch (Exception e) {
 			throw new ActionException("unknown kit action: " + req.getParameter("kitAction"), e);
 		}
+		
+		// If the user is not logged in they should not be able to edit kits.
+		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		
+		if (user == null && action != KitAction.Load && action != KitAction.Print) {
+			super.putModuleData("You must be logged in to complete this action.");
+			return;
+		}
+		
 		List<NexusKitVO> kits;
 		try {
 			switch(action) {
@@ -178,14 +188,8 @@ public class NexusKitAction extends SimpleActionAdapter {
 				case Clone:
 					kits = loadKits(req, true);
 					if (!kits.isEmpty()) {
-						UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 						NexusKitVO kit = kits.get(0);
-						if (user != null) {
-							kit.setOwnerId(user.getProfileId());
-						} else {
-							// Only clone kits when there is a user to claim ownership of the clone.
-							throw new ActionException("Sets can only be cloned while logged in.");
-						}
+						kit.setOwnerId(user.getProfileId());
 						kit.setKitId("");
 						kit.setKitDesc("(Copy)"+kit.getKitDesc());
 						for (NexusKitLayerVO layer : kit.getLayers()) {
@@ -232,7 +236,6 @@ public class NexusKitAction extends SimpleActionAdapter {
 					break;
 				case NewKit:
 					NexusKitVO newKit = new NexusKitVO(NexusProductVO.SOLR_IDX);
-					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 					newKit.setKitDesc("Empty Kit");
 					newKit.setOwnerId(user.getProfileId());
 					newKit.setOrgName(KitType.Custom.toString());
@@ -561,7 +564,7 @@ public class NexusKitAction extends SimpleActionAdapter {
 			}
 
 			if (searchTerms.length() > 0) {
-				sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ? or s.GTIN_TXT like ?) ");
+				sql.append("and (LOWER(s.SET_SKU_TXT) like LOWER(?) or LOWER(s.DESCRIPTION_TXT) like LOWER(?) or s.GTIN_TXT like ?) ");
 			}
 
 			if ("loaner".equals(nexusFilter)) {

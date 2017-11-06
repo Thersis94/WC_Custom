@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -19,8 +21,6 @@ import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.SmarttrakRssEntityVO;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -83,9 +83,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 					List<RSSArticleVO> articles = retrieveArticles(f.getRssUrl());
 					filterArticles(f, articles);
 				} catch (Exception e) {
-					log.info("Deactivating Feed: " + f.getRssEntityId());
 					log.error("Problem Processing Feed", e);
-					updateFeed(f);
 				}
 			}
 		}
@@ -97,6 +95,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private List<RSSArticleVO> retrieveArticles(String url) {
+		log.info("Retrieving Url: " + url);
 		byte[] results = getDataViaHTTP(url, null);
 
 		//Process XML
@@ -110,7 +109,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private List<RSSArticleVO> processArticleResult(byte[] results) {
-		List<RSSArticleVO> articles = null;
+		List<RSSArticleVO> articles = Collections.emptyList();
 
 		try {
 			InputStream is = new ByteArrayInputStream(results);
@@ -118,8 +117,9 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 			saxParser.parse(is, handler);
 			articles = handler.getVos();
 		} catch(SAXException | IOException se) {
-			log.error("Problem Processing Pubmed Articles", se);
+			log.error("Response was malformed.");
 		}
+		log.info("Loaded " + articles.size() + " articles.");
 		return articles;
 	}
 
@@ -131,32 +131,51 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private void filterArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles) {
 		//Query if any of the retrieved articles are already processed.
-		Set<String> existsIds = getExistingArticles(buildArticleIdsList(articles), f.getRssEntityId());
 
-		/**
-		 * Iterate over each Message in the Feed and apply all filters in the
-		 * related groups to the message.
-		 */
-		List<RSSArticleVO> nArticles = new ArrayList<>();
-		for(RSSArticleVO a : articles) {
-			if(!existsIds.contains(a.getArticleGuid())) {
-				a.setRssEntityId(f.getRssEntityId());
-				a.setPublicationName(f.getFeedName());
-				if(a.getPublishDt() == null)
-					a.setPublishDt(Calendar.getInstance().getTime());
-				for(RSSFeedGroupVO fg : f.getGroups()) {
-					matchArticle(a, fg.getFeedGroupId());
-					if(!StringUtil.isEmpty(a.getFeedGroupId())) {
-						break;
-					}
-					a.setFeedGroupId(fg.getFeedGroupId());
-				}
-				nArticles.add(a);
-			}
+		if(articles.isEmpty()) {
+			return;
 		}
 
-		//Save Articles.
-		storeArticles(nArticles);
+		Map<String, Set<String>> existsIds = getExistingArticles(buildArticleIdsList(articles), f.getRssEntityId());
+
+		articles.stream().forEach(a -> this.populateFeed(a, f));
+
+		processArticles(f, articles, existsIds);
+	}
+
+	/**
+	 * Set EntityId, PublicationName and Publish Date on the given Article.
+	 * @param a
+	 * @param f
+	 */
+	private void populateFeed(RSSArticleVO a, SmarttrakRssEntityVO f) {
+		a.setRssEntityId(f.getRssEntityId());
+		a.setPublicationName(f.getFeedName());
+		if(a.getPublishDt() == null) {
+			a.setPublishDt(Calendar.getInstance().getTime());
+		}
+	}
+
+	/**
+	 * Iterate over each Message in the Feed and apply all filters in the
+	 * related groups to the message.
+	 * @param f
+	 * @param articles
+	 * @param existsIds
+	 * @return
+	 */
+	private void processArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Map<String, Set<String>> existsIds) {
+		for(RSSArticleVO a : articles) {
+			for(RSSFeedGroupVO fg : f.getGroups()) {
+				if(!articleExists(a.getArticleGuid(), fg.getFeedGroupId(), existsIds)) {
+					applyFilter(a, fg.getFeedGroupId());
+				}
+			}
+			if(!a.getFilterVOs().isEmpty()) {
+				//Save Articles.
+				storeArticles(a);
+			}
+		}
 	}
 
 
@@ -201,9 +220,6 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		sql.append("inner join ").append(schema).append("biomedgps_feed_source_group_xr fsg ");
 		sql.append("on bre.rss_entity_id = fsg.rss_entity_id ");
 		sql.append("where e.organization_id = ? ");
-		if(!Convert.formatBoolean(props.getProperty(IS_DEBUG))) {
-			sql.append("and e.is_active = 1");
-		}
 		return sql.toString();
 	}
 }

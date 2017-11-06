@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.biomed.smarttrak.vo.UpdateVO;
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
@@ -37,7 +38,12 @@ public class UpdatesEditionDetailedEmbedAction extends UpdatesEditionAction {
 		super(arg0);
 	}
 	
-
+	
+	public void retrieve (ActionRequest req) throws ActionException {
+		req.setParameter("orderSort", "true");
+		super.retrieve(req);
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.biomed.smarttrak.action.UpdatesEditionAction#packageDataForDisplay(com.siliconmtn.data.Tree, java.util.List)
