@@ -4,12 +4,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.SolrDocument;
+
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.SmarttrakSolrAction;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
@@ -17,6 +20,7 @@ import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
@@ -28,6 +32,9 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -94,18 +101,42 @@ public class UpdatesAction extends ManagementAction {
 			return this.text;
 		}
 	}
-
-	// Maps the table field name to the db field name for sorting purposes
-	private Map<String, String> sortMapper;
+	
+	// Enum for handling the ordering desired by the bootstrap table
+	private enum Order {
+		TITLE_TXT("title"), 
+		TYPE_CD("moduleType"), 
+		PUBLISH_DT("publishDate"),
+		STATUS_CD("status_cd_s");
+		
+		String solrField;
+		
+		private Order(String solrField) {
+			this.solrField = solrField;
+		}
+		
+		public String getSolrField() {
+			return solrField;
+		}
+		
+		public static Order getOrderFromString(String order) {
+			if (order == null) return Order.PUBLISH_DT;
+			switch (order) {
+				case "titleTxt" : return Order.TITLE_TXT;
+				case "statusNm" : return Order.STATUS_CD;
+				case "typeNm" : return Order.TYPE_CD;
+				case "publishDt" :
+				default : return Order.PUBLISH_DT;
+			}
+		}
+	}
 
 	public UpdatesAction() {
 		super();
-		buildSortMapper();
 	}
 
 	public UpdatesAction(ActionInitVO actionInit) {
 		super(actionInit);
-		buildSortMapper();
 	}
 
 	/*
@@ -123,12 +154,22 @@ public class UpdatesAction extends ManagementAction {
 		if(req.hasParameter("loadHistory")) {
 			data = getHistory(req.getParameter("historyId"));
 		} else {
-
+			Order order = Order.getOrderFromString(req.getParameter("sort"));
+			String dir = StringUtil.checkVal(req.getParameter("order"), "desc");
+			
 			//Get the Filtered Updates according to Request.
-			data = getFilteredUpdates(req);
+			getFilteredUpdates(req, order, dir);
+			
+			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
+			if (resp.getResultDocuments().size() > 0) {
+				data = loadDetails(resp.getResultDocuments(), order, dir);
+			} else {
+				data = Collections.emptyList();
+			}
 			
 			// Get the count
-			count = getUpdateCount(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+			count = (int) resp.getTotalResponses();
 			log.debug("count " + count);
 		}
 
@@ -146,49 +187,119 @@ public class UpdatesAction extends ManagementAction {
 		if (req.hasParameter(UPDATE_ID))
 			loadAuthors(req);
 	}
+	
+	
+	/**
+	 * Load the most up to date details for each update
+	 * @param docs
+	 * @return
+	 */
+	private List<Object> loadDetails(List<SolrDocument> docs, Order order, String dir) {
+		String sql = formatDetailQuery(docs.size(), order, dir);
+		List<Object> params = new ArrayList<>();
+		
+		for (SolrDocument doc : docs) {
+			String id = (String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+			if (id.contains("_")) {
+				id = id.substring(id.lastIndexOf('_')+1);
+			}
+			params.add(id);
+		}
+
+		DBProcessor db = new DBProcessor(dbConn);
+		return db.executeSelect(sql, params, new UpdateVO());
+	}
+
+	
+	/**
+	 * Ensure that the information pertaining to each update is up to date.
+	 * Even if solr has not finished processing the changes.
+	 * @param size
+	 * @param dir 
+	 * @param order
+	 * @return
+	 */
+	private String formatDetailQuery(int size, Order order, String dir) {
+		StringBuilder sql = new StringBuilder(200);
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT * FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
+		sql.append("LEFT JOIN ").append(schema).append("BIOMEDGPS_UPDATE_SECTION xr ");
+		sql.append("on up.UPDATE_ID = xr.UPDATE_ID ");
+		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
+		sql.append("order by ").append(order).append(" ").append(dir);
+		
+		return sql.toString();
+	}
+
+	
+	/**
+	 * Set all paramters neccesary for solr to be able to properly search for the desired documents.
+	 * @param req
+	 * @param dir 
+	 * @param order
+	 */
+	private void setSolrParams(ActionRequest req, Order order, String dir) {
+		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
+		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
+		req.setParameter("rpp", StringUtil.checkVal(rpp));
+		req.setParameter("page", StringUtil.checkVal(page));
+		if(req.hasParameter(SEARCH)) req.setParameter("searchData", req.getParameter(SEARCH));
+		List<String> fq = new ArrayList<>(5);
+		
+		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
+		if (!StringUtil.isEmpty(dates))
+			fq.add(SearchDocumentHandler.PUBLISH_DATE + ":" + dates);
+		
+		if(req.hasParameter(UPDATE_ID)) {
+			StringBuilder id = new StringBuilder(req.getParameter(UPDATE_ID));
+			if (req.getParameter(UPDATE_ID).length() < AdminControllerAction.DOC_ID_MIN_LEN)
+				id.insert(0, "_").insert(0, UpdateIndexer.INDEX_TYPE);
+			fq.add("documentId:" + id);
+		}
+		
+		if (req.hasParameter("typeCd"))
+			fq.add(SearchDocumentHandler.MODULE_TYPE + ":" + req.getParameter("typeCd"));
+		
+		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
+		if (sectionIds != null) {
+			StringBuilder sections = new StringBuilder(50);
+			for (String s : getSectionFamily(sectionIds)) {
+				if (sections.length() > 0) sections.append(" OR ");
+				sections.append(s);
+			}
+			fq.add(SearchDocumentHandler.HIERARCHY + ":" + sections.toString());
+		}
+
+		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
+
+		req.setParameter("fieldSort", order.getSolrField());
+		req.setParameter("sortDirection", dir);
+		req.setParameter("allowCustom", "true");
+		
+		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
+	}
 
 	/**
 	 * Helper method that returns list of Updates filtered by ActionRequest
 	 * parameters.
 	 * @param req
+	 * @param dir 
+	 * @param order
 	 * @return
+	 * @throws ActionException 
 	 */
-	private List<Object> getFilteredUpdates(ActionRequest req) {
-		//Get Relevant Params off Request.
-		int start = Convert.formatInteger(req.getParameter("offset"),0);
-		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
-		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+	private void getFilteredUpdates(ActionRequest req, Order order, String dir) throws ActionException {
+		setSolrParams(req, order, dir);
+		// Pass along the proper information for a search to be done.
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		req.setParameter("pmid", mod.getPageModuleId());
 
-		String sql = formatRetrieveQuery(req, schema, req.hasParameter("loadData"), false);
-
-		log.debug(" sql: " + sql);
-		
-		List<Object> params = new ArrayList<>();
-		if (req.hasParameter(UPDATE_ID)) params.add(req.getParameter(UPDATE_ID));
-		if (req.hasParameter(STATUS_CD)) params.add(req.getParameter(STATUS_CD));
-		if (req.hasParameter(TYPE_CD)) params.add(Convert.formatInteger(req.getParameter(TYPE_CD)));
-		if (req.hasParameter(SEARCH)) {
-			String searchData = "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%";
-			params.add(searchData);
-			params.add(searchData);
-		}
-		//check if dates were passed before adding to params list
-		if(req.hasParameter(START_DATE)) 
-			params.add(Convert.formatDate(req.getParameter(START_DATE)));
-		if(req.hasParameter(END_DATE)) 
-			params.add(Convert.formatDate(req.getParameter(END_DATE)));
-			
-		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
-			
-		if (sectionIds != null) { //restrict to certain sections only
-			for (String s : getSectionFamily(sectionIds))
-				params.add(s);
-		}
-		params.add(rpp);
-		params.add(start);
-
-		DBProcessor db = new DBProcessor(dbConn, schema);
-		return db.executeSelect(sql, params, new UpdateVO());
+		// Build the solr action
+		ActionInterface sa = new SmarttrakSolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(attributes);
+		sa.retrieve(req);
 	}
 
 
@@ -211,18 +322,19 @@ public class UpdatesAction extends ManagementAction {
 		
 		//process ids according to their depth level
 		for (String s : sectionIds){
-			int depth = t.findNode(s).getDepthLevel();
+			Node n = t.findNode(s);
+			int depth = n.getDepthLevel();
 			//if the id is already in the set its a child or grand child and we don't need to process it again
-			if (set.contains(s)) continue;
+			if (set.contains(n.getFullPath())) continue;
 			
 			if (depth < 3) {
-				set.add(s);
+				set.add(n.getFullPath());
 				processTwoNodeLayers(set, t, s);
 			} else if (depth == 3){
-				set.add(s);
+				set.add(n.getFullPath());
 				processOneNodeLayer(set, t, s);
 			}else {
-				set.add(s);
+				set.add(n.getFullPath());
 			}
 		}
 
@@ -318,7 +430,7 @@ public class UpdatesAction extends ManagementAction {
 	protected String formatRetrieveAllQuery(String schema, String updateId) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select up.update_id, up.title_txt, up.message_txt, up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
-		sql.append("up.announcement_type, c.short_nm_txt as company_nm, prod.short_nm as product_nm, up.order_no, ");
+		sql.append("up.announcement_type, c.short_nm_txt as company_nm, prod.short_nm as product_nm, up.order_no, up.status_cd, ");
 		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
 		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, ");
 		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path, up.create_dt "); //need to pass this through for building URLs
@@ -333,56 +445,6 @@ public class UpdatesAction extends ManagementAction {
 
 		log.debug(sql);
 		return sql.toString();
-	}
-
-	/**
-	 * Retrieves total number of update records in db.
-	 * @param req
-	 * @param schema
-	 * @return
-	 */
-	protected int getUpdateCount(ActionRequest req, String schema) {
-		String sql = formatRetrieveQuery(req, schema, true, true);
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			setStatementValues(ps, req);
-
-			ResultSet rs = ps.executeQuery();
-			if (rs.next()) 
-				return rs.getInt(1);
-
-		} catch (SQLException e) {
-			log.error(e);
-		}
-		return 0;
-	}
-
-	/**
-	 * Helper method to set the values to the PreparedStatement
-	 * @param ps
-	 * @param req
-	 * @throws SQLException
-	 */
-	private void setStatementValues(PreparedStatement ps, ActionRequest req) throws SQLException{
-		int i = 0;
-		
-		if (req.hasParameter(UPDATE_ID)) ps.setString(++i, req.getParameter(UPDATE_ID));
-		if (req.hasParameter(STATUS_CD)) ps.setString(++i, req.getParameter(STATUS_CD));
-		if (req.hasParameter(TYPE_CD)) ps.setInt(++i, Convert.formatInteger(req.getParameter(TYPE_CD)));
-		if (req.hasParameter(SEARCH)) {
-			String searchData = "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%";
-			ps.setString(++i, searchData);
-			ps.setString(++i, searchData);
-		}
-		if(req.hasParameter(START_DATE))
-			ps.setDate(++i, Convert.formatSQLDate(req.getParameter(START_DATE)));
-		if(req.hasParameter(END_DATE))
-			ps.setDate(++i, Convert.formatSQLDate(req.getParameter(END_DATE)));
-		
-		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
-		if (sectionIds != null) { //restrict to certain sections only
-			for (String s : getSectionFamily(sectionIds))
-				ps.setString(++i, s);
-		}
 	}
 	
 	/**
@@ -416,110 +478,6 @@ public class UpdatesAction extends ManagementAction {
 		sql.append("where b.wc_key_id = ? order by a.create_dt");
 
 		log.debug(sql);
-		return sql.toString();
-	}
-
-
-	/**
-	 * Formats the Update retrieval query.
-	 * @return
-	 */
-	public String formatRetrieveQuery(ActionRequest req, String schema, boolean isList, boolean isCount) {
-		StringBuilder sql = new StringBuilder(800);
-		sql.append(buildSelectClause(isList, isCount));
-		sql.append(buildFromClause(isList, schema));
-		sql.append(buildWhereClause(req));
-
-		if (!isCount) {
-			sql.append("order by ").append(StringUtil.checkVal(sortMapper.get(req.getParameter(SORT)), "publish_dt"));
-			sql.append(" ").append(StringUtil.checkVal(req.getParameter(ORDER), "asc"));
-			sql.append(", create_dt desc limit ? offset ? ");
-		}
-
-		log.debug(" sql "+sql);
-		return sql.toString();
-	}
-
-	/**
-	 * Build the select clause based on whether this is 
-	 * a list select and whether it is a count select.
-	 * @param isList
-	 * @param isCount
-	 * @return
-	 */
-	private String buildSelectClause(boolean isList, boolean isCount) {
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("select ");
-		if (isCount) {
-			sql.append("count(distinct a.update_id) ");
-		} else {
-			sql.append("distinct a.*, p.first_nm, p.last_nm, ");
-			if (isList) {
-				sql.append("s.wc_sync_id ");
-			} else {
-				sql.append("m.market_nm, c.company_nm, pr.product_nm, b.section_id, b.update_section_xr_id ");
-			}
-		}
-		return sql.toString();
-	}
-
-
-	/**
-	 * Build the from clause based on whether it is a list request or not.
-	 * @param isList
-	 * @param schema
-	 * @return
-	 */
-	private String buildFromClause(boolean isList, String schema) {
-		StringBuilder sql = new StringBuilder(300);
-		sql.append("from ").append(schema).append("biomedgps_update a ");
-		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		if (isList) {
-			sql.append(LEFT_OUTER_JOIN).append("(select wc_sync_id, wc_key_id, row_number() ");
-			sql.append("over (partition by wc_key_id order by create_dt) as rn from wc_sync) s ");
-			sql.append("on s.wc_key_id=a.update_id and s.rn=1 ");
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_type ut on ut.TYPE_CD=a.TYPE_CD ");
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section b ");
-			sql.append("on a.update_id=b.update_id ");
-		} else {
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section b ");
-			sql.append("on a.update_id=b.update_id ");
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_market m ");
-			sql.append("on a.market_id=m.market_id ");
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c ");
-			sql.append("on a.company_id=c.company_id ");
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_product pr ");
-			sql.append("on a.product_id=pr.product_id ");
-		}
-		return sql.toString();
-	}
-
-
-	/**
-	 * Build the where clause from the request parameters
-	 * @param reqParams
-	 * @return
-	 */
-	private String buildWhereClause(ActionRequest req) {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("where 1=1 ");
-		if (req.hasParameter(UPDATE_ID)) sql.append("and a.update_id=? ");
-		if (req.hasParameter(STATUS_CD)) sql.append("and a.status_cd=? ");
-		if (req.hasParameter(TYPE_CD)) sql.append("and a.type_cd=? ");
-		if (req.hasParameter(SEARCH)) {
-			sql.append("and (lower(a.title_txt) like ? ");
-			sql.append("or lower(a.message_txt) like ? ) ");
-		}
-		//check if dates were passed before appending to query
-		if(req.hasParameter(START_DATE)) sql.append("and a.publish_dt >= ? ");
-		if(req.hasParameter(END_DATE)) sql.append("and a.publish_dt <= ? ");
-
-		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
-		if (sectionIds != null && sectionIds.length > 0) { //restrict to certain sections only
-			sql.append("and b.section_id in (");
-			DBUtil.preparedStatmentQuestion(getSectionFamily(sectionIds).size(), sql);
-			sql.append(") ");
-		}
 		return sql.toString();
 	}
 
@@ -721,17 +679,5 @@ public class UpdatesAction extends ManagementAction {
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
-	}
-
-	/**
-	 * Convert Bootstrap Table Column Names to db names. 
-	 * @return
-	 */
-	private void buildSortMapper() {
-		sortMapper = new HashMap<>();
-		sortMapper.put("titleTxt", "title_txt");
-		sortMapper.put("publishDt", "publish_dt");
-		sortMapper.put("typeNm", "type_nm");
-		sortMapper.put("statusNm", "status_cd");
 	}
 }
