@@ -185,13 +185,16 @@ public class UpdatesAction extends SBActionAdapter {
 		List<String> docIds = new ArrayList<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(getFavoriteUpdatesSql())) {
 			int i = 1;
+			ps.setString(i++, AdminControllerAction.Section.MARKET.toString() + "_");
 			ps.setString(i++, AdminControllerAction.Section.MARKET.toString());
 			ps.setString(i++, vo.getProfileId());
+			ps.setString(i++, AdminControllerAction.Section.PRODUCT.toString() + "_");
 			ps.setString(i++, AdminControllerAction.Section.PRODUCT.toString());
 			ps.setString(i++, vo.getProfileId());
+			ps.setString(i++, AdminControllerAction.Section.COMPANY.toString() + "_");
 			ps.setString(i++, AdminControllerAction.Section.COMPANY.toString());
 			ps.setString(i++, vo.getProfileId());
-
+			
 			ResultSet rs = ps.executeQuery();
 
 			//Convert Update Id to DocumentId
@@ -221,15 +224,15 @@ public class UpdatesAction extends SBActionAdapter {
 		sql.append("select distinct *, row_number() OVER (ORDER BY publish_dt desc) as rnum from ( ");
 		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
-		sql.append("on a.rel_id = b.market_id and a.type_cd = ? and a.profile_id = ? ");
+		sql.append("on replace(a.rel_id, ?, '') = b.market_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append("union ");
 		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
-		sql.append("on a.rel_id = b.product_id and a.type_cd = ? and a.profile_id = ? ");
+		sql.append("on replace(a.rel_id, ?, '') = b.product_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append("union ");
 		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
-		sql.append("on a.rel_id = b.company_id and a.type_cd = ? and a.profile_id = ? ");
+		sql.append("on replace(a.rel_id, ?, '') = b.company_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append(") as update_id order by publish_dt desc ");
 		return sql.toString();
 	}
