@@ -22,6 +22,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
@@ -396,28 +397,64 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	private void addProductCompanyData(List<Object> updates) {
 		log.debug("adding company short name and id ");
-		for (Object ob : updates) {
-			//loops all the updates and see if they have a product id
-			UpdateVO vo = (UpdateVO) ob;
+		
+		int productCount = getProductCount(updates);
+		if (productCount == 0) return;
+		
+		StringBuilder sb = new StringBuilder(161);
+		sb.append("select c.company_id, c.short_nm_txt, p.product_id from ").append(customDbSchema).append("biomedgps_product p ");
+		sb.append(INNER_JOIN).append(customDbSchema).append("biomedgps_company c on p.company_id = c.company_id ");
+		sb.append("where p.product_id in (").append(DBUtil.preparedStatmentQuestion(productCount)).append(")");
 
-			if (StringUtil.isEmpty(vo.getProductId())) continue;
-
-			StringBuilder sb = new StringBuilder(161);
-			sb.append("select c.company_id, c.short_nm_txt from ").append(customDbSchema).append("biomedgps_product p ");
-			sb.append(INNER_JOIN).append(customDbSchema).append("biomedgps_company c on p.company_id = c.company_id ");
-			sb.append("where p.product_id=?");
-
-			try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
-				ps.setString(1, vo.getProductId());
-				ResultSet rs = ps.executeQuery();
-				if (rs.next()) {
-					vo.setCompanyId(rs.getString(1));
-					vo.setCompanyNm(rs.getString(2));
-				}
-			} catch(SQLException sqle) {
-				log.error("could not confirm security by id ", sqle);
+		Map<String, GenericVO> companies = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
+			int i = 1;
+			for (Object o : updates) {
+				UpdateVO up = (UpdateVO)o;
+				if (StringUtil.isEmpty(up.getProductId())) continue;
+				ps.setString(i++, up.getProductId());
 			}
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				companies.put(rs.getString("product_id"), new GenericVO(
+						rs.getString("company_id"), rs.getString("short_nm_txt")));
+			}
+		} catch(SQLException sqle) {
+			log.error("could not confirm security by id ", sqle);
 		}
+		
+		mergeResults(updates, companies);
+	}
+
+	
+	/**
+	 * Add company information to the products updates.
+	 * @param updates
+	 * @param companies
+	 */
+	private void mergeResults(List<Object> updates, Map<String, GenericVO> companies) {
+		for (Object o : updates) {
+			UpdateVO up = (UpdateVO)o;
+			if (StringUtil.isEmpty(up.getProductId())) continue;
+			GenericVO company = companies.get(up.getProductId());
+			up.setCompanyId((String) company.getKey());
+			up.setCompanyNm((String) company.getValue());
+		}
+	}
+
+	/**
+	 * Get the count of how many updates refer to products
+	 * @param updates
+	 * @return
+	 */
+	private int getProductCount(List<Object> updates) {
+		int productCount = 0;
+		for (Object o : updates) {
+			UpdateVO up = (UpdateVO)o;
+			if (StringUtil.isEmpty(up.getProductId())) continue;
+			productCount++;
+		}
+		return productCount;
 	}
 
 	/**
