@@ -236,8 +236,8 @@ public class MIRSubmissionVO extends UserDataVO {
 	}
 
 	public String getConsentFlg() {
-		if ("1".equals(consentFlg)) return "Submitted by HCP";
-		if ("2".equals(consentFlg)) return "Submitted by Other";
+		if ("1".equals(consentFlg)) return "HCP";
+		if ("2".equals(consentFlg)) return "J&J Affiliate";
 		return "Consent not given";
 	}
 
