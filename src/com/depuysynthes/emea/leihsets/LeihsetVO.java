@@ -54,7 +54,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	private int archiveFlg = 0;
 	private Map<String, LeihsetVO> assets; //a PDF or Excel uploaded to this Liehset
 	private Map<String, LeihsetVO> materials; //Mediabin Literature
-	private ApprovalVO approval;
+	private ApprovalVO syncData;
 	
 	private String categoryName;
 	private String parentCategoryName;
@@ -260,7 +260,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	 */
 	@Override
 	public ApprovalVO getSyncData() {
-		return approval;
+		return syncData;
 	}
 
 	/* (non-Javadoc)
@@ -268,7 +268,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	 */
 	@Override
 	public void setSyncData(ApprovalVO vo) {
-		this.approval = vo;
+		this.syncData = vo;
 		
 	}
 
