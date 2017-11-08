@@ -20,6 +20,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 //WC libs
@@ -119,7 +120,12 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		params.add(endDate);
 		
 		for (Object o : db.executeSelect(sql, params, new UpdateVO())) {
-			updates.add((UpdateVO)o);
+			UpdateVO up = (UpdateVO) o;
+			up.setProductNm(StringEncoder.encodeExtendedAscii(up.getProductNm()));
+			up.setMarketNm(StringEncoder.encodeExtendedAscii(up.getMarketNm()));
+			up.setCompanyNm(StringEncoder.encodeExtendedAscii(up.getCompanyNm()));
+			up.setTitle(StringEncoder.encodeExtendedAscii(up.getTitle()));
+			updates.add(up);
 		}
 	}
 	
@@ -256,16 +262,16 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 				if (vo == null) {
 					vo = new UpdateVO();
 					vo.setUpdateId(rs.getString("update_id"));
-					vo.setTitle(rs.getString("title_txt"));
+					vo.setTitle(StringEncoder.encodeExtendedAscii(rs.getString("title_txt")));
 					vo.setMessageTxt(rs.getString("message_txt"));
 					vo.setPublishDt(rs.getDate("publish_dt"));
 					vo.setTypeCd(rs.getInt("type_cd"));
 					vo.setCompanyId(rs.getString("company_id"));
-					vo.setCompanyNm(rs.getString("company_nm"));
+					vo.setCompanyNm(StringEncoder.encodeExtendedAscii(rs.getString("company_nm")));
 					vo.setProductId(rs.getString("product_id"));
-					vo.setProductNm(rs.getString("product_nm"));
+					vo.setProductNm(StringEncoder.encodeExtendedAscii(rs.getString("product_nm")));
 					vo.setMarketId(rs.getString("market_id"));
-					vo.setMarketNm(rs.getString("market_nm"));
+					vo.setMarketNm(StringEncoder.encodeExtendedAscii(rs.getString("market_nm")));
 					vo.setStatusCd(rs.getString("status_cd"));
 					vo.setEmailFlg(rs.getInt("email_flg"));
 					vo.setQsPath((String)attributes.get(Constants.QS_PATH));
