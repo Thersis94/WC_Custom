@@ -7,7 +7,7 @@ import com.mindbody.vo.MindBodyConfig;
 /****************************************************************************
  * <b>Title:</b> MindBodyStaffVO.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Common Configuration for Class API Calls.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 

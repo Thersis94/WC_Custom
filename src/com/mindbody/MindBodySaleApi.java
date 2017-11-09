@@ -11,7 +11,7 @@ import com.mindbodyonline.clients.api._0_5_1.Sale_x0020_ServiceStub;
 /****************************************************************************
  * <b>Title:</b> MindBodySaleApi.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Manage Mind Body Sales Data.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -30,7 +30,6 @@ public class MindBodySaleApi extends AbstractMindBodyApi<Sale_x0020_ServiceStub,
 
 	/* (non-Javadoc)
 	 * @see com.mindbody.MindBodyApiIntfc#getStub()
-	 * TODO - COMPLETE METHOD BODY
 	 */
 	@Override
 	public Sale_x0020_ServiceStub getStub() throws AxisFault {

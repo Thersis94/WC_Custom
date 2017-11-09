@@ -8,7 +8,7 @@ import com.mindbody.MindBodyClassApi.ClassDocumentType;
 /****************************************************************************
  * <b>Title:</b> MindBodyGetEnrollmentsConfig.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Manages GetEnrollments Endpoint unique Configuration.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 

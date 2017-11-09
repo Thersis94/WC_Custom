@@ -10,7 +10,7 @@ import com.mindbodyonline.clients.api._0_5_1.Client_x0020_ServiceStub;
 /****************************************************************************
  * <b>Title:</b> MindbodyClientApi.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Manage Mind Body Client Data.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -31,7 +31,6 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 	/* (non-Javadoc)
 	 * @see com.mindbody.MindBodyApiIntfc#getStub()
-	 * TODO - COMPLETE METHOD BODY
 	 */
 	@Override
 	public Client_x0020_ServiceStub getStub() throws AxisFault {
