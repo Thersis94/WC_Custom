@@ -18,7 +18,7 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 public abstract class MindBodyConfig {
 
-	public static final int PAGE_SIZE = 10;
+	public static final int DEFAULT_PAGE_SIZE = 10;
 	private String sourceName;
 	private String sourceKey;
 	private String userName;
@@ -26,7 +26,7 @@ public abstract class MindBodyConfig {
 	private List<Integer> siteIds;
 	protected List<String> fields;
 	private int pageNo;
-	private int pageSize = PAGE_SIZE;
+	private int pageSize = DEFAULT_PAGE_SIZE;
 
 	/**
 	 * 
