@@ -405,7 +405,7 @@ public class ProductExplorer extends SBActionAdapter {
 	protected String getSearchValue(String searchTerm, int searchType) {
 		StringBuilder finalTerm = new StringBuilder(searchTerm.length() + 2);
 		
-		String editedTerm = StringEscapeUtils.unescapeHtml(searchTerm).replace("(", "\\(").replace("(", "\\)");
+		String editedTerm = StringEscapeUtils.unescapeHtml(searchTerm).replace("(", "\\(").replace(")", "\\)");
 		
 		switch (searchType) {
 		case CONTAINS_SEARCH:

@@ -364,6 +364,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	/**
 	 * @return the statusCd
 	 */
+	@SolrField(name="status_cd_s")
 	@Column(name="status_cd")
 	public String getStatusCd() {
 		return statusCd;
