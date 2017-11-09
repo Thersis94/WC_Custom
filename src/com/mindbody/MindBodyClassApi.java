@@ -2,6 +2,7 @@ package com.mindbody;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.axis2.AxisFault;
@@ -54,6 +55,18 @@ import com.siliconmtn.util.Convert;
  * @since Nov 3, 2017
  ****************************************************************************/
 public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStub, MindBodyClassConfig> {
+
+	public static void main(String ...strings) {
+		MindBodyGetClassesConfig vo = new MindBodyGetClassesConfig("SiliconMountainTechnologies", "wvUfT2tnahYUo5+ql7Hr9FNas/o=", Arrays.asList(-99));
+		MindBodyClassApi api = new MindBodyClassApi();
+		try {
+			List<Object> res = api.getDocument(vo);
+			for(Object o : res) {
+				System.out.println(o.toString());
+			}
+		} catch (RemoteException e) {
+		}
+	}
 
 	public enum ClassDocumentType {
 		GET_CLASSES, ADD_CLIENTS_TO_CLASS, GET_ENROLLMEMTS, GET_CLASS_SCHEDULE, REMOVE_CLIENTS_FROM_CLASS, GET_COURSES, GET_CLASS_DESC

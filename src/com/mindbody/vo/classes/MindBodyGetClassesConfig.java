@@ -1,5 +1,6 @@
 package com.mindbody.vo.classes;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -33,6 +34,9 @@ public class MindBodyGetClassesConfig extends MindBodyClassConfig {
 	 */
 	public MindBodyGetClassesConfig(String sourceName, String sourceKey, List<Integer> siteIds) {
 		super(ClassDocumentType.GET_CLASSES, sourceName, sourceKey, siteIds);
+		this.classDescriptionIds = new ArrayList<>();
+		this.sessionTypeIds = new ArrayList<>();
+		this.semesterIds = new ArrayList<>();
 	}
 
 	/**
