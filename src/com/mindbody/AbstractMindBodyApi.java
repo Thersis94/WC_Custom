@@ -133,11 +133,11 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 	 * @param req
 	 */
 	protected ArrayOfInt buildArrayOfInt(List<Integer> vals) {
-		ArrayOfInt locIds = ArrayOfInt.Factory.newInstance();
+		ArrayOfInt intArr = ArrayOfInt.Factory.newInstance();
 		for(int i : vals) {
-			locIds.addInt(i);
+			intArr.addInt(i);
 		}
-		return locIds;
+		return intArr;
 	}
 
 	/**
@@ -146,10 +146,23 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 	 * @param req
 	 */
 	protected ArrayOfLong buildArrayOfLong(List<Long> vals) {
-		ArrayOfLong locIds = ArrayOfLong.Factory.newInstance();
+		ArrayOfLong longArr = ArrayOfLong.Factory.newInstance();
 		for(long i : vals) {
-			locIds.addLong(i);
+			longArr.addLong(i);
 		}
-		return locIds;
+		return longArr;
+	}
+
+	/**
+	 * Builds a MindBody ArrayOfInt Object from provided List.
+	 * @param config
+	 * @param req
+	 */
+	protected ArrayOfString buildArrayOfString(List<String> vals) {
+		ArrayOfString stringArr = ArrayOfString.Factory.newInstance();
+		for(String i : vals) {
+			stringArr.addString(i);
+		}
+		return stringArr;
 	}
 }

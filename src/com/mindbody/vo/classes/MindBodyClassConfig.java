@@ -22,7 +22,7 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 
 	private ClassDocumentType type;
 	private List<String> clientIds;
-	private List<String> classIds;
+	private List<Integer> classIds;
 	private List<Integer> programIds;
 	private List<Long> staffIds;
 	private List<Integer> locationIds;
@@ -57,7 +57,7 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 	}
 
 
-	public List<String> getClassIds() {
+	public List<Integer> getClassIds() {
 		return classIds;
 	}
 
@@ -77,7 +77,7 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 	}
 
 
-	public void setClassIds(List<String> classIds) {
+	public void setClassIds(List<Integer> classIds) {
 		this.classIds = classIds;
 	}
 
@@ -97,7 +97,7 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 	}
 
 
-	public void addClassId(String classId) {
+	public void addClassId(Integer classId) {
 		this.classIds.add(classId);
 	}
 

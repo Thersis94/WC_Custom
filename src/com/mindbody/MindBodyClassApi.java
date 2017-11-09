@@ -2,7 +2,6 @@ package com.mindbody;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.axis2.AxisFault;
@@ -173,9 +172,9 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 			req.setClassDescriptionIDs(buildArrayOfInt(config.getClassDescriptionIds()));
 		}
 
-		//Set Any Program Ids
-		if(!config.getProgramIds().isEmpty()) {
-			req.setProgramIDs(buildArrayOfInt(config.getProgramIds()));
+		//Set Any Class Ids
+		if(!config.getClassIds().isEmpty()) {
+			req.setClassIDs(buildArrayOfInt(config.getClassIds()));
 		}
 
 		//Set Any Staff Ids
@@ -183,22 +182,53 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 			req.setStaffIDs(buildArrayOfLong(config.getStaffIds()));
 		}
 
+		//Set Start DateTime
+		if(config.getStartDt() != null) {
+			req.setStartDateTime(Convert.toCalendar(config.getStartDt()));
+		}
+
+		//Set End DateTime
+		if(config.getEndDt() != null) {
+			req.setEndDateTime(Convert.toCalendar(config.getEndDt()));
+		}
+
+		//Set Client Id if present (Use first)
+		if(!config.getClientIds().isEmpty()) {
+			req.setClientID(config.getClientIds().get(0));
+		}
+
+		//Set Any Program Ids
+		if(!config.getProgramIds().isEmpty()) {
+			req.setProgramIDs(buildArrayOfInt(config.getProgramIds()));
+		}
+
+		//Set Any SessionTypeIds
+		if(!config.getSessionTypeIds().isEmpty()) {
+			req.setSessionTypeIDs(buildArrayOfInt(config.getSessionTypeIds()));
+		}
+
 		//Set Any Location Ids
 		if(!config.getClassDescriptionIds().isEmpty()) {
 			req.setLocationIDs(buildArrayOfInt(config.getLocationIds()));
 		}
 
-		//Set Start Time
-		if(config.getStartDt() != null) {
-			req.setStartDateTime(Convert.toCalendar(config.getStartDt()));
+		//Set Any Semester Ids
+		if(!config.getSemesterIds().isEmpty()) {
+			req.setSemesterIDs(buildArrayOfInt(config.getSemesterIds()));
 		}
 
-		//Set End Time
-		if(config.getEndDt() != null) {
-			req.setEndDateTime(Convert.toCalendar(config.getEndDt()));
+		//Set Hide Canceled Classes Flag
+		if(config.isHideCanceledClasses()) {
+			req.setHideCanceledClasses(config.isHideCanceledClasses());
 		}
+
+		//Set Use Schedulign Window Flag
+		if(config.isUseSchedulingWindow()) {
+			req.setSchedulingWindow(config.isUseSchedulingWindow());
+		}
+
 		//Set Last Modified Time
-		if(config.getEndDt() != null) {
+		if(config.getModifiedDt() != null) {
 			req.setLastModifiedDate(Convert.toCalendar(config.getModifiedDt()));
 		}
 	}
@@ -277,6 +307,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		List<Object> classes = new ArrayList<>();
 		AddClientsToClassesRequest req = AddClientsToClassesRequest.Factory.newInstance();
 		prepareRequest(req, config);
+		configureAddClientsToClassRequest(req, config);
 
 		AddClientsToClassesDocument doc = AddClientsToClassesDocument.Factory.newInstance();
 		doc.addNewAddClientsToClasses().setRequest(req);
@@ -294,6 +325,40 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 
 	/**
+	 * Manage Configuring the AddClientsToClass Request.
+	 * @param req
+	 * @param config
+	 */
+	private void configureAddClientsToClassRequest(AddClientsToClassesRequest req, MindBodyAddClientsToClassConfig config) {
+
+		if(!config.getClientIds().isEmpty()) {
+			req.setClientIDs(buildArrayOfString(config.getClientIds()));
+		}
+		//Set Any Class Ids
+		if(!config.getClassIds().isEmpty()) {
+			req.setClassIDs(buildArrayOfInt(config.getClassIds()));
+		}
+
+		//Set RequirePayment Flag and ClientServiceId
+		if(config.isRequirePayment()) {
+			req.setRequirePayment(config.isRequirePayment());
+			req.setClientServiceID(config.getClientServiceId());
+		}
+
+		//Set Use WaitList Flag and WaitListEntryId
+		if(config.isUseWaitList()) {
+			req.setWaitlist(config.isUseWaitList());
+			req.setWaitlistEntryID(config.getWaitListEntryId());
+		}
+
+		//Set Send Email Flag
+		if(config.isSendEmail()) {
+			req.setSendEmail(config.isSendEmail());
+		}
+	}
+
+
+	/**
 	 * Manage Building, Configuring and Executing the GetClassSchedule Endpoint
 	 * @param config
 	 * @return
@@ -302,6 +367,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		List<Object> classes = new ArrayList<>();
 		GetClassSchedulesRequest req = GetClassSchedulesRequest.Factory.newInstance();
 		prepareRequest(req, config);
+		configureClassScheduleRequest(req, config);
 
 		GetClassSchedulesDocument doc = GetClassSchedulesDocument.Factory.newInstance();
 		doc.addNewGetClassSchedules().setRequest(req);
@@ -319,6 +385,50 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 
 	/**
+	 * Manage Configuring the ClassSchedule Request.
+	 * @param req
+	 * @param config
+	 */
+	private void configureClassScheduleRequest(GetClassSchedulesRequest req, MindBodyGetClassScheduleConfig config) {
+
+		//Set Any Location Ids
+		if(!config.getLocationIds().isEmpty()) {
+			req.setLocationIDs(buildArrayOfInt(config.getLocationIds()));
+		}
+
+		//Set Any Class Schedule Ids
+		if(!config.getClassScheduleIds().isEmpty()) {
+			req.setClassScheduleIDs(buildArrayOfInt(config.getClassScheduleIds()));
+		}
+
+		//Set Any Staff Ids
+		if(!config.getStaffIds().isEmpty()) {
+			req.setStaffIDs(buildArrayOfLong(config.getStaffIds()));
+		}
+
+		//Set Any Program Ids
+		if(!config.getProgramIds().isEmpty()) {
+			req.setProgramIDs(buildArrayOfInt(config.getProgramIds()));
+		}
+
+		//Set Any SessionTypeIds
+		if(!config.getSessionTypeIds().isEmpty()) {
+			req.setSessionTypeIDs(buildArrayOfInt(config.getSessionTypeIds()));
+		}
+
+		//Set Start DateTime
+		if(config.getStartDt() != null) {
+			req.setStartDate(Convert.toCalendar(config.getStartDt()));
+		}
+
+		//Set End DateTime
+		if(config.getEndDt() != null) {
+			req.setEndDate(Convert.toCalendar(config.getEndDt()));
+		}
+	}
+
+
+	/**
 	 * Manage Building, Configuring and Executing the GetCourses Endpoint
 	 * @param config
 	 * @return
@@ -327,6 +437,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		List<Object> courses = new ArrayList<>();
 		GetCoursesRequest req = GetCoursesRequest.Factory.newInstance();
 		prepareRequest(req, config);
+		configureCoursesRequest(req, config);
 
 		GetCoursesDocument gcd = GetCoursesDocument.Factory.newInstance();
 		gcd.addNewGetCourses().setRequest(req);
@@ -342,6 +453,16 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 
 	/**
+	 * Manage Configuring the GetCourses Request.
+	 * @param req
+	 * @param config
+	 */
+	private void configureCoursesRequest(GetCoursesRequest req, MindBodyGetCoursesConfig config) {
+		throw new IllegalArgumentException("EndPoint Not Configured Correctly.");
+	}
+
+
+	/**
 	 * Manage Building, Configuring and Executing the GetEnrollments Endpoint
 	 * @param config
 	 * @return
@@ -350,6 +471,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		List<Object> enrollments = new ArrayList<>();
 		GetEnrollmentsRequest req = GetEnrollmentsRequest.Factory.newInstance();
 		prepareRequest(req, config);
+		configureEnrollmentsRequest(req, config);
 
 		GetEnrollmentsDocument gcd = GetEnrollmentsDocument.Factory.newInstance();
 		gcd.addNewGetEnrollments().setRequest(req);
@@ -365,6 +487,16 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 
 	/**
+	 * Manage Configuring the GetEnrollments Request.
+	 * @param req
+	 * @param config
+	 */
+	private void configureEnrollmentsRequest(GetEnrollmentsRequest req, MindBodyGetEnrollmentsConfig config) {
+		throw new IllegalArgumentException("EndPoint Not Configured Correctly.");
+	}
+
+
+	/**
 	 * Manage Building, Configuring and Exectuing the RemoveClientsFromClass Endpoint
 	 * @param config
 	 * @return
@@ -373,6 +505,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		List<Object> clients = new ArrayList<>();
 		RemoveClientsFromClassesRequest req = RemoveClientsFromClassesRequest.Factory.newInstance();
 		prepareRequest(req, config);
+		configureRemoveClientsFromClassRequest(req, config);
 
 		RemoveClientsFromClassesDocument gcd = RemoveClientsFromClassesDocument.Factory.newInstance();
 		gcd.addNewRemoveClientsFromClasses().setRequest(req);
@@ -384,5 +517,39 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 			clients.add(classArr.getClass1Array(i));
 		}
 		return clients;
+	}
+
+
+	/**
+	 * Manage Configuring the RemoveClientsFromClass Request.
+	 * @param req
+	 * @param config
+	 */
+	private void configureRemoveClientsFromClassRequest(RemoveClientsFromClassesRequest req, MindBodyRemoveClientsFromClassesConfig config) {
+
+		//Set And Client Ids
+		if(!config.getClientIds().isEmpty()) {
+			req.setClientIDs(buildArrayOfString(config.getClientIds()));
+		}
+
+		//Set Any Class Ids
+		if(!config.getClassIds().isEmpty()) {
+			req.setClassIDs(buildArrayOfInt(config.getClassIds()));
+		}
+
+		//Set Test Flag
+		if(config.isTest()) {
+			req.setTest(config.isTest());
+		}
+
+		//Set SendEmail Flag
+		if(config.isSendEmail()) {
+			req.setSendEmail(config.isSendEmail());
+		}
+
+		//Set LateCancel Flag
+		if(config.isAllowLateCancel()) {
+			req.setLateCancel(config.isAllowLateCancel());
+		}
 	}
 }
