@@ -37,13 +37,18 @@ public class UpdatesEditionDetailedEmbedAction extends UpdatesEditionAction {
 	public UpdatesEditionDetailedEmbedAction(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
-	
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.action.UpdatesEditionAction#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void retrieve (ActionRequest req) throws ActionException {
 		req.setParameter("orderSort", "true");
 		super.retrieve(req);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.biomed.smarttrak.action.UpdatesEditionAction#packageDataForDisplay(com.siliconmtn.data.Tree, java.util.List)
@@ -82,17 +87,19 @@ public class UpdatesEditionDetailedEmbedAction extends UpdatesEditionAction {
 		putModuleData(dataMap, dataMap.size(), false);
 	}
 
+
 	/**
-	 * Moved Add elements to it's own method.
+	 * Used to merge the updates on one node into another - likely it's parent.
 	 * @param children
 	 * @param key
 	 * @param updates
 	 * @return
 	 */
-	public boolean addUpdates(Map<String, List<UpdateVO>> children, String key, List<UpdateVO> updates) {
+	private boolean addUpdates(Map<String, List<UpdateVO>> children, String key, List<UpdateVO> updates) {
 		children.put(key, updates);
 		return true;
 	}
+
 
 	/*
 	 * return the value loaded out of the EC data source, unless a suppress flag was also provided.
