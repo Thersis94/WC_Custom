@@ -26,6 +26,7 @@ import com.siliconmtn.util.solr.AccessControlQuery;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: ContentHierarchyAction.java
@@ -91,8 +92,8 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		List<Node> sections;
 		String sectionId = req.getParameter("sectionId");
 		Tree t = loadTree(null);
-		t.calculateTotalChildren(t.getRootNode());
-		t.buildNodePaths(Tree.DEFAULT_DELIMITER, Convert.formatBoolean(req.getParameter("useNames")));
+		Tree.calculateTotalChildren(t.getRootNode());
+		t.buildNodePaths(SearchDocumentHandler.HIERARCHY_DELIMITER, Convert.formatBoolean(req.getParameter("useNames")));
 
 		//Place requested data on the request.
 		if (!StringUtil.isEmpty(sectionId)) {
