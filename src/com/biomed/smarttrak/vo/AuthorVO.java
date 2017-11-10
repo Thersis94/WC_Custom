@@ -2,8 +2,7 @@ package com.biomed.smarttrak.vo;
 
 //smt base libs
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.http.session.SMTSession;
-import com.siliconmtn.util.StringUtil;
+
 //sb libs
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
@@ -39,15 +38,13 @@ public class AuthorVO extends SecureSolrDocumentVO {
 	 * Sets the common data for an author using the request object
 	 * @param req
 	 */
-	protected void setData(ActionRequest req){
-		if(req.hasParameter(CREATOR_PROFILE_ID)){
+	protected void setData(ActionRequest req) {
+		if (req.hasParameter(CREATOR_PROFILE_ID)) {
 			setCreatorProfileId(req.getParameter(CREATOR_PROFILE_ID));
-		}else{//attempt to retrieve from the session if not on request
-			SMTSession ses = req.getSession();
-			UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
-			if(vo != null) {
-				setCreatorProfileId(StringUtil.checkVal(req.getParameter(CREATOR_PROFILE_ID), vo.getProfileId()));
-			}			
+		} else { //attempt to retrieve from the session if not on request
+			UserVO vo = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
+			if(vo != null)
+				setCreatorProfileId(vo.getProfileId());
 		}
 	}
 
@@ -64,5 +61,4 @@ public class AuthorVO extends SecureSolrDocumentVO {
 	public void setCreatorProfileId(String creatorProfileId) {
 		this.creatorProfileId = creatorProfileId;
 	}
-
 }
