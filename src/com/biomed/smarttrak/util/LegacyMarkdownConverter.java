@@ -48,7 +48,9 @@ public class LegacyMarkdownConverter extends CommandLineUtil {
 		INSIGHT_ABS("select insight_id, abstract_txt from custom.BIOMEDGPS_INSIGHT",
 				"UPDATE custom.BIOMEDGPS_INSIGHT set abstract_txt=? where insight_id=?"),
 		INSIGHT_MAIN("select insight_id, content_txt from custom.BIOMEDGPS_INSIGHT",
-				"UPDATE custom.BIOMEDGPS_INSIGHT set content_txt=? where insight_id=?");
+				"UPDATE custom.BIOMEDGPS_INSIGHT set content_txt=? where insight_id=?"),
+		UPDATES("select update_id, message_txt from custom.BIOMEDGPS_UPDATE",
+				"UPDATE custom.BIOMEDGPS_UPDATE set message_txt=? where update_id=?");
 
 		String updateSql;
 		String selectSql;
@@ -80,7 +82,7 @@ public class LegacyMarkdownConverter extends CommandLineUtil {
 	 */
 	public static void main(String[] args) {
 		LegacyMarkdownConverter eui = new LegacyMarkdownConverter(args);
-		eui.run();
+		eui.run(Table.UPDATES);
 		//eui.runTest()
 	}
 
@@ -103,7 +105,7 @@ public class LegacyMarkdownConverter extends CommandLineUtil {
 	 */
 	void run(Table t) {
 		List<GenericVO> recs = readRecords(t);
-		convertRecords(recs);
+		convertRecords(recs, t);
 		saveRecords(recs, t);
 	}
 
@@ -118,7 +120,7 @@ public class LegacyMarkdownConverter extends CommandLineUtil {
 				"[published](http://pdfaiw.uspto.gov/.aiw?PageNum=0&docid=20160367811) describing\n\n" +
 				"<details class=\"pre\"><summary class=\"pre-title\">\n**Wells Fargo Healthcare Conference 2016**\n</summary>\n" +
 				"Neuromodulation/interventional pain <a href=\"https://www.smarttrak.net/companies/11242/\">Advanced Biohealing</a> devices (spinal cord stimulation (SCS), dorsal root ganglion (DRG) stimulation, deep brain stimulation (DBS), and radiofrequency therapy (RF))\nHello!\n))"));
-		convertRecords(recs);
+		convertRecords(recs, Table.INSIGHT_MAIN);
 	}
 
 
@@ -145,17 +147,22 @@ public class LegacyMarkdownConverter extends CommandLineUtil {
 	 * converts the markup to html for each of the records retrieved
 	 * @param records
 	 */
-	protected void convertRecords(List<GenericVO> records) {
+	protected void convertRecords(List<GenericVO> records, Table t) {
 		int cnt = 0;
 		for (GenericVO vo : records) {
 			String markup = StringUtil.checkVal(vo.getValue());
 			if (StringUtil.isEmpty(markup))continue;
-			markup = fixInnerExpanders(vo.getKey(), markup);
-			markup = fixOuterExpanders(markup);
-			markup = fixLinks(markup);
-			markup = convertViaHttp(vo.getKey(), markup);
-			markup = removeExtraTags(markup);
-			markup = fixGraphs(markup);
+			if (Table.UPDATES == t) {
+				//for Updates we only want to fix links - they're already HTML markup
+				markup = fixLinks(markup);
+			} else {
+				markup = fixInnerExpanders(vo.getKey(), markup);
+				markup = fixOuterExpanders(markup);
+				markup = fixLinks(markup);
+				markup = convertViaHttp(vo.getKey(), markup);
+				markup = removeExtraTags(markup);
+				markup = fixGraphs(markup);
+			}
 			vo.setValue(markup);
 			//log.debug("*********************** converted " + vo.getKey() + " ***********************")
 			//log.debug("parsed=" + vo.getValue())
@@ -280,6 +287,7 @@ public class LegacyMarkdownConverter extends CommandLineUtil {
 	protected String fixLinks(String markup) {
 		String x = markup.replaceAll("(https?://www\\.smarttrak\\.net)?/(companies|markets|products)?/([0-9]+)?/", "/$2/qs/$3");
 		x = x.replaceAll("(https?://www\\.smarttrak\\.net)?/archives/([0-9]+)?/", "/analysis/qs/$2");
+		x = x.replaceAll("https?://www\\.smarttrak\\.net/", "/");
 		//some binary paths
 		x = x.replaceAll("/media/", "/secBinary/org/BMG_SMARTTRAK/");
 		return x;
