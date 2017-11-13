@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.mindbody.MindBodyClassApi.ClassDocumentType;
+import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyGetClassScheduleConfig.java
@@ -28,14 +29,14 @@ public class MindBodyGetClassScheduleConfig extends MindBodyClassConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyGetClassScheduleConfig(String sourceName, String sourceKey, List<Integer> siteIds) {
-		super(ClassDocumentType.GET_CLASS_SCHEDULE, sourceName, sourceKey, siteIds);
+	public MindBodyGetClassScheduleConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
+		super(ClassDocumentType.GET_CLASS_SCHEDULE, source, user);
 		this.classScheduleIds = new ArrayList<>();
 		this.sessionTypeIds = new ArrayList<>();
 	}
 
-	public MindBodyGetClassScheduleConfig(String sourceName, String sourceKey, List<Integer> siteIds, boolean includeClasses) {
-		this(sourceName, sourceKey, siteIds);
+	public MindBodyGetClassScheduleConfig(MindBodyCredentialVO source, MindBodyCredentialVO user, boolean includeClasses) {
+		this(source, user);
 		if(includeClasses) {
 			super.addField(INCLUDE_CLASSES_FIELD);
 		}

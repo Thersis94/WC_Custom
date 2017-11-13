@@ -1,8 +1,7 @@
 package com.mindbody.vo.classes;
 
-import java.util.List;
-
 import com.mindbody.MindBodyClassApi.ClassDocumentType;
+import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyRemoveClientsFromClassesConfig.java
@@ -28,8 +27,8 @@ public class MindBodyRemoveClientsFromClassesConfig extends MindBodyClassConfig 
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyRemoveClientsFromClassesConfig(String sourceName, String sourceKey, List<Integer> siteIds) {
-		super(ClassDocumentType.REMOVE_CLIENTS_FROM_CLASS, sourceName, sourceKey, siteIds);
+	public MindBodyRemoveClientsFromClassesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
+		super(ClassDocumentType.REMOVE_CLIENTS_FROM_CLASS, source, user);
 	}
 
 	/**

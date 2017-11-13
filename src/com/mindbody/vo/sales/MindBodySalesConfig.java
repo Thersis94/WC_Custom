@@ -1,8 +1,7 @@
 package com.mindbody.vo.sales;
 
-import java.util.List;
-
 import com.mindbody.vo.MindBodyConfig;
+import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
  * <b>Title:</b> MindBodySalesVO.java
@@ -22,8 +21,8 @@ public class MindBodySalesConfig extends MindBodyConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodySalesConfig(String sourceName, String sourceKey, List<Integer> siteIds) {
-		super(sourceName, sourceKey, siteIds);
+	public MindBodySalesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
+		super(source, user);
 	}
 
 }

@@ -1,13 +1,13 @@
-package com.mindbody.vo.clients;
+package com.mindbody.vo.staff;
 
-import com.mindbody.MindbodyClientApi.ClientDocumentType;
+import com.mindbody.MindBodyStaffApi.StaffDocumentType;
 import com.mindbody.vo.MindBodyConfig;
 import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
- * <b>Title:</b> MindBodyClientVO.java
+ * <b>Title:</b> MindBodyStaffVO.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> Common Configuration for Client API Calls.
+ * <b>Description:</b> Common Configuration for Class API Calls.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -15,32 +15,29 @@ import com.mindbody.vo.MindBodyCredentialVO;
  * @version 3.3.1
  * @since Nov 6, 2017
  ****************************************************************************/
-public class MindBodyClientConfig extends MindBodyConfig {
+public abstract class MindBodyStaffConfig extends MindBodyConfig {
 
-	private ClientDocumentType type;
+	private StaffDocumentType type;
 
 	/**
 	 * @param sourceName
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyClientConfig(ClientDocumentType type, MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(source, user);
+	public MindBodyStaffConfig(StaffDocumentType type, MindBodyCredentialVO sourceCredentials, MindBodyCredentialVO userCredentials) {
+		super(sourceCredentials, userCredentials);
 		this.type = type;
 	}
-
 	/**
 	 * @return the type
 	 */
-	public ClientDocumentType getType() {
+	public StaffDocumentType getType() {
 		return type;
 	}
-
 	/**
 	 * @param type the type to set.
 	 */
-	public void setType(ClientDocumentType type) {
+	public void setType(StaffDocumentType type) {
 		this.type = type;
 	}
-
 }

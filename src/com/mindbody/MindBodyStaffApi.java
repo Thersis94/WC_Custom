@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.apache.axis2.AxisFault;
 
-import com.mindbody.vo.staff.MindBodyStaffVO;
+import com.mindbody.vo.staff.MindBodyStaffConfig;
 import com.mindbodyonline.clients.api._0_5_1.Staff_x0020_ServiceStub;
 
 /****************************************************************************
@@ -19,7 +19,15 @@ import com.mindbodyonline.clients.api._0_5_1.Staff_x0020_ServiceStub;
  * @version 3.3.1
  * @since Nov 3, 2017
  ****************************************************************************/
-public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStub, MindBodyStaffVO> {
+public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStub, MindBodyStaffConfig> {
+
+	public enum StaffDocumentType {
+		GET_STAFF,
+		GET_STAFF_PERMISSIONS,
+		ADD_OR_UPDATE_STAFF,
+		GET_STAFF_IMG_URL,
+		VALIDATE_STAFF_LOGIN
+	}
 
 	/**
 	 * 
@@ -38,11 +46,16 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 
 	/* (non-Javadoc)
 	 * @see com.mindbody.MindBodyApiIntfc#getDocument(com.mindbody.MindBodyCallVO)
-	 * TODO - COMPLETE METHOD BODY
 	 */
 	@Override
-	public List<Object> getDocument(MindBodyStaffVO call) throws RemoteException {
-		return null;
-	}
+	public List<Object> getDocument(MindBodyStaffConfig config) throws RemoteException {
+		List<Object> resp = null;
+
+		if(config.isValid()) {
+			log.info("Endpoint not supported.");
+		} else {
+			throw new IllegalArgumentException("Config Not Valid.");
+		}
+		return resp;	}
 
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.mindbody.MindBodyClassApi.ClassDocumentType;
+import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyGetCoursesConfig.java
@@ -26,8 +27,8 @@ public class MindBodyGetCoursesConfig extends MindBodyClassConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyGetCoursesConfig(String sourceName, String sourceKey, List<Integer> siteIds) {
-		super(ClassDocumentType.GET_COURSES, sourceName, sourceKey, siteIds);
+	public MindBodyGetCoursesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
+		super(ClassDocumentType.GET_COURSES, source, user);
 		this.semesterIds = new ArrayList<>();
 	}
 

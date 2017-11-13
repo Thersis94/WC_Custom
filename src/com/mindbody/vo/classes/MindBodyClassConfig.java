@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.mindbody.MindBodyClassApi.ClassDocumentType;
 import com.mindbody.vo.MindBodyConfig;
+import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
  * <b>Title:</b> ClassCallVO.java
@@ -33,8 +34,8 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 	/**
 	 * 
 	 */
-	protected MindBodyClassConfig(ClassDocumentType type, String sourceName, String sourceKey, List<Integer> siteIds) {
-		super(sourceName, sourceKey, siteIds);
+	protected MindBodyClassConfig(ClassDocumentType type, MindBodyCredentialVO source, MindBodyCredentialVO user) {
+		super(source, user);
 		this.type = type;
 		this.clientIds = new ArrayList<>();
 		this.classIds = new ArrayList<>();

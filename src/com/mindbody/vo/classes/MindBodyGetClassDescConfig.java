@@ -3,6 +3,7 @@ package com.mindbody.vo.classes;
 import java.util.List;
 
 import com.mindbody.MindBodyClassApi.ClassDocumentType;
+import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyGetClassDescConfig.java
@@ -26,8 +27,8 @@ public class MindBodyGetClassDescConfig extends MindBodyClassConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyGetClassDescConfig(String sourceName, String sourceKey, List<Integer> siteIds) {
-		super(ClassDocumentType.GET_CLASS_DESC, sourceName, sourceKey, siteIds);
+	public MindBodyGetClassDescConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
+		super(ClassDocumentType.GET_CLASS_DESC, source, user);
 	}
 
 

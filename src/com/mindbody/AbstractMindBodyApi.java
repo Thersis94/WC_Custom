@@ -9,6 +9,7 @@ import org.apache.axis2.transport.http.HTTPConstants;
 import org.apache.log4j.Logger;
 
 import com.mindbody.vo.MindBodyConfig;
+import com.mindbody.vo.MindBodyCredentialVO;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfInt;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfLong;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfString;
@@ -32,7 +33,6 @@ import com.mindbodyonline.clients.api._0_5_1.XMLDetailLevel;
 public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConfig> implements MindBodyApiIntfc<T, S> {
 
 	protected Logger log;
-	public static final int PAGE_SIZE = 25;
 
 	/**
 	 * 
@@ -51,11 +51,11 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 	 * @return
 	 */
 	@Override
-	public UserCredentials getUserCredentials(String userName, String password, List<Integer> siteIds) {
+	public UserCredentials getUserCredentials(MindBodyCredentialVO user) {
 		UserCredentials uc = UserCredentials.Factory.newInstance();
-		uc.setPassword(password);
-		uc.setUsername(userName);
-		uc.setSiteIDs(buildArrayOfInt(siteIds));
+		uc.setPassword(user.getPassword());
+		uc.setUsername(user.getUserName());
+		uc.setSiteIDs(buildArrayOfInt(user.getSiteIds()));
 
 		return uc;
 	}
@@ -68,11 +68,11 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 	 * @param siteIds
 	 */
 	@Override
-	public SourceCredentials getSourceCredentials(String sourceName, String password, List<Integer> siteIds) {
+	public SourceCredentials getSourceCredentials(MindBodyCredentialVO source) {
 		SourceCredentials sc = SourceCredentials.Factory.newInstance();
-		sc.setPassword(password);
-		sc.setSourceName(sourceName);
-		sc.setSiteIDs(buildArrayOfInt(siteIds));
+		sc.setPassword(source.getPassword());
+		sc.setSourceName(source.getUserName());
+		sc.setSiteIDs(buildArrayOfInt(source.getSiteIds()));
 
 		return sc;
 	}
@@ -102,11 +102,11 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 		if(config.isValid()) {
 
 			//Always Add Source Credentials.
-			req.setSourceCredentials(getSourceCredentials(config.getSourceName(), config.getSourceKey(), config.getSiteIds()));
+			req.setSourceCredentials(getSourceCredentials(config.getSourceCredentials()));
 
 			//If Config has User Credentials, add them.
 			if(config.hasUser()) {
-				req.setUserCredentials(getUserCredentials(config.getUserName(), config.getUserPass(), config.getSiteIds()));
+				req.setUserCredentials(getUserCredentials(config.getUserCredentials()));
 			}
 
 			//Set Standard Config Params.

@@ -21,6 +21,22 @@ import com.mindbodyonline.clients.api._0_5_1.Sale_x0020_ServiceStub;
  ****************************************************************************/
 public class MindBodySaleApi extends AbstractMindBodyApi<Sale_x0020_ServiceStub, MindBodySalesConfig> {
 
+	public enum SaleDocumentType {
+		GET_ACCEPTED_CARD_TYPE,
+		CHECKOUT_SHOPPING_CART,
+		GET_SALES,
+		GET_SERVICES,
+		UPDATE_SERVICES,
+		GET_PACKAGES,
+		GET_PRODUCTS,
+		GET_CONTRACTS,
+		PURCHASE_CONTRACTS,
+		UPDATE_PRODUCTS,
+		REDEEM_SPA_FINDER_WELLNESS_CARD,
+		GET_CUSTOM_PAYMENT_METHODS,
+		UPDATE_SALE_DATE,
+		RETURN_SALE
+	}
 	/**
 	 * 
 	 */

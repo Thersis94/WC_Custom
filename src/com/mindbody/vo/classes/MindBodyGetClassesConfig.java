@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.mindbody.MindBodyClassApi.ClassDocumentType;
+import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyGetClassesConfig.java
@@ -32,8 +33,8 @@ public class MindBodyGetClassesConfig extends MindBodyClassConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyGetClassesConfig(String sourceName, String sourceKey, List<Integer> siteIds) {
-		super(ClassDocumentType.GET_CLASSES, sourceName, sourceKey, siteIds);
+	public MindBodyGetClassesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
+		super(ClassDocumentType.GET_CLASSES, source, user);
 		this.classDescriptionIds = new ArrayList<>();
 		this.sessionTypeIds = new ArrayList<>();
 		this.semesterIds = new ArrayList<>();

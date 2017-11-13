@@ -7,6 +7,7 @@ import org.apache.axis2.AxisFault;
 import org.apache.axis2.client.Stub;
 
 import com.mindbody.vo.MindBodyConfig;
+import com.mindbody.vo.MindBodyCredentialVO;
 import com.mindbodyonline.clients.api._0_5_1.MBRequest;
 import com.mindbodyonline.clients.api._0_5_1.SourceCredentials;
 import com.mindbodyonline.clients.api._0_5_1.UserCredentials;
@@ -31,7 +32,7 @@ public interface MindBodyApiIntfc<T extends Stub, S extends MindBodyConfig> {
 	 * @param siteIds
 	 * @return
 	 */
-	public UserCredentials getUserCredentials(String userName, String password, List<Integer> siteIds);
+	public UserCredentials getUserCredentials(MindBodyCredentialVO user);
 
 
 	/**
@@ -41,7 +42,7 @@ public interface MindBodyApiIntfc<T extends Stub, S extends MindBodyConfig> {
 	 * @param siteIds
 	 * @return
 	 */
-	public SourceCredentials getSourceCredentials(String sourceName, String password, List<Integer> siteIds);
+	public SourceCredentials getSourceCredentials(MindBodyCredentialVO user);
 
 
 	/**
