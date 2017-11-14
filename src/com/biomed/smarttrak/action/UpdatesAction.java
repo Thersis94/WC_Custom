@@ -312,7 +312,7 @@ public class UpdatesAction extends SBActionAdapter {
 		req.setParameter("fmid", mod.getPageModuleId());
 
 		//Set Custom Sort Field and Direction.
-		req.setParameter("sortField", "moduleType asc, publishDtNoTime_s desc, order_i asc, publishTime_s ");
-		req.setParameter("sortDirection", "desc");
+		req.setParameter("sortField", "moduleType asc, publishDate desc, order_i ");
+		req.setParameter("sortDirection", "asc");
 	}
 }
