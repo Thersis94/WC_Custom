@@ -3,6 +3,8 @@ package com.mindbody.vo;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mindbodyonline.clients.api._0_5_1.XMLDetailLevel;
+
 /****************************************************************************
  * <b>Title:</b> MindBodyCallVO.java
  * <b>Project:</b> WC_Custom
@@ -21,13 +23,13 @@ public abstract class MindBodyConfig {
 	private MindBodyCredentialVO userCredentials;
 	private List<Integer> siteIds;
 	protected List<String> fields;
-	protected List<String> filters;
+
 	private int pageNo;
 	private int pageSize = DEFAULT_PAGE_SIZE;
+	private XMLDetailLevel.Enum xmlDetailLevel = XMLDetailLevel.FULL;
 
 	protected MindBodyConfig(MindBodyCredentialVO source) {
 		this.fields = new ArrayList<>();
-		this.filters = new ArrayList<>();
 		this.sourceCredentials = source;
 	}
 
@@ -71,15 +73,10 @@ public abstract class MindBodyConfig {
 		return pageSize;
 	}
 
-	public List<String> getFilters() {
-		return filters;
+	public XMLDetailLevel.Enum getXmlDetailLevel() {
+		return xmlDetailLevel;
 	}
 
-	public void addFilter(String filter) {
-		filters.add(filter);
-	}
-
-	
 	/**
 	 * @param siteIds the siteIds to set.
 	 */
@@ -91,13 +88,14 @@ public abstract class MindBodyConfig {
 		this.fields = fields;
 	}
 
-	public void setFilters(List<String> filters) {
-		this.filters = filters;
-	}
 	public void setPagesize(int pageSize) {
 		this.pageSize = pageSize;
 	}
-	
+
+	public void setXmlDetailLevel(XMLDetailLevel.Enum xmlDetailLevel) {
+		this.xmlDetailLevel = xmlDetailLevel;
+	}
+
 	/**
 	 * @return the sourceCredentials
 	 */
@@ -131,14 +129,10 @@ public abstract class MindBodyConfig {
 	}
 
 	public boolean isValid() {
-		return sourceCredentials != null && sourceCredentials.isValid();
+		return sourceCredentials != null && sourceCredentials.isValid() && pageNo > -1 && pageSize > 0 && xmlDetailLevel != null;
 	}
 
 	public boolean hasFields() {
 		return fields != null && !fields.isEmpty();
-	}
-
-	public boolean hasFilters() {
-		return filters != null && !filters.isEmpty();
 	}
 }

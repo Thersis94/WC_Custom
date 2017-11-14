@@ -1,5 +1,8 @@
 package com.mindbody.vo.staff;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.mindbody.MindBodyStaffApi.StaffDocumentType;
 import com.mindbody.vo.MindBodyConfig;
 import com.mindbody.vo.MindBodyCredentialVO;
@@ -18,6 +21,7 @@ import com.mindbody.vo.MindBodyCredentialVO;
 public abstract class MindBodyStaffConfig extends MindBodyConfig {
 
 	private StaffDocumentType type;
+	private List<Long> staffIds;
 
 	/**
 	 * @param sourceName
@@ -27,17 +31,34 @@ public abstract class MindBodyStaffConfig extends MindBodyConfig {
 	public MindBodyStaffConfig(StaffDocumentType type, MindBodyCredentialVO sourceCredentials, MindBodyCredentialVO userCredentials) {
 		super(sourceCredentials, userCredentials);
 		this.type = type;
+		this.staffIds = new ArrayList<>();
 	}
+
 	/**
 	 * @return the type
 	 */
 	public StaffDocumentType getType() {
 		return type;
 	}
+
 	/**
 	 * @param type the type to set.
 	 */
 	public void setType(StaffDocumentType type) {
 		this.type = type;
+	}
+
+	/**
+	 * @return the staffIds
+	 */
+	public List<Long> getStaffIds() {
+		return staffIds;
+	}
+
+	/**
+	 * @param staffIds the staffIds to set.
+	 */
+	public void setStaffIds(List<Long> staffIds) {
+		this.staffIds = staffIds;
 	}
 }

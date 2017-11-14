@@ -169,17 +169,17 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		//Set Any Class Description Ids
 		if(!config.getClassDescriptionIds().isEmpty()) {
-			req.setClassDescriptionIDs(buildArrayOfInt(config.getClassDescriptionIds()));
+			req.setClassDescriptionIDs(MindBodyUtil.buildArrayOfInt(config.getClassDescriptionIds()));
 		}
 
 		//Set Any Class Ids
 		if(!config.getClassIds().isEmpty()) {
-			req.setClassIDs(buildArrayOfInt(config.getClassIds()));
+			req.setClassIDs(MindBodyUtil.buildArrayOfInt(config.getClassIds()));
 		}
 
 		//Set Any Staff Ids
 		if(!config.getStaffIds().isEmpty()) {
-			req.setStaffIDs(buildArrayOfLong(config.getStaffIds()));
+			req.setStaffIDs(MindBodyUtil.buildArrayOfLong(config.getStaffIds()));
 		}
 
 		//Set Start DateTime
@@ -199,22 +199,22 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		//Set Any Program Ids
 		if(!config.getProgramIds().isEmpty()) {
-			req.setProgramIDs(buildArrayOfInt(config.getProgramIds()));
+			req.setProgramIDs(MindBodyUtil.buildArrayOfInt(config.getProgramIds()));
 		}
 
 		//Set Any SessionTypeIds
 		if(!config.getSessionTypeIds().isEmpty()) {
-			req.setSessionTypeIDs(buildArrayOfInt(config.getSessionTypeIds()));
+			req.setSessionTypeIDs(MindBodyUtil.buildArrayOfInt(config.getSessionTypeIds()));
 		}
 
 		//Set Any Location Ids
 		if(!config.getClassDescriptionIds().isEmpty()) {
-			req.setLocationIDs(buildArrayOfInt(config.getLocationIds()));
+			req.setLocationIDs(MindBodyUtil.buildArrayOfInt(config.getLocationIds()));
 		}
 
 		//Set Any Semester Ids
 		if(!config.getSemesterIds().isEmpty()) {
-			req.setSemesterIDs(buildArrayOfInt(config.getSemesterIds()));
+			req.setSemesterIDs(MindBodyUtil.buildArrayOfInt(config.getSemesterIds()));
 		}
 
 		//Set Hide Canceled Classes Flag
@@ -268,22 +268,22 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		//Set Any Class Description Ids
 		if(!config.getClassDescriptionIds().isEmpty()) {
-			req.setClassDescriptionIDs(buildArrayOfInt(config.getClassDescriptionIds()));
+			req.setClassDescriptionIDs(MindBodyUtil.buildArrayOfInt(config.getClassDescriptionIds()));
 		}
 
 		//Set Any Program Ids
 		if(!config.getProgramIds().isEmpty()) {
-			req.setProgramIDs(buildArrayOfInt(config.getProgramIds()));
+			req.setProgramIDs(MindBodyUtil.buildArrayOfInt(config.getProgramIds()));
 		}
 
 		//Set Any Staff Ids
 		if(!config.getStaffIds().isEmpty()) {
-			req.setStaffIDs(buildArrayOfLong(config.getStaffIds()));
+			req.setStaffIDs(MindBodyUtil.buildArrayOfLong(config.getStaffIds()));
 		}
 
 		//Set Any Location Ids
 		if(!config.getClassDescriptionIds().isEmpty()) {
-			req.setLocationIDs(buildArrayOfInt(config.getLocationIds()));
+			req.setLocationIDs(MindBodyUtil.buildArrayOfInt(config.getLocationIds()));
 		}
 
 		//Set Start Class Time
@@ -332,11 +332,11 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 	private void configureAddClientsToClassRequest(AddClientsToClassesRequest req, MindBodyAddClientsToClassConfig config) {
 
 		if(!config.getClientIds().isEmpty()) {
-			req.setClientIDs(buildArrayOfString(config.getClientIds()));
+			req.setClientIDs(MindBodyUtil.buildArrayOfString(config.getClientIds()));
 		}
 		//Set Any Class Ids
 		if(!config.getClassIds().isEmpty()) {
-			req.setClassIDs(buildArrayOfInt(config.getClassIds()));
+			req.setClassIDs(MindBodyUtil.buildArrayOfInt(config.getClassIds()));
 		}
 
 		//Set RequirePayment Flag and ClientServiceId
@@ -393,27 +393,27 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		//Set Any Location Ids
 		if(!config.getLocationIds().isEmpty()) {
-			req.setLocationIDs(buildArrayOfInt(config.getLocationIds()));
+			req.setLocationIDs(MindBodyUtil.buildArrayOfInt(config.getLocationIds()));
 		}
 
 		//Set Any Class Schedule Ids
 		if(!config.getClassScheduleIds().isEmpty()) {
-			req.setClassScheduleIDs(buildArrayOfInt(config.getClassScheduleIds()));
+			req.setClassScheduleIDs(MindBodyUtil.buildArrayOfInt(config.getClassScheduleIds()));
 		}
 
 		//Set Any Staff Ids
 		if(!config.getStaffIds().isEmpty()) {
-			req.setStaffIDs(buildArrayOfLong(config.getStaffIds()));
+			req.setStaffIDs(MindBodyUtil.buildArrayOfLong(config.getStaffIds()));
 		}
 
 		//Set Any Program Ids
 		if(!config.getProgramIds().isEmpty()) {
-			req.setProgramIDs(buildArrayOfInt(config.getProgramIds()));
+			req.setProgramIDs(MindBodyUtil.buildArrayOfInt(config.getProgramIds()));
 		}
 
 		//Set Any SessionTypeIds
 		if(!config.getSessionTypeIds().isEmpty()) {
-			req.setSessionTypeIDs(buildArrayOfInt(config.getSessionTypeIds()));
+			req.setSessionTypeIDs(MindBodyUtil.buildArrayOfInt(config.getSessionTypeIds()));
 		}
 
 		//Set Start DateTime
@@ -529,12 +529,12 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		//Set And Client Ids
 		if(!config.getClientIds().isEmpty()) {
-			req.setClientIDs(buildArrayOfString(config.getClientIds()));
+			req.setClientIDs(MindBodyUtil.buildArrayOfString(config.getClientIds()));
 		}
 
 		//Set Any Class Ids
 		if(!config.getClassIds().isEmpty()) {
-			req.setClassIDs(buildArrayOfInt(config.getClassIds()));
+			req.setClassIDs(MindBodyUtil.buildArrayOfInt(config.getClassIds()));
 		}
 
 		//Set Test Flag

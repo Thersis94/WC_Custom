@@ -1,7 +1,5 @@
 package com.mindbody;
 
-import java.util.List;
-
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.client.ServiceClient;
 import org.apache.axis2.client.Stub;
@@ -10,13 +8,9 @@ import org.apache.log4j.Logger;
 
 import com.mindbody.vo.MindBodyConfig;
 import com.mindbody.vo.MindBodyCredentialVO;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfInt;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfLong;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfString;
 import com.mindbodyonline.clients.api._0_5_1.MBRequest;
 import com.mindbodyonline.clients.api._0_5_1.SourceCredentials;
 import com.mindbodyonline.clients.api._0_5_1.UserCredentials;
-import com.mindbodyonline.clients.api._0_5_1.XMLDetailLevel;
 
 /****************************************************************************
  * <b>Title:</b> AbstractMindBodyApi.java
@@ -55,7 +49,7 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 		UserCredentials uc = UserCredentials.Factory.newInstance();
 		uc.setPassword(user.getPassword());
 		uc.setUsername(user.getUserName());
-		uc.setSiteIDs(buildArrayOfInt(user.getSiteIds()));
+		uc.setSiteIDs(MindBodyUtil.buildArrayOfInt(user.getSiteIds()));
 
 		return uc;
 	}
@@ -72,7 +66,7 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 		SourceCredentials sc = SourceCredentials.Factory.newInstance();
 		sc.setPassword(source.getPassword());
 		sc.setSourceName(source.getUserName());
-		sc.setSiteIDs(buildArrayOfInt(source.getSiteIds()));
+		sc.setSiteIDs(MindBodyUtil.buildArrayOfInt(source.getSiteIds()));
 
 		return sc;
 	}
@@ -110,59 +104,17 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 			}
 
 			//Set Standard Config Params.
-			req.setXMLDetail(XMLDetailLevel.FULL);
+			req.setXMLDetail(config.getXmlDetailLevel());
 			req.setPageSize(config.getPageSize());
 			req.setCurrentPageIndex(config.getPageNo());
 
 			//Set Any fields configured on the Config.
 			if(config.hasFields()) {
-				ArrayOfString fields = ArrayOfString.Factory.newInstance();
-				for(String f : config.getFields()) {
-					fields.addString(f);
-				}
-				req.setFields(fields);
+				req.setFields(MindBodyUtil.buildArrayOfString(config.getFields()));
 			}
+			
 		} else {
 			throw new IllegalArgumentException("Config Object is Invalid.");
 		}
-	}
-
-	/**
-	 * Builds a MindBody ArrayOfInt Object from provided List.
-	 * @param config
-	 * @param req
-	 */
-	protected ArrayOfInt buildArrayOfInt(List<Integer> vals) {
-		ArrayOfInt intArr = ArrayOfInt.Factory.newInstance();
-		for(int i : vals) {
-			intArr.addInt(i);
-		}
-		return intArr;
-	}
-
-	/**
-	 * Builds a MindBody ArrayOfLong Object from provided List.
-	 * @param config
-	 * @param req
-	 */
-	protected ArrayOfLong buildArrayOfLong(List<Long> vals) {
-		ArrayOfLong longArr = ArrayOfLong.Factory.newInstance();
-		for(long i : vals) {
-			longArr.addLong(i);
-		}
-		return longArr;
-	}
-
-	/**
-	 * Builds a MindBody ArrayOfInt Object from provided List.
-	 * @param config
-	 * @param req
-	 */
-	protected ArrayOfString buildArrayOfString(List<String> vals) {
-		ArrayOfString stringArr = ArrayOfString.Factory.newInstance();
-		for(String i : vals) {
-			stringArr.addString(i);
-		}
-		return stringArr;
 	}
 }
