@@ -393,11 +393,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		return getPublishDate();
 	}
 
-	@SolrField(name="publishDtNoTime_s")
-	public String getPublishDtNoTime() {
-		return Convert.formatDate(getPublishDate(), Convert.DATE_DASH_PATTERN);
-	}
-
 	@SolrField(name="companyLink_s")
 	public String getCompanyLink() {
 		if (StringUtil.isEmpty(companyId)) return "";
@@ -430,11 +425,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	@Deprecated
 	public void setCompanyShortName(String shortNm){
 		setCompanyNm(shortNm);
-	}
-
-	@SolrField(name="publishTime_s")
-	public String getPublishTime() {
-		return Convert.formatDate(getPublishDate(), Convert.TIME_LONG_PATTERN);
 	}
 
 	/**
