@@ -18,6 +18,8 @@ import com.smt.sitebuilder.approval.ApprovalException;
 import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
+import opennlp.tools.util.StringUtil;
+
 /****************************************************************************
  * <b>Title</b>: LeihsetApprover.java
  * <b>Description:</b> Handles all tasks related to approving/rejecting/canceling
@@ -31,7 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class LeihsetApprover extends AbstractApprover {
-	
+
 	public LeihsetApprover(SMTDBConnection conn, Map<String, Object> attributes) {
 		super(conn, attributes);
 	}
@@ -47,7 +49,7 @@ public class LeihsetApprover extends AbstractApprover {
 		String archive = "UPDATE " + customDb + "DPY_SYN_LEIHSET SET ARCHIVE_FLG = 1 WHERE LEIHSET_ID = ?";
 		String activate = "UPDATE " + customDb + "DPY_SYN_LEIHSET SET LEIHSET_GROUP_ID = null WHERE LEIHSET_ID = ?";
 		String delete = "DELETE FROM " + customDb + "DPY_SYN_LEIHSET WHERE LEIHSET_ID = ?";
-		
+
 		for (ApprovalVO vo : items) {
 			SyncStatus store = vo.getSyncStatus();
 			try {
@@ -55,19 +57,19 @@ public class LeihsetApprover extends AbstractApprover {
 					case PendingCreate:
 						executeQuery(activate, vo.getWcKeyId());
 						break;
-						
+
 					case PendingDelete:
 						executeQuery(delete, vo.getWcKeyId());
 						break;
-	
+
 					case PendingUpdate:
 						// Check if the new item is a different version that the old item						
-						if (vo.getOrigWcKeyId() != null) {
+						if (!StringUtil.isEmpty(vo.getOrigWcKeyId())) {
 							// Since we are dealing with a new version of an old document we archive the old 
 							// document instead of just deleting it.
 							executeQuery(archive, vo.getOrigWcKeyId());
 						}
-						
+
 						executeQuery(activate, vo.getWcKeyId());
 						break;
 					default:
@@ -76,7 +78,7 @@ public class LeihsetApprover extends AbstractApprover {
 
 				vo.setSyncCompleteDt(Convert.getCurrentTimestamp());
 				vo.setSyncStatus(SyncStatus.Approved);
-				
+
 			} catch (DatabaseException e) {
 				log.error("Unable to execute query for approval vo with status " + vo.getSyncStatus() + 
 						", key id " + vo.getWcKeyId() + ", and orig id " + vo.getOrigWcKeyId());
@@ -85,8 +87,8 @@ public class LeihsetApprover extends AbstractApprover {
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * Delete the in progress item
 	 */
@@ -94,19 +96,19 @@ public class LeihsetApprover extends AbstractApprover {
 	public void cancel(ApprovalVO... items) throws ApprovalException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String delete = "DELETE FROM " + customDb + "DPY_SYN_LEIHSET WHERE LEIHSET_ID = ?";
-		
+
 		for (ApprovalVO vo : items) {
 			try {
 				// If we are not rejecting a delete, delete the associated IFU record.
 				if (vo.getSyncStatus() != SyncStatus.PendingDelete)
 					executeQuery(delete, vo.getWcKeyId());
-				
+
 				vo.setSyncCompleteDt(Convert.getCurrentTimestamp());
 				vo.setSyncStatus(SyncStatus.Declined);
 				vo.setRejectCode("Cancelled");
 				vo.setRejectReason("Cancelled");
-				
-				
+
+
 			} catch (DatabaseException e) {
 				log.error("Unable to cancel approval with status " + vo.getSyncStatus() + " and id " + vo.getWcKeyId());
 				vo.setSyncStatus(SyncStatus.InProgress);
@@ -147,12 +149,12 @@ public class LeihsetApprover extends AbstractApprover {
 				ps.setString(3, SyncStatus.PendingDelete.name());
 				ps.setString(4, SyncStatus.PendingUpdate.name());
 			}
-			
+
 			ResultSet rs = ps.executeQuery();
-			
+
 			while (rs.next())
 				appItems.add(new ApprovalVO(rs, se));
-			
+
 		} catch (SQLException e) {
 			log.error("Unable to get list of IFUs for approval status: " + status, e);
 			throw new ApprovalException(e);

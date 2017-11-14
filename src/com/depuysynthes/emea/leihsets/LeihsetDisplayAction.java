@@ -12,8 +12,9 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -51,21 +52,22 @@ public class LeihsetDisplayAction extends SimpleActionAdapter {
 		super.retrieve(req);
 	}
 
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		
+
 		// Get the default language - give the user a list to choose from if one wasn't passed
-		String category = StringUtil.checkVal(req.getParameter("category"), null);
-		if (category == null) {
-			super.putModuleData(this.loadCategoryTree(page.isPreviewMode()));
-		} else {
+		if (req.hasParameter("category")) {
 			//grab PageVo for preview mode
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			super.putModuleData(loadLeihsets(site.getOrganizationId(), category, page.isPreviewMode()));
+			putModuleData(loadLeihsets(site.getOrganizationId(), req.getParameter("category"), page.isPreviewMode()));
+		} else {
+			putModuleData(loadCategoryTree(page.isPreviewMode()));
 		}
 	}
 
@@ -79,10 +81,10 @@ public class LeihsetDisplayAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected List<LeihsetVO> loadLeihsets(String orgId, String bodyArea, boolean isPreviewMode) {
-		String sql = getLeihsetQuery(bodyArea, isPreviewMode);
+		String sql = getLeihsetQuery(isPreviewMode);
 		log.debug(sql);
 
-		Map<String,LeihsetVO> data = new LinkedHashMap<>();
+		Map<String,LeihsetVO> data = new LinkedHashMap<>(100);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, bodyArea);
 			ps.setString(2, orgId);
@@ -91,12 +93,9 @@ public class LeihsetDisplayAction extends SimpleActionAdapter {
 			while (rs.next()) {
 				String unqId = rs.getString("category_nm") + "~" + rs.getString("leihset_id");
 				LeihsetVO vo = data.get(unqId);
-				if (vo == null) {
-					vo = new LeihsetVO(rs, false);
-					if (vo.getLeihsetGroupId() == null) 
-						vo.setLeihsetGroupId(vo.getLeihsetId());
-				}
-				
+				if (vo == null)
+					vo = makeLeihset(rs);
+
 				vo.setCategoryName(rs.getString("category_nm"));
 				vo.setParentCategoryName(rs.getString("parent_category_nm"));
 
@@ -106,17 +105,17 @@ public class LeihsetDisplayAction extends SimpleActionAdapter {
 		} catch (SQLException e) {
 			log.error("Unable to load leihsets", e);
 		}
-		
+
 		//if we're in preview mode, build a new list of Leihsets by inspecting and honoring groupIds from the VOs
 		//if we're not in preview mode none of this matters (has no effect because the query did not get us any pending records)
 		if (isPreviewMode) {
 			Map<String,LeihsetVO> unqLeihsets = new LinkedHashMap<>(data.size());
 			for (LeihsetVO vo : data.values())
 				unqLeihsets.put(vo.getCategoryName() + "~" + vo.getLeihsetGroupId(), vo);
-			
+
 			data = unqLeihsets;
 		}
-		
+
 
 		log.debug("loaded " + data.size() + " liehsets");
 		List<LeihsetVO> list = new ArrayList<>(data.values());
@@ -126,23 +125,38 @@ public class LeihsetDisplayAction extends SimpleActionAdapter {
 
 
 	/**
+	 * Abstraction from RS above to avoid code complexity.  
+	 * Creates a new VO from the given RS.
+	 * @param rs
+	 * @return
+	 */
+	private LeihsetVO makeLeihset(ResultSet rs) {
+		LeihsetVO vo = new LeihsetVO(rs, false);
+		if (StringUtil.isEmpty(vo.getLeihsetGroupId())) 
+			vo.setLeihsetGroupId(vo.getLeihsetId());
+
+		return vo;
+	}
+
+
+	/**
 	 * builds the complex union query that loads the language-specific IFUs
 	 * as well as the default-language IFUs (in their absense)
 	 * @param lang
 	 * @return
 	 */
-	private String getLeihsetQuery(String bodyArea, boolean isPreviewMode) {
+	private String getLeihsetQuery(boolean isPreviewMode) {
 		String cDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(500);
 		sql.append("SELECT l.*, la.*, lc.CATEGORY_NM, lc2.category_nm as parent_category_nm, ");
-		sql.append("dsm.TITLE_TXT, dsm.TRACKING_NO_TXT ");
-		sql.append("FROM ").append(cDb).append("DPY_SYN_LEIHSET l ");
-		sql.append("LEFT JOIN ").append(cDb).append("DPY_SYN_LEIHSET_ASSET la on la.leihset_id=l.leihset_id ");
-		sql.append("INNER JOIN ").append(cDb).append("DPY_SYN_LEIHSET_CATEGORY_XR xr on xr.leihset_id=l.leihset_id ");
-		sql.append("INNER JOIN ").append(cDb).append("DPY_SYN_LEIHSET_CATEGORY lc on lc.leihset_category_id=xr.leihset_category_id "); //cat at level 3
-		sql.append("INNER JOIN ").append(cDb).append("DPY_SYN_LEIHSET_CATEGORY lc2 on lc.parent_id=lc2.leihset_category_id and lc2.leihset_category_id=? "); //cat at level 2, parent of level 3
-		sql.append("LEFT JOIN ").append(cDb).append("DPY_SYN_MEDIABIN dsm on dsm.DPY_SYN_MEDIABIN_ID = la.DPY_SYN_MEDIABIN_ID ");
-		sql.append("WHERE l.archive_flg=0 and l.ORGANIZATION_ID=? ");
+		sql.append("dsm.TITLE_TXT, dsm.TRACKING_NO_TXT");
+		sql.append(DBUtil.FROM_CLAUSE).append(cDb).append("DPY_SYN_LEIHSET l");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(cDb).append("DPY_SYN_LEIHSET_ASSET la on la.leihset_id=l.leihset_id");
+		sql.append(DBUtil.INNER_JOIN).append(cDb).append("DPY_SYN_LEIHSET_CATEGORY_XR xr on xr.leihset_id=l.leihset_id");
+		sql.append(DBUtil.INNER_JOIN).append(cDb).append("DPY_SYN_LEIHSET_CATEGORY lc on lc.leihset_category_id=xr.leihset_category_id"); //cat at level 3
+		sql.append(DBUtil.INNER_JOIN).append(cDb).append("DPY_SYN_LEIHSET_CATEGORY lc2 on lc.parent_id=lc2.leihset_category_id and lc2.leihset_category_id=?"); //cat at level 2, parent of level 3
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(cDb).append("DPY_SYN_MEDIABIN dsm on dsm.DPY_SYN_MEDIABIN_ID = la.DPY_SYN_MEDIABIN_ID ");
+		sql.append("WHERE l.ORGANIZATION_ID=? and l.archive_flg=0 ");
 		if (!isPreviewMode) sql.append("and l.leihset_group_id is null ");
 		//putting groupId first ensures we get live records before pending ones, which then get replaced on our Map and sorted by the Comparator
 		sql.append("ORDER BY lc.category_nm, l.leihset_group_id, l.ORDER_NO, l.LEIHSET_NM, la.ORDER_NO, la.ASSET_NM");
