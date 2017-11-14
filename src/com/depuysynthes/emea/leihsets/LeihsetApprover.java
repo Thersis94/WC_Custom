@@ -11,14 +11,13 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.approval.AbstractApprover;
 import com.smt.sitebuilder.approval.ApprovalController.ModuleType;
 import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 import com.smt.sitebuilder.approval.ApprovalException;
 import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.common.constants.Constants;
-
-import opennlp.tools.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: LeihsetApprover.java
