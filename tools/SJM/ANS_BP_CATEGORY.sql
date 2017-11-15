@@ -1,6 +1,0 @@
-insert into ans_bp_category values (1, 'Spine Products Used', '9/11/2007')
-insert into ans_bp_category values (2, 'Procedures Physician Performs', '9/11/2007')
-insert into ans_bp_category values (3, 'ANS Projected Annual Usage', '9/11/2007')
-insert into ans_bp_category values (4, 'ANS Projected Annual Usage', '9/11/2007')
-insert into ans_bp_category values (5, 'Need Label', '9/11/2007')
-insert into ans_bp_category values (6, 'Notes and Comments', '9/11/2007')

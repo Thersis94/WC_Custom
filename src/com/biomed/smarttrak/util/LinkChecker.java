@@ -45,7 +45,7 @@ public class LinkChecker extends CommandLineUtil {
 	private static final String PRODUCTS = "products";
 	private static final String COMPANIES = "companies";
 	private static final String MARKETS = "markets";
-	private static final String INSIGHTS = "insights";
+	private static final String INSIGHTS = "analysis";
 	private static final String UPDATES = "updates";
 
 	/**
@@ -56,8 +56,7 @@ public class LinkChecker extends CommandLineUtil {
 		PROD_ATTR_XR(PRODUCTS,"select product_id, value_txt from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR"),
 		MKRT_ATTR_XR(MARKETS,"select market_id, value_txt from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR"),
 		INSIGHT_ABS(INSIGHTS,"select insight_id, abstract_txt from custom.BIOMEDGPS_INSIGHT"),
-		INSIGHT_MAIN(INSIGHTS,"select insight_id, content_txt from custom.BIOMEDGPS_INSIGHT"),
-		UPDATE(UPDATES,"select update_id, message_txt from custom.BIOMEDGPS_UPDATE");
+		INSIGHT_MAIN(INSIGHTS,"select insight_id, content_txt from custom.BIOMEDGPS_INSIGHT");
 
 		String selectSql;
 		String section;
@@ -74,10 +73,10 @@ public class LinkChecker extends CommandLineUtil {
 	List<String> validProductIds;
 	List<String> validMarketIds;
 	List<String> validInsightIds;
-	List<String> validUpdateIds;
 	List<String> recentlyChecked;
 	StringEncoder encoder;
 	List<String> getDomains; //known domains that don't support HTTP HEAD requests - set in config file
+	List<String> getDomainsReport; //temp object for domains we'll report in the log, at the end.
 	boolean onlyBroken;
 	String mockUserAgent;
 
@@ -101,7 +100,7 @@ public class LinkChecker extends CommandLineUtil {
 		validProductIds = new ArrayList<>(5000);
 		validMarketIds = new ArrayList<>(5000);
 		validInsightIds = new ArrayList<>(5000);
-		validUpdateIds = new ArrayList<>(5000);
+		getDomainsReport = new ArrayList<>(50);
 		recentlyChecked = new ArrayList<>(15000);
 		encoder = new StringEncoder();
 		getDomains = Arrays.asList(props.getProperty("getDomains").split(","));
@@ -132,11 +131,10 @@ public class LinkChecker extends CommandLineUtil {
 		String days = props.getProperty("runInterval");
 		//populate our lookup tables for companies, markets, insights, and products. ..so we're not http-spamming our own site!
 		populateLookup("select market_id from custom.biomedgps_market where status_no in ('P','E')", validMarketIds);
-		populateLookup("select product_id from custom.biomedgps_product where status_no in ('P','E')", validProductIds);
-		populateLookup("select company_id from custom.biomedgps_company where status_no in ('P','A')", validCompanyIds);
+		populateLookup("select product_id from custom.biomedgps_product where status_no in ('P','E','A')", validProductIds);
+		populateLookup("select company_id from custom.biomedgps_company where status_no in ('P','E','A')", validCompanyIds);
 		populateLookup("select insight_id from custom.biomedgps_insight where status_cd in ('P','E')", validInsightIds);
-		populateLookup("select update_id from custom.biomedgps_update", validUpdateIds);
-		
+
 		if (onlyBroken) {
 			//consider everything NOT a 404 as valid, and we won't check them
 			populateLookup("select url_txt from custom.biomedgps_link where status_no != 404", recentlyChecked);
@@ -145,7 +143,7 @@ public class LinkChecker extends CommandLineUtil {
 		}
 
 		deleteArchives(days);
-		
+
 		//iterate the enum, read, convert, and write for each
 		for (Table t : Table.values())
 			run(t);
@@ -187,7 +185,6 @@ public class LinkChecker extends CommandLineUtil {
 	 */
 	protected List<LinkVO> readRecords(Table t) {
 		List<LinkVO> records = new ArrayList<>();
-
 		try (PreparedStatement ps = dbConn.prepareStatement(t.getSelectSql())) {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
@@ -249,7 +246,7 @@ public class LinkChecker extends CommandLineUtil {
 	 */
 	protected void checkLinks(List<LinkVO> links) {
 		for (LinkVO vo : links) {
-			if (vo.getUrl().matches("^https?://(app\\.)?smarttrak\\.(com|net)/(.*)") || vo.getUrl().matches("(?i)^/([A-Z]{1,})(.*)")) {
+			if (vo.getUrl().matches("^https?://(www|app\\.)?smarttrak\\.(com|net)/(.*)") || vo.getUrl().matches("(?i)^/([A-Z]{1,})(.*)")) {
 				testInternalLink(vo);
 				++intTested;
 			} else {
@@ -268,10 +265,13 @@ public class LinkChecker extends CommandLineUtil {
 	 * @param id
 	 */
 	protected void testInternalLink(LinkVO vo) {
-		String relaUrl = vo.getUrl().replaceAll("(?i)^https?://(app\\.)?smarttrak\\.(com|net)", ""); //remove FQDN
+		String relaUrl = vo.getUrl().replaceAll("(?i)^https?://(www|app\\.)?smarttrak\\.(com|net)", ""); //remove FQDN
 		log.debug(relaUrl + " from " + vo.getUrl());
-		String targetObjectId = relaUrl.replaceAll("(?i)//?([A-Z]+)/(qs/)?([A-Z0-9]+)/?/?$", "$3"); //get assetId
-		String urlSection = relaUrl.replaceAll("(?i)//?([A-Z]+)/(.*)?$", "$1"); //URI
+		if (relaUrl.indexOf('#') > -1) //strip anchor tags
+			relaUrl = relaUrl.substring(0, relaUrl.indexOf('#'));
+
+		String targetObjectId = relaUrl.replaceAll("(?i)//?([A-Z]+)/(qs/)?([A-Z0-9]+)/?(.*)?$", "$3"); //get assetId
+		String urlSection = relaUrl.replaceAll("(?i)//?([A-Z]+)/(.*)?$", "$1").toLowerCase(); //URI
 		log.debug("cross check - section=" + urlSection + ", id=" + targetObjectId);
 
 		if (MARKETS.equals(urlSection)) {
@@ -282,10 +282,12 @@ public class LinkChecker extends CommandLineUtil {
 			vo.setOutcome(validProductIds.contains(targetObjectId) ? 200 : 404);
 		} else if (INSIGHTS.equals(urlSection) || "archives".equals(urlSection)) {
 			vo.setOutcome(validInsightIds.contains(targetObjectId) ? 200 : 404);
+		} else if (urlSection.matches("/manage\\?(.*)")) {
+			vo.setOutcome(404); //links should never go to the /manage tool
 		} else {
 			inspectLocalUrl(vo, relaUrl);
 		}
-		log.debug(vo.getOutcome() == 200 ? "success!" : targetObjectId + " in " + urlSection + " not found");
+		log.debug(vo.getOutcome() == 200 ? "success!" : targetObjectId + " in '" + urlSection + "' not found");
 	}
 
 
@@ -296,7 +298,7 @@ public class LinkChecker extends CommandLineUtil {
 	 */
 	protected void inspectLocalUrl(LinkVO vo, String relaUrl) {
 		if (relaUrl.startsWith("/tools") || relaUrl.startsWith("/explorer") || 
-				relaUrl.startsWith("/gap_analysis") || relaUrl.startsWith("/financials")) {
+				relaUrl.startsWith("/analysis") || relaUrl.startsWith("/financials")) {
 			vo.setOutcome(200); //known site pages - legacy covered by Apache rewrites
 			log.debug("identified as tools url: " + relaUrl);
 			return;
@@ -327,6 +329,17 @@ public class LinkChecker extends CommandLineUtil {
 			}
 		} catch (Exception e) {
 			log.warn("URL Failed: " + e.getMessage());
+			if ("Connection reset".equals(e.getMessage())) {
+				//maybe we're too aggressive, let's sleep for 30 secs
+				try {
+					log.info("sleeping 30 seconds");
+					Thread.sleep(30000);
+				} catch (InterruptedException e1) {
+					log.error(e);
+					Thread.currentThread().interrupt();
+				}
+			}
+
 			//try to salvage a quality http response code - fallback to 404
 			String s = StringUtil.checkVal(e.getMessage()).replaceAll("(.*)Server returned HTTP response code: ([0-9]{3,3})?(.*)", "$2");
 			vo.setOutcome(Convert.formatInteger(s, 404));
@@ -342,13 +355,11 @@ public class LinkChecker extends CommandLineUtil {
 	protected void httpHeadTest(LinkVO vo, URL url) throws IOException {
 		log.debug("HEAD " + vo.getUrl());
 		try {
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-			conn.setRequestMethod("HEAD");
-			conn.setConnectTimeout(HTTP_CONN_TIMEOUT);
-			conn.setReadTimeout(HTTP_READ_TIMEOUT);
-			conn.addRequestProperty("User-Agent", mockUserAgent);
+			HttpURLConnection conn = setupConnection("HEAD", url);
 			conn.connect();
 			vo.setOutcome(conn.getResponseCode());
+			if (200 != vo.getOutcome())
+				log.debug("failed HEAD " + vo.getOutcome() +" reason: " + conn.getResponseMessage());
 
 			//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
 			conn.getInputStream().close();
@@ -356,7 +367,9 @@ public class LinkChecker extends CommandLineUtil {
 		} catch (Exception se) {
 			httpGetTest(vo,url);
 			//if the above line succeeds, we know this domain does not support HEAD requests
-			log.fatal("ADD TO GET LIST " + url.getHost());
+			getDomains.add(url.getHost());
+			//add it to the report/email so it can be added to the config file for next time.
+			getDomainsReport.add(url.getHost());
 		}
 	}
 
@@ -367,17 +380,38 @@ public class LinkChecker extends CommandLineUtil {
 	 */
 	protected void httpGetTest(LinkVO vo, URL url) throws IOException {
 		log.debug("GET " + vo.getUrl());
-		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("GET");
-		conn.setConnectTimeout(HTTP_CONN_TIMEOUT);
-		conn.setReadTimeout(HTTP_READ_TIMEOUT);
-		conn.addRequestProperty("User-Agent", mockUserAgent);
+		HttpURLConnection conn = setupConnection("GET", url);
 		conn.connect();
 		vo.setOutcome(conn.getResponseCode());
+		if (200 != vo.getOutcome())
+			log.debug("failed GET " + vo.getOutcome() +" reason: " + conn.getResponseMessage());
 
 		//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
 		conn.getInputStream().close();
 		conn.disconnect();
+	}
+
+
+	/**
+	 * HTTP request builder - used by HEAD and GET.  
+	 * Sets headers like User-Agent and Accept-Encoding to fool remote systems into thinking we're a user.
+	 * @param string
+	 * @param url
+	 * @return
+	 * @throws IOException 
+	 */
+	private HttpURLConnection setupConnection(String verb, URL url) throws IOException {
+		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		conn.setRequestMethod(verb);
+		conn.setConnectTimeout(HTTP_CONN_TIMEOUT);
+		conn.setReadTimeout(HTTP_READ_TIMEOUT);
+		conn.addRequestProperty("User-Agent", mockUserAgent);
+		conn.addRequestProperty("Accept-Encoding", "compress, gzip");
+		conn.addRequestProperty("Accept", "*/*");
+		conn.addRequestProperty("Connection", "keep-alive");
+		conn.addRequestProperty("Cookie", "");
+		conn.addRequestProperty("Referer", "https://app.smarttrak.com/");
+		return conn;
 	}
 
 
@@ -457,7 +491,10 @@ public class LinkChecker extends CommandLineUtil {
 		msg.append("</h4>");
 
 		if (!linksFailed.isEmpty())
-			addBrokenLinkTable(msg);
+			appendBrokenLinkTable(msg);
+
+		if (!getDomainsReport.isEmpty())
+			appendGetDomainsList(msg);
 
 		try {
 			super.sendEmail(msg,null);
@@ -465,6 +502,7 @@ public class LinkChecker extends CommandLineUtil {
 			log.error("could not send admin email", e);
 		}
 	}
+
 
 	protected String fmtNo(int no) {
 		return NumberFormat.getNumberInstance(Locale.US).format(no);
@@ -477,10 +515,10 @@ public class LinkChecker extends CommandLineUtil {
 	/**
 	 * @param msg
 	 */
-	protected void addBrokenLinkTable(StringBuilder msg) {
+	protected void appendBrokenLinkTable(StringBuilder msg) {
 		String baseDomain = props.getProperty("baseDomain");
 		//add a table of failed links
-		msg.append("<h4>Broken Links (").append(linksFailed.size()).append(")</h4>\n");
+		msg.append("<h4>Broken Links (").append(linksFailed.size()).append(") - Recurrences removed for brevity</h4>\n");
 		msg.append("<table border='1' width='95%' align='center'><thead><tr>");
 		msg.append("<th>Page</th>");
 		msg.append("<th>Outcome</th>");
@@ -488,15 +526,28 @@ public class LinkChecker extends CommandLineUtil {
 		msg.append("</tr></thead><tbody>");
 
 		String qsPath = props.getProperty("qsPath");
+		List<String> printed = new ArrayList<>(linksFailed.size()); //de-duplicate the results
 		for (LinkVO vo : linksFailed) {
-			if (vo.getOutcome() == 200) 
+			String unqKey = vo.getUrl() + vo.getSection() + vo.getObjectId();
+			if (vo.getOutcome() == 200 || printed.contains(unqKey)) 
 				continue; //only print the ones that failed
 			msg.append("<tr>");
 			msg.append("<td nowrap><a href=\"").append(baseDomain).append("/").append(vo.getSection()).append(qsPath).append(vo.getObjectId()).append("\">").append(vo.getSection()).append("</a></td>");
 			msg.append("<td nowrap>").append(vo.getOutcome()).append("</td>");
 			msg.append("<td><a href=\"").append(vo.getUrl().startsWith("/") ? baseDomain + vo.getUrl() : vo.getUrl()).append("\">").append(vo.getUrl()).append("</a></td>");
 			msg.append("</tr>");
+			printed.add(unqKey);
 		}
 		msg.append("</tbody></table> <br/>\n");
+	}
+
+	/**
+	 * @param msg
+	 */
+	private void appendGetDomainsList(StringBuilder msg) {
+		//add a table of failed links
+		msg.append("<h4>Domains not supporting HEAD (Sys-Admin: add these to the config file)</h4>\n");
+		for (String domain: getDomainsReport)
+			msg.append(domain).append("<br/>\n");		
 	}
 }
