@@ -212,7 +212,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		//log.debug("depth= " + n.getDepthLevel() + " name=" + n.getNodeName())
 		List<UpdateVO> secUpds = new ArrayList<>();
 		for (UpdateVO vo : updates) {
-			iterateUpdates(vo, t, n, exclusions, secUpds);
+			iterateUpdates(vo, n, exclusions, secUpds);
 		}
 
 		//if depth is 4 then give these to our parent, level 3
