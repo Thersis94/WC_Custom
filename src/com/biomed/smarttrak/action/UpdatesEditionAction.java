@@ -217,16 +217,14 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 			// appear in multiple groups while still only appearing once per group.
 			String[] ids = StringUtil.checkVal(n.getFullPath()).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
 			
-			String exclusionId = ids.length < 2? n.getNodeId() : ids[1];
+			String exclusionId = ids.length < 2? n.getNodeId() : ids[1] + "_"+vo.getUpdateId();
 			
-			log.debug("Id is : " +exclusionId +  " and node level is " + n.getDepthLevel() + "|" + n.getFullPath());
-			if (exclusions.contains(exclusionId+"_"+vo.getUpdateId()) || secs == null || secs.isEmpty()) continue;
+			if (exclusions.contains(exclusionId) || secs == null || secs.isEmpty()) continue;
 			for (UpdateXRVO xrvo : secs) {
 				if (n.getNodeId().equals(xrvo.getSectionId())) {
 					secUpds.add(vo);
 					//log.debug(vo.getUpdateId() + " is comitted to " + n.getNodeName() + " &par=" + n.getParentId())
-					log.debug("Adding " + exclusionId+"_"+vo.getUpdateId());
-					exclusions.add(exclusionId+"_"+vo.getUpdateId());
+					exclusions.add(exclusionId);
 				}
 			}
 		}
