@@ -216,9 +216,11 @@ public class UpdatesAction extends ManagementAction {
 
 		for (SolrDocument doc : resp.getResultDocuments()) {
 			String id = (String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-			if (id.contains("_")) {
-				id = id.substring(id.lastIndexOf('_')+1);
-			}
+
+			// Replace the biomed update prefix if it exists.
+			if (id.contains(UpdateVO.DOCUMENT_ID_PREFIX))
+				id = id.replace(UpdateVO.DOCUMENT_ID_PREFIX, "");
+			
 			params.add(id);
 		}
 		return params;
