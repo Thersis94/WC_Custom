@@ -184,15 +184,7 @@ public class UpdatesAction extends ManagementAction {
 			count = (int) resp.getTotalResponses();
 			if (count > 0) {
 
-				List<Object> params = new ArrayList<>();
-
-				for (SolrDocument doc : resp.getResultDocuments()) {
-					String id = (String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-					if (id.contains("_")) {
-						id = id.substring(id.lastIndexOf('_')+1);
-					}
-					params.add(id);
-				}
+				List<Object> params = getIdsFromDocs(resp);
 				
 				data = loadDetails(params, order, dir);
 				log.debug("DB Count " + data.size());
@@ -212,6 +204,25 @@ public class UpdatesAction extends ManagementAction {
 			loadAuthors(req);
 	}
 
+
+	/**
+	 * Get all the document ids from the solr documents and remove the
+	 * custom identifier if it is present.
+	 * @param resp
+	 * @return
+	 */
+	private List<Object> getIdsFromDocs(SolrResponseVO resp) {
+		List<Object> params = new ArrayList<>();
+
+		for (SolrDocument doc : resp.getResultDocuments()) {
+			String id = (String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+			if (id.contains("_")) {
+				id = id.substring(id.lastIndexOf('_')+1);
+			}
+			params.add(id);
+		}
+		return params;
+	}
 
 	/**
 	 * Load the most up to date details for each update
