@@ -268,10 +268,7 @@ public class UpdatesAction extends SBActionAdapter {
 		List<String> terms = new ArrayList<>(Arrays.asList(fts));
 
 		//Add Sections Check.  Append a filter query for each section requested
-		if (req.hasParameter("hierarchyId")) {
-			for (String s : req.getParameterValues("hierarchyId"))
-				data.add(SearchDocumentHandler.HIERARCHY + ":" + s);
-		}
+		transposeArray(data, SearchDocumentHandler.HIERARCHY, req.getParameterValues("hierarchyId"));
 
 		//Add Favorites Filter if applicable.
 		if(docIds != null && !docIds.isEmpty()) {
@@ -286,11 +283,7 @@ public class UpdatesAction extends SBActionAdapter {
 			data.add(SearchDocumentHandler.PUBLISH_DATE + ":" + dates);
 
 		//Add a ModuleType filter if typeId was passed
-		if (req.hasParameter("typeId")) {
-			for(String s : req.getParameterValues("typeId")) {
-				data.add(SearchDocumentHandler.MODULE_TYPE + ":" + s);
-			}
-		}
+		transposeArray(data, SearchDocumentHandler.MODULE_TYPE, req.getParameterValues("typeId"));
 
 		//Custom Filtering for when looking at an Email View.
 		transposeEmailFilter(req);
@@ -298,6 +291,21 @@ public class UpdatesAction extends SBActionAdapter {
 		//put the new list of filter queries back on the request
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 		req.setParameter("ft", terms.toArray(new String[terms.size()]), true);
+	}
+	
+	
+	/**
+	 * Ensure that there is data that can be worked with and add those items to the supplied list
+	 * @param data
+	 * @param field
+	 * @param values
+	 */
+	private void transposeArray(List<String> data, String field, String[] values) {
+		if (values == null || values.length ==0) return;
+		
+		for (String s : values) {
+			data.add(field + ":" + s);
+		}
 	}
 
 	/**
