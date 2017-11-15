@@ -212,21 +212,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		//log.debug("depth= " + n.getDepthLevel() + " name=" + n.getNodeName())
 		List<UpdateVO> secUpds = new ArrayList<>();
 		for (UpdateVO vo : updates) {
-			List<UpdateXRVO> secs = vo.getUpdateSections();
-			// Checks and storage are done with the parent id to allow updates to 
-			// appear in multiple groups while still only appearing once per group.
-			String[] ids = StringUtil.checkVal(n.getFullPath()).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
-			
-			String exclusionId = ids.length < 2? n.getNodeId() : ids[1] + "_"+vo.getUpdateId();
-			
-			if (exclusions.contains(exclusionId) || secs == null || secs.isEmpty()) continue;
-			for (UpdateXRVO xrvo : secs) {
-				if (n.getNodeId().equals(xrvo.getSectionId())) {
-					secUpds.add(vo);
-					//log.debug(vo.getUpdateId() + " is comitted to " + n.getNodeName() + " &par=" + n.getParentId())
-					exclusions.add(exclusionId);
-				}
-			}
+			iterateUpdates(vo, t, n, exclusions, secUpds);
 		}
 
 		//if depth is 4 then give these to our parent, level 3
@@ -253,6 +239,33 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 
 	}
 
+
+	/**
+	 * Check whether the current node matches any of the current updates's sections
+	 * and add it to the list if it hasn't been added for that node already.
+	 * @param vo
+	 * @param t
+	 * @param n
+	 * @param exclusions
+	 * @param secUpds
+	 */
+	private void iterateUpdates(UpdateVO vo, Tree t, Node n, Set<String> exclusions, List<UpdateVO> secUpds) {
+		List<UpdateXRVO> secs = vo.getUpdateSections();
+		// Checks and storage are done with the parent id to allow updates to 
+		// appear in multiple groups while still only appearing once per group.
+		String[] ids = StringUtil.checkVal(n.getFullPath()).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+		
+		String exclusionId = ids.length < 2? n.getNodeId() : ids[1] + "_"+vo.getUpdateId();
+		
+		if (exclusions.contains(exclusionId) || secs == null || secs.isEmpty()) return;
+		for (UpdateXRVO xrvo : secs) {
+			if (n.getNodeId().equals(xrvo.getSectionId())) {
+				secUpds.add(vo);
+				//log.debug(vo.getUpdateId() + " is comitted to " + n.getNodeName() + " &par=" + n.getParentId())
+				exclusions.add(exclusionId);
+			}
+		}
+	}
 
 	/**
 	 * Sort the Updates given into order determined by the UpdateType Enum.
