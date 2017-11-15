@@ -32,6 +32,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
@@ -77,7 +78,8 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 
 		//load the core section hierarchy
 		Tree t = loadDefaultTree();
-
+		
+		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, false);
 		//load the updates that should be displayed
 		List<UpdateVO> updates = fetchUpdates(req);
 
@@ -210,17 +212,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		//log.debug("depth= " + n.getDepthLevel() + " name=" + n.getNodeName())
 		List<UpdateVO> secUpds = new ArrayList<>();
 		for (UpdateVO vo : updates) {
-			List<UpdateXRVO> secs = vo.getUpdateSections();
-			// Checks and storage are done with the parent id to allow updates to 
-			// appear in multiple groups while still only appearing once per group.
-			if (exclusions.contains(vo.getUpdateId()) || secs == null || secs.isEmpty()) continue;
-			for (UpdateXRVO xrvo : secs) {
-				if (n.getNodeId().equals(xrvo.getSectionId())) {
-					secUpds.add(vo);
-					//log.debug(vo.getUpdateId() + " is comitted to " + n.getNodeName() + " &par=" + n.getParentId())
-					exclusions.add(vo.getUpdateId());
-				}
-			}
+			iterateUpdates(vo, n, exclusions, secUpds);
 		}
 
 		//if depth is 4 then give these to our parent, level 3
@@ -247,6 +239,33 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 
 	}
 
+
+	/**
+	 * Check whether the current node matches any of the current updates's sections
+	 * and add it to the list if it hasn't been added for that node already.
+	 * @param vo
+	 * @param t
+	 * @param n
+	 * @param exclusions
+	 * @param secUpds
+	 */
+	private void iterateUpdates(UpdateVO vo, Node n, Set<String> exclusions, List<UpdateVO> secUpds) {
+		List<UpdateXRVO> secs = vo.getUpdateSections();
+		// Checks and storage are done with the parent id to allow updates to 
+		// appear in multiple groups while still only appearing once per group.
+		String[] ids = StringUtil.checkVal(n.getFullPath()).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+		
+		String exclusionId = ids.length < 2? n.getNodeId() : ids[1] + "_"+vo.getUpdateId();
+		
+		if (exclusions.contains(exclusionId) || secs == null || secs.isEmpty()) return;
+		for (UpdateXRVO xrvo : secs) {
+			if (n.getNodeId().equals(xrvo.getSectionId())) {
+				secUpds.add(vo);
+				//log.debug(vo.getUpdateId() + " is comitted to " + n.getNodeName() + " &par=" + n.getParentId())
+				exclusions.add(exclusionId);
+			}
+		}
+	}
 
 	/**
 	 * Sort the Updates given into order determined by the UpdateType Enum.
