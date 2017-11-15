@@ -249,7 +249,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 	 * @param exclusions
 	 * @param secUpds
 	 */
-	private void iterateUpdates(UpdateVO vo, Tree t, Node n, Set<String> exclusions, List<UpdateVO> secUpds) {
+	private void iterateUpdates(UpdateVO vo, Node n, Set<String> exclusions, List<UpdateVO> secUpds) {
 		List<UpdateXRVO> secs = vo.getUpdateSections();
 		// Checks and storage are done with the parent id to allow updates to 
 		// appear in multiple groups while still only appearing once per group.
