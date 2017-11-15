@@ -32,6 +32,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
@@ -77,7 +78,8 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 
 		//load the core section hierarchy
 		Tree t = loadDefaultTree();
-
+		
+		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, false);
 		//load the updates that should be displayed
 		List<UpdateVO> updates = fetchUpdates(req);
 
@@ -213,13 +215,18 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 			List<UpdateXRVO> secs = vo.getUpdateSections();
 			// Checks and storage are done with the parent id to allow updates to 
 			// appear in multiple groups while still only appearing once per group.
-			String exclutionId = n.getDepthLevel() == 3? n.getNodeId() : n.getParentId();
-			if (exclusions.contains(exclutionId+"_"+vo.getUpdateId()) || secs == null || secs.isEmpty()) continue;
+			String[] ids = StringUtil.checkVal(n.getFullPath()).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+			
+			String exclusionId = ids.length < 2? n.getNodeId() : ids[1];
+			
+			log.debug("Id is : " +exclusionId +  " and node level is " + n.getDepthLevel() + "|" + n.getFullPath());
+			if (exclusions.contains(exclusionId+"_"+vo.getUpdateId()) || secs == null || secs.isEmpty()) continue;
 			for (UpdateXRVO xrvo : secs) {
 				if (n.getNodeId().equals(xrvo.getSectionId())) {
 					secUpds.add(vo);
 					//log.debug(vo.getUpdateId() + " is comitted to " + n.getNodeName() + " &par=" + n.getParentId())
-					exclusions.add(exclutionId+"_"+vo.getUpdateId());
+					log.debug("Adding " + exclusionId+"_"+vo.getUpdateId());
+					exclusions.add(exclusionId+"_"+vo.getUpdateId());
 				}
 			}
 		}
