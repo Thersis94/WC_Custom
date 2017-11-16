@@ -27,6 +27,7 @@ import com.smt.sitebuilder.util.MessageSender;
 public class PatientAmbassadorFormCallback extends SBActionAdapter {
 
 	public PatientAmbassadorFormCallback() {
+		super();
 	}
 
 	/**
@@ -36,12 +37,17 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void build(ActionRequest req) {
 		DataContainer dc = (DataContainer)req.getAttribute("formDataVO");
-		
+
 		FormTransactionVO trans = dc.getTransactions().values().iterator().next();
-		
-		if(trans.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0).equals("Yes")) {
+
+		if("Yes".equals(trans.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0))) {
 			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 
 			//allow actions to overwrite the source email address

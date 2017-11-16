@@ -211,6 +211,8 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		List<UpdateVO> secUpds = new ArrayList<>();
 		for (UpdateVO vo : updates) {
 			List<UpdateXRVO> secs = vo.getUpdateSections();
+			// Checks and storage are done with the parent id to allow updates to 
+			// appear in multiple groups while still only appearing once per group.
 			if (exclusions.contains(vo.getUpdateId()) || secs == null || secs.isEmpty()) continue;
 			for (UpdateXRVO xrvo : secs) {
 				if (n.getNodeId().equals(xrvo.getSectionId())) {
