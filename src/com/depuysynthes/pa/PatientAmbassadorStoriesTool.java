@@ -24,6 +24,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormFacadeAction;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.admin.action.OrganizationAction;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
@@ -47,7 +48,6 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @updates:
  * 	RjR code clean up May 23, 2017
  ****************************************************************************/
-
 public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	public enum PAFConst {
 		JOINT_ID("c0a80241bba73b0a49493776bd9f999d"),
@@ -83,6 +83,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	public enum PAFStatus {saved, published, removed, republish}
 
 	private static final String EXPORT_FILE_NAME = "PatientStories.xls";
+	private static final String STORY_STS_ID = "storyStatusDataId";
 
 	public PatientAmbassadorStoriesTool() {
 		super();
@@ -99,15 +100,15 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		String msg = "Story successfuly removed.";
-		try {
+		try (SolrActionUtil util = new SolrActionUtil(attributes)) {
 			if(req.hasParameter("fsi"))
-				new SolrActionUtil(attributes).removeDocument(req.getParameter("fsi"));
+				util.removeDocument(req.getParameter("fsi"));
 
 			//Hide Submission from list.
 			writeStoryElement(getElement("1", req.getParameter("storyDeleteFieldId"), null), req.getParameter("fsi"));
 
 			//Update Status Element.
-			writeStoryElement(getElement(PAFStatus.removed.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), req.getParameter("fsi"));
+			writeStoryElement(getElement(PAFStatus.removed.name(), PAFConst.STATUS_ID.getId(), req.getParameter(STORY_STS_ID)), req.getParameter("fsi"));
 		} catch (Exception e) {
 			msg = "There was an error removing the story from the site";
 		}
@@ -129,7 +130,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 			try (SolrActionUtil util = new SolrActionUtil(attributes)) {
 				//Update Status Element.
-				writeStoryElement(getElement(PAFStatus.published.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
+				writeStoryElement(getElement(PAFStatus.published.name(), PAFConst.STATUS_ID.getId(), req.getParameter(STORY_STS_ID )), submittalId);
 				log.debug("Status Written");
 
 				//Submit to Solr
@@ -154,11 +155,11 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			//Write story Text
 			writeStoryElement(getElement(req.getParameter("storyText"), req.getParameter("storyTextFieldId"), req.getParameter("storyTextDataId")), submittalId);
 			log.debug("Text Written");
-			
+
 			//Write Surgeon Name
 			writeStoryElement(getElement(req.getParameter("surgeonNm"), req.getParameter("surgeonNameFieldId"), req.getParameter("surgeonNameDataId")), submittalId);
 			log.debug("Surgeon Name Written");
-			
+
 			//save image if provided
 			if (req.getFile("replacePhoto") != null) {
 				String filePath = saveFile(req);
@@ -167,11 +168,11 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 			if(req.hasParameter("storyStatusLevel") && req.getParameter("storyStatusLevel").equals(PAFStatus.published.name())) {
 				//Update Status Element.
-				writeStoryElement(getElement(PAFStatus.republish.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
+				writeStoryElement(getElement(PAFStatus.republish.name(), PAFConst.STATUS_ID.getId(), req.getParameter(STORY_STS_ID)), submittalId);
 				log.debug("Status Republish Written");
 			} else {
 				//Update Status Element.
-				writeStoryElement(getElement(PAFStatus.saved.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
+				writeStoryElement(getElement(PAFStatus.saved.name(), PAFConst.STATUS_ID.getId(), req.getParameter(STORY_STS_ID)), submittalId);
 				log.debug("Status Saved Written");
 			}
 		}
@@ -212,7 +213,6 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		FormFacadeAction ffa = new FormFacadeAction(actionInit);
 		ffa.setDBConnection(dbConn);
 		ffa.setAttributes(attributes);
-		//req.setParameter("formId", PAFConst.FORM_ID.getId());
 		DataContainer dc = ffa.retrieveSubmittedForm(req);
 
 		//Get the Fields off the TransactionVO.
@@ -235,18 +235,18 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		ssv.setOtherHobbies(getFirstResponse(fields.get(PAFConst.OTHER_HOBBY_ID.getId())));
 		ssv.setTitle(getFirstResponse(fields.get(PAFConst.STORY_TITLE_ID.getId())));
 		ssv.setSummary(getFirstResponse(fields.get(PAFConst.STORY_TEXT_ID.getId())));
-		ssv.addOrganization(req.getParameter("organizationId"));
+		ssv.addOrganization(req.getParameter(OrganizationAction.ORGANIZATION_ID));
 		ssv.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 
 		return ssv;
 	}
-	
+
 	private String getFirstResponse(FormFieldVO field) {
 		try {
 			return field.getResponses().get(0);
 		} catch (Exception e) {
+			//ignoreable
 		}
-		
 		return "";
 	}
 
@@ -315,8 +315,8 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		sb.append("update FORM_DATA set VALUE_TXT = ?, UPDATE_DT = ? where FORM_DATA_ID = ?");
 		return sb.toString();
 	}
-	
-	
+
+
 	/**
 	 * sets the privacy flag for the submission.  This is an override for the Admin to use.
 	 * @param formSubmittalId
@@ -342,7 +342,6 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		FormFacadeAction ffa = new FormFacadeAction(actionInit);
 		ffa.setDBConnection(dbConn);
 		ffa.setAttributes(attributes);
-		//req.setParameter("formId", PAFConst.FORM_ID.getId());
 		DataContainer dc = ffa.retrieveSubmittedForm(req);
 		this.putModuleData(dc.getTransactions().get(req.getParameter("fsi")), 1, true);
 	}
@@ -367,7 +366,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		Date reportEnd = Convert.formatSQLDate(Convert.formatEndDate(req.getParameter("reportEnd")), true);
 		String srQuery = getSubmittalRecordQuery(stateId, cityNm, joint, filterHidden);
 		log.debug("Query = " + srQuery);
-			
+
 		//Retrieve Data from DB
 		int i = 1;
 		try (PreparedStatement ps = dbConn.prepareStatement(srQuery)) {
@@ -403,11 +402,11 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 			//Loop over the Transactions and retrieve the profile data for them.
 			for(FormTransactionVO f : vos) {
-				UserDataVO t = pm.getProfile(f.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, req.getParameter("organizationId"));
+				UserDataVO t = pm.getProfile(f.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, req.getParameter(OrganizationAction.ORGANIZATION_ID));
 				f.setData(t.getDataMap());
 			}
 
-			if(vos.size() == 0)
+			if(vos.isEmpty())
 				log.debug("No Results Found");
 		} catch(SQLException sqle) {
 			log.error("Problem Retrieving Data from Database.", sqle);
@@ -458,7 +457,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		sb.append("and (a.robot_flg is null or a.robot_flg=0) ");
 		sb.append("group by a.FORM_SUBMITTAL_ID, f.value_txt, e.value_txt, f.form_data_id ");
 		sb.append("order by a.CREATE_DT desc");
-		
+
 		return sb.toString();
 	}
 
@@ -508,7 +507,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 	}
-	
+
 	/**
 	 * Stores the uploaded image to the file system
 	 *
@@ -544,7 +543,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		pg.append("/").append(attributes.get(Constants.CONTEXT_NAME));
 		pg.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 		pg.append("?dataMod=true&actionId=").append(req.getParameter("actionId"));
-		pg.append("&organizationId=").append(req.getParameter("organizationId"));
+		pg.append("&organizationId=").append(req.getParameter(OrganizationAction.ORGANIZATION_ID));
 		pg.append("&cPage=").append(req.getParameter("cPage"));
 		pg.append("&formId=").append(req.getParameter("formId"));
 		pg.append("&searchSubmitted=true");
