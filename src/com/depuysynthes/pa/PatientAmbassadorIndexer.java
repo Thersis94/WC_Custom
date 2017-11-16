@@ -110,17 +110,15 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 		log.debug("Query = " + srQuery + "|" + PAFConst.FORM_ID.getId() + "|" + PAFConst.STATUS_ID.getId());
 
 		//Retrieve Data from DB
+		String submittalId = "";
+		String fieldId = "";
+		FormTransactionVO vo = null;
+		FormFieldVO field = null;
 		try (PreparedStatement  ps = dbConn.prepareStatement(srQuery)) {
 			ps.setString(1, PAFConst.STATUS_ID.getId());
 			ps.setString(2, PAFConst.FORM_ID.getId());
 
-			//Retrieve Results
 			ResultSet rs = ps.executeQuery();
-			String submittalId = "";
-			String fieldId = "";
-			FormTransactionVO vo = null;
-			FormFieldVO field = null;
-			//Process Results
 			while(rs.next()) {
 				String formSubmittalId = rs.getString("FORM_SUBMITTAL_ID");
 
@@ -131,7 +129,7 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 					vo = new FormTransactionVO(rs);
 					submittalId = formSubmittalId;
 				}
-				
+
 				// If we are dealing with a new field we add the current
 				// one to the vo and create a new field vo.
 				// This needs to be done before the vo so that all fields are
@@ -210,8 +208,8 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 
 
 	@Override
-	public void addSingleItem(String id) {
-		// Nothing uses this class's addSingleItem method right now.
+	public void indexItems(String... id) {
+		// Nothing uses this class's indexItems method right now.
 		// should it be required it can be filled out at that time.
 	}
 }
