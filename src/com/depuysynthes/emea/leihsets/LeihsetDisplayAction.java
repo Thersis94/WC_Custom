@@ -43,15 +43,6 @@ public class LeihsetDisplayAction extends SimpleActionAdapter {
 		super(init);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#list(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void list(ActionRequest req) throws ActionException {
-		super.retrieve(req);
-	}
-
 
 	/*
 	 * (non-Javadoc)
