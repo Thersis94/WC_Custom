@@ -54,7 +54,7 @@ public class MindBodySaleApi extends AbstractMindBodyApi<Sale_x0020_ServiceStub,
 
 	/* (non-Javadoc)
 	 * @see com.mindbody.MindBodyApiIntfc#getDocument(com.mindbody.MindBodyCallVO)
-	 * TODO - COMPLETE METHOD BODY
+	 * TODO - Endpoints need Coded as Need Arises
 	 */
 	@Override
 	public List<Object> getDocument(MindBodySalesConfig call) throws RemoteException {

@@ -6,7 +6,7 @@ import com.mindbody.vo.MindBodyCredentialVO;
 /****************************************************************************
  * <b>Title:</b> MindBodyGetClientScheduleConfig.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Manages GetClientSchedule Endpoint unique Configuration.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 

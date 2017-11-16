@@ -10,7 +10,7 @@ import com.mindbodyonline.clients.api._0_5_1.ClientService;
 /****************************************************************************
  * <b>Title:</b> MindBodyUpdateClientServicesConfig.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Manages UpdateClientServices Endpoint unique Configuration.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
