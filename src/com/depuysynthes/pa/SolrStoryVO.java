@@ -13,13 +13,12 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @version 1.0
  * @since Jan 16, 2015
  ****************************************************************************/
-
 public class SolrStoryVO extends SolrDocumentVO {
 	public static final String INDEX_TYPE = "PATIENT_AMBASSADOR";
-	
+
 	private String otherHobby;
 	private String surgeonName;
-	
+
 	public SolrStoryVO() {
 		super(INDEX_TYPE);
 	}
@@ -50,5 +49,4 @@ public class SolrStoryVO extends SolrDocumentVO {
 	public void setSurgeonName(String surgeonName) {
 		this.surgeonName = surgeonName;
 	}
-
 }
