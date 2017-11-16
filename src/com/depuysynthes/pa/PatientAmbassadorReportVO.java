@@ -38,24 +38,20 @@ import com.smt.sitebuilder.data.vo.FormTransactionVO;
  *        <b>Changes: </b>
  ****************************************************************************/
 public class PatientAmbassadorReportVO extends AbstractSBReportVO {
-	/**
-	 * 
-	 */
+
 	private static final long serialVersionUID = 1L;
-	private DataContainer dc = null;
-	private String siteUrl = null;
-	/**
-	 * 
-	 */
+	private transient DataContainer dc;
+	private String siteUrl;
+
 	public PatientAmbassadorReportVO() {
 		super();
 	}
-	
+
 	public PatientAmbassadorReportVO(String fileName) {
 		super();
 		setFileName(fileName);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#generateReport()
 	 */
@@ -81,12 +77,17 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		//Write xls to ByteStream and return.
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			wb.write(baos);
-			wb.close();
 			return baos.toByteArray();
 		} catch (IOException e) {
 			log.error(e);
+			return new byte[0];
+		} finally {
+			try {
+				wb.close();
+			} catch (IOException e) {
+				//ignoreable
+			}
 		}
-		return null;
 	}
 
 	/* (non-Javadoc)
@@ -111,7 +112,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	private List<String> getHeaders() {
-		List<String> headers = new ArrayList<String>();
+		List<String> headers = new ArrayList<>();
 		headers.add("Patient Name");
 		headers.add("Email");
 		headers.add("City");
@@ -158,7 +159,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 	 */
 	private void landscapeReport(Sheet sheet) {
 		int c = 0, r = 0;
-		
+
 		Row row = sheet.createRow(r++);
 		Cell cell = null;
 		//Loop Headers and set cell values.
@@ -168,7 +169,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		}
 		c = 0;
 		row = sheet.createRow(r++);
-		
+
 		//Loop over transactions and print data appropriately.
 		for(FormTransactionVO vo : dc.getTransactions().values()) {
 			//reset cell counter
@@ -192,7 +193,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			//Set Image Url
 			String imgPath = "";
 			if (vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()) != null)
-					imgPath = vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponseText();
+				imgPath = vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponseText();
 			if (imgPath.length() > 0) imgPath = "http://" + siteUrl + imgPath;
 			addCell(c++, imgPath, row);
 
@@ -215,7 +216,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 				for (String s : vo.getFieldById(PAFConst.HOBBIES_ID.getId()).getResponses()) {
 					if (i > 0) sb.append(", ");
 					//Skip other, we'll add it later.
-					if (!s.equals("OTHER")) {
+					if (!"OTHER".equals(s)) {
 						sb.append(s);
 						i++;
 					}
@@ -229,7 +230,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 				sb.append(other);
 			}
 			addCell(c++, sb.toString(), row);
-			
+
 			//Add Surgeon Name
 			addCell(c++, vo.getFieldById(PAFConst.SURGEON_NM.getId()), row);
 
@@ -254,7 +255,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 
 			//Add Story Text
 			addCell(c++, vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()), row);
-			
+
 			//Add Status Text
 			addCell(c++, vo.getFieldById(PAFConst.STATUS_ID.getId()), row);
 
@@ -271,8 +272,8 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 				addCell(c++, "No", row);
 
 			//Add agreed Consent Flag
-			addCell(c++, ((vo.getAcceptPrivacyFlg() == 1) ? "Yes" : "No"), row);
-			
+			addCell(c, ((vo.getAcceptPrivacyFlg() == 1) ? "Yes" : "No"), row);
+
 			//Close out the Transaction Row.
 			row = sheet.createRow(r++);
 		}
@@ -307,7 +308,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		//Set Image Url
 		String imgPath = "";
 		if (vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()) != null)
-				imgPath = vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponseText();
+			imgPath = vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponseText();
 		if (imgPath.length() > 0) imgPath = "http://" + siteUrl + imgPath;
 		addRow(r++, imgPath, sheet);
 
@@ -327,7 +328,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		for(String s : vo.getFieldById(PAFConst.HOBBIES_ID.getId()).getResponses()) {
 			if(i > 0) sb.append(", ");
 			//Skip other, we'll add it later.
-			if(!s.equals("OTHER")) {
+			if(!"OTHER".equals(s)) {
 				sb.append(s);
 				i++;
 			}
@@ -340,7 +341,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			sb.append(other);
 		}
 		addRow(r++, sb.toString(), sheet);
-		
+
 		//Add Surgeon Name
 		addRow(r++, vo.getFieldById(PAFConst.SURGEON_NM.getId()), sheet);
 
@@ -388,12 +389,12 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			addRow(r++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponseText(), sheet);
 		else
 			addRow(r++, "No", sheet);
-		
+
 		//Add agreed Consent Flag
-		addRow(r++, ((vo.getAcceptPrivacyFlg() == 1) ? "Yes" : "No"), sheet);
+		addRow(r, ((vo.getAcceptPrivacyFlg() == 1) ? "Yes" : "No"), sheet);
 	}
-	
-	
+
+
 
 	/**
 	 * Helper methods for writing a pair of cells into a row.
