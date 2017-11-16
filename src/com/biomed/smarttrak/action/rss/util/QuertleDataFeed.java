@@ -111,11 +111,10 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 
 			//Load Results for the Classification
 			List<ResultAttributes> results = queryResults(port, sp, c);
-
 			log.info("Retrieved Articles, size: " + results.size());
+			
 			//If we have results, process them.
-			if (results != null && !results.isEmpty()) {
-
+			if (!results.isEmpty()) {
 				//Build and Save Article VO's
 				processResults(results, searchType);
 			}
@@ -329,6 +328,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	public SearchingSEI buildPort() {
 		URL wsdlURL = buildUrl();
+		if (wsdlURL == null) return  null;
 
 		//Create the Service.
 		SearchWSImplementationsService ss = new SearchWSImplementationsService(wsdlURL, SERVICE_NAME);
@@ -377,14 +377,12 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private URL buildUrl() {
-		URL url = null;
 		try {
-			url = new URL(props.getProperty(WSDL_URL_STRING));
+			return new URL(props.getProperty(WSDL_URL_STRING));
 		} catch (MalformedURLException e) {
 			log.error("Can not initialize the default wsdl from " + props.getProperty(WSDL_URL_STRING));
+			return null;
 		}
-
-		return url;
 	}
 
 	/**

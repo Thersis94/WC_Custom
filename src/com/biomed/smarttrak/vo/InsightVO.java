@@ -85,17 +85,21 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 		COMPLIANCE(11, "Compliance"),
 		HEALTHCARE_REFORM(13,"Healthcare Reform"),
 		INSIGHTS(4, "Insights"),
+		INDUSTRY_SPOTLIGHT(17, "Industry Spotlight"),
 		INTELLECTUAL_PROPERTY(14,"Intellectual Property"),
 		MARKET_ANALYSIS(5, "Market Analysis"),
 		MARKET_OUTLOOK(9, "Market Outlook"),
 		MARKET_RECAP(10, "Market Recap"),
 		PERSPECTIVE(1, "Perspective"),
+		PRODUCT_SPOTLIGHT(18, "Product Spotlight"),
+		PODCAST(19, "Podcast"),
 		REGULATORY(8, "Regulatory"),
 		REIMBURSEMENT(7, "Reimbursement"),
 		SMARTTRAK_VIDEO_TIPS(15, "SmartTRAK Video Tips"),
 		STARTUP_SPOTLIGHT(2, "Start-up Spotlight"),
 		UC_VIEWPOINT(3, "U.C. Viewpoints"),
-		UNCATIGORIZED(6, "Uncategorized");
+		UNCATIGORIZED(6, "Uncategorized"),
+		VIDEO(20, "Video");
 
 		private int val;
 		private String text;

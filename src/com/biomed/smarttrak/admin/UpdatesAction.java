@@ -1,32 +1,30 @@
 package com.biomed.smarttrak.admin;
 
+// Java 8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
-import java.util.Set;
 
+// J2EE libs
+import javax.servlet.http.HttpServletResponse;
+
+// Solr libs
 import org.apache.solr.common.SolrDocument;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.action.SmarttrakSolrAction;
-import com.biomed.smarttrak.util.SmarttrakSolrUtil;
-import com.biomed.smarttrak.util.SmarttrakTree;
-import com.biomed.smarttrak.util.UpdateIndexer;
-import com.biomed.smarttrak.vo.UpdateVO;
-import com.biomed.smarttrak.vo.UpdateXRVO;
+//SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
@@ -35,12 +33,23 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+
+// WC Core libs
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
+
+//WC Custom libs
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.SmarttrakSolrAction;
+import com.biomed.smarttrak.util.SmarttrakSolrUtil;
+import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.util.UpdateIndexer;
+import com.biomed.smarttrak.vo.UpdateVO;
+import com.biomed.smarttrak.vo.UpdateXRVO;
 
 /****************************************************************************
  * <b>Title</b>: UpdatesAction.java
@@ -58,12 +67,12 @@ public class UpdatesAction extends ManagementAction {
 	public static final String ORDER = "order"; //req param
 	public static final String START_DATE = "startDt"; //req param
 	public static final String END_DATE = "endDt"; //req param
-	
 	public static final String STATUS_CD = "statusCd"; //req param
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
-	private static final String SECTION_ID = "filterSectionId[]";
-	
+	private static final String COOK_UPD_START_DT = "updateStartDt";
+	private static final String COOK_UPD_END_DT = "updateEndDt";
+
 	private static final String HTML_REGEX = "(<\\/?(([uo]l)|(b)|(li)|(s((trong)|(ub))?)|(d((etails)|(iv))?)|(u)|(img)|(hr)|(font))(?!up)[^<>]*\\/?>)|(<p>&nbsp;<\\/p>)";
 
 	/**
@@ -104,24 +113,24 @@ public class UpdatesAction extends ManagementAction {
 			return this.text;
 		}
 	}
-	
+
 	// Enum for handling the ordering desired by the bootstrap table
 	private enum Order {
 		TITLE_TXT("title"), 
 		TYPE_CD("moduleType"), 
 		PUBLISH_DT("publishDate"),
 		STATUS_CD("status_cd_s");
-		
+
 		String solrField;
-		
+
 		private Order(String solrField) {
 			this.solrField = solrField;
 		}
-		
+
 		public String getSolrField() {
 			return solrField;
 		}
-		
+
 		public static Order getOrderFromString(String order) {
 			if (order == null) return Order.PUBLISH_DT;
 			switch (order) {
@@ -150,6 +159,8 @@ public class UpdatesAction extends ManagementAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
+		configureCookies(req);
+		
 		if (!req.hasParameter("loadData") && !req.hasParameter("loadhistory") && !req.hasParameter(UPDATE_ID) ) return;
 		int count = 0;
 
@@ -159,39 +170,33 @@ public class UpdatesAction extends ManagementAction {
 		} else {
 			Order order = Order.getOrderFromString(req.getParameter("sort"));
 			String dir = StringUtil.checkVal(req.getParameter("order"), "desc");
-			
+
 			//Get the Filtered Updates according to Request.
 			getFilteredUpdates(req, order, dir);
-			
+
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
-			if (resp.getResultDocuments().size() > 0) {
+			count = (int) resp.getTotalResponses();
+			if (count > 0) {
 				data = loadDetails(resp.getResultDocuments(), order, dir);
+				log.debug("DB Count " + data.size());
 			} else {
 				data = Collections.emptyList();
 			}
-			
-			// Get the count
-			count = (int) resp.getTotalResponses();
-			log.debug("count " + count);
 		}
 
 		decryptNames(data);
 
 		addProductCompanyData(data);
 
-		if(count > 0) {
-			putModuleData(data, count, false);
-		} else {
-			putModuleData(data);
-		}
+		putModuleData(data, count, false);
 
 		//when an add/edit form, load list of BiomedGPS Staff for the "Author" drop-down
 		if (req.hasParameter(UPDATE_ID))
 			loadAuthors(req);
 	}
-	
-	
+
+
 	/**
 	 * Load the most up to date details for each update
 	 * @param docs
@@ -199,8 +204,9 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	private List<Object> loadDetails(List<SolrDocument> docs, Order order, String dir) {
 		String sql = formatDetailQuery(docs.size(), order, dir);
+		log.debug(sql);
 		List<Object> params = new ArrayList<>();
-		
+
 		for (SolrDocument doc : docs) {
 			String id = (String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 			if (id.contains("_")) {
@@ -213,7 +219,7 @@ public class UpdatesAction extends ManagementAction {
 		return db.executeSelect(sql, params, new UpdateVO());
 	}
 
-	
+
 	/**
 	 * Ensure that the information pertaining to each update is up to date.
 	 * Even if solr has not finished processing the changes.
@@ -230,11 +236,11 @@ public class UpdatesAction extends ManagementAction {
 		sql.append("on up.UPDATE_ID = xr.UPDATE_ID ");
 		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
 		sql.append("order by ").append(order).append(" ").append(dir);
-		
+
 		return sql.toString();
 	}
 
-	
+
 	/**
 	 * Set all paramters neccesary for solr to be able to properly search for the desired documents.
 	 * @param req
@@ -246,40 +252,65 @@ public class UpdatesAction extends ManagementAction {
 		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
 		req.setParameter("rpp", StringUtil.checkVal(rpp));
 		req.setParameter("page", StringUtil.checkVal(page));
-		if(req.hasParameter(SEARCH)) req.setParameter("searchData", req.getParameter(SEARCH));
-		List<String> fq = new ArrayList<>(5);
-		
-		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
+		if(req.hasParameter(SEARCH)) 
+			req.setParameter("searchData", req.getParameter(SEARCH));
+
+		//build a list of filter queries
+		List<String> fq = new ArrayList<>();
+		String startDt = req.getParameter(COOK_UPD_START_DT);
+		String endDt = req.getParameter(COOK_UPD_END_DT);
+		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, startDt, endDt);
 		if (!StringUtil.isEmpty(dates))
 			fq.add(SearchDocumentHandler.PUBLISH_DATE + ":" + dates);
-		
+
 		if(req.hasParameter(UPDATE_ID)) {
 			StringBuilder id = new StringBuilder(req.getParameter(UPDATE_ID));
-			if (req.getParameter(UPDATE_ID).length() < AdminControllerAction.DOC_ID_MIN_LEN)
+			if (id.length() < AdminControllerAction.DOC_ID_MIN_LEN)
 				id.insert(0, "_").insert(0, UpdateIndexer.INDEX_TYPE);
-			fq.add("documentId:" + id);
+			fq.add(SearchDocumentHandler.DOCUMENT_ID + ":" + id);
 		}
-		
-		if (req.hasParameter("typeCd"))
-			fq.add(SearchDocumentHandler.MODULE_TYPE + ":" + req.getParameter("typeCd"));
-		
-		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
-		if (sectionIds != null) {
-			StringBuilder sections = new StringBuilder(50);
-			for (String s : getSectionFamily(sectionIds)) {
-				if (sections.length() > 0) sections.append(" OR ");
-				sections.append(s);
-			}
-			fq.add(SearchDocumentHandler.HIERARCHY + ":" + sections.toString());
+
+		String typeCd = CookieUtil.getValue("updateType", req.getCookies());
+		if (!StringUtil.isEmpty(typeCd))
+			fq.add(SearchDocumentHandler.MODULE_TYPE + ":" + typeCd);
+
+		String hierarchies = CookieUtil.getValue("updateMarkets", req.getCookies());
+		if (!StringUtil.isEmpty(hierarchies)) {
+			for (String s : hierarchies.split(","))
+				fq.add(SearchDocumentHandler.HIERARCHY + ":" + s);
 		}
 
 		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
-
 		req.setParameter("fieldSort", order.getSolrField());
 		req.setParameter("sortDirection", dir);
 		req.setParameter("allowCustom", "true");
-		
 		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
+	}
+
+
+	/**
+	 * Sets the default search values - particularly a date range of 'today'.
+	 * These can be flushed to <blank> by the user, but if they're nullified we'll restore them (e.g. next session)
+	 * If the search start date cookie does not exists, set it with a default range of today.
+	 * Otherwise, if it's blank, the user flushed the date values intentionally (which is ok)
+	 * NOTE: Setting cookies goes into the response object.  We can't set a cookie and then 
+	 * immediately read it's value.  For this reason we transpose the cookies into request parameters.
+	 * @param req
+	 */
+	private void configureCookies(ActionRequest req) {
+		String start = CookieUtil.getValue(COOK_UPD_START_DT, req.getCookies());
+		String end;
+		if (start == null) {
+			HttpServletResponse res = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
+			start = Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN); //today
+			end = start;
+			CookieUtil.add(res, COOK_UPD_START_DT, start, "/", -1);
+			CookieUtil.add(res, COOK_UPD_END_DT, end, "/", -1);
+		} else {
+			end = CookieUtil.getValue(COOK_UPD_END_DT, req.getCookies());
+		}
+		req.setParameter(COOK_UPD_START_DT, start);
+		req.setParameter(COOK_UPD_END_DT, end);
 	}
 
 	/**
@@ -292,7 +323,9 @@ public class UpdatesAction extends ManagementAction {
 	 * @throws ActionException 
 	 */
 	private void getFilteredUpdates(ActionRequest req, Order order, String dir) throws ActionException {
+		//parse the requet object
 		setSolrParams(req, order, dir);
+		
 		// Pass along the proper information for a search to be done.
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -305,70 +338,6 @@ public class UpdatesAction extends ManagementAction {
 		sa.retrieve(req);
 	}
 
-
-	/**
-	 * processes the section ides supplied and gets childern or granchildren as needed to mimic the data returned by the 
-	 * front public side search
-	 * @param sectionIds
-	 * @return
-	 */
-	private Set<String> getSectionFamily(String[] sectionIds) {
-		if (sectionIds == null) return new HashSet<>();
-		//set up a set to hold all the ids
-		Set<String> set = new HashSet<>();
-		
-		// load the section hierarchy Tree from superclass
-		Tree t = loadDefaultTree();
-
-		// Generate the Node Paths using Node Names.
-		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
-		
-		//process ids according to their depth level
-		for (String s : sectionIds){
-			Node n = t.findNode(s);
-			int depth = n.getDepthLevel();
-			//if the id is already in the set its a child or grand child and we don't need to process it again
-			if (set.contains(n.getFullPath())) continue;
-			
-			if (depth < 3) {
-				set.add(n.getFullPath());
-				processTwoNodeLayers(set, t, s);
-			} else if (depth == 3){
-				set.add(n.getFullPath());
-				processOneNodeLayer(set, t, s);
-			}else {
-				set.add(n.getFullPath());
-			}
-		}
-
-		return set;
-	}
-
-	/**
-	 * adds the ids children from the tree to the set
-	 * @param set
-	 * @param t
-	 * @param s
-	 */
-	private void processOneNodeLayer(Set<String> set, Tree t, String s) {
-		for (Node n : t.findNode(s).getChildren()){
-			set.add(n.getNodeId());
-			}
-	}
-
-	/**
-	 * adds the ids children and grand children to the set.
-	 * @param set
-	 * @param t
-	 */
-	private void processTwoNodeLayers(Set<String> set, Tree t, String s) {
-		for (Node n : t.findNode(s).getChildren()){
-			set.add(n.getNodeId());
-			for (Node g : n.getChildren()){
-				set.add(g.getNodeId());
-			}
-		}
-	}
 
 	/**
 	 * Retrieve all the updates - called by the Solr OOB indexer
@@ -399,14 +368,17 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	private void addProductCompanyData(List<Object> updates) {
 		log.debug("adding company short name and id ");
-		
+
 		int productCount = getProductCount(updates);
 		if (productCount == 0) return;
-		
+
 		StringBuilder sb = new StringBuilder(161);
 		sb.append("select c.company_id, c.short_nm_txt, p.product_id from ").append(customDbSchema).append("biomedgps_product p ");
 		sb.append(INNER_JOIN).append(customDbSchema).append("biomedgps_company c on p.company_id = c.company_id ");
-		sb.append("where p.product_id in (").append(DBUtil.preparedStatmentQuestion(productCount)).append(")");
+		sb.append("where p.product_id in (");
+		DBUtil.preparedStatmentQuestion(productCount, sb);
+		sb.append(")");
+		log.debug(sb);
 
 		Map<String, GenericVO> companies = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
@@ -418,17 +390,17 @@ public class UpdatesAction extends ManagementAction {
 			}
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				companies.put(rs.getString("product_id"), new GenericVO(
-						rs.getString("company_id"), rs.getString("short_nm_txt")));
+				GenericVO vo = new GenericVO(rs.getString("company_id"), rs.getString("short_nm_txt"));
+				companies.put(rs.getString("product_id"), vo);
 			}
 		} catch(SQLException sqle) {
 			log.error("could not confirm security by id ", sqle);
 		}
-		
+
 		mergeResults(updates, companies);
 	}
 
-	
+
 	/**
 	 * Add company information to the products updates.
 	 * @param updates
@@ -485,7 +457,7 @@ public class UpdatesAction extends ManagementAction {
 		log.debug(sql);
 		return sql.toString();
 	}
-	
+
 	/**
 	 * Retrieve list of Updates containing historical Revisions.
 	 * @param parameter
@@ -611,7 +583,7 @@ public class UpdatesAction extends ManagementAction {
 				deleteFromSolr(u);
 			} else {
 				filterText(u);
-				
+
 				db.save(u);
 
 				fixPkids(u, db.getGeneratedPKId());
@@ -637,7 +609,7 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	private void filterText(UpdateVO u) {
 		if (StringUtil.isEmpty(u.getMessageTxt())) return;
-		
+
 		u.setMessageTxt(u.getMessageTxt().replaceAll(HTML_REGEX, ""));
 	}
 

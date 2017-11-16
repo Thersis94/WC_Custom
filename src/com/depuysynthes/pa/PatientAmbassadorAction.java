@@ -41,16 +41,18 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 	public PatientAmbassadorAction(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		String storyId = StringUtil.checkVal(req.getParameter("reqParam_1"));
 		boolean isPreview = storyId.startsWith("preview_") && page.isPreviewMode();
-		
+
 		if (isPreview) {
 			//load a single story from the database, rather than Solr.
 			storyId = storyId.substring(8);
@@ -59,8 +61,8 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 			loadDocuments(req, mod);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Load all documents from solr 
 	 * @param req
@@ -76,7 +78,7 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 
 		String rpp = req.getParameter("rpp");
 		String pageNo = req.getParameter("page");
-		
+
 		// In order to ensure that all items are gotten we need to 
 		// trigger the userDataOverride in the solr action.
 		// As well as start at the beginning and get all
@@ -86,15 +88,15 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 		req.setParameter("page", "0");
 		List<SolrDocument> documents =  new ArrayList<>();
 		retrieveAllResults(sa, req, documents);
-		
+
 		// Set the rpp and page back to the original value
 		req.setParameter("rpp", StringUtil.checkVal(rpp));
 		req.setParameter("page",  StringUtil.checkVal(pageNo));
-		
+
 		putModuleData(documents);
 	}
 
-	
+
 	/**
 	 * Get all documents from solr so that the map can be properly populated.
 	 * @param sa
@@ -108,7 +110,7 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 		documents.addAll(solrResp.getResultDocuments());
 	}
 
-	
+
 	/**
 	 * calls the data tool action to load the desired patient story from the black box
 	 * @param req
@@ -122,15 +124,6 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 		pa.retrieveSubmittalData(req);
 		ModuleVO mod = (ModuleVO) pa.getAttribute(AdminConstants.ADMIN_MODULE_DATA);
 		if (mod != null) putModuleData(mod.getActionData());
-		pa = null;
 		req.setAttribute("formDataPreview", "formDataPreview");
-	}
-	
-	
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
-	 */
-	public void list(ActionRequest req) throws ActionException {
-		super.retrieve(req);
 	}
 }
