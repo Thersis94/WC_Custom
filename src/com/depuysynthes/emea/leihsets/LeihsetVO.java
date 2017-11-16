@@ -35,7 +35,7 @@ import com.smt.sitebuilder.approval.ApprovalVO;
 public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO> {
 
 	private static final long serialVersionUID = 8572661193156013730L;
-	
+
 	private String organizationId;
 	private String leihsetGroupId;
 	private String leihsetId;
@@ -55,7 +55,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	private Map<String, LeihsetVO> assets; //a PDF or Excel uploaded to this Liehset
 	private Map<String, LeihsetVO> materials; //Mediabin Literature
 	private ApprovalVO approval;
-	
+
 	private String categoryName;
 	private String parentCategoryName;
 	private Tree categoryTree;
@@ -65,11 +65,11 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 		materials = new LinkedHashMap<>();
 		categories = new HashSet<>();
 	}
-	
+
 	public LeihsetVO(ResultSet rs, boolean isSet) {
 		this();
 		DBUtil db = new DBUtil();
-		
+
 		if (isSet) {
 			//this is a setList entry being added to an existing Leihset
 			setLeihsetAssetId(db.getStringVal("leihset_asset_id", rs));
@@ -95,20 +95,20 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 		}
 		db = null;
 	}
-	
+
 	public LeihsetVO(ActionRequest req, boolean isSet) {
 		this();
 		setLeihsetGroupId(StringUtil.checkVal(req.getParameter("leihsetGroupId"), null));
 		setLeihsetId(req.getParameter("sbActionId"));
 		setOrderNo(Convert.formatInteger(req.getParameter("orderNo"), 0).intValue());
-		
+
 		if (isSet) {
 			//this is a setList entry being added to an existing Leihset
 			setLeihsetAssetId(req.getParameter("leihsetAssetId"));
 			setAssetName(req.getParameter("assetName"));
 			setAssetNumber(StringUtil.checkVal(req.getParameter("assetNumber"), null));
 			setDpySynMediaBinId(StringUtil.checkVal(req.getParameter("dpySynMediaBinId"), null));
-			
+
 			// Check if we're getting a new file that will replace the old one.
 			if (req.getFile("excelFile") == null)
 				this.setExcelUrl(StringUtil.checkVal(req.getParameter("excelFileOrig"), null));
@@ -116,21 +116,21 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 			// Check if we're getting a new file that will replace the old one.
 			if (req.getFile("pdfFile") == null)
 				this.setPdfUrl(StringUtil.checkVal(req.getParameter("pdfFileOrig"), null));
-			
+
 		} else {
 			//this is a Leihset itself
 			setOrganizationId(req.getParameter("organizationId"));
 			setLeihsetName(req.getParameter("actionName"));
 			if (req.hasParameter("categories"))
-					this.setCategories(Arrays.asList(req.getParameterValues("categories")));
+				this.setCategories(Arrays.asList(req.getParameterValues("categories")));
 			setArchiveFlg(Convert.formatInteger(req.getParameter("archiveFlg"), 0).intValue());
-			
+
 			// Check if we're getting a new file that will replace the old one.
 			if (req.getFile("imageFile") == null)
 				this.setImageUrl(req.getParameter("imageFileOrig"));
-			
+
 			setSyncData(new ApprovalVO(req));
-			
+
 		}
 	}
 
@@ -191,13 +191,13 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	}
 
 	public List<LeihsetVO> getAssets() {
-		return new ArrayList<LeihsetVO>(assets.values());
+		return new ArrayList<>(assets.values());
 	}
 
 	public List<LeihsetVO> getMaterials() {
-		return new ArrayList<LeihsetVO>(materials.values());
+		return new ArrayList<>(materials.values());
 	}
-	
+
 	private void addAsset(LeihsetVO vo) {
 		assets.put(vo.getLeihsetAssetId(), vo);
 	}
@@ -205,7 +205,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	private void addMaterial(LeihsetVO vo) {
 		materials.put(vo.getLeihsetAssetId(), vo);
 	}
-	
+
 	public void addResource(LeihsetVO vo) {
 		if (vo.getDpySynMediaBinId() != null) {
 			this.addMaterial(vo);
@@ -268,7 +268,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	@Override
 	public void setSyncData(ApprovalVO vo) {
 		this.approval = vo;
-		
+
 	}
 
 	public String getLeihsetGroupId() {
@@ -286,7 +286,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	public void setArchiveFlg(int archiveFlg) {
 		this.archiveFlg = archiveFlg;
 	}
-	
+
 	public String getLeihsetMasterId() {
 		return (leihsetGroupId == null) ? leihsetId : leihsetGroupId;
 	}
@@ -296,16 +296,16 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	 */
 	@Override
 	public int compareTo(LeihsetVO vo) {
-		if (vo == null || !(vo instanceof LeihsetVO)) return -1;
-		
+		if (vo == null) return -1;
+
 		//sort categories alphabetically
 		String cat1 = StringUtil.checkVal(vo.getCategoryName());
-		if (!cat1.equals(this.getCategoryName())) {
+		if (!cat1.equals(getCategoryName())) {
 			return StringUtil.checkVal(getCategoryName()).compareTo(cat1);
 		}
-		
+
 		//compare using Liehset rank for two VOs in the same category
-		return Integer.compare(this.getOrderNo(), vo.getOrderNo());
+		return Integer.compare(getOrderNo(), vo.getOrderNo());
 	}
 
 	public String getDpySynTrackingNo() {
@@ -323,7 +323,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	public void setCategories(Collection<String> categories) {
 		this.categories.addAll(categories);
 	}
-	
+
 	public void addCategory(String cat) {
 		this.categories.add(cat);
 	}
@@ -339,7 +339,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	public String getBusinessUnits() {
 		Tree t = getCategoryTree();
 		if (t == null || t.getRootNode() == null) return null;
-		
+
 		Set<String> bizUnits = new HashSet<>();
 		StringBuilder sb = new StringBuilder(100);
 		for (Node n : t.getRootNode().getChildren()) {

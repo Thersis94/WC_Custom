@@ -28,6 +28,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class LeihsetAssetAction extends SBActionAdapter {
 
 	public LeihsetAssetAction() {
+		super();
 	}
 
 	/**
@@ -38,8 +39,10 @@ public class LeihsetAssetAction extends SBActionAdapter {
 	}
 
 
-	/**
+	/*
 	 * Delete the supplied Leihset and redirect the user
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
@@ -51,20 +54,22 @@ public class LeihsetAssetAction extends SBActionAdapter {
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, leihsetAssetId);
-
 			if (ps.executeUpdate() < 1)
 				log.warn("No records deleted with id: " + leihsetAssetId);
+
 		} catch (SQLException e) {
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			log.error("Unable to delete asset: " + leihsetAssetId, e);
 		}
 		super.adminRedirect(req, msg, buildRedirect(req));
 	}
-	
 
-	/**
+
+	/*
 	 * Builds a LeihsetVO from the request object and passes it along to the
 	 * vo specific update method and then redirects the user
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
@@ -97,7 +102,7 @@ public class LeihsetAssetAction extends SBActionAdapter {
 		lfa.setAttributes(getAttributes());
 		return lfa.writeFile(file);
 	}
-	
+
 
 	/**
 	 * Update method that works with a premade LeihsetVO instead of the 
@@ -106,7 +111,7 @@ public class LeihsetAssetAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void update(LeihsetVO vo) {
-		boolean isInsert = StringUtil.checkVal(vo.getLeihsetAssetId()).length() == 0;
+		boolean isInsert = StringUtil.isEmpty(vo.getLeihsetAssetId());
 		if (isInsert) vo.setLeihsetAssetId(new UUIDGenerator().getUUID());
 		String sql = buildUpdateSql(isInsert);
 		log.debug(sql);
@@ -152,8 +157,7 @@ public class LeihsetAssetAction extends SBActionAdapter {
 		}
 		return sql.toString();
 	}
-	
-	
+
 
 	/**
 	 * Append extra parameters to the redirect query in order to make sure that

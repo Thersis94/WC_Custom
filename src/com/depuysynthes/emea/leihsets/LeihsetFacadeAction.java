@@ -49,7 +49,7 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		//add a hook to save categories via ajax
 		ActionType type = req.hasParameter("addCategory") ? ActionType.category : ActionType.leihset;	
-		
+
 		//LeihsetAction handles both Leihset and LeihsetAsset lists
 		getAction(type).list(req);
 	}
@@ -107,13 +107,11 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	 * @return
 	 */
 	private ActionInterface getAction(String actionType) throws ActionException {
-		ActionType at = null;
 		try {
-			at = ActionType.valueOf(actionType);
-			return getAction(at);
-		} catch (Exception e) {}
-
-		throw new ActionException("Not a valid action type");
+			return getAction(ActionType.valueOf(actionType));
+		} catch (Exception e) {
+			throw new ActionException("Not a valid action type: " + actionType);
+		}		
 	}
 
 
@@ -121,10 +119,11 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	 * Determine which action should handle the request based on an enum token
 	 * @param actionType
 	 * @return
+	 * @throws ActionException 
 	 */
-	private ActionInterface getAction(ActionType type) {
-		ActionInterface ai = null;
+	private ActionInterface getAction(ActionType type) throws ActionException {
 		log.debug("Loading action " + type);
+		ActionInterface ai;
 		switch(type) {
 			case leihset:
 				ai = new LeihsetAction(actionInit);
@@ -135,12 +134,12 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 			case category:
 				ai = new LeihsetCategoryAction(actionInit);
 				break;
+			default:
+				throw new ActionException("Not a valid action type");
 		}
 
-		if (ai != null) {
-			ai.setAttributes(getAttributes());
-			ai.setDBConnection(dbConn);
-		}
+		ai.setAttributes(getAttributes());
+		ai.setDBConnection(getDBConnection());
 		return ai;
 	}
 }
