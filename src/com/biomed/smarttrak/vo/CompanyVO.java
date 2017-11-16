@@ -31,7 +31,6 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
  * @since Jan 16, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
 @Table(name="BIOMEDGPS_COMPANY")
 public class CompanyVO  extends AuthorVO {
 	private String companyId;
@@ -84,6 +83,11 @@ public class CompanyVO  extends AuthorVO {
 		setData(req);
 	}
 	
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.vo.AuthorVO#setData(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void setData(ActionRequest req) {
 		super.setData(req);//set the creator_profile_id
 		companyId = req.getParameter("companyId");
