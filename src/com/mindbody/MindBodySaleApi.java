@@ -62,6 +62,6 @@ public class MindBodySaleApi extends AbstractMindBodyApi<Sale_x0020_ServiceStub,
 	 */
 	@Override
 	protected MindBodyResponseVO processRequest(MindBodySalesConfig config) throws RemoteException {
-		return buildErrorResponse(HttpStatus.ORDINAL_501_NOT_IMPLEMENTED, "Endpoint Not Supported");
+		return buildErrorResponse(HttpStatus.CD_501_NOT_IMPLEMENTED, "Endpoint Not Supported");
 	}
 }

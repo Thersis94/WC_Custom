@@ -89,10 +89,10 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 				resp = processRequest(config);
 			} catch(RemoteException e) {
 				log.error("Problem With Connection.", e);
-				resp = buildErrorResponse(HttpStatus.ORDINAL_500_INTERNAL_SERVER_ERROR, "Problem Occurred .");
+				resp = buildErrorResponse(HttpStatus.CD_500_INTERNAL_SERVER_ERROR, "Problem Occurred .");
 			}
 		} else {
-			resp = buildErrorResponse(HttpStatus.ORDINAL_400_BAD_REQUEST, "Invalid Config Passed.");
+			resp = buildErrorResponse(HttpStatus.CD_400_BAD_REQUEST, "Invalid Config Passed.");
 		}
 		return resp;
 	}

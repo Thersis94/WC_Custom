@@ -129,7 +129,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 				break;
 			default:
 				log.info("Endpoint not supported.");
-				resp = buildErrorResponse(HttpStatus.ORDINAL_501_NOT_IMPLEMENTED, "Endpoint Not Supported");
+				resp = buildErrorResponse(HttpStatus.CD_501_NOT_IMPLEMENTED, "Endpoint Not Supported");
 				break;
 		}
 		return resp;
