@@ -1,6 +1,6 @@
 package com.mindbody.vo.clients;
 
-import com.mindbody.MindbodyClientApi.ClientDocumentType;
+import com.mindbody.MindBodyClientApi.ClientDocumentType;
 import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************

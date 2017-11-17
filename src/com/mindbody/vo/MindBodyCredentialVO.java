@@ -1,5 +1,7 @@
 package com.mindbody.vo;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.siliconmtn.util.StringUtil;

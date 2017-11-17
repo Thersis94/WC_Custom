@@ -1,63 +1,82 @@
 package com.mindbody;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import org.apache.axis2.AxisFault;
+import org.mortbay.jetty.HttpStatus;
 
-import com.mindbody.vo.clients.*;
+import com.mindbody.vo.MindBodyResponseVO;
+import com.mindbody.vo.clients.MindBodyAddArrivalConfig;
+import com.mindbody.vo.clients.MindBodyAddOrUpdateClientsConfig;
+import com.mindbody.vo.clients.MindBodyClientConfig;
+import com.mindbody.vo.clients.MindBodyGetClientAccountBalancesConfig;
+import com.mindbody.vo.clients.MindBodyGetClientPurchasesConfig;
+import com.mindbody.vo.clients.MindBodyGetClientScheduleConfig;
+import com.mindbody.vo.clients.MindBodyGetClientServicesConfig;
+import com.mindbody.vo.clients.MindBodyGetClientVisitsConfig;
+import com.mindbody.vo.clients.MindBodyGetClientsConfig;
+import com.mindbody.vo.clients.MindBodyGetCustomClientFieldsConfig;
+import com.mindbody.vo.clients.MindBodyGetRequiredClientFieldsConfig;
+import com.mindbody.vo.clients.MindBodySendUserNewPasswordConfig;
+import com.mindbody.vo.clients.MindBodyUpdateClientServicesConfig;
+import com.mindbody.vo.clients.MindBodyUploadClientDocumentConfig;
+import com.mindbody.vo.clients.MindBodyValidateLoginConfig;
 import com.mindbodyonline.clients.api._0_5_1.AddArrivalDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddArrivalRequest;
 import com.mindbodyonline.clients.api._0_5_1.AddArrivalResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.AddArrivalResult;
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateClientsDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateClientsRequest;
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateClientsResponseDocument;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfClient;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfClientService;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfCustomClientField;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfSaleItem;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfString;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfVisit;
-import com.mindbodyonline.clients.api._0_5_1.Client;
+import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateClientsResult;
 import com.mindbodyonline.clients.api._0_5_1.ClientSendUserNewPasswordRequest;
 import com.mindbodyonline.clients.api._0_5_1.Client_x0020_ServiceStub;
 import com.mindbodyonline.clients.api._0_5_1.GetClientAccountBalancesDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetClientAccountBalancesRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetClientAccountBalancesResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetClientAccountBalancesResult;
 import com.mindbodyonline.clients.api._0_5_1.GetClientPurchasesDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetClientPurchasesRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetClientPurchasesResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetClientPurchasesResult;
 import com.mindbodyonline.clients.api._0_5_1.GetClientScheduleDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetClientScheduleRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetClientScheduleResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetClientScheduleResult;
 import com.mindbodyonline.clients.api._0_5_1.GetClientServicesDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetClientServicesRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetClientServicesResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetClientServicesResult;
 import com.mindbodyonline.clients.api._0_5_1.GetClientVisitsDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetClientVisitsRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetClientVisitsResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetClientVisitsResult;
 import com.mindbodyonline.clients.api._0_5_1.GetClientsDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetClientsRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetClientsResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetClientsResult;
 import com.mindbodyonline.clients.api._0_5_1.GetCustomClientFieldsDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetCustomClientFieldsRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetCustomClientFieldsResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetCustomClientFieldsResult;
 import com.mindbodyonline.clients.api._0_5_1.GetRequiredClientFieldsDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetRequiredClientFieldsRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetRequiredClientFieldsResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetRequiredClientFieldsResult;
 import com.mindbodyonline.clients.api._0_5_1.SendUserNewPasswordDocument;
 import com.mindbodyonline.clients.api._0_5_1.SendUserNewPasswordResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.UpdateClientServicesDocument;
 import com.mindbodyonline.clients.api._0_5_1.UpdateClientServicesRequest;
 import com.mindbodyonline.clients.api._0_5_1.UpdateClientServicesResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.UpdateClientServicesResult;
 import com.mindbodyonline.clients.api._0_5_1.UploadClientDocumentDocument1;
 import com.mindbodyonline.clients.api._0_5_1.UploadClientDocumentRequest;
 import com.mindbodyonline.clients.api._0_5_1.UploadClientDocumentResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.UploadClientDocumentResult;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginDocument;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginRequest;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.ValidateLoginResult;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -71,7 +90,7 @@ import com.siliconmtn.util.Convert;
  * @version 3.3.1
  * @since Nov 3, 2017
  ****************************************************************************/
-public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceStub, MindBodyClientConfig> {
+public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceStub, MindBodyClientConfig> {
 
 	public enum ClientDocumentType {
 		ADD_ARRIVAL,
@@ -105,7 +124,7 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	/**
 	 * 
 	 */
-	public MindbodyClientApi() {
+	public MindBodyClientApi() {
 		super();
 	}
 
@@ -118,62 +137,58 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mindbody.MindBodyApiIntfc#getDocument(com.mindbody.vo.MindBodyCallVO)
+	 * @see com.mindbody.AbstractMindBodyApi#processRequest(com.mindbody.vo.MindBodyConfig)
 	 */
 	@Override
-	public List<Object> getDocument(MindBodyClientConfig config) throws RemoteException {
-		List<Object> resp = null;
-
-		if(config.isValid()) {
-			switch (config.getType()) {
-				case ADD_ARRIVAL:
-					resp = addArrival((MindBodyAddArrivalConfig)config);
-					break;
-				case ADD_OR_UPDATE_CLIENTS:
-					resp = addOrUpdateClients((MindBodyAddOrUpdateClientsConfig)config);
-					break;
-				case GET_CLIENTS:
-					resp = getClients((MindBodyGetClientsConfig)config);
-					break;
-				case GET_CLIENT_ACCOUNT_BALANCES:
-					resp = getClientAccountBalances((MindBodyGetClientAccountBalancesConfig)config);
-					break;
-				case GET_CLIENT_PURCHASES:
-					resp = getClientPurchases((MindBodyGetClientPurchasesConfig)config);
-					break;
-				case GET_CLIENT_SCHEDULE:
-					resp = getClientSchedule((MindBodyGetClientScheduleConfig)config);
-					break;
-				case GET_CLIENT_SERVICES:
-					resp = getClientServices((MindBodyGetClientServicesConfig)config);
-					break;
-				case GET_CLIENT_VISITS:
-					resp = getClientVisits((MindBodyGetClientVisitsConfig)config);
-					break;
-				case GET_CUSTOM_CLIENT_FIELDS:
-					resp = getCustomClientFields((MindBodyGetCustomClientFieldsConfig)config);
-					break;
-				case GET_REQUIRED_CLIENT_FIELDS:
-					resp = getRequiredClientFields((MindBodyGetRequiredClientFieldsConfig)config);
-					break;
-				case SEND_USER_NEW_PASSWORD:
-					resp = sendUserNewPassword((MindBodySendUserNewPasswordConfig)config);
-					break;
-				case UPDATE_CLIENT_SERVICES:
-					resp = updateClientServices((MindBodyUpdateClientServicesConfig)config);
-					break;
-				case UPLOAD_CLIENT_DOCUMENT:
-					resp = uploadClientDocument((MindBodyUploadClientDocumentConfig)config);
-					break;
-				case VALIDATE_LOGIN:
-					resp = validateLogin((MindBodyValidateLoginConfig)config);
-					break;
-				default:
-					log.warn("Endpoint Not Supported.");
-					break;
-			}
-		} else {
-			throw new IllegalArgumentException("Config Not Valid.");
+	protected MindBodyResponseVO processRequest(MindBodyClientConfig config) throws RemoteException {
+		MindBodyResponseVO resp;
+		switch (config.getType()) {
+			case ADD_ARRIVAL:
+				resp = addArrival((MindBodyAddArrivalConfig)config);
+				break;
+			case ADD_OR_UPDATE_CLIENTS:
+				resp = addOrUpdateClients((MindBodyAddOrUpdateClientsConfig)config);
+				break;
+			case GET_CLIENTS:
+				resp = getClients((MindBodyGetClientsConfig)config);
+				break;
+			case GET_CLIENT_ACCOUNT_BALANCES:
+				resp = getClientAccountBalances((MindBodyGetClientAccountBalancesConfig)config);
+				break;
+			case GET_CLIENT_PURCHASES:
+				resp = getClientPurchases((MindBodyGetClientPurchasesConfig)config);
+				break;
+			case GET_CLIENT_SCHEDULE:
+				resp = getClientSchedule((MindBodyGetClientScheduleConfig)config);
+				break;
+			case GET_CLIENT_SERVICES:
+				resp = getClientServices((MindBodyGetClientServicesConfig)config);
+				break;
+			case GET_CLIENT_VISITS:
+				resp = getClientVisits((MindBodyGetClientVisitsConfig)config);
+				break;
+			case GET_CUSTOM_CLIENT_FIELDS:
+				resp = getCustomClientFields((MindBodyGetCustomClientFieldsConfig)config);
+				break;
+			case GET_REQUIRED_CLIENT_FIELDS:
+				resp = getRequiredClientFields((MindBodyGetRequiredClientFieldsConfig)config);
+				break;
+			case SEND_USER_NEW_PASSWORD:
+				resp = sendUserNewPassword((MindBodySendUserNewPasswordConfig)config);
+				break;
+			case UPDATE_CLIENT_SERVICES:
+				resp = updateClientServices((MindBodyUpdateClientServicesConfig)config);
+				break;
+			case UPLOAD_CLIENT_DOCUMENT:
+				resp = uploadClientDocument((MindBodyUploadClientDocumentConfig)config);
+				break;
+			case VALIDATE_LOGIN:
+				resp = validateLogin((MindBodyValidateLoginConfig)config);
+				break;
+			default:
+				log.warn("Endpoint Not Supported.");
+				resp = buildErrorResponse(HttpStatus.ORDINAL_501_Not_Implemented, "Endpoint Not Supported");
+				break;
 		}
 		return resp;
 	}
@@ -182,8 +197,8 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 * @param config
 	 * @return
 	 */
-	private List<Object> sendUserNewPassword(MindBodySendUserNewPasswordConfig config) throws RemoteException {
-		List<Object> results = new ArrayList<>();
+	private MindBodyResponseVO sendUserNewPassword(MindBodySendUserNewPasswordConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		ClientSendUserNewPasswordRequest req = ClientSendUserNewPasswordRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureSendUserNewPasswordRequest(req, config);
@@ -193,9 +208,9 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		SendUserNewPasswordResponseDocument res = client.sendUserNewPassword(doc);
-		int result = res.getSendUserNewPasswordResponse().getSendUserNewPasswordResult().getResultCount();
-		results.add(result);
-		return results;
+		resp.populateResponseFields(res.getSendUserNewPasswordResponse().getSendUserNewPasswordResult());
+
+		return resp;
 	}
 
 	/**
@@ -212,8 +227,8 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 * @param config
 	 * @return
 	 */
-	private List<Object> updateClientServices(MindBodyUpdateClientServicesConfig config) throws RemoteException {
-		List<Object> services = new ArrayList<>();
+	private MindBodyResponseVO updateClientServices(MindBodyUpdateClientServicesConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		UpdateClientServicesRequest req = UpdateClientServicesRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureUpdateClientServicesRequest(req, config);
@@ -223,9 +238,13 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		UpdateClientServicesResponseDocument res = client.updateClientServices(doc);
-		ArrayOfClientService serviceArr = res.getUpdateClientServicesResponse().getUpdateClientServicesResult().getClientServices();
-		services.add(Arrays.asList(serviceArr.getClientServiceArray()));
-		return services;
+		UpdateClientServicesResult r = res.getUpdateClientServicesResponse().getUpdateClientServicesResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getClientServices().getClientServiceArray());
+		}
+
+		return resp;
 	}
 
 	/**
@@ -244,27 +263,42 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 * @param config
 	 * @return
 	 */
-	private List<Object> validateLogin(MindBodyValidateLoginConfig config) throws RemoteException {
-		List<Object> clients = new ArrayList<>();
+	private MindBodyResponseVO validateLogin(MindBodyValidateLoginConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		ValidateLoginRequest req = ValidateLoginRequest.Factory.newInstance();
 		prepareRequest(req, config);
+		configureValidateLoginRequest(req, config);
 
 		ValidateLoginDocument doc = ValidateLoginDocument.Factory.newInstance();
 		doc.addNewValidateLogin().setRequest(req);
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		ValidateLoginResponseDocument res = client.validateLogin(doc);
-		Client c = res.getValidateLoginResponse().getValidateLoginResult().getClient();
-		clients.add(c);
-		return clients;
+		ValidateLoginResult r = res.getValidateLoginResponse().getValidateLoginResult();
+		
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(MindBodyUtil.convertClientData(r.getClient()));
+		}
+
+		return resp;
+	}
+
+	/**
+	 * @param req
+	 * @param config
+	 */
+	private void configureValidateLoginRequest(ValidateLoginRequest req, MindBodyValidateLoginConfig config) {
+		req.setUsername(config.getUserName());
+		req.setPassword(config.getPassword());
 	}
 
 	/**
 	 * @param config
 	 * @return
 	 */
-	private List<Object> getRequiredClientFields(MindBodyGetRequiredClientFieldsConfig config) throws RemoteException {
-		List<Object> fields = new ArrayList<>();
+	private MindBodyResponseVO getRequiredClientFields(MindBodyGetRequiredClientFieldsConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetRequiredClientFieldsRequest req = GetRequiredClientFieldsRequest.Factory.newInstance();
 		prepareRequest(req, config);
 
@@ -273,17 +307,21 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		GetRequiredClientFieldsResponseDocument res = client.getRequiredClientFields(doc);
-		ArrayOfString fieldsArr = res.getGetRequiredClientFieldsResponse().getGetRequiredClientFieldsResult().getRequiredClientFields();
-		fields.addAll(Arrays.asList(fieldsArr.getStringArray()));
-		return fields;
+		GetRequiredClientFieldsResult r = res.getGetRequiredClientFieldsResponse().getGetRequiredClientFieldsResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getRequiredClientFields().getStringArray());
+		}
+
+		return resp;
 	}
 
 	/**
 	 * @param config
 	 * @return
 	 */
-	private List<Object> getClientSchedule(MindBodyGetClientScheduleConfig config) throws RemoteException {
-		List<Object> schedules = new ArrayList<>();
+	private MindBodyResponseVO getClientSchedule(MindBodyGetClientScheduleConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetClientScheduleRequest req = GetClientScheduleRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureGetClientScheduleRequest(req, config);
@@ -293,9 +331,13 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		GetClientScheduleResponseDocument res = client.getClientSchedule(doc);
-		ArrayOfVisit visitArr = res.getGetClientScheduleResponse().getGetClientScheduleResult().getVisits();
-		schedules.add(Arrays.asList(visitArr.getVisitArray()));
-		return schedules;
+		GetClientScheduleResult r = res.getGetClientScheduleResponse().getGetClientScheduleResult();
+
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getVisits().getVisitArray());
+		}
+		return resp;
 	}
 
 	/**
@@ -318,8 +360,8 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 * @param config
 	 * @return
 	 */
-	private List<Object> getClientPurchases(MindBodyGetClientPurchasesConfig config) throws RemoteException {
-		List<Object> purchases = new ArrayList<>();
+	private MindBodyResponseVO getClientPurchases(MindBodyGetClientPurchasesConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetClientPurchasesRequest req = GetClientPurchasesRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureGetClientPurchasesRequest(req, config);
@@ -329,9 +371,13 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		GetClientPurchasesResponseDocument res = client.getClientPurchases(doc);
-		ArrayOfSaleItem saleArr = res.getGetClientPurchasesResponse().getGetClientPurchasesResult().getPurchases();
-		purchases.add(Arrays.asList(saleArr.getSaleItemArray()));
-		return purchases;
+		GetClientPurchasesResult r = res.getGetClientPurchasesResponse().getGetClientPurchasesResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getPurchases().getSaleItemArray());
+		}
+
+		return resp;
 	}
 
 	/**
@@ -358,8 +404,8 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 * @param config
 	 * @return
 	 */
-	private List<Object> getClientVisits(MindBodyGetClientVisitsConfig config) throws RemoteException {
-		List<Object> visits = new ArrayList<>();
+	private MindBodyResponseVO getClientVisits(MindBodyGetClientVisitsConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetClientVisitsRequest req = GetClientVisitsRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureGetClientVisitsRequest(req, config);
@@ -369,9 +415,13 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		GetClientVisitsResponseDocument res = client.getClientVisits(doc);
-		ArrayOfVisit visitArr = res.getGetClientVisitsResponse().getGetClientVisitsResult().getVisits();
-		visits.add(Arrays.asList(visitArr.getVisitArray()));
-		return visits;
+		GetClientVisitsResult r = res.getGetClientVisitsResponse().getGetClientVisitsResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getVisits().getVisitArray());
+		}
+
+		return resp;
 	}
 
 	/**
@@ -398,8 +448,8 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 * @param config
 	 * @return
 	 */
-	private List<Object> getClientServices(MindBodyGetClientServicesConfig config) throws RemoteException {
-		List<Object> services = new ArrayList<>();
+	private MindBodyResponseVO getClientServices(MindBodyGetClientServicesConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetClientServicesRequest req = GetClientServicesRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureGetClientServicesRequest(req, config);
@@ -409,9 +459,13 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		GetClientServicesResponseDocument res = client.getClientServices(doc);
-		ArrayOfClientService serviceArr = res.getGetClientServicesResponse().getGetClientServicesResult().getClientServices();
-		services.add(Arrays.asList(serviceArr.getClientServiceArray()));
-		return services;
+		GetClientServicesResult r = res.getGetClientServicesResponse().getGetClientServicesResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getClientServices().getClientServiceArray());
+		}
+
+		return resp;
 	}
 
 	/**
@@ -459,8 +513,8 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 * @param config
 	 * @return
 	 */
-	private List<Object> getClientAccountBalances(MindBodyGetClientAccountBalancesConfig config) throws RemoteException {
-		List<Object> clients = new ArrayList<>();
+	private MindBodyResponseVO getClientAccountBalances(MindBodyGetClientAccountBalancesConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetClientAccountBalancesRequest req = GetClientAccountBalancesRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureGetClientAccountBalancesRequest(req, config);
@@ -470,9 +524,13 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		GetClientAccountBalancesResponseDocument res = client.getClientAccountBalances(doc);
-		ArrayOfClient clientArr = res.getGetClientAccountBalancesResponse().getGetClientAccountBalancesResult().getClients();
-		clients.add(Arrays.asList(clientArr.getClientArray()));
-		return clients;
+		GetClientAccountBalancesResult r = res.getGetClientAccountBalancesResponse().getGetClientAccountBalancesResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getClients().getClientArray());
+		}
+
+		return resp;
 	}
 
 	/**
@@ -495,8 +553,8 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 * @param config
 	 * @return
 	 */
-	private List<Object> uploadClientDocument(MindBodyUploadClientDocumentConfig config) throws RemoteException {
-		List<Object> documents = new ArrayList<>();
+	private MindBodyResponseVO uploadClientDocument(MindBodyUploadClientDocumentConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		UploadClientDocumentRequest req = UploadClientDocumentRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureUploadClientDocumentRequest(req, config);
@@ -506,9 +564,10 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		UploadClientDocumentResponseDocument res = client.uploadClientDocument(doc);
-		int resCnt = res.getUploadClientDocumentResponse().getUploadClientDocumentResult().getResultCount();
-		documents.add(resCnt);
-		return documents;
+		UploadClientDocumentResult r = res.getUploadClientDocumentResponse().getUploadClientDocumentResult();
+		resp.populateResponseFields(r);
+
+		return resp;
 	}
 
 	/**
@@ -527,8 +586,8 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 * @param config
 	 * @return
 	 */
-	private List<Object> getCustomClientFields(MindBodyGetCustomClientFieldsConfig config) throws RemoteException {
-		List<Object> fields = new ArrayList<>();
+	private MindBodyResponseVO getCustomClientFields(MindBodyGetCustomClientFieldsConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetCustomClientFieldsRequest req = GetCustomClientFieldsRequest.Factory.newInstance();
 		prepareRequest(req, config);
 
@@ -537,17 +596,20 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		GetCustomClientFieldsResponseDocument res = client.getCustomClientFields(doc);
-		ArrayOfCustomClientField fieldsArr = res.getGetCustomClientFieldsResponse().getGetCustomClientFieldsResult().getCustomClientFields();
-		fields.addAll(Arrays.asList(fieldsArr.getCustomClientFieldArray()));
-		return fields;
+		GetCustomClientFieldsResult r = res.getGetCustomClientFieldsResponse().getGetCustomClientFieldsResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getCustomClientFields().getCustomClientFieldArray());
+		}
+		return resp;
 	}
 
 	/**
 	 * @param config
 	 * @return
 	 */
-	private List<Object> addOrUpdateClients(MindBodyAddOrUpdateClientsConfig config) throws RemoteException {
-		List<Object> clients = new ArrayList<>();
+	private MindBodyResponseVO addOrUpdateClients(MindBodyAddOrUpdateClientsConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		AddOrUpdateClientsRequest req = AddOrUpdateClientsRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureAddOrUpdateClientsRequest(req, config);
@@ -557,9 +619,12 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		AddOrUpdateClientsResponseDocument res = client.addOrUpdateClients(doc);
-		ArrayOfClient clientsArr = res.getAddOrUpdateClientsResponse().getAddOrUpdateClientsResult().getClients();
-		clients.addAll(Arrays.asList(clientsArr.getClientArray()));
-		return clients;
+		AddOrUpdateClientsResult r = res.getAddOrUpdateClientsResponse().getAddOrUpdateClientsResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getClients().getClientArray());
+		}
+		return resp;
 	}
 
 	/**
@@ -578,8 +643,8 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 * @param config
 	 * @return
 	 */
-	private List<Object> getClients(MindBodyGetClientsConfig config) throws RemoteException {
-		List<Object> clients = new ArrayList<>();
+	private MindBodyResponseVO getClients(MindBodyGetClientsConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetClientsRequest req = GetClientsRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureGetClientsRequest(req, config);
@@ -589,9 +654,12 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		GetClientsResponseDocument res = client.getClients(doc);
-		ArrayOfClient clientsArr = res.getGetClientsResponse().getGetClientsResult().getClients();
-		clients.addAll(Arrays.asList(clientsArr.getClientArray()));
-		return clients;
+		GetClientsResult r = res.getGetClientsResponse().getGetClientsResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getClients().getClientArray());
+		}
+		return resp;
 	}
 
 	/**
@@ -619,8 +687,8 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 * @return
 	 * @throws RemoteException 
 	 */
-	private List<Object> addArrival(MindBodyAddArrivalConfig config) throws RemoteException {
-		List<Object> arrival = new ArrayList<>();
+	private MindBodyResponseVO addArrival(MindBodyAddArrivalConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		AddArrivalRequest req = AddArrivalRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureAddArrivalRequest(req, config);
@@ -630,9 +698,13 @@ public class MindbodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		AddArrivalResponseDocument res = client.addArrival(doc);
-		boolean arrived = res.getAddArrivalResponse().getAddArrivalResult().getArrivalAdded();
-		arrival.add(arrived);
-		return arrival;
+		AddArrivalResult r = res.getAddArrivalResponse().getAddArrivalResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getArrivalAdded());
+		}
+
+		return resp;
 	}
 
 	/**

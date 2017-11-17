@@ -1,12 +1,11 @@
 package com.mindbody;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import org.apache.axis2.AxisFault;
+import org.mortbay.jetty.HttpStatus;
 
+import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.staff.MindBodyAddOrUpdateStaffConfig;
 import com.mindbody.vo.staff.MindBodyGetStaffConfig;
 import com.mindbody.vo.staff.MindBodyGetStaffImgUrl;
@@ -16,20 +15,22 @@ import com.mindbody.vo.staff.MindBodyValidateStaffLogin;
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateStaffDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateStaffRequest;
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateStaffResponseDocument;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfPermission;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfStaff;
+import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateStaffResult;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffImgURLDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffImgURLRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffImgURLResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetStaffImgURLResult;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffPermissionsDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffPermissionsRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffPermissionsResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetStaffPermissionsResult;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffResponseDocument;
-import com.mindbodyonline.clients.api._0_5_1.Staff;
+import com.mindbodyonline.clients.api._0_5_1.GetStaffResult;
 import com.mindbodyonline.clients.api._0_5_1.Staff_x0020_ServiceStub;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginRequest;
+import com.mindbodyonline.clients.api._0_5_1.ValidateLoginResult;
 import com.mindbodyonline.clients.api._0_5_1.ValidateStaffLoginDocument;
 import com.mindbodyonline.clients.api._0_5_1.ValidateStaffLoginResponseDocument;
 
@@ -71,35 +72,31 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mindbody.MindBodyApiIntfc#getDocument(com.mindbody.MindBodyCallVO)
+	 * @see com.mindbody.AbstractMindBodyApi#processRequest(com.mindbody.vo.MindBodyConfig)
 	 */
 	@Override
-	public List<Object> getDocument(MindBodyStaffConfig config) throws RemoteException {
-		List<Object> resp = null;
-
-		if(config.isValid()) {
-			switch(config.getType()) {
-				case ADD_OR_UPDATE_STAFF:
-					resp = addOrUpdateStaff((MindBodyAddOrUpdateStaffConfig) config);
-					break;
-				case GET_STAFF:
-					resp = getStaff((MindBodyGetStaffConfig) config);
-					break;
-				case GET_STAFF_IMG_URL:
-					resp = getStaffImgUrl((MindBodyGetStaffImgUrl) config);
-					break;
-				case GET_STAFF_PERMISSIONS:
-					resp = getStaffPermissions((MindBodyGetStaffPermissionsConfig) config);
-					break;
-				case VALIDATE_STAFF_LOGIN:
-					resp = validateStaffLogin((MindBodyValidateStaffLogin) config);
-					break;
-				default:
-					log.error("Endpoint Not Supported.");
-					break;
-			}
-		} else {
-			throw new IllegalArgumentException("Config Not Valid.");
+	protected MindBodyResponseVO processRequest(MindBodyStaffConfig config) throws RemoteException {
+		MindBodyResponseVO resp;
+		switch(config.getType()) {
+			case ADD_OR_UPDATE_STAFF:
+				resp = addOrUpdateStaff((MindBodyAddOrUpdateStaffConfig) config);
+				break;
+			case GET_STAFF:
+				resp = getStaff((MindBodyGetStaffConfig) config);
+				break;
+			case GET_STAFF_IMG_URL:
+				resp = getStaffImgUrl((MindBodyGetStaffImgUrl) config);
+				break;
+			case GET_STAFF_PERMISSIONS:
+				resp = getStaffPermissions((MindBodyGetStaffPermissionsConfig) config);
+				break;
+			case VALIDATE_STAFF_LOGIN:
+				resp = validateStaffLogin((MindBodyValidateStaffLogin) config);
+				break;
+			default:
+				log.error("Endpoint Not Supported.");
+				resp = buildErrorResponse(HttpStatus.ORDINAL_501_Not_Implemented, "Endpoint Not Supported");
+				break;
 		}
 		return resp;
 	}
@@ -110,8 +107,8 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	 * @return
 	 * @throws RemoteException
 	 */
-	private List<Object> getStaff(MindBodyGetStaffConfig config) throws RemoteException {
-		List<Object> staff = new ArrayList<>();
+	private MindBodyResponseVO getStaff(MindBodyGetStaffConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetStaffRequest req = GetStaffRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureGetStaffRequest(req, config);
@@ -121,11 +118,13 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 
 		Staff_x0020_ServiceStub client = getConfiguredStub();
 		GetStaffResponseDocument res = client.getStaff(doc);
-		ArrayOfStaff permArr = res.getGetStaffResponse().getGetStaffResult().getStaffMembers();
+		GetStaffResult r = res.getGetStaffResponse().getGetStaffResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getStaffMembers().getStaffArray());
+		}
 
-		staff.addAll(Arrays.asList(permArr.getStaffArray()));
-
-		return staff;
+		return resp;
 	}
 
 	/**
@@ -158,8 +157,8 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	 * @return
 	 * @throws RemoteException
 	 */
-	private List<Object> getStaffPermissions(MindBodyGetStaffPermissionsConfig config) throws RemoteException {
-		List<Object> permissions = new ArrayList<>();
+	private MindBodyResponseVO getStaffPermissions(MindBodyGetStaffPermissionsConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetStaffPermissionsRequest req = GetStaffPermissionsRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureGetStaffPermissionsRequest(req, config);
@@ -169,11 +168,13 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 
 		Staff_x0020_ServiceStub client = getConfiguredStub();
 		GetStaffPermissionsResponseDocument res = client.getStaffPermissions(doc);
-		ArrayOfPermission permArr = res.getGetStaffPermissionsResponse().getGetStaffPermissionsResult().getPermissions();
+		GetStaffPermissionsResult r = res.getGetStaffPermissionsResponse().getGetStaffPermissionsResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getPermissions().getPermissionArray());
+		}
 
-		permissions.addAll(Arrays.asList(permArr.getPermissionArray()));
-
-		return permissions;
+		return resp;
 	}
 
 	/**
@@ -190,8 +191,8 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	 * @return
 	 * @throws RemoteException
 	 */
-	private List<Object> addOrUpdateStaff(MindBodyAddOrUpdateStaffConfig config) throws RemoteException {
-		List<Object> staff = new ArrayList<>();
+	private MindBodyResponseVO addOrUpdateStaff(MindBodyAddOrUpdateStaffConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		AddOrUpdateStaffRequest req = AddOrUpdateStaffRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureAddOrUpdateStaffRequest(req, config);
@@ -201,11 +202,13 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 
 		Staff_x0020_ServiceStub client = getConfiguredStub();
 		AddOrUpdateStaffResponseDocument res = client.addOrUpdateStaff(doc);
-		ArrayOfStaff staffArr = res.getAddOrUpdateStaffResponse().getAddOrUpdateStaffResult().getStaff();
+		AddOrUpdateStaffResult r = res.getAddOrUpdateStaffResponse().getAddOrUpdateStaffResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getStaff().getStaffArray());
+		}
 
-		staff.addAll(Arrays.asList(staffArr.getStaffArray()));
-
-		return staff;
+		return resp;
 	}
 
 	/**
@@ -230,8 +233,8 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	 * @return
 	 * @throws RemoteException
 	 */
-	private List<Object> getStaffImgUrl(MindBodyGetStaffImgUrl config) throws RemoteException {
-		List<Object> images = new ArrayList<>();
+	private MindBodyResponseVO getStaffImgUrl(MindBodyGetStaffImgUrl config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetStaffImgURLRequest req = GetStaffImgURLRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureGetStaffImageUrlRequest(req, config);
@@ -241,10 +244,13 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 
 		Staff_x0020_ServiceStub client = getConfiguredStub();
 		GetStaffImgURLResponseDocument res = client.getStaffImgURL(doc);
-		String s = res.getGetStaffImgURLResponse().getGetStaffImgURLResult().getImageURL();
+		GetStaffImgURLResult r = res.getGetStaffImgURLResponse().getGetStaffImgURLResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getImageURL());
+		}
 
-		images.add(s);
-		return images;
+		return resp;
 	}
 
 	/**
@@ -261,8 +267,8 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	 * @return
 	 * @throws RemoteException
 	 */
-	private List<Object> validateStaffLogin(MindBodyValidateStaffLogin config) throws RemoteException {
-		List<Object> staff = new ArrayList<>();
+	private MindBodyResponseVO validateStaffLogin(MindBodyValidateStaffLogin config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		ValidateLoginRequest req = ValidateLoginRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureValidateStaffLoginRequest(req, config);
@@ -272,10 +278,13 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 
 		Staff_x0020_ServiceStub client = getConfiguredStub();
 		ValidateStaffLoginResponseDocument res = client.validateStaffLogin(doc);
-		Staff s = res.getValidateStaffLoginResponse().getValidateStaffLoginResult().getStaff();
+		ValidateLoginResult r = res.getValidateStaffLoginResponse().getValidateStaffLoginResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getStaff());
+		}
 
-		staff.add(s);
-		return staff;
+		return resp;
 	}
 
 	/**

@@ -1,11 +1,11 @@
 package com.mindbody;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.axis2.AxisFault;
+import org.mortbay.jetty.HttpStatus;
 
+import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.classes.MindBodyAddClientsToClassConfig;
 import com.mindbody.vo.classes.MindBodyClassConfig;
 import com.mindbody.vo.classes.MindBodyGetClassDescConfig;
@@ -17,29 +17,32 @@ import com.mindbody.vo.classes.MindBodyRemoveClientsFromClassesConfig;
 import com.mindbodyonline.clients.api._0_5_1.AddClientsToClassesDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddClientsToClassesRequest;
 import com.mindbodyonline.clients.api._0_5_1.AddClientsToClassesResponseDocument;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfClass;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfClassDescription;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfClassSchedule;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfCourse;
+import com.mindbodyonline.clients.api._0_5_1.AddClientsToClassesResult;
 import com.mindbodyonline.clients.api._0_5_1.Class_x0020_ServiceStub;
 import com.mindbodyonline.clients.api._0_5_1.GetClassDescriptionsDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetClassDescriptionsRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetClassDescriptionsResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetClassDescriptionsResult;
 import com.mindbodyonline.clients.api._0_5_1.GetClassSchedulesDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetClassSchedulesRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetClassSchedulesResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetClassSchedulesResult;
 import com.mindbodyonline.clients.api._0_5_1.GetClassesDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetClassesRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetClassesResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetClassesResult;
 import com.mindbodyonline.clients.api._0_5_1.GetCoursesDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetCoursesRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetCoursesResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetCoursesResult;
 import com.mindbodyonline.clients.api._0_5_1.GetEnrollmentsDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetEnrollmentsRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetEnrollmentsResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.GetEnrollmentsResult;
 import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesDocument;
 import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesRequest;
 import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesResponseDocument;
+import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesResult;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -92,47 +95,41 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 	}
 
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.mindbody.MindBodyApiIntfc#getDocument(java.lang.String)
+	/* (non-Javadoc)
+	 * @see com.mindbody.AbstractMindBodyApi#processRequest(com.mindbody.vo.MindBodyConfig)
 	 */
 	@Override
-	public List<Object> getDocument(MindBodyClassConfig config) throws RemoteException {
-		List<Object> resp = null;
-
-		if(config.isValid()) {
-			switch (config.getType()) {
-				case GET_CLASSES:
-					resp = getClasses((MindBodyGetClassesConfig) config);
-					break;
-				case GET_CLASS_DESC: 
-					resp = getClassDescriptions((MindBodyGetClassDescConfig) config);
-					break;
-				case ADD_CLIENTS_TO_CLASS:
-					resp = addClientsToClass((MindBodyAddClientsToClassConfig) config);
-					break;
-				case GET_CLASS_SCHEDULE:
-					resp = getClassSchedule((MindBodyGetClassScheduleConfig) config);
-					break;
-				case GET_COURSES:
-					resp = getCourses((MindBodyGetCoursesConfig) config);
-					break;
-				case GET_ENROLLMEMTS:
-					resp = getEnrollments((MindBodyGetEnrollmentsConfig) config);
-					break;
-				case REMOVE_CLIENTS_FROM_CLASS:
-					resp = removeClientsFromClass((MindBodyRemoveClientsFromClassesConfig) config);
-					break;
-				default:
-					log.info("Endpoint not supported.");
-					break;
-			}
-		} else {
-			throw new IllegalArgumentException("Config Not Valid.");
+	protected MindBodyResponseVO processRequest(MindBodyClassConfig config) throws RemoteException {
+		MindBodyResponseVO resp;
+		switch (config.getType()) {
+			case GET_CLASSES:
+				resp = getClasses((MindBodyGetClassesConfig) config);
+				break;
+			case GET_CLASS_DESC: 
+				resp = getClassDescriptions((MindBodyGetClassDescConfig) config);
+				break;
+			case ADD_CLIENTS_TO_CLASS:
+				resp = addClientsToClass((MindBodyAddClientsToClassConfig) config);
+				break;
+			case GET_CLASS_SCHEDULE:
+				resp = getClassSchedule((MindBodyGetClassScheduleConfig) config);
+				break;
+			case GET_COURSES:
+				resp = getCourses((MindBodyGetCoursesConfig) config);
+				break;
+			case GET_ENROLLMEMTS:
+				resp = getEnrollments((MindBodyGetEnrollmentsConfig) config);
+				break;
+			case REMOVE_CLIENTS_FROM_CLASS:
+				resp = removeClientsFromClass((MindBodyRemoveClientsFromClassesConfig) config);
+				break;
+			default:
+				log.info("Endpoint not supported.");
+				resp = buildErrorResponse(HttpStatus.ORDINAL_501_Not_Implemented, "Endpoint Not Supported");
+				break;
 		}
 		return resp;
 	}
-
 
 
 	/**
@@ -141,8 +138,8 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 	 * @return
 	 * @throws RemoteException
 	 */
-	private List<Object> getClasses(MindBodyGetClassesConfig config) throws RemoteException {
-		List<Object> classes = new ArrayList<>();
+	private MindBodyResponseVO getClasses(MindBodyGetClassesConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetClassesRequest req = GetClassesRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureClassRequest(req, config);
@@ -152,11 +149,12 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		Class_x0020_ServiceStub client = getConfiguredStub();
 		GetClassesResponseDocument res = client.getClasses(doc);
-		ArrayOfClass classArr = res.getGetClassesResponse().getGetClassesResult().getClasses();
-		for (int i = 0; i < classArr.sizeOfClass1Array(); i++) {
-			classes.add(classArr.getClass1Array(i));
+		GetClassesResult r = res.getGetClassesResponse().getGetClassesResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getClasses().getClass1Array());
 		}
-		return classes;
+		return resp;
 	}
 
 
@@ -240,8 +238,8 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 	 * @return
 	 * @throws RemoteException 
 	 */
-	private List<Object> getClassDescriptions(MindBodyGetClassDescConfig config) throws RemoteException {
-		List<Object> descriptions = new ArrayList<>();
+	private MindBodyResponseVO getClassDescriptions(MindBodyGetClassDescConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetClassDescriptionsRequest req = GetClassDescriptionsRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureClassDescriptionRequest(req, config);
@@ -251,11 +249,13 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		Class_x0020_ServiceStub client = getConfiguredStub();
 		GetClassDescriptionsResponseDocument res = client.getClassDescriptions(doc);
-		ArrayOfClassDescription classArr = res.getGetClassDescriptionsResponse().getGetClassDescriptionsResult().getClassDescriptions();
-		for (int i = 0; i < classArr.sizeOfClassDescriptionArray(); i++) {
-			descriptions.add(classArr.getClassDescriptionArray(i));
+		GetClassDescriptionsResult r = res.getGetClassDescriptionsResponse().getGetClassDescriptionsResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getClassDescriptions().getClassDescriptionArray());
 		}
-		return descriptions;
+
+		return resp;
 	}
 
 
@@ -303,8 +303,8 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 	 * @param config
 	 * @return
 	 */
-	private List<Object> addClientsToClass(MindBodyAddClientsToClassConfig config) throws RemoteException {
-		List<Object> classes = new ArrayList<>();
+	private MindBodyResponseVO addClientsToClass(MindBodyAddClientsToClassConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		AddClientsToClassesRequest req = AddClientsToClassesRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureAddClientsToClassRequest(req, config);
@@ -314,13 +314,13 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		Class_x0020_ServiceStub client = getConfiguredStub();
 		AddClientsToClassesResponseDocument res = client.addClientsToClasses(doc);
-		ArrayOfClass classArr = res.getAddClientsToClassesResponse().getAddClientsToClassesResult().addNewClasses();
-
-		for (int i = 0; i < classArr.sizeOfClass1Array(); i++) {
-			classes.add(classArr.getClass1Array(i));
+		AddClientsToClassesResult r = res.getAddClientsToClassesResponse().getAddClientsToClassesResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getClasses().getClass1Array());
 		}
 
-		return classes;
+		return resp;
 	}
 
 
@@ -363,8 +363,8 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 	 * @param config
 	 * @return
 	 */
-	private List<Object> getClassSchedule(MindBodyGetClassScheduleConfig config) throws RemoteException {
-		List<Object> classes = new ArrayList<>();
+	private MindBodyResponseVO getClassSchedule(MindBodyGetClassScheduleConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetClassSchedulesRequest req = GetClassSchedulesRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureClassScheduleRequest(req, config);
@@ -374,13 +374,13 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		Class_x0020_ServiceStub client = getConfiguredStub();
 		GetClassSchedulesResponseDocument res = client.getClassSchedules(doc);
-		ArrayOfClassSchedule classArr = res.getGetClassSchedulesResponse().getGetClassSchedulesResult().getClassSchedules();
-
-		for (int i = 0; i < classArr.sizeOfClassScheduleArray(); i++) {
-			classes.add(classArr.getClassScheduleArray(i));
+		GetClassSchedulesResult r = res.getGetClassSchedulesResponse().getGetClassSchedulesResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getClassSchedules().getClassScheduleArray());
 		}
 
-		return classes;
+		return resp;
 	}
 
 
@@ -433,8 +433,8 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 	 * @param config
 	 * @return
 	 */
-	private List<Object> getCourses(MindBodyGetCoursesConfig config) throws RemoteException {
-		List<Object> courses = new ArrayList<>();
+	private MindBodyResponseVO getCourses(MindBodyGetCoursesConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetCoursesRequest req = GetCoursesRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureCoursesRequest(req, config);
@@ -444,11 +444,13 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		Class_x0020_ServiceStub client = getConfiguredStub();
 		GetCoursesResponseDocument res = client.getCourses(gcd);
-		ArrayOfCourse classArr = res.getGetCoursesResponse().getGetCoursesResult().getCourses();
-		for (int i = 0; i < classArr.sizeOfCourseArray(); i++) {
-			courses.add(classArr.getCourseArray(i));
+		GetCoursesResult r = res.getGetCoursesResponse().getGetCoursesResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getCourses().getCourseArray());
 		}
-		return courses;
+
+		return resp;
 	}
 
 
@@ -467,8 +469,8 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 	 * @param config
 	 * @return
 	 */
-	private List<Object> getEnrollments(MindBodyGetEnrollmentsConfig config) throws RemoteException {
-		List<Object> enrollments = new ArrayList<>();
+	private MindBodyResponseVO getEnrollments(MindBodyGetEnrollmentsConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		GetEnrollmentsRequest req = GetEnrollmentsRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureEnrollmentsRequest(req, config);
@@ -478,11 +480,13 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		Class_x0020_ServiceStub client = getConfiguredStub();
 		GetEnrollmentsResponseDocument res = client.getEnrollments(gcd);
-		ArrayOfClassSchedule classArr = res.getGetEnrollmentsResponse().getGetEnrollmentsResult().getEnrollments();
-		for (int i = 0; i < classArr.sizeOfClassScheduleArray(); i++) {
-			enrollments.add(classArr.getClassScheduleArray(i));
+		GetEnrollmentsResult r = res.getGetEnrollmentsResponse().getGetEnrollmentsResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getEnrollments().getClassScheduleArray());
 		}
-		return enrollments;
+
+		return resp;
 	}
 
 
@@ -501,8 +505,8 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 	 * @param config
 	 * @return
 	 */
-	private List<Object> removeClientsFromClass(MindBodyRemoveClientsFromClassesConfig config) throws RemoteException {
-		List<Object> clients = new ArrayList<>();
+	private MindBodyResponseVO removeClientsFromClass(MindBodyRemoveClientsFromClassesConfig config) throws RemoteException {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
 		RemoveClientsFromClassesRequest req = RemoveClientsFromClassesRequest.Factory.newInstance();
 		prepareRequest(req, config);
 		configureRemoveClientsFromClassRequest(req, config);
@@ -512,11 +516,13 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 
 		Class_x0020_ServiceStub client = getConfiguredStub();
 		RemoveClientsFromClassesResponseDocument res = client.removeClientsFromClasses(gcd);
-		ArrayOfClass classArr = res.getRemoveClientsFromClassesResponse().getRemoveClientsFromClassesResult().getClasses();
-		for (int i = 0; i < classArr.sizeOfClass1Array(); i++) {
-			clients.add(classArr.getClass1Array(i));
+		RemoveClientsFromClassesResult r = res.getRemoveClientsFromClassesResponse().getRemoveClientsFromClassesResult();
+		resp.populateResponseFields(r);
+		if(resp.isValid()) {
+			resp.addResults(r.getClasses().getClass1Array());
 		}
-		return clients;
+
+		return resp;
 	}
 
 

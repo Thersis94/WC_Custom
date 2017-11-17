@@ -158,4 +158,26 @@ public class MindBodyUtil {
 
 		return serviceArr;
 	}
+
+	/**
+	 * Configure MindBody Client VO to UserDataVO
+	 * @param client
+	 * @return
+	 */
+	public static UserDataVO convertClientData(Client client) {
+		UserDataVO user = new UserDataVO();
+		user.setAllowCommunication(Convert.formatInteger(client.getPromotionalEmailOptIn()));
+		user.setFirstName(client.getFirstName());
+		user.setLastName(client.getLastName());
+		user.setAddress(client.getAddressLine1());
+		user.setCity(client.getCity());
+		user.setState(client.getState());
+		user.setCountryCode(client.getCountry());
+		user.setZipCode(client.getPostalCode());
+		user.setMobilePhone(client.getMobilePhone());
+		user.setProfileId(client.getID());
+		user.setEmailAddress(client.getEmail());
+
+		return user;
+	}
 }

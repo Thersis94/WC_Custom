@@ -1,10 +1,11 @@
 package com.mindbody;
 
 import java.rmi.RemoteException;
-import java.util.List;
 
 import org.apache.axis2.AxisFault;
+import org.mortbay.jetty.HttpStatus;
 
+import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.sales.MindBodySalesConfig;
 import com.mindbodyonline.clients.api._0_5_1.Sale_x0020_ServiceStub;
 
@@ -53,12 +54,10 @@ public class MindBodySaleApi extends AbstractMindBodyApi<Sale_x0020_ServiceStub,
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mindbody.MindBodyApiIntfc#getDocument(com.mindbody.MindBodyCallVO)
-	 * TODO - Endpoints need Coded as Need Arises
+	 * @see com.mindbody.AbstractMindBodyApi#processRequest(com.mindbody.vo.MindBodyConfig)
 	 */
 	@Override
-	public List<Object> getDocument(MindBodySalesConfig call) throws RemoteException {
-		return null;
+	protected MindBodyResponseVO processRequest(MindBodySalesConfig config) throws RemoteException {
+		return buildErrorResponse(HttpStatus.ORDINAL_501_Not_Implemented, "Endpoint Not Supported");
 	}
-
 }

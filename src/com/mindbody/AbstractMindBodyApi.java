@@ -1,13 +1,17 @@
 package com.mindbody;
 
+import java.rmi.RemoteException;
+
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.client.ServiceClient;
 import org.apache.axis2.client.Stub;
 import org.apache.axis2.transport.http.HTTPConstants;
 import org.apache.log4j.Logger;
+import org.mortbay.jetty.HttpStatus;
 
 import com.mindbody.vo.MindBodyConfig;
 import com.mindbody.vo.MindBodyCredentialVO;
+import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbodyonline.clients.api._0_5_1.MBRequest;
 import com.mindbodyonline.clients.api._0_5_1.SourceCredentials;
 import com.mindbodyonline.clients.api._0_5_1.UserCredentials;
@@ -71,6 +75,25 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 		return sc;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mindbody.MindBodyApiIntfc#getDocument(com.mindbody.vo.MindBodyCallVO)
+	 */
+	@Override
+	public MindBodyResponseVO getDocument(S config) {
+		MindBodyResponseVO resp;
+
+		if(config.isValid()) {
+			try {
+				resp = processRequest(config);
+			} catch(RemoteException e) {
+				log.error("Problem With Connection.", e);
+				resp = buildErrorResponse(HttpStatus.ORDINAL_500_Internal_Server_Error, "Problem Occurred .");
+			}
+		} else {
+			resp = buildErrorResponse(HttpStatus.ORDINAL_400_Bad_Request, "Invalid Config Passed.");
+		}
+		return resp;
+	}
 
 	/**
 	 * Manage configuring the Client that the API will use for generating calls.
@@ -117,4 +140,15 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 			throw new IllegalArgumentException("Config Object is Invalid.");
 		}
 	}
+
+	protected MindBodyResponseVO buildErrorResponse(int errorCode, String message) {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
+		resp.setErrorCode(errorCode);
+		resp.setMessage(message);
+
+		return resp;
+	}
+
+	protected abstract MindBodyResponseVO processRequest(S config) throws RemoteException;
+
 }

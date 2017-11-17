@@ -3,7 +3,7 @@ package com.mindbody.vo.clients;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.mindbody.MindbodyClientApi.ClientDocumentType;
+import com.mindbody.MindBodyClientApi.ClientDocumentType;
 import com.mindbody.vo.MindBodyCredentialVO;
 import com.mindbodyonline.clients.api._0_5_1.ClientService;
 

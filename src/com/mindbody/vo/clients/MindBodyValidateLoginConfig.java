@@ -1,6 +1,6 @@
 package com.mindbody.vo.clients;
 
-import com.mindbody.MindbodyClientApi.ClientDocumentType;
+import com.mindbody.MindBodyClientApi.ClientDocumentType;
 import com.mindbody.vo.MindBodyCredentialVO;
 
 import opennlp.tools.util.StringUtil;
@@ -26,8 +26,8 @@ public class MindBodyValidateLoginConfig extends MindBodyClientConfig {
 	 * @param source
 	 * @param user
 	 */
-	public MindBodyValidateLoginConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClientDocumentType.VALIDATE_LOGIN, source, user);
+	public MindBodyValidateLoginConfig(MindBodyCredentialVO source) {
+		super(ClientDocumentType.VALIDATE_LOGIN, source, null);
 	}
 
 	/**
