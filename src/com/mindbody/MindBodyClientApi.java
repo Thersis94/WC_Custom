@@ -3,7 +3,6 @@ package com.mindbody;
 import java.rmi.RemoteException;
 
 import org.apache.axis2.AxisFault;
-import org.mortbay.jetty.HttpStatus;
 
 import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.clients.MindBodyAddArrivalConfig;
@@ -21,6 +20,8 @@ import com.mindbody.vo.clients.MindBodySendUserNewPasswordConfig;
 import com.mindbody.vo.clients.MindBodyUpdateClientServicesConfig;
 import com.mindbody.vo.clients.MindBodyUploadClientDocumentConfig;
 import com.mindbody.vo.clients.MindBodyValidateLoginConfig;
+
+//Mind Body Client Jars
 import com.mindbodyonline.clients.api._0_5_1.AddArrivalDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddArrivalRequest;
 import com.mindbodyonline.clients.api._0_5_1.AddArrivalResponseDocument;
@@ -77,6 +78,9 @@ import com.mindbodyonline.clients.api._0_5_1.ValidateLoginDocument;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginRequest;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginResult;
+
+//Base Libs
+import com.siliconmtn.common.http.HttpStatus;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -187,13 +191,14 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 				break;
 			default:
 				log.warn("Endpoint Not Supported.");
-				resp = buildErrorResponse(HttpStatus.ORDINAL_501_Not_Implemented, "Endpoint Not Supported");
+				resp = buildErrorResponse(HttpStatus.ORDINAL_501_NOT_IMPLEMENTED, "Endpoint Not Supported");
 				break;
 		}
 		return resp;
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the SendUserNewPassword Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -214,6 +219,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the SendUserNewPassword Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -224,6 +230,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the UpdateClientServices Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -248,6 +255,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the UpdateClientServices Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -260,6 +268,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the ValidateLogin Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -285,6 +294,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the ValidateLogin Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -294,6 +304,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the GetRequiredClientFields Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -317,6 +328,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the GetClientSchedule Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -341,6 +353,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the GetClientSchedule Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -357,6 +370,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the GetClientPurchases Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -381,6 +395,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the GetClientPurchases Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -401,6 +416,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the GetClientVisits Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -425,6 +441,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the GetClientVisits Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -445,6 +462,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the GetClientServices Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -469,6 +487,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the GetClientServices Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -510,6 +529,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the GetClientAccountBalances Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -534,6 +554,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the GetClientAccountBalances Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -550,6 +571,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the GetClientDocument Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -571,6 +593,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the UploadClientDocument Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -583,6 +606,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the GetCustomClientFields Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -605,6 +629,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the AddOrUpdateClients Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -628,6 +653,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the AddOrUpdateClients Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -640,6 +666,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the GetClients Endpoint
 	 * @param config
 	 * @return
 	 */
@@ -663,6 +690,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the GetClients Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -683,6 +711,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Building, Configuring and Executing the AddArrival Endpoint
 	 * @param config
 	 * @return
 	 * @throws RemoteException 
@@ -708,6 +737,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	}
 
 	/**
+	 * Manage Configuring the AddArrival Endpoint
 	 * @param req
 	 * @param config
 	 */

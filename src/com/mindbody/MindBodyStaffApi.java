@@ -3,7 +3,6 @@ package com.mindbody;
 import java.rmi.RemoteException;
 
 import org.apache.axis2.AxisFault;
-import org.mortbay.jetty.HttpStatus;
 
 import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.staff.MindBodyAddOrUpdateStaffConfig;
@@ -12,6 +11,8 @@ import com.mindbody.vo.staff.MindBodyGetStaffImgUrl;
 import com.mindbody.vo.staff.MindBodyGetStaffPermissionsConfig;
 import com.mindbody.vo.staff.MindBodyStaffConfig;
 import com.mindbody.vo.staff.MindBodyValidateStaffLogin;
+
+//Mind Body Staff Api Jar
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateStaffDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateStaffRequest;
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateStaffResponseDocument;
@@ -34,6 +35,8 @@ import com.mindbodyonline.clients.api._0_5_1.ValidateLoginResult;
 import com.mindbodyonline.clients.api._0_5_1.ValidateStaffLoginDocument;
 import com.mindbodyonline.clients.api._0_5_1.ValidateStaffLoginResponseDocument;
 
+//Base Libs
+import com.siliconmtn.common.http.HttpStatus;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyStaffApi.java
@@ -95,14 +98,14 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 				break;
 			default:
 				log.error("Endpoint Not Supported.");
-				resp = buildErrorResponse(HttpStatus.ORDINAL_501_Not_Implemented, "Endpoint Not Supported");
+				resp = buildErrorResponse(HttpStatus.ORDINAL_501_NOT_IMPLEMENTED, "Endpoint Not Supported");
 				break;
 		}
 		return resp;
 	}
 
 	/**
-	 * 
+	 * Manage Building, Configuring and Executing the GetStaff Endpoint
 	 * @param config
 	 * @return
 	 * @throws RemoteException
@@ -128,6 +131,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	}
 
 	/**
+	 * Configures the GetStaff Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -152,7 +156,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	
 
 	/**
-	 * 
+	 * Manage Building, Configuring and Executing the GetStaffPermissions Endpoint
 	 * @param config
 	 * @return
 	 * @throws RemoteException
@@ -178,6 +182,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	}
 
 	/**
+	 * Manage Configuring the GetStaffPermissions Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -186,7 +191,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	}
 
 	/**
-	 * 
+	 * Manage Building, Configuring and Executing the AddOrUpdateStaff Endpoint
 	 * @param config
 	 * @return
 	 * @throws RemoteException
@@ -212,6 +217,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	}
 
 	/**
+	 * Manage Configuring the AddOrUpdateStaff Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -228,7 +234,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	}
 
 	/**
-	 * 
+	 * Manage Building, Configuring and Executing the GetStaffImgUrl Endpoint
 	 * @param config
 	 * @return
 	 * @throws RemoteException
@@ -254,6 +260,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	}
 
 	/**
+	 * Manage Configuring the GetStaffImageUrl Endpoint
 	 * @param req
 	 * @param config
 	 */
@@ -262,7 +269,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	}
 
 	/**
-	 * 
+	 * Manage Building, Configuring and Executing the ValidateStaffLogin Endpoint
 	 * @param config
 	 * @return
 	 * @throws RemoteException
@@ -288,6 +295,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 	}
 
 	/**
+	 * Manage Configuring the ValidateStaffLogin Endpoint
 	 * @param req
 	 * @param config
 	 */

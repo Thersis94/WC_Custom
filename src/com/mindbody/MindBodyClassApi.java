@@ -3,7 +3,6 @@ package com.mindbody;
 import java.rmi.RemoteException;
 
 import org.apache.axis2.AxisFault;
-import org.mortbay.jetty.HttpStatus;
 
 import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.classes.MindBodyAddClientsToClassConfig;
@@ -14,6 +13,8 @@ import com.mindbody.vo.classes.MindBodyGetClassesConfig;
 import com.mindbody.vo.classes.MindBodyGetCoursesConfig;
 import com.mindbody.vo.classes.MindBodyGetEnrollmentsConfig;
 import com.mindbody.vo.classes.MindBodyRemoveClientsFromClassesConfig;
+
+//Mind Body Class API Jar
 import com.mindbodyonline.clients.api._0_5_1.AddClientsToClassesDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddClientsToClassesRequest;
 import com.mindbodyonline.clients.api._0_5_1.AddClientsToClassesResponseDocument;
@@ -43,6 +44,9 @@ import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesDocument;
 import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesRequest;
 import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesResult;
+
+//Base Libs
+import com.siliconmtn.common.http.HttpStatus;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -125,7 +129,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 				break;
 			default:
 				log.info("Endpoint not supported.");
-				resp = buildErrorResponse(HttpStatus.ORDINAL_501_Not_Implemented, "Endpoint Not Supported");
+				resp = buildErrorResponse(HttpStatus.ORDINAL_501_NOT_IMPLEMENTED, "Endpoint Not Supported");
 				break;
 		}
 		return resp;

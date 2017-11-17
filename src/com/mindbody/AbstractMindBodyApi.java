@@ -7,14 +7,16 @@ import org.apache.axis2.client.ServiceClient;
 import org.apache.axis2.client.Stub;
 import org.apache.axis2.transport.http.HTTPConstants;
 import org.apache.log4j.Logger;
-import org.mortbay.jetty.HttpStatus;
 
 import com.mindbody.vo.MindBodyConfig;
 import com.mindbody.vo.MindBodyCredentialVO;
 import com.mindbody.vo.MindBodyResponseVO;
+
+//Mind Body Jar
 import com.mindbodyonline.clients.api._0_5_1.MBRequest;
 import com.mindbodyonline.clients.api._0_5_1.SourceCredentials;
 import com.mindbodyonline.clients.api._0_5_1.UserCredentials;
+import com.siliconmtn.common.http.HttpStatus;
 
 /****************************************************************************
  * <b>Title:</b> AbstractMindBodyApi.java
@@ -87,10 +89,10 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 				resp = processRequest(config);
 			} catch(RemoteException e) {
 				log.error("Problem With Connection.", e);
-				resp = buildErrorResponse(HttpStatus.ORDINAL_500_Internal_Server_Error, "Problem Occurred .");
+				resp = buildErrorResponse(HttpStatus.ORDINAL_500_INTERNAL_SERVER_ERROR, "Problem Occurred .");
 			}
 		} else {
-			resp = buildErrorResponse(HttpStatus.ORDINAL_400_Bad_Request, "Invalid Config Passed.");
+			resp = buildErrorResponse(HttpStatus.ORDINAL_400_BAD_REQUEST, "Invalid Config Passed.");
 		}
 		return resp;
 	}

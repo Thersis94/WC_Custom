@@ -121,6 +121,10 @@ public class MindBodyClientConfig extends MindBodyConfig {
 		this.endDate = endDate;
 	}
 
+	/**
+	 * Retrieves the first client Id off ClientIds list.
+	 * @return
+	 */
 	public String getClientId() {
 		return getClientIds().get(0);
 	}
