@@ -1,7 +1,5 @@
 package com.mindbody.vo;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import com.siliconmtn.util.StringUtil;
@@ -22,6 +20,9 @@ public class MindBodyCredentialVO {
 	private String userName;
 	private String password;
 	private List<Integer> siteIds;
+	public static final String MINDBODY_SITE_ID = "mindBodySiteId";
+	public static final String MINDBODY_API_KEY = "mindBodyApiKey";
+	public static final String MINDBODY_SOURCE_NAME = "mindBodySourceName";
 	/**
 	 * 
 	 */

@@ -3,7 +3,7 @@ package com.mindbody.vo.clients;
 import com.mindbody.MindBodyClientApi.ClientDocumentType;
 import com.mindbody.vo.MindBodyCredentialVO;
 
-import opennlp.tools.util.StringUtil;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyUploadClientDocumentConfig.java
@@ -61,9 +61,5 @@ public class MindBodyUploadClientDocumentConfig extends MindBodyClientConfig {
 	 */
 	public void setBytes(byte[] bytes) {
 		this.bytes = bytes;
-	}
-
-	public String getClientId() {
-		return getClientIds().get(0);
 	}
 }

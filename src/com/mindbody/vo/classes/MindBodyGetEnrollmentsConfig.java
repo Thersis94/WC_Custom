@@ -24,7 +24,7 @@ public class MindBodyGetEnrollmentsConfig extends MindBodyClassConfig {
 	private List<Integer> classScheduleIds;
 	private List<Integer> sessionTypeIds;
 	private List<Integer> semesterIds;
-	private List<Integer> courseIds;
+	private List<Long> courseIds;
 
 	/**
 	 * @param type
@@ -71,7 +71,7 @@ public class MindBodyGetEnrollmentsConfig extends MindBodyClassConfig {
 	/**
 	 * @return the courseIds
 	 */
-	public List<Integer> getCourseIds() {
+	public List<Long> getCourseIds() {
 		return courseIds;
 	}
 
@@ -99,7 +99,7 @@ public class MindBodyGetEnrollmentsConfig extends MindBodyClassConfig {
 	/**
 	 * @param courseIds the courseIds to set.
 	 */
-	public void setCourseIds(List<Integer> courseIds) {
+	public void setCourseIds(List<Long> courseIds) {
 		this.courseIds = courseIds;
 	}
 }

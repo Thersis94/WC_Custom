@@ -11,7 +11,7 @@ import com.mindbodyonline.clients.api._0_5_1.XMLDetailLevel;
 /****************************************************************************
  * <b>Title:</b> MindBodyResponseVO.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Manages Response from MindBody API Endpoints.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 

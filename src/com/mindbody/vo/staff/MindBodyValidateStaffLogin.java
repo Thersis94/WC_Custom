@@ -3,7 +3,7 @@ package com.mindbody.vo.staff;
 import com.mindbody.MindBodyStaffApi.StaffDocumentType;
 import com.mindbody.vo.MindBodyCredentialVO;
 
-import opennlp.tools.util.StringUtil;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyValidateStaffLogin.java

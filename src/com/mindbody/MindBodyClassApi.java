@@ -152,7 +152,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetClassesResult r = res.getGetClassesResponse().getGetClassesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getClasses().getClass1Array());
+			resp.addResults((Object [])r.getClasses().getClass1Array());
 		}
 		return resp;
 	}
@@ -252,7 +252,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetClassDescriptionsResult r = res.getGetClassDescriptionsResponse().getGetClassDescriptionsResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getClassDescriptions().getClassDescriptionArray());
+			resp.addResults((Object [])r.getClassDescriptions().getClassDescriptionArray());
 		}
 
 		return resp;
@@ -317,7 +317,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		AddClientsToClassesResult r = res.getAddClientsToClassesResponse().getAddClientsToClassesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getClasses().getClass1Array());
+			resp.addResults((Object [])r.getClasses().getClass1Array());
 		}
 
 		return resp;
@@ -377,7 +377,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetClassSchedulesResult r = res.getGetClassSchedulesResponse().getGetClassSchedulesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getClassSchedules().getClassScheduleArray());
+			resp.addResults((Object [])r.getClassSchedules().getClassScheduleArray());
 		}
 
 		return resp;
@@ -447,7 +447,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetCoursesResult r = res.getGetCoursesResponse().getGetCoursesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getCourses().getCourseArray());
+			resp.addResults((Object [])r.getCourses().getCourseArray());
 		}
 
 		return resp;
@@ -460,7 +460,33 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 	 * @param config
 	 */
 	private void configureCoursesRequest(GetCoursesRequest req, MindBodyGetCoursesConfig config) {
-		throw new IllegalArgumentException("EndPoint Not Configured Correctly.");
+		if(!config.getLocationIds().isEmpty()) {
+			req.setLocationIDs(MindBodyUtil.buildArrayOfInt(config.getLocationIds()));
+		}
+
+		if(!config.getCourseIds().isEmpty()) {
+			req.setCourseIDs(MindBodyUtil.buildArrayOfLong(config.getCourseIds()));
+		}
+
+		if(!config.getStaffIds().isEmpty()) {
+			req.setStaffIDs(MindBodyUtil.buildArrayOfLong(config.getStaffIds()));
+		}
+
+		if(!config.getProgramIds().isEmpty()) {
+			req.setProgramIDs(MindBodyUtil.buildArrayOfInt(config.getProgramIds()));
+		}
+
+		if(config.getStartDt() != null) {
+			req.setStartDate(Convert.toCalendar(config.getStartDt()));
+		}
+
+		if(config.getEndDt() != null) {
+			req.setEndDate(Convert.toCalendar(config.getEndDt()));
+		}
+
+		if(!config.getSemesterIds().isEmpty()) {
+			req.setSemesterIDs(MindBodyUtil.buildArrayOfInt(config.getSemesterIds()));
+		}
 	}
 
 
@@ -483,7 +509,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetEnrollmentsResult r = res.getGetEnrollmentsResponse().getGetEnrollmentsResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getEnrollments().getClassScheduleArray());
+			resp.addResults((Object [])r.getEnrollments().getClassScheduleArray());
 		}
 
 		return resp;
@@ -496,7 +522,41 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 	 * @param config
 	 */
 	private void configureEnrollmentsRequest(GetEnrollmentsRequest req, MindBodyGetEnrollmentsConfig config) {
-		throw new IllegalArgumentException("EndPoint Not Configured Correctly.");
+		if(!config.getLocationIds().isEmpty()) {
+			req.setLocationIDs(MindBodyUtil.buildArrayOfInt(config.getLocationIds()));
+		}
+
+		if(!config.getClassScheduleIds().isEmpty()) {
+			req.setClassScheduleIDs(MindBodyUtil.buildArrayOfInt(config.getClassScheduleIds()));
+		}
+
+		if(!config.getStaffIds().isEmpty()) {
+			req.setStaffIDs(MindBodyUtil.buildArrayOfLong(config.getStaffIds()));
+		}
+
+		if(!config.getProgramIds().isEmpty()) {
+			req.setProgramIDs(MindBodyUtil.buildArrayOfInt(config.getProgramIds()));
+		}
+
+		if(!config.getSessionTypeIds().isEmpty()) {
+			req.setSessionTypeIDs(MindBodyUtil.buildArrayOfInt(config.getSessionTypeIds()));
+		}
+
+		if(!config.getSemesterIds().isEmpty()) {
+			req.setSemesterIDs(MindBodyUtil.buildArrayOfInt(config.getSemesterIds()));
+		}
+
+		if(!config.getCourseIds().isEmpty()) {
+			req.setCourseIDs(MindBodyUtil.buildArrayOfLong(config.getCourseIds()));
+		}
+
+		if(config.getStartDt() != null) {
+			req.setStartDate(Convert.toCalendar(config.getStartDt()));
+		}
+
+		if(config.getEndDt() != null) {
+			req.setEndDate(Convert.toCalendar(config.getEndDt()));
+		}
 	}
 
 
@@ -519,7 +579,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		RemoveClientsFromClassesResult r = res.getRemoveClientsFromClassesResponse().getRemoveClientsFromClassesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getClasses().getClass1Array());
+			resp.addResults((Object [])r.getClasses().getClass1Array());
 		}
 
 		return resp;

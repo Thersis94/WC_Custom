@@ -1,13 +1,12 @@
 package com.mindbody.vo.clients;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import com.mindbody.MindBodyClientApi.ClientDocumentType;
 import com.mindbody.vo.MindBodyCredentialVO;
+import com.siliconmtn.util.StringUtil;
 
-import opennlp.tools.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyGetClientServicesConfig.java
@@ -42,13 +41,6 @@ public class MindBodyGetClientServicesConfig extends MindBodyClientConfig {
 	@Override
 	public boolean isValid() {
 		return super.isValid() && !StringUtil.isEmpty(getClientId());
-	}
-
-	/**
-	 * @return
-	 */
-	public String getClientId() {
-		return getClientIds().get(0);
 	}
 
 	/**

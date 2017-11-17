@@ -1,7 +1,6 @@
 package com.mindbody;
 
 import java.rmi.RemoteException;
-import java.util.List;
 
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.client.Stub;
@@ -26,9 +25,6 @@ import com.mindbodyonline.clients.api._0_5_1.UserCredentials;
  ****************************************************************************/
 public interface MindBodyApiIntfc<T extends Stub, S extends MindBodyConfig> {
 
-	public static final String MINDBODY_SOURCE_NAME = "mindBodySourceName";
-	public static final String MINDBODY_API_KEY = "mindBodyApiKey";
-	public static final String MINDBODY_SITE_ID = "mindBodySiteId";
 	/**
 	 * Build User Credentials Object for API Calls
 	 * @param userName

@@ -3,7 +3,7 @@ package com.mindbody.vo.clients;
 import com.mindbody.MindBodyClientApi.ClientDocumentType;
 import com.mindbody.vo.MindBodyCredentialVO;
 
-import opennlp.tools.util.StringUtil;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyGetClientVisitsConfig.java

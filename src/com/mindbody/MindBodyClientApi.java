@@ -241,7 +241,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		UpdateClientServicesResult r = res.getUpdateClientServicesResponse().getUpdateClientServicesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getClientServices().getClientServiceArray());
+			resp.addResults((Object [])r.getClientServices().getClientServiceArray());
 		}
 
 		return resp;
@@ -310,7 +310,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		GetRequiredClientFieldsResult r = res.getGetRequiredClientFieldsResponse().getGetRequiredClientFieldsResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getRequiredClientFields().getStringArray());
+			resp.addResults((Object [])r.getRequiredClientFields().getStringArray());
 		}
 
 		return resp;
@@ -335,7 +335,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getVisits().getVisitArray());
+			resp.addResults((Object [])r.getVisits().getVisitArray());
 		}
 		return resp;
 	}
@@ -374,7 +374,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		GetClientPurchasesResult r = res.getGetClientPurchasesResponse().getGetClientPurchasesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getPurchases().getSaleItemArray());
+			resp.addResults((Object [])r.getPurchases().getSaleItemArray());
 		}
 
 		return resp;
@@ -418,7 +418,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		GetClientVisitsResult r = res.getGetClientVisitsResponse().getGetClientVisitsResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getVisits().getVisitArray());
+			resp.addResults((Object [])r.getVisits().getVisitArray());
 		}
 
 		return resp;
@@ -462,7 +462,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		GetClientServicesResult r = res.getGetClientServicesResponse().getGetClientServicesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getClientServices().getClientServiceArray());
+			resp.addResults((Object [])r.getClientServices().getClientServiceArray());
 		}
 
 		return resp;
@@ -527,7 +527,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		GetClientAccountBalancesResult r = res.getGetClientAccountBalancesResponse().getGetClientAccountBalancesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getClients().getClientArray());
+			resp.addResults((Object [])r.getClients().getClientArray());
 		}
 
 		return resp;
@@ -599,7 +599,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		GetCustomClientFieldsResult r = res.getGetCustomClientFieldsResponse().getGetCustomClientFieldsResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getCustomClientFields().getCustomClientFieldArray());
+			resp.addResults((Object [])r.getCustomClientFields().getCustomClientFieldArray());
 		}
 		return resp;
 	}
@@ -622,7 +622,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		AddOrUpdateClientsResult r = res.getAddOrUpdateClientsResponse().getAddOrUpdateClientsResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getClients().getClientArray());
+			resp.addResults((Object [])r.getClients().getClientArray());
 		}
 		return resp;
 	}
@@ -657,7 +657,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		GetClientsResult r = res.getGetClientsResponse().getGetClientsResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getClients().getClientArray());
+			resp.addResults((Object [])r.getClients().getClientArray());
 		}
 		return resp;
 	}

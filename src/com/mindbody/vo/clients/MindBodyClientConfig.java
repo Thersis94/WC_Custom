@@ -24,7 +24,6 @@ public class MindBodyClientConfig extends MindBodyConfig {
 	private ClientDocumentType type;
 	private List<String> clientIds;
 	private List<Integer> locationIds;
-	private String clientId;
 	private Date startDate;
 	private Date endDate;
 
@@ -95,20 +94,6 @@ public class MindBodyClientConfig extends MindBodyConfig {
 	}
 
 	/**
-	 * @return the clientId
-	 */
-	public String getClientId() {
-		return clientId;
-	}
-
-	/**
-	 * @param clientId the clientId to set.
-	 */
-	public void setClientId(String clientId) {
-		this.clientId = clientId;
-	}
-
-	/**
 	 * @return the startDate
 	 */
 	public Date getStartDate() {
@@ -134,5 +119,9 @@ public class MindBodyClientConfig extends MindBodyConfig {
 	 */
 	public void setEndDate(Date endDate) {
 		this.endDate = endDate;
+	}
+
+	public String getClientId() {
+		return getClientIds().get(0);
 	}
 }

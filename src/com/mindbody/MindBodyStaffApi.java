@@ -121,7 +121,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 		GetStaffResult r = res.getGetStaffResponse().getGetStaffResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getStaffMembers().getStaffArray());
+			resp.addResults((Object [])r.getStaffMembers().getStaffArray());
 		}
 
 		return resp;
@@ -171,7 +171,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 		GetStaffPermissionsResult r = res.getGetStaffPermissionsResponse().getGetStaffPermissionsResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getPermissions().getPermissionArray());
+			resp.addResults((Object [])r.getPermissions().getPermissionArray());
 		}
 
 		return resp;
@@ -205,7 +205,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 		AddOrUpdateStaffResult r = res.getAddOrUpdateStaffResponse().getAddOrUpdateStaffResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getStaff().getStaffArray());
+			resp.addResults((Object [])r.getStaff().getStaffArray());
 		}
 
 		return resp;

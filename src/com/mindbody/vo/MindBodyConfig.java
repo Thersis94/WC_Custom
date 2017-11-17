@@ -129,7 +129,17 @@ public abstract class MindBodyConfig {
 	}
 
 	public boolean isValid() {
-		return sourceCredentials != null && sourceCredentials.isValid() && pageNo > -1 && pageSize > 0 && xmlDetailLevel != null;
+
+		//Verify Source Credentials.
+		boolean isValid = sourceCredentials != null && sourceCredentials.isValid();
+
+		//Verify Page Data is valid.
+		isValid = isValid && pageNo > -1 && pageSize > 0;
+
+		//Verify Detail Level is present.
+		isValid = isValid && xmlDetailLevel != null;
+
+		return isValid;
 	}
 
 	public boolean hasFields() {

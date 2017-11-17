@@ -30,13 +30,6 @@ public class MindBodyAddArrivalConfig extends MindBodyClientConfig {
 		return super.isValid() && !getClientIds().isEmpty();
 	}
 
-	/**
-	 * @return
-	 */
-	public String getClientId() {
-		return getClientIds().get(0);
-	}
-
 	public Integer getLocationId() {
 		return getLocationIds().get(0);
 	}

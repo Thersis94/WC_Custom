@@ -20,6 +20,7 @@ import com.mindbody.vo.MindBodyCredentialVO;
 public class MindBodyGetCoursesConfig extends MindBodyClassConfig {
 
 	private List<Integer> semesterIds;
+	private List<Long> courseIds;
 
 	/**
 	 * @param type
@@ -30,13 +31,22 @@ public class MindBodyGetCoursesConfig extends MindBodyClassConfig {
 	public MindBodyGetCoursesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
 		super(ClassDocumentType.GET_COURSES, source, user);
 		this.semesterIds = new ArrayList<>();
+		this.courseIds = new ArrayList<>();
 	}
 
 	public List<Integer> getSemesterIds() {
 		return semesterIds;
 	}
 
+	public List<Long> getCourseIds() {
+		return courseIds;
+	}
+
 	public void setSemesterIds(List<Integer> semesterIds) {
 		this.semesterIds = semesterIds;
+	}
+
+	public void setCourseIds(List<Long> courseIds) {
+		this.courseIds = courseIds;
 	}
 }
