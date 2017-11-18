@@ -586,7 +586,7 @@ public class UpdatesAction extends ManagementAction {
 
 				db.save(u);
 
-				fixPkids(u, db.getGeneratedPKId());
+				fixPkids(u);
 
 				//Save Update Sections.
 				saveSections(u);
@@ -617,14 +617,10 @@ public class UpdatesAction extends ManagementAction {
 	 * Manages updating given UpdatesVO with generated PKID and updates sections
 	 * to match.
 	 * @param u
-	 * @param generatedPKId
 	 */
-	protected void fixPkids(UpdateVO u, String generatedPKId) {
+	protected void fixPkids(UpdateVO u) {
 		//Set the UpdateId on UpdatesXRVOs
-		if (StringUtil.isEmpty(u.getUpdateId())) {
-			//Ensure proper UpdateId and Publish Dt are set.
-			u.setUpdateId(generatedPKId);
-
+		if (!StringUtil.isEmpty(u.getUpdateId())) {
 			for (UpdateXRVO uxr : u.getUpdateSections())
 				uxr.setUpdateId(u.getUpdateId());
 		}
