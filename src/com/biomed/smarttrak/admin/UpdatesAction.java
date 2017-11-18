@@ -256,6 +256,7 @@ public class UpdatesAction extends ManagementAction {
 		sql.append("on up.UPDATE_ID = xr.UPDATE_ID ");
 		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
 		sql.append("order by ").append(order).append(" ").append(dir);
+		sql.append(", up.update_dt desc, up.create_dt desc ");
 
 		return sql.toString();
 	}
