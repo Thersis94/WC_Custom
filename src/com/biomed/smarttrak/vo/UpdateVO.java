@@ -269,6 +269,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @return the marketNm
 	 */
 	@Column(name="market_nm", isReadOnly=true)
+	@SolrField(name="market_nm_t")
 	public String getMarketNm() {
 		return marketNm;
 	}
@@ -285,6 +286,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @return the productNm
 	 */
 	@Column(name="product_nm", isReadOnly=true)
+	@SolrField(name="product_nm_t")
 	public String getProductNm() {
 		return productNm;
 	}
@@ -301,7 +303,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @return the companyNm
 	 */
 	@Column(name="company_nm", isReadOnly=true)
-	@SolrField(name="companyShortName_s")
+	@SolrField(name="company_nm_t")
 	public String getCompanyNm() {
 		return companyNm;
 	}
@@ -362,6 +364,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	/**
 	 * @return the statusCd
 	 */
+	@SolrField(name="status_cd_s")
 	@Column(name="status_cd")
 	public String getStatusCd() {
 		return statusCd;

@@ -12,6 +12,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -41,17 +42,21 @@ public class LeihsetCategoryAction extends SBActionAdapter {
 	public LeihsetCategoryAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
-	
+
+
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		if (!req.hasParameter("addCategory")) return;
-		
-		String catId = addCategory(req.getParameter("addCategory"), req.getParameter("parentId"));
+		String catNm = req.getParameter("addCategory");
+		if (StringUtil.isEmpty(catNm)) return;
+
+		String parentId = req.getParameter("parentId");
+		String catId = addCategory(catNm, parentId);
+
+		//format the display (JSON)
 		Map<String, String> data = new HashMap<>();
 		data.put("catId", catId);
-		data.put("parentId", req.getParameter("parentId"));
-		data.put("catNm", req.getParameter("addCategory"));
+		data.put("parentId", parentId);
+		data.put("catNm", catNm);
 		putModuleData(data);
 	}
 
@@ -62,12 +67,12 @@ public class LeihsetCategoryAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected Tree loadCategoryTree(String leihsetId) {
-		List<Node> data = new ArrayList<>();
-		String customDb = getAttribute(Constants.CUSTOM_DB_SCHEMA).toString();
+		List<Node> data = new ArrayList<>(100);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select c.leihset_category_id, c.parent_id, c.category_nm, xr.leihset_category_xr_id, c.order_no ");
-		sql.append("from ").append(customDb).append("DPY_SYN_LEIHSET_CATEGORY c ");
-		sql.append("left outer join " ).append(customDb).append("DPY_SYN_LEIHSET_CATEGORY_XR xr ");
+		sql.append("from ").append(customDb).append("DPY_SYN_LEIHSET_CATEGORY c");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DPY_SYN_LEIHSET_CATEGORY_XR xr ");
 		sql.append("on c.leihset_category_id=xr.leihset_category_id and xr.leihset_id=? ");
 		sql.append("order by c.parent_id, c.order_no, c.category_nm ");
 		log.debug(sql + "|" + leihsetId);
@@ -81,7 +86,7 @@ public class LeihsetCategoryAction extends SBActionAdapter {
 				n.setUserObject(Boolean.valueOf(rs.getInt(4) > 0)); //boolean here is simple "is selected for this leihset"
 				data.add(n);
 				if (log.isDebugEnabled())
-						log.debug("added " + n.getNodeId() + " with parent " + n.getParentId() + " xrId=" + rs.getInt(4));
+					log.debug("added " + n.getNodeId() + " with parent " + n.getParentId() + " xrId=" + rs.getInt(4));
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load category tree", sqle);
@@ -89,8 +94,8 @@ public class LeihsetCategoryAction extends SBActionAdapter {
 
 		return new Tree(data);
 	}
-	
-	
+
+
 	/**
 	 * loads the full Tree, but with the # of leihsets in each instead of a boolean selected (above).
 	 * @return
@@ -100,9 +105,9 @@ public class LeihsetCategoryAction extends SBActionAdapter {
 		String customDb = getAttribute(Constants.CUSTOM_DB_SCHEMA).toString();
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select c.leihset_category_id, c.parent_id, c.category_nm, count(l.leihset_id), c.order_no ");
-		sql.append("from ").append(customDb).append("DPY_SYN_LEIHSET_CATEGORY c ");
-		sql.append("left outer join ").append(customDb).append("DPY_SYN_LEIHSET_CATEGORY_XR xr on c.leihset_category_id=xr.leihset_category_id ");
-		sql.append("left outer join ").append(customDb).append("DPY_SYN_LEIHSET l on xr.LEIHSET_ID=l.LEIHSET_ID ");
+		sql.append("from ").append(customDb).append("DPY_SYN_LEIHSET_CATEGORY c");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DPY_SYN_LEIHSET_CATEGORY_XR xr on c.leihset_category_id=xr.leihset_category_id");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DPY_SYN_LEIHSET l on xr.LEIHSET_ID=l.LEIHSET_ID ");
 		sql.append("and l.archive_flg=0 "); //ignore anything tied to deleted Liehsets
 		if (!isPreview) sql.append("and l.LEIHSET_GROUP_ID is null ");
 		sql.append("group by c.leihset_category_id, c.parent_id, c.category_nm, c.order_no ");
@@ -173,7 +178,7 @@ public class LeihsetCategoryAction extends SBActionAdapter {
 		//test whether we have anything to save
 		if (vo.getCategories().isEmpty())
 			return;
-		
+
 		//save any new categories being added
 		List<String> saveCats = new ArrayList<>();
 		for (String cat : vo.getCategories())

@@ -124,15 +124,19 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		params.add(startDate);
 		params.add(endDate);
 		boolean redirectLinks = Convert.formatBoolean(req.getParameter("redirectLinks"));
-		
+
 		List<Object> results = db.executeSelect(sql, params, new UpdateVO());
 		
 		String baseUrl = getBaseUrl(results);
 		
 		for (Object o : results) {
-			UpdateVO update = (UpdateVO)o;
-			if (redirectLinks) update.setMessageTxt(buildRedirectLinks(update.getMessageTxt(), baseUrl));
-			updates.add(update);
+			UpdateVO up = (UpdateVO)o;
+			if (redirectLinks) up.setMessageTxt(buildRedirectLinks(up.getMessageTxt(), baseUrl));
+			up.setProductNm(StringEncoder.encodeExtendedAscii(up.getProductNm()));
+			up.setMarketNm(StringEncoder.encodeExtendedAscii(up.getMarketNm()));
+			up.setCompanyNm(StringEncoder.encodeExtendedAscii(up.getCompanyNm()));
+			up.setTitle(StringEncoder.encodeExtendedAscii(up.getTitle()));
+			updates.add(up);
 		}
 	}
 	
@@ -350,24 +354,27 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 				if (vo == null) {
 					vo = new UpdateVO();
 					vo.setUpdateId(rs.getString("update_id"));
-					vo.setTitle(rs.getString("title_txt"));
+					vo.setTitle(StringEncoder.encodeExtendedAscii(rs.getString("title_txt")));
 					vo.setMessageTxt(rs.getString("message_txt"));
 					vo.setPublishDt(rs.getDate("publish_dt"));
 					vo.setTypeCd(rs.getInt("type_cd"));
 					vo.setCompanyId(rs.getString("company_id"));
-					vo.setCompanyNm(rs.getString("company_nm"));
+					vo.setCompanyNm(StringEncoder.encodeExtendedAscii(rs.getString("company_nm")));
 					vo.setProductId(rs.getString("product_id"));
-					vo.setProductNm(rs.getString("product_nm"));
+					vo.setProductNm(StringEncoder.encodeExtendedAscii(rs.getString("product_nm")));
 					vo.setMarketId(rs.getString("market_id"));
-					vo.setMarketNm(rs.getString("market_nm"));
+					vo.setMarketNm(StringEncoder.encodeExtendedAscii(rs.getString("market_nm")));
 					vo.setStatusCd(rs.getString("status_cd"));
 					vo.setEmailFlg(rs.getInt("email_flg"));
 					vo.setQsPath((String)attributes.get(Constants.QS_PATH));
 					vo.setSSLFlg(rs.getInt("ssl_flg"));
 					vo.setSiteAliasUrl(rs.getString("site_alias_url"));
+					vo.setOrderNo(rs.getInt("order_no"));
+
 					// If we have not created the base url yet do so with this data
 					if (baseUrl.isEmpty()) baseUrl = buildBaseUrl(vo.getSSLFlg(), vo.getSiteAliasUrl());
 					if (redirectLinks) vo.setMessageTxt(buildRedirectLinks(vo.getMessageTxt(), baseUrl));
+
 					//log.debug("loaded update: " + vo.getUpdateId())
 				}
 
