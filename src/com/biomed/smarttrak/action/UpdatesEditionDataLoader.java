@@ -114,10 +114,37 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	private void loadAnnouncements(ActionRequest req, Date startDate, Date endDate, List<UpdateVO> updates) {
 		String sql = getAnnouncementSql((String)getAttribute(Constants.CUSTOM_DB_SCHEMA), Convert.formatBoolean(req.getParameter("orderSort")));
 		DBProcessor db = new DBProcessor(dbConn);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, AdminControllerAction.PUBLIC_SITE_ID);
+			ps.setDate(2, Convert.formatSQLDate(startDate));
+			ps.setDate(3, Convert.formatSQLDate(endDate));
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while(rs.next()) {
+				UpdateVO up = new UpdateVO();
+				db.executePopulate(up, rs);
+				up.setProductNm(StringEncoder.encodeExtendedAscii(up.getProductNm()));
+				up.setMarketNm(StringEncoder.encodeExtendedAscii(up.getMarketNm()));
+				up.setCompanyNm(StringEncoder.encodeExtendedAscii(up.getCompanyNm()));
+				up.setTitle(StringEncoder.encodeExtendedAscii(up.getTitle()));
+				updates.add(up);
+			}
+		} catch(Exception e) {
+			log.error(e);
+		}
+		
+		/**
+		 * This does not work due to an bug in DBProcessor details in the SMTInteral ticket GC-74
+		 * This code has been commented out instead of deleted to provide whoever works on that ticket
+		 * an easy way to replicate the issue and allow them to restore the DBProcessor version of this
+		 * method when the error has been fixed.
 		List<Object> params = new ArrayList<>(2);
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
-		params.add(startDate);
-		params.add(endDate);
+		params.add(Convert.formatSQLDate(startDate));
+		params.add(Convert.formatSQLDate(endDate));
+		
 		
 		for (Object o : db.executeSelect(sql, params, new UpdateVO())) {
 			UpdateVO up = (UpdateVO) o;
@@ -127,6 +154,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 			up.setTitle(StringEncoder.encodeExtendedAscii(up.getTitle()));
 			updates.add(up);
 		}
+		**/
 	}
 	
 	
