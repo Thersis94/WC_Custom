@@ -28,18 +28,17 @@ public class UpdatesTypeComparator implements Comparator<UpdateVO> {
 		if (o2 == null) return -1;
 
 		//First compare by type
-		int typeNo = o1.getType().compareTo(o2.getType());
-		if (typeNo != 0) return typeNo;
+		int val = o1.getType().compareTo(o2.getType());
+		if (val != 0) return val;
 
 		//Second compare by order number
-		if (o1.getOrderNo() != o2.getOrderNo()) {
-			return Integer.valueOf(o1.getOrderNo()).compareTo(o2.getOrderNo());
-		}
+		val = Integer.valueOf(o1.getOrderNo()).compareTo(o2.getOrderNo());
+		if (val != 0) return val;
 
 		//Same type and order - compare by date - newest first.
-		int dates = o2.getPublishDate().compareTo(o1.getPublishDate());
-		if (dates != 0) return dates;
-		
+		val = o2.getPublishDate().compareTo(o1.getPublishDate());
+		if (val != 0) return val;
+
 		//If all else the same compare titles
 		return StringUtil.checkVal(o1.getTitle()).compareTo(StringUtil.checkVal(o2.getTitle()));
 	}
