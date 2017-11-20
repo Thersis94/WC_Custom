@@ -80,6 +80,9 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 				log.debug("new tree size=" + t.preorderList().size());
 			}
 		}
+
+		//this will resursively set counts to all nodes
+		Tree.calculateTotalChildren(t.getRootNode());
 		
 		return t;
 	}
