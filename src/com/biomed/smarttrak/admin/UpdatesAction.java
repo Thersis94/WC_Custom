@@ -167,6 +167,11 @@ public class UpdatesAction extends ManagementAction {
 		List<Object> data;
 		if(req.hasParameter("loadHistory")) {
 			data = getHistory(req.getParameter("historyId"));
+		} else if (req.hasParameter("updateId")) {
+			// If we have an id just load directly from the database.
+			List<Object> params = new ArrayList<>();
+			params.add(req.getParameter("updateId"));
+			data = loadDetails(params, Order.PUBLISH_DT, "desc");
 		} else {
 			Order order = Order.getOrderFromString(req.getParameter("sort"));
 			String dir = StringUtil.checkVal(req.getParameter("order"), "desc");
@@ -178,7 +183,10 @@ public class UpdatesAction extends ManagementAction {
 			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
 			count = (int) resp.getTotalResponses();
 			if (count > 0) {
-				data = loadDetails(resp.getResultDocuments(), order, dir);
+
+				List<Object> params = getIdsFromDocs(resp);
+				
+				data = loadDetails(params, order, dir);
 				log.debug("DB Count " + data.size());
 			} else {
 				data = Collections.emptyList();
@@ -198,25 +206,37 @@ public class UpdatesAction extends ManagementAction {
 
 
 	/**
+	 * Get all the document ids from the solr documents and remove the
+	 * custom identifier if it is present.
+	 * @param resp
+	 * @return
+	 */
+	private List<Object> getIdsFromDocs(SolrResponseVO resp) {
+		List<Object> params = new ArrayList<>();
+
+		for (SolrDocument doc : resp.getResultDocuments()) {
+			String id = (String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+
+			// Replace the biomed update prefix if it exists.
+			if (id.contains(UpdateVO.DOCUMENT_ID_PREFIX))
+				id = id.replace(UpdateVO.DOCUMENT_ID_PREFIX, "");
+			
+			params.add(id);
+		}
+		return params;
+	}
+
+	/**
 	 * Load the most up to date details for each update
 	 * @param docs
 	 * @return
 	 */
-	private List<Object> loadDetails(List<SolrDocument> docs, Order order, String dir) {
-		String sql = formatDetailQuery(docs.size(), order, dir);
+	private List<Object> loadDetails(List<Object> ids, Order order, String dir) {
+		String sql = formatDetailQuery(ids.size(), order, dir);
 		log.debug(sql);
-		List<Object> params = new ArrayList<>();
-
-		for (SolrDocument doc : docs) {
-			String id = (String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-			if (id.contains("_")) {
-				id = id.substring(id.lastIndexOf('_')+1);
-			}
-			params.add(id);
-		}
 
 		DBProcessor db = new DBProcessor(dbConn);
-		return db.executeSelect(sql, params, new UpdateVO());
+		return db.executeSelect(sql, ids, new UpdateVO());
 	}
 
 
@@ -236,6 +256,7 @@ public class UpdatesAction extends ManagementAction {
 		sql.append("on up.UPDATE_ID = xr.UPDATE_ID ");
 		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
 		sql.append("order by ").append(order).append(" ").append(dir);
+		sql.append(", up.update_dt desc, up.create_dt desc ");
 
 		return sql.toString();
 	}
