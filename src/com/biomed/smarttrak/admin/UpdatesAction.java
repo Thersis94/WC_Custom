@@ -73,7 +73,7 @@ public class UpdatesAction extends ManagementAction {
 	private static final String COOK_UPD_START_DT = "updateStartDt";
 	private static final String COOK_UPD_END_DT = "updateEndDt";
 
-	private static final String HTML_REGEX = "(<\\/?(([uo]l)|(b)|(li)|(s((trong)|(ub))?)|(d((etails)|(iv))?)|(u)|(img)|(hr)|(font))(?!up)[^<>]*\\/?>)|(<p>&nbsp;<\\/p>)";
+	private static final String HTML_REGEX = "(<\\/?(([uo]l)|(b)|(li)|(s((trong)|(ub))?)|(d((etails)|(iv))?)|(u)|(img)|(hr)|(font))(?!up)[^<>]*\\/?>)|(<p>&nbsp;<\\/p>)|((style|align|bgcolor|border|color)[ ]?=[ ]?['\"][^'\"]*['\"])";
 
 	/**
 	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
