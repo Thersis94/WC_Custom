@@ -92,11 +92,10 @@ public class MindBodyClassAction extends SBActionAdapter {
 		} else {
 			endDt = Convert.getLastOfMonth();
 		}
-//		MindBodyGetClassScheduleConfig conf = new MindBodyGetClassScheduleConfig(MindBodyUtil.getSourceCredentials(config), true);
-//		conf.setStartDt(startDt);
-//		conf.setEndDt(endDt);
-//		return api.getDocument(conf);
-		return null;
+		MindBodyGetClassScheduleConfig conf = new MindBodyGetClassScheduleConfig(MindBodyUtil.getSourceCredentials(config), true);
+		conf.setStartDt(startDt);
+		conf.setEndDt(endDt);
+		return api.getDocument(conf);
 	}
 
 
@@ -123,8 +122,7 @@ public class MindBodyClassAction extends SBActionAdapter {
 		MindBodyGetClassesConfig conf = new MindBodyGetClassesConfig(MindBodyUtil.getSourceCredentials(config));
 		conf.setStartDt(startDt);
 		conf.setEndDt(endDt);
-		//return api.getDocument(conf);
-		return null;
+		return api.getDocument(conf);
 	}
 
 
@@ -168,7 +166,7 @@ public class MindBodyClassAction extends SBActionAdapter {
 		conf.addClientId(user.getProfileId());
 		conf.setClientServiceId(Integer.parseInt(MB_CLIENT_SERVICE_ID));
 
-		//api.getDocument(conf);
+		api.getDocument(conf);
 	}
 
 
@@ -185,7 +183,7 @@ public class MindBodyClassAction extends SBActionAdapter {
 		conf.addClientId(user.getProfileId());
 		conf.addClassId(Integer.parseInt(req.getParameter(MB_CLASS_ID)));
 
-		//api.getDocument(conf);
+		api.getDocument(conf);
 	}
 
 
@@ -197,8 +195,7 @@ public class MindBodyClassAction extends SBActionAdapter {
 	private ClassDocumentType getDocumentType(String callType) throws ActionException {
 		if(!StringUtil.isEmpty(callType)) {
 			try {
-				//return ClassDocumentType.valueOf(callType);
-				return null;
+				return ClassDocumentType.valueOf(callType);
 			} catch(Exception e) {
 				log.error("Could not determine Class CallType.");
 				throw new ActionException("Could not determine Class CallType.");
