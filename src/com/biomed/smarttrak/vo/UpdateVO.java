@@ -41,6 +41,8 @@ import com.smt.sitebuilder.security.SecurityController;
 public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc, Serializable, Comparable<UpdateVO> {
 
 	private static final long serialVersionUID = 5149725371008749427L;
+	
+	public static final String DOCUMENT_ID_PREFIX = UpdateIndexer.INDEX_TYPE + "_";
 
 	public enum UpdateStatusCd {
 		N("New"), 
@@ -393,11 +395,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		return getPublishDate();
 	}
 
-	@SolrField(name="publishDtNoTime_s")
-	public String getPublishDtNoTime() {
-		return Convert.formatDate(getPublishDate(), Convert.DATE_DASH_PATTERN);
-	}
-
 	@SolrField(name="companyLink_s")
 	public String getCompanyLink() {
 		if (StringUtil.isEmpty(companyId)) return "";
@@ -430,11 +427,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	@Deprecated
 	public void setCompanyShortName(String shortNm){
 		setCompanyNm(shortNm);
-	}
-
-	@SolrField(name="publishTime_s")
-	public String getPublishTime() {
-		return Convert.formatDate(getPublishDate(), Convert.TIME_LONG_PATTERN);
 	}
 
 	/**
@@ -489,7 +481,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		if (docId.length() < AdminControllerAction.DOC_ID_MIN_LEN) {
 
 			//Insert separator and then insert Index Type
-			docId.insert(0, "_").insert(0, UpdateIndexer.INDEX_TYPE);
+			docId.insert(0, DOCUMENT_ID_PREFIX);
 		}
 		setDocumentId(docId.toString());
 	}
