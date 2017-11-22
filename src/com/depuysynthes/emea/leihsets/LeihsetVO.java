@@ -54,11 +54,12 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	private int archiveFlg = 0;
 	private Map<String, LeihsetVO> assets; //a PDF or Excel uploaded to this Liehset
 	private Map<String, LeihsetVO> materials; //Mediabin Literature
-	private ApprovalVO approval;
+	private ApprovalVO syncData;
 
 	private String categoryName;
 	private String parentCategoryName;
 	private Tree categoryTree;
+	private String businessUnits;
 
 	public LeihsetVO() {
 		assets = new LinkedHashMap<>();
@@ -259,7 +260,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	 */
 	@Override
 	public ApprovalVO getSyncData() {
-		return approval;
+		return syncData;
 	}
 
 	/* (non-Javadoc)
@@ -267,8 +268,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	 */
 	@Override
 	public void setSyncData(ApprovalVO vo) {
-		this.approval = vo;
-
+		this.syncData = vo;
 	}
 
 	public String getLeihsetGroupId() {
@@ -336,9 +336,28 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 		this.categoryTree = categoryTree;
 	}
 
+	/**
+	 * @return the businessUnits
+	 */
 	public String getBusinessUnits() {
+		return businessUnits;
+	}
+
+	/**
+	 * @param businessUnits the businessUnits to set
+	 */
+	public void setBusinessUnits(String businessUnits) {
+		this.businessUnits = businessUnits;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public void parseBusinessUnitsFromCategoryTree() {
 		Tree t = getCategoryTree();
-		if (t == null || t.getRootNode() == null) return null;
+
+		if (t == null || t.getRootNode() == null) return;
 
 		Set<String> bizUnits = new HashSet<>();
 		StringBuilder sb = new StringBuilder(100);
@@ -355,7 +374,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 			if (sb.length() > 0) sb.append(", ");
 			sb.append(s);
 		}
-		return sb.toString();
+		businessUnits = sb.toString();
 	}
 
 	public String getCategoryName() {
