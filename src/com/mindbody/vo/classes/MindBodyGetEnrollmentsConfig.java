@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.mindbody.MindBodyClassApi.ClassDocumentType;
+import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyGetEnrollmentsConfig.java
@@ -23,7 +24,7 @@ public class MindBodyGetEnrollmentsConfig extends MindBodyClassConfig {
 	private List<Integer> classScheduleIds;
 	private List<Integer> sessionTypeIds;
 	private List<Integer> semesterIds;
-	private List<Integer> courseIds;
+	private List<Long> courseIds;
 
 	/**
 	 * @param type
@@ -31,16 +32,16 @@ public class MindBodyGetEnrollmentsConfig extends MindBodyClassConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyGetEnrollmentsConfig(String sourceName, String sourceKey, List<Integer> siteIds) {
-		super(ClassDocumentType.GET_ENROLLMEMTS, sourceName, sourceKey, siteIds);
+	public MindBodyGetEnrollmentsConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
+		super(ClassDocumentType.GET_ENROLLMEMTS, source, user);
 		this.classScheduleIds = new ArrayList<>();
 		this.sessionTypeIds = new ArrayList<>();
 		this.semesterIds = new ArrayList<>();
 		this.courseIds = new ArrayList<>();
 	}
 
-	public MindBodyGetEnrollmentsConfig(String sourceName, String sourceKey, List<Integer> siteIds, boolean includeClasses) {
-		this(sourceName, sourceKey, siteIds);
+	public MindBodyGetEnrollmentsConfig(MindBodyCredentialVO source, MindBodyCredentialVO user, boolean includeClasses) {
+		this(source, user);
 		if(includeClasses) {
 			super.addField(INCLUDE_CLASSES_FIELD);
 		}
@@ -70,7 +71,7 @@ public class MindBodyGetEnrollmentsConfig extends MindBodyClassConfig {
 	/**
 	 * @return the courseIds
 	 */
-	public List<Integer> getCourseIds() {
+	public List<Long> getCourseIds() {
 		return courseIds;
 	}
 
@@ -98,7 +99,7 @@ public class MindBodyGetEnrollmentsConfig extends MindBodyClassConfig {
 	/**
 	 * @param courseIds the courseIds to set.
 	 */
-	public void setCourseIds(List<Integer> courseIds) {
+	public void setCourseIds(List<Long> courseIds) {
 		this.courseIds = courseIds;
 	}
 }

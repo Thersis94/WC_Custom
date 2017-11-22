@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.mindbody.MindBodyClassApi.ClassDocumentType;
 import com.mindbody.vo.MindBodyConfig;
+import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
  * <b>Title:</b> ClassCallVO.java
@@ -22,7 +23,7 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 
 	private ClassDocumentType type;
 	private List<String> clientIds;
-	private List<String> classIds;
+	private List<Integer> classIds;
 	private List<Integer> programIds;
 	private List<Long> staffIds;
 	private List<Integer> locationIds;
@@ -33,8 +34,8 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 	/**
 	 * 
 	 */
-	protected MindBodyClassConfig(ClassDocumentType type, String sourceName, String sourceKey, List<Integer> siteIds) {
-		super(sourceName, sourceKey, siteIds);
+	protected MindBodyClassConfig(ClassDocumentType type, MindBodyCredentialVO source, MindBodyCredentialVO user) {
+		super(source, user);
 		this.type = type;
 		this.clientIds = new ArrayList<>();
 		this.classIds = new ArrayList<>();
@@ -57,7 +58,7 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 	}
 
 
-	public List<String> getClassIds() {
+	public List<Integer> getClassIds() {
 		return classIds;
 	}
 
@@ -77,7 +78,7 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 	}
 
 
-	public void setClassIds(List<String> classIds) {
+	public void setClassIds(List<Integer> classIds) {
 		this.classIds = classIds;
 	}
 
@@ -97,7 +98,7 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 	}
 
 
-	public void addClassId(String classId) {
+	public void addClassId(Integer classId) {
 		this.classIds.add(classId);
 	}
 

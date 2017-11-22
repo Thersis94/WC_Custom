@@ -3,7 +3,7 @@ package com.mindbody.vo;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.siliconmtn.util.StringUtil;
+import com.mindbodyonline.clients.api._0_5_1.XMLDetailLevel;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyCallVO.java
@@ -19,43 +19,26 @@ import com.siliconmtn.util.StringUtil;
 public abstract class MindBodyConfig {
 
 	public static final int DEFAULT_PAGE_SIZE = 10;
-	private String sourceName;
-	private String sourceKey;
-	private String userName;
-	private String userPass;
+	private MindBodyCredentialVO sourceCredentials;
+	private MindBodyCredentialVO userCredentials;
 	private List<Integer> siteIds;
 	protected List<String> fields;
+
 	private int pageNo;
 	private int pageSize = DEFAULT_PAGE_SIZE;
+	private XMLDetailLevel.Enum xmlDetailLevel = XMLDetailLevel.FULL;
+
+	protected MindBodyConfig(MindBodyCredentialVO source) {
+		this.fields = new ArrayList<>();
+		this.sourceCredentials = source;
+	}
 
 	/**
 	 * 
 	 */
-	protected MindBodyConfig(String sourceName, String sourceKey, List<Integer> siteIds) {
-		this.siteIds = siteIds;
-		this.sourceName = sourceName;
-		this.sourceKey = sourceKey;
-		this.fields = new ArrayList<>();
-	}
-
-	/**
-	 * @return
-	 */
-	public String getSourceName() {
-		return sourceName;
-	}
-	public void setSourceName(String sourceName) {
-		this.sourceName = sourceName;
-	}
-
-	/**
-	 * @return
-	 */
-	public String getSourceKey() {
-		return sourceKey;
-	}
-	public void setSourceKey(String sourceKey) {
-		this.sourceKey = sourceKey;
+	protected MindBodyConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
+		this(source);
+		this.userCredentials = user;
 	}
 
 	public List<Integer> getSiteIds() {
@@ -78,20 +61,6 @@ public abstract class MindBodyConfig {
 		this.pageNo = pageNo;
 	}
 
-	/**
-	 * @return the userName
-	 */
-	public String getUserName() {
-		return userName;
-	}
-
-	/**
-	 * @return the userPass
-	 */
-	public String getUserPass() {
-		return userPass;
-	}
-
 	public List<String> getFields() {
 		return fields;
 	}
@@ -103,18 +72,9 @@ public abstract class MindBodyConfig {
 	public int getPageSize() {
 		return pageSize;
 	}
-	/**
-	 * @param userName the userName to set.
-	 */
-	public void setUserName(String userName) {
-		this.userName = userName;
-	}
 
-	/**
-	 * @param userPass the userPass to set.
-	 */
-	public void setUserPass(String userPass) {
-		this.userPass = userPass;
+	public XMLDetailLevel.Enum getXmlDetailLevel() {
+		return xmlDetailLevel;
 	}
 
 	/**
@@ -131,14 +91,55 @@ public abstract class MindBodyConfig {
 	public void setPagesize(int pageSize) {
 		this.pageSize = pageSize;
 	}
+
+	public void setXmlDetailLevel(XMLDetailLevel.Enum xmlDetailLevel) {
+		this.xmlDetailLevel = xmlDetailLevel;
+	}
+
+	/**
+	 * @return the sourceCredentials
+	 */
+	public MindBodyCredentialVO getSourceCredentials() {
+		return sourceCredentials;
+	}
+
+	/**
+	 * @return the userCredentials
+	 */
+	public MindBodyCredentialVO getUserCredentials() {
+		return userCredentials;
+	}
+
+	/**
+	 * @param sourceCredentials the sourceCredentials to set.
+	 */
+	public void setSourceCredentials(MindBodyCredentialVO sourceCredentials) {
+		this.sourceCredentials = sourceCredentials;
+	}
+
+	/**
+	 * @param userCredentials the userCredentials to set.
+	 */
+	public void setUserCredentials(MindBodyCredentialVO userCredentials) {
+		this.userCredentials = userCredentials;
+	}
+
 	public boolean hasUser() {
-		return !StringUtil.isEmpty(userName) && !StringUtil.isEmpty(userPass);
+		return userCredentials != null && userCredentials.isValid();
 	}
 
 	public boolean isValid() {
-		return !StringUtil.isEmpty(sourceName)
-				&& !StringUtil.isEmpty(sourceKey)
-				&& !siteIds.isEmpty();
+
+		//Verify Source Credentials.
+		boolean isValid = sourceCredentials != null && sourceCredentials.isValid();
+
+		//Verify Page Data is valid.
+		isValid = isValid && pageNo > -1 && pageSize > 0;
+
+		//Verify Detail Level is present.
+		isValid = isValid && xmlDetailLevel != null;
+
+		return isValid;
 	}
 
 	public boolean hasFields() {

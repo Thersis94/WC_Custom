@@ -1,6 +1,6 @@
 package com.mindbody;
 
-import java.util.List;
+import java.rmi.RemoteException;
 
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.client.ServiceClient;
@@ -8,14 +8,15 @@ import org.apache.axis2.client.Stub;
 import org.apache.axis2.transport.http.HTTPConstants;
 import org.apache.log4j.Logger;
 
+import com.mindbody.util.MindBodyUtil;
 import com.mindbody.vo.MindBodyConfig;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfInt;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfLong;
-import com.mindbodyonline.clients.api._0_5_1.ArrayOfString;
+import com.mindbody.vo.MindBodyCredentialVO;
+import com.mindbody.vo.MindBodyResponseVO;
+//Mind Body Jar
 import com.mindbodyonline.clients.api._0_5_1.MBRequest;
 import com.mindbodyonline.clients.api._0_5_1.SourceCredentials;
 import com.mindbodyonline.clients.api._0_5_1.UserCredentials;
-import com.mindbodyonline.clients.api._0_5_1.XMLDetailLevel;
+import com.siliconmtn.common.http.HttpStatus;
 
 /****************************************************************************
  * <b>Title:</b> AbstractMindBodyApi.java
@@ -32,7 +33,6 @@ import com.mindbodyonline.clients.api._0_5_1.XMLDetailLevel;
 public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConfig> implements MindBodyApiIntfc<T, S> {
 
 	protected Logger log;
-	public static final int PAGE_SIZE = 25;
 
 	/**
 	 * 
@@ -51,11 +51,11 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 	 * @return
 	 */
 	@Override
-	public UserCredentials getUserCredentials(String userName, String password, List<Integer> siteIds) {
+	public UserCredentials getUserCredentials(MindBodyCredentialVO user) {
 		UserCredentials uc = UserCredentials.Factory.newInstance();
-		uc.setPassword(password);
-		uc.setUsername(userName);
-		uc.setSiteIDs(buildArrayOfInt(siteIds));
+		uc.setPassword(user.getPassword());
+		uc.setUsername(user.getUserName());
+		uc.setSiteIDs(MindBodyUtil.buildArrayOfInt(user.getSiteIds()));
 
 		return uc;
 	}
@@ -68,15 +68,34 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 	 * @param siteIds
 	 */
 	@Override
-	public SourceCredentials getSourceCredentials(String sourceName, String password, List<Integer> siteIds) {
+	public SourceCredentials getSourceCredentials(MindBodyCredentialVO source) {
 		SourceCredentials sc = SourceCredentials.Factory.newInstance();
-		sc.setPassword(password);
-		sc.setSourceName(sourceName);
-		sc.setSiteIDs(buildArrayOfInt(siteIds));
+		sc.setPassword(source.getPassword());
+		sc.setSourceName(source.getUserName());
+		sc.setSiteIDs(MindBodyUtil.buildArrayOfInt(source.getSiteIds()));
 
 		return sc;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mindbody.MindBodyApiIntfc#getDocument(com.mindbody.vo.MindBodyCallVO)
+	 */
+	@Override
+	public MindBodyResponseVO getDocument(S config) {
+		MindBodyResponseVO resp;
+
+		if(config.isValid()) {
+			try {
+				resp = processRequest(config);
+			} catch(RemoteException e) {
+				log.error("Problem With Connection.", e);
+				resp = buildErrorResponse(HttpStatus.CD_500_INTERNAL_SERVER_ERROR, "Problem Occurred .");
+			}
+		} else {
+			resp = buildErrorResponse(HttpStatus.CD_400_BAD_REQUEST, "Invalid Config Passed.");
+		}
+		return resp;
+	}
 
 	/**
 	 * Manage configuring the Client that the API will use for generating calls.
@@ -84,7 +103,6 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 	 * correct.
 	 * @throws AxisFault 
 	 */
-	@Override
 	public T getConfiguredStub() throws AxisFault {
 		T stub = getStub();
 		ServiceClient client = stub._getServiceClient();
@@ -102,54 +120,36 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 		if(config.isValid()) {
 
 			//Always Add Source Credentials.
-			req.setSourceCredentials(getSourceCredentials(config.getSourceName(), config.getSourceKey(), config.getSiteIds()));
+			req.setSourceCredentials(getSourceCredentials(config.getSourceCredentials()));
 
 			//If Config has User Credentials, add them.
 			if(config.hasUser()) {
-				req.setUserCredentials(getUserCredentials(config.getUserName(), config.getUserPass(), config.getSiteIds()));
+				req.setUserCredentials(getUserCredentials(config.getUserCredentials()));
 			}
 
 			//Set Standard Config Params.
-			req.setXMLDetail(XMLDetailLevel.FULL);
+			req.setXMLDetail(config.getXmlDetailLevel());
 			req.setPageSize(config.getPageSize());
 			req.setCurrentPageIndex(config.getPageNo());
 
 			//Set Any fields configured on the Config.
 			if(config.hasFields()) {
-				ArrayOfString fields = ArrayOfString.Factory.newInstance();
-				for(String f : config.getFields()) {
-					fields.addString(f);
-				}
-				req.setFields(fields);
+				req.setFields(MindBodyUtil.buildArrayOfString(config.getFields()));
 			}
+			
 		} else {
 			throw new IllegalArgumentException("Config Object is Invalid.");
 		}
 	}
 
-	/**
-	 * Builds a MindBody ArrayOfInt Object from provided List.
-	 * @param config
-	 * @param req
-	 */
-	protected ArrayOfInt buildArrayOfInt(List<Integer> vals) {
-		ArrayOfInt locIds = ArrayOfInt.Factory.newInstance();
-		for(int i : vals) {
-			locIds.addInt(i);
-		}
-		return locIds;
+	protected MindBodyResponseVO buildErrorResponse(int errorCode, String message) {
+		MindBodyResponseVO resp = new MindBodyResponseVO();
+		resp.setErrorCode(errorCode);
+		resp.setMessage(message);
+
+		return resp;
 	}
 
-	/**
-	 * Builds a MindBody ArrayOfLong Object from provided List.
-	 * @param config
-	 * @param req
-	 */
-	protected ArrayOfLong buildArrayOfLong(List<Long> vals) {
-		ArrayOfLong locIds = ArrayOfLong.Factory.newInstance();
-		for(long i : vals) {
-			locIds.addLong(i);
-		}
-		return locIds;
-	}
+	protected abstract MindBodyResponseVO processRequest(S config) throws RemoteException;
+
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.mindbody.MindBodyClassApi.ClassDocumentType;
+import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyGetCoursesConfig.java
@@ -19,6 +20,7 @@ import com.mindbody.MindBodyClassApi.ClassDocumentType;
 public class MindBodyGetCoursesConfig extends MindBodyClassConfig {
 
 	private List<Integer> semesterIds;
+	private List<Long> courseIds;
 
 	/**
 	 * @param type
@@ -26,16 +28,25 @@ public class MindBodyGetCoursesConfig extends MindBodyClassConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyGetCoursesConfig(String sourceName, String sourceKey, List<Integer> siteIds) {
-		super(ClassDocumentType.GET_COURSES, sourceName, sourceKey, siteIds);
+	public MindBodyGetCoursesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
+		super(ClassDocumentType.GET_COURSES, source, user);
 		this.semesterIds = new ArrayList<>();
+		this.courseIds = new ArrayList<>();
 	}
 
 	public List<Integer> getSemesterIds() {
 		return semesterIds;
 	}
 
+	public List<Long> getCourseIds() {
+		return courseIds;
+	}
+
 	public void setSemesterIds(List<Integer> semesterIds) {
 		this.semesterIds = semesterIds;
+	}
+
+	public void setCourseIds(List<Long> courseIds) {
+		this.courseIds = courseIds;
 	}
 }

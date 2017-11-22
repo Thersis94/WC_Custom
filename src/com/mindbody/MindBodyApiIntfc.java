@@ -1,12 +1,13 @@
 package com.mindbody;
 
 import java.rmi.RemoteException;
-import java.util.List;
 
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.client.Stub;
 
 import com.mindbody.vo.MindBodyConfig;
+import com.mindbody.vo.MindBodyCredentialVO;
+import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbodyonline.clients.api._0_5_1.MBRequest;
 import com.mindbodyonline.clients.api._0_5_1.SourceCredentials;
 import com.mindbodyonline.clients.api._0_5_1.UserCredentials;
@@ -31,7 +32,7 @@ public interface MindBodyApiIntfc<T extends Stub, S extends MindBodyConfig> {
 	 * @param siteIds
 	 * @return
 	 */
-	public UserCredentials getUserCredentials(String userName, String password, List<Integer> siteIds);
+	public UserCredentials getUserCredentials(MindBodyCredentialVO vo);
 
 
 	/**
@@ -41,8 +42,16 @@ public interface MindBodyApiIntfc<T extends Stub, S extends MindBodyConfig> {
 	 * @param siteIds
 	 * @return
 	 */
-	public SourceCredentials getSourceCredentials(String sourceName, String password, List<Integer> siteIds);
+	public SourceCredentials getSourceCredentials(MindBodyCredentialVO vo);
 
+	/**
+	 * Entry point into all Concrete API Implementations that determines action
+	 * from passed config.
+	 * @param call
+	 * @return
+	 * @throws RemoteException
+	 */
+	public MindBodyResponseVO getDocument(S config) throws RemoteException;
 
 	/**
 	 * Return an Instance of type T.  Used in Concretes to instantiate Actual Object
@@ -52,7 +61,6 @@ public interface MindBodyApiIntfc<T extends Stub, S extends MindBodyConfig> {
 	 */
 	public T getStub() throws AxisFault;
 
-
 	/**
 	 * Return an instance of type T that has been properly Configured with default
 	 * params.
@@ -60,16 +68,6 @@ public interface MindBodyApiIntfc<T extends Stub, S extends MindBodyConfig> {
 	 * @throws AxisFault
 	 */
 	public T getConfiguredStub() throws AxisFault;
-
-
-	/**
-	 * Entry point into all Concrete API Implementations that determines action
-	 * from passed config.
-	 * @param call
-	 * @return
-	 * @throws RemoteException
-	 */
-	public List<Object> getDocument(S config) throws RemoteException;
 
 	/**
 	 * Performs default Configuration on the given req object that is standard
