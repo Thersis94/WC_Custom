@@ -31,7 +31,7 @@ public class MindBodyGetClientsConfig extends MindBodyClientConfig {
 
 	@Override
 	public boolean isValid() {
-		return super.isValid() && getUserCredentials() != null && searchText != null;
+		return super.isValid() && searchText != null;
 	}
 	/**
 	 * @return the searchText

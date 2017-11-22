@@ -4,6 +4,7 @@ import java.rmi.RemoteException;
 
 import org.apache.axis2.AxisFault;
 
+import com.mindbody.util.MindBodyUtil;
 import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.clients.MindBodyAddArrivalConfig;
 import com.mindbody.vo.clients.MindBodyAddOrUpdateClientsConfig;
@@ -20,7 +21,6 @@ import com.mindbody.vo.clients.MindBodySendUserNewPasswordConfig;
 import com.mindbody.vo.clients.MindBodyUpdateClientServicesConfig;
 import com.mindbody.vo.clients.MindBodyUploadClientDocumentConfig;
 import com.mindbody.vo.clients.MindBodyValidateLoginConfig;
-
 //Mind Body Client Jars
 import com.mindbodyonline.clients.api._0_5_1.AddArrivalDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddArrivalRequest;
@@ -78,7 +78,6 @@ import com.mindbodyonline.clients.api._0_5_1.ValidateLoginDocument;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginRequest;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginResult;
-
 //Base Libs
 import com.siliconmtn.common.http.HttpStatus;
 import com.siliconmtn.util.Convert;
@@ -130,14 +129,6 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	 */
 	public MindBodyClientApi() {
 		super();
-	}
-
-	/* (non-Javadoc)
-	 * @see com.mindbody.MindBodyApiIntfc#getStub()
-	 */
-	@Override
-	public Client_x0020_ServiceStub getStub() throws AxisFault {
-		return new Client_x0020_ServiceStub();
 	}
 
 	/* (non-Javadoc)
@@ -284,7 +275,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		Client_x0020_ServiceStub client = getConfiguredStub();
 		ValidateLoginResponseDocument res = client.validateLogin(doc);
 		ValidateLoginResult r = res.getValidateLoginResponse().getValidateLoginResult();
-		
+		log.info(r);
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
 			resp.addResults(MindBodyUtil.convertClientData(r.getClient()));
@@ -320,6 +311,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		GetRequiredClientFieldsResponseDocument res = client.getRequiredClientFields(doc);
 		GetRequiredClientFieldsResult r = res.getGetRequiredClientFieldsResponse().getGetRequiredClientFieldsResult();
 		resp.populateResponseFields(r);
+		log.info(r);
 		if(resp.isValid()) {
 			resp.addResults((Object [])r.getRequiredClientFields().getStringArray());
 		}
@@ -646,6 +638,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		AddOrUpdateClientsResponseDocument res = client.addOrUpdateClients(doc);
 		AddOrUpdateClientsResult r = res.getAddOrUpdateClientsResponse().getAddOrUpdateClientsResult();
 		resp.populateResponseFields(r);
+		log.info(r);
 		if(resp.isValid()) {
 			resp.addResults((Object [])r.getClients().getClientArray());
 		}
@@ -662,6 +655,10 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		if(config.isSendEmail()) {
 			req.setSendEmail(config.isSendEmail());
+		}
+
+		if(config.isTest()) {
+			req.setTest(config.isTest());
 		}
 	}
 
@@ -683,6 +680,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		GetClientsResponseDocument res = client.getClients(doc);
 		GetClientsResult r = res.getGetClientsResponse().getGetClientsResult();
 		resp.populateResponseFields(r);
+		log.info(r);
 		if(resp.isValid()) {
 			resp.addResults((Object [])r.getClients().getClientArray());
 		}
@@ -744,5 +742,13 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 	private void configureAddArrivalRequest(AddArrivalRequest req, MindBodyAddArrivalConfig config) {
 		req.setClientID(config.getClientId());
 		req.setLocationID(config.getLocationId());
+	}
+
+	/* (non-Javadoc)
+	 * @see com.mindbody.MindBodyApiIntfc#getStub()
+	 */
+	@Override
+	public Client_x0020_ServiceStub getStub() throws AxisFault {
+		return new Client_x0020_ServiceStub();
 	}
 }

@@ -4,25 +4,24 @@ import com.mindbody.MindBodyClientApi.ClientDocumentType;
 import com.mindbody.vo.MindBodyCredentialVO;
 
 /****************************************************************************
- * <b>Title:</b> MindBodyGetClientScheduleConfig.java
+ * <b>Title:</b> MindBodyGetClientReferralTypesConfig.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> Manages GetClientSchedule Endpoint unique Configuration.
+ * <b>Description:</b> Manages GetClientReferralTypes Endpoint unique Configuration.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
  * @author Billy Larsen
  * @version 3.3.1
- * @since Nov 13, 2017
+ * @since Nov 20, 2017
  ****************************************************************************/
-public class MindBodyGetClientScheduleConfig extends MindBodyClientConfig {
+public class MindBodyGetClientReferralTypesConfig extends MindBodyClientConfig {
 
 	/**
 	 * @param type
 	 * @param source
 	 * @param user
 	 */
-	public MindBodyGetClientScheduleConfig(MindBodyCredentialVO source) {
-		super(ClientDocumentType.GET_CLIENT_SCHEDULE, source, null);
+	public MindBodyGetClientReferralTypesConfig(MindBodyCredentialVO source) {
+		super(ClientDocumentType.GET_CLIENT_REFERRAL_TYPES, source, null);
 	}
-
 }

@@ -25,8 +25,8 @@ public class MindBodyGetClientVisitsConfig extends MindBodyClientConfig {
 	 * @param source
 	 * @param user
 	 */
-	public MindBodyGetClientVisitsConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClientDocumentType.GET_CLIENT_VISITS, source, user);
+	public MindBodyGetClientVisitsConfig(MindBodyCredentialVO source) {
+		super(ClientDocumentType.GET_CLIENT_VISITS, source, null);
 	}
 
 	/**

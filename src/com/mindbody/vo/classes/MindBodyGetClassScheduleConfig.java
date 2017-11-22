@@ -29,14 +29,14 @@ public class MindBodyGetClassScheduleConfig extends MindBodyClassConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyGetClassScheduleConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClassDocumentType.GET_CLASS_SCHEDULE, source, user);
+	public MindBodyGetClassScheduleConfig(MindBodyCredentialVO source) {
+		super(ClassDocumentType.GET_CLASS_SCHEDULE, source, null);
 		this.classScheduleIds = new ArrayList<>();
 		this.sessionTypeIds = new ArrayList<>();
 	}
 
-	public MindBodyGetClassScheduleConfig(MindBodyCredentialVO source, MindBodyCredentialVO user, boolean includeClasses) {
-		this(source, user);
+	public MindBodyGetClassScheduleConfig(MindBodyCredentialVO source, boolean includeClasses) {
+		this(source);
 		if(includeClasses) {
 			super.addField(INCLUDE_CLASSES_FIELD);
 		}

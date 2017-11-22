@@ -23,6 +23,10 @@ public class MindBodyCredentialVO {
 	public static final String MINDBODY_SITE_ID = "mindBodySiteId";
 	public static final String MINDBODY_API_KEY = "mindBodyApiKey";
 	public static final String MINDBODY_SOURCE_NAME = "mindBodySourceName";
+
+	public static final String MINDBODY_STAFF_ID = "mindBodyStaffId";
+	public static final String MINDBODY_STAFF_PASS = "mindBodyStaffPass";
+
 	/**
 	 * 
 	 */

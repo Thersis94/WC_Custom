@@ -8,10 +8,10 @@ import org.apache.axis2.client.Stub;
 import org.apache.axis2.transport.http.HTTPConstants;
 import org.apache.log4j.Logger;
 
+import com.mindbody.util.MindBodyUtil;
 import com.mindbody.vo.MindBodyConfig;
 import com.mindbody.vo.MindBodyCredentialVO;
 import com.mindbody.vo.MindBodyResponseVO;
-
 //Mind Body Jar
 import com.mindbodyonline.clients.api._0_5_1.MBRequest;
 import com.mindbodyonline.clients.api._0_5_1.SourceCredentials;
@@ -103,7 +103,6 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 	 * correct.
 	 * @throws AxisFault 
 	 */
-	@Override
 	public T getConfiguredStub() throws AxisFault {
 		T stub = getStub();
 		ServiceClient client = stub._getServiceClient();

@@ -4,6 +4,7 @@ import java.rmi.RemoteException;
 
 import org.apache.axis2.AxisFault;
 
+import com.mindbody.util.MindBodyUtil;
 import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.classes.MindBodyAddClientsToClassConfig;
 import com.mindbody.vo.classes.MindBodyClassConfig;
@@ -13,12 +14,14 @@ import com.mindbody.vo.classes.MindBodyGetClassesConfig;
 import com.mindbody.vo.classes.MindBodyGetCoursesConfig;
 import com.mindbody.vo.classes.MindBodyGetEnrollmentsConfig;
 import com.mindbody.vo.classes.MindBodyRemoveClientsFromClassesConfig;
-
 //Mind Body Class API Jar
 import com.mindbodyonline.clients.api._0_5_1.AddClientsToClassesDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddClientsToClassesRequest;
 import com.mindbodyonline.clients.api._0_5_1.AddClientsToClassesResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddClientsToClassesResult;
+import com.mindbodyonline.clients.api._0_5_1.Class;
+import com.mindbodyonline.clients.api._0_5_1.ClassDescription;
+import com.mindbodyonline.clients.api._0_5_1.ClassSchedule;
 import com.mindbodyonline.clients.api._0_5_1.Class_x0020_ServiceStub;
 import com.mindbodyonline.clients.api._0_5_1.GetClassDescriptionsDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetClassDescriptionsRequest;
@@ -44,7 +47,6 @@ import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesDocument;
 import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesRequest;
 import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.RemoveClientsFromClassesResult;
-
 //Base Libs
 import com.siliconmtn.common.http.HttpStatus;
 import com.siliconmtn.util.Convert;
@@ -156,7 +158,9 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetClassesResult r = res.getGetClassesResponse().getGetClassesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults((Object [])r.getClasses().getClass1Array());
+			for(Object o : r.getClasses().getClass1Array()) {
+				resp.addResults(MindBodyUtil.convertClassData((Class) o));
+			}
 		}
 		return resp;
 	}
@@ -256,7 +260,10 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetClassDescriptionsResult r = res.getGetClassDescriptionsResponse().getGetClassDescriptionsResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults((Object [])r.getClassDescriptions().getClassDescriptionArray());
+			for(Object o : r.getClassDescriptions().getClassDescriptionArray()) {
+				resp.addResults(MindBodyUtil.convertClassDescription((ClassDescription) o));
+			}
+			
 		}
 
 		return resp;
@@ -381,7 +388,9 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetClassSchedulesResult r = res.getGetClassSchedulesResponse().getGetClassSchedulesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults((Object [])r.getClassSchedules().getClassScheduleArray());
+			for(Object o : r.getClassSchedules().getClassScheduleArray()) {
+				resp.addResults(MindBodyUtil.convertClassSchedule((ClassSchedule) o));
+			}
 		}
 
 		return resp;

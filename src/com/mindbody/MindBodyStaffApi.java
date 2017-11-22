@@ -4,6 +4,7 @@ import java.rmi.RemoteException;
 
 import org.apache.axis2.AxisFault;
 
+import com.mindbody.util.MindBodyUtil;
 import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.staff.MindBodyAddOrUpdateStaffConfig;
 import com.mindbody.vo.staff.MindBodyGetStaffConfig;

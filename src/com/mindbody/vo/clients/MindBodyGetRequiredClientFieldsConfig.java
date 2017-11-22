@@ -21,7 +21,7 @@ public class MindBodyGetRequiredClientFieldsConfig extends MindBodyClientConfig 
 	 * @param source
 	 * @param user
 	 */
-	public MindBodyGetRequiredClientFieldsConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClientDocumentType.GET_REQUIRED_CLIENT_FIELDS, source, user);
+	public MindBodyGetRequiredClientFieldsConfig(MindBodyCredentialVO source) {
+		super(ClientDocumentType.GET_REQUIRED_CLIENT_FIELDS, source, null);
 	}
 }

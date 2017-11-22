@@ -32,8 +32,8 @@ public class MindBodyGetClientServicesConfig extends MindBodyClientConfig {
 	 * @param source
 	 * @param user
 	 */
-	public MindBodyGetClientServicesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClientDocumentType.GET_CLIENT_SERVICES, source, user);
+	public MindBodyGetClientServicesConfig(MindBodyCredentialVO source) {
+		super(ClientDocumentType.GET_CLIENT_SERVICES, source, null);
 		this.programIds = new ArrayList<>();
 		this.sessionTypeIds = new ArrayList<>();
 	}

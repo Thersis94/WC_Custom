@@ -27,8 +27,8 @@ public class MindBodyRemoveClientsFromClassesConfig extends MindBodyClassConfig 
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyRemoveClientsFromClassesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClassDocumentType.REMOVE_CLIENTS_FROM_CLASS, source, user);
+	public MindBodyRemoveClientsFromClassesConfig(MindBodyCredentialVO source) {
+		super(ClassDocumentType.REMOVE_CLIENTS_FROM_CLASS, source, null);
 	}
 
 	/**

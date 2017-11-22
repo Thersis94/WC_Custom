@@ -33,8 +33,8 @@ public class MindBodyGetClassesConfig extends MindBodyClassConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyGetClassesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClassDocumentType.GET_CLASSES, source, user);
+	public MindBodyGetClassesConfig(MindBodyCredentialVO source) {
+		super(ClassDocumentType.GET_CLASSES, source, null);
 		this.classDescriptionIds = new ArrayList<>();
 		this.sessionTypeIds = new ArrayList<>();
 		this.semesterIds = new ArrayList<>();

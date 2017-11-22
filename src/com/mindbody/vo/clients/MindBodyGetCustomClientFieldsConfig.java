@@ -21,8 +21,8 @@ public class MindBodyGetCustomClientFieldsConfig extends MindBodyClientConfig {
 	 * @param source
 	 * @param user
 	 */
-	public MindBodyGetCustomClientFieldsConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClientDocumentType.GET_CUSTOM_CLIENT_FIELDS, source, user);
+	public MindBodyGetCustomClientFieldsConfig(MindBodyCredentialVO source) {
+		super(ClientDocumentType.GET_CUSTOM_CLIENT_FIELDS, source, null);
 	}
 
 }

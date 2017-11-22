@@ -32,7 +32,7 @@ public interface MindBodyApiIntfc<T extends Stub, S extends MindBodyConfig> {
 	 * @param siteIds
 	 * @return
 	 */
-	public UserCredentials getUserCredentials(MindBodyCredentialVO user);
+	public UserCredentials getUserCredentials(MindBodyCredentialVO vo);
 
 
 	/**
@@ -42,8 +42,16 @@ public interface MindBodyApiIntfc<T extends Stub, S extends MindBodyConfig> {
 	 * @param siteIds
 	 * @return
 	 */
-	public SourceCredentials getSourceCredentials(MindBodyCredentialVO user);
+	public SourceCredentials getSourceCredentials(MindBodyCredentialVO vo);
 
+	/**
+	 * Entry point into all Concrete API Implementations that determines action
+	 * from passed config.
+	 * @param call
+	 * @return
+	 * @throws RemoteException
+	 */
+	public MindBodyResponseVO getDocument(S config) throws RemoteException;
 
 	/**
 	 * Return an Instance of type T.  Used in Concretes to instantiate Actual Object
@@ -53,7 +61,6 @@ public interface MindBodyApiIntfc<T extends Stub, S extends MindBodyConfig> {
 	 */
 	public T getStub() throws AxisFault;
 
-
 	/**
 	 * Return an instance of type T that has been properly Configured with default
 	 * params.
@@ -61,16 +68,6 @@ public interface MindBodyApiIntfc<T extends Stub, S extends MindBodyConfig> {
 	 * @throws AxisFault
 	 */
 	public T getConfiguredStub() throws AxisFault;
-
-
-	/**
-	 * Entry point into all Concrete API Implementations that determines action
-	 * from passed config.
-	 * @param call
-	 * @return
-	 * @throws RemoteException
-	 */
-	public MindBodyResponseVO getDocument(S config);
 
 	/**
 	 * Performs default Configuration on the given req object that is standard

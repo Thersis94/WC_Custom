@@ -25,8 +25,8 @@ public class MindBodyGetClientPurchasesConfig extends MindBodyClientConfig {
 	 * @param source
 	 * @param user
 	 */
-	public MindBodyGetClientPurchasesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClientDocumentType.GET_CLIENT_PURCHASES, source, user);
+	public MindBodyGetClientPurchasesConfig(MindBodyCredentialVO source) {
+		super(ClientDocumentType.GET_CLIENT_PURCHASES, source, null);
 	}
 
 	/**
