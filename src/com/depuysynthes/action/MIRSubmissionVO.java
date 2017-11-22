@@ -93,7 +93,7 @@ public class MIRSubmissionVO extends UserDataVO {
 	}
 
 	public String getResponseType() {
-		return responseType;
+		return "Postal".equals(responseType) ? "Postal Mail" : StringUtil.checkVal(responseType);
 	}
 
 	public String getResponseTypeOther() {
