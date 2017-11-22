@@ -74,6 +74,7 @@ public class UpdatesAction extends ManagementAction {
 	private static final String COOK_UPD_END_DT = "updateEndDt";
 
 	private static final String HTML_REGEX = "(<\\/?(([uo]l)|(b)|(li)|(s((trong)|(ub))?)|(d((etails)|(iv))?)|(u)|(img)|(hr)|(font))(?!up)[^<>]*\\/?>)|(<p>&nbsp;<\\/p>)|((style|align|bgcolor|border|color)[ ]?=[ ]?['\"][^'\"]*['\"])";
+	private static final String P_REGEX = "<p[^<>]*>";
 
 	/**
 	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
@@ -631,7 +632,9 @@ public class UpdatesAction extends ManagementAction {
 	private void filterText(UpdateVO u) {
 		if (StringUtil.isEmpty(u.getMessageTxt())) return;
 
-		u.setMessageTxt(u.getMessageTxt().replaceAll(HTML_REGEX, ""));
+		// Strip out undesired html tags and attributes and ensure that all <p> tags
+		// contain no extra characters as it can cause issues with the updates emails.
+		u.setMessageTxt(u.getMessageTxt().replaceAll(HTML_REGEX, "").replaceAll(P_REGEX, "<p>"));
 	}
 
 	/**
