@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringEscapeUtils;
+
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
 //WC Custom
@@ -239,9 +241,10 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 * @return
 	 */
 	private String buildRedirectHref(String link, String baseUrl) {
+		StringEncoder se = new StringEncoder();
 		StringBuilder redirectLink = new StringBuilder(250);
 		redirectLink.append(baseUrl).append("?");
-		redirectLink.append(REDIRECT_DEST).append("=").append(StringEncoder.urlEncode(link));
+		redirectLink.append(REDIRECT_DEST).append("=").append(StringEncoder.urlEncode(se.decodeValue(link)));
 		return redirectLink.toString();
 	}
 	
