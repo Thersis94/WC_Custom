@@ -110,7 +110,7 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		addHtmlRow(html, ++rowCnt, "HCP's Hospital / Institution / Office", vo.getHcpInstitution());
 		addHtmlRow(html, ++rowCnt, "Consent", vo.getConsentFlg());
 		// section 2 - Contact Information
-		addHtmlRow(html, ++rowCnt, "Desired Response Method", StringUtil.checkVal(vo.getResponseType()));
+		addHtmlRow(html, ++rowCnt, "Desired Response Method", vo.getResponseType());
 		addHtmlRow(html, ++rowCnt, "Desired Response Method (Other)", vo.getResponseTypeOther());
 		addHtmlRow(html, ++rowCnt, "Street Address", vo.getAddress());
 		addHtmlRow(html, ++rowCnt, "City", vo.getCity());
