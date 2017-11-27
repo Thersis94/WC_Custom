@@ -27,12 +27,12 @@ public class UpdatesEditionComparator implements Comparator<UpdateVO> {
 		if (o2 == null) return -1;
 
 		//first compare by type
-		int typeNo = o1.getType().compareTo(o2.getType());
-		if (typeNo != 0) return typeNo;
+		int val = o1.getType().compareTo(o2.getType());
+		if (val != 0) return val;
 
 		//same type - compare by date - newest first.
-		int dates = o2.getPublishDate().compareTo(o1.getPublishDate());
-		if (dates != 0) return dates;
+		val = o2.getPublishDate().compareTo(o1.getPublishDate());
+		if (val != 0) return val;
 		
 		//same dates - compare by order - lowest # first.
 		return Integer.valueOf(o1.getOrderNo()).compareTo(o2.getOrderNo());

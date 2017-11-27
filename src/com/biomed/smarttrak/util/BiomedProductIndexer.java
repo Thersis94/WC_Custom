@@ -505,7 +505,10 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("ON p.PRODUCT_ID = x.PRODUCT_ID ");
 		sql.append("WHERE (p.STATUS_NO not in ('A','D') or p.status_no is null) ");
-		if (id != null) sql.append("and x.PRODUCT_ID = ? ");
+		// When getting a single item for indexing ensure that attributes that have no products assigned
+		// to them and have a type code of null are grabbed in addition to the product's attributes.
+		// These attributes are used to generate the details tree.
+		if (id != null) sql.append("and x.PRODUCT_ID = ? or (x.product_id is null and type_cd is null)");
 		sql.append("ORDER BY a.ATTRIBUTE_ID ");
 
 		List<Node> nodes = new ArrayList<>();
