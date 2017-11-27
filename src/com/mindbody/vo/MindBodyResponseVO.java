@@ -163,7 +163,7 @@ public class MindBodyResponseVO {
 	 * @param results the results to set.
 	 */
 	public void addResults(Object... results) {
-		this.results.add(Arrays.asList(results));
+		this.results.addAll(Arrays.asList(results));
 	}
 
 	/**
@@ -171,5 +171,12 @@ public class MindBodyResponseVO {
 	 */
 	public boolean isValid() {
 		return this.errorCode == 200;
+	}
+
+	/**
+	 * @param results2
+	 */
+	public void setResults(List<Object> results) {
+		this.results = results;
 	}
 }

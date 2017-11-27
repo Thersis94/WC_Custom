@@ -3,7 +3,13 @@ package com.mindbody.security;
 import java.sql.ResultSet;
 import java.util.List;
 
+import com.mindbody.vo.classes.MBClassScheduleVO;
+import com.mindbody.vo.clients.MBServiceVO;
+import com.mindbody.vo.clients.MBVisitVO;
+import com.mindbody.vo.sales.MBSaleItemVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.commerce.payment.PaymentVO;
+import com.siliconmtn.gis.Location;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.user.HumanNameIntfc;
@@ -20,16 +26,19 @@ import com.siliconmtn.util.user.HumanNameIntfc;
  * @since Nov 20, 2017
  ****************************************************************************/
 public class MindBodyUserVO extends UserDataVO implements HumanNameIntfc {
-
 	/**
 	 *
 	 */
 	private static final long serialVersionUID = 1L;
 
-	private List<Object> visits;
-	private List<Object> schedule;
-	private List<Object> services;
-	private List<Object> purchases;
+	private List<MBVisitVO> visits;
+	private List<MBClassScheduleVO> schedule;
+	private List<MBServiceVO> services;
+	private List<MBSaleItemVO> purchases;
+	private int perkvillePoints;
+
+	private PaymentVO cardData;
+	private Location billingAddress;
 
 	/**
 	 * 
@@ -58,49 +67,85 @@ public class MindBodyUserVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return the visits
 	 */
-	public List<Object> getVisits() {
+	public List<MBVisitVO> getVisits() {
 		return visits;
 	}
 	/**
 	 * @return the schedule
 	 */
-	public List<Object> getSchedule() {
+	public List<MBClassScheduleVO> getSchedule() {
 		return schedule;
 	}
 	/**
 	 * @return the services
 	 */
-	public List<Object> getServices() {
+	public List<MBServiceVO> getServices() {
 		return services;
 	}
 	/**
 	 * @return the purchases
 	 */
-	public List<Object> getPurchases() {
+	public List<MBSaleItemVO> getPurchases() {
 		return purchases;
+	}
+
+	public int getPerkvillePoints() {
+		return perkvillePoints;
+	}
+
+	public int getClassPoints() {
+		if(services != null) {
+			return services.get(0).getRemaining();
+		} else {
+			return 0;
+		}
+	}
+
+	public PaymentVO getCardData() {
+		return cardData;
+	}
+
+	public Location getBillingAddress() {
+		return billingAddress;
 	}
 	/**
 	 * @param visits the visits to set.
 	 */
-	public void setVisits(List<Object> visits) {
+	public void setVisits(List<MBVisitVO> visits) {
 		this.visits = visits;
 	}
 	/**
 	 * @param schedule the schedule to set.
 	 */
-	public void setSchedule(List<Object> schedule) {
+	public void setSchedule(List<MBClassScheduleVO> schedule) {
 		this.schedule = schedule;
 	}
 	/**
 	 * @param services the services to set.
 	 */
-	public void setServices(List<Object> services) {
+	public void setServices(List<MBServiceVO> services) {
 		this.services = services;
 	}
 	/**
 	 * @param purchases the purchases to set.
 	 */
-	public void setPurchases(List<Object> purchases) {
+	public void setPurchases(List<MBSaleItemVO> purchases) {
 		this.purchases = purchases;
+	}
+
+	public void setPerkvillePoints(int perkvillePoints) {
+		this.perkvillePoints = perkvillePoints;
+	}
+	/**
+	 * @param convertClientCreditCart
+	 */
+	public void setClientCardData(PaymentVO cardData) {
+		this.cardData = cardData;
+	}
+	/**
+	 * @param convertBillingAddress
+	 */
+	public void setBillingAddress(Location billingAddress) {
+		this.billingAddress = billingAddress;
 	}
 }

@@ -62,10 +62,17 @@ public class MindBodyGetClassScheduleConfig extends MindBodyClassConfig {
 		this.classScheduleIds = classScheduleIds;
 	}
 
+	public void addClassScheduleId(Integer classScheduleId) {
+		this.classScheduleIds.add(classScheduleId);
+	}
 	/**
 	 * @param sessionTypeIds the sessionTypeIds to set.
 	 */
 	public void setSessionTypeIds(List<Integer> sessionTypeIds) {
 		this.sessionTypeIds = sessionTypeIds;
+	}
+
+	public void addSessionTypeId(Integer sessionTypeId) {
+		this.sessionTypeIds.add(sessionTypeId);
 	}
 }

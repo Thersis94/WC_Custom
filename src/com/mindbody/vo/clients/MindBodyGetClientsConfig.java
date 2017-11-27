@@ -18,6 +18,7 @@ import com.mindbody.vo.MindBodyCredentialVO;
  ****************************************************************************/
 public class MindBodyGetClientsConfig extends MindBodyClientConfig {
 
+	public static final String CLIENT_CARD_DATA_FIELD = "Clients.ClientCreditCard";
 	private String searchText = "";
 	private boolean isProspect;
 	private Date lastModifiedDate;
@@ -29,6 +30,11 @@ public class MindBodyGetClientsConfig extends MindBodyClientConfig {
 		super(ClientDocumentType.GET_CLIENTS, source, user);
 	}
 
+	public MindBodyGetClientsConfig(MindBodyCredentialVO source, MindBodyCredentialVO user, boolean getCardData) {
+		this(source, user);
+		if(getCardData)
+			super.addField(CLIENT_CARD_DATA_FIELD);
+	}
 	@Override
 	public boolean isValid() {
 		return super.isValid() && searchText != null;

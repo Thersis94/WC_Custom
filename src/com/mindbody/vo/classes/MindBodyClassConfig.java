@@ -134,6 +134,9 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 		this.programIds = programIds;
 	}
 
+	public void addProgramId(Integer programId) {
+		this.programIds.add(programId);
+	}
 
 	/**
 	 * @param staffIds the staffIds to set.

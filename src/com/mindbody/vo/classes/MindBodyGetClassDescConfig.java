@@ -1,5 +1,6 @@
 package com.mindbody.vo.classes;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.mindbody.MindBodyClassApi.ClassDocumentType;
@@ -27,8 +28,9 @@ public class MindBodyGetClassDescConfig extends MindBodyClassConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyGetClassDescConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClassDocumentType.GET_CLASS_DESC, source, user);
+	public MindBodyGetClassDescConfig(MindBodyCredentialVO source) {
+		super(ClassDocumentType.GET_CLASS_DESC, source, null);
+		classDescriptionIds = new ArrayList<>();
 	}
 
 

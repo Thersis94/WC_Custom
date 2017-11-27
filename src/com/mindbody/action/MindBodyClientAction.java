@@ -10,7 +10,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -26,7 +26,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 3.3.1
  * @since Nov 19, 2017
  ****************************************************************************/
-public class MindBodyClientAction extends SBActionAdapter {
+public class MindBodyClientAction extends SimpleActionAdapter {
 
 	/**
 	 * 
@@ -42,9 +42,10 @@ public class MindBodyClientAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ClientDocumentType callType = getDocumentType(req.getParameter("callType"));
-		SiteVO site = (SiteVO)req.getSession().getAttribute(Constants.SITE_DATA);
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		ClientApiUtil util = new ClientApiUtil(site.getSiteConfig());
 		List<String> fields;

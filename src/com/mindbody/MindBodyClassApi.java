@@ -157,6 +157,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetClassesResponseDocument res = client.getClasses(doc);
 		GetClassesResult r = res.getGetClassesResponse().getGetClassesResult();
 		resp.populateResponseFields(r);
+		log.debug(r);
 		if(resp.isValid()) {
 			for(Object o : r.getClasses().getClass1Array()) {
 				resp.addResults(MindBodyUtil.convertClassData((Class) o));

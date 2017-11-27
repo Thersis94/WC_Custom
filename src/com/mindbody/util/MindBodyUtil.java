@@ -1,9 +1,11 @@
 package com.mindbody.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import com.mindbody.security.MindBodyUserVO;
 import com.mindbody.vo.MindBodyCredentialVO;
 import com.mindbody.vo.classes.MBClassDescriptionVO;
 import com.mindbody.vo.classes.MBClassScheduleVO;
@@ -13,10 +15,20 @@ import com.mindbody.vo.classes.MBLocationVO;
 import com.mindbody.vo.classes.MBProgramVO;
 import com.mindbody.vo.classes.MBSessionTypeVO;
 import com.mindbody.vo.classes.MBStaffVO;
+import com.mindbody.vo.clients.MBServiceVO;
+import com.mindbody.vo.clients.MBVisitVO;
+import com.mindbody.vo.sales.MBPaymentVO;
+import com.mindbody.vo.sales.MBPurchasedItemVO;
+import com.mindbody.vo.sales.MBSaleItemVO;
+import com.mindbody.vo.sales.MBSaleVO;
+import com.mindbody.vo.site.MBRelationshipVO;
+import com.mindbody.vo.staff.MBPermissionVO;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfClient;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfClientService;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfInt;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfLong;
+import com.mindbodyonline.clients.api._0_5_1.ArrayOfPayment;
+import com.mindbodyonline.clients.api._0_5_1.ArrayOfPurchasedItem;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfStaff;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfStaffFilter;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfString;
@@ -28,12 +40,18 @@ import com.mindbodyonline.clients.api._0_5_1.ClientCreditCard;
 import com.mindbodyonline.clients.api._0_5_1.ClientService;
 import com.mindbodyonline.clients.api._0_5_1.Level;
 import com.mindbodyonline.clients.api._0_5_1.Location;
+import com.mindbodyonline.clients.api._0_5_1.Payment;
+import com.mindbodyonline.clients.api._0_5_1.Permission;
 import com.mindbodyonline.clients.api._0_5_1.Program;
+import com.mindbodyonline.clients.api._0_5_1.PurchasedItem;
+import com.mindbodyonline.clients.api._0_5_1.Relationship;
+import com.mindbodyonline.clients.api._0_5_1.Sale;
+import com.mindbodyonline.clients.api._0_5_1.SaleItem;
 import com.mindbodyonline.clients.api._0_5_1.SessionType;
 import com.mindbodyonline.clients.api._0_5_1.Staff;
 import com.mindbodyonline.clients.api._0_5_1.StaffFilter;
+import com.mindbodyonline.clients.api._0_5_1.Visit;
 import com.siliconmtn.commerce.payment.PaymentVO;
-import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -188,8 +206,8 @@ public class MindBodyUtil {
 	 * @param client
 	 * @return
 	 */
-	public static UserDataVO convertClientData(Client client) {
-		UserDataVO user = new UserDataVO();
+	public static MindBodyUserVO convertClientData(Client client) {
+		MindBodyUserVO user = new MindBodyUserVO();
 		user.setAllowCommunication(Convert.formatInteger(client.getPromotionalEmailOptIn()));
 		user.setFirstName(client.getFirstName());
 		user.setLastName(client.getLastName());
@@ -201,9 +219,40 @@ public class MindBodyUtil {
 		user.setMobilePhone(client.getMobilePhone());
 		user.setProfileId(client.getID());
 		user.setEmailAddress(client.getEmail());
-		
+
+		if(client.isSetClientCreditCard()) {
+			user.setClientCardData(convertClientCreditCart(client.getClientCreditCard()));
+			user.setBillingAddress(convertBillingAddress(client.getClientCreditCard()));
+		}
 
 		return user;
+	}
+
+	/**
+	 * @param clientCreditCard
+	 * @return
+	 */
+	public static com.siliconmtn.gis.Location convertBillingAddress(ClientCreditCard cc) {
+		com.siliconmtn.gis.Location loc = new com.siliconmtn.gis.Location();
+		loc.setAddress(cc.getAddress());
+		loc.setState(cc.getState());
+		loc.setZipCode(cc.getPostalCode());
+		loc.setCity(cc.getCity());
+		return loc;
+	}
+
+	/**
+	 * @param clientCreditCard
+	 * @return
+	 */
+	public static PaymentVO convertClientCreditCart(ClientCreditCard cc) {
+		PaymentVO card = new PaymentVO();
+		card.setPaymentName(cc.getCardHolder());
+		card.setPaymentType(cc.getCardType());
+		card.setExpirationMonth(cc.getExpMonth());
+		card.setExpirationYear(cc.getExpYear());
+		card.setPaymentNumberSuffix(cc.getLastFour());
+		return card;
 	}
 
 	/**
@@ -211,11 +260,11 @@ public class MindBodyUtil {
 	 * @param config
 	 * @return
 	 */
-	public static MindBodyCredentialVO getStaffCredentials(Map<String, String> config) {
+	public static MindBodyCredentialVO buildStaffCredentials(Map<String, String> config) {
 		String staffNm = StringUtil.checkVal(config.get(MindBodyCredentialVO.MINDBODY_STAFF_ID));
 		String staffPass = StringUtil.checkVal(config.get(MindBodyCredentialVO.MINDBODY_STAFF_PASS));
 		int siteId = Integer.parseInt(StringUtil.checkVal(config.get(MindBodyCredentialVO.MINDBODY_SITE_ID)));
-		return getCredentials(staffNm, staffPass, Arrays.asList(siteId));
+		return buildCredentials(staffNm, staffPass, Arrays.asList(siteId));
 	}
 
 	/**
@@ -223,11 +272,11 @@ public class MindBodyUtil {
 	 * @param config
 	 * @return
 	 */
-	public static MindBodyCredentialVO getSourceCredentials(Map<String, String> config) {
+	public static MindBodyCredentialVO buildSourceCredentials(Map<String, String> config) {
 		String sourceName = StringUtil.checkVal(config.get(MindBodyCredentialVO.MINDBODY_SOURCE_NAME));
 		String apiKey = StringUtil.checkVal(config.get(MindBodyCredentialVO.MINDBODY_API_KEY));
 		int siteId = Integer.parseInt(StringUtil.checkVal(config.get(MindBodyCredentialVO.MINDBODY_SITE_ID)));
-		return getCredentials(sourceName, apiKey, Arrays.asList(siteId));
+		return buildCredentials(sourceName, apiKey, Arrays.asList(siteId));
 
 	}
 
@@ -238,7 +287,7 @@ public class MindBodyUtil {
 	 * @param siteIds
 	 * @return
 	 */
-	private static MindBodyCredentialVO getCredentials(String user, String pass, List<Integer> siteIds) {
+	private static MindBodyCredentialVO buildCredentials(String user, String pass, List<Integer> siteIds) {
 		return new MindBodyCredentialVO(user, pass, siteIds);
 	}
 
@@ -248,7 +297,7 @@ public class MindBodyUtil {
 	 * @param card
 	 * @return
 	 */
-	public static ClientCreditCard convertClientCreditCard(GeocodeLocation loc, PaymentVO card) {
+	public static ClientCreditCard convertClientCreditCard(com.siliconmtn.gis.Location loc, PaymentVO card) {
 		ClientCreditCard cc = ClientCreditCard.Factory.newInstance();
 
 		cc.setCardNumber(card.getPaymentNumber());
@@ -370,12 +419,15 @@ public class MindBodyUtil {
 	 */
 	public static MBClassDescriptionVO convertClassDescription(ClassDescription cd) {
 		MBClassDescriptionVO desc = new MBClassDescriptionVO();
-		desc.setImageUrl(cd.getImageURL());
+		desc.setAction(cd.getAction());
+		desc.setActive(cd.getActive());
+		desc.setDescription(cd.getDescription());
 		desc.setId(cd.getID());
-		desc.setName(cd.getName());
-		desc.setPreReq(cd.getPrereq());
-		desc.setNotes(cd.getNotes());
+		desc.setImageUrl(cd.getImageURL());
 		desc.setLastUpdated(cd.getLastUpdated().getTime());
+		desc.setName(cd.getName());
+		desc.setNotes(cd.getNotes());
+		desc.setPreReq(cd.getPrereq());
 		if(cd.isSetProgram()) {
 			desc.setProgram(convertProgram(cd.getProgram()));
 		}
@@ -460,5 +512,162 @@ public class MindBodyUtil {
 		sched.setEndTime(cs.getEndTime().getTime());
 
 		return sched;
+	}
+
+	/**
+	 * @param v
+	 * @return
+	 */
+	public static MBVisitVO convertVisits(Visit v) {
+		MBVisitVO visit = new MBVisitVO();
+
+		visit.setAppointmentId(v.getAppointmentID());
+		visit.setAppointmentStatus(v.getAppointmentStatus());
+		visit.setAppointmentGenderPreference(v.getAppointmentGenderPreference());
+		visit.setClassId(v.getClassID());
+		visit.setClient(convertClientData(v.getClient()));
+		visit.setEndDateTime(v.getEndDateTime().getTime());
+		visit.setId(v.getID());
+		visit.setLastModifiedDateTime(v.getLastModifiedDateTime().getTime());
+		visit.setLateCancelled(v.getLateCancelled());
+		visit.setLocation(convertLocation(v.getLocation()));
+		visit.setMakeUp(v.getMakeUp());
+		visit.setName(v.getName());
+		visit.setService(convertService(v.getService()));
+		visit.setSignedIn(v.getSignedIn());
+		visit.setStaff(convertStaff(v.getStaff()));
+		visit.setStartDateTime(v.getStartDateTime().getTime());
+		visit.setWebSignup(v.getWebSignup());
+		return visit;
+	}
+
+	/**
+	 * @param service
+	 * @return
+	 */
+	public static MBServiceVO convertService(ClientService service) {
+		MBServiceVO s = new MBServiceVO();
+		s.setAction(service.getAction());
+		s.setActiveDate(service.getActiveDate().getTime());
+		s.setCount(service.getCount());
+		s.setCurrent(service.getCurrent());
+		s.setExpirationDate(service.getExpirationDate().getTime());
+		s.setId(service.getID());
+		s.setName(service.getName());
+		s.setPaymentDate(service.getPaymentDate().getTime());
+		s.setProgram(convertProgram(service.getProgram()));
+		s.setRemaining(service.getRemaining());
+		s.setSiteId(service.getSiteID());
+		return s;
+	}
+
+	/**
+	 * @param s
+	 * @return
+	 */
+	public static MBSaleItemVO convertSaleItem(SaleItem s) {
+		MBSaleItemVO item = new MBSaleItemVO();
+		item.setAccountPayment(s.getAccountPayment());
+		item.setAmountPaid(s.getAmountPaid());
+		item.setDescription(s.getDescription());
+		item.setDiscount(s.getDiscount());
+		item.setPrice(s.getPrice());
+		item.setQuantity(s.getQuantity());
+		item.setReturned(s.getReturned());
+		item.setSale(convertSale(s.getSale()));
+		item.setTax(s.getTax());
+		return item;
+	}
+
+	/**
+	 * @param sale
+	 */
+	public static MBSaleVO convertSale(Sale sale) {
+		MBSaleVO s = new MBSaleVO();
+		s.setClientId(sale.getClientID());
+		s.setId(sale.getID());
+		s.setLocation(convertLocation(sale.getLocation()));
+		s.setPayments(convertPayments(sale.getPayments()));
+		s.setPurchasedItems(convertPurchasedItems(sale.getPurchasedItems()));
+		s.setSaleDate(sale.getSaleDate().getTime());
+		s.setSaleDateTime(sale.getSaleDateTime().getTime());
+		s.setSaleTime(sale.getSaleTime().getTime());
+		
+		return s;
+	}
+
+	/**
+	 * @param purchasedItems
+	 * @return
+	 */
+	public static List<MBPurchasedItemVO> convertPurchasedItems(ArrayOfPurchasedItem purchasedItems) {
+		List<MBPurchasedItemVO> purchases = new ArrayList<>();
+		for(PurchasedItem p : purchasedItems.getPurchasedItemArray()) {
+			purchases.add(convertPurchasedItem(p));
+		}
+		return purchases;
+	}
+
+	/**
+	 * @param p
+	 * @return
+	 */
+	public static MBPurchasedItemVO convertPurchasedItem(PurchasedItem p) {
+		MBPurchasedItemVO purchase = new MBPurchasedItemVO();
+		purchase.setId(p.getID());
+		purchase.setService(p.getIsService());
+		return purchase;
+	}
+
+	/**
+	 * @param payments
+	 * @return
+	 */
+	public static List<MBPaymentVO> convertPayments(ArrayOfPayment payments) {
+		List<MBPaymentVO> pmts = new ArrayList<>();
+		for(Payment p : payments.getPaymentArray()) {
+			pmts.add(convertPayment(p));
+		}
+		return pmts;
+	}
+
+	/**
+	 * @param p
+	 * @return
+	 */
+	public static MBPaymentVO convertPayment(Payment p) {
+		MBPaymentVO payment = new MBPaymentVO();
+		payment.setAmount(p.getAmount());
+		payment.setId(p.getID());
+		payment.setLastFour(p.getLastFour());
+		payment.setMethod(p.getMethod());
+		payment.setNotes(p.getNotes());
+		payment.setType(p.getType());
+
+		return payment;
+	}
+
+	/**
+	 * @param r
+	 * @return
+	 */
+	public static MBRelationshipVO convertRelationship(Relationship r) {
+		MBRelationshipVO rel = new MBRelationshipVO();
+		rel.setId(r.getID());
+		rel.setRelationshipName1(r.getRelationshipName1());
+		rel.setRelationshipName2(r.getRelationshipName2());
+		return rel;
+	}
+
+	/**
+	 * @param p
+	 * @return
+	 */
+	public static Object convertPermission(Permission p) {
+		MBPermissionVO perm = new MBPermissionVO();
+		perm.setDisplayName(p.getDisplayName());
+		perm.setName(p.getName());
+		perm.setValue(p.getValue());
+		return perm;
 	}
 }

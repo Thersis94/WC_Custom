@@ -3,7 +3,7 @@ package com.mindbody.action;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 
 /****************************************************************************
  * <b>Title:</b> MindBodySaleAction.java
@@ -17,7 +17,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  * @version 3.3.1
  * @since Nov 20, 2017
  ****************************************************************************/
-public class MindBodySaleAction extends SBActionAdapter {
+public class MindBodySaleAction extends SimpleActionAdapter {
 
 	/**
 	 * 
@@ -34,10 +34,12 @@ public class MindBodySaleAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		
 	}
 
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		
 	}

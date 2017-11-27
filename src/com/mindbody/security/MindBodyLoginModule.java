@@ -1,6 +1,7 @@
 package com.mindbody.security;
 
 import java.sql.Connection;
+import java.util.List;
 import java.util.Map;
 
 import com.mindbody.util.ClientApiUtil;
@@ -90,6 +91,18 @@ public class MindBodyLoginModule extends DBLoginModule {
 		ClientApiUtil util = new ClientApiUtil(site.getSiteConfig());
 
 		util.reloadUserData(mbUser);
+
+		//Load Perkville Data
+		loadPerkville(mbUser);
+	}
+
+	/**
+	 * After making the call to perkville, we need to populate
+	 * the users data with the Perkville Points Response.
+	 * @param mbUser
+	 */
+	private void loadPerkville(MindBodyUserVO mbUser) {
+		
 	}
 
 	/**
@@ -109,11 +122,14 @@ public class MindBodyLoginModule extends DBLoginModule {
 
 		if(resp.isValid()) {
 			//Response is a MindBody Client VO
-			authUser.addAttribute(MindBodyUtil.MINDBODY_CLIENT_ID, ((UserDataVO)resp.getResults().get(0)).getProfileId());
+			List<Object> users = resp.getResults();
+			Object user = users.get(0);
+			authUser.addAttribute(MindBodyUtil.MINDBODY_CLIENT_ID, ((UserDataVO)user).getProfileId());
 			return authUser;
 		} else {
 			//User Data isn't available from MindBody.
-			throw new AuthenticationException("User Could not be verified in the MindBody System");
+			//throw new AuthenticationException("User Could not be verified in the MindBody System");
+			return authUser;
 		}
 	}
 }
