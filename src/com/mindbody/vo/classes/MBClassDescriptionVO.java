@@ -2,6 +2,8 @@ package com.mindbody.vo.classes;
 
 import java.util.Date;
 
+import com.mindbodyonline.clients.api._0_5_1.ActionCode;
+
 /****************************************************************************
  * <b>Title:</b> MBClassDescriptionVO.java
  * <b>Project:</b> WC_Custom
@@ -14,7 +16,9 @@ import java.util.Date;
  * @since Nov 20, 2017
  ****************************************************************************/
 public class MBClassDescriptionVO {
-
+	private ActionCode.Enum action;
+	private boolean active;
+	private String description;
 	private String imageUrl;
 	private int id;
 	private String name;
@@ -27,6 +31,27 @@ public class MBClassDescriptionVO {
 
 	public MBClassDescriptionVO() {
 		//Public Constructor
+	}
+
+	/**
+	 * @return the action
+	 */
+	public ActionCode.Enum getAction() {
+		return action;
+	}
+
+	/**
+	 * @return the active
+	 */
+	public boolean isActive() {
+		return active;
+	}
+
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
 	}
 
 	/**
@@ -90,6 +115,27 @@ public class MBClassDescriptionVO {
 	 */
 	public MBLevelVO getLevel() {
 		return level;
+	}
+
+	/**
+	 * @param action the action to set.
+	 */
+	public void setAction(ActionCode.Enum action) {
+		this.action = action;
+	}
+
+	/**
+	 * @param active the active to set.
+	 */
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+
+	/**
+	 * @param description the description to set.
+	 */
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	/**

@@ -31,6 +31,7 @@ import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateClientsRequest;
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateClientsResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateClientsResult;
 import com.mindbodyonline.clients.api._0_5_1.ClientSendUserNewPasswordRequest;
+import com.mindbodyonline.clients.api._0_5_1.ClientService;
 import com.mindbodyonline.clients.api._0_5_1.Client_x0020_ServiceStub;
 import com.mindbodyonline.clients.api._0_5_1.GetClientAccountBalancesDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetClientAccountBalancesRequest;
@@ -64,6 +65,7 @@ import com.mindbodyonline.clients.api._0_5_1.GetRequiredClientFieldsDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetRequiredClientFieldsRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetRequiredClientFieldsResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetRequiredClientFieldsResult;
+import com.mindbodyonline.clients.api._0_5_1.SaleItem;
 import com.mindbodyonline.clients.api._0_5_1.SendUserNewPasswordDocument;
 import com.mindbodyonline.clients.api._0_5_1.SendUserNewPasswordResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.UpdateClientServicesDocument;
@@ -78,6 +80,7 @@ import com.mindbodyonline.clients.api._0_5_1.ValidateLoginDocument;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginRequest;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginResult;
+import com.mindbodyonline.clients.api._0_5_1.Visit;
 //Base Libs
 import com.siliconmtn.common.http.HttpStatus;
 import com.siliconmtn.util.Convert;
@@ -339,7 +342,10 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults((Object [])r.getVisits().getVisitArray());
+			for(Visit v : r.getVisits().getVisitArray()) {
+				resp.addResults(MindBodyUtil.convertVisits(v));
+			}
+			
 		}
 		return resp;
 	}
@@ -380,7 +386,9 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		GetClientPurchasesResult r = res.getGetClientPurchasesResponse().getGetClientPurchasesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults((Object [])r.getPurchases().getSaleItemArray());
+			for(SaleItem s : r.getPurchases().getSaleItemArray()) {
+				resp.addResults(MindBodyUtil.convertSaleItem(s));
+			}
 		}
 
 		return resp;
@@ -472,7 +480,9 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		GetClientServicesResult r = res.getGetClientServicesResponse().getGetClientServicesResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults((Object [])r.getClientServices().getClientServiceArray());
+			for(ClientService s : r.getClientServices().getClientServiceArray()) {
+				resp.addResults(MindBodyUtil.convertClientService(s));
+			}
 		}
 
 		return resp;

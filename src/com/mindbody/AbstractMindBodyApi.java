@@ -81,12 +81,12 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 	 * @see com.mindbody.MindBodyApiIntfc#getDocument(com.mindbody.vo.MindBodyCallVO)
 	 */
 	@Override
-	public MindBodyResponseVO getDocument(S config) {
+	public MindBodyResponseVO getDocument(S conf) {
 		MindBodyResponseVO resp;
 
-		if(config.isValid()) {
+		if(conf.isValid()) {
 			try {
-				resp = processRequest(config);
+				resp = processRequest(conf);
 			} catch(RemoteException e) {
 				log.error("Problem With Connection.", e);
 				resp = buildErrorResponse(HttpStatus.CD_500_INTERNAL_SERVER_ERROR, "Problem Occurred .");
@@ -95,6 +95,15 @@ public abstract class AbstractMindBodyApi<T extends Stub, S extends MindBodyConf
 			resp = buildErrorResponse(HttpStatus.CD_400_BAD_REQUEST, "Invalid Config Passed.");
 		}
 		return resp;
+	}
+
+	public MindBodyResponseVO getAllDocuments(S conf) {
+
+		MindBodyResponseVO res = getDocument(conf);
+		conf.setPagesize(res.getResultCount() + 1);
+		res = getDocument(conf);
+
+		return res;
 	}
 
 	/**

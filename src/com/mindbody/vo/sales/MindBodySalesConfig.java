@@ -1,5 +1,6 @@
 package com.mindbody.vo.sales;
 
+import com.mindbody.MindBodySaleApi.SaleDocumentType;
 import com.mindbody.vo.MindBodyConfig;
 import com.mindbody.vo.MindBodyCredentialVO;
 
@@ -16,13 +17,19 @@ import com.mindbody.vo.MindBodyCredentialVO;
  ****************************************************************************/
 public class MindBodySalesConfig extends MindBodyConfig {
 
+	private SaleDocumentType type;
+
 	/**
 	 * @param sourceName
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodySalesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
+	public MindBodySalesConfig(SaleDocumentType type, MindBodyCredentialVO source, MindBodyCredentialVO user) {
 		super(source, user);
+		this.type = type;
 	}
 
+	public SaleDocumentType getType() {
+		return type;
+	}
 }

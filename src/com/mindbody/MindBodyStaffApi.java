@@ -12,7 +12,6 @@ import com.mindbody.vo.staff.MindBodyGetStaffImgUrl;
 import com.mindbody.vo.staff.MindBodyGetStaffPermissionsConfig;
 import com.mindbody.vo.staff.MindBodyStaffConfig;
 import com.mindbody.vo.staff.MindBodyValidateStaffLogin;
-
 //Mind Body Staff Api Jar
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateStaffDocument;
 import com.mindbodyonline.clients.api._0_5_1.AddOrUpdateStaffRequest;
@@ -30,19 +29,20 @@ import com.mindbodyonline.clients.api._0_5_1.GetStaffPermissionsResult;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetStaffResult;
+import com.mindbodyonline.clients.api._0_5_1.Permission;
+import com.mindbodyonline.clients.api._0_5_1.Staff;
 import com.mindbodyonline.clients.api._0_5_1.Staff_x0020_ServiceStub;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginRequest;
 import com.mindbodyonline.clients.api._0_5_1.ValidateLoginResult;
 import com.mindbodyonline.clients.api._0_5_1.ValidateStaffLoginDocument;
 import com.mindbodyonline.clients.api._0_5_1.ValidateStaffLoginResponseDocument;
-
 //Base Libs
 import com.siliconmtn.common.http.HttpStatus;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyStaffApi.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> Manage Mind Body Class Data.
+ * <b>Description:</b> Manage Mind Body Staff Data.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -125,7 +125,8 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 		GetStaffResult r = res.getGetStaffResponse().getGetStaffResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults((Object [])r.getStaffMembers().getStaffArray());
+			for(Staff s : r.getStaffMembers().getStaffArray())
+			resp.addResults(MindBodyUtil.convertStaff(s));
 		}
 
 		return resp;
@@ -176,7 +177,9 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 		GetStaffPermissionsResult r = res.getGetStaffPermissionsResponse().getGetStaffPermissionsResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults((Object [])r.getPermissions().getPermissionArray());
+			for(Permission p : r.getPermissions().getPermissionArray()) {
+				resp.addResults(MindBodyUtil.convertPermission(p));
+			}
 		}
 
 		return resp;
@@ -211,7 +214,9 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 		AddOrUpdateStaffResult r = res.getAddOrUpdateStaffResponse().getAddOrUpdateStaffResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults((Object [])r.getStaff().getStaffArray());
+			for(Staff s : r.getStaff().getStaffArray()) {
+				resp.addResults(MindBodyUtil.convertStaff(s));
+			}
 		}
 
 		return resp;
@@ -289,7 +294,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 		ValidateLoginResult r = res.getValidateStaffLoginResponse().getValidateStaffLoginResult();
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
-			resp.addResults(r.getStaff());
+			resp.addResults(MindBodyUtil.convertStaff(r.getStaff()));
 		}
 
 		return resp;

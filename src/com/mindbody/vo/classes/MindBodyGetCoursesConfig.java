@@ -28,8 +28,8 @@ public class MindBodyGetCoursesConfig extends MindBodyClassConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyGetCoursesConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClassDocumentType.GET_COURSES, source, user);
+	public MindBodyGetCoursesConfig(MindBodyCredentialVO source) {
+		super(ClassDocumentType.GET_COURSES, source, null);
 		this.semesterIds = new ArrayList<>();
 		this.courseIds = new ArrayList<>();
 	}

@@ -17,13 +17,7 @@ public class MBClassScheduleVO {
 
 	private int semesterId;
 	private int id;
-	private boolean daySunday;
-	private boolean dayMonday;
-	private boolean dayTuesday;
-	private boolean dayWednesday;
-	private boolean dayThursday;
-	private boolean dayFriday;
-	private boolean daySaturday;
+	private boolean [] days;
 	private Date startTime;
 	private Date endTime;
 	private Date startDate;
@@ -35,6 +29,7 @@ public class MBClassScheduleVO {
 
 	public MBClassScheduleVO() {
 		//Default Constructor
+		days = new boolean[7];
 	}
 
 	/**
@@ -55,49 +50,49 @@ public class MBClassScheduleVO {
 	 * @return the daySunday
 	 */
 	public boolean isDaySunday() {
-		return daySunday;
+		return days[0];
 	}
 
 	/**
 	 * @return the dayMonday
 	 */
 	public boolean isDayMonday() {
-		return dayMonday;
+		return days[1];
 	}
 
 	/**
 	 * @return the dayTuesday
 	 */
 	public boolean isDayTuesday() {
-		return dayTuesday;
+		return days[2];
 	}
 
 	/**
 	 * @return the dayWednesday
 	 */
 	public boolean isDayWednesday() {
-		return dayWednesday;
+		return days[3];
 	}
 
 	/**
 	 * @return the dayThursday
 	 */
 	public boolean isDayThursday() {
-		return dayThursday;
+		return days[4];
 	}
 
 	/**
 	 * @return the dayFriday
 	 */
 	public boolean isDayFriday() {
-		return dayFriday;
+		return days[5];
 	}
 
 	/**
 	 * @return the daySaturday
 	 */
 	public boolean isDaySaturday() {
-		return daySaturday;
+		return days[6];
 	}
 
 	/**
@@ -167,49 +162,49 @@ public class MBClassScheduleVO {
 	 * @param daySunday the daySunday to set.
 	 */
 	public void setDaySunday(boolean daySunday) {
-		this.daySunday = daySunday;
+		days[0] = daySunday;
 	}
 
 	/**
 	 * @param dayMonday the dayMonday to set.
 	 */
 	public void setDayMonday(boolean dayMonday) {
-		this.dayMonday = dayMonday;
+		days[1] = dayMonday;
 	}
 
 	/**
 	 * @param dayTuesday the dayTuesday to set.
 	 */
 	public void setDayTuesday(boolean dayTuesday) {
-		this.dayTuesday = dayTuesday;
+		days[2] = dayTuesday;
 	}
 
 	/**
 	 * @param dayWednesday the dayWednesday to set.
 	 */
 	public void setDayWednesday(boolean dayWednesday) {
-		this.dayWednesday = dayWednesday;
+		days[3] = dayWednesday;
 	}
 
 	/**
 	 * @param dayThursday the dayThursday to set.
 	 */
 	public void setDayThursday(boolean dayThursday) {
-		this.dayThursday = dayThursday;
+		days[4] = dayThursday;
 	}
 
 	/**
 	 * @param dayFriday the dayFriday to set.
 	 */
 	public void setDayFriday(boolean dayFriday) {
-		this.dayFriday = dayFriday;
+		days[5] = dayFriday;
 	}
 
 	/**
 	 * @param daySaturday the daySaturday to set.
 	 */
 	public void setDaySaturday(boolean daySaturday) {
-		this.daySaturday = daySaturday;
+		days[6] = daySaturday;
 	}
 
 	/**
@@ -259,5 +254,13 @@ public class MBClassScheduleVO {
 	 */
 	public void setClassDescription(MBClassDescriptionVO classDescription) {
 		this.classDescription = classDescription;
+	}
+
+	public boolean [] getDays() {
+		return days;
+	}
+
+	public void setDays(boolean [] days) {
+		this.days = days;
 	}
 }

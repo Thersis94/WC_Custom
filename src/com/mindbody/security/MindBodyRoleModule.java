@@ -31,5 +31,4 @@ public class MindBodyRoleModule extends DBRoleModule {
 	public MindBodyRoleModule(Map<String, Object> init) {
 		super(init);
 	}
-
 }

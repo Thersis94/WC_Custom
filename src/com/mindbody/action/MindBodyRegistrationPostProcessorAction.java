@@ -43,7 +43,7 @@ public class MindBodyRegistrationPostProcessorAction extends SBActionAdapter {
 
 		//Get New/Updated user VO.
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-		SiteVO site = (SiteVO)req.getSession().getAttribute(Constants.SITE_DATA);
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		ClientApiUtil util = new ClientApiUtil(site.getSiteConfig());
 
 		//Check for User in MindBody System.

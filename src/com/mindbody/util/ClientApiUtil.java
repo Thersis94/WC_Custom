@@ -4,9 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.mortbay.log.Log;
+
 import com.mindbody.MindBodyClientApi;
 import com.mindbody.security.MindBodyUserVO;
 import com.mindbody.vo.MindBodyResponseVO;
+import com.mindbody.vo.classes.MBClassScheduleVO;
+import com.mindbody.vo.clients.MBClientServiceVO;
+import com.mindbody.vo.clients.MBVisitVO;
 import com.mindbody.vo.clients.MindBodyAddOrUpdateClientsConfig;
 import com.mindbody.vo.clients.MindBodyClientConfig;
 import com.mindbody.vo.clients.MindBodyGetClientAccountBalancesConfig;
@@ -19,6 +24,7 @@ import com.mindbody.vo.clients.MindBodyGetClientsConfig;
 import com.mindbody.vo.clients.MindBodyGetCustomClientFieldsConfig;
 import com.mindbody.vo.clients.MindBodyGetRequiredClientFieldsConfig;
 import com.mindbody.vo.clients.MindBodyValidateLoginConfig;
+import com.mindbody.vo.sales.MBSaleItemVO;
 import com.siliconmtn.commerce.payment.PaymentVO;
 import com.siliconmtn.security.UserDataVO;
 
@@ -46,7 +52,7 @@ public class ClientApiUtil {
 	}
 
 	public MindBodyResponseVO addOrUpdateClients(UserDataVO user, PaymentVO card) {
-		MindBodyAddOrUpdateClientsConfig callConfig = new MindBodyAddOrUpdateClientsConfig(MindBodyUtil.getSourceCredentials(config), MindBodyUtil.getStaffCredentials(config));
+		MindBodyAddOrUpdateClientsConfig callConfig = new MindBodyAddOrUpdateClientsConfig(MindBodyUtil.buildSourceCredentials(config), MindBodyUtil.buildStaffCredentials(config));
 		callConfig.addClient(user, card);
 		return api.getDocument(callConfig);
 	}
@@ -57,7 +63,7 @@ public class ClientApiUtil {
 	 * @return
 	 */
 	public MBUserStatus getClientStatus(UserDataVO user) {
-		MBUserStatus stat = MBUserStatus.NOT_PRESENT;
+		MBUserStatus stat = null;
 
 		MindBodyResponseVO resp = validateClient(user);
 
@@ -65,18 +71,27 @@ public class ClientApiUtil {
 		if(resp.isValid() && !resp.getResults().isEmpty()) {
 			stat = MBUserStatus.VALID;
 		} else {
-			MindBodyResponseVO r = getClient(user.getEmailAddress());
+			stat = searchUser(user);
+		}
+		return stat;
+	}
 
-			/*
-			 * If we found a user but couldn't validate then our credentials
-			 * are invalid.
-			 */
-			if(r.isValid()) {
-				for(Object o : r.getResults()) {
-					if(((UserDataVO)o).getEmailAddress().equalsIgnoreCase(user.getEmailAddress())) {
-						stat = MBUserStatus.INVALID_CREDENTIALS;
-						break;
-					}
+	/**
+	 * @param user
+	 * @return
+	 */
+	private MBUserStatus searchUser(UserDataVO user) {
+		MindBodyResponseVO r = getClient(user.getEmailAddress());
+		MBUserStatus stat = MBUserStatus.NOT_PRESENT;
+		/*
+		 * If we found a user but couldn't validate then our credentials
+		 * are invalid.
+		 */
+		if(r.isValid() && r.getResultCount() > 0) {
+			for(Object o : r.getResults()) {
+				if(((UserDataVO)o).getEmailAddress().equalsIgnoreCase(user.getEmailAddress())) {
+					stat = MBUserStatus.INVALID_CREDENTIALS;
+					break;
 				}
 			}
 		}
@@ -89,7 +104,7 @@ public class ClientApiUtil {
 	 * @return
 	 */
 	public MindBodyResponseVO getClient(String searchText) {
-		MindBodyGetClientsConfig clients = new MindBodyGetClientsConfig(MindBodyUtil.getSourceCredentials(config), MindBodyUtil.getStaffCredentials(config));
+		MindBodyGetClientsConfig clients = new MindBodyGetClientsConfig(MindBodyUtil.buildSourceCredentials(config), MindBodyUtil.buildStaffCredentials(config), true);
 		clients.setSearchText(searchText);
 		return api.getDocument(clients);
 	}
@@ -100,55 +115,55 @@ public class ClientApiUtil {
 	 * @return
 	 */
 	public MindBodyResponseVO validateClient(UserDataVO user) {
-		MindBodyValidateLoginConfig login = new MindBodyValidateLoginConfig(MindBodyUtil.getSourceCredentials(config));
+		MindBodyValidateLoginConfig login = new MindBodyValidateLoginConfig(MindBodyUtil.buildSourceCredentials(config));
 		login.setUserName(user.getEmailAddress());
 		login.setPassword(user.getProfileId());
 		return api.getDocument(login);
 	}
 
 	public MindBodyResponseVO getAccountBalances(String clientId) {
-		MindBodyGetClientAccountBalancesConfig conf = new MindBodyGetClientAccountBalancesConfig(MindBodyUtil.getSourceCredentials(config), MindBodyUtil.getStaffCredentials(config));
+		MindBodyGetClientAccountBalancesConfig conf = new MindBodyGetClientAccountBalancesConfig(MindBodyUtil.buildSourceCredentials(config), MindBodyUtil.buildStaffCredentials(config));
 		conf.addClientId(clientId);
 		return api.getDocument(conf);
 	}
 
 	public MindBodyResponseVO getClientPurchases(String clientId) {
-		MindBodyGetClientPurchasesConfig conf = new MindBodyGetClientPurchasesConfig(MindBodyUtil.getSourceCredentials(config));
+		MindBodyGetClientPurchasesConfig conf = new MindBodyGetClientPurchasesConfig(MindBodyUtil.buildSourceCredentials(config));
 		conf.addClientId(clientId);
 		return api.getDocument(conf);
 	}
 
 	public MindBodyResponseVO getClientSchedule(String clientId) {
-		MindBodyGetClientScheduleConfig conf = new MindBodyGetClientScheduleConfig(MindBodyUtil.getSourceCredentials(config));
+		MindBodyGetClientScheduleConfig conf = new MindBodyGetClientScheduleConfig(MindBodyUtil.buildSourceCredentials(config));
 		conf.addClientId(clientId);
 		return api.getDocument(conf);
 	}
 
 	public MindBodyResponseVO getClientServices(String clientId) {
-		MindBodyGetClientServicesConfig conf = new MindBodyGetClientServicesConfig(MindBodyUtil.getSourceCredentials(config));
+		MindBodyGetClientServicesConfig conf = new MindBodyGetClientServicesConfig(MindBodyUtil.buildSourceCredentials(config));
 		conf.addClientId(clientId);
 		return api.getDocument(conf);
 	}
 
 	public MindBodyResponseVO getClientVisits(String clientId) {
-		MindBodyGetClientVisitsConfig conf = new MindBodyGetClientVisitsConfig(MindBodyUtil.getSourceCredentials(config));
+		MindBodyGetClientVisitsConfig conf = new MindBodyGetClientVisitsConfig(MindBodyUtil.buildSourceCredentials(config));
 		conf.addClientId(clientId);
 		return api.getDocument(conf);
 	}
 
 	public List<String> getRequiredClientFields() {
-		MindBodyGetRequiredClientFieldsConfig conf = new MindBodyGetRequiredClientFieldsConfig(MindBodyUtil.getSourceCredentials(config));
+		MindBodyGetRequiredClientFieldsConfig conf = new MindBodyGetRequiredClientFieldsConfig(MindBodyUtil.buildSourceCredentials(config));
 		return listResults(conf);
 	}
 
 	public List<String> getCustomClientFields() {
-		MindBodyGetCustomClientFieldsConfig conf = new MindBodyGetCustomClientFieldsConfig(MindBodyUtil.getSourceCredentials(config));
+		MindBodyGetCustomClientFieldsConfig conf = new MindBodyGetCustomClientFieldsConfig(MindBodyUtil.buildSourceCredentials(config));
 
 		return listResults(conf);
 	}
 
 	public List<String> getClientReferralTypes() {
-		MindBodyGetClientReferralTypesConfig conf = new MindBodyGetClientReferralTypesConfig(MindBodyUtil.getSourceCredentials(config));
+		MindBodyGetClientReferralTypesConfig conf = new MindBodyGetClientReferralTypesConfig(MindBodyUtil.buildSourceCredentials(config));
 		return listResults(conf);
 	}
 
@@ -165,29 +180,32 @@ public class ClientApiUtil {
 		return fields;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void reloadUserData(MindBodyUserVO user) {
 
 		//Load Visits
 		MindBodyResponseVO resp = getClientVisits(user.getProfileId());
 		if(resp.isValid()) {
-			user.setVisits(resp.getResults());
+			user.setVisits((List<MBVisitVO>)(List<?>)resp.getResults());
 		}
 
 		//Load Purchases
 		resp = getClientPurchases(user.getProfileId());
 		if(resp.isValid()) {
-			user.setPurchases(resp.getResults());
+			user.setPurchases((List<MBSaleItemVO>)(List<?>)resp.getResults());
 		}
 		//Load Services
 		resp = getClientServices(user.getProfileId());
 		if(resp.isValid()) {
-			user.setServices(resp.getResults());
+			user.setServices((List<MBClientServiceVO>)(List<?>)resp.getResults());
 		}
 
 		//Load Schedule
 		resp = getClientSchedule(user.getProfileId());
 		if(resp.isValid()) {
-			user.setSchedule(resp.getResults());
+			user.setSchedule((List<MBClassScheduleVO>)(List<?>)resp.getResults());
 		}
+
+		Log.debug("MindBody UserData Loaded.");
 	}
 }
