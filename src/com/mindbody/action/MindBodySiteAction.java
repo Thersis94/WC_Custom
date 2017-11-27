@@ -44,26 +44,11 @@ public class MindBodySiteAction extends SimpleActionAdapter {
 			case GET_LOCATIONS:
 				super.setModuleData(getLocations(site.getSiteConfig()));
 				break;
-			case GET_PROGRAMS:
-				super.setModuleData(getPrograms(site.getSiteConfig()));
-				break;
-			case GET_SESSION_TYPES:
-				break;
 			default:
 				log.warn("Endpoint not supported for give CallType: " + callType.toString());
 				break;
 
 		}
-	}
-
-	/**
-	 * @param siteConfig
-	 * @return
-	 */
-	private Object getPrograms(Map<String, String> siteConfig) {
-		MindBodyGetProgramsConfig conf = new MindBodyGetProgramsConfig(MindBodyUtil.buildSourceCredentials(siteConfig));
-		conf.setOnlineOnly(true);
-		return new MindBodySiteApi().getAllDocuments(conf);
 	}
 
 	/**
