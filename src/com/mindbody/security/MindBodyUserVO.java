@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.util.List;
 
 import com.mindbody.vo.classes.MBClassScheduleVO;
-import com.mindbody.vo.clients.MBServiceVO;
+import com.mindbody.vo.clients.MBClientServiceVO;
 import com.mindbody.vo.clients.MBVisitVO;
 import com.mindbody.vo.sales.MBSaleItemVO;
 import com.siliconmtn.action.ActionRequest;
@@ -33,7 +33,7 @@ public class MindBodyUserVO extends UserDataVO implements HumanNameIntfc {
 
 	private List<MBVisitVO> visits;
 	private List<MBClassScheduleVO> schedule;
-	private List<MBServiceVO> services;
+	private List<MBClientServiceVO> services;
 	private List<MBSaleItemVO> purchases;
 	private int perkvillePoints;
 
@@ -79,7 +79,7 @@ public class MindBodyUserVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return the services
 	 */
-	public List<MBServiceVO> getServices() {
+	public List<MBClientServiceVO> getServices() {
 		return services;
 	}
 	/**
@@ -123,7 +123,7 @@ public class MindBodyUserVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @param services the services to set.
 	 */
-	public void setServices(List<MBServiceVO> services) {
+	public void setServices(List<MBClientServiceVO> services) {
 		this.services = services;
 	}
 	/**

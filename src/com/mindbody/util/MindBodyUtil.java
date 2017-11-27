@@ -15,23 +15,27 @@ import com.mindbody.vo.classes.MBLocationVO;
 import com.mindbody.vo.classes.MBProgramVO;
 import com.mindbody.vo.classes.MBSessionTypeVO;
 import com.mindbody.vo.classes.MBStaffVO;
-import com.mindbody.vo.clients.MBServiceVO;
+import com.mindbody.vo.clients.MBClientServiceVO;
 import com.mindbody.vo.clients.MBVisitVO;
 import com.mindbody.vo.sales.MBPaymentVO;
 import com.mindbody.vo.sales.MBPurchasedItemVO;
 import com.mindbody.vo.sales.MBSaleItemVO;
 import com.mindbody.vo.sales.MBSaleVO;
+import com.mindbody.vo.sales.MBServiceVO;
 import com.mindbody.vo.site.MBRelationshipVO;
 import com.mindbody.vo.staff.MBPermissionVO;
+import com.mindbodyonline.clients.api._0_5_1.ArrayOfCartItem;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfClient;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfClientService;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfInt;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfLong;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfPayment;
+import com.mindbodyonline.clients.api._0_5_1.ArrayOfPaymentInfo;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfPurchasedItem;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfStaff;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfStaffFilter;
 import com.mindbodyonline.clients.api._0_5_1.ArrayOfString;
+import com.mindbodyonline.clients.api._0_5_1.CartItem;
 import com.mindbodyonline.clients.api._0_5_1.Class;
 import com.mindbodyonline.clients.api._0_5_1.ClassDescription;
 import com.mindbodyonline.clients.api._0_5_1.ClassSchedule;
@@ -41,16 +45,20 @@ import com.mindbodyonline.clients.api._0_5_1.ClientService;
 import com.mindbodyonline.clients.api._0_5_1.Level;
 import com.mindbodyonline.clients.api._0_5_1.Location;
 import com.mindbodyonline.clients.api._0_5_1.Payment;
+import com.mindbodyonline.clients.api._0_5_1.PaymentInfo;
 import com.mindbodyonline.clients.api._0_5_1.Permission;
 import com.mindbodyonline.clients.api._0_5_1.Program;
 import com.mindbodyonline.clients.api._0_5_1.PurchasedItem;
 import com.mindbodyonline.clients.api._0_5_1.Relationship;
 import com.mindbodyonline.clients.api._0_5_1.Sale;
 import com.mindbodyonline.clients.api._0_5_1.SaleItem;
+import com.mindbodyonline.clients.api._0_5_1.Service;
 import com.mindbodyonline.clients.api._0_5_1.SessionType;
+import com.mindbodyonline.clients.api._0_5_1.ShoppingCart;
 import com.mindbodyonline.clients.api._0_5_1.Staff;
 import com.mindbodyonline.clients.api._0_5_1.StaffFilter;
 import com.mindbodyonline.clients.api._0_5_1.Visit;
+import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.commerce.payment.PaymentVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -199,6 +207,49 @@ public class MindBodyUtil {
 		}
 
 		return serviceArr;
+	}
+
+	/**
+	 * @param cartItems
+	 * @return
+	 */
+	public static ArrayOfCartItem buildArrayOfCartItem(List<ShoppingCartItemVO> cartItems) {
+		ArrayOfCartItem cis = ArrayOfCartItem.Factory.newInstance();
+		for(ShoppingCartItemVO item : cartItems) {
+			cis.addNewCartItem();
+			cis.setCartItemArray(0, convertCartItem(item));
+		}
+		return cis;
+	}
+
+	/**
+	 * @param item
+	 * @return
+	 */
+	private static CartItem convertCartItem(ShoppingCartItemVO item) {
+		//TODO - Need To Convert our ShoppingCartItem to MindBody CartItem
+		return null;
+	}
+
+	/**
+	 * @param payments
+	 * @return
+	 */
+	public static ArrayOfPaymentInfo buildArrayOfPayments(List<PaymentVO> payments) {
+		ArrayOfPaymentInfo aopi = ArrayOfPaymentInfo.Factory.newInstance();
+		for(PaymentVO pmt : payments) {
+			aopi.addNewPaymentInfo();
+			aopi.setPaymentInfoArray(0, buildPaymentInfo(pmt));
+		}
+		return aopi;
+	}
+
+	/**
+	 * @param pmt
+	 * @return
+	 */
+	private static PaymentInfo buildPaymentInfo(PaymentVO pmt) {
+		return null;
 	}
 
 	/**
@@ -533,7 +584,7 @@ public class MindBodyUtil {
 		visit.setLocation(convertLocation(v.getLocation()));
 		visit.setMakeUp(v.getMakeUp());
 		visit.setName(v.getName());
-		visit.setService(convertService(v.getService()));
+		visit.setService(convertClientService(v.getService()));
 		visit.setSignedIn(v.getSignedIn());
 		visit.setStaff(convertStaff(v.getStaff()));
 		visit.setStartDateTime(v.getStartDateTime().getTime());
@@ -545,8 +596,8 @@ public class MindBodyUtil {
 	 * @param service
 	 * @return
 	 */
-	public static MBServiceVO convertService(ClientService service) {
-		MBServiceVO s = new MBServiceVO();
+	public static MBClientServiceVO convertClientService(ClientService service) {
+		MBClientServiceVO s = new MBClientServiceVO();
 		s.setAction(service.getAction());
 		s.setActiveDate(service.getActiveDate().getTime());
 		s.setCount(service.getCount());
@@ -669,5 +720,47 @@ public class MindBodyUtil {
 		perm.setName(p.getName());
 		perm.setValue(p.getValue());
 		return perm;
+	}
+
+	/**
+	 * @param shoppingCart
+	 * @return
+	 */
+	public static com.siliconmtn.commerce.ShoppingCartVO convertShoppingCart(ShoppingCart sc) {
+		com.siliconmtn.commerce.ShoppingCartVO cart = new com.siliconmtn.commerce.ShoppingCartVO();
+		if(sc.isSetCartItems()) {
+			for(CartItem ci : sc.getCartItems().getCartItemArray()) {
+				cart.add(convertShoppingCartItem(ci));
+			}
+		}
+
+		return cart;
+	}
+
+	/**
+	 * @param ci
+	 * @return
+	 */
+	public static ShoppingCartItemVO convertShoppingCartItem(CartItem ci) {
+		return null;
+	}
+
+	/**
+	 * @param s
+	 * @return
+	 */
+	public static MBServiceVO convertService(Service s) {
+		MBServiceVO service = new MBServiceVO();
+		service.setAction(s.getAction());
+		service.setCount(s.getCount());
+		service.setId(s.getID());
+		service.setName(s.getName());
+		service.setOnlinePrice(s.getOnlinePrice());
+		service.setPrice(s.getPrice());
+		service.setProductId(s.getProductID());
+		service.setProgramId(s.getProgramID());
+		service.setTaxIncluded(s.getTaxIncluded());
+		service.setTaxRate(s.getTaxRate());
+		return service;
 	}
 }

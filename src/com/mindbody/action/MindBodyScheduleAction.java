@@ -28,6 +28,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class MindBodyScheduleAction extends SimpleActionAdapter {
 
+	public static final String MB_CLASS_SCHEDULE_ID = "mbClassScheduleId";
+
 	public MindBodyScheduleAction() {
 		super();
 	}

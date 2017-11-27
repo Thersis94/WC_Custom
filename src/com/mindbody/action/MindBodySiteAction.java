@@ -7,7 +7,6 @@ import com.mindbody.MindBodySiteApi.SiteDocumentType;
 import com.mindbody.util.MindBodyUtil;
 import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.site.MindBodyGetLocationsConfig;
-import com.mindbody.vo.site.MindBodyGetProgramsConfig;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;

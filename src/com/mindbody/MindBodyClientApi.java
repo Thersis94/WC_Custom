@@ -481,7 +481,7 @@ public class MindBodyClientApi extends AbstractMindBodyApi<Client_x0020_ServiceS
 		resp.populateResponseFields(r);
 		if(resp.isValid()) {
 			for(ClientService s : r.getClientServices().getClientServiceArray()) {
-				resp.addResults(MindBodyUtil.convertService(s));
+				resp.addResults(MindBodyUtil.convertClientService(s));
 			}
 		}
 

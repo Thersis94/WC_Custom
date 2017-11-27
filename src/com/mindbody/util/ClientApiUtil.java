@@ -10,7 +10,7 @@ import com.mindbody.MindBodyClientApi;
 import com.mindbody.security.MindBodyUserVO;
 import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.classes.MBClassScheduleVO;
-import com.mindbody.vo.clients.MBServiceVO;
+import com.mindbody.vo.clients.MBClientServiceVO;
 import com.mindbody.vo.clients.MBVisitVO;
 import com.mindbody.vo.clients.MindBodyAddOrUpdateClientsConfig;
 import com.mindbody.vo.clients.MindBodyClientConfig;
@@ -197,7 +197,7 @@ public class ClientApiUtil {
 		//Load Services
 		resp = getClientServices(user.getProfileId());
 		if(resp.isValid()) {
-			user.setServices((List<MBServiceVO>)(List<?>)resp.getResults());
+			user.setServices((List<MBClientServiceVO>)(List<?>)resp.getResults());
 		}
 
 		//Load Schedule

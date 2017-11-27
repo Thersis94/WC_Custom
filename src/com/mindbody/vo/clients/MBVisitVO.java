@@ -31,7 +31,7 @@ public class MBVisitVO {
 	private MBLocationVO location;
 	private boolean makeUp;
 	private String name;
-	private MBServiceVO service;
+	private MBClientServiceVO service;
 	private boolean signedIn;
 	private MBStaffVO staff;
 	private Date startDateTime;
@@ -116,7 +116,7 @@ public class MBVisitVO {
 	/**
 	 * @return the service
 	 */
-	public MBServiceVO getService() {
+	public MBClientServiceVO getService() {
 		return service;
 	}
 	/**
@@ -218,7 +218,7 @@ public class MBVisitVO {
 	/**
 	 * @param service the service to set.
 	 */
-	public void setService(MBServiceVO service) {
+	public void setService(MBClientServiceVO service) {
 		this.service = service;
 	}
 	/**

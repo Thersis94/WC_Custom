@@ -16,7 +16,7 @@ import com.mindbodyonline.clients.api._0_5_1.ActionCode;
  * @version 3.3.1
  * @since Nov 25, 2017
  ****************************************************************************/
-public class MBServiceVO {
+public class MBClientServiceVO {
 
 	private ActionCode.Enum action;
 	private Date activeDate;
@@ -30,7 +30,7 @@ public class MBServiceVO {
 	private int remaining;
 	private int siteId;
 
-	public MBServiceVO() {
+	public MBClientServiceVO() {
 		//Default constructor
 	}
 
