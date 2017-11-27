@@ -66,6 +66,9 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		EMAIL_CONSENT_ID("c0a80237feea61107a662ea060005c35"),
 		MODAL_OPENED_ID("c0a80237fee851245d6f6f073c07573e"),
 		SURGEON_NM("c0a802413aea94a8e9b70d61e07832fc"),
+		HOSPITAL_NM("1e365f3fdb597794c0a8024b81e62b60"),
+		INCISION_ID("578d9b64dbb05ce3c0a802552fc1a8df"),
+		KNEE_ID("c79b06eadba570b3c0a80255f51d6312"),
 		AGREED_CONSENT_ID(""),
 
 		//the ID of the form itself (containing all these fields)
