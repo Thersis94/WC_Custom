@@ -102,7 +102,7 @@ public class MindBodyLoginModule extends DBLoginModule {
 	 * @param mbUser
 	 */
 	private void loadPerkville(MindBodyUserVO mbUser) {
-		
+		//This should tie into the Perkville API.
 	}
 
 	/**
@@ -127,9 +127,8 @@ public class MindBodyLoginModule extends DBLoginModule {
 			authUser.addAttribute(MindBodyUtil.MINDBODY_CLIENT_ID, ((UserDataVO)user).getProfileId());
 			return authUser;
 		} else {
-			//User Data isn't available from MindBody.
-			//throw new AuthenticationException("User Could not be verified in the MindBody System");
-			return authUser;
+			//TODO - What should happen if we can't get User Data?
+			throw new AuthenticationException("User Could not be verified in the MindBody System");
 		}
 	}
 }
