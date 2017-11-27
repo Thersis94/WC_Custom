@@ -73,7 +73,8 @@ public class UpdatesAction extends ManagementAction {
 	private static final String COOK_UPD_START_DT = "updateStartDt";
 	private static final String COOK_UPD_END_DT = "updateEndDt";
 
-	private static final String HTML_REGEX = "(<\\/?(([uo]l)|(b)|(li)|(s((trong)|(ub))?)|(d((etails)|(iv))?)|(u)|(img)|(hr)|(font))(?!up)[^<>]*\\/?>)|(<p>&nbsp;<\\/p>)";
+	private static final String HTML_REGEX = "(<\\/?(([uo]l)|(b)|(li)|(s((trong)|(ub))?)|(d((etails)|(iv))?)|(u)|(img)|(hr)|(font))(?!up)[^<>]*\\/?>)|(<p>&nbsp;<\\/p>)|((style|align|bgcolor|border|color)[ ]?=[ ]?['\"][^'\"]*['\"])";
+	private static final String P_REGEX = "<p[^<>]*>";
 
 	/**
 	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
@@ -114,35 +115,6 @@ public class UpdatesAction extends ManagementAction {
 		}
 	}
 
-	// Enum for handling the ordering desired by the bootstrap table
-	private enum Order {
-		TITLE_TXT("title"), 
-		TYPE_CD("moduleType"), 
-		PUBLISH_DT("publishDate"),
-		STATUS_CD("status_cd_s");
-
-		String solrField;
-
-		private Order(String solrField) {
-			this.solrField = solrField;
-		}
-
-		public String getSolrField() {
-			return solrField;
-		}
-
-		public static Order getOrderFromString(String order) {
-			if (order == null) return Order.PUBLISH_DT;
-			switch (order) {
-				case "titleTxt" : return Order.TITLE_TXT;
-				case "statusNm" : return Order.STATUS_CD;
-				case "typeNm" : return Order.TYPE_CD;
-				case "publishDt" :
-				default : return Order.PUBLISH_DT;
-			}
-		}
-	}
-
 	public UpdatesAction() {
 		super();
 	}
@@ -167,18 +139,23 @@ public class UpdatesAction extends ManagementAction {
 		List<Object> data;
 		if(req.hasParameter("loadHistory")) {
 			data = getHistory(req.getParameter("historyId"));
+		} else if (req.hasParameter("updateId")) {
+			// If we have an id just load directly from the database.
+			List<Object> params = new ArrayList<>();
+			params.add(req.getParameter("updateId"));
+			data = loadDetails(params);
 		} else {
-			Order order = Order.getOrderFromString(req.getParameter("sort"));
-			String dir = StringUtil.checkVal(req.getParameter("order"), "desc");
-
 			//Get the Filtered Updates according to Request.
-			getFilteredUpdates(req, order, dir);
+			getFilteredUpdates(req);
 
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
 			count = (int) resp.getTotalResponses();
 			if (count > 0) {
-				data = loadDetails(resp.getResultDocuments(), order, dir);
+
+				List<Object> params = getIdsFromDocs(resp);
+				
+				data = loadDetails(params);
 				log.debug("DB Count " + data.size());
 			} else {
 				data = Collections.emptyList();
@@ -198,25 +175,37 @@ public class UpdatesAction extends ManagementAction {
 
 
 	/**
+	 * Get all the document ids from the solr documents and remove the
+	 * custom identifier if it is present.
+	 * @param resp
+	 * @return
+	 */
+	private List<Object> getIdsFromDocs(SolrResponseVO resp) {
+		List<Object> params = new ArrayList<>();
+
+		for (SolrDocument doc : resp.getResultDocuments()) {
+			String id = (String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+
+			// Replace the biomed update prefix if it exists.
+			if (id.contains(UpdateVO.DOCUMENT_ID_PREFIX))
+				id = id.replace(UpdateVO.DOCUMENT_ID_PREFIX, "");
+			
+			params.add(id);
+		}
+		return params;
+	}
+
+	/**
 	 * Load the most up to date details for each update
 	 * @param docs
 	 * @return
 	 */
-	private List<Object> loadDetails(List<SolrDocument> docs, Order order, String dir) {
-		String sql = formatDetailQuery(docs.size(), order, dir);
+	private List<Object> loadDetails(List<Object> ids) {
+		String sql = formatDetailQuery(ids.size());
 		log.debug(sql);
-		List<Object> params = new ArrayList<>();
-
-		for (SolrDocument doc : docs) {
-			String id = (String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-			if (id.contains("_")) {
-				id = id.substring(id.lastIndexOf('_')+1);
-			}
-			params.add(id);
-		}
 
 		DBProcessor db = new DBProcessor(dbConn);
-		return db.executeSelect(sql, params, new UpdateVO());
+		return db.executeSelect(sql, ids, new UpdateVO());
 	}
 
 
@@ -228,14 +217,14 @@ public class UpdatesAction extends ManagementAction {
 	 * @param order
 	 * @return
 	 */
-	private String formatDetailQuery(int size, Order order, String dir) {
+	private String formatDetailQuery(int size) {
 		StringBuilder sql = new StringBuilder(200);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
 		sql.append("LEFT JOIN ").append(schema).append("BIOMEDGPS_UPDATE_SECTION xr ");
 		sql.append("on up.UPDATE_ID = xr.UPDATE_ID ");
 		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
-		sql.append("order by ").append(order).append(" ").append(dir);
+		sql.append("order by publish_dt desc, order_no asc, up.create_dt desc ");
 
 		return sql.toString();
 	}
@@ -247,7 +236,7 @@ public class UpdatesAction extends ManagementAction {
 	 * @param dir 
 	 * @param order
 	 */
-	private void setSolrParams(ActionRequest req, Order order, String dir) {
+	private void setSolrParams(ActionRequest req) {
 		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
 		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
 		req.setParameter("rpp", StringUtil.checkVal(rpp));
@@ -281,8 +270,6 @@ public class UpdatesAction extends ManagementAction {
 		}
 
 		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
-		req.setParameter("fieldSort", order.getSolrField());
-		req.setParameter("sortDirection", dir);
 		req.setParameter("allowCustom", "true");
 		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
 	}
@@ -322,9 +309,9 @@ public class UpdatesAction extends ManagementAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	private void getFilteredUpdates(ActionRequest req, Order order, String dir) throws ActionException {
+	private void getFilteredUpdates(ActionRequest req) throws ActionException {
 		//parse the requet object
-		setSolrParams(req, order, dir);
+		setSolrParams(req);
 		
 		// Pass along the proper information for a search to be done.
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
@@ -586,7 +573,7 @@ public class UpdatesAction extends ManagementAction {
 
 				db.save(u);
 
-				fixPkids(u, db.getGeneratedPKId());
+				fixPkids(u);
 
 				//Save Update Sections.
 				saveSections(u);
@@ -610,21 +597,19 @@ public class UpdatesAction extends ManagementAction {
 	private void filterText(UpdateVO u) {
 		if (StringUtil.isEmpty(u.getMessageTxt())) return;
 
-		u.setMessageTxt(u.getMessageTxt().replaceAll(HTML_REGEX, ""));
+		// Strip out undesired html tags and attributes and ensure that all <p> tags
+		// contain no extra characters as it can cause issues with the updates emails.
+		u.setMessageTxt(u.getMessageTxt().replaceAll(HTML_REGEX, "").replaceAll(P_REGEX, "<p>"));
 	}
 
 	/**
 	 * Manages updating given UpdatesVO with generated PKID and updates sections
 	 * to match.
 	 * @param u
-	 * @param generatedPKId
 	 */
-	protected void fixPkids(UpdateVO u, String generatedPKId) {
+	protected void fixPkids(UpdateVO u) {
 		//Set the UpdateId on UpdatesXRVOs
-		if (StringUtil.isEmpty(u.getUpdateId())) {
-			//Ensure proper UpdateId and Publish Dt are set.
-			u.setUpdateId(generatedPKId);
-
+		if (!StringUtil.isEmpty(u.getUpdateId())) {
 			for (UpdateXRVO uxr : u.getUpdateSections())
 				uxr.setUpdateId(u.getUpdateId());
 		}
