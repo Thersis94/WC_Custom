@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.mortbay.log.Log;
-
 import com.mindbody.MindBodyClientApi;
 import com.mindbody.security.MindBodyUserVO;
 import com.mindbody.vo.MindBodyResponseVO;
@@ -205,7 +203,5 @@ public class ClientApiUtil {
 		if(resp.isValid()) {
 			user.setSchedule((List<MBClassScheduleVO>)(List<?>)resp.getResults());
 		}
-
-		Log.debug("MindBody UserData Loaded.");
 	}
 }

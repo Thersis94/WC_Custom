@@ -169,8 +169,8 @@ public class MindBodyUtil {
 		client.setPostalCode(user.getZipCode());
 		client.setCountry(user.getCountryCode());
 		client.setHomePhone(user.getMainPhone());
-		client.setMobilePhone(StringUtil.checkVal(user.getMobilePhone(), user.getPhoneNumbers().get(0).getPhoneNumber()));
-		client.setWorkPhone(StringUtil.checkVal(user.getWorkPhone(), user.getPhoneNumbers().get(0).getPhoneNumber()));
+		client.setMobilePhone(user.getMobilePhone());
+		client.setWorkPhone(user.getWorkPhone());
 		client.setBirthDate(Convert.toCalendar(user.getBirthDate()));
 		client.setUsername(user.getEmailAddress());
 		client.setPassword(user.getProfileId());
