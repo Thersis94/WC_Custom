@@ -32,16 +32,16 @@ public class MindBodyGetEnrollmentsConfig extends MindBodyClassConfig {
 	 * @param sourceKey
 	 * @param siteIds
 	 */
-	public MindBodyGetEnrollmentsConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
-		super(ClassDocumentType.GET_ENROLLMEMTS, source, user);
+	public MindBodyGetEnrollmentsConfig(MindBodyCredentialVO source) {
+		super(ClassDocumentType.GET_ENROLLMEMTS, source, null);
 		this.classScheduleIds = new ArrayList<>();
 		this.sessionTypeIds = new ArrayList<>();
 		this.semesterIds = new ArrayList<>();
 		this.courseIds = new ArrayList<>();
 	}
 
-	public MindBodyGetEnrollmentsConfig(MindBodyCredentialVO source, MindBodyCredentialVO user, boolean includeClasses) {
-		this(source, user);
+	public MindBodyGetEnrollmentsConfig(MindBodyCredentialVO source, boolean includeClasses) {
+		this(source);
 		if(includeClasses) {
 			super.addField(INCLUDE_CLASSES_FIELD);
 		}

@@ -157,7 +157,6 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetClassesResponseDocument res = client.getClasses(doc);
 		GetClassesResult r = res.getGetClassesResponse().getGetClassesResult();
 		resp.populateResponseFields(r);
-		log.debug(r);
 		if(resp.isValid()) {
 			for(Object o : r.getClasses().getClass1Array()) {
 				resp.addResults(MindBodyUtil.convertClassData((Class) o));
@@ -260,6 +259,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetClassDescriptionsResponseDocument res = client.getClassDescriptions(doc);
 		GetClassDescriptionsResult r = res.getGetClassDescriptionsResponse().getGetClassDescriptionsResult();
 		resp.populateResponseFields(r);
+
 		if(resp.isValid()) {
 			for(Object o : r.getClassDescriptions().getClassDescriptionArray()) {
 				resp.addResults(MindBodyUtil.convertClassDescription((ClassDescription) o));
@@ -328,6 +328,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		AddClientsToClassesResponseDocument res = client.addClientsToClasses(doc);
 		AddClientsToClassesResult r = res.getAddClientsToClassesResponse().getAddClientsToClassesResult();
 		resp.populateResponseFields(r);
+
 		if(resp.isValid()) {
 			resp.addResults((Object [])r.getClasses().getClass1Array());
 		}
@@ -388,6 +389,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetClassSchedulesResponseDocument res = client.getClassSchedules(doc);
 		GetClassSchedulesResult r = res.getGetClassSchedulesResponse().getGetClassSchedulesResult();
 		resp.populateResponseFields(r);
+
 		if(resp.isValid()) {
 			for(Object o : r.getClassSchedules().getClassScheduleArray()) {
 				resp.addResults(MindBodyUtil.convertClassSchedule((ClassSchedule) o));
@@ -460,6 +462,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetCoursesResponseDocument res = client.getCourses(gcd);
 		GetCoursesResult r = res.getGetCoursesResponse().getGetCoursesResult();
 		resp.populateResponseFields(r);
+
 		if(resp.isValid()) {
 			resp.addResults((Object [])r.getCourses().getCourseArray());
 		}
@@ -522,6 +525,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetEnrollmentsResponseDocument res = client.getEnrollments(gcd);
 		GetEnrollmentsResult r = res.getGetEnrollmentsResponse().getGetEnrollmentsResult();
 		resp.populateResponseFields(r);
+
 		if(resp.isValid()) {
 			resp.addResults((Object [])r.getEnrollments().getClassScheduleArray());
 		}
@@ -592,6 +596,7 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		RemoveClientsFromClassesResponseDocument res = client.removeClientsFromClasses(gcd);
 		RemoveClientsFromClassesResult r = res.getRemoveClientsFromClassesResponse().getRemoveClientsFromClassesResult();
 		resp.populateResponseFields(r);
+
 		if(resp.isValid()) {
 			resp.addResults((Object [])r.getClasses().getClass1Array());
 		}
