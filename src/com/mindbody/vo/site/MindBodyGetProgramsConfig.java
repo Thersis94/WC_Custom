@@ -51,6 +51,4 @@ public class MindBodyGetProgramsConfig extends MindBodySiteConfig {
 	public void setOnlineOnly(boolean onlineOnly) {
 		this.onlineOnly = onlineOnly;
 	}
-
-	
 }

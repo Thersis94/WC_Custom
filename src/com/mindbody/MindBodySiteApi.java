@@ -106,7 +106,7 @@ public class MindBodySiteApi extends AbstractMindBodyApi<Site_x0020_ServiceStub,
 		prepareRequest(req, config);
 
 		GetLocationsDocument doc = GetLocationsDocument.Factory.newInstance();
-		doc.getGetLocations().setRequest(req);
+		doc.addNewGetLocations().setRequest(req);
 
 		Site_x0020_ServiceStub client = getConfiguredStub();
 		GetLocationsResponseDocument res = client.getLocations(doc);
@@ -132,7 +132,7 @@ public class MindBodySiteApi extends AbstractMindBodyApi<Site_x0020_ServiceStub,
 		prepareRequest(req, config);
 
 		GetProgramsDocument doc = GetProgramsDocument.Factory.newInstance();
-		doc.getGetPrograms().setRequest(req);
+		doc.addNewGetPrograms().setRequest(req);
 
 		Site_x0020_ServiceStub client = getConfiguredStub();
 		GetProgramsResponseDocument res = client.getPrograms(doc);
@@ -156,7 +156,7 @@ public class MindBodySiteApi extends AbstractMindBodyApi<Site_x0020_ServiceStub,
 		prepareRequest(req, config);
 
 		GetRelationshipsDocument doc = GetRelationshipsDocument.Factory.newInstance();
-		doc.getGetRelationships().setRequest(req);
+		doc.addNewGetRelationships().setRequest(req);
 
 		Site_x0020_ServiceStub client = getConfiguredStub();
 		GetRelationshipsResponseDocument res = client.getRelationships(doc);
@@ -180,7 +180,7 @@ public class MindBodySiteApi extends AbstractMindBodyApi<Site_x0020_ServiceStub,
 		prepareRequest(req, config);
 
 		GetSessionTypesDocument doc = GetSessionTypesDocument.Factory.newInstance();
-		doc.getGetSessionTypes().setRequest(req);
+		doc.addNewGetSessionTypes().setRequest(req);
 
 		Site_x0020_ServiceStub client = getConfiguredStub();
 		GetSessionTypesResponseDocument res = client.getSessionTypes(doc);

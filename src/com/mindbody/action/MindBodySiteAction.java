@@ -1,8 +1,19 @@
 package com.mindbody.action;
 
+import java.util.Map;
+
+import com.mindbody.MindBodySiteApi;
+import com.mindbody.MindBodySiteApi.SiteDocumentType;
+import com.mindbody.util.MindBodyUtil;
+import com.mindbody.vo.MindBodyResponseVO;
+import com.mindbody.vo.site.MindBodyGetLocationsConfig;
+import com.mindbody.vo.site.MindBodyGetProgramsConfig;
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title:</b> MindBodySiteAction.java
@@ -26,7 +37,54 @@ public class MindBodySiteAction extends SimpleActionAdapter {
 	}
 
 	@Override
-	public void retrieve(ActionRequest req) {
-		
+	public void retrieve(ActionRequest req) throws ActionException {
+		SiteDocumentType callType = getDocumentType(req.getParameter("callType"));
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		switch(callType) {
+			case GET_LOCATIONS:
+				super.setModuleData(getLocations(site.getSiteConfig()));
+				break;
+			case GET_PROGRAMS:
+				super.setModuleData(getPrograms(site.getSiteConfig()));
+				break;
+			case GET_SESSION_TYPES:
+				break;
+			default:
+				log.warn("Endpoint not supported for give CallType: " + callType.toString());
+				break;
+
+		}
+	}
+
+	/**
+	 * @param siteConfig
+	 * @return
+	 */
+	private Object getPrograms(Map<String, String> siteConfig) {
+		MindBodyGetProgramsConfig conf = new MindBodyGetProgramsConfig(MindBodyUtil.buildSourceCredentials(siteConfig));
+		conf.setOnlineOnly(true);
+		return new MindBodySiteApi().getAllDocuments(conf);
+	}
+
+	/**
+	 * Retrieve All Locations from MindBody System.
+	 * @param siteConfig
+	 * @return
+	 */
+	private MindBodyResponseVO getLocations(Map<String, String> siteConfig) {
+		return new MindBodySiteApi().getAllDocuments(new MindBodyGetLocationsConfig(MindBodyUtil.buildSourceCredentials(siteConfig)));
+	}
+
+	/**
+	 * @param parameter
+	 * @return
+	 * @throws ActionException 
+	 */
+	private SiteDocumentType getDocumentType(String callType) throws ActionException {
+		try {
+			return SiteDocumentType.valueOf(callType);
+		} catch(Exception e) {
+			throw new ActionException("Given callType is invalid for this request: " + callType);
+		}
 	}
 }
