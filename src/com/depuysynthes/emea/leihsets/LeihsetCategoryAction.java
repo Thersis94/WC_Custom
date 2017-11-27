@@ -75,7 +75,6 @@ public class LeihsetCategoryAction extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DPY_SYN_LEIHSET_CATEGORY_XR xr ");
 		sql.append("on c.leihset_category_id=xr.leihset_category_id and xr.leihset_id=? ");
 		sql.append("order by c.parent_id, c.order_no, c.category_nm ");
-		log.debug(sql + "|" + leihsetId);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, leihsetId);
@@ -85,6 +84,7 @@ public class LeihsetCategoryAction extends SBActionAdapter {
 				n.setNodeName(rs.getString(3));
 				n.setUserObject(Boolean.valueOf(rs.getInt(4) > 0)); //boolean here is simple "is selected for this leihset"
 				data.add(n);
+
 				if (log.isDebugEnabled())
 					log.debug("added " + n.getNodeId() + " with parent " + n.getParentId() + " xrId=" + rs.getInt(4));
 			}
@@ -121,8 +121,6 @@ public class LeihsetCategoryAction extends SBActionAdapter {
 				n.setNodeName(rs.getString(3));
 				n.setUserObject(rs.getInt(4)); //# of leihsets in this category.
 				data.add(n);
-				if (log.isDebugEnabled())
-					log.debug("added " + n.getNodeName() + " with parent " + n.getParentId());
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load category tree", sqle);
