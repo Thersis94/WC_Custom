@@ -47,12 +47,14 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	protected static final String LEFT_JOIN = "left outer join ";
 	private static final Pattern HREF_START_REGEX = Pattern.compile("href([ ]{0,1})=([ ]{0,1})(['\"])");
 	public static final String REDIRECT_DEST = "redirectDestination";
+	private StringEncoder se;
 
 	/**
 	 * No-arg constructor for initialization
 	 */
 	public UpdatesEditionDataLoader() {
 		super();
+		se = new StringEncoder();
 	}
 
 	/**
@@ -61,6 +63,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 */
 	public UpdatesEditionDataLoader(ActionInitVO init) {
 		super(init);
+		se = new StringEncoder();
 	}
 
 
@@ -241,7 +244,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	private String buildRedirectHref(String link, String baseUrl) {
 		StringBuilder redirectLink = new StringBuilder(250);
 		redirectLink.append(baseUrl).append("?");
-		redirectLink.append(REDIRECT_DEST).append("=").append(StringEncoder.urlEncode(link));
+		redirectLink.append(REDIRECT_DEST).append("=").append(StringEncoder.urlEncode(se.decodeValue(link)));
 		return redirectLink.toString();
 	}
 	
