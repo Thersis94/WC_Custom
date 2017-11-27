@@ -1,25 +1,30 @@
 package com.biomed.smarttrak.admin;
 
+// Java 8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.List;
 
-import com.biomed.smarttrak.util.SmarttrakSolrUtil;
-import com.biomed.smarttrak.util.SmarttrakTree;
-import com.biomed.smarttrak.util.UpdateIndexer;
-import com.biomed.smarttrak.vo.UpdateVO;
-import com.biomed.smarttrak.vo.UpdateXRVO;
+// J2EE libs
+import javax.servlet.http.HttpServletResponse;
+
+// Solr libs
+import org.apache.solr.common.SolrDocument;
+
+//SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
+import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.common.http.CookieUtil;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
@@ -28,9 +33,23 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
+
+// WC Core libs
+import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
+
+//WC Custom libs
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.SmarttrakSolrAction;
+import com.biomed.smarttrak.util.SmarttrakSolrUtil;
+import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.util.UpdateIndexer;
+import com.biomed.smarttrak.vo.UpdateVO;
+import com.biomed.smarttrak.vo.UpdateXRVO;
 
 /****************************************************************************
  * <b>Title</b>: UpdatesAction.java
@@ -48,13 +67,14 @@ public class UpdatesAction extends ManagementAction {
 	public static final String ORDER = "order"; //req param
 	public static final String START_DATE = "startDt"; //req param
 	public static final String END_DATE = "endDt"; //req param
-	
 	public static final String STATUS_CD = "statusCd"; //req param
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
-	private static final String SECTION_ID = "filterSectionId[]";
-	
-	private static final String HTML_REGEX = "(<\\/?(([uo]l)|(b)|(li)|(s((trong)|(ub))?)|(d((etails)|(iv))?)|(u)|(img)|(hr)|(font))(?!up)[^<>]*\\/?>)|(<p>&nbsp;<\\/p>)";
+	private static final String COOK_UPD_START_DT = "updateStartDt";
+	private static final String COOK_UPD_END_DT = "updateEndDt";
+
+	private static final String HTML_REGEX = "(<\\/?(([uo]l)|(b)|(li)|(s((trong)|(ub))?)|(d((etails)|(iv))?)|(u)|(img)|(hr)|(font))(?!up)[^<>]*\\/?>)|(<p>&nbsp;<\\/p>)|((style|align|bgcolor|border|color)[ ]?=[ ]?['\"][^'\"]*['\"])";
+	private static final String P_REGEX = "<p[^<>]*>";
 
 	/**
 	 * @deprecated not sure where this is used, possibly JSPs.  Unlikely it belongs here so reference it from it's source location.
@@ -95,17 +115,12 @@ public class UpdatesAction extends ManagementAction {
 		}
 	}
 
-	// Maps the table field name to the db field name for sorting purposes
-	private Map<String, String> sortMapper;
-
 	public UpdatesAction() {
 		super();
-		buildSortMapper();
 	}
 
 	public UpdatesAction(ActionInitVO actionInit) {
 		super(actionInit);
-		buildSortMapper();
 	}
 
 	/*
@@ -116,144 +131,200 @@ public class UpdatesAction extends ManagementAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
+		configureCookies(req);
+		
 		if (!req.hasParameter("loadData") && !req.hasParameter("loadhistory") && !req.hasParameter(UPDATE_ID) ) return;
 		int count = 0;
 
 		List<Object> data;
 		if(req.hasParameter("loadHistory")) {
 			data = getHistory(req.getParameter("historyId"));
+		} else if (req.hasParameter("updateId")) {
+			// If we have an id just load directly from the database.
+			List<Object> params = new ArrayList<>();
+			params.add(req.getParameter("updateId"));
+			data = loadDetails(params);
 		} else {
-
 			//Get the Filtered Updates according to Request.
-			data = getFilteredUpdates(req);
-			
-			// Get the count
-			count = getUpdateCount(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-			log.debug("count " + count);
+			getFilteredUpdates(req);
+
+			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
+			count = (int) resp.getTotalResponses();
+			if (count > 0) {
+
+				List<Object> params = getIdsFromDocs(resp);
+				
+				data = loadDetails(params);
+				log.debug("DB Count " + data.size());
+			} else {
+				data = Collections.emptyList();
+			}
 		}
 
 		decryptNames(data);
 
 		addProductCompanyData(data);
 
-		if(count > 0) {
-			putModuleData(data, count, false);
-		} else {
-			putModuleData(data);
-		}
+		putModuleData(data, count, false);
 
 		//when an add/edit form, load list of BiomedGPS Staff for the "Author" drop-down
 		if (req.hasParameter(UPDATE_ID))
 			loadAuthors(req);
 	}
 
+
+	/**
+	 * Get all the document ids from the solr documents and remove the
+	 * custom identifier if it is present.
+	 * @param resp
+	 * @return
+	 */
+	private List<Object> getIdsFromDocs(SolrResponseVO resp) {
+		List<Object> params = new ArrayList<>();
+
+		for (SolrDocument doc : resp.getResultDocuments()) {
+			String id = (String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+
+			// Replace the biomed update prefix if it exists.
+			if (id.contains(UpdateVO.DOCUMENT_ID_PREFIX))
+				id = id.replace(UpdateVO.DOCUMENT_ID_PREFIX, "");
+			
+			params.add(id);
+		}
+		return params;
+	}
+
+	/**
+	 * Load the most up to date details for each update
+	 * @param docs
+	 * @return
+	 */
+	private List<Object> loadDetails(List<Object> ids) {
+		String sql = formatDetailQuery(ids.size());
+		log.debug(sql);
+
+		DBProcessor db = new DBProcessor(dbConn);
+		return db.executeSelect(sql, ids, new UpdateVO());
+	}
+
+
+	/**
+	 * Ensure that the information pertaining to each update is up to date.
+	 * Even if solr has not finished processing the changes.
+	 * @param size
+	 * @param dir 
+	 * @param order
+	 * @return
+	 */
+	private String formatDetailQuery(int size) {
+		StringBuilder sql = new StringBuilder(200);
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT * FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
+		sql.append("LEFT JOIN ").append(schema).append("BIOMEDGPS_UPDATE_SECTION xr ");
+		sql.append("on up.UPDATE_ID = xr.UPDATE_ID ");
+		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
+		sql.append("order by publish_dt desc, order_no asc, up.create_dt desc ");
+
+		return sql.toString();
+	}
+
+
+	/**
+	 * Set all paramters neccesary for solr to be able to properly search for the desired documents.
+	 * @param req
+	 * @param dir 
+	 * @param order
+	 */
+	private void setSolrParams(ActionRequest req) {
+		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
+		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
+		req.setParameter("rpp", StringUtil.checkVal(rpp));
+		req.setParameter("page", StringUtil.checkVal(page));
+		if(req.hasParameter(SEARCH)) 
+			req.setParameter("searchData", req.getParameter(SEARCH));
+
+		//build a list of filter queries
+		List<String> fq = new ArrayList<>();
+		String startDt = req.getParameter(COOK_UPD_START_DT);
+		String endDt = req.getParameter(COOK_UPD_END_DT);
+		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, startDt, endDt);
+		if (!StringUtil.isEmpty(dates))
+			fq.add(SearchDocumentHandler.PUBLISH_DATE + ":" + dates);
+
+		if(req.hasParameter(UPDATE_ID)) {
+			StringBuilder id = new StringBuilder(req.getParameter(UPDATE_ID));
+			if (id.length() < AdminControllerAction.DOC_ID_MIN_LEN)
+				id.insert(0, "_").insert(0, UpdateIndexer.INDEX_TYPE);
+			fq.add(SearchDocumentHandler.DOCUMENT_ID + ":" + id);
+		}
+
+		String typeCd = CookieUtil.getValue("updateType", req.getCookies());
+		if (!StringUtil.isEmpty(typeCd))
+			fq.add(SearchDocumentHandler.MODULE_TYPE + ":" + typeCd);
+
+		String hierarchies = CookieUtil.getValue("updateMarkets", req.getCookies());
+		if (!StringUtil.isEmpty(hierarchies)) {
+			for (String s : hierarchies.split(","))
+				fq.add(SearchDocumentHandler.HIERARCHY + ":" + s);
+		}
+
+		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
+		req.setParameter("allowCustom", "true");
+		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
+	}
+
+
+	/**
+	 * Sets the default search values - particularly a date range of 'today'.
+	 * These can be flushed to <blank> by the user, but if they're nullified we'll restore them (e.g. next session)
+	 * If the search start date cookie does not exists, set it with a default range of today.
+	 * Otherwise, if it's blank, the user flushed the date values intentionally (which is ok)
+	 * NOTE: Setting cookies goes into the response object.  We can't set a cookie and then 
+	 * immediately read it's value.  For this reason we transpose the cookies into request parameters.
+	 * @param req
+	 */
+	private void configureCookies(ActionRequest req) {
+		String start = CookieUtil.getValue(COOK_UPD_START_DT, req.getCookies());
+		String end;
+		if (start == null) {
+			HttpServletResponse res = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
+			start = Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN); //today
+			end = start;
+			CookieUtil.add(res, COOK_UPD_START_DT, start, "/", -1);
+			CookieUtil.add(res, COOK_UPD_END_DT, end, "/", -1);
+		} else {
+			end = CookieUtil.getValue(COOK_UPD_END_DT, req.getCookies());
+		}
+		req.setParameter(COOK_UPD_START_DT, start);
+		req.setParameter(COOK_UPD_END_DT, end);
+	}
+
 	/**
 	 * Helper method that returns list of Updates filtered by ActionRequest
 	 * parameters.
 	 * @param req
+	 * @param dir 
+	 * @param order
 	 * @return
+	 * @throws ActionException 
 	 */
-	private List<Object> getFilteredUpdates(ActionRequest req) {
-		//Get Relevant Params off Request.
-		int start = Convert.formatInteger(req.getParameter("offset"),0);
-		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
-		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-
-		String sql = formatRetrieveQuery(req, schema, req.hasParameter("loadData"), false);
-
-		log.debug(" sql: " + sql);
+	private void getFilteredUpdates(ActionRequest req) throws ActionException {
+		//parse the requet object
+		setSolrParams(req);
 		
-		List<Object> params = new ArrayList<>();
-		if (req.hasParameter(UPDATE_ID)) params.add(req.getParameter(UPDATE_ID));
-		if (req.hasParameter(STATUS_CD)) params.add(req.getParameter(STATUS_CD));
-		if (req.hasParameter(TYPE_CD)) params.add(Convert.formatInteger(req.getParameter(TYPE_CD)));
-		if (req.hasParameter(SEARCH)) {
-			String searchData = "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%";
-			params.add(searchData);
-			params.add(searchData);
-		}
-		//check if dates were passed before adding to params list
-		if(req.hasParameter(START_DATE)) 
-			params.add(Convert.formatDate(req.getParameter(START_DATE)));
-		if(req.hasParameter(END_DATE)) 
-			params.add(Convert.formatDate(req.getParameter(END_DATE)));
-			
-		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
-			
-		if (sectionIds != null) { //restrict to certain sections only
-			for (String s : getSectionFamily(sectionIds))
-				params.add(s);
-		}
-		params.add(rpp);
-		params.add(start);
+		// Pass along the proper information for a search to be done.
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		req.setParameter("pmid", mod.getPageModuleId());
 
-		DBProcessor db = new DBProcessor(dbConn, schema);
-		return db.executeSelect(sql, params, new UpdateVO());
+		// Build the solr action
+		ActionInterface sa = new SmarttrakSolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(attributes);
+		sa.retrieve(req);
 	}
 
-
-	/**
-	 * processes the section ides supplied and gets childern or granchildren as needed to mimic the data returned by the 
-	 * front public side search
-	 * @param sectionIds
-	 * @return
-	 */
-	private Set<String> getSectionFamily(String[] sectionIds) {
-		if (sectionIds == null) return new HashSet<>();
-		//set up a set to hold all the ids
-		Set<String> set = new HashSet<>();
-		
-		// load the section hierarchy Tree from superclass
-		Tree t = loadDefaultTree();
-
-		// Generate the Node Paths using Node Names.
-		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
-		
-		//process ids according to their depth level
-		for (String s : sectionIds){
-			int depth = t.findNode(s).getDepthLevel();
-			//if the id is already in the set its a child or grand child and we don't need to process it again
-			if (set.contains(s)) continue;
-			
-			if (depth < 3) {
-				set.add(s);
-				processTwoNodeLayers(set, t, s);
-			} else if (depth == 3){
-				set.add(s);
-				processOneNodeLayer(set, t, s);
-			}else {
-				set.add(s);
-			}
-		}
-
-		return set;
-	}
-
-	/**
-	 * adds the ids children from the tree to the set
-	 * @param set
-	 * @param t
-	 * @param s
-	 */
-	private void processOneNodeLayer(Set<String> set, Tree t, String s) {
-		for (Node n : t.findNode(s).getChildren()){
-			set.add(n.getNodeId());
-			}
-	}
-
-	/**
-	 * adds the ids children and grand children to the set.
-	 * @param set
-	 * @param t
-	 */
-	private void processTwoNodeLayers(Set<String> set, Tree t, String s) {
-		for (Node n : t.findNode(s).getChildren()){
-			set.add(n.getNodeId());
-			for (Node g : n.getChildren()){
-				set.add(g.getNodeId());
-			}
-		}
-	}
 
 	/**
 	 * Retrieve all the updates - called by the Solr OOB indexer
@@ -284,28 +355,67 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	private void addProductCompanyData(List<Object> updates) {
 		log.debug("adding company short name and id ");
-		for (Object ob : updates) {
-			//loops all the updates and see if they have a product id
-			UpdateVO vo = (UpdateVO) ob;
 
-			if (StringUtil.isEmpty(vo.getProductId())) continue;
+		int productCount = getProductCount(updates);
+		if (productCount == 0) return;
 
-			StringBuilder sb = new StringBuilder(161);
-			sb.append("select c.company_id, c.short_nm_txt from ").append(customDbSchema).append("biomedgps_product p ");
-			sb.append(INNER_JOIN).append(customDbSchema).append("biomedgps_company c on p.company_id = c.company_id ");
-			sb.append("where p.product_id=?");
+		StringBuilder sb = new StringBuilder(161);
+		sb.append("select c.company_id, c.short_nm_txt, p.product_id from ").append(customDbSchema).append("biomedgps_product p ");
+		sb.append(INNER_JOIN).append(customDbSchema).append("biomedgps_company c on p.company_id = c.company_id ");
+		sb.append("where p.product_id in (");
+		DBUtil.preparedStatmentQuestion(productCount, sb);
+		sb.append(")");
+		log.debug(sb);
 
-			try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
-				ps.setString(1, vo.getProductId());
-				ResultSet rs = ps.executeQuery();
-				if (rs.next()) {
-					vo.setCompanyId(rs.getString(1));
-					vo.setCompanyNm(rs.getString(2));
-				}
-			} catch(SQLException sqle) {
-				log.error("could not confirm security by id ", sqle);
+		Map<String, GenericVO> companies = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
+			int i = 1;
+			for (Object o : updates) {
+				UpdateVO up = (UpdateVO)o;
+				if (StringUtil.isEmpty(up.getProductId())) continue;
+				ps.setString(i++, up.getProductId());
 			}
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				GenericVO vo = new GenericVO(rs.getString("company_id"), rs.getString("short_nm_txt"));
+				companies.put(rs.getString("product_id"), vo);
+			}
+		} catch(SQLException sqle) {
+			log.error("could not confirm security by id ", sqle);
 		}
+
+		mergeResults(updates, companies);
+	}
+
+
+	/**
+	 * Add company information to the products updates.
+	 * @param updates
+	 * @param companies
+	 */
+	private void mergeResults(List<Object> updates, Map<String, GenericVO> companies) {
+		for (Object o : updates) {
+			UpdateVO up = (UpdateVO)o;
+			if (StringUtil.isEmpty(up.getProductId())) continue;
+			GenericVO company = companies.get(up.getProductId());
+			up.setCompanyId((String) company.getKey());
+			up.setCompanyNm((String) company.getValue());
+		}
+	}
+
+	/**
+	 * Get the count of how many updates refer to products
+	 * @param updates
+	 * @return
+	 */
+	private int getProductCount(List<Object> updates) {
+		int productCount = 0;
+		for (Object o : updates) {
+			UpdateVO up = (UpdateVO)o;
+			if (StringUtil.isEmpty(up.getProductId())) continue;
+			productCount++;
+		}
+		return productCount;
 	}
 
 	/**
@@ -318,7 +428,7 @@ public class UpdatesAction extends ManagementAction {
 	protected String formatRetrieveAllQuery(String schema, String updateId) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select up.update_id, up.title_txt, up.message_txt, up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
-		sql.append("up.announcement_type, c.short_nm_txt as company_nm, prod.short_nm as product_nm, up.order_no, ");
+		sql.append("up.announcement_type, c.short_nm_txt as company_nm, prod.short_nm as product_nm, up.order_no, up.status_cd, ");
 		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
 		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, ");
 		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path, up.create_dt "); //need to pass this through for building URLs
@@ -335,56 +445,6 @@ public class UpdatesAction extends ManagementAction {
 		return sql.toString();
 	}
 
-	/**
-	 * Retrieves total number of update records in db.
-	 * @param req
-	 * @param schema
-	 * @return
-	 */
-	protected int getUpdateCount(ActionRequest req, String schema) {
-		String sql = formatRetrieveQuery(req, schema, true, true);
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			setStatementValues(ps, req);
-
-			ResultSet rs = ps.executeQuery();
-			if (rs.next()) 
-				return rs.getInt(1);
-
-		} catch (SQLException e) {
-			log.error(e);
-		}
-		return 0;
-	}
-
-	/**
-	 * Helper method to set the values to the PreparedStatement
-	 * @param ps
-	 * @param req
-	 * @throws SQLException
-	 */
-	private void setStatementValues(PreparedStatement ps, ActionRequest req) throws SQLException{
-		int i = 0;
-		
-		if (req.hasParameter(UPDATE_ID)) ps.setString(++i, req.getParameter(UPDATE_ID));
-		if (req.hasParameter(STATUS_CD)) ps.setString(++i, req.getParameter(STATUS_CD));
-		if (req.hasParameter(TYPE_CD)) ps.setInt(++i, Convert.formatInteger(req.getParameter(TYPE_CD)));
-		if (req.hasParameter(SEARCH)) {
-			String searchData = "%" + StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase() + "%";
-			ps.setString(++i, searchData);
-			ps.setString(++i, searchData);
-		}
-		if(req.hasParameter(START_DATE))
-			ps.setDate(++i, Convert.formatSQLDate(req.getParameter(START_DATE)));
-		if(req.hasParameter(END_DATE))
-			ps.setDate(++i, Convert.formatSQLDate(req.getParameter(END_DATE)));
-		
-		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
-		if (sectionIds != null) { //restrict to certain sections only
-			for (String s : getSectionFamily(sectionIds))
-				ps.setString(++i, s);
-		}
-	}
-	
 	/**
 	 * Retrieve list of Updates containing historical Revisions.
 	 * @param parameter
@@ -416,110 +476,6 @@ public class UpdatesAction extends ManagementAction {
 		sql.append("where b.wc_key_id = ? order by a.create_dt");
 
 		log.debug(sql);
-		return sql.toString();
-	}
-
-
-	/**
-	 * Formats the Update retrieval query.
-	 * @return
-	 */
-	public String formatRetrieveQuery(ActionRequest req, String schema, boolean isList, boolean isCount) {
-		StringBuilder sql = new StringBuilder(800);
-		sql.append(buildSelectClause(isList, isCount));
-		sql.append(buildFromClause(isList, schema));
-		sql.append(buildWhereClause(req));
-
-		if (!isCount) {
-			sql.append("order by ").append(StringUtil.checkVal(sortMapper.get(req.getParameter(SORT)), "publish_dt"));
-			sql.append(" ").append(StringUtil.checkVal(req.getParameter(ORDER), "asc"));
-			sql.append(", create_dt desc limit ? offset ? ");
-		}
-
-		log.debug(" sql "+sql);
-		return sql.toString();
-	}
-
-	/**
-	 * Build the select clause based on whether this is 
-	 * a list select and whether it is a count select.
-	 * @param isList
-	 * @param isCount
-	 * @return
-	 */
-	private String buildSelectClause(boolean isList, boolean isCount) {
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("select ");
-		if (isCount) {
-			sql.append("count(distinct a.update_id) ");
-		} else {
-			sql.append("distinct a.*, p.first_nm, p.last_nm, ");
-			if (isList) {
-				sql.append("s.wc_sync_id ");
-			} else {
-				sql.append("m.market_nm, c.company_nm, pr.product_nm, b.section_id, b.update_section_xr_id ");
-			}
-		}
-		return sql.toString();
-	}
-
-
-	/**
-	 * Build the from clause based on whether it is a list request or not.
-	 * @param isList
-	 * @param schema
-	 * @return
-	 */
-	private String buildFromClause(boolean isList, String schema) {
-		StringBuilder sql = new StringBuilder(300);
-		sql.append("from ").append(schema).append("biomedgps_update a ");
-		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		if (isList) {
-			sql.append(LEFT_OUTER_JOIN).append("(select wc_sync_id, wc_key_id, row_number() ");
-			sql.append("over (partition by wc_key_id order by create_dt) as rn from wc_sync) s ");
-			sql.append("on s.wc_key_id=a.update_id and s.rn=1 ");
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_type ut on ut.TYPE_CD=a.TYPE_CD ");
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section b ");
-			sql.append("on a.update_id=b.update_id ");
-		} else {
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_update_section b ");
-			sql.append("on a.update_id=b.update_id ");
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_market m ");
-			sql.append("on a.market_id=m.market_id ");
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c ");
-			sql.append("on a.company_id=c.company_id ");
-			sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_product pr ");
-			sql.append("on a.product_id=pr.product_id ");
-		}
-		return sql.toString();
-	}
-
-
-	/**
-	 * Build the where clause from the request parameters
-	 * @param reqParams
-	 * @return
-	 */
-	private String buildWhereClause(ActionRequest req) {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("where 1=1 ");
-		if (req.hasParameter(UPDATE_ID)) sql.append("and a.update_id=? ");
-		if (req.hasParameter(STATUS_CD)) sql.append("and a.status_cd=? ");
-		if (req.hasParameter(TYPE_CD)) sql.append("and a.type_cd=? ");
-		if (req.hasParameter(SEARCH)) {
-			sql.append("and (lower(a.title_txt) like ? ");
-			sql.append("or lower(a.message_txt) like ? ) ");
-		}
-		//check if dates were passed before appending to query
-		if(req.hasParameter(START_DATE)) sql.append("and a.publish_dt >= ? ");
-		if(req.hasParameter(END_DATE)) sql.append("and a.publish_dt <= ? ");
-
-		String[] sectionIds = req.hasParameter(SECTION_ID) ? req.getParameterValues(SECTION_ID) : null;
-		if (sectionIds != null && sectionIds.length > 0) { //restrict to certain sections only
-			sql.append("and b.section_id in (");
-			DBUtil.preparedStatmentQuestion(getSectionFamily(sectionIds).size(), sql);
-			sql.append(") ");
-		}
 		return sql.toString();
 	}
 
@@ -614,10 +570,10 @@ public class UpdatesAction extends ManagementAction {
 				deleteFromSolr(u);
 			} else {
 				filterText(u);
-				
+
 				db.save(u);
 
-				fixPkids(u, db.getGeneratedPKId());
+				fixPkids(u);
 
 				//Save Update Sections.
 				saveSections(u);
@@ -640,22 +596,20 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	private void filterText(UpdateVO u) {
 		if (StringUtil.isEmpty(u.getMessageTxt())) return;
-		
-		u.setMessageTxt(u.getMessageTxt().replaceAll(HTML_REGEX, ""));
+
+		// Strip out undesired html tags and attributes and ensure that all <p> tags
+		// contain no extra characters as it can cause issues with the updates emails.
+		u.setMessageTxt(u.getMessageTxt().replaceAll(HTML_REGEX, "").replaceAll(P_REGEX, "<p>"));
 	}
 
 	/**
 	 * Manages updating given UpdatesVO with generated PKID and updates sections
 	 * to match.
 	 * @param u
-	 * @param generatedPKId
 	 */
-	protected void fixPkids(UpdateVO u, String generatedPKId) {
+	protected void fixPkids(UpdateVO u) {
 		//Set the UpdateId on UpdatesXRVOs
-		if (StringUtil.isEmpty(u.getUpdateId())) {
-			//Ensure proper UpdateId and Publish Dt are set.
-			u.setUpdateId(generatedPKId);
-
+		if (!StringUtil.isEmpty(u.getUpdateId())) {
 			for (UpdateXRVO uxr : u.getUpdateSections())
 				uxr.setUpdateId(u.getUpdateId());
 		}
@@ -721,17 +675,5 @@ public class UpdatesAction extends ManagementAction {
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
-	}
-
-	/**
-	 * Convert Bootstrap Table Column Names to db names. 
-	 * @return
-	 */
-	private void buildSortMapper() {
-		sortMapper = new HashMap<>();
-		sortMapper.put("titleTxt", "title_txt");
-		sortMapper.put("publishDt", "publish_dt");
-		sortMapper.put("typeNm", "type_nm");
-		sortMapper.put("statusNm", "status_cd");
 	}
 }

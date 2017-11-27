@@ -187,13 +187,16 @@ public class UpdatesAction extends SBActionAdapter {
 		List<String> docIds = new ArrayList<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(getFavoriteUpdatesSql())) {
 			int i = 1;
+			ps.setString(i++, AdminControllerAction.Section.MARKET.toString() + "_");
 			ps.setString(i++, AdminControllerAction.Section.MARKET.toString());
 			ps.setString(i++, vo.getProfileId());
+			ps.setString(i++, AdminControllerAction.Section.PRODUCT.toString() + "_");
 			ps.setString(i++, AdminControllerAction.Section.PRODUCT.toString());
 			ps.setString(i++, vo.getProfileId());
+			ps.setString(i++, AdminControllerAction.Section.COMPANY.toString() + "_");
 			ps.setString(i++, AdminControllerAction.Section.COMPANY.toString());
 			ps.setString(i++, vo.getProfileId());
-
+			
 			ResultSet rs = ps.executeQuery();
 
 			//Convert Update Id to DocumentId
@@ -223,15 +226,15 @@ public class UpdatesAction extends SBActionAdapter {
 		sql.append("select distinct *, row_number() OVER (ORDER BY publish_dt desc) as rnum from ( ");
 		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
-		sql.append("on a.rel_id = b.market_id and a.type_cd = ? and a.profile_id = ? ");
+		sql.append("on replace(a.rel_id, ?, '') = b.market_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append("union ");
 		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
-		sql.append("on a.rel_id = b.product_id and a.type_cd = ? and a.profile_id = ? ");
+		sql.append("on replace(a.rel_id, ?, '') = b.product_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append("union ");
 		sql.append("select b.update_id, b.publish_dt from profile_favorite a ");
 		sql.append("inner join ").append(custom).append("biomedgps_update b ");
-		sql.append("on a.rel_id = b.company_id and a.type_cd = ? and a.profile_id = ? ");
+		sql.append("on replace(a.rel_id, ?, '') = b.company_id and a.type_cd = ? and a.profile_id = ? ");
 		sql.append(") as update_id order by publish_dt desc ");
 		return sql.toString();
 	}
@@ -267,10 +270,7 @@ public class UpdatesAction extends SBActionAdapter {
 		List<String> terms = new ArrayList<>(Arrays.asList(fts));
 
 		//Add Sections Check.  Append a filter query for each section requested
-		if (req.hasParameter("hierarchyId")) {
-			for (String s : req.getParameterValues("hierarchyId"))
-				data.add(SearchDocumentHandler.HIERARCHY + ":" + s);
-		}
+		transposeArray(data, SearchDocumentHandler.HIERARCHY, req.getParameterValues("hierarchyId"));
 
 		//Add Favorites Filter if applicable.
 		if(docIds != null && !docIds.isEmpty()) {
@@ -285,8 +285,7 @@ public class UpdatesAction extends SBActionAdapter {
 			data.add(SearchDocumentHandler.PUBLISH_DATE + ":" + dates);
 
 		//Add a ModuleType filter if typeId was passed
-		if (req.hasParameter("typeId"))
-			data.add(SearchDocumentHandler.MODULE_TYPE + ":" + req.getParameter("typeId"));
+		transposeArray(data, SearchDocumentHandler.MODULE_TYPE, req.getParameterValues("typeId"));
 
 		//Custom Filtering for when looking at an Email View.
 		transposeEmailFilter(req);
@@ -294,6 +293,21 @@ public class UpdatesAction extends SBActionAdapter {
 		//put the new list of filter queries back on the request
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 		req.setParameter("ft", terms.toArray(new String[terms.size()]), true);
+	}
+	
+	
+	/**
+	 * Ensure that there is data that can be worked with and add those items to the supplied list
+	 * @param data
+	 * @param field
+	 * @param values
+	 */
+	private void transposeArray(List<String> data, String field, String[] values) {
+		if (values == null || values.length ==0) return;
+		
+		for (String s : values) {
+			data.add(field + ":" + s);
+		}
 	}
 
 	/**
@@ -308,7 +322,7 @@ public class UpdatesAction extends SBActionAdapter {
 		req.setParameter("fmid", mod.getPageModuleId());
 
 		//Set Custom Sort Field and Direction.
-		req.setParameter("sortField", "moduleType asc, publishDtNoTime_s desc, order_i asc, publishTime_s ");
-		req.setParameter("sortDirection", "desc");
+		req.setParameter("sortField", "moduleType asc, publishDate desc, order_i ");
+		req.setParameter("sortDirection", "asc");
 	}
 }
