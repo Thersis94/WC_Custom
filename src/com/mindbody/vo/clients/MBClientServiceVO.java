@@ -11,7 +11,7 @@ import com.mindbodyonline.clients.api._0_5_1.ActionCode;
  * <b>Description:</b> Manage MindBody Service Data
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 3.3.1
  * @since Nov 25, 2017
