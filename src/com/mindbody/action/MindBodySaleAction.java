@@ -30,9 +30,6 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class MindBodySaleAction extends SimpleActionAdapter {
 
-	public static final String MB_SERVICES = "mbServices";
-
-
 	/**
 	 * 
 	 */
@@ -72,8 +69,8 @@ public class MindBodySaleAction extends SimpleActionAdapter {
 	 */
 	public MindBodyResponseVO getServices(Map<String, String> config, ActionRequest req) {
 		MindBodyGetServicesConfig conf = new MindBodyGetServicesConfig(MindBodyUtil.buildSourceCredentials(config));
-		if(req.hasParameter(MindBodyClassAction.MB_CLASS_ID)) {
-			conf.setClassId(req.getIntegerParameter(MindBodyClassAction.MB_CLASS_ID));
+		if(req.hasParameter(MindBodyScheduleAction.MB_CLASS_ID)) {
+			conf.setClassId(req.getIntegerParameter(MindBodyScheduleAction.MB_CLASS_ID));
 		}
 
 		if(req.hasParameter(MindBodyScheduleAction.MB_CLASS_SCHEDULE_ID)) {

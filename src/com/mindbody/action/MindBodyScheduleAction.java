@@ -4,13 +4,23 @@ import java.util.Date;
 import java.util.Map;
 
 import com.mindbody.MindBodyClassApi;
+import com.mindbody.MindBodyClassApi.ClassDocumentType;
+import com.mindbody.MindBodyClientApi;
+import com.mindbody.security.MindBodyUserVO;
 import com.mindbody.util.MindBodyUtil;
 import com.mindbody.vo.MindBodyResponseVO;
+import com.mindbody.vo.classes.MindBodyAddClientsToClassConfig;
 import com.mindbody.vo.classes.MindBodyGetClassScheduleConfig;
+import com.mindbody.vo.classes.MindBodyGetClassesConfig;
+import com.mindbody.vo.classes.MindBodyRemoveClientsFromClassesConfig;
+import com.mindbody.vo.clients.MBClientServiceVO;
+import com.mindbody.vo.clients.MindBodyGetClientServicesConfig;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -29,6 +39,12 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class MindBodyScheduleAction extends SimpleActionAdapter {
 
 	public static final String MB_CLASS_SCHEDULE_ID = "mbClassScheduleId";
+	public static final String MB_START_DT = "MBStartDt";
+	public static final String MB_END_DT = "MBEndDt";
+	public static final String MB_CLASS_ID = "MBClassId";
+	public static final String MB_CLIENT_SERVICE_ID = "MBClientServiceId";
+	public static final String MB_SERVICES = "mbServices";
+	public static final String NO_SERVICE_REDIR_URL = "noServiceRedirectURL";
 
 	public MindBodyScheduleAction() {
 		super();
@@ -43,14 +59,42 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if(req.hasParameter("getClasses") || req.hasParameter(MindBodyClassAction.MB_CLASS_ID)) {
-			MindBodyClassAction mbca = new MindBodyClassAction(this.actionInit);
-			mbca.setAttributes(attributes);
-			mbca.setDBConnection(dbConn);
-			mbca.retrieve(req);
+		if(req.hasParameter("getClasses") || req.hasParameter(MB_CLASS_ID)) {
+			putModuleData(getClasses(req));
 		} else {
 			putModuleData(getClassSchedules(req));
 		}
+
+	}
+
+	public void build(ActionRequest req) throws ActionException {
+		ClassDocumentType callType = getDocumentType(req.getParameter("callType"));
+
+		switch(callType) {
+			case ADD_CLIENTS_TO_CLASS:
+				checkAddToClass(req);
+				break;
+			case REMOVE_CLIENTS_FROM_CLASS:
+				removeFromClass(req);
+				break;
+			default:
+				break;
+		}
+	}
+
+	/**
+	 * @param req
+	 * @return
+	 */
+	private MindBodyResponseVO getClientServices(ActionRequest req) {
+		Map<String, String> config = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getSiteConfig();
+		MindBodyUserVO user = (MindBodyUserVO)req.getSession().getAttribute(Constants.USER_DATA);
+
+		MindBodyGetClientServicesConfig conf = new MindBodyGetClientServicesConfig(MindBodyUtil.buildSourceCredentials(config));
+		conf.setClassId(req.getIntegerParameter(MB_CLASS_ID));
+		conf.addClientId(user.getClientId());
+
+		return new MindBodyClientApi().getDocument(conf);
 
 	}
 
@@ -64,13 +108,13 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 
 		Date startDt;
 		Date endDt;
-		if(req.hasParameter(MindBodyClassAction.MB_START_DT)) {
-			startDt = Convert.parseDateUnknownPattern(req.getParameter(MindBodyClassAction.MB_START_DT));
+		if(req.hasParameter(MB_START_DT)) {
+			startDt = Convert.parseDateUnknownPattern(req.getParameter(MB_START_DT));
 		} else {
 			startDt = Convert.getFirstOfMonth();
 		}
-		if(req.hasParameter(MindBodyClassAction.MB_END_DT)) {
-			endDt = Convert.parseDateUnknownPattern(req.getParameter(MindBodyClassAction.MB_END_DT));
+		if(req.hasParameter(MB_END_DT)) {
+			endDt = Convert.parseDateUnknownPattern(req.getParameter(MB_END_DT));
 		} else {
 			endDt = Convert.getLastOfMonth();
 		}
@@ -80,7 +124,110 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 		if(req.hasParameter("scheduleId")) {
 			conf.addClassScheduleId(req.getIntegerParameter("scheduleId"));
 		}
-		
+
 		return api.getAllDocuments(conf);
+	}
+
+	/**
+	 * @param req
+	 * @param user
+	 */
+	private void addToClass(ActionRequest req, long serviceId) {
+		Map<String, String> config = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getSiteConfig();
+		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		MindBodyClassApi api = new MindBodyClassApi();
+
+		MindBodyAddClientsToClassConfig conf = new MindBodyAddClientsToClassConfig(MindBodyUtil.buildSourceCredentials(config), MindBodyUtil.buildStaffCredentials(config));
+		conf.addClassId(Integer.parseInt(req.getParameter(MB_CLASS_ID)));
+		conf.addClientId(user.getProfileId());
+		conf.setClientServiceId((int) serviceId);
+
+		api.getDocument(conf);
+	}
+
+	private void checkAddToClass(ActionRequest req) {
+		MindBodyResponseVO service = getClientServices(req);
+		long serviceId = 0;
+		if(service.isValid() && service.getResultCount() > 0) {
+			MBClientServiceVO s = (MBClientServiceVO) service.getResults().get(0);
+			serviceId = s.getId();
+		}
+
+		if(serviceId > 0) {
+			addToClass(req, serviceId);
+		} else if(req.hasParameter(NO_SERVICE_REDIR_URL)) {
+			sendRedirect(req.getParameter(NO_SERVICE_REDIR_URL), "Please Purchase a Service.", req);
+		}
+	}
+
+	/**
+	 * @param req
+	 * @param user
+	 */
+	private void removeFromClass(ActionRequest req) {
+		Map<String, String> config = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getSiteConfig();
+		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		MindBodyClassApi api = new MindBodyClassApi();
+
+		MindBodyRemoveClientsFromClassesConfig conf = new MindBodyRemoveClientsFromClassesConfig(MindBodyUtil.buildSourceCredentials(config));
+		conf.addClientId(user.getProfileId());
+		conf.addClassId(Integer.parseInt(req.getParameter(MB_CLASS_ID)));
+
+		api.getDocument(conf);
+	}
+
+
+	/**
+	 * @param req
+	 * @return
+	 */
+	private MindBodyResponseVO getClasses(ActionRequest req) {
+		Map<String, String> config = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getSiteConfig();
+		MindBodyClassApi api = new MindBodyClassApi();
+
+		Date startDt;
+		Date endDt;
+		if(req.hasParameter(MB_START_DT)) {
+			startDt = Convert.parseDateUnknownPattern(req.getParameter(MB_START_DT));
+		} else {
+			startDt = Convert.getFirstOfMonth();
+		}
+		if(req.hasParameter(MB_END_DT)) {
+			endDt = Convert.parseDateUnknownPattern(req.getParameter(MB_END_DT));
+		} else {
+			endDt = Convert.getLastOfMonth();
+		}
+
+		MindBodyGetClassesConfig conf = new MindBodyGetClassesConfig(MindBodyUtil.buildSourceCredentials(config));
+		conf.setStartDt(startDt);
+		conf.setEndDt(endDt);
+		if(req.hasParameter(MB_CLASS_ID)) {
+			conf.addClassId(req.getIntegerParameter(MB_CLASS_ID));
+		}
+
+		if(req.hasParameter("programId")) {
+			conf.addProgramId(req.getIntegerParameter("programId"));
+		}
+
+		conf.setUseSchedulingWindow(false);
+		return api.getAllDocuments(conf);
+	}
+
+	/**
+	 * Get The ClientDocumentType off the request.
+	 * @return
+	 * @throws ActionException 
+	 */
+	private ClassDocumentType getDocumentType(String callType) throws ActionException {
+		if(!StringUtil.isEmpty(callType)) {
+			try {
+				return ClassDocumentType.valueOf(callType);
+			} catch(Exception e) {
+				log.error("Could not determine Class CallType.");
+				throw new ActionException("Could not determine Class CallType.");
+			}
+		}
+
+		throw new ActionException("Class CallType not passed.");
 	}
 }

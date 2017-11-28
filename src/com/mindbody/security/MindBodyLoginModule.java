@@ -78,6 +78,7 @@ public class MindBodyLoginModule extends DBLoginModule {
 		mbUser.setData(userData.getDataMap());
 		mbUser.setAttributes(userData.getAttributes());
 		mbUser.setAuthenticated(userData.isAuthenticated());
+		mbUser.setClientId((String)userData.getAttribute(MindBodyUtil.MINDBODY_CLIENT_ID));
 		loadCustomData(mbUser);
 		return mbUser;
 	}

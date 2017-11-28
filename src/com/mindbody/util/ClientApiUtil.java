@@ -182,24 +182,24 @@ public class ClientApiUtil {
 	public void reloadUserData(MindBodyUserVO user) {
 
 		//Load Visits
-		MindBodyResponseVO resp = getClientVisits(user.getProfileId());
+		MindBodyResponseVO resp = getClientVisits(user.getClientId());
 		if(resp.isValid()) {
 			user.setVisits((List<MBVisitVO>)(List<?>)resp.getResults());
 		}
 
 		//Load Purchases
-		resp = getClientPurchases(user.getProfileId());
+		resp = getClientPurchases(user.getClientId());
 		if(resp.isValid()) {
 			user.setPurchases((List<MBSaleItemVO>)(List<?>)resp.getResults());
 		}
 		//Load Services
-		resp = getClientServices(user.getProfileId());
+		resp = getClientServices(user.getClientId());
 		if(resp.isValid()) {
 			user.setServices((List<MBClientServiceVO>)(List<?>)resp.getResults());
 		}
 
 		//Load Schedule
-		resp = getClientSchedule(user.getProfileId());
+		resp = getClientSchedule(user.getClientId());
 		if(resp.isValid()) {
 			user.setSchedule((List<MBClassScheduleVO>)(List<?>)resp.getResults());
 		}

@@ -34,10 +34,10 @@ public class MindBodyFacadeAction extends SimpleActionAdapter {
 	 */
 	static {
 		ACTIONS = new HashMap<>();
-		ACTIONS.put("class", MindBodyClassAction.class);
 		ACTIONS.put("client", MindBodyClientAction.class);
 		ACTIONS.put("sale", MindBodySaleAction.class);
 		ACTIONS.put("schedule", MindBodyScheduleAction.class);
+		ACTIONS.put("services", MindBodyServicesAction.class);
 	}
 	/**
 	 * 
