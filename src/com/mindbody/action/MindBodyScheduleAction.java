@@ -121,8 +121,11 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 		MindBodyGetClassScheduleConfig conf = new MindBodyGetClassScheduleConfig(MindBodyUtil.buildSourceCredentials(config), false);
 		conf.setStartDt(startDt);
 		conf.setEndDt(endDt);
-		if(req.hasParameter("scheduleId")) {
-			conf.addClassScheduleId(req.getIntegerParameter("scheduleId"));
+		if(req.hasParameter(MindBodyTrainerAction.MB_TRAINER_ID)) {
+			conf.addStaffId(req.getLongParameter(MindBodyTrainerAction.MB_TRAINER_ID));
+		}
+		if(req.hasParameter(MB_CLASS_SCHEDULE_ID)) {
+			conf.addClassScheduleId(req.getIntegerParameter(MB_CLASS_SCHEDULE_ID));
 		}
 
 		return api.getAllDocuments(conf);
@@ -203,6 +206,10 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 		conf.setEndDt(endDt);
 		if(req.hasParameter(MB_CLASS_ID)) {
 			conf.addClassId(req.getIntegerParameter(MB_CLASS_ID));
+		}
+
+		if(req.hasParameter(MindBodyTrainerAction.MB_TRAINER_ID)) {
+			conf.addStaffId(req.getLongParameter(MindBodyTrainerAction.MB_TRAINER_ID));
 		}
 
 		if(req.hasParameter("programId")) {

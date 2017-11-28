@@ -22,7 +22,6 @@ import com.mindbodyonline.clients.api._0_5_1.StaffFilter;
  * @since Nov 11, 2017
  ****************************************************************************/
 public class MindBodyGetStaffConfig extends MindBodyStaffConfig {
-
 	private StaffCredentials staffCredentials;
 	private Integer sessionTypeId;
 	private Date startDateTime;
@@ -114,11 +113,6 @@ public class MindBodyGetStaffConfig extends MindBodyStaffConfig {
 		this.locationId = locationId;
 	}
 
-	@Override
-	public boolean isValid() {
-		return super.isValid() && staffCredentials != null;
-	}
-
 	/**
 	 * @return the filters
 	 */
@@ -134,5 +128,17 @@ public class MindBodyGetStaffConfig extends MindBodyStaffConfig {
 	 */
 	public void setFilters(List<StaffFilter.Enum> filters) {
 		this.filters = filters;
+	}
+
+	public void addStaffViewableFilter() {
+		filters.add(StaffFilter.STAFF_VIEWABLE);
+	}
+
+	public void addAppointmentInstructorFilter() {
+		filters.add(StaffFilter.APPOINTMENT_INSTRUCTOR);
+	}
+
+	public void addClassInstructorFilter() {
+		filters.add(StaffFilter.CLASS_INSTRUCTOR);
 	}
 }

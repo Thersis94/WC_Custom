@@ -118,7 +118,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 		configureGetStaffRequest(req, config);
 
 		GetStaffDocument doc = GetStaffDocument.Factory.newInstance();
-		doc.getGetStaff().setRequest(req);
+		doc.addNewGetStaff().setRequest(req);
 
 		Staff_x0020_ServiceStub client = getConfiguredStub();
 		GetStaffResponseDocument res = client.getStaff(doc);
@@ -170,7 +170,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 		configureGetStaffPermissionsRequest(req, config);
 
 		GetStaffPermissionsDocument doc = GetStaffPermissionsDocument.Factory.newInstance();
-		doc.getGetStaffPermissions().setRequest(req);
+		doc.addNewGetStaffPermissions().setRequest(req);
 
 		Staff_x0020_ServiceStub client = getConfiguredStub();
 		GetStaffPermissionsResponseDocument res = client.getStaffPermissions(doc);
@@ -207,7 +207,7 @@ public class MindBodyStaffApi extends AbstractMindBodyApi<Staff_x0020_ServiceStu
 		configureAddOrUpdateStaffRequest(req, config);
 
 		AddOrUpdateStaffDocument doc = AddOrUpdateStaffDocument.Factory.newInstance();
-		doc.getAddOrUpdateStaff().setRequest(req);
+		doc.addNewAddOrUpdateStaff().setRequest(req);
 
 		Staff_x0020_ServiceStub client = getConfiguredStub();
 		AddOrUpdateStaffResponseDocument res = client.addOrUpdateStaff(doc);
