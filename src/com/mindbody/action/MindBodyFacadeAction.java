@@ -33,7 +33,7 @@ public class MindBodyFacadeAction extends SimpleActionAdapter {
 	 * populates the action map when the static constructor is called.  This will make our map live once in the JVM
 	 */
 	static {
-		ACTIONS = new HashMap<>(35);
+		ACTIONS = new HashMap<>();
 		ACTIONS.put("class", MindBodyClassAction.class);
 		ACTIONS.put("client", MindBodyClientAction.class);
 		ACTIONS.put("sale", MindBodySaleAction.class);
@@ -55,7 +55,9 @@ public class MindBodyFacadeAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		loadAction(req.getParameter(ACTION_TYPE)).retrieve(req);
+		if(req.hasParameter(ACTION_TYPE)) {
+			loadAction(req.getParameter(ACTION_TYPE)).retrieve(req);
+		}
 
 	}
 

@@ -54,8 +54,6 @@ public class MindBodyRegistrationPostProcessorAction extends SBActionAdapter {
 			if(!resp.isValid()) {
 				log.error("Error Creating MindBody Record: " + resp.getMessage());
 			}
-		} else {
-			//We couldn't retrieve the user record related to this user.
 		}
 	}
 }

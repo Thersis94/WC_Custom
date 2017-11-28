@@ -55,8 +55,27 @@ public class MindBodyClassAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		MindBodyResponseVO resp = getClasses(req); 
+		MindBodyResponseVO resp = getClasses(req);
+
+		if(req.hasParameter(MB_CLASS_ID)) {
+			MindBodyResponseVO services = getServices(req);
+			req.setAttribute(MindBodySaleAction.MB_SERVICES, services);
+		}
 		putModuleData(resp);
+	}
+
+
+	/**
+	 * @param req
+	 * @return
+	 */
+	private MindBodyResponseVO getServices(ActionRequest req) {
+		Map<String, String> config = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getSiteConfig();
+
+		MindBodySaleAction mbsa = new MindBodySaleAction(this.actionInit);
+		mbsa.setAttributes(attributes);
+		mbsa.setDBConnection(dbConn);
+		return mbsa.getServices(config, req);
 	}
 
 
@@ -142,7 +161,7 @@ public class MindBodyClassAction extends SimpleActionAdapter {
 		if(req.hasParameter(MB_CLASS_ID)) {
 			conf.addClassId(req.getIntegerParameter(MB_CLASS_ID));
 		}
-		
+
 		if(req.hasParameter("programId")) {
 			conf.addProgramId(req.getIntegerParameter("programId"));
 		}
