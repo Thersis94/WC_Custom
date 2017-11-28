@@ -59,6 +59,7 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+
 		if(req.hasParameter("getClasses") || req.hasParameter(MB_CLASS_ID)) {
 			putModuleData(getClasses(req));
 		} else {
@@ -67,6 +68,11 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 
 	}
 
+	/**
+	 * Manages MindBody Build type requests for adding and removing a client
+	 * from a class.
+	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ClassDocumentType callType = getDocumentType(req.getParameter("callType"));
 
@@ -83,6 +89,9 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 	}
 
 	/**
+	 * Retrieve the Services a Client has assigned to their account for a 
+	 * given ClassId.  Users can only sign up for a class that they have
+	 * a corresponding clientService for.
 	 * @param req
 	 * @return
 	 */
@@ -99,6 +108,7 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 	}
 
 	/**
+	 * Retrieve the Class Schedule Objects within a given date range.  
 	 * @param req
 	 * @return
 	 */
@@ -121,9 +131,13 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 		MindBodyGetClassScheduleConfig conf = new MindBodyGetClassScheduleConfig(MindBodyUtil.buildSourceCredentials(config), false);
 		conf.setStartDt(startDt);
 		conf.setEndDt(endDt);
+
+		//Filter by Trainer id if present.
 		if(req.hasParameter(MindBodyTrainerAction.MB_TRAINER_ID)) {
 			conf.addStaffId(req.getLongParameter(MindBodyTrainerAction.MB_TRAINER_ID));
 		}
+
+		//Filter by scheduleId if present.
 		if(req.hasParameter(MB_CLASS_SCHEDULE_ID)) {
 			conf.addClassScheduleId(req.getIntegerParameter(MB_CLASS_SCHEDULE_ID));
 		}
@@ -132,10 +146,12 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 	}
 
 	/**
+	 * Add a User to a class using the given clientServiceId and data
+	 * on the request.
 	 * @param req
 	 * @param user
 	 */
-	private void addToClass(ActionRequest req, long serviceId) {
+	private void addToClass(ActionRequest req, long clientServiceId) {
 		Map<String, String> config = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getSiteConfig();
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		MindBodyClassApi api = new MindBodyClassApi();
@@ -143,11 +159,17 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 		MindBodyAddClientsToClassConfig conf = new MindBodyAddClientsToClassConfig(MindBodyUtil.buildSourceCredentials(config), MindBodyUtil.buildStaffCredentials(config));
 		conf.addClassId(Integer.parseInt(req.getParameter(MB_CLASS_ID)));
 		conf.addClientId(user.getProfileId());
-		conf.setClientServiceId((int) serviceId);
+		conf.setClientServiceId((int) clientServiceId);
 
 		api.getDocument(conf);
 	}
 
+	/**
+	 * Attempt to add a user to a class.  Performs check for clientService
+	 * server side to prevent accidental signup when they don't have one.
+	 * Redirects to NO_SERVICE_REDIR_URL if no service found.
+	 * @param req
+	 */
 	private void checkAddToClass(ActionRequest req) {
 		MindBodyResponseVO service = getClientServices(req);
 		long serviceId = 0;
@@ -164,6 +186,7 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 	}
 
 	/**
+	 * Removes a user from a class.
 	 * @param req
 	 * @param user
 	 */
@@ -181,6 +204,7 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 
 
 	/**
+	 * Retrieves all Classes for a given Date Window. 
 	 * @param req
 	 * @return
 	 */
@@ -204,16 +228,15 @@ public class MindBodyScheduleAction extends SimpleActionAdapter {
 		MindBodyGetClassesConfig conf = new MindBodyGetClassesConfig(MindBodyUtil.buildSourceCredentials(config));
 		conf.setStartDt(startDt);
 		conf.setEndDt(endDt);
+
+		//Filter by classId if present for details page.
 		if(req.hasParameter(MB_CLASS_ID)) {
 			conf.addClassId(req.getIntegerParameter(MB_CLASS_ID));
 		}
 
+		//Filter by trainerId if present.
 		if(req.hasParameter(MindBodyTrainerAction.MB_TRAINER_ID)) {
 			conf.addStaffId(req.getLongParameter(MindBodyTrainerAction.MB_TRAINER_ID));
-		}
-
-		if(req.hasParameter("programId")) {
-			conf.addProgramId(req.getIntegerParameter("programId"));
 		}
 
 		conf.setUseSchedulingWindow(false);

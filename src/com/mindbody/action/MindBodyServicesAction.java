@@ -12,6 +12,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Title:</b> MindBodyServicesAction.java
  * <b>Project:</b> WC_Custom
  * <b>Description:</b> Manage MindBody Services Interactions.
+ * Retrieves the Services for the site from MindBody.  Used to
+ * register a services portal on the page. 
+ *
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -43,6 +46,7 @@ public class MindBodyServicesAction extends MindBodySaleAction {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+
 		Map<String, String> config = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getSiteConfig();
 		putModuleData(getServices(config, req));
 	}

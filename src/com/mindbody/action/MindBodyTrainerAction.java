@@ -15,7 +15,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 /****************************************************************************
  * <b>Title:</b> MindBodyTrainerAction.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Manages MindBody Staff interactions with regards
+ * to trainers.  Retrieves a list of Trainers from the MindBody System.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -56,6 +57,7 @@ public class MindBodyTrainerAction extends SimpleActionAdapter {
 		conf.addClassInstructorFilter();
 		conf.addStaffViewableFilter();
 
+		//Filter by TrainerId if present.
 		if(req.hasParameter(MB_TRAINER_ID)) {
 			conf.addStaffId(req.getLongParameter(MB_TRAINER_ID));
 		}
