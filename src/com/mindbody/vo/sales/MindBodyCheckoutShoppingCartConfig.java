@@ -6,14 +6,14 @@ import java.util.List;
 import com.mindbody.MindBodySaleApi.SaleDocumentType;
 import com.mindbody.vo.MindBodyCredentialVO;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
+import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.payment.PaymentVO;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyCheckoutShoppingCartConfig.java
  * <b>Project:</b> WC_Custom
  * <b>Description:</b> Manage  config for CheckoutShoppingCart Endpoint
- * TODO - Config needs built out as necessary to support use case.  Total
- * Endpoint compliance is probably not feasable or worth doing at this time.
+ * Total Endpoint compliance is probably not feasable or worth doing at this time.
  *
  * https://developers.mindbodyonline.com/Documentation/SaleService?version=v5.1#checkoutshoppingcart
  * <b>Copyright:</b> Copyright (c) 2017
@@ -27,8 +27,7 @@ public class MindBodyCheckoutShoppingCartConfig extends MindBodySalesConfig {
 
 	private String clientId;
 	private boolean test;
-	private List<ShoppingCartItemVO> cartItems;
-	private List<PaymentVO> payments;
+	private ShoppingCartVO cart;
 	private String cartId;
 	private boolean inStore;
 	private String promotionCode;
@@ -40,16 +39,15 @@ public class MindBodyCheckoutShoppingCartConfig extends MindBodySalesConfig {
 	 */
 	public MindBodyCheckoutShoppingCartConfig(MindBodyCredentialVO source, MindBodyCredentialVO user) {
 		super(SaleDocumentType.CHECKOUT_SHOPPING_CART, source, user);
-		cartItems = new ArrayList<>();
-		payments = new ArrayList<>();
 	}
 
 	@Override
 	public boolean isValid() {
 		boolean isValid = super.isValid() && clientId != null;
-		isValid = isValid && !cartItems.isEmpty() && !payments.isEmpty();
+		if (!isValid) return false;
 
-		return isValid;
+		//valid if the cart is real, it has items, and it has payment info
+		return cart != null && cart.getItems() != null && !cart.getItems().isEmpty() && cart.getPayment() != null;
 	}
 
 	/**
@@ -70,14 +68,14 @@ public class MindBodyCheckoutShoppingCartConfig extends MindBodySalesConfig {
 	 * @return the cartItems
 	 */
 	public List<ShoppingCartItemVO> getCartItems() {
-		return cartItems;
+		return new ArrayList<>(cart.getItems().values());
 	}
 
 	/**
 	 * @return the payments
 	 */
 	public List<PaymentVO> getPayments() {
-		return payments;
+		return new ArrayList<>();
 	}
 
 	/**
@@ -116,28 +114,6 @@ public class MindBodyCheckoutShoppingCartConfig extends MindBodySalesConfig {
 	}
 
 	/**
-	 * @param cartItems the cartItems to set.
-	 */
-	public void setCartItems(List<ShoppingCartItemVO> cartItems) {
-		this.cartItems = cartItems;
-	}
-
-	public void addCartItem(ShoppingCartItemVO item) {
-		cartItems.add(item);
-	}
-
-	/**
-	 * @param payments the payments to set.
-	 */
-	public void setPayments(List<PaymentVO> payments) {
-		this.payments = payments;
-	}
-
-	public void addPayment(PaymentVO p) {
-		payments.add(p);
-	}
-
-	/**
 	 * @param cartId the cartId to set.
 	 */
 	public void setCartId(String cartId) {
@@ -156,5 +132,13 @@ public class MindBodyCheckoutShoppingCartConfig extends MindBodySalesConfig {
 	 */
 	public void setPromotionCode(String promotionCode) {
 		this.promotionCode = promotionCode;
+	}
+
+	public ShoppingCartVO getCart() {
+		return cart;
+	}
+
+	public void setCart(ShoppingCartVO cart) {
+		this.cart = cart;
 	}
 }
