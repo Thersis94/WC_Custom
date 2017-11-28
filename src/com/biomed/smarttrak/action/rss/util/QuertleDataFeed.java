@@ -15,12 +15,9 @@ import javax.xml.namespace.QName;
 import javax.xml.ws.BindingProvider;
 import javax.xml.ws.handler.MessageContext;
 
-import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
-import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
-import com.biomed.smarttrak.action.rss.vo.RSSFilterVO;
 import com.quertle.webservice.base.ClassNotFoundException_Exception;
 import com.quertle.webservice.base.Exception_Exception;
 import com.quertle.webservice.base.HitcountOption;
@@ -60,8 +57,6 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	public static final String QUERTLE_ENTITY_ID = "quertleEntityId";
 	private static final QName SERVICE_NAME = new QName("http://base.webservice.quertle.com/", "SearchWSImplementationsService");
 
-	private String currUrl;
-	private String currArticle;
 	/**
 	 * @param args
 	 */
@@ -116,16 +111,12 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 
 			//Load Results for the Classification
 			List<ResultAttributes> results = queryResults(port, sp, c);
-
 			log.info("Retrieved Articles, size: " + results.size());
+			
 			//If we have results, process them.
-			if (results != null && !results.isEmpty()) {
-
-				//Build Article VO's
-				List<RSSArticleVO> articles = processResults(results, searchType);
-
-				//Save Articles.
-				storeArticles(articles);
+			if (!results.isEmpty()) {
+				//Build and Save Article VO's
+				processResults(results, searchType);
 			}
 		}
 	}
@@ -136,8 +127,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * RSSArticleVOs.  Apply Filtering to VO before returning.
 	 * @param results
 	 */
-	private List<RSSArticleVO> processResults(List<ResultAttributes> results, String searchType) {
-		List<RSSArticleVO> articles = new ArrayList<>(results.size() + 1);
+	private void processResults(List<ResultAttributes> results, String searchType) {
 
 		//Load existing Article Ids for Quertle.
 		Map<String, Set<String>> ids = getExistingIds(searchType, results);
@@ -150,25 +140,37 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 
 			a = buildArticleVO(id, searchType, r);
 
-			/*
-			 * Iterate over the FeedGroups and create an article VO for each.
-			 * Quertle results can appear in multiple groups per business
-			 * requirements.
-			 */
-			for(RSSFeedGroupVO g : groups) {
+			applyFilters(a, ids);
 
-				if(!articleExists(a.getArticleGuid(), g.getFeedGroupId(), ids)) {
-					//Apply Matching Filters to article.
-					applyFilter(a, g.getFeedGroupId());
-				}
-			}
+			//Remove the Full Article Text to lessen memory overhead.
+			a.setFullArticleTxt(null);
 
 			if(!a.getFilterVOs().isEmpty()) {
-				articles.add(a);
+				//Save Articles.
+				storeArticles(a);
+			}
+
+		}
+	}
+
+
+	/**
+	 * @param a
+	 * @param ids 
+	 */
+	private void applyFilters(RSSArticleVO a, Map<String, Set<String>> ids) {
+		/*
+		 * Iterate over the FeedGroups and create an article VO for each.
+		 * Quertle results can appear in multiple groups per business
+		 * requirements.
+		 */
+		for(RSSFeedGroupVO g : groups) {
+
+			if(!articleExists(a.getArticleGuid(), g.getFeedGroupId(), ids)) {
+				//Apply Matching Filters to article.
+				applyFilter(a, g.getFeedGroupId());
 			}
 		}
-
-		return articles;
 	}
 
 
@@ -203,6 +205,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			a.setAttribute1Txt(r.getPatentNumber());
 		}
 
+		a.setFullArticleTxt(loadArticle(a.getArticleUrl()));
 		return a;
 	}
 
@@ -287,7 +290,9 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 					resCnt += cnt;
 				}
 			}
-		} catch (WSCheckFaultException | ParseException_Exception | ClassNotFoundException_Exception | Exception_Exception | IOException_Exception e) {
+		} catch(WSCheckFaultException ws) {
+			log.info("No Articles Available.");
+		} catch (ParseException_Exception | ClassNotFoundException_Exception | Exception_Exception | IOException_Exception e) {
 			log.error("Error Processing Code", e);
 		}
 
@@ -323,6 +328,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	public SearchingSEI buildPort() {
 		URL wsdlURL = buildUrl();
+		if (wsdlURL == null) return  null;
 
 		//Create the Service.
 		SearchWSImplementationsService ss = new SearchWSImplementationsService(wsdlURL, SERVICE_NAME);
@@ -371,48 +377,13 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private URL buildUrl() {
-		URL url = null;
 		try {
-			url = new URL(props.getProperty(WSDL_URL_STRING));
+			return new URL(props.getProperty(WSDL_URL_STRING));
 		} catch (MalformedURLException e) {
 			log.error("Can not initialize the default wsdl from " + props.getProperty(WSDL_URL_STRING));
+			return null;
 		}
-
-		return url;
 	}
-
-	/**
-	 * Check if we have a match on a Required filter.  If so and Status isn't
-	 * Rejected, Set Status as New.
-	 * @param article
-	 * @param filter
-	 */
-	@Override
-	protected boolean checkReqMatch(RSSArticleFilterVO af, RSSFilterVO filter) {
-		boolean isMatch = checkMatch(af, filter);
-
-		if(isMatch && !ArticleStatus.R.equals(af.getArticleStatus())) {
-			af.setArticleStatus(ArticleStatus.N);
-			return true;
-		}
-
-		/*
-		 * If we didn't match the Required Field but we aren't rejected,
-		 * download the link and check the result.
-		 */
-		else if(!isMatch && !ArticleStatus.R.equals(af.getArticleStatus())) {
-			String newArticleTxt = loadArticle(af.getArticleUrl());
-			if(newArticleTxt != null && newArticleTxt.replaceAll(filter.getFilterExpression(), props.getProperty(REPLACE_SPAN)).contains("<span class='hit'>")) {
-				af.setArticleStatus(ArticleStatus.N);
-				return true;
-			} else {
-				af.setArticleStatus(ArticleStatus.R);
-				return false;
-			}
-		}
-		return false;
-	}
-
 
 	/**
 	 * Load the page related to the given url.
@@ -421,8 +392,8 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private String loadArticle(String url) {
 
-		if(StringUtil.isEmpty(currUrl) || !StringUtil.checkVal(currUrl).equals(url)) {
-			currUrl = url;
+		String article = null;
+		if(!StringUtil.isEmpty(url)) {
 			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
 			byte[] data = null;
 			try {
@@ -437,15 +408,13 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 					throw new IOException("Transaction Unsuccessful, code=" + conn.getResponseCode());
 				}
 
-				if(data == null) {
-					return null;
-				} else {
-					currArticle = new String(data);
+				if(data != null) {
+					article = new String(data);
 				}
 			} catch (IOException e) {
 				log.error(url);
 			}
 		}
-		return currArticle;
+		return article;
 	}
 }

@@ -7,10 +7,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
 //WC Custom
 import com.biomed.smarttrak.vo.UpdateVO;
@@ -19,6 +22,8 @@ import com.biomed.smarttrak.vo.UpdateXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 //WC libs
@@ -40,12 +45,16 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 
 	protected static final String INNER_JOIN = "inner join ";
 	protected static final String LEFT_JOIN = "left outer join ";
+	private static final Pattern HREF_START_REGEX = Pattern.compile("href([ ]{0,1})=([ ]{0,1})(['\"])");
+	public static final String REDIRECT_DEST = "redirectDestination";
+	private StringEncoder se;
 
 	/**
 	 * No-arg constructor for initialization
 	 */
 	public UpdatesEditionDataLoader() {
 		super();
+		se = new StringEncoder();
 	}
 
 	/**
@@ -54,6 +63,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 */
 	public UpdatesEditionDataLoader(ActionInitVO init) {
 		super(init);
+		se = new StringEncoder();
 	}
 
 
@@ -88,6 +98,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 
 		//get list of updates
 		List<UpdateVO> updates = loadUpdates(req, profileId, startDate, endDate);
+		loadAnnouncements(req, startDate, endDate, updates);
 
 		//set cosmetic label
 		Calendar dt = Calendar.getInstance();
@@ -98,6 +109,166 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		req.setAttribute("dateRange", label);
 
 		putModuleData(updates);
+	}
+
+	
+	/**
+	 * Load the special announcement type updates that do not have market sections.
+	 * @param req
+	 * @param startDate
+	 * @param endDate
+	 * @param updates
+	 */
+	private void loadAnnouncements(ActionRequest req, Date startDate, Date endDate, List<UpdateVO> updates) {
+		String sql = getAnnouncementSql((String)getAttribute(Constants.CUSTOM_DB_SCHEMA), Convert.formatBoolean(req.getParameter("orderSort")));
+		DBProcessor db = new DBProcessor(dbConn);
+		boolean redirectLinks = Convert.formatBoolean(req.getParameter("redirectLinks"));
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, AdminControllerAction.PUBLIC_SITE_ID);
+			ps.setDate(2, Convert.formatSQLDate(startDate));
+			ps.setDate(3, Convert.formatSQLDate(endDate));
+			
+			ResultSet rs = ps.executeQuery();
+			String baseUrl = "";
+			
+			while(rs.next()) {
+				UpdateVO up = new UpdateVO();
+				db.executePopulate(up, rs);
+				up.setProductNm(StringEncoder.encodeExtendedAscii(up.getProductNm()));
+				up.setMarketNm(StringEncoder.encodeExtendedAscii(up.getMarketNm()));
+				up.setCompanyNm(StringEncoder.encodeExtendedAscii(up.getCompanyNm()));
+				up.setTitle(StringEncoder.encodeExtendedAscii(up.getTitle()));
+				if (baseUrl.isEmpty()) baseUrl = buildBaseUrl(up.getSSLFlg(), up.getSiteAliasUrl());
+				if (redirectLinks) up.setMessageTxt(buildRedirectLinks(up.getMessageTxt(), baseUrl));
+				updates.add(up);
+			}
+		} catch(Exception e) {
+			log.error(e);
+		}		
+		/**
+		 * This does not work due to an bug in DBProcessor details in the SMTInteral ticket GC-74
+		 * This code has been commented out instead of deleted to provide whoever works on that ticket
+		 * an easy way to replicate the issue and allow them to restore the DBProcessor version of this
+		 * method when the error has been fixed.
+		List<Object> params = new ArrayList<>(2);
+		params.add(AdminControllerAction.PUBLIC_SITE_ID);
+		params.add(Convert.formatSQLDate(startDate));
+		params.add(Convert.formatSQLDate(endDate));
+		
+		
+		for (Object o : results) {
+			UpdateVO up = (UpdateVO)o;
+			if (redirectLinks) up.setMessageTxt(buildRedirectLinks(up.getMessageTxt(), baseUrl));
+			up.setProductNm(StringEncoder.encodeExtendedAscii(up.getProductNm()));
+			up.setMarketNm(StringEncoder.encodeExtendedAscii(up.getMarketNm()));
+			up.setCompanyNm(StringEncoder.encodeExtendedAscii(up.getCompanyNm()));
+			up.setTitle(StringEncoder.encodeExtendedAscii(up.getTitle()));
+			updates.add(up);
+		}
+		**/
+	}
+	
+	
+	/**
+	 * Get the parameters needed to build the base url from the results.
+	 * All updates will share the same base url so only the first item 
+	 * in the list is needed.
+	 * @param results
+	 * @return
+	 */
+	private String getBaseUrl(List<Object> results) {
+		if (results.isEmpty()) return "";
+		
+		UpdateVO up = (UpdateVO)results.get(0);
+		return buildBaseUrl(up.getSSLFlg(), up.getSiteAliasUrl());
+	}
+	
+	
+	/**
+	 * Build the base url from the supplied alias and ssl level.
+	 * @param sslFlg
+	 * @param siteAliasUrl
+	 * @return
+	 */
+	private String buildBaseUrl(int sslFlg, String siteAliasUrl) {
+		
+		StringBuilder url = new StringBuilder(75);
+		
+		url.append(sslFlg == 2? "https://":"http://");
+		url.append(siteAliasUrl).append(Section.UPDATES_EDITION.getPageURL());
+		
+		return url.toString();
+	}
+
+	
+	/**
+	 * Change all links in this content to point to the smarttrak site
+	 * where the user will only be directed to the desired location
+	 * if they are logged in.
+	 * @param text
+	 * @param baseUrl
+	 * @return
+	 */
+	private String buildRedirectLinks(String text, String baseUrl) {
+		if (StringUtil.isEmpty(text)) return text;
+		
+		Matcher matcher = HREF_START_REGEX.matcher(text);
+		StringBuilder newText = new StringBuilder(text.length() + 200);
+		int curLoc = 0;
+		while(matcher.find()) {
+			// Get the start of a link's href property
+			int valueStart = matcher.end();
+			// Append all text from the current location to here
+			newText.append(text.substring(curLoc, valueStart));
+			// Get the proper wrapper for the property value " or ' 
+			// so that we can get the whole property value
+			char propEndcap = text.charAt(valueStart-1);
+			curLoc = text.indexOf(propEndcap, valueStart);
+			// Append the redirect link and continue
+			newText.append(buildRedirectHref(text.substring(valueStart, curLoc), baseUrl));
+		}
+		// Append the remainder of the content
+		newText.append(text.substring(curLoc));
+		
+		return newText.toString();
+	}
+	
+	
+	/**
+	 * Build a redirect link based off the original link
+	 * @param link
+	 * @param baseUrl
+	 * @return
+	 */
+	private String buildRedirectHref(String link, String baseUrl) {
+		StringBuilder redirectLink = new StringBuilder(250);
+		redirectLink.append(baseUrl).append("?");
+		redirectLink.append(REDIRECT_DEST).append("=").append(StringEncoder.urlEncode(se.decodeValue(link)));
+		return redirectLink.toString();
+	}
+	
+	
+	/**
+	 * Build the sql for the announcement updates.
+	 * @param schema
+	 * @param orderSort
+	 * @return
+	 */
+	protected String getAnnouncementSql(String schema, boolean orderSort) {
+		StringBuilder sql = new StringBuilder(350);
+		sql.append("select up.*, sa.site_alias_url, st.ssl_flg from ").append(schema).append("biomedgps_update up ");
+		sql.append(LEFT_JOIN).append("site st on st.site_id = ? ");
+		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1 ");
+		sql.append("where coalesce(publish_dt, up.create_dt) >= ? and coalesce(publish_dt, up.create_dt) < ? ");
+		sql.append("and announcement_type > 0 ");
+		sql.append("order by announcement_type, type_cd, ");
+		if (orderSort) {
+			sql.append("order_no, coalesce(publish_dt, up.create_dt) ");
+		} else {
+			sql.append("coalesce(publish_dt, up.create_dt), order_no");
+		}
+		return sql.toString();
 	}
 
 	/**
@@ -180,19 +351,20 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		//build the query
 		String sql;
 		String[] sectionIds = null;
+		boolean orderSort = Convert.formatBoolean(req.getParameter("orderSort"));
 		if (req.getAttribute("isManageTool") != null) { //set by the subclass
 			sectionIds = req.getParameterValues("sectionId");
 			if (sectionIds == null || sectionIds.length == 0 || "ALL".equalsIgnoreCase(sectionIds[0])) 
 				sectionIds = null; //consolidate alt scenarios
-			sql = buildManageUpdatesSQL(schema, sectionIds);
+			sql = buildManageUpdatesSQL(schema, sectionIds, orderSort);
 		} else {
-			sql = StringUtil.isEmpty(profileId) ? buildAllUpdatesSQL(schema) : buildMyUpdatesSQL(schema);
+			sql = StringUtil.isEmpty(profileId) ? buildAllUpdatesSQL(schema, orderSort) : buildMyUpdatesSQL(schema, orderSort);
 		}
 		log.debug(sql + "|" + profileId + "|" + Convert.formatSQLDate(startDt) + "|" + Convert.formatSQLDate(endDt));
 
 		int x=0;
 		UpdateVO vo = null;
-		Map<String, UpdateVO>  updates = new HashMap<>();
+		Map<String, UpdateVO>  updates = new LinkedHashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(++x, AdminControllerAction.PUBLIC_SITE_ID);
 			if (!StringUtil.isEmpty(profileId)) ps.setString(++x, profileId);
@@ -202,6 +374,8 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 				for (String sec : sectionIds)
 					ps.setString(++x, sec);
 			}
+			String baseUrl = "";
+			boolean redirectLinks = Convert.formatBoolean(req.getParameter("redirectLinks"));
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				vo = updates.get(rs.getString("update_id"));
@@ -209,21 +383,27 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 				if (vo == null) {
 					vo = new UpdateVO();
 					vo.setUpdateId(rs.getString("update_id"));
-					vo.setTitle(rs.getString("title_txt"));
+					vo.setTitle(StringEncoder.encodeExtendedAscii(rs.getString("title_txt")));
 					vo.setMessageTxt(rs.getString("message_txt"));
 					vo.setPublishDt(rs.getDate("publish_dt"));
 					vo.setTypeCd(rs.getInt("type_cd"));
 					vo.setCompanyId(rs.getString("company_id"));
-					vo.setCompanyNm(rs.getString("company_nm"));
+					vo.setCompanyNm(StringEncoder.encodeExtendedAscii(rs.getString("company_nm")));
 					vo.setProductId(rs.getString("product_id"));
-					vo.setProductNm(rs.getString("product_nm"));
+					vo.setProductNm(StringEncoder.encodeExtendedAscii(rs.getString("product_nm")));
 					vo.setMarketId(rs.getString("market_id"));
-					vo.setMarketNm(rs.getString("market_nm"));
+					vo.setMarketNm(StringEncoder.encodeExtendedAscii(rs.getString("market_nm")));
 					vo.setStatusCd(rs.getString("status_cd"));
 					vo.setEmailFlg(rs.getInt("email_flg"));
 					vo.setQsPath((String)attributes.get(Constants.QS_PATH));
 					vo.setSSLFlg(rs.getInt("ssl_flg"));
 					vo.setSiteAliasUrl(rs.getString("site_alias_url"));
+					vo.setOrderNo(rs.getInt("order_no"));
+
+					// If we have not created the base url yet do so with this data
+					if (baseUrl.isEmpty()) baseUrl = buildBaseUrl(vo.getSSLFlg(), vo.getSiteAliasUrl());
+					if (redirectLinks) vo.setMessageTxt(buildRedirectLinks(vo.getMessageTxt(), baseUrl));
+
 					//log.debug("loaded update: " + vo.getUpdateId())
 				}
 
@@ -249,7 +429,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 * @param schema
 	 * @return
 	 */
-	protected String buildMyUpdatesSQL(String schema) {
+	protected String buildMyUpdatesSQL(String schema, boolean orderSort) {
 		StringBuilder sql = new StringBuilder(800);
 		appendSelect(sql);
 		sql.append("from profile p ");
@@ -268,7 +448,13 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1");
 		sql.append("where p.profile_id=? and up.email_flg=1 and up.status_cd in ('R','N') ");
 		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
-		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		// Determine whether order no or publish dt has priority in the sort.
+		sql.append("order by up.type_cd, ");
+		if (orderSort) {
+			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) ");
+		} else {
+			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		}
 		return sql.toString();
 	}
 
@@ -278,7 +464,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 * @param req - used by subclasses
 	 * @return
 	 */
-	protected String buildAllUpdatesSQL(String schema) {
+	protected String buildAllUpdatesSQL(String schema, boolean orderSort) {
 		StringBuilder sql = new StringBuilder(800);
 		appendSelect(sql);
 		sql.append("from ").append(schema).append("biomedgps_update_section us ");
@@ -290,7 +476,13 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1");
 		sql.append("where up.email_flg=1 and up.status_cd in ('R','N') ");
 		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
-		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		sql.append("order by up.type_cd, ");
+		// Determine whether order no or publish dt has priority in the sort.
+		if (orderSort) {
+			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) ");
+		} else {
+			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		}
 		return sql.toString();
 	}
 
@@ -301,7 +493,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 * @param sectionIds
 	 * @return
 	 */
-	protected String buildManageUpdatesSQL(String schema, String[] sectionIds) {
+	protected String buildManageUpdatesSQL(String schema, String[] sectionIds, boolean orderSort) {
 		StringBuilder sql = new StringBuilder(800);
 		appendSelect(sql);
 		sql.append("from ").append(schema).append("biomedgps_update_section us ");
@@ -317,8 +509,13 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 
 		//without a section only show un-reviewed (New) status level
 		sql.append("and up.status_cd in ('N', 'R') ");
+		sql.append("order by up.type_cd, ");
 
-		sql.append("order by up.type_cd, coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		if (orderSort) {
+			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) desc ");
+		} else {
+			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
+		}
 		return sql.toString();
 	}
 

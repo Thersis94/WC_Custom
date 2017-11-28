@@ -10,8 +10,10 @@ import java.util.Map;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedSupportEmailUtil;
+import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.DirectoryParser;
 import com.siliconmtn.security.UserDataVO;
@@ -115,6 +117,23 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 
 	}
 
+	@Override
+	public void buildCallback(ActionRequest req, TicketVO item) throws ActionException {
+		if (req.hasParameter("effortNo") || req.hasParameter("costNo")) {
+			req.setParameter("descText", "Ticket Status Updated");
+			ActionInterface a = new SmarttrakSupportTicketActivityAction(this.actionInit);
+			a.setAttributes(getAttributes());
+			a.setDBConnection(getDBConnection());
+			a.build(req);
+			
+			// Set the cost and effort to 0 to prevent 
+			// double billing in the future activities
+			req.setParameter("effortNo", "");
+			req.setParameter("costNo", "");
+		}
+		super.buildCallback(req, item);
+	}
+
 	/*
 	 * Override basic retrieval callback and additionally retrieve managers for assignment.
 	 * (non-Javadoc)
@@ -137,7 +156,7 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 		AccountAction aa = new AccountAction(this.actionInit);
 		aa.setAttributes(getAttributes());
 		aa.setDBConnection(getDBConnection());
-		aa.loadManagerList(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		aa.loadManagerList(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA), AssigneeSection.DIRECT_ACCESS);
 	}
 
 	/*

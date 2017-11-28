@@ -33,6 +33,7 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	private String rssEntityId;
 	private String articleGuid;
 	private String articleTxt;
+	private String fullArticleTxt;
 	private String titleTxt;
 	private String articleUrl;
 	private String publicationName;
@@ -150,6 +151,9 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 		return filteredText.entrySet().iterator().next().getValue();
 	}
 
+	public String getFullArticleTxt() {
+		return fullArticleTxt;
+	}
 	/**
 	 * @param rssArticleId the rssArticleId to set.
 	 */
@@ -229,5 +233,12 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	@BeanSubElement
 	public void addFilteredText(RSSArticleFilterVO vo) {
 		this.filteredText.put(vo.getFeedGroupId(), vo);
+	}
+
+	/**
+	 * @param loadArticle
+	 */
+	public void setFullArticleTxt(String fullArticleTxt) {
+		this.fullArticleTxt = fullArticleTxt;
 	}
 }

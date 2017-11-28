@@ -8,6 +8,7 @@ import java.util.List;
 //WC_Custom
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 //SMTBase libs
 import com.siliconmtn.action.ActionRequest;
@@ -64,6 +65,8 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	private String contentTxt;
 	private String sideContentTxt;
 	private int featuredFlg;
+	private int sectionFlg;
+	private int sliderFlg;
 	private String featuredImageTxt;
 	private String featuredProfileDocId;
 	private String profileImg;
@@ -82,17 +85,21 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 		COMPLIANCE(11, "Compliance"),
 		HEALTHCARE_REFORM(13,"Healthcare Reform"),
 		INSIGHTS(4, "Insights"),
+		INDUSTRY_SPOTLIGHT(17, "Industry Spotlight"),
 		INTELLECTUAL_PROPERTY(14,"Intellectual Property"),
 		MARKET_ANALYSIS(5, "Market Analysis"),
 		MARKET_OUTLOOK(9, "Market Outlook"),
 		MARKET_RECAP(10, "Market Recap"),
 		PERSPECTIVE(1, "Perspective"),
+		PRODUCT_SPOTLIGHT(18, "Product Spotlight"),
+		PODCAST(19, "Podcast"),
 		REGULATORY(8, "Regulatory"),
 		REIMBURSEMENT(7, "Reimbursement"),
 		SMARTTRAK_VIDEO_TIPS(15, "SmartTRAK Video Tips"),
 		STARTUP_SPOTLIGHT(2, "Start-up Spotlight"),
 		UC_VIEWPOINT(3, "U.C. Viewpoints"),
-		UNCATIGORIZED(6, "Uncategorized");
+		UNCATIGORIZED(6, "Uncategorized"),
+		VIDEO(20, "Video");
 
 		private int val;
 		private String text;
@@ -144,6 +151,8 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 		setContentTxt(req.getParameter("contentTxt"));
 		setSideContentTxt(req.getParameter("sideContentTxt"));
 		setFeaturedFlg(Convert.formatInteger(req.getParameter("featuredFlg")));
+		setSliderFlg(Convert.formatInteger(req.getParameter("sliderFlg")));
+		setSectionFlg(Convert.formatInteger(req.getParameter("sectionFlg")));
 				
 		if (!StringUtil.isEmpty(req.getParameter("filePathText")))
 			setFeaturedImageTxt(req.getParameter("filePathText"));
@@ -211,6 +220,8 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 				super.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 			}
 		}
+		
+		if (sectionFlg == 1) super.addACLGroup(Permission.GRANT, SmarttrakRoleVO.PUBLIC_ACL);
 	}
 
 	/* (non-Javadoc)
@@ -679,5 +690,25 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	 */
 	public void setFeaturedProfileDocId(String featuredProfileDocId) {
 		this.featuredProfileDocId = featuredProfileDocId;
+	}
+
+	@Column(name="section_flg")
+	@SolrField(name="sectionFlg_i")
+	public int getSectionFlg() {
+		return sectionFlg;
+	}
+
+	public void setSectionFlg(int sectionFlg) {
+		this.sectionFlg = sectionFlg;
+	}
+
+	@Column(name="slider_flg")
+	@SolrField(name="sliderFlg_i")
+	public int getSliderFlg() {
+		return sliderFlg;
+	}
+
+	public void setSliderFlg(int visibleFlg) {
+		this.sliderFlg = visibleFlg;
 	}
 }

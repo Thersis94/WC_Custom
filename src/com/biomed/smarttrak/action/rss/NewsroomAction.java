@@ -11,6 +11,7 @@ import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedSegment;
 import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -39,6 +40,7 @@ public class NewsroomAction extends SBActionAdapter {
 	public static final String GROUP_DATA = "groupData";
 	public static final String BUCKET_DATA = "bucketData";
 	public static final String BUCKET_ID = "bucketId";
+
 	/**
 	 * 
 	 */
@@ -62,7 +64,7 @@ public class NewsroomAction extends SBActionAdapter {
 			loadBuckets(req);
 			loadSegmentGroupArticles(req);
 		} else if(req.hasParameter("feedGroupId") && !req.hasParameter("isConsole")) {
-			loadArticles(req.getParameter("feedGroupId"), req.getParameter("statusCd"));
+			loadArticles(req.getParameter("feedGroupId"), req.getParameter("statusCd"), req.getIntegerParameter("page", 0) * 10);
 
 			//Load Managers for assigning rss articles.
 			loadManagers(req);
@@ -82,23 +84,26 @@ public class NewsroomAction extends SBActionAdapter {
 		AccountAction aa = new AccountAction(this.actionInit);
 		aa.setAttributes(getAttributes());
 		aa.setDBConnection(getDBConnection());
-		aa.loadManagerList(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		aa.loadManagerList(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA), AssigneeSection.NEWS_ROOM);
 	}
 
 	/**
 	 * Method loads list of articles tied to a given groupId.
 	 * @param req
 	 */
-	private void loadArticles(String feedGroupId, String statusCd) {
+	private void loadArticles(String feedGroupId, String statusCd, int offset) {
 		List<Object> vals = new ArrayList<>();
 		boolean hasStatus = !"ALL".equals(StringUtil.checkVal(statusCd));
 		vals.add(feedGroupId);
 		if(hasStatus) {
 			vals.add(statusCd);
 		}
+		vals.add(offset);
 
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		this.putModuleData(dbp.executeSelect(loadArticleSql(hasStatus), vals, new RSSArticleVO()));
+		List<RSSArticleVO> articles = dbp.executeSelect(loadArticleSql(hasStatus), vals, new RSSArticleVO());
+		if(!articles.isEmpty())
+			this.putModuleData(articles, articles.size(), false);
 	}
 
 	/**
@@ -116,6 +121,7 @@ public class NewsroomAction extends SBActionAdapter {
 			sql.append("and af.article_status_cd = ? ");
 		}
 		sql.append("order by a.create_dt desc ");
+		sql.append("limit 10 offset ? ");
 		return sql.toString();
 	}
 
@@ -155,7 +161,7 @@ public class NewsroomAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select distinct bucket_id from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_rss_article where bucket_id is not null");
+		sql.append("biomedgps_rss_filtered_article where bucket_id is not null");
 		return sql.toString();
 	}
 
@@ -171,8 +177,11 @@ public class NewsroomAction extends SBActionAdapter {
 		} else {
 			vals.add(((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA)).getProfileId());
 		}
+		vals.add(req.getIntegerParameter("page", 0) * 10);
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		this.putModuleData(dbp.executeSelect(loadBucketArticlesSql(), vals, new RSSArticleVO()));
+		List<RSSArticleVO> articles = dbp.executeSelect(loadBucketArticlesSql(), vals, new RSSArticleVO());
+		if(!articles.isEmpty())
+			this.putModuleData(articles, articles.size(), false);
 	}
 
 	/**
@@ -186,8 +195,9 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append("biomedgps_rss_article a ");
 		sql.append("inner join ").append(schema).append("biomedgps_rss_filtered_article fa ");
 		sql.append("on a.rss_article_id = fa.rss_article_id ");
-		sql.append("where article_status_cd = ? and bucket_id = ? ");
+		sql.append("where article_status_cd = ? and fa.bucket_id = ? ");
 		sql.append("order by a.create_dt desc ");
+		sql.append("limit 10 offset ? ");
 
 		log.debug(sql.toString());
 		return sql.toString();
