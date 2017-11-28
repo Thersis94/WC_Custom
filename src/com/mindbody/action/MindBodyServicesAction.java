@@ -12,6 +12,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Title:</b> MindBodyServicesAction.java
  * <b>Project:</b> WC_Custom
  * <b>Description:</b> Manage MindBody Services Interactions.
+ * Retrieves the Services for the site from MindBody.  Used to
+ * register a services portal on the page. 
+ *
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -20,6 +23,12 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Nov 27, 2017
  ****************************************************************************/
 public class MindBodyServicesAction extends MindBodySaleAction {
+
+	public static final String MB_SERVICE_ID = "mbServiceId";
+	public static final String MB_SERVICE_NM = "mbServiceNm";
+	public static final String MB_SERVICE_DESC = "mbServiceDesc";
+	public static final String MB_SERVICE_QTY = "mbServiceQty";
+	public static final String MB_SERVICE_PRICE = "mbServicePrice";
 
 	/**
 	 * 
@@ -35,12 +44,10 @@ public class MindBodyServicesAction extends MindBodySaleAction {
 		super(arg0);
 	}
 
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+
 		Map<String, String> config = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getSiteConfig();
 		putModuleData(getServices(config, req));
-	}
-
-	public void build(ActionRequest req) throws ActionException {
-		//Add a Service to Cart.
 	}
 }

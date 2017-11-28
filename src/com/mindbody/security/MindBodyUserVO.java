@@ -36,6 +36,7 @@ public class MindBodyUserVO extends UserDataVO implements HumanNameIntfc {
 	private List<MBClientServiceVO> services;
 	private List<MBSaleItemVO> purchases;
 	private int perkvillePoints;
+	private String clientId;
 
 	private PaymentVO cardData;
 	private Location billingAddress;
@@ -108,6 +109,10 @@ public class MindBodyUserVO extends UserDataVO implements HumanNameIntfc {
 	public Location getBillingAddress() {
 		return billingAddress;
 	}
+
+	public String getClientId() {
+		return clientId;
+	}
 	/**
 	 * @param visits the visits to set.
 	 */
@@ -147,5 +152,9 @@ public class MindBodyUserVO extends UserDataVO implements HumanNameIntfc {
 	 */
 	public void setBillingAddress(Location billingAddress) {
 		this.billingAddress = billingAddress;
+	}
+
+	public void setClientId(String clientId) {
+		this.clientId = clientId;
 	}
 }

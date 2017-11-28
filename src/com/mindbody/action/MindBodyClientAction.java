@@ -49,6 +49,8 @@ public class MindBodyClientAction extends SimpleActionAdapter {
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		ClientApiUtil util = new ClientApiUtil(site.getSiteConfig());
 		List<String> fields;
+
+		//Determine what we're doing based on ClientDocumentType.
 		switch(callType) {
 			case GET_CLIENT_ACCOUNT_BALANCES:
 				super.setModuleData(util.getAccountBalances((String)user.getAttribute(MindBodyUtil.MINDBODY_CLIENT_ID)));

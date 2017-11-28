@@ -145,6 +145,9 @@ public abstract class MindBodyClassConfig extends MindBodyConfig {
 		this.staffIds = staffIds;
 	}
 
+	public void addStaffId(Long staffId) {
+		this.staffIds.add(staffId);
+	}
 
 	/**
 	 * @param locationIds the locationIds to set.

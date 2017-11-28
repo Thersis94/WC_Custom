@@ -61,4 +61,8 @@ public abstract class MindBodyStaffConfig extends MindBodyConfig {
 	public void setStaffIds(List<Long> staffIds) {
 		this.staffIds = staffIds;
 	}
+
+	public void addStaffId(Long staffId) {
+		this.staffIds.add(staffId);
+	}
 }

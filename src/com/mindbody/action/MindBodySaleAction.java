@@ -30,9 +30,6 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class MindBodySaleAction extends SimpleActionAdapter {
 
-	public static final String MB_SERVICES = "mbServices";
-
-
 	/**
 	 * 
 	 */
@@ -66,16 +63,21 @@ public class MindBodySaleAction extends SimpleActionAdapter {
 	}
 
 	/**
+	 * Retrieves Services available from the MindBody Interface.
+	 *
 	 * @param config
 	 * @param req
 	 * @return
 	 */
 	public MindBodyResponseVO getServices(Map<String, String> config, ActionRequest req) {
 		MindBodyGetServicesConfig conf = new MindBodyGetServicesConfig(MindBodyUtil.buildSourceCredentials(config));
-		if(req.hasParameter(MindBodyClassAction.MB_CLASS_ID)) {
-			conf.setClassId(req.getIntegerParameter(MindBodyClassAction.MB_CLASS_ID));
+
+		//Filter by classId if present
+		if(req.hasParameter(MindBodyScheduleAction.MB_CLASS_ID)) {
+			conf.setClassId(req.getIntegerParameter(MindBodyScheduleAction.MB_CLASS_ID));
 		}
 
+		//Filter by classScheduleId if present.
 		if(req.hasParameter(MindBodyScheduleAction.MB_CLASS_SCHEDULE_ID)) {
 			conf.setClassScheduleId(req.getIntegerParameter(MindBodyScheduleAction.MB_CLASS_SCHEDULE_ID));
 		}
@@ -85,6 +87,7 @@ public class MindBodySaleAction extends SimpleActionAdapter {
 
 
 	/**
+	 * Retrieve accepted card types from MindBody.  Results are a String list.
 	 * @param config
 	 * @return
 	 */
