@@ -78,7 +78,6 @@ public class PerkvilleOAuth2Token implements OAuth2Token {
 
 	public enum Config {
 		PV_CLIENT_ID,
-		PV_API_KEY,
 		PV_API_SECRET, 
 		PV_TOKEN_CALLBACK_URL,
 		PV_TOKEN_SERVER_URL,
@@ -130,7 +129,7 @@ public class PerkvilleOAuth2Token implements OAuth2Token {
 				transport,
 				jsonFactory,
 				new GenericUrl(buildAuthRequestUrl()),
-				new BasicAuthentication(config.get(Config.PV_API_KEY), config.get(Config.PV_API_SECRET)),
+				new BasicAuthentication(config.get(Config.PV_CLIENT_ID), config.get(Config.PV_API_SECRET)),
 				config.get(Config.PV_CLIENT_ID),
 				config.get(Config.PV_AUTH_SERVER_URL));
 		builder.setScopes(scopes);
@@ -154,7 +153,7 @@ public class PerkvilleOAuth2Token implements OAuth2Token {
 				jsonFactory,
 				new GenericUrl(config.get(Config.PV_TOKEN_SERVER_URL)), 
 				c.getRefreshToken());
-		authReq.setClientAuthentication(new BasicAuthentication(config.get(Config.PV_API_KEY), config.get(Config.PV_API_SECRET)));
+		authReq.setClientAuthentication(new BasicAuthentication(config.get(Config.PV_CLIENT_ID), config.get(Config.PV_API_SECRET)));
 		authReq.setGrantType(config.get(Config.PV_GRANT_TYPE_CODE));
 
 		return authReq.execute();

@@ -96,16 +96,14 @@ public class PerkvilleAuthAction extends SimpleActionAdapter {
 	 */
 	private Map<Config, String> buildConfigMap(ActionRequest req) {
 		Map<String, String> siteConfig = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getSiteConfig();
-		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 
 		Map<Config, String> configMap = new EnumMap<>(Config.class);
-		configMap.put(Config.PV_CLIENT_ID, user.getProfileId());
-		configMap.put(Config.PV_API_KEY, siteConfig.get(Config.PV_API_KEY.name()));
+		configMap.put(Config.PV_CLIENT_ID, siteConfig.get(Config.PV_CLIENT_ID.name()));
 		configMap.put(Config.PV_API_SECRET, siteConfig.get(Config.PV_API_SECRET.name())); 
 		configMap.put(Config.PV_TOKEN_CALLBACK_URL, siteConfig.get(Config.PV_TOKEN_CALLBACK_URL.name()));
 		configMap.put(Config.PV_TOKEN_SERVER_URL, siteConfig.get(Config.PV_TOKEN_SERVER_URL.name()));
 		configMap.put(Config.PV_AUTH_SERVER_URL, siteConfig.get(Config.PV_AUTH_SERVER_URL.name()));
-		configMap.put(Config.PV_KEYSTORE, "perkville-" + StringUtil.removeNonAlphaNumeric(siteConfig.get(Config.PV_API_KEY.name())));
+		configMap.put(Config.PV_KEYSTORE, "perkville-" + StringUtil.removeNonAlphaNumeric(siteConfig.get(Config.PV_CLIENT_ID.name())));
 		configMap.put(Config.PV_STATE, siteConfig.get(Config.PV_STATE.name()));
 		configMap.put(Config.PV_SCOPE, siteConfig.get(Config.PV_SCOPE.name()));
 		configMap.put(Config.PV_AUTH_CODE_RESPONSE, siteConfig.get(Config.PV_AUTH_CODE_RESPONSE.name()));
