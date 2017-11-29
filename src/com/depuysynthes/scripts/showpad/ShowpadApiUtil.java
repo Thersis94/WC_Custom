@@ -26,9 +26,9 @@ import com.google.api.client.http.MultipartContent;
 import com.google.api.client.http.UrlEncodedContent;
 import com.siliconmtn.common.FileType;
 import com.siliconmtn.security.OAuth2Token;
-import com.siliconmtn.security.OAuth2TokenViaCLI;
-import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.security.OAuth2TokenViaCLI;
+import com.siliconmtn.security.BaseOAuth2Token.Config;
 
 /****************************************************************************
  * <b>Title</b>: ShowpadApiUtil.java<p/>
