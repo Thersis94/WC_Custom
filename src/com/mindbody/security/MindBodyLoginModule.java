@@ -1,21 +1,16 @@
 package com.mindbody.security;
 
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
 import com.mindbody.util.ClientApiUtil;
 import com.mindbody.util.MindBodyUtil;
 import com.mindbody.vo.MindBodyResponseVO;
-import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.smt.sitebuilder.security.DBLoginModule;
-import com.smt.sitebuilder.security.UserLogin;
 
 /****************************************************************************
  * <b>Title:</b> MindBodyLoginModule.java
@@ -30,9 +25,6 @@ import com.smt.sitebuilder.security.UserLogin;
  ****************************************************************************/
 public class MindBodyLoginModule extends DBLoginModule {
 
-	/**
-	 * 
-	 */
 	public MindBodyLoginModule() {
 		super();
 	}
@@ -44,25 +36,28 @@ public class MindBodyLoginModule extends DBLoginModule {
 		super(config);
 	}
 
+
+	/*
+	 * username/password login - Return user after loading their Mindbody data
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.security.DBLoginModule#authenticateUser(java.lang.String, java.lang.String)
+	 */
 	@Override
 	public UserDataVO authenticateUser(String username, String password) throws AuthenticationException {
-		if (StringUtil.isEmpty(username) || StringUtil.isEmpty(password))
-			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
-		log.debug("Starting authenticateUser: " + username + "/" + password);
-
-		// call UserLogin to load the authentication record
-		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
-		UserLogin ul = new UserLogin(dbConn, getAttributes());
-		UserDataVO authUser = ul.getAuthRecord(null, username);
-		authUser.setEmailAddress(username);
-
-		//getAuthRecord never returns null.  Test the VO for authenticationId, throw if not found
-		if (StringUtil.isEmpty(authUser.getAuthenticationId()))
-			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
-
-		// Return user authenticated user, after loading their Mindbody data
-		return loadMindBodyUser(loadUserData(null, authUser.getAuthenticationId()));
+		return loadMindBodyUser(super.authenticateUser(username, password));
 	}
+
+
+	/*
+	 * cookie login -  Return user after loading their Mindbody data
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.security.DBLoginModule#authenticateUser(java.lang.String)
+	 */
+	@Override
+	public UserDataVO authenticateUser(String encProfileId) throws AuthenticationException {
+		return loadMindBodyUser(super.authenticateUser(encProfileId));
+	}
+
 
 	/**
 	 * Create new MindBodyUserVO from existing UserDataVO and then populate
@@ -71,15 +66,16 @@ public class MindBodyLoginModule extends DBLoginModule {
 	 * @return
 	 * @throws AuthenticationException 
 	 */
-	private UserDataVO loadMindBodyUser(UserDataVO userData) throws AuthenticationException {
-		userData = validateMindBodyUser(userData); //this will throw if the password can't be verified
+	private UserDataVO loadMindBodyUser(UserDataVO user) throws AuthenticationException {
+		validateMindBodyUser(user); //this will throw if the password can't be verified
 
 		MindBodyUserVO mbUser = new MindBodyUserVO();
-		mbUser.setData(userData.getDataMap());
-		mbUser.setAttributes(userData.getAttributes());
-		mbUser.setAuthenticated(userData.isAuthenticated());
-		mbUser.setClientId((String)userData.getAttribute(MindBodyUtil.MINDBODY_CLIENT_ID));
+		mbUser.setData(user.getDataMap());
+		mbUser.setAttributes(user.getAttributes());
+		mbUser.setAuthenticated(user.isAuthenticated());
+		mbUser.setClientId((String)user.getAttribute(MindBodyUtil.MINDBODY_CLIENT_ID));
 		loadCustomData(mbUser);
+
 		return mbUser;
 	}
 
@@ -90,7 +86,6 @@ public class MindBodyLoginModule extends DBLoginModule {
 	private void loadCustomData(MindBodyUserVO mbUser) {
 		SiteVO site = (SiteVO) getAttribute(Constants.SITE_DATA);
 		ClientApiUtil util = new ClientApiUtil(site.getSiteConfig());
-
 		util.reloadUserData(mbUser);
 
 		//Load Perkville Data
@@ -115,20 +110,19 @@ public class MindBodyLoginModule extends DBLoginModule {
 	 * @return
 	 * @throws AuthenticationException 
 	 */
-	private UserDataVO validateMindBodyUser(UserDataVO authUser) throws AuthenticationException {
+	private void validateMindBodyUser(UserDataVO authUser) throws AuthenticationException {
 		SiteVO site = (SiteVO) getAttribute(Constants.SITE_DATA);
 		ClientApiUtil util = new ClientApiUtil(site.getSiteConfig());
 
 		MindBodyResponseVO resp = util.validateClient(authUser);
 
-		if(resp.isValid()) {
+		if (resp != null && resp.isValid()) {
 			//Response is a MindBody Client VO
 			List<Object> users = resp.getResults();
 			Object user = users.get(0);
 			authUser.addAttribute(MindBodyUtil.MINDBODY_CLIENT_ID, ((UserDataVO)user).getProfileId());
-			return authUser;
+
 		} else {
-			//TODO - What should happen if we can't get User Data?
 			throw new AuthenticationException("User Could not be verified in the MindBody System");
 		}
 	}
