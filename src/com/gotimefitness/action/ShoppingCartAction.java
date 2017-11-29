@@ -50,24 +50,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ShoppingCartVO cart = loadCart(req);
-
-		//for development only - remove from PR
-		if (req.hasParameter("populate"))
-			preload(req);
-
 		putModuleData(cart);
-	}
-
-
-	/**
-	 * for development only - remove from PR
-	 * @param cart
-	 * @throws ActionException 
-	 */
-	private void preload(ActionRequest req) throws ActionException {
-		addToCart(req, "shoes1", "Deluxe Shoestrings", "Made of Kevlar - unbreakable!", 2, 29.95);
-		addToCart(req, "p3pack", "P-3 Pack", "Loaded with protein - Ham & Cashews", 8, 2.34);
-		addToCart(req, "sangria-100", "Sangria Maker", "When your workout goes sideways, have some Sangria.", 1, 59.90);
 	}
 
 

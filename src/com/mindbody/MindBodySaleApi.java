@@ -4,6 +4,7 @@ import java.rmi.RemoteException;
 
 import org.apache.axis2.AxisFault;
 
+//Mind Body Sale API Jar
 import com.mindbody.util.MindBodyUtil;
 import com.mindbody.vo.MindBodyResponseVO;
 import com.mindbody.vo.sales.MindBodyCheckoutShoppingCartConfig;
@@ -28,9 +29,9 @@ import com.mindbodyonline.clients.api._0_5_1.GetServicesDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetServicesRequest;
 import com.mindbodyonline.clients.api._0_5_1.GetServicesResponseDocument;
 import com.mindbodyonline.clients.api._0_5_1.GetServicesResult;
-//Mind Body Sale API Jar
 import com.mindbodyonline.clients.api._0_5_1.Sale_x0020_ServiceStub;
 import com.mindbodyonline.clients.api._0_5_1.Service;
+
 //Base Libs
 import com.siliconmtn.common.http.HttpStatus;
 import com.siliconmtn.util.StringUtil;
@@ -100,7 +101,6 @@ public class MindBodySaleApi extends AbstractMindBodyApi<Sale_x0020_ServiceStub,
 				resp = getServices((MindBodyGetServicesConfig) config);
 				break;
 			default:
-				log.error("Endpoint Not Supported.");
 				resp = buildErrorResponse(HttpStatus.CD_501_NOT_IMPLEMENTED, "Endpoint Not Supported");
 				break;
 		}
@@ -140,7 +140,7 @@ public class MindBodySaleApi extends AbstractMindBodyApi<Sale_x0020_ServiceStub,
 	private void configureCheckoutChoppingCartRequest(CheckoutShoppingCartRequest req, MindBodyCheckoutShoppingCartConfig config) {
 		req.setClientID(config.getClientId());
 		req.setCartItems(MindBodyUtil.buildArrayOfCartItem(config.getCartItems()));
-		req.setPayments(MindBodyUtil.buildArrayOfPayments(config.getPayments()));
+		req.setPayments(MindBodyUtil.buildArrayOfPayments(config.getCart(), config.getCart().getPayment()));
 
 		if(!StringUtil.isEmpty(config.getCartId())) {
 			req.setCartID(config.getCartId());

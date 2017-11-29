@@ -1,5 +1,6 @@
 package com.mindbody.util;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -42,6 +43,7 @@ import com.mindbodyonline.clients.api._0_5_1.ClassSchedule;
 import com.mindbodyonline.clients.api._0_5_1.Client;
 import com.mindbodyonline.clients.api._0_5_1.ClientCreditCard;
 import com.mindbodyonline.clients.api._0_5_1.ClientService;
+import com.mindbodyonline.clients.api._0_5_1.CreditCardInfo;
 import com.mindbodyonline.clients.api._0_5_1.Level;
 import com.mindbodyonline.clients.api._0_5_1.Location;
 import com.mindbodyonline.clients.api._0_5_1.Payment;
@@ -59,6 +61,7 @@ import com.mindbodyonline.clients.api._0_5_1.Staff;
 import com.mindbodyonline.clients.api._0_5_1.StaffFilter;
 import com.mindbodyonline.clients.api._0_5_1.Visit;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
+import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.payment.PaymentVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -222,34 +225,55 @@ public class MindBodyUtil {
 		return cis;
 	}
 
+
 	/**
+	 * creates a ServiceItem from WC's shopping cart item vo
 	 * @param item
 	 * @return
 	 */
-	private static CartItem convertCartItem(ShoppingCartItemVO item) {
-		//TODO - Need To Convert our ShoppingCartItem to MindBody CartItem
-		return null;
+	private static CartItem convertCartItem(ShoppingCartItemVO cartItemVo) {
+		Service vo = Service.Factory.newInstance();
+		vo.setID(cartItemVo.getProductId());
+
+		CartItem item = CartItem.Factory.newInstance();
+		item.setItem(vo);
+		item.setQuantity(cartItemVo.getQuantity());
+		return item;
 	}
 
+
 	/**
+	 * In WC this is 1=1, but we can easily support multiple payment options.
 	 * @param payments
 	 * @return
 	 */
-	public static ArrayOfPaymentInfo buildArrayOfPayments(List<PaymentVO> payments) {
+	public static ArrayOfPaymentInfo buildArrayOfPayments(ShoppingCartVO cart, PaymentVO... payments) {
 		ArrayOfPaymentInfo aopi = ArrayOfPaymentInfo.Factory.newInstance();
 		for(PaymentVO pmt : payments) {
 			aopi.addNewPaymentInfo();
-			aopi.setPaymentInfoArray(0, buildPaymentInfo(pmt));
+			aopi.setPaymentInfoArray(0, buildPaymentInfo(pmt, cart));
 		}
 		return aopi;
 	}
 
 	/**
+	 * creates the SOAP PaymentInfo from WC's shopping cart data
 	 * @param pmt
 	 * @return
 	 */
-	private static PaymentInfo buildPaymentInfo(PaymentVO pmt) {
-		return null;
+	private static PaymentInfo buildPaymentInfo(PaymentVO pmt, ShoppingCartVO cart) {
+		CreditCardInfo vo = CreditCardInfo.Factory.newInstance();
+		vo.setBillingName(cart.getBillingInfo().getFullName());
+		vo.setBillingAddress(cart.getBillingInfo().getAddress());
+		vo.setBillingCity(cart.getBillingInfo().getCity());
+		vo.setBillingState(cart.getBillingInfo().getState());
+		vo.setBillingPostalCode(cart.getBillingInfo().getZipCode());
+		vo.setCreditCardNumber(pmt.getPaymentNumber());
+		vo.setCVV(pmt.getPaymentCode());
+		vo.setExpMonth(pmt.getExpirationMonth());
+		vo.setExpYear(pmt.getExpirationYear());
+		vo.setAmount(BigDecimal.valueOf(cart.getCartTotal()));
+		return vo;
 	}
 
 	/**
@@ -643,7 +667,7 @@ public class MindBodyUtil {
 		s.setSaleDate(sale.getSaleDate().getTime());
 		s.setSaleDateTime(sale.getSaleDateTime().getTime());
 		s.setSaleTime(sale.getSaleTime().getTime());
-		
+
 		return s;
 	}
 

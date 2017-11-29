@@ -1,38 +1,39 @@
 package com.gotimefitness.action;
 
-import java.util.Map;
-
+import com.mindbody.MindBodySaleApi;
+import com.mindbody.util.MindBodyUtil;
+import com.mindbody.vo.MindBodyCredentialVO;
+import com.mindbody.vo.MindBodyResponseVO;
+import com.mindbody.vo.sales.MindBodyCheckoutShoppingCartConfig;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
-import com.siliconmtn.commerce.cart.storage.Storage;
-import com.siliconmtn.commerce.cart.storage.StorageFactory;
-import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.exception.ApplicationException;
-import com.siliconmtn.util.Convert;
+import com.siliconmtn.commerce.payment.PaymentVO;
+import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title:</b> ShoppingCartAction.java<br/>
- * <b>Description:</b> Manages the shopping cart interactions for the website.  
- * Note:  Does NOT manage the checkout/purchase process. 
+ * <b>Title:</b> EcommerceAction.java<br/>
+ * <b>Description:</b> Manages the checkout/purchase process.
  * <br/>
  * <b>Copyright:</b> Copyright (c) 2017<br/>
  * <b>Company:</b> Silicon Mountain Technologies<br/>
  * @author James McKain
  * @version 1.0
- * @since Nov 27, 2017
+ * @since Nov 28, 2017
  ****************************************************************************/
 public class EcommerceAction extends SimpleActionAdapter {
 
-	private Storage cartStorage;
+	ShoppingCartAction sca;
 
 	public EcommerceAction() {
 		super();
+		sca = new ShoppingCartAction();
 	}
 
 	/**
@@ -40,6 +41,7 @@ public class EcommerceAction extends SimpleActionAdapter {
 	 */
 	public EcommerceAction(ActionInitVO arg0) {
 		super(arg0);
+		sca = new ShoppingCartAction();
 	}
 
 
@@ -50,48 +52,7 @@ public class EcommerceAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ShoppingCartVO cart = loadCart(req);
-
-		//for development only - remove from PR
-		if (req.hasParameter("populate"))
-			preload(req);
-
 		putModuleData(cart);
-	}
-
-
-	/**
-	 * for development only - remove from PR
-	 * @param cart
-	 * @throws ActionException 
-	 */
-	private void preload(ActionRequest req) throws ActionException {
-		addToCart(req, "shoes1", "Deluxe Shoestrings", "Made of Kevlar - unbreakable!", 2, 29.95);
-		addToCart(req, "p3pack", "P-3 Pack", "Loaded with protein - Ham & Cashews", 8, 2.34);
-		addToCart(req, "sangria-100", "Sangria Maker", "When your workout goes sideways, have some Sangria.", 1, 59.90);
-	}
-
-
-	/**
-	 * creates a purchasable product using the given parameters and adds it to the user's shopping cart.
-	 * @param productId
-	 * @param name
-	 * @param desc
-	 * @param qnty
-	 * @param basePrice
-	 * @throws ActionException 
-	 */
-	protected void addToCart(ActionRequest req, String productId, String name, String desc, 
-			int qnty, double basePrice) throws ActionException {
-		ShoppingCartItemVO item = new ShoppingCartItemVO();
-		item.setProductId(productId);
-		item.setBasePrice(basePrice);
-		item.setProductName(name);
-		item.setQuantity(qnty);
-		item.setDescription(desc);
-
-		ShoppingCartVO cart = loadCart(req);
-		cart.add(item);
-		saveCart(cart);
 	}
 
 
@@ -102,13 +63,63 @@ public class EcommerceAction extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ShoppingCartVO cart = loadCart(req);
+		String msg = "Your order was submitted successfully.  Thank you.";
 
-		if ("quantity".equals(req.getParameter("action"))) {
-			updateQuantity(req, cart);
+		try {
+			populateCart(req, cart);
+			sendOrderToMB(req, cart);
+
+			cart.flush();
 			saveCart(cart);
+			redirectUser(req, msg);
+		} catch (Exception e) {
+			log.error("could not submit order", e);
+			//failures get forwarded back to the form for resubmission - load the cart
+			retrieve(req);
+			req.setAttribute("msg", e.getMessage());
 		}
+	}
 
-		redirectUser(req);
+
+	/**
+	 * takes the data off the request and injects it into the cart (order) for processing.
+	 * @param req
+	 * @param cart
+	 */
+	private void populateCart(ActionRequest req, ShoppingCartVO cart) {
+		UserDataVO bUser = new UserDataVO(req);
+		bUser.setName(req.getParameter("combinedName"));
+		cart.setBillingInfo(bUser);
+		
+		PaymentVO pmt = new PaymentVO((String)getAttribute(Constants.ENCRYPT_KEY));
+		pmt.setPaymentNumber(req.getParameter("ccNumber"));
+		pmt.setPaymentCode(req.getParameter("cvvNumber"));
+		pmt.setExpirationMonth(req.getParameter("ccExpMo"));
+		pmt.setExpirationYear(req.getParameter("ccExpYr"));
+		cart.setPayment(pmt);
+	}
+
+	
+	/**
+	 * send the order to MindBody using their SOAP API.  This is a multi-step transaction.
+	 * @param req
+	 * @param cart
+	 * @throws ActionException 
+	 */
+	private void sendOrderToMB(ActionRequest req, ShoppingCartVO cart) throws ActionException {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		MindBodyCredentialVO srcCreds = MindBodyUtil.buildSourceCredentials(site.getSiteConfig());
+		MindBodyCredentialVO staffCreds = MindBodyUtil.buildStaffCredentials(site.getSiteConfig());
+
+		UserDataVO vo = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		MindBodyCheckoutShoppingCartConfig config = new MindBodyCheckoutShoppingCartConfig(srcCreds, staffCreds);
+		config.setCart(cart);
+		config.setClientId(vo.getProfileId());
+
+		MindBodySaleApi api = new MindBodySaleApi();
+		MindBodyResponseVO resp = api.getDocument(config);
+		if (resp == null || resp.getErrorCode() != 200)
+			throw new ActionException(resp != null ? resp.getMessage() : (String)getAttribute(AdminConstants.KEY_ERROR_MESSAGE));
 	}
 
 
@@ -116,31 +127,9 @@ public class EcommerceAction extends SimpleActionAdapter {
 	 * redirec the user after a build operation.  This could be expanded to include a confirmation message.
 	 * @param req
 	 */
-	private void redirectUser(ActionRequest req) {
+	private void redirectUser(ActionRequest req, String msg) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		sendRedirect(page.getFullPath(), null, req);
-	}
-
-
-	/**
-	 * iterates the request and updates the item quantities in the cart.
-	 * @param req
-	 * @param cart
-	 */
-	private void updateQuantity(ActionRequest req, ShoppingCartVO cart) {
-		for (Map.Entry<String, String[]> entry: req.getParameterMap().entrySet()) {
-			//ignore everything but legitimate quantities
-			if (!entry.getKey().startsWith("qnty_") || entry.getValue() == null || entry.getValue().length == 0)  continue;
-
-			String prodId = entry.getKey().substring(5);
-			Integer qnty = Convert.formatInteger(entry.getValue()[0]);
-			if (qnty == null || qnty < 1) {
-				cart.remove(prodId);
-			} else {
-				cart.updateQuantity(prodId, qnty);
-			}
-			log.debug("updated " + prodId + " to qnty=" + qnty);
-		}
+		sendRedirect(page.getFullPath(), msg, req);
 	}
 
 
@@ -150,16 +139,8 @@ public class EcommerceAction extends SimpleActionAdapter {
 	 * @throws ActionException 
 	 */
 	protected ShoppingCartVO loadCart(ActionRequest req) throws ActionException {
-		if (cartStorage == null) {
-			try {
-				setAttribute(GlobalConfig.HTTP_REQUEST, req);
-				cartStorage = StorageFactory.getDefaultInstance(getAttributes());
-			} catch (ApplicationException ae) {
-				log.error("could not init cart storage", ae);
-				throw new ActionException(ae);
-			}
-		}
-		return cartStorage.load();
+		sca.setAttributes(getAttributes());
+		return sca.loadCart(req);
 	}
 
 
@@ -169,10 +150,6 @@ public class EcommerceAction extends SimpleActionAdapter {
 	 * @throws ActionException 
 	 */
 	protected void saveCart(ShoppingCartVO cart) throws ActionException {
-		if (cartStorage != null) {
-			cartStorage.save(cart);
-		} else {
-			throw new ActionException("Cart wasn't loaded properly.  Call loadCart(req) first.");
-		}
+		sca.saveCart(cart);
 	}
 }
