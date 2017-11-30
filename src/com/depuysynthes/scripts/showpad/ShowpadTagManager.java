@@ -439,4 +439,12 @@ public class ShowpadTagManager {
 	public void setSourceConstant(String sourceConstant) {
 		this.sourceConstant = sourceConstant;
 	}
+	
+	/**
+	 * getting method used by TagUpdater to perform tag maintenance - nothing used by the general workflow
+	 * @return
+	 */
+	protected Map<String, ShowpadTagVO> getShowpadTags() {
+		return showpadTags;
+	}
 }
