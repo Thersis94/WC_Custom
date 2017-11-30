@@ -143,6 +143,11 @@ public class ShowpadTagManager {
 				//add it to the global list for the next iteration to leverage
 				tagVo = createTag(tagNm, SMT_MEDIABIN_EXTERNALID);
 				showpadTags.put(tagNm, tagVo);
+			} else {
+				//if we are going to assign a tag, make sure we assume ownership of it so we can later remove it.
+				//the mediabin process (here-in) is proclaimed authoritive with regard to tag ownership.
+				//other scripts (like smt-product) can only authorititatively remove tags they create.
+				checkExternalId(tagVo);
 			}
 
 			if (header.length() > 0) header.append(",");
@@ -150,6 +155,38 @@ public class ShowpadTagManager {
 		}
 
 		deleteUnwantedMBTags(vo, assignedTags, desiredTags);
+	}
+
+
+	/**
+	 * Tests the tag to ensure it has the proper externalId - sets it in Showpad if not
+	 * @param showpadTagVO
+	 */
+	protected void checkExternalId(ShowpadTagVO tagVo) {
+		if (tagVo == null || SMT_MEDIABIN_EXTERNALID.equals(tagVo.getExternalId()))
+			return;
+
+		//fire an update at this tag (to showpad) to take ownership of it (make it a Mediabin tag!)
+		tagVo.setExternalId(SMT_MEDIABIN_EXTERNALID);
+		saveTagExternalId(tagVo);
+		showpadTags.put(tagVo.getName(), tagVo);
+	}
+
+
+	/**
+	 * updates a Tag in showpad to set the externalId value on it
+	 * @param tagVo
+	 */
+	protected void saveTagExternalId(ShowpadTagVO tagVo) {
+		String url = showpadApiUrl + "/tags/" + tagVo.getId() + ".json";
+		Map<String, String> params = new HashMap<>();
+		params.put("externalId", tagVo.getExternalId());
+		try {
+			showpadUtil.executePost(url, params);
+			log.debug("updated tag " + tagVo.getId());
+		} catch (IOException e) {
+			log.error("could not update tag with id=" + tagVo.getId(), e);
+		}
 	}
 
 

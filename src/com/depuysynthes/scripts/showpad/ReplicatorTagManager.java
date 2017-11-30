@@ -41,6 +41,16 @@ public class ReplicatorTagManager extends ShowpadTagManager {
 
 
 	/*
+	 * (non-Javadoc)
+	 * @see com.depuysynthes.scripts.showpad.ShowpadTagManager#checkExternalId(com.depuysynthes.scripts.showpad.ShowpadTagVO)
+	 */
+	@Override
+	protected void checkExternalId(ShowpadTagVO tagVo) {
+		return; //functionality not needed here
+	}
+
+
+	/*
 	 * get desired tags from the SOURCE account
 	 * (non-Javadoc)
 	 * @see com.depuysynthes.scripts.showpad.ShowpadTagManager#getDesiredTags(com.depuysynthes.scripts.MediaBinDeltaVO)
