@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -122,25 +123,19 @@ public class ShowpadTagManager {
 	 * @throws QuotaException 
 	 */
 	public void addTags(MediaBinDeltaVO vo, StringBuilder header) throws InvalidDataException {
-		Map<String,ShowpadTagVO> assignedTags = null;
-		if (vo.getShowpadId() != null) assignedTags = loadAssetTags(vo.getShowpadId(), null, true); //suppress404 because the asset may be new
+		Map<String,ShowpadTagVO> assignedTags = loadAssetTags(vo.getShowpadId(), null, true); //suppress404 because the asset may be new
 		Set<String> tagsToAdd = getDesiredTags(vo);
 		Set<String> desiredTags = new HashSet<>(tagsToAdd); //preserve this list for deletions
 
 		//loop the tags the asset already has, removing them from the "need to add" list
-		if (assignedTags != null) {
-			for (String tag : assignedTags.keySet()) {
-				tagsToAdd.remove(tag);
-				//this line can be removed after a few runs in production, ~03.31.2017.  We only need it to clean up the legacy data
-				checkExternalId(showpadTags.get(tag));
-			}
-		}
+		for (String tag : assignedTags.keySet())
+			tagsToAdd.remove(tag);
 
 		//add what's left on the "need to add" list as new tags; both to the Asset, and to the Division in Showpad if they don't already exist
 		for (String tagNm : tagsToAdd) {
 			//do not create or bind empty tags
 			if (StringUtil.checkVal(tagNm).trim().isEmpty()) continue;
-			
+
 			tagNm = tagNm.trim();
 			log.info("asset needs tag " + tagNm);
 			ShowpadTagVO tagVo = showpadTags.get(tagNm);
@@ -148,8 +143,6 @@ public class ShowpadTagManager {
 				//add it to the global list for the next iteration to leverage
 				tagVo = createTag(tagNm, SMT_MEDIABIN_EXTERNALID);
 				showpadTags.put(tagNm, tagVo);
-			} else {
-				checkExternalId(tagVo);
 			}
 
 			if (header.length() > 0) header.append(",");
@@ -157,20 +150,6 @@ public class ShowpadTagManager {
 		}
 
 		deleteUnwantedMBTags(vo, assignedTags, desiredTags);
-	}
-
-
-	/**
-	 * Tests the tag to ensure it has the proper externalId - sets it in Showpad if not
-	 * @param showpadTagVO
-	 */
-	protected void checkExternalId(ShowpadTagVO tagVo) {
-		if (tagVo == null || SMT_MEDIABIN_EXTERNALID.equals(tagVo.getExternalId()))
-			return;
-
-		//fire an update at this tag (to showpad) to take ownership of it (make it a Mediabin tag!)
-		tagVo.setExternalId(SMT_MEDIABIN_EXTERNALID);
-		saveTagExternalId(tagVo);
 	}
 
 
@@ -185,41 +164,18 @@ public class ShowpadTagManager {
 		//if the asset had no existing tags, we're done.  There aren't any we need to worry about removing
 		if (assignedTags == null || assignedTags.isEmpty()) return;
 
-		//fire some tag deletions to this existing asset
-		//make a 'tagsToDelete' list by subtracting what we want (to add) from what we have
-		Map<String, ShowpadTagVO> tagsToDelete = new HashMap<>(assignedTags);
+		Map<String, ShowpadTagVO> tagsToDelete = new HashMap<>();
 
-		//don't delete any we want
-		for (String tagNm : desiredTags)
-			tagsToDelete.remove(tagNm);
-
-		//loop through the tags we want to delete and first check that they're ours.  We can't delete tags that aren't ours.
-		List<ShowpadTagVO> tags = new ArrayList<>(tagsToDelete.size());
-		for (ShowpadTagVO tagVo : tagsToDelete.values()) {
-			if (SMT_MEDIABIN_EXTERNALID.equals(tagVo.getExternalId())) {
-				tags.add(tagVo);
-				log.debug("unlinking mediabin tag: " + tagVo.getName());
+		//loop through the tags already assigned
+		for (ShowpadTagVO tag : assignedTags.values()) {
+			if (!desiredTags.contains(tag.getName()) && SMT_MEDIABIN_EXTERNALID.equals(tag.getExternalId())) {
+				//do not delete any that aren't smt-mediabin tags; meaning they 
+				//were created by someone or something else and are not ours to delete.
+				tagsToDelete.put(tag.getName(), tag);
+				log.debug("unlinking mediabin tag: " + tag.getName());
 			}
 		}
-		unlinkAssetFromTags(vo.getShowpadId(), tags);
-	}
-
-
-	/**
-	 * updates a Tag in showpad to set the externalId value on it
-	 * @param tagVo
-	 */
-	protected void saveTagExternalId(ShowpadTagVO tagVo) {
-		String url = showpadApiUrl + "/tags/" + tagVo.getId() + ".json";
-		Map<String, String> params = new HashMap<>();
-		params.put("externalId", tagVo.getExternalId());
-		try {
-			showpadUtil.executePost(url, params);
-			log.debug("updated tag " + tagVo.getId());
-		} catch (IOException e) {
-			log.error("could not update tag with id=" + tagVo.getId(), e);
-		}
-
+		unlinkAssetFromTags(vo.getShowpadId(), tagsToDelete.values());
 	}
 
 
@@ -257,6 +213,8 @@ public class ShowpadTagManager {
 	 */
 	protected Map<String, ShowpadTagVO> loadAssetTags(String showpadId, String externalId, boolean suppress404) 
 			throws InvalidDataException {
+		if (StringUtil.isEmpty(showpadId)) return Collections.emptyMap();
+
 		Map<String,ShowpadTagVO> tags = new HashMap<>();
 		String tagUrl = showpadApiUrl + "/assets/" + showpadId + "/tags.json?limit=1000&suppress_response_codes=true&fields=id,name,externalId";
 		if (externalId != null) tagUrl += "&externalId=" + externalId; //filters to only tags on this asset with this externalId
@@ -336,34 +294,32 @@ public class ShowpadTagManager {
 
 		Map<String, ShowpadTagVO> assignedTags = loadAssetTags(showpadId, null, false); //do not suppress404, asset should exist at this point
 		Map<String, ShowpadTagVO> tagsToAdd = new HashMap<>();
+		Map<String, ShowpadTagVO> tagsToDelete = new HashMap<>();
 
 		//put all the tags we want on the 'add' list, then we'll remove the ones that already exist
 		for (ShowpadTagVO tag : mbAsset.getTags())
 			tagsToAdd.put(tag.getName(), tag);
 
 		//make a 'tagsToDelete' list by subtracting what we want (to add) from what we have
-		Map<String, ShowpadTagVO> tagsToDelete = new HashMap<>(assignedTags);
-		for (String tagNm : tagsToAdd.keySet()) {
-			//don't delete any we want
-			tagsToDelete.remove(tagNm);
-		}
 		for (ShowpadTagVO tag : assignedTags.values()) {
-			//do not delete any that aren't smt-product tags; meaning they 
-			//were created by someone else or something else and are not ours to delete.
-			if (!SMT_PRODUCT_EXTERNALID.equals(tag.getExternalId()))
-				tagsToDelete.remove(tag.getName());
-		}
+			if (tagsToAdd.containsKey(tag.getName())) {
+				//don't need to add it, it's already there
+				tagsToAdd.remove(tag.getName());
 
-		//remove from the 'add' list any tags we want to keep that are already tied to the asset.
-		for (ShowpadTagVO tVo : assignedTags.values())
-			tagsToAdd.remove(tVo.getName());
+			} else if (SMT_PRODUCT_EXTERNALID.equals(tag.getExternalId())) {
+				//do not delete any that aren't smt-product tags; meaning they 
+				//were created by someone or something else and are not ours to delete.
+				tagsToDelete.put(tag.getName(), tag);
+				log.debug("unlinking product tag: " + tag.getName());
+			}
+		}
 
 		//do the work
 		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", previous tags: " + assignedTags.keySet());
 		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", unlinking tags: " + tagsToDelete.keySet());
 		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", linking tags: " + tagsToAdd.keySet());
 		unlinkAssetFromTags(showpadId, tagsToDelete.values());
-		linkAssetToTags(showpadId, tagsToAdd.values());
+		linkAssetToProductTags(showpadId, tagsToAdd.values());
 	}
 
 
@@ -389,17 +345,17 @@ public class ShowpadTagManager {
 	 * @param tags
 	 * @throws QuotaException
 	 */
-	protected void linkAssetToTags(String showpadAssetId, Collection<ShowpadTagVO> tags) {
+	protected void linkAssetToProductTags(String showpadAssetId, Collection<ShowpadTagVO> tags) {
 		for (ShowpadTagVO tag : tags) {
 			//do not create or bind empty tags
 			if (StringUtil.checkVal(tag.getName()).trim().isEmpty()) continue;
-			
+
 			//if we don't know this tag by ID, get it from the Division's list if it already exists there
-			if (tag.getId() == null && showpadTags.containsKey(tag.getName()))
+			if (StringUtil.isEmpty(tag.getId()) && showpadTags.containsKey(tag.getName()))
 				tag = showpadTags.get(tag.getName());
 
 			//if the tag is not there, it needs to be added to the Division before we can bind assets to it.
-			if (tag.getId() == null) {
+			if (StringUtil.isEmpty(tag.getId())) {
 				tag = createTag(tag.getName(), SMT_PRODUCT_EXTERNALID);
 				showpadTags.put(tag.getName(), tag);
 			}
