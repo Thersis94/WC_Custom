@@ -66,7 +66,9 @@ public class PerkvilleAuthAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) {
-		processOAuthCall(req);
+		if(req.hasParameter("initPerkville") || req.hasParameter("code")) {
+			processOAuthCall(req);
+		}
 	}
 
 	private void processOAuthCall(ActionRequest req) {
@@ -91,6 +93,11 @@ public class PerkvilleAuthAction extends SimpleActionAdapter {
 			else if(c == null && req.hasParameter("code")) {
 				// receive authorization code and exchange it for an access token
 				c = token.getToken(req.getParameter("code"));
+
+				//Testing hook for perkville binding successfully.
+				if(c != null) {
+					req.setAttribute("perkvilleLoaded", true);
+				}
 			}
 
 			//Refresh Token.
@@ -132,7 +139,6 @@ public class PerkvilleAuthAction extends SimpleActionAdapter {
 			}
 		} else {
 			scopes.add(Scope.PUBLIC.name());
-		//	scopes.add(Scope.USER_CUSTOMER_INFO.name());
 		}
 
 		return scopes;
