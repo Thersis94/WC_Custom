@@ -49,10 +49,6 @@ public class ConnectionVO {
 	private String user;
 	private Object [] vouchers;
 
-	public ConnectionVO() {
-		
-	}
-
 	/**
 	 * @return the business
 	 */
