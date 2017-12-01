@@ -767,30 +767,6 @@ public class MindBodyUtil {
 		return perm;
 	}
 
-	/**
-	 * Convert a MindBody ShoppingCart to WC ShoppingCartVO
-	 * @param shoppingCart
-	 * @return
-	 */
-	public static com.siliconmtn.commerce.ShoppingCartVO convertShoppingCart(ShoppingCart sc) {
-		com.siliconmtn.commerce.ShoppingCartVO cart = new com.siliconmtn.commerce.ShoppingCartVO();
-		if(sc.isSetCartItems()) {
-			for(CartItem ci : sc.getCartItems().getCartItemArray()) {
-				cart.add(convertShoppingCartItem(ci));
-			}
-		}
-
-		return cart;
-	}
-
-	/**
-	 * Convert a MindBody CartItem to WC ShoppingCartItemVO
-	 * @param ci
-	 * @return
-	 */
-	public static ShoppingCartItemVO convertShoppingCartItem(CartItem ci) {
-		return null;
-	}
 
 	/**
 	 * Convert a MindBody Service to WC MBServiceVO
