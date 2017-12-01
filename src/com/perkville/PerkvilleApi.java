@@ -1,8 +1,11 @@
 package com.perkville;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +16,8 @@ import org.apache.log4j.Logger;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.perkville.vo.ConnectionVO;
 import com.perkville.vo.PerkVO;
 import com.perkville.vo.PerkvilleVO;
@@ -20,9 +25,12 @@ import com.perkville.vo.UserVO;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.security.BaseOAuth2Token.Config;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.json.GSONDateDeserializer;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.security.oauth.OAuth2TokenViaDB;
+
 
 /****************************************************************************
  * <b>Title:</b> PerkvilleAPI.java
@@ -38,13 +46,17 @@ import com.smt.sitebuilder.security.oauth.OAuth2TokenViaDB;
 public class PerkvilleApi {
 	private Logger log;
 	private PerkvilleOAuth2Token token;
+
+	//Perkville Api URL
 	private static final String API_URL = "https://api.perkville.com";
 
+	//Map or available Perkville Endpoints.
 	protected static final Map<String, String> ENDPOINTS;
 
 	//Holds name for finding AccessToken on Session.
 	public static final String ACCESS_TOKEN = "perkvilleAccessToken";
 
+	//Perkville OAuth Scopes.
 	private enum Scope {
 		PUBLIC,						//Grants read-only access to public information
 		USER_CUSTOMER_INFO,			//Grants read-only access to user's contact information, business connections, and vouchers. Grants ability to mark a voucher as "Used".
@@ -83,12 +95,20 @@ public class PerkvilleApi {
 		ENDPOINTS.put("perks", "/v2/perks/");	
 	}
 
+	/**
+	 * 
+	 * @param conn
+	 * @param site
+	 * @param user
+	 * @param code
+	 */
 	public PerkvilleApi(Connection conn, SiteVO site, UserDataVO user, String code) {
 		this.token = buildToken(site, user, conn, code);
 		this.log = Logger.getLogger(getClass());
 	}
 
 	/**
+	 * Return PerkvilleOAuth2Token.
 	 * @return
 	 */
 	public PerkvilleOAuth2Token getToken() {
@@ -96,27 +116,28 @@ public class PerkvilleApi {
 	}
 
 	/**
-	 * 
+	 * Perform lookup against Perkville for available Perks.
 	 * @return
 	 */
 	public PerkvilleVO<PerkVO> getPerks() {
-		String perkData = performCall(buildUrl(ENDPOINTS.get("perks"))); 
-		return convertData(perkData, new PerkvilleVO<PerkVO>());
+		String perkData = performCall(buildUrl(ENDPOINTS.get("perks")));
+		return convertData(perkData, new TypeToken<PerkvilleVO<PerkVO>>() {}.getType());
 	}
 
 	/**
+	 * Deserializes jsonData down to an Object of given Type.
 	 * @param perkData
 	 * @param perkVO
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
-	private <T extends Object> T convertData(String jsonData, T vo) {
-		Gson g = new Gson();
-		return (T) g.fromJson(jsonData, vo.getClass());
+	private <T extends Object> T convertData(String jsonData, Type type) {
+		GSONDateDeserializer dateParser = new GSONDateDeserializer(Arrays.asList(Convert.DATE_DASH_PATTERN, Convert.DATE_TIME_DASH_PATTERN));
+		Gson gson = new GsonBuilder().registerTypeAdapter(Date.class, dateParser).create();
+		return gson.fromJson(jsonData, type);
 	}
 
 	/**
-	 * Perform
+	 * Perform lookup against Perkville for a users points at a given location.
 	 * @param emailAddress
 	 * @return
 	 */
@@ -125,12 +146,12 @@ public class PerkvilleApi {
 		if(conData.getObjects() != null && !conData.getObjects().isEmpty()) {
 			if(!StringUtil.isEmpty(locationId)) {
 				for(ConnectionVO c : conData.getObjects()) {
-					if(c.getHome_location().equals(locationId)) {
-						return c.getPoint_balance();
+					if(c.getHomeLocation().equals(locationId)) {
+						return c.getPointBalance();
 					}
 				}
 			} else {
-				return conData.getObjects().get(0).getPoint_balance();
+				return conData.getObjects().get(0).getPointBalance();
 			}
 		}
 
@@ -144,7 +165,7 @@ public class PerkvilleApi {
 	 */
 	public PerkvilleVO<ConnectionVO> performConnectionLookup(String connectionId) {
 		String connData = performCall(buildUrl(ENDPOINTS.get("connections"), connectionId)); 
-		return convertData(connData, new PerkvilleVO<ConnectionVO>());
+		return convertData(connData, new TypeToken<PerkvilleVO<ConnectionVO>>() {}.getType());
 	}
 
 	/**
@@ -160,7 +181,7 @@ public class PerkvilleApi {
 		}
 
 		String userData = performCall(buildUrl(ENDPOINTS.get("users"), paramMap)); 
-		return convertData(userData, new PerkvilleVO<UserVO>());
+		return convertData(userData, new TypeToken<PerkvilleVO<UserVO>>() {}.getType());
 	}
 
 	/**
@@ -240,7 +261,7 @@ public class PerkvilleApi {
 		try {
 			response = c.retrieveData(url);
 		} catch (IOException e) {
-			log.error("Error Processing Code", e);
+			log.error("Error Connecting to Perkville Endpoint.", e);
 		}
 
 		//Return Response as String.
@@ -263,7 +284,15 @@ public class PerkvilleApi {
 		return c;
 	}
 
-	public PerkvilleOAuth2Token buildToken(SiteVO site, UserDataVO user, Connection conn, String code) {
+	/**
+	 * Helper method builds the PerkvilleOAuth2Token
+	 * @param site
+	 * @param user
+	 * @param conn
+	 * @param code
+	 * @return
+	 */
+	private PerkvilleOAuth2Token buildToken(SiteVO site, UserDataVO user, Connection conn, String code) {
 		Map<String, String> siteConfig = site.getSiteConfig();
 
 		//Initialize Token.
@@ -282,7 +311,7 @@ public class PerkvilleApi {
 	 * @param siteConfig
 	 * @return
 	 */
-	protected Map<String, Object> buildOAuthAttributes(Connection conn, String code, Map<String, String> siteConfig) {
+	private Map<String, Object> buildOAuthAttributes(Connection conn, String code, Map<String, String> siteConfig) {
 		Map<String, Object> attr = new HashMap<>();
 		attr.put(OAuth2TokenViaDB.DB_CONN_KEY, conn);
 		attr.put(PerkvilleOAuth2Token.RESPONSE_TYPE_PARAM, siteConfig.get(PVSiteConfig.PV_AUTH_CODE_RESPONSE.name()));

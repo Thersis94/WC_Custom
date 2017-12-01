@@ -2,6 +2,8 @@ package com.perkville.vo;
 
 import java.util.Date;
 
+import com.google.gson.annotations.SerializedName;
+
 /****************************************************************************
  * <b>Title:</b> PerkVO.java
  * <b>Project:</b> WC_Custom
@@ -15,33 +17,46 @@ import java.util.Date;
  ****************************************************************************/
 public class PerkVO {
 
-	private boolean admin_flagged_as_invisible_to_customers;
+	@SerializedName("admin_flagged_as_invisible_to_customers")
+	private boolean adminFlaggedAsInvisibleToCustomers;
 	private String business;
 	private String classification;
-	private boolean completes_referral;
+	@SerializedName("completes_referral")
+	private boolean completesReferral;
 	private String description;
-	private boolean eligible_at_all_locations;
-	private String external_coupon_code;
-	private String external_reward_url;
-	private String fine_print;
-	private Date from_date;
-	private int perk_id;
-	private String picture_card;
+	@SerializedName("eligible_at_all_locations")
+	private boolean eligibleAtAllLocations;
+	@SerializedName("external_coupon_code")
+	private String externalCouponCode;
+	@SerializedName("external_reward_url")
+	private String externalRewardUrl;
+	@SerializedName("fine_print")
+	private String finePrint;
+	@SerializedName("from_date")
+	private Date fromDate;
+	@SerializedName("perk_id")
+	private int perkId;
+	@SerializedName("picture_card")
+	private String pictureCard;
 	private int points;
-	private int redemption_limit_count;
-	private int redemption_limit_interval;
-	private int redemption_limit_interval_count;
-	private String resource_uri;
+	@SerializedName("redemption_limit_count")
+	private int redemptionLimitCount;
+	@SerializedName("redemption_limit_interval")
+	private int redemptionLimitInterval;
+	@SerializedName("redemption_limit_interval_count")
+	private int redemptionLimitIntervalCount;
+	@SerializedName("resource_uri")
+	private String resourceUri;
 	private String status;
 	private String title;
-	private Date to_date;
+	@SerializedName("to_date")
+	private Date toDate;
 	private String type;
-
 	/**
-	 * @return the admin_flagged_as_invisible_to_customers
+	 * @return the adminFlaggedAsInvisibleToCustomers
 	 */
-	public boolean isAdmin_flagged_as_invisible_to_customers() {
-		return admin_flagged_as_invisible_to_customers;
+	public boolean isAdminFlaggedAsInvisibleToCustomers() {
+		return adminFlaggedAsInvisibleToCustomers;
 	}
 	/**
 	 * @return the business
@@ -56,10 +71,10 @@ public class PerkVO {
 		return classification;
 	}
 	/**
-	 * @return the completes_referral
+	 * @return the completesReferral
 	 */
-	public boolean isCompletes_referral() {
-		return completes_referral;
+	public boolean isCompletesReferral() {
+		return completesReferral;
 	}
 	/**
 	 * @return the description
@@ -68,46 +83,46 @@ public class PerkVO {
 		return description;
 	}
 	/**
-	 * @return the eligible_at_all_locations
+	 * @return the eligibleAtAllLocations
 	 */
-	public boolean isEligible_at_all_locations() {
-		return eligible_at_all_locations;
+	public boolean isEligibleAtAllLocations() {
+		return eligibleAtAllLocations;
 	}
 	/**
-	 * @return the external_coupon_code
+	 * @return the externalCouponCode
 	 */
-	public String getExternal_coupon_code() {
-		return external_coupon_code;
+	public String getExternalCouponCode() {
+		return externalCouponCode;
 	}
 	/**
-	 * @return the external_reward_url
+	 * @return the externalRewardUrl
 	 */
-	public String getExternal_reward_url() {
-		return external_reward_url;
+	public String getExternalRewardUrl() {
+		return externalRewardUrl;
 	}
 	/**
-	 * @return the fine_print
+	 * @return the finePrint
 	 */
-	public String getFine_print() {
-		return fine_print;
+	public String getFinePrint() {
+		return finePrint;
 	}
 	/**
-	 * @return the from_date
+	 * @return the fromDate
 	 */
-	public Date getFrom_date() {
-		return from_date;
+	public Date getFromDate() {
+		return fromDate;
 	}
 	/**
-	 * @return the perk_id
+	 * @return the perkId
 	 */
-	public int getPerk_id() {
-		return perk_id;
+	public int getPerkId() {
+		return perkId;
 	}
 	/**
-	 * @return the picture_card
+	 * @return the pictureCard
 	 */
-	public String getPicture_card() {
-		return picture_card;
+	public String getPictureCard() {
+		return pictureCard;
 	}
 	/**
 	 * @return the points
@@ -116,28 +131,28 @@ public class PerkVO {
 		return points;
 	}
 	/**
-	 * @return the redemption_limit_count
+	 * @return the redemptionLimitCount
 	 */
-	public int getRedemption_limit_count() {
-		return redemption_limit_count;
+	public int getRedemptionLimitCount() {
+		return redemptionLimitCount;
 	}
 	/**
-	 * @return the redemption_limit_interval
+	 * @return the redemptionLimitInterval
 	 */
-	public int getRedemption_limit_interval() {
-		return redemption_limit_interval;
+	public int getRedemptionLimitInterval() {
+		return redemptionLimitInterval;
 	}
 	/**
-	 * @return the redemption_limit_interval_count
+	 * @return the redemptionLimitIntervalCount
 	 */
-	public int getRedemption_limit_interval_count() {
-		return redemption_limit_interval_count;
+	public int getRedemptionLimitIntervalCount() {
+		return redemptionLimitIntervalCount;
 	}
 	/**
-	 * @return the resource_uri
+	 * @return the resourceUri
 	 */
-	public String getResource_uri() {
-		return resource_uri;
+	public String getResourceUri() {
+		return resourceUri;
 	}
 	/**
 	 * @return the status
@@ -152,10 +167,10 @@ public class PerkVO {
 		return title;
 	}
 	/**
-	 * @return the to_date
+	 * @return the toDate
 	 */
-	public Date getTo_date() {
-		return to_date;
+	public Date getToDate() {
+		return toDate;
 	}
 	/**
 	 * @return the type
@@ -164,10 +179,10 @@ public class PerkVO {
 		return type;
 	}
 	/**
-	 * @param admin_flagged_as_invisible_to_customers the admin_flagged_as_invisible_to_customers to set.
+	 * @param adminFlaggedAsInvisibleToCustomers the adminFlaggedAsInvisibleToCustomers to set.
 	 */
-	public void setAdmin_flagged_as_invisible_to_customers(boolean admin_flagged_as_invisible_to_customers) {
-		this.admin_flagged_as_invisible_to_customers = admin_flagged_as_invisible_to_customers;
+	public void setAdminFlaggedAsInvisibleToCustomers(boolean adminFlaggedAsInvisibleToCustomers) {
+		this.adminFlaggedAsInvisibleToCustomers = adminFlaggedAsInvisibleToCustomers;
 	}
 	/**
 	 * @param business the business to set.
@@ -182,10 +197,10 @@ public class PerkVO {
 		this.classification = classification;
 	}
 	/**
-	 * @param completes_referral the completes_referral to set.
+	 * @param completesReferral the completesReferral to set.
 	 */
-	public void setCompletes_referral(boolean completes_referral) {
-		this.completes_referral = completes_referral;
+	public void setCompletesReferral(boolean completesReferral) {
+		this.completesReferral = completesReferral;
 	}
 	/**
 	 * @param description the description to set.
@@ -194,46 +209,46 @@ public class PerkVO {
 		this.description = description;
 	}
 	/**
-	 * @param eligible_at_all_locations the eligible_at_all_locations to set.
+	 * @param eligibleAtAllLocations the eligibleAtAllLocations to set.
 	 */
-	public void setEligible_at_all_locations(boolean eligible_at_all_locations) {
-		this.eligible_at_all_locations = eligible_at_all_locations;
+	public void setEligibleAtAllLocations(boolean eligibleAtAllLocations) {
+		this.eligibleAtAllLocations = eligibleAtAllLocations;
 	}
 	/**
-	 * @param external_coupon_code the external_coupon_code to set.
+	 * @param externalCouponCode the externalCouponCode to set.
 	 */
-	public void setExternal_coupon_code(String external_coupon_code) {
-		this.external_coupon_code = external_coupon_code;
+	public void setExternalCouponCode(String externalCouponCode) {
+		this.externalCouponCode = externalCouponCode;
 	}
 	/**
-	 * @param external_reward_url the external_reward_url to set.
+	 * @param externalRewardUrl the externalRewardUrl to set.
 	 */
-	public void setExternal_reward_url(String external_reward_url) {
-		this.external_reward_url = external_reward_url;
+	public void setExternalRewardUrl(String externalRewardUrl) {
+		this.externalRewardUrl = externalRewardUrl;
 	}
 	/**
-	 * @param fine_print the fine_print to set.
+	 * @param finePrint the finePrint to set.
 	 */
-	public void setFine_print(String fine_print) {
-		this.fine_print = fine_print;
+	public void setFinePrint(String finePrint) {
+		this.finePrint = finePrint;
 	}
 	/**
-	 * @param from_date the from_date to set.
+	 * @param fromDate the fromDate to set.
 	 */
-	public void setFrom_date(Date from_date) {
-		this.from_date = from_date;
+	public void setFromDate(Date fromDate) {
+		this.fromDate = fromDate;
 	}
 	/**
-	 * @param perk_id the perk_id to set.
+	 * @param perkId the perkId to set.
 	 */
-	public void setPerk_id(int perk_id) {
-		this.perk_id = perk_id;
+	public void setPerkId(int perkId) {
+		this.perkId = perkId;
 	}
 	/**
-	 * @param picture_card the picture_card to set.
+	 * @param pictureCard the pictureCard to set.
 	 */
-	public void setPicture_card(String picture_card) {
-		this.picture_card = picture_card;
+	public void setPictureCard(String pictureCard) {
+		this.pictureCard = pictureCard;
 	}
 	/**
 	 * @param points the points to set.
@@ -242,28 +257,28 @@ public class PerkVO {
 		this.points = points;
 	}
 	/**
-	 * @param redemption_limit_count the redemption_limit_count to set.
+	 * @param redemptionLimitCount the redemptionLimitCount to set.
 	 */
-	public void setRedemption_limit_count(int redemption_limit_count) {
-		this.redemption_limit_count = redemption_limit_count;
+	public void setRedemptionLimitCount(int redemptionLimitCount) {
+		this.redemptionLimitCount = redemptionLimitCount;
 	}
 	/**
-	 * @param redemption_limit_interval the redemption_limit_interval to set.
+	 * @param redemptionLimitInterval the redemptionLimitInterval to set.
 	 */
-	public void setRedemption_limit_interval(int redemption_limit_interval) {
-		this.redemption_limit_interval = redemption_limit_interval;
+	public void setRedemptionLimitInterval(int redemptionLimitInterval) {
+		this.redemptionLimitInterval = redemptionLimitInterval;
 	}
 	/**
-	 * @param redemption_limit_interval_count the redemption_limit_interval_count to set.
+	 * @param redemptionLimitIntervalCount the redemptionLimitIntervalCount to set.
 	 */
-	public void setRedemption_limit_interval_count(int redemption_limit_interval_count) {
-		this.redemption_limit_interval_count = redemption_limit_interval_count;
+	public void setRedemptionLimitIntervalCount(int redemptionLimitIntervalCount) {
+		this.redemptionLimitIntervalCount = redemptionLimitIntervalCount;
 	}
 	/**
-	 * @param resource_uri the resource_uri to set.
+	 * @param resourceUri the resourceUri to set.
 	 */
-	public void setResource_uri(String resource_uri) {
-		this.resource_uri = resource_uri;
+	public void setResourceUri(String resourceUri) {
+		this.resourceUri = resourceUri;
 	}
 	/**
 	 * @param status the status to set.
@@ -278,10 +293,10 @@ public class PerkVO {
 		this.title = title;
 	}
 	/**
-	 * @param to_date the to_date to set.
+	 * @param toDate the toDate to set.
 	 */
-	public void setTo_date(Date to_date) {
-		this.to_date = to_date;
+	public void setToDate(Date toDate) {
+		this.toDate = toDate;
 	}
 	/**
 	 * @param type the type to set.

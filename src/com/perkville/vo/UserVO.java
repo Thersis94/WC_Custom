@@ -2,6 +2,8 @@ package com.perkville.vo;
 
 import java.util.Date;
 
+import com.google.gson.annotations.SerializedName;
+
 /****************************************************************************
  * <b>Title:</b> UserVO.java
  * <b>Project:</b> WC_Custom
@@ -15,44 +17,49 @@ import java.util.Date;
  ****************************************************************************/
 public class UserVO {
 
-	private int user_id;
-	private String first_name;
-	private Date last_mod_dt;
-	private String last_name;
-	private String phone_number;
+	@SerializedName("user_id")
+	private int userId;
+	@SerializedName("first_name")
+	private String firstName;
+	@SerializedName("last_mod_dt")
+	private Date lastModDt;
+	@SerializedName("last_name")
+	private String lastName;
+	@SerializedName("phone_number")
+	private String phoneNumber;
+	@SerializedName("birthday")
 	private Date birthday;
 	private Object [] emails;
 	private Object [] connections;
-
 	/**
-	 * @return the user_id
+	 * @return the userId
 	 */
-	public int getUser_id() {
-		return user_id;
+	public int getUserId() {
+		return userId;
 	}
 	/**
-	 * @return the first_name
+	 * @return the firstName
 	 */
-	public String getFirst_name() {
-		return first_name;
+	public String getFirstName() {
+		return firstName;
 	}
 	/**
-	 * @return the last_mod_dt
+	 * @return the lastModDt
 	 */
-	public Date getLast_mod_dt() {
-		return last_mod_dt;
+	public Date getLastModDt() {
+		return lastModDt;
 	}
 	/**
-	 * @return the last_name
+	 * @return the lastName
 	 */
-	public String getLast_name() {
-		return last_name;
+	public String getLastName() {
+		return lastName;
 	}
 	/**
-	 * @return the phone_number
+	 * @return the phoneNumber
 	 */
-	public String getPhone_number() {
-		return phone_number;
+	public String getPhoneNumber() {
+		return phoneNumber;
 	}
 	/**
 	 * @return the birthday
@@ -73,34 +80,34 @@ public class UserVO {
 		return connections;
 	}
 	/**
-	 * @param user_id the user_id to set.
+	 * @param userId the userId to set.
 	 */
-	public void setUser_id(int user_id) {
-		this.user_id = user_id;
+	public void setUserId(int userId) {
+		this.userId = userId;
 	}
 	/**
-	 * @param first_name the first_name to set.
+	 * @param firstName the firstName to set.
 	 */
-	public void setFirst_name(String first_name) {
-		this.first_name = first_name;
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
 	}
 	/**
-	 * @param last_mod_dt the last_mod_dt to set.
+	 * @param lastModDt the lastModDt to set.
 	 */
-	public void setLast_mod_dt(Date last_mod_dt) {
-		this.last_mod_dt = last_mod_dt;
+	public void setLastModDt(Date lastModDt) {
+		this.lastModDt = lastModDt;
 	}
 	/**
-	 * @param last_name the last_name to set.
+	 * @param lastName the lastName to set.
 	 */
-	public void setLast_name(String last_name) {
-		this.last_name = last_name;
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
 	}
 	/**
-	 * @param phone_number the phone_number to set.
+	 * @param phoneNumber the phoneNumber to set.
 	 */
-	public void setPhone_number(String phone_number) {
-		this.phone_number = phone_number;
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
 	}
 	/**
 	 * @param birthday the birthday to set.
