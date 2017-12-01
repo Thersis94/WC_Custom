@@ -81,6 +81,7 @@ public class ShowpadApiUtil {
 		config.put(Config.TOKEN_SERVER_URL, props.getProperty(prefix + "showpadTokenUrl"));
 		config.put(Config.AUTH_SERVER_URL,  props.getProperty(prefix + "showpadAuthUrl"));
 		config.put(Config.KEYSTORE, "showpad-" + StringUtil.removeNonAlphaNumeric(config.get(Config.API_KEY)));
+		config.put(Config.GRANT_TYPE, "refresh_token");
 		List<String> scopes = Arrays.asList(props.getProperty(prefix + "showpadScopes").split(","));
 		return new ShowpadApiUtil(new OAuth2TokenViaCLI(config, scopes));
 	}

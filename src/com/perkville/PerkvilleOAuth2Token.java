@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import com.google.api.client.auth.oauth2.AuthorizationCodeTokenRequest;
 import com.google.api.client.auth.oauth2.TokenResponse;
-import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.GenericUrl;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.smt.sitebuilder.security.oauth.OAuth2TokenViaDB;
@@ -59,25 +57,6 @@ public class PerkvilleOAuth2Token extends OAuth2TokenViaDB {
 	}
 
 	/**
-	 * Build the Token Request Url.
-	 */
-	@Override
-	public String buildTokenReqUrl() {
-		GenericUrl url = new GenericUrl(config.get(Config.TOKEN_SERVER_URL));
-		url.set(CLIENT_ID_PARAM, config.get(Config.API_KEY));
-		url.set(CODE_PARAM, attributes.get(CODE_PARAM));
-		url.set(GRANT_TYPE_PARAM, config.get(Config.GRANT_TYPE));
-		url.set(STATE_PARAM, attributes.get(STATE_PARAM));
-
-		//GenericUrl is encoding the CallbackUrl in a way that Perkville doesn't recognize so append it after the fact.
-		StringBuilder u = new StringBuilder(150);
-	    u.append(url.build()).append("&").append(REDIRECT_URL_PARAM).append("=").append(StringEncoder.urlEncode(config.get(Config.TOKEN_CALLBACK_URL)));
-		log.info(u);
-
-	    return u.toString();
-	}
-
-	/**
 	 * Build the Scope String according to how Perkville wants it.
 	 * @return
 	 */
@@ -97,27 +76,10 @@ public class PerkvilleOAuth2Token extends OAuth2TokenViaDB {
 	 * @throws IOException
 	 */
 	public TokenResponse getTokenResponse(String code) throws IOException {
-		AuthorizationCodeTokenRequest tokReq = flow.newTokenRequest(code)
+		return flow.newTokenRequest(code)
 		.setRedirectUri(config.get(Config.TOKEN_CALLBACK_URL))
-		.setScopes(scopes);
-		tokReq.setClientAuthentication(new BasicAuthentication(config.get(Config.API_KEY), config.get(Config.API_SECRET)));
-
-		return tokReq.execute();
-	}
-
-	/**
-	 * Build the TokenRequestUrl with the required Params.
-	 * @param code - Auth code retrieved from AuthRequest Response.
-	 * @return
-	 */
-	public String buildTokenRequestUrl(String code) {
-		GenericUrl url = new GenericUrl(config.get(Config.TOKEN_SERVER_URL));
-		url.set(CLIENT_ID_PARAM, config.get(Config.API_KEY));
-		url.set(CODE_PARAM, code);
-		url.set(GRANT_TYPE_PARAM, attributes.get(GRANT_TYPE_PARAM));
-		url.set(REDIRECT_URL_PARAM, Config.TOKEN_CALLBACK_URL);
-		url.set(STATE_PARAM, attributes.get(STATE_PARAM));
-
-		return url.build();
+		.setScopes(scopes)
+		.set(CLIENT_ID_PARAM, config.get(Config.API_KEY))
+		.execute();
 	}
 }

@@ -130,7 +130,6 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 				resp = removeClientsFromClass((MindBodyRemoveClientsFromClassesConfig) config);
 				break;
 			default:
-				log.info("Endpoint not supported.");
 				resp = buildErrorResponse(HttpStatus.CD_501_NOT_IMPLEMENTED, "Endpoint Not Supported");
 				break;
 		}
@@ -389,7 +388,6 @@ public class MindBodyClassApi extends AbstractMindBodyApi<Class_x0020_ServiceStu
 		GetClassSchedulesResponseDocument res = client.getClassSchedules(doc);
 		GetClassSchedulesResult r = res.getGetClassSchedulesResponse().getGetClassSchedulesResult();
 		resp.populateResponseFields(r);
-
 		if(resp.isValid()) {
 			for(Object o : r.getClassSchedules().getClassScheduleArray()) {
 				resp.addResults(MindBodyUtil.convertClassSchedule((ClassSchedule) o));
