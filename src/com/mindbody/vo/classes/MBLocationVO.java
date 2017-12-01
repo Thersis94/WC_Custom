@@ -33,6 +33,12 @@ public class MBLocationVO extends GeocodeLocation {
 	private float tax4;
 	private float tax5;
 	private List<String> additionalImageUrls;
+	private int businessId;
+	private boolean canBook;
+	private String description;
+	private double distanceInMiles;
+	private String imageUrl;
+	private boolean proSpaFinderSite;
 
 	public MBLocationVO() {
 		//Default Constructor
@@ -246,5 +252,89 @@ public class MBLocationVO extends GeocodeLocation {
 	 */
 	public void setAdditionalImageUrls(List<String> additionalImageUrls) {
 		this.additionalImageUrls = additionalImageUrls;
+	}
+
+	/**
+	 * @return the businessId
+	 */
+	public int getBusinessId() {
+		return businessId;
+	}
+
+	/**
+	 * @return the canBook
+	 */
+	public boolean isCanBook() {
+		return canBook;
+	}
+
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+
+	/**
+	 * @return the distanceInMiles
+	 */
+	public double getDistanceInMiles() {
+		return distanceInMiles;
+	}
+
+	/**
+	 * @return the imageUrl
+	 */
+	public String getImageUrl() {
+		return imageUrl;
+	}
+
+	/**
+	 * @return the proSpaFinderSite
+	 */
+	public boolean isProSpaFinderSite() {
+		return proSpaFinderSite;
+	}
+
+	/**
+	 * @param businessId the businessId to set.
+	 */
+	public void setBusinessId(int businessId) {
+		this.businessId = businessId;
+	}
+
+	/**
+	 * @param canBook the canBook to set.
+	 */
+	public void setCanBook(boolean canBook) {
+		this.canBook = canBook;
+	}
+
+	/**
+	 * @param description the description to set.
+	 */
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	/**
+	 * @param distanceInMiles the distanceInMiles to set.
+	 */
+	public void setDistanceInMiles(double distanceInMiles) {
+		this.distanceInMiles = distanceInMiles;
+	}
+
+	/**
+	 * @param imageUrl the imageUrl to set.
+	 */
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
+	/**
+	 * @param proSpaFinderSite the proSpaFinderSite to set.
+	 */
+	public void setProSpaFinderSite(boolean proSpaFinderSite) {
+		this.proSpaFinderSite = proSpaFinderSite;
 	}
 }

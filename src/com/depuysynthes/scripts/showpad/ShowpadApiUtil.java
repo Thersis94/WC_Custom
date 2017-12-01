@@ -26,9 +26,9 @@ import com.google.api.client.http.MultipartContent;
 import com.google.api.client.http.UrlEncodedContent;
 import com.siliconmtn.common.FileType;
 import com.siliconmtn.security.OAuth2Token;
-import com.siliconmtn.security.OAuth2TokenViaCLI;
-import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.security.OAuth2TokenViaCLI;
+import com.siliconmtn.security.BaseOAuth2Token.Config;
 
 /****************************************************************************
  * <b>Title</b>: ShowpadApiUtil.java<p/>
@@ -81,6 +81,7 @@ public class ShowpadApiUtil {
 		config.put(Config.TOKEN_SERVER_URL, props.getProperty(prefix + "showpadTokenUrl"));
 		config.put(Config.AUTH_SERVER_URL,  props.getProperty(prefix + "showpadAuthUrl"));
 		config.put(Config.KEYSTORE, "showpad-" + StringUtil.removeNonAlphaNumeric(config.get(Config.API_KEY)));
+		config.put(Config.GRANT_TYPE, "refresh_token");
 		List<String> scopes = Arrays.asList(props.getProperty(prefix + "showpadScopes").split(","));
 		return new ShowpadApiUtil(new OAuth2TokenViaCLI(config, scopes));
 	}

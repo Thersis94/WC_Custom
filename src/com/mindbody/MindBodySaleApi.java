@@ -127,7 +127,7 @@ public class MindBodySaleApi extends AbstractMindBodyApi<Sale_x0020_ServiceStub,
 		resp.populateResponseFields(r);
 		log.info(r);
 		if(resp.isValid()) {
-			resp.addResults(MindBodyUtil.convertShoppingCart(r.getShoppingCart()));
+			resp.addResults(r.getShoppingCart());
 		}
 
 		return resp;

@@ -87,7 +87,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Builds a MindBody ArrayOfInt Object from provided List.
+	 * Build a MindBody ArrayOfInt from list of given Integer vals
 	 * @param config
 	 * @param req
 	 */
@@ -100,7 +100,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Builds a MindBody ArrayOfLong Object from provided List.
+	 * Build a MindBody ArrayOfLong from list of given Long vals
 	 * @param config
 	 * @param req
 	 */
@@ -113,7 +113,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Builds a MindBody ArrayOfInt Object from provided List.
+	 * Build a MindBody ArrayOfString from list of given String vals.
 	 * @param config
 	 * @param req
 	 */
@@ -127,7 +127,7 @@ public class MindBodyUtil {
 
 
 	/**
-	 * Builds a MindBody ArrayOfStaff Object from provided List.
+	 * Build a MindBody ArrayOfStaff from list of given MB Staff
 	 * @param staff
 	 * @return
 	 */
@@ -141,7 +141,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Builds a MindBody ArrayOfStaffFilter Object from provided List.
+	 * Build a MindBody ArrayOfStaffFilter from list of given MB  StaffFilter Enums
 	 * @param filters
 	 * @return
 	 */
@@ -155,6 +155,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert WC UserDataVO to MB Client
 	 * @param client
 	 * @return
 	 */
@@ -184,7 +185,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Builds a MindBody ArrayOfClient Object from provided List.
+	 * Build a MindBody ArrayOfClient from list of given MB Client
 	 * @param clients
 	 * @return
 	 */
@@ -199,7 +200,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Builds a MindBody ArrayOfClientServices Object from provided List.
+	 * Build a MindBody ArrayOfClientService from list of given MB ClientService
 	 * @param clientServices
 	 * @return
 	 */
@@ -213,6 +214,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Build a MindBody ArrayOfCartItems from given WC ShoppingCartItemVOs
 	 * @param cartItems
 	 * @return
 	 */
@@ -227,7 +229,7 @@ public class MindBodyUtil {
 
 
 	/**
-	 * creates a ServiceItem from WC's shopping cart item vo
+	 * Convert a WC ShoppingCartItemVO to MB CartItem
 	 * @param item
 	 * @return
 	 */
@@ -277,7 +279,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Configure MindBody Client VO to UserDataVO
+	 * Convert a Mindbody Client to a WC MindBodyUserVO
 	 * @param client
 	 * @return
 	 */
@@ -304,6 +306,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a Mindbody ClientCreditCard to a WC Location
 	 * @param clientCreditCard
 	 * @return
 	 */
@@ -317,6 +320,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a Mindbody ClientCreditCard to a WC PaymentVO
 	 * @param clientCreditCard
 	 * @return
 	 */
@@ -367,7 +371,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Generates a ClientCreditCard VO from a PaymentVO
+	 * Convert a WC Location and PaymentVO to a MindBody ClientCreditCard
 	 * @param loc 
 	 * @param card
 	 * @return
@@ -391,7 +395,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Convert a Mindbody Class to a MBClassVO
+	 * Convert a Mindbody Class to a WC MBClassVO
 	 * @param c
 	 * @return
 	 */
@@ -430,40 +434,46 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Converts a Mindbody Location to a MBLocationVO
+	 * Converts a Mindbody Location to a WC MBLocationVO
 	 * @param location
 	 * @return
 	 */
 	public static MBLocationVO convertLocation(Location l) {
 		MBLocationVO loc = new MBLocationVO();
-		loc.setSiteId(l.getSiteID());
-		loc.setBusinessDescription(l.getBusinessDescription());
-		loc.setHasClasses(l.getHasClasses());
-		loc.setId(l.getID());
-		loc.setName(l.getName());
+		loc.setAdditionalImageUrls(Arrays.asList(l.getAdditionalImageURLs().getStringArray()));
 		loc.setAddress(l.getAddress());
 		loc.setAddress2(l.getAddress2());
+		loc.setBusinessDescription(l.getBusinessDescription());
+		loc.setBusinessId(l.getBusinessID());
+		loc.setCanBook(l.getCanBook());
+		loc.setCity(l.getCity());
+		loc.setDescription(l.getDescription());
+		loc.setDistanceInMiles(l.getDistanceInMiles());
+		loc.setFacilitySquareFeet(l.getFacilitySquareFeet());
+		loc.setHasClasses(l.getHasClasses());
+		loc.setId(l.getID());
+		loc.setImageUrl(l.getImageURL());
+		loc.setLatitude(l.getLatitude());
+		loc.setLongitude(l.getLongitude());
+		loc.setName(l.getName());
+		loc.setPhone(l.getPhone());
+		loc.setPhoneExtension(l.getPhoneExtension());
+		loc.setZipCode(l.getPostalCode());
+		loc.setProSpaFinderSite(l.getProSpaFinderSite());
+		loc.setSiteId(l.getSiteID());
+		loc.setState(l.getStateProvCode());
 		loc.setTax1(l.getTax1());
 		loc.setTax2(l.getTax2());
 		loc.setTax3(l.getTax3());
 		loc.setTax4(l.getTax4());
 		loc.setTax5(l.getTax5());
-		loc.setPhone(l.getPhone());
-		loc.setPhoneExtension(l.getPhoneExtension());
-		loc.setCity(l.getCity());
-		loc.setState(l.getStateProvCode());
-		loc.setZipCode(l.getPostalCode());
-		loc.setLatitude(l.getLatitude());
-		loc.setLongitude(l.getLongitude());
-		loc.setAdditionalImageUrls(Arrays.asList(l.getAdditionalImageURLs().getStringArray()));
-		loc.setFacilitySquareFeet(l.getFacilitySquareFeet());
 		loc.setTreatmentRooms(l.getTreatmentRooms());
 
 		return loc;
 	}
 
 	/**
-	 * Converts a Mindbody Staff to a MBStaffVO
+	 * Converts a Mindbody Staff to a WC MBStaffVO
 	 * @param staff
 	 * @return
 	 */
@@ -488,7 +498,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Convert a Mindbody ClassDescription to MBClassDescriptionVO
+	 * Convert a Mindbody ClassDescription to WC MBClassDescriptionVO
 	 * @param classDescription
 	 * @return
 	 */
@@ -516,7 +526,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Convert a Mindbody Level to MBLevelVO
+	 * Convert a Mindbody Level to WC MBLevelVO
 	 * @param level
 	 * @return
 	 */
@@ -529,7 +539,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Convert a Mindbody SessionType to MBSessionTypeVO
+	 * Convert a Mindbody SessionType to WC MBSessionTypeVO
 	 * @param sessionType
 	 * @return
 	 */
@@ -544,7 +554,7 @@ public class MindBodyUtil {
 	}
 
 	/**
-	 * Convert a Mindbody Program to a MBProgramVO
+	 * Convert a Mindbody Program to a WC MBProgramVO
 	 * @param program
 	 * @return
 	 */
@@ -558,6 +568,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a MindBody ClassSchedule to WC MBClassScheduleVO
 	 * @param o
 	 * @return
 	 */
@@ -590,6 +601,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a MindBody Visit to WC MBVisitVO
 	 * @param v
 	 * @return
 	 */
@@ -617,6 +629,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a MindBody ClientService to WC MBClientServiceVO
 	 * @param service
 	 * @return
 	 */
@@ -637,6 +650,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a MindBody SaleItem to WC MBSaleItemVO
 	 * @param s
 	 * @return
 	 */
@@ -655,6 +669,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a MindBody Sale to WC MBSaleVO
 	 * @param sale
 	 */
 	public static MBSaleVO convertSale(Sale sale) {
@@ -672,6 +687,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a MindBody ArrayOfPurchasedItem to WC List of MBPurchasedItemVO
 	 * @param purchasedItems
 	 * @return
 	 */
@@ -684,6 +700,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a MindBody PurchasedItem to WC MBPurchasedItemVO
 	 * @param p
 	 * @return
 	 */
@@ -695,6 +712,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a MindBody ArrayOfPayment to WC List of MBPaymentVO
 	 * @param payments
 	 * @return
 	 */
@@ -707,6 +725,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a MindBody Payment to WC MBPaymentVO
 	 * @param p
 	 * @return
 	 */
@@ -723,6 +742,7 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a MindBody Relationship to WC MBRelationshipVO
 	 * @param r
 	 * @return
 	 */
@@ -735,10 +755,11 @@ public class MindBodyUtil {
 	}
 
 	/**
+	 * Convert a MindBody Permission to WC MBPermissionVO
 	 * @param p
 	 * @return
 	 */
-	public static Object convertPermission(Permission p) {
+	public static MBPermissionVO convertPermission(Permission p) {
 		MBPermissionVO perm = new MBPermissionVO();
 		perm.setDisplayName(p.getDisplayName());
 		perm.setName(p.getName());
@@ -746,30 +767,9 @@ public class MindBodyUtil {
 		return perm;
 	}
 
-	/**
-	 * @param shoppingCart
-	 * @return
-	 */
-	public static com.siliconmtn.commerce.ShoppingCartVO convertShoppingCart(ShoppingCart sc) {
-		com.siliconmtn.commerce.ShoppingCartVO cart = new com.siliconmtn.commerce.ShoppingCartVO();
-		if(sc.isSetCartItems()) {
-			for(CartItem ci : sc.getCartItems().getCartItemArray()) {
-				cart.add(convertShoppingCartItem(ci));
-			}
-		}
-
-		return cart;
-	}
 
 	/**
-	 * @param ci
-	 * @return
-	 */
-	public static ShoppingCartItemVO convertShoppingCartItem(CartItem ci) {
-		return null;
-	}
-
-	/**
+	 * Convert a MindBody Service to WC MBServiceVO
 	 * @param s
 	 * @return
 	 */
@@ -785,6 +785,7 @@ public class MindBodyUtil {
 		service.setProgramId(s.getProgramID());
 		service.setTaxIncluded(s.getTaxIncluded());
 		service.setTaxRate(s.getTaxRate());
+
 		return service;
 	}
 }

@@ -1,11 +1,14 @@
 package com.mindbody.security;
 
+import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
 import com.mindbody.util.ClientApiUtil;
 import com.mindbody.util.MindBodyUtil;
 import com.mindbody.vo.MindBodyResponseVO;
+import com.perkville.PerkvilleApi;
+import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -89,7 +92,7 @@ public class MindBodyLoginModule extends DBLoginModule {
 		util.reloadUserData(mbUser);
 
 		//Load Perkville Data
-		loadPerkville(mbUser);
+		loadPerkville(site, mbUser);
 	}
 
 	/**
@@ -97,8 +100,12 @@ public class MindBodyLoginModule extends DBLoginModule {
 	 * the users data with the Perkville Points Response.
 	 * @param mbUser
 	 */
-	private void loadPerkville(MindBodyUserVO mbUser) {
-		//This should tie into the Perkville API.
+	private void loadPerkville(SiteVO site, MindBodyUserVO mbUser) {
+		//Attempt to Load Perkville Token
+		Connection dbConn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
+
+		PerkvilleApi api = new PerkvilleApi(dbConn, site, mbUser, null);
+		mbUser.setPerkvillePoints(api.getPoints(null));
 	}
 
 	/**
