@@ -37,7 +37,7 @@ public class PerkvilleAuthAction extends PerkvilleAction {
 		PerkvilleApi api = new PerkvilleApi(dbConn, site, user, req.getParameter("code"));
 
 		//Attempt to get Token
-		Credential c = api.getToken().getToken();
+		Credential c = api.getAuthToken().getToken();
 		if(c == null && (req.hasParameter("initPerkville") || req.hasParameter("code"))) {
 			processOAuthCall(api, req);
 		} else if(c != null) {
@@ -55,7 +55,7 @@ public class PerkvilleAuthAction extends PerkvilleAction {
 	 * @param req
 	 */
 	private void processOAuthCall(PerkvilleApi api, ActionRequest req) {
-		PerkvilleOAuth2Token t = api.getToken();
+		PerkvilleOAuth2Token t = api.getAuthToken();
 		Credential c = null;
 		PageVO p = ((PageVO)req.getAttribute(Constants.PAGE_DATA));
 		try {

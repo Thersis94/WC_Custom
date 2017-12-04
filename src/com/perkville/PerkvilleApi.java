@@ -115,7 +115,7 @@ public class PerkvilleApi {
 	 * Return PerkvilleOAuth2Token.
 	 * @return
 	 */
-	public PerkvilleOAuth2Token getToken() {
+	public PerkvilleOAuth2Token getAuthToken() {
 		return authToken;
 	}
 
