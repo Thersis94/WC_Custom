@@ -45,7 +45,7 @@ import com.smt.sitebuilder.security.oauth.OAuth2TokenViaDB;
  ****************************************************************************/
 public class PerkvilleApi {
 	private Logger log;
-	private PerkvilleOAuth2Token token;
+	private PerkvilleOAuth2Token authToken;
 
 	//Perkville Api URL
 	private static final String API_URL = "https://api.perkville.com";
@@ -56,6 +56,7 @@ public class PerkvilleApi {
 	//Holds name for finding AccessToken on Session.
 	public static final String ACCESS_TOKEN = "perkvilleAccessToken";
 
+	private boolean isValidToken;
 	//Perkville OAuth Scopes.
 	private enum Scope {
 		PUBLIC,						//Grants read-only access to public information
@@ -96,23 +97,26 @@ public class PerkvilleApi {
 	}
 
 	/**
-	 * 
+	 * Default Constructor that builds the authToken object and attempts
+	 * to validate it.
+	 *
 	 * @param conn
 	 * @param site
 	 * @param user
 	 * @param code
 	 */
 	public PerkvilleApi(Connection conn, SiteVO site, UserDataVO user, String code) {
-		this.token = buildToken(site, user, conn, code);
+		this.authToken = buildToken(site, user, conn, code);
 		this.log = Logger.getLogger(getClass());
+		this.isValidToken = isValidToken();
 	}
 
 	/**
 	 * Return PerkvilleOAuth2Token.
 	 * @return
 	 */
-	public PerkvilleOAuth2Token getToken() {
-		return token;
+	public PerkvilleOAuth2Token getAuthToken() {
+		return authToken;
 	}
 
 	/**
@@ -120,8 +124,13 @@ public class PerkvilleApi {
 	 * @return
 	 */
 	public PerkvilleVO<PerkVO> getPerks() {
-		String perkData = performCall(buildUrl(ENDPOINTS.get("perks")));
-		return convertData(perkData, new TypeToken<PerkvilleVO<PerkVO>>() {}.getType());
+		PerkvilleVO<PerkVO> perks = new PerkvilleVO<>();
+		if(isValidToken) {
+			String perkData = performCall(buildUrl(ENDPOINTS.get("perks")));
+			perks = convertData(perkData, new TypeToken<PerkvilleVO<PerkVO>>() {}.getType());
+		}
+
+		return perks;
 	}
 
 	/**
@@ -142,20 +151,37 @@ public class PerkvilleApi {
 	 * @return
 	 */
 	public int getPoints(String locationId) {
-		PerkvilleVO<ConnectionVO> conData = performConnectionLookup(null);
-		if(conData.getObjects() != null && !conData.getObjects().isEmpty()) {
-			if(!StringUtil.isEmpty(locationId)) {
-				for(ConnectionVO c : conData.getObjects()) {
-					if(c.getHomeLocation().equals(locationId)) {
-						return c.getPointBalance();
-					}
-				}
-			} else {
-				return conData.getObjects().get(0).getPointBalance();
+		int points = 0;
+
+		if(isValidToken) {
+			PerkvilleVO<ConnectionVO> conData = performConnectionLookup(null);
+			if(conData != null && conData.getObjects() != null && !conData.getObjects().isEmpty()) {
+				points = getLocationPoints(locationId, conData);
 			}
 		}
 
-		return 0;
+		return points;
+	}
+
+	/**
+	 * Process Connections and return the points.
+	 * @param locationId
+	 * @param conData
+	 * @return
+	 */
+	private int getLocationPoints(String locationId, PerkvilleVO<ConnectionVO> conData) {
+		int points = 0;
+		if(!StringUtil.isEmpty(locationId)) {
+			for(ConnectionVO c : conData.getObjects()) {
+				if(c.getHomeLocation().equals(locationId)) {
+					points = c.getPointBalance();
+				}
+			}
+		} else {
+			points = conData.getObjects().get(0).getPointBalance();
+		}
+
+		return points;
 	}
 
 	/**
@@ -164,8 +190,12 @@ public class PerkvilleApi {
 	 * @return
 	 */
 	public PerkvilleVO<ConnectionVO> performConnectionLookup(String connectionId) {
-		String connData = performCall(buildUrl(ENDPOINTS.get("connections"), connectionId)); 
-		return convertData(connData, new TypeToken<PerkvilleVO<ConnectionVO>>() {}.getType());
+		PerkvilleVO<ConnectionVO> conData = new PerkvilleVO<>();
+		if(isValidToken) {
+			String connData = performCall(buildUrl(ENDPOINTS.get("connections"), connectionId)); 
+			conData = convertData(connData, new TypeToken<PerkvilleVO<ConnectionVO>>() {}.getType());
+		}
+		return conData;
 	}
 
 	/**
@@ -175,13 +205,18 @@ public class PerkvilleApi {
 	 * @return
 	 */
 	public PerkvilleVO<UserVO> performUserLookup(String emailAddress) {
-		Map<String, String> paramMap = new HashMap<>();
-		if(!StringUtil.isEmpty(emailAddress)) {
-			paramMap.put("emails__email", emailAddress);
-		}
+		PerkvilleVO<UserVO> users = new PerkvilleVO<>();
 
-		String userData = performCall(buildUrl(ENDPOINTS.get("users"), paramMap)); 
-		return convertData(userData, new TypeToken<PerkvilleVO<UserVO>>() {}.getType());
+		if(isValidToken) {
+			Map<String, String> paramMap = new HashMap<>();
+			if(!StringUtil.isEmpty(emailAddress)) {
+				paramMap.put("emails__email", emailAddress);
+			}
+
+			String userData = performCall(buildUrl(ENDPOINTS.get("users"), paramMap));
+			users = convertData(userData, new TypeToken<PerkvilleVO<UserVO>>() {}.getType());
+		}
+		return users;
 	}
 
 	/**
@@ -246,26 +281,34 @@ public class PerkvilleApi {
 	 * @param url
 	 * @return
 	 */
-	public String performCall(String url) {
+	protected String performCall(String url) {
 		SMTHttpConnectionManager c = new SMTHttpConnectionManager();
 
-		//Add Header for the Authorization Bearer Token.
-		String accessToken = token.getToken().getAccessToken();
-		c.addRequestHeader("Authorization", "Bearer " + accessToken);
+		/*
+		 * Verify that we have a valid token for making the call.  An invalid
+		 * access Token will cause problems.
+		 */
+		if(isValidToken) {
+			//Add Header for the Authorization Bearer Token.
+			String accessToken = authToken.getToken().getAccessToken();
+			c.addRequestHeader("Authorization", "Bearer " + accessToken);
 
-		//Add Header for User Agent.  Required to get through CloudFlare
-		c.addRequestHeader("User-Agent", "WebCrescendoConnectionManager/3.3");
+			//Add Header for User Agent.  Required to get through CloudFlare
+			c.addRequestHeader("User-Agent", "WebCrescendoConnectionManager/3.3");
 
-		//Perform actual Call.
-		byte[] response = null;
-		try {
-			response = c.retrieveData(url);
-		} catch (IOException e) {
-			log.error("Error Connecting to Perkville Endpoint.", e);
+			//Perform actual Call.
+			byte[] response = null;
+			try {
+				response = c.retrieveData(url);
+			} catch (IOException e) {
+				log.error("Error Connecting to Perkville Endpoint.", e);
+			}
+
+			//Return Response as String.
+			return new String(response);
+		} else {
+			return "";
 		}
-
-		//Return Response as String.
-		return new String(response);
 	}
 
 	/**
@@ -273,10 +316,10 @@ public class PerkvilleApi {
 	 * @return
 	 */
 	public Credential refresh() {
-		Credential c = token.getToken();
+		Credential c = authToken.getToken();
 		log.debug("refreshing access token: " + c.getAccessToken());
 		try {
-			return token.refreshToken(c);
+			return authToken.refreshToken(c);
 		} catch (IOException e) {
 			log.error("Error Processing Code", e);
 		}
@@ -341,6 +384,12 @@ public class PerkvilleApi {
 
 	/**
 	 * Build the Config map for the PerkvilleOAuth2Token
+	 *
+	 * TODO - All Calls required an authenticated user.  If the intent is
+	 * to have some areas of Perkville retrieved on a public user then we
+	 * need a set of bot Credentials in the system and need to override
+	 * missing userId with the bot id.
+	 *
 	 * @param req
 	 * @return
 	 */
@@ -356,5 +405,23 @@ public class PerkvilleApi {
 		configMap.put(Config.KEYSTORE, PerkvilleOAuth2Token.PERKVILLE_KEYSTORE);
 		configMap.put(Config.GRANT_TYPE, siteConfig.get(PVSiteConfig.PV_GRANT_TYPE_CODE.name()));
 		return configMap;
+	}
+
+	/**
+	 * Validate that we have a proper Access Token for API Calls.
+	 * @return
+	 */
+	private boolean isValidToken() {
+		boolean isValid = false;
+
+		//Get Credentials off authToken.
+		Credential c = authToken.getToken();
+
+		//Verify Credentials are useable.
+		if(c != null && !StringUtil.isEmpty(c.getAccessToken())) {
+			isValid = true;
+		}
+
+		return isValid;
 	}
 }

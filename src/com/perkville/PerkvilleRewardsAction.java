@@ -44,7 +44,7 @@ public class PerkvilleRewardsAction extends PerkvilleAction {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 
 		PerkvilleApi api = new PerkvilleApi(dbConn, site, user, null);
-		Credential c = api.getToken().getToken();
+		Credential c = api.getAuthToken().getToken();
 
 		//If user has a token, load perks. 
 		if(c != null) {
