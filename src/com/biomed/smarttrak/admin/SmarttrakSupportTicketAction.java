@@ -64,7 +64,10 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 	public String formatRetrieveQuery(Map<String, Object> params) {
 		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(500);
-		sql.append("select acc.account_nm as organization_id, a.*, b.first_nm as reporter_first_nm, ");
+		
+		
+		sql.append("select acc.account_nm as organization_id, a.ticket_id, a.reporter_id, b.first_nm as reporter_first_nm, ");
+		sql.append("a.assigned_id, a.ticket_no, a.status_cd, a.notify_flg, a.desc_txt, a.referrer_url, a.create_dt, a.update_dt, ");
 		sql.append("b.last_nm as reporter_last_nm, c.first_nm as assigned_first_nm, ");
 		sql.append("c.last_nm as assigned_last_nm ");
 		sql.append("from support_ticket a ");
