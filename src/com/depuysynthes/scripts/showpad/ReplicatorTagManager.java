@@ -35,7 +35,7 @@ public class ReplicatorTagManager extends ShowpadTagManager {
 	 */
 	@Override
 	protected ShowpadTagVO createTag(String tagNm, String externalId) {
-		// we don't want to impose any SMT/Mediabin values - always save these w/null externalId.
+		// we don't want to impose any SMT/Mediabin values on tags that aren't ours - always save these w/null externalId.
 		return super.createTag(tagNm, null);
 	}
 
