@@ -197,7 +197,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			
 			String currentProduct = "";
 			ResultSet rs = ps.executeQuery();
-			ProductVO p = null;
+			ProductVO p = new ProductVO();
 			while(rs.next()) {
 				
 				if (!currentProduct.equals(rs.getString("PRODUCT_ID"))) {
