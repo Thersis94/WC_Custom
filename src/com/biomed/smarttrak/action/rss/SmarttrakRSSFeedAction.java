@@ -61,7 +61,7 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 	public void delete(ActionRequest req) throws ActionException {
 		try {
 			SmarttrakRssEntityVO s = new SmarttrakRssEntityVO();
-			s.setRssEntityId(req.getParameter(RSSFeedAction.RSS_ENTITY_ID));
+			s.setRssEntityId(req.getParameter("pkId"));
 			new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA)).delete(s);
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Error Deleting Parsing Filter", e);
@@ -237,14 +237,10 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 	 */
 	protected void updateRSSEntityId(RSSEntityVO re, SmarttrakRssEntityVO entity) throws InvalidDataException, DatabaseException, SQLException {
 		DBProcessor dbpc = new DBProcessor(dbConn);
+		boolean isInsert = StringUtil.isEmpty(re.getRssEntityId());
 		dbpc.save(re);
-		if(StringUtil.isEmpty(re.getRssEntityId())) {
-			re.setRssEntityId(dbpc.getGeneratedPKId());
-			entity.setRssEntityId(re.getRssEntityId());
-			writeCustomRssEntity(entity, true);
-		} else {
-			writeCustomRssEntity(entity, false);
-		}
+		entity.setRssEntityId(re.getRssEntityId());
+		writeCustomRssEntity(entity, isInsert);
 	}
 
 	/**
