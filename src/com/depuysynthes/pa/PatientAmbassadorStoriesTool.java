@@ -392,7 +392,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 			if (isExportLeads) {
 				ps.setString(i++, PAFConst.PERMISSION_TO_CONTACT.getId());
-				ps.setString(i++, "Yes");
+				ps.setString(i++, PERMISSION_TO_CONTACT_VALUE);
 				ps.setString(i++, req.getParameter("formId"));
 				ps.setDate(i++, reportStart);
 				ps.setDate(i++, reportEnd);
