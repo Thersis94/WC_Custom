@@ -1,16 +1,19 @@
 package com.biomed.smarttrak.admin;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.ticketing.SupportUtilFactory;
 import com.smt.sitebuilder.action.ticketing.TicketFacadeAction;
+import com.smt.sitebuilder.action.ticketing.vo.SupportBugVO;
 import com.smt.sitebuilder.action.ticketing.vo.SupportFieldsVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.util.CacheAdministrator;
 
 /****************************************************************************
  * <b>Title</b>: ZohoIntegrationAction.java
@@ -31,6 +34,7 @@ public class ZohoIntegrationAction extends TicketFacadeAction {
 	public static final String PROJECT_ID = "967168000000259067";
 	private static final String SMARTTRAK_CACHE_KEY = "smarttrak_zoho_ticket_list";
 	private static final int CACHE_TIMEOUT = 900;
+	private static final String CLOSED_STATUS = "967168000000007054";
 	
 	public ZohoIntegrationAction() {
 		super();
@@ -64,19 +68,43 @@ public class ZohoIntegrationAction extends TicketFacadeAction {
 	 * @throws ActionException
 	 */
 	private void retrieveTickets(ActionRequest req) throws ActionException {
-		CacheAdministrator cache = new CacheAdministrator(attributes);
-		ModuleVO cachedMod = cache.readFromCache(SMARTTRAK_CACHE_KEY);
+		ModuleVO cachedMod = super.readFromCache(SMARTTRAK_CACHE_KEY);
 		if (cachedMod == null) {
 			super.list(req);
-			cachedMod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			ModuleVO loadedMod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			// Copy the data over to a new module in order to prevent cache poisoning that
+			// can arise from editing the module in the attributes map via the filterTickets method.
+			cachedMod = new ModuleVO();
+			cachedMod.setActionData(loadedMod.getActionData());
 			cachedMod.setCacheTimeout(CACHE_TIMEOUT);
 			cachedMod.setPageModuleId(SMARTTRAK_CACHE_KEY);
-			cache.writeToCache(cachedMod);
+			super.writeToCache(cachedMod);
+		}
+		
+		if (!Convert.formatBoolean(req.getParameter("showClosed"))) {
+			filterTickets(cachedMod);
 		} else {
 			super.putModuleData(cachedMod.getActionData(), cachedMod.getDataSize(), false);
 		}
 	}
 	
+	/**
+	 * Filter out any closed tickets so that only the tickets that are being worked on are shown.
+	 * @param cachedMod
+	 */
+	@SuppressWarnings("unchecked")
+	private void filterTickets(ModuleVO cachedMod) {
+		List<SupportBugVO> bugs = (List<SupportBugVO>) cachedMod.getActionData();
+		List<SupportBugVO> filteredBugs = new ArrayList<>(bugs.size());
+		
+		for (SupportBugVO bug : bugs) {
+			if (!CLOSED_STATUS.equals(bug.getStatusTypeId()))
+				filteredBugs.add(bug);
+		}
+		
+		super.putModuleData(filteredBugs, filteredBugs.size(), false);
+	}
+
 	/**
 	 * Get the list of support fields for the add form
 	 * @param req
@@ -92,8 +120,7 @@ public class ZohoIntegrationAction extends TicketFacadeAction {
 		req.setParameter(TICKET_TYPE_PARAM, TICKET_TYPE.BUG.toString());
 		super.build(req);
 
-		CacheAdministrator cache = new CacheAdministrator(attributes);
-		cache.clearCacheByKey(SMARTTRAK_CACHE_KEY);
+		super.clearCacheByKey(SMARTTRAK_CACHE_KEY);
 	}
 
 }
