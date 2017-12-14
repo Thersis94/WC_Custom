@@ -50,6 +50,7 @@ public class LeadsPostProcessor extends SandstoneAbstractPostProcessor {
 		params.put("email_address", StringUtil.checkVal(req.getParameter("pfl_EMAIL_ADDRESS_TXT")));
 		params.put("primary_phone", StringUtil.checkVal(StringUtil.removeNonNumeric(req.getParameter("pfl_MAIN_PHONE_TXT"))));
 		params.put("mobile_phone", StringUtil.checkVal(StringUtil.removeNonNumeric(req.getParameter("pfl_MOBILE_PHONE_TXT"))));
+		params.put("address_1", StringUtil.checkVal(req.getParameter("pfl_ADDRESS_TXT")));
 		params.put("zipcode", StringUtil.checkVal(req.getParameter("pfl_ZIP_CD")));
 		
 		// Add the selected services to populate into the Sandstone call/to-do
