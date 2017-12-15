@@ -592,7 +592,7 @@ public class CoopAdsEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
-			mail.addCC("s");
+			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
 
 			MessageSender sender = new MessageSender(attributes,dbConn);
