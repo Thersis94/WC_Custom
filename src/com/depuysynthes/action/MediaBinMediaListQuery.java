@@ -31,7 +31,7 @@ public class MediaBinMediaListQuery implements MediaListQueryIntfc {
 	@Override
 	public void addSelectFields(StringBuilder sql) {
 		sql.append("select 'mediabin' as type, dpy_syn_mediabin_id as id, file_nm as name, title_txt as description, "); 
-		sql.append("orig_file_size_no as file_size, dpy_syn_mediabin_id as secondary_id, ");
+		sql.append("orig_file_size_no as file_size, tracking_no_txt as secondary_id, ");
 		sql.append("modified_dt as last_modified, '/json{0}amid=MEDIA_BIN_AJAX&mbid=' + dpy_syn_mediabin_id as file_path, ");
 		sql.append("cast(coalesce(substring(NULLIF(dimensions_txt, '') from 0 for position('~' in NULLIF(dimensions_txt, ''))), '0') as integer) as width, ");
 		sql.append("cast(coalesce(substring(NULLIF(dimensions_txt, '') from position('~' in NULLIF(dimensions_txt, '')) + 1), '0') as integer) as height, ");
@@ -82,7 +82,10 @@ public class MediaBinMediaListQuery implements MediaListQueryIntfc {
 		if (! StringUtil.isEmpty(req.getParameter(SEARCH_PARAM))) {
 			String searchVal = "%" + StringUtil.checkVal(req.getParameter(SEARCH_PARAM)).toLowerCase() + "%";
 
-			sql.append("and (lower(tracking_no_txt) like ? or lower(prod_nm) like ? or lower(prod_family) like ?) ");
+			sql.append("and (lower(tracking_no_txt) like ? or lower(prod_nm) like ? or lower(prod_family) like ? ");
+			sql.append("or lower(title_txt) like ? or lower(file_nm) like ?) ");
+			params.add(searchVal);
+			params.add(searchVal);
 			params.add(searchVal);
 			params.add(searchVal);
 			params.add(searchVal);
