@@ -22,7 +22,7 @@ import com.siliconmtn.util.StringUtil;
  * @updates:
  ****************************************************************************/
 @Table(name="ic_project")
-public class IrriCurbProjectVO extends BeanDataVO{
+public class ProjectVO extends BeanDataVO {
 
 	private static final long serialVersionUID = -1785673422020888616L;
 	
@@ -49,15 +49,15 @@ public class IrriCurbProjectVO extends BeanDataVO{
 		}
 	}
 	
-	public IrriCurbProjectVO(ResultSet rs) {
+	public ProjectVO(ResultSet rs) {
 		super.populateData(rs);
 	}
 
-	public IrriCurbProjectVO(ActionRequest req) {
+	public ProjectVO(ActionRequest req) {
 		super.populateData(req);
 	}
 	
-	public IrriCurbProjectVO() {
+	public ProjectVO() {
 		//empty constructor for db processor use
 	}
 

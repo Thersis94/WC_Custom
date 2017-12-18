@@ -3,7 +3,7 @@ package com.irricurb.action.project;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.irricurb.action.data.vo.IrriCurbProjectVO;
+import com.irricurb.action.data.vo.ProjectVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -53,7 +53,7 @@ public class ProjectManageAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private GridDataVO<IrriCurbProjectVO> getProjects(ActionRequest req) {
+	private GridDataVO<ProjectVO> getProjects(ActionRequest req) {
 		
 		List<Object> params = new ArrayList<>();
 		DBProcessor dbp = new DBProcessor(getDBConnection());
@@ -63,7 +63,7 @@ public class ProjectManageAction extends SBActionAdapter {
 		sql.append(ProjectFascadeAction.SELECT_STAR).append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("ic_project ");
 		sql.append("where 1=1 ");
 		
-		return dbp.executeSQLWithCount(sql.toString(), params, new IrriCurbProjectVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));
+		return dbp.executeSQLWithCount(sql.toString(), params, new ProjectVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));
 	}
 	
 }

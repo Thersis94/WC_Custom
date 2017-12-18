@@ -1,16 +1,17 @@
 package com.irricurb.action.data.vo;
 
+import java.sql.ResultSet;
 import java.util.Date;
 
-import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
- * <b>Title</b>: IrriCurbProjectDeviceVO.java
+ * <b>Title</b>: ProjectDeviceVO.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO Put Something Here
+ * <b>Description: </b> Data bean extending the device with project specific information
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -20,7 +21,7 @@ import com.siliconmtn.util.StringUtil;
  * @updates:
  ****************************************************************************/
 @Table(name="ic_project_device")
-public class IrriCurbProjectDeviceVO extends BeanDataVO{
+public class ProjectDeviceVO extends DeviceVO {
 
 	private static final long serialVersionUID = 6922132132917524118L;
 
@@ -37,8 +38,10 @@ public class IrriCurbProjectDeviceVO extends BeanDataVO{
 	private Date updateDate;
 	
 	
-	
-	public enum ProjectDeviceStatusCd {
+	/**
+	 * Status Code Enum
+	 */
+	public enum ProjectDeviceStatusCode {
 		ON("On"), 
 		OFF("Off"),
 		PROCESSING("Processing"),
@@ -47,7 +50,7 @@ public class IrriCurbProjectDeviceVO extends BeanDataVO{
 		ERROR("Error"),
 		CLOSED("Closed");
 		private String statusName;
-		ProjectDeviceStatusCd(String statusName) {
+		ProjectDeviceStatusCode(String statusName) {
 			this.statusName = statusName;
 		}
 		public String getStatusName() {
@@ -55,8 +58,29 @@ public class IrriCurbProjectDeviceVO extends BeanDataVO{
 		}
 	}
 
-
-
+	/**
+	 * 
+	 */
+	public ProjectDeviceVO() {
+		super();
+	}
+	
+	/**
+	 * 
+	 * @param rs
+	 */
+	public ProjectDeviceVO(ResultSet rs) {
+		super(rs);
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 */
+	public ProjectDeviceVO(ActionRequest req) {
+		super(req);
+	}
+	
 	/**
 	 * @return the projectDeviceId
 	 */

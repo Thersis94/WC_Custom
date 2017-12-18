@@ -3,7 +3,7 @@ package com.irricurb.action.project;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.irricurb.action.data.vo.IrriCurbProjectDeviceVO;
+import com.irricurb.action.data.vo.ProjectDeviceVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -53,7 +53,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 * @param string
 	 * @return
 	 */
-	private GridDataVO<IrriCurbProjectDeviceVO> getProjectDevices(ActionRequest req) {
+	private GridDataVO<ProjectDeviceVO> getProjectDevices(ActionRequest req) {
 		String projectId = StringUtil.checkVal(req.getStringParameter(ProjectFascadeAction.PROJECT_ID));
 		List<Object> params = new ArrayList<>();
 		DBProcessor dbp = new DBProcessor(getDBConnection());
@@ -64,6 +64,6 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		sql.append("where project_id = ? ");
 		params.add(projectId);
 		
-		return dbp.executeSQLWithCount(sql.toString(), params, new IrriCurbProjectDeviceVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));
+		return dbp.executeSQLWithCount(sql.toString(), params, new ProjectDeviceVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));
 	}
 }
