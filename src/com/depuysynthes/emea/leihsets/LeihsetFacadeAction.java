@@ -39,7 +39,7 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	 * ActionType - supported behaviors of this facade
 	 **/
 	private enum ActionType {
-		leihset, asset, category; 
+		LEIHSET, ASSET, CATEGORY; 
 	}
 
 	/* (non-Javadoc)
@@ -48,7 +48,7 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		//add a hook to save categories via ajax
-		ActionType type = req.hasParameter("addCategory") ? ActionType.category : ActionType.leihset;	
+		ActionType type = req.hasParameter("addCategory") ? ActionType.CATEGORY : ActionType.LEIHSET;	
 
 		//LeihsetAction handles both Leihset and LeihsetAsset lists
 		getAction(type).list(req);
@@ -76,7 +76,7 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	@Override
 	public void copy(ActionRequest req) throws ActionException {
 		//LeihsetAction handles both Leihset and LeihsetAsset copies
-		getAction(ActionType.leihset).copy(req);
+		getAction(ActionType.LEIHSET).copy(req);
 	}
 
 
@@ -108,7 +108,7 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	 */
 	private ActionInterface getAction(String actionType) throws ActionException {
 		try {
-			return getAction(ActionType.valueOf(actionType));
+			return getAction(ActionType.valueOf(actionType.toUpperCase()));
 		} catch (Exception e) {
 			throw new ActionException("Not a valid action type: " + actionType);
 		}		
@@ -125,13 +125,13 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 		log.debug("Loading action " + type);
 		ActionInterface ai;
 		switch(type) {
-			case leihset:
+			case LEIHSET:
 				ai = new LeihsetAction(actionInit);
 				break;
-			case asset:
+			case ASSET:
 				ai =  new LeihsetAssetAction(actionInit);
 				break;
-			case category:
+			case CATEGORY:
 				ai = new LeihsetCategoryAction(actionInit);
 				break;
 			default:

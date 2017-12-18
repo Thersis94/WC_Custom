@@ -442,7 +442,7 @@ public class NoteAction extends SBActionAdapter {
 				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getNoteId()));
 				return vo;
 			}
-		} catch(SQLException | ActionException sqle) {
+		} catch(SQLException sqle) {
 			log.error("could not select notes by id ", sqle);
 		}
 		return null;
@@ -802,7 +802,7 @@ public class NoteAction extends SBActionAdapter {
 				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getNoteId()));
 				processNote(noteType, data, vo);
 			}
-		} catch(SQLException | ActionException sqle) {
+		} catch(SQLException sqle) {
 			log.error("could not load notes ", sqle);
 		}
 
