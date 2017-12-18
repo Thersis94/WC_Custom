@@ -45,6 +45,7 @@ import com.smt.sitebuilder.security.SecurityController;
 public class AccountAction extends SBActionAdapter {
 
 	public static final String ACCOUNT_ID = "accountId"; //req param
+	private static final String CHANGE_ACCOUNT = "changeAccount";
 	public static final String MANAGERS = "managers";
 	public static final String SESS_ACCOUNT = "sesAccount";
 
@@ -62,11 +63,12 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
+		//ensure that accountId is not fetched when on the list page
+		String accountId = req.hasParameter(ACCOUNT_ID) && !req.hasParameter(CHANGE_ACCOUNT) ? req.getParameter(ACCOUNT_ID) : null;
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		
 		//if this is the add form, no account information to fetch
-		if( (accountId != null && !"ADD".equals(accountId)) || req.hasParameter("changeAccount")){
+		if( (accountId != null && !"ADD".equals(accountId)) || req.hasParameter(CHANGE_ACCOUNT)){
 			List<Object> accounts = fetchAccounts(req, accountId, schema);
 			putModuleData(accounts);
 		}
@@ -85,7 +87,7 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	protected List<Object> fetchAccounts(ActionRequest req, String accountId, String schema){
 		List<Object> accounts = null;
-		if (req.hasParameter("changeAccount")) {
+		if (req.hasParameter(CHANGE_ACCOUNT)) {
 			req.getSession().removeAttribute(SESS_ACCOUNT);
 		} else { 
 			loadAccount(req, dbConn, getAttributes());
@@ -96,7 +98,7 @@ public class AccountAction extends SBActionAdapter {
 		//pull accountId from session if we need it
 		if (StringUtil.isEmpty(accountId) && acct != null)
 			accountId = acct.getAccountId();
-
+		
 		accounts = loadAccounts(schema, accountId);
 
 		//hold the selected account in session for editing
