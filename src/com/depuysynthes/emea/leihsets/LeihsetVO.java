@@ -52,16 +52,22 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	private String dpySynTrackingNo;
 	private int orderNo = 0;
 	private int archiveFlg = 0;
+
+	/**
+	 * these 3 variables are not needed on the list page, which is generated via an ajax call using Bootstrap tables.  Annotate them for exclusion to avoid JSON bloat.
+	 */
 	private Map<String, LeihsetVO> assets; //a PDF or Excel uploaded to this Liehset
 	private Map<String, LeihsetVO> materials; //Mediabin Literature
+	private transient Tree categoryTree;
+
 	private ApprovalVO syncData;
 
 	private String categoryName;
 	private String parentCategoryName;
-	private Tree categoryTree;
 	private String businessUnits;
 
 	public LeihsetVO() {
+		super();
 		assets = new LinkedHashMap<>();
 		materials = new LinkedHashMap<>();
 		categories = new HashSet<>();
@@ -82,7 +88,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 			setDpySynMediaBinId(db.getStringVal("dpy_syn_mediabin_id", rs));
 			setDpySynAssetName(db.getStringVal("TITLE_TXT", rs)); //from dpy_syn_mediabin
 			setDpySynTrackingNo(db.getStringVal("TRACKING_NO_TXT", rs)); //from dpy_syn_mediabin
-			setOrderNo(db.getIntVal("order_no", rs));
+			setOrderNo(db.getIntVal("asset_order_no", rs));
 		} else {
 			//this is a Leihset itself
 			setLeihsetGroupId(db.getStringVal("leihset_group_id", rs));
@@ -94,7 +100,6 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 			setArchiveFlg(db.getIntVal("archive_flg", rs));
 			setSyncData(new ApprovalVO(rs));
 		}
-		db = null;
 	}
 
 	public LeihsetVO(ActionRequest req, boolean isSet) {
@@ -288,10 +293,13 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	}
 
 	public String getLeihsetMasterId() {
-		return (leihsetGroupId == null) ? leihsetId : leihsetGroupId;
+		return StringUtil.isEmpty(leihsetGroupId) ? leihsetId : leihsetGroupId;
 	}
 
-	/* (non-Javadoc)
+	/* 
+	 * compareTo is used on the front-end (public side) for sorting.
+	 * The LeihsetSorter is used on the admintool side.
+	 * (non-Javadoc)
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 */
 	@Override
@@ -365,7 +373,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 			//dig down and find out of this root node is tagged for this Leihset
 			for (Node n2 : n.getChildren()) {
 				for (Node n3 : n2.getChildren()) {
-					if (!((Boolean)(n3.getUserObject()))) continue;
+					if (!Convert.formatBoolean(n3.getUserObject())) continue;
 					bizUnits.add(n.getNodeName());
 				}
 			}

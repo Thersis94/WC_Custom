@@ -58,7 +58,7 @@ public class LeihsetDisplayAction extends SimpleActionAdapter {
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			putModuleData(loadLeihsets(site.getOrganizationId(), req.getParameter("category"), page.isPreviewMode()));
 		} else {
-			putModuleData(loadCategoryTree(page.isPreviewMode()));
+			putModuleData(loadCategoryTree(page.isPreviewMode(), req.getParameter("filter")));
 		}
 	}
 
@@ -139,7 +139,7 @@ public class LeihsetDisplayAction extends SimpleActionAdapter {
 	private String getLeihsetQuery(boolean isPreviewMode) {
 		String cDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(500);
-		sql.append("SELECT l.*, la.*, lc.CATEGORY_NM, lc2.category_nm as parent_category_nm, ");
+		sql.append("SELECT l.*, la.*, la.order_no as asset_order_no, lc.CATEGORY_NM, lc2.category_nm as parent_category_nm, ");
 		sql.append("dsm.TITLE_TXT, dsm.TRACKING_NO_TXT");
 		sql.append(DBUtil.FROM_CLAUSE).append(cDb).append("DPY_SYN_LEIHSET l");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(cDb).append("DPY_SYN_LEIHSET_ASSET la on la.leihset_id=l.leihset_id");
@@ -159,10 +159,10 @@ public class LeihsetDisplayAction extends SimpleActionAdapter {
 	 * loads the categories tree for printing the selector hierarchy
 	 * @return
 	 */
-	private Tree loadCategoryTree(boolean isPreview) {
+	private Tree loadCategoryTree(boolean isPreview, String keyword) {
 		LeihsetCategoryAction ca = new LeihsetCategoryAction();
 		ca.setDBConnection(dbConn);
 		ca.setAttributes(getAttributes());
-		return ca.loadCategoryTreeWithCounts(isPreview);
+		return ca.loadCategoryTreeWithCounts(isPreview, keyword);
 	}
 }

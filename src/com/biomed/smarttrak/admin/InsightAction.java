@@ -342,12 +342,8 @@ public class InsightAction extends ManagementAction {
 			pda.setDBConnection(dbConn);
 			pda.setActionInit(actionInit);
 
-			try {
-				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getInsightId()));
-				log.debug(" doc size " + vo.getProfileDocuments().size());
-			} catch (ActionException e) {
-				log.error("error loading profile documents",e);
-			}
+			vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getInsightId()));
+			log.debug(" doc size " + vo.getProfileDocuments().size());
 		}
 		return insights;
 	}
