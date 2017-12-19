@@ -23,7 +23,7 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
  * @since Dec 8, 2017
  * @updates:
  ****************************************************************************/
-public class ProjectFascadeAction extends FacadeActionAdapter {
+public class ProjectFacadeAction extends FacadeActionAdapter {
 	
 	public static final String WIDGET_ACTION = "widgetAction";
 	public static final String PROJECT_ID = "projectId";
@@ -42,11 +42,11 @@ public class ProjectFascadeAction extends FacadeActionAdapter {
         ACTION_MAP = Collections.unmodifiableMap(statMap);
     }
     
-	public ProjectFascadeAction() {
+	public ProjectFacadeAction() {
 		super();
 	}
 
-	public ProjectFascadeAction(ActionInitVO arg0) {
+	public ProjectFacadeAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 	

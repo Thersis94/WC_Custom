@@ -3,7 +3,7 @@ package com.irricurb.action;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.irricurb.action.project.ProjectFascadeAction;
+import com.irricurb.action.project.ProjectFacadeAction;
 import com.irricurb.util.LookupAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInterface;
@@ -44,7 +44,7 @@ public class PortalControllerAction extends SimpleActionAdapter {
 	 */
 	static {
 		ACTIONS = new HashMap<>(1);
-		ACTIONS.put("PROJECT", ProjectFascadeAction.class);
+		ACTIONS.put("PROJECT", ProjectFacadeAction.class);
 		ACTIONS.put("UTIL", LookupAction.class);
 		
 	}

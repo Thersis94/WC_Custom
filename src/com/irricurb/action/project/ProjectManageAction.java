@@ -44,7 +44,7 @@ public class ProjectManageAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req ) throws ActionException {
 		log.debug("project manage action retrieve called");
-		if (req.hasParameter(ProjectFascadeAction.WIDGET_ACTION) && MANAGE.equalsIgnoreCase(req.getParameter(ProjectFascadeAction.WIDGET_ACTION)) ){
+		if (req.hasParameter(ProjectFacadeAction.WIDGET_ACTION) && MANAGE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) ){
 			setModuleData(getProjects(req));
 		}
 	}
@@ -60,7 +60,7 @@ public class ProjectManageAction extends SBActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(90);
 		
-		sql.append(ProjectFascadeAction.SELECT_STAR).append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("ic_project ");
+		sql.append(ProjectFacadeAction.SELECT_STAR).append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("ic_project ");
 		sql.append("where 1=1 ");
 		
 		return dbp.executeSQLWithCount(sql.toString(), params, new ProjectVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));

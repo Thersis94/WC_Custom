@@ -44,7 +44,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req ) throws ActionException {
 		log.debug("project device action retrieve called");
-		if (req.hasParameter(ProjectFascadeAction.WIDGET_ACTION) && DEVICE.equalsIgnoreCase(req.getParameter(ProjectFascadeAction.WIDGET_ACTION)) ){
+		if (req.hasParameter(ProjectFacadeAction.WIDGET_ACTION) && DEVICE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) ){
 			setModuleData(getProjectDevices(req));
 		}
 	}
@@ -54,13 +54,13 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 * @return
 	 */
 	private GridDataVO<ProjectDeviceVO> getProjectDevices(ActionRequest req) {
-		String projectId = StringUtil.checkVal(req.getStringParameter(ProjectFascadeAction.PROJECT_ID));
+		String projectId = StringUtil.checkVal(req.getStringParameter(ProjectFacadeAction.PROJECT_ID));
 		List<Object> params = new ArrayList<>();
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		
 		StringBuilder sql = new StringBuilder(90);
 		
-		sql.append(ProjectFascadeAction.SELECT_STAR).append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("ic_project_device ");
+		sql.append(ProjectFacadeAction.SELECT_STAR).append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("ic_project_device ");
 		sql.append("where project_id = ? ");
 		params.add(projectId);
 		
