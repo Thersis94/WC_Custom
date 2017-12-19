@@ -2,6 +2,7 @@ package com.irricurb.action.data.vo;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -39,7 +40,7 @@ public class ProjectZoneVO extends BeanDataVO {
 	private Date updateDate;
 	
 	// Subelements
-	private List<ZoneGeocodeVO> points;
+	private List<ZoneGeocodeVO> points = new ArrayList<>(24);
 	
 	/**
 	 * 

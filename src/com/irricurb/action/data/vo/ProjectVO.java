@@ -1,10 +1,15 @@
 package com.irricurb.action.data.vo;
 
+// JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
+// SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
@@ -23,9 +28,12 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 @Table(name="ic_project")
 public class ProjectVO extends BeanDataVO {
-
+	/**
+	 * 
+	 */
 	private static final long serialVersionUID = -1785673422020888616L;
 	
+	// Member Variables
 	private String projectId;
 	private String customerId;
 	private String projectName;
@@ -34,31 +42,51 @@ public class ProjectVO extends BeanDataVO {
 	private Date createDate;
 	private Date updateDate;
 	
+	// Helper items (SubBeans)
+	private List<ProjectLocationVO> locations = new ArrayList<>(8);
+	
+	/**
+	 * Values for the project status
+	 */
 	public enum ProjectStatusCd {
 		OPEN("Open"), 
 		ACTIVE("Active"), 
 		INPROGRESS("In Progress"),
 		COMPLETE("Complete"),
 		CLOSED("Closed");
+		
 		private String statusName;
+		
 		ProjectStatusCd(String statusName) {
 			this.statusName = statusName;
 		}
+		
 		public String getStatusName() {
 			return statusName;
 		}
 	}
 	
+	/**
+	 * 
+	 * @param rs
+	 */
 	public ProjectVO(ResultSet rs) {
-		super.populateData(rs);
+		super(rs);
 	}
 
+	/**
+	 * 
+	 * @param req
+	 */
 	public ProjectVO(ActionRequest req) {
-		super.populateData(req);
+		super(req);
 	}
 	
+	/**
+	 * 
+	 */
 	public ProjectVO() {
-		//empty constructor for db processor use
+		super();
 	}
 
 	/**
@@ -116,9 +144,13 @@ public class ProjectVO extends BeanDataVO {
 		return updateDate;
 	}
 	
-	
-	
-	
+	/**
+	 * @return the locations
+	 */
+	public List<ProjectLocationVO> getLocations() {
+		return locations;
+	}
+		
 	/**
 	 * @param projectId the projectId to set
 	 */
@@ -182,6 +214,22 @@ public class ProjectVO extends BeanDataVO {
 	@Override
 	public String toString(){
 		return StringUtil.getToString(this);
+	}
+
+	/**
+	 * @param locations the locations to set
+	 */
+	public void setLocations(List<ProjectLocationVO> locations) {
+		this.locations = locations;
+	}
+	
+	/**
+	 * 
+	 * @param location
+	 */
+	@BeanSubElement
+	public void addLocation(ProjectLocationVO location) {
+		locations.add(location);
 	}
 
 }

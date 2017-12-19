@@ -2,6 +2,7 @@ package com.irricurb.action.data.vo;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.List;
 
 // SMT Base Libs
@@ -36,7 +37,7 @@ public class ProjectLocationVO extends GeocodeLocation {
 	private int manualFlag;
 	
 	// Collections
-	private List<ProjectZoneVO> zones;
+	private List<ProjectZoneVO> zones = new ArrayList<>(32);
 	
 	/**
 	 * 
