@@ -88,7 +88,6 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req ) throws ActionException {
-		
 		if (!req.hasParameter(WIDGET_ACTION)) return;
 		
 		String key = StringUtil.checkVal(req.getParameter(WIDGET_ACTION));
