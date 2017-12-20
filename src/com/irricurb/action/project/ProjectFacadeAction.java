@@ -27,9 +27,7 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 	
 	public static final String WIDGET_ACTION = "widgetAction";
 	public static final String PROJECT_ID = "projectId";
-	public static final String SELECT_STAR = "select * from ";
-
-	
+		
     private static final Map<String,  Class<? extends ActionInterface>> ACTION_MAP;
     
     /**
