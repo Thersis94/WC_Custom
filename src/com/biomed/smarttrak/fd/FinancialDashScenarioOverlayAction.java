@@ -319,6 +319,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			Set<Map.Entry<String, JsonElement>> entries = revenueData.entrySet();
 
 			for (Map.Entry<String, JsonElement> entry: entries) {
+				if (entry.getKey().startsWith("YTD")) continue;
 				String quarter = getQuarterFromField(entry.getKey());
 				long value = entry.getValue().getAsLong();
 				
