@@ -13,7 +13,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
-import com.smt.sitebuilder.action.formbuilder.vo.FBFormVO;
+import com.smt.sitebuilder.data.vo.FormActionVO;
 
 /****************************************************************************
  * <b>Title</b>: HuddleFormVO.java
@@ -39,7 +39,7 @@ public class HuddleGroupVO extends SBModuleVO {
 	private Map<String, HuddleForm> forms;
 	
 	public HuddleGroupVO() {
-		forms = new LinkedHashMap<String, HuddleForm>();
+		forms = new LinkedHashMap<>();
 	}
 	
 	public HuddleGroupVO(ResultSet rs) {
@@ -76,7 +76,7 @@ public class HuddleGroupVO extends SBModuleVO {
 
 	//Getter
 	public Map<String, HuddleForm> getFormsMap() {return forms;}
-	public List<HuddleForm> getForms() {return new ArrayList<HuddleForm>(forms.values());}
+	public List<HuddleForm> getForms() {return new ArrayList<>(forms.values());}
 
 	//Setter
 	public void setForms(Map<String, HuddleForm> forms) {this.forms = forms;}
@@ -110,7 +110,7 @@ public class HuddleGroupVO extends SBModuleVO {
 	 *        <b>Changes: </b>
 	 ***************************************************************************
 	 */
-	public class HuddleForm extends FBFormVO {
+	public class HuddleForm extends FormActionVO {
 
 		private static final long serialVersionUID = 1L;
 		private String huddleGroupId;
