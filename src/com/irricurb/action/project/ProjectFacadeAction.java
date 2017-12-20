@@ -1,14 +1,12 @@
 package com.irricurb.action.project;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
+// SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
+
+// WC Libs
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 
 /****************************************************************************
@@ -25,29 +23,35 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
  ****************************************************************************/
 public class ProjectFacadeAction extends FacadeActionAdapter {
 	
+	// Constants for use in the action
 	public static final String WIDGET_ACTION = "widgetAction";
 	public static final String PROJECT_ID = "projectId";
 	public static final String SELECT_STAR = "select * from ";
 
-	
-    private static final Map<String,  Class<? extends ActionInterface>> ACTION_MAP;
-    
-    /**
-     * builds the static map so these methods can be used anywhere
-     */
-    static {
-        Map<String,  Class<? extends ActionInterface>> statMap = new HashMap<>();
-        statMap.put(ProjectManageAction.MANAGE, ProjectManageAction.class);
-        statMap.put(ProjectDeviceAction.DEVICE, ProjectDeviceAction.class);
-        ACTION_MAP = Collections.unmodifiableMap(statMap);
-    }
-    
+	/**
+	 * 
+	 */
 	public ProjectFacadeAction() {
 		super();
+		assignActions();
 	}
 
+	/**
+	 * 
+	 * @param arg0
+	 */
 	public ProjectFacadeAction(ActionInitVO arg0) {
 		super(arg0);
+		assignActions();
+	}
+	
+	/**
+	 * Assigns the facade actions need to be called
+	 */
+	public void assignActions() {
+        actionMap.put(ProjectDeviceAction.DEVICE, ProjectDeviceAction.class);
+        actionMap.put(ProjectManageAction.MANAGE, ProjectManageAction.class);
+        actionMap.put(ProjectMapAction.MAP, ProjectMapAction.class);
 	}
 	
 	/*
@@ -58,29 +62,6 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
     public void copy(ActionRequest req) throws ActionException {
 		//empty for the time being
 	}
-	
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void delete(ActionRequest req ) throws ActionException {
-		//empty for the time being
-		super.delete(req);
-	}
-	
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void update(ActionRequest req ) throws ActionException {
-		//empty for the time being
-		super.update(req);
-	}
-	
 	
 	/*
 	 * (non-Javadoc)
@@ -94,42 +75,5 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 		
 		loadAction(key).retrieve(req);
 	}
-	
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void list(ActionRequest req ) throws ActionException {
-		//empty for the time being
-		super.list(req);
-	}
-	
-	/**
-	 * Based on the passed actionType, instantiate the appropriate class and return.
-	 * 
-	 * @param actionType
-	 * @return
-	 * @throws ActionException
-	 */
-	protected ActionInterface loadAction(String actionType) throws ActionException {
-		Class<?> c = ACTION_MAP.get(actionType);
-		if (c == null) 
-			throw new ActionException("Unknown action type: " + actionType);
-
-		// Instantiate the action & return it - pass attributes & dbConn
-		try {
-			ActionInterface action = (ActionInterface) c.newInstance();
-			action.setDBConnection(dbConn);
-			action.setAttributes(getAttributes());
-			return action;
-		} catch (InstantiationException | IllegalAccessException e) {
-			throw new ActionException("Problem instantiating action type: " + actionType);
-		}
-	}
-	
-
-	
 	
 }

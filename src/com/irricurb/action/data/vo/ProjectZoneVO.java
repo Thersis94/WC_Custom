@@ -36,6 +36,7 @@ public class ProjectZoneVO extends BeanDataVO {
 	private String projectLocationId;
 	private String name;
 	private String description;
+	private String color;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -93,6 +94,14 @@ public class ProjectZoneVO extends BeanDataVO {
 	@Column(name="zone_desc")
 	public String getDescription() {
 		return description;
+	}
+
+	/**
+	 * @return the color
+	 */
+	@Column(name="color_txt")
+	public String getColor() {
+		return color;
 	}
 	
 	/**
@@ -174,6 +183,13 @@ public class ProjectZoneVO extends BeanDataVO {
 	 */
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	/**
+	 * @param color the color to set
+	 */
+	public void setColor(String color) {
+		this.color = color;
 	}
 
 }

@@ -7,10 +7,12 @@ import java.util.List;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
+import com.siliconmtn.util.StringUtil;
 
 /********************************************************************
  * <b>Title: </b>ProjectLocationVO.java<br/>
@@ -76,6 +78,15 @@ public class ProjectLocationVO extends GeocodeLocation {
 	public ProjectLocationVO(ActionRequest req) {
 		super();
 		populateData(req);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.siliconmtn.gis.GeocodeLocation#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this);
 	}
 
 	/**
@@ -148,6 +159,7 @@ public class ProjectLocationVO extends GeocodeLocation {
 	/**
 	 * @param zones  add a zone to the zones set
 	 */
+	@BeanSubElement
 	public void addZone(ProjectZoneVO zone) {
 		this.zones.add(zone);
 	}
