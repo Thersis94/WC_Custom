@@ -48,6 +48,19 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		if (req.hasParameter(ProjectFacadeAction.WIDGET_ACTION) && DEVICE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) ){
 			setModuleData(getProjectDevices(req));
 		}
+		
+		if(req.hasParameter("projectDeviceId")){
+			getProjectDeviceById(req);
+		}
+	}
+
+	/**
+	 * this method will get a project devices attributes 
+	 * @param req
+	 */
+	private void getProjectDeviceById(ActionRequest req) {
+		log.debug("@@@@@@@@@@@ get by project device id");
+		
 	}
 
 	/**
