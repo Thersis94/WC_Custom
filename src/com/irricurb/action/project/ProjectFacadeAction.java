@@ -26,7 +26,6 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 	// Constants for use in the action
 	public static final String WIDGET_ACTION = "widgetAction";
 	public static final String PROJECT_ID = "projectId";
-	public static final String SELECT_STAR = "select * from ";
 
 	/**
 	 * 

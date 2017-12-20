@@ -7,6 +7,7 @@ import com.irricurb.action.data.vo.ProjectDeviceVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.http.filter.fileupload.Constants;
@@ -55,15 +56,20 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 */
 	private GridDataVO<ProjectDeviceVO> getProjectDevices(ActionRequest req) {
 		String projectId = StringUtil.checkVal(req.getStringParameter(ProjectFacadeAction.PROJECT_ID));
+		String customSchema = StringUtil.checkVal(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		List<Object> params = new ArrayList<>();
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		
 		StringBuilder sql = new StringBuilder(90);
 		
-		sql.append(ProjectFacadeAction.SELECT_STAR).append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("ic_project_device ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customSchema).append("ic_project_device icpd ");
+		sql.append("inner join ").append(customSchema).append("ic_device icd on icpd.device_id = icd.device_id ");
+		sql.append("inner join ").append(customSchema).append("ic_project_zone icpz on icpd.project_zone_id = icpz.project_zone_id ");
 		sql.append("where project_id = ? ");
 		params.add(projectId);
 		
-		return dbp.executeSQLWithCount(sql.toString(), params, new ProjectDeviceVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));
+		GridDataVO<ProjectDeviceVO> data = dbp.executeSQLWithCount(sql.toString(), params, new ProjectDeviceVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));
+		log.debug("### Data size " + data.getTotal() + " project id " + projectId);
+		return data;
 	}
 }

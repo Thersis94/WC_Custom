@@ -1,9 +1,9 @@
 package com.irricurb.action.data.vo;
 
 import java.sql.ResultSet;
-import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
@@ -27,16 +27,13 @@ public class ProjectDeviceVO extends DeviceVO {
 
 	private String projectDeviceId;
 	private String projectZoneId;
-	private String deviceId;
 	private String projectId;
 	private String ipAddressText;
 	private String serialNumberText;
 	private Double longitudeNumber = 0.0;
 	private Double latitudeNumber = 0.0;
 	private String statusCode;
-	private Date createDate;
-	private Date updateDate;
-	
+	private ProjectZoneVO zone;
 	
 	/**
 	 * Status Code Enum
@@ -98,13 +95,6 @@ public class ProjectDeviceVO extends DeviceVO {
 	}
 	/**
 
-	/**
-	 * @return the deviceId
-	 */
-	@Column(name="device_id")
-	public String getDeviceId() {
-		return deviceId;
-	}
 
 	/**
 	 * @return the projectId
@@ -155,23 +145,6 @@ public class ProjectDeviceVO extends DeviceVO {
 	}
 	
 	/**
-	 * @return the createDate
-	 */
-	@Column(name="create_dt", isInsertOnly=true)
-	public Date getCreateDate() {
-		return createDate;
-	}
-	
-	/**
-	 * @return the updateDate
-	 */
-	@Column(name="update_dt", isUpdateOnly=true)
-	public Date getUpdateDate() {
-		return updateDate;
-	}
-	
-
-	/**
 	 * @param projectDeviceId the projectDeviceId to set
 	 */
 	public void setProjectDeviceId(String projectDeviceId) {
@@ -185,12 +158,7 @@ public class ProjectDeviceVO extends DeviceVO {
 		this.projectZoneId = projectZoneId;
 	}
 
-	/**
-	 * @param deviceId the deviceId to set
-	 */
-	public void setDeviceId(String deviceId) {
-		this.deviceId = deviceId;
-	}
+
 
 	/**
 	 * @param projectId the projectId to set
@@ -235,19 +203,7 @@ public class ProjectDeviceVO extends DeviceVO {
 		this.statusCode = statusCode;
 	}
 
-	/**
-	 * @param createDate the createDate to set
-	 */
-	public void setCreateDate(Date createDate) {
-		this.createDate = createDate;
-	}
 
-	/**
-	 * @param updateDate the updateDate to set
-	 */
-	public void setUpdateDate(Date updateDate) {
-		this.updateDate = updateDate;
-	}
 	
 	/*
 	 * (non-Javadoc)
@@ -256,5 +212,20 @@ public class ProjectDeviceVO extends DeviceVO {
 	@Override
 	public String toString(){
 		return StringUtil.getToString(this);
+	}
+
+	/**
+	 * @return the zone
+	 */
+	public ProjectZoneVO getZone() {
+		return zone;
+	}
+
+	/**
+	 * @param zone the zone to set
+	 */
+	@BeanSubElement
+	public void setZone(ProjectZoneVO zone) {
+		this.zone = zone;
 	}
 }

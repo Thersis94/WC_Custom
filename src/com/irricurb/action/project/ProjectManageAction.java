@@ -7,6 +7,7 @@ import com.irricurb.action.data.vo.ProjectVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.http.filter.fileupload.Constants;
@@ -60,7 +61,7 @@ public class ProjectManageAction extends SBActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(90);
 		
-		sql.append(ProjectFacadeAction.SELECT_STAR).append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("ic_project ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("ic_project ");
 		sql.append("where 1=1 ");
 		
 		return dbp.executeSQLWithCount(sql.toString(), params, new ProjectVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));
