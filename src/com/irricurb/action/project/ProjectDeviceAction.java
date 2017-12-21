@@ -17,7 +17,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 /****************************************************************************
  * <b>Title</b>: ProjectDeviceAction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO Put Something Here
+ * <b>Description: </b> WC Widget Action managing devices for a given project
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -68,8 +68,36 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		sql.append("where project_id = ? ");
 		params.add(projectId);
 		
-		GridDataVO<ProjectDeviceVO> data = dbp.executeSQLWithCount(sql.toString(), params, new ProjectDeviceVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));
-		log.debug("### Data size " + data.getTotal() + " project id " + projectId);
-		return data;
+		// Add the filtering
+		applyFilters(req, sql, params);
+		
+		// Return the data
+		return dbp.executeSQLWithCount(sql.toString(), params, new ProjectDeviceVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));
+	}
+	
+	/**
+	 * Adds the sql filters for the filter selections on the bootstrap table
+	 * @param req
+	 * @param sql
+	 * @param params
+	 */
+	protected void applyFilters(ActionRequest req, StringBuilder sql, List<Object> params) {
+		// Add a filter for the zone
+		if (req.hasParameter("projectZone")) {
+			sql.append("and icpz.project_zone_id = ? ");
+			params.add(req.getParameter("projectZone"));
+		}
+		
+		// Add a filter for the device type
+		if (req.hasParameter("deviceType")) {
+			sql.append("and icd.device_type_cd = ? ");
+			params.add(req.getParameter("deviceType"));
+		}
+		
+		// Add a filter for the project status
+		if (req.hasParameter("projectStatus")) {
+			sql.append("and icpd.status_cd = ? ");
+			params.add(req.getParameter("projectStatus"));
+		}
 	}
 }

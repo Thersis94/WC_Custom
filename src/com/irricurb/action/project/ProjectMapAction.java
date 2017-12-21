@@ -11,6 +11,8 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /********************************************************************
@@ -47,17 +49,49 @@ public class ProjectMapAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.info("Mapping");
-		if (req.hasParameter("zoneId")) {
+		log.info("Mapping : " + req.getParameter("pmid") + "|" + req.getParameter("zoneId"));
+		if (req.hasParameter("pmid") && req.hasParameter("zoneId")) {
 			putModuleData(getZoneDevices(req.getParameter("zoneId")));
+		} else if (! req.hasParameter("pmid") && req.hasParameter("zoneId")) {
+			putModuleData(getZone(req.getParameter("zoneId")));
 		} else {
 			putModuleData(getLocationData(req.getStringParameter("projectId", "PROJECT1")));
 		}
 	}
 	
+	/**
+	 * Retrieves the zone data
+	 * @param zoneId
+	 * @return
+	 */
+	public ProjectZoneVO getZone(String zoneId) {
+		ProjectZoneVO zone = new ProjectZoneVO();
+		zone.setProjectZoneId(zoneId);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.getByPrimaryKey(zone);
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Unable to retrieve zone data", e);
+		}
+		
+		return zone;
+	}
+	
+	/**
+	 * Retrieves a list of devices in a zone
+	 * @param zoneId
+	 * @return
+	 */
 	public List<ProjectDeviceVO> getZoneDevices(String zoneId) {
 		StringBuilder sql = new StringBuilder(128);
-		return null;
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ic_project_device a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_device b on a.device_id = b.device_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("project_zone_id = ? ");
+		log.info(sql + "|" + zoneId);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), Arrays.asList(new  Object[] {zoneId }), new ProjectDeviceVO());
 	}
 	
 	/**
@@ -80,7 +114,6 @@ public class ProjectMapAction extends SBActionAdapter {
 		sql.append("on b.project_zone_id = c.project_zone_id ");
 		sql.append("where a.project_location_id = ? ");
 		sql.append("order by b.project_zone_id, order_no ");
-		log.info(sql + "|" + projectId);
 		
 		// Loop the locations and add the zone data
 		for (ProjectLocationVO location : projectLocations) {

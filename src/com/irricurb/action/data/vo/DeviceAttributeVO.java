@@ -9,6 +9,7 @@ import java.util.List;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -217,6 +218,7 @@ public class DeviceAttributeVO extends BeanDataVO {
 	 * 
 	 * @param option
 	 */
+	@BeanSubElement
 	public void addOption(DeviceAttributeVO option) {
 		options.add(option);
 	}
