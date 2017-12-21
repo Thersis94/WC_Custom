@@ -63,30 +63,24 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 * @param req
 	 */
 	private List<ProjectDeviceAttributeVO> getProjectDeviceById(ActionRequest req) {
-		log.debug("@@@@@@@@@@@ get by project device id");
-		String projectDeviceId = StringUtil.checkVal(req.getStringParameter("projectDeviceId"));
-		String customSchema = StringUtil.checkVal(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		List<Object> params = new ArrayList<>();
+
+		
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		
 		StringBuilder sql = new StringBuilder(400);
-/*		sql.append(DBUtil.SELECT_FROM_STAR).append(customSchema).append("ic_device_attribute a ");
-		sql.append("inner join ").append(customSchema).append("ic_attribute_device b on a.device_attribute_id = b.device_attribute_id ");
-		sql.append("left outer join ").append(customSchema).append("ic_device_attribute_xr c on b.attribute_device_id = c.attribute_device_id and project_device_id = ? ");
-		sql.append("where device_id in ( ");
-		sql.append("select device_id from custom.ic_project_device where project_device_id = ? ");
-		sql.append(")order by a.attribute_nm ");*/
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ic_device_attribute a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_attribute_device b on a.device_attribute_id = b.device_attribute_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ic_device_attribute_xr c ");
+		sql.append("on b.attribute_device_id = c.attribute_device_id and project_device_id = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" device_id in ( ");
+		sql.append("select device_id from ").append(getCustomSchema()).append("ic_project_device where project_device_id = ? ");
+		sql.append(") order by a.attribute_nm ");
+		log.info(sql + "|" + StringUtil.checkVal(req.getStringParameter("projectDeviceId")));
 		
-		sql.append("select * from custom.ic_device_attribute_xr daxr ");
-		sql.append("inner join custom.ic_attribute_device ad on daxr.attribute_device_id = ad.attribute_device_id ");
-		sql.append("where project_device_id = ?  ");
-		
-		//params.add(projectDeviceId);
-		params.add(projectDeviceId);
-	
-		List<ProjectDeviceAttributeVO> data = dbp.executeSelect(sql.toString(), params, new ProjectDeviceAttributeVO());
-		log.debug("### Data size " + data.size() + " project device id " + projectDeviceId);
-		return data;
+		List<Object> params = new ArrayList<>();
+		params.add(StringUtil.checkVal(req.getStringParameter("projectDeviceId")));
+		params.add(StringUtil.checkVal(req.getStringParameter("projectDeviceId")));
+		return dbp.executeSelect(sql.toString(), params, new ProjectDeviceAttributeVO());
 	}
 
 	/**
