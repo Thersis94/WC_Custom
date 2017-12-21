@@ -68,6 +68,7 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req ) throws ActionException {
+		log.debug("facade action retrieve called");
 		if (!req.hasParameter(WIDGET_ACTION)) return;
 		
 		String key = StringUtil.checkVal(req.getParameter(WIDGET_ACTION));

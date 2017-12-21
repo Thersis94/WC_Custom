@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -21,10 +22,10 @@ import com.siliconmtn.db.orm.Table;
  * Last Updated: 
  *******************************************************************/
 @Table(name="ic_attribute_device")
-public class AttributeDevice extends DeviceAttributeVO {
+public class AttributeDevice extends BeanDataVO {
 
 	/**
-	 * 
+	 * DeviceAttributeVO
 	 */
 	private static final long serialVersionUID = 5352420977846321729L;
 	
