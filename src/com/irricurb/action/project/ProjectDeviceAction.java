@@ -3,6 +3,8 @@ package com.irricurb.action.project;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.irricurb.action.data.vo.DeviceAttributeVO;
+import com.irricurb.action.data.vo.ProjectDeviceAttributeVO;
 import com.irricurb.action.data.vo.ProjectDeviceVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -45,12 +47,14 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req ) throws ActionException {
 		log.debug("project device action retrieve called");
-		if (req.hasParameter(ProjectFacadeAction.WIDGET_ACTION) && DEVICE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) ){
+		if (!req.hasParameter(ProjectFacadeAction.WIDGET_ACTION)) return;
+		
+		if (DEVICE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) && req.hasParameter("projectId") ){
 			setModuleData(getProjectDevices(req));
 		}
 		
-		if(req.hasParameter("projectDeviceId")){
-			getProjectDeviceById(req);
+		if(DEVICE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) && req.hasParameter("projectDeviceId")){
+			setModuleData(getProjectDeviceById(req));
 		}
 	}
 
@@ -58,9 +62,31 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 * this method will get a project devices attributes 
 	 * @param req
 	 */
-	private void getProjectDeviceById(ActionRequest req) {
+	private List<ProjectDeviceAttributeVO> getProjectDeviceById(ActionRequest req) {
 		log.debug("@@@@@@@@@@@ get by project device id");
+		String projectDeviceId = StringUtil.checkVal(req.getStringParameter("projectDeviceId"));
+		String customSchema = StringUtil.checkVal(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		List<Object> params = new ArrayList<>();
+		DBProcessor dbp = new DBProcessor(getDBConnection());
 		
+		StringBuilder sql = new StringBuilder(400);
+/*		sql.append(DBUtil.SELECT_FROM_STAR).append(customSchema).append("ic_device_attribute a ");
+		sql.append("inner join ").append(customSchema).append("ic_attribute_device b on a.device_attribute_id = b.device_attribute_id ");
+		sql.append("left outer join ").append(customSchema).append("ic_device_attribute_xr c on b.attribute_device_id = c.attribute_device_id and project_device_id = ? ");
+		sql.append("where device_id in ( ");
+		sql.append("select device_id from custom.ic_project_device where project_device_id = ? ");
+		sql.append(")order by a.attribute_nm ");*/
+		
+		sql.append("select * from custom.ic_device_attribute_xr daxr ");
+		sql.append("inner join custom.ic_attribute_device ad on daxr.attribute_device_id = ad.attribute_device_id ");
+		sql.append("where project_device_id = ?  ");
+		
+		//params.add(projectDeviceId);
+		params.add(projectDeviceId);
+	
+		List<ProjectDeviceAttributeVO> data = dbp.executeSelect(sql.toString(), params, new ProjectDeviceAttributeVO());
+		log.debug("### Data size " + data.size() + " project device id " + projectDeviceId);
+		return data;
 	}
 
 	/**
@@ -82,7 +108,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		params.add(projectId);
 		
 		GridDataVO<ProjectDeviceVO> data = dbp.executeSQLWithCount(sql.toString(), params, new ProjectDeviceVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));
-		log.debug("### Data size " + data.getTotal() + " project id " + projectId);
+		log.debug("Data size " + data.getTotal() + " project id " + projectId);
 		return data;
 	}
 }
