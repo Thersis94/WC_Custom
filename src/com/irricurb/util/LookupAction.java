@@ -8,8 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
-
+import com.irricurb.action.project.ProjectSelectionAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -99,12 +98,13 @@ public class LookupAction extends SimpleActionAdapter {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		StringBuilder sql = new StringBuilder(75);
-		sql.append("select customer_id as key, customer_nm as value from ").append(schema).append("ic_customer ");
+		sql.append("select a.customer_id as key, customer_nm as value from ").append(schema).append("ic_customer a ");
+		sql.append("inner join custom.ic_project b on a.customer_id = b.customer_id ");
+		sql.append("order by customer_nm ");
 		
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<GenericVO> data = dbp.executeSelect(sql.toString(), null, new GenericVO());
-		log.debug("sql: " + sql.toString());
-		log.debug("data size " + data.size());
+
 		return data;
 	}
 	
@@ -147,7 +147,7 @@ public class LookupAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getProjectZones(ActionRequest req) {
-		String projectId = req.getParameter("projectId");
+		String projectId = (String)req.getSession().getAttribute(ProjectSelectionAction.PROJECT_LOOKUP);
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select project_zone_id as key, zone_nm as value from ").append(getCustomSchema()).append("ic_project_location a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_project_zone b on a.project_location_id = b.project_location_id ");

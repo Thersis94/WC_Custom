@@ -77,7 +77,7 @@ public class ProjectSelectionAction extends SimpleActionAdapter {
 			String projectId = StringUtil.checkVal(ses.getAttribute(PROJECT_LOOKUP));
 			
 			//. Load the data
-			putModuleData(getSelectData(req, customerId, projectId));
+			putModuleData(getSelectData(req, ses, customerId, projectId));
 		}
 		
 	}
@@ -148,14 +148,41 @@ public class ProjectSelectionAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public Map<String, List<GenericVO>> getSelectData(ActionRequest req, String customerId, String projectId) {
+	public Map<String, List<GenericVO>> getSelectData(ActionRequest req,SMTSession ses, String customerId, String projectId) {
 		Map<String, List<GenericVO>> items = new HashMap<String, List<GenericVO>>();
+				
+		// Get the list of available customers.  If a customer isn't selected via cookie or session,
+		// Use the first customer and assign to session and request 
 		items.put(CUSTOMER_LOOKUP, getLookupData(req, CUSTOMER_LOOKUP));
+		customerId = assignValues(CUSTOMER_LOOKUP, customerId, items, req, ses);
 		
-		if (! projectId.isEmpty())
-			items.put(PROJECT_LOOKUP, getLookupData(req, PROJECT_LOOKUP));
+		// Get the list of available projects.  If a project isn't selected via cookie or session,
+		// Use the first project and assign to session and request 
+		items.put(PROJECT_LOOKUP, getLookupData(req, PROJECT_LOOKUP));
+		assignValues(PROJECT_LOOKUP, projectId, items, req, ses);
 		
 		return items;
+	}
+	
+	/**
+	 * Assigns the values to the session, request and cookies if not assigned
+	 * @param key The Key (PROJECT_LOOKUP or CUSTOMER_LOOKUP)
+	 * @param value customerId or projectId
+	 * @param items Map of Lists (Project or Customer)
+	 * @param req
+	 * @param ses
+	 * @return
+	 */
+	protected String assignValues(String key, String value, Map<String, List<GenericVO>> items, ActionRequest req, SMTSession ses) {
+		if(! value.isEmpty() || items.get(key).isEmpty()) return value;
+		
+		HttpServletResponse res = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
+		value = (String) items.get(key).get(0).getKey();
+		ses.setAttribute(key, value);
+		req.setParameter("customerId", value);
+		CookieUtil.add(res, key, value, "/", (86400 * 365));
+		
+		return value;
 	}
 	
 	/**

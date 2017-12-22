@@ -13,6 +13,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.session.SMTSession;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /********************************************************************
@@ -49,13 +50,14 @@ public class ProjectMapAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.info("Mapping : " + req.getParameter("pmid") + "|" + req.getParameter("zoneId"));
+		
 		if (req.hasParameter("pmid") && req.hasParameter("zoneId")) {
 			putModuleData(getZoneDevices(req.getParameter("zoneId")));
 		} else if (! req.hasParameter("pmid") && req.hasParameter("zoneId")) {
 			putModuleData(getZone(req.getParameter("zoneId")));
 		} else {
-			putModuleData(getLocationData(req.getStringParameter("projectId", "PROJECT1")));
+			SMTSession ses = req.getSession(); 
+			putModuleData(getLocationData((String) ses.getAttribute(ProjectSelectionAction.PROJECT_LOOKUP)));
 		}
 	}
 	
