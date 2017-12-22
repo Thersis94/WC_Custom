@@ -122,12 +122,10 @@ public class LookupAction extends SimpleActionAdapter {
 			sql.append("where customer_id = ? ");
 			params.add(req.getStringParameter("customerId"));
 		}
-
+		
+		log.debug("sql: " + sql.toString() + params);
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
-		List<GenericVO> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
-		log.debug("sql: " + sql.toString());
-		log.debug("data size " + data.size()+ " params size: " +params.size());
-		return data;
+		return dbp.executeSelect(sql.toString(), params, new GenericVO());
 	}
 	
 	/**

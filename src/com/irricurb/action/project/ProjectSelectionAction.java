@@ -1,13 +1,18 @@
 package com.irricurb.action.project;
 
-import java.util.Calendar;
+// JDK 1.8.x
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// J2EE 6
 import javax.servlet.http.HttpServletResponse;
 
+// WC Libs
 import com.irricurb.util.LookupAction;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
+
+// SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -16,9 +21,8 @@ import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.http.session.SMTSession;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SimpleActionAdapter;
+
 
 /********************************************************************
  * <b>Title: </b>ProjectSelectionAction.java<br/>
@@ -58,14 +62,14 @@ public class ProjectSelectionAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		SMTSession ses = req.getSession();
 		
-		if (req.hasParameter("amid") && req.hasParameter(PROJECT_LOOKUP)) {
+		if (req.hasParameter("pmid") && req.hasParameter(PROJECT_LOOKUP)) {
 			assignProjectCookie(req, ses, req.getParameter(PROJECT_LOOKUP));
 			
-		} else if (req.hasParameter("amid") && req.hasParameter(CUSTOMER_LOOKUP)) {
-			assignCustomerCookie(req, ses, req.getParameter(CUSTOMER_LOOKUP));
+		} else if (req.hasParameter("pmid") && req.hasParameter(CUSTOMER_LOOKUP)) {
+			putModuleData(assignCustomerCookie(req, ses, req.getParameter(CUSTOMER_LOOKUP)));
 			
 		} else {
-			// Gte the cookies loaded and added to the session on a new session
+			// Get the cookies loaded and added to the session on a new session
 			if (ses.isNew()) checkCookies(req, ses);
 			
 			// Get the session values
@@ -111,6 +115,8 @@ public class ProjectSelectionAction extends SimpleActionAdapter {
 		CookieUtil.add(res, PROJECT_LOOKUP, "", "/", (86400 * 365));
 		ses.setAttribute(PROJECT_LOOKUP, "");
 		
+		// Add the customerId
+		req.setParameter("customerId", customerId);
 		return getLookupData(req, PROJECT_LOOKUP);
 	}
 	
@@ -124,12 +130,17 @@ public class ProjectSelectionAction extends SimpleActionAdapter {
 		if (cookies == null) return;
 		
 		for (SMTCookie cookie : cookies) {
+			log.info("Name: " + cookie.getName());
 			if (CUSTOMER_LOOKUP.equalsIgnoreCase(cookie.getName())) {
 				ses.setAttribute(CUSTOMER_LOOKUP, cookie.getValue());
+
 			} else if(PROJECT_LOOKUP.equalsIgnoreCase(cookie.getName())) {
 				ses.setAttribute(PROJECT_LOOKUP, cookie.getValue());
+
 			}
 		}
+		
+		log.info("Sess Info: " + ses.getAttribute(CUSTOMER_LOOKUP) + "|" + ses.getAttribute(PROJECT_LOOKUP));
 	}
 	
 	/**
