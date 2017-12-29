@@ -451,10 +451,16 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 			
 			if (!NAME.equals(key) && fdRow.getColumns().get(key).getPctDiff() != null) {
 				Double value = fdRow.getColumns().get(key).getPctDiff();
-				cell.setCellValue(value);
-				cell.setCellType(Cell.CELL_TYPE_NUMERIC);
 				
-				if (value == 0) {
+				// setCellValue is type dependant, ensure that the proper one is called here
+				if (value == -1) {
+					cell.setCellValue("-");
+				} else {
+					cell.setCellValue(value);
+					cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+				}
+				
+				if (value == 0 || value == -1) {
 					cell.setCellStyle(cellStyles.get(CellStyleName.PERCENT));
 				} else {
 					cell.setCellStyle(cellStyles.get(value > 0 ? CellStyleName.PERCENT_POS : CellStyleName.PERCENT_NEG));
