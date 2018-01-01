@@ -42,6 +42,7 @@ public class ProjectZoneVO extends BeanDataVO {
 	
 	// Subelements
 	private List<ZoneGeocodeVO> points = new ArrayList<>(24);
+	private List<ProjectDeviceVO> devices = new ArrayList<>(128);
 	
 	/**
 	 * 
@@ -190,6 +191,29 @@ public class ProjectZoneVO extends BeanDataVO {
 	 */
 	public void setColor(String color) {
 		this.color = color;
+	}
+
+	/**
+	 * @return the devices
+	 */
+	public List<ProjectDeviceVO> getDevices() {
+		return devices;
+	}
+
+	/**
+	 * @param devices the devices to set
+	 */
+	public void setDevices(List<ProjectDeviceVO> devices) {
+		this.devices = devices;
+	}
+	
+	/**
+	 * 
+	 * @param device
+	 */
+	@BeanSubElement
+	public void addDevice(ProjectDeviceVO device) {
+		devices.add(device);
 	}
 
 }
