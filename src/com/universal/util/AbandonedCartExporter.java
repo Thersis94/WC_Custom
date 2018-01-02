@@ -448,16 +448,11 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		for (int i = 1; i <= sitesNo; i++) {
 			if (props.getProperty(keyPrefix+i) != null) {
 				brandMap.put(keyPrefix+i, props.getProperty(keyPrefix+i));
-			} else {
-				// we're done...bail
-				break;
 			}
 		}
 
-		if (log.isDebugEnabled()) {
-			for (Map.Entry<String, String> entry: brandMap.entrySet())
-				log.debug("brandMap key/val: " + entry.getKey() + "|" + entry.getValue());
-		}
+		for (Map.Entry<String, String> entry: brandMap.entrySet())
+			log.info("brandMap key/val: " + entry.getKey() + "|" + entry.getValue());
 	}
 
 }
