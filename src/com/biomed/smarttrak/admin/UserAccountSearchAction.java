@@ -121,12 +121,8 @@ public class UserAccountSearchAction extends SBActionAdapter {
 		sql.append("SELECT a.ACCOUNT_ID, a.ACCOUNT_NM, p.FIRST_NM, p.LAST_NM, ");
 		sql.append("p.EMAIL_ADDRESS_TXT, u.USER_ID ");
 		sql.append("FROM ").append(customDb).append("biomedgps_account a ");
-		sql.append("LEFT JOIN ").append(customDb).append("biomedgps_team t ");
-		sql.append("ON t.ACCOUNT_ID = a.ACCOUNT_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("biomedgps_user_team_xr xr ");
-		sql.append("ON t.TEAM_ID = xr.TEAM_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("biomedgps_user u ");
-		sql.append("ON u.USER_ID = xr.USER_ID ");
+		sql.append("ON u.ACCOUNT_ID = a.ACCOUNT_ID ");
 		sql.append("LEFT JOIN PROFILE p on p.PROFILE_ID = u.PROFILE_ID ");
 		
 		sql.append("WHERE 1=2 ");
