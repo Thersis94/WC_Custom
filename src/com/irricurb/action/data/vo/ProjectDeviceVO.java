@@ -1,7 +1,11 @@
 package com.irricurb.action.data.vo;
 
+// JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
+// SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
@@ -24,7 +28,8 @@ import com.siliconmtn.util.StringUtil;
 public class ProjectDeviceVO extends DeviceVO {
 
 	private static final long serialVersionUID = 6922132132917524118L;
-
+	
+	// Member Variables
 	private String projectDeviceId;
 	private String projectZoneId;
 	private String projectId;
@@ -33,6 +38,9 @@ public class ProjectDeviceVO extends DeviceVO {
 	private Double longitudeNumber = 0.0;
 	private Double latitudeNumber = 0.0;
 	private String statusCode;
+	
+	// Sub-bean Elements
+	private List<ProjectDeviceAttributeVO> attributes = new ArrayList<>(16);
 	private ProjectZoneVO zone;
 	
 	/**
@@ -76,6 +84,15 @@ public class ProjectDeviceVO extends DeviceVO {
 	 */
 	public ProjectDeviceVO(ActionRequest req) {
 		super(req);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.siliconmtn.data.parser.BeanDataVO#toString()
+	 */
+	@Override
+	public String toString(){
+		return StringUtil.getToString(this);
 	}
 	
 	/**
@@ -145,6 +162,20 @@ public class ProjectDeviceVO extends DeviceVO {
 	}
 	
 	/**
+	 * @return the attributes
+	 */
+	public List<ProjectDeviceAttributeVO> getAttributes() {
+		return attributes;
+	}
+	
+	/**
+	 * @return the zone
+	 */
+	public ProjectZoneVO getZone() {
+		return zone;
+	}
+	
+	/**
 	 * @param projectDeviceId the projectDeviceId to set
 	 */
 	public void setProjectDeviceId(String projectDeviceId) {
@@ -157,8 +188,6 @@ public class ProjectDeviceVO extends DeviceVO {
 	public void setProjectZoneId(String projectZoneId) {
 		this.projectZoneId = projectZoneId;
 	}
-
-
 
 	/**
 	 * @param projectId the projectId to set
@@ -203,29 +232,27 @@ public class ProjectDeviceVO extends DeviceVO {
 		this.statusCode = statusCode;
 	}
 
-
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.siliconmtn.data.parser.BeanDataVO#toString()
-	 */
-	@Override
-	public String toString(){
-		return StringUtil.getToString(this);
-	}
-
-	/**
-	 * @return the zone
-	 */
-	public ProjectZoneVO getZone() {
-		return zone;
-	}
-
 	/**
 	 * @param zone the zone to set
 	 */
 	@BeanSubElement
 	public void setZone(ProjectZoneVO zone) {
 		this.zone = zone;
+	}
+
+	/**
+	 * @param attributes the attributes to set
+	 */
+	public void setAttributes(List<ProjectDeviceAttributeVO> attributes) {
+		this.attributes = attributes;
+	}
+	
+	/**
+	 * 
+	 * @param attribute
+	 */
+	@BeanSubElement
+	public void addAttribute(ProjectDeviceAttributeVO attribute) {
+		attributes.add(attribute);
 	}
 }

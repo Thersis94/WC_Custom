@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -22,7 +21,7 @@ import com.siliconmtn.db.orm.Table;
  * Last Updated: 
  *******************************************************************/
 @Table(name="ic_attribute_device")
-public class AttributeDevice extends BeanDataVO {
+public class AttributeDevice extends DeviceAttributeVO {
 
 	/**
 	 * DeviceAttributeVO
@@ -35,7 +34,6 @@ public class AttributeDevice extends BeanDataVO {
 	
 	// Helper Classed (SubBeans)
 	private DeviceAttributeVO deviceAttribute;
-	private DeviceVO device;
 	
 	/**
 	 * 
@@ -82,13 +80,6 @@ public class AttributeDevice extends BeanDataVO {
 	}
 
 	/**
-	 * @return the device
-	 */
-	public DeviceVO getDevice() {
-		return device;
-	}
-
-	/**
 	 * @param attributeDeviceId the attributeDeviceId to set
 	 */
 	public void setAttributeDeviceId(String attributeDeviceId) {
@@ -108,14 +99,6 @@ public class AttributeDevice extends BeanDataVO {
 	@BeanSubElement
 	public void setDeviceAttribute(DeviceAttributeVO deviceAttribute) {
 		this.deviceAttribute = deviceAttribute;
-	}
-
-	/**
-	 * @param device the device to set
-	 */
-	@BeanSubElement
-	public void setDevice(DeviceVO device) {
-		this.device = device;
 	}
 
 }
