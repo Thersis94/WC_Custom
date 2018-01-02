@@ -66,8 +66,8 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	private List<AbandonedCartVO> carts = null;
 	private List<String> messageLog = null;
 	private Map<String,String> brandMap = null;
-	private String propertiesPath = "C:/Users/beaker/gitHome/git/WC_Custom/scripts/usa_abandoned_carts.properties"; 
-	private String logPropertiesPath = "C:/Users/beaker/gitHome/git/WC_Custom/scripts/usa_abandoned_carts_log4j.properties";
+	private String propertiesPath = "scripts/usa_abandoned_carts.properties"; 
+	private String logPropertiesPath = "scripts/usa_abandoned_carts_log4j.properties";
 
 	public AbandonedCartExporter(String[] args) {
 		super(args);
