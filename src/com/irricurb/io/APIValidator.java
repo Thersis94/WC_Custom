@@ -2,6 +2,7 @@ package com.irricurb.io;
 
 // Gson 2.4
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.irricurb.action.data.vo.ProjectDeviceAttributeVO;
 import com.irricurb.action.data.vo.ProjectDeviceVO;
 import com.irricurb.action.data.vo.ProjectLocationVO;
@@ -91,7 +92,7 @@ public class APIValidator {
 		location.addZone(zone);
 		
 		// Serialize the object
-		Gson g = new Gson();
+		Gson g = new GsonBuilder().setExclusionStrategies(new ProjectLocationExclusionStrategy()).create();
 		String json = g.toJson(location);
 		System.out.println(json);
 		
