@@ -45,7 +45,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req ) throws ActionException {
-
+		
 		if (!req.hasParameter(ProjectFacadeAction.WIDGET_ACTION)) return;
 
 		if(DEVICE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) && req.hasParameter("projectDeviceId")){
@@ -62,7 +62,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 */
 	private List<ProjectDeviceAttributeVO> getProjectDeviceById(ActionRequest req) {
 
-		
+		log.debug("$$$$$$$$$$$$$$$ test test test");
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		
 		StringBuilder sql = new StringBuilder(400);
