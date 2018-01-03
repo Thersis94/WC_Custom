@@ -458,8 +458,9 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 				sql.append(", SECT_ID, r.REGION_CD ");
 			}
 		}
-		
+
 		sql.append("having sum(r.Q1_NO) is not null or sum(r.Q2_NO) is not null or sum(r.Q3_NO) is not null or sum(r.Q4_NO) is not null ");
+		sql.append("or sum(r2.Q1_NO) is not null or sum(r2.Q2_NO) is not null or sum(r2.Q3_NO) is not null or sum(r2.Q4_NO) is not null ");
 		
 		sql.append("order by ROW_NM").append(dash.getEditMode() ? ", CASE r.REGION_CD WHEN 'US' THEN 1 WHEN 'EU' THEN 2 ELSE 3 END" : "");
 		
