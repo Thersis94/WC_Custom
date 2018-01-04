@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -74,13 +73,6 @@ public class AttributeDevice extends DeviceAttributeVO {
 	}
 
 	/**
-	 * @return the deviceAttribute
-	 */
-	public DeviceAttributeVO getDeviceAttribute() {
-		return deviceAttribute;
-	}
-
-	/**
 	 * @param attributeDeviceId the attributeDeviceId to set
 	 */
 	public void setAttributeDeviceId(String attributeDeviceId) {
@@ -94,13 +86,6 @@ public class AttributeDevice extends DeviceAttributeVO {
 		this.deviceId = deviceId;
 	}
 
-	/**
-	 * @param deviceAttribute the deviceAttribute to set
-	 */
-	@BeanSubElement
-	public void setDeviceAttribute(DeviceAttributeVO deviceAttribute) {
-		this.deviceAttribute = deviceAttribute;
-	}
 
 	/**
 	 * @return the displayTypeCode

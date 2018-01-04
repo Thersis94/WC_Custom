@@ -3,6 +3,7 @@ package com.irricurb.action.project;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.irricurb.action.data.vo.DeviceAttributeVO;
 import com.irricurb.action.data.vo.ProjectDeviceAttributeVO;
 import com.irricurb.action.data.vo.ProjectDeviceVO;
 import com.siliconmtn.action.ActionException;
@@ -103,7 +104,6 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 * @param req
 	 */
 	private List<ProjectDeviceAttributeVO> getProjectDeviceById(ActionRequest req) {
-
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		
 		StringBuilder sql = new StringBuilder(400);
@@ -119,7 +119,29 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		List<Object> params = new ArrayList<>();
 		params.add(StringUtil.checkVal(req.getStringParameter("projectDeviceId")));
 		params.add(StringUtil.checkVal(req.getStringParameter("projectDeviceId")));
-		return dbp.executeSelect(sql.toString(), params, new ProjectDeviceAttributeVO());
+
+		// Get the data and then assign the options
+		List<ProjectDeviceAttributeVO> data = dbp.executeSelect(sql.toString(), params, new ProjectDeviceAttributeVO()); 
+		for (ProjectDeviceAttributeVO attr : data) {
+			getDeviceAttributeOptions(dbp, attr);
+		}
+		
+		return data;
+	}
+	
+	/**
+	 * Retrieves the attribute options for a given attribute
+	 * @param dbp
+	 * @param attr
+	 */
+	protected void getDeviceAttributeOptions(DBProcessor dbp, ProjectDeviceAttributeVO attr) {
+		StringBuilder sql = new StringBuilder(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ic_device_attribute ");
+		sql.append("where parent_id = ?");
+		
+		List<Object> params = new ArrayList<>();
+		params.add(attr.getDeviceAttributeId());
+		
+		attr.setOptions(dbp.executeSelect(sql.toString(), params, new DeviceAttributeVO())); 
 	}
 
 	/**
