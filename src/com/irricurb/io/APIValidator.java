@@ -1,8 +1,11 @@
 package com.irricurb.io;
 
+import java.util.Date;
+
 // Gson 2.4
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.irricurb.action.data.vo.DeviceDataVO;
 import com.irricurb.action.data.vo.ProjectDeviceAttributeVO;
 import com.irricurb.action.data.vo.ProjectDeviceVO;
 import com.irricurb.action.data.vo.ProjectLocationVO;
@@ -37,10 +40,18 @@ public class APIValidator {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		
-		testDevice();
-		
-		
+		testDeviceEntity();
+	}
+	
+	/**
+	 * 
+	 */
+	protected static void testDeviceEntity() {
+		DeviceDataVO data = new DeviceDataVO();
+		data.setCreateDate(new Date());
+		data.setReadingDate(new Date());
+		data.setProjectDeviceDataId("12344567");
+		data.setProjectDeviceId("");
 	}
 	
 	/**
