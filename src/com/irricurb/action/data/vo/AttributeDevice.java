@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
