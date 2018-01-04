@@ -29,7 +29,7 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 public class RSSArticleSaxHandler extends DefaultHandler {
 
-	public enum SearchType {TITLE("title"), DESCRIPTION("description"), LINK("link"), ITEM("item"),PUB_DATE("pubDate"), GUID("guid"), F_DATE("fDate");
+	public enum SearchType {TITLE("title"), DESCRIPTION("description"), LINK("link"), ITEM("item"),PUB_DATE("pubDate"), GUID("guid"), F_DATE("fDate"), CHANNEL("channel");
 		private String qName;
 		SearchType(String qName) {
 			this.qName = qName;
@@ -73,6 +73,8 @@ public class RSSArticleSaxHandler extends DefaultHandler {
 		type = null;
 		if(SearchType.ITEM.getQName().equals(qName)) {
 			vos.add(buildRSSVO());
+			data = new EnumMap<>(SearchType.class);
+		} else if (SearchType.CHANNEL.getQName().equals(qName)) {
 			data = new EnumMap<>(SearchType.class);
 		}
 	}
