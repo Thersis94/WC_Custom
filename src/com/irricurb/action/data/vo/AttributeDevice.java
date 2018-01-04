@@ -24,7 +24,7 @@ import com.siliconmtn.db.orm.Table;
 public class AttributeDevice extends DeviceAttributeVO {
 
 	/**
-	 * 
+	 * DeviceAttributeVO
 	 */
 	private static final long serialVersionUID = 5352420977846321729L;
 	
@@ -34,7 +34,6 @@ public class AttributeDevice extends DeviceAttributeVO {
 	
 	// Helper Classed (SubBeans)
 	private DeviceAttributeVO deviceAttribute;
-	private DeviceVO device;
 	
 	/**
 	 * 
@@ -81,13 +80,6 @@ public class AttributeDevice extends DeviceAttributeVO {
 	}
 
 	/**
-	 * @return the device
-	 */
-	public DeviceVO getDevice() {
-		return device;
-	}
-
-	/**
 	 * @param attributeDeviceId the attributeDeviceId to set
 	 */
 	public void setAttributeDeviceId(String attributeDeviceId) {
@@ -107,14 +99,6 @@ public class AttributeDevice extends DeviceAttributeVO {
 	@BeanSubElement
 	public void setDeviceAttribute(DeviceAttributeVO deviceAttribute) {
 		this.deviceAttribute = deviceAttribute;
-	}
-
-	/**
-	 * @param device the device to set
-	 */
-	@BeanSubElement
-	public void setDevice(DeviceVO device) {
-		this.device = device;
 	}
 
 }

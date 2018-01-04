@@ -2,17 +2,18 @@ package com.irricurb.util;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
-
+import com.irricurb.action.project.ProjectSelectionAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -42,6 +43,8 @@ public class LookupAction extends SimpleActionAdapter {
         Map<String, GenericVO> statMap = new HashMap<>();
         statMap.put("CUSTOMERS", new GenericVO("getProjectCustomers",null));
         statMap.put("PROJECTS", new GenericVO("getProjects",ActionRequest.class));
+        statMap.put("DEVICE_TYPES", new GenericVO("getDeviceTypes",ActionRequest.class));
+        statMap.put("PROJECT_ZONES", new GenericVO("getProjectZones",ActionRequest.class));
         METHOD_MAP = Collections.unmodifiableMap(statMap);
     }
 
@@ -95,12 +98,13 @@ public class LookupAction extends SimpleActionAdapter {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		StringBuilder sql = new StringBuilder(75);
-		sql.append("select customer_id as key, customer_nm as value from ").append(schema).append("ic_customer ");
+		sql.append("select a.customer_id as key, customer_nm as value from ").append(schema).append("ic_customer a ");
+		sql.append("inner join custom.ic_project b on a.customer_id = b.customer_id ");
+		sql.append("order by customer_nm ");
 		
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<GenericVO> data = dbp.executeSelect(sql.toString(), null, new GenericVO());
-		log.debug("sql: " + sql.toString());
-		log.debug("data size " + data.size());
+
 		return data;
 	}
 	
@@ -110,20 +114,45 @@ public class LookupAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getProjects(ActionRequest req) {
-		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(75);
-		sql.append("select project_id as key, project_nm as value from ").append(schema).append("ic_project ");
+		sql.append("select project_id as key, project_nm as value from ").append(getCustomSchema()).append("ic_project ");
 		
 		if (req.hasParameter("customerId") && !req.getStringParameter("customerId").isEmpty()){
 			sql.append("where customer_id = ? ");
 			params.add(req.getStringParameter("customerId"));
 		}
-
+		
+		log.debug("sql: " + sql.toString() + params);
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
-		List<GenericVO> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
-		log.debug("sql: " + sql.toString());
-		log.debug("data size " + data.size()+ " params size: " +params.size());
-		return data;
+		return dbp.executeSelect(sql.toString(), params, new GenericVO());
+	}
+	
+	/**
+	 * Returns the list of device types
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getDeviceTypes(ActionRequest req) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select device_type_cd as key, type_nm as value from ").append(getCustomSchema()).append("ic_device_type ");
+		sql.append("order by type_nm ");
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		return dbp.executeSelect(sql.toString(), null, new GenericVO());
+	}
+	
+	/**
+	 * Returns a list of nodes for the given project
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getProjectZones(ActionRequest req) {
+		String projectId = (String)req.getSession().getAttribute(ProjectSelectionAction.PROJECT_LOOKUP);
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select project_zone_id as key, zone_nm as value from ").append(getCustomSchema()).append("ic_project_location a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_project_zone b on a.project_location_id = b.project_location_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("project_id = ? order by zone_nm");
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		return dbp.executeSelect(sql.toString(), Arrays.asList(new Object[] {projectId}), new GenericVO());
 	}
 }

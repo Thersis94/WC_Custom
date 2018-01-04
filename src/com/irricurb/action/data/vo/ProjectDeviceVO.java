@@ -1,9 +1,13 @@
 package com.irricurb.action.data.vo;
 
+// JDK 1.8.x
 import java.sql.ResultSet;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
+// SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
@@ -24,19 +28,20 @@ import com.siliconmtn.util.StringUtil;
 public class ProjectDeviceVO extends DeviceVO {
 
 	private static final long serialVersionUID = 6922132132917524118L;
-
+	
+	// Member Variables
 	private String projectDeviceId;
 	private String projectZoneId;
-	private String deviceId;
 	private String projectId;
 	private String ipAddressText;
 	private String serialNumberText;
 	private Double longitudeNumber = 0.0;
 	private Double latitudeNumber = 0.0;
 	private String statusCode;
-	private Date createDate;
-	private Date updateDate;
 	
+	// Sub-bean Elements
+	private List<ProjectDeviceAttributeVO> attributes = new ArrayList<>(16);
+	private ProjectZoneVO zone;
 	
 	/**
 	 * Status Code Enum
@@ -81,6 +86,15 @@ public class ProjectDeviceVO extends DeviceVO {
 		super(req);
 	}
 	
+	/*
+	 * (non-Javadoc)
+	 * @see com.siliconmtn.data.parser.BeanDataVO#toString()
+	 */
+	@Override
+	public String toString(){
+		return StringUtil.getToString(this);
+	}
+	
 	/**
 	 * @return the projectDeviceId
 	 */
@@ -98,13 +112,6 @@ public class ProjectDeviceVO extends DeviceVO {
 	}
 	/**
 
-	/**
-	 * @return the deviceId
-	 */
-	@Column(name="device_id")
-	public String getDeviceId() {
-		return deviceId;
-	}
 
 	/**
 	 * @return the projectId
@@ -155,22 +162,19 @@ public class ProjectDeviceVO extends DeviceVO {
 	}
 	
 	/**
-	 * @return the createDate
+	 * @return the attributes
 	 */
-	@Column(name="create_dt", isInsertOnly=true)
-	public Date getCreateDate() {
-		return createDate;
+	public List<ProjectDeviceAttributeVO> getAttributes() {
+		return attributes;
 	}
 	
 	/**
-	 * @return the updateDate
+	 * @return the zone
 	 */
-	@Column(name="update_dt", isUpdateOnly=true)
-	public Date getUpdateDate() {
-		return updateDate;
+	public ProjectZoneVO getZone() {
+		return zone;
 	}
 	
-
 	/**
 	 * @param projectDeviceId the projectDeviceId to set
 	 */
@@ -183,13 +187,6 @@ public class ProjectDeviceVO extends DeviceVO {
 	 */
 	public void setProjectZoneId(String projectZoneId) {
 		this.projectZoneId = projectZoneId;
-	}
-
-	/**
-	 * @param deviceId the deviceId to set
-	 */
-	public void setDeviceId(String deviceId) {
-		this.deviceId = deviceId;
 	}
 
 	/**
@@ -236,25 +233,26 @@ public class ProjectDeviceVO extends DeviceVO {
 	}
 
 	/**
-	 * @param createDate the createDate to set
+	 * @param zone the zone to set
 	 */
-	public void setCreateDate(Date createDate) {
-		this.createDate = createDate;
+	@BeanSubElement
+	public void setZone(ProjectZoneVO zone) {
+		this.zone = zone;
 	}
 
 	/**
-	 * @param updateDate the updateDate to set
+	 * @param attributes the attributes to set
 	 */
-	public void setUpdateDate(Date updateDate) {
-		this.updateDate = updateDate;
+	public void setAttributes(List<ProjectDeviceAttributeVO> attributes) {
+		this.attributes = attributes;
 	}
 	
-	/*
-	 * (non-Javadoc)
-	 * @see com.siliconmtn.data.parser.BeanDataVO#toString()
+	/**
+	 * 
+	 * @param attribute
 	 */
-	@Override
-	public String toString(){
-		return StringUtil.getToString(this);
+	@BeanSubElement
+	public void addAttribute(ProjectDeviceAttributeVO attribute) {
+		attributes.add(attribute);
 	}
 }

@@ -36,11 +36,13 @@ public class ProjectZoneVO extends BeanDataVO {
 	private String projectLocationId;
 	private String name;
 	private String description;
+	private String color;
 	private Date createDate;
 	private Date updateDate;
 	
 	// Subelements
 	private List<ZoneGeocodeVO> points = new ArrayList<>(24);
+	private List<ProjectDeviceVO> devices = new ArrayList<>(128);
 	
 	/**
 	 * 
@@ -93,6 +95,14 @@ public class ProjectZoneVO extends BeanDataVO {
 	@Column(name="zone_desc")
 	public String getDescription() {
 		return description;
+	}
+
+	/**
+	 * @return the color
+	 */
+	@Column(name="color_txt")
+	public String getColor() {
+		return color;
 	}
 	
 	/**
@@ -174,6 +184,36 @@ public class ProjectZoneVO extends BeanDataVO {
 	 */
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	/**
+	 * @param color the color to set
+	 */
+	public void setColor(String color) {
+		this.color = color;
+	}
+
+	/**
+	 * @return the devices
+	 */
+	public List<ProjectDeviceVO> getDevices() {
+		return devices;
+	}
+
+	/**
+	 * @param devices the devices to set
+	 */
+	public void setDevices(List<ProjectDeviceVO> devices) {
+		this.devices = devices;
+	}
+	
+	/**
+	 * 
+	 * @param device
+	 */
+	@BeanSubElement
+	public void addDevice(ProjectDeviceVO device) {
+		devices.add(device);
 	}
 
 }
