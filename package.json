@@ -1,0 +1,8 @@
+{
+	"name": "WC_Custom",
+	"description": "Customer-specific code/extentions of Web Crescendo",
+	"repository" :
+	{	"type" : "git",
+		"url" : "https://github.com/smtadmin/WC_Custom.git"
+	}
+}

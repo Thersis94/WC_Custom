@@ -81,6 +81,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	private String userId;
 
 	public enum InsightType {
+		ANNOUNCEMENT(21, "Announcement", true),
 		CLINICAL(12, "Clinical"),
 		COMPLIANCE(11, "Compliance"),
 		HEALTHCARE_REFORM(13,"Healthcare Reform"),
@@ -88,30 +89,44 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 		INDUSTRY_SPOTLIGHT(17, "Industry Spotlight"),
 		INTELLECTUAL_PROPERTY(14,"Intellectual Property"),
 		MARKET_ANALYSIS(5, "Market Analysis"),
-		MARKET_OUTLOOK(9, "Market Outlook"),
-		MARKET_RECAP(10, "Market Recap"),
-		PERSPECTIVE(1, "Perspective"),
+		MARKET_OUTLOOK(9, "Market Outlook", true),
+		MARKET_RECAP(10, "Market Recap", true),
+		NEW_PRODUCT(22, "New Product", true),
+		PERSPECTIVE(1, "Perspective", true),
 		PRODUCT_SPOTLIGHT(18, "Product Spotlight"),
 		PODCAST(19, "Podcast"),
 		REGULATORY(8, "Regulatory"),
 		REIMBURSEMENT(7, "Reimbursement"),
 		SMARTTRAK_VIDEO_TIPS(15, "SmartTRAK Video Tips"),
-		STARTUP_SPOTLIGHT(2, "Start-up Spotlight"),
+		STARTUP_SPOTLIGHT(2, "Start-up Spotlight", true),
 		UC_VIEWPOINT(3, "U.C. Viewpoints"),
 		UNCATIGORIZED(6, "Uncategorized"),
 		VIDEO(20, "Video");
 
 		private int val;
 		private String text;
+		private boolean displayFlag;
+		/**
+		 * Constructor that defaults the display/view flag to false
+		 * @param val
+		 * @param text
+		 */
 		InsightType(int val, String text) {
+			this(val, text, Boolean.FALSE);
+		}
+		InsightType(int val, String text, boolean displayFlag) {
 			this.val = val;
 			this.text = text;
+			this.displayFlag = displayFlag;
 		}
 		public int getVal() {
 			return this.val;
 		}
 		public String getText() {
 			return this.text;
+		}
+		public boolean getDisplayFlag() {
+			return this.displayFlag;
 		}
 	}
 
