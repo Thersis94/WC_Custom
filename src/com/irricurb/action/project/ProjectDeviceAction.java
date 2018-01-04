@@ -11,7 +11,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
-
+import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -45,7 +45,6 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req ) throws ActionException {
-		
 		if (!req.hasParameter(ProjectFacadeAction.WIDGET_ACTION)) return;
 
 		if(DEVICE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) && req.hasParameter("projectDeviceId")){
@@ -55,6 +54,49 @@ public class ProjectDeviceAction extends SBActionAdapter {
 			setModuleData(getProjectDevices(req, projectId));
 		}
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+		if (!req.hasParameter(ProjectFacadeAction.WIDGET_ACTION)) return;
+		
+		if(DEVICE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) && req.hasParameter("deviceAttributeXRId")){
+				updateValueByAttrXRID(req);
+				//TODO send a request to the device so the change takes place in the real world device
+		}
+		
+		
+	}
+
+	/**
+	 * this method updates the 
+	 * @param req
+	 */
+	private void updateValueByAttrXRID(ActionRequest req) {
+		DBProcessor db = new DBProcessor(dbConn);
+		ProjectDeviceAttributeVO pdvo = new ProjectDeviceAttributeVO();
+				
+		pdvo.setDeviceAttributeXrId(StringUtil.checkVal(req.getStringParameter("deviceAttributeXRId")));
+		pdvo.setValue(StringUtil.checkVal(req.getStringParameter("valueText")));
+		
+		List<String> fields = new ArrayList<>();
+		fields.add("value_txt");
+		fields.add("device_attribute_xr_id");
+		
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("update ").append(getCustomSchema()).append("ic_device_attribute_xr set value_txt = ? where device_attribute_xr_id = ? ");
+		
+		log.debug("sql " + sql.toString() + "|" +pdvo.getValue()+ "|" + pdvo.getDeviceAttributeXrId());
+		
+		try {
+			db.executeSqlUpdate(sql.toString(), pdvo, fields);
+		} catch (DatabaseException e) {
+			log.error("could not save new value text to database ",e);
+		}
+	}
 
 	/**
 	 * this method will get a project devices attributes 
@@ -62,7 +104,6 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 */
 	private List<ProjectDeviceAttributeVO> getProjectDeviceById(ActionRequest req) {
 
-		log.debug("$$$$$$$$$$$$$$$ test test test");
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		
 		StringBuilder sql = new StringBuilder(400);

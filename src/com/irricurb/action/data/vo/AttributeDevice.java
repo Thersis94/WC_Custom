@@ -31,6 +31,7 @@ public class AttributeDevice extends DeviceAttributeVO {
 	// Member Variables
 	private String attributeDeviceId;
 	private String deviceId;
+	private String displayTypeCode;
 	
 	// Helper Classed (SubBeans)
 	private DeviceAttributeVO deviceAttribute;
@@ -99,6 +100,21 @@ public class AttributeDevice extends DeviceAttributeVO {
 	@BeanSubElement
 	public void setDeviceAttribute(DeviceAttributeVO deviceAttribute) {
 		this.deviceAttribute = deviceAttribute;
+	}
+
+	/**
+	 * @return the displayTypeCode
+	 */
+	@Column(name="display_type_cd")
+	public String getDisplayTypeCode() {
+		return displayTypeCode;
+	}
+
+	/**
+	 * @param displayTypeCode the displayTypeCode to set
+	 */
+	public void setDisplayTypeCode(String displayTypeCode) {
+		this.displayTypeCode = displayTypeCode;
 	}
 
 }
