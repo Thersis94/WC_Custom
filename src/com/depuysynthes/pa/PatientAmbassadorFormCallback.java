@@ -62,7 +62,8 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 				mail.addRecipients(trans.getEmailAddress());
 				mail.setSubject("Patient Ambassador Consent Document");
 				mail.setFrom(senderEmail);
-				mail.setHtmlBody(dc.getForm().getOrgConsentText());
+				//TODO - Need to fix later.
+				//mail.setHtmlBody(dc.getForm().getOrgConsentText());
 
 				MessageSender ms = new MessageSender(attributes, dbConn);
 				ms.sendMessage(mail);
