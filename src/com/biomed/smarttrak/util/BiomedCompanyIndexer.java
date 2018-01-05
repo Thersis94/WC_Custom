@@ -328,6 +328,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		company.setDocumentUrl(AdminControllerAction.Section.COMPANY.getPageURL()+config.getProperty(Constants.QS_PATH)+rs.getString(COMPANY_ID));
 		company.addAttribute("productCount", rs.getInt("PRODUCT_NO"));
 		SmarttrakSolrUtil.setSearchField(rs.getString("PARENT_NM"), "parentNm", company);
+		SmarttrakSolrUtil.setSearchField(rs.getString("alias_nm"), "aliasNm", company);
 
 		//concat some fields into meta-keywords
 		StringBuilder sb = new StringBuilder(100);
@@ -378,7 +379,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		sql.append("ON cs.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c2 ");
 		sql.append("ON c2.COMPANY_ID = c.PARENT_ID ");
-		sql.append("WHERE c.STATUS_NO not in ('A','D') and p.STATUS_NO not in ('A', 'D', 'E') ");
+		sql.append("WHERE c.STATUS_NO not in ('A','D','I') and p.STATUS_NO not in ('A', 'D', 'E') ");
 		if (id != null) sql.append("and c.COMPANY_ID = ? ");
 		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, a.SECTION_ID, c.STATUS_NO, ");
 		sql.append("c.stock_abbr_txt, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT ");
