@@ -13,7 +13,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
-import com.smt.sitebuilder.data.vo.FormActionVO;
+import com.smt.sitebuilder.action.form.FormActionVO;
 
 /****************************************************************************
  * <b>Title</b>: HuddleFormVO.java
