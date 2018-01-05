@@ -5,8 +5,6 @@ import java.sql.ResultSet;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.parser.BeanDataVO;
-import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -22,7 +20,7 @@ import com.siliconmtn.db.orm.Table;
  * Last Updated: 
  *******************************************************************/
 @Table(name="ic_attribute_device")
-public class AttributeDevice extends BeanDataVO {
+public class AttributeDevice extends DeviceAttributeVO {
 
 	/**
 	 * DeviceAttributeVO
@@ -32,10 +30,10 @@ public class AttributeDevice extends BeanDataVO {
 	// Member Variables
 	private String attributeDeviceId;
 	private String deviceId;
+	private String displayTypeCode;
 	
 	// Helper Classed (SubBeans)
 	private DeviceAttributeVO deviceAttribute;
-	private DeviceVO device;
 	
 	/**
 	 * 
@@ -75,20 +73,6 @@ public class AttributeDevice extends BeanDataVO {
 	}
 
 	/**
-	 * @return the deviceAttribute
-	 */
-	public DeviceAttributeVO getDeviceAttribute() {
-		return deviceAttribute;
-	}
-
-	/**
-	 * @return the device
-	 */
-	public DeviceVO getDevice() {
-		return device;
-	}
-
-	/**
 	 * @param attributeDeviceId the attributeDeviceId to set
 	 */
 	public void setAttributeDeviceId(String attributeDeviceId) {
@@ -102,20 +86,20 @@ public class AttributeDevice extends BeanDataVO {
 		this.deviceId = deviceId;
 	}
 
+
 	/**
-	 * @param deviceAttribute the deviceAttribute to set
+	 * @return the displayTypeCode
 	 */
-	@BeanSubElement
-	public void setDeviceAttribute(DeviceAttributeVO deviceAttribute) {
-		this.deviceAttribute = deviceAttribute;
+	@Column(name="display_type_cd")
+	public String getDisplayTypeCode() {
+		return displayTypeCode;
 	}
 
 	/**
-	 * @param device the device to set
+	 * @param displayTypeCode the displayTypeCode to set
 	 */
-	@BeanSubElement
-	public void setDevice(DeviceVO device) {
-		this.device = device;
+	public void setDisplayTypeCode(String displayTypeCode) {
+		this.displayTypeCode = displayTypeCode;
 	}
 
 }
