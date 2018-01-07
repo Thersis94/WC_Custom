@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -100,6 +101,19 @@ public class AttributeDevice extends DeviceAttributeVO {
 	 */
 	public void setDisplayTypeCode(String displayTypeCode) {
 		this.displayTypeCode = displayTypeCode;
+	}
+	
+	/**
+	 * @param deviceAttribute the deviceAttribute to set
+	 * @param displayTypeCode the displayTypeCode to set
+	*/
+	@BeanSubElement
+	public void setDeviceAttribute(DeviceAttributeVO deviceAttribute) {
+		this.deviceAttribute = deviceAttribute;
+	}
+	
+	public DeviceAttributeVO getDeviceAttribute(){
+		return deviceAttribute;
 	}
 
 }
