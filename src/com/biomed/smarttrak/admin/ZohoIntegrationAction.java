@@ -132,6 +132,9 @@ public class ZohoIntegrationAction extends TicketFacadeAction {
 		req.setParameter(TICKET_TYPE_PARAM, TICKET_TYPE.BUG.toString());
 		super.build(req);
 
+		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.FALSE);
+		req.removeAttribute(Constants.REDIRECT_URL);
+
 		super.clearCacheByKey(SMARTTRAK_CACHE_KEY);
 	}
 
