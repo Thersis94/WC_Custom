@@ -38,24 +38,20 @@ import com.smt.sitebuilder.data.vo.FormTransactionVO;
  *        <b>Changes: </b>
  ****************************************************************************/
 public class PatientAmbassadorReportVO extends AbstractSBReportVO {
-	/**
-	 * 
-	 */
+
 	private static final long serialVersionUID = 1L;
-	private DataContainer dc = null;
-	private String siteUrl = null;
-	/**
-	 * 
-	 */
+	private transient DataContainer dc;
+	private String siteUrl;
+
 	public PatientAmbassadorReportVO() {
 		super();
 	}
-	
+
 	public PatientAmbassadorReportVO(String fileName) {
 		super();
 		setFileName(fileName);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#generateReport()
 	 */
@@ -81,12 +77,17 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		//Write xls to ByteStream and return.
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			wb.write(baos);
-			wb.close();
 			return baos.toByteArray();
 		} catch (IOException e) {
 			log.error(e);
+			return new byte[0];
+		} finally {
+			try {
+				wb.close();
+			} catch (IOException e) {
+				//ignoreable
+			}
 		}
-		return null;
 	}
 
 	/* (non-Javadoc)
@@ -111,7 +112,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	private List<String> getHeaders() {
-		List<String> headers = new ArrayList<String>();
+		List<String> headers = new ArrayList<>();
 		headers.add("Patient Name");
 		headers.add("Email");
 		headers.add("City");
@@ -121,6 +122,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		headers.add("Joints");
 		headers.add("Hobbies");
 		headers.add("Surgeon Name");
+		headers.add("Hospital Name");
 		headers.add("Had Surgery");
 		headers.add("Life Before");
 		headers.add("Turning Point");
@@ -132,6 +134,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		headers.add("User opened consent statement");
 		headers.add("User was emailed consent statement");
 		headers.add("User agreed to consent statement");
+		headers.add("Permission to contact user");
 
 		return headers;
 	}
@@ -157,8 +160,9 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 	 * @param sheet
 	 */
 	private void landscapeReport(Sheet sheet) {
-		int c = 0, r = 0;
-		
+		int c = 0;
+		int r = 0;
+
 		Row row = sheet.createRow(r++);
 		Cell cell = null;
 		//Loop Headers and set cell values.
@@ -166,9 +170,8 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			cell = row.createCell(c++);
 			cell.setCellValue(n);
 		}
-		c = 0;
 		row = sheet.createRow(r++);
-		
+
 		//Loop over transactions and print data appropriately.
 		for(FormTransactionVO vo : dc.getTransactions().values()) {
 			//reset cell counter
@@ -192,7 +195,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			//Set Image Url
 			String imgPath = "";
 			if (vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()) != null)
-					imgPath = vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponseText();
+				imgPath = vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponseText();
 			if (imgPath.length() > 0) imgPath = "http://" + siteUrl + imgPath;
 			addCell(c++, imgPath, row);
 
@@ -203,6 +206,16 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 				for(String s : vo.getFieldById(PAFConst.JOINT_ID.getId()).getResponses()) {
 					if(i > 0) sb.append(", ");
 					sb.append(s);
+					// add detail for hip or knee joint choice
+					if (s.toLowerCase().startsWith("hip")) {
+						sb.append("(");
+						sb.append(vo.getFieldById(PAFConst.INCISION_NM_ID.getId()).getResponses().get(0));
+						sb.append(")");
+					} else if (s.toLowerCase().startsWith("knee")) {
+						sb.append("(");
+						sb.append(vo.getFieldById(PAFConst.IMPLANT_NM_ID.getId()).getResponses().get(0));
+						sb.append(")");
+					}
 					i++;
 				}
 			}
@@ -215,7 +228,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 				for (String s : vo.getFieldById(PAFConst.HOBBIES_ID.getId()).getResponses()) {
 					if (i > 0) sb.append(", ");
 					//Skip other, we'll add it later.
-					if (!s.equals("OTHER")) {
+					if (!"OTHER".equals(s)) {
 						sb.append(s);
 						i++;
 					}
@@ -229,9 +242,12 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 				sb.append(other);
 			}
 			addCell(c++, sb.toString(), row);
-			
+
 			//Add Surgeon Name
 			addCell(c++, vo.getFieldById(PAFConst.SURGEON_NM.getId()), row);
+
+			//Add Hospital Name
+			addCell(c++, vo.getFieldById(PAFConst.HOSPITAL_NM.getId()), row);
 
 			//Add Has had Replacement
 			String response = (vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()) != null) ? vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()).getResponseText() : null;
@@ -254,7 +270,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 
 			//Add Story Text
 			addCell(c++, vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()), row);
-			
+
 			//Add Status Text
 			addCell(c++, vo.getFieldById(PAFConst.STATUS_ID.getId()), row);
 
@@ -272,7 +288,13 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 
 			//Add agreed Consent Flag
 			addCell(c++, ((vo.getAcceptPrivacyFlg() == 1) ? "Yes" : "No"), row);
-			
+
+			//Add Permission to send info/contact
+			if(vo.getFieldById(PAFConst.PERMISSION_TO_CONTACT.getId()) != null)
+				addCell(c, vo.getFieldById(PAFConst.PERMISSION_TO_CONTACT.getId()).getResponseText(), row);
+			else
+				addCell(c, "No", row);
+
 			//Close out the Transaction Row.
 			row = sheet.createRow(r++);
 		}
@@ -286,6 +308,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 	 */
 	private void portraitReport(Sheet sheet) {
 		int r = 0;
+		List<String> responses = null;
 		FormTransactionVO vo = dc.getTransactions().values().iterator().next();
 
 		//Write Name in Portrait
@@ -307,29 +330,39 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		//Set Image Url
 		String imgPath = "";
 		if (vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()) != null)
-				imgPath = vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponseText();
+			imgPath = vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponseText();
 		if (imgPath.length() > 0) imgPath = "http://" + siteUrl + imgPath;
 		addRow(r++, imgPath, sheet);
 
 		//Set Joints
 		StringBuilder sb = new StringBuilder();
 		int i = 0;
-		for(String s : vo.getFieldById(PAFConst.JOINT_ID.getId()).getResponses()) {
-			if(i > 0) sb.append(", ");
-			sb.append(s);
-			i++;
+		if (vo.getFieldById(PAFConst.JOINT_ID.getId()) != null) { 
+			responses = vo.getFieldById(PAFConst.JOINT_ID.getId()).getResponses();
+			if (responses != null) {
+				for(String s : responses) {
+					if(i > 0) sb.append(", ");
+					sb.append(s);
+					i++;
+				}
+			}
 		}
 		addRow(r++, sb.toString(),sheet);
 		i = 0;
 
 		//Set Hobbies
 		sb = new StringBuilder();
-		for(String s : vo.getFieldById(PAFConst.HOBBIES_ID.getId()).getResponses()) {
-			if(i > 0) sb.append(", ");
-			//Skip other, we'll add it later.
-			if(!s.equals("OTHER")) {
-				sb.append(s);
-				i++;
+		if (vo.getFieldById(PAFConst.HOBBIES_ID.getId()) != null) {
+			responses = vo.getFieldById(PAFConst.HOBBIES_ID.getId()).getResponses();
+			if (responses != null) {
+				for(String s : responses) {
+					if(i > 0) sb.append(", ");
+					//Skip other, we'll add it later.
+					if(!"OTHER".equals(s)) {
+						sb.append(s);
+						i++;
+					}
+				}
 			}
 		}
 
@@ -340,9 +373,12 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			sb.append(other);
 		}
 		addRow(r++, sb.toString(), sheet);
-		
+
 		//Add Surgeon Name
 		addRow(r++, vo.getFieldById(PAFConst.SURGEON_NM.getId()), sheet);
+
+		//Add Hospital Name
+		addRow(r++, vo.getFieldById(PAFConst.HOSPITAL_NM.getId()), sheet);
 
 		//Add Has had Replacement
 		addRow(r++, vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()), sheet);
@@ -388,12 +424,17 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			addRow(r++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponseText(), sheet);
 		else
 			addRow(r++, "No", sheet);
-		
+
 		//Add agreed Consent Flag
 		addRow(r++, ((vo.getAcceptPrivacyFlg() == 1) ? "Yes" : "No"), sheet);
+
+		//Add Permission to send info/contact
+		if(vo.getFieldById(PAFConst.PERMISSION_TO_CONTACT.getId()) != null)
+			addRow(r, vo.getFieldById(PAFConst.PERMISSION_TO_CONTACT.getId()).getResponseText(), sheet);
+		else
+			addRow(r, "No", sheet);
 	}
-	
-	
+
 
 	/**
 	 * Helper methods for writing a pair of cells into a row.

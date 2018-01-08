@@ -13,13 +13,15 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @version 1.0
  * @since Jan 16, 2015
  ****************************************************************************/
-
 public class SolrStoryVO extends SolrDocumentVO {
 	public static final String INDEX_TYPE = "PATIENT_AMBASSADOR";
-	
+
 	private String otherHobby;
 	private String surgeonName;
-	
+	private String hospitalName;
+	private String incisionName;
+	private String implantName;
+
 	public SolrStoryVO() {
 		super(INDEX_TYPE);
 	}
@@ -51,4 +53,49 @@ public class SolrStoryVO extends SolrDocumentVO {
 		this.surgeonName = surgeonName;
 	}
 
+	/**
+	 * @return the hospitalName
+	 */
+	@SolrField(name="hospital_name_s")
+	public String getHospitalName() {
+		return hospitalName;
+	}
+
+	/**
+	 * @param hospitalName the hospitalName to set
+	 */
+	public void setHospitalName(String hospitalName) {
+		this.hospitalName = hospitalName;
+	}
+
+	/**
+	 * @return the incisionName
+	 */
+	@SolrField(name="incision_name_s")
+	public String getIncisionName() {
+		return incisionName;
+	}
+
+	/**
+	 * @param incisionName the incisionName to set
+	 */
+	public void setIncisionName(String incisionName) {
+		this.incisionName = incisionName;
+	}
+
+	/**
+	 * @return the implantName
+	 */
+	@SolrField(name="implant_name_s")
+	public String getImplantName() {
+		return implantName;
+	}
+
+	/**
+	 * @param implantName the implantName to set
+	 */
+	public void setImplantName(String implantName) {
+		this.implantName = implantName;
+	}
+	
 }

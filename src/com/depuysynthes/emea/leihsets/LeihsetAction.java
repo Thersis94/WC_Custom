@@ -6,19 +6,22 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.approval.ApprovalDecoratorAction;
+import com.smt.sitebuilder.admin.action.OrganizationAction;
+import com.smt.sitebuilder.approval.ApprovalController;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
@@ -35,7 +38,13 @@ import com.smt.sitebuilder.util.RecordDuplicatorUtility;
  ****************************************************************************/
 public class LeihsetAction extends SBActionAdapter {
 
+	protected static final String REQ_LEIHSET_ID = "leihsetId";
+	protected static final String REQ_LEIHSET_ASSET_ID = "leihsetAssetId";
+	protected static final String RS_LEIHSET_ID = "LEIHSET_ID";
+	protected static final String RS_LEIHSET_ASSET_ID = "LEIHSET_ASSET_ID";
+
 	public LeihsetAction() {
+		super();
 	}
 
 	/**
@@ -52,66 +61,98 @@ public class LeihsetAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		if (req.hasParameter("json") || req.hasParameter("leihsetId"))
+		if (req.hasParameter("json") || req.hasParameter(REQ_LEIHSET_ID)) {
 			loadLeihsets(req);
+		} else {
+			//set an api key for previewing pages
+			String previewApiKey = ApprovalController.generatePreviewApiKey(attributes);
+			req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
+		}
 	}
 
-	
+
 	/**
 	 * Get a single IFU document instance along with its related technique guides
 	 * @param req
 	 */
 	protected void loadLeihsets(ActionRequest req) {
-		String leihsetId = StringUtil.checkVal(req.getParameter("leihsetId"), null);
-		String leihsetAssetId = StringUtil.checkVal(req.getParameter("leihsetAssetId"), null);
+		String leihsetId = StringUtil.checkVal(req.getParameter(REQ_LEIHSET_ID), null);
+		String leihsetAssetId = StringUtil.checkVal(req.getParameter(REQ_LEIHSET_ASSET_ID), null);
 		log.debug("Retriving leihsets " + leihsetId + "|" + leihsetAssetId);
 
 		String sql = getSelectSql(leihsetId, leihsetAssetId);
 		log.debug(sql);
 
 		int x = 1;
-		Map<String,LeihsetVO> data = new LinkedHashMap<>();
+		Map<String,LeihsetVO> data = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			ps.setString(x++, req.getParameter("organizationId"));
+			ps.setString(x++, req.getParameter(OrganizationAction.ORGANIZATION_ID));
 			if (leihsetId != null) ps.setString(x++, leihsetId);
 			if (leihsetAssetId != null) ps.setString(x++, leihsetAssetId);
-			
+
 			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				String groupId = rs.getString("leihset_group_id");
-				if (groupId == null || groupId.length() == 0) groupId = rs.getString("leihset_id");
-				LeihsetVO vo = data.get(groupId);
-				if (vo == null)
-					vo = new LeihsetVO(rs, false);
-				
-				if (vo.getLeihsetGroupId() == null) vo.setLeihsetGroupId(rs.getString("leihset_group_id"));
-				if (rs.getString("leihset_asset_id") != null) vo.addResource(new LeihsetVO(rs, true));
-				data.put(groupId, vo);
-			}
+			while (rs.next())
+				parseRecord(rs, data);
+
 		} catch (SQLException e) {
 			log.error("Unable to get data for leihset: " + leihsetId, e);
 		}
-		
+
 		log.debug("loaded " + data.size() + " liehsets");
 		List<LeihsetVO> list = new ArrayList<>(data.values());
-		Collections.sort(list);
-		
+		Collections.sort(list, new LeihsetSorter());
 
+		//load the category tree, once.  Then marry the Liehsets into it (giving each a copy of the Tree)
 		LeihsetCategoryAction ca = new LeihsetCategoryAction();
 		ca.setDBConnection(dbConn);
 		ca.setAttributes(getAttributes());
-		
-		//if we're loading a single Leihset, load the category tree
+		List<Node> categories = ca.loadCategoryTree();
+
 		for (LeihsetVO vo : list) {
-			vo.setCategoryTree(ca.loadCategoryTree(vo.getLeihsetId()));
+			List<Node> myCats = new ArrayList<>(categories);
+			for (Node n : myCats) {
+				n.setUserObject(vo.getCategories().contains(n.getNodeId()));
+			}
+			vo.setCategoryTree(new Tree(myCats));
+			vo.parseBusinessUnitsFromCategoryTree();
 		}
 		if (list.isEmpty()) { //add form
-			req.setAttribute("categories",  ca.loadCategoryTree(null));
+			req.setAttribute("categories",  new Tree(categories));
 		}
-		
-		super.putModuleData(list);
+
+		putModuleData(list);
 	}
-	
+
+
+	/**
+	 * helper for above method to abstract complexity
+	 * @param rs
+	 * @param data
+	 * @throws SQLException 
+	 */
+	private void parseRecord(ResultSet rs, Map<String, LeihsetVO> data) throws SQLException {
+		String groupId = rs.getString("leihset_group_id");
+		if (StringUtil.isEmpty(groupId)) groupId = rs.getString(RS_LEIHSET_ID);
+		LeihsetVO vo = data.get(groupId);
+		if (vo == null)
+			vo = new LeihsetVO(rs, false);
+
+		//set groupId
+		if (StringUtil.isEmpty(vo.getLeihsetGroupId()))
+			vo.setLeihsetGroupId(rs.getString("leihset_group_id"));
+
+		//possibly add a resource
+		if (!StringUtil.isEmpty(rs.getString("leihset_asset_id")))
+			vo.addResource(new LeihsetVO(rs, true));
+
+		//possibly add a category
+		String catId = rs.getString("leihset_category_id");
+		if (!StringUtil.isEmpty(catId))
+			vo.addCategory(catId);
+
+		data.put(groupId, vo);
+	}
+
 
 	/**
 	 * Create the sql query to get a complete single IFU document instance
@@ -120,16 +161,17 @@ public class LeihsetAction extends SBActionAdapter {
 	private String getSelectSql(String leihsetId, String leihsetAssetId) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("SELECT l.*, la.*, dsm.TITLE_TXT, dsm.TRACKING_NO_TXT, ws.* ");
-		sql.append("FROM ").append(customDb).append("DPY_SYN_LEIHSET l ");
-		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_LEIHSET_ASSET la on la.leihset_id=l.leihset_id ");
-		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_MEDIABIN dsm on dsm.DPY_SYN_MEDIABIN_ID = la.DPY_SYN_MEDIABIN_ID ");
+		sql.append("SELECT l.*, la.*, dsm.TITLE_TXT, dsm.TRACKING_NO_TXT, ws.*, la.order_no as asset_order_no, xr.leihset_category_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customDb).append("DPY_SYN_LEIHSET l ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DPY_SYN_LEIHSET_ASSET la on la.leihset_id=l.leihset_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DPY_SYN_LEIHSET_CATEGORY_XR xr on xr.leihset_id=l.leihset_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DPY_SYN_MEDIABIN dsm on dsm.DPY_SYN_MEDIABIN_ID = la.DPY_SYN_MEDIABIN_ID ");
 		sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = l.LEIHSET_ID and ws.WC_SYNC_STATUS_CD not in ('Approved', 'Declined') ");
 		sql.append("WHERE l.archive_flg=0 and l.ORGANIZATION_ID=? ");
 		if (leihsetId != null) sql.append("and l.LEIHSET_ID=? ");
 		if (leihsetAssetId != null) sql.append("and la.LEIHSET_ASSET_ID=? ");
 		//putting groupId first ensures we get pending records before live ones, which then get replaced on our Map and sorted by the Comparator
-		sql.append("ORDER BY l.leihset_group_id desc, l.ORDER_NO, l.LEIHSET_NM, la.ORDER_NO, la.ASSET_NM");
+		sql.append("ORDER BY coalesce(l.leihset_group_id,'') desc, l.ORDER_NO, l.LEIHSET_NM, la.ORDER_NO, la.ASSET_NM");
 		return sql.toString();
 	}
 
@@ -140,23 +182,23 @@ public class LeihsetAction extends SBActionAdapter {
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
-		String leihsetId = req.getParameter("leihsetId");
+		String leihsetId = req.getParameter(REQ_LEIHSET_ID);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(80);
 		sql.append("DELETE FROM ").append(customDb).append("DPY_SYN_LEIHSET WHERE LEIHSET_ID=?");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, leihsetId);
-
 			if (ps.executeUpdate() < 1)
 				log.warn("No records deleted with id: " + leihsetId);
+
 		} catch (SQLException e) {
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			log.error("Unable to delete document: " + leihsetId, e);
 		}
 		super.adminRedirect(req, msg, buildRedirect(req));
 	}
-	
+
 
 	/**
 	 * Builds a LeihsetVO from the request object and passes it along to the
@@ -200,7 +242,7 @@ public class LeihsetAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void update(LeihsetVO vo) {
-		boolean isInsert = StringUtil.checkVal(vo.getLeihsetId()).length() == 0;
+		boolean isInsert = StringUtil.isEmpty(vo.getLeihsetId());
 		if (isInsert) {
 			vo.setLeihsetId(new UUIDGenerator().getUUID());
 			vo.setLeihsetGroupId(vo.getLeihsetId());
@@ -224,11 +266,11 @@ public class LeihsetAction extends SBActionAdapter {
 		} catch (SQLException e) {
 			log.error("Unable to update leihset: " + vo.getLeihsetId(), e);
 		}
-		
+
 		saveCategories(vo);
 	}
-	
-	
+
+
 	/**
 	 * write the body regions and business units to the _category table
 	 * @param vo
@@ -276,7 +318,7 @@ public class LeihsetAction extends SBActionAdapter {
 		redirect.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 		if (req.hasParameter("wasDelete")) {
 			redirect.append("?facadeType=leihset&cPage=manage_leihset");
-			redirect.append("&leihsetId=").append(req.getParameter("sbActionId"));
+			redirect.append("&leihsetId=").append(req.getParameter(SBActionAdapter.SB_ACTION_ID));
 			redirect.append("&leihsetGroupId=").append(req.getParameter("leihsetGroupId"));
 		}
 
@@ -291,11 +333,13 @@ public class LeihsetAction extends SBActionAdapter {
 	@Override
 	public void copy(ActionRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String oldLeihset = req.getParameter("sbActionId");
+		String oldLeihset = req.getParameter(SBActionAdapter.SB_ACTION_ID);
 		// Get id of the item that was potentially deleted to trigger this copy in order to exclude it from the new Leihset
 		String excludeId = StringUtil.checkVal(req.getParameter("excludeId"));
-
+		boolean formerAutoCommit = true;
+		
 		try {
+			formerAutoCommit = dbConn.getAutoCommit();
 			dbConn.setAutoCommit(false);
 
 			// Copy the Leihset
@@ -307,32 +351,37 @@ public class LeihsetAction extends SBActionAdapter {
 			replaceVals.put("LEIHSET_GROUP_ID", groupId);
 			replaceVals.put("CREATE_DT", Convert.getCurrentTimestamp());
 
-			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DPY_SYN_LEIHSET", "LEIHSET_ID", true);
-			rdu.addWhereClause("LEIHSET_ID", oldLeihset);
+			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DPY_SYN_LEIHSET", RS_LEIHSET_ID, true);
+			rdu.addWhereClause(RS_LEIHSET_ID, oldLeihset);
 			Map<String, String> ids = rdu.copy();
-			replaceVals.put("LEIHSET_ID", ids);
+			replaceVals.put(RS_LEIHSET_ID, ids);
 
 			// Copy all assets of this leihset
 			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DPY_SYN_LEIHSET_ASSET", "LEIHSET_ASSET_ID", true);
-			rdu.addWhereListClause("LEIHSET_ID");
+			rdu.addWhereListClause(RS_LEIHSET_ID);
 			// Prevent the indicated id from being copied in order to simulate a delete of that IMPL
 			if (excludeId.length() > 0) rdu.addWhereClause("LEIHSET_ASSET_ID!", excludeId);
 			rdu.returnGeneratedKeys(false);
-			rdu.copy();
+			Map<String, String> assetIds = rdu.copy();
 
 			// Copy all category relationships of this leihset
 			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DPY_SYN_LEIHSET_CATEGORY_XR", "LEIHSET_CATEGORY_XR_ID", true);
-			rdu.addWhereListClause("LEIHSET_ID");
+			rdu.addWhereListClause(RS_LEIHSET_ID);
 			rdu.returnGeneratedKeys(false);
 			rdu.copy();
-			
+
 			dbConn.commit();
 
 			// Put the new id on the request object so we update the NEW record and not the old one.
 			log.debug("newId=" + ids.get(oldLeihset));
-			req.setAttribute(ApprovalDecoratorAction.SB_ACTION_ID,ids.get(oldLeihset)); //for the ApprovalDecorator
-			req.setParameter("sbActionId",ids.get(oldLeihset)); //for the LeihsetVO
+			req.setAttribute(SBActionAdapter.SB_ACTION_ID,ids.get(oldLeihset)); //for the ApprovalDecorator
+			req.setParameter(SBActionAdapter.SB_ACTION_ID,ids.get(oldLeihset)); //for the LeihsetVO
 			req.setParameter("leihsetGroupId", oldLeihset);
+			
+			//if this copy was invoked because we're editing an asset, change the pkId of the record to the new one
+			String assetId = req.getParameter(REQ_LEIHSET_ASSET_ID);
+			if (!StringUtil.isEmpty(assetId) && assetIds.containsKey(assetId)) 
+				req.setParameter(REQ_LEIHSET_ASSET_ID, assetIds.get(assetId));
 
 		} catch (Exception e) {
 			log.error("Unable to copy record " + oldLeihset, e);
@@ -343,7 +392,7 @@ public class LeihsetAction extends SBActionAdapter {
 			}
 		} finally {
 			try {
-				dbConn.setAutoCommit(true);
+				dbConn.setAutoCommit(formerAutoCommit);
 			} catch (Exception e3) {log.error("Error resetting autocommit to 'true', ", e3);}
 		}
 	}

@@ -112,7 +112,9 @@ public class UpdatesAction extends SBActionAdapter {
 		//fail fast if we can't perform our duty here
 		if (fOld == null) return;
 		
-		FacetField fNew = new FacetField(fOld.getName(), fOld.getGap(), fOld.getEnd());
+		//TODO address this before Solr 6.6 releases! - Zoho V3-114
+		//FacetField fNew = new FacetField(fOld.getName(), fOld.getGap(), fOld.getEnd());
+		FacetField fNew = new FacetField(fOld.getName());
 
 		/*
 		 * Iterate over Section Nodes first as they have the order.  Iterate
@@ -268,10 +270,7 @@ public class UpdatesAction extends SBActionAdapter {
 		List<String> terms = new ArrayList<>(Arrays.asList(fts));
 
 		//Add Sections Check.  Append a filter query for each section requested
-		if (req.hasParameter("hierarchyId")) {
-			for (String s : req.getParameterValues("hierarchyId"))
-				data.add(SearchDocumentHandler.HIERARCHY + ":" + s);
-		}
+		transposeArray(data, SearchDocumentHandler.HIERARCHY, req.getParameterValues("hierarchyId"));
 
 		//Add Favorites Filter if applicable.
 		if(docIds != null && !docIds.isEmpty()) {
@@ -286,11 +285,7 @@ public class UpdatesAction extends SBActionAdapter {
 			data.add(SearchDocumentHandler.PUBLISH_DATE + ":" + dates);
 
 		//Add a ModuleType filter if typeId was passed
-		if (req.hasParameter("typeId")) {
-			for(String s : req.getParameterValues("typeId")) {
-				data.add(SearchDocumentHandler.MODULE_TYPE + ":" + s);
-			}
-		}
+		transposeArray(data, SearchDocumentHandler.MODULE_TYPE, req.getParameterValues("typeId"));
 
 		//Custom Filtering for when looking at an Email View.
 		transposeEmailFilter(req);
@@ -298,6 +293,21 @@ public class UpdatesAction extends SBActionAdapter {
 		//put the new list of filter queries back on the request
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 		req.setParameter("ft", terms.toArray(new String[terms.size()]), true);
+	}
+	
+	
+	/**
+	 * Ensure that there is data that can be worked with and add those items to the supplied list
+	 * @param data
+	 * @param field
+	 * @param values
+	 */
+	private void transposeArray(List<String> data, String field, String[] values) {
+		if (values == null || values.length ==0) return;
+		
+		for (String s : values) {
+			data.add(field + ":" + s);
+		}
 	}
 
 	/**
@@ -312,7 +322,7 @@ public class UpdatesAction extends SBActionAdapter {
 		req.setParameter("fmid", mod.getPageModuleId());
 
 		//Set Custom Sort Field and Direction.
-		req.setParameter("sortField", "moduleType asc, publishDtNoTime_s desc, order_i asc, publishTime_s ");
-		req.setParameter("sortDirection", "desc");
+		req.setParameter("sortField", "moduleType asc, publishDate desc, order_i ");
+		req.setParameter("sortDirection", "asc");
 	}
 }

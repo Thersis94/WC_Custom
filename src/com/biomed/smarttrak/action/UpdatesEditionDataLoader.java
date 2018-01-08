@@ -10,7 +10,10 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
 //WC Custom
 import com.biomed.smarttrak.vo.UpdateVO;
@@ -42,12 +45,16 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 
 	protected static final String INNER_JOIN = "inner join ";
 	protected static final String LEFT_JOIN = "left outer join ";
+	private static final Pattern HREF_START_REGEX = Pattern.compile("href([ ]{0,1})=([ ]{0,1})(['\"])");
+	public static final String REDIRECT_DEST = "redirectDestination";
+	private StringEncoder se;
 
 	/**
 	 * No-arg constructor for initialization
 	 */
 	public UpdatesEditionDataLoader() {
 		super();
+		se = new StringEncoder();
 	}
 
 	/**
@@ -56,6 +63,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 */
 	public UpdatesEditionDataLoader(ActionInitVO init) {
 		super(init);
+		se = new StringEncoder();
 	}
 
 
@@ -114,19 +122,130 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	private void loadAnnouncements(ActionRequest req, Date startDate, Date endDate, List<UpdateVO> updates) {
 		String sql = getAnnouncementSql((String)getAttribute(Constants.CUSTOM_DB_SCHEMA), Convert.formatBoolean(req.getParameter("orderSort")));
 		DBProcessor db = new DBProcessor(dbConn);
+		boolean redirectLinks = Convert.formatBoolean(req.getParameter("redirectLinks"));
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, AdminControllerAction.PUBLIC_SITE_ID);
+			ps.setDate(2, Convert.formatSQLDate(startDate));
+			ps.setDate(3, Convert.formatSQLDate(endDate));
+			
+			ResultSet rs = ps.executeQuery();
+			String baseUrl = "";
+			
+			while(rs.next()) {
+				UpdateVO up = new UpdateVO();
+				db.executePopulate(up, rs);
+				up.setProductNm(StringEncoder.encodeExtendedAscii(up.getProductNm()));
+				up.setMarketNm(StringEncoder.encodeExtendedAscii(up.getMarketNm()));
+				up.setCompanyNm(StringEncoder.encodeExtendedAscii(up.getCompanyNm()));
+				up.setTitle(StringEncoder.encodeExtendedAscii(up.getTitle()));
+				if (baseUrl.isEmpty()) baseUrl = buildBaseUrl(up.getSSLFlg(), up.getSiteAliasUrl());
+				if (redirectLinks) up.setMessageTxt(buildRedirectLinks(up.getMessageTxt(), baseUrl));
+				updates.add(up);
+			}
+		} catch(Exception e) {
+			log.error(e);
+		}		
+		/**
+		 * This does not work due to an bug in DBProcessor details in the SMTInteral ticket GC-74
+		 * This code has been commented out instead of deleted to provide whoever works on that ticket
+		 * an easy way to replicate the issue and allow them to restore the DBProcessor version of this
+		 * method when the error has been fixed.
 		List<Object> params = new ArrayList<>(2);
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
-		params.add(startDate);
-		params.add(endDate);
+		params.add(Convert.formatSQLDate(startDate));
+		params.add(Convert.formatSQLDate(endDate));
 		
-		for (Object o : db.executeSelect(sql, params, new UpdateVO())) {
-			UpdateVO up = (UpdateVO) o;
+		
+		for (Object o : results) {
+			UpdateVO up = (UpdateVO)o;
+			if (redirectLinks) up.setMessageTxt(buildRedirectLinks(up.getMessageTxt(), baseUrl));
 			up.setProductNm(StringEncoder.encodeExtendedAscii(up.getProductNm()));
 			up.setMarketNm(StringEncoder.encodeExtendedAscii(up.getMarketNm()));
 			up.setCompanyNm(StringEncoder.encodeExtendedAscii(up.getCompanyNm()));
 			up.setTitle(StringEncoder.encodeExtendedAscii(up.getTitle()));
 			updates.add(up);
 		}
+		**/
+	}
+	
+	
+	/**
+	 * Get the parameters needed to build the base url from the results.
+	 * All updates will share the same base url so only the first item 
+	 * in the list is needed.
+	 * @param results
+	 * @return
+	 */
+	private String getBaseUrl(List<Object> results) {
+		if (results.isEmpty()) return "";
+		
+		UpdateVO up = (UpdateVO)results.get(0);
+		return buildBaseUrl(up.getSSLFlg(), up.getSiteAliasUrl());
+	}
+	
+	
+	/**
+	 * Build the base url from the supplied alias and ssl level.
+	 * @param sslFlg
+	 * @param siteAliasUrl
+	 * @return
+	 */
+	private String buildBaseUrl(int sslFlg, String siteAliasUrl) {
+		
+		StringBuilder url = new StringBuilder(75);
+		
+		url.append(sslFlg == 2? "https://":"http://");
+		url.append(siteAliasUrl).append(Section.UPDATES_EDITION.getPageURL());
+		
+		return url.toString();
+	}
+
+	
+	/**
+	 * Change all links in this content to point to the smarttrak site
+	 * where the user will only be directed to the desired location
+	 * if they are logged in.
+	 * @param text
+	 * @param baseUrl
+	 * @return
+	 */
+	private String buildRedirectLinks(String text, String baseUrl) {
+		if (StringUtil.isEmpty(text)) return text;
+		
+		Matcher matcher = HREF_START_REGEX.matcher(text);
+		StringBuilder newText = new StringBuilder(text.length() + 200);
+		int curLoc = 0;
+		while(matcher.find()) {
+			// Get the start of a link's href property
+			int valueStart = matcher.end();
+			// Append all text from the current location to here
+			newText.append(text.substring(curLoc, valueStart));
+			// Get the proper wrapper for the property value " or ' 
+			// so that we can get the whole property value
+			char propEndcap = text.charAt(valueStart-1);
+			curLoc = text.indexOf(propEndcap, valueStart);
+			// Append the redirect link and continue
+			newText.append(buildRedirectHref(text.substring(valueStart, curLoc), baseUrl));
+		}
+		// Append the remainder of the content
+		newText.append(text.substring(curLoc));
+		
+		return newText.toString();
+	}
+	
+	
+	/**
+	 * Build a redirect link based off the original link
+	 * @param link
+	 * @param baseUrl
+	 * @return
+	 */
+	private String buildRedirectHref(String link, String baseUrl) {
+		StringBuilder redirectLink = new StringBuilder(250);
+		redirectLink.append(baseUrl).append("?");
+		redirectLink.append(REDIRECT_DEST).append("=").append(StringEncoder.urlEncode(se.decodeValue(link)));
+		return redirectLink.toString();
 	}
 	
 	
@@ -255,6 +374,8 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 				for (String sec : sectionIds)
 					ps.setString(++x, sec);
 			}
+			String baseUrl = "";
+			boolean redirectLinks = Convert.formatBoolean(req.getParameter("redirectLinks"));
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				vo = updates.get(rs.getString("update_id"));
@@ -278,6 +399,11 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 					vo.setSSLFlg(rs.getInt("ssl_flg"));
 					vo.setSiteAliasUrl(rs.getString("site_alias_url"));
 					vo.setOrderNo(rs.getInt("order_no"));
+
+					// If we have not created the base url yet do so with this data
+					if (baseUrl.isEmpty()) baseUrl = buildBaseUrl(vo.getSSLFlg(), vo.getSiteAliasUrl());
+					if (redirectLinks) vo.setMessageTxt(buildRedirectLinks(vo.getMessageTxt(), baseUrl));
+
 					//log.debug("loaded update: " + vo.getUpdateId())
 				}
 
