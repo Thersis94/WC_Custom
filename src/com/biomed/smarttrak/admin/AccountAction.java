@@ -11,6 +11,7 @@ import java.util.Map;
 
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
+import com.biomed.smarttrak.vo.AccountVO.Status;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.biomed.smarttrak.action.AdminControllerAction;
@@ -325,14 +326,13 @@ public class AccountAction extends SBActionAdapter {
 			} else {
 				db.save(account);
 				//if an insert, set the generated ID on request for redirect
-				if(db.getGeneratedPKId() != null) {
-					req.setParameter(ACCOUNT_ID, db.getGeneratedPKId());
-				}
+				if(StringUtil.isEmpty(req.getParameter(ACCOUNT_ID))) 
+					req.setParameter(ACCOUNT_ID, account.getAccountId());
 				
 				//deactivate the users for the account if it has expired or becomes inactive
 				Date currentDt = Convert.formatStartDate(new Date());
 				Date expireDt = account.getExpirationDate();
-				if("Inactive".equals(account.getStatusName()) || (expireDt != null && expireDt.before(currentDt))) {
+				if(Status.INACTIVE.getStatusNo().equals(account.getStatusNo()) || (expireDt != null && expireDt.before(currentDt))) {
 					deactiveAccountUsers(account.getAccountId());
 				}
 			}
@@ -355,7 +355,7 @@ public class AccountAction extends SBActionAdapter {
 			ps.setString(1, accountId);
 			ps.executeUpdate();
 		}catch(SQLException sqle) {
-			log.error("Error attempting to update account users: " + sqle); 
+			log.error("Error attempting to update account users: ", sqle); 
 		}
 	}
 
