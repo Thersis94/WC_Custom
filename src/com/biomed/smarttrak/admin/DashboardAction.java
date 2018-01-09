@@ -41,33 +41,11 @@ public class DashboardAction extends SBActionAdapter {
 	public DashboardAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	
-	@Override
-	public void retrieve(ActionRequest req) throws ActionException {
-		// Pass along the proper information for a search to be done.
-		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
-		req.setParameter("pmid", mod.getPageModuleId());
-		String search = StringUtil.checkVal(req.getParameter("searchData"));
-
-		req.setParameter("searchData", search.toLowerCase());
-
-		// Build the solr action
-		SolrAction sa = new SolrAction(actionInit);
-		sa.setDBConnection(dbConn);
-		sa.setAttributes(attributes);
-		sa.retrieve(req);
-
-		req.setParameter("searchData", search);
-	}
+	/**
+	 * Information on the various types of items that can be loaded for in this action, 
+	 * including thier actionType, database table, and database columns.
 	 */
-	
-	
-	
 	enum loadAction { 
 		PRODUCT("productAdmin", "product_id", "product_nm", "biomedgps_product"),
 		COMPANY("companyAdmin", "company_id", "company_nm", "biomedgps_company"),
@@ -106,13 +84,18 @@ public class DashboardAction extends SBActionAdapter {
 	
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug(req.getParameter("loadAction"));
 		if (!req.hasParameter("loadAction")) return;
 		super.putModuleData(loadRecentlyViewed(req));
 	}
 	
 	
-	private List<GenericVO> loadRecentlyViewed(ActionRequest req) {
+	/**
+	 * Load recently viewed items based on load type.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private List<GenericVO> loadRecentlyViewed(ActionRequest req) throws ActionException {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(getPageRetrieveSql())) {
@@ -124,12 +107,15 @@ public class DashboardAction extends SBActionAdapter {
 			
 			return parsePageViews(rs, loadAction.getFromAction(req.getParameter("loadAction")));
 		} catch (SQLException e) {
-			log.error(e);
+			throw new ActionException(e);
 		}
-		return Collections.emptyList();
 	}
 	
 	
+	/**
+	 * Create sql query for retrieving page view information
+	 * @return
+	 */
 	private String getPageRetrieveSql() {
 		StringBuilder sql = new StringBuilder(325);
 		
@@ -143,35 +129,59 @@ public class DashboardAction extends SBActionAdapter {
 	}
 	
 	
-	private List<GenericVO> parsePageViews(ResultSet rs, loadAction load) throws SQLException {
+	/**
+	 * Turn page views into a list of item ids that can be used to get more detailed information
+	 * @param rs
+	 * @param load
+	 * @return
+	 * @throws SQLException
+	 */
+	private List<GenericVO> parsePageViews(ResultSet rs, loadAction load) throws ActionException {
 		if (load == null) return Collections.emptyList();
 		List<String> ids = new ArrayList<>(MAX_RESULTS);
 		QueryStringParser p = new QueryStringParser();
-		while(rs.next()) {
-			p.processData(rs.getString("query_str_txt"));
-			
-			for (String s : p.getParameterMap().keySet()) {
-				if (s.endsWith("Id")) {
-					addItem(ids, p.getParameter(s));
-					break;
+		try {
+			while(rs.next()) {
+				p.processData(rs.getString("query_str_txt"));
+				
+				for (String s : p.getParameterMap().keySet()) {
+					if (s.endsWith("Id")) {
+						addItem(ids, p.getParameter(s));
+						break;
+					}
 				}
+				
+				// If the maximum desired results have been retrieve stop looping.
+				if (ids.size() == MAX_RESULTS) break;
 			}
+			
+			return getItemDetails(ids, load);
+		} catch (SQLException e) {
+			throw new ActionException(e);
 		}
-		
-		return getItemDetails(ids, load);
-		
 	}
 
 	
+	/**
+	 * Ensure that an actual id has been passed along and that it is not already in the list.
+	 * @param ids
+	 * @param id
+	 */
 	private void addItem(List<String> ids, String id) {
 		// Only display the first five unique items
-		if (StringUtil.isEmpty(id) || ids.size() == MAX_RESULTS || ids.contains(id)) return;
+		if (StringUtil.isEmpty(id) || ids.contains(id)) return;
 		// Add empty entry for now to retain proper ordering
 		ids.add(id);
 	}
 	
 	
-	private List<GenericVO> getItemDetails(List<String> ids, loadAction load) {
+	/**
+	 * Get the name of each item in the list of ids.
+	 * @param ids
+	 * @param load
+	 * @return
+	 */
+	private List<GenericVO> getItemDetails(List<String> ids, loadAction load) throws ActionException {
 
 		Map<String, String> data = new HashMap<>(MAX_RESULTS);
 		try (PreparedStatement ps = dbConn.prepareStatement(getDetailSQL(ids.size(), load))) {
@@ -185,7 +195,7 @@ public class DashboardAction extends SBActionAdapter {
 			}
 			
 		} catch (SQLException e) {
-			log.error(e);
+			throw new ActionException(e);
 		}
 		
 		
@@ -194,10 +204,17 @@ public class DashboardAction extends SBActionAdapter {
 		for (String id : ids) {
 			items.add(new GenericVO(id, data.get(id)));
 		}
-		log.debug(items.size());
+		
 		return items;	
 	}
 
+	
+	/**
+	 * Create the sql query for retrieving the name of all recently viewed items.
+	 * @param size
+	 * @param load
+	 * @return
+	 */
 	private String getDetailSQL(int size, loadAction load) {
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(750);
@@ -208,9 +225,5 @@ public class DashboardAction extends SBActionAdapter {
 		
 		return sql.toString();
 	}
-	
-	
-	
-	
 	
 }
