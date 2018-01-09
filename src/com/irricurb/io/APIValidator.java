@@ -1,7 +1,9 @@
 package com.irricurb.io;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // Gson 2.4
@@ -44,7 +46,7 @@ public class APIValidator {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		testDeviceEntity();
+		testSensorEntity();
 	}
 	
 	/**
@@ -88,6 +90,7 @@ public class APIValidator {
 	 * 
 	 */
 	protected static void testSensorEntity() throws Exception {
+		List<DeviceDataVO> sensors = new ArrayList<>();
 		DeviceDataVO data = new DeviceDataVO();
 		data.setCreateDate(new Date());
 		data.setReadingDate(new Date());
@@ -97,11 +100,23 @@ public class APIValidator {
 		reading.setCreateDate(new Date());
 		reading.setDeviceAttributeId("MOISTURE");
 		reading.setReadingValue(.42);
-		
 		data.addReading(reading);
+		sensors.add(data);
+		
+		data = new DeviceDataVO();
+		data.setCreateDate(new Date());
+		data.setReadingDate(new Date());
+		data.setProjectDeviceId("PRO_DEVICE_29");
+		
+		reading = new DeviceEntityDataVO();
+		reading.setCreateDate(new Date());
+		reading.setDeviceAttributeId("TEMP");
+		reading.setReadingValue(55);
+		data.addReading(reading);
+		sensors.add(data);
 		
 		Gson gson = new Gson();
-		String json = gson.toJson(data);
+		String json = gson.toJson(sensors);
 		
 		Map<String, Object> params = new HashMap<>();
 		params.put("type", "SENSOR");

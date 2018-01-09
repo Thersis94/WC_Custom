@@ -1,12 +1,13 @@
 package com.irricurb.action.project;
 
+import java.lang.reflect.Type;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
 
 // Google Gson 2.4
 import com.google.gson.Gson;
-
+import com.google.gson.reflect.TypeToken;
 // App Libs
 import com.irricurb.action.data.vo.DeviceDataVO;
 import com.irricurb.action.data.vo.DeviceEntityDataVO;
@@ -72,7 +73,7 @@ public class DataRecieverAction extends SimpleActionAdapter {
 		String typeVal = StringUtil.checkVal(req.getParameter("type")).toUpperCase();
 		DataType type = EnumUtil.safeValueOf(DataType.class, typeVal, DataType.DEVICE);
 		String json = req.getStringParameter("data", "");
-		log.info("Data Receiver Type: " + type);
+		
 		log.info(json);
 		try {
 			if(type.equals(DataType.SENSOR)) {
@@ -143,20 +144,25 @@ public class DataRecieverAction extends SimpleActionAdapter {
 	public void processSensor(String json) throws InvalidDataException, DatabaseException {
 		if (json.isEmpty()) throw new InvalidDataException("No JSON Data Available");
 		Gson g = new Gson();
-		DeviceDataVO data = g.fromJson(json, DeviceDataVO.class);
-		log.info(data);
+		log.info("Ok Here");
+		Type listType = new TypeToken<ArrayList<DeviceDataVO>>(){}.getType();
+		List<DeviceDataVO> readings = g.fromJson(json, listType);
+		log.info(readings);
 		
 		// Save the reading master entry
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		db.save(data);
 		
-		// Save the data for each reading
-		for (DeviceEntityDataVO reading:  data.getReadings()) {
-			reading.setProjectDeviceDataId(data.getProjectDeviceDataId());
-			db.save(reading);
+		for (DeviceDataVO data : readings) {
+			db.save(data);
 			
-			// Update the sensor value that's stored in the DB.
-			updateSensorValue(db, data.getProjectDeviceId(), reading.getDeviceAttributeId(), reading.getReadingValue());
+			// Save the data for each reading
+			for (DeviceEntityDataVO reading:  data.getReadings()) {
+				reading.setProjectDeviceDataId(data.getProjectDeviceDataId());
+				db.save(reading);
+				
+				// Update the sensor value that's stored in the DB.
+				updateSensorValue(db, data.getProjectDeviceId(), reading.getDeviceAttributeId(), reading.getReadingValue());
+			}
 		}
 	}
 	
