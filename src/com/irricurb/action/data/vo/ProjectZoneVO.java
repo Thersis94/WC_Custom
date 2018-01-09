@@ -68,7 +68,7 @@ public class ProjectZoneVO extends BeanDataVO {
 	/**
 	 * @return the projectZoneId
 	 */
-	@Column(name="project_zone_id", isPrimaryKey=true, isAutoGen=true)
+	@Column(name="project_zone_id", isPrimaryKey=true)
 	public String getProjectZoneId() {
 		return projectZoneId;
 	}

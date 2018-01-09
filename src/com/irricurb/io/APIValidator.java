@@ -1,11 +1,14 @@
 package com.irricurb.io;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 // Gson 2.4
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.irricurb.action.data.vo.DeviceDataVO;
+import com.irricurb.action.data.vo.DeviceEntityDataVO;
 import com.irricurb.action.data.vo.ProjectDeviceAttributeVO;
 import com.irricurb.action.data.vo.ProjectDeviceVO;
 import com.irricurb.action.data.vo.ProjectLocationVO;
@@ -28,6 +31,7 @@ import com.siliconmtn.io.http.SMTHttpConnectionManager;
  ****************************************************************************/
 public class APIValidator {
 	public static final String URL = "http://test-frontend.oviattgreenhouse.com/api/gateways/gateway_test_001?token=3d15359b2872548acb89b7a2c0a0fe6f";
+	public static final String PORTAL_URL = "http://irricurb.dev.siliconmtn.com/json";
 	
 	/**
 	 * 
@@ -46,12 +50,68 @@ public class APIValidator {
 	/**
 	 * 
 	 */
-	protected static void testDeviceEntity() {
+	protected static void testDeviceEntity() throws Exception {
+		ProjectDeviceVO device = new ProjectDeviceVO();
+		device.setProjectDeviceId("PRO_DEVICE_32");
+		
+		// Add the attributes to the data
+		ProjectDeviceAttributeVO attr = new ProjectDeviceAttributeVO();
+		attr.setDeviceAttributeId("COLOR_ROYGBIV");
+		attr.setValue("Green");
+		device.addAttribute(attr);
+		
+		attr = new ProjectDeviceAttributeVO();
+		attr.setDeviceAttributeId("BRIGHT");
+		attr.setValue("10");
+		device.addAttribute(attr);
+		
+		attr = new ProjectDeviceAttributeVO();
+		attr.setDeviceAttributeId("ENGAGE");
+		attr.setValue("Off");
+		device.addAttribute(attr);
+		
+		// Send the data to the portal
+		Gson gson = new Gson();
+		String json = gson.toJson(device);
+		
+		Map<String, Object> params = new HashMap<>();
+		params.put("type", "DEVICE");
+		params.put("data", json);
+		params.put("amid", "data_rec");
+		
+		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
+		byte[] res = conn.retrieveDataViaPost(PORTAL_URL, params);
+		System.out.println(new String(res));
+	}
+	
+	/**
+	 * 
+	 */
+	protected static void testSensorEntity() throws Exception {
 		DeviceDataVO data = new DeviceDataVO();
 		data.setCreateDate(new Date());
 		data.setReadingDate(new Date());
-		data.setProjectDeviceDataId("12344567");
-		data.setProjectDeviceId("");
+		data.setProjectDeviceId("PRO_DEVICE_28");
+		
+		DeviceEntityDataVO reading = new DeviceEntityDataVO();
+		reading.setCreateDate(new Date());
+		reading.setDeviceAttributeId("MOISTURE");
+		reading.setReadingValue(.42);
+		
+		data.addReading(reading);
+		
+		Gson gson = new Gson();
+		String json = gson.toJson(data);
+		
+		Map<String, Object> params = new HashMap<>();
+		params.put("type", "SENSOR");
+		params.put("data", json);
+		params.put("amid", "data_rec");
+		
+		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
+		byte[] res = conn.retrieveDataViaPost(PORTAL_URL, params);
+		
+		System.out.println(new String(res));
 	}
 	
 	/**

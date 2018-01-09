@@ -69,7 +69,7 @@ public class DeviceAttributeVO extends BeanDataVO {
 	/**
 	 * @return the deviceAttributeId
 	 */
-	@Column(name="device_attribute_id", isPrimaryKey=true, isAutoGen=true)
+	@Column(name="device_attribute_id", isPrimaryKey=true)
 	public String getDeviceAttributeId() {
 		return deviceAttributeId;
 	}

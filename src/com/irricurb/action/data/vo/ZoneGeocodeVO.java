@@ -59,7 +59,7 @@ public class ZoneGeocodeVO extends BeanDataVO {
 	/**
 	 * @return the zoneGeoId
 	 */
-	@Column(name="project_zone_geo_id", isPrimaryKey=true, isAutoGen=true)
+	@Column(name="project_zone_geo_id", isPrimaryKey=true)
 	public String getZoneGeoId() {
 		return zoneGeoId;
 	}

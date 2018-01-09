@@ -67,7 +67,7 @@ public class DeviceDataVO extends BeanDataVO {
 	/**
 	 * @return the projectDeviceDataId
 	 */
-	@Column(name="project_device_data_id", isPrimaryKey=true, isAutoGen=true)
+	@Column(name="project_device_data_id", isPrimaryKey=true)
 	public String getProjectDeviceDataId() {
 		return projectDeviceDataId;
 	}
