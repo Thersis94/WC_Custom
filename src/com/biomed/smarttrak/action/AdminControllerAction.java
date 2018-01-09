@@ -37,6 +37,7 @@ import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.admin.UpdatesEmailSendAction;
 import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.admin.UserAccountSearchAction;
+import com.biomed.smarttrak.admin.ZohoIntegrationAction;
 import com.biomed.smarttrak.admin.report.EmailReportAction;
 import com.biomed.smarttrak.fd.FinancialDashAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
@@ -112,7 +113,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 */
 	public enum Section {
 		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("analysis/"), PRODUCT_EXPLOERER("explorer/"),
-		UPDATES_EDITION("updates-edition/"), FINANCIAL_DASHBOARD("financial/"), GAP_ANALYSIS("analysis/");
+		UPDATES_EDITION("updates-edition/"), FINANCIAL_DASHBOARD("tools/financial/"), GAP_ANALYSIS("tools/analysis/");
 
 		private String path;
 		Section(String path) { this.path = path; }
@@ -173,7 +174,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * populates the action map when the static constructor is called.  This will make our map live once in the JVM
 	 */
 	static {
-		ACTIONS = new HashMap<>(35);
+		ACTIONS = new HashMap<>(38);
+		ACTIONS.put("tickets", ZohoIntegrationAction.class);
 		ACTIONS.put("hierarchy", SectionHierarchyAction.class);
 		ACTIONS.put("agap", GapAnalysisAdminAction.class);
 		ACTIONS.put("fd", FinancialDashAdminAction.class);
