@@ -906,7 +906,10 @@ public class ProductManagementAction extends ManagementAction {
 		boolean isInsert = StringUtil.isEmpty(p.getProductId());
 		saveProduct(p, db, isInsert);
 		saveSections(req, p);
-		if (isInsert) generateContent(req, p.getProductId());
+		if (isInsert) {
+			generateContent(req, p.getProductId());
+			req.setParameter("productId", p.getProductId());
+		}
 	}
 
 
