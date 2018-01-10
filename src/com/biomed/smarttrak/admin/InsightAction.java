@@ -4,6 +4,8 @@ package com.biomed.smarttrak.admin;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -17,12 +19,12 @@ import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
 import com.biomed.smarttrak.vo.InsightXRVO;
 import com.biomed.smarttrak.vo.UserVO;
-
 //SMT baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
@@ -35,7 +37,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
-
 //WebCrescendo
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -68,7 +69,8 @@ public class InsightAction extends ManagementAction {
 
 	protected enum Fields {
 		INSIGHT_ID, STATUS_CD, TYPE_CD, DATE_RANGE, START, RPP, SORT, ORDER,
-		SEARCH, ID_BYPASS, TITLE_BYPASS, CREATOR_PROFILE_ID, FEATURED_FLG;
+		SEARCH, ID_BYPASS, TITLE_BYPASS, CREATOR_PROFILE_ID, FEATURED_FLG, 
+		START_DATE, END_DATE, HIERACHIES;
 	}
 
 
@@ -156,8 +158,6 @@ public class InsightAction extends ManagementAction {
 		//table into the view (which will come back for the data).
 		if (req.hasParameter(INSIGHT_ID)) insightParamsMap.put(Fields.INSIGHT_ID, req.getParameter(INSIGHT_ID) );
 		if (req.hasParameter("statusCd")) insightParamsMap.put(Fields.STATUS_CD, req.getParameter("statusCd"));
-		if (req.hasParameter("typeCd")) insightParamsMap.put(Fields.TYPE_CD, req.getParameter("typeCd"));
-		if (req.hasParameter("dateRange")) insightParamsMap.put(Fields.DATE_RANGE, req.getParameter("dateRange"));
 		if (req.hasParameter(TITLE_BYPASS)) insightParamsMap.put(Fields.TITLE_BYPASS, req.getParameter(TITLE_BYPASS));
 		if (req.hasParameter("authorId")) insightParamsMap.put(Fields.CREATOR_PROFILE_ID, req.getParameter("authorId"));
 		if (req.hasParameter("featuredFlg")) insightParamsMap.put(Fields.FEATURED_FLG, req.getParameter("featuredFlg"));
@@ -168,6 +168,18 @@ public class InsightAction extends ManagementAction {
 		insightParamsMap.put(Fields.ORDER, StringUtil.checkVal(req.getParameter("order"), "desc"));
 		insightParamsMap.put(Fields.SEARCH, StringUtil.checkVal(req.getParameter("search")).toUpperCase());
 		insightParamsMap.put(Fields.ID_BYPASS, "false");
+		String typeCd = CookieUtil.getValue("insightType", req.getCookies());
+		if (!StringUtil.isEmpty(typeCd))
+			insightParamsMap.put(Fields.TYPE_CD, typeCd);
+		String startDt = CookieUtil.getValue("insightStartDt", req.getCookies());
+		if(!StringUtil.isEmpty(startDt))
+			insightParamsMap.put(Fields.START_DATE, startDt);
+		String endDt = CookieUtil.getValue("insightEndDt", req.getCookies());
+		if(!StringUtil.isEmpty(endDt))
+			insightParamsMap.put(Fields.END_DATE, endDt);
+		String hierarchies = CookieUtil.getValue("insightMarkets", req.getCookies());
+		if (!StringUtil.isEmpty(hierarchies)) 
+			insightParamsMap.put(Fields.HIERACHIES, hierarchies);
 
 		List<Object> insights = getInsights(insightParamsMap);
 		decryptNames(insights);
@@ -362,10 +374,26 @@ public class InsightAction extends ManagementAction {
 		if (insightParamsMap.containsKey(Fields.CREATOR_PROFILE_ID)) 
 			params.add(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
 		if (insightParamsMap.containsKey(Fields.FEATURED_FLG)) params.add(Convert.formatInteger(insightParamsMap.get(Fields.FEATURED_FLG)));
+		if (insightParamsMap.containsKey(Fields.START_DATE)) {
+			Date startDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, insightParamsMap.get(Fields.START_DATE));
+			params.add(Convert.formatTimestamp(startDt));
+		}
+		if (insightParamsMap.containsKey(Fields.END_DATE)) {
+			//format the end date to account for the entire day
+			Date endDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, insightParamsMap.get(Fields.END_DATE));
+			params.add(Convert.formatTimestamp(getFullDateTime(endDt)));
+		}
+		if (insightParamsMap.containsKey(Fields.HIERACHIES)) {
+			String hierarchies = insightParamsMap.get(Fields.HIERACHIES);
+			for (String val : hierarchies.split(",")) {
+				params.add(val);
+			}
+		}
 		if (insightParamsMap.containsKey(Fields.RPP) && Convert.formatInteger(insightParamsMap.get(Fields.RPP)) > 0 && insightParamsMap.containsKey(Fields.START)) {
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.RPP)));
 			params.add(Convert.formatInteger(insightParamsMap.get(Fields.START)));
 		}
+
 		return params;
 	}
 
@@ -447,13 +475,10 @@ public class InsightAction extends ManagementAction {
 		if ( !StringUtil.isEmpty(insightParamsMap.get(Fields.TYPE_CD)))
 			sql.append("and a.type_cd=? ");
 
-		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.DATE_RANGE))) {
-			if("1".equals(insightParamsMap.get(Fields.DATE_RANGE))) {
-				sql.append("and a.create_Dt > CURRENT_DATE - INTERVAL '6 months' ");
-			} else if ("2".equals(insightParamsMap.get(Fields.DATE_RANGE))) {
-				sql.append("and a.create_Dt < CURRENT_DATE - INTERVAL '6 months' ");
-			}
-		}
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.START_DATE))) 
+				sql.append("and a.publish_dt >= ? ");
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.END_DATE)))
+				sql.append("and a.publish_dt < ? ");
 
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.SEARCH)))
 			sql.append("and upper(title_txt) like ? "); 
@@ -463,6 +488,14 @@ public class InsightAction extends ManagementAction {
 		
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.FEATURED_FLG)))
 			sql.append("and a.featured_flg=? ");
+		
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.HIERACHIES))) {
+			String [] hierarchies = insightParamsMap.get(Fields.HIERACHIES).split(",");
+			sql.append("and b.section_id in(");
+			DBUtil.preparedStatmentQuestion(hierarchies.length, sql);
+			sql.append(") "); 
+		}
+		
 	}
 
 	/**
@@ -490,8 +523,8 @@ public class InsightAction extends ManagementAction {
 	 */
 	private static void generateJoinSectionOfQuery(StringBuilder sql, String schema, Map<Fields, String> insightParamsMap) {
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-
-		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS))){
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS)) 
+				|| !StringUtil.isEmpty(insightParamsMap.get(Fields.HIERACHIES))){
 			sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
 			sql.append("on a.insight_id=b.insight_id ");
 		}
@@ -840,6 +873,20 @@ public class InsightAction extends ManagementAction {
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
+	}
+	
+	/**
+	 * Returns a Date object that includes complete date and time for the 
+	 * entire date passed(just before next day). 
+	 * @param initialDate
+	 * @return
+	 */
+	private Date getFullDateTime(Date initialDate) {
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(initialDate);
+		cal.add(Calendar.DATE, 1);
+		cal.add(Calendar.SECOND, -1);
+		return cal.getTime(); 
 	}
 
 	/**

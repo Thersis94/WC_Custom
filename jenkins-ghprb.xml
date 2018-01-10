@@ -1,7 +1,7 @@
 <!--
 	This file is used by Jenkin's GitHub Pull Request Builder plugin.  
 	It defines the configuration passed to SonarQube for code analysis,
-	which automatically gets involed by GitHub when a developer opens a Pull Request.
+	which automatically gets invoked by GitHub when a developer opens a Pull Request.
 	@author James McKain
 	@version 1.0
 	@created Aug 12, 2016
@@ -20,15 +20,13 @@
 
 	<!-- Define the SonarQube project properties -->
 	<property name="sonar.projectKey" value="smtadmin:WC_Custom" />
-	<property name="sonar.projectName" value="WebCrescendo Custom" />
-	<property name="sonar.projectVersion" value="2.0.0" />
 	<property name="sonar.sources" value="src" />
-	<property name="sonar.java.binaries" value="" />
+	<property name="sonar.java.binaries" value="../../git/WC_Custom/bin" />
 	<property name="sonar.sourceEncoding" value="UTF-8" />
-
-	<!--<path id="sonar.java.libraries">
-		<fileset dir="../SMTAppLibraries/lib" includes="**/*.jar" />
-	</path>-->
+		
+	<path id="sonar.java.libraries">
+		<fileset dir="../../git/SMTAppLibraries/**/*.jar,../../git/builds/lib/**/*.jar,/apps/tomcat/lib/*.jar,/apps/tomcat/bin/*.jar" />
+	</path>
 		
 	 
 	<!-- Define the SonarQube target -->
@@ -42,3 +40,4 @@
 		<sonar:sonar />
 	</target>
 </project>
+

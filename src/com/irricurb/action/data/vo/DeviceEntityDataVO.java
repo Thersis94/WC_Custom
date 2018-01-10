@@ -61,7 +61,7 @@ public class DeviceEntityDataVO extends BeanDataVO {
 	/**
 	 * @return the dataEntityId
 	 */
-	@Column(name="data_entity_id", isPrimaryKey=true, isAutoGen=true)
+	@Column(name="data_entity_id", isPrimaryKey=true)
 	public String getDataEntityId() {
 		return dataEntityId;
 	}

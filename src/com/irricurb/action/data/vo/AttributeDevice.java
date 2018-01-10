@@ -60,7 +60,7 @@ public class AttributeDevice extends DeviceAttributeVO {
 	/**
 	 * @return the attributeDeviceId
 	 */
-	@Column(name="attribute_device_id", isPrimaryKey=true, isAutoGen=true)
+	@Column(name="attribute_device_id", isPrimaryKey=true)
 	public String getAttributeDeviceId() {
 		return attributeDeviceId;
 	}

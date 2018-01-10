@@ -57,7 +57,7 @@ public class ProjectDeviceAttributeVO extends AttributeDevice {
 	/**
 	 * @return the deviceAttributeXrId
 	 */
-	@Column(name="device_attribute_xr_id", isPrimaryKey=true, isAutoGen=true)
+	@Column(name="device_attribute_xr_id", isPrimaryKey=true)
 	public String getDeviceAttributeXrId() {
 		return deviceAttributeXrId;
 	}

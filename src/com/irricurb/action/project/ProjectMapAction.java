@@ -119,7 +119,9 @@ public class ProjectMapAction extends SBActionAdapter {
 		
 		// Loop the locations and add the zone data
 		for (ProjectLocationVO location : projectLocations) {
+			log.info(sql + "|" + location.getProjectLocationId());
 			List<ProjectZoneVO> zones = db.executeSelect(sql.toString(), Arrays.asList(new Object[] {location.getProjectLocationId()}), new ProjectZoneVO());
+			log.info(zones);
 			location.setZones(zones);
 		}
 		
