@@ -1,13 +1,14 @@
 package com.irricurb.action.project;
 
-import java.lang.reflect.Type;
 // JDK 1.8.x
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
 // Google Gson 2.4
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+
 // App Libs
 import com.irricurb.action.data.vo.DeviceDataVO;
 import com.irricurb.action.data.vo.DeviceEntityDataVO;
@@ -73,8 +74,8 @@ public class DataRecieverAction extends SimpleActionAdapter {
 		String typeVal = StringUtil.checkVal(req.getParameter("type")).toUpperCase();
 		DataType type = EnumUtil.safeValueOf(DataType.class, typeVal, DataType.DEVICE);
 		String json = req.getStringParameter("data", "");
-		
 		log.info(json);
+
 		try {
 			if(type.equals(DataType.SENSOR)) {
 				processSensor(json);
@@ -82,6 +83,7 @@ public class DataRecieverAction extends SimpleActionAdapter {
 				processDevice(json);
 			}
 		} catch (Exception e) {
+			log.error("Failed to process data", e);
 			putModuleData(null, 0, false, e.getMessage(), true);
 		}
 	}

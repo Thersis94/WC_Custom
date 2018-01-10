@@ -46,7 +46,16 @@ public class APIValidator {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		testSensorEntity();
+		testDeviceEntity();
+	}
+	
+	
+	public static void documentTest() throws Exception {
+		String url = PORTAL_URL + "?type=DEVICE&amid=data_rec";
+		byte[] data = "Testing ...".getBytes();
+		
+		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
+		byte[] res = conn.postDocument(url, data, "application/json");
 	}
 	
 	/**
