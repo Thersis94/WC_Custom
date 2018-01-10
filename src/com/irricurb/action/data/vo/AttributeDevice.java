@@ -31,6 +31,7 @@ public class AttributeDevice extends DeviceAttributeVO {
 	// Member Variables
 	private String attributeDeviceId;
 	private String deviceId;
+	private String displayTypeCode;
 	
 	// Helper Classed (SubBeans)
 	private DeviceAttributeVO deviceAttribute;
@@ -59,7 +60,7 @@ public class AttributeDevice extends DeviceAttributeVO {
 	/**
 	 * @return the attributeDeviceId
 	 */
-	@Column(name="attribute_device_id", isPrimaryKey=true, isAutoGen=true)
+	@Column(name="attribute_device_id", isPrimaryKey=true)
 	public String getAttributeDeviceId() {
 		return attributeDeviceId;
 	}
@@ -70,13 +71,6 @@ public class AttributeDevice extends DeviceAttributeVO {
 	@Column(name="device_id")
 	public String getDeviceId() {
 		return deviceId;
-	}
-
-	/**
-	 * @return the deviceAttribute
-	 */
-	public DeviceAttributeVO getDeviceAttribute() {
-		return deviceAttribute;
 	}
 
 	/**
@@ -93,12 +87,33 @@ public class AttributeDevice extends DeviceAttributeVO {
 		this.deviceId = deviceId;
 	}
 
+
+	/**
+	 * @return the displayTypeCode
+	 */
+	@Column(name="display_type_cd")
+	public String getDisplayTypeCode() {
+		return displayTypeCode;
+	}
+
+	/**
+	 * @param displayTypeCode the displayTypeCode to set
+	 */
+	public void setDisplayTypeCode(String displayTypeCode) {
+		this.displayTypeCode = displayTypeCode;
+	}
+	
 	/**
 	 * @param deviceAttribute the deviceAttribute to set
-	 */
+	 * @param displayTypeCode the displayTypeCode to set
+	*/
 	@BeanSubElement
 	public void setDeviceAttribute(DeviceAttributeVO deviceAttribute) {
 		this.deviceAttribute = deviceAttribute;
+	}
+	
+	public DeviceAttributeVO getDeviceAttribute(){
+		return deviceAttribute;
 	}
 
 }

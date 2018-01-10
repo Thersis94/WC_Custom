@@ -76,4 +76,17 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 		loadAction(key).retrieve(req);
 	}
 	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void build(ActionRequest req ) throws ActionException {
+		log.debug("facade action build called");
+		if (!req.hasParameter(WIDGET_ACTION)) return;
+		
+		String key = StringUtil.checkVal(req.getParameter(WIDGET_ACTION));
+		
+		loadAction(key).build(req);
+	}
 }

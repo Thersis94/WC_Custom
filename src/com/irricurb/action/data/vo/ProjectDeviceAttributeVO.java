@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /********************************************************************
  * <b>Title: </b>ProjectDeviceAttributeVO.java<br/>
@@ -56,7 +57,7 @@ public class ProjectDeviceAttributeVO extends AttributeDevice {
 	/**
 	 * @return the deviceAttributeXrId
 	 */
-	@Column(name="device_attribute_xr_id", isPrimaryKey=true, isAutoGen=true)
+	@Column(name="device_attribute_xr_id", isPrimaryKey=true)
 	public String getDeviceAttributeXrId() {
 		return deviceAttributeXrId;
 	}
@@ -98,4 +99,13 @@ public class ProjectDeviceAttributeVO extends AttributeDevice {
 		this.value = value;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.siliconmtn.data.parser.BeanDataVO#toString()
+	 */
+	@Override
+	public String toString(){
+		return StringUtil.getToString(this);
+	}
+	
 }

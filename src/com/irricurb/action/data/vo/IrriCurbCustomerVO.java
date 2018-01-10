@@ -60,7 +60,7 @@ public class IrriCurbCustomerVO extends BeanDataVO {
 	/**
 	 * @return the deviceManufacturerId
 	 */
-	@Column(name="customer_id", isPrimaryKey=true, isAutoGen=true )
+	@Column(name="customer_id", isPrimaryKey=true)
 	public String getCustomerId() {
 		return customerId;
 	}
