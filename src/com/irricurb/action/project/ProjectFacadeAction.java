@@ -10,7 +10,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 
 /****************************************************************************
- * <b>Title</b>: ProjectFascadeAction.java
+ * <b>Title</b>: ProjectFacadeAction.java
  * <b>Project</b>: WC_Custom
  * <b>Description: </b> Facade action controlling which project action is called.
  * <b>Copyright:</b> Copyright (c) 2017
