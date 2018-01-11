@@ -92,7 +92,7 @@ public class ProjectLocationVO extends GeocodeLocation {
 	/**
 	 * @return the projectLocationId
 	 */
-	@Column(name="project_location_id",isPrimaryKey=true, isAutoGen=true)
+	@Column(name="project_location_id",isPrimaryKey=true)
 	public String getProjectLocationId() {
 		return projectLocationId;
 	}

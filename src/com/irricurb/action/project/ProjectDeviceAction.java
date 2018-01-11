@@ -1,11 +1,21 @@
 package com.irricurb.action.project;
 
+// JDK 1.8
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+// GSON 2.4
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+// Irricurb Libs
 import com.irricurb.action.data.vo.DeviceAttributeVO;
 import com.irricurb.action.data.vo.ProjectDeviceAttributeVO;
 import com.irricurb.action.data.vo.ProjectDeviceVO;
+import com.irricurb.io.ProjectLocationExclusionStrategy;
+
+// SMT Base Libs 3.2
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -13,7 +23,10 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.StringUtil;
+
+// WC Libs 3.3
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
@@ -29,13 +42,28 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  * @updates:
  ****************************************************************************/
 public class ProjectDeviceAction extends SBActionAdapter {
+	/**
+	 * This constant is TEMPORARY for the demo.  This will be replaced
+	 * at a later time when the full design has been completed
+	 */
+	public static final String CONTROLLER_URL = "http://test-frontend.oviattgreenhouse.com/api/gateways/gateway_test_001?token=3d15359b2872548acb89b7a2c0a0fe6f";
 	
+	/**
+	 * Widget action for devices
+	 */
 	public static final String DEVICE = "device";
 	
+	/**
+	 * 
+	 */
 	public ProjectDeviceAction() {
 		super();
 	}
 
+	/**
+	 * 
+	 * @param arg0
+	 */
 	public ProjectDeviceAction(ActionInitVO arg0) {
 		super(arg0);
 	}
@@ -65,38 +93,67 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		if (!req.hasParameter(ProjectFacadeAction.WIDGET_ACTION)) return;
 		
 		if(DEVICE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) && req.hasParameter("deviceAttributeXRId")){
-				updateValueByAttrXRID(req);
-				//TODO send a request to the device so the change takes place in the real world device
+			updateDeviceAtrributes(new ProjectDeviceAttributeVO(req));
 		}
 		
 		
 	}
-
+	
+	/**
+	 * Updates the database and sends the data to the controller
+	 * @param pdvo
+	 */
+	public void updateDeviceAtrributes(ProjectDeviceAttributeVO pdvo) {
+		
+		try {
+			// Update the record in the database
+			updateValueByAttrXRID(pdvo);
+			
+			// Send a request to the device so the change takes place in the real world device
+			sendAtttributesController(pdvo);
+			
+		} catch (Exception e) {
+			log.error("Unable to update device attrributes", e);
+			this.putModuleData(pdvo, 1, false, e.getMessage(), true);
+		}
+		
+	}
+	
+	/**
+	 * Serializes the device attributes and sends the data to the controller
+	 * @param pdvo
+	 * @throws IOException
+	 */
+	public void sendAtttributesController(ProjectDeviceAttributeVO pdvo) throws IOException {
+		// Serialize the object
+		Gson g = new GsonBuilder().setExclusionStrategies(new ProjectLocationExclusionStrategy()).create();
+		String json = g.toJson(pdvo);
+		
+		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
+		byte[] res = conn.postDocument(CONTROLLER_URL, json.getBytes(), "application/json");
+		
+		if (res != null)
+			log.info("Response: " + new String(res));
+	}
+	
 	/**
 	 * this method updates the 
 	 * @param req
+	 * @throws DatabaseException 
 	 */
-	private void updateValueByAttrXRID(ActionRequest req) {
+	public void updateValueByAttrXRID(ProjectDeviceAttributeVO pdvo) throws DatabaseException {
 		DBProcessor db = new DBProcessor(dbConn);
-		ProjectDeviceAttributeVO pdvo = new ProjectDeviceAttributeVO();
-				
-		pdvo.setDeviceAttributeXrId(StringUtil.checkVal(req.getStringParameter("deviceAttributeXRId")));
-		pdvo.setValue(StringUtil.checkVal(req.getStringParameter("valueText")));
 		
 		List<String> fields = new ArrayList<>();
 		fields.add("value_txt");
 		fields.add("device_attribute_xr_id");
 		
 		StringBuilder sql = new StringBuilder(125);
-		sql.append("update ").append(getCustomSchema()).append("ic_device_attribute_xr set value_txt = ? where device_attribute_xr_id = ? ");
+		sql.append("update ").append(getCustomSchema()).append("ic_device_attribute_xr set value_txt = ? ");
+		sql.append("where device_attribute_xr_id = ? ");
 		
-		log.debug("sql " + sql.toString() + "|" +pdvo.getValue()+ "|" + pdvo.getDeviceAttributeXrId());
-		
-		try {
-			db.executeSqlUpdate(sql.toString(), pdvo, fields);
-		} catch (DatabaseException e) {
-			log.error("could not save new value text to database ",e);
-		}
+		log.debug("sql " + sql.toString() + "|" + pdvo.getValue()+ "|" + pdvo.getDeviceAttributeXrId());
+		db.executeSqlUpdate(sql.toString(), pdvo, fields);
 	}
 
 	/**
