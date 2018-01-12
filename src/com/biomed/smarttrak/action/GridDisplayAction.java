@@ -14,12 +14,17 @@ import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 import com.biomed.smarttrak.vo.grid.BiomedExcelReport;
+import com.biomed.smarttrak.vo.grid.GoogleChartCellVO;
+import com.biomed.smarttrak.vo.grid.GoogleChartColumnVO;
+import com.biomed.smarttrak.vo.grid.GoogleChartRowVO;
 import com.biomed.smarttrak.vo.grid.SMTChartFactory;
 import com.biomed.smarttrak.vo.grid.SMTChartFactory.ProviderType;
 import com.biomed.smarttrak.vo.grid.SMTChartOptionFactory;
 import com.biomed.smarttrak.vo.grid.SMTChartOptionFactory.ChartType;
 import com.biomed.smarttrak.vo.grid.SMTChartOptionIntfc;
 import com.biomed.smarttrak.vo.grid.SMTGridIntfc;
+import com.biomed.smarttrak.vo.grid.SMTGridRowIntfc;
+import com.biomed.smarttrak.vo.grid.GoogleChartVO.DataType;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -250,10 +255,68 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		// Add configurable attributes
 		if(stacked) gridData.addCustomValue("isStacked", true);
 
+		setValueFormats(gridData);
+		
 		return gridData;
 	}
 
 
+	/**
+	 * Fromat the value displays
+	 * @param gridData
+	 */
+	private void setValueFormats(SMTGridIntfc gridData) {
+		GoogleChartColumnVO col = new GoogleChartColumnVO();
+		col.setRole("annotation");
+		col.setDataType(DataType.STRING);
+		gridData.addColumn(col);
+		
+		for (SMTGridRowIntfc row : gridData.getRows()) {
+			GoogleChartRowVO gRow = (GoogleChartRowVO) row;
+			for (int i=1; i < gRow.getC().size(); i++) {
+				GoogleChartCellVO c = gRow.getC().get(i);
+				c.setFormat(formatCellValue(StringUtil.checkVal(c.getValue())));
+			}
+		}
+	}
+
+	
+	/**
+	 * Shorten the supplied value to a single decimal dollar amount
+	 * appended with a shorthand character for the magnitude.
+	 * @param value
+	 * @return
+	 */
+	private String formatCellValue(String value) {
+		if (value.length() <= 3) return value;
+		String suffix = "";
+		int pos = value.length()%3;
+		if (pos == 0) pos = 3;
+		
+		switch ((int)Math.ceil((value.length()/3))) {
+			case 2:
+				suffix = " K";
+				break;
+			case 3:
+				suffix = " M";
+				break;
+			case 4:
+				suffix = " B";
+				break;
+			case 5:
+				suffix = " T";
+				break;
+		}
+		
+		StringBuilder formatted = new StringBuilder(pos + 4);
+		
+		formatted.append("$").append(value.substring(0, pos)).append(".");
+		formatted.append(value.charAt(pos+1)).append(suffix);
+		
+		return formatted.toString();
+	}
+
+	
 	/**
 	 * Check to see if the label needs to be modified
 	 * and do so if necessary.
@@ -272,7 +335,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		if (total.compareTo(new BigDecimal(100)) == 0) return;
 
 		for (GridDetailVO detail : grid.getDetails()) {
-			detail.setLabel(detail.getLabel() + " - " + detail.getValue1());
+			detail.setLabel(detail.getLabel() + " - " + formatCellValue(StringUtil.removeNonNumeric(detail.getValue1())));
 		}
 
 	}
