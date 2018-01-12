@@ -466,6 +466,8 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		product.addAttribute("status", rs.getString("STATUS_NO"));
 		SmarttrakSolrUtil.setSearchField(rs.getString("short_nm"), "shortNm", product);
 		SmarttrakSolrUtil.setSearchField(rs.getString("short_nm_txt"), "companyShortNm", product);
+		SmarttrakSolrUtil.setSearchField(rs.getString("company_alias"), "companyAlias", product);
+		SmarttrakSolrUtil.setSearchField(rs.getString("stock_abbr_txt"), "companyTicker", product);
 
 		//concat some fields into meta-keywords
 		StringBuilder sb = new StringBuilder(100);
@@ -562,7 +564,8 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	protected String buildRetrieveSql(String id) {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT p.*, s.SECTION_ID, s.SECTION_NM, s.SOLR_TOKEN_TXT, c.COMPANY_NM, c.SHORT_NM_TXT, c.HOLDING_TXT FROM ");
+		sql.append("SELECT p.*, s.SECTION_ID, s.SECTION_NM, s.SOLR_TOKEN_TXT, c.COMPANY_NM, c.SHORT_NM_TXT, c.HOLDING_TXT, ");
+		sql.append("c.stock_abbr_txt, c.alias_nm as COMPANY_ALIAS FROM ");
 		sql.append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION ps ");
 		sql.append("ON ps.PRODUCT_ID = p.PRODUCT_ID ");

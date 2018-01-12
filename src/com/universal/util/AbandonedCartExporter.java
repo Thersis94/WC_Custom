@@ -66,8 +66,8 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	private List<AbandonedCartVO> carts = null;
 	private List<String> messageLog = null;
 	private Map<String,String> brandMap = null;
-	private String propertiesPath = "C:/Users/beaker/gitHome/git/WC_Custom/scripts/usa_abandoned_carts.properties"; 
-	private String logPropertiesPath = "C:/Users/beaker/gitHome/git/WC_Custom/scripts/usa_abandoned_carts_log4j.properties";
+	private String propertiesPath = "scripts/usa_abandoned_carts.properties"; 
+	private String logPropertiesPath = "scripts/usa_abandoned_carts_log4j.properties";
 
 	public AbandonedCartExporter(String[] args) {
 		super(args);
@@ -448,16 +448,11 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		for (int i = 1; i <= sitesNo; i++) {
 			if (props.getProperty(keyPrefix+i) != null) {
 				brandMap.put(keyPrefix+i, props.getProperty(keyPrefix+i));
-			} else {
-				// we're done...bail
-				break;
 			}
 		}
 
-		if (log.isDebugEnabled()) {
-			for (Map.Entry<String, String> entry: brandMap.entrySet())
-				log.debug("brandMap key/val: " + entry.getKey() + "|" + entry.getValue());
-		}
+		for (Map.Entry<String, String> entry: brandMap.entrySet())
+			log.info("brandMap key/val: " + entry.getKey() + "|" + entry.getValue());
 	}
 
 }

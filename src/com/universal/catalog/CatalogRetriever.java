@@ -36,7 +36,8 @@ import com.siliconmtn.util.Convert;
 public class CatalogRetriever {
 
 	private static final Logger log = Logger.getLogger(CatalogRetriever.class);
-	private final String HTTP_USER_AGENT = "User-Agent:Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.62 Safari/537.36";;
+	private static final String HTTP_USER_AGENT = "User-Agent:Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.62 Safari/537.36";;
+	private static final String FILE_DELIMITER = "/";
 	private Properties config;
 	private String destinationPath;
 	private String today;
@@ -121,6 +122,9 @@ public class CatalogRetriever {
 			}
 			
 		}
+		if (! destinationPath.endsWith(FILE_DELIMITER))
+			return destinationPath + FILE_DELIMITER;
+
 		return destinationPath;
 	}
 
@@ -132,21 +136,18 @@ public class CatalogRetriever {
 	 */
 	private void writeSourceFile(byte[] fileData, String filePath, String fileName) 
 			throws IOException {
-		String fullPath = filePath + fileName;
-		log.info("writing source file: " + fullPath);
 		//create destination folder
 		createFolderLocation(filePath);
+
+		String fullPath = filePath + FILE_DELIMITER + fileName;
+		log.info("writing source file: " + fullPath);
 		
-		FileOutputStream fos = null;
-		BufferedOutputStream bos = null;
-		fos = new FileOutputStream(fullPath);
-		bos = new BufferedOutputStream(fos);
-		// write file
-		bos.write(fileData);
-		bos.flush();
-		// clean up
-		bos.close();
-		fos.close();
+		try (FileOutputStream fos = new FileOutputStream(fullPath); 
+				BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+			// write file
+			bos.write(fileData);
+			bos.flush();
+		}
 	}
 	
 	/**
@@ -170,7 +171,7 @@ public class CatalogRetriever {
 	 */
 	private void buildDestinationPath(String catalogId) {
 		today = getToday();
-		destinationPath = config.getProperty("sourceFileDestination") + today + "\\" + catalogId + "\\";
+		destinationPath = config.getProperty("sourceFileDestination") + today + FILE_DELIMITER + catalogId;
 	}
 	
 	/**
