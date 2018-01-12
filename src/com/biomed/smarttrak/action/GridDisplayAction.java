@@ -59,6 +59,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class GridDisplayAction extends SimpleActionAdapter {
 
 	public static final String GRID_ID = "gridId";
+	
+	private static final String[] PIE_CHART_COLORS = { "#3366cc","#dc3912","#ff9900","#109618","#990099","#0099c6","#8f8f8f","#e53ac3","#f96125","#316395" };
 
 	public GridDisplayAction() {
 		super();
@@ -246,6 +248,12 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		options.addOptionsFromGridData(grid);
 		log.debug("options: " + options);
 		
+		// Load the custom pie chart colors.
+		if (ChartType.PIE == type) {
+			options.getChartOptions().put("colors", PIE_CHART_COLORS);
+		}
+		
+		// Load company specific colors
 		setColors(grid, options);
 
 		// Pie charts need to have their labels modified in order to
