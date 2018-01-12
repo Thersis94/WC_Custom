@@ -1,11 +1,13 @@
 package com.biomed.smarttrak.vo;
 
+import java.util.Comparator;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ProductAttributeVO.java <p/>
@@ -162,5 +164,18 @@ public class ProductAttributeVO {
 	public Date getUpdateDate() {return null;}
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
+	
+	
+	/**
+	 * Special comparator used in ordering the detail attributes
+	 */
+	public static Comparator<ProductAttributeVO> detailComparator = new Comparator<ProductAttributeVO>() {
+		public int compare(ProductAttributeVO a1, ProductAttributeVO a2) {
+			String name1 = StringUtil.checkVal(a1.getAttributeName());
+			String name2 = StringUtil.checkVal(a2.getAttributeName());
+			
+			return name1.compareTo(name2);
+		}
+	};
 
 }
