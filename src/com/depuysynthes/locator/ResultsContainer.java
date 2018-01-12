@@ -37,6 +37,7 @@ public class ResultsContainer implements Serializable {
 	private static final String FILTER_VALUE_DELIMITER_REGEX = "\\|";
 	private static final double RADIUS_SEARCH_DEFAULT = 50;
 	private static final double RADIUS_EXTENDED_SEARCH_DEFAULT = 251;
+	private static final int SPECIALTY_ID_BIOLOGICS = 16;
 	private String json;
 	private int numResults;
 	private int pageSize;
@@ -331,6 +332,11 @@ public class ResultsContainer implements Serializable {
 	 * counts with the number of procedure filters and product filters submitted.  If 
 	 * the values match, then all possible filters were submitted and all results are
 	 * eligible for display consideration relative to the radius requirements.
+	 * 
+	 * We adjust these for the Biologics specialty which is a special case.  Search filters
+	 * only include the Biologics product and not the Biologics procedure.  We therefore
+	 * have to reduce the number of possible procedures by 1 if the Biologics specialty
+	 * has been included amongst the specialty filters.
 	 * @param hasFilterVals
 	 * @return
 	 */
@@ -342,23 +348,24 @@ public class ResultsContainer implements Serializable {
 		int prodPossible = 0;
 		for (Node spec : hierarchy) {
 			if (specFilters.contains(spec.getDepthLevel())) {
-				procPossible += spec.getNumberChildren();
-				// loop procedures
+
+				// increment 'number of possible procedures' if specialty is not Biologics
+				if (spec.getDepthLevel() != SPECIALTY_ID_BIOLOGICS)
+					procPossible += spec.getNumberChildren();
+
+				// loop specialty's children (procedures)
 				for (Node proc : spec.getChildren()) {
 					prodPossible += proc.getNumberChildren();
-					if (procFilters.contains(proc.getDepthLevel())) {
-						procMatch++;
-						// loop products
-						for (Node prod : proc.getChildren()) {
-							if (prodFilters.contains(prod.getDepthLevel())) prodMatch++;
-						}
+					if (procFilters.contains(proc.getDepthLevel())) procMatch++;
+
+					// loop procedure's children (products)
+					for (Node prod : proc.getChildren()) {
+						if (prodFilters.contains(prod.getDepthLevel())) prodMatch++;
 					}
 				}
 			}
 		}
-
-		return (procMatch >= procPossible && 
-				prodMatch >= prodPossible);
+		return (procMatch >= procPossible && prodMatch >= prodPossible);
 	}
 
 	/**
@@ -370,6 +377,7 @@ public class ResultsContainer implements Serializable {
 		filteredSurgeonList.clear();
 		int displayCount = 0;
 		useExtendedResults = false;
+
 		/* Perform filtering if necessary */
 		if (! useAllFilters && (hasProcFilters() || hasProdFilters())) {
 			boolean displaySurgeon = false;
@@ -683,11 +691,11 @@ public class ResultsContainer implements Serializable {
 	}
 
 	private boolean hasProcFilters() {
-		return (procFilters == null || procFilters.isEmpty());
+		return (procFilters != null && ! procFilters.isEmpty());
 	}
 
 	private boolean hasProdFilters() {
-		return (prodFilters == null || prodFilters.isEmpty());
+		return (prodFilters != null && ! prodFilters.isEmpty());
 	}
 
 	/**
