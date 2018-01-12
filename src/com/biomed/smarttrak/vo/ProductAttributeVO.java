@@ -169,13 +169,7 @@ public class ProductAttributeVO {
 	/**
 	 * Special comparator used in ordering the detail attributes
 	 */
-	public static Comparator<ProductAttributeVO> detailComparator = new Comparator<ProductAttributeVO>() {
-		public int compare(ProductAttributeVO a1, ProductAttributeVO a2) {
-			String name1 = StringUtil.checkVal(a1.getAttributeName());
-			String name2 = StringUtil.checkVal(a2.getAttributeName());
-			
-			return name1.compareTo(name2);
-		}
-	};
+	public static final Comparator<ProductAttributeVO> detailComparator = (ProductAttributeVO a1, ProductAttributeVO a2)->
+		StringUtil.checkVal(a1.getAttributeName()).compareTo(StringUtil.checkVal(a2.getAttributeName()));
 
 }
