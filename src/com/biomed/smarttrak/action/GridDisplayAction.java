@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 // App Libs
 import com.biomed.smarttrak.admin.GridChartAction;
@@ -31,6 +34,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -234,11 +238,6 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param cols List of columns to display.  Blank equals all
 	 */
 	public SMTGridIntfc retrieveChartData(GridVO grid, ChartType type, boolean full, boolean stacked, ProviderType pt, List<Integer> cols) {
-		// Pie charts need to have their labels modified in order to
-		// get all pertinant information to the user.
-		if (ChartType.PIE == type) {
-			modifyLabel(grid);
-		}
 
 		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type, full, cols);
 
@@ -246,6 +245,15 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE, full);
 		options.addOptionsFromGridData(grid);
 		log.debug("options: " + options);
+		
+		setColors(grid, options);
+
+		// Pie charts need to have their labels modified in order to
+		// get all pertinant information to the user.
+		// Since this modifies labels it needs to be done after the colors have been set.
+		if (ChartType.PIE == type) {
+			modifyLabel(grid);
+		}
 
 		// Add the chart specific options
 		gridData.addCustomValues(options.getChartOptions());
@@ -260,6 +268,52 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		return gridData;
 	}
 
+
+	@SuppressWarnings("unused")
+	private void setColors(GridVO grid, SMTChartOptionIntfc options) {
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select distinct company_nm, alias_nm, short_nm_txt, graph_color from ").append(customDb).append("biomedgps_company ");
+		sql.append("where company_nm in (").append(DBUtil.preparedStatmentQuestion(grid.getDetails().size())).append(")");
+		sql.append("or alias_nm in (").append(DBUtil.preparedStatmentQuestion(grid.getDetails().size())).append(")");
+		sql.append("or short_nm_txt in (").append(DBUtil.preparedStatmentQuestion(grid.getDetails().size())).append(")");
+
+		Map<String, String> colorMap = new HashMap<>();
+		int size = grid.getDetails().size();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			int i = 1;
+			for (GridDetailVO detail : grid.getDetails()) {
+				// Each value is used in three seperate in blocks
+				ps.setString(i + size*2, detail.getLabel());
+				ps.setString(i + size, detail.getLabel());
+				ps.setString(i++, detail.getLabel());
+			}
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) {
+				if (!StringUtil.isEmpty(rs.getString("graph_color"))) {
+					colorMap.put(rs.getString("company_nm"), rs.getString("graph_color"));
+					colorMap.put(rs.getString("alias_nm"), rs.getString("graph_color"));
+					colorMap.put(rs.getString("short_nm_txt"), rs.getString("graph_color"));
+				}
+			}
+			
+			
+			String[] colors = (String[]) options.getChartOptions().get("colors");
+			
+			for (int j=0; j < size; j++) {
+				String name = grid.getDetails().get(j).getLabel();
+				if (!colorMap.containsKey(name)) continue;
+				
+				colors[j] = colorMap.get(name);
+			}
+			
+		} catch (SQLException e) {
+			log.error("Failed to set custom colors. Retaining standard colors", e);
+		}
+		
+	}
 
 	/**
 	 * Fromat the value displays
