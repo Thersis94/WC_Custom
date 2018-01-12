@@ -38,6 +38,12 @@ public class ProductAttributeVO {
 	private String statusNo;
 	private int orderNo;
 	
+	/**
+	 * Special comparator used in ordering the detail attributes
+	 */
+	public static final Comparator<ProductAttributeVO> detailComparator = (ProductAttributeVO a1, ProductAttributeVO a2)->
+		StringUtil.checkVal(a1.getAttributeName()).compareTo(StringUtil.checkVal(a2.getAttributeName()));
+	
 	public ProductAttributeVO() {
 		// Empty default constructor
 	}
@@ -166,10 +172,5 @@ public class ProductAttributeVO {
 	public Date getCreateDate() {return null;}
 	
 	
-	/**
-	 * Special comparator used in ordering the detail attributes
-	 */
-	public static final Comparator<ProductAttributeVO> detailComparator = (ProductAttributeVO a1, ProductAttributeVO a2)->
-		StringUtil.checkVal(a1.getAttributeName()).compareTo(StringUtil.checkVal(a2.getAttributeName()));
 
 }
