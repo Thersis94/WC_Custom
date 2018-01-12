@@ -83,7 +83,9 @@ public class ResultsContainer implements Serializable {
 	 * extendedRadius: The maximum allowed search radius to use in filtering
 	 * results from search.  Defaults to RADIUS_EXTENDED_SEARCH_DEFAULT 
 	 * if not set. Defaults to RADIUS_EXTENDED_SEARCH_MAXIMUM if set to value
-	 * greater than RADIUS_EXTENDED_SEARCH_MAXIMUM. 
+	 * greater than RADIUS_EXTENDED_SEARCH_MAXIMUM.
+	 * 
+	 *  Currently unused. Exists for backwards compatiblity.
 	 */
 	@SuppressWarnings("unused")
 	private double extendedRadius;
