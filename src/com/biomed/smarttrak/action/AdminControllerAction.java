@@ -110,7 +110,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
 	 */
 	public enum Section {
-		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("analysis/"), PRODUCT_EXPLOERER("explorer/"),
+		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("analysis/"), PRODUCT_EXPLORER("explorer/"),
 		UPDATES_EDITION("updates-edition/"), FINANCIAL_DASHBOARD("tools/financial/"), GAP_ANALYSIS("tools/analysis/");
 
 		private String path;
