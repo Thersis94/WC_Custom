@@ -119,6 +119,7 @@ public class GridVO extends BeanDataVO {
 	private Date createDate;
 	private int numberRows = 0;
 	private int numberColumns = 0;
+	private int abbreviateNumbers;
 	
 	// Data containers
 	@Expose(serialize = false, deserialize = false)
@@ -861,6 +862,15 @@ public class GridVO extends BeanDataVO {
 		}
 		
 		return ++numCols;
+	}
+
+	@Column(name="abbreviate_numbers")
+	public int getAbbreviateNumbers() {
+		return abbreviateNumbers;
+	}
+
+	public void setAbbreviateNumbers(int abbreviateNumbers) {
+		this.abbreviateNumbers = abbreviateNumbers;
 	}
 
 }

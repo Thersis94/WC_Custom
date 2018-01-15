@@ -270,8 +270,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 		// Add configurable attributes
 		if(stacked) gridData.addCustomValue("isStacked", true);
-
-		setValueFormats(gridData);
+		
+		if (Convert.formatBoolean(grid.getAbbreviateNumbers())) setValueFormats(gridData);
 		
 		return gridData;
 	}
@@ -395,9 +395,14 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		// the same as the value and appending it to the 
 		// label will result in needless duplication of data.
 		if (total.compareTo(new BigDecimal(100)) == 0) return;
-
+		
+		boolean format =  Convert.formatBoolean(grid.getAbbreviateNumbers());
 		for (GridDetailVO detail : grid.getDetails()) {
-			detail.setLabel(detail.getLabel() + " - " + formatCellValue(StringUtil.removeNonNumeric(detail.getValue1())));
+			if (format) {
+				detail.setLabel(detail.getLabel() + " - " + formatCellValue(StringUtil.removeNonNumeric(detail.getValue1())));
+			} else {
+				detail.setLabel(detail.getLabel() + " - " + detail.getValue1());
+			}
 		}
 
 	}
