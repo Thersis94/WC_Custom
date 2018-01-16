@@ -88,7 +88,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 		groups.put(BROWSE_SECTION, new HashSet<String>());
 		groups.put(Section.FINANCIAL_DASHBOARD, new HashSet<String>());
 		groups.put(Section.GAP_ANALYSIS, new HashSet<String>());
-		groups.put(Section.PRODUCT_EXPLOERER, new HashSet<String>());
+		groups.put(Section.PRODUCT_EXPLORER, new HashSet<String>());
 		groups.put(Section.INSIGHT, new HashSet<String>());
 		groups.put(Section.UPDATES_EDITION, new HashSet<String>());
 
@@ -104,7 +104,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 				addAclIf(vo.isBrowseAuth(), acl, groups.get(BROWSE_SECTION));
 				addAclIf(vo.isFdAuth(), acl, groups.get(Section.FINANCIAL_DASHBOARD));
 				addAclIf(vo.isGaAuth(), acl, groups.get(Section.GAP_ANALYSIS));
-				addAclIf(vo.isPeAuth(), acl, groups.get(Section.PRODUCT_EXPLOERER));
+				addAclIf(vo.isPeAuth(), acl, groups.get(Section.PRODUCT_EXPLORER));
 				addAclIf(vo.isAnAuth(), acl, groups.get(Section.INSIGHT));
 				addAclIf(vo.isUpdatesAuth(), acl, groups.get(Section.UPDATES_EDITION));
 			}
@@ -113,7 +113,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 		groups.get(BROWSE_SECTION).add(PUBLIC_ACL);
 		groups.get(Section.FINANCIAL_DASHBOARD).add(PUBLIC_ACL);
 		groups.get(Section.GAP_ANALYSIS).add(PUBLIC_ACL);
-		groups.get(Section.PRODUCT_EXPLOERER).add(PUBLIC_ACL);
+		groups.get(Section.PRODUCT_EXPLORER).add(PUBLIC_ACL);
 		groups.get(Section.INSIGHT).add(PUBLIC_ACL);
 		groups.get(Section.UPDATES_EDITION).add(PUBLIC_ACL);
 
