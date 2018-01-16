@@ -92,7 +92,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		if (!req.hasParameter(ProjectFacadeAction.WIDGET_ACTION)) return;
 		
-		if(DEVICE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) && req.hasParameter("deviceAttributeXRId")){
+		if(DEVICE.equalsIgnoreCase(req.getParameter(ProjectFacadeAction.WIDGET_ACTION)) && req.hasParameter("deviceAttributeXrId")){
 			updateDeviceAtrributes(new ProjectDeviceAttributeVO(req));
 		}
 		
@@ -108,7 +108,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		try {
 			// Update the record in the database
 			updateValueByAttrXRID(pdvo);
-			
+			log.debug(pdvo);
 			// Send a request to the device so the change takes place in the real world device
 			sendAtttributesController(pdvo);
 			
