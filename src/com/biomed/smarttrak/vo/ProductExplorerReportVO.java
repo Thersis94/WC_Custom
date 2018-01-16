@@ -172,7 +172,7 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 
 			if (!excludeColumns.contains("3")) {
 				cell = row.createCell(j++);
-				cell.setCellValue(buildContentList(doc.getFieldValues("sectionname_ss")));
+				cell.setCellValue(buildContentList(doc.getFieldValues("section")));
 				if (i%2 == 1)cell.setCellStyle(alternate);
 			}
 
