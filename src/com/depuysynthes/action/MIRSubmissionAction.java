@@ -10,6 +10,7 @@ import org.apache.solr.common.SolrDocument;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.exception.CaptchaException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.action.ActionRequest;
@@ -28,6 +29,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.MessageSender;
+import com.smt.sitebuilder.util.google.ReCaptchaUtil;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
@@ -114,23 +116,43 @@ public class MIRSubmissionAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		//turn the request into a VO using annotations/reflection
-		MIRSubmissionVO vo = new MIRSubmissionVO(req);
-		log.debug("submission: " + vo + "|files: " + req.getFiles().size());
+		boolean captchaPassed = testCaptcha(req);
 
-		//turn the vo into an email
-		EmailMessageVO msg = new MIREmailMessageVO(vo, req, getAttributes());
+		if (captchaPassed) {
+			//turn the request into a VO using annotations/reflection
+			MIRSubmissionVO vo = new MIRSubmissionVO(req);
+			log.debug("submission: " + vo + "|files: " + req.getFiles().size());
 
-		//send the email
-		new MessageSender(getAttributes(), getDBConnection()).sendMessage(msg);
-		
+			//turn the vo into an email
+			EmailMessageVO msg = new MIREmailMessageVO(vo, req, getAttributes());
+
+			//send the email
+			new MessageSender(getAttributes(), getDBConnection()).sendMessage(msg);
+		}
+
 		//redirect the user
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		StringBuilder url = new StringBuilder(150);
-		url.append(page.getRequestURI()).append("?complete=1");
-		sendRedirect(url.toString(), null, req);
+		sendRedirect(captchaPassed, req);
 	}
 
+
+	/**
+	 * varies the redirect depending on whether the user passed validation
+	 * @param captchaPassed
+	 * @param req
+	 */
+	private void sendRedirect(boolean captchaPassed, ActionRequest req) {
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		StringBuilder url = new StringBuilder(150);
+		url.append(page.getRequestURI());
+		if (captchaPassed) {
+			url.append("?complete=1");
+		} else {
+			url.append("?captchaFailed=1&subregion=").append(req.getParameter("subregion"));
+			url.append("&region=").append(req.getParameter("region"));
+			url.append("&country=").append(req.getParameter("countryCode"));
+		}
+		sendRedirect(url.toString(), null, req);
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -226,5 +248,18 @@ public class MIRSubmissionAction extends SimpleActionAdapter {
 		} catch (Exception e) {
 			log.error("could not push MIR products to solr", e);
 		}
+	}
+
+
+	/**
+	 * tests if the passed captcha response is valid.
+	 * @param req
+	 * @param publicUser
+	 * @throws CaptchaException
+	 */
+	protected boolean testCaptcha(ActionRequest req) {
+		String resp = req.getParameter(Constants.RECAPTCHA_USER_RESPONSE);
+		log.debug("testing captcha using response token value of: " + resp);
+		return ReCaptchaUtil.validateReCaptcha(getAttributes(), resp);
 	}
 }
