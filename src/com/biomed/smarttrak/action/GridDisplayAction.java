@@ -356,7 +356,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	private String formatCellValue(String value) {
 		if (value.length() <= 3) return value;
 		// Decimal and 0 added by the system
-		if (value.contains("."))
+		if (value.indexOf('.') > -1)
 			value = value.substring(0, value.indexOf("."));
 		String suffix = "";
 		int pos = value.length()%3;
