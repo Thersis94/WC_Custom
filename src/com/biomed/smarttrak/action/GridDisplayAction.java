@@ -96,8 +96,6 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		boolean stacked = Convert.formatBoolean(req.getParameter("isStacked"), false);
 		ProviderType pt = ProviderType.valueOf(StringUtil.checkVal(req.getParameter("pt"), "GOOGLE").toUpperCase());
 
-		boolean display = Convert.formatBoolean(req.getParameter("display"));
-
 		// Get the list of columns and convert to integer list
 		List<Integer> columns = new ArrayList<>();
 		if (! StringUtil.isEmpty(req.getParameter("columns"))) {
@@ -356,7 +354,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		int pos = value.length()%3;
 		if (pos == 0) pos = 3;
 		
-		switch ((int)Math.ceil((value.length()/3))) {
+		switch ((int)Math.ceil(value.length()/3)) {
 			case 2:
 				suffix = " K";
 				break;
@@ -369,6 +367,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			case 5:
 				suffix = " T";
 				break;
+			default:
+				suffix = "";
 		}
 		
 		StringBuilder formatted = new StringBuilder(pos + 4);
