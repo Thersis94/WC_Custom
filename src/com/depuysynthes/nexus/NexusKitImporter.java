@@ -192,30 +192,21 @@ public class NexusKitImporter extends CommandLineUtil {
 	public void run() {
 		log.info("Starting Application at: " + new Date());
 		Map<String, String> messages = new HashMap<>();
-		int cnt = 0;
 		try {
 			if (Convert.formatBoolean(props.get(LOAD_JDE))) {
 				// Process the JDE Header file
-				cnt = processJDEHeaderFile();
-				messages.put("Number of JDE Kits", cnt + "");
+				processJDEHeaderFile(messages);
 				
 				// Process the JDE Detail File
-				cnt = processJDEDetailFile();
-				messages.put("Number of JDE Kit Items", cnt + "");
+				processJDEDetailFile(messages);
 			}
 			
 			if (Convert.formatBoolean(props.get(LOAD_MDM))) {
 				// Process the MDM File
-				int[] mdmCnt = this.processMDMFile();
+				int[] mdmCnt = this.processMDMFile(messages);
 
 				// Get the GTIN and Description from Solr
-				cnt = processMDMInformation(mdmCnt);
-				
-				// Add the final message values for the email.
-				messages.put("Number of MDM Kits", mdmCnt[0] + "");
-				messages.put("Number of MDM Kit Items", mdmCnt[1] + "");
-				messages.put("Number of Items in MDM File", (mdmCnt[2] + mdmCnt[1]) + "");
-				messages.put("MDM Kit Data Updated From Solr", "OK");
+				processMDMInformation(mdmCnt, messages);
 			}
 			
 			// Once this point has been reached all documents are ready to be committed.
@@ -241,7 +232,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public int processMDMInformation(int[] mdmCnt) throws SQLException {
+	public void processMDMInformation(int[] mdmCnt, Map<String, String> messages) throws SQLException {
 		// Initialize the connection to solr
 		SolrQueryProcessor sqp = new SolrQueryProcessor((Map)props, "DePuy_NeXus");
 		
@@ -249,6 +240,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		// the ids into solr filters
 		List<String> ids = this.formatIdsIntoSolrQuery(this.getMDMIds());
 		
+		List<String> failures = new ArrayList<>();
 		// Loop the filters and get the data
 		for(String where : ids) {
 			SolrActionVO qData = new SolrActionVO();
@@ -269,8 +261,11 @@ public class NexusKitImporter extends CommandLineUtil {
 				String desc = StringUtil.checkVal(doc.get(SearchDocumentHandler.SUMMARY));
 				String sku = StringUtil.checkVal(doc.get(SearchDocumentHandler.DOCUMENT_ID));
 				String gtin = StringUtil.checkVal(doc.get(NexusProductVO.DEVICE_ID));
+				if (!this.updateKitRecord(sku, gtin, desc)) {
+					failures.add(sku);
+					continue;
+				}
 				this.updateSolr(sku, gtin, desc);
-				this.updateKitRecord(sku, gtin, desc);
 			}
 		}
 		
@@ -279,12 +274,14 @@ public class NexusKitImporter extends CommandLineUtil {
 		// Delete any remaining blank kits
 		deleteBlankKits();
 		
-		mdmCnt[1] = mdmCnt[1]-fails;
-		mdmCnt[2] = mdmCnt[2]+fails;
-		log.debug("Final MDM Successes: " + mdmCnt[1]);
-		log.debug("Final MDM Failures: " + mdmCnt[2]);
+		mdmCnt[0] = mdmCnt[0]-fails;
+		mdmCnt[1] = mdmCnt[1]+fails;
 		
-		return 0;
+		// Update the counts for the counts.
+		messages.put("Number of MDM Kit Items", StringUtil.checkVal(mdmCnt[0]));
+		messages.put("Number of Items in MDM File", StringUtil.checkVal(mdmCnt[1] + mdmCnt[0]) );
+		if (failures.size() > 0) messages.put("MDM Kits Failed to Update", createFailureList(failures));
+		
 	}
 	
 	
@@ -378,11 +375,12 @@ public class NexusKitImporter extends CommandLineUtil {
 	
 	/**
 	 * Processes the MDM File and stores the kit, layer and item information
+	 * @param messages 
 	 * @return Array of counts.  0 location = # of Kits.  1 Location = #Kit items
 	 * @throws IOException
 	 * @throws SQLException
 	 */
-	public int[] processMDMFile() throws IOException, SQLException {
+	public int[] processMDMFile(Map<String, String> messages) throws IOException, SQLException {
 		String path = props.getProperty(KIT_FILE_PATH);
 		String name = props.getProperty(MDM_FILE_NAME);
 		BufferedReader in = getFile(path, name);
@@ -397,10 +395,15 @@ public class NexusKitImporter extends CommandLineUtil {
 		Set<String> kitIds = new HashSet<>();
 		String temp;
 		int iCtr = 0, kCtr = 0;
+		List<String> kitFailures = new ArrayList<>();
+		List<String> productFailures = new ArrayList<>();
 		while((temp = in.readLine()) != null) {
 			// Make sure the feature code is empty and the opco is on the list
 			String[] items = temp.split("\\|");
-			if (! MDM_ORG_MAP.containsKey(items[0])) {
+			if (kitFailures.contains(items[1])) {
+				fail++;
+				continue;
+			} else if (! MDM_ORG_MAP.containsKey(items[0])) {
 				fail++;
 				continue;
 			} else if (StringUtil.checkVal(items[3]).length() > 0) {
@@ -416,16 +419,23 @@ public class NexusKitImporter extends CommandLineUtil {
 				kit.setOrgId(MDM_ORG_MAP.get(items[0]));
 				kit.setKitSKU(items[1]);
 				
+				boolean addSuccess = false;
 				// Store the header and layer info to the DB
 				if (existingSets.keySet().contains(kit.getKitId())) {
-					this.updateKitHeader(kit);
+					addSuccess = this.updateKitHeader(kit);
 				} else {
-					this.storeKitHeader(kit, true);
+					addSuccess = this.storeKitHeader(kit, true);
 				}
 				
 				// Add the kit to the set so this kit doesn't get built again
 				kitIds.add(items[1]);
-				kCtr++; 
+				
+				if (addSuccess) {
+					kCtr++; 
+				} else {
+					fail++;
+					kitFailures.add(kit.getKitSKU());
+				}
 			}
 			
 			// There will always be a kit item added.  If the date is way out into 
@@ -437,25 +447,29 @@ public class NexusKitImporter extends CommandLineUtil {
 					success++;
 				} else {
 					nonOrg++;
+					productFailures.add(items[2]);
 				}
 			} else {
 				if (this.storeKitItem(items[1], items[2], items[9], items[5], end, iCtr, items[7], true, false)) {
 					success++;
 				} else {
 					nonOrg++;
+					productFailures.add(items[2]);
 				}
 			}
 			iCtr++;
 		}
 		
 		// Update the kit count and kit item count
-		mdmCnt[0] = kCtr;
-		mdmCnt[1] = success;
-		mdmCnt[2] = fail + nonBlank + nonOrg;
-		log.debug("Successes: " +success);
-		log.debug("Non-Capitated Data Issue Fails: " +fail);
-		log.debug("Capitaded or Promotional Fails: " + nonBlank);
-		log.debug("Invalid Products: " + nonOrg);
+		mdmCnt[0] = success;
+		mdmCnt[1] = fail + nonBlank + nonOrg;
+
+		messages.put("Number of MDM Kits", StringUtil.checkVal(kCtr));
+		// Add current counts to ensure proper order in the email
+		messages.put("Number of MDM Kit Items", StringUtil.checkVal(mdmCnt[0]));
+		messages.put("Number of Items in MDM File", StringUtil.checkVal(mdmCnt[1] + mdmCnt[0]));
+		if (kitFailures.size() > 0) messages.put("Failed MDM Kits", createFailureList(kitFailures));
+		if (productFailures.size() > 0) messages.put("Failed MDM Kit Items", createFailureList(productFailures));
 		
 		// Close the stream and return
 		in.close();
@@ -468,7 +482,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * @param kit
 	 * @throws SQLException
 	 */
-	private void updateKitHeader(NexusKitVO kit) throws SQLException {
+	private boolean updateKitHeader(NexusKitVO kit) throws SQLException {
 		StringBuilder sql = new StringBuilder(200);
 		
 		sql.append("update ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_nexus_set_info ");
@@ -482,11 +496,14 @@ public class NexusKitImporter extends CommandLineUtil {
 			ps.setString(4, kit.getKitId());
 			
 			ps.executeUpdate();
+			
+			// Remove all products associated with the kit.
+			// The kit's current products are all in the file.
+			deleteKitProducts(kit.getKitId());
+		} catch (Exception e) {
+			return false;
 		}
-		
-		// Remove all products associated with the kit.
-		// The kit's current products are all in the file.
-		deleteKitProducts(kit.getKitId());
+		return true;
 	}
 
 	
@@ -549,10 +566,11 @@ public class NexusKitImporter extends CommandLineUtil {
 
 	/**
 	 * Processes the JDE Kit Header Data
+	 * @param messages 
 	 * @return
 	 * @throws Exception
 	 */
-	public int processJDEHeaderFile() throws Exception {
+	public void processJDEHeaderFile(Map<String, String> messages) throws Exception {
 		flushJDEKits();
 		String path = props.getProperty(KIT_FILE_PATH);
 		String name = props.getProperty(JDE_HEADER_FILE_NAME);
@@ -560,6 +578,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		
 		String temp;
 		int ctr = -1;
+		List<String> failures = new ArrayList<>();
 		while((temp = in.readLine()) != null) {
 			// Skip the first row as it contains the header data
 			ctr ++;
@@ -586,13 +605,28 @@ public class NexusKitImporter extends CommandLineUtil {
 			kit.setOrgName(kit.getOrgId());
 			
 			// Load the DB and solr
-			storeKitHeader(kit, false);
-			addToSolr(kit);
+			if (!storeKitHeader(kit, false)) {
+				failures.add(kit.getKitSKU());
+			} else {
+				addToSolr(kit);
+			}
 		}
+		
+		messages.put("Number of JDE Kits", StringUtil.checkVal(ctr));
+		if (failures.size() > 0) messages.put("Failed JDE Kits", createFailureList(failures));
 		
 		in.close();
 		
-		return ctr;
+	}
+	
+	
+	/**
+	 * Concatenate the list of failed items into a list
+	 */
+	private String createFailureList(List<String> failures) {
+		StringBuilder message = new StringBuilder(failures.size()*12);
+		for (String fail : failures) message.append(fail).append("<br/>");
+		return message.toString();
 	}
 	
 	/**
@@ -628,11 +662,12 @@ public class NexusKitImporter extends CommandLineUtil {
 
 	/**
 	 * Processes the details file and stores the entries in the database
+	 * @param messages 
 	 * @return
 	 * @throws IOException
 	 * @throws SQLException
 	 */
-	public int processJDEDetailFile() throws IOException, SQLException {
+	public void processJDEDetailFile(Map<String, String> messages) throws IOException, SQLException {
 		// Open a stream to the file
 		String path = props.getProperty(KIT_FILE_PATH);
 		String name = props.getProperty(JDE_DETAIL_FILE_NAME);
@@ -642,6 +677,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		// Read in one line at a time and process it
 		String temp;
 		int ctr = -1;
+		List<String> failures = new ArrayList<>();
 		while((temp = in.readLine()) != null) {
 			// Skip the first row as it contains the header data
 			ctr ++;
@@ -654,6 +690,7 @@ public class NexusKitImporter extends CommandLineUtil {
 					ctr--;
 				} else if (!this.storeKitItem(items[0], items[1], items[4], items[5],items[6], ctr, "", false, false)) {
 					ctr--;
+					failures.add(items[1]);
 				}
 			} catch (ParseException e) {
 				ctr--;
@@ -662,7 +699,8 @@ public class NexusKitImporter extends CommandLineUtil {
 		}
 		
 		in.close();
-		return ctr;
+		messages.put("Number of JDE Kit Items", StringUtil.checkVal(ctr));
+		if (failures.size() > 0) messages.put("Failed JDE Kit Items", createFailureList(failures));
 	}
 	
 	/**
@@ -719,7 +757,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * @param kit
 	 * @throws SQLException
 	 */
-	public void storeKitHeader(NexusKitVO kit, boolean isMDM) throws SQLException {
+	public boolean storeKitHeader(NexusKitVO kit, boolean isMDM) {
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(255);
 		sql.append("insert into ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
@@ -749,10 +787,13 @@ public class NexusKitImporter extends CommandLineUtil {
 			
 			// Store the data
 			ps.executeUpdate();
+			
+			// Add the layer
+			storeKitLayer(kit.getKitId());
+		} catch (Exception e) {
+			return false;
 		}
-		
-		// Add the layer
-		storeKitLayer(kit.getKitId());
+		return true;
 	}
 	
 	/**
@@ -791,12 +832,11 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * @return
 	 * @throws SQLException
 	 */
-	public int updateKitRecord(String sku, String gtin, String desc) throws SQLException {
+	public boolean updateKitRecord(String sku, String gtin, String desc) {
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("update ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("dpy_syn_nexus_set_info set gtin_txt = ?, description_txt = ? ");
 		sql.append("where set_info_id = ? ");
-		int cnt;
 		// Set the sql data elements
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, gtin);
@@ -804,10 +844,12 @@ public class NexusKitImporter extends CommandLineUtil {
 			ps.setString(3, sku);
 			
 			// Store the data
-			cnt = ps.executeUpdate();
+			ps.executeUpdate();
 			ps.close();
+		} catch (SQLException e) {
+			return false;
 		}
-		return cnt;
+		return true;
 	}
 	
 	/**
