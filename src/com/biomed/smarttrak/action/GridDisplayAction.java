@@ -299,10 +299,11 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
-				if (!StringUtil.isEmpty(rs.getString("graph_color"))) {
-					colorMap.put(rs.getString("company_nm"), rs.getString("graph_color"));
-					colorMap.put(rs.getString("alias_nm"), rs.getString("graph_color"));
-					colorMap.put(rs.getString("short_nm_txt"), rs.getString("graph_color"));
+				String color = rs.getString("graph_color");
+				if (!StringUtil.isEmpty(color)) {
+					colorMap.put(rs.getString("company_nm"), color);
+					colorMap.put(rs.getString("alias_nm"), color);
+					colorMap.put(rs.getString("short_nm_txt"), color);
 				}
 			}
 			
