@@ -357,7 +357,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		if (value.length() <= 3) return value;
 		// Decimal and 0 added by the system
 		if (value.indexOf('.') > -1)
-			value = value.substring(0, value.indexOf("."));
+			value = value.substring(0, value.indexOf('.'));
 		String suffix = "";
 		int pos = value.length()%3;
 		if (pos == 0) pos = 3;
