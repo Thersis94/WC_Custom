@@ -429,16 +429,8 @@ public class NexusKitImporter extends CommandLineUtil {
 					kitFailures.add(kit.getKitSKU());
 				}
 			}
-			
-			// There will always be a kit item added.  If the date is way out into 
-			// the future, set it into the future 
-			String end = StringUtil.checkVal(items[6]);
-			if (! end.startsWith("20")) end = "20501231";
-			boolean update = false;
-			if (existingSets.containsKey(items[1]))
-				update = existingSets.get(items[1]).contains(items[2]);
 				
-			if (this.storeKitItem(items[1], items[2], items[9], items[5], end, iCtr, items[7], true, update)) {
+			if (saveMDMItem(items, iCtr, existingSets)) {
 				success++;
 			} else {
 				nonOrg++;
@@ -465,7 +457,26 @@ public class NexusKitImporter extends CommandLineUtil {
 	}
 	
 	
-	
+	/**
+	 * Save the MDM product indicated by the supplied data.
+	 * @param items
+	 * @param iCtr
+	 * @param existingSets
+	 * @return
+	 * @throws SQLException
+	 */
+	private boolean saveMDMItem(String[] items, int iCtr, Map<String, List<String>> existingSets) throws SQLException {
+		// There will always be a kit item added.  If the date is way out into 
+		// the future, set it into the future 
+		String end = StringUtil.checkVal(items[6]);
+		if (! end.startsWith("20")) end = "20501231";
+		boolean update = false;
+		if (existingSets.containsKey(items[1]))
+			update = existingSets.get(items[1]).contains(items[2]);
+		
+		return this.storeKitItem(items[1], items[2], items[9], items[5], end, iCtr, items[7], true, update);
+	}
+
 	private boolean saveMDMKit(NexusKitVO kit, boolean isUpdate) throws SQLException {
 		if (isUpdate) {
 			return updateKitHeader(kit);
