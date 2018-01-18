@@ -276,7 +276,11 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	}
 
 
-	@SuppressWarnings("unused")
+	/**
+	 * Set the colors based on companies.
+	 * @param grid
+	 * @param options
+	 */
 	private void setColors(GridVO grid, SMTChartOptionIntfc options) {
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(200);
@@ -351,11 +355,13 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 */
 	private String formatCellValue(String value) {
 		if (value.length() <= 3) return value;
+		// Decimal and 0 added by the system
+		if (value.contains("."))
+			value = value.substring(0, value.indexOf("."));
 		String suffix = "";
 		int pos = value.length()%3;
 		if (pos == 0) pos = 3;
-		
-		switch ((int)Math.ceil(value.length()/3)) {
+		switch ((int)Math.ceil((double)value.length()/3)) {
 			case 2:
 				suffix = " K";
 				break;
@@ -375,7 +381,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		StringBuilder formatted = new StringBuilder(pos + 4);
 		
 		formatted.append("$").append(value.substring(0, pos)).append(".");
-		formatted.append(value.charAt(pos+1)).append(suffix);
+		formatted.append(value.charAt(pos)).append(suffix);
 		
 		return formatted.toString();
 	}
