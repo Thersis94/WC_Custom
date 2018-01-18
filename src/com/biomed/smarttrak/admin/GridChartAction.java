@@ -342,9 +342,11 @@ public class GridChartAction extends SBActionAdapter {
 	 */
 	public void retrieveData(String gridId, String schema, boolean display) {
 		StringBuilder sql = new StringBuilder(164);
-		sql.append("select * from ").append(schema).append("biomedgps_grid a ");
-		sql.append("inner join ").append(schema).append("biomedgps_grid_detail b ");
-		sql.append("on a.grid_id = b.grid_id where (a.grid_id = ? or a.slug_txt = ?) ");
+		sql.append("select a.*, b.*, g2.grid_id as LEGACY_ID, g2.title_nm as LEGACY_NM from ").append(schema).append("biomedgps_grid a ");
+		sql.append("inner join ").append(schema).append("biomedgps_grid_detail b on a.grid_id = b.grid_id ");
+		sql.append("left join ").append(schema).append("biomedgps_grid_table_map gtm on a.slug_txt = gtm.grid_graphic_id ");
+		sql.append("left join ").append(schema).append("biomedgps_grid g2 on gtm.slug_txt = g2.slug_txt ");
+		sql.append("where (a.grid_id = ? or a.slug_txt = ?) ");
 		if (display) sql.append(" and (grid_detail_type_cd = 'DATA' or grid_detail_type_cd is null) ");
 		sql.append("order by b.order_no");
 		log.debug(sql + "|" + gridId + "|" + display);
