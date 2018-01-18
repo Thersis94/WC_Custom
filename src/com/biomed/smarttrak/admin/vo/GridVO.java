@@ -120,6 +120,8 @@ public class GridVO extends BeanDataVO {
 	private int numberRows = 0;
 	private int numberColumns = 0;
 	private int abbreviateNumbers;
+	private String legacyId;
+	private String legacyName;
 	
 	// Data containers
 	@Expose(serialize = false, deserialize = false)
@@ -871,6 +873,24 @@ public class GridVO extends BeanDataVO {
 
 	public void setAbbreviateNumbers(int abbreviateNumbers) {
 		this.abbreviateNumbers = abbreviateNumbers;
+	}
+
+	@Column(name="legacy_id", isReadOnly=true)
+	public String getLegacyId() {
+		return legacyId;
+	}
+
+	public void setLegacyId(String legacyId) {
+		this.legacyId = legacyId;
+	}
+
+	@Column(name="legacy_nm", isReadOnly=true)
+	public String getLegacyName() {
+		return legacyName;
+	}
+
+	public void setLegacyName(String legacyName) {
+		this.legacyName = legacyName;
 	}
 
 }
