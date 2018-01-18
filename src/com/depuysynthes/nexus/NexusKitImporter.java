@@ -280,7 +280,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		// Update the counts for the counts.
 		messages.put("Number of MDM Kit Items", StringUtil.checkVal(mdmCnt[0]));
 		messages.put("Number of Items in MDM File", StringUtil.checkVal(mdmCnt[1] + mdmCnt[0]) );
-		if (failures.isEmpty()) messages.put("MDM Kits Failed to Update", createFailureList(failures));
+		if (!failures.isEmpty()) messages.put("MDM Kits Failed to Update", createFailureList(failures));
 		
 	}
 	
@@ -448,8 +448,8 @@ public class NexusKitImporter extends CommandLineUtil {
 		// Add current counts to ensure proper order in the email
 		messages.put("Number of MDM Kit Items", StringUtil.checkVal(mdmCnt[0]));
 		messages.put("Number of Items in MDM File", StringUtil.checkVal(mdmCnt[1] + mdmCnt[0]));
-		if (kitFailures.isEmpty()) messages.put("Failed MDM Kits", createFailureList(kitFailures));
-		if (productFailures.isEmpty()) messages.put("Failed MDM Kit Items", createFailureList(productFailures));
+		if (!kitFailures.isEmpty()) messages.put("Failed MDM Kits", createFailureList(kitFailures));
+		if (!productFailures.isEmpty()) messages.put("Failed MDM Kit Items", createFailureList(productFailures));
 		
 		// Close the stream and return
 		in.close();
@@ -622,7 +622,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		}
 		
 		messages.put("Number of JDE Kits", StringUtil.checkVal(ctr));
-		if (failures.isEmpty()) messages.put("Failed JDE Kits", createFailureList(failures));
+		if (!failures.isEmpty()) messages.put("Failed JDE Kits", createFailureList(failures));
 		
 		in.close();
 		
@@ -709,7 +709,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		
 		in.close();
 		messages.put("Number of JDE Kit Items", StringUtil.checkVal(ctr));
-		if (failures.isEmpty()) messages.put("Failed JDE Kit Items", createFailureList(failures));
+		if (!failures.isEmpty()) messages.put("Failed JDE Kit Items", createFailureList(failures));
 	}
 	
 	/**
