@@ -280,7 +280,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		// Update the counts for the counts.
 		messages.put("Number of MDM Kit Items", StringUtil.checkVal(mdmCnt[0]));
 		messages.put("Number of Items in MDM File", StringUtil.checkVal(mdmCnt[1] + mdmCnt[0]) );
-		if (failures.size() > 0) messages.put("MDM Kits Failed to Update", createFailureList(failures));
+		if (failures.isEmpty()) messages.put("MDM Kits Failed to Update", createFailureList(failures));
 		
 	}
 	
@@ -400,10 +400,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		while((temp = in.readLine()) != null) {
 			// Make sure the feature code is empty and the opco is on the list
 			String[] items = temp.split("\\|");
-			if (kitFailures.contains(items[1])) {
-				fail++;
-				continue;
-			} else if (! MDM_ORG_MAP.containsKey(items[0])) {
+			if (kitFailures.contains(items[1]) || ! MDM_ORG_MAP.containsKey(items[0])) {
 				fail++;
 				continue;
 			} else if (StringUtil.checkVal(items[3]).length() > 0) {
@@ -468,8 +465,8 @@ public class NexusKitImporter extends CommandLineUtil {
 		// Add current counts to ensure proper order in the email
 		messages.put("Number of MDM Kit Items", StringUtil.checkVal(mdmCnt[0]));
 		messages.put("Number of Items in MDM File", StringUtil.checkVal(mdmCnt[1] + mdmCnt[0]));
-		if (kitFailures.size() > 0) messages.put("Failed MDM Kits", createFailureList(kitFailures));
-		if (productFailures.size() > 0) messages.put("Failed MDM Kit Items", createFailureList(productFailures));
+		if (kitFailures.isEmpty()) messages.put("Failed MDM Kits", createFailureList(kitFailures));
+		if (productFailures.isEmpty()) messages.put("Failed MDM Kit Items", createFailureList(productFailures));
 		
 		// Close the stream and return
 		in.close();
@@ -613,7 +610,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		}
 		
 		messages.put("Number of JDE Kits", StringUtil.checkVal(ctr));
-		if (failures.size() > 0) messages.put("Failed JDE Kits", createFailureList(failures));
+		if (failures.isEmpty()) messages.put("Failed JDE Kits", createFailureList(failures));
 		
 		in.close();
 		
@@ -700,7 +697,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		
 		in.close();
 		messages.put("Number of JDE Kit Items", StringUtil.checkVal(ctr));
-		if (failures.size() > 0) messages.put("Failed JDE Kit Items", createFailureList(failures));
+		if (failures.isEmpty()) messages.put("Failed JDE Kit Items", createFailureList(failures));
 	}
 	
 	/**
