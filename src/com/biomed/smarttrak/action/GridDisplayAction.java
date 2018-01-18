@@ -109,8 +109,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		if (grids != null && grids.length > 0) {
 			this.putModuleData(loadAllGrids(grids, full, stacked, pt));
 		} else {
-			if (display && ChartType.TABLE.equals(type)) display = false;
-			GridVO grid = getGridData(gridId, display);
+			GridVO grid = getGridData(gridId, false);
+			// If this grid has legacy data load that instead.
+			if (!StringUtil.isEmpty(grid.getLegacyId())) grid = getGridData(grid.getLegacyId(), false);
 			if (req.hasParameter("excel")) buildExcelFile(req, grid);
 
 			else if (! StringUtil.isEmpty(gridId)) { 
