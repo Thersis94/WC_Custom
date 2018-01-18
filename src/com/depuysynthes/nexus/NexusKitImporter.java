@@ -416,13 +416,8 @@ public class NexusKitImporter extends CommandLineUtil {
 				kit.setOrgId(MDM_ORG_MAP.get(items[0]));
 				kit.setKitSKU(items[1]);
 				
-				boolean addSuccess = false;
 				// Store the header and layer info to the DB
-				if (existingSets.keySet().contains(kit.getKitId())) {
-					addSuccess = this.updateKitHeader(kit);
-				} else {
-					addSuccess = this.storeKitHeader(kit, true);
-				}
+				boolean addSuccess = saveMDMKit(kit, existingSets.keySet().contains(kit.getKitId()));
 				
 				// Add the kit to the set so this kit doesn't get built again
 				kitIds.add(items[1]);
@@ -439,21 +434,17 @@ public class NexusKitImporter extends CommandLineUtil {
 			// the future, set it into the future 
 			String end = StringUtil.checkVal(items[6]);
 			if (! end.startsWith("20")) end = "20501231";
-			if (existingSets.get(items[1]) != null) {
-				if (this.storeKitItem(items[1], items[2], items[9], items[5], end, iCtr, items[7], true, existingSets.get(items[1]).contains(items[2]))) {
-					success++;
-				} else {
-					nonOrg++;
-					productFailures.add(items[2]);
-				}
+			boolean update = false;
+			if (existingSets.containsKey(items[1]))
+				update = existingSets.get(items[1]).contains(items[2]);
+				
+			if (this.storeKitItem(items[1], items[2], items[9], items[5], end, iCtr, items[7], true, update)) {
+				success++;
 			} else {
-				if (this.storeKitItem(items[1], items[2], items[9], items[5], end, iCtr, items[7], true, false)) {
-					success++;
-				} else {
-					nonOrg++;
-					productFailures.add(items[2]);
-				}
+				nonOrg++;
+				productFailures.add(items[2]);
 			}
+			
 			iCtr++;
 		}
 		
@@ -471,6 +462,16 @@ public class NexusKitImporter extends CommandLineUtil {
 		// Close the stream and return
 		in.close();
 		return mdmCnt;
+	}
+	
+	
+	
+	private boolean saveMDMKit(NexusKitVO kit, boolean isUpdate) throws SQLException {
+		if (isUpdate) {
+			return updateKitHeader(kit);
+		} else {
+			return storeKitHeader(kit, true);
+		}
 	}
 	
 	
