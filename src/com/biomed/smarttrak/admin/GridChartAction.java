@@ -174,29 +174,41 @@ public class GridChartAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("###########################################################");
 		if (Convert.formatBoolean(req.getParameter("deleteLegacy"))) {
-			deactivateLegacy(req.getParameter("slugTxt"));
+			deactivateLegacy(req.getParameter("slugText"));
 		} else {
 			saveGrid(req);
 		}
 	}
 	
+	
+	/**
+	 * Deactivate the legacy relation between charts.
+	 * @param slug
+	 * @throws ActionException
+	 */
 	private void deactivateLegacy(String slug) throws ActionException {
 		if (StringUtil.isEmpty(slug)) return;
 		
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_grid_table_map where grid_graphic_id = ? ");
-		
+		log.debug(sql+"|"+slug);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, slug);
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
+		putModuleData("Success");
 	}
 
+	
+	/**
+	 * Save the grid on the request object.
+	 * @param req
+	 * @throws ActionException
+	 */
 	private void saveGrid(ActionRequest req) throws ActionException {
 		GridVO grid = new GridVO(req);
 		grid.setCreateDate(new Date());
