@@ -174,6 +174,30 @@ public class GridChartAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.debug("###########################################################");
+		if (Convert.formatBoolean(req.getParameter("deleteLegacy"))) {
+			deactivateLegacy(req.getParameter("slugTxt"));
+		} else {
+			saveGrid(req);
+		}
+	}
+	
+	private void deactivateLegacy(String slug) throws ActionException {
+		if (StringUtil.isEmpty(slug)) return;
+		
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_grid_table_map where grid_graphic_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, slug);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+	private void saveGrid(ActionRequest req) throws ActionException {
 		GridVO grid = new GridVO(req);
 		grid.setCreateDate(new Date());
 		grid.setUpdateDate(new Date());
@@ -229,8 +253,9 @@ public class GridChartAction extends SBActionAdapter {
 		response.put(GlobalConfig.ACTION_DATA_KEY, columnMatch);
 		response.put(GlobalConfig.ACTION_DATA_COUNT, columnMatch.size());
 		putModuleData(response, 0, false, msg, error);
-		
+			
 	}
+	
 	
 	/**
 	 * Deletes any rows not being updated
