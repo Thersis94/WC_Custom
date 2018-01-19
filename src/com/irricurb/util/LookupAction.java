@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.irricurb.action.data.vo.ProjectDeviceVO;
+import com.irricurb.action.data.vo.ProjectDeviceVO.ProjectDeviceStatusCode;
 import com.irricurb.action.project.ProjectSelectionAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -45,6 +47,7 @@ public class LookupAction extends SimpleActionAdapter {
         statMap.put("PROJECTS", new GenericVO("getProjects",ActionRequest.class));
         statMap.put("DEVICE_TYPES", new GenericVO("getDeviceTypes",ActionRequest.class));
         statMap.put("PROJECT_ZONES", new GenericVO("getProjectZones",ActionRequest.class));
+        statMap.put("DEVICE_STATUS", new GenericVO("getDeviceStatus",ActionRequest.class));
         METHOD_MAP = Collections.unmodifiableMap(statMap);
     }
 
@@ -141,6 +144,18 @@ public class LookupAction extends SimpleActionAdapter {
 		return dbp.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
+	/**
+	 * returns the list of device status
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getDeviceStatus(ActionRequest req){
+		List<GenericVO> data = new ArrayList<>();
+		for (ProjectDeviceStatusCode status : ProjectDeviceVO.ProjectDeviceStatusCode.values()){
+			data.add(new GenericVO(status.name(),status.getStatusName()));
+		}
+		return data;
+	}
 	/**
 	 * Returns a list of nodes for the given project
 	 * @param req

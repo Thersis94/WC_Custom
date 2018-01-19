@@ -47,13 +47,9 @@ public class ProjectDeviceVO extends DeviceVO {
 	 * Status Code Enum
 	 */
 	public enum ProjectDeviceStatusCode {
-		ON("On"), 
-		OFF("Off"),
-		PROCESSING("Processing"),
 		ACTIVE("Active"), 
-		COMPLETE("Complete"),
 		ERROR("Error"),
-		CLOSED("Closed");
+		MAINTENANCE("Maintenance");
 		private String statusName;
 		ProjectDeviceStatusCode(String statusName) {
 			this.statusName = statusName;

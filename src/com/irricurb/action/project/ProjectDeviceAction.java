@@ -80,7 +80,10 @@ public class ProjectDeviceAction extends SBActionAdapter {
 			setModuleData(getProjectDeviceById(req));
 		} else {
 			String projectId = (String) req.getSession().getAttribute(ProjectSelectionAction.PROJECT_LOOKUP);
-			setModuleData(getProjectDevices(req, projectId));
+			log.debug("Project ID: " + projectId);
+			GridDataVO<ProjectDeviceVO>  data = getProjectDevices(req, projectId);
+			log.info(data);
+			setModuleData(data);
 		}
 	}
 	
@@ -223,7 +226,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		log.debug(sql + ":" + params);
 		
 		// Return the data
-		return dbp.executeSQLWithCount(sql.toString(), params, new ProjectDeviceVO(), null, req.getIntegerParameter("limit"), req.getIntegerParameter("offset"));
+		return dbp.executeSQLWithCount(sql.toString(), params, new ProjectDeviceVO(), null, req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
 	}
 	
 	/**
