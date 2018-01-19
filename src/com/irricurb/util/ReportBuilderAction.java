@@ -62,22 +62,21 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 	 */
 	protected SMTChartIntfc generateHumidityTempReport() {
 		StringBuilder sql = new StringBuilder(256);
-		sql.append("select data_entity_id as chart_detail_id, b.device_attribute_id as serie_nm, ");
-		sql.append("cast(round(avg(reading_value_no), 1) as varchar(32)) as value, ");
+		sql.append("select cast(row_number() over (order by b.device_attribute_id nulls last) as varchar(32)) as chart_detail_id, ");
+		sql.append("b.device_attribute_id as serie_nm, cast(round(avg(reading_value_no), 1) as varchar(32)) as value, ");
 		sql.append("extract(hour from reading_dt) || ':00' as label_nm ");
 		sql.append("from custom.ic_project_device p ");
 		sql.append("inner join custom.ic_project_device_data a on p.project_device_id = a.project_device_id ");
 		sql.append("inner join custom.ic_data_entity b on a.project_device_data_id = b.project_device_data_id ");
 		sql.append("inner join custom.ic_device_attribute c on b.device_attribute_id = c.device_attribute_id ");
 		sql.append("where b.device_attribute_id in ('TEMPERATURE', 'HUMIDITY') and project_id = 'PROJECT1' ");
-		sql.append("group by chart_detail_id, serie_nm, label_nm ");
+		sql.append("group by serie_nm, label_nm ");
 		sql.append("order by label_nm, serie_nm ");
 		log.debug(sql);
 		
 		// retrieve the data
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<SMTChartDetailVO> chartData = db.executeSelect(sql.toString(), new ArrayList<Object>(), new SMTChartDetailVO());
-		log.debug(chartData);
 		
 		// Process the data into the chartvo
 		SMTChartVO chart = new SMTChartVO(chartData);
