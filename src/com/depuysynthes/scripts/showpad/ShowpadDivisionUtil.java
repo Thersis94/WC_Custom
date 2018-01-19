@@ -191,9 +191,11 @@ public class ShowpadDivisionUtil {
 		if (DSPrivateAssetsImporter.INTERNAL_TAG.equals(tagMgr.getSourceConstant())) {
 			params.put("isSensitive", "true");
 			params.put("isShareable", "false");
+			params.put("isDownloadable", "false");
 		} else {
 			params.put("isSensitive", "false");
 			params.put("isShareable", "true");
+			params.put("isDownloadable", "true");
 		}
 
 		params.put("isDivisionShared", "false");
