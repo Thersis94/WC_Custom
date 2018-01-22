@@ -81,6 +81,8 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		if (! req.hasParameter(ACTION_TYPE_KEY)) return;
+		
 		String projectId = (String) req.getSession().getAttribute(ProjectSelectionAction.PROJECT_LOOKUP);
 		String actionType = req.getStringParameter(ACTION_TYPE_KEY, "").toUpperCase();
 		String chartType = req.getStringParameter(CHART_TYPE_KEY, "").toUpperCase();
