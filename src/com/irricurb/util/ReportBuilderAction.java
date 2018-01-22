@@ -103,7 +103,7 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 		sql.append("inner join custom.ic_device_attribute c on b.device_attribute_id = c.device_attribute_id ");
 		sql.append("where project_id = ? and b.device_attribute_id in (").append(DBUtil.preparedStatmentQuestion(attributes.size())).append(") ");
 		sql.append("group by serie_nm, label_nm ");
-		sql.append("order by label_nm, serie_nm ");
+		sql.append("order by label_nm, serie_nm");
 		log.debug(sql);
 		
 		// retrieve the data
