@@ -35,6 +35,7 @@ public class DeviceVO extends BeanDataVO {
 	private String deviceTypeCode;
 	private String name;
 	private String modelNumber;
+	private String icon;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -196,6 +197,21 @@ public class DeviceVO extends BeanDataVO {
 	 */
 	public void setDeviceTypeCode(String deviceTypeCode) {
 		this.deviceTypeCode = deviceTypeCode;
+	}
+
+	/**
+	 * @return the icon
+	 */
+	@Column(name="icon_info_txt")
+	public String getIcon() {
+		return icon;
+	}
+
+	/**
+	 * @param icon the icon to set
+	 */
+	public void setIcon(String icon) {
+		this.icon = icon;
 	}
 
 }

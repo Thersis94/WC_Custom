@@ -14,6 +14,7 @@ import com.irricurb.action.project.ProjectSelectionAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.report.chart.SMTChartDetailVO;
 import com.siliconmtn.data.report.chart.SMTChartFactory;
 import com.siliconmtn.data.report.chart.SMTChartIntfc;
@@ -53,14 +54,14 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 	/**
 	 * Collection of actionTypes that identifies the list of data types to include
 	 */
-	public static Map<String, List<String>> ACTION_TYPES = new HashMap<String, List<String>>() {
+	protected static Map<String, GenericVO> actionTypes = new HashMap<String, GenericVO>() {
 		private static final long serialVersionUID = 1L; {
-			put("SOIL", Arrays.asList("MOISTURE"));
-			put("AIR", Arrays.asList("TEMPERATURE", "HUMIDITY"));
-			put("PH",  Arrays.asList("PH"));
+			put("SOIL", new GenericVO("Moisture", Arrays.asList("MOISTURE")));
+			put("AIR", new GenericVO("Temperature(f)", Arrays.asList("TEMPERATURE", "HUMIDITY")));
+			put("PH",  new GenericVO("Acidity", Arrays.asList("PH")));
 		}
-		
 	};
+
 	/**
 	 * 
 	 */
@@ -87,14 +88,16 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 		String actionType = req.getStringParameter(ACTION_TYPE_KEY, "").toUpperCase();
 		String chartType = req.getStringParameter(CHART_TYPE_KEY, "").toUpperCase();
 		ChartType ct = EnumUtil.safeValueOf(ChartType.class, chartType, ChartType.COLUMN);
-		putModuleData(buildDashboardReport(projectId, ACTION_TYPES.get(actionType), ct));
+		putModuleData(buildDashboardReport(projectId, actionTypes.get(actionType), ct, req.getBooleanParameter("fullGraph")));
 	}
 	
 	/**
 	 * Generates the report and formats it into a chart object for humidity and temperature
 	 * @return
 	 */
-	protected SMTChartIntfc buildDashboardReport(String projectId, List<String> attributes, ChartType chartType) {
+	@SuppressWarnings("unchecked")
+	protected SMTChartIntfc buildDashboardReport(String projectId, GenericVO item, ChartType chartType, boolean full) {
+		List<String> attributes = (List<String>) item.getValue();
 		StringBuilder sql = new StringBuilder(256);
 		sql.append("select cast(row_number() over (order by b.device_attribute_id nulls last) as varchar(32)) as chart_detail_id, ");
 		sql.append("b.device_attribute_id as serie_nm, cast(round(avg(reading_value_no), 1) as varchar(32)) as value, ");
@@ -118,10 +121,13 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 		// Process the data into the chartvo
 		SMTChartVO chart = new SMTChartVO(chartData);
 		chart.setPrimaryXTitle("Hour of Day");
-		chart.setPrimaryYTitle("Temperature(F)");
+		chart.setPrimaryYTitle(item.getKey().toString());
 		
 		SMTChartIntfc theChart = SMTChartFactory.getInstance(ProviderType.GOOGLE, chart, null);
-		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(chartType, ProviderType.GOOGLE, true);
+		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(chartType, ProviderType.GOOGLE, full);
+		String[] colors = {"#00cc00", "#00b200", "#009900", "#007f00", "#006600", "#004c00"};
+		options.getChartOptions().put("colors", colors);
+		log.debug(options);
 		options.addOptionsFromGridData(chart);
 		theChart.addCustomValues(options.getChartOptions());
 		

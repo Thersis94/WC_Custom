@@ -32,6 +32,7 @@ public class ProjectDeviceAttributeVO extends AttributeDevice {
 	private String deviceAttributeXrId;
 	private String projectDeviceId;
 	private String value;
+	private String deviceName;
 
 	/**
 	 * 
@@ -106,6 +107,21 @@ public class ProjectDeviceAttributeVO extends AttributeDevice {
 	@Override
 	public String toString(){
 		return StringUtil.getToString(this);
+	}
+
+	/**
+	 * @return the deviceName
+	 */
+	@Column(name="device_nm", isReadOnly=true)
+	public String getDeviceName() {
+		return deviceName;
+	}
+
+	/**
+	 * @param deviceName the deviceName to set
+	 */
+	public void setDeviceName(String deviceName) {
+		this.deviceName = deviceName;
 	}
 	
 }

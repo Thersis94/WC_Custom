@@ -167,13 +167,14 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		
 		StringBuilder sql = new StringBuilder(400);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ic_device_attribute a ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_attribute_device b on a.device_attribute_id = b.device_attribute_id ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ic_device icd ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_attribute_device a on icd.device_id = a.device_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_device_attribute b on a.device_attribute_id = b.device_attribute_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ic_device_attribute_xr c ");
-		sql.append("on b.attribute_device_id = c.attribute_device_id and project_device_id = ? ");
-		sql.append(DBUtil.WHERE_CLAUSE).append(" device_id in ( ");
+		sql.append("on a.attribute_device_id = c.attribute_device_id and project_device_id = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" a.device_id in ( ");
 		sql.append("select device_id from ").append(getCustomSchema()).append("ic_project_device where project_device_id = ? ");
-		sql.append(") order by a.attribute_nm ");
+		sql.append(") order by b.attribute_nm ");
 		log.debug(sql + "|" + StringUtil.checkVal(req.getStringParameter("projectDeviceId")));
 		
 		List<Object> params = new ArrayList<>();
@@ -209,7 +210,6 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 * @return
 	 */
 	private GridDataVO<ProjectDeviceVO> getProjectDevices(ActionRequest req, String projectId) {
-
 		List<Object> params = new ArrayList<>();
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		
