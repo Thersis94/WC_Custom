@@ -7,7 +7,7 @@ import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.formbuilder.FormBuilderFacadeAction;
+import com.smt.sitebuilder.action.form.designer.FormDesignerFacadeAction;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -117,9 +117,9 @@ public class HuddleFormSolrAction extends SimpleActionAdapter {
 	 * @param formId
 	 * @return
 	 */
-	protected FormBuilderFacadeAction getFormBuilderFacadeAction(String formId) {
+	protected FormDesignerFacadeAction getFormBuilderFacadeAction(String formId) {
 		this.actionInit.setActionGroupId(formId);
-		FormBuilderFacadeAction fbfa = new FormBuilderFacadeAction(this.actionInit);
+		FormDesignerFacadeAction fbfa = new FormDesignerFacadeAction(this.actionInit);
 		fbfa.setDBConnection(getDBConnection());
 		fbfa.setAttributes(getAttributes());
 		return fbfa;
