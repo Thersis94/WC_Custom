@@ -10,6 +10,7 @@ import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
+import com.smt.sitebuilder.data.TransactionParserIntfc;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
 import com.smt.sitebuilder.util.MessageSender;
 
@@ -86,7 +87,7 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 	 * @param req
 	 */
 	private void formatRedirect(ActionRequest req) {
-		String hasReplacedJoint = req.getParameter("frm_" + PatientAmbassadorStoriesTool.PAFConst.HAS_REPLACED_ID.getId());
+		String hasReplacedJoint = req.getParameter(TransactionParserIntfc.FORM_FIELD_PREFIX + PatientAmbassadorStoriesTool.PAFConst.HAS_REPLACED_ID.getId());
 		if ("yes".equalsIgnoreCase(hasReplacedJoint)) return;
 
 		StringBuilder redir = new StringBuilder(300);
