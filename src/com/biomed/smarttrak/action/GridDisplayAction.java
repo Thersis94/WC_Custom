@@ -116,7 +116,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		} else {
 			GridVO grid = getGridData(gridId, false);
 			// If this grid has legacy data load that instead.
-			if (!StringUtil.isEmpty(grid.getLegacyId())) 
+			if (!StringUtil.isEmpty(grid.getLegacyId()) && type == ChartType.TABLE) 
 				grid = getGridData(grid.getLegacyId(), false);
 			
 			if (req.hasParameter("excel")) {
