@@ -114,10 +114,12 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		if (grids != null && grids.length > 0) {
 			putModuleData(loadAllGrids(grids, full, stacked, pt));
 		} else {
-			GridVO grid = getGridData(gridId, false);
+			boolean display = Convert.formatBoolean(req.getParameter("display"));
+			if (display && type == ChartType.TABLE) display = false;
+			GridVO grid = getGridData(gridId, display);
 			// If this grid has legacy data load that instead.
 			if (!StringUtil.isEmpty(grid.getLegacyId()) && type == ChartType.TABLE) 
-				grid = getGridData(grid.getLegacyId(), false);
+				grid = getGridData(grid.getLegacyId(), display);
 			
 			if (req.hasParameter("excel")) {
 				buildExcelFile(req, grid);
