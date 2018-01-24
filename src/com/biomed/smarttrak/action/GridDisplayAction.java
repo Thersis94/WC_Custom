@@ -114,10 +114,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		if (grids != null && grids.length > 0) {
 			putModuleData(loadAllGrids(grids, full, stacked, pt));
 		} else {
-			GridVO grid = getGridData(gridId, false);
-			// If this grid has legacy data load that instead.
-			if (!StringUtil.isEmpty(grid.getLegacyId()) && type == ChartType.TABLE) 
-				grid = getGridData(grid.getLegacyId(), false);
+			GridVO grid = loadSingleGrid(type, gridId, req);
 			
 			if (req.hasParameter("excel")) {
 				buildExcelFile(req, grid);
@@ -125,6 +122,26 @@ public class GridDisplayAction extends SimpleActionAdapter {
 				putModuleData(retrieveChartData(grid, type, full, stacked, pt, columns, rows));
 			}
 		}
+	}
+	
+	
+	/**
+	 * Load the grid with the supplied id.
+	 * @param type
+	 * @param gridId
+	 * @param req
+	 * @return
+	 */
+	private GridVO loadSingleGrid(ChartType type, String gridId, ActionRequest req ) {
+		boolean display = Convert.formatBoolean(req.getParameter("display"));
+		if (display && type == ChartType.TABLE) display = false;
+		GridVO grid = getGridData(gridId, display);
+		
+		// If this grid has legacy data load that instead.
+		if (!StringUtil.isEmpty(grid.getLegacyId()) && type == ChartType.TABLE) 
+			grid = getGridData(grid.getLegacyId(), display);
+		
+		return grid;
 	}
 
 
