@@ -52,6 +52,11 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 	public static final String CHART_TYPE_KEY = "chartType";
 	
 	/**
+	 * Color pallette for the charts on the dashboard and the rest of the portal
+	 */
+	public static final String[] CHART_COLORS = {"#00cc00", "#00b200", "#009900", "#007f00", "#006600", "#004c00"};
+	
+	/**
 	 * Collection of actionTypes that identifies the list of data types to include
 	 */
 	protected static Map<String, GenericVO> actionTypes = new HashMap<String, GenericVO>() {
@@ -84,11 +89,17 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (! req.hasParameter(ACTION_TYPE_KEY)) return;
 		
+		boolean full = req.getBooleanParameter("fullGraph");
 		String projectId = (String) req.getSession().getAttribute(ProjectSelectionAction.PROJECT_LOOKUP);
 		String actionType = req.getStringParameter(ACTION_TYPE_KEY, "").toUpperCase();
 		String chartType = req.getStringParameter(CHART_TYPE_KEY, "").toUpperCase();
 		ChartType ct = EnumUtil.safeValueOf(ChartType.class, chartType, ChartType.COLUMN);
-		putModuleData(buildDashboardReport(projectId, actionTypes.get(actionType), ct, req.getBooleanParameter("fullGraph")));
+		
+		if (req.hasParameter("projectDeviceId")) {
+			putModuleData(buildDeviceChart(projectId, req.getParameter("projectDeviceId"), ct, full));
+		} else {
+			putModuleData(buildDashboardReport(projectId, actionTypes.get(actionType), ct, full));
+		}
 	}
 	
 	/**
@@ -118,20 +129,66 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 		params.addAll(attributes);
 		List<SMTChartDetailVO> chartData = db.executeSelect(sql.toString(),params, new SMTChartDetailVO());
 		
+		return buildChart(chartData, "Hour of Day", item.getKey().toString(), chartType, full);
+	}
+	
+	/**
+	 * Takes the chart data and returns the appropriate chart type
+	 * @param data
+	 * @param xTitle
+	 * @param yTitle
+	 * @param ct
+	 * @param full
+	 * @return
+	 */
+	protected SMTChartIntfc buildChart(List<SMTChartDetailVO> data, String xTitle, String yTitle, ChartType ct, boolean full) {
 		// Process the data into the chartvo
-		SMTChartVO chart = new SMTChartVO(chartData);
-		chart.setPrimaryXTitle("Hour of Day");
-		chart.setPrimaryYTitle(item.getKey().toString());
+		SMTChartVO chart = new SMTChartVO(data);
+		chart.setPrimaryXTitle(xTitle);
+		chart.setPrimaryYTitle(yTitle);
 		
 		SMTChartIntfc theChart = SMTChartFactory.getInstance(ProviderType.GOOGLE, chart, null);
-		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(chartType, ProviderType.GOOGLE, full);
-		String[] colors = {"#00cc00", "#00b200", "#009900", "#007f00", "#006600", "#004c00"};
-		options.getChartOptions().put("colors", colors);
-		log.debug(options);
+		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(ct, ProviderType.GOOGLE, full);
+		
+		options.getChartOptions().put("colors", CHART_COLORS);
 		options.addOptionsFromGridData(chart);
 		theChart.addCustomValues(options.getChartOptions());
 		
 		return theChart;
+	}
+	
+	/**
+	 * 
+	 * @param projId
+	 * @param pdi
+	 * @param label
+	 * @param chartType
+	 * @param full
+	 * @return
+	 */
+	public SMTChartIntfc buildDeviceChart(String projId, String pdi, ChartType chartType, boolean full) {
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select cast(row_number() over (order by b.device_attribute_id nulls last) as varchar(32)) as chart_detail_id, ");
+		sql.append("b.device_attribute_id as serie_nm, cast(round(max(reading_value_no), 1) as varchar(32)) as value, ");
+		sql.append("extract(hour from reading_dt) || ':00' as label_nm, extract(hour from reading_dt) as order_nm ");
+		sql.append("from custom.ic_project_device p ");
+		sql.append("inner join custom.ic_project_device_data a on p.project_device_id = a.project_device_id ");
+		sql.append("inner join custom.ic_data_entity b on a.project_device_data_id = b.project_device_data_id ");
+		sql.append("inner join custom.ic_device_attribute c on b.device_attribute_id = c.device_attribute_id ");
+		sql.append("where project_id = ? and p.project_device_id = ? ");
+		sql.append("group by serie_nm, order_nm, label_nm ");
+		sql.append("order by order_nm, serie_nm");
+		
+		// retrieve the data
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<Object> params = new ArrayList<>();
+		params.add(projId);
+		params.add(pdi);
+		log.debug(sql + "|" + params);
+		
+		List<SMTChartDetailVO> chartData = db.executeSelect(sql.toString(),params, new SMTChartDetailVO());
+		
+		return buildChart(chartData, "Hour of Day", "Measurement", chartType, full);
 	}
 
 }
