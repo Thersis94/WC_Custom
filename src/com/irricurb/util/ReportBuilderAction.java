@@ -158,7 +158,7 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * Builds the sql and retrieves the data for the graphs when displaying the device information in a modal
 	 * @param projId
 	 * @param pdi
 	 * @param label
