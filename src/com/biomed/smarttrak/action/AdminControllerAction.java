@@ -29,6 +29,7 @@ import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.ReportFacadeAction;
 import com.biomed.smarttrak.admin.SearchUtilAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.admin.SmartSearchAction;
 import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
@@ -212,6 +213,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("userAccountSearch", UserAccountSearchAction.class);
 		ACTIONS.put("feeds", CustomRSSFacadeAction.class);
 		ACTIONS.put("dashboard", DashboardAction.class);
+		ACTIONS.put("smartSearch", SmartSearchAction.class);
 		ACTIONS.put("feature", FeaturedInsightsAction.class);
 		ACTIONS.put(DEFAULT_ACTION, com.biomed.smarttrak.action.UpdatesAction.class);
 	}
