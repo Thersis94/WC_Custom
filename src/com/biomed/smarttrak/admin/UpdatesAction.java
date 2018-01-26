@@ -278,23 +278,19 @@ public class UpdatesAction extends ManagementAction {
 	/**
 	 * Sets the default search values - particularly a date range of 'today'.
 	 * These can be flushed to <blank> by the user, but if they're nullified we'll restore them (e.g. next session)
-	 * If the search start date cookie does not exists, set it with a default range of today.
+	 * If the search end date cookie does not exists, set it with a default range of today.
 	 * Otherwise, if it's blank, the user flushed the date values intentionally (which is ok)
 	 * NOTE: Setting cookies goes into the response object.  We can't set a cookie and then 
 	 * immediately read it's value.  For this reason we transpose the cookies into request parameters.
 	 * @param req
 	 */
 	private void configureCookies(ActionRequest req) {
-		String start = CookieUtil.getValue(COOK_UPD_START_DT, req.getCookies());
-		String end;
-		if (start == null) {
+		String start = StringUtil.checkVal(CookieUtil.getValue(COOK_UPD_START_DT, req.getCookies()), "");
+		String end = CookieUtil.getValue(COOK_UPD_END_DT, req.getCookies());
+		if (end == null) {
 			HttpServletResponse res = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
-			start = Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN); //today
-			end = start;
-			CookieUtil.add(res, COOK_UPD_START_DT, start, "/", -1);
+			end = Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN); //today
 			CookieUtil.add(res, COOK_UPD_END_DT, end, "/", -1);
-		} else {
-			end = CookieUtil.getValue(COOK_UPD_END_DT, req.getCookies());
 		}
 		req.setParameter(COOK_UPD_START_DT, start);
 		req.setParameter(COOK_UPD_END_DT, end);

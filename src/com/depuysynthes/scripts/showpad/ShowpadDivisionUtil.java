@@ -16,6 +16,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
+import com.depuysynthes.scripts.DSPrivateAssetsImporter;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.siliconmtn.exception.InvalidDataException;
@@ -185,8 +186,18 @@ public class ShowpadDivisionUtil {
 		params.put("name", title);
 		params.put("resourcetype", ShowpadResourceType.getResourceType(fType)); //Showpad Constant for all assets
 		params.put("suppress_response_codes","true"); //forces a 200 response header
-		params.put("isSensitive", "false");
-		params.put("isShareable", "true");
+
+		//distinguish some values for EMEA private assets only - trigger off the tag passed from that script marking them as 'internal'
+		if (DSPrivateAssetsImporter.INTERNAL_TAG.equals(tagMgr.getSourceConstant())) {
+			params.put("isSensitive", "true");
+			params.put("isShareable", "false");
+			params.put("isDownloadable", "false");
+		} else {
+			params.put("isSensitive", "false");
+			params.put("isShareable", "true");
+			params.put("isDownloadable", "true");
+		}
+
 		params.put("isDivisionShared", "false");
 		params.put("releasedAt", Convert.formatDate(vo.getModifiedDt(), Convert.DATE_TIME_SLASH_PATTERN));
 		if (vo.getDownloadTypeTxt() != null)
