@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: TechniqueGuideVO.java <p/>
@@ -52,7 +53,11 @@ public class IFUTechniqueGuideVO {
 		this.setDpySynAssetName(db.getStringVal("TITLE_TXT", rs));
 		this.setOrderNo(db.getIntVal("ORDER_NO", rs));
 		this.setImplId(db.getStringVal("DEPUY_IFU_IMPL_ID", rs));
-		db = null;
+		
+		//verify the asset is in Mediabin before we proclaim it is
+		if (!StringUtil.isEmpty(getDpySynMediaBinId()) && StringUtil.isEmpty(db.getStringVal("mediabin_present", rs))) {
+			setDpySynMediaBinId(null);
+		}
 	}
 
 	public String getTgId() {
