@@ -3,6 +3,7 @@ package com.irricurb.util;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,12 +55,14 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 	/**
 	 * Color pallette for the charts on the dashboard and the rest of the portal
 	 */
-	public static final String[] CHART_COLORS = {"#00cc00", "#00b200", "#009900", "#007f00", "#006600", "#004c00"};
+	public static final List<String> CHART_COLORS = Collections.unmodifiableList(Arrays.asList(
+		"#00cc00", "#00b200", "#009900", "#007f00", "#006600", "#004c00")
+	);
 	
 	/**
 	 * Collection of actionTypes that identifies the list of data types to include
 	 */
-	protected static Map<String, GenericVO> actionTypes = new HashMap<String, GenericVO>() {
+	protected static final Map<String, GenericVO> actionTypes = new HashMap<String, GenericVO>() {
 		private static final long serialVersionUID = 1L; {
 			put("SOIL", new GenericVO("Moisture", Arrays.asList("MOISTURE")));
 			put("AIR", new GenericVO("Temperature(f)", Arrays.asList("TEMPERATURE", "HUMIDITY")));
@@ -150,7 +153,7 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 		SMTChartIntfc theChart = SMTChartFactory.getInstance(ProviderType.GOOGLE, chart, null);
 		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(ct, ProviderType.GOOGLE, full);
 		
-		options.getChartOptions().put("colors", CHART_COLORS);
+		options.getChartOptions().put("colors", CHART_COLORS.toArray());
 		options.addOptionsFromGridData(chart);
 		theChart.addCustomValues(options.getChartOptions());
 		
