@@ -930,7 +930,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @return
 	 */
 	private String splitTrackingNo(String tn) {
-		if (StringUtil.isEmpty(tn) || tn.indexOf(",") == -1) {
+		if (StringUtil.isEmpty(tn) || tn.indexOf(',') == -1) {
 			return tn;
 		} else {
 			return tn.split(",")[0];
