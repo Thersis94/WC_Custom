@@ -5,6 +5,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -458,10 +461,28 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 				sql.append(", SECT_ID, r.REGION_CD ");
 			}
 		}
+
+		sql.append("having sum(r.Q1_NO) > 0 or sum(r.Q2_NO) > 0 or sum(r.Q3_NO) > 0 or sum(r.Q4_NO) > 0 ");
+		if (getCurrentQuarter() == 1)
+			sql.append("or sum(r2.Q1_NO) > 0 or sum(r2.Q2_NO) > 0 or sum(r2.Q3_NO) > 0 or sum(r2.Q4_NO) > 0 ");
 		
 		sql.append("order by ROW_NM").append(dash.getEditMode() ? ", CASE r.REGION_CD WHEN 'US' THEN 1 WHEN 'EU' THEN 2 ELSE 3 END" : "");
 		
 		return sql;
+	}
+	
+	/**
+	 * Get the current quarter
+	 * @return
+	 */
+	private int getCurrentQuarter() {
+		Date currentDate = Convert.formatDate(new Date(), Calendar.MONTH, FinancialDashVO.CURRENT_DT_MONTH_OFFSET);
+
+		Calendar calendar = new GregorianCalendar();
+		calendar.setTime(currentDate);
+		
+		int month = calendar.get(Calendar.MONTH);
+		return month/3 + 1;
 	}
 
 	@Override
