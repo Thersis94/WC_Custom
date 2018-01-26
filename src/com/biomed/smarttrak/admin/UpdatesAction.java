@@ -637,7 +637,7 @@ public class UpdatesAction extends ManagementAction {
 	protected void writeToSolr(UpdateVO u) {
 		UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
 		idx.setDBConnection(dbConn);
-		idx.addSingleItem(u.getUpdateId());
+		idx.indexItems(u.getUpdateId());
 	}
 
 
