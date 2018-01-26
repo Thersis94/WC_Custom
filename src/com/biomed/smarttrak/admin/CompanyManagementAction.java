@@ -1190,7 +1190,7 @@ public class CompanyManagementAction extends ManagementAction {
 			if ("D".equals(status) || "A".equals(status)) {
 				indexer.purgeSingleItem(companyId, false);
 			} else {
-				indexer.addSingleItem(companyId);
+				indexer.indexItems(companyId);
 			}
 		} catch (IOException e) {
 			throw new ActionException(e);

@@ -168,15 +168,13 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 	}
 
 
-
-
 	/**
 	 * returns the event lookup query used to load indexable events
 	 * @return
 	 */
 	@Override
 	protected String buildQuery(String moduleTypeId, Set<String> eventIds) {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(500);
 		sql.append("select s.alias_path_nm, c.full_path_txt, et.type_nm, ee.* ");
 		sql.append("from event_entry ee ");
 		sql.append("inner join event_type et on ee.event_type_id=et.event_type_id ");

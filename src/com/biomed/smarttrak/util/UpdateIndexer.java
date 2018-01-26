@@ -66,23 +66,6 @@ public class UpdateIndexer extends SMTAbstractIndex {
 
 	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addSingleItem(java.lang.String)
-	 */
-	@Override
-	public void addSingleItem(String itemId) {
-		log.debug("adding single Update: " + itemId);
-		SolrClient server = makeServer();
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
-			util.addDocuments(getDocuments(itemId));
-			server.commit(false, false);
-		} catch (Exception e) {
-			log.error("Failed to index Update with id=" + itemId, e);
-		}
-	}
-
-
-	/*
-	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
 	 */
 	@Override
@@ -114,5 +97,22 @@ public class UpdateIndexer extends SMTAbstractIndex {
 		}
 
 		return(List<SolrDocumentVO>)(List<?>) list;
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
+	 */
+	@Override
+	public void indexItems(String... itemIds) {
+		log.debug("adding single Update: " + itemIds);
+		SolrClient server = makeServer();
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+			for (String id : itemIds)
+				util.addDocuments(getDocuments(id));
+
+		} catch (Exception e) {
+			log.error("Failed to index Update with id=" + itemIds, e);
+		}
 	}
 }
