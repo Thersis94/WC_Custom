@@ -1014,7 +1014,7 @@ public class MarketManagementAction extends ManagementAction {
 				log.warn("could not delete market from solr " + marketId, e);
 			}
 		} else {
-			idx.addSingleItem(marketId);
+			idx.indexItems(marketId);
 		}
 	}
 	
@@ -1035,7 +1035,7 @@ public class MarketManagementAction extends ManagementAction {
 		idx.purgeIndexItems(ids, statuses);
 		
 		//index the items to Solr
-		idx.addIndexItems(ids);
+		idx.indexItems(ids);
 	}
 
 
