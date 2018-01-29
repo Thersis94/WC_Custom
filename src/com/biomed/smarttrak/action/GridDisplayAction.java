@@ -275,7 +275,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 		// Load the custom pie chart colors.
 		if (ChartType.PIE == type) {
-			options.getChartOptions().put("colors", PIE_CHART_COLORS);
+			options.getChartOptions().put("colors", PIE_CHART_COLORS.clone());
 		}
 
 		// Load company specific colors
@@ -349,7 +349,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		String[] colors = (String[]) options.getChartOptions().get("colors");
 		for (int j=0; j < size; j++) {
 			String name = grid.getDetails().get(j).getLabel();
-			if (!colorMap.containsKey(name)) continue;
+			if (StringUtil.isEmpty(name) || !colorMap.containsKey(name)) continue;
 			colors[j] = colorMap.get(name);
 		}
 	}
