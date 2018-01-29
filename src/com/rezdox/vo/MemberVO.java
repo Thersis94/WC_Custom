@@ -22,13 +22,11 @@ import com.siliconmtn.util.user.HumanNameIntfc;
  @since Jan 18, 2018
  <b>Changes:</b> 
  ***************************************************************************/
-/**
- * @author tim
- *
- */
+
 @Table(name="REZDOX_MEMBER")
 public class MemberVO extends UserDataVO implements HumanNameIntfc {
-	private static final long serialVersionUID = -8619730513300299951L;
+	private static final long serialVersionUID = 6973805787915145277L;
+
 	private String memberId;
 	private String registerSubmittalId;
 	private int statusFlg;
