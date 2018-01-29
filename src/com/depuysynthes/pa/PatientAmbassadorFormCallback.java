@@ -6,6 +6,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -45,7 +46,7 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) {
-		DataContainer dc = (DataContainer)req.getAttribute("formDataVO");
+		DataContainer dc = (DataContainer)req.getAttribute(FormAction.FORM_DATA);
 
 		FormTransactionVO trans = dc.getTransactions().values().iterator().next();
 
