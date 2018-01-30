@@ -124,7 +124,6 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 		sql.append("group by serie_nm, order_nm, label_nm ");
 		sql.append("order by order_nm, serie_nm");
 		
-		
 		// retrieve the data
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<Object> params = new ArrayList<>();
