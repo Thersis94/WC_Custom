@@ -105,6 +105,23 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 			return null;
 		}
 	}
+	
+	/**
+	 * Account Status enum mapping
+	 */
+	public enum Status{
+		ACTIVE("A", "Active"), INACTIVE("I", "Inactive");
+		
+		private String statusNo;
+		private String label;
+		private Status(String statusNo, String label) {
+			this.statusNo = statusNo;
+			this.label = label;
+		}
+		/*==Getters==*/
+		public String getStatusNo() { return statusNo; }
+		public String getLabel() { return label; }
+	}
 
 	public AccountVO() {
 		super();

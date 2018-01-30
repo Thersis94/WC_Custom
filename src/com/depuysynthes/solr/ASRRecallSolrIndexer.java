@@ -10,7 +10,6 @@ import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.SolrException;
 
 import com.depuysynthes.solr.data.ASRRecallVO;
 import com.siliconmtn.action.ActionException;
@@ -28,23 +27,22 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @author Eric Damschroder
  * @since Oct 3, 2016
  ****************************************************************************/
-
 public class ASRRecallSolrIndexer extends FileSolrIndexer {
 	private List<String> bypass;
 	private Map<String, String> nameCases;
-	
+
 	public ASRRecallSolrIndexer(Properties config) {
 		super(config, "ASR_");
 		buildBypass();
 		buildNameCases();
 	}
-	
+
 	public static ASRRecallSolrIndexer makeInstance(Map<String, Object> attributes) {
 		Properties props = new Properties();
 		props.putAll(attributes);
 		return new ASRRecallSolrIndexer(props);
 	}
-	
+
 	/**
 	 * Create a list of files that are present in the directory that
 	 * do not need to show up in solr
@@ -134,8 +132,8 @@ public class ASRRecallSolrIndexer extends FileSolrIndexer {
 		bypass.add("indiaprofessional.html");
 		bypass.add("reimbursement.html");
 	}
-	
-	
+
+
 	/**
 	 * Create the map of non-standard file names so that
 	 * proper titles can be gotten for all documents
@@ -183,8 +181,11 @@ public class ASRRecallSolrIndexer extends FileSolrIndexer {
 		return doc;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
+	 */
 	@Override
-	public void addSingleItem(String arg0) throws SolrException {
+	public void indexItems(String... itemIds) {
 		// This function should never be called as the indexer will only
 		// be run for all documents at once
 	}

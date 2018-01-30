@@ -16,7 +16,6 @@ import net.sf.json.JSONObject;
 
 //Solr libs
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
@@ -28,11 +27,11 @@ import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
-
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
+
 //WC Libs
+import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
@@ -47,17 +46,17 @@ import com.depuysynthes.solr.data.ProductCatalogSolrDocumentVO;
 
 
 /****************************************************************************
-* <b>Title</b>: HuddleProductCatalogSolrIndex.java <p/>
-* <b>Project</b>: WebCrescendo <p/>
-* <b>Description: </b> This class gets invoked by the Solr Index Builder (batch)
-* It gets all products from the supplied organization's catalog and places them into solr.
-* <p/>
-* <b>Copyright:</b> Copyright (c) 2016<p/>
-* <b>Company:</b> Silicon Mountain Technologies<p/>
-* @author Eric Damschroder
-* @version 1.0
-* @since Jan 8, 2016<p/>
-****************************************************************************/
+ * <b>Title</b>: HuddleProductCatalogSolrIndex.java <p/>
+ * <b>Project</b>: WebCrescendo <p/>
+ * <b>Description: </b> This class gets invoked by the Solr Index Builder (batch)
+ * It gets all products from the supplied organization's catalog and places them into solr.
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2016<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Eric Damschroder
+ * @version 1.0
+ * @since Jan 8, 2016<p/>
+ ****************************************************************************/
 public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 
 	protected String organizationId = "DPY_SYN_HUDDLE";
@@ -81,7 +80,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		prepareSortOrder();
 		indexProducts(server);
 	}
-	
+
 	private void prepareSortOrder() {
 		//acertain the sequencing order of the attributes, so we can push that into the solr field names and onward to the views
 		for (ProductAttributeVO vo : HuddleUtils.loadProductAttributes(new SMTDBConnection(dbConn), organizationId))
@@ -99,8 +98,8 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		Tree tree = getProductData(HuddleUtils.CATALOG_ID);
 		traverseTree(tree, server);
 	}
-	
-	
+
+
 	/**
 	 * Traverse the tree to get the category hierarchies and all documents.
 	 * @param tree
@@ -112,10 +111,10 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		for (Node child : tree.getRootNode().getChildren()) {
 			loopNode(child);
 		}
-		
+
 		//verify we have something to index
 		if (products == null || products.size() == 0) return;
-		
+
 		//push the list to Solr all at once
 		try {
 			SolrActionUtil solrUtil = new SolrActionUtil(server);
@@ -124,8 +123,8 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			log.error("Unable to index products", e);
 		}
 	}
-	
-	
+
+
 	/**
 	 * recursive method that walks the Product Tree from a certain level (down)
 	 * @param n
@@ -134,7 +133,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		//add this level to the hierarchy tree
 		log.debug("adding hierarchy: " + par.getDepthLevel() + "=" + par.getNodeName());
 		hierarchy.put(Integer.valueOf(par.getDepthLevel()), par.getNodeName());
-		
+
 		for (Node child : par.getChildren()) {
 			ProductCategoryVO vo = (ProductCategoryVO)child.getUserObject();
 			if (vo.getProductId() != null) {
@@ -145,8 +144,8 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				loopNode(child);
 			}
 		}
-		
-		
+
+
 		// Products that have not been assigned any categories come as one off
 		// nodes with no children and must be handled differently.
 		ProductCategoryVO cat = (ProductCategoryVO)par.getUserObject();
@@ -154,8 +153,8 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			indexProduct(cat, par.getDepthLevel() -1);
 		}
 	}
-	
-	
+
+
 	/**
 	 * creates a SolrDocumentVO from the passed ProductCategoryVO,
 	 * then adds the hierarchy or opco_ss to it based on the pre-built hierarchy.
@@ -182,7 +181,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 					attachProductCategories(solrDoc, depth);
 					addProductAttributes(solrDoc, pVo);
 				}
-	
+
 				//add a new hierarchy to this product; its either Specialty or Category (we only support two)
 				attachProductCategories(solrDoc, depth);
 				products.put(pVo.getProductId(), solrDoc);
@@ -192,8 +191,8 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * Turns the recursively built hierarchy into either Specialty (opco_ss) 
 	 * or Category (hierarchy) on the SolrDoc
@@ -203,7 +202,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	private void attachProductCategories(ProductCatalogSolrDocumentVO solrDoc, int depth) {
 		//verify we have quality data to parse
 		if (hierarchy == null || hierarchy.size() < depth) return;
-		
+
 		//determine if this is a Speciaty or Category tree; they get added to the document differently
 		if ("Specialties".equalsIgnoreCase(hierarchy.get(Integer.valueOf(1)))) { //level 1 of category tree
 			solrDoc.addSpecialty(hierarchy.get(depth));
@@ -219,8 +218,8 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			solrDoc.addHierarchies(sb.toString());
 		}
 	}
-	
-	
+
+
 	/**
 	 * loops and adds the product attributes to the Solr record
 	 * @param solrDoc
@@ -229,27 +228,27 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	private void addProductAttributes(ProductCatalogSolrDocumentVO solrDoc, ProductVO pVo) {
 		ProductAttributeContainer attrContainer = pVo.getAttributes();
 		if (attrContainer == null) return;
-		
+
 		// Loop over all attributes and add them to the
 		// custom field map on the solr document
 		for (Node attrNode : attrContainer.getAllAttributes()) {
 			if (attrNode.getUserObject() == null) continue;
 			ProductAttributeVO attr = (ProductAttributeVO)attrNode.getUserObject();
-			
+
 			// This attribute has nothing we need and can be skipped.
 			if (attr.getValueText() == null) continue;
-			
-			
+
+
 			String fieldNm = HuddleUtils.makeSolrNmFromProdAttrNm(
-										sortOrder.get(attr.getAttributeId()), 
-										attr.getAttributeName(), 
-										attr.getAttributeType());
-			
+					sortOrder.get(attr.getAttributeId()), 
+					attr.getAttributeName(), 
+					attr.getAttributeType());
+
 			//check if we've already picked up this attribute, so we don't clobber previously captured values
 			@SuppressWarnings("unchecked")
 			List<String> values = (List<String>) solrDoc.getAttribute(fieldNm);
 			if (values == null) values = new ArrayList<>();
-			
+
 			//turn the value back into a JSON object and index the mediabinAssetIds only
 			/**
 			 * This JSON gets built in the JSP/browser.  Parse it into a JSONArray and iterate the IDs out for indexing
@@ -271,12 +270,12 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 					values.add(attr.getValueText());
 					break;
 			}
-			
+
 			solrDoc.addAttribute(fieldNm, values);
 		}
 	}
-	
-	
+
+
 	/**
 	 * converts the JSON object stored in the product attribute into 
 	 * a List<String> assetIds that we can use to lookup in Solr/Mediabin-table/CMS/etc. 
@@ -306,7 +305,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		}
 		return values;
 	}
-	
+
 
 	/**
 	 * load the entire product catalog in the same way the public sites would.
@@ -323,7 +322,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		util.setAttributes(attribs);
 		return util.loadCatalog(catalogId, null, true, null);
 	}
-	
+
 
 	@Override
 	public void purgeIndexItems(SolrClient server) throws IOException {
@@ -331,7 +330,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			StringBuilder solrQuery = new StringBuilder(60);
 			solrQuery.append(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType() + " AND ");
 			solrQuery.append(SearchDocumentHandler.ORGANIZATION + ":" + organizationId);
-			
+
 			server.deleteByQuery(solrQuery.toString());
 		} catch (Exception e) {
 			throw new IOException(e);
@@ -342,40 +341,8 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	public String getIndexType() {
 		return HuddleUtils.IndexType.PRODUCT.toString();
 	}
-	
 
-	/**
-	 * Called form com.depuysynthes.huddle.HuddleProductAdminAction in order to 
-	 * keep the index current with the product catalog without having to call for
-	 * a full rebuild or set up a regular rebuild of the index.
-	 * @param blogId
-	 */
-	@Override
-	public void addSingleItem(String productId) {
-		log.debug("Indexing Single Huddle Product");
-		ProductCatalogAction pc = new ProductCatalogAction();
-		pc.setDBConnection((SMTDBConnection) dbConn);
-		try {
-			Tree t = pc.loadEntireCatalog(getCatalogId(productId), true, null, productId);
-		
-			SolrClient server = makeServer();
-			prepareSortOrder();
-			traverseTree(t, server);
-		
-			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
-		} catch (SolrServerException e) {
-			log.error("could not commit to Solr");
-			throw new SolrException(ErrorCode.BAD_REQUEST, e);
-		} catch (IOException e) {
-			log.error("could not create solr server");
-			throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
-		} catch (SQLException e) {
-			log.error("Could not get catalog id from database");
-			throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
-		} 
-	}
-	
-	
+
 	/**
 	 * Get the catalog that the current product is part of.
 	 * @param productId
@@ -386,11 +353,40 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		String sql = "select PRODUCT_CATALOG_ID from PRODUCT where PRODUCT_ID = ?";
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, productId);
-			
+
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				return rs.getString("PRODUCT_CATALOG_ID");
 			throw new SQLException("No Products Found");
 		}
+	}
+
+	/* 
+	 * Called form com.depuysynthes.huddle.HuddleProductAdminAction in order to 
+	 * keep the index current with the product catalog without having to call for
+	 * a full rebuild or set up a regular rebuild of the index.
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
+	 */
+	@Override
+	public void indexItems(String... productIds) {
+		log.debug("Indexing Single Huddle Product");
+		ProductCatalogAction pc = new ProductCatalogAction();
+		pc.setDBConnection((SMTDBConnection) dbConn);
+		try (SolrClient server = makeServer()) {
+
+			for (String id : productIds) {
+				Tree t = pc.loadEntireCatalog(getCatalogId(id), true, null, id);
+				prepareSortOrder();
+				traverseTree(t, server);
+			}
+
+		} catch (IOException e) {
+			log.error("could not create solr server");
+			throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
+		} catch (SQLException e) {
+			log.error("Could not get catalog id from database");
+			throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
+		} 
 	}
 }
