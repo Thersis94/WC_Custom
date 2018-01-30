@@ -101,7 +101,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		setChecksum(db.getStringVal("file_checksum_txt", rs));
 		
 		String dims = db.getStringVal("dimensions_txt", rs);
-		if (dims != null && dims.indexOf("~") > 0) {
+		if (dims != null && dims.indexOf('~') > 0) {
 			int delim = dims.indexOf('~');
 			setWidthNo(Convert.formatInteger(dims.substring(0, delim)));
 			setHeightNo(Convert.formatInteger(dims.substring(delim+1)));
