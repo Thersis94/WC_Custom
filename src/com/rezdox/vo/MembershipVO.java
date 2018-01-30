@@ -29,7 +29,7 @@ public class MembershipVO implements Serializable  {
 	private String membershipId;
 	private String membershipName;
 	private Group group;
-	private int statusFlg;
+	private int statusFlag;
 	private double costNo;
 	private int quantityNo;
 	private Date createDate;
@@ -51,9 +51,9 @@ public class MembershipVO implements Serializable  {
 
 	public MembershipVO(ActionRequest req) {
 		setMembershipId(req.getParameter("membershipId"));
-		setMembershipName(req.getParameter("mebershipName"));
-		setGroupCd(req.getParameter("groupCd"));
-		setStatusFlg(Convert.formatInteger(req.getParameter("statusFlg")));
+		setMembershipName(req.getParameter("membershipName"));
+		setGroupCode(req.getParameter("groupCode"));
+		setStatusFlag(Convert.formatInteger(req.getParameter("statusFlag")));
 		setCostNo(Convert.formatDouble(req.getParameter("costNo")));
 		setQuantityNo(Convert.formatInteger(req.getParameter("quantityNo")));
 	}
@@ -106,30 +106,30 @@ public class MembershipVO implements Serializable  {
 	 * @return the group code
 	 */
 	@Column(name="group_cd")
-	public String getGroupCd() {
+	public String getGroupCode() {
 		return group == null ? null : group.name();
 	}
 
 	/**
-	 * @param groupCd the group code to set
+	 * @param groupCode the group code to set
 	 */
-	public void setGroupCd(String groupCd) {
-		setGroup(Group.valueOf(groupCd));
+	public void setGroupCode(String groupCode) {
+		setGroup(Group.valueOf(groupCode));
 	}
 
 	/**
-	 * @return the statusFlg
+	 * @return the statusFlag
 	 */
 	@Column(name="status_flg")
-	public int getStatusFlg() {
-		return statusFlg;
+	public int getStatusFlag() {
+		return statusFlag;
 	}
 
 	/**
-	 * @param statusFlg the statusFlg to set
+	 * @param statusFlag the statusFlag to set
 	 */
-	public void setStatusFlg(int statusFlg) {
-		this.statusFlg = statusFlg;
+	public void setStatusFlag(int statusFlag) {
+		this.statusFlag = statusFlag;
 	}
 
 	/**

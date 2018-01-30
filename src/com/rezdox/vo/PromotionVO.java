@@ -3,9 +3,12 @@ package com.rezdox.vo;
 //Java 8
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
@@ -32,27 +35,45 @@ public class PromotionVO implements Serializable  {
 	private String descriptionText;
 	private String termsText;
 	private double discountPctNo;
-	private int statusFlg;
+	private int statusFlag;
 	private Date startDate;
 	private Date expireDate;
 	private Date createDate;
 	private Date updateDate;
 	
+	// XR Data
+	private Map<String, MembershipVO> memberships;
+	
 	/**
-	 * Promotion code used when someone signs up for the service
+	 * Default promotion code used when someone signs up for the service
 	 */
 	public static final String SIGNUP_PROMOTION_CD = "REZDOXFIRST";
 
-	public PromotionVO() {}
+	public PromotionVO() {
+		memberships = new HashMap<>();
+	}
 
+	/**
+	 * @param req
+	 */
 	public PromotionVO(ActionRequest req) {
+		this();
+		setData(req);
+	}
+	
+	/**
+	 * Sets data from the request
+	 * 
+	 * @param req
+	 */
+	public void setData(ActionRequest req) {
 		setPromotionId(req.getParameter("promotionId"));
 		setPromotionName(req.getParameter("promotionName"));
 		setPromotionCode(req.getParameter("promotionCode"));
 		setDescriptionText(req.getParameter("descriptionText"));
 		setTermsText(req.getParameter("termsText"));
 		setDiscountPctNo(Convert.formatDouble(req.getParameter("discountPctNo")));
-		setStatusFlg(Convert.formatInteger(req.getParameter("statusFlg")));
+		setStatusFlag(Convert.formatInteger(req.getParameter("statusFlag")));
 		setStartDate(Convert.parseDateUnknownPattern(req.getParameter("startDate")));
 		setExpireDate(Convert.parseDateUnknownPattern(req.getParameter("expireDate")));
 	}
@@ -148,18 +169,18 @@ public class PromotionVO implements Serializable  {
 	}
 
 	/**
-	 * @return the statusFlg
+	 * @return the statusFlag
 	 */
 	@Column(name="status_flg")
-	public int getStatusFlg() {
-		return statusFlg;
+	public int getStatusFlag() {
+		return statusFlag;
 	}
 
 	/**
-	 * @param statusFlg the statusFlg to set
+	 * @param statusFlag the statusFlag to set
 	 */
-	public void setStatusFlg(int statusFlg) {
-		this.statusFlg = statusFlg;
+	public void setStatusFlag(int statusFlag) {
+		this.statusFlag = statusFlag;
 	}
 
 	/**
@@ -220,5 +241,27 @@ public class PromotionVO implements Serializable  {
 	 */
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	/**
+	 * @return the memberships
+	 */
+	public Map<String, MembershipVO> getMemberships() {
+		return memberships;
+	}
+
+	/**
+	 * @param memberships the memberships to set
+	 */
+	public void setMemberships(Map<String, MembershipVO> memberships) {
+		this.memberships = memberships;
+	}
+
+	/**
+	 * @param membership the membership to add
+	 */
+	@BeanSubElement
+	public void addMembership(MembershipVO membership) {
+		memberships.put(membership.getMembershipId(), membership);
 	}
 }
