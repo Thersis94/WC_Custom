@@ -256,6 +256,7 @@ Create table custom.REZDOX_MEMBERSHIP
 	STATUS_FLG Integer NOT NULL Default 0,
 	COST_NO Double precision NOT NULL,
 	QTY_NO Integer NOT NULL Default 1,
+	NEW_MBR_DFLT_FLG Integer NOT NULL Default 0,
 	CREATE_DT Timestamp NOT NULL,
 	UPDATE_DT Timestamp,
 constraint pk_REZDOX_MEMBERSHIP primary key (MEMBERSHIP_ID)

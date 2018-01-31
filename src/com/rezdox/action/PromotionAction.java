@@ -59,7 +59,7 @@ public class PromotionAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	protected List<PromotionVO> retrievePromotions(ActionRequest req) {
+	public List<PromotionVO> retrievePromotions(ActionRequest req) {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(250);
 		List<Object> params = new ArrayList<>();
@@ -72,6 +72,11 @@ public class PromotionAction extends SBActionAdapter {
 		if (!StringUtil.isEmpty(req.getParameter("promotionId"))) {
 			sql.append("where p.promotion_id = ? ");
 			params.add(req.getParameter("promotionId"));
+		}
+		
+		if (!StringUtil.isEmpty(req.getParameter("promotionCode"))) {
+			sql.append("where p.promotion_cd = ? ");
+			params.add(req.getParameter("promotionCode"));
 		}
 		
 		DBProcessor dbp = new DBProcessor(dbConn);

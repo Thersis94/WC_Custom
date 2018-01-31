@@ -51,7 +51,7 @@ public class MembershipAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	protected List<MembershipVO> retrieveMemberships(ActionRequest req) {
+	public List<MembershipVO> retrieveMemberships(ActionRequest req) {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
 		List<Object> params = new ArrayList<>();
@@ -61,6 +61,11 @@ public class MembershipAction extends SBActionAdapter {
 		if (!StringUtil.isEmpty(req.getParameter("membershipId"))) {
 			sql.append("where membership_id = ? ");
 			params.add(req.getParameter("membershipId"));
+		}
+		
+		if (req.hasParameter("getNewMemberDefault")) {
+			sql.append("where new_mbr_dflt_flg = 1 and group_cd = ? ");
+			params.add(req.getParameter("groupCode"));
 		}
 		
 		sql.append("order by group_cd, qty_no ");

@@ -32,6 +32,7 @@ public class MembershipVO implements Serializable  {
 	private int statusFlag;
 	private double costNo;
 	private int quantityNo;
+	private int newMemberDefaultFlag;
 	private Date createDate;
 	private Date updateDate;
 
@@ -56,6 +57,7 @@ public class MembershipVO implements Serializable  {
 		setStatusFlag(Convert.formatInteger(req.getParameter("statusFlag")));
 		setCostNo(Convert.formatDouble(req.getParameter("costNo")));
 		setQuantityNo(Convert.formatInteger(req.getParameter("quantityNo")));
+		setNewMemberDefaultFlag(Convert.formatInteger(req.getParameter("newMemberDefaultFlag")));
 	}
 
 	/**
@@ -160,6 +162,21 @@ public class MembershipVO implements Serializable  {
 	 */
 	public void setQuantityNo(int quantityNo) {
 		this.quantityNo = quantityNo;
+	}
+
+	/**
+	 * @return the newMemberDefaultFlag
+	 */
+	@Column(name="new_mbr_dflt_flg")
+	public int getNewMemberDefaultFlag() {
+		return newMemberDefaultFlag;
+	}
+
+	/**
+	 * @param newMemberDefaultFlag the newMemberDefaultFlag to set
+	 */
+	public void setNewMemberDefaultFlag(int newMemberDefaultFlag) {
+		this.newMemberDefaultFlag = newMemberDefaultFlag;
 	}
 
 	/**

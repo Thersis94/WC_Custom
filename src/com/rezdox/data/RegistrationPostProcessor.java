@@ -1,14 +1,16 @@
 package com.rezdox.data;
 
-import java.util.ArrayList;
 import java.util.List;
 
 // WC_Custom
+import com.rezdox.action.MembershipAction;
+import com.rezdox.action.PromotionAction;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO;
 import com.rezdox.vo.MembershipVO.Group;
 import com.rezdox.vo.PromotionVO;
 import com.rezdox.vo.SubscriptionVO;
+
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -70,8 +72,8 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		SubscriptionVO subscription = new SubscriptionVO();
 
 		DBProcessor dbp = new DBProcessor(dbConn);
-		MembershipVO membership = retrieveDefaultMembership(dbp);
-		PromotionVO promotion = retrieveFreePromotion(dbp);
+		MembershipVO membership = retrieveDefaultMembership();
+		PromotionVO promotion = retrieveFreePromotion();
 		
 		subscription.setMember(member);
 		subscription.setMembership(membership);
@@ -88,47 +90,42 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 			log.error("Unable to save new RezDox member/subscription data. ", e);
 		}
 		
-		// TODO: Ticket #RV-72: Add in hook to give the user Rez Rewards for signing up.
+		// TODO: Ticket #RV-72: Add in hook to give the user Rez Rewards for signing up here.
 		
 	}
 	
 	/**
 	 * Retrieves the default membership for signing up.
 	 * 
-	 * @param dbp
 	 * @return
 	 */
-	private MembershipVO retrieveDefaultMembership(DBProcessor dbp) {
-		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select * from ").append(schema).append("rezdox_membership ");
-		sql.append("where group_cd = ? and qty_no = 100 ");
+	private MembershipVO retrieveDefaultMembership() {
+		ActionRequest membershipReq = new ActionRequest();
+		membershipReq.setParameter("getNewMemberDefault", "true");
+		membershipReq.setParameter("groupCode", Group.CO.name());
 		
-		List<Object> params = new ArrayList<>();
-		params.add(Group.CO.name());
+		MembershipAction ma = new MembershipAction();
+		ma.setAttributes(this.attributes);
+		ma.setDBConnection(dbConn);
 		
-		List<MembershipVO> membership = dbp.executeSelect(sql.toString(), params, new MembershipVO());
-		
+		List<MembershipVO> membership = ma.retrieveMemberships(membershipReq);
 		return membership.get(0);
 	}
 
 	/**
-	 * Retrieves the promotion used when signing up.
+	 * Retrieves the promotion used for signing up.
 	 * 
-	 * @param dbp
 	 * @return
 	 */
-	private PromotionVO retrieveFreePromotion(DBProcessor dbp) {
-		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select * from ").append(schema).append("rezdox_promotion ");
-		sql.append("where promotion_cd = ? ");
+	private PromotionVO retrieveFreePromotion() {
+		ActionRequest promotionReq = new ActionRequest();
+		promotionReq.setParameter("promotionCode", PromotionVO.SIGNUP_PROMOTION_CD);
 		
-		List<Object> params = new ArrayList<>();
-		params.add(PromotionVO.SIGNUP_PROMOTION_CD);
+		PromotionAction pa = new PromotionAction();
+		pa.setAttributes(this.attributes);
+		pa.setDBConnection(dbConn);
 		
-		List<PromotionVO> promotion = dbp.executeSelect(sql.toString(), params, new PromotionVO());
-		
+		List<PromotionVO> promotion = pa.retrievePromotions(promotionReq);
 		return promotion.get(0);
 	}
 }

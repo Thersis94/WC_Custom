@@ -754,12 +754,12 @@ public class LegacyDataMigration extends CommandLineUtil {
 	protected void createMemberships() {
 		log.info("Adding Memberships");
 		StringBuilder sql = new StringBuilder(600);
-		sql.append("insert into custom.rezdox_membership (membership_id, membership_nm, group_cd, status_flg, cost_no, qty_no, create_dt) ");
-		sql.append("values (replace(newid(),'-',''), 'Residence', 'HO', 1, 9.99, 1, getdate()), ");
-		sql.append("(replace(newid(),'-',''), 'Business', 'BU', 1, 79.99, 1, getdate()), ");
-		sql.append("(replace(newid(),'-',''), '100 Connections', 'CO', 1, 99.99, 100, getdate()), ");
-		sql.append("(replace(newid(),'-',''), '200 Connections', 'CO', 1, 179.99, 200, getdate()), ");
-		sql.append("(replace(newid(),'-',''), '300 Connections', 'CO', 1, 239.99, 300, getdate()) ");
+		sql.append("insert into custom.rezdox_membership (membership_id, membership_nm, group_cd, status_flg, cost_no, qty_no, new_mbr_dflt_flg, create_dt) ");
+		sql.append("values (replace(newid(),'-',''), 'Residence', 'HO', 1, 9.99, 1, 1, getdate()), ");
+		sql.append("(replace(newid(),'-',''), 'Business', 'BU', 1, 79.99, 1, 1, getdate()), ");
+		sql.append("(replace(newid(),'-',''), '100 Connections', 'CO', 1, 99.99, 100, 1, getdate()), ");
+		sql.append("(replace(newid(),'-',''), '200 Connections', 'CO', 1, 179.99, 200, 0, getdate()), ");
+		sql.append("(replace(newid(),'-',''), '300 Connections', 'CO', 1, 239.99, 300, 0, getdate()) ");
 		executeSimpleMapping(sql, "membership");
 	}
 	
