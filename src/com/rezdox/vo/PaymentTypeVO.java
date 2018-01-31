@@ -32,7 +32,20 @@ public class PaymentTypeVO implements Serializable {
 
 	public PaymentTypeVO() {}
 
+	/**
+	 * @param req
+	 */
 	public PaymentTypeVO(ActionRequest req) {
+		this();
+		setData(req);
+	}
+	
+	/**
+	 * Sets data from the request
+	 * 
+	 * @param req
+	 */
+	public void setData(ActionRequest req) {
 		setPaymentTypeId(req.getParameter("paymentTypeId"));
 		setTypeName(req.getParameter("typeName"));
 	}

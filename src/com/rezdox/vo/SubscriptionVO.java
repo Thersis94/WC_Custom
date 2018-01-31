@@ -46,7 +46,19 @@ public class SubscriptionVO implements Serializable {
 		setPromotion(new PromotionVO());
 	}
 
+	/**
+	 * @param req
+	 */
 	public SubscriptionVO(ActionRequest req) {
+		setData(req);
+	}
+	
+	/**
+	 * Sets data from the request
+	 * 
+	 * @param req
+	 */
+	public void setData(ActionRequest req) {
 		setSubscriptionId(req.getParameter("subscriptionId"));
 		setPaymentType(new PaymentTypeVO(req));
 		setMember(new MemberVO(req));

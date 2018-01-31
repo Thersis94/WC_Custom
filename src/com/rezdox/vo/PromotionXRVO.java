@@ -31,6 +31,12 @@ public class PromotionXRVO implements Serializable  {
 
 	public PromotionXRVO() {}
 	
+	/**
+	 * Sets the required fields
+	 * 
+	 * @param promotionId
+	 * @param membershipId
+	 */
 	public PromotionXRVO(String promotionId, String membershipId) {
 		this.promotionId = promotionId;
 		this.membershipId = membershipId;

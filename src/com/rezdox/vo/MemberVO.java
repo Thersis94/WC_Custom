@@ -1,5 +1,6 @@
 package com.rezdox.vo;
 
+import java.io.Serializable;
 //Java 8
 import java.util.Date;
 
@@ -24,7 +25,7 @@ import com.siliconmtn.util.user.HumanNameIntfc;
  ***************************************************************************/
 
 @Table(name="REZDOX_MEMBER")
-public class MemberVO extends UserDataVO implements HumanNameIntfc {
+public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable {
 	private static final long serialVersionUID = 6973805787915145277L;
 
 	private String memberId;
@@ -33,7 +34,6 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc {
 	private int privacyFlg;
 	private String profilePicPath;
 	private Date createDate;
-	private Date updateDate;
 
 	/**
 	 * RezDox privacy flags.
@@ -73,18 +73,32 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc {
 	}
 
 	public MemberVO() {
+		super();
 	}
 
+	/**
+	 * @param req
+	 */
 	public MemberVO(ActionRequest req) {
-		super(req);
+		this();
+		setData(req);
+	}
+
+	/**
+	 * Sets data from the request
+	 * 
+	 * @param req
+	 */
+	@Override
+	public void setData(ActionRequest req) {
+		super.setData(req);
 		setMemberId(req.getParameter("memberId"));
 		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
 		setStatusFlg(Convert.formatInteger(req.getParameter("statusFlg")));
 		setPrivacyFlg(Convert.formatInteger(req.getParameter("privacyFlg")));
 		setProfilePicPath(req.getParameter("profilePicPath"));
 	}
-
-
+	
 	/**
 	 * @return the memberId
 	 */

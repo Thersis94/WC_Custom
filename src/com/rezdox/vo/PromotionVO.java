@@ -44,11 +44,6 @@ public class PromotionVO implements Serializable  {
 	// XR Data
 	private Map<String, MembershipVO> memberships;
 	
-	/**
-	 * Default promotion code used when someone signs up for the service
-	 */
-	public static final String SIGNUP_PROMOTION_CD = "REZDOXFIRST";
-
 	public PromotionVO() {
 		memberships = new HashMap<>();
 	}

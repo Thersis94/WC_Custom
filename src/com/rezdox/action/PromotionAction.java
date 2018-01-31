@@ -26,6 +26,13 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class PromotionAction extends SBActionAdapter {
 
+	public static final String PROMOTION_ID = "promotionId";
+	
+	/**
+	 * Default promotion code used when someone signs up for the service
+	 */
+	public static final String SIGNUP_PROMOTION_CD = "REZDOXFIRST";
+
 	public PromotionAction() {
 		super();
 	}
@@ -69,9 +76,9 @@ public class PromotionAction extends SBActionAdapter {
 		sql.append("left join rezdox_membership_promotion mp on p.promotion_id = mp.promotion_id ");
 		sql.append("left join rezdox_membership m on mp.membership_id = m.membership_id ");
 		
-		if (!StringUtil.isEmpty(req.getParameter("promotionId"))) {
+		if (!StringUtil.isEmpty(req.getParameter(PROMOTION_ID))) {
 			sql.append("where p.promotion_id = ? ");
-			params.add(req.getParameter("promotionId"));
+			params.add(req.getParameter(PROMOTION_ID));
 		}
 		
 		if (!StringUtil.isEmpty(req.getParameter("promotionCode"))) {
@@ -92,7 +99,7 @@ public class PromotionAction extends SBActionAdapter {
 		
 		// Change the status or a full insert/update with xr
 		if (req.hasParameter("toggleStatus")) {
-			setPromotionStatus(req.getParameter("promotionId"), req.getIntegerParameter("toggleStatus"));
+			setPromotionStatus(req.getParameter(PROMOTION_ID), req.getIntegerParameter("toggleStatus"));
 			msg = "The promotion status has been updated.";
 		} else {
 			updatePromotion(req);

@@ -24,6 +24,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Jan 30, 2018
  ****************************************************************************/
 public class MembershipAction extends SBActionAdapter {
+	
+	private static final String MEMBERSHIP_ID = "membershipId";
 
 	public MembershipAction() {
 		super();
@@ -58,9 +60,9 @@ public class MembershipAction extends SBActionAdapter {
 
 		sql.append("select * from ").append(schema).append("rezdox_membership ");
 		
-		if (!StringUtil.isEmpty(req.getParameter("membershipId"))) {
+		if (!StringUtil.isEmpty(req.getParameter(MEMBERSHIP_ID))) {
 			sql.append("where membership_id = ? ");
-			params.add(req.getParameter("membershipId"));
+			params.add(req.getParameter(MEMBERSHIP_ID));
 		}
 		
 		if (req.hasParameter("getNewMemberDefault")) {
@@ -83,7 +85,7 @@ public class MembershipAction extends SBActionAdapter {
 		
 		// Change the status or a full insert/update
 		if (req.hasParameter("toggleStatus")) {
-			setMembershipStatus(req.getParameter("membershipId"), req.getIntegerParameter("toggleStatus"));
+			setMembershipStatus(req.getParameter(MEMBERSHIP_ID), req.getIntegerParameter("toggleStatus"));
 			msg = "The membership status has been updated.";
 		} else {
 			updateMembership(req);

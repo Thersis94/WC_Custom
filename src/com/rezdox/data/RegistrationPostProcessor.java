@@ -119,7 +119,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 	 */
 	private PromotionVO retrieveFreePromotion() {
 		ActionRequest promotionReq = new ActionRequest();
-		promotionReq.setParameter("promotionCode", PromotionVO.SIGNUP_PROMOTION_CD);
+		promotionReq.setParameter("promotionCode", PromotionAction.SIGNUP_PROMOTION_CD);
 		
 		PromotionAction pa = new PromotionAction();
 		pa.setAttributes(this.attributes);

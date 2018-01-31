@@ -50,7 +50,20 @@ public class MembershipVO implements Serializable  {
 
 	public MembershipVO() {}
 
+	/**
+	 * @param req
+	 */
 	public MembershipVO(ActionRequest req) {
+		this();
+		setData(req);
+	}
+	
+	/**
+	 * Sets data from the request
+	 * 
+	 * @param req
+	 */
+	public void setData(ActionRequest req) {
 		setMembershipId(req.getParameter("membershipId"));
 		setMembershipName(req.getParameter("membershipName"));
 		setGroupCode(req.getParameter("groupCode"));

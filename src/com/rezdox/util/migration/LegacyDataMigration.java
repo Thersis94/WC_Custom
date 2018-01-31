@@ -38,10 +38,13 @@ public class LegacyDataMigration extends CommandLineUtil {
 	// import env params
 	private static final String SOURCE_FILE_CONFIG="scripts/rezdox/migration_config.properties";
 	private static final String SOURCE_FILE_LOG="scripts/rezdox/migration_log4j.properties";
-
-	// profile header vals
-	private long startTimeInMillis;
 	
+	// delimiters used in legacy fields
+	private static final String TWO_PIPES = "\\|\\|";
+	private static final String FOUR_PIPES = "\\|\\|\\|\\|";
+	
+	private static final String BUSINESS_ID = "business_id";
+
 	public LegacyDataMigration(String[] args) {
 		super(args);
 		PropertyConfigurator.configure(SOURCE_FILE_LOG);
@@ -59,7 +62,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 	}
 	
 	public void run() {
-		startTimeInMillis = Calendar.getInstance().getTimeInMillis();
+		long startTimeInMillis = Calendar.getInstance().getTimeInMillis();
 		
 		// load props
 		loadProperties(SOURCE_FILE_CONFIG);
@@ -139,23 +142,37 @@ public class LegacyDataMigration extends CommandLineUtil {
 		try (PreparedStatement legacyPhotoPs = dbConn.prepareStatement(legacyPhotoSql.toString())) {
 			ResultSet rs = legacyPhotoPs.executeQuery();
 			while (rs.next()) {
-				String[] photos = rs.getString("photos").split("\\|\\|\\|\\|");
+				String[] photos = rs.getString("photos").split(FOUR_PIPES);
 				String id = rs.getString(idName);
-				int order = 0;
 				
-				for (String photo : photos) {
-					if (photo.equals("0")) continue;
-					int idx = 0;
-					photoPs.setString(++idx, new UUIDGenerator().getUUID());
-					photoPs.setString(++idx, id);
-					photoPs.setString(++idx, photo);
-					photoPs.setInt(++idx, order++);
-					photoPs.setTimestamp(++idx, Convert.getCurrentTimestamp());
-					photoPs.addBatch();
-				}
+				processPhotos(id, photos, photoPs);
 			}
 		} catch (Exception e) {
 			throw new Exception("Error retrieving legacy photo data.", e);
+		}
+	}
+	
+	/**
+	 * Helper to take the array of photos that was split from one field in the legacy data
+	 * and add individual records to the new data model for each.
+	 * 
+	 * @param id - the owner of the photos
+	 * @param photos - the photos to be added
+	 * @param photoPs - the prepared statement we are building
+	 * @throws SQLException
+	 */
+	private void processPhotos(String id, String[] photos, PreparedStatement photoPs) throws SQLException {
+		int order = 0;
+		
+		for (String photo : photos) {
+			if ("0".equals(photo)) continue;
+			int idx = 0;
+			photoPs.setString(++idx, new UUIDGenerator().getUUID());
+			photoPs.setString(++idx, id);
+			photoPs.setString(++idx, photo);
+			photoPs.setInt(++idx, order++);
+			photoPs.setTimestamp(++idx, Convert.getCurrentTimestamp());
+			photoPs.addBatch();
 		}
 	}
 	
@@ -171,7 +188,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 		try (PreparedStatement legacyFilePs = dbConn.prepareStatement(legacyFileSql.toString())) {
 			ResultSet rs = legacyFilePs.executeQuery();
 			while (rs.next()) {
-				String[] files = rs.getString("files").split("\\|\\|\\|\\|");
+				String[] files = rs.getString("files").split(FOUR_PIPES);
 				String id = rs.getString(idName);
 				
 				for (String file : files) {
@@ -209,9 +226,10 @@ public class LegacyDataMigration extends CommandLineUtil {
 				for (int i = 1; i < columnCnt + 1; i++) {
 					String columnName = metaData.getColumnName(i);
 					
-					if (columnsToSplit.containsKey(columnName))
-						splitAttributeColumn(columnsToSplit, columnName, attrPs, rs, fieldPrefix);
+					// Split columns that have delimited data to be added as separate records
+					splitAttributeColumn(columnsToSplit, columnName, attrPs, rs, fieldPrefix);
 					
+					// Skip fields that do not need to be added, or already added to ps
 					if ("id".equals(columnName) || columnsToSplit.containsKey(columnName))
 						continue;
 					
@@ -242,6 +260,9 @@ public class LegacyDataMigration extends CommandLineUtil {
 	private void splitAttributeColumn(Map<String, String> columnsToSplit, String columnName, PreparedStatement attrPs,
 			ResultSet sourceRs, String fieldPrefix) throws SQLException {
 
+		if (!columnsToSplit.containsKey(columnName))
+			return;
+		
 		String[] data = sourceRs.getString(columnName).split(columnsToSplit.get(columnName));
 		int position = 0;
 		
@@ -277,8 +298,8 @@ public class LegacyDataMigration extends CommandLineUtil {
 
 		// migrate residence photos
 		StringBuilder photosSql = new StringBuilder(150);
-		photosSql.append("insert into custom.rezdox_photo (photo_id, residence_id, photo_nm, order_no, create_dt) ");
-		photosSql.append("values (?,?,?,?,?)");
+		photosSql.append("insert into custom.rezdox_photo (photo_id, residence_id, photo_nm, order_no, ");
+		photosSql.append("create_dt) values (?,?,?,?,?)");
 
 		StringBuilder legacyPhotoSql = new StringBuilder(50);
 		legacyPhotoSql.append("select cast(id as varchar) as residence_id, photos from rezdox.residence_tbl where photos != '0'");
@@ -296,7 +317,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 	 * @return
 	 * @throws Exception 
 	 */
-	protected void migrateResidenceMembers() throws Exception {
+	protected void migrateResidenceMembers() {
 		log.info("Migrating Residence Members");
 		
 		// move residence owner data to new data model
@@ -320,8 +341,8 @@ public class LegacyDataMigration extends CommandLineUtil {
 		
 		// Migrate residence attributes
 		StringBuilder attrSql = new StringBuilder(150);
-		attrSql.append("insert into custom.rezdox_residence_attribute (attribute_id, residence_id, form_field_id, ");
-		attrSql.append("value_txt, create_dt) values (?,?,?,?,?)");
+		attrSql.append("insert into custom.rezdox_residence_attribute (attribute_id, residence_id, ");
+		attrSql.append("form_field_id, value_txt, create_dt) values (?,?,?,?,?) ");
 		
 		StringBuilder legacySql = new StringBuilder(100);
 		legacySql.append("select ri.* from rezdox.residence_info_tbl ri inner join rezdox.residence_tbl r on ri.id = r.id");
@@ -419,14 +440,14 @@ public class LegacyDataMigration extends CommandLineUtil {
 
 		// Migrate pipe delimeted photos from source business record
 		StringBuilder photosSql = new StringBuilder(150);
-		photosSql.append("insert into custom.rezdox_photo (photo_id, business_id, photo_nm, order_no, create_dt) ");
-		photosSql.append("values (?,?,?,?,?)");
+		photosSql.append("insert into custom.rezdox_photo (photo_id, business_id, photo_nm, order_no, ");
+		photosSql.append("create_dt) values (?,?,?,?,?)");
 
 		StringBuilder legacyPhotoSql = new StringBuilder(50);
 		legacyPhotoSql.append("select cast(id as varchar) as business_id, photos from rezdox.business_tbl where photos != '0'");
 
 		try (PreparedStatement photoPs = dbConn.prepareStatement(photosSql.toString());) {
-			buildPhotoPs(photoPs, legacyPhotoSql, "business_id");
+			buildPhotoPs(photoPs, legacyPhotoSql, BUSINESS_ID);
 			photoPs.executeBatch();
 		} catch (Exception sqle) {
 			log.error("Error migrating business photos. ", sqle);
@@ -446,22 +467,22 @@ public class LegacyDataMigration extends CommandLineUtil {
 		
 		// Migrate business attributes
 		StringBuilder attrSql = new StringBuilder(150);
-		attrSql.append("insert into custom.rezdox_business_attribute (attribute_id, business_id, form_field_id, ");
-		attrSql.append("value_txt, create_dt) values (?,?,?,?,?)");
+		attrSql.append("insert into custom.rezdox_business_attribute (attribute_id, business_id, ");
+		attrSql.append("form_field_id, value_txt, create_dt) values (?,?,?,?,?) ");
 
 		StringBuilder legacySql = new StringBuilder(100);
 		legacySql.append("select bi.* from rezdox.business_info_tbl bi inner join rezdox.business_tbl b on bi.id = b.id");
 
 		Map<String, String> columnsToSplit = new HashMap<>();
-		columnsToSplit.put("trade_areas", "\\|\\|");
-		columnsToSplit.put("hours_ops", "\\|\\|\\|\\|");
-		columnsToSplit.put("socialmedia", "\\|\\|");
-		columnsToSplit.put("payments", "\\|\\|");
-		columnsToSplit.put("specialties", "\\|\\|");
-		columnsToSplit.put("programs", "\\|\\|");
-		columnsToSplit.put("associations", "\\|\\|");
-		columnsToSplit.put("accolades", "\\|\\|");
-		columnsToSplit.put("style_ops", "\\|\\|");
+		columnsToSplit.put("trade_areas", TWO_PIPES);
+		columnsToSplit.put("hours_ops", FOUR_PIPES);
+		columnsToSplit.put("socialmedia", TWO_PIPES);
+		columnsToSplit.put("payments", TWO_PIPES);
+		columnsToSplit.put("specialties", TWO_PIPES);
+		columnsToSplit.put("programs", TWO_PIPES);
+		columnsToSplit.put("associations", TWO_PIPES);
+		columnsToSplit.put("accolades", TWO_PIPES);
+		columnsToSplit.put("style_ops", TWO_PIPES);
 
 		try (PreparedStatement attrPs = dbConn.prepareStatement(attrSql.toString());) {
 			buildAttributesPs(attrPs, legacySql, columnsToSplit, "BUSINESS");
@@ -521,7 +542,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			ResultSet legacyRs = legacyPs.executeQuery();
 			
 			while (legacyRs.next()) {
-				String[] data = legacyRs.getString("content").split("\\|\\|\\|\\|");
+				String[] data = legacyRs.getString("content").split(FOUR_PIPES);
 				String baseId = legacyRs.getString("id");
 				String member1 = legacyRs.getString("pro1").substring(1);
 				String member2 = legacyRs.getString("pro2").substring(1);
@@ -529,7 +550,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 				
 				for (String datum : data) {
 					String messageId = baseId + "_" + msgIndex++;
-					String[] messageData = datum.split("\\|\\|");
+					String[] messageData = datum.split(TWO_PIPES);
 					
 					String fromId = messageData[0].substring(1);
 					String toId = fromId.equals(member1) ? member2 : member1;
@@ -635,46 +656,85 @@ public class LegacyDataMigration extends CommandLineUtil {
 			// Migrate Member Connections
 			ResultSet memberRs = memberPs.executeQuery();
 			while (memberRs.next()) {
-				String[] memMemConn = memberRs.getString("mem_con").split("\\|\\|\\|\\|");
-				String[] memBusConn = memberRs.getString("bus_con").split("\\|\\|\\|\\|");
+				String[] memMemConn = memberRs.getString("mem_con").split(FOUR_PIPES);
+				String[] memBusConn = memberRs.getString("bus_con").split(FOUR_PIPES);
 				String memberId = memberRs.getString("member_id");
 				
-				// Member to member connections need to be de-duped... connections from member1 to member2, also exist
-				// as connections from member2 to member1 in the legacy data. This is not necessary.
-				for (String connectionId : memMemConn) {
-					if (!memberIds.contains(connectionId)) continue;
-					if (Convert.formatInteger(connectionId) > Convert.formatInteger(memberId)) {
-						addConnection(connectionPs, memberId, connectionId, null, null);
-					}
-				}
-				
-				// To de-dupe member to business connections, we won't migrate business to member connections off
-				// of the business records in the next piece. Simple.
-				for (String connectionId : memBusConn) {
-					if (!businessIds.contains(connectionId)) continue;
-					addConnection(connectionPs, memberId, null, null, connectionId);
-				}
+				processMemToMemConnections(memberId, memMemConn, memberIds, connectionPs);
+				processMemToBusConnections(memberId, memBusConn, businessIds, connectionPs);
 			}
 			
 			// Migrate Business Connections
 			ResultSet businessRs = businessPs.executeQuery();
 			while (businessRs.next()) {
-				String[] busBusConn = businessRs.getString("bus_con").split("\\|\\|\\|\\|");
-				String businessId = businessRs.getString("business_id");
+				String[] busBusConn = businessRs.getString("bus_con").split(FOUR_PIPES);
+				String businessId = businessRs.getString(BUSINESS_ID);
 				
-				// Business to business connections need to be de-duped... connections from business1 to business2, also exist
-				// as connections from business2 to business1 in the legacy data. This is not necessary.
-				for (String connectionId : busBusConn) {
-					if (!businessIds.contains(connectionId)) continue;
-					if (Convert.formatInteger(connectionId) > Convert.formatInteger(businessId)) {
-						addConnection(connectionPs, null, null, businessId, connectionId);
-					}
-				}
+				processBusToBusConnections(businessId, busBusConn, businessIds, connectionPs);
 			}
 			
 			connectionPs.executeBatch();
 		} catch (Exception sqle) {
 			log.error("Error migrating connections. ", sqle);
+		}
+	}
+	
+	/**
+	 * Member to member connections need to be de-duped... connections from member1 to member2, also exist
+	 * as connections from member2 to member1 in the legacy data. This is not necessary.
+	 * 
+	 * @param memberId - the member the connections belong to
+	 * @param memMemConn - the connections from this member to other members
+	 * @param memberIds - valid members in the system
+	 * @param connectionPs - the prepared statement we are adding to
+	 * @throws SQLException
+	 */
+	private void processMemToMemConnections(String memberId, String[] memMemConn, List<String> memberIds, PreparedStatement connectionPs) throws SQLException {
+		for (String connectionId : memMemConn) {
+			if (!memberIds.contains(connectionId)) continue;
+			
+			// De-dupe the data
+			if (Convert.formatInteger(connectionId) > Convert.formatInteger(memberId)) {
+				addConnection(connectionPs, memberId, connectionId, null, null);
+			}
+		}
+	}
+	
+	/**
+	 * To de-dupe member to business connections, we won't migrate business to member connections
+	 * found in the business records. So there is no de-duping going on here. Simple.
+	 * 
+	 * @param memberId - the member the connections belong to
+	 * @param memBusConn - the connections from this member to businesses
+	 * @param businessIds - valid businesses in the system
+	 * @param connectionPs - the prepared statement we are adding to
+	 * @throws SQLException
+	 */
+	private void processMemToBusConnections(String memberId, String[] memBusConn, List<String> businessIds, PreparedStatement connectionPs) throws SQLException {
+		for (String connectionId : memBusConn) {
+			if (!businessIds.contains(connectionId)) continue;
+			addConnection(connectionPs, memberId, null, null, connectionId);
+		}
+	}
+	
+	/**
+	 * Business to business connections need to be de-duped... connections from business1 to business2, also exist
+	 * as connections from business2 to business1 in the legacy data. This is not necessary.
+	 * 
+	 * @param businessId - the business the connections belong to
+	 * @param busBusConn - the connections from this business to other businesses
+	 * @param businessIds - valid businesses in the system
+	 * @param connectionPs - the prepared statement we are adding to
+	 * @throws SQLException
+	 */
+	private void processBusToBusConnections(String businessId, String[] busBusConn, List<String> businessIds, PreparedStatement connectionPs) throws SQLException {
+		for (String connectionId : busBusConn) {
+			if (!businessIds.contains(connectionId)) continue;
+			
+			// De-dupe the data
+			if (Convert.formatInteger(connectionId) > Convert.formatInteger(businessId)) {
+				addConnection(connectionPs, null, null, businessId, connectionId);
+			}
 		}
 	}
 	
@@ -739,7 +799,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				businessIds.add(rs.getString("business_id"));
+				businessIds.add(rs.getString(BUSINESS_ID));
 			}
 		} catch (Exception sqle) {
 			log.error("Error getting business id list. ", sqle);
@@ -813,33 +873,31 @@ public class LegacyDataMigration extends CommandLineUtil {
 	 * There are some exceptions where a few select people get more residences/businesses.
 	 */
 	protected void migrateSubscriptions() {
+		String insert = "insert into custom.rezdox_subscription (subscription_id, member_id, membership_id, promotion_id, cost_no, discount_no, qty_no, create_dt) ";
+		String select = "select replace(newid(),'-',''), member_id, m.membership_id, p.promotion_id, cost_no, discount_pct_no * cost_no * -1, qty_no, getdate() ";
+		String joinMp = "inner join custom.rezdox_membership_promotion mp on m.membership_id = mp.membership_id ";
+		String joinP = "inner join custom.rezdox_promotion p on mp.promotion_id = p.promotion_id and p.promotion_cd = 'REZDOXFIRST' ";
+		String group = "group by member_id, m.membership_id, p.promotion_id ";
+		
 		log.info("Adding Member Residence Subscriptions");
 		StringBuilder resSql = new StringBuilder(700);
-		resSql.append("insert into custom.rezdox_subscription (subscription_id, member_id, membership_id, promotion_id, cost_no, discount_no, qty_no, create_dt) ");
-		resSql.append("select replace(newid(),'-',''), member_id, m.membership_id, p.promotion_id, cost_no, discount_pct_no * cost_no * -1, qty_no, getdate() ");
+		resSql.append(insert).append(select);
 		resSql.append("from custom.rezdox_residence_member_xr rm inner join custom.rezdox_membership m on m.group_cd = 'HO' ");
-		resSql.append("inner join custom.rezdox_membership_promotion mp on m.membership_id = mp.membership_id ");
-		resSql.append("inner join custom.rezdox_promotion p on mp.promotion_id = p.promotion_id and p.promotion_cd = 'REZDOXFIRST' ");
-		resSql.append("group by member_id, m.membership_id, p.promotion_id ");
+		resSql.append(joinMp).append(joinP).append(group);
 		executeSimpleMapping(resSql, "member residence subscription");
 		
 		log.info("Adding Member Business Subscriptions");
 		StringBuilder busSql = new StringBuilder(700);
-		busSql.append("insert into custom.rezdox_subscription (subscription_id, member_id, membership_id, promotion_id, cost_no, discount_no, qty_no, create_dt) ");
-		busSql.append("select replace(newid(),'-',''), member_id, m.membership_id, p.promotion_id, cost_no, discount_pct_no * cost_no * -1, qty_no, getdate() ");
+		busSql.append(insert).append(select);
 		busSql.append("from custom.rezdox_business_member_xr bm inner join custom.rezdox_membership m on m.group_cd = 'BU' ");
-		busSql.append("inner join custom.rezdox_membership_promotion mp on m.membership_id = mp.membership_id ");
-		busSql.append("inner join custom.rezdox_promotion p on mp.promotion_id = p.promotion_id and p.promotion_cd = 'REZDOXFIRST' ");
-		busSql.append("group by member_id, m.membership_id, p.promotion_id ");
+		busSql.append(joinMp).append(joinP).append(group);
 		executeSimpleMapping(busSql, "member business subscription");
 		
 		log.info("Adding Member Connection Subscriptions");
 		StringBuilder conSql = new StringBuilder(600);
-		conSql.append("insert into custom.rezdox_subscription (subscription_id, member_id, membership_id, promotion_id, cost_no, discount_no, qty_no, create_dt) ");
-		conSql.append("select replace(newid(),'-',''), member_id, m.membership_id, p.promotion_id, cost_no, discount_pct_no * cost_no * -1, qty_no, getdate() ");
+		conSql.append(insert).append(select);
 		conSql.append("from custom.rezdox_member inner join custom.rezdox_membership m on m.group_cd = 'CO' and qty_no = 100 ");
-		conSql.append("inner join custom.rezdox_membership_promotion mp on m.membership_id = mp.membership_id ");
-		conSql.append("inner join custom.rezdox_promotion p on mp.promotion_id = p.promotion_id and p.promotion_cd = 'REZDOXFIRST' ");
+		conSql.append(joinMp).append(joinP);
 		executeSimpleMapping(conSql, "member connection subscription");
 	}
 	
@@ -887,8 +945,8 @@ public class LegacyDataMigration extends CommandLineUtil {
 		
 		// Migrate project attributes
 		StringBuilder attrSql = new StringBuilder(150);
-		attrSql.append("insert into custom.rezdox_project_attribute (attribute_id, project_id, form_field_id, ");
-		attrSql.append("value_txt, create_dt) values (?,?,?,?,?)");
+		attrSql.append("insert into custom.rezdox_project_attribute (attribute_id, project_id, ");
+		attrSql.append("form_field_id, value_txt, create_dt) values (?,?,?,?,?)");
 		
 		StringBuilder legacySql = new StringBuilder(100);
 		legacySql.append("select id, notes, provider, phone, email, res_owner from rezdox.history_tbl h ");
