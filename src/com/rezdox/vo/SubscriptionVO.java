@@ -28,19 +28,18 @@ public class SubscriptionVO implements Serializable {
 	private static final long serialVersionUID = -4531854612880049798L;
 
 	private String subscriptionId;
-	private PaymentTypeVO paymentType;
+	private TransactionVO transaction;
 	private MemberVO member;
 	private MembershipVO membership;
 	private PromotionVO promotion;
 	private double costNo;
 	private double discountNo;
 	private int quantityNo;
-	private String transactionCd;
 	private Date createDate;
 	private Date updateDate;
 
 	public SubscriptionVO() {
-		setPaymentType(new PaymentTypeVO());
+		setTransaction(new TransactionVO());
 		setMember(new MemberVO());
 		setMembership(new MembershipVO());
 		setPromotion(new PromotionVO());
@@ -60,13 +59,12 @@ public class SubscriptionVO implements Serializable {
 	 */
 	public void setData(ActionRequest req) {
 		setSubscriptionId(req.getParameter("subscriptionId"));
-		setPaymentType(new PaymentTypeVO(req));
+		setTransaction(new TransactionVO(req));
 		setMember(new MemberVO(req));
 		setMembership(new MembershipVO(req));
 		setPromotion(new PromotionVO(req));
 		setCostNo(Convert.formatDouble(req.getParameter("costNo")));
 		setDiscountNo(Convert.formatDouble(req.getParameter("discountNo")));
-		setTransactionCd(req.getParameter("transactionCd"));
 	}
 	
 	/**
@@ -85,23 +83,23 @@ public class SubscriptionVO implements Serializable {
 	}
 
 	/**
-	 * @return the paymentType
+	 * @return the transaction
 	 */
-	public PaymentTypeVO getPaymentType() {
-		return paymentType;
+	public TransactionVO getTransaction() {
+		return transaction;
 	}
 
 	/**
-	 * @param paymentType the paymentType to set
+	 * @param transaction the transaction to set
 	 */
 	@BeanSubElement
-	public void setPaymentType(PaymentTypeVO paymentType) {
-		this.paymentType = paymentType;
+	public void setTransaction(TransactionVO transaction) {
+		this.transaction = transaction;
 	}
 
-	@Column(name="payment_type_id")
-	public String paymentTypeId() {
-		return paymentType.getPaymentTypeId();
+	@Column(name="transaction_id")
+	public String getTransactionId() {
+		return transaction.getTransactionId();
 	}
 
 	/**
@@ -206,21 +204,6 @@ public class SubscriptionVO implements Serializable {
 	 */
 	public void setQuantityNo(int quantityNo) {
 		this.quantityNo = quantityNo;
-	}
-
-	/**
-	 * @return the transactionCd
-	 */
-	@Column(name="transaction_cd")
-	public String getTransactionCd() {
-		return transactionCd;
-	}
-
-	/**
-	 * @param transactionCd the transactionCd to set
-	 */
-	public void setTransactionCd(String transactionCd) {
-		this.transactionCd = transactionCd;
 	}
 
 	/**

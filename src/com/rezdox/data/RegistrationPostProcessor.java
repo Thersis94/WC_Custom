@@ -79,7 +79,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		subscription.setMembership(membership);
 		subscription.setPromotion(promotion);
 		subscription.setCostNo(membership.getCostNo());
-		subscription.setDiscountNo(membership.getCostNo() * promotion.getDiscountPctNo());
+		subscription.setDiscountNo(membership.getCostNo() * promotion.getDiscountPctNo() * -1);
 		subscription.setQuantityNo(membership.getQuantityNo());
 		
 		// Save member/subscription data

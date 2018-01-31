@@ -365,14 +365,13 @@ constraint pk_REZDOX_MEMBERSHIP_PROMOTION primary key (MEMBERSHIP_PROMOTION_ID)
 Create table custom.REZDOX_SUBSCRIPTION
 (
 	SUBSCRIPTION_ID Varchar(32) NOT NULL,
-	PAYMENT_TYPE_ID Varchar(32),
+	TRANSACTION_ID Varchar(32),
 	MEMBER_ID Varchar(32) NOT NULL,
 	MEMBERSHIP_ID Varchar(32) NOT NULL,
 	PROMOTION_ID Varchar(32),
 	COST_NO Double precision Default 0.00,
 	DISCOUNT_NO Double precision,
 	QTY_NO Integer NOT NULL Default 0,
-	TRANSACTION_CD Varchar(50),
 	CREATE_DT Timestamp NOT NULL,
 	UPDATE_DT Timestamp,
 constraint pk_REZDOX_SUBSCRIPTION primary key (SUBSCRIPTION_ID)
@@ -504,6 +503,16 @@ constraint pk_REZDOX_MESSAGE primary key (MESSAGE_ID)
 ) Without Oids;
 
 
+Create table custom.REZDOX_TRANSACTION
+(
+	TRANSACTION_ID Varchar(32) NOT NULL,
+	PAYMENT_TYPE_ID Varchar(32) NOT NULL,
+	TRANSACTION_CD Varchar(50),
+	CREATE_DT Timestamp NOT NULL,
+constraint pk_REZDOX_TRANSACTION primary key (TRANSACTION_ID)
+) Without Oids;
+
+
 /* Create Foreign Keys */
 
 Alter table custom.REZDOX_PROJECT add Constraint RESIDENCE_PROJECT_FKEY foreign key (RESIDENCE_ID) references custom.REZDOX_RESIDENCE (RESIDENCE_ID) on update restrict on delete restrict;
@@ -592,7 +601,7 @@ Alter table custom.REZDOX_PHOTO add Constraint TREASURE_ITEM_PHOTO_FKEY foreign 
 
 Alter table custom.REZDOX_DOCUMENT add Constraint TREASURE_ITEM_DOCUMENT_FKEY foreign key (TREASURE_ITEM_ID) references custom.REZDOX_TREASURE_ITEM (TREASURE_ITEM_ID) on update restrict on delete cascade;
 
-Alter table custom.REZDOX_SUBSCRIPTION add  foreign key (PAYMENT_TYPE_ID) references custom.REZDOX_PAYMENT_TYPE (PAYMENT_TYPE_ID) on update restrict on delete restrict;
+Alter table custom.REZDOX_TRANSACTION add Constraint PAYMENT_TYPE_TRANSACTION_FKEY foreign key (PAYMENT_TYPE_ID) references custom.REZDOX_PAYMENT_TYPE (PAYMENT_TYPE_ID) on update restrict on delete restrict;
 
 Alter table custom.REZDOX_MEMBERSHIP_PROMOTION add Constraint PROMOTION_MEMBERSHIP_FKEY foreign key (PROMOTION_ID) references custom.REZDOX_PROMOTION (PROMOTION_ID) on update restrict on delete restrict;
 
@@ -615,5 +624,7 @@ Alter table custom.REZDOX_TREASURE_ITEM add Constraint RESIDENCE_ROOM_TREASURE_I
 Alter table custom.REZDOX_MEMBER_MESSAGE add  foreign key (MESSAGE_ID) references custom.REZDOX_MESSAGE (MESSAGE_ID) on update restrict on delete restrict;
 
 Alter table custom.REZDOX_NOTIFICATION add  foreign key (MESSAGE_ID) references custom.REZDOX_MESSAGE (MESSAGE_ID) on update restrict on delete restrict;
+
+Alter table custom.REZDOX_SUBSCRIPTION add Constraint TRANSACTION_SUBSCRIPTION_FKEY foreign key (TRANSACTION_ID) references custom.REZDOX_TRANSACTION (TRANSACTION_ID) on update restrict on delete restrict;
 
 
