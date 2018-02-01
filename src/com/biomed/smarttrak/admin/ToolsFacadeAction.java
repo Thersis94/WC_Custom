@@ -1,12 +1,14 @@
 package com.biomed.smarttrak.admin;
 
+//WC Custom libs
+import com.biomed.smarttrak.action.GapAnalysisAction;
+import com.biomed.smarttrak.action.ProductExplorer;
 //Base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
-//SMT libs
-import com.smt.sitebuilder.action.SBActionAdapter;
+//WebCrescendo libs
+import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -21,7 +23,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Jan 12, 2018
  ****************************************************************************/
 
-public class ToolsFacadeAction extends SBActionAdapter {
+public class ToolsFacadeAction extends FacadeActionAdapter {
 
 	public ToolsFacadeAction() {
 		super();
@@ -32,8 +34,8 @@ public class ToolsFacadeAction extends SBActionAdapter {
 	} 
 	
 	protected enum FacadeType{
-		PRODUCT_EXPLORER("explorer", "com.biomed.smarttrak.action.ProductExplorer"), 
-		GAP_ANALYSIS("analysis", "com.biomed.smarttrak.action.GapAnalysisAction");
+		PRODUCT_EXPLORER("explorer", ProductExplorer.class.getName()), 
+		GAP_ANALYSIS("analysis", GapAnalysisAction.class.getName());
 		
 		private String facadeTarget; 
 		private String className; //the fully qualified class name
@@ -61,9 +63,9 @@ public class ToolsFacadeAction extends SBActionAdapter {
 		if(FacadeType.PRODUCT_EXPLORER.equals(type)){
 			configurePEData();
 		}
-		
+			
 		//load action and execute retrieve
-		loadAction(type.getClassName()).retrieve(req);
+		getActionInstance(type.getClassName()).retrieve(req);
 	}
 	
 	/*
@@ -79,7 +81,7 @@ public class ToolsFacadeAction extends SBActionAdapter {
 		}
 		
 		//load action and execute build
-		loadAction(type.getClassName()).build(req);
+		getActionInstance(type.getClassName()).build(req);
 	}
 	
 	/**
@@ -91,28 +93,6 @@ public class ToolsFacadeAction extends SBActionAdapter {
 		String actionId = mod.getIntroText();
 		mod.setAttribute(ModuleVO.ATTRIBUTE_1, actionId);
 		setAttribute(Constants.MODULE_DATA, mod);
-	}
-	
-	/**
-	 * Dynamically instantiates the appropriate action class based on given class name
-	 * @param className - the fully qualified class name
-	 * @return - the corresponding action class
-	 * @throws ActionException
-	 */
-	private ActionInterface loadAction(String className) throws ActionException {
-		ActionInterface ai = null;
-		
-		//load the class and set attributes/dbConn
-		try {
-			Class<?> c = Class.forName(className);
-			ai = (ActionInterface) c.newInstance();
-			ai.setActionInit(actionInit);
-			ai.setAttributes(attributes);
-			ai.setDBConnection(dbConn);
-		} catch (Exception e) {
-			throw new ActionException("Could not instantiate tool facade class: ", e);
-		}
-		return ai;
 	}
 	
 	/**
