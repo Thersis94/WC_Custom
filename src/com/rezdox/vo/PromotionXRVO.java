@@ -29,7 +29,9 @@ public class PromotionXRVO implements Serializable  {
 	private String membershipId;
 	private Date createDate;
 
-	public PromotionXRVO() {}
+	public PromotionXRVO() {
+		super();
+	}
 	
 	/**
 	 * Sets the required fields
@@ -38,6 +40,7 @@ public class PromotionXRVO implements Serializable  {
 	 * @param membershipId
 	 */
 	public PromotionXRVO(String promotionId, String membershipId) {
+		this();
 		this.promotionId = promotionId;
 		this.membershipId = membershipId;
 	}

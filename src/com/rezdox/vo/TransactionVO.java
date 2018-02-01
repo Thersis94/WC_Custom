@@ -32,6 +32,7 @@ public class TransactionVO implements Serializable {
 	private Date createDate;
 
 	public TransactionVO() {
+		super();
 		setPaymentType(new PaymentTypeVO());
 	}
 
@@ -39,6 +40,7 @@ public class TransactionVO implements Serializable {
 	 * @param req
 	 */
 	public TransactionVO(ActionRequest req) {
+		this();
 		setData(req);
 	}
 	

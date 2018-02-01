@@ -30,7 +30,9 @@ public class PaymentTypeVO implements Serializable {
 	private Date createDate;
 	private Date updateDate;
 
-	public PaymentTypeVO() {}
+	public PaymentTypeVO() {
+		super();
+	}
 
 	/**
 	 * @param req

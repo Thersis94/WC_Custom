@@ -48,7 +48,9 @@ public class MembershipVO implements Serializable  {
 		public String getLabel() { return label; }
 	}
 
-	public MembershipVO() {}
+	public MembershipVO() {
+		super();
+	}
 
 	/**
 	 * @param req

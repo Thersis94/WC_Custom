@@ -45,6 +45,7 @@ public class PromotionVO implements Serializable  {
 	private Map<String, MembershipVO> memberships;
 	
 	public PromotionVO() {
+		super();
 		memberships = new HashMap<>();
 	}
 

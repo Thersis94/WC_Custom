@@ -39,6 +39,7 @@ public class SubscriptionVO implements Serializable {
 	private Date updateDate;
 
 	public SubscriptionVO() {
+		super();
 		setTransaction(new TransactionVO());
 		setMember(new MemberVO());
 		setMembership(new MembershipVO());
@@ -49,6 +50,7 @@ public class SubscriptionVO implements Serializable {
 	 * @param req
 	 */
 	public SubscriptionVO(ActionRequest req) {
+		this();
 		setData(req);
 	}
 	
