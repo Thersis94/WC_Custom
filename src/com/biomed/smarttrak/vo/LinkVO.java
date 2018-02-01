@@ -25,6 +25,7 @@ public class LinkVO {
 	private int outcome;
 	private String adminUrl;
 	private String publicUrl;
+	private String redirectUrl;
 	private int reviewFlag;
 
 	public LinkVO(String section, String id, String html) {
@@ -157,5 +158,17 @@ public class LinkVO {
 	 */
 	public void setLinkId(String linkId) {
 		this.linkId = linkId;
+	}
+
+	/**
+	 * redirectUrl is used by the LinkChecker script - when a server response 301 or 302 and we need to follow it.
+	 * @return
+	 */
+	public String getRedirectUrl() {
+		return redirectUrl;
+	}
+
+	public void setRedirectUrl(String redirectUrl) {
+		this.redirectUrl = redirectUrl;
 	}
 }
