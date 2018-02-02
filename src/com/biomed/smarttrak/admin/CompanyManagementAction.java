@@ -707,7 +707,10 @@ public class CompanyManagementAction extends ManagementAction {
 				CompanyVO c = new CompanyVO(req);
 				boolean isInsert = saveCompany(c, db);
 				saveSections(req, c.getCompanyId());
-				if (isInsert) generateContent(req, c.getCompanyId(), CONTENT_ATTRIBUTE_ID);
+				if (isInsert) {
+					generateContent(req, c.getCompanyId(), CONTENT_ATTRIBUTE_ID);
+					req.setParameter("companyId", c.getCompanyId());
+				}
 				break;
 			case LOCATION:
 				LocationVO l = new LocationVO(req);
