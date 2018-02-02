@@ -195,7 +195,9 @@ public class MarketManagementAction extends ManagementAction {
 	private void retrieveMarket(ActionRequest req) throws ActionException {
 		if (req.hasParameter("marketId") && ! req.hasParameter("add")) {
 			retrieveSingleMarket(req);
-			req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
+			if (!req.getSession().getAttributes().keySet().contains("marketSections")) {
+				req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
+			}
 
 		} else if (!req.hasParameter("add")) {
 			retrieveMarkets(req);
@@ -204,7 +206,7 @@ public class MarketManagementAction extends ManagementAction {
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
 
 			//TODO Cleanup hierarchy loading/caching code - Zoho SC-230
-			if (req.getSession().getAttributes().keySet().contains("hierarchyTree")) {
+			if (!req.getSession().getAttributes().keySet().contains("marketSections")) {
 				// This is a form for a new market make sure that the hierarchy tree is present 
 				req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
 			}
