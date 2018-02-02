@@ -1,14 +1,17 @@
 package com.biomed.smarttrak.admin;
 
 //Java 8
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
+import com.biomed.smarttrak.vo.AccountVO.Status;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.biomed.smarttrak.action.AdminControllerAction;
@@ -21,10 +24,10 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
-
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
@@ -45,6 +48,7 @@ import com.smt.sitebuilder.security.SecurityController;
 public class AccountAction extends SBActionAdapter {
 
 	public static final String ACCOUNT_ID = "accountId"; //req param
+	private static final String CHANGE_ACCOUNT = "changeAccount";
 	public static final String MANAGERS = "managers";
 	public static final String SESS_ACCOUNT = "sesAccount";
 
@@ -62,11 +66,12 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
+		//ensure that accountId is not fetched when on the list page
+		String accountId = req.hasParameter(ACCOUNT_ID) && !req.hasParameter(CHANGE_ACCOUNT) ? req.getParameter(ACCOUNT_ID) : null;
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		
 		//if this is the add form, no account information to fetch
-		if( (accountId != null && !"ADD".equals(accountId)) || req.hasParameter("changeAccount")){
+		if( (accountId != null && !"ADD".equals(accountId)) || req.hasParameter(CHANGE_ACCOUNT)){
 			List<Object> accounts = fetchAccounts(req, accountId, schema);
 			putModuleData(accounts);
 		}
@@ -85,7 +90,7 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	protected List<Object> fetchAccounts(ActionRequest req, String accountId, String schema){
 		List<Object> accounts = null;
-		if (req.hasParameter("changeAccount")) {
+		if (req.hasParameter(CHANGE_ACCOUNT)) {
 			req.getSession().removeAttribute(SESS_ACCOUNT);
 		} else { 
 			loadAccount(req, dbConn, getAttributes());
@@ -96,7 +101,7 @@ public class AccountAction extends SBActionAdapter {
 		//pull accountId from session if we need it
 		if (StringUtil.isEmpty(accountId) && acct != null)
 			accountId = acct.getAccountId();
-
+		
 		accounts = loadAccounts(schema, accountId);
 
 		//hold the selected account in session for editing
@@ -312,18 +317,45 @@ public class AccountAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
+		AccountVO account = new AccountVO(req);
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		try {
 			if (isDelete) {
-				db.delete(new AccountVO(req));
+				db.delete(account);
+				deactiveAccountUsers(account.getAccountId());
 			} else {
-				db.save(new AccountVO(req));
+				db.save(account);
 				//if an insert, set the generated ID on request for redirect
-				if(db.getGeneratedPKId() != null) 
-					req.setParameter(ACCOUNT_ID, db.getGeneratedPKId());
+				if(StringUtil.isEmpty(req.getParameter(ACCOUNT_ID))) 
+					req.setParameter(ACCOUNT_ID, account.getAccountId());
+				
+				//deactivate the users for the account if it has expired or becomes inactive
+				Date currentDt = Convert.formatStartDate(new Date());
+				Date expireDt = account.getExpirationDate();
+				if(Status.INACTIVE.getStatusNo().equals(account.getStatusNo()) || (expireDt != null && expireDt.before(currentDt))) {
+					deactiveAccountUsers(account.getAccountId());
+				}
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
+		}
+	}
+	
+	/**
+	 * Deactivates users from an associated account if the account has been set to inactive or expires
+	 * @param accountId
+	 */
+	protected void deactiveAccountUsers(String accountId) {
+		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("update ").append(schema).append("biomedgps_user ");
+		sql.append("set active_flg = 0 where account_id = ? ");
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+			ps.setString(1, accountId);
+			ps.executeUpdate();
+		}catch(SQLException sqle) {
+			log.error("Error attempting to update account users: ", sqle); 
 		}
 	}
 

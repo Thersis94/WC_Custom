@@ -1191,7 +1191,7 @@ public class CompanyManagementAction extends ManagementAction {
 			if ("D".equals(status) || "A".equals(status) || "I".equals(status)) {
 				indexer.purgeSingleItem(Section.COMPANY.name() + "_" +companyId, false);
 			} else {
-				indexer.addSingleItem(companyId);
+				indexer.indexItems(companyId);
 			}
 		} catch (IOException e) {
 			throw new ActionException(e);

@@ -7,12 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-
-
 // log4j 1.2-15
 import org.apache.solr.client.solrj.SolrClient;
-
-
 
 // SMT Base Libs
 import com.depuysynthes.action.ProductCatalogUtil;
@@ -237,8 +233,11 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 		return INDEX_TYPE;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
+	 */
 	@Override
-	public void addSingleItem(String arg0) {
+	public void indexItems(String... itemIds) {
 		// Currently nothing makes use of single item inserts with this class.
 		// When products are added to the list of dynamic solr groups the class
 		// will have to be reworked to support this function.

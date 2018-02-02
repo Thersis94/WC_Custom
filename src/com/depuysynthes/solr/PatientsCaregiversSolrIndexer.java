@@ -7,7 +7,6 @@ import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.SolrException;
 
 import com.depuysynthes.solr.data.PatientsCaregiversVO;
 import com.siliconmtn.action.ActionException;
@@ -25,13 +24,12 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @author Eric Damschroder
  * @since Oct 3, 2016
  ****************************************************************************/
-
 public class PatientsCaregiversSolrIndexer extends FileSolrIndexer {
-	
+
 	public PatientsCaregiversSolrIndexer(Properties config) {
 		super(config, "PC_");
 	}
-	
+
 	public static PatientsCaregiversSolrIndexer makeInstance(Map<String, Object> attributes) {
 		Properties props = new Properties();
 		props.putAll(attributes);
@@ -59,8 +57,11 @@ public class PatientsCaregiversSolrIndexer extends FileSolrIndexer {
 		return doc;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
+	 */
 	@Override
-	public void addSingleItem(String arg0) throws SolrException {
+	public void indexItems(String... itemIds) {
 		// This function should never be called as the indexer will only
 		// be run for all documents at once
 	}
