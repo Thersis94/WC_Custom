@@ -101,13 +101,13 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		List<Integer> columns = new ArrayList<>();
 		if (! StringUtil.isEmpty(req.getParameter("columns"))) {
 			List<String> sCols = Arrays.asList(req.getParameter("columns").split("\\,"));
-			columns = sCols.stream().map(Integer::parseInt).collect(Collectors.toList());
+			columns = sCols.stream().map(Convert::formatInteger).collect(Collectors.toList());
 		}
 		// Get the list of rows and convert to integer list
 		List<Integer> rows = new ArrayList<>();
 		if (! StringUtil.isEmpty(req.getParameter("rows"))) {
 			List<String> sCols = Arrays.asList(req.getParameter("rows").split("\\,"));
-			rows = sCols.stream().map(Integer::parseInt).collect(Collectors.toList());
+			rows = sCols.stream().map(Convert::formatInteger).collect(Collectors.toList());
 		}
 
 		// Process the data
@@ -215,7 +215,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 			if (columns.length() > 0) {
 				List<String> sCols = Arrays.asList(columns.split("\\,"));
-				cols = sCols.stream().map(Integer::parseInt).collect(Collectors.toList());
+				cols = sCols.stream().map(Convert::formatInteger).collect(Collectors.toList());
 			}
 
 			// Retrieve the data for all of the charts
@@ -264,8 +264,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param type
 	 * @param cols List of columns to display.  Blank equals all
 	 */
-	public SMTGridIntfc retrieveChartData(GridVO grid, ChartType type, boolean full, boolean stacked, ProviderType pt, List<Integer> cols, List<Integer> rows) {
-
+	public SMTGridIntfc retrieveChartData(GridVO grid, ChartType type, boolean full, 
+			boolean stacked, ProviderType pt, List<Integer> cols, List<Integer> rows) {
 		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type, full, cols, rows);
 
 		// Get the chart options
