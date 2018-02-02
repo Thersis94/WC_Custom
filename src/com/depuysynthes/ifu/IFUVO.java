@@ -25,9 +25,8 @@ import com.smt.sitebuilder.approval.ApprovalVO;
  * @since March 10, 2015<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
 public class IFUVO implements Approvable {
-	
+
 	private String ifuId;
 	private String ifuGroupId;
 	private String titleText;
@@ -38,11 +37,11 @@ public class IFUVO implements Approvable {
 	private Date createDate = null;
 	private String businessUnitName;
 	private ApprovalVO approval;
-	
+
 	public IFUVO() {
-		ifuDocuments = new HashMap<String, IFUDocumentVO>();
+		ifuDocuments = new HashMap<>();
 	}
-	
+
 	public IFUVO(ActionRequest req) {
 		this();
 		this.setIfuId(req.getParameter("ifuId"));
@@ -54,7 +53,7 @@ public class IFUVO implements Approvable {
 		this.setBusinessUnitName(req.getParameter("businessUnitName"));
 		this.setSyncData(new ApprovalVO(req));
 	}
-	
+
 	public IFUVO(ResultSet rs) {
 		this();
 		DBUtil db = new DBUtil();
@@ -67,7 +66,6 @@ public class IFUVO implements Approvable {
 		this.setCreateDate(db.getDateVal("CREATE_DT", rs));
 		this.setBusinessUnitName(db.getStringVal("BUSINESS_UNIT_NM", rs));
 		this.setSyncData(new ApprovalVO(rs));
-		db = null;
 	}
 
 	public String getIfuId() {
@@ -125,7 +123,7 @@ public class IFUVO implements Approvable {
 	public void setIfuDocuments(Map<String, IFUDocumentVO> ifuDocuments) {
 		this.ifuDocuments = ifuDocuments;
 	}
-	
+
 	public void addIfuDocument(String key, IFUDocumentVO doc) {
 		ifuDocuments.put(key, doc);
 	}
@@ -154,7 +152,6 @@ public class IFUVO implements Approvable {
 	@Override
 	public void setSyncData(ApprovalVO approval) {
 		this.approval = approval;
-		
-	}
 
+	}
 }

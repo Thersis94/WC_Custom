@@ -23,6 +23,7 @@ import com.biomed.smarttrak.vo.RegulationVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
@@ -45,7 +46,6 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
  * @since Feb 15, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
 public class BiomedProductIndexer  extends SMTAbstractIndex {
 	public static final String INDEX_TYPE = "BIOMEDGPS_PRODUCT";
 
@@ -72,22 +72,6 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 			util.addDocuments(retreiveProducts(null).values());
 		} catch (Exception e) {
 			log.error("could not index products", e);
-		}
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addSingleItem(java.lang.String)
-	 */
-	@Override
-	public void addSingleItem(String id) {
-		SolrClient server = makeServer();
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
-			util.addDocuments(retreiveProducts(id).values());
-			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
-		} catch (Exception e) {
-			log.error("Failed to index product with id: " + id, e);
 		}
 	}
 
@@ -159,7 +143,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		List<Object> params = new ArrayList<>();
-		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_LOCATION l ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDb).append("BIOMEDGPS_COMPANY_LOCATION l ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = l.COUNTRY_CD ");
 		sql.append("ORDER BY COMPANY_ID, PRIMARY_LOCN_FLG DESC ");
 
@@ -199,9 +183,9 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT x.PRODUCT_ID, x.VALUE_TXT FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("on a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("ON p.PRODUCT_ID = x.PRODUCT_ID ");
 		sql.append("WHERE p.STATUS_NO not in ('A','D') and a.TYPE_CD = 'HTML' ");
 		if (id != null) sql.append("and x.PRODUCT_ID = ? ");
@@ -294,12 +278,12 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		StringBuilder sql = new StringBuilder(475);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		List<Object> params = new ArrayList<>();
-		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR xr ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_ALLIANCE_TYPE t ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDb).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR xr ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_ALLIANCE_TYPE t ");
 		sql.append("on t.ALLIANCE_TYPE_ID = xr.ALLIANCE_TYPE_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("on c.COMPANY_ID = xr.COMPANY_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("ON p.PRODUCT_ID = xr.PRODUCT_ID ");
 		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
 		if (id != null) {
@@ -370,14 +354,14 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		StringBuilder sql = new StringBuilder(475);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		List<Object> params = new ArrayList<>();
-		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_REGULATORY r ");
-		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_STATUS s ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDb).append("BIOMEDGPS_PRODUCT_REGULATORY r ");
+		sql.append(DBUtil.INNER_JOIN).append(customDb).append("BIOMEDGPS_REGULATORY_STATUS s ");
 		sql.append("ON s.STATUS_ID = r.STATUS_ID ");
-		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_REGION re ");
+		sql.append(DBUtil.INNER_JOIN).append(customDb).append("BIOMEDGPS_REGULATORY_REGION re ");
 		sql.append("ON re.REGION_ID = r.REGION_ID ");
-		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_PATH p ");
+		sql.append(DBUtil.INNER_JOIN).append(customDb).append("BIOMEDGPS_REGULATORY_PATH p ");
 		sql.append("ON p.PATH_ID = r.PATH_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT pro ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT pro ");
 		sql.append("ON pro.PRODUCT_ID = r.PRODUCT_ID ");
 		sql.append("WHERE pro.STATUS_NO not in ('A','D') ");
 		if (id != null) {
@@ -501,10 +485,10 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	protected Tree retrieveAttributes(String id) {
 		StringBuilder sql = new StringBuilder(125);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
 		sql.append("ON a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("ON p.PRODUCT_ID = x.PRODUCT_ID ");
 		sql.append("WHERE (p.STATUS_NO not in ('A','D') or p.status_no is null) ");
 		// When getting a single item for indexing ensure that attributes that have no products assigned
@@ -567,11 +551,11 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("SELECT p.*, s.SECTION_ID, s.SECTION_NM, s.SOLR_TOKEN_TXT, c.COMPANY_NM, c.SHORT_NM_TXT, c.HOLDING_TXT, ");
 		sql.append("c.stock_abbr_txt, c.alias_nm as COMPANY_ALIAS FROM ");
 		sql.append(customDb).append("BIOMEDGPS_PRODUCT p ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION ps ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT_SECTION ps ");
 		sql.append("ON ps.PRODUCT_ID = p.PRODUCT_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_SECTION s ");
 		sql.append("ON ps.SECTION_ID = s.SECTION_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
 		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
 		if (id != null) sql.append("and p.PRODUCT_ID = ? ");
@@ -602,5 +586,21 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	@Override
 	public String getIndexType() {
 		return INDEX_TYPE;
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
+	 */
+	@Override
+	public void indexItems(String... itemIds) {
+		SolrClient server = makeServer(); //the server will get closed by the auto-closeable util below.
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+			for (String id : itemIds) 
+				util.addDocuments(retreiveProducts(id).values());
+
+		} catch (Exception e) {
+			log.error("Failed to index product with id: " + itemIds, e);
+		}
 	}
 }

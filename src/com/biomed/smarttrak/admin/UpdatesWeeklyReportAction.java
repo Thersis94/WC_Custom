@@ -96,7 +96,7 @@ public class UpdatesWeeklyReportAction extends UpdatesEditionAction {
 		UpdateIndexer ui = UpdateIndexer.makeInstance(attributes);
 		ui.setDBConnection(getDBConnection());
 		for(UpdateVO u : updates) {
-			ui.addSingleItem(u.getUpdateId());
+			ui.indexItems(u.getUpdateId());
 		}
 	}
 

@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -31,46 +32,47 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since March 10, 2015<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
 public class IFUInstanceAction extends SBActionAdapter {
-	
+
+	protected static final String REQ_IMPL_ID = "implId";
+
 	public IFUInstanceAction() {
 		super();
 	}
-	
+
 	public IFUInstanceAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		if (req.hasParameter("implId") || req.hasParameter("add")) {
+		if (req.hasParameter(REQ_IMPL_ID) || req.hasParameter("add")) {
 			getSingleInstance(req);
 		} else {
 			getAllInstances(req);
 		}
 	}
-	
+
+
 	/**
 	 * Get a single IFU document instance along with its related technique guides
 	 * @param req
 	 */
 	public void getSingleInstance(ActionRequest req) {
-		String implId = req.getParameter("implId");
+		String implId = req.getParameter(REQ_IMPL_ID);
 		log.debug("Retriving instance " + implId);
-		
-		String sql = createSingleInstaceSql();
+
+		String sql = createSingleInstaceSql(req.hasParameter("tgGuideList"));
 		log.debug(sql+"|"+implId);
-		
+
 		IFUDocumentVO doc = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, implId);
-			
 			ResultSet rs = ps.executeQuery();
-			
 			while (rs.next()) {
 				if (doc == null) {
 					doc = new IFUDocumentVO(rs);
@@ -84,37 +86,40 @@ public class IFUInstanceAction extends SBActionAdapter {
 		} catch (SQLException e) {
 			log.error("Unable to get data for document: " + implId, e);
 		}
-		
-		super.putModuleData(doc);
+		putModuleData(doc);
 	}
-	
+
+
 	/**
 	 * Create the sql query to get a complete single IFU document instance
 	 * @return
 	 */
-	private String createSingleInstaceSql() {
+	private String createSingleInstaceSql(boolean tgListReq) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		
 		StringBuilder sql = new StringBuilder(400);
-		
-		sql.append("SELECT *, dit.URL_TXT as TG_URL, dit.DPY_SYN_MEDIABIN_ID as TG_MEDIABIN_ID, ");
-		sql.append("dsm.TITLE_TXT as MEDIABIN_NM ");
+		if (tgListReq) {
+			sql.append("SELECT dit.depuy_ifu_tg_id, dit.tg_nm, dit.URL_TXT as TG_URL, ");
+			sql.append("dit.DPY_SYN_MEDIABIN_ID as TG_MEDIABIN_ID, dsm.TITLE_TXT as MEDIABIN_NM ");
+		} else {
+			sql.append("SELECT *, dit.URL_TXT as TG_URL, dit.DPY_SYN_MEDIABIN_ID as TG_MEDIABIN_ID, ");
+			sql.append("dsm.TITLE_TXT as MEDIABIN_NM ");
+		}
 		sql.append("FROM ").append(customDb).append("DEPUY_IFU_IMPL dii ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU di on ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DEPUY_IFU di on ");
 		sql.append("di.DEPUY_IFU_ID = dii.DEPUY_IFU_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_TG_XR ditx on ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DEPUY_IFU_TG_XR ditx on ");
 		sql.append("dii.DEPUY_IFU_IMPL_ID = ditx.DEPUY_IFU_IMPL_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_TG dit on ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DEPUY_IFU_TG dit on ");
 		sql.append("ditx.DEPUY_IFU_TG_ID = dit.DEPUY_IFU_TG_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_MEDIABIN dsm on ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DPY_SYN_MEDIABIN dsm on ");
 		sql.append("dsm.DPY_SYN_MEDIABIN_ID = dii.DPY_SYN_MEDIABIN_ID ");
-	     sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = dii.DEPUY_IFU_ID and WC_SYNC_STATUS_CD not in ('Approved', 'Declined')");
+		sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = dii.DEPUY_IFU_ID and WC_SYNC_STATUS_CD not in ('Approved', 'Declined')");
 		sql.append("WHERE dii.DEPUY_IFU_IMPL_ID = ? ");
 		sql.append("ORDER BY ditx.ORDER_NO");
-		
 		return sql.toString();
 	}
-	
+
+
 	/**
 	 * Get all the instances of the supplied IFU document
 	 * @param req
@@ -124,17 +129,17 @@ public class IFUInstanceAction extends SBActionAdapter {
 		String ifuId = req.getParameter("ifuId");
 		StringBuilder sql = new StringBuilder(260);
 		log.debug("Getting list of instances for document " + ifuId);
-		
+
 		sql.append("SELECT *, dii.TITLE_TXT as IMPL_TITLE_TXT FROM ").append(customDb).append("DEPUY_IFU di ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_IMPL dii ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DEPUY_IFU_IMPL dii ");
 		sql.append("on di.DEPUY_IFU_ID = dii.DEPUY_IFU_ID ");
 		sql.append("WHERE di.DEPUY_IFU_ID = ? ");
 		log.debug(sql + "|" + ifuId);
-		
+
 		IFUVO con = null;
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, ifuId);
-			
+
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 				if (con == null) {
@@ -143,44 +148,49 @@ public class IFUInstanceAction extends SBActionAdapter {
 				String docTitle = rs.getString("IMPL_TITLE_TXT");
 				IFUDocumentVO doc = new IFUDocumentVO(rs);
 				doc.setTitleText(docTitle);
-				
+
 				con.addIfuDocument(docTitle, doc);
 			}
 		} catch (SQLException e) {
 			log.error("Unable to get instances of IFU: " + ifuId, e);
 		}
-		
-		super.putModuleData(con);
+		putModuleData(con);
 	}
-	
-	/**
+
+
+	/*
 	 * Delete the supplied IFU document instance and redirect the user to the 
 	 * parent IFU document.
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
-		String implId = req.getParameter("implId");
+		String implId = req.getParameter(REQ_IMPL_ID);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(80);
 		sql.append("DELETE FROM ").append(customDb).append("DEPUY_IFU_IMPL WHERE DEPUY_IFU_IMPL_ID = ?");
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, implId);
-			
+
 			if (ps.executeUpdate() < 1)
 				log.warn("No records deleted with id: " + implId);
 		} catch (SQLException e) {
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			log.error("Unable to delete document: " + implId, e);
 		}
-		super.adminRedirect(req, msg, buildRedirect(req));
+		adminRedirect(req, msg, buildRedirect(req));
 	}
 
-	/**
+
+	/*
 	 * Builds an IFUDocumentVO from the request object and passes it along to the
 	 * vo specific update method and then redirects the user to the parent IFU
 	 * document's page.
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
@@ -191,13 +201,12 @@ public class IFUInstanceAction extends SBActionAdapter {
 				vo.setUrlText(writeNewFile(req));
 			this.update(vo);
 		} catch (ActionException e) {
-			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			throw e;
-		} finally {
-			super.adminRedirect(req, msg, buildRedirect(req));
 		}
+		adminRedirect(req, msg, buildRedirect(req));
 	}
-	
+
+
 	/**
 	 * Write the new file for this IFU document instance
 	 * @param req
@@ -211,13 +220,14 @@ public class IFUInstanceAction extends SBActionAdapter {
 			fm.setPath(path);
 			fm.writeFiles(file.getFileData(), path, file.getFileName(), true, false);
 			log.debug("Wrote file to " + path + fm.getFileName());
-			
+
 			return fm.getFileName();
 		} catch (Exception e) {
 			log.error("Unable to upload file for new IFU document instance.", e);
 			throw new ActionException(e);
 		}
 	}
+
 
 	/**
 	 * Update method that works with a premade IFUDocumentVO instead of the 
@@ -229,12 +239,12 @@ public class IFUInstanceAction extends SBActionAdapter {
 		boolean isInsert = StringUtil.checkVal(vo.getImplId()).length() == 0;
 		if (isInsert)
 			vo.setImplId(new UUIDGenerator().getUUID());
-		
+
 		String sql = buildUpdateSql(isInsert);
 		log.debug(sql+"|"+vo.getIfuId()+"|"+vo.getTitleText()+"|"+vo.getLanguageCd()+"|"
 				+vo.getUrlText()+"|"+vo.getDpySynMediaBinId()+"|"+vo.getArticleText()+"|"
 				+vo.getPartNoText()+"|"+vo.getDefaultMsgText()+"|"+vo.getImplId());
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
 			ps.setString(i++, vo.getIfuId());
@@ -247,15 +257,16 @@ public class IFUInstanceAction extends SBActionAdapter {
 			ps.setString(i++, vo.getDefaultMsgText());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setString(i++, vo.getImplId());
-			
+
 			if (ps.executeUpdate() < 1)
 				log.warn("No documents updated for " + vo.getImplId());
-			
+
 		} catch (SQLException e) {
 			log.error("Unable to update document: " + vo.getImplId(), e);
 		}
 	}
-	
+
+
 	/**
 	 * Build the update or insert sql.
 	 * @param isInsert
@@ -264,7 +275,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	private String buildUpdateSql(boolean isInsert) {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		
+
 		if (isInsert) {
 			sql.append("INSERT INTO ").append(customDb).append("DEPUY_IFU_IMPL ");
 			sql.append("(DEPUY_IFU_ID, TITLE_TXT, LANGUAGE_CD, URL_TXT, DPY_SYN_MEDIABIN_ID, ");
@@ -278,7 +289,8 @@ public class IFUInstanceAction extends SBActionAdapter {
 		}
 		return sql.toString();
 	}
-	
+
+
 	/**
 	 * Append extra parameters to the redirect query in order to make sure that
 	 * the user is redirected to the parent IFU document of the current document
@@ -289,9 +301,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	private String buildRedirect(ActionRequest req) {
 		StringBuilder redirect = new StringBuilder(100);
 		redirect.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
-		redirect.append("?facadeType=ifu");
-		redirect.append("&ifuId=").append(req.getParameter("ifuId"));
-		
+		redirect.append("?facadeType=ifu&ifuId=").append(req.getParameter("ifuId"));
 		return redirect.toString();
 	}
 }
