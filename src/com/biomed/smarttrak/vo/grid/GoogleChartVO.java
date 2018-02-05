@@ -4,11 +4,9 @@ package com.biomed.smarttrak.vo.grid;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 // Log4j 1.2.17
 import org.apache.log4j.Logger;
@@ -101,9 +99,8 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 				processGridPie(grid, columns, rows);
 				break;
 			default:
-				processGridBar(grid, full, columns, rows);
+				processGridBar(grid, full, columns);
 		}
-
 	}
 
 	/**
@@ -111,17 +108,15 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 	 * NOTE: fCols and fRows are transposed from the above invocation - rows one way is columns the other.
 	 * @param grid Grid data
 	 */
-	public void processGridBar(GridVO grid, boolean full, List<Integer> fRows, List<Integer> fCols) {
+	public void processGridBar(GridVO grid, boolean full, List<Integer> fCols) {
 		String[] series = grid.getSeries();
 		log.debug("fCols = " + fCols);
-		log.debug("fRows = " + fRows);
 
 		// Get the row data that corresponds to the series
 		List<GridDetailVO> details = grid.getDetails();
 
 		// Loop the rows and and the data
 		//TODO "10" here is a binding specific to SmartTRAK (DB Schema).  Mind this trap when porting code to BaseLibs.
-//		int rowCnt = 0;
 		for (int i=0; i < 10; i++) {
 			GoogleChartRowVO row = new GoogleChartRowVO();
 
@@ -147,12 +142,8 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 				else if (formatter == null && cell.getFormat().contains("%")) formatter = "%";
 
 				// Determine if there is a columns filter and apply
-//				if (fCols.isEmpty() || fCols.contains(x)) {
+				if (fCols.isEmpty() || fCols.contains(i + 1))
 					row.addCell(cell);
-//					log.debug("saved cell at " + x + " in row " + rowCnt);
-//				}
-//
-//				log.error(x + "=colCnt,  cell=" + cell);
 			}
 
 			// Only add annotations if the col was supposed to be displayed and it is a full size image
@@ -171,16 +162,8 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			}
 
 			// Make sure there is data in the elements
-			if (row.getC().size() > 1) {
-				//skip rows we don't want to see, if filters were passed
-//				if (!fRows.isEmpty() && !fRows.contains(rowCnt)) {
-//					log.error("omiting idx=" + i + " row=" + row);
-//				} else {
-					addRow(row);
-//				}
-			}
-//			log.error(" row=" + row);
-//			++rowCnt;
+			if (row.getC().size() > 1)
+				addRow(row);
 		}
 
 		// Get the column labels first
@@ -239,8 +222,8 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 
 			if (fRows.isEmpty() || fRows.contains(rowCnt))
 				addRow(row);
-			log.error(" row=" + row);
 
+			log.debug(" row=" + row);
 			++rowCnt;
 		}
 
@@ -288,7 +271,6 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 			if (!StringUtil.isEmpty(detail.getDetailType()))
 				cell.addCustomValue("className", RowStyle.valueOf(detail.getDetailType()).getName());
 
-			log.error(" cell=" + cell);
 			// Determine if there is a columns filter and apply
 			if (fCols.isEmpty() || fCols.contains(i + 1))
 				row.addCell(cell);

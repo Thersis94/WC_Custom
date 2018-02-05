@@ -134,11 +134,11 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 */
 	private GridVO loadSingleGrid(ChartType type, String gridId, ActionRequest req ) {
 		boolean display = Convert.formatBoolean(req.getParameter("display"));
-		if (display && type == ChartType.TABLE) display = false;
+		if (display && ChartType.TABLE == type) display = false;
 		GridVO grid = getGridData(gridId, display);
 		
 		// If this grid has legacy data load that instead.
-		if (!StringUtil.isEmpty(grid.getLegacyId()) && type == ChartType.TABLE) 
+		if (!StringUtil.isEmpty(grid.getLegacyId()) && ChartType.TABLE == type) 
 			grid = getGridData(grid.getLegacyId(), display);
 		
 		return grid;
@@ -453,7 +453,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		gca.setAttributes(getAttributes());
 		gca.setDBConnection(getDBConnection());
 
-		gca.retrieveData(gridId, attributes.get(Constants.CUSTOM_DB_SCHEMA) + "", display);
+		gca.retrieveData(gridId, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA), display);
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 
 		return (GridVO) mod.getActionData();
