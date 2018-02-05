@@ -28,6 +28,7 @@ import com.siliconmtn.common.FileType;
 import com.siliconmtn.security.OAuth2Token;
 import com.siliconmtn.security.OAuth2TokenViaCLI;
 import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -50,7 +51,8 @@ public class ShowpadApiUtil {
 	private static final int WRITE_TIMEOUT = 120000; //2 minutes
 
 	private static final int API_1HR_LIMIT = 3500; //stay below the 5k ceiling.  Leave a buffer of 100, because they may not count as precisely as us.
-
+	private int apiThreshold = API_1HR_LIMIT; //raised to 10k for AWS - made this configurable -JM- 01.17.2018
+	
 	protected static int lastMinute = 0;
 	protected static AtomicIntegerArray minuteTotals = new AtomicIntegerArray(60);
 
@@ -82,7 +84,10 @@ public class ShowpadApiUtil {
 		config.put(Config.AUTH_SERVER_URL,  props.getProperty(prefix + "showpadAuthUrl"));
 		config.put(Config.KEYSTORE, "showpad-" + StringUtil.removeNonAlphaNumeric(config.get(Config.API_KEY)));
 		List<String> scopes = Arrays.asList(props.getProperty(prefix + "showpadScopes").split(","));
-		return new ShowpadApiUtil(new OAuth2TokenViaCLI(config, scopes));
+		
+		ShowpadApiUtil util = new ShowpadApiUtil(new OAuth2TokenViaCLI(config, scopes));
+		util.apiThreshold = Convert.formatInteger(props.getProperty(prefix + "showpadApiThreshold"), API_1HR_LIMIT);
+		return util;
 	}
 
 
@@ -224,7 +229,7 @@ public class ShowpadApiUtil {
 	 * glass ceiling on API requests in a 24hr period. 
 	 * @throws QuotaException
 	 */
-	protected static synchronized void checkRequestCount() {
+	protected synchronized void checkRequestCount() {
 		final int currentMinute = Calendar.getInstance().get(Calendar.MINUTE);
 
 		//when the minute changes, set the counter for the NEW minute to zero, then begin incrementing it again
@@ -248,7 +253,7 @@ public class ShowpadApiUtil {
 		//we need to lock and pause the thread, until Showpad releases some quota to us
 		//NOTE: if the script is running really fast you may burn through the quota in <1hr.  We may go through several 
 		//sleep cylces before the counts begin to come down.  This is proper behavior.
-		if (total >= API_1HR_LIMIT)
+		if (total >= apiThreshold)
 			sleepThread(5*60*1000);
 	}
 

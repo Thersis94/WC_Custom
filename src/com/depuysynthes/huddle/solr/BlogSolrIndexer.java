@@ -12,7 +12,6 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -48,7 +47,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @since Jan 08, 2016
  ****************************************************************************/
 public class BlogSolrIndexer extends SMTAbstractIndex {
-	
+
 	private static final int MIN_ROLE_LVL = SecurityController.PUBLIC_REGISTERED_LEVEL;
 
 	/**
@@ -57,7 +56,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 	public BlogSolrIndexer(Properties config) {
 		super(config);
 	}
-	
+
 	public static BlogSolrIndexer makeInstance(Map<String, Object> attributes) {
 		Properties props = new Properties();
 		props.putAll(attributes);
@@ -89,7 +88,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 		SolrActionUtil solrUtil = new SolrActionUtil(server);
 		SolrDocumentVO solrDoc = null;
 		List<SolrInputDocument> docs = new ArrayList<>();
-		
+
 		for (BlogGroupVO vo : data) {
 			for (BlogVO entry : vo.getCurrentBlogsList()) {
 				if (blogId != null && !blogId.equals(entry.getBlogId())) continue; //we only want one record
@@ -105,7 +104,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 					solrDoc.setSolrIndex(getIndexType());
 					solrDoc.addRole(MIN_ROLE_LVL);
 					solrDoc.setModule("BLOG");
-					
+
 					//get the dynamically built document, then add a couple of custom fields to it for Huddle's date faceting.
 					SolrInputDocument doc = solrUtil.createInputDocument(solrDoc);
 					doc.setField(SearchDocumentHandler.START_DATE + "Year_i", Convert.formatDate(entry.getPublishDate(), "yyyy"));
@@ -118,14 +117,14 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 
 					log.debug("adding to Solr: " + solrDoc);
 					docs.add(doc);
-					
+
 				} catch (Exception e) {
 					log.error("Unable to index blogs: " + StringUtil.getToString(entry), e);
 				}
 			}
 		}
-		
-		if (docs.size() > 0)
+
+		if (!docs.isEmpty())
 			try {
 				server.add(docs);
 			} catch (Exception e) {
@@ -141,7 +140,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 	 */
 	private List<BlogGroupVO> getBlogs(String blogId) {
 		ActionInterface sai = null;
-		List<BlogGroupVO> data = new ArrayList<BlogGroupVO>();
+		List<BlogGroupVO> data = new ArrayList<>();
 
 		try(PreparedStatement ps = dbConn.prepareStatement(getBlogDataSql(blogId))) {
 			if (blogId != null && blogId.length() > 0) ps.setString(1, blogId);
@@ -156,7 +155,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 				//call the blog action to load the Blog as the website would
 				sai = new BlogAction(new ActionInitVO(null, null, rs.getString(1)));
 				sai.setDBConnection(new SMTDBConnection(dbConn));
-				Map<String, Object> map = new HashMap<String, Object>();
+				Map<String, Object> map = new HashMap<>();
 				map.put(Constants.MODULE_DATA, new ModuleVO());
 				sai.setAttributes(map);
 				sai.retrieve(new ActionRequest()); //avoid ambiguity 
@@ -215,27 +214,25 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 			throw new IOException(e);
 		}
 	}
-	
 
-	/**
+
+	/* 
 	 * called from com.depuysynthes.huddle.BlogAction to push a single article update into Solr.
 	 * We don't need to re-index the entire action for a single article, nor should we have to wait until 
 	 * tomorrow for it to appear in search results (the next SolrIndexBuilder run).
-	 * @param blogId
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
 	 */
 	@Override
-	public void addSingleItem(String blogId) throws SolrException {
+	public void indexItems(String... itemIds) {
 		log.info("Indexing Single Huddle Blog");
 		try (SolrClient server = makeServer()) {
-			// load the blog portlet this blogId belongs to, inclusive of the indexable page that it's on
-			List<BlogGroupVO> data = getBlogs(blogId);
-			indexBlogs(server, data, blogId);
-			
-			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
-			
-		} catch (SolrServerException e) {
-			log.error("could not commit to Solr");
-			throw new SolrException(ErrorCode.BAD_REQUEST, e);
+			for (String blogId : itemIds) {
+				// load the blog portlet this blogId belongs to, inclusive of the indexable page that it's on
+				List<BlogGroupVO> data = getBlogs(blogId);
+				indexBlogs(server, data, blogId);
+			}
+
 		} catch (IOException e) {
 			log.error("could not create solr server");
 			throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);

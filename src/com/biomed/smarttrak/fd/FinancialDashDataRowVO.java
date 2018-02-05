@@ -35,6 +35,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	private String companyId;
 	private String sectionId;
 	private String regionCd;
+	private String graphColor;
 	private boolean inactiveFlg;
 	private int inactiveCnt; // internal value used to calculate overall inactivity
 	private Map<String, FinancialDashDataColumnVO> columns;
@@ -69,6 +70,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		setCompanyId(util.getStringVal("COMPANY_ID", rs));
 		setSectionId(util.getStringVal("SECT_ID", rs));
 		setRegionCd(util.getStringVal("REGION_CD", rs));
+		setGraphColor(util.getStringVal("GRAPH_COLOR", rs));
 		
 		setColumns(util, rs);
 	}
@@ -113,6 +115,14 @@ public class FinancialDashDataRowVO implements Serializable {
 	 */
 	public String getRegionCd() {
 		return regionCd;
+	}
+
+	public String getGraphColor() {
+		return graphColor;
+	}
+
+	public void setGraphColor(String graphColor) {
+		this.graphColor = graphColor;
 	}
 
 	/**

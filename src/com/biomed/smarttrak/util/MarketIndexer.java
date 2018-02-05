@@ -77,30 +77,8 @@ public class MarketIndexer  extends SMTAbstractIndex {
 			log.error("Failed to index markets", e);
 		}
 	}
-	
-	/**
-	 * Takes a variable amount of market ids to add to Solr
-	 * @param ids
-	 */
-	public void addIndexItems(String...ids){
-		SolrClient server = makeServer();
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
-			util.addDocuments(retrieveMarkets(ids));
-			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
-		} catch (Exception e) {
-			log.error("Failed to index markets", e);
-		}
-	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addSingleItem(java.lang.String)
-	 */
-	@Override
-	public void addSingleItem(String id) {
-		addIndexItems(id);
-	}
-	
+
 	/**
 	 * Purges multiple markets from Solr based on status
 	 * @param marketIds
@@ -108,11 +86,11 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	 */
 	public void purgeIndexItems(String[] marketIds, String[] statuses){
 		if(marketIds == null || statuses == null) return; //quick fail
-			
+
 		for (int i = 0; i < marketIds.length; i++) {
 			String marketId = marketIds[i];
 			String status = statuses[i];
-			
+
 			//if status is archived or deleted remove it
 			if ("A".equals(status) || "D".equals(status)) {
 				try {
@@ -198,7 +176,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 
 		//Append the market's order number for intra-section ordering(overwrites region ordering)
 		order.append(StringUtil.padLeft(StringUtil.checkVal(market.getOrderNo()), '0', 3));
-		
+
 		//Add the market's region code for intra-region ordering
 		if(!StringUtil.isEmpty(market.getRegionCode())) {
 			try{
@@ -224,7 +202,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT x.MARKET_ID, x.VALUE_TXT FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR x ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
 		sql.append("on a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
 		sql.append("WHERE a.TYPE_CD = 'HTML' ");
 		addStatementMarks(sql, "x.MARKET_ID", ids);
@@ -309,8 +287,8 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT m.*, coalesce(m.update_dt, m.create_dt) as mod_dt, ms.SECTION_ID, s.SOLR_TOKEN_TXT ");
 		sql.append("FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_SECTION ms ON ms.MARKET_ID = m.MARKET_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ON ms.SECTION_ID = s.SECTION_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_MARKET_SECTION ms ON ms.MARKET_ID = m.MARKET_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_SECTION s ON ms.SECTION_ID = s.SECTION_ID ");
 		sql.append("WHERE m.status_no not in ('A','D') "); //do not push archived or deleted markets to Solr
 		addStatementMarks(sql, "m.MARKET_ID", ids);
 		return sql.toString();
@@ -330,7 +308,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		t.buildNodePaths();
 		return t;
 	}
-	
+
 	/**
 	 * Helper method to add statement marks(?) into StringBuilder sql query
 	 * @param sql
@@ -343,7 +321,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 			sql.append(" ) ");
 		}
 	}
-	
+
 	/**
 	 * Helper method to set the values into the PreparedStatement for us
 	 * @param ps
@@ -365,5 +343,19 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	@Override
 	public String getIndexType() {
 		return INDEX_TYPE;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
+	 */
+	@Override
+	public void indexItems(String... itemIds) {
+		SolrClient server = makeServer();
+		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+			util.addDocuments(retrieveMarkets(itemIds));
+
+		} catch (Exception e) {
+			log.error("Failed to index markets", e);
+		}
 	}
 }

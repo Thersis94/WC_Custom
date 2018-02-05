@@ -26,20 +26,30 @@ public class HuddleProductAdminAction extends SimpleActionAdapter {
 
 	public HuddleProductAdminAction() {
 		super();
-		
+
 	}
 
 	public HuddleProductAdminAction(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		ProductDataTool bfa = new ProductDataTool(actionInit);
 		bfa.setAttributes(getAttributes());
 		bfa.setDBConnection(dbConn);
 		bfa.list(req);
 	}
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#update(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void update(ActionRequest req) throws ActionException {
 		ProductDataTool bfa = new ProductDataTool(actionInit);
 		bfa.setAttributes(getAttributes());
@@ -47,31 +57,36 @@ public class HuddleProductAdminAction extends SimpleActionAdapter {
 		bfa.update(req);
 		if (req.hasParameter("productId")) {
 			// Since this is a product update only that needs to be updated.
-			indexProduct(req.getParameter("productId"), req.getParameter("catalogId"), req);
+			indexProduct(req.getParameter("productId"));
 		} else if (req.hasParameter("productCategoryCode") || req.hasParameter("attributeId")) {
 			// Attribute and category updates can affect many products,
 			// therefore the entire index needs to be remade.
-			indexProduct(null, req.getParameter("catalogId"), req);
+			indexProduct(null);
 		}
 	}
-	
-	private void indexProduct(String productId, String catalogId, ActionRequest req) {
+
+	private void indexProduct(String productId) {
 		//fire the VO to Solr, leverage the same lookup the "full rebuild" indexer uses, which joins to Site Pages
 		Properties props = new Properties();
 		props.putAll(getAttributes());
 		HuddleProductCatalogSolrIndex indexer = new HuddleProductCatalogSolrIndex(props);
 		indexer.setDBConnection(getDBConnection());
-		indexer.addSingleItem(productId);
+		indexer.indexItems(productId);
 	}
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#delete(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		ProductDataTool bfa = new ProductDataTool(actionInit);
 		bfa.setAttributes(getAttributes());
 		bfa.setDBConnection(dbConn);
 		bfa.delete(req);
-		
+
 		if (!req.hasParameter("productId")) return;
-		
+
 		String bType = StringUtil.checkVal(req.getParameter("bType"));
 		if ("Product".equals(bType)) {
 			//fire the delete to Solr
@@ -83,9 +98,7 @@ public class HuddleProductAdminAction extends SimpleActionAdapter {
 		} else if (bType.contains("Product")) {
 			// We are deleting an attribute or a category on a product
 			// and need to update the related solr document.
-			indexProduct(req.getParameter("productId"), req.getParameter("catalogId"), req);
+			indexProduct(req.getParameter("productId"));
 		}
-		
 	}
-	
 }

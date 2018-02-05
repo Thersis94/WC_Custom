@@ -66,6 +66,7 @@ public class CompanyVO  extends AuthorVO {
 	private String updateMsg;
 	private String currencyTypeSymbol;
 	private int publicFlag;
+	private String graphColor;
 	
 	
 	public CompanyVO() {
@@ -116,6 +117,9 @@ public class CompanyVO  extends AuthorVO {
 				investors.put(s, "");
 			}
 		}
+		
+		if (Convert.formatBoolean(req.getParameter("useCustom")))
+			graphColor = req.getParameter("graphColor");
 	}
 	
 	public static void setSolrId(SecureSolrDocumentVO doc, String docId) {
@@ -438,6 +442,15 @@ public class CompanyVO  extends AuthorVO {
 		for (List<ProductVO> prodList : products.values()) {
 			Collections.sort(prodList);
 		}
+	}
+
+	@Column(name="graph_color")
+	public String getGraphColor() {
+		return graphColor;
+	}
+
+	public void setGraphColor(String graphColor) {
+		this.graphColor = graphColor;
 	}
 
 }
