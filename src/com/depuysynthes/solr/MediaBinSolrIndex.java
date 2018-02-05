@@ -1,6 +1,6 @@
 package com.depuysynthes.solr;
 
-// JDK 1.7.x
+// JDK 1.8
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,12 +34,6 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
-
-
-
-
-
-
 
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
@@ -106,8 +100,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	public MediaBinSolrIndex() {
 		loadBusUnits();
 	}
-	
-			
+
+
 	/**
 	 * Initializes the Business Units
 	 */
@@ -174,7 +168,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()));
 				//downloadType is used exclusively for DS and EMEA-DS as a cosmetic value
 				doc.setField(MediaBinField.DownloadType.getField(), parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
-				
+
 				doc.setField(SearchDocumentHandler.META_KEYWORDS, vo.getMetaKeywords());
 				doc.addField(MediaBinField.SearchType.getField(), vo.isVideo() ? "VIDEO" : "DOWNLOAD");
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOCUMENT");
@@ -262,10 +256,10 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		String fileNm = null;
 		try { //catch NPEs in the file name, before we attempt to open the file
 			fileNm = StringUtil.replace(vo.getRevisionLvlTxt() + "/" + vo.getAssetNm(), "/", File.separator);
-			
+
 			//remain backwards compatible, this class is used by both the V1 and V2 Mediabin importers
 			if (vo instanceof MediaBinDeltaVO) fileNm = ((MediaBinDeltaVO)vo).getFileName();
-			
+
 		} catch (Exception e) {
 			return data; 
 		}
@@ -403,23 +397,23 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param isVideo
 	 * @return
 	 */
-    private String parseDownloadType(String downloadType, boolean isVideo) {
-    	String tmp = StringUtil.checkVal(downloadType).replace("~", ",");
-    	if (isVideo) {
-    		// this is a video, set the type as 'Video' or add 'Video' to the existing type(s).
-    		if (tmp.length() == 0) {
-    			tmp = "Video";
-    		} else {
-    			if (! tmp.toLowerCase().contains("video")) tmp += ",Video";
-    		}
-    	} else {
-    		// not a video, set type as 'Other' if no type was supplied.
-    		if (tmp.length() == 0) {
-    			tmp = "Other";
-    		}
-    	}
-    	return tmp;
-    }
+	private String parseDownloadType(String downloadType, boolean isVideo) {
+		String tmp = StringUtil.checkVal(downloadType).replace("~", ",");
+		if (isVideo) {
+			// this is a video, set the type as 'Video' or add 'Video' to the existing type(s).
+			if (tmp.length() == 0) {
+				tmp = "Video";
+			} else {
+				if (! tmp.toLowerCase().contains("video")) tmp += ",Video";
+			}
+		} else {
+			// not a video, set type as 'Other' if no type was supplied.
+			if (tmp.length() == 0) {
+				tmp = "Other";
+			}
+		}
+		return tmp;
+	}
 
 	/**
 	 * Helper method for loading the business units look-up map.  This map provides
@@ -460,10 +454,13 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			throw new IOException(e);
 		}
 	}
-	
-	
+
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
+	 */
 	@Override
-	public void addSingleItem(String id) {
+	public void indexItems(String... itemIds) {
 		// As MediaBin items come to us wholesale from depuy there is 
 		// no reason to fill out the add single item method at the current time
 	}

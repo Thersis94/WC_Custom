@@ -69,7 +69,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 * The default list of excluded columns in the product explorer and its report
 	 * This is used when the user has not edited thier viewed columns during this session.
 	 */
-	private static final String DEFAULT_COLUMNS = "3|7|0|d";
+	private static final String DEFAULT_COLUMNS = "3|0|d";
 
 
 	private enum BuildType {

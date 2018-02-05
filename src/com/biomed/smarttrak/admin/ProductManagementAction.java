@@ -906,7 +906,10 @@ public class ProductManagementAction extends ManagementAction {
 		boolean isInsert = StringUtil.isEmpty(p.getProductId());
 		saveProduct(p, db, isInsert);
 		saveSections(req, p);
-		if (isInsert) generateContent(req, p.getProductId());
+		if (isInsert) {
+			generateContent(req, p.getProductId());
+			req.setParameter("productId", p.getProductId());
+		}
 	}
 
 
@@ -1370,7 +1373,7 @@ public class ProductManagementAction extends ManagementAction {
 			if ("D".equals(status) || "A".equals(status)) {
 				indexer.purgeSingleItem(productId, false);
 			} else {
-				indexer.addSingleItem(productId);
+				indexer.indexItems(productId);
 			}
 		} catch (IOException e) {
 			throw new ActionException(e);
