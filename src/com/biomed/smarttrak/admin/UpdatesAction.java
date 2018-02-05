@@ -546,11 +546,14 @@ public class UpdatesAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		UpdateVO u = new UpdateVO(req);
 
-		// The form used to send this update can come from either the updates tool or 
-		// we need the updates review tool. If it has come from the review tool 
-		// the end redirect to send the user back there instead of the updates tool
+		// The form data used for this update can come from several places. Either the updates tool, 
+		// from the updates review tool, or from the updates home page. If it has come from the review tool 
+		// redirect the user there, if from home page redirect user to home page. Otherwise redirect to updates list.
 		if (Convert.formatBoolean(req.getParameter("reviewUpdate")))
 			req.setAttribute(Constants.REDIRECT_URL, "?actionType=uwr");
+		else if(req.hasParameter("homePageUpdate")) {
+			req.setAttribute(Constants.REDIRECT_URL, "/manage");
+		}
 
 		try {
 			if (isDelete) {
