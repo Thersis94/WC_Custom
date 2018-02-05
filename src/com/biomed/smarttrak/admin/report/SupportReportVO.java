@@ -83,7 +83,7 @@ public class SupportReportVO extends AbstractSBReportVO {
 			row.put(SupportReportCol.STATUS.name(), t.getStatusNm());
 			row.put(SupportReportCol.PAGE.name(), t.getReferrerUrl());
 			row.put(SupportReportCol.DATE.name(), Convert.formatDate(t.getCreateDt(), Convert.DATE_SLASH_PATTERN));
-			row.put(SupportReportCol.DESC.name(), t.getDescText());
+			row.put(SupportReportCol.DESC.name(), StringUtil.checkVal(t.getDescText()).replace("\n", "").replace("\r", ""));
 			row.put(SupportReportCol.ASSIGNED.name(), StringUtil.checkVal(t.getAssignedFirstNm()) + " " + StringUtil.checkVal(t.getAssignedLastNm()));
 			row.put(SupportReportCol.MINUTES.name(), t.getTotalEffortNo());
 			row.put(SupportReportCol.COST.name(), t.getTotalCostNo());
