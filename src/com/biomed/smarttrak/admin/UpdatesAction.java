@@ -38,6 +38,7 @@ import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -552,7 +553,8 @@ public class UpdatesAction extends ManagementAction {
 		if (Convert.formatBoolean(req.getParameter("reviewUpdate")))
 			req.setAttribute(Constants.REDIRECT_URL, "?actionType=uwr");
 		else if(req.hasParameter("homePageUpdate")) {
-			req.setAttribute(Constants.REDIRECT_URL, "/manage");
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			req.setAttribute(Constants.REDIRECT_URL, page.getFullPath());
 		}
 
 		try {
