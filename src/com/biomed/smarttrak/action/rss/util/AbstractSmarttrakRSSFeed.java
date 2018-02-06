@@ -121,7 +121,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		StringBuilder sql = new StringBuilder(500);
 		sql.append("select a.article_guid, fa.feed_group_id from ").append(customDb);
 		sql.append("BIOMEDGPS_RSS_ARTICLE a ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("biomedgps_rss_filtered_article fa on a.rss_article_id=fa.rss_article_id ");
+		sql.append(DBUtil.INNER_JOIN).append(customDb).append("biomedgps_rss_filtered_article fa on a.rss_article_id=fa.rss_article_id ");
 		sql.append("where a.rss_entity_id=? and a.article_guid in (");
 		DBUtil.preparedStatmentQuestion(size, sql);
 		sql.append(") order by a.article_guid");
@@ -138,7 +138,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		sql.append("biomedgps_rss_filtered_article (rss_article_filter_id, ");
 		sql.append("feed_group_id, article_status_cd, rss_article_id, filter_title_txt, ");
 		sql.append("filter_article_txt, create_dt, match_no) values (?,?,?,?,?,?,?,?)");
-		
+
 		DBProcessor dbp = new DBProcessor(dbConn, customDb);
 		try {
 			//save the article itself
@@ -165,7 +165,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	private boolean articleExists(RSSArticleVO article) {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select rss_article_id from ").append(customDb).append("biomedgps_rss_article where article_guid=?");
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, article.getArticleGuid());
 			ResultSet rs = ps.executeQuery();
@@ -174,7 +174,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 				article.setRssArticleId(rs.getString(1));
 				return true;
 			}
-			
+
 		} catch (SQLException sqle) {
 			log.error("could not check for existing article", sqle);
 		}
@@ -281,20 +281,21 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		if (!StringUtil.isEmpty(rssEntityId)) {
 			vals.add(rssEntityId);
 		}
-		
+
 		groups = dbp.executeSelect(getFiltersSql(!StringUtil.isEmpty(rssEntityId)), vals, new RSSFeedGroupVO());
 		for (RSSFeedGroupVO g : groups) {
 			List<RSSFilterVO> o = new ArrayList<>();
 			List<RSSFilterVO> r = new ArrayList<>();
-			for(RSSFilterVO f : g.getFilters()) {
-				if(FilterType.O.name().equals(f.getTypeCd())) {
+			for (RSSFilterVO f : g.getFilters()) {
+				if (FilterType.O.name().equals(f.getTypeCd())) {
 					o.add(f);
 				} else if (FilterType.R.name().equals(f.getTypeCd())) {
 					r.add(f);
 				}
 			}
-			omits.put(g.getFeedGroupId(), o);
-			reqs.put(g.getFeedGroupId(), r);
+			if (!o.isEmpty()) omits.put(g.getFeedGroupId(), o);
+			if (!r.isEmpty()) reqs.put(g.getFeedGroupId(), r);
+			log.info("loaded feedGroupId=" + g.getFeedGroupId() + " with " + omits.size() + " Omits and " + reqs.size() + " Requires");
 		}
 
 		filters.put(FilterType.O, omits);
@@ -406,17 +407,17 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	protected boolean checkMatch(RSSArticleFilterVO af, RSSFilterVO filter) {
 		boolean isMatch = false;
 
-		StringBuilder regex = new StringBuilder(filter.getFilterExpression().length() + 10);
-		regex.append("(?i)(").append(filter.getFilterExpression()).append(")");
+		String regex = new StringBuilder(filter.getFilterExpression().length() + 10)
+				.append("(?i)(").append(filter.getFilterExpression()).append(")").toString();
 
-		af.setFilterArticleTxt(af.getArticleTxt().replaceAll(regex.toString(), replaceSpanText));
-		af.setFilterTitleTxt(af.getTitleTxt().replaceAll(regex.toString(), replaceSpanText));
+		af.setFilterArticleTxt(af.getArticleTxt().replaceAll(regex, replaceSpanText));
+		af.setFilterTitleTxt(af.getTitleTxt().replaceAll(regex, replaceSpanText));
 
 		//Build Matchers.
 		if (!StringUtil.isEmpty(af.getFilterArticleTxt()) && af.getFilterArticleTxt().contains(SPAN_CLASS_HIT)) {
 			isMatch = true;
 		} else if (!StringUtil.isEmpty(af.getFullArticleTxt())) {
-			String filteredFull = af.getFullArticleTxt().replaceAll(regex.toString(), replaceSpanText);
+			String filteredFull = af.getFullArticleTxt().replaceAll(regex, replaceSpanText);
 			if (filteredFull.contains(SPAN_CLASS_HIT)) {
 				isMatch = true;
 				af.setMatchCount(filteredFull.split(SPAN_CLASS_HIT).length - 1);

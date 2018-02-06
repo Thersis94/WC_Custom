@@ -260,7 +260,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 			saxParser.parse(is, handler);
 			articles = handler.getVos();
 			saxParser.reset();
-		} catch(SAXException | IOException se) {
+		} catch (Exception se) {
 			log.error("Problem Processing Pubmed Articles", se);
 		}
 		return articles;

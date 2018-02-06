@@ -147,6 +147,10 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 		return filteredText;
 	}
 
+	public RSSArticleFilterVO getFilterText() {
+		return filteredText != null && filteredText.size() == 1 ? filteredText.entrySet().iterator().next().getValue() : null;
+	}
+
 	public String getFullArticleTxt() {
 		return fullArticleTxt;
 	}
