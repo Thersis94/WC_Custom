@@ -391,6 +391,13 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 */
 	private String formatCellValue(String value) {
 		if (value.length() <= 3) return value;
+		
+		// Convert from scientific exponent to simple number if applicable.
+		if (value.indexOf('E') > -1) {
+			int exp = Convert.formatInteger(value.substring(value.indexOf('E')+1));
+			value = StringUtil.padRight(value.replace(".", "").substring(0, value.indexOf('E')-1), '0', exp+1);
+		}
+
 		// Decimal and 0 added by the system
 		if (value.indexOf('.') > -1)
 			value = value.substring(0, value.indexOf('.'));
