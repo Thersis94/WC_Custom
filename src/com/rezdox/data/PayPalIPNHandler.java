@@ -87,8 +87,6 @@ public class PayPalIPNHandler extends SimpleActionAdapter {
 			List<MembershipVO> paidMemberships = retrievePaidMemberships(purchaseQtys.keySet());
 			saveSubscriptions(memberId, transaction, paidMemberships, purchaseQtys);
 		}
-		
-		log.debug(ipnMessage.getIpnMap());
 	}
 	
 	/**
@@ -116,7 +114,7 @@ public class PayPalIPNHandler extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Retrieves the memberships paid for by the member.
+	 * Retrieves the base data for the memberships paid for by the member.
 	 * 
 	 * @param membershipIds
 	 * @return
