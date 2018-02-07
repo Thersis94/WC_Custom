@@ -1,14 +1,15 @@
 package com.rezdox.action;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.rezdox.vo.MembershipVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -25,7 +26,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class MembershipAction extends SBActionAdapter {
 	
-	private static final String MEMBERSHIP_ID = "membershipId";
+	public static final String MEMBERSHIP_ID = "membershipId";
 
 	public MembershipAction() {
 		super();
@@ -60,9 +61,10 @@ public class MembershipAction extends SBActionAdapter {
 
 		sql.append("select * from ").append(schema).append("rezdox_membership ");
 		
-		if (!StringUtil.isEmpty(req.getParameter(MEMBERSHIP_ID))) {
-			sql.append("where membership_id = ? ");
-			params.add(req.getParameter(MEMBERSHIP_ID));
+		String[] membershipIds = req.getParameterValues(MEMBERSHIP_ID);
+		if (membershipIds != null && membershipIds.length > 0) {
+			sql.append("where membership_id in (").append(DBUtil.preparedStatmentQuestion(membershipIds.length)).append(") ");
+			params.addAll(Arrays.asList(membershipIds));
 		}
 		
 		if (req.hasParameter("getNewMemberDefault")) {
