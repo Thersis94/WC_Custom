@@ -140,6 +140,7 @@ public class ProductAction extends SimpleActionAdapter {
 		sql.append("ON xr.SECTION_ID = s.SECTION_ID ");
 		sql.append("WHERE p.COMPANY_ID = ? ");
 
+		List<String> addedItems = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, product.getCompanyId());
 
@@ -151,7 +152,7 @@ public class ProductAction extends SimpleActionAdapter {
 			while(rs.next()) {
 				ProductVO p = new ProductVO();
 				db.executePopulate(p, rs);
-				addRelatedProduct(p, product, t, rs.getString("SECTION_ID"));
+				addRelatedProduct(p, product, t, rs.getString("SECTION_ID"), addedItems);
 			}
 
 		} catch (SQLException e) {
@@ -177,21 +178,24 @@ public class ProductAction extends SimpleActionAdapter {
 	 * @param p
 	 * @param product
 	 * @param t
+	 * @param addedItems 
 	 */
 	protected void addRelatedProduct(ProductVO p, ProductVO product,
-			SmarttrakTree t, String sectionId) {
+			SmarttrakTree t, String sectionId, List<String> addedItems) {
 		Node n = t.findNode(sectionId);
 
 		// If this product doesn't have any 
 		if (n == null) return;
 
 		String[] path = n.getFullPath().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
-
-		if (path.length < 2) {
-			product.addRelatedProduct(path[path.length-1], p);
-		} else {
-			product.addRelatedProduct(path[1], p);
-		}
+		String section = path.length < 2? path[path.length-1] : path[1];
+		String addedKey = section+"|"+p.getProductId();
+		
+		// Check if this product has already been added for this section
+		if (addedItems.contains(addedKey)) return;
+		
+		addedItems.add(addedKey);
+		product.addRelatedProduct(section, p);
 	}
 
 

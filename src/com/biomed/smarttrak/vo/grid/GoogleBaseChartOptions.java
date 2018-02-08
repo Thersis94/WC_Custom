@@ -156,7 +156,7 @@ public class GoogleBaseChartOptions implements SMTChartOptionIntfc {
 		if(full) {	
 			// Add the hAxis label with copyright
 			Map<String, Object> hAxis = new LinkedHashMap<>();
-			String label = String.format("\nCopyright© %s BioMedGPS, LLC", Convert.getCurrentYear());
+			String label = String.format("\nCopyright© %s SmartTRAK, LLC", Convert.getCurrentYear());
 			hAxis.put(TITLE_LABEL, StringUtil.checkVal(grid.getPrimaryXTitle()) + label);
 			chart.put("hAxis", hAxis);
 		}

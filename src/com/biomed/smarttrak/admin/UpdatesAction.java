@@ -38,6 +38,7 @@ import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -546,11 +547,8 @@ public class UpdatesAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		UpdateVO u = new UpdateVO(req);
 
-		// The form used to send this update can come from either the updates tool or 
-		// we need the updates review tool. If it has come from the review tool 
-		// the end redirect to send the user back there instead of the updates tool
-		if (Convert.formatBoolean(req.getParameter("reviewUpdate")))
-			req.setAttribute(Constants.REDIRECT_URL, "?actionType=uwr");
+		//Set the redirect URL if applicable
+		setRedirectUrl(req);
 
 		try {
 			if (isDelete) {
@@ -583,8 +581,27 @@ public class UpdatesAction extends ManagementAction {
 			throw new ActionException(e);
 		}
 	}
-
-
+	
+	/**
+	* The form data used for this update can come from several places. Either the updates tool, 
+ 	* from the updates review tool, or from the updates home page. If it has come from the review tool 
+	* redirect the user there, if from home page redirect user to home page. Otherwise redirect to updates list.  
+	 * @param req
+	 */
+	protected void setRedirectUrl(ActionRequest req) {
+		String returnType =  StringUtil.checkVal(req.getParameter("returnType"));
+		if(!StringUtil.isEmpty(returnType)) {
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			
+			//build our redirect url
+			StringBuilder redirectUrl = new StringBuilder(50);
+			redirectUrl.append(page.getFullPath());
+			if(!"homepage".equals(returnType)) {
+				redirectUrl.append("?actionType=").append(returnType);
+			}
+			req.setAttribute(Constants.REDIRECT_URL, redirectUrl.toString());
+		}
+	}
 
 	/**
 	 * Filter out prohibited html tags from the message text
@@ -633,7 +650,7 @@ public class UpdatesAction extends ManagementAction {
 	protected void writeToSolr(UpdateVO u) {
 		UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
 		idx.setDBConnection(dbConn);
-		idx.addSingleItem(u.getUpdateId());
+		idx.indexItems(u.getUpdateId());
 	}
 
 

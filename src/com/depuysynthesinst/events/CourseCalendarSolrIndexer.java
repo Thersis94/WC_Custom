@@ -36,11 +36,11 @@ import com.smt.sitebuilder.security.SecurityController;
  * @since Sep 10, 2014
  ****************************************************************************/
 public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
-	
+
 	/**
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
-	protected String INDEX_TYPE = "COURSE_CAL";
+	protected static final String INDEX_TYPE = "COURSE_CAL";
 	protected String organizationId = "DPY_SYN_INST";
 
 	/**
@@ -59,12 +59,12 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		List<EventEntryVO> data = loadEvents(dbConn, null);
 		indexEvents(server, data);
 	}
-	
-	
+
+
 	public void indexCertainItems(Set<String> eventEntryIds) {
 		SolrClient server = makeServer();
 		log.info("Indexing Certain Course Calendar Portlets");
-		
+
 		//if we're doing a full rebuild, make sure we purge what's in there
 		if (eventEntryIds == null) {
 			try {
@@ -73,22 +73,16 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				log.error("could not purge index", e);
 			}
 		}
-		
+
 		List<EventEntryVO> data = loadEvents(dbConn, eventEntryIds);
 		indexEvents(server, data);
-		
-		try {
-			server.commit(false, false, true); //commit, but don't wait for Solr to acknowledge
-		} catch (Exception e) {
-			log.error("could not commit to Solr", e);
-		}
 	}
-	
+
 
 	protected void indexEvents(SolrClient server, List<EventEntryVO> data) {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 		List<SolrInputDocument> docs = new ArrayList<>(data.size());
-		
+
 		for (EventEntryVO vo : data) {
 			SolrInputDocument doc = new SolrInputDocument();
 			try {
@@ -111,16 +105,16 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				doc.setField(MediaBinField.AssetDesc.getField(), "Course"); //displays on the gallery view
 				doc.setField("duration_i", vo.getDuration()); //this is an int, not a String like MediaBin uses
 				doc.setField("eventType_s", StringUtil.checkVal(vo.getEventTypeCd()).toLowerCase());
-				
+
 				for (String s : StringUtil.checkVal(vo.getServiceText()).split(","))
 					doc.addField(SearchDocumentHandler.HIERARCHY, s.trim());
-				
+
 				docs.add(doc);
 			} catch (Exception e) {
 				log.error("Unable to index course: " + StringUtil.getToString(vo), e);
 			}
 		}
-		
+
 		if (!docs.isEmpty()) {
 			try {
 				server.add(docs);
@@ -130,7 +124,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		}
 	}
 
-	
+
 	/**
 	 * builds a summary of the Event using city & state.  fallback to full description
 	 * @param vo
@@ -140,11 +134,11 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		String val = StringUtil.checkVal(vo.getCityName());
 		if (val.length() > 0 && vo.getStateCode() != null && vo.getStateCode().length() > 0) val += ", ";
 		val+= vo.getStateCode();
-		
+
 		return val;
 	}
-	
-	
+
+
 	/**
 	 * loads approved Events portlets that are attached to site pages,
 	 * for all orgs in this WC instance. 
@@ -153,7 +147,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	 * @return Map<pageUrl, BlogGroupVO>
 	 */
 	protected List<EventEntryVO> loadEvents(Connection conn, Set<String> eventIds) {
-		String sql = buildQuery("COURSE_CAL", eventIds);
+		String sql = buildQuery(INDEX_TYPE, eventIds);
 		log.debug(sql);
 
 		List<EventEntryVO> data = new ArrayList<>();
@@ -171,7 +165,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				//ensure pages on subsites are aliased properly.
 				String subSiteAlias = StringUtil.checkVal(rs.getString(1));
 				if (subSiteAlias.length() > 0) url = "/" + subSiteAlias + url;
-				
+
 				//nursing events only appear on the nursing calendar page
 				if ("nurse-education".equals(subSiteAlias) && !"NURSE".equals(rs.getString(3)))
 					continue;
@@ -187,11 +181,11 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 					continue;
 				else if ("outpatient-education".equals(subSiteAlias) && !"OUTPATIENT".equals(rs.getString(3)))
 					continue;
-				
+
 				EventEntryVO vo = new EventEntryVO(rs);
 				vo.setEventUrl(url + vo.getActionId());
 				vo.setOrganizationId(organizationId);
-				
+
 				//for vet, we need to align the hierarchies so they match the anatomy pages, which are 2nd level.
 				if ("VET".equals(vo.getEventTypeCd())) {
 					vo.setServiceText("Vet/Small Animal,Vet/Large Animal");
@@ -207,7 +201,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 						vo.setServiceText(services.toString());
 					}
 				}
-				
+
 				log.info("loaded " + vo.getEventTypeCd() + " - " + vo.getEventName());
 				data.add(vo);
 			}
@@ -220,7 +214,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		return data;
 	}
 
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
 	 */
@@ -241,8 +235,8 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 			throw new IOException(e);
 		}
 	}
-	
-	
+
+
 	/**
 	 * returns the event lookup query used to load indexable events
 	 * @return
@@ -265,7 +259,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
 		sql.append("and a.module_type_id='").append(moduleTypeId);
 		sql.append("' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
-		
+
 		//limit the results to the new events we're adding - this scenario is invoked by the real-time indexer
 		if (eventIds != null) {
 			sql.append("and ee.event_entry_id in (");
@@ -274,12 +268,14 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		}
 		return sql.toString();
 	}
-	
-	
+
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
+	 */
 	@Override
-	public void addSingleItem(String id) {
+	public void indexItems(String... itemIds) {
 		// Nothing uses this class's addSingleItem method right now.
 		// should it be required it can be filled out at that time.
 	}
-
 }
