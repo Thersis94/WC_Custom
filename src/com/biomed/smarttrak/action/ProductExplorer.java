@@ -646,6 +646,7 @@ public class ProductExplorer extends SBActionAdapter {
 			EmailMessageVO msg = new EmailMessageVO();
 			msg.setSubject("Smarttrak Products");
 			msg.addRecipient(req.getParameter("recipient"));
+			msg.setFrom("info@smarttrak.com");
 
 			StringBuilder body = new StringBuilder(250);
 			body.append(user.getFullName()).append(" has shared a product set with you.</br>");
