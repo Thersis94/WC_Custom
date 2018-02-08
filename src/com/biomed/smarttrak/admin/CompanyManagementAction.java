@@ -11,6 +11,7 @@ import java.util.Properties;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.vo.AllianceVO;
@@ -1192,7 +1193,9 @@ public class CompanyManagementAction extends ManagementAction {
 		indexer.setDBConnection(dbConn);
 		try {
 			if ("D".equals(status) || "A".equals(status) || "I".equals(status)) {
-				indexer.purgeSingleItem(Section.COMPANY.name() + "_" +companyId, false);
+				if (companyId.length() < AdminControllerAction.DOC_ID_MIN_LEN)
+					companyId = Section.COMPANY.name() + "_" +companyId;
+				indexer.purgeSingleItem(companyId, false);
 			} else {
 				indexer.indexItems(companyId);
 			}
