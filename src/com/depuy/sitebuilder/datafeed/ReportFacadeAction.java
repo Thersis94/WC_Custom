@@ -127,8 +127,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 			log.info("path " + path);
 
 			// Add the report data to the collection
-			SMTClassLoader scl = new SMTClassLoader();
-			rep = (Report)scl.getClassInstance(path);
+			rep = (Report)SMTClassLoader.getClassInstance(path);
 
 
 			rep.setDatabaseConnection(dbConn);
@@ -138,7 +137,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 			if ("excel".equals(req.getParameter("reportType"))){
 
 				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
-				req.setAttribute(Constants.BINARY_DOCUMENT, (AbstractDataFeedReportVO)getBinaryReport(req,type,scl,data));
+				req.setAttribute(Constants.BINARY_DOCUMENT, (AbstractDataFeedReportVO)getBinaryReport(req,type,data));
 
 			}else {
 				mod.setActionData(data);
@@ -166,14 +165,14 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 * @throws InvalidDataException 
 	 * @throws DatabaseException 
 	 */
-	protected AbstractDataFeedReportVO getBinaryReport(ActionRequest req, String type, SMTClassLoader scl, Object data) throws ActionException, ClassNotFoundException {
+	protected AbstractDataFeedReportVO getBinaryReport(ActionRequest req, String type, Object data) throws ActionException, ClassNotFoundException {
 		AbstractDataFeedReportVO rpt = null;
 
 		String binaryPath = binaryReport.get(type);
 		if (binaryPath == null) throw new ActionException("Invalid Report Parameter");
 		log.info("binary report path " + binaryPath);
 
-		rpt = (AbstractDataFeedReportVO)scl.getClassInstance(binaryPath);
+		rpt = (AbstractDataFeedReportVO)SMTClassLoader.getClassInstance(binaryPath);
 
 		rpt.setRequestData(req);
 
