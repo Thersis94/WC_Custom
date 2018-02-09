@@ -7,6 +7,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title:</b> SRTRoster.java
@@ -27,6 +28,7 @@ public class SRTRosterVO extends UserDataVO {
 	 */
 	private static final long serialVersionUID = 1L;
 	private String rosterId;
+	private String registerSubmittalId;
 	private String opCoId;
 	private String workgroupId;
 	private String wwid;
@@ -36,9 +38,12 @@ public class SRTRosterVO extends UserDataVO {
 	private String area;
 	private String territory;
 	private String engineeringContact;
-	private String role;
+	private String companyRole;
+	private int isActive;
+	private int isAdmin;
 	private Date createDt;
 	private Date updateDt;
+	private Date deactivatedDt;
 
 	/**
 	 * Default Constructor
@@ -109,7 +114,7 @@ public class SRTRosterVO extends UserDataVO {
 	/**
 	 * @return the accountNo
 	 */
-	@Column(name="ACCOUNT_NO")
+	@Column(name="ACOUNT_NO")
 	public String getAccountNo() {
 		return accountNo;
 	}
@@ -149,9 +154,9 @@ public class SRTRosterVO extends UserDataVO {
 	/**
 	 * @return the role
 	 */
-	@Column(name="ROLE")
-	public String getRole() {
-		return role;
+	@Column(name="COMPANY_ROLE")
+	public String getCompanyRole() {
+		return companyRole;
 	}
 
 	/**
@@ -168,6 +173,13 @@ public class SRTRosterVO extends UserDataVO {
 	@Column(name="UPDATE_DT", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDt() {
 		return updateDt;
+	}
+
+	/**
+	 * @param rosterId the rosterId to set.
+	 */
+	public void setRosterId(String rosterId) {
+		this.rosterId = rosterId;
 	}
 
 	/**
@@ -236,8 +248,8 @@ public class SRTRosterVO extends UserDataVO {
 	/**
 	 * @param role the role to set.
 	 */
-	public void setRole(String role) {
-		this.role = role;
+	public void setCompanyRole(String companyRole) {
+		this.companyRole = companyRole;
 	}
 
 	/**
@@ -252,5 +264,78 @@ public class SRTRosterVO extends UserDataVO {
 	 */
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
+	}
+
+	/**
+	 * @return the isActive
+	 */
+	@Column(name="IS_ACTIVE")
+	public int getIsActive() {
+		return isActive;
+	}
+
+	/**
+	 * @param isActive the isActive to set.
+	 */
+	public void setIsActive(int isActive) {
+		this.isActive = isActive;
+	}
+
+	public boolean isActive() {
+		return Convert.formatBoolean(isActive);
+	}
+
+	public void setIsActive(boolean isActive) {
+		this.isActive = Convert.formatInteger(isActive);
+	}
+
+	/**
+	 * @return the isActive
+	 */
+	@Column(name="IS_ADMIN")
+	public int getIsAdmin() {
+		return isAdmin;
+	}
+
+	/**
+	 * @param isActive the isActive to set.
+	 */
+	public void setIsAdmin(int isAdmin) {
+		this.isAdmin = isAdmin;
+	}
+
+	public boolean isAdmin() {
+		return Convert.formatBoolean(isAdmin);
+	}
+
+	public void setIsAdmin(boolean isAdmin) {
+		this.isAdmin = Convert.formatInteger(isAdmin);
+	}
+
+	@Column(name="REGISTER_SUBMITTAL_ID")
+	public String getRegisterSubmittalId() {
+		return registerSubmittalId;
+	}
+
+	/**
+	 * @param regSubId
+	 */
+	public void setRegisterSubmittalId(String registerSubmittalId) {
+		this.registerSubmittalId = registerSubmittalId;
+	}
+
+	@Column(name="PROFILE_ID")
+	@Override
+	public String getProfileId() {
+		return super.profileId;
+	}
+
+	@Column(name="DEACTIVATED_DT")
+	public Date getDeactivatedDt() {
+		return deactivatedDt;
+	}
+
+	public void setDeactivatedDt(Date deactivatedDt) {
+		this.deactivatedDt = deactivatedDt;
 	}
 }

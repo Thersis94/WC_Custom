@@ -17,6 +17,7 @@ import org.apache.log4j.PropertyConfigurator;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 import com.depuysynthes.srt.SRTRosterVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -44,7 +45,7 @@ import com.smt.sitebuilder.security.UserLogin;
  * @version 3.3.1
  * @since Feb 8, 2018
  ****************************************************************************/
-public abstract class SRTUserImport extends CommandLineUtil {
+public class SRTUserImport extends CommandLineUtil {
 
 	private static final String SOURCE_FILE_CONFIG="scripts/srt/user_import_config.properties";
 	private static final String SOURCE_FILE_LOG="scripts/srt/user_import_log4j.properties";
@@ -64,20 +65,28 @@ public abstract class SRTUserImport extends CommandLineUtil {
 	private String registeredRole;
 	private String adminRole;
 	private String viewOnlyRole;
+	private String opCoId;
+
 	enum ImportField {
-		ROSTER_ID, 
-		IS_ACTIVE, 
-		EMAIL_ADDRESS_TXT, 
-		FIRST_NM, 
-		LAST_NM, 
-		PASSWORD_TXT, 
-		ROLE_TXT, 
-		WORKGROUP_ID, 
-		USER_EMAIL, 
+		ACCOUNT_NO,
+		IS_ACTIVE,
+		EMAIL_ADDRESS_TXT,
+		FIRST_NM,
+		LAST_NM,
+		ADDRESS_TXT,
+		CITY_NM,
+		STATE_CD,
+		ZIP_CD,
+		PASSWORD_TXT,
+		ROLE_TXT,
+		WORKGROUP_ID,
 		ALLOW_COMM_FLG,
 		TERRITORY_ID,
+		REGION_ID,
+		AREA_ID,
 		MOBILE_PHONE_TXT,
-		OP_CO_ID
+		OP_CO_ID,
+		IS_ADMIN
 	}
 
 	/**
@@ -92,6 +101,11 @@ public abstract class SRTUserImport extends CommandLineUtil {
 		failedSourceUserInserts = new LinkedHashMap<>();
 		failedSourceUserProfileUpdates = new LinkedHashMap<>();
 		failedSourceUserAuthenticationUpdates = new LinkedHashMap<>();
+	}
+
+	public static void main(String[] args) {
+		SRTUserImport udi = new SRTUserImport(args);
+		udi.run();
 	}
 
 	/* (non-Javadoc)
@@ -139,6 +153,7 @@ public abstract class SRTUserImport extends CommandLineUtil {
 		registeredRole = props.getProperty("registeredRole");
 		adminRole = props.getProperty("adminRole");
 		viewOnlyRole = props.getProperty("viewOnlyRole");
+		opCoId = props.getProperty("opCoId");
 	}
 
 	/**
@@ -535,17 +550,23 @@ public abstract class SRTUserImport extends CommandLineUtil {
 		SRTRosterVO user = new SRTRosterVO();
 		user.setData(dataSet);
 		user.setPassword(StringUtil.checkVal(dataSet.get(ImportField.PASSWORD_TXT.name()),null));
-
+		user.setIsAdmin(Convert.formatBoolean(dataSet.get(ImportField.IS_ADMIN.name())));
 		user.setWorkgroupId(StringUtil.checkVal(dataSet.get(ImportField.WORKGROUP_ID.name())));
-		user.setActive(Convert.formatBoolean(dataSet.get(ImportField.IS_ACTIVE.name())));
-		user.setRole(StringUtil.checkVal(dataSet.get(ImportField.ROLE_TXT.name())));
+		user.setIsActive(Convert.formatBoolean(dataSet.get(ImportField.IS_ACTIVE.name())));
+		user.setCompanyRole(StringUtil.checkVal(dataSet.get(ImportField.ROLE_TXT.name())));
 		user.setOpCoId(StringUtil.checkVal(dataSet.get(ImportField.OP_CO_ID.name())));
 
+		if(!user.isActive()) {
+			user.setDeactivatedDt(Convert.getCurrentTimestamp());
+		}
+
 		user.setTerritory(StringUtil.checkVal(dataSet.get(ImportField.TERRITORY_ID.name())));
-		user.setAccountNo(StringUtil.checkVal(dataSet.get(ImportField.ROSTER_ID.name())));
+		user.setRegion(StringUtil.checkVal(dataSet.get(ImportField.REGION_ID.name())));
+		user.setArea(StringUtil.checkVal(dataSet.get(ImportField.AREA_ID.name())));
+		user.setAccountNo(StringUtil.checkVal(dataSet.get(ImportField.ACCOUNT_NO.name())));
 
 		// parse user's email.
-		parseUserEmail(user, (String)dataSet.get(ImportField.USER_EMAIL.name()));
+		parseUserEmail(user, (String)dataSet.get(ImportField.EMAIL_ADDRESS_TXT.name()));
 
 		return user;
 	}
@@ -692,7 +713,15 @@ public abstract class SRTUserImport extends CommandLineUtil {
 	/**
 	 * @return
 	 */
-	protected abstract StringBuilder buildMainQuery();
+	protected StringBuilder buildMainQuery() {
+		StringBuilder megaQuery = new StringBuilder(2200);
+		megaQuery.append(buildAdminUserQuery());
+		megaQuery.append(" union ");
+		megaQuery.append(buildSalesRosterQuery());
+		megaQuery.append(" union ");
+		megaQuery.append(buildProjectUserQuery());
+		return megaQuery;
+	}
 
 	/**
 	 * Creates map of query statements that have fixed number of
@@ -776,5 +805,105 @@ public abstract class SRTUserImport extends CommandLineUtil {
 			log.info("--------------------------------------------------");
 		}
 
+	}
+
+	/* (non-Javadoc)
+	 * @see com.depuysynthes.srt.util.SRTUserImport#buildMainQuery()
+	 */
+	protected StringBuilder buildProjectUserQuery() {
+		StringBuilder sql = new StringBuilder(1000);
+		sql.append("select distinct ");
+		sql.append("case when salesrep like '%,%' then trim(split_part(salesrep, ',', 1)) ");
+		sql.append("when salesrep not like '%,%' then trim(split_part(salesrep, ' ', 1)) ");
+		sql.append("else salesrep end as FIRST_NM, ");
+		sql.append("case when salesrep like '%,%' then trim(split_part(salesrep, ',', 2)) ");
+		sql.append("when salesrep not like '%,%' then trim(split_part(salesrep, ' ', 2)) end as LAST_NM, ");
+		sql.append("0 as allow_comm_flg, ");
+		sql.append("null as wwid, ");
+		sql.append("'0' as IS_ACTIVE, ");
+		sql.append("'0' as ROLE_TXT, ");
+		sql.append("null as ADDRESS_TXT, ");
+		sql.append("null as CITY_NM, ");
+		sql.append("null as STATE_CD, ");
+		sql.append("null as ZIP_CD, ");
+		sql.append("case when salesrepemail like '%@%' then salesrepemail ");
+		sql.append("when salesrepemail not like '%@%' then concat(replace(salesrep, ' ', ''), '@srt.com') end ");
+		sql.append("as EMAIL_ADDRESS_TXT, ");
+		sql.append("'6' as workgroup_id, ");
+		sql.append("null as PASSWORD_TXT, ");
+		sql.append("case when salesrepcellphone is not null and salesrepcellphone != '' ");
+		sql.append("then salesrepcellphone ");
+		sql.append("when salesreppager is not null and salesreppager != '' ");
+		sql.append("then salesreppager else null end as MOBILE_PHONE_TXT, ");
+		sql.append("cast(territoryid as varchar) as TERRITORY_ID, ");
+		sql.append("null as REGION_ID, ");
+		sql.append("null as AREA_ID, ");
+		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
+		sql.append("0 as is_admin, ");
+		sql.append("replace(core.newId(), '-', '') as ACCOUNT_NO ");
+		sql.append(DBUtil.FROM_CLAUSE).append("dbo.projects ");
+		sql.append("where salesrep not in ");
+		sql.append("(select concat(s.last_name, ', ', s.first_name) ");
+		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster s) ");
+		sql.append("and salesrep not in ");
+		sql.append("(select concat(s.first_name, ' ', s.last_name) ");
+		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster s) ");
+		sql.append("and salesrep != '' ");
+		return sql;
+	}
+
+	protected StringBuilder buildSalesRosterQuery() {
+		StringBuilder sql = new StringBuilder(1000);
+		sql.append("select ");
+		sql.append("first_name as first_nm, ");
+		sql.append("last_name as last_nm, ");
+		sql.append("1 as allow_comm_flg, ");
+		sql.append("wwid, ");
+		sql.append("'1' as IS_ACTIVE, ");
+		sql.append("'5' as ROLE_TXT, ");
+		sql.append("address as ADDRESS_TXT, ");
+		sql.append("city as CITY_NM, ");
+		sql.append("state as STATE_CD, ");
+		sql.append("zip as ZIP_CD, ");
+		sql.append("email as EMAIL_ADDRESS_TXT, ");
+		sql.append("'8' as workgroup_id, ");
+		sql.append("null as PASSWORD_TXT, ");
+		sql.append("cell_phone as MOBILE_PHONE_TXT, ");
+		sql.append("cast(territoryid as varchar) as TERRITORY_ID, ");
+		sql.append("cast(region as varchar) as REGION_ID, ");
+		sql.append("cast(area as varchar) as AREA_ID, ");
+		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
+		sql.append("0 as is_admin, ");
+		sql.append("cast(id as varchar) as ACCOUNT_NO ");
+		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster ");
+
+		return sql;
+	}
+
+	protected StringBuilder buildAdminUserQuery() {
+		StringBuilder sql = new StringBuilder(400);
+		sql.append("select ");
+		sql.append("userfirstname as first_nm, ");
+		sql.append("userlastname as last_nm, ");
+		sql.append("1 as allow_comm_flg, ");
+		sql.append("wwid as WWID, ");
+		sql.append("case when status = 'Active' then '1' else '0' end as IS_ACTIVE, ");
+		sql.append("cast (role as varchar) as ROLE_TXT, ");
+		sql.append("null as ADDRESS_TXT, ");
+		sql.append("null as CITY_NM, ");
+		sql.append("null as STATE_CD, ");
+		sql.append("null as ZIP_CD, ");
+		sql.append("lower(emailaddresstxt) as EMAIL_ADDRESS_TXT, ");
+		sql.append("cast(workgroupid as varchar) as workgroup_id, ");
+		sql.append("userpassword as PASSWORD_TXT, ");
+		sql.append("null as MOBILE_PHONE_TXT, ");
+		sql.append("'-1' as TERRITORY_ID, ");
+		sql.append("null as REGION_ID, ");
+		sql.append("null as AREA_ID, ");
+		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
+		sql.append("1 as is_admin, ");
+		sql.append("cast(userid as varchar) as ACCOUNT_NO ");
+		sql.append(DBUtil.FROM_CLAUSE).append("dbo.users ");
+		return sql;
 	}
 }
