@@ -3,6 +3,7 @@ package com.rezdox.vo;
 //Java 8
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 // SMTBaseLibs
@@ -33,12 +34,21 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	private Date lastSoldDate;
 	private Date forSaleDate;
 	private int privacyFlag;
-	private Map<String, String> attributes;
+	private Map<String, Object> attributes;
 	private Date createDate;
 	private Date updateDate;
+	
+	/**
+	 * Special use keys for values from the attributes table in the attibutes map
+	 */
+	private static final String BEDS_NO = "bedsNo";
+	private static final String BATHS_NO = "bathsNo";
+	private static final String SQFT_NO = "sqftNo";
+	private static final String PURCHASE_PRICE_NO = "purchasePriceNo";
 
 	public ResidenceVO() {
 		super();
+		attributes = new HashMap<>();
 	}
 
 	/**
@@ -138,18 +148,78 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	public void setPrivacyFlag(int privacyFlag) {
 		this.privacyFlag = privacyFlag;
 	}
+	
+	/**
+	 * @return the bedsNo
+	 */
+	@Column(name="beds_no")
+	public Integer getBedsNo() {
+		return (Integer) attributes.get(BEDS_NO);
+	}
+
+	/**
+	 * @param bedsNo the bedsNo to set
+	 */
+	public void setBedsNo(Integer bedsNo) {
+		attributes.put(BEDS_NO, bedsNo);
+	}
+
+	/**
+	 * @return the bathsNo
+	 */
+	@Column(name="baths_no")
+	public Double getBathsNo() {
+		return (Double) attributes.get(BATHS_NO);
+	}
+
+	/**
+	 * @param bathsNo the bathsNo to set
+	 */
+	public void setBathsNo(Double bathsNo) {
+		attributes.put(BATHS_NO, bathsNo);
+	}
+
+	/**
+	 * @return the sqftNo
+	 */
+	@Column(name="sqft_no")
+	public Integer getSqftNo() {
+		return (Integer) attributes.get(SQFT_NO);
+	}
+
+	/**
+	 * @param sqftNo the sqftNo to set
+	 */
+	public void setSqftNo(Integer sqftNo) {
+		attributes.put(SQFT_NO, sqftNo);
+	}
+
+	/**
+	 * @return the purchasePriceNo
+	 */
+	@Column(name="purchase_price_no")
+	public Double getPurchasePriceNo() {
+		return (Double) attributes.get(PURCHASE_PRICE_NO);
+	}
+
+	/**
+	 * @param purchasePriceNo the purchasePriceNo to set
+	 */
+	public void setPurchasePriceNo(Double purchasePriceNo) {
+		attributes.put(PURCHASE_PRICE_NO, purchasePriceNo);
+	}
 
 	/**
 	 * @return the attributes
 	 */
-	public Map<String, String> getAttributes() {
+	public Map<String, Object> getAttributes() {
 		return attributes;
 	}
 
 	/**
 	 * @param attributes the attributes to set
 	 */
-	public void setAttributes(Map<String, String> attributes) {
+	public void setAttributes(Map<String, Object> attributes) {
 		this.attributes = attributes;
 	}
 
