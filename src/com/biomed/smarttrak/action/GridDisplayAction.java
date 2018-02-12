@@ -62,7 +62,10 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	public static final String GRID_ID = "gridId";
 	
 	// Constants for the label types
-	public static final int ALL_LABELS = 0, VALUE_ONLY = 1, TOTAL_ONLY = 2, NO_LABEL = 3;
+	public static final int ALL_LABELS = 0;
+	public static final int VALUE_ONLY = 1;
+	public static final int TOTAL_ONLY = 2;
+	public static final int NO_LABEL = 3;
 
 	private static final String[] PIE_CHART_COLORS = { "#3366cc","#dc3912","#ff9900","#109618","#990099","#0099c6","#8f8f8f","#e53ac3","#f96125","#316395" };
 
@@ -123,7 +126,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			if (req.hasParameter("excel")) {
 				buildExcelFile(req, grid);
 			} else if (! StringUtil.isEmpty(gridId)) { 
-				putModuleData(retrieveChartData(grid, type, full, stacked, pt, columns, rows, labelType));
+				SMTGridIntfc gridData = retrieveChartData(grid, type, full, stacked, pt, columns, rows);
+				configureGridOptions(gridData, grid, type, full, labelType);
+				putModuleData(gridData);
 			}
 		}
 	}
@@ -223,7 +228,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			}
 
 			// Retrieve the data for all of the charts
-			data.put(id, retrieveChartData(grid, ct, full, stacked, pt, cols, Collections.emptyList(), ALL_LABELS));
+			SMTGridIntfc loadedGrid = retrieveChartData(grid, ct, full, stacked, pt, cols, Collections.emptyList());
+			configureGridOptions(loadedGrid, grid, ct, full, ALL_LABELS);
+			data.put(id, loadedGrid);
 		}
 
 		return data;
@@ -269,13 +276,34 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param cols List of columns to display.  Blank equals all
 	 */
 	public SMTGridIntfc retrieveChartData(GridVO grid, ChartType type, boolean full, 
-			boolean stacked, ProviderType pt, List<Integer> cols, List<Integer> rows, int labelType) {
+			boolean stacked, ProviderType pt, List<Integer> cols, List<Integer> rows) {
 		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type, full, cols, rows);
 
+		// Add the chart specific options
+		gridData.addCustomValue("width", "100%");
+		gridData.addCustomValue("height", "100%");
+
+		// Add configurable attributes
+		if(stacked) gridData.addCustomValue("isStacked", true);
+
+		if (Convert.formatBoolean(grid.getAbbreviateNumbers())) setValueFormats(gridData);
+
+		return gridData;
+	}
+	
+	
+	/**
+	 * Customize the display options for the supplied grid
+	 * @param gridData
+	 * @param grid
+	 * @param type
+	 * @param full
+	 * @param labelType
+	 */
+	private void configureGridOptions(SMTGridIntfc gridData, GridVO grid, ChartType type, boolean full, int labelType) {
 		// Get the chart options
 		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE, full);
 		options.addOptionsFromGridData(grid);
-		log.debug("options: " + options);
 
 		// Load the custom pie chart colors.
 		if (ChartType.PIE == type) {
@@ -296,17 +324,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			modifyPieLabels(grid);
 		}
 
-		// Add the chart specific options
 		gridData.addCustomValues(options.getChartOptions());
-		gridData.addCustomValue("width", "100%");
-		gridData.addCustomValue("height", "100%");
-
-		// Add configurable attributes
-		if(stacked) gridData.addCustomValue("isStacked", true);
-
-		if (Convert.formatBoolean(grid.getAbbreviateNumbers())) setValueFormats(gridData);
-
-		return gridData;
 	}
 
 
