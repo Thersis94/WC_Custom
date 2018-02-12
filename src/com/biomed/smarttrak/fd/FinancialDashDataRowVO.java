@@ -37,41 +37,41 @@ public class FinancialDashDataRowVO implements Serializable {
 	private String regionCd;
 	private String graphColor;
 	private boolean inactiveFlg;
-	private int inactiveCnt; // internal value used to calculate overall inactivity
+	private int activeCnt; // internal value used to calculate overall inactivity
 	private Map<String, FinancialDashDataColumnVO> columns;
-	
+
 	/**
 	 * Provides a logger
 	 */
 	protected static Logger log;
-	
+
 	public FinancialDashDataRowVO() {
 		super();
 		columns = new HashMap<>();
 		log = Logger.getLogger(getClass());
 	}
-	
-	public FinancialDashDataRowVO(ResultSet rs) {
+
+	public FinancialDashDataRowVO(ResultSet rs) throws SQLException {
 		this();
 		setData(rs);
 	}
-	
+
 	/**
 	 * Sets data from a ResultSet
 	 * @param rs
 	 */
-	public void setData(ResultSet rs) {
+	public void setData(ResultSet rs) throws SQLException {
 		DBUtil util = new DBUtil();
-		
+
 		setName(util.getStringVal("ROW_NM", rs));
 		setPrimaryKey(util.getStringVal("ROW_ID", rs));
-		
+
 		// These only come from the edit version of the query
 		setCompanyId(util.getStringVal("COMPANY_ID", rs));
 		setSectionId(util.getStringVal("SECT_ID", rs));
 		setRegionCd(util.getStringVal("REGION_CD", rs));
 		setGraphColor(util.getStringVal("GRAPH_COLOR", rs));
-		
+
 		setColumns(util, rs);
 	}
 
@@ -145,53 +145,44 @@ public class FinancialDashDataRowVO implements Serializable {
 	public void setColumns(Map<String, FinancialDashDataColumnVO> columns) {
 		this.columns = columns;
 	}
-	
+
 	/**
 	 *  Sets all financial data columns found in the result set
 	 * 
 	 * @param util
 	 * @param rs
+	 * @throws SQLException 
 	 */
-	public void setColumns(DBUtil util, ResultSet rs) {
-		
-		try {
-			int maxYear = util.getIntVal("YEAR_NO", rs);
-			
-			Map<Integer, Integer> cyTotals = new HashMap<>(); // calendar year totals without adjustment
-			Map<Integer, Integer> ytdTotals = new HashMap<>(); // totals with adjustments when the current year is not complete
-			Map<Integer, String> ids = new HashMap<>();
-			
-			ResultSetMetaData rsmd;
-			rsmd = rs.getMetaData();
-			
-			int colCount = rsmd.getColumnCount();
-			for (int i = 1; i <= colCount; i++) {
-				String colName = rsmd.getColumnName(i).toUpperCase();
-				String qtr = colName.substring(0,2);
-				int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
+	public void setColumns(DBUtil util, ResultSet rs) throws SQLException {
+		int maxYear = util.getIntVal("YEAR_NO", rs);
 
-				switch (qtr) {
-					case FinancialDashBaseAction.QUARTER_1:
-					case FinancialDashBaseAction.QUARTER_2:
-					case FinancialDashBaseAction.QUARTER_3:
-					case FinancialDashBaseAction.QUARTER_4:
-						addColumn(qtr, yearIdx, maxYear, util, rs);
-						incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
-						incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + maxYear);
-						calculateInactivity(qtr, yearIdx, util, rs);
-						ids.put(yearIdx, util.getStringVal("REVENUE_ID_" + yearIdx, rs));
-						break;
-					default:
-				}
+		Map<Integer, Integer> cyTotals = new HashMap<>(); // calendar year totals without adjustment
+		Map<Integer, Integer> ytdTotals = new HashMap<>(); // totals with adjustments when the current year is not complete
+		Map<Integer, String> ids = new HashMap<>();
+
+		ResultSetMetaData rsmd;
+		rsmd = rs.getMetaData();
+
+		int colCount = rsmd.getColumnCount();
+		for (int i = 1; i <= colCount; i++) {
+			String colName = rsmd.getColumnName(i).toUpperCase();
+			String qtr = colName.substring(0,2);
+			int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
+
+			if (qtr.matches("Q[1-4]")) {
+				addColumn(qtr, yearIdx, maxYear, util, rs);
+				incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
+				incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + maxYear);
+				calculateInactivity(qtr, yearIdx, util, rs);
+				ids.put(yearIdx, util.getStringVal("REVENUE_ID_" + yearIdx, rs));
 			}
-			
-			this.addSummaryColumns(cyTotals, maxYear, FinancialDashBaseAction.CALENDAR_YEAR, ids);
-			this.addSummaryColumns(ytdTotals, maxYear, FinancialDashBaseAction.YEAR_TO_DATE, ids);
-		} catch (SQLException sqle) {
-			log.error("Unable to set financial dashboard row data columns", sqle);
 		}
+
+		this.addSummaryColumns(cyTotals, maxYear, FinancialDashBaseAction.CALENDAR_YEAR, ids);
+		this.addSummaryColumns(ytdTotals, maxYear, FinancialDashBaseAction.YEAR_TO_DATE, ids);
+
 	}
-	
+
 	/**
 	 * @param primaryKey the primaryKey to set
 	 */
@@ -219,7 +210,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	public void setRegionCd(String regionCd) {
 		this.regionCd = regionCd;
 	}
-	
+
 	/**
 	 * Per the defined business rules:
 	 * For the current quarter, if any revenue data exists, then the term "Reporting" is displayed.
@@ -230,17 +221,17 @@ public class FinancialDashDataRowVO implements Serializable {
 	 */
 	protected void setReportingPending(SmarttrakTree tree, int currentQtr, int currentYear) {
 		Node node = tree.findNode(primaryKey);
-		
+
 		// If node isn't found, this is a company row, and the value will be displayed
 		if (node != null) {
 			SectionVO section = (SectionVO) node.getUserObject();
-			
+
 			// If the current year/qtr don't match the published year/qtr then we will mark the column reporting/pending.
 			if (currentQtr != section.getFdPubQtr() || currentYear != section.getFdPubYr())
 				markColumnReportingPending(currentQtr, currentYear);
 		}
 	}
-	
+
 	/**
 	 * Marks the column associated to the current qtr/year as reporting or pending
 	 * 
@@ -250,12 +241,12 @@ public class FinancialDashDataRowVO implements Serializable {
 	protected void markColumnReportingPending(int currentQtr, int currentYear) {
 		// Find the column in the map that matches the current year/qtr
 		FinancialDashDataColumnVO currentCol = columns.get(FinancialDashBaseAction.QUARTER + currentQtr + "-" + currentYear);
-		
+
 		// May be null here if we are currently viewing a different time period
 		if (currentCol != null)
 			currentCol.setValueDisplay();
 	}
-	
+
 	/**
 	 * @param inactiveFlg the inactiveFlg to set
 	 */
@@ -277,8 +268,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		col.setPctDiff(pctDiff);
 		col.setColId(colId);
 		col.setRevenueId(revenueId);
-		
-		this.addColumn(colId, col);
+		addColumn(colId, col);
 	}
 
 	/**
@@ -308,17 +298,17 @@ public class FinancialDashDataRowVO implements Serializable {
 		if (pyDollarValue > 0) {
 			pctChange = (double) (dollarValue - pyDollarValue) / pyDollarValue;
 		}
-		
+
 		// Subtracting the year index from the most recent year in the query,
 		// gives the year for that column. One row in the returned data could
 		// represent data from more than one year.
 		String columnId = qtr + "-" + (maxYear - yearIdx);
 		addColumn(columnId, dollarValue, pctChange, util.getStringVal("REVENUE_ID_" + yearIdx, rs));
-		
+
 		// Checks for potential delta between overlay and base data 
 		checkOverlayDelta(columnId, qtr, yearIdx, rs);
 	}
-	
+
 	/**
 	 * Checks for deltas between base and scenario overlay data.
 	 * 
@@ -331,17 +321,17 @@ public class FinancialDashDataRowVO implements Serializable {
 		try {
 			int baseValue = rs.getInt(FinancialDashScenarioOverlayAction.BASE_PREFIX + qtr + "_" + yearIdx);
 			int overlayValue = rs.getInt(qtr + "_" + yearIdx);
-			
+
 			FinancialDashDataColumnVO currentCol = columns.get(id);
 			if (baseValue != overlayValue)
 				currentCol.setDelta(true);
-			
+
 		} catch (Exception e) {
 			// base value not found in the result set
 			// intentionally buried... if we make it here, then we aren't looking at a scenario, there is no delta
 		}
 	}
-	
+
 	/**
 	 * Makes determination as to whether the company is inactive. When inactive,
 	 * the row should not be returned back to the client.
@@ -355,21 +345,20 @@ public class FinancialDashDataRowVO implements Serializable {
 		// Inactivity is only determined from the first two years of data
 		if (StringUtil.isEmpty(getCompanyId()) || yearIdx > 1)
 			return;
-		
-		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
-		
+
+		Integer dollarValue = util.getIntegerVal(qtr + "_" + yearIdx, rs);
+
+		// Check for difference between a new company record (with no previous years), and actual zero values
 		try {
-			// Check for difference between a new company record (with no previous years), and actual zero values
-			if (rs.wasNull() && yearIdx == 1) {
+			if (yearIdx == 1 && rs.wasNull())
 				return;
-			}
-		} catch (SQLException sqle) {
-			log.error("Unable to calculate company inactivity.", sqle);
+		} catch (Exception e) {
+			//ignoreable
 		}
 		
-		checkInactive(qtr, yearIdx, dollarValue);
+		checkInactive(qtr, dollarValue);
 	}
-	
+
 	/**
 	 * Checks for company inactivity for the passed quarter
 	 * 
@@ -377,26 +366,14 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param yearIdx
 	 * @param dollarValue
 	 */
-	private void checkInactive(String qtr, int yearIdx, int dollarValue) {
-		switch (qtr) {
-			case FinancialDashBaseAction.QUARTER_1:
-			case FinancialDashBaseAction.QUARTER_2:
-				if (yearIdx == 1)
-					break;
-			case FinancialDashBaseAction.QUARTER_3:
-			case FinancialDashBaseAction.QUARTER_4:
-				if (dollarValue == 0)
-					inactiveCnt += 1;
-				break;
-			default:
-		}
-		
-		// If all 6 of the past quarters are zero, this company is inactive
-		if (inactiveCnt == 6) {
-			setInactive(true);
-		}
+	private void checkInactive(String qtr, int dollarValue) {
+		if (qtr.matches("Q[1-4]") && dollarValue > 0)
+			activeCnt += 1;
+
+		// If all of the displayable quarters are zero, this company is inactive
+		setInactive(activeCnt == 0);
 	}
-	
+
 	/**
 	 * Creates the summary YTD/CY columns.
 	 * 
@@ -407,12 +384,12 @@ public class FinancialDashDataRowVO implements Serializable {
 		for (int i = 0; i < totals.size() - 1; i++) {
 			Integer cyTotal = totals.get(i);
 			Integer pyTotal = totals.get(i + 1);
-			
+
 			Double pctChange = null;
 			if (pyTotal > 0) {
 				pctChange = (double) (cyTotal - pyTotal) / pyTotal;
 			}
-			
+
 			// Each iteration signifies one year earlier
 			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pctChange, ids.get(i));
 		}
@@ -423,7 +400,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		Double pctChange = null;
 		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, pctChange, ids.get(last));
 	}
-	
+
 	/**
 	 * Increments the totals for the summary YTD/CY columns.
 	 * 
@@ -436,7 +413,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		if (totals.get(yearIdx) == null) {
 			totals.put(yearIdx, 0);
 		}
-		
+
 		boolean adjustForIncompleteYear = curYrColId != null;
 
 		// Run through a series of checks to see if the current 
