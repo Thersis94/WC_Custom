@@ -341,7 +341,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	private void calculateInactivity(String qtr, int yearIdx, DBUtil util, ResultSet rs) {
 		// Inactivity only applies to company rows, not market rows
 		// Inactivity is only determined from the first two years of data
-		if (StringUtil.isEmpty(getCompanyId()) || yearIdx > 1)
+		if (StringUtil.isEmpty(getCompanyId()))
 			return;
 
 		Integer dollarValue = util.getIntegerVal(qtr + "_" + yearIdx, rs);
