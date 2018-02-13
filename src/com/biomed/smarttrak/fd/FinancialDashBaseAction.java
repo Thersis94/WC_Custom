@@ -11,6 +11,7 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.admin.AbstractTreeAction;
@@ -54,6 +55,12 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	public static final String CALENDAR_YEAR = "CY";
 	public static final String YEAR_TO_DATE = "YTD";
 	public static final String QUARTER = "Q";
+	
+	/**
+	 * Reused regex pattern used to determine whether the given column (name)
+	 * in the ResultSet cotains Quarterly FD
+	 */
+	protected static final Pattern QTR_PATTERN = Pattern.compile("Q[1-4]");
 
 	/**
 	 * Quarter prefixes for columns

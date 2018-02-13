@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
@@ -42,24 +43,23 @@ public class FinancialDashDataRowVO implements Serializable {
 	/**
 	 * Provides a logger
 	 */
-	protected static Logger log;
+	protected static Logger log = Logger.getLogger(FinancialDashDataRowVO.class);
 
 	public FinancialDashDataRowVO() {
 		super();
 		columns = new HashMap<>();
-		log = Logger.getLogger(getClass());
 	}
 
-	public FinancialDashDataRowVO(ResultSet rs) throws SQLException {
+	public FinancialDashDataRowVO(ResultSet rs, FinancialDashVO dashboard) throws SQLException {
 		this();
-		setData(rs);
+		setData(rs, dashboard);
 	}
 
 	/**
 	 * Sets data from a ResultSet
 	 * @param rs
 	 */
-	public void setData(ResultSet rs) throws SQLException {
+	public void setData(ResultSet rs, FinancialDashVO dashboard) throws SQLException {
 		DBUtil util = new DBUtil();
 
 		setName(util.getStringVal("ROW_NM", rs));
@@ -71,7 +71,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		setRegionCd(util.getStringVal("REGION_CD", rs));
 		setGraphColor(util.getStringVal("GRAPH_COLOR", rs));
 
-		setColumns(util, rs);
+		setColumns(util, rs, dashboard);
 	}
 
 	/**
@@ -152,7 +152,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param rs
 	 * @throws SQLException 
 	 */
-	public void setColumns(DBUtil util, ResultSet rs) throws SQLException {
+	public void setColumns(DBUtil util, ResultSet rs, FinancialDashVO dashboard) throws SQLException {
 		int maxYear = util.getIntVal("YEAR_NO", rs);
 
 		Map<Integer, Integer> cyTotals = new HashMap<>(); // calendar year totals without adjustment
@@ -167,11 +167,11 @@ public class FinancialDashDataRowVO implements Serializable {
 			String qtr = colName.substring(0,2);
 			int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
 
-			if (qtr.matches("Q[1-4]")) {
+			if (FinancialDashBaseAction.QTR_PATTERN.matcher(qtr).matches()) {
 				addColumn(qtr, yearIdx, maxYear, util, rs);
 				incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
 				incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + (maxYear-yearIdx));
-				calculateInactivity(qtr, yearIdx, util, rs);
+				calculateInactivity(qtr, yearIdx, util, rs, dashboard.getColHeaders(), qtr + "-" + (maxYear-yearIdx));
 				ids.put(yearIdx, util.getStringVal("REVENUE_ID_" + yearIdx, rs));
 			}
 		}
@@ -337,36 +337,24 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param qtr
 	 * @param yearIdx
 	 * @param dollarValue
+	 * @throws SQLException 
 	 */
-	private void calculateInactivity(String qtr, int yearIdx, DBUtil util, ResultSet rs) {
+	private void calculateInactivity(String qtr, int yearIdx, DBUtil util, ResultSet rs, 
+			FinancialDashColumnSet headers, String displayColNm) throws SQLException {
 		// Inactivity only applies to company rows, not market rows
-		// Inactivity is only determined from the first two years of data
-		if (StringUtil.isEmpty(getCompanyId()))
+		// Inactivity is onlycalcuated against columns contains Quarterly FD data
+		if (StringUtil.isEmpty(getCompanyId()) || !FinancialDashBaseAction.QTR_PATTERN.matcher(qtr).matches())
 			return;
 
-		Integer dollarValue = util.getIntegerVal(qtr + "_" + yearIdx, rs);
+		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
 
 		// Check for difference between a new company record (with no previous years), and actual zero values
-		try {
-			if (yearIdx == 1 && rs.wasNull())
-				return;
-		} catch (Exception e) {
-			//ignoreable
-		}
-
-		checkInactive(qtr, dollarValue);
-	}
-
-	/**
-	 * Checks for company inactivity for the passed quarter
-	 * 
-	 * @param qtr
-	 * @param yearIdx
-	 * @param dollarValue
-	 */
-	private void checkInactive(String qtr, int dollarValue) {
-		if (qtr.matches("Q[1-4]") && dollarValue > 0)
-			activeCnt += 1;
+		if (rs.wasNull())
+			return;
+		
+		boolean needCol = headers.getColumns().containsKey(displayColNm) || DisplayType.FOURYR == headers.getDisplayType();
+		if (needCol && dollarValue > 0)
+			++activeCnt;
 
 		// If all of the displayable quarters are zero, this company is inactive
 		setInactive(activeCnt == 0);
