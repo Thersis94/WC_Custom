@@ -268,15 +268,11 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected int getDataYears(DisplayType dt, int currentYear) {
-		int years = 0;
-
 		if (DisplayType.ALL == dt) {
-			years = currentYear - FinancialDashColumnSet.BEGINNING_YEAR + 1;
+			return currentYear - FinancialDashColumnSet.BEGINNING_YEAR + 1;
 		} else {
-			years = dt.getDataYears();
+			return dt.getDataYears();
 		}
-
-		return years;
 	}
 
 	/**
@@ -285,7 +281,6 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 */
 	protected String getFinancialDataSql(FinancialDashVO dash) {
 		StringBuilder sql = new StringBuilder(2600);
-
 		sql.append(getCommonSelectSql(dash));
 		sql.append(getSelectSql(dash));
 		sql.append(getJoinSql(dash));

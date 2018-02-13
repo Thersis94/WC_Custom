@@ -120,7 +120,6 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setData(ResultSet rs, SmarttrakTree sections) {
 		FinancialDashDataRowVO row;
-		
 		try {
 			while (rs.next()) {
 				row = new FinancialDashDataRowVO(rs);

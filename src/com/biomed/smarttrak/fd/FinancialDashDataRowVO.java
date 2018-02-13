@@ -26,7 +26,6 @@ import com.siliconmtn.util.StringUtil;
  * @version 1.0
  * @since Jan 04, 2017
  ****************************************************************************/
-
 public class FinancialDashDataRowVO implements Serializable {
 
 	private static final long serialVersionUID = -1858035677710604733L;
@@ -160,11 +159,10 @@ public class FinancialDashDataRowVO implements Serializable {
 		Map<Integer, Integer> ytdTotals = new HashMap<>(); // totals with adjustments when the current year is not complete
 		Map<Integer, String> ids = new HashMap<>();
 
-		ResultSetMetaData rsmd;
-		rsmd = rs.getMetaData();
-
+		ResultSetMetaData rsmd = rs.getMetaData();
 		int colCount = rsmd.getColumnCount();
-		for (int i = 1; i <= colCount; i++) {
+		
+		for (int i=1; i <= colCount; i++) {
 			String colName = rsmd.getColumnName(i).toUpperCase();
 			String qtr = colName.substring(0,2);
 			int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
@@ -172,7 +170,7 @@ public class FinancialDashDataRowVO implements Serializable {
 			if (qtr.matches("Q[1-4]")) {
 				addColumn(qtr, yearIdx, maxYear, util, rs);
 				incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
-				incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + maxYear);
+				incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + (maxYear-yearIdx));
 				calculateInactivity(qtr, yearIdx, util, rs);
 				ids.put(yearIdx, util.getStringVal("REVENUE_ID_" + yearIdx, rs));
 			}
@@ -355,7 +353,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		} catch (Exception e) {
 			//ignoreable
 		}
-		
+
 		checkInactive(qtr, dollarValue);
 	}
 
@@ -391,6 +389,7 @@ public class FinancialDashDataRowVO implements Serializable {
 			}
 
 			// Each iteration signifies one year earlier
+			log.debug(columnPrefix + " " + (maxYear - i) + " " + cyTotal + " " + ids.get(i));
 			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pctChange, ids.get(i));
 		}
 
@@ -398,6 +397,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		int last = totals.size() - 1;
 		Integer cyTotal = totals.get(last);
 		Double pctChange = null;
+		log.debug(columnPrefix + " " + (maxYear - last) + " " + cyTotal + " " + ids.get(last));
 		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, pctChange, ids.get(last));
 	}
 
@@ -410,9 +410,8 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param curYrColId - passed when you want to adjust totals for previous years based on current year
 	 */
 	protected void incrementTotal(Map<Integer, Integer> totals, int yearIdx, int dollarValue, String curYrColId) {
-		if (totals.get(yearIdx) == null) {
+		if (totals.get(yearIdx) == null)
 			totals.put(yearIdx, 0);
-		}
 
 		boolean adjustForIncompleteYear = curYrColId != null;
 
@@ -422,9 +421,11 @@ public class FinancialDashDataRowVO implements Serializable {
 		// to a previous year's full compliment of profits.
 		int addDollarValue = dollarValue;
 		if (adjustForIncompleteYear && yearIdx > 0 && columns.get(curYrColId).getDollarValue() == 0) {
+			log.debug("YTD?" + yearIdx + " " + curYrColId + " " + dollarValue);
 			addDollarValue = 0;
 		}
 
+		log.debug(yearIdx + " " + totals.get(yearIdx) + " " + addDollarValue);
 		totals.put(yearIdx, totals.get(yearIdx) + addDollarValue);
 	}
 }
