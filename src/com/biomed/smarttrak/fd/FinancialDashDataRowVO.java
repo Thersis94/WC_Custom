@@ -389,7 +389,6 @@ public class FinancialDashDataRowVO implements Serializable {
 			}
 
 			// Each iteration signifies one year earlier
-			log.debug(columnPrefix + " " + (maxYear - i) + " " + cyTotal + " " + ids.get(i));
 			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pctChange, ids.get(i));
 		}
 
@@ -397,7 +396,6 @@ public class FinancialDashDataRowVO implements Serializable {
 		int last = totals.size() - 1;
 		Integer cyTotal = totals.get(last);
 		Double pctChange = null;
-		log.debug(columnPrefix + " " + (maxYear - last) + " " + cyTotal + " " + ids.get(last));
 		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, pctChange, ids.get(last));
 	}
 
@@ -421,11 +419,9 @@ public class FinancialDashDataRowVO implements Serializable {
 		// to a previous year's full compliment of profits.
 		int addDollarValue = dollarValue;
 		if (adjustForIncompleteYear && yearIdx > 0 && columns.get(curYrColId).getDollarValue() == 0) {
-			log.debug("YTD?" + yearIdx + " " + curYrColId + " " + dollarValue);
 			addDollarValue = 0;
 		}
 
-		log.debug(yearIdx + " " + totals.get(yearIdx) + " " + addDollarValue);
 		totals.put(yearIdx, totals.get(yearIdx) + addDollarValue);
 	}
 }
