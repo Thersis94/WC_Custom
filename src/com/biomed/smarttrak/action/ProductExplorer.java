@@ -167,6 +167,7 @@ public class ProductExplorer extends SBActionAdapter {
 		SecurityController.isPeAuth(req);
 
 		putModuleData(retrieveProducts(req, false));
+
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
 			retrieveSavedQueries(req);
 	}
@@ -245,17 +246,16 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void retrieveSavedQueries(ActionRequest req) throws ActionException {
+		UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 		StringBuilder sql = new StringBuilder(125);
-		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("SELECT * FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_EXPLORER_QUERY WHERE USER_ID = ? ");
+		log.debug(sql);
 
 		List<Map<String, String>> queries = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 			ps.setString(1, user.getUserId());
-
 			ResultSet rs = ps.executeQuery();
-
 			while (rs.next()) {
 				Map<String, String> entry = new HashMap<>();
 				entry.put("id", rs.getString("EXPLORER_QUERY_ID"));
@@ -286,15 +286,16 @@ public class ProductExplorer extends SBActionAdapter {
 
 		addFacetFields(req, qData);
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
+		sqp.setFacetLimit(1500); //set this high enough so we can get all the companies.  ~1050 as of 02.12.2018 -JM
 		SolrResponseVO vo = sqp.processQuery(qData);
 
 		// Check to see if all the results should be returned instead of the current page
-		if (getAll) {
+		if (getAll)
 			getRemainingDocuments(vo, sqp, qData);
-		}
 
 		if (!req.hasParameter("compare") && !req.hasParameter("textCompare"))
 			buildFilterList(req);
+
 		return vo;
 	}
 
@@ -306,13 +307,12 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @param qData
 	 */
 	private void getRemainingDocuments(SolrResponseVO vo, SolrQueryProcessor sqp, SolrActionVO qData) {
-		int totals = 0;
-		List<SolrDocument> docs = new ArrayList<>();
+		List<SolrDocument> docs = new ArrayList<>(Convert.formatInteger(""+vo.getTotalResponses()));
 		docs.addAll(vo.getResultDocuments());
+		qData.setNumberResponses(1000);
 
-		while (totals < vo.getTotalResponses()) {
-			totals += 100;
-			qData.setStartLocation(totals);
+		while (docs.size() < vo.getTotalResponses()) {
+			qData.setStartLocation(docs.size());
 			SolrResponseVO currentResponse = sqp.processQuery(qData);
 			docs.addAll(currentResponse.getResultDocuments());
 		}
