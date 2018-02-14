@@ -1,7 +1,6 @@
 package com.biomed.smarttrak.action.rss.util;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -274,13 +273,15 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	protected PubMedSearchResultVO processTermsResults(byte[] results) {
+		if (results == null || results.length == 0) return null;
+
 		PubMedSearchResultVO vo = null;
 		try (InputStream is = new ByteArrayInputStream(results)) {
 			PubmedListSaxHandler handler = new PubmedListSaxHandler();
 			saxParser.parse(is, handler);
 			vo = handler.getVo();
 			saxParser.reset();
-		} catch(SAXException | IOException se) {
+		} catch(Exception se) {
 			log.error("Problem Processing Pubmed Search", se);
 		}
 		return vo;

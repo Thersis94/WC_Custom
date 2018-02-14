@@ -1,7 +1,6 @@
 package com.biomed.smarttrak.action.rss.util;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,11 +17,7 @@ import javax.xml.ws.handler.MessageContext;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
-import com.quertle.webservice.base.ClassNotFoundException_Exception;
-import com.quertle.webservice.base.Exception_Exception;
 import com.quertle.webservice.base.HitcountOption;
-import com.quertle.webservice.base.IOException_Exception;
-import com.quertle.webservice.base.ParseException_Exception;
 import com.quertle.webservice.base.ResultAttributes;
 import com.quertle.webservice.base.SearchParams;
 import com.quertle.webservice.base.SearchParams.PostFilters;
@@ -217,7 +212,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private Date getPubDate(String pubDate) {
-		if(StringUtil.isEmpty(pubDate)) {
+		if (StringUtil.isEmpty(pubDate)) {
 			return Convert.getCurrentTimestamp();
 		} else {
 			String d = pubDate.replace(" ", "-").replace("\"", "");
@@ -285,8 +280,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			}
 		} catch(WSCheckFaultException ws) {
 			log.error("Could not load articles", ws);
-		} catch (ParseException_Exception | ClassNotFoundException_Exception | 
-				Exception_Exception | IOException_Exception e) {
+		} catch (Exception e) {
 			log.error("Error Processing Code", e);
 		}
 
@@ -368,7 +362,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	private URL buildUrl() {
 		try {
 			return new URL(props.getProperty(WSDL_URL_STRING));
-		} catch (MalformedURLException e) {
+		} catch (Exception e) {
 			log.error("Can not initialize the default wsdl from " + props.getProperty(WSDL_URL_STRING));
 			return null;
 		}
@@ -404,7 +398,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			if (data != null)
 				return new String(data);
 
-		} catch (IOException ioe) {
+		} catch (Exception ioe) {
 			log.error("could not load data from url=" + url, ioe);
 		}
 		return null;

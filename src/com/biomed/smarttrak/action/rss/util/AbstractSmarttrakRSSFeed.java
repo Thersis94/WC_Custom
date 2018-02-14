@@ -242,7 +242,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 				throw new IOException("Transaction Unsuccessful, code=" + conn.getResponseCode());
 			}
 
-		} catch (IOException e) {
+		} catch (Exception e) {
 			StringBuilder err = new StringBuilder(100);
 			err.append("Could not retrieve Feed: ").append(url).append(", Connection Response: ").append(conn.getResponseCode());
 			log.error(err.toString());
