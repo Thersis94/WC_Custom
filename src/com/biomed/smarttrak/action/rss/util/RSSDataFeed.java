@@ -1,7 +1,6 @@
 package com.biomed.smarttrak.action.rss.util;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -77,13 +76,14 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	public void process(List<SmarttrakRssEntityVO> feeds) {
 		for(SmarttrakRssEntityVO f : feeds) {
-			if(!f.getRssEntityId().equals(props.get(PUBMED_ENTITY_ID))) {
-				try {
-					List<RSSArticleVO> articles = retrieveArticles(f.getRssUrl());
-					filterArticles(f, articles);
-				} catch (Exception e) {
-					log.error("Problem Processing Feed", e);
-				}
+			//for some reason PubMed gets picked up here - skip over it.
+			if (f.getRssEntityId().equals(props.get(PUBMED_ENTITY_ID))) continue;
+			
+			try {
+				List<RSSArticleVO> articles = retrieveArticles(f.getRssUrl());
+				filterArticles(f, articles);
+			} catch (Exception e) {
+				log.error("Problem Processing Feed", e);
 			}
 		}
 	}
@@ -118,7 +118,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 			RSSArticleSaxHandler handler = new RSSArticleSaxHandler();
 			saxParser.parse(is, handler);
 			articles = handler.getVos();
-		} catch(SAXException | IOException se) {
+		} catch(Exception se) {
 			log.error("Response was malformed: " + se.getMessage());
 		}
 		log.info("Loaded " + articles.size() + " articles.");
