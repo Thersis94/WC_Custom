@@ -14,7 +14,6 @@ import java.util.Map;
 
 import org.apache.log4j.PropertyConfigurator;
 
-import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 import com.depuysynthes.srt.SRTRosterVO;
 import com.siliconmtn.db.DBUtil;
@@ -71,8 +70,10 @@ public class SRTUserImport extends CommandLineUtil {
 		ACCOUNT_NO,
 		IS_ACTIVE,
 		EMAIL_ADDRESS_TXT,
+		ROSTER_EMAIL_ADDRESS_TXT,
 		FIRST_NM,
 		LAST_NM,
+		USER_NAME,
 		ADDRESS_TXT,
 		CITY_NM,
 		STATE_CD,
@@ -86,7 +87,9 @@ public class SRTUserImport extends CommandLineUtil {
 		AREA_ID,
 		MOBILE_PHONE_TXT,
 		OP_CO_ID,
-		IS_ADMIN
+		IS_ADMIN,
+		DEPUY_ID,
+		ENGINEERING_CONTACT
 	}
 
 	/**
@@ -128,12 +131,12 @@ public class SRTUserImport extends CommandLineUtil {
 		List<Map<String,Object>> records = retrieveData();
 		log.info("records retrieved: " + records.size());
 		try {
-			dbConn.setAutoCommit(false);
+			//dbConn.setAutoCommit(false);
 
 			insertRecords(records);
 
-			dbConn.commit();
-			dbConn.setAutoCommit(true);
+			//dbConn.commit();
+			//dbConn.setAutoCommit(true);
 		} catch(Exception e) {
 			log.error("Error, failed to insert records, ", e);
 		}
@@ -199,14 +202,14 @@ public class SRTUserImport extends CommandLineUtil {
 			// init site user from import source
 			user = initUser(dataSet);
 
-			log.info("START: processing record|source: " + recordCnt + "|" + user.getRosterId());
+			log.info("START: processing record|source: " + recordCnt + "|" + user.getDepuyId());
 			// if we weren't able to get a valid email address for the user, don't even process it.
-			if (user.getValidEmailFlag() == 0) {
-				logInvalidUserRecord(recordCnt, user);
-				failedCnt++;
-				continue;
-			}
-			
+//			if (user.getValidEmailFlag() == 0) {
+//				logInvalidUserRecord(recordCnt, user);
+//				failedCnt++;
+//				continue;
+//			}
+
 			try {
 				/* check for pre-existing user profile */
 				findProfile(dbConn, pm, user);
@@ -227,9 +230,8 @@ public class SRTUserImport extends CommandLineUtil {
 				/* Add profile roles for this user for the specified site ID. */
 				processRole(dbConn, prm, dataSet, user.getProfileId());
 
-				
 			} catch(Exception ex) {
-				log.error("Error processing source ID " + user.getRosterId() + ", ", ex);
+				log.error("Error processing source ID " + user.getDepuyId() + ", ", ex);
 			}
 
 			// if valid profile, insert reg records, create biomedgps user, update profile/auth.
@@ -242,7 +244,7 @@ public class SRTUserImport extends CommandLineUtil {
 					updateSourceUserProfile(dbConn, user);
 					updateSourceUserAuthentication(dbConn, user);
 				}
-				log.info("END: inserting for record|source: " + recordCnt + "|" + user.getRosterId());
+				log.info("END: inserting for record|source: " + recordCnt + "|" + user.getDepuyId());
 			} else {
 				// if we couldn't successfully create a profile, add to failed count.
 				logInvalidUserRecord(recordCnt, user);
@@ -346,12 +348,12 @@ public class SRTUserImport extends CommandLineUtil {
 	protected boolean isDuplicateProfile(SRTRosterVO user, int recordCnt) {
 		if (user.getProfileId() != null) {
 			if (processedProfiles.containsValue(user.getProfileId())) {
-				log.info("END: IS DUPLICATE PROFILE, skipping record|userId: " + recordCnt + "|" + user.getRosterId());
+				log.info("END: IS DUPLICATE PROFILE, skipping record|userId: " + recordCnt + "|" + user.getDepuyId());
 				// add profile ID to dupes map.
-				duplicateProfiles.put(user.getRosterId(),user.getProfileId());
+				duplicateProfiles.put(user.getDepuyId(),user.getProfileId());
 				return true;
 			} else {
-				processedProfiles.put(user.getRosterId(), user.getProfileId());
+				processedProfiles.put(user.getDepuyId(), user.getProfileId());
 				return false;
 			}
 		}
@@ -390,10 +392,10 @@ public class SRTUserImport extends CommandLineUtil {
 
 		try {
 			new DBProcessor(dbConn, schema).save(sUser);
-			log.debug("inserted source user record for user_id|profile_id: " + sUser.getRosterId() + "|" + sUser.getProfileId());
+			log.debug("inserted source user record for user_id|profile_id: " + sUser.getDepuyId() + "|" + sUser.getProfileId());
 		} catch(InvalidDataException | com.siliconmtn.db.util.DatabaseException sqle) {
 			log.error("Error inserting source user, ", sqle);
-			failedSourceUserInserts.put(sUser.getRosterId(),sUser.getProfileId());
+			failedSourceUserInserts.put(sUser.getDepuyId(),sUser.getProfileId());
 		}
 	}
 
@@ -410,7 +412,7 @@ public class SRTUserImport extends CommandLineUtil {
 			ps.execute();
 			
 		} catch(SQLException sqle) {
-			failedSourceUserProfileUpdates.put(sUser.getRosterId(),sUser.getProfileId());
+			failedSourceUserProfileUpdates.put(sUser.getDepuyId(),sUser.getProfileId());
 		}
 	}
 
@@ -429,7 +431,7 @@ public class SRTUserImport extends CommandLineUtil {
 			ps.execute();
 
 		} catch(SQLException sqle) {
-			failedSourceUserAuthenticationUpdates.put(sUser.getRosterId(),sUser.getAuthenticationId());
+			failedSourceUserAuthenticationUpdates.put(sUser.getDepuyId(),sUser.getAuthenticationId());
 		}
 	}
 
@@ -538,7 +540,7 @@ public class SRTUserImport extends CommandLineUtil {
 	 * @param user
 	 */
 	protected void logInvalidUserRecord(int recordCnt, SRTRosterVO user) {
-		log.info("END: INVALID record, DID NOT insert for record|source: " + recordCnt + "|" + user.getRosterId());
+		log.info("END: INVALID record, DID NOT insert for record|source: " + recordCnt + "|" + user.getDepuyId());
 	}
 
 	/**
@@ -555,6 +557,8 @@ public class SRTUserImport extends CommandLineUtil {
 		user.setIsActive(Convert.formatBoolean(dataSet.get(ImportField.IS_ACTIVE.name())));
 		user.setCompanyRole(StringUtil.checkVal(dataSet.get(ImportField.ROLE_TXT.name())));
 		user.setOpCoId(StringUtil.checkVal(dataSet.get(ImportField.OP_CO_ID.name())));
+		user.setRosterEmailAddress(StringUtil.checkVal(dataSet.get(ImportField.ROSTER_EMAIL_ADDRESS_TXT.name())));
+		user.setDepuyId(StringUtil.checkVal(dataSet.get(ImportField.DEPUY_ID.name())));
 
 		if(!user.isActive()) {
 			user.setDeactivatedDt(Convert.getCurrentTimestamp());
@@ -564,9 +568,9 @@ public class SRTUserImport extends CommandLineUtil {
 		user.setRegion(StringUtil.checkVal(dataSet.get(ImportField.REGION_ID.name())));
 		user.setArea(StringUtil.checkVal(dataSet.get(ImportField.AREA_ID.name())));
 		user.setAccountNo(StringUtil.checkVal(dataSet.get(ImportField.ACCOUNT_NO.name())));
-
+		user.setEngineeringContact(StringUtil.checkVal(dataSet.get(ImportField.ENGINEERING_CONTACT.name())));
 		// parse user's email.
-		parseUserEmail(user, (String)dataSet.get(ImportField.EMAIL_ADDRESS_TXT.name()));
+		//parseUserEmail(user, null);
 
 		return user;
 	}
@@ -585,35 +589,7 @@ public class SRTUserImport extends CommandLineUtil {
 			String stUserName = StringUtil.checkVal(legacyUserName);
 			if (! StringUtil.isValidEmail(stUserName)) {
 				// username not valid email address either, append fallback email suffix
-				user.setEmailAddress(stUserName + props.getProperty("emailSuffixDefault"));
-			} else {
-				user.setEmailAddress(stUserName);
-			}
-		}
-		// Check to see if we can set 'valid' email flag
-		if (StringUtil.isValidEmail(user.getEmailAddress())) {
-			user.setValidEmailFlag(1);
-		} else {
-			user.setValidEmailFlag(0);
-		}
-		log.debug("User email address is: " + user.getEmailAddress());
-	}
-
-	/**
-	 * Checks user's email address.  If email address is invalid, the user's legacy 
-	 * username is checked.  If the username is not a valid email address, 
-	 * the user's email address is set to null.
-	 * @param user
-	 * @param originalUserName
-	 */
-	protected void parseUserEmail(UserVO user, String legacyUserName) {
-		// check email address
-		if (! StringUtil.isValidEmail(user.getEmailAddress())) {
-			// email address not valid, check username
-			String stUserName = StringUtil.checkVal(legacyUserName);
-			if (! StringUtil.isValidEmail(stUserName)) {
-				// username not valid email address either, append fallback email suffix
-				user.setEmailAddress(stUserName + props.getProperty("emailSuffixDefault"));
+				//user.setEmailAddress(stUserName + props.getProperty("emailSuffixDefault"));
 			} else {
 				user.setEmailAddress(stUserName);
 			}
@@ -636,23 +612,6 @@ public class SRTUserImport extends CommandLineUtil {
 		record.put(ImportField.ROLE_TXT.name(), checkRole(tmpVal));
 		tmpVal = (String) record.get(ImportField.IS_ACTIVE.name());
 		record.put(ImportField.IS_ACTIVE.name(), Convert.formatInteger(Convert.formatBoolean(tmpVal)));
-		tmpVal = (String) record.get(ImportField.FIRST_NM.name());
-		record.put(ImportField.FIRST_NM.name(), cleanName(tmpVal));
-	}
-
-	/**
-	 * @param tmpVal
-	 * @return
-	 */
-	private Object cleanName(String tmpVal) {
-
-		//Check if this is last, first notation.  If so, swap values.
-		if(!StringUtil.isEmpty(tmpVal) && tmpVal.indexOf(',') > -1) {
-			String last = tmpVal.substring(0, tmpVal.indexOf(','));
-			String first = tmpVal.substring(tmpVal.indexOf(',') + 1, tmpVal.length());
-			return new StringBuilder(50).append(first).append(" ").append(last).toString();
-		}
-		return tmpVal;
 	}
 
 	/**
@@ -715,11 +674,13 @@ public class SRTUserImport extends CommandLineUtil {
 	 */
 	protected StringBuilder buildMainQuery() {
 		StringBuilder megaQuery = new StringBuilder(2200);
+		megaQuery.append("select * from (");
 		megaQuery.append(buildAdminUserQuery());
 		megaQuery.append(" union ");
 		megaQuery.append(buildSalesRosterQuery());
 		megaQuery.append(" union ");
 		megaQuery.append(buildProjectUserQuery());
+		megaQuery.append(") users order by is_admin desc, depuy_id desc;");
 		return megaQuery;
 	}
 
@@ -813,11 +774,9 @@ public class SRTUserImport extends CommandLineUtil {
 	protected StringBuilder buildProjectUserQuery() {
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select distinct ");
-		sql.append("case when salesrep like '%,%' then trim(split_part(salesrep, ',', 1)) ");
-		sql.append("when salesrep not like '%,%' then trim(split_part(salesrep, ' ', 1)) ");
-		sql.append("else salesrep end as FIRST_NM, ");
-		sql.append("case when salesrep like '%,%' then trim(split_part(salesrep, ',', 2)) ");
-		sql.append("when salesrep not like '%,%' then trim(split_part(salesrep, ' ', 2)) end as LAST_NM, ");
+		sql.append("first_nm, ");
+		sql.append("last_nm, ");
+		sql.append("concat('\"', salesrep, '\"') as USER_NAME, ");
 		sql.append("0 as allow_comm_flg, ");
 		sql.append("null as wwid, ");
 		sql.append("'0' as IS_ACTIVE, ");
@@ -826,56 +785,58 @@ public class SRTUserImport extends CommandLineUtil {
 		sql.append("null as CITY_NM, ");
 		sql.append("null as STATE_CD, ");
 		sql.append("null as ZIP_CD, ");
-		sql.append("case when salesrepemail like '%@%' then salesrepemail ");
-		sql.append("when salesrepemail not like '%@%' then concat(replace(salesrep, ' ', ''), '@srt.com') end ");
-		sql.append("as EMAIL_ADDRESS_TXT, ");
+		sql.append("null as EMAIL_ADDRESS_TXT, ");
+		sql.append("EMAIL_ADDRESS_TXT as ROSTER_EMAIL_ADDRESS_TXT, ");
 		sql.append("'6' as workgroup_id, ");
 		sql.append("null as PASSWORD_TXT, ");
-		sql.append("case when salesrepcellphone is not null and salesrepcellphone != '' ");
-		sql.append("then salesrepcellphone ");
-		sql.append("when salesreppager is not null and salesreppager != '' ");
-		sql.append("then salesreppager else null end as MOBILE_PHONE_TXT, ");
+		sql.append("MOBILE_PHONE_TXT, ");
 		sql.append("cast(territoryid as varchar) as TERRITORY_ID, ");
 		sql.append("null as REGION_ID, ");
 		sql.append("null as AREA_ID, ");
 		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
 		sql.append("0 as is_admin, ");
-		sql.append("replace(core.newId(), '-', '') as ACCOUNT_NO ");
-		sql.append(DBUtil.FROM_CLAUSE).append("dbo.projects ");
-		sql.append("where salesrep not in ");
-		sql.append("(select concat(s.last_name, ', ', s.first_name) ");
-		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster s) ");
-		sql.append("and salesrep not in ");
-		sql.append("(select concat(s.first_name, ' ', s.last_name) ");
-		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster s) ");
-		sql.append("and salesrep != '' ");
+		sql.append("jdeacctnumber as ACCOUNT_NO, ");
+		sql.append("concat('PR_', projectid) as depuy_id, ");
+		sql.append("srtcontact as ENGINEERING_CONTACT ");
+		sql.append(DBUtil.FROM_CLAUSE).append("dbo.projects p ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" projectid not in ( ");
+		sql.append("select projectid ").append(DBUtil.FROM_CLAUSE);
+		sql.append("dbo.projects").append(DBUtil.WHERE_CLAUSE);
+		sql.append("jdeacctnumber in (select customerId from dbo.tbl_pt_sales_roster) ");
+		sql.append("or lower(salesrepemail) in (select lower(email) from dbo.tbl_pt_sales_roster) ");
+		sql.append("or concat(first_nm, ' ', last_nm) in (select firstlast from dbo.tbl_pt_sales_roster) ");
+		sql.append("or salesrep in (select concat(last_nm, ', ', first_nm) from dbo.tbl_pt_sales_roster)) ");
 		return sql;
 	}
 
 	protected StringBuilder buildSalesRosterQuery() {
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select ");
-		sql.append("first_name as first_nm, ");
-		sql.append("last_name as last_nm, ");
+		sql.append("r.first_name as first_nm, ");
+		sql.append("r.last_name as last_nm, ");
+		sql.append("concat('\"', firstlast, '\"') as USER_NAME, ");
 		sql.append("1 as allow_comm_flg, ");
-		sql.append("wwid, ");
+		sql.append("r.wwid, ");
 		sql.append("'1' as IS_ACTIVE, ");
 		sql.append("'5' as ROLE_TXT, ");
-		sql.append("address as ADDRESS_TXT, ");
-		sql.append("city as CITY_NM, ");
-		sql.append("state as STATE_CD, ");
-		sql.append("zip as ZIP_CD, ");
-		sql.append("email as EMAIL_ADDRESS_TXT, ");
+		sql.append("r.address as ADDRESS_TXT, ");
+		sql.append("r.city as CITY_NM, ");
+		sql.append("r.state as STATE_CD, ");
+		sql.append("r.zip as ZIP_CD, ");
+		sql.append("r.alt_email as EMAIL_ADDRESS_TXT, ");
+		sql.append("r.email as ROSTER_EMAIL_ADDRESS_TXT, ");
 		sql.append("'8' as workgroup_id, ");
 		sql.append("null as PASSWORD_TXT, ");
-		sql.append("cell_phone as MOBILE_PHONE_TXT, ");
-		sql.append("cast(territoryid as varchar) as TERRITORY_ID, ");
-		sql.append("cast(region as varchar) as REGION_ID, ");
-		sql.append("cast(area as varchar) as AREA_ID, ");
+		sql.append("r.cell_phone as MOBILE_PHONE_TXT, ");
+		sql.append("cast(r.territoryid as varchar) as TERRITORY_ID, ");
+		sql.append("cast(r.region as varchar) as REGION_ID, ");
+		sql.append("cast(r.area as varchar) as AREA_ID, ");
 		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
 		sql.append("0 as is_admin, ");
-		sql.append("cast(id as varchar) as ACCOUNT_NO ");
-		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster ");
+		sql.append("customerid as ACCOUNT_NO, ");
+		sql.append("concat('SR_', r.id) as depuy_id, ");
+		sql.append("'replace' as ENGINEERING_CONTACT ");
+		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster r ");
 
 		return sql;
 	}
@@ -885,6 +846,7 @@ public class SRTUserImport extends CommandLineUtil {
 		sql.append("select ");
 		sql.append("userfirstname as first_nm, ");
 		sql.append("userlastname as last_nm, ");
+		sql.append("concat('\"', useremail, '\"') as USER_NAME, ");
 		sql.append("1 as allow_comm_flg, ");
 		sql.append("wwid as WWID, ");
 		sql.append("case when status = 'Active' then '1' else '0' end as IS_ACTIVE, ");
@@ -894,6 +856,7 @@ public class SRTUserImport extends CommandLineUtil {
 		sql.append("null as STATE_CD, ");
 		sql.append("null as ZIP_CD, ");
 		sql.append("lower(emailaddresstxt) as EMAIL_ADDRESS_TXT, ");
+		sql.append("lower(emailaddresstxt) as ROSTER_EMAIL_ADDRESS_TXT, ");
 		sql.append("cast(workgroupid as varchar) as workgroup_id, ");
 		sql.append("userpassword as PASSWORD_TXT, ");
 		sql.append("null as MOBILE_PHONE_TXT, ");
@@ -902,7 +865,9 @@ public class SRTUserImport extends CommandLineUtil {
 		sql.append("null as AREA_ID, ");
 		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
 		sql.append("1 as is_admin, ");
-		sql.append("cast(userid as varchar) as ACCOUNT_NO ");
+		sql.append("'US_SPINE_ADMIN' as ACCOUNT_NO, ");
+		sql.append("concat('ADM_', userid) as depuy_id, ");
+		sql.append("srtcontact2 as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.users ");
 		return sql;
 	}
