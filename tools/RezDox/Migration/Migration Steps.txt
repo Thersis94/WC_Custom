@@ -31,6 +31,8 @@ run Custom Tables.sql script
 
 run LegacyDataMigration.java
 
+run After Migration.sql script
+
 ---------------
 Drop RezDox Custom Tables
 SELECT concat('drop table if exists custom.',relname,' cascade;' )

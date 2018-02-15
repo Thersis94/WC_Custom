@@ -23,6 +23,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class SubscriptionAction extends SBActionAdapter {
 	
+	public static final String UPGRADE_PATH = "/subscribe";
+	
 	public SubscriptionAction() {
 		super();
 	}
@@ -54,6 +56,7 @@ public class SubscriptionAction extends SBActionAdapter {
 	 * Checks if a member needs to purchase a residence subscription upgrade
 	 * 
 	 * @param req
+	 * @return true if the member needs an upgrade, false if not
 	 */
 	protected boolean checkResidenceUpgrade(String memberId) {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
