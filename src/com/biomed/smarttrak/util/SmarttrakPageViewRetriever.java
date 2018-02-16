@@ -3,12 +3,14 @@ package com.biomed.smarttrak.util;
 //Java 8
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 //WC Custom libs
 import com.biomed.smarttrak.action.AdminControllerAction;
 //SB libs
 import com.smt.sitebuilder.util.PageViewRetriever;
+import com.smt.sitebuilder.util.PageViewVO;
 
 /****************************************************************************
  * Title: SmarttrakPageViewRetriever.java <p/>
@@ -43,7 +45,8 @@ public class SmarttrakPageViewRetriever extends PageViewRetriever {
 	 * Formats the standard (non-rollup) query for smarttrak to include page titles for various sections
 	 */
 	@Override
-	protected StringBuilder formatStandardQuery() {	
+	protected StringBuilder formatStandardQuery() {
+		boolean isSiteAdmin = getProfileId() == null;
 		StringBuilder sql = new StringBuilder(1000);
 		/*if this page is a market, company, product, or insight and has a query string, go fetch it's name
 		 *otherwise default to it's page name*/
@@ -59,11 +62,9 @@ public class SmarttrakPageViewRetriever extends PageViewRetriever {
 		sql.append("(select product_nm from ").append(customSchema).append("biomedgps_product where product_id = query_str_txt) ");
 		sql.append("ELSE b.page_display_nm END) as page_title_nm ");
 		sql.append("from pageview_user a left outer join page b on a.page_id = b.page_id ");
-		if(getProfileId() == null) { //if this is a site admin, filter out staff roles 
-			sql.append("inner join profile_role c on a.profile_id = c.profile_id inner join role d ");
-			sql.append("on c.role_id = d.role_id and d.role_id != ? ");		
-		}
+		if(isSiteAdmin) sql.append("inner join profile_role c on a.profile_id = c.profile_id inner join role d on c.role_id = d.role_id ");
 		formatCommonQuery(sql);
+		if(isSiteAdmin) sql.append(" and d.role_id != ? "); //if this is a site admin, filter out staff roles
 		sql.append("order by a.visit_dt ");
 		
 		log.debug("Smarttrak page view query: " + sql);
@@ -75,14 +76,27 @@ public class SmarttrakPageViewRetriever extends PageViewRetriever {
 	 * @see com.smt.sitebuilder.util.PageViewRetriever#formatPreparedStatement(java.sql.PreparedStatement)
 	 */
 	@Override
-	protected void formatPreparedStatement(PreparedStatement ps) throws SQLException {
-		int currentIdx = 1;
-		if(getProfileId() == null) { //if this is a site admin, set the id for staff
-			ps.setString(currentIdx++, AdminControllerAction.STAFF_ROLE_ID);
-		}
-		super.formatPreparedStatement(ps, currentIdx);
+	protected int formatPreparedStatement(PreparedStatement ps) throws SQLException {
+		//call super and return the current index
+		int currentIdx = super.formatPreparedStatement(ps);
+		
+		//if this is a site admin, set the id for staff
+		if(getProfileId() == null) ps.setString(currentIdx++, AdminControllerAction.STAFF_ROLE_ID);
+		
+		return currentIdx;
 	}
-
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.util.PageViewRetriever#generatePageViewVO(java.sql.ResultSet)
+	 */
+	@Override
+	protected PageViewVO generatePageViewVO(ResultSet rs) throws SQLException {
+		PageViewVO pageView = super.generatePageViewVO(rs);
+		pageView.setPageTitleName(rs.getString("page_title_nm")); //set the custom field onto the vo
+		return pageView;
+	}
+	
 	/**
 	 * @return the customSchema
 	 */
