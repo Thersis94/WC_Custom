@@ -40,6 +40,9 @@ import com.smt.sitebuilder.data.vo.GenericQueryVO;
  ****************************************************************************/
 public class ResidenceFormTransaction extends FormDataTransaction {
 	
+	/**
+	 * Request parameter names for form field slug_txt values
+	 */
 	public enum ResidenceField {
 		RESIDENCE_NAME("residenceName"), RESIDENCE_ADDRESS("address"), RESIDENCE_ADDRESS_2("address2"), RESIDENCE_CITY("city"),
 		RESIDENCE_STATE("state"), RESIDENCE_ZIP("zipCode"), RESIDENCE_COUNTRY("country"), RESIDENCE_PRIVACY_FLAG("privacyFlag");
@@ -172,7 +175,7 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 				ps.setString(2, req.getParameter(ResidenceAction.RESIDENCE_ID));
 				ps.setString(3, vo.getSlugTxt());
 				ps.setString(4, sen.decodeValue(StringUtil.checkVal(val)));
-				ps.setTimestamp(5, Convert.getCurrentTimestamp());;
+				ps.setTimestamp(5, Convert.getCurrentTimestamp());
 				ps.addBatch();
 			}
 			ps.executeBatch();
