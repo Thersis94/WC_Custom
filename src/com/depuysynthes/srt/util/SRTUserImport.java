@@ -15,7 +15,7 @@ import java.util.Map;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
-import com.depuysynthes.srt.SRTRosterVO;
+import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
@@ -88,7 +88,7 @@ public class SRTUserImport extends CommandLineUtil {
 		MOBILE_PHONE_TXT,
 		OP_CO_ID,
 		IS_ADMIN,
-		DEPUY_ID,
+		CO_ROSTER_ID,
 		ENGINEERING_CONTACT
 	}
 
@@ -202,7 +202,7 @@ public class SRTUserImport extends CommandLineUtil {
 			// init site user from import source
 			user = initUser(dataSet);
 
-			log.info("START: processing record|source: " + recordCnt + "|" + user.getDepuyId());
+			log.info("START: processing record|source: " + recordCnt + "|" + user.getCoRosterId());
 			// if we weren't able to get a valid email address for the user, don't even process it.
 //			if (user.getValidEmailFlag() == 0) {
 //				logInvalidUserRecord(recordCnt, user);
@@ -231,7 +231,7 @@ public class SRTUserImport extends CommandLineUtil {
 				processRole(dbConn, prm, dataSet, user.getProfileId());
 
 			} catch(Exception ex) {
-				log.error("Error processing source ID " + user.getDepuyId() + ", ", ex);
+				log.error("Error processing source ID " + user.getCoRosterId() + ", ", ex);
 			}
 
 			// if valid profile, insert reg records, create biomedgps user, update profile/auth.
@@ -244,7 +244,7 @@ public class SRTUserImport extends CommandLineUtil {
 					updateSourceUserProfile(dbConn, user);
 					updateSourceUserAuthentication(dbConn, user);
 				}
-				log.info("END: inserting for record|source: " + recordCnt + "|" + user.getDepuyId());
+				log.info("END: inserting for record|source: " + recordCnt + "|" + user.getCoRosterId());
 			} else {
 				// if we couldn't successfully create a profile, add to failed count.
 				logInvalidUserRecord(recordCnt, user);
@@ -348,12 +348,12 @@ public class SRTUserImport extends CommandLineUtil {
 	protected boolean isDuplicateProfile(SRTRosterVO user, int recordCnt) {
 		if (user.getProfileId() != null) {
 			if (processedProfiles.containsValue(user.getProfileId())) {
-				log.info("END: IS DUPLICATE PROFILE, skipping record|userId: " + recordCnt + "|" + user.getDepuyId());
+				log.info("END: IS DUPLICATE PROFILE, skipping record|userId: " + recordCnt + "|" + user.getCoRosterId());
 				// add profile ID to dupes map.
-				duplicateProfiles.put(user.getDepuyId(),user.getProfileId());
+				duplicateProfiles.put(user.getCoRosterId(),user.getProfileId());
 				return true;
 			} else {
-				processedProfiles.put(user.getDepuyId(), user.getProfileId());
+				processedProfiles.put(user.getCoRosterId(), user.getProfileId());
 				return false;
 			}
 		}
@@ -392,10 +392,10 @@ public class SRTUserImport extends CommandLineUtil {
 
 		try {
 			new DBProcessor(dbConn, schema).save(sUser);
-			log.debug("inserted source user record for user_id|profile_id: " + sUser.getDepuyId() + "|" + sUser.getProfileId());
+			log.debug("inserted source user record for user_id|profile_id: " + sUser.getCoRosterId() + "|" + sUser.getProfileId());
 		} catch(InvalidDataException | com.siliconmtn.db.util.DatabaseException sqle) {
 			log.error("Error inserting source user, ", sqle);
-			failedSourceUserInserts.put(sUser.getDepuyId(),sUser.getProfileId());
+			failedSourceUserInserts.put(sUser.getCoRosterId(),sUser.getProfileId());
 		}
 	}
 
@@ -412,7 +412,7 @@ public class SRTUserImport extends CommandLineUtil {
 			ps.execute();
 			
 		} catch(SQLException sqle) {
-			failedSourceUserProfileUpdates.put(sUser.getDepuyId(),sUser.getProfileId());
+			failedSourceUserProfileUpdates.put(sUser.getCoRosterId(),sUser.getProfileId());
 		}
 	}
 
@@ -431,7 +431,7 @@ public class SRTUserImport extends CommandLineUtil {
 			ps.execute();
 
 		} catch(SQLException sqle) {
-			failedSourceUserAuthenticationUpdates.put(sUser.getDepuyId(),sUser.getAuthenticationId());
+			failedSourceUserAuthenticationUpdates.put(sUser.getCoRosterId(),sUser.getAuthenticationId());
 		}
 	}
 
@@ -540,7 +540,7 @@ public class SRTUserImport extends CommandLineUtil {
 	 * @param user
 	 */
 	protected void logInvalidUserRecord(int recordCnt, SRTRosterVO user) {
-		log.info("END: INVALID record, DID NOT insert for record|source: " + recordCnt + "|" + user.getDepuyId());
+		log.info("END: INVALID record, DID NOT insert for record|source: " + recordCnt + "|" + user.getCoRosterId());
 	}
 
 	/**
@@ -558,7 +558,7 @@ public class SRTUserImport extends CommandLineUtil {
 		user.setCompanyRole(StringUtil.checkVal(dataSet.get(ImportField.ROLE_TXT.name())));
 		user.setOpCoId(StringUtil.checkVal(dataSet.get(ImportField.OP_CO_ID.name())));
 		user.setRosterEmailAddress(StringUtil.checkVal(dataSet.get(ImportField.ROSTER_EMAIL_ADDRESS_TXT.name())));
-		user.setDepuyId(StringUtil.checkVal(dataSet.get(ImportField.DEPUY_ID.name())));
+		user.setCoRosterId(StringUtil.checkVal(dataSet.get(ImportField.CO_ROSTER_ID.name())));
 
 		if(!user.isActive()) {
 			user.setDeactivatedDt(Convert.getCurrentTimestamp());
@@ -680,7 +680,8 @@ public class SRTUserImport extends CommandLineUtil {
 		megaQuery.append(buildSalesRosterQuery());
 		megaQuery.append(" union ");
 		megaQuery.append(buildProjectUserQuery());
-		megaQuery.append(") users order by is_admin desc, depuy_id desc;");
+		megaQuery.append(") as users ");
+		megaQuery.append("order by is_admin desc, CO_ROSTER_ID desc;");
 		return megaQuery;
 	}
 
@@ -773,9 +774,12 @@ public class SRTUserImport extends CommandLineUtil {
 	 */
 	protected StringBuilder buildProjectUserQuery() {
 		StringBuilder sql = new StringBuilder(1000);
-		sql.append("select distinct ");
-		sql.append("first_nm, ");
-		sql.append("last_nm, ");
+		sql.append("select ");
+		sql.append("case when first_nm is not null and first_nm != '' ");
+		sql.append("then first_nm else '(NO NAME)' end as first_nm, ");
+		sql.append("case when last_nm is not null and last_nm != '' ");
+		sql.append("then last_nm when first_nm is not null and first_nm != '' ");
+		sql.append("then first_nm else '(NO NAME)' end as last_nm, ");
 		sql.append("concat('\"', salesrep, '\"') as USER_NAME, ");
 		sql.append("0 as allow_comm_flg, ");
 		sql.append("null as wwid, ");
@@ -796,7 +800,7 @@ public class SRTUserImport extends CommandLineUtil {
 		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
 		sql.append("0 as is_admin, ");
 		sql.append("jdeacctnumber as ACCOUNT_NO, ");
-		sql.append("concat('PR_', projectid) as depuy_id, ");
+		sql.append("cast(projectid as varchar) as CO_ROSTER_ID, ");
 		sql.append("srtcontact as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.projects p ");
 		sql.append(DBUtil.WHERE_CLAUSE).append(" projectid not in ( ");
@@ -804,8 +808,10 @@ public class SRTUserImport extends CommandLineUtil {
 		sql.append("dbo.projects").append(DBUtil.WHERE_CLAUSE);
 		sql.append("jdeacctnumber in (select customerId from dbo.tbl_pt_sales_roster) ");
 		sql.append("or lower(salesrepemail) in (select lower(email) from dbo.tbl_pt_sales_roster) ");
-		sql.append("or concat(first_nm, ' ', last_nm) in (select firstlast from dbo.tbl_pt_sales_roster) ");
-		sql.append("or salesrep in (select concat(last_nm, ', ', first_nm) from dbo.tbl_pt_sales_roster)) ");
+		sql.append("or concat(first_nm, ' ', last_nm) in (select firstlast from dbo.tbl_pt_sales_roster)) ");
+		sql.append("and p.projectid not in (");
+		sql.append("select cast(CO_ROSTER_ID as int) from custom.srt_roster ");
+		sql.append("where CO_ROSTER_ID not like 'ADM_%' and CO_ROSTER_ID not like 'SR_%') ");
 		return sql;
 	}
 
@@ -834,9 +840,10 @@ public class SRTUserImport extends CommandLineUtil {
 		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
 		sql.append("0 as is_admin, ");
 		sql.append("customerid as ACCOUNT_NO, ");
-		sql.append("concat('SR_', r.id) as depuy_id, ");
+		sql.append("concat('SR_', r.id) as CO_ROSTER_ID, ");
 		sql.append("'replace' as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster r ");
+		sql.append("where concat('SR_', r.id) not in (select CO_ROSTER_ID from custom.srt_roster) ");
 
 		return sql;
 	}
@@ -866,9 +873,10 @@ public class SRTUserImport extends CommandLineUtil {
 		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
 		sql.append("1 as is_admin, ");
 		sql.append("'US_SPINE_ADMIN' as ACCOUNT_NO, ");
-		sql.append("concat('ADM_', userid) as depuy_id, ");
+		sql.append("concat('ADM_', userid) as CO_ROSTER_ID, ");
 		sql.append("srtcontact2 as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.users ");
+		sql.append("where concat('ADM_', userid) not in (select CO_ROSTER_ID from custom.srt_roster) ");
 		return sql;
 	}
 }

@@ -1,4 +1,4 @@
-package com.depuysynthes.srt;
+package com.depuysynthes.srt.vo;
 
 import java.util.ArrayList;
 import java.util.Date;

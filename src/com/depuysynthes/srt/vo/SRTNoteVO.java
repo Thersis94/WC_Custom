@@ -1,5 +1,9 @@
-package com.depuysynthes.srt;
+package com.depuysynthes.srt.vo;
 
+import java.sql.ResultSet;
+
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -15,15 +19,29 @@ import com.siliconmtn.db.orm.Table;
  * @since Feb 5, 2018
  ****************************************************************************/
 @Table(name="SRT_NOTE")
-public class SRTNoteVO {
+public class SRTNoteVO extends BeanDataVO {
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
 	private String noteId;
 	private String projectId;
 	private String noteTxt;
 	private String createDt;
 
 	public SRTNoteVO() {
-		//Default Constructor
+		super();
+	}
+
+	public SRTNoteVO(ActionRequest req) {
+		this();
+		super.populateData(req);
+	}
+
+	public SRTNoteVO(ResultSet rs) {
+		this();
+		super.populateData(rs);
 	}
 
 	/**

@@ -1,4 +1,4 @@
-package com.depuysynthes.srt;
+package com.depuysynthes.srt.vo;
 
 import java.sql.ResultSet;
 import java.util.Date;
@@ -23,13 +23,37 @@ import com.siliconmtn.util.Convert;
 @Table(name="SRT_ROSTER")
 public class SRTRosterVO extends UserDataVO {
 
+	public enum Role {ADMIN, SALES_ROSTER, PUBLIC}
+
+	//TODO - Update if we need Registration Fields.
+	public enum RegistrationMap {
+		TODO("", "");
+
+		private boolean isArray;
+		private String fieldId;
+		private String reqParam;
+		private RegistrationMap(String registerFieldId, String reqParam) {
+			this(registerFieldId, reqParam, false);
+		}
+		private RegistrationMap(String registerFieldId, String reqParam, boolean isArray) {
+			this.fieldId = registerFieldId;
+			this.reqParam = reqParam;
+			this.isArray = isArray;
+		}
+		public String getFieldId() { return fieldId; }
+		public String getReqParam() { return reqParam; }
+		public boolean isArray() { return isArray; }
+	}
+
 	/**
 	 *
 	 */
 	private static final long serialVersionUID = 1L;
+
 	private String rosterId;
 	private String registerSubmittalId;
 	private String opCoId;
+	private String coRosterId;
 	private String workgroupId;
 	private String wwid;
 	private String territoryId;
@@ -39,6 +63,7 @@ public class SRTRosterVO extends UserDataVO {
 	private String territory;
 	private String engineeringContact;
 	private String companyRole;
+	private String rosterEmailAddress;
 	private int isActive;
 	private int isAdmin;
 	private Date createDt;
@@ -85,6 +110,14 @@ public class SRTRosterVO extends UserDataVO {
 	@Column(name="OP_CO_ID")
 	public String getOpCoId() {
 		return opCoId;
+	}
+
+	/**
+	 * @return the coRosterId
+	 */
+	@Column(name="CO_ROSTER_ID")
+	public String getCoRosterId() {
+		return coRosterId;
 	}
 
 	/**
@@ -187,6 +220,13 @@ public class SRTRosterVO extends UserDataVO {
 	 */
 	public void setOpCoId(String opCoId) {
 		this.opCoId = opCoId;
+	}
+
+	/**
+	 * @param coRosterId the coRosterId to set.
+	 */
+	public void setCoRosterId(String coRosterId) {
+		this.coRosterId = coRosterId;
 	}
 
 	/**
@@ -337,5 +377,26 @@ public class SRTRosterVO extends UserDataVO {
 
 	public void setDeactivatedDt(Date deactivatedDt) {
 		this.deactivatedDt = deactivatedDt;
+	}
+
+	@Column(name="FIRST_NM")
+	@Override
+	public String getFirstName() {
+		return super.getFirstName();
+	}
+
+	@Column(name="LAST_NM")
+	@Override
+	public String getLastName() {
+		return super.getLastName();
+	}
+
+	@Column(name="ROSTER_EMAIL_ADDRESS_TXT")
+	public String getRosterEmailAddress() {
+		return rosterEmailAddress;
+	}
+
+	public void setRosterEmailAddress(String rosterEmailAddress) {
+		this.rosterEmailAddress = rosterEmailAddress;
 	}
 }

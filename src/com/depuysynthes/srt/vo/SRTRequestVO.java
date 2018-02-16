@@ -1,13 +1,17 @@
-package com.depuysynthes.srt;
+package com.depuysynthes.srt.vo;
 
 import java.math.BigDecimal;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.gis.Location;
 
 /****************************************************************************
  * <b>Title:</b> SRTRequestVO.java
@@ -20,26 +24,13 @@ import com.siliconmtn.db.orm.Column;
  * @version 3.3.1
  * @since Feb 5, 2018
  ****************************************************************************/
-public class SRTRequestVO {
+public class SRTRequestVO extends BeanDataVO {
 
-	public enum ReasonForRequest {
-		CONVERT_NEW("Convert New Business"), 
-		MAINTAIN_EXISTING("Maintain Existing Business"), 
-		PREVENT_LOSS("Prevent Loss");
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
 
-		private String text;
-		private ReasonForRequest(String text) {this.text = text;}
-		public String getText() {return text;}
-	}
-
-	public enum ChargeTo {
-		TERRITORY("Territory"),
-		HOSPITAL_PO("Hospital P.O."),
-		OTHER("Other");
-		private String text;
-		private ChargeTo(String text) {this.text = text;}
-		public String getText() {return text;}
-	}
 	private String requestId;
 	private SRTRosterVO requestor;
 	private String hospitalName;
@@ -50,15 +41,27 @@ public class SRTRequestVO {
 	private List<GenericVO> fileUploads;
 	private List<SRTNoteVO> srtNotes;
 	private BigDecimal estimatedRoi;
+	private Location address;
 	private int qtyNo;
-	private ReasonForRequest reason;
-	private ChargeTo chargeTo;
+	private String reason;
+	private String chargeTo;
 	private Date createDt;
 	private Date updateDt;
 
 	public SRTRequestVO() {
+		super();
 		fileUploads = new ArrayList<>();
 		srtNotes = new ArrayList<>();
+	}
+
+	public SRTRequestVO(ActionRequest req) {
+		this();
+		super.populateData(req);
+	}
+
+	public SRTRequestVO(ResultSet rs) {
+		this();
+		super.populateData(rs);
 	}
 
 	/**
@@ -181,7 +184,7 @@ public class SRTRequestVO {
 	 * @return the reason
 	 */
 	@Column(name="REASON_FOR_REQ")
-	public ReasonForRequest getReason() {
+	public String getReason() {
 		return reason;
 	}
 
@@ -189,8 +192,13 @@ public class SRTRequestVO {
 	 * @return the chargeTo
 	 */
 	@Column(name="CHARGE_TO")
-	public ChargeTo getChargeTo() {
+	public String getChargeTo() {
 		return chargeTo;
+	}
+
+	@BeanSubElement
+	public Location getAddress() {
+		return address;
 	}
 
 	/**
@@ -293,14 +301,14 @@ public class SRTRequestVO {
 	/**
 	 * @param reason the reason to set.
 	 */
-	public void setReason(ReasonForRequest reason) {
+	public void setReason(String reason) {
 		this.reason = reason;
 	}
 
 	/**
 	 * @param chargeTo the chargeTo to set.
 	 */
-	public void setChargeTo(ChargeTo chargeTo) {
+	public void setChargeTo(String chargeTo) {
 		this.chargeTo = chargeTo;
 	}
 

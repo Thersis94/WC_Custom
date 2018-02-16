@@ -1,4 +1,4 @@
-package com.depuysynthes.srt;
+package com.depuysynthes.srt.vo;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
