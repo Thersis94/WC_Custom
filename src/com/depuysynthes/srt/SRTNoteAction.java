@@ -3,7 +3,7 @@ package com.depuysynthes.srt;
 /****************************************************************************
  * <b>Title:</b> SRTNoteAction.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Stores SRT Note Information
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -13,4 +13,5 @@ package com.depuysynthes.srt;
  ****************************************************************************/
 public class SRTNoteAction {
 
+	//TODO - Populate Class.
 }

@@ -10,7 +10,7 @@ import com.siliconmtn.gis.Location;
 /****************************************************************************
  * <b>Title:</b> SRTLocationVO.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Stores SRT Request Location Address Data.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 

@@ -36,7 +36,7 @@ import com.smt.sitebuilder.security.UserLogin;
 /****************************************************************************
  * <b>Title:</b> SRTUserImport.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Imports SRT Data for Users into the System.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
