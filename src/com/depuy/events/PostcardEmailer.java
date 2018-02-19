@@ -150,6 +150,7 @@ public class PostcardEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
+			mail.addCC("vplatt@mediaspace.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -245,6 +246,7 @@ public class PostcardEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
+			mail.addCC("vplatt@mediaspace.com");
 			mail.addCC(site.getAdminEmail());
 
 			mail.setSubject(subject.toString());
@@ -519,6 +521,7 @@ public class PostcardEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
+			mail.addCC("vplatt@mediaspace.com");
 
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
