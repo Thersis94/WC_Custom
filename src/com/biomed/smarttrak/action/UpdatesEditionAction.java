@@ -267,7 +267,8 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		// appear in multiple groups while still only appearing once per group.
 		String[] ids = StringUtil.checkVal(n.getFullPath()).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
 		
-		String exclusionId = ids.length < 2? n.getNodeId() : ids[1] + "_"+vo.getUpdateId();
+		String exclusionId = (ids.length < 2 ? n.getNodeId() : ids[1]) + "_"+vo.getUpdateId();
+		//log.debug("exclusionId=" + exclusionId)
 		
 		if (exclusions.contains(exclusionId) || secs == null || secs.isEmpty()) return;
 		for (UpdateXRVO xrvo : secs) {

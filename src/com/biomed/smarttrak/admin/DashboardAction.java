@@ -33,6 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Jun 13, 2017
  ****************************************************************************/
 public class DashboardAction extends SBActionAdapter {
+	
 
 	public DashboardAction() {
 		super();
@@ -81,6 +82,27 @@ public class DashboardAction extends SBActionAdapter {
 	}
 	
 	private static final int MAX_RESULTS = 25;
+	private static final String ATTRIBUTE_START = "manage_recent_";
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+		GenericVO item = new GenericVO(req.getParameter("itemId"), req.getParameter("itemName"));
+		String attrKey = ATTRIBUTE_START +req.getParameter("loadAction");
+		
+		List<GenericVO> itemList = (List<GenericVO>) req.getSession().getAttribute(attrKey);
+		if (itemList == null || itemList.isEmpty()) itemList = loadRecentlyViewed(req);
+		int i=0;
+		// Check if the new item is present.
+		for (; i < MAX_RESULTS && i < itemList.size(); i++) {
+			String id = (String) itemList.get(i).getKey();
+			if (id.equals(item.getKey())) break;
+		}
+		// If this is a new item for the lists ensure that last current item is removed.
+		if (i == MAX_RESULTS) i--;
+		itemList.remove(i);
+		itemList.add(0, item);
+	}
 	
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
@@ -95,17 +117,26 @@ public class DashboardAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unchecked")
 	private List<GenericVO> loadRecentlyViewed(ActionRequest req) throws ActionException {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		String action = req.getParameter("loadAction");
+		
+		// If this has already been loaded just 
+		if (req.getSession().getAttributes().containsKey(ATTRIBUTE_START +action)) {
+			return (List<GenericVO>) req.getSession().getAttribute(ATTRIBUTE_START +action);
+		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(getPageRetrieveSql())) {
 			ps.setString(1, "BMG_SMARTTRAK_1");
 			ps.setString(2, user.getProfileId());
-			ps.setString(3, "%" + req.getParameter("loadAction") + "%");
-			
+			ps.setString(3, "%" + action + "%");
+
 			ResultSet rs = ps.executeQuery();
 			
-			return parsePageViews(rs, loadAction.getFromAction(req.getParameter("loadAction")));
+			List<GenericVO> results = parsePageViews(rs, loadAction.getFromAction(action));
+			req.getSession().setAttribute(ATTRIBUTE_START +action, results);
+			return results;
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
@@ -124,7 +155,7 @@ public class DashboardAction extends SBActionAdapter {
 		// Limit the returned pageviews to the main details page of the various manage tools that have actual items associated with them
 		sql.append("and query_str_txt like ? and query_str_txt like '%Id=%' and length(query_str_txt) < 100 and query_str_txt not like '%Id=ADD%'");
 		sql.append("order by visit_dt desc");
-		
+
 		return sql.toString();
 	}
 	
@@ -154,7 +185,6 @@ public class DashboardAction extends SBActionAdapter {
 				// If the maximum desired results have been retrieve stop looping.
 				if (ids.size() == MAX_RESULTS) break;
 			}
-			
 			return getItemDetails(ids, load);
 		} catch (SQLException e) {
 			throw new ActionException(e);
@@ -222,7 +252,7 @@ public class DashboardAction extends SBActionAdapter {
 		sql.append("select ").append(load.getIdField()).append(" as id, ").append(load.getNameField()).append(" as name ");
 		sql.append("from ").append(customDb).append(load.getTable()).append(" ");
 		sql.append("where ").append(load.getIdField()).append(" in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
-		
+
 		return sql.toString();
 	}
 	
