@@ -165,9 +165,9 @@ public class FinancialDashDataRowVO implements Serializable {
 		for (int i=1; i <= colCount; i++) {
 			String colName = rsmd.getColumnName(i).toUpperCase();
 			String qtr = colName.substring(0,2);
-			int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
 
 			if (FinancialDashBaseAction.QTR_PATTERN.matcher(qtr).matches()) {
+				int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
 				addColumn(qtr, yearIdx, maxYear, util, rs);
 				incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
 				incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + (maxYear-yearIdx));

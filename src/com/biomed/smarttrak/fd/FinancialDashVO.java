@@ -30,7 +30,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
  ****************************************************************************/
 
 public class FinancialDashVO extends SBModuleVO {
-	
+
 	private static final long serialVersionUID = 1L;
 	private List<CountryType> countryTypes;			// used for data aggregation
 	private List<CountryType> selectedCountryTypes;	// used for selecting items on a menu
@@ -47,12 +47,12 @@ public class FinancialDashVO extends SBModuleVO {
 	private int currentQtr;
 	private int currentYear;
 	private boolean behindLatest;
-	
+
 	/**
 	 * The month offset from the current date, for the financial dashboard to display as current
 	 */
 	public static final int CURRENT_DT_MONTH_OFFSET = -3;
-	
+
 	/**
 	 * Provides a logger
 	 */
@@ -62,40 +62,40 @@ public class FinancialDashVO extends SBModuleVO {
 	 * Default table type.
 	 */
 	public static final String DEFAULT_TABLE_TYPE = "MARKET";
-	
+
 	protected enum TableType {
 		MARKET("Market"), COMPANY("Company / Partner");
-		
+
 		private String name;
-		
+
 		TableType(String name) {
 			this.name= name;
 		}
-		
+
 		public String getName() {
 			return name;
 		}
 	}
-	
+
 	/**
 	 * Default country type.
 	 */
 	public static final String DEFAULT_COUNTRY_TYPE = "US";
-	
+
 	protected enum CountryType {
 		US("United States"), EU("European Union"), ROW("Rest-of-World"), WW("World-Wide");
-		
+
 		private String name;
-		
+
 		CountryType(String name) {
 			this.name= name;
 		}
-		
+
 		public String getName() {
 			return name;
 		}
 	}
-	
+
 	public FinancialDashVO() {
 		countryTypes = new ArrayList<>();
 		selectedCountryTypes = new ArrayList<>();
@@ -107,12 +107,12 @@ public class FinancialDashVO extends SBModuleVO {
 		this();
 		setData(rs, sections);
 	}
-	
+
 	public FinancialDashVO(ActionRequest req, SmarttrakTree sections) {
 		this();
 		setData(req, sections);
 	}
-	
+
 	/**
 	 * Sets applicable data coming from a ResultSet
 	 * 
@@ -123,17 +123,14 @@ public class FinancialDashVO extends SBModuleVO {
 		try {
 			while (rs.next()) {
 				row = new FinancialDashDataRowVO(rs, this);
-
-				if (!row.isInactive()) {
-					row.setReportingPending(sections, currentQtr, currentYear);
-					addRow(row);
-				}
+				row.setReportingPending(sections, currentQtr, currentYear);
+				addRow(row);
 			}
 		} catch (SQLException sqle) {
 			log.error("Unable to set financial dashboard row data", sqle);
 		}
 	}
-	
+
 	/**
 	 * Processes the request's options needed for generating the
 	 * requested table, chart, or report. Sets defaults where needed.
@@ -150,10 +147,10 @@ public class FinancialDashVO extends SBModuleVO {
 		boolean edit = Convert.formatBoolean(req.getParameter("editMode"));
 		String scenId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String compId = StringUtil.checkVal(req.getParameter("companyId"));
-		
+
 		if (0 == getCurrentYear()) setCurrentQtrYear();
 		Integer calYr = Convert.formatInteger(req.getParameter("calendarYear"), getCurrentYear());
-		
+
 		// Set the parameters
 		setTableType(tblType);
 		setColHeaders(dispType, calYr);
@@ -164,13 +161,13 @@ public class FinancialDashVO extends SBModuleVO {
 		setEditMode(edit);
 		setScenarioId(scenId);
 		setCompanyId(compId);
-		
+
 		// Get the year/quarter of what was most recently published for the section being viewed
 		SectionVO section = (SectionVO) sections.getRootNode().getUserObject();
 		setPublishedQtr(section.getFdPubQtr());
 		setPublishedYear(section.getFdPubYr());
 	}
-	
+
 	/**
 	 * @return the colHeaders
 	 */
@@ -294,7 +291,7 @@ public class FinancialDashVO extends SBModuleVO {
 	public void setColHeaders(FinancialDashColumnSet colHeaders) {
 		this.colHeaders = colHeaders;
 	}
-	
+
 	/**
 	 * Sets a list of columns for the dynamically generated tables/columns,
 	 * based on the passed display type.
@@ -312,7 +309,7 @@ public class FinancialDashVO extends SBModuleVO {
 	public void setRows(List<FinancialDashDataRowVO> rows) {
 		this.rows = rows;
 	}
-	
+
 	/**
 	 * @param countryTypes the countryTypes to set
 	 */
@@ -373,7 +370,7 @@ public class FinancialDashVO extends SBModuleVO {
 	public void setSectionId(String sectionId) {
 		this.sectionId = sectionId;
 	}
-	
+
 	/**
 	 * @param editMode the editMode to set
 	 */
@@ -387,7 +384,7 @@ public class FinancialDashVO extends SBModuleVO {
 	public void setScenarioId(String scenarioId) {
 		this.scenarioId = scenarioId;
 	}
-	
+
 	/**
 	 * @param companyId the companyId to set
 	 */
@@ -427,14 +424,14 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setCurrentQtrYear(DashType dashType, SectionVO data) {
 		log.debug("Setting Current Quarter - Dash Type: " + dashType.toString());
-		
+
 		if (DashType.ADMIN == dashType) {
 			setCurrentQtrYear();
 		} else {
 			setCurrentQtrYear(data);
 		}
 	}
-	
+
 	/**
 	 * Sets the current quarter/year for the financial dashboard display,
 	 * based on the month offset, from the current date.
@@ -444,13 +441,13 @@ public class FinancialDashVO extends SBModuleVO {
 
 		Calendar calendar = new GregorianCalendar();
 		calendar.setTime(currentDate);
-		
+
 		// Set the "current" quarter/year
 		int month = calendar.get(Calendar.MONTH);
 		setCurrentQtr(month/3 + 1);
 		setCurrentYear(calendar.get(Calendar.YEAR));
 	}
-	
+
 	/**
 	 * Sets the current quarter/year for the financial dashboard display,
 	 * based on publish data from a section vo.
@@ -461,7 +458,7 @@ public class FinancialDashVO extends SBModuleVO {
 		setCurrentQtr(data.getFdPubQtr());
 		setCurrentYear(data.getFdPubYr());
 	}
-	
+
 	/**
 	 * @param currentQtr the currentQtr to set
 	 */
@@ -475,7 +472,7 @@ public class FinancialDashVO extends SBModuleVO {
 	public void setCurrentYear(int currentYear) {
 		this.currentYear = currentYear;
 	}
-	
+
 	/**
 	 * @param behindLatest the behindLatest to set
 	 */
