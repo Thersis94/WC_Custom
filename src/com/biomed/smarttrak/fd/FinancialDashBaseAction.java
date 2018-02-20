@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -34,6 +35,8 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.databean.FilePartDataBean;
+import com.siliconmtn.util.parser.AnnotationParser;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -413,24 +416,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		int regionCnt = dash.getCountryTypes().size();
 		TableType tt = dash.getTableType();
 		
-		sql.append("inner join ").append(custom).append("BIOMEDGPS_COMPANY c on r.COMPANY_ID = c.COMPANY_ID ");
-		sql.append("inner join ").append(custom).append("BIOMEDGPS_SECTION s1 on r.SECTION_ID = s1.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa1 on s1.SECTION_ID = aa1.SECTION_ID and aa1.FD_NO = 1 and aa1.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s2 on s1.PARENT_ID = s2.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa2 on s2.SECTION_ID = aa2.SECTION_ID and aa2.FD_NO = 1 and aa2.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s3 on s2.PARENT_ID = s3.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa3 on s3.SECTION_ID = aa3.SECTION_ID and aa3.FD_NO = 1 and aa3.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s4 on s3.PARENT_ID = s4.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa4 on s4.SECTION_ID = aa4.SECTION_ID and aa4.FD_NO = 1 and aa4.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s5 on s4.PARENT_ID = s5.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa5 on s5.SECTION_ID = aa5.SECTION_ID and aa5.FD_NO = 1 and aa5.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s6 on s5.PARENT_ID = s6.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa6 on s6.SECTION_ID = aa6.SECTION_ID and aa6.FD_NO = 1 and aa6.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s7 on s6.PARENT_ID = s7.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa7 on s7.SECTION_ID = aa7.SECTION_ID and aa7.FD_NO = 1 and aa7.ACCOUNT_ID = ? ");
-
-		sql.append("where (s1.SECTION_ID = ? OR s2.SECTION_ID = ? OR s3.SECTION_ID = ? OR s4.SECTION_ID = ? OR s5.SECTION_ID = ? OR s6.SECTION_ID = ? OR s7.SECTION_ID = ?) ");
-		sql.append("and (aa1.SECTION_ID is not null or aa2.SECTION_ID is not null or aa3.SECTION_ID is not null or aa4.SECTION_ID is not null or aa5.SECTION_ID is not null or aa6.SECTION_ID is not null or aa7.SECTION_ID is not null) ");
+		getCommonMidSql(sql, custom);
 		
 		sql.append("and r.REGION_CD in (");
 		for (int i = 1; i <= regionCnt; i++) {
@@ -473,6 +459,64 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		return sql;
 	}
 	
+	
+	/**
+	 * Get the join and standard where clause for the queries.
+	 * @param sql
+	 * @param custom
+	 */
+	private void getCommonMidSql(StringBuilder sql, String custom) {
+		sql.append("inner join ").append(custom).append("BIOMEDGPS_COMPANY c on r.COMPANY_ID = c.COMPANY_ID ");
+		sql.append("inner join ").append(custom).append("BIOMEDGPS_SECTION s1 on r.SECTION_ID = s1.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa1 on s1.SECTION_ID = aa1.SECTION_ID and aa1.FD_NO = 1 and aa1.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s2 on s1.PARENT_ID = s2.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa2 on s2.SECTION_ID = aa2.SECTION_ID and aa2.FD_NO = 1 and aa2.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s3 on s2.PARENT_ID = s3.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa3 on s3.SECTION_ID = aa3.SECTION_ID and aa3.FD_NO = 1 and aa3.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s4 on s3.PARENT_ID = s4.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa4 on s4.SECTION_ID = aa4.SECTION_ID and aa4.FD_NO = 1 and aa4.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s5 on s4.PARENT_ID = s5.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa5 on s5.SECTION_ID = aa5.SECTION_ID and aa5.FD_NO = 1 and aa5.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s6 on s5.PARENT_ID = s6.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa6 on s6.SECTION_ID = aa6.SECTION_ID and aa6.FD_NO = 1 and aa6.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s7 on s6.PARENT_ID = s7.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa7 on s7.SECTION_ID = aa7.SECTION_ID and aa7.FD_NO = 1 and aa7.ACCOUNT_ID = ? ");
+
+		sql.append("where (s1.SECTION_ID = ? OR s2.SECTION_ID = ? OR s3.SECTION_ID = ? OR s4.SECTION_ID = ? OR s5.SECTION_ID = ? OR s6.SECTION_ID = ? OR s7.SECTION_ID = ?) ");
+		sql.append("and (aa1.SECTION_ID is not null or aa2.SECTION_ID is not null or aa3.SECTION_ID is not null or aa4.SECTION_ID is not null or aa5.SECTION_ID is not null or aa6.SECTION_ID is not null or aa7.SECTION_ID is not null) ");
+	}
+	
+	
+	/**
+	 * Build the sql query used to generate the export report
+	 * @param isCompany
+	 * @param fullCompany
+	 * @return
+	 */
+	private String getExportSql(boolean isCompany, boolean fullCompany) {
+		StringBuilder sql = new StringBuilder(1000);
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		
+		sql.append("select s1.section_nm, c.company_nm, c.company_id, r.year_no, r.region_cd, s1.section_nm + c.company_nm + cast(r.year_no as varchar) as GROUP_ID, ");
+		sql.append("o.overlay_id, r.revenue_id, ? as SCENARIO_ID, coalesce(o.Q1_NO, r.Q1_NO) as Q1_NO, coalesce(o.Q2_NO, r.Q2_NO) as Q2_NO, ");
+		sql.append("coalesce(o.Q3_NO, r.Q3_NO) as Q3_NO, coalesce(o.Q4_NO, r.Q4_NO) as Q4_NO, case when o.overlay_id is not null then 1 else 0 end as SCENARIO_FLG ");
+		
+		sql.append("from custom.BIOMEDGPS_FD_REVENUE r ");
+		sql.append("left join custom.biomedgps_fd_scenario_overlay o on o.revenue_id = r.revenue_id and o.scenario_id = ? ");
+		getCommonMidSql(sql, custom);
+		if (fullCompany) {
+			sql.append("and c.company_id = ? ");
+		}
+		if (isCompany) {
+			sql.append("order by company_nm, s1.section_nm, year_no, region_cd");
+		} else {
+			sql.append("order by s1.section_nm, c.company_nm, year_no, region_cd");
+		}
+		
+		return sql.toString();		
+	}
+	
+	
 	/**
 	 * Get the current quarter
 	 * @return
@@ -493,11 +537,147 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		if ("markCurrent".equals(actionPerform)) {
 			markCurrentQuarter(req);
 			return;
+		} else if ("export".equals(actionPerform)) {
+			FinancialDashImportReportVO report = new FinancialDashImportReportVO();
+			report.setData(buildEditableExport(req));
+			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+			req.setAttribute(Constants.BINARY_DOCUMENT, report);
+			return;
+		} else if ("import".equals(actionPerform)) {
+			importChanges(req);
+			return;
 		}
 		
 		this.updateData(req);
 	}
 	
+	
+	/**
+	 * Parse the supplied file and apply the changes to the applicable scenario.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void importChanges(ActionRequest req) throws ActionException {
+		AnnotationParser parser;
+		FilePartDataBean fpdb = req.getFile("fdImport");
+		StringBuilder redirectUrl = new StringBuilder(100);
+		redirectUrl.append("manage?actionType=").append(req.getParameter("actionType")).append("&msg=");
+		String hash = req.getParameter("returnHash");
+		if (fpdb == null) {
+			redirectUrl.append("No File provided").append(hash);
+			sendRedirect(redirectUrl.toString(), "", req);
+			return;
+		}
+		
+		try {
+			parser = new AnnotationParser(FinancialDashRevenueDataRowVO.class, fpdb.getExtension());
+			//Gets the xls file from the request object, and passes it to the parser.
+			//Parser then returns the list of populated beans
+			Map<Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
+
+			ArrayList<Object> parsedList = new ArrayList<>(beans.get(FinancialDashRevenueDataRowVO.class));
+			List<FinancialDashRevenueDataRowVO> insertList = new ArrayList<>();
+			List<FinancialDashRevenueDataRowVO> updateList = new ArrayList<>();
+			
+			for (Object o : parsedList) {
+				FinancialDashRevenueDataRowVO row = (FinancialDashRevenueDataRowVO) o;
+				if (CountryType.WW.toString().equals(row.getRegionCode())) continue;
+				// Every valid row should have a scenario id.  If not this isn't a scenario save and should be discarded.
+				if (StringUtil.isEmpty(row.getScenarioId())) throw new ActionException("Missing Scenario Id. Canceling data import");
+				
+				if (StringUtil.isEmpty(row.getOverlayId())) {
+					insertList.add(row);
+				} else {
+					updateList.add(row);
+				}
+			}
+			
+			DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
+			
+			if (!insertList.isEmpty()) db.executeBatch(insertList);
+			if (!updateList.isEmpty()) db.executeBatch(updateList);
+
+		} catch (Exception e) {
+			redirectUrl.append(e.getMessage()).append(hash);
+			sendRedirect(redirectUrl.toString(), "", req);
+			return;
+		}
+
+		redirectUrl.append("Changes sucessfully imported.").append(hash);
+		sendRedirect(redirectUrl.toString(), "", req);
+	}
+	
+	
+	/**
+	 * Build the data used to create the export file.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private List<List<FinancialDashRevenueDataRowVO>> buildEditableExport(ActionRequest req) throws ActionException {
+		String sql = getExportSql(Convert.formatBoolean(req.getParameter("isCompany")), req.hasParameter("companyId"));
+		FinancialDashVO dash = new FinancialDashVO();
+		SmarttrakTree sections = getHierarchy(req);
+		dash.setData(req, sections);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
+			int idx = 0;
+			ps.setString(++idx, req.getParameter("scenarioId"));
+			ps.setString(++idx, req.getParameter("scenarioId"));
+			for (int i = 0; i < 7; i++) ps.setString(++idx, user.getAccountId());
+			for (int i = 0; i < 7; i++) ps.setString(++idx, dash.getSectionId());
+			if (req.hasParameter("companyId")) ps.setString(++idx, req.getParameter("companyId"));
+
+			return buildData(ps.executeQuery());
+			
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+	
+	/**
+	 * Turn the result set for the export into usable data.
+	 * @param rs
+	 * @return
+	 * @throws ActionException 
+	 */
+	private List<List<FinancialDashRevenueDataRowVO>> buildData(ResultSet rs) throws ActionException {
+		String groupId = "";
+		List<List<FinancialDashRevenueDataRowVO>> data = new ArrayList<>();
+		List<FinancialDashRevenueDataRowVO> group = new ArrayList<>();
+		DBProcessor db = new DBProcessor(dbConn);
+		try {
+			while (rs.next()) {
+				if (!groupId.equals(rs.getString("GROUP_ID"))) {
+					groupId = rs.getString("GROUP_ID");
+					addData(data, group);
+					group = new ArrayList<>();
+				}
+				FinancialDashRevenueDataRowVO row = new FinancialDashRevenueDataRowVO();
+				db.executePopulate(row, rs);
+				group.add(row);
+			}
+			addData(data, group);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		
+		return data;
+	}
+
+	
+	/**
+	 * Add the completed item to the list
+	 * @param data
+	 * @param group
+	 */
+	private void addData(List<List<FinancialDashRevenueDataRowVO>> data,
+			List<FinancialDashRevenueDataRowVO> group) {
+		if (group.isEmpty()) return;
+		data.add(group);
+	}
+
 	/**
 	 * Adds one or more companies to the FD data for a given section/region/year
 	 * 
