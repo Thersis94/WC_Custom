@@ -150,6 +150,7 @@ public class PostcardEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
+			mail.addCC("vplatt@mediaspace.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -245,6 +246,7 @@ public class PostcardEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
+			mail.addCC("vplatt@mediaspace.com");
 			mail.addCC(site.getAdminEmail());
 
 			mail.setSubject(subject.toString());
@@ -296,8 +298,8 @@ public class PostcardEmailer {
 			msg.append(event.getAddress2Text()).append("\r");
 		msg.append(event.getCityName()).append(" ").append(event.getStateCode());
 		msg.append(", ").append(event.getZipCode()).append("\r\r");
-		msg.append("If you have any questions please contact Stefanie Sax ");
-		msg.append("at 303-945-5184 or stef@siliconmtn.com\r\r");
+		msg.append("If you have any questions please contact Kaylee Shull ");
+		msg.append("at 574-371-4569 or kshull@its.jnj.com\r\r");
 
 		// build the attachment
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
@@ -307,7 +309,7 @@ public class PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress()); //Coordinator
 			mail.addCC("Brittany.Neff@hmktgroup.com");
-			mail.addCC("kshull@ITS.JNJ.com");
+			mail.addCC("kshull@its.jnj.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC(site.getAdminEmail());
 			for (PersonVO p : sem.getPeople()) { 
@@ -519,6 +521,7 @@ public class PostcardEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
+			mail.addCC("vplatt@mediaspace.com");
 
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;

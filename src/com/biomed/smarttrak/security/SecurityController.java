@@ -18,6 +18,7 @@ import com.siliconmtn.util.solr.AccessControlQuery;
 
 // WC core
 import com.smt.sitebuilder.common.SiteBuilderUtil;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
@@ -176,5 +177,17 @@ public class SecurityController {
 		url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
 		new SiteBuilderUtil().manualRedirect(req, url.toString());
 		throw new ActionNotAuthorizedException("not authorized");
+	}
+	
+	
+	/**
+	 * Simple JSP helper that ensures we're in the Manage tool.
+	 * This could check user permission as well, but the WC core (PageFilter) is already enforcing that.
+	 * We accept an Object here so the JSPs don't need to import SiteVO and cast the request attribute to it.
+	 * @param obj
+	 * @return
+	 */
+	public static boolean isManageTool(Object obj) {
+		return "manage".equals(((SiteVO)obj).getAliasPathName());
 	}
 }
