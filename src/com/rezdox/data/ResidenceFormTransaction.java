@@ -43,7 +43,7 @@ import com.smt.sitebuilder.data.vo.GenericQueryVO;
 public class ResidenceFormTransaction extends FormDataTransaction {
 	
 	/**
-	 * Request parameter names for form field slug_txt values
+	 * Request parameter names for form field slug_txt values that go to the residence table, not the attributes table
 	 */
 	public enum ResidenceField {
 		RESIDENCE_NAME("residenceName"), RESIDENCE_ADDRESS("address"), RESIDENCE_ADDRESS_2("address2"), RESIDENCE_CITY("city"),
@@ -113,7 +113,7 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 	 * @throws DatabaseException
 	 */
 	protected void saveResidenceMemberXR(boolean newResidence) throws DatabaseException {
-		// Record already exists if this isn't a new residence, don't add another
+		// Record already exists if this isn't a new residence, don't need another here
 		if (!newResidence) return;
 		
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);

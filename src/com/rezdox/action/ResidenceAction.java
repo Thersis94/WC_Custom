@@ -37,7 +37,7 @@ import com.smt.sitebuilder.data.vo.QueryParamVO;
  ****************************************************************************/
 public class ResidenceAction extends FormAction {
 	
-	private static final String RESIDENCE_DATA = "residenceData";
+	public static final String RESIDENCE_DATA = "residenceData";
 	public static final String RESIDENCE_ID = "residenceId";
 	public static final String PRIMARY_RESIDENCE = " Primary Residence";
 	public static final String UPGRADE_MSG = "You have reached your maximum residences. Please purchase a residence upgrade to continue.";
