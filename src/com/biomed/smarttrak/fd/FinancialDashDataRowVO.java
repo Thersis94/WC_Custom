@@ -35,6 +35,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	private String companyId;
 	private String sectionId;
 	private String regionCd;
+	private String graphColor;
 	private boolean inactiveFlg;
 	private int inactiveCnt; // internal value used to calculate overall inactivity
 	private Map<String, FinancialDashDataColumnVO> columns;
@@ -69,6 +70,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		setCompanyId(util.getStringVal("COMPANY_ID", rs));
 		setSectionId(util.getStringVal("SECT_ID", rs));
 		setRegionCd(util.getStringVal("REGION_CD", rs));
+		setGraphColor(util.getStringVal("GRAPH_COLOR", rs));
 		
 		setColumns(util, rs);
 	}
@@ -115,6 +117,14 @@ public class FinancialDashDataRowVO implements Serializable {
 		return regionCd;
 	}
 
+	public String getGraphColor() {
+		return graphColor;
+	}
+
+	public void setGraphColor(String graphColor) {
+		this.graphColor = graphColor;
+	}
+
 	/**
 	 * @return the inactiveFlg
 	 */
@@ -149,6 +159,7 @@ public class FinancialDashDataRowVO implements Serializable {
 			
 			Map<Integer, Integer> cyTotals = new HashMap<>(); // calendar year totals without adjustment
 			Map<Integer, Integer> ytdTotals = new HashMap<>(); // totals with adjustments when the current year is not complete
+			Map<Integer, String> ids = new HashMap<>();
 			
 			ResultSetMetaData rsmd;
 			rsmd = rs.getMetaData();
@@ -168,13 +179,14 @@ public class FinancialDashDataRowVO implements Serializable {
 						incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
 						incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + maxYear);
 						calculateInactivity(qtr, yearIdx, util, rs);
+						ids.put(yearIdx, util.getStringVal("REVENUE_ID_" + yearIdx, rs));
 						break;
 					default:
 				}
 			}
 			
-			this.addSummaryColumns(cyTotals, maxYear, FinancialDashBaseAction.CALENDAR_YEAR);
-			this.addSummaryColumns(ytdTotals, maxYear, FinancialDashBaseAction.YEAR_TO_DATE);
+			this.addSummaryColumns(cyTotals, maxYear, FinancialDashBaseAction.CALENDAR_YEAR, ids);
+			this.addSummaryColumns(ytdTotals, maxYear, FinancialDashBaseAction.YEAR_TO_DATE, ids);
 		} catch (SQLException sqle) {
 			log.error("Unable to set financial dashboard row data columns", sqle);
 		}
@@ -391,7 +403,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param totals
 	 * @param maxYear - the most recent year from the query
 	 */
-	private void addSummaryColumns(Map<Integer, Integer> totals, int maxYear, String columnPrefix) {
+	private void addSummaryColumns(Map<Integer, Integer> totals, int maxYear, String columnPrefix, Map<Integer, String> ids) {
 		for (int i = 0; i < totals.size() - 1; i++) {
 			Integer cyTotal = totals.get(i);
 			Integer pyTotal = totals.get(i + 1);
@@ -402,14 +414,14 @@ public class FinancialDashDataRowVO implements Serializable {
 			}
 			
 			// Each iteration signifies one year earlier
-			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pctChange, null);
+			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pctChange, ids.get(i));
 		}
 
 		// Add the last totals column, which has no py
 		int last = totals.size() - 1;
 		Integer cyTotal = totals.get(last);
 		Double pctChange = null;
-		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, pctChange, null);
+		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, pctChange, ids.get(last));
 	}
 	
 	/**

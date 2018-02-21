@@ -66,6 +66,10 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		EMAIL_CONSENT_ID("c0a80237feea61107a662ea060005c35"),
 		MODAL_OPENED_ID("c0a80237fee851245d6f6f073c07573e"),
 		SURGEON_NM("c0a802413aea94a8e9b70d61e07832fc"),
+		HOSPITAL_NM("1e365f3fdb597794c0a8024b81e62b60"),
+		INCISION_NM_ID("578d9b64dbb05ce3c0a802552fc1a8df"),
+		IMPLANT_NM_ID("c79b06eadba570b3c0a80255f51d6312"),
+		PERMISSION_TO_CONTACT("163adc3c2cadfa83c0a80255deabac8c"),
 		AGREED_CONSENT_ID(""),
 
 		//the ID of the form itself (containing all these fields)
@@ -84,6 +88,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 	private static final String EXPORT_FILE_NAME = "PatientStories.xls";
 	private static final String STORY_STS_ID = "storyStatusDataId";
+	private static final String PERMISSION_TO_CONTACT_VALUE = "Yes";
 
 	public PatientAmbassadorStoriesTool() {
 		super();
@@ -131,11 +136,9 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			try (SolrActionUtil util = new SolrActionUtil(attributes)) {
 				//Update Status Element.
 				writeStoryElement(getElement(PAFStatus.published.name(), PAFConst.STATUS_ID.getId(), req.getParameter(STORY_STS_ID )), submittalId);
-				log.debug("Status Written");
 
 				//Submit to Solr
 				util.addDocument(ssv);
-				log.debug("Solr Updated");
 
 				msg = "Story Successfully Published";
 
@@ -150,15 +153,21 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 			//Write story Title
 			writeStoryElement(getElement(req.getParameter("storyTitle"), req.getParameter("storyTitleFieldId"), req.getParameter("storyTitleDataId")), submittalId);
-			log.debug("Title Written");
 
 			//Write story Text
 			writeStoryElement(getElement(req.getParameter("storyText"), req.getParameter("storyTextFieldId"), req.getParameter("storyTextDataId")), submittalId);
-			log.debug("Text Written");
 
 			//Write Surgeon Name
 			writeStoryElement(getElement(req.getParameter("surgeonNm"), req.getParameter("surgeonNameFieldId"), req.getParameter("surgeonNameDataId")), submittalId);
-			log.debug("Surgeon Name Written");
+
+			//Write Hospital Name
+			writeStoryElement(getElement(req.getParameter("hospitalNm"), req.getParameter("hospitalNameFieldId"), req.getParameter("hospitalNameDataId")), submittalId);
+
+			//Write Incision type
+			writeStoryElement(getElement(req.getParameter("incisionNm"), req.getParameter("incisionFieldId"), req.getParameter("incisionDataId")), submittalId);
+
+			//Write Implant type
+			writeStoryElement(getElement(req.getParameter("implantNm"), req.getParameter("implantFieldId"), req.getParameter("implantDataId")), submittalId);
 
 			//save image if provided
 			if (req.getFile("replacePhoto") != null) {
@@ -169,11 +178,9 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			if(req.hasParameter("storyStatusLevel") && req.getParameter("storyStatusLevel").equals(PAFStatus.published.name())) {
 				//Update Status Element.
 				writeStoryElement(getElement(PAFStatus.republish.name(), PAFConst.STATUS_ID.getId(), req.getParameter(STORY_STS_ID)), submittalId);
-				log.debug("Status Republish Written");
 			} else {
 				//Update Status Element.
 				writeStoryElement(getElement(PAFStatus.saved.name(), PAFConst.STATUS_ID.getId(), req.getParameter(STORY_STS_ID)), submittalId);
-				log.debug("Status Saved Written");
 			}
 		}
 		sendRedirect(req, msg);
@@ -193,7 +200,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		if (req.hasParameter("export")) {
 			exportAllSubmissions(req);
 		} else if (req.hasParameter("searchSubmitted")){
-			List<FormTransactionVO> vos = retreiveAllSubmissions(req, true);
+			List<FormTransactionVO> vos = retreiveAllSubmissions(req, true, false);
 			this.putModuleData(vos, vos.size(), true);
 		} else if (req.hasParameter("fsi")) {
 			retrieveSubmittalData(req);
@@ -231,7 +238,13 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		ssv.setCategories(fields.get(PAFConst.HOBBIES_ID.getId()).getResponses());
 		if (fields.get(PAFConst.SURGEON_NM.getId()) != null)
 			ssv.setSurgeonName(fields.get(PAFConst.SURGEON_NM.getId()).getResponses().get(0));
+		if (fields.get(PAFConst.HOSPITAL_NM.getId()) != null)
+			ssv.setSurgeonName(fields.get(PAFConst.HOSPITAL_NM.getId()).getResponses().get(0));
 		ssv.setHierarchies(fields.get(PAFConst.JOINT_ID.getId()).getResponses());
+		if (fields.get(PAFConst.INCISION_NM_ID.getId()) != null)
+			ssv.setIncisionName(fields.get(PAFConst.INCISION_NM_ID.getId()).getResponses().get(0));
+		if (fields.get(PAFConst.IMPLANT_NM_ID.getId()) != null)
+			ssv.setImplantName(fields.get(PAFConst.IMPLANT_NM_ID.getId()).getResponses().get(0));
 		ssv.setOtherHobbies(getFirstResponse(fields.get(PAFConst.OTHER_HOBBY_ID.getId())));
 		ssv.setTitle(getFirstResponse(fields.get(PAFConst.STORY_TITLE_ID.getId())));
 		ssv.setSummary(getFirstResponse(fields.get(PAFConst.STORY_TEXT_ID.getId())));
@@ -353,7 +366,8 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * @param req
 	 * @return 
 	 */
-	private List<FormTransactionVO> retreiveAllSubmissions(ActionRequest req, boolean filterHidden) {
+	private List<FormTransactionVO> retreiveAllSubmissions(ActionRequest req, 
+			boolean filterHidden, boolean isExportLeads) {
 
 		List<FormTransactionVO> vos = new ArrayList<>();
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
@@ -364,39 +378,57 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		String joint = StringUtil.checkVal(req.getParameter("searchJoint"));
 		Date reportStart = Convert.formatSQLDate(Convert.formatStartDate(req.getParameter("reportStart"), "1/1/2015"));
 		Date reportEnd = Convert.formatSQLDate(Convert.formatEndDate(req.getParameter("reportEnd")), true);
-		String srQuery = getSubmittalRecordQuery(stateId, cityNm, joint, filterHidden);
+		String srQuery;
+		if (isExportLeads) {
+			srQuery = getLeadsQuery();
+		} else {
+			srQuery = getSubmittalRecordQuery(stateId, cityNm, joint, filterHidden);
+		}
 		log.debug("Query = " + srQuery);
 
 		//Retrieve Data from DB
 		int i = 1;
 		try (PreparedStatement ps = dbConn.prepareStatement(srQuery)) {
-			ps.setString(i++, PAFConst.JOINT_ID.getId());
-			ps.setString(i++, PAFConst.STATUS_ID.getId());
-			if(filterHidden)
-				ps.setString(i++, PAFConst.HIDDEN_ID.getId());
-			ps.setString(i++, req.getParameter("formId"));
-			ps.setString(i++, PAFConst.JOINT_ID.getId());
-			ps.setDate(i++, reportStart);
-			ps.setDate(i++, reportEnd);
-			if(stateId.length() > 0)
-				ps.setString(i++, stateId);
-			if(cityNm.length() > 0)
-				ps.setString(i++, cityNm);
-			if(joint.length() > 0)
-				ps.setString(i++, joint + '%');
+
+			if (isExportLeads) {
+				ps.setString(i++, PAFConst.PERMISSION_TO_CONTACT.getId());
+				ps.setString(i++, PERMISSION_TO_CONTACT_VALUE);
+				ps.setString(i++, req.getParameter("formId"));
+				ps.setDate(i++, reportStart);
+				ps.setDate(i++, reportEnd);
+			} else {
+				ps.setString(i++, PAFConst.JOINT_ID.getId());
+				ps.setString(i++, PAFConst.STATUS_ID.getId());
+				if(filterHidden)
+					ps.setString(i++, PAFConst.HIDDEN_ID.getId());
+				ps.setString(i++, req.getParameter("formId"));
+				ps.setString(i++, PAFConst.JOINT_ID.getId());
+				ps.setDate(i++, reportStart);
+				ps.setDate(i++, reportEnd);
+				if(stateId.length() > 0)
+					ps.setString(i++, stateId);
+				if(cityNm.length() > 0)
+					ps.setString(i++, cityNm);
+				if(joint.length() > 0)
+					ps.setString(i++, joint + '%');
+			}
 
 			//Retrieve Results
 			ResultSet rs = ps.executeQuery();
 
 			//Process Results
 			while(rs.next()) {
-				String [] data = new String []{rs.getString("Joints"), rs.getString("STATUS"), rs.getString("STATUS_ID")};
-				//Skip any results that have the Hidden flag (Have been deleted)
-				if(filterHidden && Convert.formatBoolean(rs.getString("HIDE")))
-					continue;
-				FormTransactionVO vo = new FormTransactionVO(rs);
-				vo.setUserExtendedInfo(data);
-
+				FormTransactionVO vo = null;
+				if (isExportLeads) {
+					vo = new FormTransactionVO(rs);
+				} else {
+					String [] data = new String []{rs.getString("Joints"), rs.getString("STATUS"), rs.getString("STATUS_ID")};
+					//Skip any results that have the Hidden flag (Have been deleted)
+					if(filterHidden && Convert.formatBoolean(rs.getString("HIDE")))
+						continue;
+					vo = new FormTransactionVO(rs);
+					vo.setUserExtendedInfo(data);
+				}
 				vos.add(vo);
 			}
 
@@ -460,6 +492,30 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 		return sb.toString();
 	}
+	
+	/**
+	 * Retrieves submissions for visitors who indicated that they want to have information
+	 * sent to them.
+	 * @return
+	 */
+	private String getLeadsQuery() {
+		StringBuilder sb = new StringBuilder(750);
+		sb.append("select distinct a.*, b.form_field_id, b.value_txt ");
+		sb.append("from FORM_SUBMITTAL a ");
+		sb.append("inner join FORM_DATA b on a.FORM_SUBMITTAL_ID = b.FORM_SUBMITTAL_ID ");
+		sb.append("inner join FORM_DATA x on b.FORM_SUBMITTAL_ID = x.FORM_SUBMITTAL_ID ");
+		sb.append("and x.form_field_id = ? and cast(x.value_txt as varchar) = ? ");
+		sb.append("left outer join PROFILE c on a.PROFILE_ID = c.PROFILE_ID ");
+		sb.append("left outer join PROFILE_ADDRESS d on c.PROFILE_ID = d.PROFILE_ID ");
+		sb.append("where FORM_ID = ? and a.CREATE_DT between ? and ? ");
+
+		//Add Ordering for newest first.
+		sb.append("and (a.robot_flg is null or a.robot_flg=0) ");
+		sb.append("group by a.FORM_SUBMITTAL_ID, b.form_field_id, b.value_txt ");
+		sb.append("order by a.CREATE_DT desc");
+
+		return sb.toString();
+	}
 
 	/**
 	 * Method retrieves all Submittal ids for a given date range then calls out
@@ -470,7 +526,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 */
 	private void exportAllSubmissions(ActionRequest req) {
 		DataContainer results = new DataContainer();
-
+		boolean exportLeads = Convert.formatBoolean(req.getParameter("exportLeads"));
 		/*
 		 * Retrieve Form Submittal Ids.  We may be doing an individual export so
 		 * look on request for fsi param first.  If not present then get all
@@ -483,7 +539,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			f.setFormSubmittalId(req.getParameter("fsi"));
 			fsids.add(f);
 		} else {
-			fsids = retreiveAllSubmissions(req, true);
+			fsids = retreiveAllSubmissions(req, true, exportLeads);
 		}
 		Map<String, FormTransactionVO> t = new HashMap<>(fsids.size());
 

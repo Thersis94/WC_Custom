@@ -72,7 +72,7 @@ public class BlogAction extends SimpleActionAdapter {
 			BlogSolrIndexer indexer = BlogSolrIndexer.makeInstance(getAttributes());
 			indexer.setDBConnection(getDBConnection());
 			log.debug("indexing blog article " + req.getParameter("blogId"));
-			indexer.addSingleItem(req.getParameter("blogId")); //null here would index the entire portlet, not just one article
+			indexer.indexItems(req.getParameter("blogId")); //null here would index the entire portlet, not just one article
 		}
 	}
 	

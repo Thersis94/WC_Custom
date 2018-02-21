@@ -6,6 +6,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
@@ -69,5 +70,34 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 				log.error("could not send contact email", ide);
 			}
 		}
+
+		// Format the redirect to use with this request
+		formatRedirect(req);
+
+	}
+
+	/**
+	 * Check the response value for 'has replaced joint' and builds a custom redirect depending 
+	 * upon the response.  We format the redirect here instead of relying on FormFacadeAction's 
+	 * more generic redirect builder so that we can to pass a custom parameter back to the JSTL.
+	 * We use this custom parameter to tailor the form submission response when the requestor is
+	 * from a visitor who does not have a DePuy Synthes implant..
+	 * @param req
+	 */
+	private void formatRedirect(ActionRequest req) {
+		String hasReplacedJoint = req.getParameter("frm_" + PatientAmbassadorStoriesTool.PAFConst.HAS_REPLACED_ID.getId());
+		if ("yes".equalsIgnoreCase(hasReplacedJoint)) return;
+
+		StringBuilder redir = new StringBuilder(300);
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		redir.append(site.getFullSiteAlias());
+
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		redir.append(page.getRequestURI()).append("?page=");
+		redir.append(req.getParameter("page"));
+		redir.append("&fsi=").append(req.getParameter("fsi"));
+		redir.append("&submitNotDSJoint=").append("true");
+
+		req.setParameter(Constants.REDIRECT_URL, redir.toString(), true);
 	}
 }
