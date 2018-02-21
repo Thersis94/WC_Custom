@@ -91,6 +91,7 @@ public class CoopAdsEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
+			mail.addCC("vplatt@mediaspace.com");
 			mail.setSubject(label + " Ad #" + cnt + " declined for Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -175,6 +176,7 @@ public class CoopAdsEmailer {
 				mail.addCC("Brianna.Victorio@umj3.com");
 				mail.addCC("emcphail@mediaspace.com");
 				mail.addCC("krogalski@mediaspace.com");
+				mail.addCC("vplatt@mediaspace.com");
 			}
 			mail.setSubject("Newspaper Options Confirmed - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -352,6 +354,7 @@ public class CoopAdsEmailer {
 				mail.addCC("Brianna.Victorio@umj3.com");
 				mail.addCC("emcphail@mediaspace.com");
 				mail.addCC("krogalski@mediaspace.com");
+				mail.addCC("vplatt@mediaspace.com");
 			} else {
 				//CFSEM recipients
 				mail.addRecipient("Brittany.Neff@hmktgroup.com");
@@ -511,6 +514,7 @@ public class CoopAdsEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
+			mail.addCC("vplatt@mediaspace.com");
 
 			mail.setSubject("Payment Received from Speaker for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -556,6 +560,7 @@ public class CoopAdsEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
+			mail.addCC("vplatt@mediaspace.com");
 			mail.setTextBody(msg.toString());
 
 			//Send message
@@ -594,6 +599,7 @@ public class CoopAdsEmailer {
 			mail.addCC("Brianna.Victorio@umj3.com");
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
+			mail.addCC("vplatt@mediaspace.com");
 
 			MessageSender sender = new MessageSender(attributes,dbConn);
 			sender.sendMessage(mail);

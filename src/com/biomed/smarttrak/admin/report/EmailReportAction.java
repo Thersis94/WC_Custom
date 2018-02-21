@@ -57,6 +57,8 @@ public class EmailReportAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("loadData")) {
 			List<EmailLogVO> data = loadSummaryData(req, null);
+			for (EmailLogVO email : data)
+				populateEmail(email);
 			putModuleData(data, getEmailCount(req), false);
 		} else if (req.hasParameter("campaignLogId")) {
 			putModuleData(loadSingleEmail(req, req.getParameter("campaignLogId")));
