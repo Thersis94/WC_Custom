@@ -105,6 +105,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			createRewardTypes();
 			migrateRewards();
 			migrateMemberRewards();
+			migrateAlbums();
 		} catch(Exception e) {
 			log.error("Failed to migrate data.", e);
 		}
@@ -143,9 +144,11 @@ public class LegacyDataMigration extends CommandLineUtil {
 			ResultSet rs = legacyPhotoPs.executeQuery();
 			while (rs.next()) {
 				String[] photos = rs.getString("photos").split(FOUR_PIPES);
+				String[] captions = rs.getString("captions").split(FOUR_PIPES);
+				String root = rs.getString("root_path");
 				String id = rs.getString(idName);
 				
-				processPhotos(id, photos, photoPs);
+				processPhotos(id, photos, captions, root, photoPs);
 			}
 		} catch (Exception e) {
 			throw new Exception("Error retrieving legacy photo data.", e);
@@ -158,10 +161,12 @@ public class LegacyDataMigration extends CommandLineUtil {
 	 * 
 	 * @param id - the owner of the photos
 	 * @param photos - the photos to be added
+	 * @param captions - the captions/titles to the photos
+	 * @param root - the root path for the album
 	 * @param photoPs - the prepared statement we are building
 	 * @throws SQLException
 	 */
-	private void processPhotos(String id, String[] photos, PreparedStatement photoPs) throws SQLException {
+	private void processPhotos(String id, String[] photos, String[] captions, String root, PreparedStatement photoPs) throws SQLException {
 		int order = 0;
 		
 		for (String photo : photos) {
@@ -169,7 +174,8 @@ public class LegacyDataMigration extends CommandLineUtil {
 			int idx = 0;
 			photoPs.setString(++idx, new UUIDGenerator().getUUID());
 			photoPs.setString(++idx, id);
-			photoPs.setString(++idx, photo);
+			photoPs.setString(++idx, captions[order]);
+			photoPs.setString(++idx, root + photo);
 			photoPs.setInt(++idx, order++);
 			photoPs.setTimestamp(++idx, Convert.getCurrentTimestamp());
 			photoPs.addBatch();
@@ -293,23 +299,6 @@ public class LegacyDataMigration extends CommandLineUtil {
 		residenceSql.append("create_dt) select cast(id as varchar), name, address1, city, state, 'US', zip, lat, lng, profilepic, ");
 		residenceSql.append("case when forsale != 0 then getdate() else null end, privacy, getdate() from rezdox.residence_tbl ");
 		executeSimpleMapping(residenceSql, "base residence");
-		
-		log.info("Migrating Residence Photos");
-
-		// migrate residence photos
-		StringBuilder photosSql = new StringBuilder(150);
-		photosSql.append("insert into custom.rezdox_photo (photo_id, residence_id, photo_nm, order_no, ");
-		photosSql.append("create_dt) values (?,?,?,?,?)");
-
-		StringBuilder legacyPhotoSql = new StringBuilder(50);
-		legacyPhotoSql.append("select cast(id as varchar) as residence_id, photos from rezdox.residence_tbl where photos != '0'");
-
-		try (PreparedStatement photoPs = dbConn.prepareStatement(photosSql.toString());) {
-			buildPhotoPs(photoPs, legacyPhotoSql, "residence_id");
-			photoPs.executeBatch();
-		} catch (Exception sqle) {
-			log.error("Error migrating residence photos. ", sqle);
-		}
 	}
 	
 	/**
@@ -435,23 +424,6 @@ public class LegacyDataMigration extends CommandLineUtil {
 		businessCatSql.append("insert into custom.rezdox_business_category_xr (business_category_xr_id, business_id, business_category_cd, create_dt) ");
 		businessCatSql.append("select replace(newid(),'-',''), cast(id as varchar), concat('SUB_', cast(subtype as varchar)), getdate() from rezdox.business_tbl ");
 		executeSimpleMapping(businessCatSql, "business category xr");
-		
-		log.info("Migrating Business Photos");
-
-		// Migrate pipe delimeted photos from source business record
-		StringBuilder photosSql = new StringBuilder(150);
-		photosSql.append("insert into custom.rezdox_photo (photo_id, business_id, photo_nm, order_no, ");
-		photosSql.append("create_dt) values (?,?,?,?,?)");
-
-		StringBuilder legacyPhotoSql = new StringBuilder(50);
-		legacyPhotoSql.append("select cast(id as varchar) as business_id, photos from rezdox.business_tbl where photos != '0'");
-
-		try (PreparedStatement photoPs = dbConn.prepareStatement(photosSql.toString());) {
-			buildPhotoPs(photoPs, legacyPhotoSql, BUSINESS_ID);
-			photoPs.executeBatch();
-		} catch (Exception sqle) {
-			log.error("Error migrating business photos. ", sqle);
-		}
 	}	
 	
 	/**
@@ -970,11 +942,12 @@ public class LegacyDataMigration extends CommandLineUtil {
 
 		// Migrate project photos
 		StringBuilder photosSql = new StringBuilder(150);
-		photosSql.append("insert into custom.rezdox_photo (photo_id, project_id, photo_nm, order_no, create_dt) ");
-		photosSql.append("values (?,?,?,?,?)");
+		photosSql.append("insert into custom.rezdox_photo (photo_id, project_id, photo_nm, image_url, order_no, create_dt) ");
+		photosSql.append("values (?,?,?,?,?,?)");
 
 		StringBuilder legacyPhotoSql = new StringBuilder(200);
-		legacyPhotoSql.append("select cast(id as varchar) as project_id, images as photos from rezdox.history_tbl h ");
+		legacyPhotoSql.append("select cast(id as varchar) as project_id, images as photos, images as captions, concat('/gallery/project/', cast(id as varchar), '/') as root_path ");
+		legacyPhotoSql.append("from rezdox.history_tbl h ");
 		legacyPhotoSql.append("where cast(h.id as varchar) in (select project_id from custom.rezdox_project) and images != '' ");
 
 		try (PreparedStatement photoPs = dbConn.prepareStatement(photosSql.toString());) {
@@ -1104,11 +1077,12 @@ public class LegacyDataMigration extends CommandLineUtil {
 
 		// Migrate treasure item photos
 		StringBuilder photosSql = new StringBuilder(150);
-		photosSql.append("insert into custom.rezdox_photo (photo_id, treasure_item_id, photo_nm, order_no, create_dt) ");
-		photosSql.append("values (?,?,?,?,?)");
+		photosSql.append("insert into custom.rezdox_photo (photo_id, treasure_item_id, photo_nm, image_url, order_no, create_dt) ");
+		photosSql.append("values (?,?,?,?,?,?)");
 
-		StringBuilder legacyPhotoSql = new StringBuilder(90);
-		legacyPhotoSql.append("select cast(id as varchar) as treasure_item_id, images as photos from rezdox.treasure_tbl where images != '' ");
+		StringBuilder legacyPhotoSql = new StringBuilder(200);
+		legacyPhotoSql.append("select cast(id as varchar) as treasure_item_id, images as photos, images as captions, concat('/gallery/treasure/', cast(id as varchar), '/') as root_path ");
+		legacyPhotoSql.append("from rezdox.treasure_tbl where images != '' ");
 
 		try (PreparedStatement photoPs = dbConn.prepareStatement(photosSql.toString());) {
 			buildPhotoPs(photoPs, legacyPhotoSql, "treasure_item_id");
@@ -1186,5 +1160,36 @@ public class LegacyDataMigration extends CommandLineUtil {
 		redeemedSql.append("from rezdox.rezredeem_tbl red inner join rezdox.rezrewards_tbl rew on red.gc_name = rew.name ");
 		redeemedSql.append("inner join rezdox.member_tbl m on red.mem_id = m.id ");
 		executeSimpleMapping(redeemedSql, "rez rewards redeemed");
+	}
+	
+	/**
+	 * Migrates Residence and Business Photo Albums
+	 */
+	protected void migrateAlbums() {
+		log.info("Migrating Albums");
+		StringBuilder albumSql = new StringBuilder(400);
+		albumSql.append("insert into custom.rezdox_album(album_id, residence_id, business_id, album_nm, create_dt) ");
+		albumSql.append("select id, case when left(pro1,1)='r' then right(pro1,-1) else null end, case when left(pro1,1)='b' then right(pro1,-1) else null end, name, datetime ");
+		albumSql.append("from rezdox.album_tbl a inner join rezdox.alb_pro_tbl ap on a.id = ap.alb_id ");
+		albumSql.append("where left(pro1,1)='r' or left(pro1,1)='b' ");
+		executeSimpleMapping(albumSql, "album");
+		
+		log.info("Migrating Business & Residence Photos");
+		StringBuilder photosSql = new StringBuilder(150);
+		photosSql.append("insert into custom.rezdox_photo (photo_id, album_id, photo_nm, image_url, order_no, ");
+		photosSql.append("create_dt) values (?,?,?,?,?,?)");
+
+		StringBuilder legacyPhotoSql = new StringBuilder(450);
+		legacyPhotoSql.append("select cast(id as varchar) as album_id, images as photos, captions, ");
+		legacyPhotoSql.append("concat('/gallery/', case when left(pro1,1)='r' then 'residence' else 'business' end, '/', right(pro1,-1), '/', cast(id as varchar), '/') as root_path ");
+		legacyPhotoSql.append("from rezdox.album_tbl a inner join rezdox.alb_pro_tbl ap on a.id = ap.alb_id ");
+		legacyPhotoSql.append("where images != '' and (left(pro1,1)='r' or left(pro1,1)='b') ");
+
+		try (PreparedStatement photoPs = dbConn.prepareStatement(photosSql.toString());) {
+			buildPhotoPs(photoPs, legacyPhotoSql, "album_id");
+			photoPs.executeBatch();
+		} catch (Exception sqle) {
+			log.error("Error migrating album photos. ", sqle);
+		}
 	}
 }
