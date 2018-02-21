@@ -345,13 +345,21 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			log.error("Failed to set custom colors. Retaining standard colors", e);
 		}
 
-		//update the colors...by reference?  It's a String[] - not sure this code does what it suggestions, if anything.  -JM- 01.23.2018
 		String[] colors = (String[]) options.getChartOptions().get("colors");
+		List<String> colorList = new ArrayList<>(Arrays.asList(colors));
+		
+		// Loop over the columns, getting either a default color or a company color for each one.
 		for (int j=0; j < size; j++) {
 			String name = grid.getDetails().get(j).getLabel();
-			if (StringUtil.isEmpty(name) || !colorMap.containsKey(name)) continue;
-			colors[j] = colorMap.get(name);
+			if (StringUtil.isEmpty(name) || !colorMap.containsKey(name)) {
+				colorList.add(j, colors[j%colors.length]);
+			} else {
+				colorList.add(j, colorMap.get(name));
+			}
 		}
+		
+		// Place the new color set in the conig.
+		 options.getChartOptions().put("colors", colorList.toArray());
 	}
 
 
@@ -383,6 +391,13 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 */
 	private String formatCellValue(String value) {
 		if (value.length() <= 3) return value;
+		
+		// Convert from scientific exponent to simple number if applicable.
+		if (value.indexOf('E') > -1) {
+			int exp = Convert.formatInteger(value.substring(value.indexOf('E')+1));
+			value = StringUtil.padRight(value.replace(".", "").substring(0, value.indexOf('E')-1), '0', exp+1);
+		}
+
 		// Decimal and 0 added by the system
 		if (value.indexOf('.') > -1)
 			value = value.substring(0, value.indexOf('.'));
