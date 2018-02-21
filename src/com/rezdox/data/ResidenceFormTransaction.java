@@ -2,7 +2,9 @@ package com.rezdox.data;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.ResidenceAction;
@@ -144,14 +146,20 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 	protected void saveFieldData(FormTransactionVO data) throws DatabaseException {
 		log.debug("Saving RezDox Residence Attributes");
 		
+		List<FormFieldVO> oldFormFields = new ArrayList<>();
+		List<FormFieldVO> newFormFields = new ArrayList<>();
+		
 		for (FormFieldVO vo : data.getCustomData().values()) {
-			deleteSavedResponses(vo);
+			oldFormFields.add(vo);
 
 			// Save valid responses.
 			if (vo.getResponses() != null && !vo.getResponses().isEmpty()) {
-				saveFieldData(vo);
+				newFormFields.add(vo);
 			}
 		}
+		
+		deleteSavedResponses(oldFormFields);
+		saveFieldData(newFormFields);
 	}
 
 	/**
@@ -160,7 +168,7 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 	 * @param vo
 	 * @throws DatabaseException
 	 */
-	protected void saveFieldData(FormFieldVO vo) throws DatabaseException {
+	protected void saveFieldData(List<FormFieldVO> newFormFields) throws DatabaseException {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringEncoder sen = new StringEncoder();
 		StringBuilder sql = new StringBuilder(150);
@@ -170,17 +178,19 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			for (String val : vo.getResponses()) {
-				ps.setString(1, new UUIDGenerator().getUUID());
-				ps.setString(2, req.getParameter(ResidenceAction.RESIDENCE_ID));
-				ps.setString(3, vo.getSlugTxt());
-				ps.setString(4, sen.decodeValue(StringUtil.checkVal(val)));
-				ps.setTimestamp(5, Convert.getCurrentTimestamp());
-				ps.addBatch();
+			for (FormFieldVO formField : newFormFields) {
+				for (String val : formField.getResponses()) {
+					ps.setString(1, new UUIDGenerator().getUUID());
+					ps.setString(2, req.getParameter(ResidenceAction.RESIDENCE_ID));
+					ps.setString(3, formField.getSlugTxt());
+					ps.setString(4, sen.decodeValue(StringUtil.checkVal(val)));
+					ps.setTimestamp(5, Convert.getCurrentTimestamp());
+					ps.addBatch();
+				}
 			}
 			ps.executeBatch();
 		} catch (SQLException sqle) {
-			log.error("Could not save RezDox Residence Form Field "	+ vo.getSlugTxt(), sqle);
+			log.error("Could not save RezDox Residence form fields.", sqle);
 			throw new DatabaseException(sqle);
 		}
 	}
@@ -190,18 +200,21 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 	 * 
 	 * @param vo
 	 */
-	protected void deleteSavedResponses(FormFieldVO vo) {
+	protected void deleteSavedResponses(List<FormFieldVO> oldFormFields) {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.DELETE_CLAUSE).append(" from ").append(schema).append("rezdox_residence_attribute ");
 		sql.append("where residence_id = ? and slug_txt = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, req.getParameter(ResidenceAction.RESIDENCE_ID));
-			ps.setString(2, vo.getSlugTxt());
-			ps.execute();
+			for (FormFieldVO formField : oldFormFields) {
+				ps.setString(1, req.getParameter(ResidenceAction.RESIDENCE_ID));
+				ps.setString(2, formField.getSlugTxt());
+				ps.addBatch();
+			}
+			ps.executeBatch();
 		} catch (SQLException sqle) {
-			log.error("could not delete saved field responses", sqle);
+			log.error("Could not delete RexDox Residence form field data.", sqle);
 		}
 	}
 	
