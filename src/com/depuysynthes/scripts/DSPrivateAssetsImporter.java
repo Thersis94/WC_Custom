@@ -32,7 +32,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 
-	protected static final String INTERNAL_TAG = "internal";
+	public static final String INTERNAL_TAG = "internal";
 	private Set<String> publicAssetIds;
 	private Set<String> blockedPublicAssets;
 

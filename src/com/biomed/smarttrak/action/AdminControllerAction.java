@@ -18,10 +18,10 @@ import com.biomed.smarttrak.admin.CRMAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.DashboardAction;
 import com.biomed.smarttrak.admin.EditorsDeskAction;
+import com.biomed.smarttrak.admin.FeaturedInsightsAction;
 import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.GridChartAction;
-import com.biomed.smarttrak.admin.FeaturedInsightsAction;
 import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.ManageAuthorAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
@@ -29,19 +29,21 @@ import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.ReportFacadeAction;
 import com.biomed.smarttrak.admin.SearchUtilAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.admin.SmartSearchAction;
 import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
+import com.biomed.smarttrak.admin.ToolsFacadeAction;
 import com.biomed.smarttrak.admin.UpdateListTitleAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.admin.UpdatesEmailSendAction;
 import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.admin.UserAccountSearchAction;
+import com.biomed.smarttrak.admin.ZohoIntegrationAction;
 import com.biomed.smarttrak.admin.report.EmailReportAction;
 import com.biomed.smarttrak.fd.FinancialDashAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
-
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -50,10 +52,8 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-
 //WC Email Campaigns
 import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
 import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
@@ -111,8 +111,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
 	 */
 	public enum Section {
-		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("analysis/"), PRODUCT_EXPLOERER("explorer/"),
-		UPDATES_EDITION("updates-edition/"), FINANCIAL_DASHBOARD("financial/"), GAP_ANALYSIS("analysis/");
+		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("analysis/"), PRODUCT_EXPLORER("explorer/"),
+		UPDATES_EDITION("updates-edition/"), FINANCIAL_DASHBOARD("tools/financial/"), GAP_ANALYSIS("tools/analysis/");
 
 		private String path;
 		Section(String path) { this.path = path; }
@@ -173,9 +173,11 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * populates the action map when the static constructor is called.  This will make our map live once in the JVM
 	 */
 	static {
-		ACTIONS = new HashMap<>(35);
+		ACTIONS = new HashMap<>(39);
+		ACTIONS.put("tickets", ZohoIntegrationAction.class);
 		ACTIONS.put("hierarchy", SectionHierarchyAction.class);
 		ACTIONS.put("agap", GapAnalysisAdminAction.class);
+		ACTIONS.put("tools", ToolsFacadeAction.class);
 		ACTIONS.put("fd", FinancialDashAdminAction.class);
 		ACTIONS.put("fdScenario", FinancialDashScenarioAction.class);
 		ACTIONS.put("fdFootnote", FinancialDashFootnoteAdminAction.class);
@@ -210,6 +212,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("userAccountSearch", UserAccountSearchAction.class);
 		ACTIONS.put("feeds", CustomRSSFacadeAction.class);
 		ACTIONS.put("dashboard", DashboardAction.class);
+		ACTIONS.put("smartSearch", SmartSearchAction.class);
 		ACTIONS.put("feature", FeaturedInsightsAction.class);
 		ACTIONS.put(DEFAULT_ACTION, com.biomed.smarttrak.action.UpdatesAction.class);
 	}

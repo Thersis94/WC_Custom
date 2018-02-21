@@ -29,7 +29,7 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 public class RSSArticleSaxHandler extends DefaultHandler {
 
-	public enum SearchType {TITLE("title"), DESCRIPTION("description"), LINK("link"), ITEM("item"),PUB_DATE("pubDate"), GUID("guid"), F_DATE("fDate");
+	public enum SearchType {TITLE("title"), DESCRIPTION("description"), LINK("link"), ITEM("item"),PUB_DATE("pubDate"), GUID("guid"), F_DATE("fDate"), CHANNEL("channel");
 		private String qName;
 		SearchType(String qName) {
 			this.qName = qName;
@@ -55,6 +55,10 @@ public class RSSArticleSaxHandler extends DefaultHandler {
 	 */
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+		// Ensure that whenever an item element starts we clear out the data.
+		// If the xml file was properly formatted any adding to the vo list will have been handled
+		// by the endElement method. Improperly formatted data is discarded here.
+		if(SearchType.ITEM.getQName().equals(qName)) data = new EnumMap<>(SearchType.class);
 		super.startElement(uri, localName, qName, attributes);
 		for(SearchType s : SearchType.values()) {
 			if(s.getQName().equals(qName)) {
@@ -73,6 +77,8 @@ public class RSSArticleSaxHandler extends DefaultHandler {
 		type = null;
 		if(SearchType.ITEM.getQName().equals(qName)) {
 			vos.add(buildRSSVO());
+			data = new EnumMap<>(SearchType.class);
+		} else if (SearchType.CHANNEL.getQName().equals(qName)) {
 			data = new EnumMap<>(SearchType.class);
 		}
 	}
