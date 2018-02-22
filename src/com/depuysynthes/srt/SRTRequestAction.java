@@ -9,7 +9,9 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.exception.DatabaseException;
 import com.smt.sitebuilder.action.form.FormAction;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -48,7 +50,7 @@ public class SRTRequestAction extends FormAction {
 			putModuleData(loadRequests(roster));
 		}
 	}
-
+ 
 	/**
 	 * Load SRT Requests.
 	 * @param roster
@@ -63,7 +65,34 @@ public class SRTRequestAction extends FormAction {
 			vals.add(roster.getRosterId());
 		}
 
-		return new DBProcessor(dbConn).executeSelect(buildRequestLoadSql(!vals.isEmpty()), vals, new SRTRequestVO());
+		List<SRTRequestVO> requests = new DBProcessor(dbConn).executeSelect(buildRequestLoadSql(!vals.isEmpty()), vals, new SRTRequestVO());
+
+		//Get List of Users
+		List<SRTRosterVO> users = getRosters(requests);
+
+		try {
+			//Populate SRT Roster Records via reference.
+			ProfileManagerFactory.getInstance(attributes).populateRecords(dbConn, users);
+		} catch (DatabaseException e) {
+			log.error("Problem Populating Requestor Records.", e);
+		}
+
+		return requests;
+	}
+
+	/**
+	 * Extract Request Roster Records to a list.
+	 * @param requests
+	 * @return
+	 */
+	private List<SRTRosterVO> getRosters(List<SRTRequestVO> requests) {
+		List<SRTRosterVO> users = new ArrayList<>();
+
+		for(SRTRequestVO r : requests) {
+			users.add(r.getRequestor());
+		}
+
+		return users;
 	}
 
 	/**
@@ -79,7 +108,9 @@ public class SRTRequestAction extends FormAction {
 		sql.append("SRT_REQUEST_ADDRESS a on r.REQUEST_ID = a.REQUEST_ID ");
 		sql.append("inner join ").append(schema);
 		sql.append("SRT_ROSTER u on r.ROSTER_ID = u.ROSTER_ID ");
-		sql.append("inner join PROFILE p on u.PROFILE_ID = p.PROFILE_ID ");
+		if(hasUser) {
+			sql.append("where u.roster_id = ? ");
+		}
 		sql.append("order by r.create_dt desc ");
 		return sql.toString();
 	}

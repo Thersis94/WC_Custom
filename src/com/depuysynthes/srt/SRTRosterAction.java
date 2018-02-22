@@ -154,6 +154,10 @@ public class SRTRosterAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	protected void loadRegistration(ActionRequest req, List<Object> users) throws ActionException {
+		//fail-fast if there's no user to load responses for, or too many users
+		if (users == null || users.isEmpty() || users.size() != 1)
+			return;
+
 		//load the registration form
 		ActionInitVO actionInit = new ActionInitVO();
 		actionInit.setActionGroupId(SRTUtil.REGISTRATION_GRP_ID);
@@ -162,10 +166,6 @@ public class SRTRosterAction extends SBActionAdapter {
 		sa.setAttributes(getAttributes());
 		sa.retrieve(req);
 		req.setAttribute("registrationForm", ((ModuleVO)sa.getAttribute(Constants.MODULE_DATA)).getActionData());
-
-		//fail-fast if there's no user to load responses for, or too many users
-		if (users == null || users.isEmpty() || users.size() != 1)
-			return;
 
 		//load the user's registration responses - these will go into the UserDataVO->attributes map
 		SRTRosterVO user = (SRTRosterVO) users.get(0);

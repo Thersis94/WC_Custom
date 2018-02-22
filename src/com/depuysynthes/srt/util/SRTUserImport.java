@@ -131,12 +131,7 @@ public class SRTUserImport extends CommandLineUtil {
 		List<Map<String,Object>> records = retrieveData();
 		log.info("records retrieved: " + records.size());
 		try {
-			//dbConn.setAutoCommit(false);
-
 			insertRecords(records);
-
-			//dbConn.commit();
-			//dbConn.setAutoCommit(true);
 		} catch(Exception e) {
 			log.error("Error, failed to insert records, ", e);
 		}
@@ -191,7 +186,7 @@ public class SRTUserImport extends CommandLineUtil {
 
 		//iterate the records, inserting each
 		Iterator<Map<String,Object>> iter = records.iterator();
-		int comLevel = 1000;
+
 		while (iter.hasNext()) {
 			recordCnt++;
 			dataSet = iter.next();
@@ -204,11 +199,6 @@ public class SRTUserImport extends CommandLineUtil {
 
 			log.info("START: processing record|source: " + recordCnt + "|" + user.getCoRosterId());
 			// if we weren't able to get a valid email address for the user, don't even process it.
-//			if (user.getValidEmailFlag() == 0) {
-//				logInvalidUserRecord(recordCnt, user);
-//				failedCnt++;
-//				continue;
-//			}
 
 			try {
 				/* check for pre-existing user profile */
@@ -250,15 +240,7 @@ public class SRTUserImport extends CommandLineUtil {
 				logInvalidUserRecord(recordCnt, user);
 				failedCnt++;
 			}
-
-			//Commit Every 1000 Records.
-			if(recordCnt % comLevel == 0) {
-			//	dbConn.commit();
-			}
 		}
-
-		//Commit Hanging Records.
-		//dbConn.commit();
 
 		// log summary info.
 		writeLogs(recordCnt,successCnt,failedCnt,skipCnt);
@@ -504,23 +486,22 @@ public class SRTUserImport extends CommandLineUtil {
 	protected void processRole(Connection dbConn, ProfileRoleManager prm, 
 			Map<String,Object> dataSet, String profileId) throws DatabaseException {
 		String newRoleId = StringUtil.checkVal(dataSet.get(ImportField.ROLE_TXT.name()),null);
-		String siteId = props.getProperty(SiteAction.SITE_ID);
 		if (newRoleId == null || siteId == null) 
 			return;
-		
+
 		/* Check for existing role for this user for this site? Returns profile role id (primary key)
 		 * if role exists, null if not. */
 		String currProfileRoleId = prm.checkRole(profileId, siteId, dbConn);
 
 		log.info("Profile-role ID: " + currProfileRoleId);
-		
+
 		// create role VO for the insert or update
 		SBUserRole userRole = new SBUserRole();
 		userRole.setSiteId(siteId);
 		userRole.setRoleId(newRoleId);
 		userRole.setStatusId(20);
 		userRole.setProfileId(profileId);
-		
+
 		// if found existing profile role id, set on vo so update occurs.
 		if (currProfileRoleId != null) 
 			userRole.setProfileRoleId(currProfileRoleId);
@@ -570,7 +551,6 @@ public class SRTUserImport extends CommandLineUtil {
 		user.setAccountNo(StringUtil.checkVal(dataSet.get(ImportField.ACCOUNT_NO.name())));
 		user.setEngineeringContact(StringUtil.checkVal(dataSet.get(ImportField.ENGINEERING_CONTACT.name())));
 		// parse user's email.
-		//parseUserEmail(user, null);
 
 		return user;
 	}
@@ -587,10 +567,7 @@ public class SRTUserImport extends CommandLineUtil {
 		if (! StringUtil.isValidEmail(user.getEmailAddress())) {
 			// email address not valid, check username
 			String stUserName = StringUtil.checkVal(legacyUserName);
-			if (! StringUtil.isValidEmail(stUserName)) {
-				// username not valid email address either, append fallback email suffix
-				//user.setEmailAddress(stUserName + props.getProperty("emailSuffixDefault"));
-			} else {
+			if(StringUtil.isValidEmail(stUserName)) {
 				user.setEmailAddress(stUserName);
 			}
 		}
