@@ -34,7 +34,6 @@ import com.biomed.smarttrak.vo.grid.GoogleChartVO.DataType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
@@ -191,12 +190,15 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		String schema = getAttribute(Constants.CUSTOM_DB_SCHEMA) + "";
 
 		// Parse the map data and place in a map
-		Map<Object, GenericVO> items = new HashMap<>(grids.length);
+		Map<Object, Map<String, String>> items = new HashMap<>(grids.length);
 		for(String grid : grids) {
 			String[] vals = grid.split("\\|");
-			String columns = "";
-			if (vals.length == 3) columns = vals[2];
-			items.put(vals[0], new GenericVO(vals[1], columns));
+			Map<String, String> values = new HashMap<>(3);
+			for (String s : vals)log.debug(s);
+			values.put("type", vals[1]);
+			if (vals.length >= 3) values.put("columns", vals[2]);
+			if (vals.length >= 4) values.put("labelType", vals[3]);
+			items.put(vals[0], values);
 		}
 
 		// Retrieve the data
@@ -215,8 +217,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			if (items.get(grid.getGridId()) == null)  id = grid.getSlug();
 
 			// Parse pout the passed in data and format for calling each chart
-			ChartType ct = ChartType.valueOf(items.get(id).getKey() + "");
-			String columns = StringUtil.checkVal(items.get(id).getValue());
+			ChartType ct = ChartType.valueOf(items.get(id).get("type") + "");
+			String columns = StringUtil.checkVal(items.get(id).get("columns"));
+			int labelType = Convert.formatInteger(items.get(id).get("labelType"));
 
 			if (!ChartType.TABLE.equals(ct)) {
 				pruneColumns(grid);
@@ -229,7 +232,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 			// Retrieve the data for all of the charts
 			SMTGridIntfc loadedGrid = retrieveChartData(grid, ct, full, stacked, pt, cols, Collections.emptyList());
-			configureGridOptions(loadedGrid, grid, ct, full, ALL_LABELS);
+			configureGridOptions(loadedGrid, grid, ct, full, labelType);
 			data.put(id, loadedGrid);
 		}
 
@@ -365,7 +368,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			gridData.getCols().remove(i.intValue());
 			for (SMTGridRowIntfc row : gridData.getRows()) {
 				GoogleChartRowVO gRow = (GoogleChartRowVO) row;
-				gRow.getC().remove(i.intValue());
+				if (i.intValue() < gRow.getC().size())
+					gRow.getC().remove(i.intValue());
 			}
 		}
 	}
