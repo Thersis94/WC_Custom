@@ -327,6 +327,9 @@ public class LinkChecker extends CommandLineUtil {
 			} else {
 				httpHeadTest(vo,url);
 			}
+			//check for redirects
+			checkRedirect(vo);
+
 		} catch (Exception e) {
 			log.warn("URL Failed: " + e.getMessage());
 			if ("Connection reset".equals(e.getMessage())) {
@@ -348,6 +351,21 @@ public class LinkChecker extends CommandLineUtil {
 
 
 	/**
+	 * if the initial http call returned a redirect, transpose it into the main URL field and call a second time.
+	 * @param vo
+	 */
+	private void checkRedirect(LinkVO vo) {
+		if (isRedirect(vo.getOutcome()) && !StringUtil.isEmpty(vo.getRedirectUrl())) {
+			log.debug("got redirected to: " + vo.getRedirectUrl());
+			vo.setUrl(vo.getRedirectUrl());
+			vo.setRedirectUrl(null); //flush this or we're in a continuous loop
+			vo.setOutcome(0);
+			httpTest(vo);
+		}
+	}
+
+
+	/**
 	 * runs a HEAD request against the domains.  Falls-back to GET if a SocketException occurs.
 	 * @param vo
 	 * @param url
@@ -358,12 +376,18 @@ public class LinkChecker extends CommandLineUtil {
 			HttpURLConnection conn = setupConnection("HEAD", url);
 			conn.connect();
 			vo.setOutcome(conn.getResponseCode());
-			if (200 != vo.getOutcome())
+			
+			if (isRedirect(vo.getOutcome())) {
+				vo.setRedirectUrl(conn.getHeaderField("Location"));
+			} else if (200 != vo.getOutcome()) {
 				log.debug("failed HEAD " + vo.getOutcome() +" reason: " + conn.getResponseMessage());
+			}
 
 			//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
 			conn.getInputStream().close();
 			conn.disconnect();
+			
+
 		} catch (Exception se) {
 			httpGetTest(vo,url);
 			//if the above line succeeds, we know this domain does not support HEAD requests
@@ -371,6 +395,16 @@ public class LinkChecker extends CommandLineUtil {
 			//add it to the report/email so it can be added to the config file for next time.
 			getDomainsReport.add(url.getHost());
 		}
+	}
+
+
+	/**
+	 * is this http response code a redirect
+	 * @param outcome
+	 * @return
+	 */
+	private boolean isRedirect(int outcome) {
+		return 301 == outcome || 302 == outcome;
 	}
 
 
@@ -383,9 +417,13 @@ public class LinkChecker extends CommandLineUtil {
 		HttpURLConnection conn = setupConnection("GET", url);
 		conn.connect();
 		vo.setOutcome(conn.getResponseCode());
-		if (200 != vo.getOutcome())
+		
+		if (isRedirect(vo.getOutcome())) {
+			vo.setRedirectUrl(conn.getHeaderField("Location"));
+		} else if (200 != vo.getOutcome()) {
 			log.debug("failed GET " + vo.getOutcome() +" reason: " + conn.getResponseMessage());
-
+		}
+		
 		//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
 		conn.getInputStream().close();
 		conn.disconnect();
@@ -406,11 +444,12 @@ public class LinkChecker extends CommandLineUtil {
 		conn.setConnectTimeout(HTTP_CONN_TIMEOUT);
 		conn.setReadTimeout(HTTP_READ_TIMEOUT);
 		conn.addRequestProperty("User-Agent", mockUserAgent);
-		conn.addRequestProperty("Accept-Encoding", "compress, gzip");
+		conn.addRequestProperty("Accept-Encoding", "*");
 		conn.addRequestProperty("Accept", "*/*");
 		conn.addRequestProperty("Connection", "keep-alive");
 		conn.addRequestProperty("Cookie", "");
 		conn.addRequestProperty("Referer", "https://app.smarttrak.com/");
+		conn.setInstanceFollowRedirects(true);
 		return conn;
 	}
 
