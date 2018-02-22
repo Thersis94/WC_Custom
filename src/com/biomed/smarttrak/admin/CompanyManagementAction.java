@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Properties;
 
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
@@ -707,7 +708,10 @@ public class CompanyManagementAction extends ManagementAction {
 				CompanyVO c = new CompanyVO(req);
 				boolean isInsert = saveCompany(c, db);
 				saveSections(req, c.getCompanyId());
-				if (isInsert) generateContent(req, c.getCompanyId(), CONTENT_ATTRIBUTE_ID);
+				if (isInsert) {
+					generateContent(req, c.getCompanyId(), CONTENT_ATTRIBUTE_ID);
+					req.setParameter("companyId", c.getCompanyId());
+				}
 				break;
 			case LOCATION:
 				LocationVO l = new LocationVO(req);
@@ -1187,10 +1191,10 @@ public class CompanyManagementAction extends ManagementAction {
 		BiomedCompanyIndexer indexer = new BiomedCompanyIndexer(props);
 		indexer.setDBConnection(dbConn);
 		try {
-			if ("D".equals(status) || "A".equals(status)) {
-				indexer.purgeSingleItem(companyId, false);
+			if ("D".equals(status) || "A".equals(status) || "I".equals(status)) {
+				indexer.purgeSingleItem(Section.COMPANY.name() + "_" +companyId, false);
 			} else {
-				indexer.addSingleItem(companyId);
+				indexer.indexItems(companyId);
 			}
 		} catch (IOException e) {
 			throw new ActionException(e);

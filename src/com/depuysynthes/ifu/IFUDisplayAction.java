@@ -240,7 +240,7 @@ public class IFUDisplayAction extends SimpleActionAdapter {
 			lang = "?";
 		}
 		
-		StringBuilder sql = new StringBuilder(300);
+		StringBuilder sql = new StringBuilder(600);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select case b.language_cd when ").append(lang).append(" then 0 else 1 end as precedence, ");
 		sql.append("a.BUSINESS_UNIT_NM, a.order_no, a.version_txt, a.business_unit_nm,  ");
@@ -248,7 +248,7 @@ public class IFUDisplayAction extends SimpleActionAdapter {
 		sql.append("b.title_txt, b.url_txt, b.dpy_syn_mediabin_id, ");
 		sql.append("b.language_cd, b.create_dt, b.default_msg_txt, ");
 		sql.append("b.depuy_ifu_impl_id, xr.depuy_ifu_impl_id as xr_impl_id, ");
-		sql.append("tg.DEPUY_IFU_TG_ID, tg.tg_nm, tg.url_txt as tg_url, tg.dpy_syn_mediabin_id as tg_mediabin_id ");
+		sql.append("tg.DEPUY_IFU_TG_ID, tg.tg_nm, tg.url_txt as tg_url, tg.dpy_syn_mediabin_id as tg_mediabin_id, mb.dpy_syn_mediabin_id as mediabin_present ");
 		if (isKeyword) {
 			//sequence here is important for performance, we save evaluating article_txt (the blob) for last
 			sql.append(", case when a.title_txt like ").append(keyword).append(" escape '!' then 1 ");
@@ -263,6 +263,7 @@ public class IFUDisplayAction extends SimpleActionAdapter {
 		sql.append(") ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_IFU_TG_XR xr on b.depuy_ifu_impl_id=xr.depuy_ifu_impl_id ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_IFU_TG tg on xr.depuy_ifu_tg_id=tg.depuy_ifu_tg_id ");
+		sql.append("left outer join ").append(customDb).append("dpy_syn_mediabin mb on tg.dpy_syn_mediabin_id=mb.dpy_syn_mediabin_id ");
 		sql.append("where a.archive_flg=").append((isArchive) ? 1 : 0);
 		if (!isPreviewMode) sql.append("and a.depuy_ifu_group_id is null ");
 		

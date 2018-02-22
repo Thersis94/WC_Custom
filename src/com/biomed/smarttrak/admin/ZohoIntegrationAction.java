@@ -7,7 +7,9 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.ticketing.SupportUtilFactory;
 import com.smt.sitebuilder.action.ticketing.TicketFacadeAction;
 import com.smt.sitebuilder.action.ticketing.vo.SupportBugVO;
@@ -130,12 +132,29 @@ public class ZohoIntegrationAction extends TicketFacadeAction {
 	public void build(ActionRequest req) throws ActionException {
 		req.setParameter("projectId", PROJECT_ID);
 		req.setParameter(TICKET_TYPE_PARAM, TICKET_TYPE.BUG.toString());
+		req.setParameter("bugDesc", appendDescription(req));
 		super.build(req);
 
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.FALSE);
 		req.removeAttribute(Constants.REDIRECT_URL);
 
 		super.clearCacheByKey(SMARTTRAK_CACHE_KEY);
+	}
+
+	/**
+	 * Ensure that the ticket desciption includes the submitting user's name
+	 * as the zoho api does not support remotely adding a ticket with a 
+	 * user's id
+	 * @param req
+	 * @return
+	 */
+	private String appendDescription(ActionRequest req) {
+		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		String oldDesc = StringUtil.checkVal(req.getParameter("bugDesc"));
+		StringBuilder bugDesc = new StringBuilder(oldDesc.length() + 100);
+		bugDesc.append(oldDesc);
+		bugDesc.append("<p>Ticket Submitted by: ").append(user.getFullName()).append("</p>");
+		return bugDesc.toString();
 	}
 
 }
