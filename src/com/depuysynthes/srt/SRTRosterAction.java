@@ -14,12 +14,12 @@ import java.util.Set;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import com.depuysynthes.srt.vo.SRTRosterVO;
-import com.depuysynthes.srt.vo.SRTRosterVO.RegistrationMap;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.StringEncrypter;
@@ -63,6 +63,7 @@ public class SRTRosterAction extends SBActionAdapter {
 	public static final String PUBLIC_SITE_ID = "DPY_SYN_HUDDLE_2";
 	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
 
+	public static final String REQ_CHECK_USER_BY_EMAIL = "checkUserByEmail";
 	public static final String REQ_ROSTER_ID = "rosterId";
 	public SRTRosterAction() {
 		super();
@@ -77,7 +78,7 @@ public class SRTRosterAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if (req.hasParameter("checkUserByEmail")) {
+		if (req.hasParameter(REQ_CHECK_USER_BY_EMAIL)) {
 			checkForExistingUser(req);
 			return;
 		}
@@ -105,7 +106,7 @@ public class SRTRosterAction extends SBActionAdapter {
 		boolean loadProfileData = false;
 
 		//Build Sql
-		String sql = formatRetrieveQuery(schema, rosterId, profileId, opCoId);
+		String sql = formatRetrieveQuery(schema, rosterId, profileId);
 
 		//Build Params
 		List<Object> params = new ArrayList<>();
@@ -200,20 +201,20 @@ public class SRTRosterAction extends SBActionAdapter {
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	protected String formatRetrieveQuery(String schema, String rosterId, String profileId, String opCoId) {
+	protected String formatRetrieveQuery(String schema, String rosterId, String profileId) {
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select * ");
+		sql.append("select r.*, p.first_nm, p.last_nm, p.email_address_txt ");
 		sql.append("from profile p ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("srt_roster u on u.profile_id=p.profile_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("srt_roster r on r.profile_id=p.profile_id ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if (StringUtil.isEmpty(profileId)) {
-			sql.append("and u.op_co_id=? ");
-			if (rosterId != null) sql.append("and u.roster_id=? ");
+			sql.append("and r.op_co_id=? ");
+			if (rosterId != null) sql.append("and r.roster_id=? ");
 		} else {
 			sql.append("and p.profile_id=? ");
 		}
 	
-		sql.append("group by u.op_co_id ");
+		sql.append("group by r.op_co_id ");
 
 		log.debug(sql);
 		return sql.toString();
@@ -224,11 +225,11 @@ public class SRTRosterAction extends SBActionAdapter {
 	 * @param req
 	 */
 	private void checkForExistingUser(ActionRequest req) {
-		boolean isEmailSearch = req.hasParameter("checkUserByEmail");
+		boolean isEmailSearch = req.hasParameter(REQ_CHECK_USER_BY_EMAIL);
 		String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
-		String email = req.getParameter("checkUserByEmail").toUpperCase();
+		String email = req.getParameter(REQ_CHECK_USER_BY_EMAIL).toUpperCase();
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select a.roster_id, b.profile_id, a.op_co_id from ").append(schema).append("srt_roster a ");
 		sql.append("right outer join profile b on a.profile_id=b.profile_id ");
@@ -283,7 +284,7 @@ public class SRTRosterAction extends SBActionAdapter {
 		//save their registration data
 		saveRegistrationData(req, user);
 
-		//save their UserVO (smarttrak user table)
+		//save their RosterVO (SRT_ROSTER table)
 		saveRecord(user, false);
 
 		setupRedirect(req);
@@ -296,7 +297,7 @@ public class SRTRosterAction extends SBActionAdapter {
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
 		SRTRosterVO user = new SRTRosterVO(req);
-		saveRecord(user, true); //deletes them from Smartrak, but not from the WC core
+		saveRecord(user, true); //De-Activates them from SRT.
 		saveProfileRole(user, true); //revoke website access
 		setupRedirect(req);
 	}
@@ -438,19 +439,19 @@ public class SRTRosterAction extends SBActionAdapter {
 
 		//build a list of values to insert based on the ones we're going to delete
 		List<SubmittalDataVO> regData = new ArrayList<>();
-		SubmittalDataVO vo;
-		for (RegistrationMap field : SRTRosterVO.RegistrationMap.values()) {
-			formFields.add(field.getFieldId());
-			String[] values = req.getParameterValues(field.getReqParam());
-			if (values == null) continue; //we're still going to flush the old data, but have nothing to save in it's place
-
-			for (String val : values) {
-				vo = new SubmittalDataVO(null);
-				vo.setRegisterFieldId(field.getFieldId());
-				vo.setUserValue(val);
-				regData.add(vo);
-			}
-		}
+//		SubmittalDataVO vo;
+//		for (RegistrationMap field : SRTRosterVO.RegistrationMap.values()) {
+//			formFields.add(field.getFieldId());
+//			String[] values = req.getParameterValues(field.getReqParam());
+//			if (values == null) continue; //we're still going to flush the old data, but have nothing to save in it's place
+//
+//			for (String val : values) {
+//				vo = new SubmittalDataVO(null);
+//				vo.setRegisterFieldId(field.getFieldId());
+//				vo.setUserValue(val);
+//				regData.add(vo);
+//			}
+//		}
 
 		//put the fields we're going to be saving onto the request - Registration won't save what we can't prove we're passing
 		req.setParameter("formFields", formFields.toArray(new String[formFields.size()]) , Boolean.TRUE);
@@ -480,12 +481,8 @@ public class SRTRosterAction extends SBActionAdapter {
 	protected void saveRecord(SRTRosterVO user, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		try {
-			if (isDelete) {
-				db.delete(user);
-			} else {
-				db.save(user);
-			}
-		} catch (InvalidDataException | com.siliconmtn.db.util.DatabaseException e) {
+			db.save(user);
+		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
 	}

@@ -6,6 +6,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.user.HumanNameIntfc;
 
 /****************************************************************************
  * <b>Title:</b> SRTNoteVO.java
@@ -19,7 +20,7 @@ import com.siliconmtn.db.orm.Table;
  * @since Feb 5, 2018
  ****************************************************************************/
 @Table(name="SRT_NOTE")
-public class SRTNoteVO extends BeanDataVO {
+public class SRTNoteVO extends BeanDataVO implements HumanNameIntfc {
 
 	/**
 	 *
@@ -27,8 +28,11 @@ public class SRTNoteVO extends BeanDataVO {
 	private static final long serialVersionUID = 1L;
 	private String noteId;
 	private String projectId;
+	private String rosterId;
 	private String noteTxt;
 	private String createDt;
+	private String firstNm;
+	private String lastNm;
 
 	public SRTNoteVO() {
 		super();
@@ -58,6 +62,14 @@ public class SRTNoteVO extends BeanDataVO {
 	@Column(name="PROJECT_ID")
 	public String getProjectId() {
 		return projectId;
+	}
+
+	/**
+	 * @return
+	 */
+	@Column(name="ROSTER_ID")
+	public String getRosterID() {
+		return rosterId;
 	}
 
 	/**
@@ -91,6 +103,13 @@ public class SRTNoteVO extends BeanDataVO {
 	}
 
 	/**
+	 * @param rosterId the rosterId to set.
+	 */
+	public void setRosterId(String rosterId) {
+		this.rosterId = rosterId;
+	}
+
+	/**
 	 * @param noteTxt the noteTxt to set.
 	 */
 	public void setNoteTxt(String noteTxt) {
@@ -102,5 +121,39 @@ public class SRTNoteVO extends BeanDataVO {
 	 */
 	public void setCreateDt(String createDt) {
 		this.createDt = createDt;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.util.user.HumanNameIntfc#getFirstName()
+	 */
+	@Override
+	@Column(name="first_nm", isReadOnly=true)
+	public String getFirstName() {
+		return firstNm;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.util.user.HumanNameIntfc#getLastName()
+	 */
+	@Override
+	@Column(name="last_nm", isReadOnly=true)
+	public String getLastName() {
+		return lastNm;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.util.user.HumanNameIntfc#setFirstName(java.lang.String)
+	 */
+	@Override
+	public void setFirstName(String firstNm) {
+		this.firstNm = firstNm;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.util.user.HumanNameIntfc#setLastName(java.lang.String)
+	 */
+	@Override
+	public void setLastName(String lastNm) {
+		this.lastNm = lastNm;
 	}
 }
