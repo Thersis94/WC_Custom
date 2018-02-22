@@ -96,8 +96,7 @@ constraint pk_REZDOX_BUSINESS primary key (BUSINESS_ID)
 Create table custom.REZDOX_PHOTO
 (
 	PHOTO_ID Varchar(32) NOT NULL,
-	BUSINESS_ID Varchar(32),
-	RESIDENCE_ID Varchar(32),
+	ALBUM_ID Varchar(32),
 	TREASURE_ITEM_ID Varchar(32),
 	PROJECT_ID Varchar(32),
 	PHOTO_NM Varchar(100) NOT NULL,
@@ -513,6 +512,18 @@ constraint pk_REZDOX_TRANSACTION primary key (TRANSACTION_ID)
 ) Without Oids;
 
 
+Create table custom.REZDOX_ALBUM
+(
+	ALBUM_ID Varchar(32) NOT NULL,
+	RESIDENCE_ID Varchar(32),
+	BUSINESS_ID Varchar(32),
+	ALBUM_NM Varchar(100) NOT NULL,
+	CREATE_DT Timestamp NOT NULL,
+	UPDATE_DT Timestamp,
+constraint pk_REZDOX_ALBUM primary key (ALBUM_ID)
+) Without Oids;
+
+
 /* Create Foreign Keys */
 
 Alter table custom.REZDOX_PROJECT add Constraint RESIDENCE_PROJECT_FKEY foreign key (RESIDENCE_ID) references custom.REZDOX_RESIDENCE (RESIDENCE_ID) on update restrict on delete restrict;
@@ -525,7 +536,7 @@ Alter table custom.REZDOX_TREASURE_ITEM add Constraint RESIDENCE_TREASURE_FKEY f
 
 Alter table custom.REZDOX_ROOM add Constraint RESIDENCE_ROOM_FKEY foreign key (RESIDENCE_ID) references custom.REZDOX_RESIDENCE (RESIDENCE_ID) on update restrict on delete cascade;
 
-Alter table custom.REZDOX_PHOTO add Constraint RESIDENCE_PHOTO_FKEY foreign key (RESIDENCE_ID) references custom.REZDOX_RESIDENCE (RESIDENCE_ID) on update restrict on delete cascade;
+Alter table custom.REZDOX_ALBUM add Constraint RESIDENCE_ALBUM_FKEY foreign key (RESIDENCE_ID) references custom.REZDOX_RESIDENCE (RESIDENCE_ID) on update restrict on delete cascade;
 
 Alter table custom.REZDOX_PROJECT_ATTRIBUTE add Constraint PROJECT_ATTRIBUTE_FKEY foreign key (PROJECT_ID) references custom.REZDOX_PROJECT (PROJECT_ID) on update restrict on delete cascade;
 
@@ -577,7 +588,7 @@ Alter table custom.REZDOX_PROJECT add Constraint BUSINESS_RESIDENCE_PROJECT fore
 
 Alter table custom.REZDOX_BUSINESS_CATEGORY_XR add Constraint BUSINESS_CATEGORY_FKEY foreign key (BUSINESS_ID) references custom.REZDOX_BUSINESS (BUSINESS_ID) on update restrict on delete cascade;
 
-Alter table custom.REZDOX_PHOTO add Constraint BUSINESS_PHOTO_FKEY foreign key (BUSINESS_ID) references custom.REZDOX_BUSINESS (BUSINESS_ID) on update restrict on delete cascade;
+Alter table custom.REZDOX_ALBUM add Constraint BUSINESS_ALBUM_FKEY foreign key (BUSINESS_ID) references custom.REZDOX_BUSINESS (BUSINESS_ID) on update restrict on delete cascade;
 
 Alter table custom.REZDOX_BUSINESS_CATEGORY add Constraint BUSINESS_CATEGORY_SKEY foreign key (PARENT_CD) references custom.REZDOX_BUSINESS_CATEGORY (BUSINESS_CATEGORY_CD) on update restrict on delete restrict;
 
@@ -626,5 +637,7 @@ Alter table custom.REZDOX_MEMBER_MESSAGE add  foreign key (MESSAGE_ID) reference
 Alter table custom.REZDOX_NOTIFICATION add  foreign key (MESSAGE_ID) references custom.REZDOX_MESSAGE (MESSAGE_ID) on update restrict on delete restrict;
 
 Alter table custom.REZDOX_SUBSCRIPTION add Constraint TRANSACTION_SUBSCRIPTION_FKEY foreign key (TRANSACTION_ID) references custom.REZDOX_TRANSACTION (TRANSACTION_ID) on update restrict on delete restrict;
+
+Alter table custom.REZDOX_PHOTO add Constraint ALBUM_PHOTO_FKEY foreign key (ALBUM_ID) references custom.REZDOX_ALBUM (ALBUM_ID) on update restrict on delete cascade;
 
 
