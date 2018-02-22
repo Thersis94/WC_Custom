@@ -1,7 +1,6 @@
 package com.biomed.smarttrak.action.rss.util;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,11 +17,7 @@ import javax.xml.ws.handler.MessageContext;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
-import com.quertle.webservice.base.ClassNotFoundException_Exception;
-import com.quertle.webservice.base.Exception_Exception;
 import com.quertle.webservice.base.HitcountOption;
-import com.quertle.webservice.base.IOException_Exception;
-import com.quertle.webservice.base.ParseException_Exception;
 import com.quertle.webservice.base.ResultAttributes;
 import com.quertle.webservice.base.SearchParams;
 import com.quertle.webservice.base.SearchParams.PostFilters;
@@ -57,6 +52,9 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	public static final String QUERTLE_ENTITY_ID = "quertleEntityId";
 	private static final QName SERVICE_NAME = new QName("http://base.webservice.quertle.com/", "SearchWSImplementationsService");
 
+	private long lastUSPTOAccessTime;
+	private static final long USPTO_LAG_TIME_MS = 2000;
+	
 	/**
 	 * @param args
 	 */
@@ -70,17 +68,15 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @see com.siliconmtn.util.CommandLineUtil#run()
 	 */
 	public void run() {
-
 		//Load the filters
 		loadFilters(props.getProperty(QUERTLE_ENTITY_ID));
 
-		log.info("filters loaded.");
 		//Build the configured Port
 		SearchingSEI port = buildPort();
 
 		//If Port is null, we can't connect to Quertle System.
-		if(port == null) {
-			log.error("Can not connect to Quertle");
+		if (port == null) {
+			log.fatal("Can not connect to Quertle");
 			return;
 		}
 
@@ -105,68 +101,67 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	private void getPatentsFromQuertle(SearchingSEI port, String searchType) {
 		String[] classifications = props.getProperty(CLASSIFICATIONS).split(",");
 		SearchParams sp = initializeSearchParams(searchType, null);
+		int patentCnt = 0;
 
 		//Call to Quertle for each Classification
-		for (String c : classifications) {
-
+		for (String classy : classifications) {
 			//Load Results for the Classification
-			List<ResultAttributes> results = queryResults(port, sp, c);
-			log.info("Retrieved Articles, size: " + results.size());
-			
+			List<ResultAttributes> results = loadArticlesFromVendor(port, sp, classy);
+			log.info("retrieved " + results.size() + " records from vendor for class=" + classy);
+
 			//If we have results, process them.
 			if (!results.isEmpty()) {
-				//Build and Save Article VO's
-				processResults(results, searchType);
+				int existingCnt = processResults(results, searchType);
+				patentCnt += results.size() - existingCnt; //increment our 'new' count using #found - #existing
 			}
 		}
+		log.info("loaded " + patentCnt + " new patents from Quertle for type=" + searchType);
 	}
 
 
 	/**
-	 * Process the Given Quertle ResultAttributes list and convert to
-	 * RSSArticleVOs.  Apply Filtering to VO before returning.
+	 * Process the Given Quertle ResultAttributes list and convert to RSSArticleVOs.  
+	 * Apply Filtering to VO before returning.
 	 * @param results
 	 */
-	private void processResults(List<ResultAttributes> results, String searchType) {
+	private int processResults(List<ResultAttributes> results, String searchType) {
+		// Load existing Article Ids for Quertle.
+		Map<String, Set<String>> articleGuids = getExistingIds(searchType, results);
+		log.info("found " + articleGuids.size() + " existing articles for type=" + searchType + " and loaded each one's feedGroupIds");
 
-		//Load existing Article Ids for Quertle.
-		Map<String, Set<String>> ids = getExistingIds(searchType, results);
+		RSSArticleVO article;
+		// Iterate Results and Builds Article VOs.
+		for (ResultAttributes resultAttrs : results) {
+			String id = searchType + resultAttrs.getApplicationNumber();
 
-		log.info("Found Existing Records: " + ids.size());
-		RSSArticleVO a = null;
-		//Iterate Results and Builds Article VOs.
-		for (ResultAttributes r : results) {
-			String id = searchType + r.getApplicationNumber();
+			article = buildArticleVO(id, searchType, resultAttrs);
 
-			a = buildArticleVO(id, searchType, r);
+			applyFilters(article, articleGuids);
 
-			applyFilters(a, ids);
+			// Remove the Full Article Text to lessen memory overhead.
+			article.setFullArticleTxt(null);
 
-			//Remove the Full Article Text to lessen memory overhead.
-			a.setFullArticleTxt(null);
-
-			if(!a.getFilterVOs().isEmpty()) {
-				//Save Articles.
-				storeArticles(a);
+			if (!article.getFilterVOs().isEmpty()) {
+				storeArticle(article);
+			} else {
+				log.info("************** article below did not match filters ****************");
+				
 			}
-
 		}
+		// return the # of existing records, so we can report how many new ones we found in the logs.
+		return articleGuids.size();
 	}
 
 
 	/**
+	 * Iterate over the FeedGroups and create an article VO for each.
+	 * Quertle results can appear in multiple groups per business requirements.
 	 * @param a
 	 * @param ids 
 	 */
-	private void applyFilters(RSSArticleVO a, Map<String, Set<String>> ids) {
-		/*
-		 * Iterate over the FeedGroups and create an article VO for each.
-		 * Quertle results can appear in multiple groups per business
-		 * requirements.
-		 */
-		for(RSSFeedGroupVO g : groups) {
-
-			if(!articleExists(a.getArticleGuid(), g.getFeedGroupId(), ids)) {
+	private void applyFilters(RSSArticleVO a, Map<String, Set<String>> articleGuids) {
+		for (RSSFeedGroupVO g : groups) {
+			if (! articleExists(a.getArticleGuid(), g.getFeedGroupId(), articleGuids)) {
 				//Apply Matching Filters to article.
 				applyFilter(a, g.getFeedGroupId());
 			}
@@ -177,36 +172,37 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	/**
 	 * Parse and build and filter an RSSArticleVO with the given information.
 	 * @param id
-	 * @param r
+	 * @param searchType
 	 * @param g
 	 * @return
 	 */
-	private RSSArticleVO buildArticleVO(String id, String searchType, ResultAttributes r) {
-
+	private RSSArticleVO buildArticleVO(String articleGuid, String searchType, ResultAttributes resultAttrs) {
 		//Instantiate the Article and set common fields.
-		RSSArticleVO a = new RSSArticleVO();
-		a.setTitleTxt(r.getTitle().replace("\u00a0"," "));
-		a.setArticleTxt(r.getAbstractText().replace("\u00a0"," "));
-		a.setPublishDt(getPubDate(r.getPubDate()));
-		a.setArticleGuid(id);
-		a.setRssEntityId(props.getProperty(QUERTLE_ENTITY_ID));
-		a.setArticleSourceType(ArticleSourceType.QUERTLE);
+		RSSArticleVO article = new RSSArticleVO();
+		article.setTitleTxt(resultAttrs.getTitle().replace("\u00a0"," "));
+		article.setArticleTxt(resultAttrs.getAbstractText().replace("\u00a0"," "));
+		article.setPublishDt(getPubDate(resultAttrs.getPubDate()));
+		article.setArticleGuid(articleGuid);
+		article.setRssEntityId(props.getProperty(QUERTLE_ENTITY_ID));
+		article.setArticleSourceType(ArticleSourceType.QUERTLE);
 
 		//Set special attributes based on Application or Grant Type.
-		if(searchType.equals(props.get(PATENT_APPLICATION_TYPE))) {
-			a.setArticleUrl(r.getPAppHtmlLink());
+		if (searchType.equals(props.get(PATENT_APPLICATION_TYPE))) {
+			article.setArticleUrl(resultAttrs.getPAppHtmlLink());
 			//Set PDF Link
-			a.setAttribute1Txt(r.getPAppPdfLink());
+			article.setAttribute1Txt(resultAttrs.getPAppPdfLink());
 		} else {
-			a.setArticleUrl(r.getPGrantHtmlLink());
-			//Set PDF Link
-			a.setAttribute1Txt(r.getPGrantPdfLink());
-			//Set Patent No
-			a.setAttribute1Txt(r.getPatentNumber());
+			article.setArticleUrl(resultAttrs.getPGrantHtmlLink());
+			//Set PDF Link - for patents we just capture the patent# - the JSP/View prepends the rest of the URL.
+			if (articleGuid.startsWith("p10")) {
+				article.setAttribute1Txt(resultAttrs.getPatentNumber());
+			} else {
+				article.setAttribute1Txt(resultAttrs.getPGrantPdfLink());
+			}
 		}
 
-		a.setFullArticleTxt(loadArticle(a.getArticleUrl()));
-		return a;
+		article.setFullArticleTxt(loadArticle(article.getArticleUrl()));
+		return article;
 	}
 
 
@@ -216,7 +212,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private Date getPubDate(String pubDate) {
-		if(StringUtil.isEmpty(pubDate)) {
+		if (StringUtil.isEmpty(pubDate)) {
 			return Convert.getCurrentTimestamp();
 		} else {
 			String d = pubDate.replace(" ", "-").replace("\"", "");
@@ -231,23 +227,22 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private Map<String, Set<String>> getExistingIds(String searchType, List<ResultAttributes> results) {
-		List<String> ids = new ArrayList<>(results.size());
-		for(ResultAttributes r : results) {
-			ids.add(searchType + r.getApplicationNumber());
+		List<String> articleGuids = new ArrayList<>(results.size());
+		for (ResultAttributes resultAttrs : results) {
+			articleGuids.add(searchType + resultAttrs.getApplicationNumber());
 		}
-		return super.getExistingArticles(ids, props.getProperty(QUERTLE_ENTITY_ID));
+		return super.getExistingArticles(articleGuids, props.getProperty(QUERTLE_ENTITY_ID));
 	}
 
 
 	/**
 	 * Query Quertle for results matching the given searchparams and classification.
-	 *
 	 * @param service
 	 * @param sp
 	 * @param c
 	 * @return
 	 */
-	private List<ResultAttributes> queryResults(SearchingSEI port, SearchParams sp, String c) {
+	private List<ResultAttributes> loadArticlesFromVendor(SearchingSEI port, SearchParams sp, String c) {
 		List<ResultAttributes> results = Collections.emptyList();
 		int cnt = Convert.formatInteger(props.getProperty(HITS_PER_QUERY));
 
@@ -261,10 +256,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			//Check if we have results.
 			if (!hits.isEmpty() && hits.size() > 1) {
 
-				/*
-				 * The results we care about are described by the object at index
-				 * 1.
-				 */
+				// The results we care about are described by the object at index 1.
 				HitcountOption h = hits.get(1);
 
 				//Instantiate Results List with proper size.
@@ -274,12 +266,8 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 				results.addAll(port.resultElements(null));
 				int resCnt = cnt;
 
-				/*
-				 * Continue to Query the system and store results until we've
-				 * gotten all the results.
-				 */
+				// Continue to Query the system and store results until we've gotten all the results.
 				while (h.getHitCount() > resCnt) {
-
 					//Query for next batch of results.
 					port.resultHitcounts(sp, resCnt, cnt);
 
@@ -291,8 +279,8 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 				}
 			}
 		} catch(WSCheckFaultException ws) {
-			log.info("No Articles Available.");
-		} catch (ParseException_Exception | ClassNotFoundException_Exception | Exception_Exception | IOException_Exception e) {
+			log.error("Could not load articles", ws);
+		} catch (Exception e) {
 			log.error("Error Processing Code", e);
 		}
 
@@ -302,7 +290,6 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 
 	/**
 	 * Initialize Default Search Parameters for Queries.
-	 * 
 	 * @return
 	 */
 	private SearchParams initializeSearchParams(String type, String dr) {
@@ -310,10 +297,8 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		SearchParams sp = new SearchParams();
 		PostFilters pf = new PostFilters();
 		Entry e = new Entry();
-		StringBuilder value = new StringBuilder(25);
-		value.append("f=").append(type).append("|").append(dateRange);
 		e.setKey("value");
-		e.setValue(value.toString());
+		e.setValue(StringUtil.join("f=", type, "|", dateRange));
 		pf.getEntry().add(e);
 		sp.setPostFilters(pf);
 		sp.setQuery(" ");
@@ -342,12 +327,10 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		Map<String, Object> ctx = port.getRequestContext();
 		ctx.put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, url);
 
-		/****
-		 * User Authentication using partner code and authentication code
-		 ***/
+		// User Authentication using partner code and authentication code
 		ctx.put(MessageContext.HTTP_REQUEST_HEADERS, buildHeaders());
 
-		/*** Session maintenance by providing it in the header ***/
+		// Session maintenance by providing it in the header
 		port.getRequestContext().put(BindingProvider.SESSION_MAINTAIN_PROPERTY, true);
 		port.getRequestContext().put("com.sun.xml.ws.request.timeout", 10 * 60 * 1000);
 
@@ -379,7 +362,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	private URL buildUrl() {
 		try {
 			return new URL(props.getProperty(WSDL_URL_STRING));
-		} catch (MalformedURLException e) {
+		} catch (Exception e) {
 			log.error("Can not initialize the default wsdl from " + props.getProperty(WSDL_URL_STRING));
 			return null;
 		}
@@ -391,30 +374,51 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private String loadArticle(String url) {
+		if (StringUtil.isEmpty(url)) return null;
+		boolean configureUSPTO = url.matches("(?i)https?://(app|pat)ft\\.uspto\\.gov/(.*)");
+		SMTHttpConnectionManager conn = createBaseHttpConnection();
 
-		String article = null;
-		if(!StringUtil.isEmpty(url)) {
-			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
-			byte[] data = null;
+		try {
+			//do special things for the US Patent Office, who thinks we're DDoS'ing them
+			if (configureUSPTO) {
+				//log.info("USPTO URL: " + url) //used to verify regex above
+				takeNap();
+				conn.addCookie("TSPD_101", ":");
+			}
+
+			byte[] data = conn.retrieveData(url);
+
+			//trap all errors generated by LL
+			if (404 == conn.getResponseCode())
+				return null;
+
+			if (200 != conn.getResponseCode())
+				throw new IOException("Transaction Unsuccessful, code=" + conn.getResponseCode());
+
+			if (data != null)
+				return new String(data);
+
+		} catch (Exception ioe) {
+			log.error("could not load data from url=" + url, ioe);
+		}
+		return null;
+	}
+
+
+	/**
+	 * Puts the thread to sleep if we haven't waited at least a minimum amount of time between USPTO queries
+	 * Calculate a wait time based on the last time we queried them.  If less than the threshold, put our thread to sleep.
+	 */
+	private void takeNap() {
+		long mustWaitTime = System.currentTimeMillis() - lastUSPTOAccessTime;
+		if (mustWaitTime > 0 && mustWaitTime < USPTO_LAG_TIME_MS) {
 			try {
-				data = conn.retrieveData(url);
-
-				//trap all errors generated by LL
-				if (404 == conn.getResponseCode()) {
-					return null;
-				}
-
-				if (200 != conn.getResponseCode()) {
-					throw new IOException("Transaction Unsuccessful, code=" + conn.getResponseCode());
-				}
-
-				if(data != null) {
-					article = new String(data);
-				}
-			} catch (IOException e) {
-				log.error(url);
+				//sleep the remaining time to get us to the threshold
+				Thread.sleep(USPTO_LAG_TIME_MS - mustWaitTime);
+			} catch (Exception e) {
+				//don't care - this would bubble up as runtime issues anyways
 			}
 		}
-		return article;
+		lastUSPTOAccessTime = System.currentTimeMillis();
 	}
 }
