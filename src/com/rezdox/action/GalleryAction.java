@@ -11,7 +11,6 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: GalleryAction.java<p/>
@@ -40,14 +39,6 @@ public class GalleryAction extends SimpleActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
-	public void list(ActionRequest req) throws ActionException {
-		super.retrieve(req);
-	}
-	
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		List<PhotoVO> photoList = retrievePhotos(req);
 		putModuleData(photoList, photoList.size(), false);
@@ -60,7 +51,7 @@ public class GalleryAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected List<PhotoVO> retrievePhotos(ActionRequest req) {
-		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String schema = getCustomSchema();
 		PhotoVO photoOptions = new PhotoVO(req);
 		
 		StringBuilder sql = new StringBuilder(300);
