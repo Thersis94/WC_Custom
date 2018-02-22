@@ -31,6 +31,7 @@ public class AttributeDevice extends DeviceAttributeVO {
 	private String attributeDeviceId;
 	private String deviceId;
 	private String displayTypeCode;
+	private String unitText;
 	
 	/**
 	 * 
@@ -97,6 +98,21 @@ public class AttributeDevice extends DeviceAttributeVO {
 	 */
 	public void setDisplayTypeCode(String displayTypeCode) {
 		this.displayTypeCode = displayTypeCode;
+	}
+
+	/**
+	 * @return the unitText
+	 */
+	@Column(name="unit_txt")
+	public String getUnitText() {
+		return unitText;
+	}
+
+	/**
+	 * @param unitText the unitText to set
+	 */
+	public void setUnitText(String unitText) {
+		this.unitText = unitText;
 	}
 
 }
