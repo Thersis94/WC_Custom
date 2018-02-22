@@ -11,8 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.StringEscapeUtils;
-
+import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -21,7 +20,6 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
@@ -57,11 +55,6 @@ import com.smt.sitebuilder.security.UserLogin;
  * @since Feb 15, 2018
  ****************************************************************************/
 public class SRTRosterAction extends SBActionAdapter {
-
-	//TODO Update with actual Values when decided.
-	public static final String SRT_ORG_ID = "DPY_SYN_HUDDLE"; 
-	public static final String PUBLIC_SITE_ID = "DPY_SYN_HUDDLE_2";
-	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
 
 	public static final String REQ_CHECK_USER_BY_EMAIL = "checkUserByEmail";
 	public static final String REQ_ROSTER_ID = "rosterId";
@@ -163,7 +156,7 @@ public class SRTRosterAction extends SBActionAdapter {
 	protected void loadRegistration(ActionRequest req, List<Object> users) throws ActionException {
 		//load the registration form
 		ActionInitVO actionInit = new ActionInitVO();
-		actionInit.setActionGroupId(REGISTRATION_GRP_ID);
+		actionInit.setActionGroupId(SRTUtil.REGISTRATION_GRP_ID);
 		RegistrationAction sa = new RegistrationAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(getAttributes());
@@ -178,7 +171,7 @@ public class SRTRosterAction extends SBActionAdapter {
 		SRTRosterVO user = (SRTRosterVO) users.get(0);
 		ResponseLoader rl = new ResponseLoader();
 		rl.setDbConn(dbConn);
-		rl.loadRegistrationResponses(user, PUBLIC_SITE_ID);
+		rl.loadRegistrationResponses(user, SRTUtil.PUBLIC_SITE_ID);
 
 		//load the user's profile data
 		callProfileManager(user, req, false);
@@ -380,7 +373,7 @@ public class SRTRosterAction extends SBActionAdapter {
 	 */
 	protected void saveProfileRole(SRTRosterVO user, boolean isDelete) throws ActionException {
 		ProfileRoleManager prm = new ProfileRoleManager();
-		SBUserRole role = new SBUserRole(PUBLIC_SITE_ID);
+		SBUserRole role = new SBUserRole(SRTUtil.PUBLIC_SITE_ID);
 		role.setStatusId(SecurityController.STATUS_ACTIVE);
 		role.setProfileId(user.getProfileId());
 
@@ -433,8 +426,8 @@ public class SRTRosterAction extends SBActionAdapter {
 
 		//possibly create a new registration record.  This would be for the 'add user' scenario
 		if (StringUtil.isEmpty(user.getRegisterSubmittalId())) {
-			req.setParameter(SBActionAdapter.SB_ACTION_ID, REGISTRATION_GRP_ID);
-			user.setRegisterSubmittalId(sa.insertRegisterSubmittal(req, user.getProfileId(), PUBLIC_SITE_ID));
+			req.setParameter(SBActionAdapter.SB_ACTION_ID, SRTUtil.REGISTRATION_GRP_ID);
+			user.setRegisterSubmittalId(sa.insertRegisterSubmittal(req, user.getProfileId(), SRTUtil.PUBLIC_SITE_ID));
 		}
 
 		//build a list of values to insert based on the ones we're going to delete
@@ -485,16 +478,5 @@ public class SRTRosterAction extends SBActionAdapter {
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
-	}
-
-	/**
-	 * takes the pain out of passing Strings in and out of URLs/forms.  Typically these form values arrive HTML encoded.  
-	 * Use encodeURIComponent in your JS to compliment what this is doing server-side (at the client).
-	 * @param value
-	 * @return
-	 */
-	public static String urlEncode(String value) {
-		if (StringUtil.isEmpty(value)) return ""; //going in a URL, we don't want to return a null
-		return StringEncoder.urlEncode(StringEscapeUtils.unescapeHtml(value)).replace("+", "%20");
 	}
 }
