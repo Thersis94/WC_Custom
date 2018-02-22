@@ -33,7 +33,7 @@ public class LinkVO {
 		this.setObjectId(id);
 		this.html = html;
 	}
-	
+
 	public LinkVO() {
 		//no-arg constructor for simple instantiation
 	}
@@ -43,7 +43,7 @@ public class LinkVO {
 		vo.setUrl(url);
 		return vo;
 	}
-	
+
 	/**
 	 * Generates a new LinkVO and sets relevant values via ResultSet
 	 * @param rs
@@ -59,7 +59,7 @@ public class LinkVO {
 		vo.setLastChecked(rs.getDate("check_dt"));
 		vo.setOutcomeNo(rs.getInt("status_no"));
 		vo.setReviewFlag(rs.getInt("review_flg"));
-		
+
 		return vo;
 	}
 
