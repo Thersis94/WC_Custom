@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.depuysynthes.huddle.HuddleUtils;
+import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
@@ -62,17 +63,17 @@ public class SRTLoginModule extends SAMLLoginModule {
 		Connection dbConn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
 
 		//Attempt to retrieve SRT Roster record from Database.
-		List<SRTRosterVO> user = new DBProcessor(dbConn).executeSelect(buildRosterSql(), Arrays.asList(wcUser.getProfileId()), new SRTRosterVO());
+		List<SRTRosterVO> users = new DBProcessor(dbConn).executeSelect(buildRosterSql(), Arrays.asList(wcUser.getProfileId()), new SRTRosterVO());
 
-		for(SRTRosterVO r : user) {
+		for(SRTRosterVO user : users) {
 			//If this user matches the data coming back from SSO.
-			if(r.isActive() && r.getWwid().equals(wcUser.getAttribute("wwid"))) {
+			if(user.isActive() && user.getWwid().equals(wcUser.getAttribute("wwid"))) {
 
 				//Set Extra ProfileData from original incoming user record
-				r.setData(wcUser.getDataMap());
+				user.setData(wcUser.getDataMap());
 
 				//Return.
-				return r;
+				return user;
 			}
 		}
 
@@ -113,7 +114,7 @@ public class SRTLoginModule extends SAMLLoginModule {
 	 * @param userData
 	 */
 	private void applyRedirectLogic(UserDataVO userData) {
-		String homepage = StringUtil.checkVal(userData.getAttribute(HuddleUtils.HOMEPAGE_REGISTER_FIELD_ID), null);
+		String homepage = StringUtil.checkVal(userData.getAttribute(SRTUtil.HOMEPAGE_REGISTER_FIELD_ID), null);
 		ActionRequest req = (ActionRequest) getAttribute(GlobalConfig.ACTION_REQUEST);
 		SMTSession ses = req.getSession();
 		String destPg = StringUtil.checkVal(ses.getAttribute(LoginAction.DESTN_URL));

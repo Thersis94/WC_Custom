@@ -226,11 +226,10 @@ public class SRTRosterAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select a.roster_id, b.profile_id, a.op_co_id from ").append(schema).append("srt_roster a ");
 		sql.append("right outer join profile b on a.profile_id=b.profile_id ");
-		sql.append(DBUtil.WHERE_CLAUSE);
 		if(isEmailSearch) {
-			sql.append("b.search_email_txt=?");
+			sql.append("and b.search_email_txt = ? ");
 		} else {
-			sql.append("a.wwid=?");
+			sql.append(DBUtil.WHERE_CLAUSE).append(" a.wwid = ?");
 		}
 
 		log.debug(sql + " " + email);
