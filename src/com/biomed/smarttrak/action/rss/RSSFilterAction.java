@@ -160,9 +160,6 @@ public class RSSFilterAction extends SBActionAdapter {
 	private void updateFilterParser(RSSFilterVO fv) throws InvalidDataException, DatabaseException {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA)); 
 		dbp.save(fv);
-		if(StringUtil.isEmpty(fv.getFilterId())) {
-			fv.setFilterId(dbp.getGeneratedPKId());
-		}
 	}
 
 	/* (non-Javadoc)
