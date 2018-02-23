@@ -1,17 +1,26 @@
 package com.biomed.smarttrak.fd;
 
+import java.io.ByteArrayInputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.admin.AbstractTreeAction;
@@ -35,8 +44,6 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.databean.FilePartDataBean;
-import com.siliconmtn.util.parser.AnnotationParser;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -497,20 +504,21 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(1000);
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
-		sql.append("select s1.section_nm, c.company_nm, c.company_id, r.year_no, r.region_cd, s1.section_nm + c.company_nm + cast(r.year_no as varchar) as GROUP_ID, ");
-		sql.append("o.overlay_id, r.revenue_id, ? as SCENARIO_ID, coalesce(o.Q1_NO, r.Q1_NO) as Q1_NO, coalesce(o.Q2_NO, r.Q2_NO) as Q2_NO, ");
-		sql.append("coalesce(o.Q3_NO, r.Q3_NO) as Q3_NO, coalesce(o.Q4_NO, r.Q4_NO) as Q4_NO, case when o.overlay_id is not null then 1 else 0 end as SCENARIO_FLG ");
+		sql.append("select s1.section_nm, c.company_nm, c.company_id, r.year_no, r.region_cd, s1.section_id + c.company_id + region_cd as GROUP_ID, ");
+		sql.append("o.overlay_id, r.revenue_id, ? as SCENARIO_ID, scenario_nm, coalesce(o.Q1_NO, r.Q1_NO) as Q1_NO, coalesce(o.Q2_NO, r.Q2_NO) as Q2_NO, ");
+		sql.append("coalesce(o.Q3_NO, r.Q3_NO) as Q3_NO, coalesce(o.Q4_NO, r.Q4_NO) as Q4_NO ");
 		
 		sql.append("from custom.BIOMEDGPS_FD_REVENUE r ");
 		sql.append("left join custom.biomedgps_fd_scenario_overlay o on o.revenue_id = r.revenue_id and o.scenario_id = ? ");
+		sql.append("left join custom.biomedgps_fd_scenario s on s.scenario_id = ? ");
 		getCommonMidSql(sql, custom);
 		if (fullCompany) {
 			sql.append("and c.company_id = ? ");
 		}
 		if (isCompany) {
-			sql.append("order by company_nm, s1.section_nm, year_no, region_cd");
+			sql.append("order by company_nm, s1.section_nm, region_cd, year_no");
 		} else {
-			sql.append("order by s1.section_nm, c.company_nm, year_no, region_cd");
+			sql.append("order by s1.section_nm, c.company_nm, region_cd, year_no");
 		}
 		
 		return sql.toString();		
@@ -538,8 +546,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			markCurrentQuarter(req);
 			return;
 		} else if ("export".equals(actionPerform)) {
-			FinancialDashImportReportVO report = new FinancialDashImportReportVO();
-			report.setData(buildEditableExport(req));
+			FinancialDashImportReportVO report = buildReport(req);
 			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 			req.setAttribute(Constants.BINARY_DOCUMENT, report);
 			return;
@@ -558,29 +565,16 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void importChanges(ActionRequest req) throws ActionException {
-		AnnotationParser parser;
-		FilePartDataBean fpdb = req.getFile("fdImport");
 		StringBuilder redirectUrl = new StringBuilder(100);
 		redirectUrl.append("manage?actionType=").append(req.getParameter("actionType")).append("&msg=");
 		String hash = req.getParameter("returnHash");
-		if (fpdb == null) {
-			redirectUrl.append("No File provided").append(hash);
-			sendRedirect(redirectUrl.toString(), "", req);
-			return;
-		}
 		
 		try {
-			parser = new AnnotationParser(FinancialDashRevenueDataRowVO.class, fpdb.getExtension());
-			//Gets the xls file from the request object, and passes it to the parser.
-			//Parser then returns the list of populated beans
-			Map<Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
-
-			ArrayList<Object> parsedList = new ArrayList<>(beans.get(FinancialDashRevenueDataRowVO.class));
+			List<FinancialDashRevenueDataRowVO> data = buildFromFile(req);
 			List<FinancialDashRevenueDataRowVO> insertList = new ArrayList<>();
 			List<FinancialDashRevenueDataRowVO> updateList = new ArrayList<>();
 			
-			for (Object o : parsedList) {
-				FinancialDashRevenueDataRowVO row = (FinancialDashRevenueDataRowVO) o;
+			for (FinancialDashRevenueDataRowVO row : data) {
 				if (CountryType.WW.toString().equals(row.getRegionCode())) continue;
 				// Every valid row should have a scenario id.  If not this isn't a scenario save and should be discarded.
 				if (StringUtil.isEmpty(row.getScenarioId())) throw new ActionException("Missing Scenario Id. Canceling data import");
@@ -609,12 +603,75 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	
 	
 	/**
+	 * Build a list of VOs from a supplied file
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private List<FinancialDashRevenueDataRowVO> buildFromFile(ActionRequest req) throws ActionException {
+		List<FinancialDashRevenueDataRowVO> items = new ArrayList<>();
+		try {
+			//Get the file from the byte array
+			Workbook wb = WorkbookFactory.create(new ByteArrayInputStream(req.getFile("fdImport").getFileData()));
+			//get the first sheet in the workbook
+			Sheet sheet = wb.getSheetAt(0);
+			FormulaEvaluator objFormulaEvaluator = wb.getCreationHelper().createFormulaEvaluator();
+			DataFormatter objDefaultFormat = new DataFormatter();
+			
+			//Used to iterate over each row in the spreadsheet
+			Iterator<Row> rowSet = sheet.rowIterator();
+			Row cursor = null;
+			//Skip the first row, since it just has the header names
+			rowSet.next();
+
+			while (rowSet.hasNext()) {
+				cursor = rowSet.next();
+				int end = cursor.getLastCellNum();
+				int cur = FinancialDashImportReportVO.DATA_START_NO;
+				
+				while (cur < end) {
+					FinancialDashRevenueDataRowVO dataRow = new FinancialDashRevenueDataRowVO();
+					dataRow.setCompanyId(getCellValue(cursor.getCell(FinancialDashImportReportVO.COMPANY_ID_COL), objDefaultFormat, objFormulaEvaluator));
+					dataRow.setRegionCode(getCellValue(cursor.getCell(FinancialDashImportReportVO.REGION_COL), objDefaultFormat, objFormulaEvaluator));
+					dataRow.setScenarioId(getCellValue(cursor.getCell(FinancialDashImportReportVO.SCENARIO_ID_COL), objDefaultFormat, objFormulaEvaluator));
+					dataRow.setRevenueId(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator));
+					dataRow.setOverlayId(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator));
+					dataRow.setYearNo(Convert.formatInteger(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator)));
+					dataRow.setQ1No(Convert.formatInteger(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator)));
+					dataRow.setQ2No(Convert.formatInteger(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator)));
+					dataRow.setQ3No(Convert.formatInteger(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator)));
+					dataRow.setQ4No(Convert.formatInteger(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator)));
+					
+					items.add(dataRow);
+				}
+			}
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+		return items;
+	}
+	
+	
+	/**
+	 * Get the string value from the supplied cell while accounting for formulae in the cell
+	 * @param cell
+	 * @param objDefaultFormat
+	 * @param objFormulaEvaluator
+	 * @return
+	 */
+	private String getCellValue(Cell cell, DataFormatter objDefaultFormat, FormulaEvaluator objFormulaEvaluator) {
+		objFormulaEvaluator.evaluateFormulaCell(cell);
+		return objDefaultFormat.formatCellValue(cell, objFormulaEvaluator);
+	}
+
+	/**
 	 * Build the data used to create the export file.
 	 * @param req
 	 * @return
 	 * @throws ActionException
 	 */
-	private List<List<FinancialDashRevenueDataRowVO>> buildEditableExport(ActionRequest req) throws ActionException {
+	private FinancialDashImportReportVO buildReport(ActionRequest req) throws ActionException {
+		FinancialDashImportReportVO report = new FinancialDashImportReportVO();
 		String sql = getExportSql(Convert.formatBoolean(req.getParameter("isCompany")), req.hasParameter("companyId"));
 		FinancialDashVO dash = new FinancialDashVO();
 		SmarttrakTree sections = getHierarchy(req);
@@ -624,56 +681,81 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			int idx = 0;
 			ps.setString(++idx, req.getParameter("scenarioId"));
 			ps.setString(++idx, req.getParameter("scenarioId"));
+			ps.setString(++idx, req.getParameter("scenarioId"));
 			for (int i = 0; i < 7; i++) ps.setString(++idx, user.getAccountId());
 			for (int i = 0; i < 7; i++) ps.setString(++idx, dash.getSectionId());
 			if (req.hasParameter("companyId")) ps.setString(++idx, req.getParameter("companyId"));
 
-			return buildData(ps.executeQuery());
+			buildData(ps.executeQuery(), report);
 			
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
+		return report;
 	}
 
 	
 	/**
 	 * Turn the result set for the export into usable data.
 	 * @param rs
+	 * @param report 
 	 * @return
 	 * @throws ActionException 
 	 */
-	private List<List<FinancialDashRevenueDataRowVO>> buildData(ResultSet rs) throws ActionException {
+	private void buildData(ResultSet rs, FinancialDashImportReportVO report) throws ActionException {
 		String groupId = "";
-		List<List<FinancialDashRevenueDataRowVO>> data = new ArrayList<>();
-		List<FinancialDashRevenueDataRowVO> group = new ArrayList<>();
+		List<Map<Integer, List<FinancialDashRevenueDataRowVO>>> data = new ArrayList<>();
+		Map<Integer, List<FinancialDashRevenueDataRowVO>> group = new HashMap<>();
+		Map<String, Object> reportData = new HashMap<>();
+		int minYear = 10000;
+		int maxYear = 0;
 		DBProcessor db = new DBProcessor(dbConn);
+		
 		try {
 			while (rs.next()) {
 				if (!groupId.equals(rs.getString("GROUP_ID"))) {
 					groupId = rs.getString("GROUP_ID");
 					addData(data, group);
-					group = new ArrayList<>();
+					group = new HashMap<>();
 				}
 				FinancialDashRevenueDataRowVO row = new FinancialDashRevenueDataRowVO();
 				db.executePopulate(row, rs);
-				group.add(row);
+				if (minYear > row.getYearNo()) minYear = row.getYearNo();
+				if (maxYear < row.getYearNo()) maxYear = row.getYearNo();
+				addExportYear(group, row);
 			}
 			addData(data, group);
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
 		
-		return data;
+		reportData.put("data", data);
+		reportData.put("minYear", minYear);
+		reportData.put("maxYear", maxYear);
+		report.setData(reportData);
 	}
 
 	
+	/**
+	 * Add the data for this year to the data collection
+	 * @param group
+	 * @param row
+	 */
+	private void addExportYear(Map<Integer, List<FinancialDashRevenueDataRowVO>> group,
+			FinancialDashRevenueDataRowVO row) {
+		if (!group.containsKey(row.getYearNo()))
+			group.put(row.getYearNo(), new ArrayList<>());
+		
+		group.get(row.getYearNo()).add(row);
+	}
+
 	/**
 	 * Add the completed item to the list
 	 * @param data
 	 * @param group
 	 */
-	private void addData(List<List<FinancialDashRevenueDataRowVO>> data,
-			List<FinancialDashRevenueDataRowVO> group) {
+	private void addData(List<Map<Integer, List<FinancialDashRevenueDataRowVO>>> data,
+			Map<Integer, List<FinancialDashRevenueDataRowVO>> group) {
 		if (group.isEmpty()) return;
 		data.add(group);
 	}

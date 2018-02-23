@@ -2,8 +2,6 @@ package com.biomed.smarttrak.fd;
 
 import java.util.Date;
 
-import com.siliconmtn.annotations.DataType;
-import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -24,6 +22,7 @@ public class FinancialDashRevenueDataRowVO {
 	private String overlayId;
 	private String revenueId;
 	private String scenarioId;
+	private String scenarioName;
 	private String companyName;
 	private String companyId;
 	private String sectionName;
@@ -40,7 +39,6 @@ public class FinancialDashRevenueDataRowVO {
 	public String getOverlayId() {
 		return overlayId;
 	}
-	@Importable(name="Overlay Id", type=DataType.STRING)
 	public void setOverlayId(String overlayId) {
 		this.overlayId = overlayId;
 	}
@@ -49,7 +47,6 @@ public class FinancialDashRevenueDataRowVO {
 	public String getRevenueId() {
 		return revenueId;
 	}
-	@Importable(name="Revenue Id", type=DataType.STRING)
 	public void setRevenueId(String revenueId) {
 		this.revenueId = revenueId;
 	}
@@ -58,11 +55,17 @@ public class FinancialDashRevenueDataRowVO {
 	public String getScenarioId() {
 		return scenarioId;
 	}
-	@Importable(name="Scenario Id", type=DataType.STRING)
 	public void setScenarioId(String scenarioId) {
 		this.scenarioId = scenarioId;
 	}
-	
+
+	@Column(name="scenario_nm")
+	public String getScenarioName() {
+		return scenarioName;
+	}
+	public void setScenarioName(String scenarioName) {
+		this.scenarioName = scenarioName;
+	}
 	@Column(name="company_nm", isReadOnly=true)
 	public String getCompanyName() {
 		return companyName;
@@ -75,7 +78,6 @@ public class FinancialDashRevenueDataRowVO {
 	public String getCompanyId() {
 		return companyId;
 	}
-	@Importable(name="Company Id", type=DataType.STRING)
 	public void setCompanyId(String companyId) {
 		this.companyId = companyId;
 	}
@@ -92,7 +94,6 @@ public class FinancialDashRevenueDataRowVO {
 	public String getRegionCode() {
 		return regionCode;
 	}
-	@Importable(name="Region", type=DataType.STRING)
 	public void setRegionCode(String regionCode) {
 		this.regionCode = regionCode;
 	}
@@ -101,7 +102,6 @@ public class FinancialDashRevenueDataRowVO {
 	public int getYearNo() {
 		return yearNo;
 	}
-	@Importable(name="Revenue Year", type=DataType.STRING)
 	public void setYearNo(int yearNo) {
 		this.yearNo = yearNo;
 	}
@@ -110,7 +110,6 @@ public class FinancialDashRevenueDataRowVO {
 	public long getQ1No() {
 		return q1No;
 	}
-	@Importable(name="Q1 Earnings", type=DataType.LONG)
 	public void setQ1No(long q1No) {
 		this.q1No = q1No;
 	}
@@ -119,7 +118,6 @@ public class FinancialDashRevenueDataRowVO {
 	public long getQ2No() {
 		return q2No;
 	}
-	@Importable(name="Q2 Earnings", type=DataType.LONG)
 	public void setQ2No(long q2No) {
 		this.q2No = q2No;
 	}
@@ -128,7 +126,6 @@ public class FinancialDashRevenueDataRowVO {
 	public long getQ3No() {
 		return q3No;
 	}
-	@Importable(name="Q3 Earnings", type=DataType.LONG)
 	public void setQ3No(long q3No) {
 		this.q3No = q3No;
 	}
@@ -137,7 +134,6 @@ public class FinancialDashRevenueDataRowVO {
 	public long getQ4No() {
 		return q4No;
 	}
-	@Importable(name="Q4 Earnings", type=DataType.LONG)
 	public void setQ4No(long q4No) {
 		this.q4No = q4No;
 	}

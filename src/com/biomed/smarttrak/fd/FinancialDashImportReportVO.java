@@ -3,13 +3,14 @@ package com.biomed.smarttrak.fd;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
-import com.biomed.smarttrak.fd.FinancialDashVO.CountryType;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /****************************************************************************
@@ -26,10 +27,19 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 public class FinancialDashImportReportVO extends AbstractSBReportVO {
     private static final long serialVersionUID = 1l;
     
-    private List<List<FinancialDashRevenueDataRowVO>> revenueData;
+    public static final int DATA_START_NO = 6;
+    public static final int SCENARIO_ID_COL = 0;
+    public static final int COMPANY_ID_COL = 3;
+    public static final int REGION_COL = 5;
+    
+    private List<Map<Integer, List<FinancialDashRevenueDataRowVO>>> revenueData;
+    private int maxYear;
+    private int minYear;
     private HSSFWorkbook wb;
     private Sheet sheet;
     private int rowCount;
+    private HSSFCellStyle locked;
+    private HSSFCellStyle unlocked;
 
     public FinancialDashImportReportVO() {
         super();
@@ -41,13 +51,21 @@ public class FinancialDashImportReportVO extends AbstractSBReportVO {
     @SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object data) {
-    	revenueData = (List<List<FinancialDashRevenueDataRowVO>>) data;
+    	Map<String, Object> dataMap = (Map<String, Object>)data;
+    	revenueData = (List<Map<Integer, List<FinancialDashRevenueDataRowVO>>>) dataMap.get("data");
+    	minYear = (int) dataMap.get("minYear");
+    	maxYear = (int) dataMap.get("maxYear");
     }
 
 	@Override
 	public byte[] generateReport() {
 		wb = new HSSFWorkbook();
 		sheet = wb.createSheet();
+		sheet.protectSheet(""); 
+		locked = wb.createCellStyle();
+		locked.setLocked(true);
+		unlocked = wb.createCellStyle();
+		unlocked.setLocked(false);
 
 		populateHeader(sheet);
 		populateData(sheet);
@@ -75,18 +93,33 @@ public class FinancialDashImportReportVO extends AbstractSBReportVO {
 	private void populateHeader(Sheet sheet2) {
 		Row row = sheet.createRow(rowCount++);
 		int cellCount = 0;
-		row.createCell(cellCount++).setCellValue("Revenue Id");
+		sheet.setColumnWidth(cellCount, 0);
 		row.createCell(cellCount++).setCellValue("Scenario Id");
-		row.createCell(cellCount++).setCellValue("Overlay Id");
+		sheet.setColumnWidth(cellCount, 7500);
+		row.createCell(cellCount++).setCellValue("Scenario Title");
+		sheet.setColumnWidth(cellCount, 7500);
 		row.createCell(cellCount++).setCellValue("Market Section");
+		sheet.setColumnWidth(cellCount, 0);
 		row.createCell(cellCount++).setCellValue("Company Id");
+		sheet.setColumnWidth(cellCount, 10000);
 		row.createCell(cellCount++).setCellValue("Company Name");
-		row.createCell(cellCount++).setCellValue("Revenue Year");
 		row.createCell(cellCount++).setCellValue("Region");
-		row.createCell(cellCount++).setCellValue("Q1 Earnings");
-		row.createCell(cellCount++).setCellValue("Q2 Earnings");
-		row.createCell(cellCount++).setCellValue("Q3 Earnings");
-		row.createCell(cellCount++).setCellValue("Q4 Earnings");
+		for (int i = minYear; i <= maxYear; i++) {
+			sheet.setColumnWidth(cellCount, 0);
+			row.createCell(cellCount++).setCellValue(i + "Revenue Id");
+			sheet.setColumnWidth(cellCount, 0);
+			row.createCell(cellCount++).setCellValue(i + "Overlay Id");
+			sheet.setColumnWidth(cellCount, 0);
+			row.createCell(cellCount++).setCellValue("Year No");
+			sheet.setColumnWidth(cellCount, 5000);
+			row.createCell(cellCount++).setCellValue("Q1 " + i + " Earnings");
+			sheet.setColumnWidth(cellCount, 5000);
+			row.createCell(cellCount++).setCellValue("Q2 " + i + " Earnings");
+			sheet.setColumnWidth(cellCount, 5000);
+			row.createCell(cellCount++).setCellValue("Q3 " + i + " Earnings");
+			sheet.setColumnWidth(cellCount, 5000);
+			row.createCell(cellCount++).setCellValue("Q4 " + i + " Earnings");
+		}
 	}
 
 	/**
@@ -94,52 +127,63 @@ public class FinancialDashImportReportVO extends AbstractSBReportVO {
 	 * @param sheet
 	 */
 	private void populateData(Sheet sheet) {
-		for (List<FinancialDashRevenueDataRowVO> dataGroup : revenueData) {
-			for (FinancialDashRevenueDataRowVO dataRow : dataGroup) {
-				Row row = sheet.createRow(rowCount++);
-				int cellCount = 0;
-				Cell cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getRevenueId());
-				cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getScenarioId());
-				cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getOverlayId());
-				cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getSectionName());
-				cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getCompanyId());
-				cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getCompanyName());
-				cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getYearNo());
-				cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getRegionCode().toString());
-				cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getQ1No());
-				cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getQ2No());
-				cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getQ3No());
-				cell = row.createCell(cellCount);
-				cell.setCellValue(dataRow.getQ4No());
-			}
-			int cellNo = 7;
-			char column = 'I';
+		for (Map<Integer, List<FinancialDashRevenueDataRowVO>> dataGroup : revenueData) {
+			int cellCount = DATA_START_NO;
 			Row row = sheet.createRow(rowCount++);
-			Cell cell = row.createCell(cellNo++);
-			cell.setCellValue(CountryType.WW.toString());
-			cell = row.createCell(cellNo++);
-			cell.setCellType(Cell.CELL_TYPE_FORMULA);
-			cell.setCellFormula("SUM("+column+(rowCount-dataGroup.size())+":"+ column++ +(rowCount-1)+")");
-			cell = row.createCell(cellNo++);
-			cell.setCellType(Cell.CELL_TYPE_FORMULA);
-			cell.setCellFormula("SUM("+column+(rowCount-dataGroup.size())+":"+ column++ +(rowCount-1)+")");
-			cell = row.createCell(cellNo++);
-			cell.setCellType(Cell.CELL_TYPE_FORMULA);
-			cell.setCellFormula("SUM("+column+(rowCount-dataGroup.size())+":"+ column++ +(rowCount-1)+")");
-			cell = row.createCell(cellNo);
-			cell.setCellType(Cell.CELL_TYPE_FORMULA);
-			cell.setCellFormula("SUM("+column+(rowCount-dataGroup.size())+":"+ column++ +(rowCount-1)+")");
+			boolean writeStarter = true;
+			for (int i = minYear; i <= maxYear; i++) {
+				if (!dataGroup.containsKey(i)) {
+					cellCount += 4;
+				} else {
+					for (FinancialDashRevenueDataRowVO dataRow : dataGroup.get(i)) {
+						Cell cell = null;
+						if (writeStarter) {
+							writeStarter = false;
+							int starterCells = 0;
+							cell = row.createCell(starterCells++);
+							cell.setCellValue(dataRow.getScenarioId());
+							cell.setCellStyle(locked);
+							cell = row.createCell(starterCells++);
+							cell.setCellValue(dataRow.getScenarioName());
+							cell.setCellStyle(locked);
+							cell = row.createCell(starterCells++);
+							cell.setCellValue(dataRow.getSectionName());
+							cell.setCellStyle(locked);
+							cell = row.createCell(starterCells++);
+							cell.setCellValue(dataRow.getCompanyId());
+							cell.setCellStyle(locked);
+							cell = row.createCell(starterCells++);
+							cell.setCellValue(dataRow.getCompanyName());
+							cell.setCellStyle(locked);
+							cell = row.createCell(starterCells);
+							cell.setCellValue(dataRow.getRegionCode().toString());
+							cell.setCellStyle(locked);
+						}
+						cell = row.createCell(cellCount++);
+						cell.setCellValue(dataRow.getRevenueId());
+						cell.setCellStyle(locked);
+						cell = row.createCell(cellCount++);
+						cell.setCellValue(dataRow.getOverlayId());
+						cell.setCellStyle(locked);
+						cell = row.createCell(cellCount++);
+						cell.setCellValue(dataRow.getYearNo());
+						cell.setCellStyle(locked);
+						cell = row.createCell(cellCount++);
+						cell.setCellValue(dataRow.getQ1No());
+						cell.setCellStyle(unlocked);
+						cell = row.createCell(cellCount++);
+						cell.setCellValue(dataRow.getQ2No());
+						cell.setCellStyle(unlocked);
+						cell = row.createCell(cellCount++);
+						cell.setCellValue(dataRow.getQ3No());
+						cell.setCellStyle(unlocked);
+						cell = row.createCell(cellCount++);
+						cell.setCellValue(dataRow.getQ4No());
+						cell.setCellStyle(unlocked);
+					}
+				}
+				
+			}
 		}
 	}
 
