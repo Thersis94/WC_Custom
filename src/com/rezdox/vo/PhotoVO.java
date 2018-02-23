@@ -27,8 +27,7 @@ public class PhotoVO extends BeanDataVO implements Serializable {
 	private static final long serialVersionUID = -2320409186167844402L;
 
 	private String photoId;
-	private String businessId;
-	private String residenceId;
+	private String albumId;
 	private String treasureItemId;
 	private String projectId;
 	private String photoName;
@@ -67,33 +66,18 @@ public class PhotoVO extends BeanDataVO implements Serializable {
 	}
 
 	/**
-	 * @return the businessId
+	 * @return the albumId
 	 */
-	@Column(name="business_id")
-	public String getBusinessId() {
-		return businessId;
+	@Column(name="album_id")
+	public String getAlbumId() {
+		return albumId;
 	}
 
 	/**
-	 * @param businessId the businessId to set
+	 * @param albumId the albumId to set
 	 */
-	public void setBusinessId(String businessId) {
-		this.businessId = businessId;
-	}
-
-	/**
-	 * @return the residenceId
-	 */
-	@Column(name="residence_id")
-	public String getResidenceId() {
-		return residenceId;
-	}
-
-	/**
-	 * @param residenceId the residenceId to set
-	 */
-	public void setResidenceId(String residenceId) {
-		this.residenceId = residenceId;
+	public void setAlbumId(String albumId) {
+		this.albumId = albumId;
 	}
 
 	/**
