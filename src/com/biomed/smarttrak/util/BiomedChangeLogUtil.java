@@ -12,6 +12,7 @@ import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.changelog.ChangeLogUtil;
 import com.smt.sitebuilder.changelog.ChangeLogVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: BiomedChangelogUtil.java
@@ -65,8 +66,9 @@ public class BiomedChangeLogUtil extends ChangeLogUtil {
 	 */
 	protected String formatSqlQuery(String wcOrigKeyId, String changeLogId, String orgId, boolean hideReviewed) {
 		String updateType = StringUtil.checkVal(BiomedChangeLogDecoratorAction.EditPath.UPDATE, true);
+		String customSchema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(800);
 		sql.append("select a.*, b.*, d.first_nm as creator_first_nm, d.last_nm as creator_last_nm, ");
 		sql.append("c.first_nm as disposition_first_nm, c.last_nm as disposition_last_nm, ");
 		sql.append("f.first_nm as author_first_nm, f.last_nm as author_last_nm ");
@@ -77,7 +79,7 @@ public class BiomedChangeLogUtil extends ChangeLogUtil {
 		/*Insights are currently the only actionType taking advantage of the changeLogUtility, Simply extend out
 		 * to the insight table for the author data. If more types start taking advantage of this utility, update this to 
 		 * a case statement query or implement another approach. 02-22-18 D.F.*/
-		sql.append("left outer join custom.biomedgps_insight e on b.wc_key_id = e.insight_id ");
+		sql.append("left outer join ").append(customSchema).append("biomedgps_insight e on b.wc_key_id = e.insight_id ");
 		sql.append("left outer join profile f on e.creator_profile_id = f.profile_id ");
 		sql.append("where 1 = 1 ");
 
