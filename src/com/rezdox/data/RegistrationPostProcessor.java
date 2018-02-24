@@ -5,6 +5,8 @@ import java.util.List;
 // WC_Custom
 import com.rezdox.action.MembershipAction;
 import com.rezdox.action.PromotionAction;
+import com.rezdox.action.RewardsAction;
+import com.rezdox.action.RezDoxUtils;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO;
 import com.rezdox.vo.MembershipVO.Group;
@@ -53,7 +55,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("Running RezDox registration post-processor.");
-		
+
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		MemberVO member = new MemberVO();
 
@@ -61,12 +63,12 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		member.setData(user.getDataMap());
 		member.setAttributes(user.getAttributes());
 		member.setAuthenticated(user.isAuthenticated());
-		
+
 		// Set data for new members
 		member.setRegisterSubmittalId((String) req.getAttribute("registerSubmittalId"));
 		member.setStatusFlg(1);
 		member.setPrivacyFlg(0);
-		
+
 		// Get default member subscription... the only default right now is "100 Connections".
 		// Free business and residence subscriptions are added by member selection after signing up.
 		SubscriptionVO subscription = new SubscriptionVO();
@@ -74,26 +76,28 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		DBProcessor dbp = new DBProcessor(dbConn);
 		MembershipVO membership = retrieveDefaultMembership();
 		PromotionVO promotion = retrieveFreePromotion();
-		
+
 		subscription.setMember(member);
 		subscription.setMembership(membership);
 		subscription.setPromotion(promotion);
 		subscription.setCostNo(membership.getCostNo());
 		subscription.setDiscountNo(membership.getCostNo() * promotion.getDiscountPctNo() * -1);
 		subscription.setQuantityNo(membership.getQuantityNo());
-		
+
 		// Save member/subscription data
 		try {
 			dbp.save(member);
 			dbp.save(subscription);
 		} catch (Exception e) {
-			log.error("Unable to save new RezDox member/subscription data. ", e);
+			throw new ActionException(e);
 		}
-		
-		// TODO: Ticket #RV-72: Add in hook to give the user Rez Rewards for signing up here.
-		
+
+		//apply the default reward give to all new users at first login
+		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
+		ra.applyReward(RezDoxUtils.NEW_REGISTRANT_REWARD, member.getMemberId());
 	}
-	
+
+
 	/**
 	 * Retrieves the default membership for signing up.
 	 * 
@@ -103,11 +107,11 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		ActionRequest membershipReq = new ActionRequest();
 		membershipReq.setParameter("getNewMemberDefault", "true");
 		membershipReq.setParameter("groupCode", Group.CO.name());
-		
+
 		MembershipAction ma = new MembershipAction();
 		ma.setAttributes(this.attributes);
 		ma.setDBConnection(dbConn);
-		
+
 		List<MembershipVO> membership = ma.retrieveMemberships(membershipReq);
 		return membership.get(0);
 	}
@@ -120,11 +124,11 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 	private PromotionVO retrieveFreePromotion() {
 		ActionRequest promotionReq = new ActionRequest();
 		promotionReq.setParameter("promotionCode", PromotionAction.SIGNUP_PROMOTION_CD);
-		
+
 		PromotionAction pa = new PromotionAction();
 		pa.setAttributes(this.attributes);
 		pa.setDBConnection(dbConn);
-		
+
 		List<PromotionVO> promotion = pa.retrievePromotions(promotionReq);
 		return promotion.get(0);
 	}

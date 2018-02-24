@@ -1,6 +1,5 @@
 package com.rezdox.action;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.rezdox.action.RewardsAction.REQ_REWARD_ID;
@@ -8,7 +7,6 @@ import com.rezdox.vo.RewardVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -43,21 +41,8 @@ public class RewardsDataTool extends SimpleActionAdapter {
 		//only load data on the ajax call (list pg), or when a pkId is passed (edit pg)
 		if (!req.hasParameter("loadData") && !req.hasParameter(REQ_REWARD_ID)) return;
 
-		String schema = getCustomSchema();
-		List<Object> params = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.*, b.type_nm from ").append(schema).append("REZDOX_REWARD a ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_REWARD_TYPE b ");
-		sql.append("on a.reward_type_cd=b.reward_type_cd ");
-
-		if (req.hasParameter(REQ_REWARD_ID)) {
-			params.add(req.getParameter(REQ_REWARD_ID));
-			sql.append("where a.reward_id=? ");
-		}
-		sql.append("order by b.type_nm, a.order_no, a.reward_nm");
-
-		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		List<Object> data = db.executeSelect(sql.toString(), params, new RewardVO());
+		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
+		List<RewardVO> data = ra.loadRewards(req.getParameter(REQ_REWARD_ID));
 		putModuleData(data);
 	}
 
