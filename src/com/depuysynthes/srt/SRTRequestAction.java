@@ -3,14 +3,18 @@ package com.depuysynthes.srt;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
+import com.smt.sitebuilder.action.form.designer.FormDesignerFacadeAction;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -25,7 +29,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 3.3.1
  * @since Feb 15, 2018
  ****************************************************************************/
-public class SRTRequestAction extends FormAction {
+public class SRTRequestAction extends SimpleActionAdapter {
 
 	public static final String SRT_REQUEST_ID = "srtRequestId"; 
 	public SRTRequestAction() {
@@ -45,12 +49,49 @@ public class SRTRequestAction extends FormAction {
 		 * Else list SRTRequestVOs for Tables.
 		 */
 		if(req.hasParameter(SRT_REQUEST_ID)) {
-			super.retrieve(req);
+			loadDataFromForms(req);
 		} else {
 			putModuleData(loadRequests(roster));
 		}
 	}
  
+	/**
+	 * Load data via the FormAction Tool
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void loadDataFromForms(ActionRequest req) throws ActionException {
+		FormAction fa = (FormAction) super.getConfiguredAction(FormAction.class.getName());
+
+		//Get OpCo Id off Users Session
+		String opCo = SRTUtil.getOpCO(req);
+
+		//Load proper Request form according to Users OpCo
+		String formId = getFormIdByOpCo(opCo);
+
+		req.setParameter(FormDesignerFacadeAction.REQ_FORM_ID, formId);
+		fa.retrieve(req);
+
+		String reqId = req.getParameter(SRT_REQUEST_ID);
+
+		//Retrieve FormData for submitted Form if not a new one.
+		if(!"ADD".equals(reqId)) {
+			fa.retrieveSubmittedForm(req);
+		}
+	}
+
+	/**
+	 * TODO - Determine how to tag a form with Purpose and OpCo.
+	 * IE.  Load Request Form for OPCo US_SPINE.
+	 *
+	 * With move to SB_ACTION record, potentially attrib 1 and 2 txt.
+	 * @param opCo
+	 * @return
+	 */
+	private String getFormIdByOpCo(String opCo) {
+		return null;
+	}
+
 	/**
 	 * Load SRT Requests.
 	 * @param roster
@@ -102,12 +143,12 @@ public class SRTRequestAction extends FormAction {
 	private String buildRequestLoadSql(boolean hasUser) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select * from ").append(schema);
+		sql.append("select r.*, a.*, u.profile_id from ").append(schema);
 		sql.append("SRT_REQUEST r ");
-		sql.append("left outer join ").append(schema);
-		sql.append("SRT_REQUEST_ADDRESS a on r.REQUEST_ID = a.REQUEST_ID ");
-		sql.append("inner join ").append(schema);
+		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("SRT_ROSTER u on r.ROSTER_ID = u.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
+		sql.append("SRT_REQUEST_ADDRESS a on r.REQUEST_ID = a.REQUEST_ID ");
 		if(hasUser) {
 			sql.append("where u.roster_id = ? ");
 		}

@@ -11,6 +11,7 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.gis.Location;
 
 /****************************************************************************
@@ -24,6 +25,7 @@ import com.siliconmtn.gis.Location;
  * @version 3.3.1
  * @since Feb 5, 2018
  ****************************************************************************/
+@Table(name="SRT_REQUEST")
 public class SRTRequestVO extends BeanDataVO {
 
 	/**

@@ -1,12 +1,15 @@
 package com.depuysynthes.srt.vo;
 
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -24,8 +27,12 @@ import com.siliconmtn.util.StringUtil;
  * @since Feb 5, 2018
  ****************************************************************************/
 @Table(name="SRT_MASTER_RECORD")
-public class SRTMasterRecordVO {
+public class SRTMasterRecordVO extends BeanDataVO {
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 8656525987783386949L;
 	private String masterRecordId;
 	private String partNo;
 	private String titleTxt;
@@ -48,6 +55,13 @@ public class SRTMasterRecordVO {
 		attributes = new HashMap<>();
 	}
 
+	public SRTMasterRecordVO(ActionRequest req) {
+		populateData(req);
+	}
+
+	public SRTMasterRecordVO(ResultSet rs) {
+		populateData(rs);
+	}
 	/**
 	 * @return the masterRecordId
 	 */

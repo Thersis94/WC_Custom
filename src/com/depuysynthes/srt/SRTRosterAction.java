@@ -27,6 +27,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.LastNameComparator;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
 import com.smt.sitebuilder.action.registration.ResponseLoader;
 import com.smt.sitebuilder.action.registration.SubmittalAction;
@@ -54,7 +55,7 @@ import com.smt.sitebuilder.security.UserLogin;
  * @version 3.3.1
  * @since Feb 15, 2018
  ****************************************************************************/
-public class SRTRosterAction extends SBActionAdapter {
+public class SRTRosterAction extends SimpleActionAdapter {
 
 	public static final String REQ_CHECK_USER_BY_EMAIL = "checkUserByEmail";
 	public static final String REQ_ROSTER_ID = "rosterId";

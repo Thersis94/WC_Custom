@@ -1,6 +1,7 @@
 package com.depuysynthes.srt.vo;
 
 import java.sql.ResultSet;
+import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -30,7 +31,7 @@ public class SRTNoteVO extends BeanDataVO implements HumanNameIntfc {
 	private String projectId;
 	private String rosterId;
 	private String noteTxt;
-	private String createDt;
+	private Date createDt;
 	private String firstNm;
 	private String lastNm;
 
@@ -84,7 +85,7 @@ public class SRTNoteVO extends BeanDataVO implements HumanNameIntfc {
 	 * @return the createDt
 	 */
 	@Column(name="CREATE_DT", isInsertOnly=true, isAutoGen=true)
-	public String getCreateDt() {
+	public Date getCreateDt() {
 		return createDt;
 	}
 
@@ -119,7 +120,7 @@ public class SRTNoteVO extends BeanDataVO implements HumanNameIntfc {
 	/**
 	 * @param createDt the createDt to set.
 	 */
-	public void setCreateDt(String createDt) {
+	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
 	}
 

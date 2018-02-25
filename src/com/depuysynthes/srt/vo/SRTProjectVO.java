@@ -9,12 +9,13 @@ import java.util.Map;
 
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
- * <b>Title:</b> SRTProjectRecordVO.java
+ * <b>Title:</b> SRTProjectVO.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> Stores ProjectRecordVO
+ * <b>Description:</b> Stores Project Data
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -22,7 +23,8 @@ import com.siliconmtn.util.StringUtil;
  * @version 3.3.1
  * @since Feb 5, 2018
  ****************************************************************************/
-public class SRTProjectRecordVO {
+@Table(name="SRT_PROJECT")
+public class SRTProjectVO {
 
 	private String projectId;
 	private String projectName;
@@ -35,8 +37,11 @@ public class SRTProjectRecordVO {
 	private BigDecimal actualRoi;
 	private String srtContact;
 	private String engineerId;
+	private String engineerNm;
 	private String designerId;
+	private String designerNm;
 	private String qualityEngineerId;
+	private String qualityEngineerNm;
 	private boolean makeFromScratch;
 	private String funcCheckOrderNo;
 	private String makeFromOrderNo;
@@ -51,12 +56,13 @@ public class SRTProjectRecordVO {
 	private Date createDt;
 	private Date updateDt;
 
-	private SRTMasterRecordVO masterRecord;
-	private SRTRequestVO reqVO;
-	private Map<String, Date> milestones;
+	private List<SRTMasterRecordVO> masterRecords;
+	private SRTRequestVO requestorVO;
+	private Map<String, SRTMilestoneVO> milestones;
 
-	public SRTProjectRecordVO() {
+	public SRTProjectVO() {
 		notes = new ArrayList<>();
+		masterRecords = new ArrayList<>();
 		milestones = new HashMap<>();
 	}
 
@@ -153,6 +159,14 @@ public class SRTProjectRecordVO {
 	}
 
 	/**
+	 * @return the engineerNm
+	 */
+	@Column(name="ENGINEER_NM", isReadOnly=true) 
+	public String getEngineerNm() {
+		return engineerNm;
+	}
+
+	/**
 	 * @return the designerId
 	 */
 	@Column(name="DESIGNER_ID")
@@ -161,11 +175,27 @@ public class SRTProjectRecordVO {
 	}
 
 	/**
+	 * @return the designerNm
+	 */
+	@Column(name="DESIGNER_NM", isReadOnly=true) 
+	public String getDesignerNm() {
+		return designerNm;
+	}
+
+	/**
 	 * @return the qualityEngineerId
 	 */
 	@Column(name="QUALITY_ENGINEER_ID")
 	public String getQualityEngineerId() {
 		return qualityEngineerId;
+	}
+
+	/**
+	 * @return the designerNm
+	 */
+	@Column(name="QUALITY_ENGINEER_NM", isReadOnly=true) 
+	public String getQualityEngineerNm() {
+		return qualityEngineerNm;
 	}
 
 	/**
@@ -275,23 +305,15 @@ public class SRTProjectRecordVO {
 	/**
 	 * @return the masterRecord
 	 */
-	public SRTMasterRecordVO getMasterRecord() {
-		return masterRecord;
-	}
-
-	/**
-	 * @return the masterRecord Id
-	 */
-	@Column(name="MASTER_RECORD_ID")
-	public String getMasterRecordId() {
-		return masterRecord != null ? masterRecord.getMasterRecordId() : "";
+	public List<SRTMasterRecordVO> getMasterRecords() {
+		return masterRecords;
 	}
 
 	/**
 	 * @return the reqVO
 	 */
 	public SRTRequestVO getReqVO() {
-		return reqVO;
+		return requestorVO;
 	}
 
 	/**
@@ -299,12 +321,12 @@ public class SRTProjectRecordVO {
 	 */
 	@Column(name="REQUEST_ID")
 	public String getRequestId() {
-		return reqVO != null ? reqVO.getRequestId() : "";
+		return requestorVO != null ? requestorVO.getRequestId() : "";
 	}
 	/**
 	 * @return the milestones
 	 */
-	public Map<String, Date> getMilestones() {
+	public Map<String, SRTMilestoneVO> getMilestones() {
 		return milestones;
 	}
 
@@ -312,7 +334,7 @@ public class SRTProjectRecordVO {
 	 * @param milestoneId the id of the Milestone to retrieve.
 	 * @return
 	 */
-	public Date getMilestone(String milestoneId) {
+	public SRTMilestoneVO getMilestone(String milestoneId) {
 		return milestones.get(milestoneId);
 	}
 
@@ -404,6 +426,13 @@ public class SRTProjectRecordVO {
 	}
 
 	/**
+	 * @param engineerNm the engineerNm to set.
+	 */
+	public void setEngineerNm(String engineerNm) {
+		this.engineerNm = engineerNm;
+	}
+
+	/**
 	 * @param designerId the designerId to set.
 	 */
 	public void setDesignerId(String designerId) {
@@ -411,10 +440,24 @@ public class SRTProjectRecordVO {
 	}
 
 	/**
+	 * @param designerNm the designerNm to set.
+	 */
+	public void setDesignerNm(String designerNm) {
+		this.designerNm = designerNm;
+	}
+
+	/**
 	 * @param qualityEngineerId the qualityEngineerId to set.
 	 */
 	public void setQualityEngineerId(String qualityEngineerId) {
 		this.qualityEngineerId = qualityEngineerId;
+	}
+
+	/**
+	 * @param qualityEngineerNm the qualityEngineerNm to set.
+	 */
+	public void setQualityEngineerNm(String qualityEngineerNm) {
+		this.qualityEngineerNm = qualityEngineerNm;
 	}
 
 	/**
@@ -509,11 +552,20 @@ public class SRTProjectRecordVO {
 	}
 
 	/**
-	 * @param masterRecord the masterRecord to set.
+	 * @param masterRecords the masterRecords to set.
+	 */
+	public void setMasterRecord(List<SRTMasterRecordVO> masterRecords) {
+		this.masterRecords = masterRecords;
+	}
+
+	/**
+	 * @param masterRecord the masterRecords to add.
 	 */
 	@BeanSubElement
-	public void setMasterRecord(SRTMasterRecordVO masterRecord) {
-		this.masterRecord = masterRecord;
+	public void addMasterRecord(SRTMasterRecordVO masterRecord) {
+		if(masterRecord != null) {
+			masterRecords.add(masterRecord);
+		}
 	}
 
 	/**
@@ -521,13 +573,13 @@ public class SRTProjectRecordVO {
 	 */
 	@BeanSubElement
 	public void setReqVO(SRTRequestVO reqVO) {
-		this.reqVO = reqVO;
+		this.requestorVO = reqVO;
 	}
 
 	/**
 	 * @param milestones the milestones to set.
 	 */
-	public void setMilestones(Map<String, Date> milestones) {
+	public void setMilestones(Map<String, SRTMilestoneVO> milestones) {
 		this.milestones = milestones;
 	}
 
@@ -535,9 +587,10 @@ public class SRTProjectRecordVO {
 	 * @param milestoneId - the milestoneId to be added
 	 * @param milestoneDt - the date the milstone was achieved.
 	 */
-	public void addMilestone(String milestoneId, Date milestoneDt) {
-		if(!StringUtil.isEmpty(milestoneId)) {
-			milestones.put(milestoneId, milestoneDt);
+	@BeanSubElement
+	public void addMilestone(SRTMilestoneVO milestone) {
+		if(milestone != null && !StringUtil.isEmpty(milestone.getMilestoneId())) {
+			milestones.put(milestone.getMilestoneId(), milestone);
 		}
 	}
 }
