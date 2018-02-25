@@ -110,31 +110,12 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		try {
 			StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
 			for(SRTProjectVO p : projects.getRowData()) {
-				p.setEngineerNm(decryptName(p.getEngineerNm(), se));
-				p.setDesignerNm(decryptName(p.getDesignerNm(), se));
-				p.setQualityEngineerNm(decryptName(p.getQualityEngineerNm(), se));
+				p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
+				p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
+				p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
 			}
 		} catch (EncryptionException e) {
 			log.error("Error Processing Code", e);
-		}
-	}
-
-	/**
-	 * Decrypt given username.  May be empty, just first or first and last
-	 * name.
-	 * @param qualityEngineerNm
-	 * @param se
-	 * @return
-	 * @throws EncryptionException
-	 */
-	private String decryptName(String name, StringEncrypter se) throws EncryptionException {
-		String [] firstLast = name.split(" ");
-		if(firstLast == null || firstLast.length == 0) {
-			return "";
-		} else if(firstLast.length == 1) {
-			return se.decrypt(firstLast[0]);
-		} else {
-			return StringUtil.join(se.decrypt(firstLast[0]), " ", se.decrypt(firstLast[1]));
 		}
 	}
 

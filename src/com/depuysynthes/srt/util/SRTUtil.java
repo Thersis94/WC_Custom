@@ -15,6 +15,8 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -100,5 +102,24 @@ public class SRTUtil {
 			return r.getOpCoId();
 		}
 		return null;
+	}
+
+	/**
+	 * Decrypt given username.  May be empty, just first or first and last
+	 * name.
+	 * @param qualityEngineerNm
+	 * @param se
+	 * @return
+	 * @throws EncryptionException
+	 */
+	public static String decryptName(String name, StringEncrypter se) throws EncryptionException {
+		String [] firstLast = name.split(" ");
+		if(firstLast == null || firstLast.length == 0) {
+			return "";
+		} else if(firstLast.length == 1) {
+			return se.decrypt(firstLast[0]);
+		} else {
+			return StringUtil.join(se.decrypt(firstLast[0]), " ", se.decrypt(firstLast[1]));
+		}
 	}
 }
