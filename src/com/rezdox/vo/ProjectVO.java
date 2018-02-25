@@ -93,7 +93,7 @@ public class ProjectVO {
 		return businessViewFlg;
 	}
 
-	@BeanSubElement
+	//@BeanSubElement  - This method is NOT annotated because it's not part of the SQL query that populates this VO.
 	public List<ProjectMaterialVO> getMaterials() {
 		return materials;
 	}
