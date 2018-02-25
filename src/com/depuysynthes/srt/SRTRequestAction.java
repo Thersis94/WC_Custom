@@ -89,6 +89,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	private String getFormIdByOpCo(String opCo) {
+		log.info(opCo);
 		return null;
 	}
 

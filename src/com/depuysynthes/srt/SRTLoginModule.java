@@ -40,8 +40,6 @@ public class SRTLoginModule extends DBLoginModule {
 		UserDataVO userData = super.authenticateUser(user, pwd);
 
 		log.debug("USER IS AUTHENTICATED: " + userData.isAuthenticated());
-		//redirect to the user's personal homepage.
-		//applyRedirectLogic(userData);
 
 		return loadSRTUser(userData);
 	}
@@ -54,14 +52,10 @@ public class SRTLoginModule extends DBLoginModule {
 	 * @throws AuthenticationException
 	 */
 	public SRTRosterVO loadSRTUser(UserDataVO wcUser) throws AuthenticationException {
-		Connection dbConn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
-
 		//Attempt to retrieve SRT Roster record from Database.
-		List<SRTRosterVO> users = new DBProcessor(dbConn).executeSelect(buildRosterSql(), Arrays.asList(wcUser.getProfileId()), new SRTRosterVO());
+		List<SRTRosterVO> users = new DBProcessor((Connection) getAttribute(GlobalConfig.KEY_DB_CONN)).executeSelect(buildRosterSql(), Arrays.asList(wcUser.getProfileId()), new SRTRosterVO());
 
-		SRTRosterVO roster = matchUser(wcUser, users);
-
-		return roster;
+		return matchUser(wcUser);
 	}
 
 	/**
@@ -71,7 +65,7 @@ public class SRTLoginModule extends DBLoginModule {
 	 * @return
 	 * @throws AuthenticationException - Throw Exception if no match found.
 	 */
-	private SRTRosterVO matchUser(UserDataVO wcUser, List<SRTRosterVO> users) throws AuthenticationException {
+	private SRTRosterVO matchUser(UserDataVO wcUser) {
 
 		SRTRosterVO roster = new SRTRosterVO();
 		roster.setData(wcUser.getDataMap());
@@ -104,10 +98,7 @@ public class SRTLoginModule extends DBLoginModule {
 		UserDataVO userData = super.authenticateUser(encProfileId);
 
 		//redirect to the user's personal homepage.
-		//applyRedirectLogic(userData);
 
 		return loadSRTUser(userData);
 	}
-
-
 }

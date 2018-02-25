@@ -45,12 +45,10 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		SRTRosterVO roster = ((SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA));
 		String projectId = req.getParameter("projectId");
-		String opCoId = StringUtil.checkVal(roster.getOpCoId(), "SPINE_US");
 
 		if(!StringUtil.isEmpty(projectId)) {
-			SRTProjectVO project = getProjectDetails(req, opCoId, projectId);
+			SRTProjectVO project = getProjectDetails(req, projectId);
 			putModuleData(project);
 		} else {
 			GridDataVO<SRTProjectVO> projects = loadProjects(req);
@@ -65,10 +63,14 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 * @param projectId
 	 * @return
 	 */
-	private SRTProjectVO getProjectDetails(ActionRequest req, String opCoId, String projectId) {
+	private SRTProjectVO getProjectDetails(ActionRequest req, String projectId) {
 
 		fa.retrieveSubmittedForm(req);
 
+		//Only load data if this isn't a new record
+		if(!"ADD".equals(projectId)) {
+			log.info("Loading Existing Record.");
+		}
 		return null;
 	}
 
@@ -85,7 +87,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		vals.add(roster.getOpCoId());
 
 		//Build Query and populate required vals at same time.
-		String sql = buildProjectRetrievalQuery(req, vals);
+		String sql = buildProjectRetrievalQuery(req);
 
 		//Load Projects
 		GridDataVO<SRTProjectVO> projects = new DBProcessor(dbConn).executeSQLWithCount(sql, vals, new SRTProjectVO(), req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
@@ -142,7 +144,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 * @param projectId
 	 * @return
 	 */
-	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals) {
+	private String buildProjectRetrievalQuery(ActionRequest req) {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select p.*, r.*, pr.first_nm, pr.last_nm, ");
@@ -180,7 +182,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		sql.append("on q.PROFILE_ID = qp.PROFILE_ID ");
 
 		sql.append(DBUtil.WHERE_1_CLAUSE).append(" and p.OP_CO_ID = ? ");
-		sql.append(DBUtil.ORDER_BY).append("p.create_dt");
+		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(req.getParameter("orderBy"), "p.create_dt"));
 
 		return sql.toString();
 	}

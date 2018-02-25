@@ -25,26 +25,6 @@ public class SRTRosterVO extends UserDataVO {
 
 	public enum Role {ADMIN, SALES_ROSTER, PUBLIC}
 
-	//TODO - Update if we need Registration Fields.
-//	public enum RegistrationMap {
-//		TODO("", "");
-//
-//		private boolean isArray;
-//		private String fieldId;
-//		private String reqParam;
-//		private RegistrationMap(String registerFieldId, String reqParam) {
-//			this(registerFieldId, reqParam, false);
-//		}
-//		private RegistrationMap(String registerFieldId, String reqParam, boolean isArray) {
-//			this.fieldId = registerFieldId;
-//			this.reqParam = reqParam;
-//			this.isArray = isArray;
-//		}
-//		public String getFieldId() { return fieldId; }
-//		public String getReqParam() { return reqParam; }
-//		public boolean isArray() { return isArray; }
-//	}
-
 	/**
 	 *
 	 */
