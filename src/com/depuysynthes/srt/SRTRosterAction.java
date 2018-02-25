@@ -432,19 +432,6 @@ public class SRTRosterAction extends SimpleActionAdapter {
 
 		//build a list of values to insert based on the ones we're going to delete
 		List<SubmittalDataVO> regData = new ArrayList<>();
-//		SubmittalDataVO vo;
-//		for (RegistrationMap field : SRTRosterVO.RegistrationMap.values()) {
-//			formFields.add(field.getFieldId());
-//			String[] values = req.getParameterValues(field.getReqParam());
-//			if (values == null) continue; //we're still going to flush the old data, but have nothing to save in it's place
-//
-//			for (String val : values) {
-//				vo = new SubmittalDataVO(null);
-//				vo.setRegisterFieldId(field.getFieldId());
-//				vo.setUserValue(val);
-//				regData.add(vo);
-//			}
-//		}
 
 		//put the fields we're going to be saving onto the request - Registration won't save what we can't prove we're passing
 		req.setParameter("formFields", formFields.toArray(new String[formFields.size()]) , Boolean.TRUE);
