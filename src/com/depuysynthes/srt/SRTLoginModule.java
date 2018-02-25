@@ -72,19 +72,7 @@ public class SRTLoginModule extends DBLoginModule {
 	 * @throws AuthenticationException - Throw Exception if no match found.
 	 */
 	private SRTRosterVO matchUser(UserDataVO wcUser, List<SRTRosterVO> users) throws AuthenticationException {
-//		for(SRTRosterVO user : users) {
-//			//If this user matches the data coming back from SSO.
-//			if(user.isActive() && user.getWwid().equals(wcUser.getAttribute("wwid"))) {
-//
-//				//Set Extra ProfileData from original incoming user record
-//				user.setData(wcUser.getDataMap());
-//
-//				//Return.
-//				return user;
-//			}
-//		}
-//
-//		throw new AuthenticationException("User Not Authorized");
+
 		SRTRosterVO roster = new SRTRosterVO();
 		roster.setData(wcUser.getDataMap());
 		roster.setOpCoId("US_SPINE");
