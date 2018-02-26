@@ -46,10 +46,6 @@ public class FinancialDashFootnoteAdminAction extends FinancialDashFootnoteActio
 				dbp.delete(fvo);
 			} else {
 				dbp.save(fvo);
-				
-				String newId = dbp.getGeneratedPKId();
-				if (newId != null)
-					fvo.setFootnoteId(newId);
 			}
 		} catch (Exception e) {
 			throw new ActionException("Couldn't create/update financial dash footnote.", e);
