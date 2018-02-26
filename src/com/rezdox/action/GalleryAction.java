@@ -112,11 +112,15 @@ public class GalleryAction extends SimpleActionAdapter {
 		DBProcessor dbp = new DBProcessor(dbConn);
 
 		try {
-			dbp.save(album);
+			if (req.hasParameter("isDelete")) {
+				dbp.delete(album);
+			} else {
+				dbp.save(album);
+			}
 		} catch(Exception e) {
 			log.error("could not save photo album", e);
 		}
 
-		putModuleData(album.getAlbumId(), 1, false);
+		putModuleData(album, 1, false);
 	}
 }
