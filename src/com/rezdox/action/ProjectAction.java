@@ -46,12 +46,14 @@ public class ProjectAction extends SimpleActionAdapter {
 		if (StringUtil.isEmpty(residenceId)) return;
 
 		String schema = getCustomSchema();
-		StringBuilder sql = new StringBuilder(300);
+		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.*, "); //should this be honed?
 		sql.append("b.attribute_id, b.slug_txt, b.value_txt");
+		sql.append("c.category_nm, d.type_nm");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("REZDOX_PROJECT a ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_ATTRIBUTE b ");
-		sql.append("on a.project_id=b.project_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_ATTRIBUTE b on a.project_id=b.project_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_CATEGORY c on a.project_category_cd=c.project_category_cd ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_TYPE d on a.project_type_cd=d.project_type_cd ");
 		sql.append("where a.residence_id=? ");
 		sql.append("order by cast(a.create_dt as date) desc, a.project_nm");
 
@@ -66,5 +68,17 @@ public class ProjectAction extends SimpleActionAdapter {
 			log.error("could not load projects for residenceId=" + residenceId, e);
 		}
 		putModuleData(data);
+	}
+	
+	/*
+	 * Saves or creates a project tied to the given residenceId.
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+		//this calls to a save handler?
+		
+		//sendRedirect
 	}
 }

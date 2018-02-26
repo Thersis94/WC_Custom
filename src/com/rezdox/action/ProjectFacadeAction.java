@@ -27,7 +27,7 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 		MATERIAL(ProjectMaterialAction.class);
 		
 		Class<? extends ActionInterface> c;
-		private ActionType(Class<? extends ActionInterface> c) { this.c = c; }
+		ActionType(Class<? extends ActionInterface> c) { this.c = c; }
 		public Class<? extends ActionInterface> getClassName() { return c; } 
 	}
 

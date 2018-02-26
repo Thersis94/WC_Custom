@@ -1,10 +1,12 @@
 package com.rezdox.vo;
 
+import java.util.Date;
 import java.util.List;
 
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title:</b> ProjectVO.java<br/>
@@ -91,6 +93,16 @@ public class ProjectVO {
 	@Column(name="business_view_flg")
 	public int getBusinessViewFlg() {
 		return businessViewFlg;
+	}
+
+	@Column(name="create_dt", isInsertOnly=true)
+	public Date getCreateDate() {
+		return Convert.getCurrentTimestamp();
+	}
+
+	@Column(name="update_dt", isUpdateOnly=true)
+	public Date getUpdateDate() {
+		return Convert.getCurrentTimestamp();
 	}
 
 	//@BeanSubElement  - This method is NOT annotated because it's not part of the SQL query that populates this VO.
