@@ -63,6 +63,9 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	DBProcessor dbp;
 	UserVO user;
 
+	public static final String SCENARIO_ID = "scenarioId";
+	public static final String COMPANY_ID = "companyId";
+
 	/**
 	 * Column prefixes
 	 */
@@ -672,19 +675,19 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 */
 	private FinancialDashImportReportVO buildReport(ActionRequest req) throws ActionException {
 		FinancialDashImportReportVO report = new FinancialDashImportReportVO();
-		String sql = getExportSql(Convert.formatBoolean(req.getParameter("isCompany")), req.hasParameter("companyId"));
+		String sql = getExportSql(Convert.formatBoolean(req.getParameter("isCompany")), req.hasParameter(COMPANY_ID));
 		FinancialDashVO dash = new FinancialDashVO();
 		SmarttrakTree sections = getHierarchy(req);
 		dash.setData(req, sections);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 			int idx = 0;
-			ps.setString(++idx, req.getParameter("scenarioId"));
-			ps.setString(++idx, req.getParameter("scenarioId"));
-			ps.setString(++idx, req.getParameter("scenarioId"));
+			ps.setString(++idx, req.getParameter(SCENARIO_ID));
+			ps.setString(++idx, req.getParameter(SCENARIO_ID));
+			ps.setString(++idx, req.getParameter(SCENARIO_ID));
 			for (int i = 0; i < 7; i++) ps.setString(++idx, user.getAccountId());
 			for (int i = 0; i < 7; i++) ps.setString(++idx, dash.getSectionId());
-			if (req.hasParameter("companyId")) ps.setString(++idx, req.getParameter("companyId"));
+			if (req.hasParameter(COMPANY_ID)) ps.setString(++idx, req.getParameter(COMPANY_ID));
 
 			buildData(ps.executeQuery(), report);
 			
