@@ -31,6 +31,7 @@ public class FinancialDashImportReportVO extends AbstractSBReportVO {
     public static final int SCENARIO_ID_COL = 0;
     public static final int COMPANY_ID_COL = 3;
     public static final int REGION_COL = 5;
+    public static final String COL_SUFFIX = " Earnings";
     
     private List<Map<Integer, List<FinancialDashRevenueDataRowVO>>> revenueData;
     private int maxYear;
@@ -111,13 +112,13 @@ public class FinancialDashImportReportVO extends AbstractSBReportVO {
 			sheet.setColumnWidth(cellCount, 0);
 			row.createCell(cellCount++).setCellValue("Year No");
 			sheet.setColumnWidth(cellCount, 5000);
-			row.createCell(cellCount++).setCellValue("Q1 " + i + " Earnings");
+			row.createCell(cellCount++).setCellValue("Q1 " + i + COL_SUFFIX);
 			sheet.setColumnWidth(cellCount, 5000);
-			row.createCell(cellCount++).setCellValue("Q2 " + i + " Earnings");
+			row.createCell(cellCount++).setCellValue("Q2 " + i + COL_SUFFIX);
 			sheet.setColumnWidth(cellCount, 5000);
-			row.createCell(cellCount++).setCellValue("Q3 " + i + " Earnings");
+			row.createCell(cellCount++).setCellValue("Q3 " + i + COL_SUFFIX);
 			sheet.setColumnWidth(cellCount, 5000);
-			row.createCell(cellCount++).setCellValue("Q4 " + i + " Earnings");
+			row.createCell(cellCount++).setCellValue("Q4 " + i + COL_SUFFIX);
 		}
 	}
 
