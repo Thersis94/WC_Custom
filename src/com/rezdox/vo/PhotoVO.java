@@ -21,7 +21,6 @@ import com.siliconmtn.db.orm.Table;
  @since Feb 20, 2018
  <b>Changes:</b> 
  ***************************************************************************/
-
 @Table(name="REZDOX_PHOTO")
 public class PhotoVO extends BeanDataVO implements Serializable {
 	private static final long serialVersionUID = -2320409186167844402L;
@@ -49,7 +48,7 @@ public class PhotoVO extends BeanDataVO implements Serializable {
 		this();
 		populateData(req);
 	}
-	
+
 	/**
 	 * @return the photoId
 	 */
