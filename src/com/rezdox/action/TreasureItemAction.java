@@ -61,7 +61,7 @@ public class TreasureItemAction extends SimpleActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		List<TreasureItemVO> data = db.executeSelect(sql.toString(), params, new TreasureItemVO());
 
-		//load ancilary details if it was requested and we indeed matched a single record in the lookup query.
+		//load ancilary details if they were requested and we indeed matched a single record in the lookup query.
 		if (loadSingleItem && data != null && data.size() == 1) {
 			TreasureItemVO vo = data.get(0);
 			loadDocuments(vo, req);
@@ -79,8 +79,8 @@ public class TreasureItemAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void loadPhotos(TreasureItemVO vo, ActionRequest req) {
-		GalleryAction ga = new GalleryAction(getDBConnection(), getAttributes());
-		vo.setPhotos(ga.retrievePhotos(req));
+		PhotoAction pa = new PhotoAction(getDBConnection(), getAttributes());
+		vo.setPhotos(pa.retrievePhotos(req));
 	}
 
 
@@ -153,6 +153,6 @@ public class TreasureItemAction extends SimpleActionAdapter {
 	 * @throws ActionException 
 	 */
 	private void savePhoto(ActionRequest req) throws ActionException {
-		new GalleryAction(getDBConnection(), getAttributes()).build(req);
+		new PhotoAction(getDBConnection(), getAttributes()).build(req);
 	}
 }
