@@ -54,7 +54,7 @@ public class SRTLoginModule extends DBLoginModule {
 	public SRTRosterVO loadSRTUser(UserDataVO wcUser) throws AuthenticationException {
 		//Attempt to retrieve SRT Roster record from Database.
 		List<SRTRosterVO> users = new DBProcessor((Connection) getAttribute(GlobalConfig.KEY_DB_CONN)).executeSelect(buildRosterSql(), Arrays.asList(wcUser.getProfileId()), new SRTRosterVO());
-
+		log.info(users);
 		return matchUser(wcUser);
 	}
 
