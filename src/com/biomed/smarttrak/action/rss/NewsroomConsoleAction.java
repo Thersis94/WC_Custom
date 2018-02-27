@@ -59,7 +59,7 @@ public class NewsroomConsoleAction extends NewsroomAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		if (!req.hasParameter(FEED_GROUP_ID)) return;
-		
+
 		if(req.hasParameter("filterId")) {
 			addFilterGroupXR(req.getParameter(FEED_GROUP_ID), req.getParameter("filterId"));
 		} else if (req.hasParameter("sourceId")) {
@@ -67,7 +67,7 @@ public class NewsroomConsoleAction extends NewsroomAction {
 		}
 	}
 
-	
+
 	/**
 	 * Add the supplied source to the current feed group
 	 * @param feedGroupId
@@ -84,7 +84,7 @@ public class NewsroomConsoleAction extends NewsroomAction {
 			ps.setString(2, feedGroupId);
 			ps.setString(3, sourceId);
 			ps.setTimestamp(4, Convert.getCurrentTimestamp());
-			
+
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new ActionException(e);
@@ -107,7 +107,7 @@ public class NewsroomConsoleAction extends NewsroomAction {
 		if(req.hasParameter("delFilterGroupXr")) {
 			deleteGroupFilterXr(req.getParameter("pkId"));
 		} else if (req.hasParameter("rssEntityId")) {
-			deleteEntityGroupXr(req.getParameter("feedGroupId"), req.getParameter("rssEntityId"));
+			deleteEntityGroupXr(req.getParameter(FEED_GROUP_ID), req.getParameter("rssEntityId"));
 		}
 	}
 
@@ -146,7 +146,7 @@ public class NewsroomConsoleAction extends NewsroomAction {
 		}
 	}
 
-	
+
 	/**
 	 * Load sources not already assigned to the current feed group
 	 * @param req
@@ -159,14 +159,14 @@ public class NewsroomConsoleAction extends NewsroomAction {
 			String feedGroupId = c.getValue();
 			List<Object> vals = new ArrayList<>();
 			vals.add(feedGroupId);
-			
+
 			DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-			return (List<RSSEntityVO>)(List<?>)dbp.executeSelect(buildSourceRetrieve(), vals, new RSSEntityVO());
+			return dbp.executeSelect(buildSourceRetrieve(), vals, new RSSEntityVO());
 		}
 		return Collections.emptyList();
 	}
 
-	
+
 	/**
 	 * Build the sql to retrieve no assigned sources
 	 */
@@ -192,9 +192,9 @@ public class NewsroomConsoleAction extends NewsroomAction {
 			String feedGroupId = c.getValue();
 			List<Object> vals = new ArrayList<>();
 			vals.add(feedGroupId);
-			
+
 			DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-			return (List<RSSFilterVO>)(List<?>)dbp.executeSelect(buildNonGroupedFilterRetrieve(), vals, new RSSFilterVO());
+			return dbp.executeSelect(buildNonGroupedFilterRetrieve(), vals, new RSSFilterVO());
 		}
 		return Collections.emptyList();
 	}

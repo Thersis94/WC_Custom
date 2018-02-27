@@ -52,9 +52,6 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	public static final String QUERTLE_ENTITY_ID = "quertleEntityId";
 	private static final QName SERVICE_NAME = new QName("http://base.webservice.quertle.com/", "SearchWSImplementationsService");
 
-	private long lastUSPTOAccessTime;
-	private static final long USPTO_LAG_TIME_MS = 2000;
-	
 	/**
 	 * @param args
 	 */
@@ -375,14 +372,14 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private String loadArticle(String url) {
 		if (StringUtil.isEmpty(url)) return null;
-		boolean configureUSPTO = url.matches("(?i)https?://(app|pat)ft\\.uspto\\.gov/(.*)");
 		SMTHttpConnectionManager conn = createBaseHttpConnection();
 
 		try {
+			throttleRequests(url);
+			
 			//do special things for the US Patent Office, who thinks we're DDoS'ing them
-			if (configureUSPTO) {
+			if (url.matches("(?i)https?://(app|pat)ft\\.uspto\\.gov/(.*)")) {
 				//log.info("USPTO URL: " + url) //used to verify regex above
-				takeNap();
 				conn.addCookie("TSPD_101", ":");
 			}
 
@@ -402,23 +399,5 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			log.error("could not load data from url=" + url, ioe);
 		}
 		return null;
-	}
-
-
-	/**
-	 * Puts the thread to sleep if we haven't waited at least a minimum amount of time between USPTO queries
-	 * Calculate a wait time based on the last time we queried them.  If less than the threshold, put our thread to sleep.
-	 */
-	private void takeNap() {
-		long mustWaitTime = System.currentTimeMillis() - lastUSPTOAccessTime;
-		if (mustWaitTime > 0 && mustWaitTime < USPTO_LAG_TIME_MS) {
-			try {
-				//sleep the remaining time to get us to the threshold
-				Thread.sleep(USPTO_LAG_TIME_MS - mustWaitTime);
-			} catch (Exception e) {
-				//don't care - this would bubble up as runtime issues anyways
-			}
-		}
-		lastUSPTOAccessTime = System.currentTimeMillis();
 	}
 }
