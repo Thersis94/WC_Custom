@@ -15,12 +15,14 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+import com.smt.sitebuilder.action.user.LocationManager;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.FormDataTransaction;
@@ -86,9 +88,17 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 			}
 		}
 		
-		// Save the Residence record
+		// Get the residence data
 		ResidenceVO residence = new ResidenceVO(req);
 		boolean newResidence = StringUtil.isEmpty(residence.getResidenceId());
+		
+		// Geocode the residence address
+		LocationManager lm = new LocationManager(residence);
+		GeocodeLocation gl = lm.geocode(attributes);
+		residence.setLatitude(gl.getLatitude());
+		residence.setLongitude(gl.getLongitude());
+		
+		// Save the residence record
 		DBProcessor dbp = new DBProcessor(dbConn);
 		try {
 			dbp.save(residence);
