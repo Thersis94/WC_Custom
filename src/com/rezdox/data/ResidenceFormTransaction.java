@@ -153,7 +153,7 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 			oldFormFields.add(vo);
 
 			// Save valid responses.
-			if (vo.getResponses() != null && !vo.getResponses().isEmpty()) {
+			if (vo.getResponses() != null && !vo.getResponses().isEmpty() && !StringUtil.isEmpty(vo.getSlugTxt())) {
 				newFormFields.add(vo);
 			}
 		}
