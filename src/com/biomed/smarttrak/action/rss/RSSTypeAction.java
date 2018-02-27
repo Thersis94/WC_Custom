@@ -60,9 +60,7 @@ public class RSSTypeAction extends SBActionAdapter {
 		try {
 			DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA)); 
 			dbp.save(gt);
-			if(StringUtil.isEmpty(gt.getFeedTypeId())) {
-				gt.setFeedTypeId(dbp.getGeneratedPKId());
-			}
+
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Error Processing Code", e);
 		}
@@ -98,7 +96,8 @@ public class RSSTypeAction extends SBActionAdapter {
 		if(!StringUtil.isEmpty(feedTypeCd)) {
 			vals.add(feedTypeCd);
 		}
-		return(List<RSSFeedTypeVO>)(List<?>) new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA)).executeSelect(loadTypeSql(!StringUtil.isEmpty(feedTypeCd)), vals, new RSSFeedTypeVO());
+		DBProcessor dbp = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		return dbp.executeSelect(loadTypeSql(!StringUtil.isEmpty(feedTypeCd)), vals, new RSSFeedTypeVO());
 	}
 
 	/**
