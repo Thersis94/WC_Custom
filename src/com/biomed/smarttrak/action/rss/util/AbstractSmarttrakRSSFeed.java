@@ -58,6 +58,9 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	protected List<RSSFeedGroupVO> groups;
 	protected UUIDGenerator uuid;
 
+	private Map<String, Long> accessTimes;
+	private static final long LAG_TIME_MS = 2000;
+
 
 	/**
 	 * @param args
@@ -72,6 +75,7 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		customDb = props.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		replaceSpanText = props.getProperty(REPLACE_SPAN);
 		mockUserAgent = props.getProperty("mockUserAgent");
+		accessTimes = new HashMap<>(5000);
 	}
 
 
@@ -224,6 +228,8 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		SMTHttpConnectionManager conn = createBaseHttpConnection();
 		byte[] data = null;
 		try {
+			throttleRequests(url);
+			
 			if (queryParams != null && !queryParams.isEmpty()) {
 				//do a POST
 				data = conn.retrieveDataViaPost(url, queryParams);
@@ -444,5 +450,31 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 			return grps.contains(feedGroupId);
 		}
 		return false;
+	}
+
+
+	/**
+	 * Puts the thread to sleep if we haven't waited at least a minimum amount of time between USPTO queries
+	 * Calculate a wait time based on the last time we queried them.  If less than the threshold, put our thread to sleep.
+	 */
+	protected void throttleRequests(String url) {
+		String domain = StringUtil.stripProtocol(url);
+		domain = domain.substring(0, domain.indexOf('/'));
+
+		Long lastAccessTime = accessTimes.get(domain);
+		if (lastAccessTime == null) lastAccessTime = Long.valueOf(0);
+		log.debug("domain from URL= " + domain + " last access=" + lastAccessTime);
+
+		long mustWaitTime = System.currentTimeMillis() - lastAccessTime;
+		if (mustWaitTime > 0 && mustWaitTime < LAG_TIME_MS) {
+			try {
+				//sleep the remaining time to get us to the threshold
+				log.debug("sleeping for " + (LAG_TIME_MS - mustWaitTime));
+				Thread.sleep(LAG_TIME_MS - mustWaitTime);
+			} catch (Exception e) {
+				//don't care - this would bubble up as runtime issues anyways
+			}
+		}
+		accessTimes.put(domain, System.currentTimeMillis());
 	}
 }
