@@ -39,6 +39,7 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 	private static final String REPORT_TITLE = "Activity Report";
 	private static final String NAME = "NAME";
 	private static final String PAGE = "PAGE";
+	private static final String PAGE_TITLE = "PAGE_TITLE";
 	private static final String VISIT_DATE = "VISIT_DATE";
 	private static final String URI = "URI";
 
@@ -95,6 +96,7 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 				row = new HashMap<>();
 				row.put(NAME, cnt > 1 ? "" : user.getFirstName() + " " + user.getLastName());
 				row.put(PAGE, page.getPageDisplayName());
+				row.put(PAGE_TITLE, page.getPageTitleName());
 				row.put(URI, page.getRequestUri());
 				row.put(VISIT_DATE, page.getVisitDate());
 				rows.add(row);
@@ -128,6 +130,7 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put(NAME,"Name");
 		headerMap.put(PAGE,"Page");
+		headerMap.put(PAGE_TITLE, "Page Title");
 		headerMap.put(URI,"Page Address");
 		headerMap.put(VISIT_DATE,"Visit Date");
 		return headerMap;
