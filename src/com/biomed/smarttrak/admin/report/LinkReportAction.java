@@ -66,14 +66,14 @@ public class LinkReportAction extends SimpleActionAdapter {
 		boolean reviewFlg = Convert.formatBoolean(req.getParameter("reviewFlag"));
 		return loadLinks(site, reviewFlg);
 	}
-	
+
 	@Override
 	public void build(ActionRequest req) throws ActionException{
 		if(req.hasParameter("markedReview")){
 			markedReview(StringUtil.checkVal(req.getParameter(LINK_ID)));
 		}		
 	}
-	
+
 	/**
 	 *	Updates LinkVO's status to reviewed in db
 	 * @param linkId
@@ -84,7 +84,7 @@ public class LinkReportAction extends SimpleActionAdapter {
 		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_LINK set review_flg = 1 where link_id = ?");
 		log.debug(sql);
-		
+
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
 			ps.setString(1, linkId);
 			ps.executeUpdate();
@@ -104,7 +104,7 @@ public class LinkReportAction extends SimpleActionAdapter {
 	private List<LinkVO> loadLinks(SiteVO site, boolean reviewFlag) throws ActionException {
 		String qsPath = (String) getAttribute(Constants.QS_PATH);
 		List<LinkVO> data = new ArrayList<>(5000);
-		
+
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select link_id, url_txt, status_no, check_dt, review_flg, ");
 		sql.append("coalesce(company_id,product_id,insight_id,update_id,market_id) as id, ");
@@ -149,6 +149,7 @@ public class LinkReportAction extends SimpleActionAdapter {
 		} else if (Section.INSIGHT.name().equals(vo.getSection())) {
 			sec = Section.INSIGHT.getPageURL();
 			actionType="insights&insightId=";
+			vo.setSection("ANALYSIS"); //override cosmetic label
 		} else if (Section.MARKET.name().equals(vo.getSection())) {
 			sec = Section.MARKET.getPageURL();
 			actionType="marketAdmin&marketId=";
@@ -161,8 +162,8 @@ public class LinkReportAction extends SimpleActionAdapter {
 		//add FQDN to relative (presumed local) URLs
 		if (!StringUtil.isEmpty(vo.getUrl()) && vo.getUrl().startsWith("/")) 
 			vo.setUrl(fqdn + vo.getUrl());
-		
-		vo.setPublicUrl(new StringBuilder(100).append(fqdn).append("/").append(sec).append(qsPath).append(vo.getObjectId()).toString());
-		vo.setAdminUrl(new StringBuilder(100).append(fqdn).append("/manage?actionType=").append(actionType).append(vo.getObjectId()).toString());
+
+		vo.setPublicUrl(StringUtil.join(fqdn, sec, qsPath, vo.getObjectId()));
+		vo.setAdminUrl(StringUtil.join(fqdn, "/manage?actionType=", actionType, vo.getObjectId()));
 	}
 }

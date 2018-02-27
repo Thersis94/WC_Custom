@@ -68,9 +68,6 @@ public class RSSTermsAction extends SBActionAdapter {
 		try {
 			DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA)); 
 			dbp.save(ft);
-			if(StringUtil.isEmpty(ft.getFilterTermId())) {
-				ft.setFilterTermId(dbp.getGeneratedPKId());
-			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Error Processing Code", e);
 		}
@@ -120,8 +117,9 @@ public class RSSTermsAction extends SBActionAdapter {
 		if (!StringUtil.isEmpty(feedGroupCd)) {
 			vals.add(feedGroupCd);
 		}
-		return(List<RSSFilterTerm>)(List<?>) new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA)).executeSelect(
-				loadFilterTermTypeSql(!StringUtil.isEmpty(filterTermId), !StringUtil.isEmpty(filterTypeCode), !StringUtil.isEmpty(feedGroupCd)), vals, new RSSFilterTerm());
+		DBProcessor dbp = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		String sql = loadFilterTermTypeSql(!StringUtil.isEmpty(filterTermId), !StringUtil.isEmpty(filterTypeCode), !StringUtil.isEmpty(feedGroupCd));
+		return dbp.executeSelect(sql, vals, new RSSFilterTerm());
 	}
 
 	/**

@@ -55,6 +55,10 @@ public class RSSArticleSaxHandler extends DefaultHandler {
 	 */
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+		// Ensure that whenever an item element starts we clear out the data.
+		// If the xml file was properly formatted any adding to the vo list will have been handled
+		// by the endElement method. Improperly formatted data is discarded here.
+		if(SearchType.ITEM.getQName().equals(qName)) data = new EnumMap<>(SearchType.class);
 		super.startElement(uri, localName, qName, attributes);
 		for(SearchType s : SearchType.values()) {
 			if(s.getQName().equals(qName)) {

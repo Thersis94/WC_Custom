@@ -19,22 +19,25 @@ import org.xml.sax.helpers.DefaultHandler;
  * @since Apr 22, 2017
  ****************************************************************************/
 public class PubmedListSaxHandler extends DefaultHandler {
-	public enum SearchType {E_SEARCH_RES("eSearchResult"), COUNT("Count"), RET_MAX("RetMax"), RET_START("RetStart"), QUERY_KEY("QueryKey"), WEB_ENV("WebEnv"), ID("Id");
+
+	public enum SearchType {
+		E_SEARCH_RES("eSearchResult"), 
+		COUNT("Count"), 
+		RET_MAX("RetMax"), 
+		RET_START("RetStart"), 
+		QUERY_KEY("QueryKey"), 
+		WEB_ENV("WebEnv"), 
+		ID("Id");
+
 		private String qName;
-		SearchType(String qName) {
-			this.qName = qName;
-		}
-		public String getQName() {
-			return qName;
-		}
+		SearchType(String qName) { this.qName = qName; }
+		public String getQName() { return qName; }
 	}
-	
+
 	private SearchType type;
 	private PubMedSearchResultVO vo;
 	private Queue<String> types;
-	/**
-	 * 
-	 */
+
 	public PubmedListSaxHandler() {
 		super();
 		vo = new PubMedSearchResultVO();
@@ -56,8 +59,8 @@ public class PubmedListSaxHandler extends DefaultHandler {
 				break;
 			}
 		}
-		
 	}
+
 
 	/* (non-Javadoc)
 	 * @see org.xml.sax.helpers.DefaultHandler#endElement(java.lang.String, java.lang.String, java.lang.String)
