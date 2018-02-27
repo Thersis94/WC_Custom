@@ -119,8 +119,8 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.INSERT_CLAUSE).append(schema).append("rezdox_residence_member_xr (residence_member_xr_id, ");
-		sql.append("member_id, residence_id, create_dt) ");
-		sql.append("values (?,?,?,?)");
+		sql.append("member_id, residence_id, status_flg, create_dt) ");
+		sql.append("values (?,?,?,?,?)");
 		log.debug(sql);
 		
 		// Get the member adding this residence
@@ -131,7 +131,8 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 			ps.setString(1, new UUIDGenerator().getUUID());
 			ps.setString(2, member.getMemberId());
 			ps.setString(3, req.getParameter(ResidenceAction.RESIDENCE_ID));
-			ps.setTimestamp(4, Convert.getCurrentTimestamp());
+			ps.setInt(4, 1); // Newly added residences are always active
+			ps.setTimestamp(5, Convert.getCurrentTimestamp());
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			log.error("Could not save RezDox Member/Residence XR ", sqle);
