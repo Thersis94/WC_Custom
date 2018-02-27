@@ -69,7 +69,8 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 			List<FinancialDashRevenueDataRowVO> updateList = new ArrayList<>();
 			
 			for (FinancialDashRevenueDataRowVO row : data) {
-				if (CountryType.WW.toString().equals(row.getRegionCode())) continue;
+				if (CountryType.WW.toString().equals(row.getRegionCode()) || 
+						StringUtil.isEmpty(row.getRevenueId())) continue;
 				// Every valid row should have a scenario id.  If not this isn't a scenario save and should be discarded.
 				if (StringUtil.isEmpty(row.getScenarioId())) throw new ActionException("Missing Scenario Id. Canceling data import");
 				
