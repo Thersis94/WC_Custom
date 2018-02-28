@@ -414,24 +414,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		int regionCnt = dash.getCountryTypes().size();
 		TableType tt = dash.getTableType();
 		
-		sql.append("inner join ").append(custom).append("BIOMEDGPS_COMPANY c on r.COMPANY_ID = c.COMPANY_ID ");
-		sql.append("inner join ").append(custom).append("BIOMEDGPS_SECTION s1 on r.SECTION_ID = s1.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa1 on s1.SECTION_ID = aa1.SECTION_ID and aa1.FD_NO = 1 and aa1.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s2 on s1.PARENT_ID = s2.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa2 on s2.SECTION_ID = aa2.SECTION_ID and aa2.FD_NO = 1 and aa2.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s3 on s2.PARENT_ID = s3.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa3 on s3.SECTION_ID = aa3.SECTION_ID and aa3.FD_NO = 1 and aa3.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s4 on s3.PARENT_ID = s4.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa4 on s4.SECTION_ID = aa4.SECTION_ID and aa4.FD_NO = 1 and aa4.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s5 on s4.PARENT_ID = s5.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa5 on s5.SECTION_ID = aa5.SECTION_ID and aa5.FD_NO = 1 and aa5.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s6 on s5.PARENT_ID = s6.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa6 on s6.SECTION_ID = aa6.SECTION_ID and aa6.FD_NO = 1 and aa6.ACCOUNT_ID = ? ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s7 on s6.PARENT_ID = s7.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa7 on s7.SECTION_ID = aa7.SECTION_ID and aa7.FD_NO = 1 and aa7.ACCOUNT_ID = ? ");
-
-		sql.append("where (s1.SECTION_ID = ? OR s2.SECTION_ID = ? OR s3.SECTION_ID = ? OR s4.SECTION_ID = ? OR s5.SECTION_ID = ? OR s6.SECTION_ID = ? OR s7.SECTION_ID = ?) ");
-		sql.append("and (aa1.SECTION_ID is not null or aa2.SECTION_ID is not null or aa3.SECTION_ID is not null or aa4.SECTION_ID is not null or aa5.SECTION_ID is not null or aa6.SECTION_ID is not null or aa7.SECTION_ID is not null) ");
+		getCommonMidSql(sql, custom);
 		
 		sql.append("and r.REGION_CD in (");
 		for (int i = 1; i <= regionCnt; i++) {
@@ -477,6 +460,34 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		return sql;
 	}
 	
+	
+	/**
+	 * Get the join and standard where clause for the queries.
+	 * @param sql
+	 * @param custom
+	 */
+	protected void getCommonMidSql(StringBuilder sql, String custom) {
+		sql.append("inner join ").append(custom).append("BIOMEDGPS_COMPANY c on r.COMPANY_ID = c.COMPANY_ID ");
+		sql.append("inner join ").append(custom).append("BIOMEDGPS_SECTION s1 on r.SECTION_ID = s1.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa1 on s1.SECTION_ID = aa1.SECTION_ID and aa1.FD_NO = 1 and aa1.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s2 on s1.PARENT_ID = s2.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa2 on s2.SECTION_ID = aa2.SECTION_ID and aa2.FD_NO = 1 and aa2.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s3 on s2.PARENT_ID = s3.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa3 on s3.SECTION_ID = aa3.SECTION_ID and aa3.FD_NO = 1 and aa3.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s4 on s3.PARENT_ID = s4.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa4 on s4.SECTION_ID = aa4.SECTION_ID and aa4.FD_NO = 1 and aa4.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s5 on s4.PARENT_ID = s5.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa5 on s5.SECTION_ID = aa5.SECTION_ID and aa5.FD_NO = 1 and aa5.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s6 on s5.PARENT_ID = s6.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa6 on s6.SECTION_ID = aa6.SECTION_ID and aa6.FD_NO = 1 and aa6.ACCOUNT_ID = ? ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s7 on s6.PARENT_ID = s7.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa7 on s7.SECTION_ID = aa7.SECTION_ID and aa7.FD_NO = 1 and aa7.ACCOUNT_ID = ? ");
+
+		sql.append("where (s1.SECTION_ID = ? OR s2.SECTION_ID = ? OR s3.SECTION_ID = ? OR s4.SECTION_ID = ? OR s5.SECTION_ID = ? OR s6.SECTION_ID = ? OR s7.SECTION_ID = ?) ");
+		sql.append("and (aa1.SECTION_ID is not null or aa2.SECTION_ID is not null or aa3.SECTION_ID is not null or aa4.SECTION_ID is not null or aa5.SECTION_ID is not null or aa6.SECTION_ID is not null or aa7.SECTION_ID is not null) ");
+	}
+	
+	
 	/**
 	 * Get the current quarter
 	 * @return
@@ -497,11 +508,25 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		if ("markCurrent".equals(actionPerform)) {
 			markCurrentQuarter(req);
 			return;
+		} else if ("export".equals(actionPerform)) {
+			FinancialDashImportAction export = new FinancialDashImportAction();
+			export.setDBConnection(dbConn);
+			export.setAttributes(attributes);
+			FinancialDashImportReportVO report = export.buildReport(req);
+			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+			req.setAttribute(Constants.BINARY_DOCUMENT, report);
+			return;
+		} else if ("import".equals(actionPerform)) {
+			FinancialDashImportAction importer = new FinancialDashImportAction();
+			importer.setDBConnection(dbConn);
+			importer.setAttributes(attributes);
+			importer.importChanges(req);
+			return;
 		}
 		
 		this.updateData(req);
 	}
-	
+
 	/**
 	 * Adds one or more companies to the FD data for a given section/region/year
 	 * 
