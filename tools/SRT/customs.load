@@ -1,0 +1,4 @@
+load database
+	from mssql://sa:sqll0gin@10.0.20.71:1433/customs
+	into postgresql://raptor:sqll0gin@playstation/raptor_webcrescendo_depuy
+excluding table names like 'tbl_pt_sales_roster' in schema 'dbo';
