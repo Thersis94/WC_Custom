@@ -24,9 +24,6 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class SubscriptionAction extends SBActionAdapter {
 	
-	public static final String UPGRADE_PATH = "/subscribe";
-	private static final String USAGE_QTY = "usage_qty";
-	
 	public SubscriptionAction() {
 		super();
 	}
@@ -79,7 +76,7 @@ public class SubscriptionAction extends SBActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				int purchaseQty = rs.getInt("purchase_qty");
+				int purchaseQty = rs.getInt(1);
 				int usageQty = getUsageQty(memberId, membershipGroup);
 				needsUpgrade = purchaseQty - usageQty <= 0;
 			}
@@ -100,23 +97,16 @@ public class SubscriptionAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	private int getUsageQty(String memberId, Group membershipGroup) throws ActionException {
-		int usageQty = 0;
-		
 		switch (membershipGroup) {
 			case HO:
-				usageQty = getResidenceUsage(memberId);
-				break;
+				return getResidenceUsage(memberId);
 			case BU: 
-				usageQty = getBusinessUsage(memberId);
-				break;
+				return getBusinessUsage(memberId);
 			case CO: 
-				usageQty = getConnectionUsage(memberId);
-				break;
+				return getConnectionUsage(memberId);
 			default:
 				throw new ActionException("Unsupported membership group type.");
 		}
-		
-		return usageQty;
 	}
 	
 	/**
@@ -138,7 +128,7 @@ public class SubscriptionAction extends SBActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				usageQty = rs.getInt(USAGE_QTY);
+				usageQty = rs.getInt(1);
 			}
 		} catch (SQLException e) {
 			log.error("Unable to validate member residence usage. ", e);
@@ -166,7 +156,7 @@ public class SubscriptionAction extends SBActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				usageQty = rs.getInt(USAGE_QTY);
+				usageQty = rs.getInt(1);
 			}
 		} catch (SQLException e) {
 			log.error("Unable to validate member business usage. ", e);
@@ -199,7 +189,7 @@ public class SubscriptionAction extends SBActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				usageQty = rs.getInt(USAGE_QTY);
+				usageQty = rs.getInt(1);
 			}
 		} catch (SQLException e) {
 			log.error("Unable to validate member connection usage. ", e);

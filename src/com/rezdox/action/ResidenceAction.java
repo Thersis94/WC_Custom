@@ -68,7 +68,7 @@ public class ResidenceAction extends FormAction {
 		if (req.hasParameter("homeInfo")) {
 			// When adding a new residence, check to make sure the member has not reached their limit
 			if (residenceList.isEmpty() && !canAddNewResidence(residenceList, req)) {
-				sendRedirect(SubscriptionAction.UPGRADE_PATH, UPGRADE_MSG, req);
+				sendRedirect(RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH, UPGRADE_MSG, req);
 				return;
 			} else {
 				// Set the data to be returned
