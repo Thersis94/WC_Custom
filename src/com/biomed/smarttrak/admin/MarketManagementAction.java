@@ -10,7 +10,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.MarketAction;
 import com.biomed.smarttrak.util.MarketIndexer;
 import com.biomed.smarttrak.util.SmarttrakTree;
@@ -1011,6 +1013,8 @@ public class MarketManagementAction extends ManagementAction {
 		//if status is archived or deleted, remove this market from Solr
 		if ("A".equals(status) || "D".equals(status)) {
 			try {
+				if (marketId.length() < AdminControllerAction.DOC_ID_MIN_LEN)
+					marketId = Section.MARKET.name() + "_" +marketId;
 				idx.purgeSingleItem(marketId);
 			} catch (IOException e) {
 				log.warn("could not delete market from solr " + marketId, e);
