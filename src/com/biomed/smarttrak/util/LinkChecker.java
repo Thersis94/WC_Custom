@@ -11,8 +11,10 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,8 +47,11 @@ public class LinkChecker extends CommandLineUtil {
 	private static final String PRODUCTS = "products";
 	private static final String COMPANIES = "companies";
 	private static final String MARKETS = "markets";
-	private static final String INSIGHTS = "analysis";
+	private static final String ANALYSIS = "analysis";  //formerly called INSIGHTS
 	private static final String UPDATES = "updates";
+
+	private Map<String, Long> accessTimes;
+	private static final long LAG_TIME_MS = 1000;
 
 	/**
 	 * This enum is what we iterate when the script runs.
@@ -55,8 +60,8 @@ public class LinkChecker extends CommandLineUtil {
 		COMPANY_ATTR_XR(COMPANIES,"select company_id, value_txt from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR"),
 		PROD_ATTR_XR(PRODUCTS,"select product_id, value_txt from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR"),
 		MKRT_ATTR_XR(MARKETS,"select market_id, value_txt from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR"),
-		INSIGHT_ABS(INSIGHTS,"select insight_id, abstract_txt from custom.BIOMEDGPS_INSIGHT"),
-		INSIGHT_MAIN(INSIGHTS,"select insight_id, content_txt from custom.BIOMEDGPS_INSIGHT");
+		ANALYSIS_ABS(ANALYSIS,"select insight_id, abstract_txt from custom.BIOMEDGPS_INSIGHT"),
+		ANALYSIS_MAIN(ANALYSIS,"select insight_id, content_txt from custom.BIOMEDGPS_INSIGHT");
 
 		String selectSql;
 		String section;
@@ -72,7 +77,7 @@ public class LinkChecker extends CommandLineUtil {
 	List<String> validCompanyIds;
 	List<String> validProductIds;
 	List<String> validMarketIds;
-	List<String> validInsightIds;
+	List<String> validInsightIds;  //AKA analysis
 	List<String> recentlyChecked;
 	StringEncoder encoder;
 	List<String> getDomains; //known domains that don't support HTTP HEAD requests - set in config file
@@ -96,6 +101,7 @@ public class LinkChecker extends CommandLineUtil {
 		super(args);
 		loadProperties("scripts/bmg_smarttrak/link-checker.properties");
 		loadDBConnection(props);
+		accessTimes = new HashMap<>(5000);
 		validCompanyIds = new ArrayList<>(5000);
 		validProductIds = new ArrayList<>(5000);
 		validMarketIds = new ArrayList<>(5000);
@@ -254,7 +260,8 @@ public class LinkChecker extends CommandLineUtil {
 				++extTested;
 			}
 			//if it failed, add it to the report email - 200=success, 3xx=redirects (okay)
-			if (vo.getOutcome() > 399)
+			//429 is not a failure necessarily, it's a request rate limit.
+			if (vo.getOutcome() != 429 && vo.getOutcome() > 403)
 				linksFailed.add(vo);
 		}
 	}
@@ -280,7 +287,7 @@ public class LinkChecker extends CommandLineUtil {
 			vo.setOutcome(validCompanyIds.contains(targetObjectId) ? 200 : 404);
 		} else if (PRODUCTS.equals(urlSection)) {
 			vo.setOutcome(validProductIds.contains(targetObjectId) ? 200 : 404);
-		} else if (INSIGHTS.equals(urlSection) || "archives".equals(urlSection)) {
+		} else if (ANALYSIS.equals(urlSection) || "archives".equals(urlSection)) {
 			vo.setOutcome(validInsightIds.contains(targetObjectId) ? 200 : 404);
 		} else if (urlSection.matches("/manage\\?(.*)")) {
 			vo.setOutcome(404); //links should never go to the /manage tool
@@ -297,8 +304,8 @@ public class LinkChecker extends CommandLineUtil {
 	 * @param urlSection
 	 */
 	protected void inspectLocalUrl(LinkVO vo, String relaUrl) {
-		if (relaUrl.startsWith("/tools") || relaUrl.startsWith("/explorer") || 
-				relaUrl.startsWith("/analysis") || relaUrl.startsWith("/financials")) {
+		if (relaUrl.startsWith("/tools") || relaUrl.startsWith("/analysis") || 
+				relaUrl.startsWith("/explorer") || relaUrl.startsWith("/financial")) {
 			vo.setOutcome(200); //known site pages - legacy covered by Apache rewrites
 			log.debug("identified as tools url: " + relaUrl);
 			return;
@@ -321,19 +328,26 @@ public class LinkChecker extends CommandLineUtil {
 	protected void httpTest(LinkVO vo) {
 		try {
 			URL url = new URL(vo.getUrl());
+
+			// If necessary pause to avoid 429 responses - "Too Fast"
+			throttleRequests(vo.getUrl());
+
 			//some domains don't support HEAD - don't bother.
 			if (getDomains.contains(url.getHost())) { 
 				httpGetTest(vo,url);
 			} else {
 				httpHeadTest(vo,url);
 			}
+			//check for redirects
+			checkRedirect(vo);
+
 		} catch (Exception e) {
-			log.warn("URL Failed: " + e.getMessage());
-			if ("Connection reset".equals(e.getMessage())) {
+			log.warn("URL Failed: " + e.getMessage() + " sts=" + vo.getOutcome());
+			if ("Connection reset".equals(e.getMessage()) || 429 == vo.getOutcome()) {
 				//maybe we're too aggressive, let's sleep for 30 secs
 				try {
-					log.info("sleeping 30 seconds");
-					Thread.sleep(30000);
+					log.info("sleeping 10 seconds");
+					Thread.sleep(10000);
 				} catch (InterruptedException e1) {
 					log.error(e);
 					Thread.currentThread().interrupt();
@@ -343,6 +357,21 @@ public class LinkChecker extends CommandLineUtil {
 			//try to salvage a quality http response code - fallback to 404
 			String s = StringUtil.checkVal(e.getMessage()).replaceAll("(.*)Server returned HTTP response code: ([0-9]{3,3})?(.*)", "$2");
 			vo.setOutcome(Convert.formatInteger(s, 404));
+		}
+	}
+
+
+	/**
+	 * if the initial http call returned a redirect, transpose it into the main URL field and call a second time.
+	 * @param vo
+	 */
+	private void checkRedirect(LinkVO vo) {
+		if (isRedirect(vo.getOutcome()) && !StringUtil.isEmpty(vo.getRedirectUrl())) {
+			log.debug("got redirected to: " + vo.getRedirectUrl());
+			vo.setUrl(vo.getRedirectUrl());
+			vo.setRedirectUrl(null); //flush this or we're in a continuous loop
+			vo.setOutcome(0);
+			httpTest(vo);
 		}
 	}
 
@@ -358,12 +387,18 @@ public class LinkChecker extends CommandLineUtil {
 			HttpURLConnection conn = setupConnection("HEAD", url);
 			conn.connect();
 			vo.setOutcome(conn.getResponseCode());
-			if (200 != vo.getOutcome())
+
+			if (isRedirect(vo.getOutcome())) {
+				vo.setRedirectUrl(conn.getHeaderField("Location"));
+			} else if (200 != vo.getOutcome()) {
 				log.debug("failed HEAD " + vo.getOutcome() +" reason: " + conn.getResponseMessage());
+			}
 
 			//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
 			conn.getInputStream().close();
 			conn.disconnect();
+
+
 		} catch (Exception se) {
 			httpGetTest(vo,url);
 			//if the above line succeeds, we know this domain does not support HEAD requests
@@ -383,12 +418,27 @@ public class LinkChecker extends CommandLineUtil {
 		HttpURLConnection conn = setupConnection("GET", url);
 		conn.connect();
 		vo.setOutcome(conn.getResponseCode());
-		if (200 != vo.getOutcome())
+
+		if (isRedirect(vo.getOutcome())) {
+			vo.setRedirectUrl(conn.getHeaderField("Location"));
+
+		} else if (200 != vo.getOutcome()) {
 			log.debug("failed GET " + vo.getOutcome() +" reason: " + conn.getResponseMessage());
+		}
 
 		//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
 		conn.getInputStream().close();
 		conn.disconnect();
+	}
+
+
+	/**
+	 * is this http response code a redirect
+	 * @param outcome
+	 * @return
+	 */
+	private boolean isRedirect(int outcome) {
+		return 301 == outcome || 302 == outcome;
 	}
 
 
@@ -406,11 +456,14 @@ public class LinkChecker extends CommandLineUtil {
 		conn.setConnectTimeout(HTTP_CONN_TIMEOUT);
 		conn.setReadTimeout(HTTP_READ_TIMEOUT);
 		conn.addRequestProperty("User-Agent", mockUserAgent);
-		conn.addRequestProperty("Accept-Encoding", "compress, gzip");
+		conn.addRequestProperty("Accept-Encoding", "*");
 		conn.addRequestProperty("Accept", "*/*");
 		conn.addRequestProperty("Connection", "keep-alive");
-		conn.addRequestProperty("Cookie", "");
 		conn.addRequestProperty("Referer", "https://app.smarttrak.com/");
+		conn.setUseCaches(true); //true because anything cached won't live beyond the JVM - so encourage reuse within this 'run' (of the script).
+		conn.setAllowUserInteraction(false);
+		HttpURLConnection.setFollowRedirects(true);
+		conn.setInstanceFollowRedirects(true);
 		return conn;
 	}
 
@@ -426,7 +479,7 @@ public class LinkChecker extends CommandLineUtil {
 		if (onlyBroken) {
 			sql = "delete from custom.biomedgps_link where status_no=404";
 		} else {
-			sql = "delete from custom.biomedgps_link where check_dt < (CURRENT_DATE - interval '"+days+" days')";
+			sql = StringUtil.join("delete from custom.biomedgps_link where check_dt < (CURRENT_DATE - interval '", days," days')");
 		}
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
@@ -455,7 +508,7 @@ public class LinkChecker extends CommandLineUtil {
 				ps.setString(2, COMPANIES.equals(vo.getSection()) ? vo.getObjectId() : null);
 				ps.setString(3, MARKETS.equals(vo.getSection()) ? vo.getObjectId() : null);
 				ps.setString(4, PRODUCTS.equals(vo.getSection()) ? vo.getObjectId() : null);
-				ps.setString(5, INSIGHTS.equals(vo.getSection()) ? vo.getObjectId() : null);
+				ps.setString(5, ANALYSIS.equals(vo.getSection()) ? vo.getObjectId() : null);
 				ps.setString(6, UPDATES.equals(vo.getSection()) ? vo.getObjectId() : null);
 				ps.setString(7,  vo.getUrl());
 				ps.setTimestamp(8, Convert.formatTimestamp(vo.getLastChecked()));
@@ -529,7 +582,7 @@ public class LinkChecker extends CommandLineUtil {
 		List<String> printed = new ArrayList<>(linksFailed.size()); //de-duplicate the results
 		for (LinkVO vo : linksFailed) {
 			String unqKey = vo.getUrl() + vo.getSection() + vo.getObjectId();
-			if (vo.getOutcome() == 200 || printed.contains(unqKey)) 
+			if (printed.contains(unqKey)) 
 				continue; //only print the ones that failed
 			msg.append("<tr>");
 			msg.append("<td nowrap><a href=\"").append(baseDomain).append("/").append(vo.getSection()).append(qsPath).append(vo.getObjectId()).append("\">").append(vo.getSection()).append("</a></td>");
@@ -549,5 +602,31 @@ public class LinkChecker extends CommandLineUtil {
 		msg.append("<h4>Domains not supporting HEAD (Sys-Admin: add these to the config file)</h4>\n");
 		for (String domain: getDomainsReport)
 			msg.append(domain).append("<br/>\n");		
+	}
+
+
+	/**
+	 * Puts the thread to sleep if we haven't waited at least a minimum amount of time between USPTO queries
+	 * Calculate a wait time based on the last time we queried them.  If less than the threshold, put our thread to sleep.
+	 */
+	private void throttleRequests(String url) {
+		String domain = StringUtil.stripProtocol(url);
+		domain = domain.substring(0, domain.indexOf('/'));
+
+		Long lastAccessTime = accessTimes.get(domain);
+		if (lastAccessTime == null) lastAccessTime = Long.valueOf(0);
+		log.debug("domain from URL= " + domain + " last access=" + lastAccessTime);
+
+		long mustWaitTime = System.currentTimeMillis() - lastAccessTime;
+		if (mustWaitTime > 0 && mustWaitTime < LAG_TIME_MS) {
+			try {
+				//sleep the remaining time to get us to the threshold
+				log.debug("sleeping for " + (LAG_TIME_MS - mustWaitTime));
+				Thread.sleep(LAG_TIME_MS - mustWaitTime);
+			} catch (Exception e) {
+				//don't care - this would bubble up as runtime issues anyways
+			}
+		}
+		accessTimes.put(domain, System.currentTimeMillis());
 	}
 }

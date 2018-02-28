@@ -96,7 +96,7 @@ public class FinancialDashHierarchyAction extends SectionHierarchyAction {
 	 */
 	protected SmarttrakTree getTree() throws ActionException {
 		SmarttrakTree tree = loadTree(null);
-		tree.calculateTotalChildren(tree.getRootNode());
+		SmarttrakTree.calculateTotalChildren(tree.getRootNode());
 		
 		return tree;
 	}

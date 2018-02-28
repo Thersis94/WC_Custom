@@ -25,6 +25,7 @@ public class LinkVO {
 	private int outcome;
 	private String adminUrl;
 	private String publicUrl;
+	private String redirectUrl;
 	private int reviewFlag;
 
 	public LinkVO(String section, String id, String html) {
@@ -32,7 +33,7 @@ public class LinkVO {
 		this.setObjectId(id);
 		this.html = html;
 	}
-	
+
 	public LinkVO() {
 		//no-arg constructor for simple instantiation
 	}
@@ -42,7 +43,7 @@ public class LinkVO {
 		vo.setUrl(url);
 		return vo;
 	}
-	
+
 	/**
 	 * Generates a new LinkVO and sets relevant values via ResultSet
 	 * @param rs
@@ -58,7 +59,7 @@ public class LinkVO {
 		vo.setLastChecked(rs.getDate("check_dt"));
 		vo.setOutcomeNo(rs.getInt("status_no"));
 		vo.setReviewFlag(rs.getInt("review_flg"));
-		
+
 		return vo;
 	}
 
@@ -157,5 +158,17 @@ public class LinkVO {
 	 */
 	public void setLinkId(String linkId) {
 		this.linkId = linkId;
+	}
+
+	/**
+	 * redirectUrl is used by the LinkChecker script - when a server response 301 or 302 and we need to follow it.
+	 * @return
+	 */
+	public String getRedirectUrl() {
+		return redirectUrl;
+	}
+
+	public void setRedirectUrl(String redirectUrl) {
+		this.redirectUrl = redirectUrl;
 	}
 }

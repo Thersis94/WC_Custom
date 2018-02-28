@@ -161,20 +161,18 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 			svo.setStatusFlg(StatusLevel.T.toString());
 		}
 		
-		String newId = null;
 		try {
 			if (req.hasParameter("isDelete")) {
 				dbp.delete(svo);
 			} else {
 				dbp.save(svo);
-				newId = dbp.getGeneratedPKId();
 			}
 		} catch (Exception e) {
 			throw new ActionException("Couldn't update/create scenario record.", e);
 		}
 		
 		Map<String, Object> response = new HashMap<>();
-		response.put("scenarioId", newId);
+		response.put("scenarioId", svo.getScenarioId());
 		putModuleData(response, 0, false);
 	}
 }
