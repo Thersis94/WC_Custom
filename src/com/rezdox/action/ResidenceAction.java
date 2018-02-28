@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import com.rezdox.vo.MemberVO;
+import com.rezdox.vo.MembershipVO.Group;
 import com.rezdox.vo.ResidenceVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -67,7 +68,7 @@ public class ResidenceAction extends FormAction {
 		if (req.hasParameter("homeInfo")) {
 			// When adding a new residence, check to make sure the member has not reached their limit
 			if (residenceList.isEmpty() && !canAddNewResidence(residenceList, req)) {
-				sendRedirect(SubscriptionAction.UPGRADE_PATH, UPGRADE_MSG, req);
+				sendRedirect(RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH, UPGRADE_MSG, req);
 				return;
 			} else {
 				// Set the data to be returned
@@ -85,8 +86,9 @@ public class ResidenceAction extends FormAction {
 	 * @param residenceList
 	 * @param member
 	 * @return true if residence can be added, false if not
+	 * @throws ActionException 
 	 */
-	private boolean canAddNewResidence(List<ResidenceVO> residenceList, ActionRequest req) {
+	private boolean canAddNewResidence(List<ResidenceVO> residenceList, ActionRequest req) throws ActionException {
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 			
@@ -94,7 +96,7 @@ public class ResidenceAction extends FormAction {
 		SubscriptionAction sa = new SubscriptionAction(getActionInit());
 		sa.setAttributes(getAttributes());
 		sa.setDBConnection(getDBConnection());
-		boolean needsUpgrade = sa.checkResidenceUpgrade(member.getMemberId());
+		boolean needsUpgrade = sa.checkUpgrade(member.getMemberId(), Group.HO);
 		
 		// Set default residence name per requirements
 		if (!needsUpgrade) {

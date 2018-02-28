@@ -4,10 +4,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import com.rezdox.vo.MembershipVO;
+import com.rezdox.vo.MembershipVO.Group;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -22,8 +23,6 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Feb 7, 2018
  ****************************************************************************/
 public class SubscriptionAction extends SBActionAdapter {
-	
-	public static final String UPGRADE_PATH = "/subscribe";
 	
 	public SubscriptionAction() {
 		super();
@@ -53,37 +52,149 @@ public class SubscriptionAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Checks if a member needs to purchase a residence subscription upgrade
+	 * Checks if a member needs to purchase a subscription upgrade
 	 * 
 	 * @param req
 	 * @return true if the member needs an upgrade, false if not
+	 * @throws ActionException 
 	 */
-	protected boolean checkResidenceUpgrade(String memberId) {
+	protected boolean checkUpgrade(String memberId, Group membershipGroup) throws ActionException {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		boolean needsUpgrade = true;
 		
 		StringBuilder sql = new StringBuilder(350);
-		sql.append("select sum(s.qty_no) - (select count(residence_id) from custom.rezdox_residence_member_xr where member_id = ?) as available_qty ");
-		sql.append("from ").append(schema).append("rezdox_subscription s inner join ");
+		sql.append("select sum(s.qty_no) as purchase_qty ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_subscription s inner join ");
 		sql.append(schema).append("rezdox_membership m on s.membership_id = m.membership_id ");
 		sql.append("where group_cd = ? and member_id = ? ");
 		sql.append("group by group_cd ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int idx = 0;
-			ps.setString(++idx, memberId);
-			ps.setString(++idx, MembershipVO.Group.HO.toString());
+			ps.setString(++idx, membershipGroup.toString());
 			ps.setString(++idx, memberId);
 			
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				int availableQty = rs.getInt("available_qty");
-				needsUpgrade = availableQty > 0 ? false : true;
+				int purchaseQty = rs.getInt(1);
+				int usageQty = getUsageQty(memberId, membershipGroup);
+				needsUpgrade = purchaseQty - usageQty <= 0;
 			}
 		} catch (SQLException e) {
-			log.error("Unable to validate current Residence subscriptions. ", e);
+			log.error("Unable to validate subscription purchase qty. ", e);
 		}
 		
 		return needsUpgrade;
+	}
+	
+	/**
+	 * Gets a member's subscription usage for a given membership type.
+	 * NOTE: This is different than the total subscriptions paid for.
+	 * 
+	 * @param memberId
+	 * @param membershipGroup
+	 * @return
+	 * @throws ActionException 
+	 */
+	private int getUsageQty(String memberId, Group membershipGroup) throws ActionException {
+		switch (membershipGroup) {
+			case HO:
+				return getResidenceUsage(memberId);
+			case BU: 
+				return getBusinessUsage(memberId);
+			case CO: 
+				return getConnectionUsage(memberId);
+			default:
+				throw new ActionException("Unsupported membership group type.");
+		}
+	}
+	
+	/**
+	 * Checks a member's usage of residence subscriptions
+	 * 
+	 * @param memberId
+	 * @return
+	 */
+	private int getResidenceUsage(String memberId) {
+		String schema = getCustomSchema();
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select count(residence_id) as usage_qty from ").append(schema);
+		sql.append("rezdox_residence_member_xr where member_id = ? and status_flg = 1 ");
+		
+		int usageQty = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, memberId);
+			
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				usageQty = rs.getInt(1);
+			}
+		} catch (SQLException e) {
+			log.error("Unable to validate member residence usage. ", e);
+		}
+		
+		return usageQty;
+	}
+	
+	/**
+	 * Checks a member's usage of business subscriptions
+	 * 
+	 * @param memberId
+	 * @return
+	 */
+	private int getBusinessUsage(String memberId) {
+		String schema = getCustomSchema();
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select count(business_id) as usage_qty from ").append(schema);
+		sql.append("rezdox_business_member_xr where member_id = ? and status_flg = 1 ");
+		
+		int usageQty = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, memberId);
+			
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				usageQty = rs.getInt(1);
+			}
+		} catch (SQLException e) {
+			log.error("Unable to validate member business usage. ", e);
+		}
+		
+		return usageQty;
+	}
+
+	/**
+	 * Checks a member's usage of connection subscriptions
+	 * 
+	 * @param memberId
+	 * @return
+	 */
+	private int getConnectionUsage(String memberId) {
+		String schema = getCustomSchema();
+		
+		StringBuilder sql = new StringBuilder(400);
+		sql.append("select count(*) as usage_qty from ").append(schema).append("rezdox_connection c ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("rezdox_business_member_xr sbm on c.sndr_business_id = sbm.business_id and sbm.status_flg = 1 ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("rezdox_business_member_xr rbm on c.rcpt_business_id = rbm.business_id and rbm.status_flg = 1 ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("approved_flg = 1 and (sndr_member_id = ? or rcpt_member_id = ? or sbm.member_id = ? or rbm.member_id = ?) ");
+		
+		int usageQty = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, memberId);
+			ps.setString(2, memberId);
+			ps.setString(3, memberId);
+			ps.setString(4, memberId);
+			
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				usageQty = rs.getInt(1);
+			}
+		} catch (SQLException e) {
+			log.error("Unable to validate member connection usage. ", e);
+		}
+		
+		return usageQty;
 	}
 }

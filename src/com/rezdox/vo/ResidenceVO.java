@@ -222,6 +222,24 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	public void setAttributes(Map<String, Object> attributes) {
 		this.attributes = attributes;
 	}
+	
+	/**
+	 * @return the latitude
+	 */
+	@Override
+	@Column(name="latitude_no")
+	public Double getLatitude() {
+		return latitude;
+	}
+
+	/**
+	 * @return the longitude
+	 */
+	@Override
+	@Column(name="longitude_no")
+	public Double getLongitude() {
+		return longitude;
+	}
 
 	/**
 	 * @return the createDate
