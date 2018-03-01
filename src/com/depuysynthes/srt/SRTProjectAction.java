@@ -14,6 +14,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
@@ -32,6 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class SRTProjectAction extends SimpleActionAdapter {
 
+	public enum DisplayType {ENGINEERING, POST_ENGINEERING, UNASSIGNED, MY_PROJECTS}
 	private FormAction fa;
 	public SRTProjectAction() {
 		super();
@@ -52,7 +54,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			putModuleData(project);
 		} else {
 			GridDataVO<SRTProjectVO> projects = loadProjects(req);
-			putModuleData(projects, projects.getTotal(), false);
+			putModuleData(projects.getRowData(), projects.getTotal(), false);
 		}
 	}
 
@@ -83,20 +85,28 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
 
+		//Holds Engineering, Post Engineering, Unassigned, My Projects.
+		DisplayType displayType = EnumUtil.safeValueOf(DisplayType.class, req.getParameter("displayType"));
+		if(displayType == null) {
+			displayType = DisplayType.ENGINEERING;
+		}
+
 		//We always set Op Co Id off user so they are restricted to their data set.
 		vals.add(roster.getOpCoId());
 
 		//Build Query and populate required vals at same time.
-		String sql = buildProjectRetrievalQuery(req);
+		String sql = buildProjectRetrievalQuery(req, vals, displayType);
 
 		//Load Projects
 		GridDataVO<SRTProjectVO> projects = new DBProcessor(dbConn).executeSQLWithCount(sql, vals, new SRTProjectVO(), req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
 
-		//Decrypt Project Record Name Fields.
-		decryptProjectNames(projects);
+		if(!projects.getRowData().isEmpty()) {
+			//Decrypt Project Record Name Fields.
+			decryptProjectNames(projects);
 
-		//Add Milestone Data
-		SRTUtil.populateMilestones(projects.getRowData(), dbConn, getCustomSchema());
+			//Add Milestone Data
+			SRTUtil.populateMilestones(projects.getRowData(), dbConn, getCustomSchema());
+		}
 
 		//Return Projects
 		return projects;
@@ -110,6 +120,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		try {
 			StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
 			for(SRTProjectVO p : projects.getRowData()) {
+				p.setRequestorNm(SRTUtil.decryptName(p.getRequestorNm(), se));
 				p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
 				p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
 				p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
@@ -121,14 +132,17 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	/**
 	 * Builds the Project Retrieval Query.
+	 * @param displayType 
+	 * @param vals 
 	 * @param rosterId
 	 * @param projectId
 	 * @return
 	 */
-	private String buildProjectRetrievalQuery(ActionRequest req) {
+	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals, DisplayType displayType) {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("select p.*, r.*, pr.first_nm, pr.last_nm, ");
+		sql.append("select p.*, req.*, ");
+		sql.append("concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
 		sql.append("concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
 		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
 		sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm ");
@@ -162,9 +176,37 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE qp ");
 		sql.append("on q.PROFILE_ID = qp.PROFILE_ID ");
 
-		sql.append(DBUtil.WHERE_1_CLAUSE).append(" and p.OP_CO_ID = ? ");
+		buildWhereClause(sql, req, vals, displayType);
+
 		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(req.getParameter("orderBy"), "p.create_dt"));
 
 		return sql.toString();
+	}
+
+	/**
+	 * Build the where clause of the query.
+	 * @param sql
+	 * @param req
+	 * @param vals
+	 * @param displayType
+	 */
+	private void buildWhereClause(StringBuilder sql, ActionRequest req, List<Object> vals, DisplayType displayType) {
+		sql.append(DBUtil.WHERE_1_CLAUSE).append(" and p.OP_CO_ID = ? ");
+
+		//If my Project, add roster ID for comparisons.  Else sort by status.
+		if(DisplayType.MY_PROJECTS.equals(displayType)) {
+			SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
+
+			sql.append("and (req.roster_id = ? or engineer_id = ? ");
+			sql.append("or quality_engineer_id = ? or designer_id = ?) ");
+
+			vals.add(roster.getRosterId());
+			vals.add(roster.getRosterId());
+			vals.add(roster.getRosterId());
+			vals.add(roster.getRosterId());
+		} else {
+			sql.append("and PROJECT_STATUS = ? ");
+			vals.add(displayType.name());
+		}
 	}
 }

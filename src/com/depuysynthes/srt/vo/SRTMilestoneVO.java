@@ -4,6 +4,7 @@ import java.util.Date;
 
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> SRTMilestoneVO.java
@@ -16,7 +17,7 @@ import com.siliconmtn.db.orm.Column;
  * @version 3.3.1
  * @since Feb 23, 2018
  ****************************************************************************/
-public class SRTMilestoneVO extends BeanDataVO {
+public class SRTMilestoneVO extends BeanDataVO implements Comparable<SRTMilestoneVO>{
 
 	/**
 	 *
@@ -89,5 +90,28 @@ public class SRTMilestoneVO extends BeanDataVO {
 	 */
 	public void setMilestoneDt(Date milestoneDt) {
 		this.milestoneDt = milestoneDt;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 */
+	@Override
+	public int compareTo(SRTMilestoneVO o) {
+		return getMilestoneDt().compareTo(o.getMilestoneDt());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		boolean same = true;
+
+		if(o instanceof SRTMilestoneVO) {
+			SRTMilestoneVO m = (SRTMilestoneVO)o; 
+			same = same && StringUtil.checkVal(milestoneId).equals(m.getMilestoneId());
+			same = same && StringUtil.checkVal(projectId).equals(m.getProjectId());
+		} else {
+			same = false;
+		}
+
+		return same;
 	}
 }

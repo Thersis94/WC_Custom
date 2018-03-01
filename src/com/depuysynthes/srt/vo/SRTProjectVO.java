@@ -1,12 +1,15 @@
 package com.depuysynthes.srt.vo;
 
 import java.math.BigDecimal;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -24,8 +27,12 @@ import com.siliconmtn.util.StringUtil;
  * @since Feb 5, 2018
  ****************************************************************************/
 @Table(name="SRT_PROJECT")
-public class SRTProjectVO {
+public class SRTProjectVO extends BeanDataVO {
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
 	private String projectId;
 	private String projectName;
 	private String projectType;
@@ -37,11 +44,8 @@ public class SRTProjectVO {
 	private BigDecimal actualRoi;
 	private String srtContact;
 	private String engineerId;
-	private String engineerNm;
 	private String designerId;
-	private String designerNm;
 	private String qualityEngineerId;
-	private String qualityEngineerNm;
 	private boolean makeFromScratch;
 	private String funcCheckOrderNo;
 	private String makeFromOrderNo;
@@ -56,14 +60,28 @@ public class SRTProjectVO {
 	private Date createDt;
 	private Date updateDt;
 
+	//Helper Values.  Not on DB Record
+	private String engineerNm;
+	private String designerNm;
+	private String qualityEngineerNm;
+	private String requestorNm;
+
 	private List<SRTMasterRecordVO> masterRecords;
-	private SRTRequestVO requestorVO;
+	private SRTRequestVO request;
 	private Map<String, SRTMilestoneVO> milestones;
 
 	public SRTProjectVO() {
 		notes = new ArrayList<>();
 		masterRecords = new ArrayList<>();
-		milestones = new HashMap<>();
+		milestones = new LinkedHashMap<>();
+	}
+
+	public SRTProjectVO(ActionRequest req) {
+		populateData(req);
+	}
+
+	public SRTProjectVO(ResultSet rs) {
+		populateData(rs);
 	}
 
 	/**
@@ -312,8 +330,16 @@ public class SRTProjectVO {
 	/**
 	 * @return the reqVO
 	 */
-	public SRTRequestVO getReqVO() {
-		return requestorVO;
+	public SRTRequestVO getRequest() {
+		return request;
+	}
+
+	/**
+	 * @return the designerNm
+	 */
+	@Column(name="REQUESTOR_NM", isReadOnly=true) 
+	public String getRequestorNm() {
+		return requestorNm;
 	}
 
 	/**
@@ -321,13 +347,27 @@ public class SRTProjectVO {
 	 */
 	@Column(name="REQUEST_ID")
 	public String getRequestId() {
-		return requestorVO != null ? requestorVO.getRequestId() : "";
+		return request != null ? request.getRequestId() : "";
 	}
+
 	/**
 	 * @return the milestones
 	 */
 	public Map<String, SRTMilestoneVO> getMilestones() {
 		return milestones;
+	}
+
+	/**
+	 * Retrieve latest status off the stack.
+	 * @return
+	 */
+	public String getStatus() {
+		if(milestones == null || milestones.size() == 0) {
+			return "";
+		} else {
+			List<SRTMilestoneVO> m = new ArrayList<>(milestones.values());
+			return m.get(m.size() - 1).getMilestoneId();
+		}
 	}
 
 	/**
@@ -569,11 +609,18 @@ public class SRTProjectVO {
 	}
 
 	/**
-	 * @param reqVO the reqVO to set.
+	 * @param reqVO the request to set.
 	 */
 	@BeanSubElement
-	public void setReqVO(SRTRequestVO reqVO) {
-		this.requestorVO = reqVO;
+	public void setRequest(SRTRequestVO request) {
+		this.request = request;
+	}
+
+	/**
+	 * @param requestorNm the requestorNm to set.
+	 */
+	public void setRequestorNm(String requestorNm) {
+		this.requestorNm = requestorNm;
 	}
 
 	/**

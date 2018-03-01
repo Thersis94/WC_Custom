@@ -113,7 +113,7 @@ public class SRTUtil {
 	 * @throws EncryptionException
 	 */
 	public static String decryptName(String name, StringEncrypter se) throws EncryptionException {
-		String [] firstLast = name.split(" ");
+		String [] firstLast = StringUtil.checkVal(name).split(" ");
 		if(firstLast == null || firstLast.length == 0) {
 			return "";
 		} else if(firstLast.length == 1) {

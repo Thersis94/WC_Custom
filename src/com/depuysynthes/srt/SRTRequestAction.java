@@ -2,8 +2,8 @@ package com.depuysynthes.srt;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 
-import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
@@ -11,12 +11,18 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
-import com.smt.sitebuilder.action.form.designer.FormDesignerFacadeAction;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.data.DataContainer;
+import com.smt.sitebuilder.data.DataManagerFacade;
+import com.smt.sitebuilder.data.vo.GenericQueryVO;
+import com.smt.sitebuilder.data.vo.QueryParamVO;
 
 /****************************************************************************
  * <b>Title:</b> SRTRequestAction.java
@@ -31,7 +37,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class SRTRequestAction extends SimpleActionAdapter {
 
-	public static final String SRT_REQUEST_ID = "srtRequestId"; 
+	public static final String SRT_REQUEST_ID = "requestId"; 
 	public SRTRequestAction() {
 		super();
 	}
@@ -43,6 +49,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
+		GridDataVO<SRTRequestVO> requests = loadRequests(roster, req);
 
 		/*
 		 * If requestId is present, Load Data from Form Retrieval,
@@ -50,9 +57,9 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		 */
 		if(req.hasParameter(SRT_REQUEST_ID)) {
 			loadDataFromForms(req);
-		} else {
-			putModuleData(loadRequests(roster));
 		}
+
+		putModuleData(requests.getRowData(), requests.getTotal(), false);
 	}
  
 	/**
@@ -60,37 +67,31 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void loadDataFromForms(ActionRequest req) throws ActionException {
-		FormAction fa = (FormAction) super.getConfiguredAction(FormAction.class.getName());
+	private void loadDataFromForms(ActionRequest req) {
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 
-		//Get OpCo Id off Users Session
-		String opCo = SRTUtil.getOpCO(req);
+		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 
-		//Load proper Request form according to Users OpCo
-		String formId = getFormIdByOpCo(opCo);
+		log.debug("Retrieving Form : " + formId);
 
-		req.setParameter(FormDesignerFacadeAction.REQ_FORM_ID, formId);
-		fa.retrieve(req);
-
-		String reqId = req.getParameter(SRT_REQUEST_ID);
-
-		//Retrieve FormData for submitted Form if not a new one.
-		if(!"ADD".equals(reqId)) {
-			fa.retrieveSubmittedForm(req);
+		DataManagerFacade dmf = new DataManagerFacade(attributes, dbConn, req);
+		DataContainer dc = dmf.loadForm(formId);
+		if (dc.hasErrors()) {
+			for (Entry<String, Throwable> e : dc.getErrors().entrySet()) {
+				log.error("Error retrieving form: ", e.getValue());
+			}
 		}
-	}
 
-	/**
-	 * TODO - Determine how to tag a form with Purpose and OpCo.
-	 * IE.  Load Request Form for OPCo US_SPINE.
-	 *
-	 * With move to SB_ACTION record, potentially attrib 1 and 2 txt.
-	 * @param opCo
-	 * @return
-	 */
-	private String getFormIdByOpCo(String opCo) {
-		log.info(opCo);
-		return null;
+		dc.getForm().setCurrentTemplateNo(1);
+
+		// Get saved data and return for re-display on the form.
+		GenericQueryVO query = new GenericQueryVO(formId);
+		QueryParamVO param = new QueryParamVO("REQUEST_ID", false);
+		param.setValues(req.getParameterValues(SRT_REQUEST_ID));
+		query.addConditional(param);
+		dc.setQuery(query);
+		dmf.loadTransactions(dc);
+		req.setAttribute(FormAction.FORM_DATA, dc);
 	}
 
 	/**
@@ -99,18 +100,24 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	 * @param parameter
 	 * @return
 	 */
-	private List<SRTRequestVO> loadRequests(SRTRosterVO roster) {
+	private GridDataVO<SRTRequestVO> loadRequests(SRTRosterVO roster, ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
 
 		//if user is not an admin, add rosterId.
-		if(!roster.isAdmin()) {
-			vals.add(roster.getRosterId());
+		if(req.hasParameter(SRT_REQUEST_ID)) {
+			vals.add(req.getParameter(SRT_REQUEST_ID));
 		}
+//		if(!roster.isAdmin()) {
+//			vals.add(roster.getRosterId());
+//		}
 
-		List<SRTRequestVO> requests = new DBProcessor(dbConn).executeSelect(buildRequestLoadSql(!vals.isEmpty()), vals, new SRTRequestVO());
+		int limit = req.getIntegerParameter("limit", 10);
+		int offset = req.getIntegerParameter("offset", 0);
+		GridDataVO<SRTRequestVO> requests = new DBProcessor(dbConn).executeSQLWithCount(buildRequestLoadSql(roster.isAdmin(), req.hasParameter(SRT_REQUEST_ID)), vals, new SRTRequestVO(), limit, offset);
 
+		log.debug(StringUtil.join("Found ", Integer.toString(requests.getTotal()), " Requests."));
 		//Get List of Users
-		List<SRTRosterVO> users = getRosters(requests);
+		List<SRTRosterVO> users = getRosters(requests.getRowData());
 
 		try {
 			//Populate SRT Roster Records via reference.
@@ -141,7 +148,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	 * Build the SRT Request Load Sql.
 	 * @return
 	 */
-	private String buildRequestLoadSql(boolean hasUser) {
+	private String buildRequestLoadSql(boolean hasUser, boolean hasRequestId) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select r.*, a.*, u.profile_id from ").append(schema);
@@ -150,8 +157,12 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		sql.append("SRT_ROSTER u on r.ROSTER_ID = u.ROSTER_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
 		sql.append("SRT_REQUEST_ADDRESS a on r.REQUEST_ID = a.REQUEST_ID ");
-		if(hasUser) {
-			sql.append("where u.roster_id = ? ");
+
+		sql.append(DBUtil.WHERE_1_CLAUSE);
+		if(hasRequestId) {
+			sql.append("and r.request_id = ? ");
+		} else if(hasUser) {
+			sql.append("and u.roster_id = ? ");
 		}
 		sql.append("order by r.create_dt desc ");
 		return sql.toString();
