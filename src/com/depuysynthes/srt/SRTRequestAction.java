@@ -2,8 +2,8 @@ package com.depuysynthes.srt;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 
+import com.depuysynthes.srt.data.RequestDataTransactionHandler;
 import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
@@ -18,9 +18,10 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
-import com.smt.sitebuilder.data.DataManagerFacade;
+import com.smt.sitebuilder.data.DataManagerUtil;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.QueryParamVO;
 
@@ -62,6 +63,17 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		putModuleData(requests.getRowData(), requests.getTotal(), false);
 	}
  
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+
+		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
+
+		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, RequestDataTransactionHandler.class);
+
+		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), "/order-online");
+	}
+
 	/**
 	 * Load data via the FormAction Tool
 	 * @param req
@@ -74,23 +86,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 
 		log.debug("Retrieving Form : " + formId);
 
-		DataManagerFacade dmf = new DataManagerFacade(attributes, dbConn, req);
-		DataContainer dc = dmf.loadForm(formId);
-		if (dc.hasErrors()) {
-			for (Entry<String, Throwable> e : dc.getErrors().entrySet()) {
-				log.error("Error retrieving form: ", e.getValue());
-			}
-		}
-
-		dc.getForm().setCurrentTemplateNo(1);
-
-		// Get saved data and return for re-display on the form.
-		GenericQueryVO query = new GenericQueryVO(formId);
-		QueryParamVO param = new QueryParamVO("REQUEST_ID", false);
-		param.setValues(req.getParameterValues(SRT_REQUEST_ID));
-		query.addConditional(param);
-		dc.setQuery(query);
-		dmf.loadTransactions(dc);
+		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadFormWithData(formId, req, null);
 		req.setAttribute(FormAction.FORM_DATA, dc);
 	}
 

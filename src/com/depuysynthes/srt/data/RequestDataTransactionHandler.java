@@ -6,12 +6,14 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.depuysynthes.srt.SRTRequestAction;
+import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.EnumUtil;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.FormDataTransaction;
@@ -55,12 +57,12 @@ public class RequestDataTransactionHandler extends FormDataTransaction {
 	 * @param attributes
 	 * @param req
 	 */
-	protected RequestDataTransactionHandler(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
+	public RequestDataTransactionHandler(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
 		super(conn, attributes, req);
 	}
 
 	@Override
-	protected FormTransactionVO writeTransaction(FormTransactionVO data) throws DatabaseException {
+	public FormTransactionVO writeTransaction(FormTransactionVO data) throws DatabaseException {
 		log.debug("Saving SRT Request");
 
 		// Set the form fields that should not be saved as attributes, onto the request, with appropriate parameter names.
@@ -78,28 +80,27 @@ public class RequestDataTransactionHandler extends FormDataTransaction {
 		// Get the residence data
 		SRTRequestVO request = new SRTRequestVO(req);
 		SRTRequestAddressVO addr = new SRTRequestAddressVO(req);
-		
+
 		// Save the residence record
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
 			dbp.save(request);
 			req.setParameter(SRTRequestAction.SRT_REQUEST_ID, request.getRequestId());
 			addr.setRequestId(request.getRequestId());
-			
 		} catch(Exception e) {
-			log.error("Could not save RezDox Residence");
+			log.error("Could not save RezDox Residence", e);
 		}
 
 		// Save the Residence attributes
 		saveFieldData(data);
-		return null;
+		return data;
 	}
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.data.AbstractFormTransaction#loadTransactions(com.smt.sitebuilder.data.DataContainer)
 	 */
 	@Override
-	protected DataContainer loadTransactions(DataContainer dc) throws DatabaseException {
+	public DataContainer loadTransactions(DataContainer dc) throws DatabaseException {
 		log.debug("Loading SRT Request Form Transaction Data");
 		
 		GenericQueryVO qry = dc.getQuery();
@@ -117,7 +118,7 @@ public class RequestDataTransactionHandler extends FormDataTransaction {
 	 * @throws SQLException
 	 */
 	@Override
-	protected void populateQueryParams(PreparedStatement ps, GenericQueryVO qry) throws SQLException {
+	public void populateQueryParams(PreparedStatement ps, GenericQueryVO qry) throws SQLException {
 		ps.setString(1, qry.getConditionals().get(0).getValues()[0]);
 	}
 
@@ -125,7 +126,7 @@ public class RequestDataTransactionHandler extends FormDataTransaction {
 	 * @see com.smt.sitebuilder.data.AbstractFormTransaction#flushTransactions(com.smt.sitebuilder.data.DataContainer)
 	 */
 	@Override
-	protected void flushTransactions(DataContainer dc) {
+	public void flushTransactions(DataContainer dc) {
 		//Users can't delete a request.
 		return;
 	}
