@@ -28,6 +28,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class RSSSegmentAction extends SBActionAdapter {
 
 	public static final String SEGMENT_ID = "segmentId";
+
 	public RSSSegmentAction() {
 		super();
 	}
@@ -64,7 +65,7 @@ public class RSSSegmentAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected List<RSSFeedSegment> loadSegmentGroups() {
-		return (List<RSSFeedSegment>)(List<?>)new DBProcessor(dbConn).executeSelect(rssSegmentGroupRetrieveSql(), null, new RSSFeedSegment());
+		return new DBProcessor(dbConn).executeSelect(rssSegmentGroupRetrieveSql(), null, new RSSFeedSegment());
 	}
 
 	/**
@@ -79,7 +80,8 @@ public class RSSSegmentAction extends SBActionAdapter {
 			vals.add(segmentId);
 		}
 
-		return (List<RSSFeedSegment>)(List<?>)new DBProcessor(dbConn).executeSelect(getRssSegmentSql(!StringUtil.isEmpty(segmentId)), vals, new RSSFeedSegment());
+		String sql = getRssSegmentSql(!StringUtil.isEmpty(segmentId));
+		return new DBProcessor(dbConn).executeSelect(sql, vals, new RSSFeedSegment());
 	}
 
 	@Override
@@ -114,9 +116,6 @@ public class RSSSegmentAction extends SBActionAdapter {
 		try {
 			DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA)); 
 			dbp.save(s);
-			if(StringUtil.isEmpty(s.getSegmentId())) {
-				s.setSegmentId(dbp.getGeneratedPKId());
-			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Error Processing Code", e);
 		}
