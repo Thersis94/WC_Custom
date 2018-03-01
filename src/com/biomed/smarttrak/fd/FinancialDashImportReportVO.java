@@ -27,10 +27,10 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 public class FinancialDashImportReportVO extends AbstractSBReportVO {
     private static final long serialVersionUID = 1l;
     
-    public static final int DATA_START_NO = 6;
+    public static final int DATA_START_NO = 7;
     public static final int SCENARIO_ID_COL = 0;
-    public static final int COMPANY_ID_COL = 3;
-    public static final int REGION_COL = 5;
+    public static final int COMPANY_ID_COL = 4;
+    public static final int REGION_COL = 6;
     public static final String COL_SUFFIX = " Earnings";
     
     private List<Map<Integer, List<FinancialDashRevenueDataRowVO>>> revenueData;
@@ -98,6 +98,8 @@ public class FinancialDashImportReportVO extends AbstractSBReportVO {
 		sheet.setColumnWidth(cellCount, 7500);
 		row.createCell(cellCount++).setCellValue("Scenario Title");
 		sheet.setColumnWidth(cellCount, 7500);
+		row.createCell(cellCount++).setCellValue("Parent Section");
+		sheet.setColumnWidth(cellCount, 7500);
 		row.createCell(cellCount++).setCellValue("Market Section");
 		sheet.setColumnWidth(cellCount, 0);
 		row.createCell(cellCount++).setCellValue("Company Id");
@@ -160,6 +162,9 @@ public class FinancialDashImportReportVO extends AbstractSBReportVO {
 					cell.setCellStyle(locked);
 					cell = row.createCell(starterCells++);
 					cell.setCellValue(dataRow.getScenarioName());
+					cell.setCellStyle(locked);
+					cell = row.createCell(starterCells++);
+					cell.setCellValue(dataRow.getParentName());
 					cell.setCellStyle(locked);
 					cell = row.createCell(starterCells++);
 					cell.setCellValue(dataRow.getSectionName());
