@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 //WC_Custom
+import com.biomed.smarttrak.util.BiomedChangeLogUtil;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
@@ -37,6 +38,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
+import com.smt.sitebuilder.changelog.ChangeLogVO;
 //WebCrescendo
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -100,6 +102,10 @@ public class InsightAction extends ManagementAction {
 			loadPreview(req);
 			return;
 		}
+		if(req.getBooleanParameter("editorsDesk")) {
+			retrieveSyncId(req);
+			return;
+		}
 		
 		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
@@ -127,6 +133,21 @@ public class InsightAction extends ManagementAction {
 		ai.setAttributes(attributes);
 		
 		ai.retrieve(req);
+	}
+
+	/**
+	 * retrieves the wc sync id for the insight and sets onto request
+	 * @param req
+	 */
+	private void retrieveSyncId(ActionRequest req) {
+		if(StringUtil.isEmpty(req.getParameter(INSIGHT_ID))) return;
+		
+		//perform lookup
+		List<Object> changeLogs = new BiomedChangeLogUtil(dbConn, attributes).loadRecords(req.getParameter(INSIGHT_ID), null, null, true);
+		String currentSyncId = ((ChangeLogVO) changeLogs.get(0)).getWcSyncId();
+		
+		// set current sync id on request
+		putModuleData(currentSyncId);
 	}
 
 	/**
