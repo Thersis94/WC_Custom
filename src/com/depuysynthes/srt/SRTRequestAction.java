@@ -15,10 +15,8 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
-import com.smt.sitebuilder.admin.action.OrganizationAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -73,27 +71,11 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		//Place ActionInit on the Attributes map for the Data Save Handler.
 		attributes.put(Constants.ACTION_DATA, actionInit);
 
-		//Set the Default Save Path for the DataManagerUtil saveFile Method.
-		String customFileUploadPath = buildUploadPath(req);
-		attributes.put(DataManagerUtil.CUSTOM_UPLOAD_PATH, customFileUploadPath);
-
 		//Call DataManagerUtil to save the form.
 		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, RequestDataTransactionHandler.class);
 
 		//Redirect the User.
 		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), "/order-online");
-	}
-
-	/**
-	 * Build Path to write file.
-	 * @param req
-	 * @return
-	 */
-	private String buildUploadPath(ActionRequest req) {
-		ProfileDocumentAction pda = (ProfileDocumentAction)getConfiguredAction(ProfileDocumentAction.class.getName());
-		StringBuilder path = new StringBuilder(100);
-		path.append(pda.getPathToFileUrl(req.getParameter(OrganizationAction.ORGANIZATION_ID)));
-		return path.toString().replaceAll("//", "/");
 	}
 
 	/**

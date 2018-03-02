@@ -1,33 +1,30 @@
 package com.depuysynthes.srt.data;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import com.depuysynthes.srt.SRTRequestAction;
-import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTFileVO;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
-import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.io.FileWriterException;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.data.AbstractDataTransaction;
 import com.smt.sitebuilder.data.DataContainer;
-import com.smt.sitebuilder.data.FormDataTransaction;
 import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
-import com.smt.sitebuilder.data.vo.GenericQueryVO;
 
 /****************************************************************************
  * <b>Title:</b> RequestDataTransactionHandler.java
@@ -40,7 +37,7 @@ import com.smt.sitebuilder.data.vo.GenericQueryVO;
  * @version 3.3.1
  * @since Feb 28, 2018
  ****************************************************************************/
-public class RequestDataTransactionHandler extends FormDataTransaction {
+public class RequestDataTransactionHandler extends AbstractDataTransaction {
 
 	public enum RequestField {
 		REQUEST_ID(SRTRequestAction.SRT_REQUEST_ID), REQUESTOR_NM("requestorNm"),
@@ -62,6 +59,8 @@ public class RequestDataTransactionHandler extends FormDataTransaction {
 		public String getReqParam() {return reqParam;}
 	}
 
+	private List<SRTFileVO> files;
+
 	/**
 	 * @param conn
 	 * @param attributes
@@ -69,10 +68,36 @@ public class RequestDataTransactionHandler extends FormDataTransaction {
 	 */
 	public RequestDataTransactionHandler(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
 		super(conn, attributes, req);
+		files = new ArrayList<>();
 	}
 
+	/**
+	 * Process files on the form and Ensure we've written records to ProfileDocuments
+	 * and SRT File.
+	 * @param request
+	 */
+	private void writeSRTFileRecord() {
+		SRTFileVO file = new SRTFileVO(req);
+		file.setFileId(req.getParameter("profileDocumentId"));
+
+		//Save SRTFile Record now that it's successfully saved to DocumentAction.
+		files.add(file);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.data.AbstractFormTransaction#flushTransactions(com.smt.sitebuilder.data.DataContainer)
+	 */
 	@Override
-	public FormTransactionVO writeTransaction(FormTransactionVO data) throws DatabaseException {
+	public void flushTransactions(DataContainer dc) {
+		//Users can't delete a request.
+		return;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.data.AbstractDataTransaction#saveFormData(com.smt.sitebuilder.data.vo.FormTransactionVO)
+	 */
+	@Override
+	protected void saveFormData(FormTransactionVO data) throws DatabaseException {
 		log.debug("Saving SRT Request");
 
 		// Set the form fields that should not be saved as attributes, onto the request, with appropriate parameter names.
@@ -95,99 +120,52 @@ public class RequestDataTransactionHandler extends FormDataTransaction {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
 			dbp.save(request);
-			log.debug("Saved Request.");
-			processFileUploads(request);
-			log.debug("Saved Files.");
+			data.setFormSubmittalId(request.getRequestId());
 			req.setParameter(SRTRequestAction.SRT_REQUEST_ID, request.getRequestId());
 			addr.setRequestId(request.getRequestId());
 		} catch(Exception e) {
 			log.error("Could not save SRT Request", e);
 		}
 
-		// Save the Residence attributes
-		saveFieldData(data);
-		return data;
 	}
 
-	/**
-	 * Process files on the form and Ensure we've written records to ProfileDocuments
-	 * and SRT File.
-	 * @param request
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.data.AbstractDataTransaction#saveFieldData(com.smt.sitebuilder.data.vo.FormTransactionVO)
 	 */
-	private void processFileUploads(SRTRequestVO request) {
-		if(req.hasFiles()) {
-			log.debug("process profile document creation called ");
-			ProfileDocumentAction pda = new ProfileDocumentAction();
-			pda.setAttributes(attributes);
-			pda.setDBConnection(dbConn);
-			ActionInitVO init = (ActionInitVO)attributes.get(Constants.ACTION_DATA);
-			String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
-			String profileId = SRTUtil.getRoster(req).getProfileId();
+	@Override
+	protected void saveFieldData(FormTransactionVO data) throws DatabaseException {
+		//Not Implemented
+	}
 
-			req.setParameter("profileId", profileId);
-			req.setParameter("featureId", request.getRequestId());
-			req.setParameter("organizationId", orgId);
-			req.setParameter("actionId", init.getActionId());
-			List<SRTFileVO> files = new ArrayList<>();
-			for(FilePartDataBean f : req.getFiles()) {
-				req.setParameter("fileName", f.getFileName());
-				req.setParameter("filePathText", "/" + f.getCanonicalPath());
-				req.setParameter("fileType", f.getExtension());
-				try {
-					//adds the new record and file
-					pda.build(req);
-					SRTFileVO file = new SRTFileVO(req);
-					file.setFileId(req.getParameter("profileDocumentId"));
-					//Save SRTFile Record now that it's successfully saved to DocumentAction.
-					files.add(file);
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.data.AbstractDataTransaction#loadTransactions(com.smt.sitebuilder.data.DataContainer)
+	 */
+	@Override
+	protected DataContainer loadTransactions(DataContainer dc) throws DatabaseException {
+		//Not Implemented
+		return null;
+	}
 
-					//Null out document Id so we can retrieve it.
-					req.setParameter("profileDocumentId", null);
-				} catch (Exception e) {
-					log.error("error occured during profile document generation " , e);
-				}
-			}
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.data.AbstractDataTransaction#saveFile(com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction, com.siliconmtn.util.databean.FilePartDataBean)
+	 */
+	@Override
+	protected void saveFile(ProfileDocumentAction pda, FilePartDataBean fpdb) throws ActionException, FileWriterException, InvalidDataException {
+		super.saveFile(pda, fpdb);
+		writeSRTFileRecord();
+	}
 
+	@Override
+	protected void saveFiles(FormTransactionVO data) {
+		super.saveFiles(data);
+
+		//Write SRT Files after processing all files.
+		if(!files.isEmpty()) {
 			try {
 				new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).executeBatch(files, true);
 			} catch (com.siliconmtn.db.util.DatabaseException e) {
 				log.error("Error Processing Code", e);
 			}
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.data.AbstractFormTransaction#loadTransactions(com.smt.sitebuilder.data.DataContainer)
-	 */
-	@Override
-	public DataContainer loadTransactions(DataContainer dc) throws DatabaseException {
-		log.debug("Loading SRT Request Form Transaction Data");
-
-		GenericQueryVO qry = dc.getQuery();
-		loadTransaction(dc, qry);
-		
-		return dc;
-	}
-
-
-	/**
-	 * Populates the Prepared Statement with the required parameters for loading the attributes
-	 *
-	 * @param ps
-	 * @param qry
-	 * @throws SQLException
-	 */
-	@Override
-	public void populateQueryParams(PreparedStatement ps, GenericQueryVO qry) throws SQLException {
-		ps.setString(1, qry.getConditionals().get(0).getValues()[0]);
-	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.data.AbstractFormTransaction#flushTransactions(com.smt.sitebuilder.data.DataContainer)
-	 */
-	@Override
-	public void flushTransactions(DataContainer dc) {
-		//Users can't delete a request.
-		return;
 	}
 }
