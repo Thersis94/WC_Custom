@@ -1,28 +1,26 @@
 package com.rezdox.action;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 
+import com.rezdox.data.ResidenceFormTransaction;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO.Group;
 import com.rezdox.vo.ResidenceVO;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBModuleVO;
+import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
-import com.smt.sitebuilder.action.form.FormActionVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
-import com.smt.sitebuilder.data.DataManagerFacade;
+import com.smt.sitebuilder.data.DataManagerUtil;
+import com.smt.sitebuilder.data.vo.FormVO;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.QueryParamVO;
 
@@ -36,7 +34,7 @@ import com.smt.sitebuilder.data.vo.QueryParamVO;
  * @version 1.0
  * @since Feb 7, 2018
  ****************************************************************************/
-public class ResidenceAction extends FormAction {
+public class ResidenceAction extends SBActionAdapter {
 	
 	public static final String RESIDENCE_DATA = "residenceData";
 	public static final String RESIDENCE_ID = "residenceId";
@@ -56,6 +54,14 @@ public class ResidenceAction extends FormAction {
 	 */
 	public ResidenceAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
 	}
 
 	/* (non-Javadoc)
@@ -93,9 +99,7 @@ public class ResidenceAction extends FormAction {
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 			
 		// Validate whether the member needs a residence upgrade
-		SubscriptionAction sa = new SubscriptionAction(getActionInit());
-		sa.setAttributes(getAttributes());
-		sa.setDBConnection(getDBConnection());
+		SubscriptionAction sa = (SubscriptionAction) ActionControllerFactoryImpl.loadAction(SubscriptionAction.class.getName(), this);
 		boolean needsUpgrade = sa.checkUpgrade(member.getMemberId(), Group.HO);
 		
 		// Set default residence name per requirements
@@ -125,7 +129,7 @@ public class ResidenceAction extends FormAction {
 		
 		// Using pivot table on the attributes to get additional data for display
 		StringBuilder sql = new StringBuilder(900);
-		sql.append("select r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt) as update_dt, ");
+		sql.append("select r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt) as update_dt, ");
 		sql.append("beds_no, baths_no, coalesce(f_sqft_no, 0) + coalesce(uf_sqft_no, 0) as sqft_no, purchase_price_no ");
 		sql.append("from ").append(schema).append("rezdox_residence r inner join ");
 		sql.append(schema).append("rezdox_residence_member_xr m on r.residence_id = m.residence_id ");
@@ -153,91 +157,44 @@ public class ResidenceAction extends FormAction {
 	 * 
 	 * @param req
 	 */
-	protected FormActionVO retrieveHomeInfoForm(ActionRequest req) {
-		String actionId = this.actionInit.getActionId();
-		FormActionVO fa = loadFormActionVO(actionId);
+	protected FormVO retrieveHomeInfoForm(ActionRequest req) {
+		String formId = getFormId();
+		log.debug("Retrieving Residence Form: " + formId);
 		
-		if (fa == null) {
-			log.debug("Could not get RezDox Residence Form Action for actionId: " + actionId);
-			return fa;
-		}
-
-		log.debug("Retrieving Form tied to actionId: " + actionId);
-
-		DataManagerFacade dmf = new DataManagerFacade(attributes, dbConn, req);
-		DataContainer dc = dmf.loadForm(fa.getFormId());
-		if (dc.hasErrors()) {
-			for (Entry<String, Throwable> e : dc.getErrors().entrySet()) {
-				log.error("Error retrieving form: ", e.getValue());
-			}
-		}
-		
-		dc.getForm().setCurrentTemplateNo(1);
-		fa.setDataContainer(dc);
-
-		// Get saved data and return for re-display on the form.
-		GenericQueryVO query = new GenericQueryVO(fa.getFormId());
+		// Set the requried params
+		GenericQueryVO query = new GenericQueryVO(formId);
 		QueryParamVO param = new QueryParamVO(ResidenceColumnName.RESIDENCE_ID.name(), false);
 		param.setValues(req.getParameterValues(RESIDENCE_ID));
 		query.addConditional(param);
-		dc.setQuery(query);
-		dmf.loadTransactions(dc);
+		
+		// Get the form and the saved data for re-display onto the form.
+		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadFormWithData(formId, req, query, ResidenceFormTransaction.class);
 		req.setAttribute(FormAction.FORM_DATA, dc);
 		
-		return fa;
-	}
-
-	/**
-	 * Gets a residence form's action record
-	 * 
-	 * @param actionId
-	 * @return
-	 * @throws ActionException
-	 */
-	@Override
-	protected FormActionVO loadFormActionVO(String actionId) {
-		FormActionVO vo = null;
-
-		StringBuilder sql = new StringBuilder(60);
-		sql.append("select action_id, organization_id, module_type_id, action_nm, action_desc, attrib1_txt as form_id, pending_sync_flg, ");
-		sql.append("action_group_id, create_dt, update_dt, create_by_id, update_by_id from sb_action where action_id = ? ");
-
-		log.info("Residence Form Action SQL: " + sql.toString() + " | " + actionId);
-
-		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, actionId);
-			ResultSet rs = ps.executeQuery();
-
-			if(rs.next()) {
-				vo = new FormActionVO(rs);
-				vo.setAttribute(SBModuleVO.ATTRIBUTE_1, rs.getString("form_id"));
-			}
-		} catch (SQLException e) {
-			log.error("Could not retrieve residence form action record. ", e);
-		}
-
-		return vo;
+		return dc.getForm();
 	}
 	
 	/**
-	 * Manages updating the Residence Form Action record.
+	 * Get's the form id associated to the action
 	 * 
-	 * @param req
-	 * @throws SQLException
-	 */
-	@Override
-	protected void updateFormRecord(ActionRequest req, String sbActionId, ModuleVO mod) throws SQLException {
-		// No form record to update, only using the sb_action record for the RezDox Residence Form Action
-	}
-	
-	/**
-	 * Stores images from the form
-	 *
-	 * @param req
 	 * @return
 	 */
+	private String getFormId() {
+		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		return (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
-	protected void saveFiles(ActionRequest req) {
-		// TODO: Handle file saves differently than super class
+	public void build(ActionRequest req) throws ActionException {
+		String formId = getFormId();
+
+		// Place ActionInit on the Attributes map for the Data Save Handler.
+		attributes.put(Constants.ACTION_DATA, actionInit);
+
+		// Call DataManagerUtil to save the form.
+		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ResidenceFormTransaction.class);
 	}
 }
