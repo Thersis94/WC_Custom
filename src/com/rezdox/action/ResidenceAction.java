@@ -3,7 +3,7 @@ package com.rezdox.action;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.rezdox.data.ResidenceFormTransaction;
+import com.rezdox.data.ResidenceFormProcessor;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO.Group;
 import com.rezdox.vo.ResidenceVO;
@@ -168,7 +168,7 @@ public class ResidenceAction extends SBActionAdapter {
 		query.addConditional(param);
 		
 		// Get the form and the saved data for re-display onto the form.
-		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadFormWithData(formId, req, query, ResidenceFormTransaction.class);
+		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadFormWithData(formId, req, query, ResidenceFormProcessor.class);
 		req.setAttribute(FormAction.FORM_DATA, dc);
 		
 		return dc.getForm();
@@ -195,6 +195,6 @@ public class ResidenceAction extends SBActionAdapter {
 		attributes.put(Constants.ACTION_DATA, actionInit);
 
 		// Call DataManagerUtil to save the form.
-		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ResidenceFormTransaction.class);
+		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ResidenceFormProcessor.class);
 	}
 }

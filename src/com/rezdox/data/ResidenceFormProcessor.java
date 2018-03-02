@@ -31,7 +31,7 @@ import com.smt.sitebuilder.data.vo.FormTransactionVO;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 
 /****************************************************************************
- * <p><b>Title</b>: ResidenceFormTransaction</p>
+ * <p><b>Title</b>: ResidenceFormProcessor</p>
  * <p><b>Description: </b>Writes the residence form data to the
  * residence_attributes table.</p>
  * <p> 
@@ -42,7 +42,7 @@ import com.smt.sitebuilder.data.vo.GenericQueryVO;
  * @since Feb 9, 2018
  * <b>Changes:</b>
  ****************************************************************************/
-public class ResidenceFormTransaction extends FormDataProcessor {
+public class ResidenceFormProcessor extends FormDataProcessor {
 	
 	/**
 	 * Request parameter names for form field slug_txt values that go to the residence table, not the attributes table
@@ -65,7 +65,7 @@ public class ResidenceFormTransaction extends FormDataProcessor {
 	 * @param attributes
 	 * @param req
 	 */
-	public ResidenceFormTransaction(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
+	public ResidenceFormProcessor(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
 		super(conn, attributes, req);
 	}
 
