@@ -15,15 +15,15 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.admin.action.OrganizationAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
-import com.smt.sitebuilder.data.vo.GenericQueryVO;
-import com.smt.sitebuilder.data.vo.QueryParamVO;
 
 /****************************************************************************
  * <b>Title:</b> SRTRequestAction.java
@@ -49,29 +49,51 @@ public class SRTRequestAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
-		GridDataVO<SRTRequestVO> requests = loadRequests(roster, req);
+		if(req.hasParameter(SRT_REQUEST_ID) || req.hasParameter("json")) {
+			SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
+			GridDataVO<SRTRequestVO> requests = loadRequests(roster, req);
 
-		/*
-		 * If requestId is present, Load Data from Form Retrieval,
-		 * Else list SRTRequestVOs for Tables.
-		 */
-		if(req.hasParameter(SRT_REQUEST_ID)) {
-			loadDataFromForms(req);
+			/*
+			 * If requestId is present, Load Data from Form Retrieval,
+			 * Else list SRTRequestVOs for Tables.
+			 */
+			if(req.hasParameter(SRT_REQUEST_ID)) {
+				loadDataFromForms(req);
+			}
+
+			putModuleData(requests.getRowData(), requests.getTotal(), false);
 		}
-
-		putModuleData(requests.getRowData(), requests.getTotal(), false);
 	}
  
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-
 		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 
+		//Place ActionInit on the Attributes map for the Data Save Handler.
+		attributes.put(Constants.ACTION_DATA, actionInit);
+
+		//Set the Default Save Path for the DataManagerUtil saveFile Method.
+		String customFileUploadPath = buildUploadPath(req);
+		attributes.put(DataManagerUtil.CUSTOM_UPLOAD_PATH, customFileUploadPath);
+
+		//Call DataManagerUtil to save the form.
 		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, RequestDataTransactionHandler.class);
 
+		//Redirect the User.
 		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), "/order-online");
+	}
+
+	/**
+	 * Build Path to write file.
+	 * @param req
+	 * @return
+	 */
+	private String buildUploadPath(ActionRequest req) {
+		ProfileDocumentAction pda = (ProfileDocumentAction)getConfiguredAction(ProfileDocumentAction.class.getName());
+		StringBuilder path = new StringBuilder(100);
+		path.append(pda.getPathToFileUrl(req.getParameter(OrganizationAction.ORGANIZATION_ID)));
+		return path.toString().replaceAll("//", "/");
 	}
 
 	/**
