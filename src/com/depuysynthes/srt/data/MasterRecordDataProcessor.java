@@ -4,7 +4,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.smt.sitebuilder.data.FormDataTransaction;
+import com.smt.sitebuilder.data.FormDataProcessor;
 
 /****************************************************************************
  * <b>Title:</b> RequestDataTransactionHandler.java
@@ -17,7 +17,7 @@ import com.smt.sitebuilder.data.FormDataTransaction;
  * @version 3.3.1
  * @since Feb 28, 2018
  ****************************************************************************/
-public class MasterRecordDataTransactionHandler extends FormDataTransaction {
+public class MasterRecordDataProcessor extends FormDataProcessor {
 
 	public enum MasterRecordField {
 		PART_NO("partNo"), PROD_DESC("productDesc"), QUALITY_SYS("qualitySystem"), PROD_TYPE("productType"),
@@ -35,7 +35,7 @@ public class MasterRecordDataTransactionHandler extends FormDataTransaction {
 	 * @param attributes
 	 * @param req
 	 */
-	protected MasterRecordDataTransactionHandler(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
+	protected MasterRecordDataProcessor(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
 		super(conn, attributes, req);
 	}
 

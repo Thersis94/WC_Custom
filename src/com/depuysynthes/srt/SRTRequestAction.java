@@ -3,7 +3,7 @@ package com.depuysynthes.srt;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.depuysynthes.srt.data.RequestDataTransactionHandler;
+import com.depuysynthes.srt.data.RequestDataProcessor;
 import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
@@ -72,7 +72,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		attributes.put(Constants.ACTION_DATA, actionInit);
 
 		//Call DataManagerUtil to save the form.
-		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, RequestDataTransactionHandler.class);
+		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, RequestDataProcessor.class);
 
 		//Redirect the User.
 		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), "/order-online");
@@ -90,7 +90,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 
 		log.debug("Retrieving Form : " + formId);
 
-		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadFormWithData(formId, req, null);
+		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadFormWithData(formId, req, null, null);
 		req.setAttribute(FormAction.FORM_DATA, dc);
 	}
 

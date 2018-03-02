@@ -4,7 +4,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.smt.sitebuilder.data.FormDataTransaction;
+import com.smt.sitebuilder.data.FormDataProcessor;
 
 /****************************************************************************
  * <b>Title:</b> RequestDataTransactionHandler.java
@@ -17,14 +17,14 @@ import com.smt.sitebuilder.data.FormDataTransaction;
  * @version 3.3.1
  * @since Feb 28, 2018
  ****************************************************************************/
-public class ProjectDataTransactionHandler extends FormDataTransaction {
+public class ProjectDataProcessor extends FormDataProcessor {
 
 	/**
 	 * @param conn
 	 * @param attributes
 	 * @param req
 	 */
-	protected ProjectDataTransactionHandler(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
+	protected ProjectDataProcessor(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
 		super(conn, attributes, req);
 	}
 

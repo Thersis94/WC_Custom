@@ -21,7 +21,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.data.AbstractDataTransaction;
+import com.smt.sitebuilder.data.AbstractDataProcessor;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
@@ -37,7 +37,7 @@ import com.smt.sitebuilder.data.vo.FormTransactionVO;
  * @version 3.3.1
  * @since Feb 28, 2018
  ****************************************************************************/
-public class RequestDataTransactionHandler extends AbstractDataTransaction {
+public class RequestDataProcessor extends AbstractDataProcessor {
 
 	public enum RequestField {
 		REQUEST_ID(SRTRequestAction.SRT_REQUEST_ID), REQUESTOR_NM("requestorNm"),
@@ -66,7 +66,7 @@ public class RequestDataTransactionHandler extends AbstractDataTransaction {
 	 * @param attributes
 	 * @param req
 	 */
-	public RequestDataTransactionHandler(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
+	public RequestDataProcessor(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
 		super(conn, attributes, req);
 		files = new ArrayList<>();
 	}

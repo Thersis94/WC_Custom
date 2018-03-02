@@ -86,5 +86,8 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		//TODO Save Master Record Data in Form Framework.
+		FormAction fa = (FormAction)getConfiguredAction(FormAction.class.getName());
+
+		fa.build(req);
 	}
 }
