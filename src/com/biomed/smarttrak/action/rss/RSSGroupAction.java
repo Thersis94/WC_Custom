@@ -87,9 +87,6 @@ public class RSSGroupAction extends SBActionAdapter {
 		try {
 			DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA)); 
 			dbp.save(g);
-			if(StringUtil.isEmpty(g.getFeedGroupId())) {
-				g.setFeedGroupId(dbp.getGeneratedPKId());
-			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Error Processing Code", e);
 		}
@@ -117,7 +114,7 @@ public class RSSGroupAction extends SBActionAdapter {
 		}
 
 		String sql = getGroupXRSql(!StringUtil.isEmpty(filterId), !StringUtil.isEmpty(feedGroupId), !StringUtil.isEmpty(rssEntityId));
-		return (List<RSSFeedGroupVO>)(List<?>) new DBProcessor(dbConn).executeSelect(sql, vals, new RSSFeedGroupVO());
+		return new DBProcessor(dbConn).executeSelect(sql, vals, new RSSFeedGroupVO());
 	}
 
 	/**
@@ -139,7 +136,7 @@ public class RSSGroupAction extends SBActionAdapter {
 			sql.append("left outer join ").append(schema).append("biomedgps_feed_source_group_xr fsg ");
 			sql.append("on g.feed_group_id = fsg.feed_group_id and fsg.rss_entity_id = ? ");
 		}
-		
+
 		if(hasGroupId)
 			sql.append("where g.feed_group_id = ? ");
 		sql.append("order by g.FEED_GROUP_NM ");

@@ -24,9 +24,6 @@ import com.siliconmtn.db.orm.Table;
 @Table(name="biomedgps_rss_article_filter")
 public class RSSArticleFilterVO extends BeanDataVO {
 
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = -7885046900442552916L;
 	private String articleFilterId;
 	private String rssArticleId;
