@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /****************************************************************************
  * <b>Title</b>: MarketManagementAction.java <p/>
@@ -54,6 +56,7 @@ public class MarketManagementAction extends ManagementAction {
 	public static final String CHANGE_TARGET = "changeTarget";
 	public static final String GRAPH_ID = "GRID";
 	public static final String CONTENT_ATTRIBUTE_ID = "CONTENT";
+	public static final String MARKET_ID = "marketId";
 
 	private enum ActionTarget {
 		MARKET, MARKETATTRIBUTE, ATTRIBUTE, SECTION, MARKETGRAPH, MARKETLINK, MARKETATTACH, PREVIEW
@@ -161,7 +164,7 @@ public class MarketManagementAction extends ManagementAction {
 		MarketAction ma = new MarketAction(actionInit);
 		ma.setDBConnection(dbConn);
 		ma.setAttributes(attributes);
-		super.putModuleData(ma.retrieveFromDB(req.getParameter("marketId"), req, true));
+		super.putModuleData(ma.retrieveFromDB(req.getParameter(MARKET_ID), req, true));
 	}
 
 
@@ -195,7 +198,7 @@ public class MarketManagementAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	private void retrieveMarket(ActionRequest req) throws ActionException {
-		if (req.hasParameter("marketId") && ! req.hasParameter("add")) {
+		if (req.hasParameter(MARKET_ID) && ! req.hasParameter("add")) {
 			retrieveSingleMarket(req);
 			if (!req.getSession().getAttributes().keySet().contains("marketSections")) {
 				req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
@@ -349,11 +352,6 @@ public class MarketManagementAction extends ManagementAction {
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
 
-		if (StringUtil.isEmpty(req.getParameter("inactive"))) {
-			sql.append("and (m.STATUS_NO = '").append(Status.P.toString()).append("' ");
-			sql.append("or m.STATUS_NO = '").append(Status.E.toString()).append("') ");
-		}
-
 		if (!StringUtil.isEmpty(req.getParameter("authorId"))) {
 			sql.append("and m.creator_profile_id = ? ");
 			params.add(req.getParameter("authorId"));
@@ -449,7 +447,7 @@ public class MarketManagementAction extends ManagementAction {
 		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_MARKET m ");
 		sql.append("WHERE MARKET_ID = ? ");
 		List<Object> params = new ArrayList<>();
-		params.add(req.getParameter("marketId"));
+		params.add(req.getParameter(MARKET_ID));
 
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 		market = (MarketVO) db.executeSelect(sql.toString(), params, new MarketVO()).get(0);
@@ -513,7 +511,7 @@ public class MarketManagementAction extends ManagementAction {
 	 */
 	protected void retrieveSections(ActionRequest req) throws ActionException {
 		List<Node> hierarchy = loadDefaultTree().preorderList();
-		List<String> activeNodes = getActiveSections(req.getParameter("marketId"));
+		List<String> activeNodes = getActiveSections(req.getParameter(MARKET_ID));
 
 		// Loop over all sections and set the leaf property to 
 		// signify it being in use by the current market.
@@ -590,7 +588,7 @@ public class MarketManagementAction extends ManagementAction {
 	protected String updateElement(ActionRequest req) throws ActionException {
 		ActionTarget action = ActionTarget.valueOf(req.getParameter(ACTION_TARGET));
 		DBProcessor db = new DBProcessor(dbConn, (String) customDbSchema);
-		String marketId = req.getParameter("marketId");
+		String marketId = req.getParameter(MARKET_ID);
 
 		switch(action) {
 			case MARKET:
@@ -670,7 +668,7 @@ public class MarketManagementAction extends ManagementAction {
 		if (isInsert) generateContent(req, c.getMarketId());
 		// Market save also includes the single section associated
 		// with this market
-		req.setParameter("marketId", c.getMarketId());
+		req.setParameter(MARKET_ID, c.getMarketId());
 		saveSections(req);
 		return marketId;
 	}
@@ -745,7 +743,7 @@ public class MarketManagementAction extends ManagementAction {
 	protected void saveSections(ActionRequest req) throws ActionException {
 		// Delete all sections currently assigned to this market before adding
 		// what is on the request object.
-		String marketId = req.getParameter("marketId");
+		String marketId = req.getParameter(MARKET_ID);
 		deleteSection(true, marketId);
 
 		// If nothing is there to add return now.
@@ -756,7 +754,7 @@ public class MarketManagementAction extends ManagementAction {
 		sql.append("BIOMEDGPS_MARKET_SECTION (MARKET_SECTION_XR_ID, SECTION_ID, ");
 		sql.append("MARKET_ID, CREATE_DT) ");
 		sql.append("VALUES(?,?,?,?) ");
-		log.debug(sql+"|"+req.getParameter("sectionId")+"|"+req.getParameter("marketId"));
+		log.debug(sql+"|"+req.getParameter("sectionId")+"|"+req.getParameter(MARKET_ID));
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (String sectionId : req.getParameterValues("sectionId")) {
 				ps.setString(1, new UUIDGenerator().getUUID());
@@ -862,6 +860,8 @@ public class MarketManagementAction extends ManagementAction {
 			}else if("changeUpdate".equals(buildAction)) {
 				updateChanges(req);
 				return; // We don't want to send redirects after an order/indent update
+			} else if("createArchive".equals(buildAction)) {
+				createArchive(req);
 			}
 		} catch (Exception e) {
 			log.error("Error attempting to build: ", e);
@@ -877,6 +877,73 @@ public class MarketManagementAction extends ManagementAction {
 
 		redirectRequest(msg, buildAction, req);
 	}
+
+	
+	/**
+	 * Create a copy of the supplied market and archive it.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void createArchive(ActionRequest req) throws ActionException {
+		// Ensure that an empty replacevals map is in the attributes for the RDU to use.
+		Map<String, Object> replaceVals = new HashMap<>();
+		attributes.put(RecordDuplicatorUtility.REPLACE_VALS, replaceVals);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		boolean formerAutoCommit = true;
+		try {
+			formerAutoCommit = dbConn.getAutoCommit();
+			dbConn.setAutoCommit(false);
+			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_market", "market_id", true);
+			rdu.addWhereClause("market_id", req.getParameter(MARKET_ID));
+			Map<String, String> ids;
+			ids = rdu.copy();
+			replaceVals.put("market_id", ids);
+
+			// Copy all attributes
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_market_attribute_xr", "market_attribute_id", true);
+			rdu.addWhereListClause("market_id");
+			rdu.returnGeneratedKeys(false);
+			rdu.copy();
+
+			// Copy all market sections
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_market_section", "market_section_xr_id", true);
+			rdu.addWhereListClause("market_id");
+			rdu.returnGeneratedKeys(false);
+			rdu.copy();
+			
+			// Update the name and status of the new market
+			updateMarketName(ids.get( req.getParameter(MARKET_ID)));
+
+			dbConn.commit();
+			
+			putModuleData("Market Successfully Archived");
+		} catch (Exception e) {
+			throw new ActionException(e);
+		} finally {
+			try {
+				dbConn.setAutoCommit(formerAutoCommit);
+			} catch (SQLException e) {
+				log.error("Failed to return database to previous commit status.");
+			}
+		}
+	}
+
+
+	/**
+	 * Change the name and status of the supplied market to denote its archived status
+	 */
+	private void updateMarketName(String marketId) throws SQLException {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_market set market_nm = market_nm + '(Archived)', ");
+		sql.append("status_no = 'A' where market_id = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, marketId);
+			ps.executeUpdate();
+		}
+	}
+
 
 	/**
 	 * Updates the appropriate changes for markets to DB, then to Solr
@@ -911,7 +978,7 @@ public class MarketManagementAction extends ManagementAction {
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			String[] order = req.getParameterValues("orderNo");
-			String[] ids = req.getParameterValues("marketId");
+			String[] ids = req.getParameterValues(MARKET_ID);
 			for (int i=0; i < order.length || i < ids.length; i++) {
 				ps.setInt(1, Convert.formatInteger(order[i]));
 				ps.setString(2, ids[i]);
@@ -961,7 +1028,7 @@ public class MarketManagementAction extends ManagementAction {
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			String[] indentNos = req.getParameterValues("indentNo");
-			String[] ids = req.getParameterValues("marketId");
+			String[] ids = req.getParameterValues(MARKET_ID);
 			for (int i=0; i < indentNos.length || i < ids.length; i++) {
 				ps.setInt(1, Convert.formatInteger(indentNos[i]));
 				ps.setString(2, ids[i]);
@@ -1034,7 +1101,7 @@ public class MarketManagementAction extends ManagementAction {
 		idx.setDBConnection(dbConn);
 		
 		//grab values from request
-		String[] ids = req.getParameterValues("marketId");
+		String[] ids = req.getParameterValues(MARKET_ID);
 		String[] statuses = req.getParameterValues("statusNo");
 		
 		//remove any markets from Solr if applicable
@@ -1064,7 +1131,7 @@ public class MarketManagementAction extends ManagementAction {
 		//if a market is being deleted do not redirect the user to a market page
 		if (!"delete".equals(buildAction) || 
 				ActionTarget.valueOf(req.getParameter(ACTION_TARGET)) != ActionTarget.MARKET) {
-			url.append("&marketId=").append(req.getParameter("marketId"));
+			url.append("&marketId=").append(req.getParameter(MARKET_ID));
 		}
 
 		if ("ATTRIBUTE".equals(req.getParameter(ACTION_TARGET)))

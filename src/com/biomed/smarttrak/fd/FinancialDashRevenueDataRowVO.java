@@ -26,6 +26,7 @@ public class FinancialDashRevenueDataRowVO {
 	private String companyName;
 	private String companyId;
 	private String sectionName;
+	private String parentName;
 	private String regionCode;
 	private int yearNo;
 	private long q1No;
@@ -65,6 +66,13 @@ public class FinancialDashRevenueDataRowVO {
 	}
 	public void setScenarioName(String scenarioName) {
 		this.scenarioName = scenarioName;
+	}
+	@Column(name="parent_nm")
+	public String getParentName() {
+		return parentName;
+	}
+	public void setParentName(String parentName) {
+		this.parentName = parentName;
 	}
 	@Column(name="company_nm", isReadOnly=true)
 	public String getCompanyName() {
