@@ -8,30 +8,27 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: UserResidentList.java
+ * <b>Title</b>: ResidentRoomList.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> this list will generate a list of residences the user 
- *       has to be returned of use as a select picker
+ * <b>Description: </b> Generates a list of rooms for the residence submitted
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
  * @author ryan
  * @version 3.0
- * @since Mar 1, 2018
+ * @since Mar 2, 2018
  * @updates:
  ****************************************************************************/
-public class UserResidentList extends SimpleActionAdapter {
+public class ResidentRoomList extends SimpleActionAdapter {
 	
-	public UserResidentList() {
+	public ResidentRoomList() {
 		super();
 	}
 
-	public UserResidentList(ActionInitVO arg0) {
+	public ResidentRoomList(ActionInitVO arg0) {
 		super(arg0);
 	}
 	
@@ -42,16 +39,14 @@ public class UserResidentList extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String custom = getCustomSchema();
-		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 
-		StringBuilder sql = new StringBuilder(304);
-		sql.append("select r.residence_nm as value, r.residence_id as key from ").append(custom).append("rezdox_residence r ");
-		sql.append("inner join ").append(custom).append("rezdox_residence_member_xr rmxr on r.residence_id = rmxr.residence_id and rmxr.status_flg = 1 ");
-		sql.append("inner join ").append(custom).append("rezdox_member m on rmxr.member_id = m.member_id ");
-		sql.append("where m.profile_id = ? ");
+		StringBuilder sql = new StringBuilder(176);
+		sql.append("select rr.room as key_id, rt.type_nm as value from ").append(custom).append("rezdox_room rr ");
+		sql.append("inner join ").append(custom).append("rezdox_room_type rt on rt.room_type_cd = rr.room_type_cd ");
+		sql.append("where residence_id = ? ");
 		
 		List<Object> params = new ArrayList<>();
-		params.add(user.getProfileId());
+		params.add(req.getParameter("residenceId"));
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), custom);
 		List<GenericVO> data = db.executeSelect(sql.toString(), params, new GenericVO());
@@ -60,3 +55,4 @@ public class UserResidentList extends SimpleActionAdapter {
 	}
 
 }
+
