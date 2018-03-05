@@ -12,7 +12,6 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.gis.Location;
 
 /****************************************************************************
  * <b>Title:</b> SRTRequestVO.java
@@ -43,10 +42,11 @@ public class SRTRequestVO extends BeanDataVO {
 	private List<GenericVO> fileUploads;
 	private List<SRTNoteVO> srtNotes;
 	private BigDecimal estimatedRoi;
-	private Location address;
+	private SRTRequestAddressVO address;
 	private int qtyNo;
 	private String reason;
 	private String chargeTo;
+	private String opCoId;
 	private Date createDt;
 	private Date updateDt;
 
@@ -79,6 +79,13 @@ public class SRTRequestVO extends BeanDataVO {
 	 */
 	public SRTRosterVO getRequestor() {
 		return requestor;
+	}
+
+	/**
+	 * @return helper method to get RequestorNm
+	 */
+	public String getRequstorNm() {
+		return requestor != null ? requestor.getFullName() : "";
 	}
 
 	/**
@@ -116,7 +123,7 @@ public class SRTRequestVO extends BeanDataVO {
 	/**
 	 * @return the description
 	 */
-	@Column(name="REQ_DESC")
+	@Column(name="REQUEST_DESC")
 	public String getDescription() {
 		return description;
 	}
@@ -124,7 +131,7 @@ public class SRTRequestVO extends BeanDataVO {
 	/**
 	 * @return the reqTerritoryId
 	 */
-	@Column(name="REQ_TERRITORY_ID")
+	@Column(name="REQUEST_TERRITORY_ID")
 	public String getReqTerritoryId() {
 		return reqTerritoryId;
 	}
@@ -185,7 +192,7 @@ public class SRTRequestVO extends BeanDataVO {
 	/**
 	 * @return the reason
 	 */
-	@Column(name="REASON_FOR_REQ")
+	@Column(name="REASON_FOR_REQUEST")
 	public String getReason() {
 		return reason;
 	}
@@ -198,16 +205,39 @@ public class SRTRequestVO extends BeanDataVO {
 		return chargeTo;
 	}
 
-	@BeanSubElement
-	public Location getAddress() {
+	/**
+	 * @return the address
+	 */
+	public SRTRequestAddressVO getAddress() {
 		return address;
+	}
+
+	/**
+	 * @return the opCoId
+	 */
+	@Column(name="OP_CO_ID")
+	public String getOpCoId() {
+		return opCoId;
+	}
+
+	@BeanSubElement
+	public void setAddress(SRTRequestAddressVO address) {
+		this.address = address;
 	}
 
 	/**
 	 * @param requestor the requestor to set.
 	 */
+	@BeanSubElement
 	public void setRequestor(SRTRosterVO requestor) {
 		this.requestor = requestor;
+	}
+
+	/**
+	 * @param requestId the requestId to set.
+	 */
+	public void setRequestId(String requestId) {
+		this.requestId = requestId;
 	}
 
 	/**
@@ -255,7 +285,6 @@ public class SRTRequestVO extends BeanDataVO {
 	/**
 	 * @param file the file to add.
 	 */
-	@BeanSubElement
 	public void addFileUpload(GenericVO file) {
 		if(file != null) {
 			fileUploads.add(file);
@@ -272,7 +301,6 @@ public class SRTRequestVO extends BeanDataVO {
 	/**
 	 * @param note the srtNote to add.
 	 */
-	@BeanSubElement
 	public void addSrtNote(SRTNoteVO note) {
 		if(note != null) {
 			srtNotes.add(note);
@@ -326,5 +354,12 @@ public class SRTRequestVO extends BeanDataVO {
 	 */
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
+	}
+
+	/**
+	 * @param opCoId the opCoId to set.
+	 */
+	public void setOpCoId(String opCoId) {
+		this.opCoId = opCoId;
 	}
 }

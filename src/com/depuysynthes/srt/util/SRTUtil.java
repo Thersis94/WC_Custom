@@ -97,7 +97,7 @@ public class SRTUtil {
 	 * @return
 	 */
 	public static String getOpCO(ActionRequest req) {
-		SRTRosterVO r = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
+		SRTRosterVO r = getRoster(req);
 		if(r != null) {
 			return r.getOpCoId();
 		}
@@ -113,7 +113,7 @@ public class SRTUtil {
 	 * @throws EncryptionException
 	 */
 	public static String decryptName(String name, StringEncrypter se) throws EncryptionException {
-		String [] firstLast = name.split(" ");
+		String [] firstLast = StringUtil.checkVal(name).split(" ");
 		if(firstLast == null || firstLast.length == 0) {
 			return "";
 		} else if(firstLast.length == 1) {
@@ -121,5 +121,15 @@ public class SRTUtil {
 		} else {
 			return StringUtil.join(se.decrypt(firstLast[0]), " ", se.decrypt(firstLast[1]));
 		}
+	}
+
+	/**
+	 * Retrieve the Roster Records off the Request.
+	 * @param req
+	 * @return
+	 */
+	public static SRTRosterVO getRoster(ActionRequest req) {
+		return (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
+
 	}
 }
