@@ -11,15 +11,15 @@ import com.siliconmtn.gis.Location;
 /****************************************************************************
  * <b>Title:</b> SRTRequestActionCO.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Stores Request Address Data.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 3.3.1
  * @since Feb 28, 2018
  ****************************************************************************/
-@Table(name="")
+@Table(name="SRT_REQUEST_ADDRESS")
 public class SRTRequestAddressVO extends Location {
 
 	/**

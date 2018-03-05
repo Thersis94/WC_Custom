@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.depuysynthes.srt.data.RequestDataProcessor;
+import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
@@ -48,7 +49,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter(SRT_REQUEST_ID) || req.hasParameter("json")) {
-			SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
+			SRTRosterVO roster = SRTUtil.getRoster(req);
 			GridDataVO<SRTRequestVO> requests = loadRequests(roster, req);
 
 			/*
@@ -65,21 +66,23 @@ public class SRTRequestAction extends SimpleActionAdapter {
  
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
+		if(!req.hasParameter(SRT_REQUEST_ID)) {
+			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+			String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 
-		//Place ActionInit on the Attributes map for the Data Save Handler.
-		attributes.put(Constants.ACTION_DATA, actionInit);
+			//Place ActionInit on the Attributes map for the Data Save Handler.
+			attributes.put(Constants.ACTION_DATA, actionInit);
 
-		//Call DataManagerUtil to save the form.
-		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, RequestDataProcessor.class);
+			//Call DataManagerUtil to save the form.
+			new DataManagerUtil(attributes, dbConn).saveForm(formId, req, RequestDataProcessor.class);
 
-		//Redirect the User.
-		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), "/order-online");
+			//Redirect the User.
+			sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), "/order-online");
+		}
 	}
 
 	/**
-	 * Load data via the FormAction Tool
+	 * Load Form Data.
 	 * @param req
 	 * @throws ActionException
 	 */
@@ -90,7 +93,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 
 		log.debug("Retrieving Form : " + formId);
 
-		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadFormWithData(formId, req, null, null);
+		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadFormWithData(formId, req, null, RequestDataProcessor.class);
 		req.setAttribute(FormAction.FORM_DATA, dc);
 	}
 
@@ -107,13 +110,14 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		if(req.hasParameter(SRT_REQUEST_ID)) {
 			vals.add(req.getParameter(SRT_REQUEST_ID));
 		}
-//		if(!roster.isAdmin()) {
-//			vals.add(roster.getRosterId());
-//		}
+
+		if(!roster.isAdmin()) {
+			vals.add(roster.getRosterId());
+		}
 
 		int limit = req.getIntegerParameter("limit", 10);
 		int offset = req.getIntegerParameter("offset", 0);
-		GridDataVO<SRTRequestVO> requests = new DBProcessor(dbConn).executeSQLWithCount(buildRequestLoadSql(roster.isAdmin(), req.hasParameter(SRT_REQUEST_ID)), vals, new SRTRequestVO(), limit, offset);
+		GridDataVO<SRTRequestVO> requests = new DBProcessor(dbConn).executeSQLWithCount(buildRequestLoadSql(!roster.isAdmin(), req.hasParameter(SRT_REQUEST_ID)), vals, new SRTRequestVO(), limit, offset);
 
 		log.debug(StringUtil.join("Found ", Integer.toString(requests.getTotal()), " Requests."));
 		//Get List of Users
@@ -148,7 +152,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	 * Build the SRT Request Load Sql.
 	 * @return
 	 */
-	private String buildRequestLoadSql(boolean hasUser, boolean hasRequestId) {
+	private String buildRequestLoadSql(boolean notAdmin, boolean hasRequestId) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select r.*, a.*, u.profile_id from ").append(schema);
@@ -161,7 +165,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if(hasRequestId) {
 			sql.append("and r.request_id = ? ");
-		} else if(hasUser) {
+		} else if(notAdmin) {
 			sql.append("and u.roster_id = ? ");
 		}
 		sql.append("order by r.create_dt desc ");

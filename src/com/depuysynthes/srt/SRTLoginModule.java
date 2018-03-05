@@ -55,22 +55,24 @@ public class SRTLoginModule extends DBLoginModule {
 		//Attempt to retrieve SRT Roster record from Database.
 		List<SRTRosterVO> users = new DBProcessor((Connection) getAttribute(GlobalConfig.KEY_DB_CONN)).executeSelect(buildRosterSql(), Arrays.asList(wcUser.getProfileId()), new SRTRosterVO());
 		log.info(users);
-		return matchUser(wcUser);
+		if(!users.isEmpty()) {
+			return matchUser(wcUser, users);
+		} else {
+			throw new AuthenticationException("User not in Roster Table.");
+		}
 	}
 
 	/**
 	 * Match WC Core User to an SRTRosterVO and return it.
-	 * @param wcUser
+	 * @param wcUser 
+	 * @param users
 	 * @param users
 	 * @return
 	 * @throws AuthenticationException - Throw Exception if no match found.
 	 */
-	private SRTRosterVO matchUser(UserDataVO wcUser) {
-
-		SRTRosterVO roster = new SRTRosterVO();
+	private SRTRosterVO matchUser(UserDataVO wcUser, List<SRTRosterVO> users) {
+		SRTRosterVO roster = users.get(0);
 		roster.setData(wcUser.getDataMap());
-		roster.setOpCoId("US_SPINE");
-
 		//THIS NEEDS TO BE SET OFF ORIGINAL RECORD!
 		roster.setAuthenticated(wcUser.isAuthenticated());
 		return roster;

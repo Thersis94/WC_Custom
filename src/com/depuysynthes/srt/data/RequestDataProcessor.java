@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.depuysynthes.srt.SRTRequestAction;
 import com.depuysynthes.srt.vo.SRTFileVO;
+import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.siliconmtn.action.ActionException;
@@ -101,7 +102,6 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		log.debug("Saving SRT Request");
 
 		// Set the form fields that should not be saved as attributes, onto the request, with appropriate parameter names.
-		// Remove from the form field map so they aren't saved as attributes.
 		Iterator<Map.Entry<String, FormFieldVO>> iter = data.getCustomData().entrySet().iterator();
 		while (iter.hasNext()) {
 			Map.Entry<String, FormFieldVO> entry = iter.next();
@@ -112,21 +112,53 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 			}
 		}
 
-		// Get the residence data
+		// Build the SRT Request from the request.
 		SRTRequestVO request = new SRTRequestVO(req);
-		SRTRequestAddressVO addr = new SRTRequestAddressVO(req);
-		log.debug(req.getParameter("rosterId"));
-		// Save the residence record
+
+		/*
+		 * Store if this is an insert or not so we can decide if we create
+		 * a Project Record laster.
+		 */
+		boolean isInsert = StringUtil.isEmpty(request.getRequestId());
+
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
+
+			//Save the Request Record
 			dbp.save(request);
+
+			//Update the FormTransactionVO
 			data.setFormSubmittalId(request.getRequestId());
+
+			//Update the request
 			req.setParameter(SRTRequestAction.SRT_REQUEST_ID, request.getRequestId());
-			addr.setRequestId(request.getRequestId());
+
+			//Build the SRT RequestAddressVO
+			SRTRequestAddressVO addr = new SRTRequestAddressVO(req);
+			dbp.save(addr);
+
+			//Save the Request Address.
+			request.setAddress(addr);
+
+			//Generate Project Record if necessary.
+			if(isInsert) {
+				dbp.save(buildProjectRecord(request));
+			}
+
 		} catch(Exception e) {
 			log.error("Could not save SRT Request", e);
 		}
 
+	}
+
+	/**
+	 * Build the Project Record for this request on inserts only.
+	 * @param request
+	 */
+	private SRTProjectVO buildProjectRecord(SRTRequestVO request) {
+		SRTProjectVO p = new SRTProjectVO();
+		p.setRequest(request);
+		return p;
 	}
 
 	/* (non-Javadoc)
