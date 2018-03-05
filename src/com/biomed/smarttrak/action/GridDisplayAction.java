@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
 
 // App Libs
 import com.biomed.smarttrak.admin.GridChartAction;
@@ -315,16 +316,13 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 		// Load company specific colors
 		setColors(grid, options);
-		
-		if (labelType > ALL_LABELS) {
-			modifyLabels(gridData, options, labelType);
-		}
 
-		// Pie charts need to have their labels modified in order to
-		// get all pertinant information to the user.
-		// Since this modifies labels it needs to be done after the colors have been set.
-		if (ChartType.PIE == type && labelType < TOTAL_ONLY) {
-			modifyPieLabels(grid);
+		// Pie charts only need to edit their labels when all
+		// labels are present.  Otherwise use the default label edit.
+		if (ChartType.PIE == type && labelType == ALL_LABELS) {
+			modifyPieLabels(grid, gridData);
+		} else if (labelType > ALL_LABELS) {
+			modifyLabels(gridData, options, labelType);
 		}
 
 		gridData.addCustomValues(options.getChartOptions());
@@ -505,8 +503,10 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	/**
 	 * Check to see if the label needs to be modified
 	 * and do so if necessary.
+	 * @param grid 
+	 * @param gridData 
 	 */
-	private void modifyPieLabels(GridVO grid) {
+	private void modifyPieLabels(GridVO grid, SMTGridIntfc gridData) {
 		// Add up all values to see if the chart was generated
 		// with percentages instead of actual values.
 		BigDecimal total = new BigDecimal(0);
@@ -520,11 +520,19 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		if (total.compareTo(new BigDecimal(100)) == 0) return;
 
 		boolean format =  Convert.formatBoolean(grid.getAbbreviateNumbers());
-		for (GridDetailVO detail : grid.getDetails()) {
+        DecimalFormat decimalFormat = new DecimalFormat("#,##0");
+		for (SMTGridRowIntfc row : gridData.getRows()) {
+			GoogleChartRowVO gRow = (GoogleChartRowVO) row;
+			// Ensure that all needed data is here.
+			if (gRow.getC().size() < 2) continue;
+			
+			String name = (String) gRow.getC().get(0).getValue();
+			String value = decimalFormat.format(gRow.getC().get(1).getValue());
+			
 			if (format) {
-				detail.setLabel(detail.getLabel() + " - " + formatCellValue(StringUtil.removeNonNumeric(detail.getValue1())));
+				gRow.getC().get(0).setValue(name + " - $" + formatCellValue(StringUtil.removeNonNumeric(value)));
 			} else {
-				detail.setLabel(detail.getLabel() + " - " + detail.getValue1());
+				gRow.getC().get(0).setValue(name + " - $" + value);
 			}
 		}
 
