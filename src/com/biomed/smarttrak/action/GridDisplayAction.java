@@ -530,9 +530,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			String value = decimalFormat.format(gRow.getC().get(1).getValue());
 			
 			if (format) {
-				gRow.getC().get(0).setValue(name + " - " + formatCellValue(StringUtil.removeNonNumeric(value)));
+				gRow.getC().get(0).setValue(name + " - $" + formatCellValue(StringUtil.removeNonNumeric(value)));
 			} else {
-				gRow.getC().get(0).setValue(name + " - " + value);
+				gRow.getC().get(0).setValue(name + " - $" + value);
 			}
 		}
 
