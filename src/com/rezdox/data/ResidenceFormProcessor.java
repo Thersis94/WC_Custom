@@ -25,13 +25,13 @@ import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.user.LocationManager;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
-import com.smt.sitebuilder.data.FormDataTransaction;
+import com.smt.sitebuilder.data.FormDataProcessor;
 import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 
 /****************************************************************************
- * <p><b>Title</b>: ResidenceFormTransaction</p>
+ * <p><b>Title</b>: ResidenceFormProcessor</p>
  * <p><b>Description: </b>Writes the residence form data to the
  * residence_attributes table.</p>
  * <p> 
@@ -42,7 +42,7 @@ import com.smt.sitebuilder.data.vo.GenericQueryVO;
  * @since Feb 9, 2018
  * <b>Changes:</b>
  ****************************************************************************/
-public class ResidenceFormTransaction extends FormDataTransaction {
+public class ResidenceFormProcessor extends FormDataProcessor {
 	
 	/**
 	 * Request parameter names for form field slug_txt values that go to the residence table, not the attributes table
@@ -65,15 +65,15 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 	 * @param attributes
 	 * @param req
 	 */
-	public ResidenceFormTransaction(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
+	public ResidenceFormProcessor(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
 		super(conn, attributes, req);
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.data.AbstractFormTransaction#writeTransaction(com.smt.sitebuilder.data.vo.FormTransactionVO)
+	 * @see com.smt.sitebuilder.data.FormDataProcessor#saveFormData(com.smt.sitebuilder.data.vo.FormTransactionVO)
 	 */
 	@Override
-	protected FormTransactionVO writeTransaction(FormTransactionVO data) throws DatabaseException {
+	protected void saveFormData(FormTransactionVO data) throws DatabaseException {
 		log.debug("Saving RezDox Residence Form Transaction Data");
 		
 		// Set the form fields that should not be saved as attributes, onto the request, with appropriate parameter names.
@@ -109,11 +109,6 @@ public class ResidenceFormTransaction extends FormDataTransaction {
 		
 		// Save the Residence/Member XR
 		saveResidenceMemberXR(newResidence);
-		
-		// Save the Residence attributes
-		saveFieldData(data);
-		
-		return null;
 	}
 	
 	/**
