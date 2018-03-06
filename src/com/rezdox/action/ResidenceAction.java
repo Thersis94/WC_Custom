@@ -158,12 +158,12 @@ public class ResidenceAction extends SBActionAdapter {
 		// Using pivot table on the attributes to get additional data for display
 		StringBuilder sql = new StringBuilder(900);
 		sql.append("select r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt) as update_dt, ");
-		sql.append("beds_no, baths_no, coalesce(f_sqft_no, 0) as sqft_no, purchase_price_no ");
+		sql.append("beds_no, baths_no, coalesce(f_sqft_no, 0) as sqft_no, zestimate_no ");
 		sql.append("from ").append(schema).append("rezdox_residence r inner join ");
 		sql.append(schema).append("rezdox_residence_member_xr m on r.residence_id = m.residence_id ");
 		sql.append("left join (SELECT * FROM crosstab('SELECT residence_id, slug_txt, value_txt FROM ").append(schema).append("rezdox_residence_attribute ORDER BY 1', ");
-		sql.append("'SELECT DISTINCT slug_txt FROM ").append(schema).append("rezdox_residence_attribute WHERE slug_txt in (''bedrooms'',''bathrooms'',''finishedSqFt'', ''lastSoldPrice'') ORDER BY 1') ");
-		sql.append("AS (residence_id text, baths_no float, beds_no int, f_sqft_no int, purchase_price_no float) ");
+		sql.append("'SELECT DISTINCT slug_txt FROM ").append(schema).append("rezdox_residence_attribute WHERE slug_txt in (''bedrooms'',''bathrooms'',''finishedSqFt'', ''RESIDENCE_ZESTIMATE'') ORDER BY 1') ");
+		sql.append("AS (residence_id text, baths_no float, beds_no int, f_sqft_no int, zestimate_no float) ");
 		sql.append(") ra on r.residence_id = ra.residence_id ");
 		sql.append("where member_id = ? ");
 		
