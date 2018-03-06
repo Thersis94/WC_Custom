@@ -11,7 +11,7 @@ import com.siliconmtn.db.orm.Table;
 /****************************************************************************
  * <b>Title:</b> SRTFileVO.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Stores SRT File Relationship Data.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 

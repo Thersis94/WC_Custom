@@ -1,18 +1,16 @@
 package com.depuysynthes.srt.vo;
 
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -34,6 +32,7 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	 */
 	private static final long serialVersionUID = 8656525987783386949L;
 	private String masterRecordId;
+	private String opCoId;
 	private String partNo;
 	private String titleTxt;
 	private String qualitySystemId;
@@ -43,23 +42,24 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	private String makeFromPartNos;
 	private String prodFamilyId;
 	private int totalBuilt;
-	private boolean isObsolete;
+	private boolean obsoleteFlg;
 	private String obsoleteReason;
 	private Date createDt;
 	private Date updateDt;
-	private List<GenericVO> fileUploads;
+	private SRTFileVO prodImg;
 	private Map<String, String> attributes;
 
 	public SRTMasterRecordVO() {
-		fileUploads = new ArrayList<>();
 		attributes = new HashMap<>();
 	}
 
 	public SRTMasterRecordVO(ActionRequest req) {
+		this();
 		populateData(req);
 	}
 
 	public SRTMasterRecordVO(ResultSet rs) {
+		this();
 		populateData(rs);
 	}
 	/**
@@ -68,6 +68,14 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	@Column(name="MASTER_RECORD_ID", isPrimaryKey=true)
 	public String getMasterRecordId() {
 		return masterRecordId;
+	}
+
+	/**
+	 * @return the opCoId
+	 */
+	@Column(name="OP_CO_ID")
+	public String getOpCoId() {
+		return opCoId;
 	}
 
 	/**
@@ -142,12 +150,17 @@ public class SRTMasterRecordVO extends BeanDataVO {
 		return totalBuilt;
 	}
 
+	@Column(name="OBSOLETE_FLG")
+	public int getObsoleteFlg() {
+		return Convert.formatInteger(obsoleteFlg);
+	}
+
 	/**
 	 * @return the isObsolete
 	 */
-	@Column(name="OBSOLETE_FLG")
+
 	public boolean isObsolete() {
-		return isObsolete;
+		return obsoleteFlg;
 	}
 
 	/**
@@ -177,8 +190,8 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	/**
 	 * @return the fileUploads
 	 */
-	public List<GenericVO> getFileUploads() {
-		return fileUploads;
+	public SRTFileVO getProdImg() {
+		return prodImg;
 	}
 
 	/**
@@ -193,6 +206,13 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	 */
 	public void setMasterRecordId(String masterRecordId) {
 		this.masterRecordId = masterRecordId;
+	}
+
+	/**
+	 * @param opCoId the opCoId to set.
+	 */
+	public void setOpCoId(String opCoId) {
+		this.opCoId = opCoId;
 	}
 
 	/**
@@ -261,10 +281,13 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	/**
 	 * @param isObsolete the isObsolete to set.
 	 */
-	public void setObsolete(boolean isObsolete) {
-		this.isObsolete = isObsolete;
+	public void setObsolete(boolean obsoleteFlg) {
+		this.obsoleteFlg = obsoleteFlg;
 	}
 
+	public void setObsoleteFlg(int isObsolete) {
+		this.obsoleteFlg = Convert.formatBoolean(obsoleteFlg);
+	}
 	/**
 	 * @param obsoleteReason the obsoleteReason to set.
 	 */
@@ -289,18 +312,9 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	/**
 	 * @param fileUploads the fileUploads to set.
 	 */
-	public void setFileUploads(List<GenericVO> fileUploads) {
-		this.fileUploads = fileUploads;
-	}
-
-	/**
-	 * @param file the file to add.
-	 */
 	@BeanSubElement
-	public void addFileUpload(GenericVO file) {
-		if(file != null) {
-			fileUploads.add(file);
-		}
+	public void setProdImg(SRTFileVO prodImg) {
+		this.prodImg = prodImg;
 	}
 
 	/**
