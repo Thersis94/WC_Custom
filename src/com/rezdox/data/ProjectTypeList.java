@@ -3,9 +3,9 @@ package com.rezdox.data;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.list.ListDataVO;
 
 /****************************************************************************
  * <b>Title:</b> ProjectTypeList.java<br/>
@@ -35,10 +35,10 @@ public class ProjectTypeList extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select project_type_cd as key, type_nm as value from ");
+		sql.append("select project_type_cd as value_txt, type_nm as label_txt from ");
 		sql.append(schema).append("REZDOX_PROJECT_TYPE order by type_nm ");
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		putModuleData(db.executeSelect(sql.toString(), null, new GenericVO()));
+		putModuleData(db.executeSelect(sql.toString(), null, new ListDataVO(),"LABEL_TXT"));
 	}
 }
