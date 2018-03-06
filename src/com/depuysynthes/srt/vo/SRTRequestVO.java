@@ -323,7 +323,7 @@ public class SRTRequestVO extends BeanDataVO {
 	 * @param estimatedRoi the estimatedRoi to set.
 	 */
 	public void setEstimatedRoiDbl(double estimatedRoi) {
-		this.estimatedRoi = BigDecimal.valueOf(Double.valueOf(estimatedRoi));
+		this.estimatedRoi = BigDecimal.valueOf(estimatedRoi);
 	}
 
 	/**
