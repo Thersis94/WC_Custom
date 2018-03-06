@@ -2,6 +2,7 @@ package com.rezdox.action;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.rezdox.vo.PromotionVO;
 import com.rezdox.vo.PromotionXRVO;
@@ -9,6 +10,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -42,6 +44,16 @@ public class PromotionAction extends SBActionAdapter {
 	 */
 	public PromotionAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/**
+	 * @param dbConnection
+	 * @param attributes
+	 */
+	public PromotionAction(SMTDBConnection dbConnection, Map<String, Object> attributes) {
+		this();
+		setDBConnection(dbConnection);
+		setAttributes(attributes);
 	}
 
 	/* (non-Javadoc)
@@ -88,6 +100,19 @@ public class PromotionAction extends SBActionAdapter {
 		
 		DBProcessor dbp = new DBProcessor(dbConn);
 		return dbp.executeSelect(sql.toString(), params, new PromotionVO());
+	}
+	
+	/**
+	 * Retrieves the promotion used for signing up.
+	 * 
+	 * @return
+	 */
+	public PromotionVO retrieveFreePromotion() {
+		ActionRequest promotionReq = new ActionRequest();
+		promotionReq.setParameter("promotionCode", SIGNUP_PROMOTION_CD);
+
+		List<PromotionVO> promotion = retrievePromotions(promotionReq);
+		return promotion.get(0);
 	}
 
 	/* (non-Javadoc)

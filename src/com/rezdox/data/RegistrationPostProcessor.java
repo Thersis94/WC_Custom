@@ -1,17 +1,15 @@
 package com.rezdox.data;
 
-import java.util.List;
-
 // WC_Custom
 import com.rezdox.action.MembershipAction;
 import com.rezdox.action.PromotionAction;
 import com.rezdox.action.RewardsAction;
 import com.rezdox.action.RezDoxUtils;
+import com.rezdox.action.SubscriptionAction;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO;
 import com.rezdox.vo.MembershipVO.Group;
 import com.rezdox.vo.PromotionVO;
-import com.rezdox.vo.SubscriptionVO;
 
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
@@ -69,67 +67,29 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		member.setStatusFlg(1);
 		member.setPrivacyFlg(0);
 
-		// Get default member subscription... the only default right now is "100 Connections".
-		// Free business and residence subscriptions are added by member selection after signing up.
-		SubscriptionVO subscription = new SubscriptionVO();
-
+		// Save member data
 		DBProcessor dbp = new DBProcessor(dbConn);
-		MembershipVO membership = retrieveDefaultMembership();
-		PromotionVO promotion = retrieveFreePromotion();
-
-		subscription.setMember(member);
-		subscription.setMembership(membership);
-		subscription.setPromotion(promotion);
-		subscription.setCostNo(membership.getCostNo());
-		subscription.setDiscountNo(membership.getCostNo() * promotion.getDiscountPctNo() * -1);
-		subscription.setQuantityNo(membership.getQuantityNo());
-
-		// Save member/subscription data
 		try {
 			dbp.save(member);
-			dbp.save(subscription);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
+		
+		// Get default member subscription... the only default right now is "100 Connections".
+		// Free business and residence subscriptions are added by member selection after signing up.
+		MembershipAction ma = new MembershipAction(dbConn, attributes);
+		MembershipVO membership = ma.retrieveDefaultMembership(Group.CO);
+
+		// Get the "Free" promotion used when signing up
+		PromotionAction pa = new PromotionAction(dbConn, attributes);
+		PromotionVO promotion = pa.retrieveFreePromotion();
+
+		// Give the member their free subscription
+		SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
+		sa.addSubscription(member, membership, promotion);
 
 		//apply the default reward give to all new users at first login
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 		ra.applyReward(RezDoxUtils.NEW_REGISTRANT_REWARD, member.getMemberId());
-	}
-
-
-	/**
-	 * Retrieves the default membership for signing up.
-	 * 
-	 * @return
-	 */
-	private MembershipVO retrieveDefaultMembership() {
-		ActionRequest membershipReq = new ActionRequest();
-		membershipReq.setParameter("getNewMemberDefault", "true");
-		membershipReq.setParameter("groupCode", Group.CO.name());
-
-		MembershipAction ma = new MembershipAction();
-		ma.setAttributes(this.attributes);
-		ma.setDBConnection(dbConn);
-
-		List<MembershipVO> membership = ma.retrieveMemberships(membershipReq);
-		return membership.get(0);
-	}
-
-	/**
-	 * Retrieves the promotion used for signing up.
-	 * 
-	 * @return
-	 */
-	private PromotionVO retrieveFreePromotion() {
-		ActionRequest promotionReq = new ActionRequest();
-		promotionReq.setParameter("promotionCode", PromotionAction.SIGNUP_PROMOTION_CD);
-
-		PromotionAction pa = new PromotionAction();
-		pa.setAttributes(this.attributes);
-		pa.setDBConnection(dbConn);
-
-		List<PromotionVO> promotion = pa.retrievePromotions(promotionReq);
-		return promotion.get(0);
 	}
 }
