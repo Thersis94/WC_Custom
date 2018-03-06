@@ -2,7 +2,12 @@ package com.rezdox.action;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +59,7 @@ public class ResidenceAction extends SBActionAdapter {
 	public static final String RESIDENCE_ID = "residenceId";
 	public static final String PRIMARY_RESIDENCE = " Primary Residence";
 	public static final String UPGRADE_MSG = "You have reached your maximum residences. Please purchase a residence upgrade to continue.";
+	public static final String SLUG_RESIDENCE_ZESTIMATE = "RESIDENCE_ZESTIMATE";
 	
 	public enum ResidenceColumnName {
 		RESIDENCE_ID, CREATE_DT, UPDATE_DT
@@ -179,9 +185,14 @@ public class ResidenceAction extends SBActionAdapter {
 	 * 
 	 * @param req
 	 */
+	@SuppressWarnings("unchecked")
 	protected FormVO retrieveHomeInfoForm(ActionRequest req) {
 		String formId = getFormId();
 		log.debug("Retrieving Residence Form: " + formId);
+		
+		// Update Zestimate before form load, per requirements
+		ResidenceVO residence = ((List<ResidenceVO>) req.getAttribute(RESIDENCE_DATA)).get(0);
+		updateZestimate(residence);
 		
 		// Set the requried params
 		GenericQueryVO query = new GenericQueryVO(formId);
@@ -247,7 +258,7 @@ public class ResidenceAction extends SBActionAdapter {
 		ResidenceVO residence = new ResidenceVO(req);
 		boolean newResidence = StringUtil.isEmpty(residence.getResidenceId());
 		
-		// If this is a new residence, lookup residential API data
+		// If this is a new residence, lookup residential API data + extended data for attributes
 		ZillowPropertyVO property = null;
 		if (newResidence) {
 			ZillowAPIManager zillow = new ZillowAPIManager();
@@ -322,18 +333,19 @@ public class ResidenceAction extends SBActionAdapter {
 		Map<String, String> zillowData = property.getExtendedData();
 		
 		// Create attributes from Zillow data where there is a matching slug text.
-		// These are the only Zillow fields we care about.
+		// These are the only Zillow extended fields we care about.
 		for (String slugText : getSlugTxtList(req)) {
 			String valueText = zillowData.get(slugText);
 			
 			if (!StringUtil.isEmpty(valueText)) {
-				ResidenceAttributeVO attribute = new ResidenceAttributeVO();
-				attribute.setResidenceId(residence.getResidenceId());
-				attribute.setSlugText(slugText);
-				attribute.setValueText(valueText);
+				ResidenceAttributeVO attribute = new ResidenceAttributeVO(residence.getResidenceId(), slugText, valueText);
 				attributes.add(attribute);
 			}
 		}
+		
+		// Add additional non-extended attributes
+		ResidenceAttributeVO attribute = new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE, property.getValueEstimate().toString());
+		attributes.add(attribute);
 		
 		return attributes;
 	}
@@ -360,5 +372,53 @@ public class ResidenceAction extends SBActionAdapter {
 		}
 		
 		return slugs;
+	}
+	
+	/**
+	 * Update the Zestimate data for a residence
+	 * 
+	 * @param req
+	 */
+	protected void updateZestimate(ResidenceVO residence) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select attribute_id, residence_id, slug_txt, value_txt, create_dt, update_dt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("rezdox_residence_attribute ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" residence_id = ? and slug_txt = ? ");
+		
+		List<Object> params = new ArrayList<>();
+		params.addAll(Arrays.asList(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE));
+		
+		DBProcessor dbp = new DBProcessor(dbConn);
+		List<ResidenceAttributeVO> attr = dbp.executeSelect(sql.toString(), params, new ResidenceAttributeVO());
+		
+		// Check to make sure we are updating at most once per day
+		ResidenceAttributeVO zestimate = attr.get(0);
+		Date lastUpdate = zestimate.getUpdateDate() == null ? zestimate.getCreateDate() : zestimate.getUpdateDate();
+		LocalDate now = LocalDate.now();
+		LocalDate prev = lastUpdate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		int daysSinceLastUpdate = Period.between(prev, now).getDays();
+		
+		if (daysSinceLastUpdate >= 1) {
+			applyZestimateUpdate(residence, zestimate);
+		}
+	}
+	
+	/**
+	 * Applies an update to the residence Zestimate record
+	 * 
+	 * @param residence
+	 * @param zestimate
+	 */
+	private void applyZestimateUpdate(ResidenceVO residence, ResidenceAttributeVO zestimate) {
+		try {
+			ZillowAPIManager zillowApi = new ZillowAPIManager();
+			ZillowPropertyVO property = zillowApi.retrieveZillowId(residence);
+			zestimate.setValueText(property.getValueEstimate().toString());
+			
+			DBProcessor dbp = new DBProcessor(dbConn);
+			dbp.save(zestimate);
+		} catch (Exception e) {
+			log.error("Could not update zestimate value for residence", e);
+		}
 	}
 }

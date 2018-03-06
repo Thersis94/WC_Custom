@@ -30,6 +30,19 @@ public class ResidenceAttributeVO {
 	public ResidenceAttributeVO() {
 		super();
 	}
+	
+	/**
+	 * Constructor to quickly populate the bean
+	 * 
+	 * @param residenceId
+	 * @param slugText
+	 * @param valueText
+	 */
+	public ResidenceAttributeVO(String residenceId, String slugText, String valueText) {
+		this.residenceId = residenceId;
+		this.slugText = slugText;
+		this.valueText = valueText;
+	}
 
 	/**
 	 * @return the attributeId
