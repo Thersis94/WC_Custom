@@ -97,12 +97,11 @@ public class NewsroomAction extends SBActionAdapter {
 		if(hasStatus) {
 			vals.add(statusCd);
 		}
-		vals.add(offset);
 
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		List<RSSArticleVO> articles = dbp.executeSelect(loadArticleSql(hasStatus), vals, new RSSArticleVO());
 		if(!articles.isEmpty())
-			this.putModuleData(articles, articles.size(), false);
+			this.putModuleData(articles.subList(offset, offset+10), articles.size(), false);
 	}
 
 	/**
@@ -120,7 +119,6 @@ public class NewsroomAction extends SBActionAdapter {
 			sql.append("and af.article_status_cd = ? ");
 		}
 		sql.append("order by a.create_dt desc ");
-		sql.append("limit 10 offset ? ");
 		return sql.toString();
 	}
 
@@ -222,7 +220,7 @@ public class NewsroomAction extends SBActionAdapter {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(700);
 		sql.append("select a.feed_segment_id, a.feed_group_id, a.feed_group_nm, ");
-		sql.append("b.FEED_SEGMENT_NM, cast(Count(d.feed_group_id) as int) as article_count from ");
+		sql.append("b.FEED_SEGMENT_NM, cast(Count(distinct d.rss_article_id) as int) as article_count from ");
 		sql.append(schema).append("BIOMEDGPS_FEED_GROUP a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("BIOMEDGPS_FEED_SEGMENT b ");
 		sql.append("on a.FEED_SEGMENT_ID = b.FEED_SEGMENT_ID ");
