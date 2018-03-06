@@ -111,15 +111,18 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
 	 */
 	public enum Section {
-		MARKET("markets/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHT("analysis/"), PRODUCT_EXPLORER("explorer/"),
-		UPDATES_EDITION("updates-edition/"), FINANCIAL_DASHBOARD("tools/financial/"), GAP_ANALYSIS("tools/analysis/");
+		MARKET("markets/", "marketAdmin"), PRODUCT("products/", "productAdmin"), COMPANY("companies/", "companyAdmin"), 
+		INSIGHT("analysis/", "insights"), PRODUCT_EXPLORER("explorer/", "tools&facadeType=explorer"), UPDATES_EDITION("updates-edition/", "uwr"),
+		FINANCIAL_DASHBOARD("tools/financial/", "fd"), GAP_ANALYSIS("tools/analysis/", "tools&facadeType=analysis");
 
 		private String path;
-		Section(String path) { this.path = path; }
+		private String actionType;
+		Section(String path, String actionType) { this.path = path; this.actionType = actionType; }
 		public String getURLToken() { return path; }
 		public String getPageURL() { //FQDN version
 			return "/" + getURLToken();
 		}
+		public String getActionType() { return actionType;}
 	}
 	
 	public enum LinkType {
