@@ -30,6 +30,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class MembershipAction extends SBActionAdapter {
 	
 	public static final String MEMBERSHIP_ID = "membershipId";
+	public static final String REQ_EXC_GROUP_CD = "excGroupCd";
 
 	public MembershipAction() {
 		super();
@@ -83,6 +84,12 @@ public class MembershipAction extends SBActionAdapter {
 		if (req.hasParameter("getNewMemberDefault")) {
 			sql.append("where new_mbr_dflt_flg = 1 and group_cd = ? ");
 			params.add(req.getParameter("groupCode"));
+		}
+		
+		String[] groupCodes = req.getParameterValues(REQ_EXC_GROUP_CD);
+		if (groupCodes != null && groupCodes.length > 0) {
+			sql.append("where group_cd not in (").append(DBUtil.preparedStatmentQuestion(groupCodes.length)).append(") ");
+			params.addAll(Arrays.asList(groupCodes));
 		}
 		
 		sql.append("order by group_cd, qty_no ");

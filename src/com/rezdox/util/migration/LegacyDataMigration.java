@@ -106,6 +106,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			migrateRewards();
 			migrateMemberRewards();
 			migrateAlbums();
+			//TODO: addZestimates() addPaypalButtons()
 		} catch(Exception e) {
 			log.error("Failed to migrate data.", e);
 		}

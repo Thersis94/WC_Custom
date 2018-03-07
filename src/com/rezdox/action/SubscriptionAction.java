@@ -58,15 +58,20 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		// Check if this is a new member. New members get a free residence or a free business.
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 		String memberId = member.getMemberId();
-		req.setAttribute("newMember", getResidenceUsage(memberId) + getBusinessUsage(memberId) == 0);
+		
+		// Check if this is a new member. New members get a free residence or a free business.
+		int residenceCount = getResidenceUsage(memberId);
+		int businessCount = getBusinessUsage(memberId);
+		req.setAttribute("newMember", residenceCount + businessCount == 0);
 		if ((boolean) req.getAttribute("newMember")) return;
 		
-		// Get the possible memberships to be shown to the member for purchase.
-		
+		// Get the possible memberships the member can subscribe to.
+		req.setParameter(MembershipAction.REQ_EXC_GROUP_CD, residenceCount > 0 ? Group.BU.name() : Group.HO.name());
+		MembershipAction ma = new MembershipAction(dbConn, attributes);
+		putModuleData(ma.retrieveMemberships(req));
 	}
 	
 	/**
