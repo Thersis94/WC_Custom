@@ -150,6 +150,9 @@ public class SRTMasterRecordVO extends BeanDataVO {
 		return totalBuilt;
 	}
 
+	/**
+	 * @return the isObsolete
+	 */
 	@Column(name="OBSOLETE_FLG")
 	public int getObsoleteFlg() {
 		return Convert.formatInteger(obsoleteFlg);
@@ -158,7 +161,6 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	/**
 	 * @return the isObsolete
 	 */
-
 	public boolean isObsolete() {
 		return obsoleteFlg;
 	}
