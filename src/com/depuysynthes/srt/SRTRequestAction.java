@@ -49,8 +49,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter(SRT_REQUEST_ID) || req.hasParameter("json")) {
-			SRTRosterVO roster = SRTUtil.getRoster(req);
-			GridDataVO<SRTRequestVO> requests = loadRequests(roster, req);
+			GridDataVO<SRTRequestVO> requests = loadRequests(req);
 
 			/*
 			 * If requestId is present, Load Data from Form Retrieval,
@@ -103,9 +102,10 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	 * @param parameter
 	 * @return
 	 */
-	private GridDataVO<SRTRequestVO> loadRequests(SRTRosterVO roster, ActionRequest req) {
+	public GridDataVO<SRTRequestVO> loadRequests(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
 
+		SRTRosterVO roster = SRTUtil.getRoster(req);
 		//if user is not an admin, add rosterId.
 		if(req.hasParameter(SRT_REQUEST_ID)) {
 			vals.add(req.getParameter(SRT_REQUEST_ID));

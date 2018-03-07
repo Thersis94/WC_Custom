@@ -6,6 +6,7 @@ import java.util.List;
 import com.depuysynthes.srt.data.ProjectDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTProjectVO;
+import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -31,7 +32,7 @@ import com.smt.sitebuilder.data.DataManagerUtil;
  * <b>Description:</b> Manages SRT Project Data.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 3.3.1
  * @since Feb 15, 2018
@@ -117,6 +118,10 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		GridDataVO<SRTProjectVO> projects = new DBProcessor(dbConn).executeSQLWithCount(sql, vals, new SRTProjectVO(), req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
 
 		if(!projects.getRowData().isEmpty()) {
+			if(req.hasParameter(SRT_PROJECT_ID)) {
+				SRTProjectVO p = projects.getRowData().get(0);
+				loadRequestData(p, req);
+			}
 			//Decrypt Project Record Name Fields.
 			decryptProjectNames(projects);
 
@@ -126,6 +131,20 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		//Return Projects
 		return projects;
+	}
+
+	/**
+	 * Loads Request Data when we are looking at a single record.
+	 * @param p
+	 * @param req
+	 */
+	private void loadRequestData(SRTProjectVO p, ActionRequest req) {
+		req.setParameter(SRTRequestAction.SRT_REQUEST_ID, p.getRequestId());
+		SRTRequestAction sra = (SRTRequestAction) getConfiguredAction(SRTRequestAction.class.getName());
+		GridDataVO<SRTRequestVO> gridReq = sra.loadRequests(req);
+		if(gridReq != null && !gridReq.getRowData().isEmpty()) {
+			p.setRequest(gridReq.getRowData().get(0));
+		}
 	}
 
 	/**
@@ -157,16 +176,21 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals, DisplayType displayType) {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("select p.*, req.*, ");
-		sql.append("concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
-		sql.append("concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
-		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
-		sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm ");
+		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm ");
+
+		//If this isn't a detail load, get Names for display purposes.
+		if(!req.hasParameter(SRT_PROJECT_ID)) {
+			sql.append(", concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
+			sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
+			sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm ");
+		}
+
+		//Joins to tables.
 		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("SRT_PROJECT p ");
-		sql.append(DBUtil.INNER_JOIN).append(custom).append("SRT_MASTER_RECORD_PROJECT_XR xr ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("SRT_REQUEST req ");
+		sql.append("on p.request_id = req.request_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_MASTER_RECORD_PROJECT_XR xr ");
 		sql.append("on xr.PROJECT_ID = p.PROJECT_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_REQUEST req ");
-		sql.append("on p.REQUEST_ID = req.REQUEST_ID ");
 
 		//Get Requestor Information
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER r ");
@@ -174,26 +198,31 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE pr ");
 		sql.append("on r.PROFILE_ID = pr.PROFILE_ID ");
 
-		//Get Optional Engineer Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER e ");
-		sql.append("on p.ENGINEER_ID = e.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE ep ");
-		sql.append("on e.PROFILE_ID = ep.PROFILE_ID ");
+		//Load Optional User Data if this isn't a detail view.
+		if(!req.hasParameter(SRT_PROJECT_ID)) {
+			//Get Optional Engineer Information
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER e ");
+			sql.append("on p.ENGINEER_ID = e.ROSTER_ID ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE ep ");
+			sql.append("on e.PROFILE_ID = ep.PROFILE_ID ");
 
-		//Get Optional Designer Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER d ");
-		sql.append("on p.DESIGNER_ID = d.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE dp ");
-		sql.append("on d.PROFILE_ID = dp.PROFILE_ID ");
+			//Get Optional Designer Information
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER d ");
+			sql.append("on p.DESIGNER_ID = d.ROSTER_ID ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE dp ");
+			sql.append("on d.PROFILE_ID = dp.PROFILE_ID ");
 
-		//Get Optional QA Engineer Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER q ");
-		sql.append("on p.QUALITY_ENGINEER_ID = q.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE qp ");
-		sql.append("on q.PROFILE_ID = qp.PROFILE_ID ");
+			//Get Optional QA Engineer Information
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER q ");
+			sql.append("on p.QUALITY_ENGINEER_ID = q.ROSTER_ID ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE qp ");
+			sql.append("on q.PROFILE_ID = qp.PROFILE_ID ");
+		}
 
+		//Build Where Conditional and set and clause values on the vals list.
 		buildWhereClause(sql, req, vals, displayType);
 
+		//Add Order By clause.
 		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(req.getParameter("orderBy"), "p.create_dt desc"));
 
 		return sql.toString();

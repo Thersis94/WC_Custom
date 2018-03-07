@@ -122,7 +122,7 @@ public class SRTProjectVO extends BeanDataVO {
 	/**
 	 * @return the projectType
 	 */
-	@Column(name="PROJECT_TYPE_ID")
+	@Column(name="PROJ_TYPE_ID")
 	public String getProjectType() {
 		return projectType;
 	}
@@ -161,7 +161,7 @@ public class SRTProjectVO extends BeanDataVO {
 	/**
 	 * @return the projectStatus
 	 */
-	@Column(name="PROJECT_STATUS_ID")
+	@Column(name="proj_stat_id")
 	public String getProjectStatus() {
 		return projectStatus;
 	}

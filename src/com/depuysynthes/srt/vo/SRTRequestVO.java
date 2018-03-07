@@ -43,7 +43,7 @@ public class SRTRequestVO extends BeanDataVO {
 	private List<GenericVO> fileUploads;
 	private List<SRTNoteVO> srtNotes;
 	private BigDecimal estimatedRoi;
-	private SRTRequestAddressVO address;
+	private SRTRequestAddressVO requestAddress;
 	private int qtyNo;
 	private String reason;
 	private String chargeTo;
@@ -206,8 +206,8 @@ public class SRTRequestVO extends BeanDataVO {
 	/**
 	 * @return the address
 	 */
-	public SRTRequestAddressVO getAddress() {
-		return address;
+	public SRTRequestAddressVO getRequestAddress() {
+		return requestAddress;
 	}
 
 	/**
@@ -219,8 +219,8 @@ public class SRTRequestVO extends BeanDataVO {
 	}
 
 	@BeanSubElement
-	public void setAddress(SRTRequestAddressVO address) {
-		this.address = address;
+	public void setRequestAddress(SRTRequestAddressVO address) {
+		this.requestAddress = address;
 	}
 
 	/**
