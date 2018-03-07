@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.depuysynthes.srt.data.ProjectDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
@@ -118,10 +119,13 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		GridDataVO<SRTProjectVO> projects = new DBProcessor(dbConn).executeSQLWithCount(sql, vals, new SRTProjectVO(), req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
 
 		if(!projects.getRowData().isEmpty()) {
+
+			//If this is a detail request, load additional data.
 			if(req.hasParameter(SRT_PROJECT_ID)) {
 				SRTProjectVO p = projects.getRowData().get(0);
-				loadRequestData(p, req);
+				loadDetailData(p, req);
 			}
+
 			//Decrypt Project Record Name Fields.
 			decryptProjectNames(projects);
 
@@ -138,12 +142,21 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 * @param p
 	 * @param req
 	 */
-	private void loadRequestData(SRTProjectVO p, ActionRequest req) {
+	private void loadDetailData(SRTProjectVO p, ActionRequest req) {
+
+		//Load request Information and assign on Project Record.
 		req.setParameter(SRTRequestAction.SRT_REQUEST_ID, p.getRequestId());
 		SRTRequestAction sra = (SRTRequestAction) getConfiguredAction(SRTRequestAction.class.getName());
-		GridDataVO<SRTRequestVO> gridReq = sra.loadRequests(req);
-		if(gridReq != null && !gridReq.getRowData().isEmpty()) {
-			p.setRequest(gridReq.getRowData().get(0));
+		GridDataVO<SRTRequestVO> reqData = sra.loadRequests(req);
+		if(reqData != null && !reqData.getRowData().isEmpty()) {
+			p.setRequest(reqData.getRowData().get(0));
+		}
+
+		//Load Master Record Data and assign on Project Record.
+		SRTMasterRecordAction smra = (SRTMasterRecordAction) getConfiguredAction(SRTMasterRecordAction.class.getName());
+		List<SRTMasterRecordVO> prodData = smra.loadMasterRecordXR(p);
+		for(SRTMasterRecordVO mr : prodData) {
+			p.addMasterRecord(mr);
 		}
 	}
 
@@ -189,8 +202,6 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("SRT_PROJECT p ");
 		sql.append(DBUtil.INNER_JOIN).append(custom).append("SRT_REQUEST req ");
 		sql.append("on p.request_id = req.request_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_MASTER_RECORD_PROJECT_XR xr ");
-		sql.append("on xr.PROJECT_ID = p.PROJECT_ID ");
 
 		//Get Requestor Information
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER r ");
