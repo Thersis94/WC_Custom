@@ -13,6 +13,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -21,7 +22,7 @@ import com.siliconmtn.util.StringUtil;
  * <b>Description:</b> Stores Project Data
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 3.3.1
  * @since Feb 5, 2018
@@ -34,6 +35,9 @@ public class SRTProjectVO extends BeanDataVO {
 	 */
 	private static final long serialVersionUID = 1L;
 	private String projectId;
+	private String requestId;
+	private String opCoId;
+	private String coProjectId;
 	private String projectName;
 	private String projectType;
 	private String priority;
@@ -92,7 +96,21 @@ public class SRTProjectVO extends BeanDataVO {
 		return projectId;
 	}
 
-	
+	/**
+	 * @return the opCoId
+	 */
+	@Column(name="OP_CO_ID")
+	public String getOpCoId() {
+		return opCoId;
+	}
+
+	/**
+	 * @return the coProjectId
+	 */
+	@Column(name="CO_PROJECT_ID")
+	public String getCoProjectId() {
+		return coProjectId;
+	}
 	/**
 	 * @return the projectName
 	 */
@@ -225,6 +243,13 @@ public class SRTProjectVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the makeFromScratch
+	 */
+	@Column(name="MAKE_FROM_SCRATCH_NO")
+	public int getMakeFromScratchFlg() {
+		return Convert.formatInteger(makeFromScratch);
+	}
+	/**
 	 * @return the funcCheckOrderNo
 	 */
 	@Column(name="FUNCT_CHECK_ORDER_NO")
@@ -267,17 +292,31 @@ public class SRTProjectVO extends BeanDataVO {
 	/**
 	 * @return the projectHold
 	 */
-	@Column(name="PROJECT_HOLD_FLG")
 	public boolean isProjectHold() {
 		return projectHold;
+	}
+
+	/**
+	 * @return the projectHold
+	 */
+	@Column(name="PROJECT_HOLD_FLG")
+	public int getProjectHoldFlg() {
+		return Convert.formatInteger(projectHold);
+	}
+
+	/**
+	 * @return the projectCancelled
+	 */
+	public boolean isProjectCancelled() {
+		return projectCancelled;
 	}
 
 	/**
 	 * @return the projectCancelled
 	 */
 	@Column(name="PROJECT_CANCELLED_FLG")
-	public boolean isProjectCancelled() {
-		return projectCancelled;
+	public int getProjectCancelledFlg() {
+		return Convert.formatInteger(projectCancelled);
 	}
 
 	/**
@@ -345,9 +384,9 @@ public class SRTProjectVO extends BeanDataVO {
 	/**
 	 * @return the SRT Request ID
 	 */
-	@Column(name="REQUEST_ID")
+	@Column(name="REQUEST_ID", isInsertOnly=true)
 	public String getRequestId() {
-		return request != null ? request.getRequestId() : "";
+		return requestId;
 	}
 
 	/**
@@ -383,6 +422,20 @@ public class SRTProjectVO extends BeanDataVO {
 	 */
 	public void setProjectId(String projectId) {
 		this.projectId = projectId;
+	}
+
+	/**
+	 * @param opCoId the opCoId to set.
+	 */
+	public void setOpCoId(String opCoId) {
+		this.opCoId = opCoId;
+	}
+
+	/**
+	 * @param coProjectId the coProjectId to set.
+	 */
+	public void setCoProjectId(String coProjectId) {
+		this.coProjectId = coProjectId;
 	}
 
 	/**
@@ -462,7 +515,7 @@ public class SRTProjectVO extends BeanDataVO {
 	 * @param engineerId the engineerId to set.
 	 */
 	public void setEngineerId(String engineerId) {
-		this.engineerId = engineerId;
+		this.engineerId = StringUtil.checkVal(engineerId, null);
 	}
 
 	/**
@@ -476,7 +529,7 @@ public class SRTProjectVO extends BeanDataVO {
 	 * @param designerId the designerId to set.
 	 */
 	public void setDesignerId(String designerId) {
-		this.designerId = designerId;
+		this.designerId = StringUtil.checkVal(designerId, null);
 	}
 
 	/**
@@ -490,7 +543,7 @@ public class SRTProjectVO extends BeanDataVO {
 	 * @param qualityEngineerId the qualityEngineerId to set.
 	 */
 	public void setQualityEngineerId(String qualityEngineerId) {
-		this.qualityEngineerId = qualityEngineerId;
+		this.qualityEngineerId = StringUtil.checkVal(qualityEngineerId, null);
 	}
 
 	/**
@@ -505,6 +558,13 @@ public class SRTProjectVO extends BeanDataVO {
 	 */
 	public void setMakeFromScratch(boolean makeFromScratch) {
 		this.makeFromScratch = makeFromScratch;
+	}
+
+	/**
+	 * @param makeFromScratch the makeFromScratch to set.
+	 */
+	public void setMakeFromScratchFlg(int makeFromScratch) {
+		this.makeFromScratch = Convert.formatBoolean(makeFromScratch);
 	}
 
 	/**
@@ -525,7 +585,7 @@ public class SRTProjectVO extends BeanDataVO {
 	 * @param buyerId the buyerId to set.
 	 */
 	public void setBuyerId(String buyerId) {
-		this.buyerId = buyerId;
+		this.buyerId = StringUtil.checkVal(buyerId, null);
 	}
 
 	/**
@@ -550,10 +610,24 @@ public class SRTProjectVO extends BeanDataVO {
 	}
 
 	/**
+	 * @param projectHold the projectHold to set.
+	 */
+	public void setProjectHoldFlg(int projectHold) {
+		this.projectHold = Convert.formatBoolean(projectHold);
+	}
+
+	/**
 	 * @param projectCancelled the projectCancelled to set.
 	 */
 	public void setProjectCancelled(boolean projectCancelled) {
 		this.projectCancelled = projectCancelled;
+	}
+
+	/**
+	 * @param projectCancelled the projectCancelled to set.
+	 */
+	public void setProjectCancelledFlg(int projectCancelled) {
+		this.projectCancelled = Convert.formatBoolean(projectCancelled);
 	}
 
 	/**
@@ -614,6 +688,13 @@ public class SRTProjectVO extends BeanDataVO {
 	@BeanSubElement
 	public void setRequest(SRTRequestVO request) {
 		this.request = request;
+	}
+
+	/**
+	 * @param requestId the requestId to set.
+	 */
+	public void setRequestId(String requestId) {
+		this.requestId = requestId;
 	}
 
 	/**

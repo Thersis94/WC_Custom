@@ -3,6 +3,7 @@ package com.depuysynthes.srt;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.depuysynthes.srt.data.ProjectDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
@@ -18,7 +19,11 @@ import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.data.DataContainer;
+import com.smt.sitebuilder.data.DataManagerUtil;
 
 /****************************************************************************
  * <b>Title:</b> SRTProjectAction.java
@@ -34,46 +39,57 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class SRTProjectAction extends SimpleActionAdapter {
 
 	public enum DisplayType {ENGINEERING, POST_ENGINEERING, UNASSIGNED, MY_PROJECTS}
-	private FormAction fa;
+	public static final String SRT_PROJECT_ID = "projectId";
+
 	public SRTProjectAction() {
 		super();
-		fa = new FormAction();
 	}
 
 	public SRTProjectAction(ActionInitVO init) {
 		super(init);
-		fa = new FormAction();
 	}
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String projectId = req.getParameter("projectId");
-
-		if(!StringUtil.isEmpty(projectId)) {
-			SRTProjectVO project = getProjectDetails(req, projectId);
-			putModuleData(project);
-		} else {
+		if(req.hasParameter(SRT_PROJECT_ID) || req.hasParameter("json")) {
 			GridDataVO<SRTProjectVO> projects = loadProjects(req);
+
+			if(req.hasParameter(SRT_PROJECT_ID)) {
+				loadDataFromForms(req);
+			}
+
 			putModuleData(projects.getRowData(), projects.getTotal(), false);
 		}
 	}
 
 
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
+
+		//Place ActionInit on the Attributes map for the Data Save Handler.
+		attributes.put(Constants.ACTION_DATA, actionInit);
+
+		//Call DataManagerUtil to save the form.
+		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ProjectDataProcessor.class);
+
+		//Redirect the User.
+		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), "/projects");
+	}
+
 	/**
-	 * Load Project Data via Form Framework.
-	 * @param opCoId
-	 * @param projectId
-	 * @return
+	 * Load Form Data.
+	 * @param req
 	 */
-	private SRTProjectVO getProjectDetails(ActionRequest req, String projectId) {
+	private void loadDataFromForms(ActionRequest req) {
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 
-		fa.retrieveSubmittedForm(req);
+		log.debug("Retrieving Form : " + formId);
 
-		//Only load data if this isn't a new record
-		if(!"ADD".equals(projectId)) {
-			log.info("Loading Existing Record.");
-		}
-		return null;
+		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadFormWithData(formId, req, null, ProjectDataProcessor.class);
+		req.setAttribute(FormAction.FORM_DATA, dc);
 	}
 
 	/**
@@ -178,7 +194,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		buildWhereClause(sql, req, vals, displayType);
 
-		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(req.getParameter("orderBy"), "p.create_dt"));
+		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(req.getParameter("orderBy"), "p.create_dt desc"));
 
 		return sql.toString();
 	}
@@ -193,8 +209,13 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	private void buildWhereClause(StringBuilder sql, ActionRequest req, List<Object> vals, DisplayType displayType) {
 		sql.append(DBUtil.WHERE_1_CLAUSE).append(" and p.OP_CO_ID = ? ");
 
+		if(req.hasParameter(SRT_PROJECT_ID)) {
+			sql.append("and p.PROJECT_ID = ? ");
+			vals.add(req.getParameter(SRT_PROJECT_ID));
+		}
+
 		//If my Project, add roster ID for comparisons.  Else sort by status.
-		if(DisplayType.MY_PROJECTS.equals(displayType)) {
+		else if(DisplayType.MY_PROJECTS.equals(displayType)) {
 			SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
 
 			sql.append("and (req.roster_id = ? or engineer_id = ? ");
@@ -205,8 +226,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			vals.add(roster.getRosterId());
 			vals.add(roster.getRosterId());
 		} else {
-			sql.append("and PROJECT_STATUS = ? ");
-			vals.add(displayType.name());
+			//sql.append("and PROJECT_STATUS = ? ");
+			//vals.add(displayType.name());
 		}
 	}
 }

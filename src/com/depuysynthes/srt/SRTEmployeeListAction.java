@@ -7,13 +7,13 @@ import com.depuysynthes.srt.util.SRTUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.EnumUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.list.ListDataVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -31,12 +31,12 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class SRTEmployeeListAction extends SimpleActionAdapter {
 
-	public enum EmployeeType {ENGINEER(2), DESIGNER(3), QA(9), BUYER(5);
-		private int typeId;
-		EmployeeType(int typeId) {
+	public enum EmployeeType {ENGINEER("2"), DESIGNER("3"), QA("9"), BUYER("5");
+		private String typeId;
+		EmployeeType(String typeId) {
 			this.typeId = typeId;
 		}
-		public int getTypeId() {
+		public String getTypeId() {
 			return typeId;
 		}
 	}
@@ -51,10 +51,10 @@ public class SRTEmployeeListAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		EmployeeType type = EnumUtil.safeValueOf(EmployeeType.class, req.getParameter("emplyoeeType"));
+		EmployeeType type = EnumUtil.safeValueOf(EmployeeType.class, req.getParameter("employeeType"));
 		String opCoId = SRTUtil.getOpCO(req);
 		if(type != null) {
-			List<GenericVO> employees = loadEmployees(type, opCoId);
+			List<ListDataVO> employees = loadEmployees(type, opCoId);
 			putModuleData(employees, employees.size(), false);
 		}
 	}
@@ -66,19 +66,19 @@ public class SRTEmployeeListAction extends SimpleActionAdapter {
 	 * @param opCoId
 	 * @return
 	 */
-	private List<GenericVO> loadEmployees(EmployeeType type, String opCoId) {
+	private List<ListDataVO> loadEmployees(EmployeeType type, String opCoId) {
 		List<Object> vals = new ArrayList<>();
 		vals.add(type.getTypeId());
-		vals.add("1");	//We Only want active users retrieved here.
+		vals.add(1);	//We Only want active users retrieved here.
 		vals.add(opCoId);
 
-		List<GenericVO> employees = new DBProcessor(dbConn).executeSelect(loadEmployeesSql(), vals, new GenericVO());
+		List<ListDataVO> employees = new DBProcessor(dbConn).executeSelect(loadEmployeesSql(), vals, new ListDataVO());
 
 		try {
 			StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
 	
-			for(GenericVO e : employees) {
-				e.setValue(SRTUtil.decryptName((String) e.getValue(), se));
+			for(ListDataVO e : employees) {
+				e.setLabelTxt(SRTUtil.decryptName(e.getLabelTxt(), se));
 			}
 		} catch(EncryptionException e) {
 			log.error("Unable to decrypt Employee Name: ", e);
@@ -94,8 +94,9 @@ public class SRTEmployeeListAction extends SimpleActionAdapter {
 	private String loadEmployeesSql() {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select r.roster_id as key, concat(p.first_nm, ' ', p.last_nm) ");
-		sql.append("as value ").append(DBUtil.FROM_CLAUSE).append(custom);
+		sql.append("select r.roster_id as LIST_DATA_ID, r.roster_id as VALUE_TXT, ");
+		sql.append("concat(p.first_nm, ' ', p.last_nm) ");
+		sql.append("as LABEL_TXT ").append(DBUtil.FROM_CLAUSE).append(custom);
 		sql.append("srt_roster r ").append(DBUtil.INNER_JOIN).append(" profile p ");
 		sql.append("on r.profile_id = p.profile_id ").append(DBUtil.WHERE_CLAUSE);
 		sql.append("r.workgroup_id = ? and r.is_active = ? and r.op_co_id = ?");

@@ -33,6 +33,7 @@ public class SRTRequestVO extends BeanDataVO {
 	private static final long serialVersionUID = 1L;
 
 	private String requestId;
+	private String rosterId;
 	private SRTRosterVO requestor;
 	private String hospitalName;
 	private String surgeonFirstName;
@@ -74,6 +75,11 @@ public class SRTRequestVO extends BeanDataVO {
 		return requestId;
 	}
 
+	@Column(name="ROSTER_ID")
+	public String getRosterId() {
+		return rosterId;
+	}
+
 	/**
 	 * @return the requestor
 	 */
@@ -86,14 +92,6 @@ public class SRTRequestVO extends BeanDataVO {
 	 */
 	public String getRequstorNm() {
 		return requestor != null ? requestor.getFullName() : "";
-	}
-
-	/**
-	 * 
-	 * @return the requstor's rosterId
-	 */
-	public String getRosterId() {
-		return requestor!= null ? requestor.getRosterId() : "";
 	}
 
 	/**
@@ -238,6 +236,13 @@ public class SRTRequestVO extends BeanDataVO {
 	 */
 	public void setRequestId(String requestId) {
 		this.requestId = requestId;
+	}
+
+	/**
+	 * @param rosterId the rosterId to set.
+	 */
+	public void setRosterId(String rosterId) {
+		this.rosterId = rosterId;
 	}
 
 	/**
