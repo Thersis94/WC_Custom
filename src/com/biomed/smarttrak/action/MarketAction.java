@@ -27,6 +27,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 
@@ -121,7 +122,7 @@ public class MarketAction extends SimpleActionAdapter {
 			db.getByPrimaryKey(market);
 			addAttributes(market, role.getRoleLevel());
 			addSections(market);
-			if (loadGraphs) addGraphs(market);
+			if (loadGraphs) addGraphs(market, req);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
@@ -132,7 +133,11 @@ public class MarketAction extends SimpleActionAdapter {
 	/**
 	 * Add associated graphs to the supplied market.
 	 */
-	private void addGraphs(MarketVO market) {
+	private void addGraphs(MarketVO market, ActionRequest req) {
+		String[] excludeMarkets = req.getParameterValues("excludeGraphs");
+		List<Object> params = new ArrayList<>();
+		params.add(market.getMarketId());
+		
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT xr.*, g.TITLE_NM as ATTRIBUTE_NM FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
@@ -141,11 +146,15 @@ public class MarketAction extends SimpleActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_GRID g ");
 		sql.append("ON g.GRID_ID = xr.VALUE_1_TXT ");
 		sql.append("WHERE MARKET_ID = ? and a.TYPE_CD = 'GRID' ");
+		if (excludeMarkets != null) {
+			sql.append("and market_attribute_id not in (");
+			DBUtil.preparedStatmentQuestion(excludeMarkets.length, sql);
+			sql.append(")");
+			for (String param : excludeMarkets) params.add(param);
+		}
+
 		sql.append("ORDER BY xr.ORDER_NO");
 		log.debug(sql+"|"+market.getMarketId());
-
-		List<Object> params = new ArrayList<>();
-		params.add(market.getMarketId());
 		DBProcessor db = new DBProcessor(dbConn);
 
 		List<Object> results = db.executeSelect(sql.toString(), params, new MarketAttributeVO());
