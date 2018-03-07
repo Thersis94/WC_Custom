@@ -44,7 +44,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	private static final String BEDS_NO = "bedsNo";
 	private static final String BATHS_NO = "bathsNo";
 	private static final String SQFT_NO = "sqftNo";
-	private static final String PURCHASE_PRICE_NO = "purchasePriceNo";
+	private static final String ZESTIMATE_NO = "zestimateNo";
 
 	public ResidenceVO() {
 		super();
@@ -195,18 +195,18 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	}
 
 	/**
-	 * @return the purchasePriceNo
+	 * @return the zestimateNo
 	 */
-	@Column(name="purchase_price_no")
-	public Double getPurchasePriceNo() {
-		return (Double) attributes.get(PURCHASE_PRICE_NO);
+	@Column(name="zestimate_no")
+	public Double getZestimateNo() {
+		return (Double) attributes.get(ZESTIMATE_NO);
 	}
 
 	/**
-	 * @param purchasePriceNo the purchasePriceNo to set
+	 * @param zestimateNo the zestimateNo to set
 	 */
-	public void setPurchasePriceNo(Double purchasePriceNo) {
-		attributes.put(PURCHASE_PRICE_NO, purchasePriceNo);
+	public void setZestimateNo(Double zestimateNo) {
+		attributes.put(ZESTIMATE_NO, zestimateNo);
 	}
 
 	/**

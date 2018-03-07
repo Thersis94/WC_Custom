@@ -8,21 +8,15 @@ import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.ResidenceAction;
-import com.rezdox.vo.MemberVO;
-import com.rezdox.vo.ResidenceVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.http.parser.StringEncoder;
-import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-import com.smt.sitebuilder.action.user.LocationManager;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.FormDataProcessor;
@@ -88,60 +82,12 @@ public class ResidenceFormProcessor extends FormDataProcessor {
 			}
 		}
 		
-		// Get the residence data
-		ResidenceVO residence = new ResidenceVO(req);
-		boolean newResidence = StringUtil.isEmpty(residence.getResidenceId());
-		
-		// Geocode the residence address
-		LocationManager lm = new LocationManager(residence);
-		GeocodeLocation gl = lm.geocode(attributes);
-		residence.setLatitude(gl.getLatitude());
-		residence.setLongitude(gl.getLongitude());
-		
-		// Save the residence record
-		DBProcessor dbp = new DBProcessor(dbConn);
+		// Save the Residence Data
+		ResidenceAction ra = new ResidenceAction(dbConn, attributes);
 		try {
-			dbp.save(residence);
-			req.setParameter(ResidenceAction.RESIDENCE_ID, residence.getResidenceId());
-		} catch(Exception e) {
-			log.error("Could not save RezDox Residence");
-		}
-		
-		// Save the Residence/Member XR
-		saveResidenceMemberXR(newResidence);
-	}
-	
-	/**
-	 * Save the XR record between the residence and member
-	 * 
-	 * @param newResidence
-	 * @throws DatabaseException
-	 */
-	protected void saveResidenceMemberXR(boolean newResidence) throws DatabaseException {
-		// Record already exists if this isn't a new residence, don't need another here
-		if (!newResidence) return;
-		
-		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(150);
-		sql.append(DBUtil.INSERT_CLAUSE).append(schema).append("rezdox_residence_member_xr (residence_member_xr_id, ");
-		sql.append("member_id, residence_id, status_flg, create_dt) ");
-		sql.append("values (?,?,?,?,?)");
-		log.debug(sql);
-		
-		// Get the member adding this residence
-		SMTSession session = req.getSession();
-		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, new UUIDGenerator().getUUID());
-			ps.setString(2, member.getMemberId());
-			ps.setString(3, req.getParameter(ResidenceAction.RESIDENCE_ID));
-			ps.setInt(4, 1); // Newly added residences are always active
-			ps.setTimestamp(5, Convert.getCurrentTimestamp());
-			ps.executeUpdate();
-		} catch (SQLException sqle) {
-			log.error("Could not save RezDox Member/Residence XR ", sqle);
-			throw new DatabaseException(sqle);
+			ra.saveResidence(req);
+		} catch (Exception e) {
+			throw new DatabaseException("Could not save residence", e);
 		}
 	}
 

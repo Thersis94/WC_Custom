@@ -3,13 +3,21 @@ package com.rezdox.action;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
 
+import com.rezdox.vo.MemberVO;
+import com.rezdox.vo.MembershipVO;
+import com.rezdox.vo.SubscriptionVO;
 import com.rezdox.vo.MembershipVO.Group;
+import com.rezdox.vo.PromotionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.http.session.SMTSession;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -22,7 +30,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Feb 7, 2018
  ****************************************************************************/
-public class SubscriptionAction extends SBActionAdapter {
+public class SubscriptionAction extends SimpleActionAdapter {
 	
 	public SubscriptionAction() {
 		super();
@@ -34,21 +42,36 @@ public class SubscriptionAction extends SBActionAdapter {
 	public SubscriptionAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
+	
+	/**
+	 * @param dbConnection
+	 * @param attributes
+	 */
+	public SubscriptionAction(SMTDBConnection dbConnection, Map<String, Object> attributes) {
+		this();
+		setDBConnection(dbConnection);
+		setAttributes(attributes);
+	}
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
-	public void list(ActionRequest req) throws ActionException {
-		super.retrieve(req);
-	}
-	
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		// Get the possible subscriptions to be shown to the member for purchase
+		SMTSession session = req.getSession();
+		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
+		String memberId = member.getMemberId();
+		
+		// Check if this is a new member. New members get a free residence or a free business.
+		int residenceCount = getResidenceUsage(memberId);
+		int businessCount = getBusinessUsage(memberId);
+		req.setAttribute("newMember", residenceCount + businessCount == 0);
+		if ((boolean) req.getAttribute("newMember")) return;
+		
+		// Get the possible memberships the member can subscribe to.
+		req.setParameter(MembershipAction.REQ_EXC_GROUP_CD, residenceCount > 0 ? Group.BU.name() : Group.HO.name());
+		MembershipAction ma = new MembershipAction(dbConn, attributes);
+		putModuleData(ma.retrieveMemberships(req));
 	}
 	
 	/**
@@ -58,7 +81,7 @@ public class SubscriptionAction extends SBActionAdapter {
 	 * @return true if the member needs an upgrade, false if not
 	 * @throws ActionException 
 	 */
-	protected boolean checkUpgrade(String memberId, Group membershipGroup) throws ActionException {
+	protected boolean checkUpgrade(MemberVO member, Group membershipGroup) throws ActionException {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		boolean needsUpgrade = true;
 		
@@ -72,13 +95,20 @@ public class SubscriptionAction extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int idx = 0;
 			ps.setString(++idx, membershipGroup.toString());
-			ps.setString(++idx, memberId);
+			ps.setString(++idx, member.getMemberId());
 			
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
+				// Check their purchases against their usage
 				int purchaseQty = rs.getInt(1);
-				int usageQty = getUsageQty(memberId, membershipGroup);
+				int usageQty = getUsageQty(member.getMemberId(), membershipGroup);
 				needsUpgrade = purchaseQty - usageQty <= 0;
+			} else {
+				// No purchases were found (free or otherwise), add the free one they get for signing up.
+				MembershipAction ma = new MembershipAction(dbConn, attributes);
+				PromotionAction pa = new PromotionAction(dbConn, attributes);
+				addSubscription(member, ma.retrieveDefaultMembership(membershipGroup), pa.retrieveFreePromotion());
+				needsUpgrade = false;
 			}
 		} catch (SQLException e) {
 			log.error("Unable to validate subscription purchase qty. ", e);
@@ -196,5 +226,31 @@ public class SubscriptionAction extends SBActionAdapter {
 		}
 		
 		return usageQty;
+	}
+	
+	/**
+	 * Adds a membership subscription for a given member
+	 * 
+	 * @param member
+	 * @param membership
+	 * @param promotion
+	 * @throws ActionException 
+	 */
+	public void addSubscription(MemberVO member, MembershipVO membership, PromotionVO promotion) throws ActionException {
+		SubscriptionVO subscription = new SubscriptionVO();
+		subscription.setMember(member);
+		subscription.setMembership(membership);
+		subscription.setPromotion(promotion);
+		subscription.setCostNo(membership.getCostNo());
+		subscription.setDiscountNo(membership.getCostNo() * promotion.getDiscountPctNo() * -1);
+		subscription.setQuantityNo(membership.getQuantityNo());
+		
+		// Save the member's subscription
+		DBProcessor dbp = new DBProcessor(dbConn);
+		try {
+			dbp.save(subscription);
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
 	}
 }

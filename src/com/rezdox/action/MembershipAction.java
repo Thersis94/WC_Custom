@@ -3,13 +3,16 @@ package com.rezdox.action;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import com.rezdox.vo.MembershipVO;
+import com.rezdox.vo.MembershipVO.Group;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -27,6 +30,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class MembershipAction extends SBActionAdapter {
 	
 	public static final String MEMBERSHIP_ID = "membershipId";
+	public static final String REQ_EXC_GROUP_CD = "excGroupCd";
 
 	public MembershipAction() {
 		super();
@@ -37,6 +41,16 @@ public class MembershipAction extends SBActionAdapter {
 	 */
 	public MembershipAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/**
+	 * @param dbConnection
+	 * @param attributes
+	 */
+	public MembershipAction(SMTDBConnection dbConnection, Map<String, Object> attributes) {
+		this();
+		setDBConnection(dbConnection);
+		setAttributes(attributes);
 	}
 
 	/* (non-Javadoc)
@@ -72,10 +86,32 @@ public class MembershipAction extends SBActionAdapter {
 			params.add(req.getParameter("groupCode"));
 		}
 		
+		String[] groupCodes = req.getParameterValues(REQ_EXC_GROUP_CD);
+		if (groupCodes != null && groupCodes.length > 0) {
+			sql.append("where group_cd not in (").append(DBUtil.preparedStatmentQuestion(groupCodes.length)).append(") ");
+			params.addAll(Arrays.asList(groupCodes));
+		}
+		
 		sql.append("order by group_cd, qty_no ");
 		
 		DBProcessor dbp = new DBProcessor(dbConn);
 		return dbp.executeSelect(sql.toString(), params, new MembershipVO());
+	}
+	
+	/**
+	 * Gets the default membership for a given membership group.
+	 * Given free when signing up.
+	 * 
+	 * @param membershipGroup
+	 * @return
+	 */
+	public MembershipVO retrieveDefaultMembership(Group membershipGroup) {
+		ActionRequest membershipReq = new ActionRequest();
+		membershipReq.setParameter("getNewMemberDefault", "true");
+		membershipReq.setParameter("groupCode", membershipGroup.name());
+
+		List<MembershipVO> membership = retrieveMemberships(membershipReq);
+		return membership.get(0);
 	}
 
 	/* (non-Javadoc)
