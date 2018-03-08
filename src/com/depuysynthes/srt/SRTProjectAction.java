@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.depuysynthes.srt.data.ProjectDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
@@ -77,7 +78,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ProjectDataProcessor.class);
 
 		//Redirect the User.
-		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), "/projects");
+		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), SrtPage.PROJECT.getUrlPath());
 	}
 
 	/**

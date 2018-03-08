@@ -11,6 +11,7 @@ import java.util.Map;
 
 import com.depuysynthes.srt.data.MasterRecordDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.siliconmtn.action.ActionException;
@@ -42,6 +43,7 @@ import com.smt.sitebuilder.data.DataManagerUtil;
 public class SRTMasterRecordAction extends SimpleActionAdapter {
 
 	public static final String SRT_MASTER_RECORD_ID = "masterRecordId";
+	public static final String MASTER_RECORD_DATA = "masterRecordData";
 
 	public SRTMasterRecordAction() {
 		super();
@@ -154,7 +156,10 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	private GridDataVO<SRTMasterRecordVO> loadMasterRecords(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
 		vals.add(SRTUtil.getOpCO(req));
-		if(req.hasParameter(SRT_MASTER_RECORD_ID)) {
+		if(req.hasParameter("isSearch")) {
+			vals.add(req.getParameter("term").toLowerCase());
+			vals.add(req.getParameter("term").toLowerCase());
+		} else if(req.hasParameter(SRT_MASTER_RECORD_ID)) {
 			vals.add(req.getParameter(SRT_MASTER_RECORD_ID));
 		}
 		int limit = req.getIntegerParameter("limit", 10);
@@ -168,6 +173,8 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	 */
 	private String listMasterRecordsSql(ActionRequest req) {
 		boolean getById = req.hasParameter(SRT_MASTER_RECORD_ID);
+		boolean isSearch = req.hasParameter("isSearch");
+
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select * from ").append(custom);
@@ -177,10 +184,13 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 			sql.append("on mr.MASTER_RECORD_ID = f.MASTER_RECORD_ID ");
 		}
 		sql.append(DBUtil.WHERE_CLAUSE).append(" mr.OP_CO_ID = ? ");
-		if(getById) {
+		if(isSearch) {
+			sql.append("and lower(mr.part_no) like '%' + ? + '%' or lower(mr.title_txt) like '%' + ? + '%' ");
+		}
+		else if(getById) {
 			sql.append("and mr.master_record_id = ? ");
 		}
-		sql.append("order by ").append(StringUtil.checkVal(req.getParameter("order"), "mr.create_dt"));
+		sql.append("order by ").append(StringUtil.checkVal(req.getParameter("order"), "mr.create_dt desc"));
 
 		return sql.toString();
 	}
@@ -189,15 +199,23 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
-
+		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		//Place ActionInit on the Attributes map for the Data Save Handler.
 		attributes.put(Constants.ACTION_DATA, actionInit);
 
 		//Call DataManagerUtil to save the form.
 		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, MasterRecordDataProcessor.class);
 
-		//Redirect the User.
-		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), "/master-record");
+		/*
+		 * If this is an ajax call, return the MasterRecord we worked on.
+		 * Otherwise this is a standard edit, redirect.
+		 */
+		if(req.hasParameter("amid")) {
+			super.putModuleData(req.getAttribute(MASTER_RECORD_DATA));
+		} else {
+			//Redirect the User.
+			sbUtil.moduleRedirect(req, msg, SrtPage.MASTER_RECORD.getUrlPath());
+		}
 	}
 
 	/**

@@ -102,13 +102,20 @@ public class MasterRecordDataProcessor extends AbstractDataProcessor {
 		log.debug("Saving SRT Master Record");
 
 		// Set the form fields that should not be saved as attributes, onto the request, with appropriate parameter names.
-		Iterator<Map.Entry<String, FormFieldVO>> iter = data.getCustomData().entrySet().iterator();
-		while (iter.hasNext()) {
-			Map.Entry<String, FormFieldVO> entry = iter.next();
-			MasterRecordField param = EnumUtil.safeValueOf(MasterRecordField.class, entry.getValue().getSlugTxt());
-			if (param != null) {
-				req.setParameter(param.getReqParam(), StringUtil.checkVal(entry.getValue().getResponseText()).trim());
-				iter.remove();
+
+		/*
+		 * If we are submitting over ajax, assume params have been set
+		 * correctly already for VO to populate.
+		 */
+		if(!req.hasParameter("amid")) {
+			Iterator<Map.Entry<String, FormFieldVO>> iter = data.getCustomData().entrySet().iterator();
+			while (iter.hasNext()) {
+				Map.Entry<String, FormFieldVO> entry = iter.next();
+				MasterRecordField param = EnumUtil.safeValueOf(MasterRecordField.class, entry.getValue().getSlugTxt());
+				if (param != null) {
+					req.setParameter(param.getReqParam(), StringUtil.checkVal(entry.getValue().getResponseText()).trim());
+					iter.remove();
+				}
 			}
 		}
 
@@ -124,8 +131,10 @@ public class MasterRecordDataProcessor extends AbstractDataProcessor {
 			//Process Master Record Attributes
 			processAttributes(mrv, data);
 
+			//Put Master Record back on request at retrievable location.
+			req.setAttribute(SRTMasterRecordAction.MASTER_RECORD_DATA, mrv);
 		} catch(Exception e) {
-			log.error("Could not save SRT Request", e);
+			throw new DatabaseException(e);
 		}
 
 		log.debug("Process Master Record");

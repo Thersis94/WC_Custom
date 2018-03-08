@@ -1,10 +1,13 @@
 package com.depuysynthes.srt.data;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.depuysynthes.srt.SRTMasterRecordAction;
 import com.depuysynthes.srt.SRTProjectAction;
 import com.depuysynthes.srt.vo.SRTFileVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
@@ -15,8 +18,10 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.FileWriterException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -122,10 +127,89 @@ public class ProjectDataProcessor extends FormDataProcessor {
 			dbp.save(project);
 			data.setFormSubmittalId(project.getProjectId());
 			req.setParameter(SRTProjectAction.SRT_PROJECT_ID, project.getProjectId());
+
+			processMasterRecordXR(project);
 		} catch(Exception e) {
 			log.error("Could not save SRT Request", e);
 		}
 
+	}
+
+	/**
+	 * Process MasterRecordIds on request and add them as Master Record
+	 * Project Xr Records.
+	 * @param project
+	 */
+	private void processMasterRecordXR(SRTProjectVO project) {
+
+		//Flush existing MasterRecordXRs
+		flushMasterRecordXRs(project);
+
+		//Save new MasterRecordXRs
+		saveMasterRecordXRs(project);
+	}
+
+	/**
+	 * Flush existing Master Record XR Values.
+	 * @param project
+	 */
+	private void flushMasterRecordXRs(SRTProjectVO project) {
+
+		try(PreparedStatement ps = dbConn.prepareStatement(buildMasterRecordFlushSql())) {
+			ps.setString(1, project.getProjectId());
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error Flushing Master Record Project Xrs", e);
+		}
+	}
+
+	/**
+	 * Build the Deletion Query.
+	 * @return
+	 */
+	private String buildMasterRecordFlushSql() {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("delete from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("SRT_MASTER_RECORD_PROJECT_XR where project_id = ? ");
+
+		return sql.toString();
+	}
+
+	/**
+	 * Generate new MasterRecordProjectXR Records for each masterRecordId
+	 * on the request.
+	 * @param project
+	 */
+	private void saveMasterRecordXRs(SRTProjectVO project) {
+		String [] masterRecordIds = req.getParameterValues(SRTMasterRecordAction.SRT_MASTER_RECORD_ID);
+		try(PreparedStatement ps = dbConn.prepareStatement(buildMasterRecordXrInsertSql())) {
+			int i;
+			UUIDGenerator uuid = new UUIDGenerator();
+			for(String masterRecordId : masterRecordIds) {
+				i = 1;
+				ps.setString(i++, uuid.getUUID());
+				ps.setString(i++, masterRecordId);
+				ps.setString(i++, project.getProjectId());
+				ps.setTimestamp(i++, Convert.getCurrentTimestamp());
+				ps.addBatch();
+			}
+
+			ps.executeBatch();
+		} catch (SQLException e) {
+			log.error("Error Flushing Master Record Project Xrs", e);
+		}
+	}
+
+	/**
+	 * Build Master Record Project Xr Insert Sql.
+	 * @return
+	 */
+	private String buildMasterRecordXrInsertSql() {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("srt_master_record_project_xr (master_record_project_xr_id, ");
+		sql.append("master_record_id, project_id, create_Dt) values (?,?,?,?)");
+		return sql.toString();
 	}
 
 	/* (non-Javadoc)
@@ -163,7 +247,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 			try {
 				new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).executeBatch(files, true);
 			} catch (com.siliconmtn.db.util.DatabaseException e) {
-				log.error("Error Processing Code", e);
+				log.error("Error saving Project Attachments", e);
 			}
 		}
 	}
