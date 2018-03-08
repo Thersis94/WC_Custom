@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.depuysynthes.srt.data.RequestDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
@@ -76,7 +77,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 			new DataManagerUtil(attributes, dbConn).saveForm(formId, req, RequestDataProcessor.class);
 
 			//Redirect the User.
-			sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), "/order-online");
+			sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), SrtPage.REQUEST.getUrlPath());
 		}
 	}
 

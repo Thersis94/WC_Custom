@@ -40,6 +40,13 @@ public class SRTUtil {
 	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
 	public static final String HOMEPAGE_REGISTER_FIELD_ID = null;
 
+	public enum SrtPage {MASTER_RECORD("/master-record"), PROJECT("/projects"), REQUEST("/order-online");
+		private String urlPath;
+		private SrtPage(String urlPath) {
+			this.urlPath = urlPath;
+		}
+		public String getUrlPath() {return urlPath;}
+	}
 	private SRTUtil() {
 		//Hide Default Constructor.
 	}

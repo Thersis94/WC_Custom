@@ -505,6 +505,13 @@ public class SRTProjectVO extends BeanDataVO {
 	}
 
 	/**
+	 * @param actualRoi the actualRow to set.
+	 */
+	public void setActualRoiDbl(double actualRoi) {
+		this.actualRoi = BigDecimal.valueOf(actualRoi);
+	}
+
+	/**
 	 * @param srtContact the srtContact to set.
 	 */
 	public void setSrtContact(String srtContact) {
@@ -677,7 +684,7 @@ public class SRTProjectVO extends BeanDataVO {
 	 */
 	@BeanSubElement
 	public void addMasterRecord(SRTMasterRecordVO masterRecord) {
-		if(masterRecord != null) {
+		if(masterRecord != null && !StringUtil.isEmpty(masterRecord.getPartNo())) {
 			masterRecords.add(masterRecord);
 		}
 	}
