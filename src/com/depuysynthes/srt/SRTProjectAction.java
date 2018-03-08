@@ -266,9 +266,6 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			vals.add(roster.getRosterId());
 			vals.add(roster.getRosterId());
 			vals.add(roster.getRosterId());
-		} else {
-			//sql.append("and PROJECT_STATUS = ? ");
-			//vals.add(displayType.name());
 		}
 	}
 }
