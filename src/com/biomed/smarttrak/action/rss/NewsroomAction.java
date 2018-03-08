@@ -100,8 +100,9 @@ public class NewsroomAction extends SBActionAdapter {
 
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		List<RSSArticleVO> articles = dbp.executeSelect(loadArticleSql(hasStatus), vals, new RSSArticleVO());
-		if(!articles.isEmpty())
-			this.putModuleData(articles.subList(offset, offset+10), articles.size(), false);
+		int end = articles.size() < offset+10? articles.size() : offset+10;
+		if(!articles.isEmpty() && offset < articles.size())
+			this.putModuleData(articles.subList(offset, end), articles.size(), false);
 	}
 
 	/**
