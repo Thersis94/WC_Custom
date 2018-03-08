@@ -112,7 +112,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 */
 	public enum Section {
 		MARKET("markets/", "marketAdmin"), PRODUCT("products/", "productAdmin"), COMPANY("companies/", "companyAdmin"), 
-		INSIGHT("analysis/", "insights"), PRODUCT_EXPLORER("explorer/", "tools&facadeType=explorer"), UPDATES_EDITION("updates-edition/", "uwr"),
+		INSIGHT("analysis/", "insights"), PRODUCT_EXPLORER("tools/explorer/", "tools&facadeType=explorer"), UPDATES_EDITION("updates-edition/", "uwr"),
 		FINANCIAL_DASHBOARD("tools/financial/", "fd"), GAP_ANALYSIS("tools/analysis/", "tools&facadeType=analysis");
 
 		private String path;
