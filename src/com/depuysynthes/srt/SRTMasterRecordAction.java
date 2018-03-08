@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,7 @@ import java.util.Map;
 import com.depuysynthes.srt.data.MasterRecordDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
+import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -196,5 +198,28 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 
 		//Redirect the User.
 		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), "/master-record");
+	}
+
+	/**
+	 * Load the Master Records associated with given SRTProjectVO
+	 * @param p
+	 * @return
+	 */
+	public List<SRTMasterRecordVO> loadMasterRecordXR(SRTProjectVO p) {
+		return new DBProcessor(dbConn, getCustomSchema()).executeSelect(buildXrQuery(), Arrays.asList(p.getProjectId()), new SRTMasterRecordVO());
+	}
+
+	/**
+	 * Build the Master Record Lookup Query against the Xr Table.
+	 * @return
+	 */
+	private String buildXrQuery() {
+		String schema = getCustomSchema();
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select * from ").append(schema).append("SRT_MASTER_RECORD_PROJECT_XR x ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("SRT_MASTER_RECORD mr ");
+		sql.append("on x.MASTER_RECORD_ID = mr.MASTER_RECORD_ID and x.PROJECT_ID = ? ");
+		sql.append(DBUtil.ORDER_BY).append("x.CREATE_DT");
+		return sql.toString();
 	}
 }

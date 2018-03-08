@@ -39,7 +39,7 @@ public class SRTRequestAddressVO extends Location {
 	}
 
 	public SRTRequestAddressVO(ResultSet rs) {
-		super(rs);
+		populateData(rs);
 	}
 
 	/**

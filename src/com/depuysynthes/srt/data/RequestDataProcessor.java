@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.depuysynthes.srt.SRTRequestAction;
+import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTFileVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
@@ -108,10 +109,12 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 			RequestField param = EnumUtil.safeValueOf(RequestField.class, entry.getValue().getSlugTxt());
 			if (param != null) {
 				req.setParameter(param.getReqParam(), StringUtil.checkVal(entry.getValue().getResponseText()).trim());
+				log.debug(StringUtil.join(param.getReqParam(), " -- ", StringUtil.checkVal(entry.getValue().getResponseText()).trim()));
 				iter.remove();
 			}
 		}
 
+		log.debug("Creating Request.");
 		// Build the SRT Request from the request.
 		SRTRequestVO request = new SRTRequestVO(req);
 
@@ -135,14 +138,17 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 
 			//Build the SRT RequestAddressVO
 			SRTRequestAddressVO addr = new SRTRequestAddressVO(req);
+
+			log.debug(req.getParameter("address"));
+			//Save the Address.
 			dbp.save(addr);
 
 			//Save the Request Address.
-			request.setAddress(addr);
+			request.setRequestAddress(addr);
 
 			//Generate Project Record if necessary.
 			if(isInsert) {
-				dbp.save(buildProjectRecord(request));
+				dbp.save(buildProjectRecord(req));
 			}
 
 		} catch(Exception e) {
@@ -155,9 +161,16 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 	 * Build the Project Record for this request on inserts only.
 	 * @param request
 	 */
-	private SRTProjectVO buildProjectRecord(SRTRequestVO request) {
-		SRTProjectVO p = new SRTProjectVO();
-		p.setRequest(request);
+	private SRTProjectVO buildProjectRecord(ActionRequest req) {
+		SRTProjectVO p = new SRTProjectVO(req);
+		p.setSrtContact(SRTUtil.getRoster(req).getEngineeringContact());
+		p.setProjectName(StringUtil.checkVal(req.getParameter(RequestField.DESCRIPTION.getReqParam())));
+		if(p.getProjectName().length() > 100) {
+			p.setProjectName(p.getProjectName().substring(0, 100) + "...");
+		}
+		p.setProjectType("NEW");
+		p.setProjectStatus("UNASSIGNED");
+
 		return p;
 	}
 
