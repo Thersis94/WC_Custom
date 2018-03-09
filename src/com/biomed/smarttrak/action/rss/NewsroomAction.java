@@ -15,6 +15,7 @@ import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
@@ -74,9 +75,7 @@ public class NewsroomAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Load smarttrak managers for use with assigning tickets.\
-	 * 
-	 * TODO - This needs to change to load Analysts.
+	 * Load smarttrak managers for use with assigning tickets.
 	 * @param req
 	 * @throws ActionException
 	 */
@@ -113,8 +112,8 @@ public class NewsroomAction extends SBActionAdapter {
 	private String loadArticleSql(boolean hasStatusCd) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select * from ").append(schema).append("biomedgps_rss_article a ");
-		sql.append("inner join ").append(schema).append("biomedgps_rss_filtered_article af ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("biomedgps_rss_article a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article af ");
 		sql.append("on a.rss_article_id = af.rss_article_id ");
 		sql.append("where af.feed_group_id = ? ");
 		if(hasStatusCd) {
@@ -191,9 +190,9 @@ public class NewsroomAction extends SBActionAdapter {
 	private String loadBucketArticlesSql() {
 		StringBuilder sql = new StringBuilder(250);
 		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("select * from ").append(schema);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(schema);
 		sql.append("biomedgps_rss_article a ");
-		sql.append("inner join ").append(schema).append("biomedgps_rss_filtered_article fa ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article fa ");
 		sql.append("on a.rss_article_id = fa.rss_article_id ");
 		sql.append("where article_status_cd = ? and fa.bucket_id = ? ");
 		sql.append("order by a.create_dt desc ");
@@ -225,7 +224,7 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append("select a.feed_segment_id, a.feed_group_id, a.feed_group_nm, ");
 		sql.append("b.FEED_SEGMENT_NM, cast(Count(d.feed_group_id) as int) as article_count from ");
 		sql.append(schema).append("BIOMEDGPS_FEED_GROUP a ");
-		sql.append("inner join ").append(schema).append("BIOMEDGPS_FEED_SEGMENT b ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("BIOMEDGPS_FEED_SEGMENT b ");
 		sql.append("on a.FEED_SEGMENT_ID = b.FEED_SEGMENT_ID ");
 		sql.append("left outer join ").append(schema).append("biomedgps_rss_filtered_article d ");
 		sql.append("on a.feed_group_id = d.feed_group_id and d.article_status_cd = ? ");
