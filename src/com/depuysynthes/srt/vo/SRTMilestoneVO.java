@@ -1,7 +1,9 @@
 package com.depuysynthes.srt.vo;
 
+import java.sql.ResultSet;
 import java.util.Date;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.util.StringUtil;
@@ -30,6 +32,16 @@ public class SRTMilestoneVO extends BeanDataVO implements Comparable<SRTMileston
 
 	public SRTMilestoneVO() {
 		//Default Constructor
+	}
+
+	public SRTMilestoneVO(ActionRequest req) {
+		this();
+		populateData(req);
+	}
+
+	public SRTMilestoneVO(ResultSet rs) {
+		this();
+		populateData(rs);
 	}
 
 	/**

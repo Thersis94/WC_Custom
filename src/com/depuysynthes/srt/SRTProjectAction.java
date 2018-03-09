@@ -131,11 +131,19 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			decryptProjectNames(projects);
 
 			//Add Milestone Data
-			SRTUtil.populateMilestones(projects.getRowData(), dbConn, getCustomSchema());
+			loadMilestoneDetails(projects.getRowData());
 		}
 
 		//Return Projects
 		return projects;
+	}
+
+	/**
+	 * @param rowData
+	 */
+	private void loadMilestoneDetails(List<SRTProjectVO> projects) {
+		SRTMilestoneAction sma = (SRTMilestoneAction) getConfiguredAction(SRTMilestoneAction.class.getName());
+		sma.populateMilestones(projects);
 	}
 
 	/**
@@ -190,8 +198,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals, DisplayType displayType) {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm ");
-
+		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
+		sql.append("req.surgeon_first_nm, req.surgeon_last_nm ");
 		//If this isn't a detail load, get Names for display purposes.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
 			sql.append(", concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
