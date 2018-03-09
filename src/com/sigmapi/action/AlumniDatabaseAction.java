@@ -140,7 +140,7 @@ public class AlumniDatabaseAction extends SimpleActionAdapter {
 
 		DataContainer dc = new DataContainer();
 		dc.setQuery(query);
-		DataManagerFacade dmf = new DataManagerFacade(attributes, dbConn);
+		DataManagerFacade dmf = new DataManagerFacade(attributes, dbConn, null);
 		dmf.loadTransactions(dc);
 
 		return dc;

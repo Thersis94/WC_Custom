@@ -28,6 +28,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 //WC libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -171,33 +172,15 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	
 	
 	/**
-	 * Get the parameters needed to build the base url from the results.
-	 * All updates will share the same base url so only the first item 
-	 * in the list is needed.
-	 * @param results
-	 * @return
-	 */
-	private String getBaseUrl(List<Object> results) {
-		if (results.isEmpty()) return "";
-		
-		UpdateVO up = (UpdateVO)results.get(0);
-		return buildBaseUrl(up.getSSLFlg(), up.getSiteAliasUrl());
-	}
-	
-	
-	/**
 	 * Build the base url from the supplied alias and ssl level.
 	 * @param sslFlg
 	 * @param siteAliasUrl
 	 * @return
 	 */
 	private String buildBaseUrl(int sslFlg, String siteAliasUrl) {
-		
 		StringBuilder url = new StringBuilder(75);
-		
-		url.append(sslFlg == 2? "https://":"http://");
+		url.append(sslFlg == SiteVO.SITE_SSL ? "https://" : "http://");
 		url.append(siteAliasUrl).append(Section.UPDATES_EDITION.getPageURL());
-		
 		return url.toString();
 	}
 

@@ -8,11 +8,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 //SMT base lib
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -21,7 +22,7 @@ import com.siliconmtn.util.databean.FilePartDataBean;
 //WebCrescendo
 import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.form.FormFacadeAction;
+import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.admin.action.OrganizationAction;
@@ -217,7 +218,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		SolrStoryVO ssv = new SolrStoryVO();
 
 		//Retrieve Submittal Data
-		FormFacadeAction ffa = new FormFacadeAction(actionInit);
+		FormAction ffa = new FormAction(actionInit);
 		ffa.setDBConnection(dbConn);
 		ffa.setAttributes(attributes);
 		DataContainer dc = ffa.retrieveSubmittedForm(req);
@@ -352,7 +353,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 */
 	protected void retrieveSubmittalData(ActionRequest req) {
 		log.debug(" retrieveSubmittalData " );
-		FormFacadeAction ffa = new FormFacadeAction(actionInit);
+		FormAction ffa = new FormAction(actionInit);
 		ffa.setDBConnection(dbConn);
 		ffa.setAttributes(attributes);
 		DataContainer dc = ffa.retrieveSubmittedForm(req);
@@ -545,7 +546,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 		//Iterate over list to get FormTransactionVOs
 
-		FormFacadeAction ffa = new FormFacadeAction(actionInit);
+		FormAction ffa = new FormAction(actionInit);
 		ffa.setDBConnection(dbConn);
 		ffa.setAttributes(attributes);
 		for(FormTransactionVO f : fsids) {

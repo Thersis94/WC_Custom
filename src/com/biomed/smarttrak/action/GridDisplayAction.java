@@ -3,29 +3,39 @@ package com.biomed.smarttrak.action;
 // JDK 1.8
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.DecimalFormat;
 
 // App Libs
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 import com.biomed.smarttrak.vo.grid.BiomedExcelReport;
+import com.biomed.smarttrak.vo.grid.GoogleChartCellVO;
+import com.biomed.smarttrak.vo.grid.GoogleChartColumnVO;
+import com.biomed.smarttrak.vo.grid.GoogleChartRowVO;
 import com.biomed.smarttrak.vo.grid.SMTChartFactory;
 import com.biomed.smarttrak.vo.grid.SMTChartFactory.ProviderType;
 import com.biomed.smarttrak.vo.grid.SMTChartOptionFactory;
 import com.biomed.smarttrak.vo.grid.SMTChartOptionFactory.ChartType;
 import com.biomed.smarttrak.vo.grid.SMTChartOptionIntfc;
 import com.biomed.smarttrak.vo.grid.SMTGridIntfc;
+import com.biomed.smarttrak.vo.grid.SMTGridRowIntfc;
+import com.biomed.smarttrak.vo.grid.GoogleChartVO.DataType;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -50,6 +60,14 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class GridDisplayAction extends SimpleActionAdapter {
 
 	public static final String GRID_ID = "gridId";
+	
+	// Constants for the label types
+	public static final int ALL_LABELS = 0;
+	public static final int VALUE_ONLY = 1;
+	public static final int TOTAL_ONLY = 2;
+	public static final int NO_LABEL = 3;
+
+	private static final String[] PIE_CHART_COLORS = { "#3366cc","#dc3912","#ff9900","#109618","#990099","#0099c6","#8f8f8f","#e53ac3","#f96125","#316395" };
 
 	public GridDisplayAction() {
 		super();
@@ -83,31 +101,58 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		String[] grids = req.getParameterValues("grid");
 		boolean full = Convert.formatBoolean(req.getParameter("full"), false);
 		boolean stacked = Convert.formatBoolean(req.getParameter("isStacked"), false);
+		int labelType = Convert.formatInteger(req.getParameter("labelType"));
 		ProviderType pt = ProviderType.valueOf(StringUtil.checkVal(req.getParameter("pt"), "GOOGLE").toUpperCase());
-
-		boolean display = Convert.formatBoolean(req.getParameter("display"));
 
 		// Get the list of columns and convert to integer list
 		List<Integer> columns = new ArrayList<>();
 		if (! StringUtil.isEmpty(req.getParameter("columns"))) {
 			List<String> sCols = Arrays.asList(req.getParameter("columns").split("\\,"));
-			columns = sCols.stream().map(Integer::parseInt).collect(Collectors.toList());
+			columns = sCols.stream().map(Convert::formatInteger).collect(Collectors.toList());
+		}
+		// Get the list of rows and convert to integer list
+		List<Integer> rows = new ArrayList<>();
+		if (! StringUtil.isEmpty(req.getParameter("rows"))) {
+			List<String> sCols = Arrays.asList(req.getParameter("rows").split("\\,"));
+			rows = sCols.stream().map(Convert::formatInteger).collect(Collectors.toList());
 		}
 
 		// Process the data
 		if (grids != null && grids.length > 0) {
-			this.putModuleData(loadAllGrids(grids, full, stacked, pt));
+			putModuleData(loadAllGrids(grids, full, stacked, pt));
 		} else {
-			if (display && ChartType.TABLE.equals(type)) display = false;
-			GridVO grid = getGridData(gridId, display);
-			if (req.hasParameter("excel")) buildExcelFile(req, grid);
-
-			else if (! StringUtil.isEmpty(gridId)) { 
-				this.putModuleData(retrieveChartData(grid, type, full, stacked, pt, columns	));
+			GridVO grid = loadSingleGrid(type, gridId, req);
+			
+			if (req.hasParameter("excel")) {
+				buildExcelFile(req, grid);
+			} else if (! StringUtil.isEmpty(gridId)) { 
+				SMTGridIntfc gridData = retrieveChartData(grid, type, full, stacked, pt, columns, rows);
+				configureGridOptions(gridData, grid, type, full, labelType);
+				putModuleData(gridData);
 			}
 		}
-
 	}
+	
+	
+	/**
+	 * Load the grid with the supplied id.
+	 * @param type
+	 * @param gridId
+	 * @param req
+	 * @return
+	 */
+	private GridVO loadSingleGrid(ChartType type, String gridId, ActionRequest req ) {
+		boolean display = Convert.formatBoolean(req.getParameter("display"));
+		if (display && ChartType.TABLE == type) display = false;
+		GridVO grid = getGridData(gridId, display);
+		
+		// If this grid has legacy data load that instead.
+		if (!StringUtil.isEmpty(grid.getLegacyId()) && ChartType.TABLE == type) 
+			grid = getGridData(grid.getLegacyId(), display);
+		
+		return grid;
+	}
+
 
 	/**
 	 * Looks up the gridId for a chart that utilizes a different data set for the table representation
@@ -146,12 +191,15 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		String schema = getAttribute(Constants.CUSTOM_DB_SCHEMA) + "";
 
 		// Parse the map data and place in a map
-		Map<Object, GenericVO> items = new HashMap<>(grids.length);
+		Map<Object, Map<String, String>> items = new HashMap<>(grids.length);
 		for(String grid : grids) {
 			String[] vals = grid.split("\\|");
-			String columns = "";
-			if (vals.length == 3) columns = vals[2];
-			items.put(vals[0], new GenericVO(vals[1], columns));
+			Map<String, String> values = new HashMap<>(3);
+			for (String s : vals)log.debug(s);
+			values.put("type", vals[1]);
+			if (vals.length >= 3) values.put("columns", vals[2]);
+			if (vals.length >= 4) values.put("labelType", vals[3]);
+			items.put(vals[0], values);
 		}
 
 		// Retrieve the data
@@ -170,26 +218,29 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			if (items.get(grid.getGridId()) == null)  id = grid.getSlug();
 
 			// Parse pout the passed in data and format for calling each chart
-			ChartType ct = ChartType.valueOf(items.get(id).getKey() + "");
-			String columns = StringUtil.checkVal(items.get(id).getValue());
-			
+			ChartType ct = ChartType.valueOf(items.get(id).get("type") + "");
+			String columns = StringUtil.checkVal(items.get(id).get("columns"));
+			int labelType = Convert.formatInteger(items.get(id).get("labelType"));
+
 			if (!ChartType.TABLE.equals(ct)) {
 				pruneColumns(grid);
 			}
-			
+
 			if (columns.length() > 0) {
 				List<String> sCols = Arrays.asList(columns.split("\\,"));
-				cols = sCols.stream().map(Integer::parseInt).collect(Collectors.toList());
+				cols = sCols.stream().map(Convert::formatInteger).collect(Collectors.toList());
 			}
 
 			// Retrieve the data for all of the charts
-			data.put(id, retrieveChartData(grid, ct, full, stacked, pt, cols));
+			SMTGridIntfc loadedGrid = retrieveChartData(grid, ct, full, stacked, pt, cols, Collections.emptyList());
+			configureGridOptions(loadedGrid, grid, ct, full, labelType);
+			data.put(id, loadedGrid);
 		}
 
 		return data;
 	}
 
-	
+
 	/**
 	 * The retrieve all grids method does not differentiate between grid types. 
 	 * Here all details that do not belong in a non-table display are removed.
@@ -228,37 +279,234 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param type
 	 * @param cols List of columns to display.  Blank equals all
 	 */
-	public SMTGridIntfc retrieveChartData(GridVO grid, ChartType type, boolean full, boolean stacked, ProviderType pt, List<Integer> cols) {
-		// Pie charts need to have their labels modified in order to
-		// get all pertinant information to the user.
-		if (ChartType.PIE == type) {
-			modifyLabel(grid);
-		}
-
-		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type, full, cols);
-
-		// Get the chart options
-		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE, full);
-		options.addOptionsFromGridData(grid);
-		log.debug("options: " + options);
+	public SMTGridIntfc retrieveChartData(GridVO grid, ChartType type, boolean full, 
+			boolean stacked, ProviderType pt, List<Integer> cols, List<Integer> rows) {
+		SMTGridIntfc gridData = SMTChartFactory.getInstance(pt, grid, type, full, cols, rows);
 
 		// Add the chart specific options
-		gridData.addCustomValues(options.getChartOptions());
 		gridData.addCustomValue("width", "100%");
 		gridData.addCustomValue("height", "100%");
 
 		// Add configurable attributes
 		if(stacked) gridData.addCustomValue("isStacked", true);
 
+		if (Convert.formatBoolean(grid.getAbbreviateNumbers())) setValueFormats(gridData);
+
 		return gridData;
+	}
+	
+	
+	/**
+	 * Customize the display options for the supplied grid
+	 * @param gridData
+	 * @param grid
+	 * @param type
+	 * @param full
+	 * @param labelType
+	 */
+	private void configureGridOptions(SMTGridIntfc gridData, GridVO grid, ChartType type, boolean full, int labelType) {
+		// Get the chart options
+		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(type, ProviderType.GOOGLE, full);
+		options.addOptionsFromGridData(grid);
+
+		// Load the custom pie chart colors.
+		if (ChartType.PIE == type) {
+			options.getChartOptions().put("colors", PIE_CHART_COLORS.clone());
+		}
+
+		// Load company specific colors
+		setColors(grid, options);
+
+		// Pie charts only need to edit their labels when all
+		// labels are present.  Otherwise use the default label edit.
+		if (ChartType.PIE == type && labelType == ALL_LABELS) {
+			modifyPieLabels(grid, gridData);
+		} else if (labelType > ALL_LABELS) {
+			modifyLabels(gridData, options, labelType);
+		}
+
+		gridData.addCustomValues(options.getChartOptions());
+	}
+
+
+	/**
+	 * Remove labels from the graph based on its label type.
+	 * @param gridData
+	 * @param options
+	 * @param labelType
+	 */
+	private void modifyLabels(SMTGridIntfc gridData, SMTChartOptionIntfc options, int labelType) {
+		
+		if (labelType == VALUE_ONLY || labelType == NO_LABEL) {
+			removeAnnotations(gridData);
+		}
+		
+		if (labelType == TOTAL_ONLY || labelType == NO_LABEL) {
+			options.getChartOptions().put("legend", "none");
+		}
+	}
+
+	
+	/**
+	 * Find and remove any annotation columns
+	 * @param gridData
+	 */
+	private void removeAnnotations(SMTGridIntfc gridData) {
+		List<Integer> annotations = new ArrayList<>();
+		for (int i = 0; i < gridData.getCols().size(); i++) {
+			GoogleChartColumnVO col = (GoogleChartColumnVO) gridData.getCols().get(i);
+			if ("annotation".equals(col.getRole()))
+				annotations.add(i);
+		}
+		
+		// Sort into descending order to prevent items from shifting with removal.
+		Collections.sort(annotations, Collections.reverseOrder());
+		
+		for (Integer i : annotations) {
+			gridData.getCols().remove(i.intValue());
+			for (SMTGridRowIntfc row : gridData.getRows()) {
+				GoogleChartRowVO gRow = (GoogleChartRowVO) row;
+				if (i.intValue() < gRow.getC().size())
+					gRow.getC().remove(i.intValue());
+			}
+		}
+	}
+
+	/**
+	 * Set the colors based on companies.
+	 * @param grid
+	 * @param options
+	 */
+	private void setColors(GridVO grid, SMTChartOptionIntfc options) {
+		int size = grid != null && grid.getDetails() != null ? grid.getDetails().size() : 0;
+		if (size == 0) return; //nothing to do - query won't match any data.
+		
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select distinct company_nm, alias_nm, short_nm_txt, graph_color from ").append(customDb).append("biomedgps_company ");
+		sql.append("where company_nm in (");
+		DBUtil.preparedStatmentQuestion(size, sql);
+		sql.append(") or alias_nm in (");
+		DBUtil.preparedStatmentQuestion(size, sql);
+		sql.append(") or short_nm_txt in (");
+		DBUtil.preparedStatmentQuestion(size, sql);
+		sql.append(")");
+
+		int i = 1;
+		Map<String, String> colorMap = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (GridDetailVO detail : grid.getDetails()) {
+				// Each value is used in three seperate in blocks
+				ps.setString(i + size*2, detail.getLabel());
+				ps.setString(i + size, detail.getLabel());
+				ps.setString(i++, detail.getLabel());
+			}
+
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				String color = rs.getString("graph_color");
+				if (!StringUtil.isEmpty(color)) {
+					colorMap.put(rs.getString("company_nm"), color);
+					colorMap.put(rs.getString("alias_nm"), color);
+					colorMap.put(rs.getString("short_nm_txt"), color);
+				}
+			}
+		} catch (SQLException e) {
+			log.error("Failed to set custom colors. Retaining standard colors", e);
+		}
+
+		String[] colors = (String[]) options.getChartOptions().get("colors");
+		List<String> colorList = new ArrayList<>(Arrays.asList(colors));
+		
+		// Loop over the columns, getting either a default color or a company color for each one.
+		for (int j=0; j < size; j++) {
+			String name = grid.getDetails().get(j).getLabel();
+			if (StringUtil.isEmpty(name) || !colorMap.containsKey(name)) {
+				colorList.add(j, colors[j%colors.length]);
+			} else {
+				colorList.add(j, colorMap.get(name));
+			}
+		}
+		
+		// Place the new color set in the conig.
+		 options.getChartOptions().put("colors", colorList.toArray());
+	}
+
+
+	/**
+	 * Fromat the value displays
+	 * @param gridData
+	 */
+	private void setValueFormats(SMTGridIntfc gridData) {
+		GoogleChartColumnVO col = new GoogleChartColumnVO();
+		col.setRole("annotation");
+		col.setDataType(DataType.STRING);
+		gridData.addColumn(col);
+
+		for (SMTGridRowIntfc row : gridData.getRows()) {
+			GoogleChartRowVO gRow = (GoogleChartRowVO) row;
+			for (int i=1; i < gRow.getC().size(); i++) {
+				GoogleChartCellVO c = gRow.getC().get(i);
+				c.setFormat(formatCellValue(StringUtil.checkVal(c.getValue())));
+			}
+		}
+	}
+
+
+	/**
+	 * Shorten the supplied value to a single decimal dollar amount
+	 * appended with a shorthand character for the magnitude.
+	 * @param value
+	 * @return
+	 */
+	private String formatCellValue(String value) {
+		if (value.length() <= 3) return value;
+		
+		// Convert from scientific exponent to simple number if applicable.
+		if (value.indexOf('E') > -1) {
+			int exp = Convert.formatInteger(value.substring(value.indexOf('E')+1));
+			value = StringUtil.padRight(value.replace(".", "").substring(0, value.indexOf('E')-1), '0', exp+1);
+		}
+
+		// Decimal and 0 added by the system
+		if (value.indexOf('.') > -1)
+			value = value.substring(0, value.indexOf('.'));
+		String suffix = "";
+		int pos = value.length()%3;
+		if (pos == 0) pos = 3;
+		switch ((int)Math.ceil((double)value.length()/3)) {
+			case 2:
+				suffix = " K";
+				break;
+			case 3:
+				suffix = " M";
+				break;
+			case 4:
+				suffix = " B";
+				break;
+			case 5:
+				suffix = " T";
+				break;
+			default:
+				suffix = "";
+		}
+
+		StringBuilder formatted = new StringBuilder(pos + 4);
+
+		formatted.append("$").append(value.substring(0, pos)).append(".");
+		formatted.append(value.charAt(pos)).append(suffix);
+
+		return formatted.toString();
 	}
 
 
 	/**
 	 * Check to see if the label needs to be modified
 	 * and do so if necessary.
+	 * @param grid 
+	 * @param gridData 
 	 */
-	private void modifyLabel(GridVO grid) {
+	private void modifyPieLabels(GridVO grid, SMTGridIntfc gridData) {
 		// Add up all values to see if the chart was generated
 		// with percentages instead of actual values.
 		BigDecimal total = new BigDecimal(0);
@@ -271,8 +519,21 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		// label will result in needless duplication of data.
 		if (total.compareTo(new BigDecimal(100)) == 0) return;
 
-		for (GridDetailVO detail : grid.getDetails()) {
-			detail.setLabel(detail.getLabel() + " - " + detail.getValue1());
+		boolean format =  Convert.formatBoolean(grid.getAbbreviateNumbers());
+        DecimalFormat decimalFormat = new DecimalFormat("#,##0");
+		for (SMTGridRowIntfc row : gridData.getRows()) {
+			GoogleChartRowVO gRow = (GoogleChartRowVO) row;
+			// Ensure that all needed data is here.
+			if (gRow.getC().size() < 2) continue;
+			
+			String name = (String) gRow.getC().get(0).getValue();
+			String value = decimalFormat.format(gRow.getC().get(1).getValue());
+			
+			if (format) {
+				gRow.getC().get(0).setValue(name + " - $" + formatCellValue(StringUtil.removeNonNumeric(value)));
+			} else {
+				gRow.getC().get(0).setValue(name + " - $" + value);
+			}
 		}
 
 	}
@@ -287,7 +548,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		gca.setAttributes(getAttributes());
 		gca.setDBConnection(getDBConnection());
 
-		gca.retrieveData(gridId, attributes.get(Constants.CUSTOM_DB_SCHEMA) + "", display);
+		gca.retrieveData(gridId, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA), display);
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 
 		return (GridVO) mod.getActionData();

@@ -1,17 +1,11 @@
 package com.biomed.smarttrak.fd;
 
-import java.lang.reflect.Constructor;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
-
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.FacadeActionAdapter;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.security.SecurityController;
@@ -26,7 +20,7 @@ import com.biomed.smarttrak.security.SecurityController;
  * @version 1.0
  * @since Feb 06, 2017
  ****************************************************************************/
-public class FinancialDashAction extends SBActionAdapter {
+public class FinancialDashAction extends FacadeActionAdapter {
 
 	private static final String FD = "fd";
 	public static final String DASH_TYPE = "dashType";
@@ -37,26 +31,13 @@ public class FinancialDashAction extends SBActionAdapter {
 	/**
 	 * Values for whether the dashboard is being viewed from admin or public
 	 */
-	public enum DashType {ADMIN, COMMON}
-
-	/**
-	 * Map of financial dash classes
-	 */
-	public static final Map<String, String> FD_ACTIONS;
-	
-	static {
-		Map<String, String> fdActions = new HashMap<>();
-		fdActions.put("fd", "com.biomed.smarttrak.fd.FinancialDashBaseAction");
-		fdActions.put("fdOverlay", "com.biomed.smarttrak.fd.FinancialDashScenarioOverlayAction");
-		fdActions.put("fdHierarchy", "com.biomed.smarttrak.admin.FinancialDashHierarchyAction");
-		fdActions.put("fdScenario", "com.biomed.smarttrak.fd.FinancialDashScenarioAction");
-		fdActions.put("fdFootnote", "com.biomed.smarttrak.fd.FinancialDashFootnoteAction");
-
-		FD_ACTIONS = Collections.unmodifiableMap(fdActions);
+	public enum DashType { 
+		ADMIN, COMMON
 	}
 
 	public FinancialDashAction() {
 		super();
+		initMap();
 	}
 
 	/**
@@ -64,6 +45,18 @@ public class FinancialDashAction extends SBActionAdapter {
 	 */
 	public FinancialDashAction(ActionInitVO actionInit) {
 		super(actionInit);
+		initMap();
+	}
+
+	/**
+	 * populates the classLoader map on the FacadeActionAdapter
+	 */
+	private void initMap() {
+		actionMap.put("fd", com.biomed.smarttrak.fd.FinancialDashBaseAction.class);
+		actionMap.put("fdOverlay", com.biomed.smarttrak.fd.FinancialDashScenarioOverlayAction.class);
+		actionMap.put("fdHierarchy", com.biomed.smarttrak.admin.FinancialDashHierarchyAction.class);
+		actionMap.put("fdScenario", com.biomed.smarttrak.fd.FinancialDashScenarioAction.class);
+		actionMap.put("fdFootnote", com.biomed.smarttrak.fd.FinancialDashFootnoteAction.class);
 	}
 
 	/* (non-Javadoc)
@@ -94,39 +87,20 @@ public class FinancialDashAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private ActionInterface getAction(ActionRequest req) throws ActionException {
-		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String actionType = StringUtil.checkVal(req.getParameter(AdminControllerAction.ACTION_TYPE), FD);
 
 		// Set the dashboard type
 		req.setAttribute(DASH_TYPE, dashType);
 
 		// Determine the request type
-		String action;
-		if (scenarioId.length() > 0 && FD.equals(actionType)) {
-			action = FD_ACTIONS.get("fdOverlay");
-		} else {
-			action = FD_ACTIONS.get(actionType);
-		}
+		if (req.hasParameter("scenarioId") && FD.equals(actionType))
+			actionType = "fdOverlay";
 
-		log.debug("Starting FD Action: " + action);
-
-		// Forward to the appropriate action
-		ActionInterface ai;
-		try {
-			Class<?> klass = Class.forName(action);
-			Constructor<?> constructor = klass.getConstructor(ActionInitVO.class);
-			ai = (ActionInterface) constructor.newInstance(this.actionInit);
-		} catch (Exception e) {
-			throw new ActionException("Could not instantiate FD class.", e);
-		}
-
-		// Set the appropriate attributes for the action
-		ai.setAttributes(this.attributes);
-		ai.setDBConnection(dbConn);
 
 		// In case default was used
 		req.setParameter(AdminControllerAction.ACTION_TYPE, actionType);
 
-		return ai;
+		log.debug("Loading FD Action: " + actionType);
+		return super.loadAction(actionType);
 	}
 }

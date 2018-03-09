@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.ProductAction;
@@ -906,7 +907,10 @@ public class ProductManagementAction extends ManagementAction {
 		boolean isInsert = StringUtil.isEmpty(p.getProductId());
 		saveProduct(p, db, isInsert);
 		saveSections(req, p);
-		if (isInsert) generateContent(req, p.getProductId());
+		if (isInsert) {
+			generateContent(req, p.getProductId());
+			req.setParameter("productId", p.getProductId());
+		}
 	}
 
 
@@ -1368,6 +1372,8 @@ public class ProductManagementAction extends ManagementAction {
 		indexer.setDBConnection(dbConn);
 		try {
 			if ("D".equals(status) || "A".equals(status)) {
+				if (productId.length() < AdminControllerAction.DOC_ID_MIN_LEN)
+					productId = Section.PRODUCT.name() + "_" +productId;
 				indexer.purgeSingleItem(productId, false);
 			} else {
 				indexer.indexItems(productId);

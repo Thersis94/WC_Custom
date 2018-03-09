@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.util.SmarttrakPageViewRetriever;
 // WC custom
 import com.biomed.smarttrak.vo.UserActivityVO;
 
@@ -184,7 +185,8 @@ public class UserActivityAction extends SimpleActionAdapter {
 		
 		/* Retrieve page views from db, parse into PageViewVO
 		 * and return list */
-		PageViewRetriever pvr = new PageViewRetriever(dbConn);
+		String customSchema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		PageViewRetriever pvr = new SmarttrakPageViewRetriever(dbConn, customSchema);
 		pvr.setSortDescending(true);
 		List<PageViewVO> pageViews = pvr.retrievePageViews(siteId, profileId, dateStart, dateEnd);
 		log.debug("Total number of raw page views found: " + pageViews.size());
