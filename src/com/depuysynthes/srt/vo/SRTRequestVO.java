@@ -24,7 +24,7 @@ import com.siliconmtn.db.orm.Table;
  * @version 3.3.1
  * @since Feb 5, 2018
  ****************************************************************************/
-@Table(name="SRT_REQUEST")
+@Table(name="DPY_SYN_SRT_REQUEST")
 public class SRTRequestVO extends BeanDataVO {
 
 	/**

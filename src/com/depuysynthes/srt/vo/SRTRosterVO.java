@@ -20,7 +20,7 @@ import com.siliconmtn.util.Convert;
  * @version 3.3.1
  * @since Feb 5, 2018
  ****************************************************************************/
-@Table(name="SRT_ROSTER")
+@Table(name="DPY_SYN_SRT_ROSTER")
 public class SRTRosterVO extends UserDataVO {
 
 	public enum Role {ADMIN, SALES_ROSTER, PUBLIC}

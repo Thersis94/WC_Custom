@@ -1,8 +1,6 @@
 package com.depuysynthes.srt;
 
-import java.sql.Connection;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -98,7 +96,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	private String buildMilestoneQuery(int size, String schema) {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select * from ").append(schema);
-		sql.append("SRT_PROJECT_MILESTONE_XR where PROJECT_ID in (");
+		sql.append("DPY_SYN_SRT_PROJECT_MILESTONE_XR where PROJECT_ID in (");
 		DBUtil.preparedStatmentQuestion(size, sql);
 		sql.append(") order by PROJECT_ID");
 

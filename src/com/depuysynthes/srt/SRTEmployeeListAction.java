@@ -97,7 +97,7 @@ public class SRTEmployeeListAction extends SimpleActionAdapter {
 		sql.append("select r.roster_id as LIST_DATA_ID, r.roster_id as VALUE_TXT, ");
 		sql.append("concat(p.first_nm, ' ', p.last_nm) ");
 		sql.append("as LABEL_TXT ").append(DBUtil.FROM_CLAUSE).append(custom);
-		sql.append("srt_roster r ").append(DBUtil.INNER_JOIN).append(" profile p ");
+		sql.append("dpy_syn_srt_roster r ").append(DBUtil.INNER_JOIN).append(" profile p ");
 		sql.append("on r.profile_id = p.profile_id ").append(DBUtil.WHERE_CLAUSE);
 		sql.append("r.workgroup_id = ? and r.is_active = ? and r.op_co_id = ?");
 		return sql.toString();

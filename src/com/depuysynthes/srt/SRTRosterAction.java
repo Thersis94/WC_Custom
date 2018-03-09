@@ -199,7 +199,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select r.*, p.first_nm, p.last_nm, p.email_address_txt ");
 		sql.append("from profile p ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("srt_roster r on r.profile_id=p.profile_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("dpy_syn_srt_roster r on r.profile_id=p.profile_id ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if (StringUtil.isEmpty(profileId)) {
 			sql.append("and r.op_co_id=? ");
@@ -225,7 +225,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 
 		String email = req.getParameter(REQ_CHECK_USER_BY_EMAIL).toUpperCase();
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("select a.roster_id, b.profile_id, a.op_co_id from ").append(schema).append("srt_roster a ");
+		sql.append("select a.roster_id, b.profile_id, a.op_co_id from ").append(schema).append("dpy_syn_srt_roster a ");
 		sql.append("right outer join profile b on a.profile_id=b.profile_id ");
 		if(isEmailSearch) {
 			sql.append("and b.search_email_txt = ? ");
@@ -306,7 +306,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	private void saveStatus(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("update ").append((String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("srt_roster set is_active=?, update_dt=CURRENT_TIMESTAMP ");
+		sql.append("dpy_syn_srt_roster set is_active=?, update_dt=CURRENT_TIMESTAMP ");
 		if(req.getBooleanParameter("activeFlg")) {
 			sql.append(", deactivated_dt = CURRENT_TIMESTAMP ");
 		}

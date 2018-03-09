@@ -27,7 +27,7 @@ import com.siliconmtn.util.StringUtil;
  * @version 3.3.1
  * @since Feb 5, 2018
  ****************************************************************************/
-@Table(name="SRT_PROJECT")
+@Table(name="DPY_SYN_SRT_PROJECT")
 public class SRTProjectVO extends BeanDataVO {
 
 	/**

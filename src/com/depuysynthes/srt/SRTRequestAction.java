@@ -157,11 +157,11 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select r.*, a.*, u.profile_id from ").append(schema);
-		sql.append("SRT_REQUEST r ");
+		sql.append("DPY_SYN_SRT_REQUEST r ");
 		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("SRT_ROSTER u on r.ROSTER_ID = u.ROSTER_ID ");
+		sql.append("DPY_SYN_SRT_ROSTER u on r.ROSTER_ID = u.ROSTER_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
-		sql.append("SRT_REQUEST_ADDRESS a on r.REQUEST_ID = a.REQUEST_ID ");
+		sql.append("DPY_SYN_SRT_REQUEST_ADDRESS a on r.REQUEST_ID = a.REQUEST_ID ");
 
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if(hasRequestId) {

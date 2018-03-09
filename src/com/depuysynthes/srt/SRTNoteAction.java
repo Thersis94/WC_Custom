@@ -78,8 +78,8 @@ public class SRTNoteAction extends SimpleActionAdapter {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select n.*, p.first_nm, p.last_nm from ").append(custom);
-		sql.append("SRT_NOTE n inner join ").append(custom);
-		sql.append("SRT_ROSTER r on n.ROSTER_ID = r.ROSTER_ID ");
+		sql.append("DPY_SYN_SRT_NOTE n inner join ").append(custom);
+		sql.append("DPY_SYN_SRT_ROSTER r on n.ROSTER_ID = r.ROSTER_ID ");
 		sql.append("inner join PROFILE p on r.profile_id = p.profile_id ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if(!StringUtil.isEmpty(projectId)) {

@@ -19,7 +19,7 @@ import com.siliconmtn.gis.Location;
  * @version 3.3.1
  * @since Feb 28, 2018
  ****************************************************************************/
-@Table(name="SRT_REQUEST_ADDRESS")
+@Table(name="DPY_SYN_SRT_REQUEST_ADDRESS")
 public class SRTRequestAddressVO extends Location {
 
 	/**

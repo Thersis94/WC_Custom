@@ -20,7 +20,7 @@ import com.siliconmtn.util.user.HumanNameIntfc;
  * @version 3.3.1
  * @since Feb 5, 2018
  ****************************************************************************/
-@Table(name="SRT_NOTE")
+@Table(name="DPY_SYN_SRT_NOTE")
 public class SRTNoteVO extends BeanDataVO implements HumanNameIntfc {
 
 	/**
