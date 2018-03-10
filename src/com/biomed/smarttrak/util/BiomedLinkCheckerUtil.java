@@ -35,16 +35,22 @@ import com.smt.sitebuilder.common.SiteVO;
 public class BiomedLinkCheckerUtil {
 	private static final Logger log = Logger.getLogger(BiomedLinkCheckerUtil.class.getName());	
 	private Connection dbConn;
-	private static final String HREF_START_REGEX = "href=['\"]";
-	private static final String HREF_END_REGEX = ".*?['\"]>";
+	private static final String ANCHOR_END_REGEX = ".*?['\"]>";
 	private static final String QS_PARAM_TOKEN = "/qs/";
+	private static final String MANAGE_PATH = "/manage";
+	private String baseDomain;
+	private List<String> siteAliases;
 	
 	/**
 	 * Constructor to initialize class
 	 * @param dbConn
+	 * @param site
 	 */
-	public BiomedLinkCheckerUtil(Connection dbConn) {
+	public BiomedLinkCheckerUtil(Connection dbConn, SiteVO site) {
 		this.dbConn = dbConn;
+		
+		//populate list of site domains/aliases
+		loadSiteAliases(site);
 	}
 
 	/**
@@ -53,10 +59,10 @@ public class BiomedLinkCheckerUtil {
 	 * @param text
 	 * @return - The modified text with updated links if applicable, otherwise the original text
 	 */
-	public String modifySiteLinks(String text, SiteVO site) {		
+	public String modifySiteLinks(String text) {		
 		//attempt to find any matches for public site links(absolute or relative)
 		String modifiedText = modifyRelativeLinks(text);
-		modifiedText = modifyAbsoluteLinks(modifiedText, site);
+		modifiedText = modifyAbsoluteLinks(modifiedText);
 		
 		return modifiedText;
 	}
@@ -71,41 +77,49 @@ public class BiomedLinkCheckerUtil {
 		if(StringUtil.isEmpty(text)) return text;
 		log.debug("Checking relative links...");
 		
-		//build the regex pattern based on search for relative links
-		String searchPattern = buildRelativePattern();
-		
-		Pattern p = Pattern.compile(searchPattern);
-		Matcher m = p.matcher(text);
-		while(m.find()) {		
-			//update to manage link
-			text = transposeContentLinks(m.group(), text, false);
-		}
-		
-		return text;
+		//replace any public site links with manage links and return
+		return transposeContentLinks(buildRelativePattern(), text, false);		
 	}
 	
 	/**
 	 * Searches text content for any public links and returns a modified text with links converted to manage links.
 	 * @param text
-	 * @param site
 	 * @return
 	 */
-	public String modifyAbsoluteLinks(String text, SiteVO site){
-		if(StringUtil.isEmpty(text) || site == null) return text;
+	public String modifyAbsoluteLinks(String text){
+		if(StringUtil.isEmpty(text)) return text;
 		log.debug("Checking absolute links...");
 		
-		//build the regex pattern based on search for absolute links
-		String searchPattern = buildAbsolutePattern(site);
+		//replace any public site links with manage links and return
+		return transposeContentLinks(buildAbsolutePattern(), text, true);
+	}
+	
+	/**
+	 * Modifies a single plain URL string to it's manage side equivalent. Useful when an exact URL is known versus buried in content text.
+	 * Example: app.smarttrak.com/analysis/qs/1234 -> app.smarttrak.com/manage?actionType=insights&insightId=1234  
+	 * @param url
+	 * @return
+	 */
+	public String modifyPlainURL(String url) {
+		//ensure not empty and we are dealing with a URL path
+		if(StringUtil.isEmpty(url) || url.indexOf('/') == -1) return url;
+		log.debug("Checking plain url...");
 		
-		Pattern p = Pattern.compile(searchPattern);
-		Matcher m = p.matcher(text);
-		while(m.find()) {
-		
-			//update the manage link
-			text = transposeContentLinks(m.group(), text, true);
+		//determine the type of URL, if absolute ensure it's an aliases for the site
+		boolean isAbsoluteURL = url.indexOf('/') == 0 ? false : true;
+		if(isAbsoluteURL) {
+			boolean matchFound = false;
+			for (String alias : siteAliases) {
+				if(url.indexOf(alias) > -1) {
+					matchFound = true;
+					break;
+				}
+			}
+			if(!matchFound) return url;
 		}
-		
-		return text;
+				
+		//transpose it with appropriate params to pass
+		return transposeURL(url, isAbsoluteURL);
 	}
 	
 	/**
@@ -114,60 +128,124 @@ public class BiomedLinkCheckerUtil {
 	 * www.smarttrak.net/products -> www.smarttrak.net/manage?actionType=productAdmin
 	 * @param publicLink
 	 * @param text
-	 * @param isAbsoluteSearch
+	 * @param isAbsoluteLink
 	 * @return
 	 */
-	private String transposeContentLinks(String publicLink, String text, boolean isAbsoluteSearch) {
-			try {
-				if(publicLink.indexOf("/manage") > -1) {
-					return  text; // matched link already points to manage tool, skip			
-				}
-				log.trace("public link to transpose: " + publicLink);
-				StringBuilder manageLink = new StringBuilder(publicLink.length() + 150);	
+	private String transposeContentLinks(String searchPattern, String text, boolean isAbsoluteLink) {
+		Pattern p = Pattern.compile(searchPattern);
+		Matcher m = p.matcher(text);
+		String publicLink;
+
+		//find all public links and update
+		try {
+			while(m.find()) {
+				publicLink = m.group();
+				
+				// matched link already points to manage tool, skip		
+				if(publicLink.indexOf(MANAGE_PATH) > -1) continue;
+			
+				if(log.isTraceEnabled()) log.trace("public link to transpose: " + publicLink);
+				StringBuilder manageLink = new StringBuilder(publicLink.length() + 150);
+				int endIndex =  publicLink.length() -2; //account for anchor end tag plus quote
 		
 				//add the manage path in correct location
-				String baseDomain = "";
-				if(isAbsoluteSearch) {
-					int endIndex = publicLink.lastIndexOf('.') + 4; //top level domain
-					baseDomain = publicLink.substring("href=\"".length(),  endIndex);		
-					manageLink.append("href=\"").append(baseDomain).append("/manage"); //append manage		
-				}else {
-					manageLink.append("href=\"/manage"); //prepend manage
-				}
+				appendManagePath(publicLink, manageLink, isAbsoluteLink);
 				
 				//replace the section page with corresponding manage section
-				boolean sectionFound = false;
-				String tokenMinusEndSlash = "";
-				for(Section section : Section.values()) {
-					tokenMinusEndSlash = section.getURLToken().substring(0, section.getURLToken().lastIndexOf('/'));
-					if(publicLink.indexOf(tokenMinusEndSlash) > -1) {
-						sectionFound = true;
-						manageLink.append("?actionType=").append(section.getActionType());
-						
-						//check for qs param with id and replace with appropriate manage section id
-						if(publicLink.indexOf(QS_PARAM_TOKEN) > -1) {
-							appendQSParamId(section, publicLink, manageLink);
-						}else {
-							int startIndex = publicLink.indexOf(tokenMinusEndSlash) + tokenMinusEndSlash.length();
-							manageLink.append(publicLink.substring(startIndex, publicLink.length() -2));
-						}
-					}
-				}	
+				boolean sectionFound = appendSectionToken(publicLink, manageLink, endIndex);
 				
 				//if no matching manage section found, handle appending any remaining url values(page, query params, etc.) here
-				if(isAbsoluteSearch && !sectionFound) {
-					int startIndex = publicLink.indexOf(baseDomain) + baseDomain.length();
-					manageLink.append(publicLink.substring(startIndex, publicLink.length() -2));
-				}
+				appendEndURLValues(publicLink, manageLink, isAbsoluteLink, sectionFound, endIndex);
 				manageLink.append("\">"); //end the anchor tag
 				
 				//replace the public link with the admin link
-				log.trace("transposed manage link: " + manageLink);
-				return text.replace(publicLink, manageLink.toString());	
-			}catch(Exception e) {//If an error occurs catch it here, and return original text
-				log.error("Error attempting to transpose public link to manage link: " + e);
-				return text;
+				if(log.isTraceEnabled()) log.trace("transposed manage link: " + manageLink);
+				text = text.replace(publicLink, manageLink.toString());	
 			}
+		}catch(Exception e) {//If an error occurs catch it here, and return original text
+			log.error("Error attempting to transpose public link to manage link: " + e);
+			return text;
+		}
+		
+		return text;
+	}
+	
+	/**
+	 * Transposes the direct URL to corresponding manage section
+	 * Example: companies/qs/73139 -> /manage?actionType="companyAdmin&companyId=73139"
+	 * @param url
+	 * @param isAbsoluteURL
+	 * @return
+	 */
+	private String transposeURL(String url, boolean isAbsoluteURL) {		
+		// passed url already points to manage tool, return		
+		if(url.indexOf(MANAGE_PATH) > -1) return url;
+		if(log.isTraceEnabled()) 
+			log.trace("given URL to transpose: " + url);	
+		
+		StringBuilder manageURL = new StringBuilder(url.length() + 150);
+		int endIndex =  url.length();
+		try {
+			//add the manage path in correct location
+			appendManagePath(url, manageURL, isAbsoluteURL);
+			
+			//replace the section page with corresponding manage section
+			boolean sectionFound = appendSectionToken(url, manageURL, endIndex);
+			
+			//if no matching manage section found, handle appending any remaining url values(page, query params, etc.) here
+			appendEndURLValues(url, manageURL, isAbsoluteURL, sectionFound, endIndex);			
+			if(log.isTraceEnabled()) log.trace("transposed manage URL: " + manageURL);
+		
+		}catch(Exception e) {//If an error occurs catch it here, and return original url
+			log.error("Error attempting to transpose public link to manage link: " + e);
+			return url;
+		}
+		
+		return manageURL.toString();
+	}
+	
+	/**
+	 * Appends the '/manage' path in appropriate location based on relative or absolute domain 
+	 * @param publicLink
+	 * @param manageLink
+	 * @param isAbsoluteSearch
+	 */
+	private void appendManagePath(String publicLink, StringBuilder manageLink, boolean isAbsoluteSearch) {
+		if(isAbsoluteSearch) {
+			int endIndex = publicLink.lastIndexOf('.') + 4; //top level domain
+			baseDomain = publicLink.substring(0,  endIndex);	
+			manageLink.append(baseDomain).append(MANAGE_PATH); //append manage		
+		}else {
+			manageLink.append(MANAGE_PATH); //prepend manage
+		}
+	}
+	
+	/**
+	 * Appends the appropriate manage section if a matching public page is found
+	 * @param publicLink
+	 * @param manageLink
+	 * @param endIndex
+	 * @return true or false indicating if a matching section was found
+	 */
+	private boolean appendSectionToken(String publicLink, StringBuilder manageLink, int endIndex) {
+		boolean sectionFound = false;
+		String tokenMinusEndSlash = "";
+		for(Section section : Section.values()) {
+			tokenMinusEndSlash = section.getURLToken().substring(0, section.getURLToken().lastIndexOf('/'));
+			if(publicLink.indexOf(tokenMinusEndSlash) > -1) {
+				sectionFound = true;
+				manageLink.append("?actionType=").append(section.getActionType());
+				
+				//check for qs param with id and replace with appropriate manage section id
+				if(publicLink.indexOf(QS_PARAM_TOKEN) > -1) {
+					appendQSParamId(section, publicLink, manageLink, endIndex);
+				}else {
+					int startIndex = publicLink.indexOf(tokenMinusEndSlash) + tokenMinusEndSlash.length();
+					manageLink.append(publicLink.substring(startIndex, endIndex));
+				}
+			}
+		}
+		return sectionFound;
 	}
 	
 	/**
@@ -175,11 +253,12 @@ public class BiomedLinkCheckerUtil {
 	 * @param section
 	 * @param publicLink
 	 * @param manageLink
+	 * @param endIndex
 	 */
-	private void appendQSParamId(Section section, String publicLink, StringBuilder manageLink) {
+	private void appendQSParamId(Section section, String publicLink, StringBuilder manageLink, int endIndex) {
 		//parse out the qs param id(go to end of link and capture Id along with any remaining query params)
 		int startIndex = publicLink.indexOf(QS_PARAM_TOKEN) + QS_PARAM_TOKEN.length();
-		String paramId = publicLink.substring(startIndex , publicLink.length() -2);
+		String paramId = publicLink.substring(startIndex , endIndex);
 		
 		switch(section) {
 			case MARKET : 
@@ -199,6 +278,22 @@ public class BiomedLinkCheckerUtil {
 	}
 	
 	/**
+	 * Handles appending any remaining url values(page, query params, etc.) if no matching manage section found
+	 * @param publicLink
+	 * @param manageLink
+	 * @param isAbsoluteSearch
+	 * @param sectionFound
+	 * @param endIndex
+	 */
+	private void appendEndURLValues(String publicLink, StringBuilder manageLink, boolean isAbsoluteSearch, 
+			boolean sectionFound, int endIndex) {
+		if(isAbsoluteSearch && !sectionFound) {
+			int startIndex = publicLink.indexOf(baseDomain) + baseDomain.length();
+			manageLink.append(publicLink.substring(startIndex, endIndex));
+		}
+	}
+	
+	/**
 	 * Builds the regular expression for searching for relative links for section pages
 	 * @return
 	 */
@@ -207,39 +302,35 @@ public class BiomedLinkCheckerUtil {
 		String tokenMinusEndSlash;
 		int count = 0;
 		
-		//compose regex group of pipe delimited sections : href="/(markets|companies|products)"/>
-		relativePattern.append(HREF_START_REGEX).append("/(");
+		//compose regex group of pipe delimited sections : /(markets|companies|products)"/>
+		relativePattern.append("/(");
 		for(Section section : Section.values()) {
 			tokenMinusEndSlash = section.getURLToken().substring(0, section.getURLToken().lastIndexOf('/'));
 			if(count > 0) relativePattern.append("|");
 			relativePattern.append(tokenMinusEndSlash);
 			count++;
 		}
-		relativePattern.append(")").append(HREF_END_REGEX);
+		relativePattern.append(")").append(ANCHOR_END_REGEX);
 		return relativePattern.toString();
 	}
 	
 	/**
 	 * Builds the regular expression for searching for absolute links based on sites' aliases
-	 * @param site
 	 * @return
 	 */
-	protected String buildAbsolutePattern(SiteVO site) {
+	protected String buildAbsolutePattern() {
 		StringBuilder absolutePattern = new StringBuilder(200);
 		String protocolRegex = "((http|https)://)*?";
 		
-		//fetch list of site domains/aliases
-		List<String> aliases = fetchSiteAliases(site);
-		
 		//compose regex group of pipe delimited absolute links based on the sites' aliases.
 		int count = 0;
-		absolutePattern.append(HREF_START_REGEX).append(protocolRegex).append("(");
-		for (String alias : aliases) {
+		absolutePattern.append(protocolRegex).append("(");
+		for (String alias : siteAliases) {
 			if(count > 0) absolutePattern.append("|");
 			absolutePattern.append(alias);
 			count++;
 		}
-		absolutePattern.append(")").append(HREF_END_REGEX);
+		absolutePattern.append(")").append(ANCHOR_END_REGEX);
 		return absolutePattern.toString();
 	}
 	
@@ -248,8 +339,8 @@ public class BiomedLinkCheckerUtil {
 	 * @param site
 	 * @return
 	 */
-	protected List<String> fetchSiteAliases(SiteVO site){
-		List<String> aliases = new ArrayList<>(); 
+	protected void loadSiteAliases(SiteVO site){
+		siteAliases = new ArrayList<>(); 
 		String siteId = site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId(); 
 		
 		//execute query and populate list
@@ -257,13 +348,11 @@ public class BiomedLinkCheckerUtil {
 			ps.setString(1, siteId);
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				aliases.add(rs.getString("site_alias_url"));
+				siteAliases.add(rs.getString("site_alias_url"));
 			}
 		}catch(SQLException e) {
 			log.error("Error attempting to execute alias sql: ", e);
 		}
-		
-		return aliases;
 	}
 	
 	/**
