@@ -2,11 +2,13 @@ package com.depuysynthes.srt;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.depuysynthes.srt.util.SRTUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.EncryptionException;
@@ -55,7 +57,11 @@ public class SRTEmployeeListAction extends SimpleActionAdapter {
 		String opCoId = SRTUtil.getOpCO(req);
 		if(type != null) {
 			List<ListDataVO> employees = loadEmployees(type, opCoId);
-			putModuleData(employees, employees.size(), false);
+			List<GenericVO> data = employees
+					.stream()
+					.map(listDataVO -> new GenericVO(listDataVO.getValueTxt(), listDataVO.getLabelTxt()))
+					.collect(Collectors.toList());
+			putModuleData(data, data.size(), false);
 		}
 	}
 
