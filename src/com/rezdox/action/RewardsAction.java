@@ -70,7 +70,8 @@ public class RewardsAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_REWARD b on a.reward_id=b.reward_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_REWARD_TYPE c on b.reward_type_cd=c.reward_type_cd ");
 		sql.append("where a.member_id=? ");
-		sql.append("order by c.type_nm, b.order_no, b.reward_nm");
+		sql.append("order by coalesce(a.update_dt, a.create_dt, CURRENT_TIMESTAMP) desc, c.type_nm, b.order_no, b.reward_nm");
+		log.debug(sql);
 
 		String memberId = StringUtil.checkVal(req.getAttribute("member_id"), null);
 		if (memberId == null) {

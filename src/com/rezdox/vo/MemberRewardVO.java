@@ -5,7 +5,6 @@ import java.util.Date;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title:</b> RewardVO.java<br/>
@@ -27,6 +26,8 @@ public class MemberRewardVO {
 	private double currencyValueNo;
 	private int approvalFlg;
 	private RewardVO reward;
+	private Date createDate;
+	private Date updateDate;
 
 	public MemberRewardVO() {
 		super();
@@ -42,6 +43,10 @@ public class MemberRewardVO {
 		MemberRewardVO vo = new MemberRewardVO();
 		vo.setReward(reward);
 		vo.setMemberId(memberId);
+		// dollar and point values get captured/preserved "at the time of redemption" for historical purposes.
+		vo.setCurrencyValueNo(reward.getCurrencyValueNo());
+		vo.setPointsNo(reward.getPointsNo());
+
 		return vo;
 	}
 
@@ -75,17 +80,20 @@ public class MemberRewardVO {
 		return approvalFlg;
 	}
 
-	@Column(name="create_dt", isInsertOnly=true)
+	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
-		return Convert.getCurrentTimestamp();
+		return createDate;
 	}
 
-	@Column(name="update_dt", isUpdateOnly=true)
+	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
-		return Convert.getCurrentTimestamp();
+		return updateDate;
 	}
 
-	@BeanSubElement
+	public Date getRewardDate() {
+		return updateDate != null ? updateDate : createDate;
+	}
+
 	public RewardVO getReward() {
 		return reward;
 	}
@@ -114,8 +122,17 @@ public class MemberRewardVO {
 		this.approvalFlg = approvalFlg;
 	}
 
+	@BeanSubElement
 	public void setReward(RewardVO reward) {
 		this.reward = reward;
 		setRewardId(reward.getRewardId());
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	public void setUpdateDate(Date updateDate) {
+		this.updateDate = updateDate;
 	}
 }
