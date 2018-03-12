@@ -787,7 +787,7 @@ public class SRTUserImport extends CommandLineUtil {
 		sql.append("or lower(salesrepemail) in (select lower(email) from dbo.tbl_pt_sales_roster) ");
 		sql.append("or concat(first_nm, ' ', last_nm) in (select firstlast from dbo.tbl_pt_sales_roster)) ");
 		sql.append("and p.projectid not in (");
-		sql.append("select cast(CO_ROSTER_ID as int) from custom.srt_roster ");
+		sql.append("select cast(CO_ROSTER_ID as int) from custom.dpy_syn_srt_roster ");
 		sql.append("where CO_ROSTER_ID not like 'ADM_%' and CO_ROSTER_ID not like 'SR_%') ");
 		return sql;
 	}
@@ -820,7 +820,7 @@ public class SRTUserImport extends CommandLineUtil {
 		sql.append("concat('SR_', r.id) as CO_ROSTER_ID, ");
 		sql.append("'replace' as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster r ");
-		sql.append("where concat('SR_', r.id) not in (select CO_ROSTER_ID from custom.srt_roster) ");
+		sql.append("where concat('SR_', r.id) not in (select CO_ROSTER_ID from custom.dpy_syn_srt_roster) ");
 
 		return sql;
 	}
@@ -853,7 +853,7 @@ public class SRTUserImport extends CommandLineUtil {
 		sql.append("concat('ADM_', userid) as CO_ROSTER_ID, ");
 		sql.append("srtcontact2 as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.users ");
-		sql.append("where concat('ADM_', userid) not in (select CO_ROSTER_ID from custom.srt_roster) ");
+		sql.append("where concat('ADM_', userid) not in (select CO_ROSTER_ID from custom.dpy_syn_srt_roster) ");
 		return sql;
 	}
 }

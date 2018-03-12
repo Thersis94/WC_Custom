@@ -193,7 +193,7 @@ public class MasterRecordDataProcessor extends AbstractDataProcessor {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.DELETE_CLAUSE).append(DBUtil.FROM_CLAUSE);
 		sql.append((String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("srt_mr_attr_xr where master_record_id = ?");
+		sql.append("dpy_syn_srt_mr_attr_xr where master_record_id = ?");
 		return sql.toString();
 	}
 
@@ -227,7 +227,7 @@ public class MasterRecordDataProcessor extends AbstractDataProcessor {
 		StringBuilder sql = new StringBuilder(250);
 		sql.append(DBUtil.INSERT_CLAUSE);
 		sql.append((String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("SRT_MR_ATTR_XR (ATTR_XR_ID, ATTR_ID, VALUE_TXT, ");
+		sql.append("DPY_SYN_SRT_MR_ATTR_XR (ATTR_XR_ID, ATTR_ID, VALUE_TXT, ");
 		sql.append("MASTER_RECORD_ID, CREATE_DT) values (?,?,?,?,?);");
 		return sql.toString();
 	}
@@ -261,7 +261,7 @@ public class MasterRecordDataProcessor extends AbstractDataProcessor {
 		sql.append("select ATTR_ID ");
 		sql.append(DBUtil.FROM_CLAUSE);
 		sql.append((String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("SRT_MR_ATTR_OP_CO_XR ");
+		sql.append("DPY_SYN_SRT_MR_ATTR_OP_CO_XR ");
 		sql.append(DBUtil.WHERE_CLAUSE).append(" OP_CO_ID = ? ");
 
 		return sql.toString();

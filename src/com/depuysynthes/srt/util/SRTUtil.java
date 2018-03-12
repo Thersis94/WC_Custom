@@ -1,19 +1,9 @@
 package com.depuysynthes.srt.util;
 
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.lang.StringEscapeUtils;
 
-import com.depuysynthes.srt.vo.SRTMilestoneVO;
-import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
-import com.google.common.collect.Maps;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
@@ -60,42 +50,6 @@ public class SRTUtil {
 	public static String urlEncode(String value) {
 		if (StringUtil.isEmpty(value)) return ""; //going in a URL, we don't want to return a null
 		return StringEncoder.urlEncode(StringEscapeUtils.unescapeHtml(value)).replace("+", "%20");
-	}
-
-	/**
-	 * Helper method that loads Milestones into a list of Project Records.
-	 * @param rowData
-	 */
-	public static void populateMilestones(List<SRTProjectVO> rowData, Connection dbConn, String schema) {
-
-		//Map Projects by ProjectId
-		Map<String, SRTProjectVO> pMap = Maps.uniqueIndex(rowData, SRTProjectVO::getProjectId);
-
-		//Create list of keys via pMap keySet.
-		List<Object> vals = new ArrayList<>(pMap.keySet());
-
-		//Retrieve all Milestones for the project Ids in vals.
-		List<SRTMilestoneVO> milestones = new DBProcessor(dbConn).executeSelect(buildMilestoneQuery(vals.size(), schema), vals, new SRTMilestoneVO());
-
-		//Add Milestones.  Will reflect in passed rowData by references.
-		for(SRTMilestoneVO m : milestones) {
-			pMap.get(m.getProjectId()).addMilestone(m);
-		}
-	}
-
-	/**
-	 * Build Milestone Retrieval Sql.
-	 * @param size
-	 * @return
-	 */
-	private static String buildMilestoneQuery(int size, String schema) {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from ").append(schema);
-		sql.append("SRT_PROJECT_MILESTONE_XR where PROJECT_ID in (");
-		DBUtil.preparedStatmentQuestion(size, sql);
-		sql.append(") order by PROJECT_ID");
-
-		return sql.toString();
 	}
 
 	/**

@@ -86,7 +86,7 @@ public class SRTLoginModule extends DBLoginModule {
 	private String buildRosterSql() {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("SRT_ROSTER where profile_id = ? ");
+		sql.append("DPY_SYN_SRT_ROSTER where profile_id = ? ");
 
 		return sql.toString();
 	}

@@ -121,10 +121,10 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 		} else {
 			sql.append(" '' as value_txt ");
 		}
-		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("SRT_MR_ATTR_OP_CO_XR a ");
+		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("DPY_SYN_SRT_MR_ATTR_OP_CO_XR a ");
 
 		if(hasMasterRecord) {
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_MR_ATTR_XR x ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_MR_ATTR_XR x ");
 			sql.append("on a.attr_id = x.attr_id and x.master_record_id = ? ");
 		}
 
@@ -178,9 +178,9 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select * from ").append(custom);
-		sql.append("SRT_MASTER_RECORD mr ");
+		sql.append("DPY_SYN_SRT_MASTER_RECORD mr ");
 		if(getById) {
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_FILE f ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_FILE f ");
 			sql.append("on mr.MASTER_RECORD_ID = f.MASTER_RECORD_ID ");
 		}
 		sql.append(DBUtil.WHERE_CLAUSE).append(" mr.OP_CO_ID = ? ");
@@ -234,8 +234,8 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	private String buildXrQuery() {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from ").append(schema).append("SRT_MASTER_RECORD_PROJECT_XR x ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("SRT_MASTER_RECORD mr ");
+		sql.append("select * from ").append(schema).append("DPY_SYN_SRT_MASTER_RECORD_PROJECT_XR x ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("DPY_SYN_SRT_MASTER_RECORD mr ");
 		sql.append("on x.MASTER_RECORD_ID = mr.MASTER_RECORD_ID and x.PROJECT_ID = ? ");
 		sql.append(DBUtil.ORDER_BY).append("x.CREATE_DT");
 		return sql.toString();

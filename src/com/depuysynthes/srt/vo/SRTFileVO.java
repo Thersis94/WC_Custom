@@ -19,7 +19,7 @@ import com.siliconmtn.db.orm.Table;
  * @version 3.3.1
  * @since Mar 1, 2018
  ****************************************************************************/
-@Table(name="SRT_FILE")
+@Table(name="DPY_SYN_SRT_FILE")
 public class SRTFileVO extends BeanDataVO {
 
 	/**

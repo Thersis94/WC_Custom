@@ -84,21 +84,21 @@ public class SRTFileAction extends SimpleActionAdapter {
 		//This determines if they can actually see it.
 		StringBuilder sql = new StringBuilder(205);
 		sql.append("select count(*) from profile_document pd ");
-		sql.append("inner join ").append(schema).append("srt_file f ");
+		sql.append("inner join ").append(schema).append("dpy_syn_srt_file f ");
 		sql.append("on f.file_id = pd.profile_document_id ");
 		sql.append("and pd.feature_id = ? ");
 		sql.append(DBUtil.INNER_JOIN).append(schema);
 		switch(rel) {
 			case MASTER_RECORD:
-				sql.append("SRT_MASTER_RECORD mr on ");
+				sql.append("DPY_SYN_SRT_MASTER_RECORD mr on ");
 				sql.append("mr.master_record_id = pd.feature_id ");
 				break;
 			case PROJECT:
-				sql.append("SRT_PROJECT p on ");
+				sql.append("DPY_SYN_SRT_PROJECT p on ");
 				sql.append("p.project_id = pd.feature_id ");
 				break;
 			case REQUEST:
-				sql.append("SRT_REQUEST r on ");
+				sql.append("DPY_SYN_SRT_REQUEST r on ");
 				sql.append("r.request_id = pd.feature_id ");
 				break;
 			default:

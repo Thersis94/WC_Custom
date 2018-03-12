@@ -37,12 +37,14 @@ public class SRTNoteAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String projectId = req.getParameter("projectId");
+		String projectId = req.getParameter(SRTProjectAction.SRT_PROJECT_ID);
 
-		String requestId = req.getParameter("requestId");
-		List<SRTNoteVO> notes = loadNotes(projectId, requestId);
+		String requestId = req.getParameter(SRTRequestAction.SRT_REQUEST_ID);
 
-		putModuleData(notes);
+		if(!StringUtil.isEmpty(projectId) || !StringUtil.isEmpty(requestId)) {
+			List<SRTNoteVO> notes = loadNotes(projectId, requestId);
+			putModuleData(notes);
+		}
 	}
 
 	/**
@@ -76,14 +78,14 @@ public class SRTNoteAction extends SimpleActionAdapter {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select n.*, p.first_nm, p.last_nm from ").append(custom);
-		sql.append("SRT_NOTE n inner join ").append(custom);
-		sql.append("SRT_ROSTER r on n.ROSTER_ID = r.ROSTER_ID ");
+		sql.append("DPY_SYN_SRT_NOTE n inner join ").append(custom);
+		sql.append("DPY_SYN_SRT_ROSTER r on n.ROSTER_ID = r.ROSTER_ID ");
 		sql.append("inner join PROFILE p on r.profile_id = p.profile_id ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if(!StringUtil.isEmpty(projectId)) {
-			sql.append("n.project_id = ?");
+			sql.append("and n.project_id = ? ");
 		} else if(!StringUtil.isEmpty(requestId)) {
-			sql.append("n.request_id = ?");
+			sql.append("and n.request_id = ? ");
 		}
 
 		return sql.toString();
@@ -98,7 +100,7 @@ public class SRTNoteAction extends SimpleActionAdapter {
 
 		/*
 		 * Place the note back on moduleData.  This is intended to be
-		 * called via ajax and we wanna return the proper note.
+		 * called via ajax and we want to return the proper note.
 		 */
 		putModuleData(note);
 	}

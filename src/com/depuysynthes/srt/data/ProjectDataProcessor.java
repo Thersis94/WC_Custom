@@ -170,7 +170,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 	private String buildMasterRecordFlushSql() {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("delete from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("SRT_MASTER_RECORD_PROJECT_XR where project_id = ? ");
+		sql.append("DPY_SYN_SRT_MASTER_RECORD_PROJECT_XR where project_id = ? ");
 
 		return sql.toString();
 	}
@@ -207,7 +207,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 	private String buildMasterRecordXrInsertSql() {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("srt_master_record_project_xr (master_record_project_xr_id, ");
+		sql.append("dpy_syn_srt_master_record_project_xr (master_record_project_xr_id, ");
 		sql.append("master_record_id, project_id, create_Dt) values (?,?,?,?)");
 		return sql.toString();
 	}

@@ -131,11 +131,19 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			decryptProjectNames(projects);
 
 			//Add Milestone Data
-			SRTUtil.populateMilestones(projects.getRowData(), dbConn, getCustomSchema());
+			loadMilestoneDetails(projects.getRowData());
 		}
 
 		//Return Projects
 		return projects;
+	}
+
+	/**
+	 * @param rowData
+	 */
+	private void loadMilestoneDetails(List<SRTProjectVO> projects) {
+		SRTMilestoneAction sma = (SRTMilestoneAction) getConfiguredAction(SRTMilestoneAction.class.getName());
+		sma.populateMilestones(projects);
 	}
 
 	/**
@@ -190,8 +198,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals, DisplayType displayType) {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm ");
-
+		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
+		sql.append("req.surgeon_first_nm, req.surgeon_last_nm ");
 		//If this isn't a detail load, get Names for display purposes.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
 			sql.append(", concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
@@ -200,12 +208,12 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		}
 
 		//Joins to tables.
-		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("SRT_PROJECT p ");
-		sql.append(DBUtil.INNER_JOIN).append(custom).append("SRT_REQUEST req ");
+		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("DPY_SYN_SRT_PROJECT p ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("DPY_SYN_SRT_REQUEST req ");
 		sql.append("on p.request_id = req.request_id ");
 
 		//Get Requestor Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER r ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER r ");
 		sql.append("on req.ROSTER_ID = r.ROSTER_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE pr ");
 		sql.append("on r.PROFILE_ID = pr.PROFILE_ID ");
@@ -213,19 +221,19 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		//Load Optional User Data if this isn't a detail view.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
 			//Get Optional Engineer Information
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER e ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER e ");
 			sql.append("on p.ENGINEER_ID = e.ROSTER_ID ");
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE ep ");
 			sql.append("on e.PROFILE_ID = ep.PROFILE_ID ");
 
 			//Get Optional Designer Information
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER d ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER d ");
 			sql.append("on p.DESIGNER_ID = d.ROSTER_ID ");
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE dp ");
 			sql.append("on d.PROFILE_ID = dp.PROFILE_ID ");
 
 			//Get Optional QA Engineer Information
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("SRT_ROSTER q ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER q ");
 			sql.append("on p.QUALITY_ENGINEER_ID = q.ROSTER_ID ");
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE qp ");
 			sql.append("on q.PROFILE_ID = qp.PROFILE_ID ");

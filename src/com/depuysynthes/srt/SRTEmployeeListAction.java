@@ -2,11 +2,13 @@ package com.depuysynthes.srt;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.depuysynthes.srt.util.SRTUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.EncryptionException;
@@ -55,7 +57,11 @@ public class SRTEmployeeListAction extends SimpleActionAdapter {
 		String opCoId = SRTUtil.getOpCO(req);
 		if(type != null) {
 			List<ListDataVO> employees = loadEmployees(type, opCoId);
-			putModuleData(employees, employees.size(), false);
+			List<GenericVO> data = employees
+					.stream()
+					.map(listDataVO -> new GenericVO(listDataVO.getValueTxt(), listDataVO.getLabelTxt()))
+					.collect(Collectors.toList());
+			putModuleData(data, data.size(), false);
 		}
 	}
 
@@ -97,7 +103,7 @@ public class SRTEmployeeListAction extends SimpleActionAdapter {
 		sql.append("select r.roster_id as LIST_DATA_ID, r.roster_id as VALUE_TXT, ");
 		sql.append("concat(p.first_nm, ' ', p.last_nm) ");
 		sql.append("as LABEL_TXT ").append(DBUtil.FROM_CLAUSE).append(custom);
-		sql.append("srt_roster r ").append(DBUtil.INNER_JOIN).append(" profile p ");
+		sql.append("dpy_syn_srt_roster r ").append(DBUtil.INNER_JOIN).append(" profile p ");
 		sql.append("on r.profile_id = p.profile_id ").append(DBUtil.WHERE_CLAUSE);
 		sql.append("r.workgroup_id = ? and r.is_active = ? and r.op_co_id = ?");
 		return sql.toString();
