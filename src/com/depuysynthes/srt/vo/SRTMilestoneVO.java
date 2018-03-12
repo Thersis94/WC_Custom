@@ -1,11 +1,15 @@
 package com.depuysynthes.srt.vo;
 
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -19,19 +23,21 @@ import com.siliconmtn.util.StringUtil;
  * @version 3.3.1
  * @since Feb 23, 2018
  ****************************************************************************/
-public class SRTMilestoneVO extends BeanDataVO implements Comparable<SRTMilestoneVO>{
+@Table(name="DPY_SYN_SRT_MILESTONE")
+public class SRTMilestoneVO extends BeanDataVO {
 
 	/**
 	 *
 	 */
 	private static final long serialVersionUID = 1L;
-	private String projectMilestoneXRId;
-	private String projectId;
 	private String milestoneId;
-	private Date milestoneDt;
+	private String opCoId;
+	private String parentId;
+	private Date createDt;
+	private List<SRTMilestoneRuleVO> rules;
 
 	public SRTMilestoneVO() {
-		//Default Constructor
+		rules = new ArrayList<>();
 	}
 
 	public SRTMilestoneVO(ActionRequest req) {
@@ -45,22 +51,6 @@ public class SRTMilestoneVO extends BeanDataVO implements Comparable<SRTMileston
 	}
 
 	/**
-	 * @return the projectMilestoneXRId
-	 */
-	@Column(name="PROJ_MILESTONE_XR_ID", isPrimaryKey= true)
-	public String getProjectMilestoneXRId() {
-		return projectMilestoneXRId;
-	}
-
-	/**
-	 * @return the projectId
-	 */
-	@Column(name="PROJECT_ID")
-	public String getProjectId() {
-		return projectId;
-	}
-
-	/**
 	 * @return the milestoneId
 	 */
 	@Column(name="MILESTONE_ID")
@@ -69,25 +59,41 @@ public class SRTMilestoneVO extends BeanDataVO implements Comparable<SRTMileston
 	}
 
 	/**
+	 * @return the opCoId
+	 */
+	@Column(name="OP_CO_ID")
+	public String getOpCoId() {
+		return opCoId;
+	}
+
+	/**
+	 * @return the parentId
+	 */
+	@Column(name="PARENT_ID")
+	public String getParentId() {
+		return parentId;
+	}
+
+	/**
 	 * @return the createDt
 	 */
-	@Column(name="MILESTONE_DT", isAutoGen=true, isInsertOnly=true)
-	public Date getMilestoneDt() {
-		return milestoneDt;
+	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
+	public Date getCreateDt() {
+		return createDt;
 	}
 
 	/**
-	 * @param projectMilestoneXRId the projectMilestoneXRId to set.
+	 * @param parentId the parentId to set.
 	 */
-	public void setProjectMilestoneXRId(String projectMilestoneXRId) {
-		this.projectMilestoneXRId = projectMilestoneXRId;
+	public void setParentId(String parentId) {
+		this.parentId = parentId;
 	}
 
 	/**
-	 * @param projectId the projectId to set.
+	 * @param opCoId the opCoId to set.
 	 */
-	public void setProjectId(String projectId) {
-		this.projectId = projectId;
+	public void setOpCoId(String opCoId) {
+		this.opCoId = opCoId;
 	}
 
 	/**
@@ -100,30 +106,31 @@ public class SRTMilestoneVO extends BeanDataVO implements Comparable<SRTMileston
 	/**
 	 * @param createDt the createDt to set.
 	 */
-	public void setMilestoneDt(Date milestoneDt) {
-		this.milestoneDt = milestoneDt;
+	public void setCreateDt(Date createDt) {
+		this.createDt = createDt;
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	/**
+	 * @return the rules
 	 */
-	@Override
-	public int compareTo(SRTMilestoneVO o) {
-		return getMilestoneDt().compareTo(o.getMilestoneDt());
+	public List<SRTMilestoneRuleVO> getRules() {
+		return rules;
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		boolean same = true;
+	/**
+	 * @param rules the rules to set.
+	 */
+	public void setRules(List<SRTMilestoneRuleVO> rules) {
+		this.rules = rules;
+	}
 
-		if(o instanceof SRTMilestoneVO) {
-			SRTMilestoneVO m = (SRTMilestoneVO)o; 
-			same = same && StringUtil.checkVal(milestoneId).equals(m.getMilestoneId());
-			same = same && StringUtil.checkVal(projectId).equals(m.getProjectId());
-		} else {
-			same = false;
+	/**
+	 * @param srtMilestoneRuleVO
+	 */
+	@BeanSubElement
+	public void addRule(SRTMilestoneRuleVO rule) {
+		if(rule != null && !StringUtil.isEmpty(rule.getMilestoneRuleId())) {
+			rules.add(rule);
 		}
-
-		return same;
 	}
 }

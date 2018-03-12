@@ -72,7 +72,7 @@ public class SRTProjectVO extends BeanDataVO {
 
 	private List<SRTMasterRecordVO> masterRecords;
 	private SRTRequestVO request;
-	private Map<String, SRTMilestoneVO> milestones;
+	private Map<String, SRTProjectMilestoneVO> milestones;
 
 	public SRTProjectVO() {
 		notes = new ArrayList<>();
@@ -392,7 +392,7 @@ public class SRTProjectVO extends BeanDataVO {
 	/**
 	 * @return the milestones
 	 */
-	public Map<String, SRTMilestoneVO> getMilestones() {
+	public Map<String, SRTProjectMilestoneVO> getMilestones() {
 		return milestones;
 	}
 
@@ -404,7 +404,7 @@ public class SRTProjectVO extends BeanDataVO {
 		if(milestones == null || milestones.size() == 0) {
 			return "";
 		} else {
-			List<SRTMilestoneVO> m = new ArrayList<>(milestones.values());
+			List<SRTProjectMilestoneVO> m = new ArrayList<>(milestones.values());
 			return m.get(m.size() - 1).getMilestoneId();
 		}
 	}
@@ -413,7 +413,7 @@ public class SRTProjectVO extends BeanDataVO {
 	 * @param milestoneId the id of the Milestone to retrieve.
 	 * @return
 	 */
-	public SRTMilestoneVO getMilestone(String milestoneId) {
+	public SRTProjectMilestoneVO getMilestone(String milestoneId) {
 		return milestones.get(milestoneId);
 	}
 
@@ -714,7 +714,7 @@ public class SRTProjectVO extends BeanDataVO {
 	/**
 	 * @param milestones the milestones to set.
 	 */
-	public void setMilestones(Map<String, SRTMilestoneVO> milestones) {
+	public void setMilestones(Map<String, SRTProjectMilestoneVO> milestones) {
 		this.milestones = milestones;
 	}
 
@@ -723,7 +723,7 @@ public class SRTProjectVO extends BeanDataVO {
 	 * @param milestoneDt - the date the milstone was achieved.
 	 */
 	@BeanSubElement
-	public void addMilestone(SRTMilestoneVO milestone) {
+	public void addMilestone(SRTProjectMilestoneVO milestone) {
 		if(milestone != null && !StringUtil.isEmpty(milestone.getMilestoneId())) {
 			milestones.put(milestone.getMilestoneId(), milestone);
 		}
