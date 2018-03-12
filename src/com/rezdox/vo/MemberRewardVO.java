@@ -29,6 +29,12 @@ public class MemberRewardVO {
 	private Date createDate;
 	private Date updateDate;
 
+	// WC Data Tool helpers
+	private String firstName;
+	private String lastName;
+	private String emailAddress;
+	private int myPointsNo;
+
 	public MemberRewardVO() {
 		super();
 	}
@@ -134,5 +140,40 @@ public class MemberRewardVO {
 
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	@Column(name="first_nm", isReadOnly=true)
+	public String getFirstName() {
+		return firstName;
+	}
+
+	@Column(name="last_nm", isReadOnly=true)
+	public String getLastName() {
+		return lastName;
+	}
+
+	@Column(name="email_address_txt", isReadOnly=true)
+	public String getEmailAddress() {
+		return emailAddress;
+	}
+
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
+
+	public void setEmailAddress(String emailAddress) {
+		this.emailAddress = emailAddress;
+	}
+
+	public int getMyPointsNo() {
+		return myPointsNo;
+	}
+
+	public void setMyPointsNo(int myPointsNo) {
+		this.myPointsNo = myPointsNo;
 	}
 }
