@@ -1,25 +1,24 @@
 package com.depuysynthes.srt.vo;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.parser.BeanDataVO;
-import com.siliconmtn.db.orm.Column;
-import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.workflow.milestones.MilestoneVO;
 
 /****************************************************************************
- * <b>Title:</b> SRTMilestoneVO.java
- * <b>Project:</b> WC_Custom
- * <b>Description:</b> Stores Project Milestone Data.
+ * <b>Title:</b> SRTProjectMilestoneVO.java
+ * <b>Project:</b> WebCrescendo
+ * <b>Description:</b> Stores SRT Project Milestone XR Records.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 3.3.1
- * @since Feb 23, 2018
+ * @since Mar 12, 2018
  ****************************************************************************/
-public class SRTMilestoneVO extends BeanDataVO implements Comparable<SRTMilestoneVO>{
+public class SRTProjectMilestoneVO extends MilestoneVO {
 
 	/**
 	 *
@@ -27,27 +26,51 @@ public class SRTMilestoneVO extends BeanDataVO implements Comparable<SRTMileston
 	private static final long serialVersionUID = 1L;
 	private String projectMilestoneXRId;
 	private String projectId;
-	private String milestoneId;
 	private Date milestoneDt;
 
-	public SRTMilestoneVO() {
+	public SRTProjectMilestoneVO() {
 		//Default Constructor
 	}
 
-	public SRTMilestoneVO(ActionRequest req) {
+	/**
+	 * Overloaded Constructor for easy ProjectMilestone Creation.
+	 * @param milestoneId
+	 * @param projectId
+	 */
+	public SRTProjectMilestoneVO(String milestoneId, String projectId) {
+		this();
+		this.projectId = projectId;
+		setMilestoneId(milestoneId);
+	}
+
+	public SRTProjectMilestoneVO(ActionRequest req) {
 		this();
 		populateData(req);
 	}
 
-	public SRTMilestoneVO(ResultSet rs) {
+	public SRTProjectMilestoneVO(ResultSet rs) throws SQLException {
 		this();
-		populateData(rs);
+		setData(rs);
+	}
+
+	/**
+	 * Set data off a ResultSet
+	 * @param rs
+	 * @throws SQLException
+	 */
+	private void setData(ResultSet rs) throws SQLException {
+		setMilestoneId(rs.getString("MILESTONE_ID"));
+		setOrganizationId(rs.getString("OP_CO_ID"));
+		setParentId(rs.getString("PARENT_ID"));
+		setCreateDt(rs.getDate("CREATE_DT"));
+		setProjectId(rs.getString("PROJECT_ID"));
+		setProjectMilestoneXRId(rs.getString("PROJ_MILESTONE_XR_ID"));
+		setMilestoneDt(rs.getDate("MILESTONE_DT"));
 	}
 
 	/**
 	 * @return the projectMilestoneXRId
 	 */
-	@Column(name="PROJ_MILESTONE_XR_ID", isPrimaryKey= true)
 	public String getProjectMilestoneXRId() {
 		return projectMilestoneXRId;
 	}
@@ -55,7 +78,6 @@ public class SRTMilestoneVO extends BeanDataVO implements Comparable<SRTMileston
 	/**
 	 * @return the projectId
 	 */
-	@Column(name="PROJECT_ID")
 	public String getProjectId() {
 		return projectId;
 	}
@@ -63,15 +85,14 @@ public class SRTMilestoneVO extends BeanDataVO implements Comparable<SRTMileston
 	/**
 	 * @return the milestoneId
 	 */
-	@Column(name="MILESTONE_ID")
+	@Override
 	public String getMilestoneId() {
-		return milestoneId;
+		return super.getMilestoneId();
 	}
 
 	/**
 	 * @return the createDt
 	 */
-	@Column(name="MILESTONE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getMilestoneDt() {
 		return milestoneDt;
 	}
@@ -91,39 +112,9 @@ public class SRTMilestoneVO extends BeanDataVO implements Comparable<SRTMileston
 	}
 
 	/**
-	 * @param milestoneId the milestoneId to set.
-	 */
-	public void setMilestoneId(String milestoneId) {
-		this.milestoneId = milestoneId;
-	}
-
-	/**
 	 * @param createDt the createDt to set.
 	 */
 	public void setMilestoneDt(Date milestoneDt) {
 		this.milestoneDt = milestoneDt;
-	}
-
-	/* (non-Javadoc)
-	 * @see java.lang.Comparable#compareTo(java.lang.Object)
-	 */
-	@Override
-	public int compareTo(SRTMilestoneVO o) {
-		return getMilestoneDt().compareTo(o.getMilestoneDt());
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		boolean same = true;
-
-		if(o instanceof SRTMilestoneVO) {
-			SRTMilestoneVO m = (SRTMilestoneVO)o; 
-			same = same && StringUtil.checkVal(milestoneId).equals(m.getMilestoneId());
-			same = same && StringUtil.checkVal(projectId).equals(m.getProjectId());
-		} else {
-			same = false;
-		}
-
-		return same;
 	}
 }
