@@ -1,6 +1,7 @@
 package com.depuysynthes.srt.vo;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
@@ -47,9 +48,24 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 		populateData(req);
 	}
 
-	public SRTProjectMilestoneVO(ResultSet rs) {
+	public SRTProjectMilestoneVO(ResultSet rs) throws SQLException {
 		this();
-		populateData(rs);
+		setData(rs);
+	}
+
+	/**
+	 * Set data off a ResultSet
+	 * @param rs
+	 * @throws SQLException
+	 */
+	private void setData(ResultSet rs) throws SQLException {
+		setMilestoneId(rs.getString("MILESTONE_ID"));
+		setOrganizationId(rs.getString("OP_CO_ID"));
+		setParentId(rs.getString("PARENT_ID"));
+		setCreateDt(rs.getDate("CREATE_DT"));
+		setProjectId(rs.getString("PROJECT_ID"));
+		setProjectMilestoneXRId(rs.getString("PROJ_MILESTONE_XR_ID"));
+		setMilestoneDt(rs.getDate("MILESTONE_DT"));
 	}
 
 	/**
