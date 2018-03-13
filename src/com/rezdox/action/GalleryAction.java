@@ -59,11 +59,14 @@ public class GalleryAction extends SimpleActionAdapter {
 		List<AlbumVO> albumList = retrieveAlbums(req);
 		putModuleData(albumList, albumList.size(), false);
 
+		// Get required data for the type of album
 		if (req.hasParameter("residenceId")) {
-			ResidenceAction ra = new ResidenceAction(getActionInit());
-			ra.setAttributes(getAttributes());
-			ra.setDBConnection(getDBConnection());
+			ResidenceAction ra = new ResidenceAction(dbConn, attributes);
 			req.setAttribute(ResidenceAction.RESIDENCE_DATA, ra.retrieveResidences(req));
+			
+		} else if (req.hasParameter("businessId")) {
+			BusinessAction ba = new BusinessAction(dbConn, attributes);
+			req.setAttribute(BusinessAction.BUSINESS_DATA, ba.retrieveBusinesses(req));
 		}
 	}
 
@@ -94,7 +97,12 @@ public class GalleryAction extends SimpleActionAdapter {
 		} else if (!StringUtil.isEmpty(opts.getResidenceId())) {
 			sql.append("or residence_id=? ");
 			params.add(opts.getResidenceId());
+			
+		} else if (!StringUtil.isEmpty(opts.getBusinessId())) {
+			sql.append("or business_id=? ");
+			params.add(opts.getBusinessId());
 		}
+		
 		sql.append("group by a.album_id");
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);

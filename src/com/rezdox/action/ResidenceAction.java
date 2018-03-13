@@ -23,6 +23,8 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.DatabaseNote;
+import com.siliconmtn.db.DatabaseNote.DBType;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
@@ -147,6 +149,7 @@ public class ResidenceAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
+	@DatabaseNote(type = DBType.POSTGRES)
 	protected List<ResidenceVO> retrieveResidences(ActionRequest req) {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String residenceId = req.getParameter(RESIDENCE_ID);
@@ -326,9 +329,8 @@ public class ResidenceAction extends SBActionAdapter {
 	 * 
 	 * @param property
 	 * @param residence
-	 * @throws DatabaseException 
 	 */
-	private List<ResidenceAttributeVO> mapZillowDataToAttributes(ZillowPropertyVO property, ResidenceVO residence, ActionRequest req) throws DatabaseException {
+	private List<ResidenceAttributeVO> mapZillowDataToAttributes(ZillowPropertyVO property, ResidenceVO residence, ActionRequest req) {
 		List<ResidenceAttributeVO> attributes = new ArrayList<>();
 		Map<String, String> zillowData = property.getExtendedData();
 		
@@ -354,9 +356,8 @@ public class ResidenceAction extends SBActionAdapter {
 	 * Gets a list of slugs for the residence form.
 	 * 
 	 * @return
-	 * @throws DatabaseException
 	 */
-	private List<String> getSlugTxtList(ActionRequest req) throws DatabaseException {
+	private List<String> getSlugTxtList(ActionRequest req) {
 		List<String> slugs = new ArrayList<>();
 		
 		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadForm(getFormId(), req);

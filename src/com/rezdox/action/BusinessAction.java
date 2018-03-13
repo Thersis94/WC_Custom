@@ -154,13 +154,17 @@ public class BusinessAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(900);
 		sql.append("select b.business_id, business_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, ");
 		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, email_address_txt, website_url, photo_url, ad_file_url, ");
-		sql.append("privacy_flg, create_dt, coalesce(b.update_dt, b.create_dt) as update_dt, summary_txt ");
-		sql.append("from ").append(schema).append("rezdox_business b inner join ");
+		sql.append("privacy_flg, bsc.business_category_cd as sub_category_cd, bc.business_category_cd as category_cd, b.create_dt, ");
+		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, summary_txt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b inner join ");
 		sql.append(schema).append("rezdox_business_member_xr m on b.business_id = m.business_id ");
-		sql.append("left join (SELECT * FROM crosstab('SELECT business_id, slug_txt, value_txt FROM ").append(schema).append("rezdox_business_attribute ORDER BY 1', ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" (SELECT * FROM crosstab('SELECT business_id, slug_txt, value_txt FROM ").append(schema).append("rezdox_business_attribute ORDER BY 1', ");
 		sql.append("'SELECT DISTINCT slug_txt FROM ").append(schema).append("rezdox_business_attribute WHERE slug_txt in (''BUSINESS_SUMMARY'') ORDER BY 1') ");
 		sql.append("AS (business_id text, summary_txt text) ");
 		sql.append(") ba on b.business_id = ba.business_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id = bcx.business_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bsc on bcx.business_category_cd = bsc.business_category_cd ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bsc.parent_cd = bc.business_category_cd ");
 		sql.append("where member_id = ? ");
 		
 		List<Object> params = new ArrayList<>();
