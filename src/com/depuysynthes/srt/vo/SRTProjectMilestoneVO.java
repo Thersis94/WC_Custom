@@ -4,8 +4,7 @@ import java.sql.ResultSet;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.parser.BeanDataVO;
-import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.workflow.milestones.MilestoneVO;
 
 /****************************************************************************
  * <b>Title:</b> SRTProjectMilestoneVO.java
@@ -18,8 +17,7 @@ import com.siliconmtn.db.orm.Column;
  * @version 3.3.1
  * @since Mar 12, 2018
  ****************************************************************************/
-
-public class SRTProjectMilestoneVO extends BeanDataVO {
+public class SRTProjectMilestoneVO extends MilestoneVO {
 
 	/**
 	 *
@@ -27,7 +25,6 @@ public class SRTProjectMilestoneVO extends BeanDataVO {
 	private static final long serialVersionUID = 1L;
 	private String projectMilestoneXRId;
 	private String projectId;
-	private String milestoneId;
 	private Date milestoneDt;
 
 	public SRTProjectMilestoneVO() {
@@ -42,7 +39,7 @@ public class SRTProjectMilestoneVO extends BeanDataVO {
 	public SRTProjectMilestoneVO(String milestoneId, String projectId) {
 		this();
 		this.projectId = projectId;
-		this.milestoneId = milestoneId; 
+		setMilestoneId(milestoneId);
 	}
 
 	public SRTProjectMilestoneVO(ActionRequest req) {
@@ -58,7 +55,6 @@ public class SRTProjectMilestoneVO extends BeanDataVO {
 	/**
 	 * @return the projectMilestoneXRId
 	 */
-	@Column(name="PROJ_MILESTONE_XR_ID", isPrimaryKey= true)
 	public String getProjectMilestoneXRId() {
 		return projectMilestoneXRId;
 	}
@@ -66,7 +62,6 @@ public class SRTProjectMilestoneVO extends BeanDataVO {
 	/**
 	 * @return the projectId
 	 */
-	@Column(name="PROJECT_ID")
 	public String getProjectId() {
 		return projectId;
 	}
@@ -74,15 +69,14 @@ public class SRTProjectMilestoneVO extends BeanDataVO {
 	/**
 	 * @return the milestoneId
 	 */
-	@Column(name="MILESTONE_ID")
+	@Override
 	public String getMilestoneId() {
-		return milestoneId;
+		return super.getMilestoneId();
 	}
 
 	/**
 	 * @return the createDt
 	 */
-	@Column(name="MILESTONE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getMilestoneDt() {
 		return milestoneDt;
 	}
@@ -99,13 +93,6 @@ public class SRTProjectMilestoneVO extends BeanDataVO {
 	 */
 	public void setProjectId(String projectId) {
 		this.projectId = projectId;
-	}
-
-	/**
-	 * @param milestoneId the milestoneId to set.
-	 */
-	public void setMilestoneId(String milestoneId) {
-		this.milestoneId = milestoneId;
 	}
 
 	/**

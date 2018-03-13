@@ -9,10 +9,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.depuysynthes.srt.util.SRTMilestoneUtil;
 import com.depuysynthes.srt.util.SRTUtil;
-import com.depuysynthes.srt.vo.SRTMilestoneRuleVO;
-import com.depuysynthes.srt.vo.SRTMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.siliconmtn.action.ActionException;
@@ -24,6 +21,9 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.workflow.milestones.MilestoneRuleVO;
+import com.siliconmtn.workflow.milestones.MilestoneUtil;
+import com.siliconmtn.workflow.milestones.MilestoneVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
 /****************************************************************************
@@ -71,15 +71,15 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * @param milestoneId
 	 * @param loadRules - Load Rules in addition to Milestone data.
 	 */
-	private List<SRTMilestoneVO> loadMilestoneData(String opCoId, String milestoneId, boolean loadRules) {
-		List<SRTMilestoneVO> milestones = loadMilestones(opCoId, milestoneId);
+	private List<SRTProjectMilestoneVO> loadMilestoneData(String opCoId, String milestoneId, boolean loadRules) {
+		List<SRTProjectMilestoneVO> milestones = loadMilestones(opCoId, milestoneId);
 
 		/*
 		 * If we are loading rules and milestones isn't empty, load Rules
 		 * for each Milestone in the list.
 		 */
 		if(loadRules && !milestones.isEmpty()) {
-			for(SRTMilestoneVO m : milestones) {
+			for(MilestoneVO m : milestones) {
 				loadMilestoneRules(m);
 			}
 		}
@@ -92,9 +92,9 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * @param parameter
 	 * @return
 	 */
-	private void loadMilestoneRules(SRTMilestoneVO milestone) {
+	private void loadMilestoneRules(MilestoneVO milestone) {
 		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
-		milestone.setRules(dbp.executeSelect(loadMilestonRulesSql(), Arrays.asList(milestone.getMilestoneId()), new SRTMilestoneRuleVO()));
+		milestone.setRules(dbp.executeSelect(loadMilestonRulesSql(), Arrays.asList(milestone.getMilestoneId()), new MilestoneRuleVO()));
 	}
 
 	/**
@@ -114,13 +114,13 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * Load Milestones List.
 	 * @return
 	 */
-	private List<SRTMilestoneVO> loadMilestones(String opCoId, String milestoneId) {
+	private List<SRTProjectMilestoneVO> loadMilestones(String opCoId, String milestoneId) {
 		List<Object> vals = new ArrayList<>();
 		vals.add(opCoId);
 		if(!StringUtil.isEmpty(milestoneId)) {
 			vals.add(milestoneId);
 		}
-		return new DBProcessor(dbConn, getCustomSchema()).executeSelect(loadMilestonesSql(!StringUtil.isEmpty(milestoneId)), vals, new SRTMilestoneVO());
+		return new DBProcessor(dbConn, getCustomSchema()).executeSelect(loadMilestonesSql(!StringUtil.isEmpty(milestoneId)), vals, new SRTProjectMilestoneVO());
 	}
 
 	/**
@@ -142,8 +142,8 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 
 		//If we have a milestoneId on the request, save the Milestone.
 		if(req.hasParameter(MILESTONE_ID)) {
-			SRTMilestoneVO milestone = new SRTMilestoneVO(req);
-			milestone.setRules(new IndexBeanDataMapper<SRTMilestoneRuleVO>(new SRTMilestoneRuleVO()).populate(req.getParameterMap()));
+			MilestoneVO milestone = new MilestoneVO(req);
+			milestone.setRules(new IndexBeanDataMapper<MilestoneRuleVO>(new MilestoneRuleVO()).populate(req.getParameterMap()));
 			saveMilestone(milestone);
 		}
 	}
@@ -152,7 +152,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * Save Milestone after Edit.
 	 * @param milestone
 	 */
-	private void saveMilestone(SRTMilestoneVO milestone) {
+	private void saveMilestone(MilestoneVO milestone) {
 		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 
 		/*
@@ -196,7 +196,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * @param milestone
 	 * @throws DatabaseException
 	 */
-	private void addRules(DBProcessor dbp, SRTMilestoneVO milestone) throws DatabaseException {
+	private void addRules(DBProcessor dbp, MilestoneVO milestone) throws DatabaseException {
 		//Ensure MilestoneId is set for all milestone Rules.
 		milestone.getRules().stream().forEach(r -> r.setMilestoneId(milestone.getMilestoneId()));
 
@@ -242,10 +242,10 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		populateMilestones(Arrays.asList(p));
 
 		//Load all Available Milestones for projects under this OpCo with rules.
-		List<SRTMilestoneVO> milestones = loadMilestoneData(p.getOpCoId(), null, true);
+		List<SRTProjectMilestoneVO> milestones = loadMilestoneData(p.getOpCoId(), null, true);
 
 		//Run project through milestone rules.
-		SRTMilestoneUtil.checkGates(p, milestones);
+		new MilestoneUtil<SRTProjectMilestoneVO>().checkGates(p, milestones);
 
 		//Save New Milestones.
 		saveMilestones(p);
@@ -259,7 +259,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	private void saveMilestones(SRTProjectVO p) throws DatabaseException {
 
 		//Filter out new Milestones to save.
-		List<SRTProjectMilestoneVO> newMilestones = p.getMilestones()
+		List<MilestoneVO> newMilestones = p.getMilestones()
 													.values()
 													.stream()
 													.filter(m -> StringUtil.isEmpty(m.getProjectMilestoneXRId()))

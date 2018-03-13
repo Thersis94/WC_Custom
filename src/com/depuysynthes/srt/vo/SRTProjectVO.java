@@ -15,6 +15,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.workflow.milestones.MilestoneIntfc;
 
 /****************************************************************************
  * <b>Title:</b> SRTProjectVO.java
@@ -28,7 +29,7 @@ import com.siliconmtn.util.StringUtil;
  * @since Feb 5, 2018
  ****************************************************************************/
 @Table(name="DPY_SYN_SRT_PROJECT")
-public class SRTProjectVO extends BeanDataVO {
+public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjectMilestoneVO> {
 
 	/**
 	 *
@@ -723,9 +724,19 @@ public class SRTProjectVO extends BeanDataVO {
 	 * @param milestoneDt - the date the milstone was achieved.
 	 */
 	@BeanSubElement
+	@Override
 	public void addMilestone(SRTProjectMilestoneVO milestone) {
 		if(milestone != null && !StringUtil.isEmpty(milestone.getMilestoneId())) {
+			milestone.setProjectId(projectId);
 			milestones.put(milestone.getMilestoneId(), milestone);
 		}
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.workflow.milestones.MilestoneIntfc#removeMilestone(java.lang.String)
+	 */
+	@Override
+	public void removeMilestone(String milestoneId) {
+		milestones.remove(milestoneId);
 	}
 }

@@ -9,86 +9,88 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.depuysynthes.srt.vo.SRTMilestoneRuleVO;
-import com.depuysynthes.srt.vo.SRTMilestoneVO;
+import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
+import com.siliconmtn.common.constants.Operator;
 import com.siliconmtn.util.Convert;
-import com.smt.sitebuilder.data.vo.GenericQueryVO.Operator;
+import com.siliconmtn.workflow.milestones.MilestoneIntfc;
+import com.siliconmtn.workflow.milestones.MilestoneRuleVO;
+import com.siliconmtn.workflow.milestones.MilestoneUtil;
 
 /****************************************************************************
- * <b>Title:</b> SRTMilestoneTest.java <b>Project:</b> WC_Custom
+ * <b>Title:</b> SRTMilestoneTest.java
+ * <b>Project:</b> WC_Custom
  * <b>Description:</b> Tests that MilestoneUtil is working as intended.
- * <b>Copyright:</b> Copyright (c) 2018 <b>Company:</b> Silicon Mountain
- * Technologies
+ * <b>Copyright:</b> Copyright (c) 2018
+ * <b>Company:</b> Silicon Mountain Technologies
  *
  * @author Billy Larsen
  * @version 3.3.1
  * @since Mar 12, 2018
  ****************************************************************************/
-public class SRTMilestoneTest {
-	private SRTProjectVO p;
-	private List<SRTMilestoneVO> milestones;
-
+public class MilestoneTest {
+	private MilestoneIntfc<SRTProjectMilestoneVO> target;
+	private List<SRTProjectMilestoneVO> milestones;
+	private MilestoneUtil<SRTProjectMilestoneVO> util;
 
 	/**
 	 * @throws java.lang.Exception
 	 */
 	@Before
 	public void setUp() throws Exception {
+		util = new MilestoneUtil<>();
 		buildProjectRecord();
 		buildMilestoneVOs();
 	}
-
 
 	/**
 	 * 
 	 */
 	private void buildProjectRecord() {
-		p = new SRTProjectVO();
+		SRTProjectVO p = new SRTProjectVO();
 		p.setProjectId("Test 1");
 		p.setCreateDt(Convert.getCurrentTimestamp());
 		p.setEngineerId("user");
 		p.setDesignerId("designer");
+		target = p;
 	}
-
 
 	/**
 	 * 
 	 */
 	private void buildMilestoneVOs() {
 		milestones = new ArrayList<>();
-		SRTMilestoneVO m = new SRTMilestoneVO();
+		SRTProjectMilestoneVO m = new SRTProjectMilestoneVO();
 		m.setMilestoneId("PROJECT_START");
-		m.setOpCoId("US_SPINE");
-		SRTMilestoneRuleVO rule1 = new SRTMilestoneRuleVO();
+		m.setOrganizationId("US_SPINE");
+		MilestoneRuleVO rule1 = new MilestoneRuleVO();
 		rule1.setMilestoneRuleId("rule1");
 		rule1.setFieldNm("createDt");
-		rule1.setOperandType(Operator.notEmpty);
+		rule1.setOperandType(Operator.NOT_EMPTY);
 		m.addRule(rule1);
 		milestones.add(m);
 
-		SRTMilestoneVO e = new SRTMilestoneVO();
+		SRTProjectMilestoneVO e = new SRTProjectMilestoneVO();
 		e.setMilestoneId("ENGINEER_START");
-		e.setOpCoId("US_SPINE");
+		e.setOrganizationId("US_SPINE");
 		e.setParentId("PROJECT_START");
-		SRTMilestoneRuleVO rule2 = new SRTMilestoneRuleVO();
+		MilestoneRuleVO rule2 = new MilestoneRuleVO();
 		rule2.setMilestoneRuleId("rule2");
 		rule2.setFieldNm("engineerId");
-		rule2.setOperandType(Operator.notEmpty);
+		rule2.setOperandType(Operator.NOT_EMPTY);
 		e.addRule(rule2);
 		milestones.add(e);
 
-		SRTMilestoneVO d = new SRTMilestoneVO();
+		SRTProjectMilestoneVO d = new SRTProjectMilestoneVO();
 		d.setMilestoneId("DESIGNER_START");
-		d.setOpCoId("US_SPINE");
+		d.setOrganizationId("US_SPINE");
 		d.setParentId("ENGINEER_START");
-		SRTMilestoneRuleVO rule3 = new SRTMilestoneRuleVO();
+		MilestoneRuleVO rule3 = new MilestoneRuleVO();
 		rule3.setMilestoneRuleId("rule3");
 		rule3.setFieldNm("designerId");
-		rule3.setOperandType(Operator.notEmpty);
+		rule3.setOperandType(Operator.NOT_EMPTY);
 		d.addRule(rule3);
 		milestones.add(e);
-
 	}
 
 
@@ -99,24 +101,21 @@ public class SRTMilestoneTest {
 	public void tearDown() throws Exception {
 	}
 
-
 	@Test
 	public void testStart() {
-		SRTMilestoneUtil.checkGates(p, milestones);
-		assertTrue(p.getMilestone("PROJECT_START") != null);
+		util.checkGates(target, milestones);
+		assertTrue(target.getMilestone("PROJECT_START") != null);
 	}
-
 
 	@Test
 	public void testEngineer() {
-		SRTMilestoneUtil.checkGates(p, milestones);
-		assertTrue(p.getMilestone("ENGINEER_START") != null);
+		util.checkGates(target, milestones);
+		assertTrue(target.getMilestone("ENGINEER_START") != null);
 	}
-
 
 	@Test
 	public void testDesigner() {
-		SRTMilestoneUtil.checkGates(p, milestones);
-		assertTrue(p.getMilestone("DESIGNER_START") == null);
+		util.checkGates(target, milestones);
+		assertTrue(target.getMilestone("DESIGNER_START") == null);
 	}
 }
