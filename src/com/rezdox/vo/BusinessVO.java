@@ -39,6 +39,8 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private String adFileUrl;
 	private int privacyFlag;
 	private transient Map<String, Object> attributes;
+	private String subCategoryCd;
+	private String categoryCd;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -252,6 +254,36 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setSummaryText(String summaryText) {
 		attributes.put(SUMMARY, summaryText);
+	}
+
+	/**
+	 * @return the subCategoryCd
+	 */
+	@Column(name="sub_category_cd", isReadOnly=true)
+	public String getSubCategoryCd() {
+		return subCategoryCd;
+	}
+
+	/**
+	 * @param subCategoryCd the subCategoryCd to set
+	 */
+	public void setSubCategoryCd(String subCategoryCd) {
+		this.subCategoryCd = subCategoryCd;
+	}
+
+	/**
+	 * @return the categoryCd
+	 */
+	@Column(name="category_cd", isReadOnly=true)
+	public String getCategoryCd() {
+		return categoryCd;
+	}
+
+	/**
+	 * @param categoryCd the categoryCd to set
+	 */
+	public void setCategoryCd(String categoryCd) {
+		this.categoryCd = categoryCd;
 	}
 
 	/**

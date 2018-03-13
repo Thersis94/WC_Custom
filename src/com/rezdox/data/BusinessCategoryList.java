@@ -6,10 +6,10 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.list.ListDataVO;
 
 
 /****************************************************************************
@@ -43,19 +43,20 @@ public class BusinessCategoryList extends SimpleActionAdapter {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select business_category_cd as value_txt, category_nm as label_txt from ");
+		sql.append("select business_category_cd as key, category_nm as value from ");
 		sql.append(schema).append("rezdox_business_category ");
 		
 		if(!StringUtil.isEmpty(req.getParameter("businessCat"))) {
 			sql.append("where parent_cd = ? ");
 			params.add(req.getParameter("businessCat"));
+			log.debug("Business Cat: " + req.getParameter("businessCat"));
 		}
 		
 		sql.append("order by business_category_cd ");
 		
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		List<ListDataVO> data = db.executeSelect(sql.toString(), params, new ListDataVO(),"value_txt");
+		List<GenericVO> data = db.executeSelect(sql.toString(), params, new GenericVO());
 		log.debug("sql " + sql.toString() + " params " + params + " size " + data.size());
 		putModuleData(data, data.size(),false);
 	}
