@@ -49,7 +49,6 @@ public class BusinessCategoryList extends SimpleActionAdapter {
 		if(!StringUtil.isEmpty(req.getParameter("businessCat"))) {
 			sql.append("where parent_cd = ? ");
 			params.add(req.getParameter("businessCat"));
-			log.debug("Business Cat: " + req.getParameter("businessCat"));
 		}
 		
 		sql.append("order by business_category_cd ");
