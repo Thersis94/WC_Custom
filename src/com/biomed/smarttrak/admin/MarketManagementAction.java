@@ -26,6 +26,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -456,7 +457,7 @@ public class MarketManagementAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 		market = (MarketVO) db.executeSelect(sql.toString(), params, new MarketVO()).get(0);
 		req.getSession().setAttribute("marketName", market.getMarketName());
-		req.getSession().setAttribute("marketShortName", market.getShortName());
+		req.getSession().setAttribute("marketNameParam", StringEncoder.urlEncode(market.getMarketName()));
 
 		// Get specifics on market details
 		addAttributes(market, req.getParameter("typeCd"));

@@ -25,6 +25,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -534,7 +535,7 @@ public class CompanyManagementAction extends ManagementAction {
 			req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		}
 		req.getSession().setAttribute("companyName", company.getCompanyName());
-		req.getSession().setAttribute("companyShortName", company.getShortName());
+		req.getSession().setAttribute("companyNameParam", StringEncoder.urlEncode(company.getCompanyName()));
 
 		addInvestors(company);
 
