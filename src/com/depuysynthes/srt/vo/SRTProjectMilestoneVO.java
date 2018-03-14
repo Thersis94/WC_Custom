@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.workflow.milestones.MilestoneVO;
 
 /****************************************************************************
@@ -59,13 +60,15 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 	 * @throws SQLException
 	 */
 	private void setData(ResultSet rs) throws SQLException {
+		DBUtil util = new DBUtil();
 		setMilestoneId(rs.getString("MILESTONE_ID"));
-		setOrganizationId(rs.getString("OP_CO_ID"));
-		setParentId(rs.getString("PARENT_ID"));
-		setCreateDt(rs.getDate("CREATE_DT"));
-		setProjectId(rs.getString("PROJECT_ID"));
-		setProjectMilestoneXRId(rs.getString("PROJ_MILESTONE_XR_ID"));
-		setMilestoneDt(rs.getDate("MILESTONE_DT"));
+		setOrganizationId(util.getStringVal("OP_CO_ID", rs));
+		setParentId(util.getStringVal("PARENT_ID", rs));
+		setCreateDt(util.getDateVal("CREATE_DT", rs));
+		setProjectId(util.getStringVal("PROJECT_ID", rs));
+		setMilestoneNm(util.getStringVal("MILESTONE_NM", rs));
+		setProjectMilestoneXRId(util.getStringVal("PROJ_MILESTONE_XR_ID", rs));
+		setMilestoneDt(util.getDateVal("MILESTONE_DT", rs));
 	}
 
 	/**

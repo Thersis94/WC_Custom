@@ -11,14 +11,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.util.SRTUtil.SrtAdmin;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.parser.IndexBeanDataMapper;
+import com.siliconmtn.data.parser.PrefixBeanDataMapper;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.util.ClassUtils;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -26,6 +28,7 @@ import com.siliconmtn.workflow.milestones.MilestoneRuleVO;
 import com.siliconmtn.workflow.milestones.MilestoneUtil;
 import com.siliconmtn.workflow.milestones.MilestoneVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 
 /****************************************************************************
  * <b>Title:</b> MilestoneAction.java
@@ -54,13 +57,21 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if(req.hasParameter("json")) {
+		if(req.hasParameter("json") || req.hasParameter(MILESTONE_ID)) {
 
 			/*
 			 * Load Milestone Data.
 			 * Only load rules if we are looking at a specific milestone.
 			 */
-			loadMilestoneData(SRTUtil.getOpCO(req), req.getParameter(MILESTONE_ID), req.hasParameter(MILESTONE_ID));
+			String opCoId = SRTUtil.getOpCO(req);
+			List<SRTProjectMilestoneVO> milestones = loadMilestoneData(opCoId, req.getParameter(MILESTONE_ID), req.hasParameter(MILESTONE_ID));
+
+			if(req.hasParameter(MILESTONE_ID)) {
+				req.setAttribute("parents", loadMilestoneData(opCoId, null, false));
+				req.setAttribute("fieldNames", ClassUtils.getComparableFieldNames(SRTProjectVO.class));
+			}
+
+			putModuleData(milestones, milestones.size(), false);
 		}
 	}
 
@@ -116,7 +127,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	private String loadMilestoneRulesSql(int count) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
-		sql.append("DPY_SYN_SRT_MILESTONE_REQ_RULE ").append(DBUtil.WHERE_CLAUSE);
+		sql.append("DPY_SYN_SRT_MILESTONE_RULE ").append(DBUtil.WHERE_CLAUSE);
 		sql.append(" MILESTONE_ID in (");
 		DBUtil.preparedStatmentQuestion(count, sql);
 		sql.append(")");
@@ -157,20 +168,21 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("DPY_SYN_SRT_MILESTONE ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("OP_CO_ID = ? ");
 		if(hasId) {
-			sql.append("and MILE_STONE_ID = ? ");
+			sql.append("and MILESTONE_ID = ? ");
 		}
 		return sql.toString();
 	}
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 		//If we have a milestoneId on the request, save the Milestone.
-		if(req.hasParameter(MILESTONE_ID)) {
-			MilestoneVO milestone = new MilestoneVO(req);
-			milestone.setRules(new IndexBeanDataMapper<MilestoneRuleVO>(new MilestoneRuleVO()).populate(req.getParameterMap()));
-			saveMilestone(milestone);
-		}
+		MilestoneVO milestone = new MilestoneVO(req);
+		milestone.setRules(new PrefixBeanDataMapper<MilestoneRuleVO>(new MilestoneRuleVO()).populate(req.getParameterMap(), "fieldNm"));
+		saveMilestone(milestone);
+
+		sbUtil.moduleRedirect(req, msg, SrtAdmin.MILESTONE.getUrlPath());
 	}
 
 	/**
@@ -230,7 +242,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 			int i = 1;
 			ps.setString(i++, milestone.getMilestoneNm());
 			ps.setString(i++, milestone.getOrganizationId());
-			ps.setString(i++, milestone.getParentId());
+			ps.setString(i++, StringUtil.checkVal(milestone.getParentId(), null));
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setString(i++, milestone.getMilestoneId());
 			ps.executeUpdate();
@@ -253,7 +265,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		} else {
 			sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema());
 			sql.append("DPY_SYN_SRT_MILESTONE set MILESTONE_NM = ?, ");
-			sql.append("OP_CO_ID = ?, PARENT_ID = ? UPDATE_DT = ? ");
+			sql.append("OP_CO_ID = ?, PARENT_ID = ?, UPDATE_DT = ? ");
 			sql.append("where MILESTONE_ID = ?");
 		}
 		return sql.toString();
@@ -281,7 +293,9 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 				ps.setString(i++, r.getFieldVal());
 				ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 				ps.setString(i++, uuid.getUUID());
+				ps.addBatch();
 			}
+			ps.executeBatch();
 		}
 	}
 
@@ -294,7 +308,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INSERT_CLAUSE).append(getCustomSchema());
 		sql.append("DPY_SYN_SRT_MILESTONE_RULE (MILESTONE_ID, FIELD_NM, ");
 		sql.append("OPERAND_TYPE, FIELD_VAL, CREATE_DT, MILESTONE_RULE_ID) ");
-		sql.append("values (?,?,?,?,?)");
+		sql.append("values (?,?,?,?,?,?)");
 
 		return sql.toString();
 	}
