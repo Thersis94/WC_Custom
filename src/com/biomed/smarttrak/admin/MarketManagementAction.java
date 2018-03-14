@@ -161,6 +161,10 @@ public class MarketManagementAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	protected void retrievePreview(ActionRequest req) throws ActionException {
+		//set data for downstream
+		setAttribute(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
+		setAttribute(Constants.PAGE_PREVIEW, true);
+		
 		MarketAction ma = new MarketAction(actionInit);
 		ma.setDBConnection(dbConn);
 		ma.setAttributes(attributes);

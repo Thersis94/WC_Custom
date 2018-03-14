@@ -15,6 +15,7 @@ import org.apache.log4j.Logger;
 
 //WC Custom
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.siliconmtn.db.pool.SMTDBConnection;
 //SMT base libs
 import com.siliconmtn.util.StringUtil;
 //WebCrescendo
@@ -34,7 +35,7 @@ import com.smt.sitebuilder.common.SiteVO;
 
 public class BiomedLinkCheckerUtil {
 	private static final Logger log = Logger.getLogger(BiomedLinkCheckerUtil.class.getName());	
-	private Connection dbConn;
+	private SMTDBConnection dbConn;
 	private static final String ANCHOR_END_REGEX = ".*?['\"]>";
 	private static final String QS_PARAM_TOKEN = "/qs/";
 	private static final String MANAGE_PATH = "/manage";
@@ -42,12 +43,22 @@ public class BiomedLinkCheckerUtil {
 	private List<String> siteAliases;
 	
 	/**
+	 * Overloaded constructor that takes a Connection object
+	 * @param conn
+	 * @param site
+	 */
+	public BiomedLinkCheckerUtil(Connection conn, SiteVO site) {
+		this(new SMTDBConnection(conn), site);
+	}
+	
+	/**
 	 * Constructor to initialize class
 	 * @param dbConn
 	 * @param site
 	 */
-	public BiomedLinkCheckerUtil(Connection dbConn, SiteVO site) {
+	public BiomedLinkCheckerUtil(SMTDBConnection dbConn, SiteVO site) {
 		this.dbConn = dbConn;
+		siteAliases = new ArrayList<>(); 
 		
 		//populate list of site domains/aliases
 		loadSiteAliases(site);
@@ -231,6 +242,11 @@ public class BiomedLinkCheckerUtil {
 		boolean sectionFound = false;
 		String tokenMinusEndSlash = "";
 		for(Section section : Section.values()) {
+			/*skip over sections that don't have 'tools' in path when the link does. Prevent links that point to manage 
+			 *sub-pages from being transpose to their manage parent pages incorrectly */
+			if(publicLink.contains("tools") && !section.getURLToken().contains("tools")) { 
+				continue;
+			}
 			tokenMinusEndSlash = section.getURLToken().substring(0, section.getURLToken().lastIndexOf('/'));
 			if(publicLink.indexOf(tokenMinusEndSlash) > -1) {
 				sectionFound = true;
@@ -243,6 +259,7 @@ public class BiomedLinkCheckerUtil {
 					int startIndex = publicLink.indexOf(tokenMinusEndSlash) + tokenMinusEndSlash.length();
 					manageLink.append(publicLink.substring(startIndex, endIndex));
 				}
+				break;
 			}
 		}
 		return sectionFound;
@@ -321,6 +338,7 @@ public class BiomedLinkCheckerUtil {
 	protected String buildAbsolutePattern() {
 		StringBuilder absolutePattern = new StringBuilder(200);
 		String protocolRegex = "((http|https)://)*?";
+		String binaryRegex = "(?!(/binary|/secBinary))"; //don't worry about binary path links
 		
 		//compose regex group of pipe delimited absolute links based on the sites' aliases.
 		int count = 0;
@@ -330,7 +348,7 @@ public class BiomedLinkCheckerUtil {
 			absolutePattern.append(alias);
 			count++;
 		}
-		absolutePattern.append(")").append(ANCHOR_END_REGEX);
+		absolutePattern.append(")").append(binaryRegex).append(ANCHOR_END_REGEX);
 		return absolutePattern.toString();
 	}
 	
@@ -340,7 +358,10 @@ public class BiomedLinkCheckerUtil {
 	 * @return
 	 */
 	protected void loadSiteAliases(SiteVO site){
-		siteAliases = new ArrayList<>(); 
+		if(site == null) {
+			log.error("Site data is null, cannot load aliases");
+			return;
+		}
 		String siteId = site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId(); 
 		
 		//execute query and populate list

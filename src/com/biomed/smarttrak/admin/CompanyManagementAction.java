@@ -188,6 +188,10 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	protected void retrievePreview(ActionRequest req) throws ActionException {
+		//set data for downstream
+		setAttribute(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
+		setAttribute(Constants.PAGE_PREVIEW, true);
+		
 		SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 		CompanyAction ca = new CompanyAction(actionInit);
 		ca.setDBConnection(dbConn);
