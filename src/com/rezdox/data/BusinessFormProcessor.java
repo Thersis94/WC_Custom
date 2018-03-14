@@ -43,9 +43,9 @@ public class BusinessFormProcessor extends FormDataProcessor {
 	 */
 	public enum BusinessField {
 		BUSINESS_NAME("businessName"), BUSINESS_ADDRESS("address"), BUSINESS_ADDRESS_2("address2"), BUSINESS_CITY("city"),
-		BUSINESS_STATE("state"), BUSINESS_ZIP("zipCode"), BUSINESS_COUNTRY("country"), BUSINESS_MAIN_PHONE("mainPhoneText"),
-		BUSINESS_ALT_PHONE("altPhoneText"), BUSINESS_EMAIL("emailAddressText"), BUSINESS_WEBSITE("websiteUrl"),
-		BUSINESS_PRIVACY_FLAG("privacyFlag");
+		BUSINESS_STATE("state"), BUSINESS_ZIP("zipCode"), BUSINESS_COUNTRY("country"), BUSINESS_PHONE_1("mainPhoneText"),
+		BUSINESS_PHONE_2("altPhoneText"), BUSINESS_EMAIL_1("emailAddressText"), BUSINESS_WEBSITE("websiteUrl"),
+		BUSINESS_PRIVACY_FLAG("privacyFlag"), BUSINESS_CATEGORY("categoryCd"), BUSINESS_SUB_CATEGORY("subCategoryCd");
 
 		private String reqParam;
 		

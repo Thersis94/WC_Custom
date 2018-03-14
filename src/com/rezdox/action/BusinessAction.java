@@ -59,6 +59,21 @@ public class BusinessAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Business status
+	 */
+	public enum BusinessStatus {
+		INACTIVE(0), ACTIVE(1), PENDING(2);
+
+		private int status;
+		
+		private BusinessStatus(int status) {
+			this.status = status;
+		}
+		
+		public int getStatus() { return status; }
+	}
+	
+	/**
 	 * Required attribute fields in the attributes table
 	 */
 	public enum BusinessRequiredAttribute {
@@ -155,9 +170,9 @@ public class BusinessAction extends SBActionAdapter {
 		sql.append("select b.business_id, business_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, ");
 		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, email_address_txt, website_url, photo_url, ad_file_url, ");
 		sql.append("privacy_flg, bsc.business_category_cd as sub_category_cd, bc.business_category_cd as category_cd, b.create_dt, ");
-		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, summary_txt ");
+		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, summary_txt, m.status_flg ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b inner join ");
-		sql.append(schema).append("rezdox_business_member_xr m on b.business_id = m.business_id ");
+		sql.append(schema).append("rezdox_business_member_xr m on b.business_id = m.business_id and m.status_flg > ? ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" (SELECT * FROM crosstab('SELECT business_id, slug_txt, value_txt FROM ").append(schema).append("rezdox_business_attribute ORDER BY 1', ");
 		sql.append("'SELECT DISTINCT slug_txt FROM ").append(schema).append("rezdox_business_attribute WHERE slug_txt in (''BUSINESS_SUMMARY'') ORDER BY 1') ");
 		sql.append("AS (business_id text, summary_txt text) ");
@@ -168,6 +183,7 @@ public class BusinessAction extends SBActionAdapter {
 		sql.append("where member_id = ? ");
 		
 		List<Object> params = new ArrayList<>();
+		params.add(BusinessStatus.INACTIVE.getStatus());
 		params.add(member.getMemberId());
 		
 		// Return only a specific business if selected
@@ -274,8 +290,9 @@ public class BusinessAction extends SBActionAdapter {
 			throw new DatabaseException(e);
 		}
 		
-		// Save the Business/Member XR
+		// Save the Business/Member XR and Category XR
 		saveBusinessMemberXR(req, newBusiness);
+		saveBusinessCategoryXR(req);
 		
 		// Return the data
 		return business;
@@ -306,11 +323,56 @@ public class BusinessAction extends SBActionAdapter {
 			ps.setString(1, new UUIDGenerator().getUUID());
 			ps.setString(2, member.getMemberId());
 			ps.setString(3, req.getParameter(BusinessAction.REQ_BUSINESS_ID));
-			ps.setInt(4, 2); // Newly added businesses are always pending status
+			ps.setInt(4, BusinessStatus.PENDING.getStatus()); // Newly added businesses are always pending status, until admin reviews
 			ps.setTimestamp(5, Convert.getCurrentTimestamp());
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			log.error("Could not save RezDox Member/Business XR ", sqle);
+			throw new DatabaseException(sqle);
+		}
+	}
+	
+	/**
+	 * Save the XR record between the business and business categories
+	 * 
+	 * @throws DatabaseException
+	 */
+	protected void saveBusinessCategoryXR(ActionRequest req) throws DatabaseException {
+		String schema = getCustomSchema();
+		deleteBusinessCategoryXR(req);
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.INSERT_CLAUSE).append(schema).append("rezdox_business_category_xr (business_category_xr_id, ");
+		sql.append("business_id, business_category_cd, create_dt) ");
+		sql.append("values (?,?,?,?)");
+		log.debug(sql);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, new UUIDGenerator().getUUID());
+			ps.setString(2, req.getParameter(BusinessAction.REQ_BUSINESS_ID));
+			ps.setString(3, req.getParameter("subCategoryCd"));
+			ps.setTimestamp(4, Convert.getCurrentTimestamp());
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			throw new DatabaseException(sqle);
+		}
+	}
+	
+	/**
+	 * Remove the XR record(s) between the business and business categories
+	 * 
+	 * @throws DatabaseException
+	 */
+	private void deleteBusinessCategoryXR(ActionRequest req) throws DatabaseException {
+		String schema = getCustomSchema();
+		StringBuilder sqlDelete = new StringBuilder(100);
+		sqlDelete.append(DBUtil.DELETE_CLAUSE).append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business_category_xr ");
+		sqlDelete.append(DBUtil.WHERE_CLAUSE).append("business_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sqlDelete.toString())) {
+			ps.setString(1, req.getParameter(BusinessAction.REQ_BUSINESS_ID));
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
 			throw new DatabaseException(sqle);
 		}
 	}

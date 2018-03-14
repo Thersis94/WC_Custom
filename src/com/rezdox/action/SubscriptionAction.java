@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 
+import com.rezdox.action.BusinessAction.BusinessStatus;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO;
 import com.rezdox.vo.SubscriptionVO;
@@ -178,11 +179,12 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select count(business_id) as usage_qty from ").append(schema);
-		sql.append("rezdox_business_member_xr where member_id = ? and status_flg = 1 ");
+		sql.append("rezdox_business_member_xr where member_id = ? and status_flg > ? ");
 		
 		int usageQty = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, memberId);
+			ps.setInt(2, BusinessStatus.INACTIVE.getStatus());
 			
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {

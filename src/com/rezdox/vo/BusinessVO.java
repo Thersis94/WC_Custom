@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.rezdox.action.BusinessAction.BusinessStatus;
 import com.siliconmtn.action.ActionRequest;
 // SMTBaseLibs
 import com.siliconmtn.db.orm.Column;
@@ -41,6 +42,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private transient Map<String, Object> attributes;
 	private String subCategoryCd;
 	private String categoryCd;
+	private BusinessStatus status;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -284,6 +286,39 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setCategoryCd(String categoryCd) {
 		this.categoryCd = categoryCd;
+	}
+
+	/**
+	 * @return the status
+	 */
+	public BusinessStatus getStatus() {
+		return status;
+	}
+
+	/**
+	 * @param status the status to set
+	 */
+	public void setStatus(BusinessStatus status) {
+		this.status = status;
+	}
+
+	/**
+	 * @return the statusCode
+	 */
+	@Column(name="status_flg", isReadOnly=true)
+	public int getStatusCode() {
+		return status.getStatus();
+	}
+
+	/**
+	 * @param statusCode the statusCode to set
+	 */
+	public void setStatusCode(int statusCode) {
+		for (BusinessStatus businessStatus : BusinessStatus.values()) {
+			if (businessStatus.getStatus() == statusCode) {
+				this.status = businessStatus;
+			}
+		}
 	}
 
 	/**
