@@ -322,7 +322,7 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	/**
 	 * @param attributes the attributes to set.
 	 */
-	public void getAttributes(Map<String, String> attributes) {
+	public void setAttributes(Map<String, String> attributes) {
 		this.attributes = attributes;
 	}
 
