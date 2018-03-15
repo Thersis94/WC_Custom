@@ -10,6 +10,7 @@ import java.util.Map;
 import com.depuysynthes.srt.SRTMasterRecordAction;
 import com.depuysynthes.srt.SRTProjectAction;
 import com.depuysynthes.srt.vo.SRTFileVO;
+import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
@@ -118,23 +119,30 @@ public class ProjectDataProcessor extends FormDataProcessor {
 			}
 		}
 
-		// Get the residence data
+		// Get the project data
 		SRTProjectVO project = new SRTProjectVO(req);
 
-		// Save the residence record
+		String [] masterRecordIds = req.getParameterValues(SRTMasterRecordAction.SRT_MASTER_RECORD_ID);
+
+		for(String masterRecordId : masterRecordIds) {
+			project.addMasterRecord(new SRTMasterRecordVO(masterRecordId));
+		}
+
+		// Save the project record
+		saveProjectRecord(project);
+	}
+
+	public void saveProjectRecord(SRTProjectVO project) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
 			dbp.save(project);
-			data.setFormSubmittalId(project.getProjectId());
 			req.setParameter(SRTProjectAction.SRT_PROJECT_ID, project.getProjectId());
 
 			processMasterRecordXR(project);
 		} catch(Exception e) {
 			log.error("Could not save SRT Request", e);
 		}
-
 	}
-
 	/**
 	 * Process MasterRecordIds on request and add them as Master Record
 	 * Project Xr Records.
@@ -181,14 +189,13 @@ public class ProjectDataProcessor extends FormDataProcessor {
 	 * @param project
 	 */
 	private void saveMasterRecordXRs(SRTProjectVO project) {
-		String [] masterRecordIds = req.getParameterValues(SRTMasterRecordAction.SRT_MASTER_RECORD_ID);
 		try(PreparedStatement ps = dbConn.prepareStatement(buildMasterRecordXrInsertSql())) {
 			int i;
 			UUIDGenerator uuid = new UUIDGenerator();
-			for(String masterRecordId : masterRecordIds) {
+			for(SRTMasterRecordVO mrv : project.getMasterRecords()) {
 				i = 1;
 				ps.setString(i++, uuid.getUUID());
-				ps.setString(i++, masterRecordId);
+				ps.setString(i++, mrv.getMasterRecordId());
 				ps.setString(i++, project.getProjectId());
 				ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 				ps.addBatch();

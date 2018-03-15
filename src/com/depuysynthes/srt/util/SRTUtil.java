@@ -29,11 +29,18 @@ public class SRTUtil {
 	public static final String PUBLIC_SITE_ID = "DPY_SYN_HUDDLE_2";
 	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
 	public static final String HOMEPAGE_REGISTER_FIELD_ID = null;
-
+	public static final String adminPath = "/manage";
 	public enum SrtPage {MASTER_RECORD("/master-record"), PROJECT("/projects"), REQUEST("/order-online");
 		private String urlPath;
 		private SrtPage(String urlPath) {
 			this.urlPath = urlPath;
+		}
+		public String getUrlPath() {return urlPath;}
+	}
+	public enum SrtAdmin {MILESTONE("/milestones");
+		private String urlPath;
+		private SrtAdmin(String urlPath) {
+			this.urlPath = StringUtil.join(adminPath, urlPath);
 		}
 		public String getUrlPath() {return urlPath;}
 	}

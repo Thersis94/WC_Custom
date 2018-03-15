@@ -82,10 +82,12 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	public SRTProjectVO(ActionRequest req) {
+		this();
 		populateData(req);
 	}
 
 	public SRTProjectVO(ResultSet rs) {
+		this();
 		populateData(rs);
 	}
 
@@ -676,7 +678,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	/**
 	 * @param masterRecords the masterRecords to set.
 	 */
-	public void setMasterRecord(List<SRTMasterRecordVO> masterRecords) {
+	public void setMasterRecords(List<SRTMasterRecordVO> masterRecords) {
 		this.masterRecords = masterRecords;
 	}
 
@@ -685,7 +687,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	 */
 	@BeanSubElement
 	public void addMasterRecord(SRTMasterRecordVO masterRecord) {
-		if(masterRecord != null && !StringUtil.isEmpty(masterRecord.getPartNo())) {
+		if(masterRecord != null && !StringUtil.isEmpty(masterRecord.getMasterRecordId())) {
 			masterRecords.add(masterRecord);
 		}
 	}

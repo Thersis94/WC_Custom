@@ -20,6 +20,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
@@ -54,28 +55,77 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	}
 
 	@Override
+	public void copy(ActionRequest req) throws ActionException {
+		if(req.hasParameter(SRT_MASTER_RECORD_ID)) {
+			GridDataVO<SRTMasterRecordVO> record = loadMasterRecordData(req);
+			if(!record.getRowData().isEmpty()) {
+
+				//Get first record available.
+				SRTMasterRecordVO r = record.getRowData().get(0);
+
+				//TODO - Get feedback on what fields need reset on a copy.
+				//Wipe out Master Record Id to ensure Copy
+				r.setMasterRecordId(null);
+
+				//Wipe out Part No so new one is created
+				r.setPartNo("replaceMe");
+
+				//Update title Text
+				r.setTitleTxt(StringUtil.join(r.getTitleTxt(), " (copy)"));
+
+				//Get a MasterRecordDataProcessor for Saving
+				MasterRecordDataProcessor mrdp = new MasterRecordDataProcessor(dbConn, attributes, req);
+
+				//Save
+				try {
+					mrdp.saveMasterRecordData(r);
+				} catch (DatabaseException e) {
+					log.error("Error Copying Record", e);
+				}
+			}
+		}
+	}
+
+
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter(SRT_MASTER_RECORD_ID) || req.hasParameter("json")) {
-			GridDataVO<SRTMasterRecordVO> masterRecords = loadMasterRecords(req);
-
-			/*
-			 * If masterRecordId is present, Load Data from Form Retrieval,
-			 * Else list SRTMasterRecordVOs for Tables.
-			 */
-			if(req.hasParameter(SRT_MASTER_RECORD_ID)) {
-
-				//Load Form Data.
-				loadDataFromForms(req);
-
-				//Load Map of Attributes.
-				Map<String, String> masterRecordAttrs = loadRecordAttributes(req.getParameter(SRT_MASTER_RECORD_ID), SRTUtil.getOpCO(req));
-
-				//Store map of attributes on the request.
-				req.setAttribute("masterRecordAttrs", masterRecordAttrs);
-			}
+			GridDataVO<SRTMasterRecordVO> masterRecords = loadMasterRecordData(req);
 
 			putModuleData(masterRecords.getRowData(), masterRecords.getTotal(), false);
 		}
+	}
+
+	/**
+	 * Load Master Record Data.
+	 * @param req
+	 * @return
+	 */
+	private GridDataVO<SRTMasterRecordVO> loadMasterRecordData(ActionRequest req) {
+		GridDataVO<SRTMasterRecordVO> masterRecords = loadMasterRecords(req);
+
+		/*
+		 * If masterRecordId is present, Load Data from Form Retrieval,
+		 * Else list SRTMasterRecordVOs for Tables.
+		 */
+		if(req.hasParameter(SRT_MASTER_RECORD_ID)) {
+
+			//Load Form Data.
+			loadDataFromForms(req);
+
+			//Load Map of Attributes.
+			Map<String, String> masterRecordAttrs = loadRecordAttributes(req.getParameter(SRT_MASTER_RECORD_ID), SRTUtil.getOpCO(req));
+
+			//Ensure MasterRecordAttributes are set on the VO.
+			if(!masterRecords.getRowData().isEmpty()) {
+				masterRecords.getRowData().get(0).setAttributes(masterRecordAttrs);
+			}
+
+			//Store map of attributes on the request.
+			req.setAttribute("masterRecordAttrs", masterRecordAttrs);
+		}
+
+		return masterRecords;
 	}
 
 	/**
@@ -197,15 +247,14 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
-		//Place ActionInit on the Attributes map for the Data Save Handler.
-		attributes.put(Constants.ACTION_DATA, actionInit);
 
-		//Call DataManagerUtil to save the form.
-		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, MasterRecordDataProcessor.class);
-
+		//Check if we're doing a copy or regular save.
+		if(req.hasParameter("isCopy")) {
+			copy(req);
+		} else {
+			saveMasterRecord(req);
+		}
 		/*
 		 * If this is an ajax call, return the MasterRecord we worked on.
 		 * Otherwise this is a standard edit, redirect.
@@ -216,6 +265,21 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 			//Redirect the User.
 			sbUtil.moduleRedirect(req, msg, SrtPage.MASTER_RECORD.getUrlPath());
 		}
+	}
+
+	/**
+	 * Saves Master Record Data.
+	 * @param req
+	 */
+	private void saveMasterRecord(ActionRequest req) {
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
+		//Place ActionInit on the Attributes map for the Data Save Handler.
+		attributes.put(Constants.ACTION_DATA, actionInit);
+
+		//Call DataManagerUtil to save the form.
+		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, MasterRecordDataProcessor.class);
+
 	}
 
 	/**

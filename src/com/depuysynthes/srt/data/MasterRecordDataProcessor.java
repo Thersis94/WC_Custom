@@ -122,22 +122,35 @@ public class MasterRecordDataProcessor extends AbstractDataProcessor {
 		// Build the Master Record VO from request.
 		SRTMasterRecordVO mrv = new SRTMasterRecordVO(req);
 
+		//Load Attribute from Db.
+		List<String> attrs = loadAttributesList();
+
+		//Process Attributes off the DataMap and store on MasterRecordVO.
+		matchAttrs(attrs, mrv, data);
+
+		saveMasterRecordData(mrv);
+
+		log.debug("Process Master Record");
+	}
+
+	/*
+	 * Controls saving an SRTMasterRecordVO.  Can be called externally as
+	 * a single point of execution for Saving.
+	 */
+	public void saveMasterRecordData(SRTMasterRecordVO mrv) throws DatabaseException {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
 			dbp.save(mrv);
-			data.setFormSubmittalId(mrv.getMasterRecordId());
 			req.setParameter(SRTMasterRecordAction.SRT_MASTER_RECORD_ID, mrv.getMasterRecordId());
 
 			//Process Master Record Attributes
-			processAttributes(mrv, data);
+			processAttributes(mrv);
 
 			//Put Master Record back on request at retrievable location.
 			req.setAttribute(SRTMasterRecordAction.MASTER_RECORD_DATA, mrv);
 		} catch(Exception e) {
 			throw new DatabaseException(e);
 		}
-
-		log.debug("Process Master Record");
 	}
 
 	/**
@@ -145,11 +158,7 @@ public class MasterRecordDataProcessor extends AbstractDataProcessor {
 	 * @param mrv
 	 * @param data
 	 */
-	private void processAttributes(SRTMasterRecordVO mrv, FormTransactionVO data ) {
-		List<String> attrs = loadAttributesList();
-
-		matchAttrs(attrs, mrv, data);
-
+	private void processAttributes(SRTMasterRecordVO mrv) {
 		flushAttrs(mrv);
 
 		saveAttrs(mrv);
