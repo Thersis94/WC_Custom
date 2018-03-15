@@ -18,3 +18,7 @@ update custom.rezdox_residence_attribute set slug_txt = 'bedrooms' where slug_tx
 update custom.rezdox_residence_attribute set slug_txt = 'bathrooms' where slug_txt = 'RESIDENCE_BATHS';
 update custom.rezdox_residence_attribute set slug_txt = 'finishedSqFt' where slug_txt = 'RESIDENCE_F_SQFT';
 update custom.rezdox_residence_attribute set slug_txt = 'unfinishedSqFt' where slug_txt = 'RESIDENCE_UF_SQFT';
+
+-- Fix business category names with trailing new lines
+update custom.rezdox_business_category
+set category_nm = regexp_replace(category_nm, '\r|\n', '', 'g');

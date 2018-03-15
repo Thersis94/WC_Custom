@@ -307,7 +307,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	@Column(name="status_flg", isReadOnly=true)
 	public int getStatusCode() {
-		return status.getStatus();
+		return status == null ? 0 : status.getStatus();
 	}
 
 	/**
