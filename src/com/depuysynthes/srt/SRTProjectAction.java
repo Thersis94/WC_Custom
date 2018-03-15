@@ -41,7 +41,7 @@ import com.smt.sitebuilder.data.DataManagerUtil;
  ****************************************************************************/
 public class SRTProjectAction extends SimpleActionAdapter {
 
-	public enum DisplayType {ENGINEERING, POST_ENGINEERING, UNASSIGNED, MY_PROJECTS}
+	public enum DisplayType {ENGINEERING, PRODUCTION, UNASSIGNED, MY_PROJECTS}
 	public static final String SRT_PROJECT_ID = "projectId";
 
 	public SRTProjectAction() {
@@ -68,6 +68,92 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+
+		//Determine what kind of build action is being performed.
+		if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
+			splitProject(req);
+		} else if(req.hasParameter("isCopy") && req.getBooleanParameter("isCopy")) {
+			copy(req);
+		} else {
+			saveProject(req);
+		}
+
+		//Redirect the User.
+		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), SrtPage.PROJECT.getUrlPath());
+	}
+
+	/**
+	 * Splits a Project Record.  If a project has more than one MasterRecords
+	 * tied to it, new Project Records are created for each Master Record.
+	 * @param req
+	 */
+	private void splitProject(ActionRequest req) {
+
+		//Attempt to Load Project Record
+		GridDataVO<SRTProjectVO> project = loadProjects(req);
+
+		//Fast fail if we don't find a project.
+		if(project.getRowData().isEmpty()) {
+			log.debug("No Project Found for provided projectId");
+			return;
+		}
+
+		//Get Actual Project Record and verify we can split it.
+		SRTProjectVO p = project.getRowData().get(0);
+		if(p.getMasterRecords().isEmpty() || p.getMasterRecords().size() < 2) {
+			log.debug("Project has a single MasterRecord and can't be split.");
+			return;
+		}
+
+		//Save off existing Master Records.
+		List<SRTMasterRecordVO> masterRecords = p.getMasterRecords();
+
+		//overwrite current Master Recods with new Empty List.
+		p.setMasterRecords(new ArrayList<>());
+
+		/*
+		 * Update/Clone the Project Record with each MasterRecord.
+		 */
+		boolean autoCommit = true;
+		try {
+			autoCommit = dbConn.getAutoCommit();
+			dbConn.setAutoCommit(false);
+
+			//Get ProjectDataProcessor for Saving Records.
+			ProjectDataProcessor pdp = new ProjectDataProcessor(dbConn, attributes, req);
+
+			for(int i = 0; i < masterRecords.size(); i++) {
+
+				//Add the current Master Record.
+				p.addMasterRecord(masterRecords.get(i));
+
+				//Save the Project.
+				pdp.saveProjectRecord(p);
+
+				//TODO - Do we need to clone Milestone Records/Dates?
+
+				/*
+				 * Wipe out the ProjectId.  Ensure first call is an update
+				 * and all future are inserts.
+				 */
+				p.setProjectId(null);
+				p.setCoProjectId(null);
+				p.setMasterRecords(new ArrayList<>());
+			}
+
+			dbConn.commit();
+			dbConn.setAutoCommit(autoCommit);
+		} catch(Exception e) {
+			log.error(StringUtil.join("Problem Splitting the Project Record: ", req.getParameter(SRT_PROJECT_ID)));
+			DBUtil.setAutoCommit(dbConn, autoCommit);
+		}
+	}
+
+	/**
+	 * Save the Project Record on a Form Submission.
+	 * @param req
+	 */
+	private void saveProject(ActionRequest req) {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 
@@ -76,9 +162,6 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		//Call DataManagerUtil to save the form.
 		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ProjectDataProcessor.class);
-
-		//Redirect the User.
-		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), SrtPage.PROJECT.getUrlPath());
 	}
 
 	/**
@@ -105,9 +188,9 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
 
 		//Holds Engineering, Post Engineering, Unassigned, My Projects.
-		DisplayType displayType = EnumUtil.safeValueOf(DisplayType.class, req.getParameter("displayType"));
+		DisplayType displayType = EnumUtil.safeValueOf(DisplayType.class, req.getParameter("filterType"));
 		if(displayType == null) {
-			displayType = DisplayType.ENGINEERING;
+			displayType = DisplayType.MY_PROJECTS;
 		}
 
 		//We always set Op Co Id off user so they are restricted to their data set.
@@ -264,16 +347,47 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		}
 
 		//If my Project, add roster ID for comparisons.  Else sort by status.
-		else if(DisplayType.MY_PROJECTS.equals(displayType)) {
+		else {
 			SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
 
-			sql.append("and (req.roster_id = ? or engineer_id = ? ");
-			sql.append("or quality_engineer_id = ? or designer_id = ?) ");
-
-			vals.add(roster.getRosterId());
-			vals.add(roster.getRosterId());
-			vals.add(roster.getRosterId());
-			vals.add(roster.getRosterId());
+			/**
+			 * TODO - This is where the large filters against Projects is
+			 * done.  This probably ties into Milestones.  Waiting on
+			 * answers from Mike as to business rules for Engineering vs.
+			 * Production filters.
+			 */
+			switch(displayType) {
+				case ENGINEERING:
+					sql.append("and (engineer_id is not null and buyer_id is null) ");
+					break;
+				case MY_PROJECTS:
+					buildMyProjectsClause(sql, vals, roster);
+					break;
+				case PRODUCTION:
+					sql.append("and buyer_id is not null ");
+					break;
+				case UNASSIGNED:
+					sql.append("and engineer_id is null ");
+					break;
+				default:
+					break;
+			}
 		}
+	}
+
+	/**
+	 * Builds the My Project Clause of the Project Retrieval Query.
+	 * @param sql
+	 * @param vals
+	 * @param roster
+	 */
+	private void buildMyProjectsClause(StringBuilder sql, List<Object> vals, SRTRosterVO roster) {
+		sql.append("and (req.roster_id = ? or engineer_id = ? ");
+		sql.append("or quality_engineer_id = ? or designer_id = ?) ");
+
+		vals.add(roster.getRosterId());
+		vals.add(roster.getRosterId());
+		vals.add(roster.getRosterId());
+		vals.add(roster.getRosterId());
 	}
 }

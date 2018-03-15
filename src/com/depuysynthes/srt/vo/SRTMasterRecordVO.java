@@ -62,6 +62,14 @@ public class SRTMasterRecordVO extends BeanDataVO {
 		this();
 		populateData(rs);
 	}
+
+	/*
+	 * Overloaded constructor for generating MasterRecord placeholders on
+	 * project record.
+	 */
+	public SRTMasterRecordVO(String masterRecordId) {
+		this.masterRecordId = masterRecordId;
+	}
 	/**
 	 * @return the masterRecordId
 	 */
