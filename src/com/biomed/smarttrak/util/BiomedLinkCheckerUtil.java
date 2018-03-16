@@ -18,6 +18,8 @@ import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.siliconmtn.db.pool.SMTDBConnection;
 //SMT base libs
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.http.SMTServletRequest;
+
 //WebCrescendo
 import com.smt.sitebuilder.common.SiteVO;
 
@@ -37,7 +39,7 @@ public class BiomedLinkCheckerUtil {
 	private static final Logger log = Logger.getLogger(BiomedLinkCheckerUtil.class.getName());	
 	private SMTDBConnection dbConn;
 	private static final String ANCHOR_END_REGEX = ".*?['\"]>";
-	private static final String QS_PARAM_TOKEN = "/qs/";
+	private static final String QS_PARAM_TOKEN = "/"+SMTServletRequest.DIRECTORY_KEY+"/";
 	private static final String MANAGE_PATH = "/manage";
 	private String baseDomain;
 	private List<String> siteAliases;
@@ -208,7 +210,7 @@ public class BiomedLinkCheckerUtil {
 			if(log.isTraceEnabled()) log.trace("transposed manage URL: " + manageURL);
 		
 		}catch(Exception e) {//If an error occurs catch it here, and return original url
-			log.error("Error attempting to transpose public link to manage link: " + e);
+			log.error("Error attempting to transpose given URL to manage URL: " + e);
 			return url;
 		}
 		
@@ -259,7 +261,7 @@ public class BiomedLinkCheckerUtil {
 					int startIndex = publicLink.indexOf(tokenMinusEndSlash) + tokenMinusEndSlash.length();
 					manageLink.append(publicLink.substring(startIndex, endIndex));
 				}
-				break;
+				return sectionFound; //return if we find a match
 			}
 		}
 		return sectionFound;
@@ -279,16 +281,16 @@ public class BiomedLinkCheckerUtil {
 		
 		switch(section) {
 			case MARKET : 
-				manageLink.append("&marketId="+paramId);
+				manageLink.append("&marketId=").append(paramId);
 				break;
 			case PRODUCT : 
-				manageLink.append("&productId="+paramId);
+				manageLink.append("&productId=").append(paramId);
 				break;
 			case COMPANY : 
-				manageLink.append("&companyId="+paramId);
+				manageLink.append("&companyId=").append(paramId);
 				break;
 			case INSIGHT : 
-				manageLink.append("&insightId="+paramId);
+				manageLink.append("&insightId=").append(paramId);
 				break;
 			default : break;
 		}
@@ -365,7 +367,7 @@ public class BiomedLinkCheckerUtil {
 		String siteId = site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId(); 
 		
 		//execute query and populate list
-		try(PreparedStatement ps = dbConn.prepareStatement(buildSiteAliasQuery())){
+		try(PreparedStatement ps = dbConn.prepareStatement("select site_alias_url from site_alias where site_id = ?")){
 			ps.setString(1, siteId);
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
@@ -374,15 +376,5 @@ public class BiomedLinkCheckerUtil {
 		}catch(SQLException e) {
 			log.error("Error attempting to execute alias sql: ", e);
 		}
-	}
-	
-	/**
-	 * Builds the site alias sql query 
-	 * @return
-	 */
-	protected String buildSiteAliasQuery(){
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select site_alias_url from site_alias where site_id = ? ");
-		return sql.toString();
 	}
 }
