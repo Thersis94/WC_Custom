@@ -33,7 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class SRTEmployeeListAction extends SimpleActionAdapter {
 
-	public enum EmployeeType {ENGINEER("2"), DESIGNER("3"), QA("9"), BUYER("5");
+	public enum EmployeeType {ENGINEER("2"), DESIGNER("3"), QA("9"), BUYER("5"), SALES_ROSTER("8");
 		private String typeId;
 		EmployeeType(String typeId) {
 			this.typeId = typeId;
