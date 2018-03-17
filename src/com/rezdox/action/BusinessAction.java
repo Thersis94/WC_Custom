@@ -16,8 +16,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.db.DatabaseNote;
-import com.siliconmtn.db.DatabaseNote.DBType;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
@@ -155,27 +153,21 @@ public class BusinessAction extends SBActionAdapter {
 	 * 
 	 * @return
 	 */
-	@DatabaseNote(type = DBType.POSTGRES)
 	private StringBuilder getBaseBusinessSql() {
 		String schema = getCustomSchema();
 		
-		// Using pivot table on the attributes to get additional data for display,
-		// There may be additional attributes at some point beyond summary_txt.
-		StringBuilder sql = new StringBuilder(1400);
+		StringBuilder sql = new StringBuilder(1200);
 		sql.append("select b.business_id, business_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, ");
 		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, email_address_txt, website_url, photo_url, ad_file_url, ");
 		sql.append("privacy_flg, bsc.business_category_cd as sub_category_cd, bc.business_category_cd as category_cd, b.create_dt, ");
-		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, summary_txt, m.status_flg ");
+		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, m.status_flg, attribute_id, slug_txt, value_txt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b inner join ");
 		sql.append(schema).append("rezdox_business_member_xr m on b.business_id = m.business_id and m.status_flg >= ? ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" (SELECT * FROM crosstab('SELECT business_id, slug_txt, value_txt FROM ").append(schema).append("rezdox_business_attribute ORDER BY 1', ");
-		sql.append("'SELECT DISTINCT slug_txt FROM ").append(schema).append("rezdox_business_attribute WHERE slug_txt in (''BUSINESS_SUMMARY'') ORDER BY 1') ");
-		sql.append("AS (business_id text, summary_txt text) ");
-		sql.append(") ba on b.business_id = ba.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id = bcx.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bsc on bcx.business_category_cd = bsc.business_category_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bsc.parent_cd = bc.business_category_cd ");
-
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_attribute ba on b.business_id = ba.business_id ");
+		
 		return sql;
 	}
 	
