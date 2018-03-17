@@ -3,13 +3,17 @@ package com.rezdox.data;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.BusinessAction;
+import com.rezdox.vo.BusinessVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -17,6 +21,9 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+import com.siliconmtn.util.databean.FilePartDataBean;
+import com.smt.sitebuilder.action.FileLoader;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.FormDataProcessor;
@@ -45,7 +52,8 @@ public class BusinessFormProcessor extends FormDataProcessor {
 		BUSINESS_NAME("businessName"), BUSINESS_ADDRESS("address"), BUSINESS_ADDRESS_2("address2"), BUSINESS_CITY("city"),
 		BUSINESS_STATE("state"), BUSINESS_ZIP("zipCode"), BUSINESS_COUNTRY("country"), BUSINESS_PHONE_1("mainPhoneText"),
 		BUSINESS_PHONE_2("altPhoneText"), BUSINESS_EMAIL_1("emailAddressText"), BUSINESS_WEBSITE("websiteUrl"),
-		BUSINESS_PRIVACY_FLAG("privacyFlag"), BUSINESS_CATEGORY("categoryCd"), BUSINESS_SUB_CATEGORY("subCategoryCd");
+		BUSINESS_PRIVACY_FLAG("privacyFlag"), BUSINESS_CATEGORY("categoryCd"), BUSINESS_SUB_CATEGORY("subCategoryCd"),
+		BUSINESS_AD_FILE_URL("adFileUrl"), BUSINESS_PHOTO_URL("photoUrl");
 
 		private String reqParam;
 		
@@ -57,12 +65,36 @@ public class BusinessFormProcessor extends FormDataProcessor {
 	}
 
 	/**
+	 * DB field names, request param names for form field slug_txt values that are file uploads
+	 */
+	public enum BusinessFile {
+		BUSINESS_UPLOADAD("adFileUrl", "ad_file_url"), BUSINESS_LOGO("photoUrl", "photo_url");
+
+		private String reqParam;
+		private String dbField;
+		
+		private BusinessFile(String reqParam, String dbField) {
+			this.reqParam = reqParam;
+			this.dbField = dbField;
+		}
+		
+		public String getReqParam() { return reqParam; }
+		public String getDbField() { return dbField; }
+	}
+	
+	/**
+	 * Maps submitted form builder parameter names to those expected in the business table 
+	 */
+	private Map<String, GenericVO> fileMap;
+	
+	/**
 	 * @param conn
 	 * @param attributes
 	 * @param req
 	 */
 	public BusinessFormProcessor(SMTDBConnection conn, Map<String, Object> attributes, ActionRequest req) {
 		super(conn, attributes, req);
+		fileMap = new HashMap<>();
 	}
 
 	/* (non-Javadoc)
@@ -77,9 +109,18 @@ public class BusinessFormProcessor extends FormDataProcessor {
 		Iterator<Map.Entry<String, FormFieldVO>> iter = data.getCustomData().entrySet().iterator();
 		while (iter.hasNext()) {
 			Map.Entry<String, FormFieldVO> entry = iter.next();
+			
+			// Add parameters to the request to be saved to the business table
 			BusinessField param = EnumUtil.safeValueOf(BusinessField.class, entry.getValue().getSlugTxt());
 			if (param != null) {
 				req.setParameter(param.getReqParam(), entry.getValue().getResponseText());
+				iter.remove();
+			}
+
+			// Get form builder parameter names for files and map them to their business table conterparts
+			BusinessFile fileParam = EnumUtil.safeValueOf(BusinessFile.class, entry.getValue().getSlugTxt());
+			if (fileParam != null) {
+				fileMap.put(entry.getValue().getFieldNm(), new GenericVO(fileParam.getReqParam(), fileParam.getDbField()));
 				iter.remove();
 			}
 		}
@@ -90,6 +131,80 @@ public class BusinessFormProcessor extends FormDataProcessor {
 			ba.saveBusiness(req);
 		} catch (Exception e) {
 			throw new DatabaseException("Could not save business", e);
+		}
+	}
+
+	
+	/* 
+	 * Saves the files to secure binary
+	 * 
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.data.AbstractDataProcessor#saveFiles(com.smt.sitebuilder.data.vo.FormTransactionVO)
+	 */
+	@Override
+	protected void saveFiles(FormTransactionVO data) {
+		String secBinaryPath = (String) attributes.get(com.siliconmtn.http.filter.fileupload.Constants.SECURE_PATH_TO_BINARY);
+		String orgId = ((SiteVO) req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
+		
+		// Root for the organization (RezDox)
+		String orgRoot = secBinaryPath + (String) attributes.get("orgAlias") + orgId;
+		
+		// Root for the business uploading a file
+		String rootBusinessPath = "/business/" + req.getParameter(BusinessAction.REQ_BUSINESS_ID) + "/";
+
+		// Root upload path
+		String rootUploadPath = orgRoot + rootBusinessPath;
+
+		// Store the files to the file system
+		List<String> dbFields = new ArrayList<>();
+		try {
+			for(FilePartDataBean fpdb : req.getFiles()) {
+				FileLoader fl = new FileLoader(attributes);
+				fl.setData(fpdb.getFileData());
+				fl.setFileName(fpdb.getFileName());
+				fl.setPath(rootUploadPath);
+				fl.writeFiles();
+				
+				GenericVO field = fileMap.get(fpdb.getKey());
+				if (field != null) {
+					req.setParameter((String) field.getKey(), rootBusinessPath + fpdb.getFileName());
+					dbFields.add((String) field.getValue());
+				}
+			}
+		} catch (Exception e) {
+			log.error("Could not write RezDox business file", e);
+		}
+		
+		// Store file data to the db
+		if (!dbFields.isEmpty()) {
+			saveFileInfo(dbFields);
+		}
+	}
+	
+	/**
+	 * Save file data to the existing business record
+	 * 
+	 * @param dbFields
+	 */
+	private void saveFileInfo(List<String> dbFields) {
+		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("rezdox_business set ");
+		
+		int cnt = 0;
+		for (String field : dbFields) {
+			sql.append(cnt++ > 0 ? ", " : "").append(field).append(" = ? ");
+		}
+		
+		sql.append("where business_id = ? ");
+		dbFields.add("business_id");
+		
+		DBProcessor dbp = new DBProcessor(dbConn);
+		try {
+			dbp.executeSqlUpdate(sql.toString(), new BusinessVO(req), dbFields);
+		} catch (Exception e) {
+			log.error("Couldn't save business file data", e);
 		}
 	}
 
@@ -148,7 +263,6 @@ public class BusinessFormProcessor extends FormDataProcessor {
 			throw new DatabaseException(sqle);
 		}
 	}
-
 	/**
 	 * Delete old Business form responses
 	 * 
