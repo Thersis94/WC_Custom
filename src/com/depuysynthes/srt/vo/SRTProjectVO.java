@@ -92,6 +92,29 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * Copy Constructor takes SRTProjectVO and clones relevant data off
+	 * for an admin copy request.
+	 * @param srtProjectVO
+	 */
+	public SRTProjectVO(SRTProjectVO project) {
+		this();
+
+		//TODO - What needs removed from the Project Record on a copy.
+		if(project != null) {
+			this.setOpCoId(project.getOpCoId());
+			this.setProjectName(project.getProjectName());
+			this.setProjectType(project.getProjectType());
+			this.setSpecialInstructions(project.getSpecialInstructions());
+			this.setSrtContact(project.getSrtContact());
+			this.setProjectStatus("UNASSIGNED");
+			this.setProjectType("NEW");
+			for(SRTMasterRecordVO mr : project.getMasterRecords()) {
+				this.addMasterRecord(new SRTMasterRecordVO(mr.getMasterRecordId()));
+			}
+		}
+	}
+
+	/**
 	 * @return the projectId
 	 */
 	@Column(name="PROJECT_ID", isPrimaryKey=true)

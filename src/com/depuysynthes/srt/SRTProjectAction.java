@@ -4,12 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.depuysynthes.srt.data.ProjectDataProcessor;
+import com.depuysynthes.srt.data.RequestDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
+import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -53,6 +56,54 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	}
 
 	@Override
+	public void copy(ActionRequest req) throws ActionException {
+
+		//Load Roster Data.
+		SRTRosterAction sra = (SRTRosterAction)ActionControllerFactoryImpl.loadAction(SRTRosterAction.class.getName(), this);
+		List<SRTRosterVO> rosters = sra.loadRosterUsers(req);
+		SRTRosterVO roster = rosters.get(0);
+
+		//Save the Request and set Roster Data on it.
+		SRTRequestVO request = new SRTRequestVO(req);
+		request.setRequestor(roster);
+		request.setReqTerritoryId(roster.getTerritory());
+
+		try {
+
+			//Generate a RequestDataProcessor
+			RequestDataProcessor rdp = new RequestDataProcessor(dbConn, attributes, req);
+			SRTRequestAddressVO address = new SRTRequestAddressVO(req);
+			SRTProjectVO project = null;
+
+			rdp.saveRequestData(request, address, null);
+
+			/*
+			 * If this is a Copy, Project record will be copied via given
+			 * projectId.  Otherwise, generate a new Project as we would
+			 * on a standard Project Request.
+			 */
+			if(!req.hasParameter(SRT_PROJECT_ID)) {
+				project = rdp.buildProjectRecord(roster);
+			} else {
+				GridDataVO<SRTProjectVO> projects = loadProjects(req);
+				if(!projects.getRowData().isEmpty()) {
+					project = new SRTProjectVO(projects.getRowData().get(0));
+					project.setRequestId(request.getRequestId());
+					project.setRequest(request);
+				}
+			}
+
+			//Save Project Record.
+			new ProjectDataProcessor(dbConn, attributes, req).saveProjectRecord(project);
+
+			log.debug(project);
+
+		} catch (Exception e) {
+			log.error("Unable to add/copy Project.", e);
+		}
+	}
+
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter(SRT_PROJECT_ID) || req.hasParameter("json")) {
 			GridDataVO<SRTProjectVO> projects = loadProjects(req);
@@ -72,7 +123,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		//Determine what kind of build action is being performed.
 		if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
 			splitProject(req);
-		} else if(req.hasParameter("isCopy") && req.getBooleanParameter("isCopy")) {
+		} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
 			copy(req);
 		} else {
 			saveProject(req);

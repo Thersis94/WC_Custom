@@ -11,6 +11,7 @@ import com.depuysynthes.srt.vo.SRTFileVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
+import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -115,55 +116,66 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		}
 
 		log.debug("Creating Request.");
-		// Build the SRT Request from the request.
-		SRTRequestVO request = new SRTRequestVO(req);
 
+		// Build the SRT Request and Address from the request.
+		SRTRequestVO request = new SRTRequestVO(req);
+		SRTRequestAddressVO address = new SRTRequestAddressVO(req);
+		SRTProjectVO project = null;
 		/*
 		 * Store if this is an insert or not so we can decide if we create
 		 * a Project Record laster.
 		 */
-		boolean isInsert = StringUtil.isEmpty(request.getRequestId());
+		if(StringUtil.isEmpty(request.getRequestId())) {
+			project = buildProjectRecord(SRTUtil.getRoster(req));
+		}
 
+		//Save the Request and Address info and optional generate a Project
+		saveRequestData(request, address, project);
+	}
+
+	/**
+	 * Manages saving the given Request, Address and Project Records.
+	 * @param request - The SRTRequestVO to be saved.
+	 * @param address - The SRTRequestAddressVO to be saved.
+	 * @param project - The SRTProjectVO to be saved.
+	 */
+	public void saveRequestData(SRTRequestVO request, SRTRequestAddressVO address, SRTProjectVO project) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+
 		try {
 
-			//Save the Request Record
+			//Save the SRTRequestVO
 			dbp.save(request);
-
-			//Update the FormTransactionVO
-			data.setFormSubmittalId(request.getRequestId());
-
-			//Update the request
 			req.setParameter(SRTRequestAction.SRT_REQUEST_ID, request.getRequestId());
 
-			//Build the SRT RequestAddressVO
-			SRTRequestAddressVO addr = new SRTRequestAddressVO(req);
+			//Update the Address
+			address.setRequestId(req.getParameter(SRTRequestAction.SRT_REQUEST_ID));
 
-			log.debug(req.getParameter("address"));
-			//Save the Address.
-			dbp.save(addr);
+			//Save the AddressVO
+			dbp.save(address);
 
 			//Save the Request Address.
-			request.setRequestAddress(addr);
+			request.setRequestAddress(address);
 
 			//Generate Project Record if necessary.
-			if(isInsert) {
-				dbp.save(buildProjectRecord(req));
+			if(project != null) {
+				project.setRequestId(request.getRequestId());
+				dbp.save(project);
 			}
 
 		} catch(Exception e) {
 			log.error("Could not save SRT Request", e);
 		}
-
 	}
+
 
 	/**
 	 * Build the Project Record for this request on inserts only.
 	 * @param request
 	 */
-	private SRTProjectVO buildProjectRecord(ActionRequest req) {
+	public SRTProjectVO buildProjectRecord(SRTRosterVO roster) {
 		SRTProjectVO p = new SRTProjectVO(req);
-		p.setSrtContact(SRTUtil.getRoster(req).getEngineeringContact());
+		p.setSrtContact(roster.getEngineeringContact());
 		p.setProjectName(StringUtil.checkVal(req.getParameter(RequestField.DESCRIPTION.getReqParam())));
 		if(p.getProjectName().length() > 100) {
 			p.setProjectName(p.getProjectName().substring(0, 100) + "...");

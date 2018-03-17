@@ -76,7 +76,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 			checkForExistingUser(req);
 			return;
 		}
-		List<Object> users = loadRosterUsers(req);
+		List<SRTRosterVO> users = loadRosterUsers(req);
 
 		putModuleData(users);
 	}
@@ -92,7 +92,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	public List<Object> loadRosterUsers(ActionRequest req) throws ActionException {
+	public List<SRTRosterVO> loadRosterUsers(ActionRequest req) throws ActionException {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String rosterId = req.hasParameter(REQ_ROSTER_ID) ? req.getParameter(REQ_ROSTER_ID) : null;
 		String opCoId = ((SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA)).getOpCoId();
@@ -114,7 +114,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		}
 
 		//Call Execute the Query with given params.
-		List<Object> users = executeUserQuery(sql, params);
+		List<SRTRosterVO> users = executeUserQuery(sql, params);
 
 		//get more information about this one user, so we can display the edit screen.
 		//If this is an ADD, we don't need the additional lookups
@@ -133,15 +133,15 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected List<Object> executeUserQuery(String sql, List<Object> params) {
+	protected List<SRTRosterVO> executeUserQuery(String sql, List<Object> params) {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		log.debug(params);
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  data = db.executeSelect(sql, params, new SRTRosterVO());
+		List<SRTRosterVO>  data = db.executeSelect(sql, params, new SRTRosterVO());
 		log.debug("loaded " + data.size() + " users");
 
 		//decrypt the owner profiles
-		decryptNames(data);
+		//decryptNames(data);
 
 		return data;
 	}
@@ -154,7 +154,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 * @param userObj
 	 * @throws ActionException 
 	 */
-	protected void loadRegistration(ActionRequest req, List<Object> users) throws ActionException {
+	protected void loadRegistration(ActionRequest req, List<SRTRosterVO> users) throws ActionException {
 		//fail-fast if there's no user to load responses for, or too many users
 		if (users == null || users.isEmpty() || users.size() != 1)
 			return;
@@ -169,7 +169,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		req.setAttribute("registrationForm", ((ModuleVO)sa.getAttribute(Constants.MODULE_DATA)).getActionData());
 
 		//load the user's registration responses - these will go into the UserDataVO->attributes map
-		SRTRosterVO user = (SRTRosterVO) users.get(0);
+		SRTRosterVO user = users.get(0);
 		ResponseLoader rl = new ResponseLoader();
 		rl.setDbConn(dbConn);
 		rl.loadRegistrationResponses(user, SRTUtil.PUBLIC_SITE_ID);
@@ -185,7 +185,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 * @param accounts
 	 */
 	@SuppressWarnings("unchecked")
-	protected void decryptNames(List<Object> data) {
+	protected void decryptNames(List<SRTRosterVO> data) {
 		LastNameComparator c = new LastNameComparator();
 		c.decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 		Collections.sort(data, c);
@@ -208,7 +208,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 			sql.append("and p.profile_id=? ");
 		}
 	
-		sql.append("group by r.op_co_id ");
+		//sql.append("group by r.op_co_id ");
 
 		log.debug(sql);
 		return sql.toString();

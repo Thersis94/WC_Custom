@@ -7,6 +7,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.gis.Location;
+import com.siliconmtn.security.UserDataVO;
 
 /****************************************************************************
  * <b>Title:</b> SRTRequestActionCO.java
@@ -40,6 +41,11 @@ public class SRTRequestAddressVO extends Location {
 
 	public SRTRequestAddressVO(ResultSet rs) {
 		populateData(rs);
+	}
+
+	public SRTRequestAddressVO(UserDataVO u) {
+		this();
+		setData(u);
 	}
 
 	/**
