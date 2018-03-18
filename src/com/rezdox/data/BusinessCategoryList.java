@@ -2,12 +2,14 @@ package com.rezdox.data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
@@ -32,6 +34,16 @@ public class BusinessCategoryList extends SimpleActionAdapter {
 
 	public BusinessCategoryList(ActionInitVO arg0) {
 		super(arg0);
+	}
+	
+	/**
+	 * @param dbConnection
+	 * @param attributes
+	 */
+	public BusinessCategoryList(SMTDBConnection dbConnection, Map<String, Object> attributes) {
+		this();
+		setDBConnection(dbConnection);
+		setAttributes(attributes);
 	}
 
 	/*

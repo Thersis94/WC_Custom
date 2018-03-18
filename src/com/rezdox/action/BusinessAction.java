@@ -16,8 +16,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.db.DatabaseNote;
-import com.siliconmtn.db.DatabaseNote.DBType;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
@@ -51,11 +49,27 @@ public class BusinessAction extends SBActionAdapter {
 	
 	public static final String BUSINESS_DATA = "businessData";
 	public static final String REQ_BUSINESS_ID = "businessId";
+	public static final String REQ_BUSINESS_INFO = "businessInfo";
 	public static final String UPGRADE_MSG = "You have reached your maximum businesses. Please purchase a business upgrade to continue.";
 	private static final Class<BusinessFormProcessor> BUSINESS_FORM_PROCESSOR = BusinessFormProcessor.class;
 	
 	public enum BusinessColumnName {
 		BUSINESS_ID, CREATE_DT, UPDATE_DT
+	}
+	
+	/**
+	 * Business status
+	 */
+	public enum BusinessStatus {
+		INACTIVE(0), ACTIVE(1), PENDING(2);
+
+		private int status;
+		
+		private BusinessStatus(int status) {
+			this.status = status;
+		}
+		
+		public int getStatus() { return status; }
 	}
 	
 	/**
@@ -105,7 +119,7 @@ public class BusinessAction extends SBActionAdapter {
 		if ("new".equalsIgnoreCase(businessId) && !canAddNewBusiness(req)) {
 			// When adding a new business, check to make sure the member has not reached their limit
 			sendRedirect(RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH, UPGRADE_MSG, req);
-		} else if (req.hasParameter("businessInfo")) {
+		} else if (req.hasParameter(REQ_BUSINESS_INFO)) {
 			// Set the data to be returned
 			req.setAttribute(BUSINESS_DATA, businessList);
 			putModuleData(retrieveBusinessInfoForm(req));
@@ -135,40 +149,56 @@ public class BusinessAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Retrieves base business data
+	 * Returns base business sql query. The where clause is left up to the calling method.
+	 * Note that the xr status flag parameter is added here and required for all queries.
+	 * 
+	 * @return
+	 */
+	private StringBuilder getBaseBusinessSql() {
+		String schema = getCustomSchema();
+		
+		StringBuilder sql = new StringBuilder(1200);
+		sql.append("select b.business_id, business_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, ");
+		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, email_address_txt, website_url, photo_url, ad_file_url, ");
+		sql.append("privacy_flg, bsc.business_category_cd as sub_category_cd, bc.business_category_cd as category_cd, bc.category_nm, b.create_dt, ");
+		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, m.status_flg, attribute_id, slug_txt, value_txt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b inner join ");
+		sql.append(schema).append("rezdox_business_member_xr m on b.business_id = m.business_id and m.status_flg >= ? ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id = bcx.business_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bsc on bcx.business_category_cd = bsc.business_category_cd ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bsc.parent_cd = bc.business_category_cd ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_attribute ba on b.business_id = ba.business_id ");
+		
+		return sql;
+	}
+	
+	/**
+	 * Retrieves base business data for a member
 	 * 
 	 * @param req
 	 * @return
 	 */
-	@DatabaseNote(type = DBType.POSTGRES)
 	protected List<BusinessVO> retrieveBusinesses(ActionRequest req) {
-		String schema = getCustomSchema();
 		String businessId = req.getParameter(REQ_BUSINESS_ID);
 		
 		// Show only businesses that the member has access to
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 		
-		// Using pivot table on the attributes to get additional data for display,
-		// There may be additional attributes at some point beyond summary_txt.
-		StringBuilder sql = new StringBuilder(900);
-		sql.append("select b.business_id, business_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, ");
-		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, email_address_txt, website_url, photo_url, ad_file_url, ");
-		sql.append("privacy_flg, bsc.business_category_cd as sub_category_cd, bc.business_category_cd as category_cd, b.create_dt, ");
-		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, summary_txt ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b inner join ");
-		sql.append(schema).append("rezdox_business_member_xr m on b.business_id = m.business_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" (SELECT * FROM crosstab('SELECT business_id, slug_txt, value_txt FROM ").append(schema).append("rezdox_business_attribute ORDER BY 1', ");
-		sql.append("'SELECT DISTINCT slug_txt FROM ").append(schema).append("rezdox_business_attribute WHERE slug_txt in (''BUSINESS_SUMMARY'') ORDER BY 1') ");
-		sql.append("AS (business_id text, summary_txt text) ");
-		sql.append(") ba on b.business_id = ba.business_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id = bcx.business_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bsc on bcx.business_category_cd = bsc.business_category_cd ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bsc.parent_cd = bc.business_category_cd ");
-		sql.append("where member_id = ? ");
+		// Use the base query
+		StringBuilder sql = getBaseBusinessSql();
 		
+		// Get everything that is active or pending
 		List<Object> params = new ArrayList<>();
-		params.add(member.getMemberId());
+		params.add(BusinessStatus.ACTIVE.getStatus());
+		
+		// Restrict to the member owner when editing business details
+		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter("settings") || StringUtil.isEmpty(businessId)) {
+			sql.append("where member_id = ? ");
+			params.add(member.getMemberId());
+		} else if (req.hasParameter("storeFront") && !StringUtil.isEmpty(businessId)) {
+			sql.append("where 1=1 ");
+		}
 		
 		// Return only a specific business if selected
 		if (!StringUtil.isEmpty(businessId)) {
@@ -176,6 +206,24 @@ public class BusinessAction extends SBActionAdapter {
 			params.add(businessId);
 		}
 		
+		DBProcessor dbp = new DBProcessor(dbConn);
+		return dbp.executeSelect(sql.toString(), params, new BusinessVO());
+	}
+	
+	/**
+	 * Returns a list of businesses that have not yet received administrative approval
+	 * 
+	 * @return
+	 */
+	protected List<BusinessVO> retrievePendingBusinesses() {
+		// Use the base query, no additional filtering required
+		StringBuilder sql = getBaseBusinessSql();
+		
+		// Get everything in the system that is pending approval
+		List<Object> params = new ArrayList<>();
+		params.add(BusinessStatus.PENDING.getStatus());
+		
+		// Get/return the data
 		DBProcessor dbp = new DBProcessor(dbConn);
 		return dbp.executeSelect(sql.toString(), params, new BusinessVO());
 	}
@@ -217,7 +265,7 @@ public class BusinessAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		if (req.hasParameter("businessInfo")) {
+		if (req.hasParameter(REQ_BUSINESS_INFO)) {
 			saveForm(req);
 		} else {
 			try {
@@ -274,8 +322,9 @@ public class BusinessAction extends SBActionAdapter {
 			throw new DatabaseException(e);
 		}
 		
-		// Save the Business/Member XR
+		// Save the Business/Member XR and Category XR
 		saveBusinessMemberXR(req, newBusiness);
+		saveBusinessCategoryXR(req);
 		
 		// Return the data
 		return business;
@@ -306,11 +355,56 @@ public class BusinessAction extends SBActionAdapter {
 			ps.setString(1, new UUIDGenerator().getUUID());
 			ps.setString(2, member.getMemberId());
 			ps.setString(3, req.getParameter(BusinessAction.REQ_BUSINESS_ID));
-			ps.setInt(4, 2); // Newly added businesses are always pending status
+			ps.setInt(4, BusinessStatus.PENDING.getStatus()); // Newly added businesses are always pending status, until admin reviews
 			ps.setTimestamp(5, Convert.getCurrentTimestamp());
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			log.error("Could not save RezDox Member/Business XR ", sqle);
+			throw new DatabaseException(sqle);
+		}
+	}
+	
+	/**
+	 * Save the XR record between the business and business categories
+	 * 
+	 * @throws DatabaseException
+	 */
+	protected void saveBusinessCategoryXR(ActionRequest req) throws DatabaseException {
+		String schema = getCustomSchema();
+		deleteBusinessCategoryXR(req);
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.INSERT_CLAUSE).append(schema).append("rezdox_business_category_xr (business_category_xr_id, ");
+		sql.append("business_id, business_category_cd, create_dt) ");
+		sql.append("values (?,?,?,?)");
+		log.debug(sql);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, new UUIDGenerator().getUUID());
+			ps.setString(2, req.getParameter(BusinessAction.REQ_BUSINESS_ID));
+			ps.setString(3, req.getParameter("subCategoryCd"));
+			ps.setTimestamp(4, Convert.getCurrentTimestamp());
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			throw new DatabaseException(sqle);
+		}
+	}
+	
+	/**
+	 * Remove the XR record(s) between the business and business categories
+	 * 
+	 * @throws DatabaseException
+	 */
+	private void deleteBusinessCategoryXR(ActionRequest req) throws DatabaseException {
+		String schema = getCustomSchema();
+		StringBuilder sqlDelete = new StringBuilder(100);
+		sqlDelete.append(DBUtil.DELETE_CLAUSE).append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business_category_xr ");
+		sqlDelete.append(DBUtil.WHERE_CLAUSE).append("business_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sqlDelete.toString())) {
+			ps.setString(1, req.getParameter(BusinessAction.REQ_BUSINESS_ID));
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
 			throw new DatabaseException(sqle);
 		}
 	}

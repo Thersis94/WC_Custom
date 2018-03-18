@@ -6,7 +6,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.rezdox.action.BusinessAction.BusinessStatus;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 // SMTBaseLibs
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -38,16 +40,18 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private String photoUrl;
 	private String adFileUrl;
 	private int privacyFlag;
-	private transient Map<String, Object> attributes;
+	private Map<String, String> attributes;
 	private String subCategoryCd;
 	private String categoryCd;
+	private String categoryName;
+	private BusinessStatus status;
 	private Date createDate;
 	private Date updateDate;
 	
 	/**
 	 * Special use keys for values from the attributes table in the attibutes map
 	 */
-	private static final String SUMMARY = "summary";
+	private static final String SLUG_BUSINESS_SUMMARY = "BUSINESS_SUMMARY";
 
 	public BusinessVO() {
 		super();
@@ -230,30 +234,37 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	/**
 	 * @return the attributes
 	 */
-	public Map<String, Object> getAttributes() {
+	public Map<String, String> getAttributes() {
 		return attributes;
 	}
 
 	/**
 	 * @param attributes the attributes to set
 	 */
-	public void setAttributes(Map<String, Object> attributes) {
+	public void setAttributes(Map<String, String> attributes) {
 		this.attributes = attributes;
+	}
+
+	/**
+	 * @param attribute
+	 */
+	@BeanSubElement
+	public void addAttribute(BusinessAttributeVO attribute) {
+		this.attributes.put(attribute.getSlugText(), attribute.getValueText());
 	}
 
 	/**
 	 * @return the summaryText
 	 */
-	@Column(name="summary_txt")
 	public String getSummaryText() {
-		return (String) attributes.get(SUMMARY);
+		return attributes.get(SLUG_BUSINESS_SUMMARY);
 	}
 
 	/**
 	 * @param summaryText the summaryText to set
 	 */
 	public void setSummaryText(String summaryText) {
-		attributes.put(SUMMARY, summaryText);
+		attributes.put(SLUG_BUSINESS_SUMMARY, summaryText);
 	}
 
 	/**
@@ -284,6 +295,54 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setCategoryCd(String categoryCd) {
 		this.categoryCd = categoryCd;
+	}
+
+	/**
+	 * @return the categoryName
+	 */
+	@Column(name="category_nm", isReadOnly=true)
+	public String getCategoryName() {
+		return categoryName;
+	}
+
+	/**
+	 * @param categoryName the categoryName to set
+	 */
+	public void setCategoryName(String categoryName) {
+		this.categoryName = categoryName;
+	}
+
+	/**
+	 * @return the status
+	 */
+	public BusinessStatus getStatus() {
+		return status;
+	}
+
+	/**
+	 * @param status the status to set
+	 */
+	public void setStatus(BusinessStatus status) {
+		this.status = status;
+	}
+
+	/**
+	 * @return the statusCode
+	 */
+	@Column(name="status_flg", isReadOnly=true)
+	public int getStatusCode() {
+		return status == null ? 0 : status.getStatus();
+	}
+
+	/**
+	 * @param statusCode the statusCode to set
+	 */
+	public void setStatusCode(int statusCode) {
+		for (BusinessStatus businessStatus : BusinessStatus.values()) {
+			if (businessStatus.getStatus() == statusCode) {
+				this.status = businessStatus;
+			}
+		}
 	}
 
 	/**
