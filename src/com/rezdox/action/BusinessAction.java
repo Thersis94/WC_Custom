@@ -49,6 +49,7 @@ public class BusinessAction extends SBActionAdapter {
 	
 	public static final String BUSINESS_DATA = "businessData";
 	public static final String REQ_BUSINESS_ID = "businessId";
+	public static final String REQ_BUSINESS_INFO = "businessInfo";
 	public static final String UPGRADE_MSG = "You have reached your maximum businesses. Please purchase a business upgrade to continue.";
 	private static final Class<BusinessFormProcessor> BUSINESS_FORM_PROCESSOR = BusinessFormProcessor.class;
 	
@@ -118,7 +119,7 @@ public class BusinessAction extends SBActionAdapter {
 		if ("new".equalsIgnoreCase(businessId) && !canAddNewBusiness(req)) {
 			// When adding a new business, check to make sure the member has not reached their limit
 			sendRedirect(RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH, UPGRADE_MSG, req);
-		} else if (req.hasParameter("businessInfo")) {
+		} else if (req.hasParameter(REQ_BUSINESS_INFO)) {
 			// Set the data to be returned
 			req.setAttribute(BUSINESS_DATA, businessList);
 			putModuleData(retrieveBusinessInfoForm(req));
@@ -159,7 +160,7 @@ public class BusinessAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(1200);
 		sql.append("select b.business_id, business_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, ");
 		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, email_address_txt, website_url, photo_url, ad_file_url, ");
-		sql.append("privacy_flg, bsc.business_category_cd as sub_category_cd, bc.business_category_cd as category_cd, b.create_dt, ");
+		sql.append("privacy_flg, bsc.business_category_cd as sub_category_cd, bc.business_category_cd as category_cd, bc.category_nm, b.create_dt, ");
 		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, m.status_flg, attribute_id, slug_txt, value_txt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b inner join ");
 		sql.append(schema).append("rezdox_business_member_xr m on b.business_id = m.business_id and m.status_flg >= ? ");
@@ -184,14 +185,20 @@ public class BusinessAction extends SBActionAdapter {
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 		
-		// Use the base query and start the where clause
+		// Use the base query
 		StringBuilder sql = getBaseBusinessSql();
-		sql.append("where member_id = ? ");
 		
-		// Get everything for the member that is active or pending
+		// Get everything that is active or pending
 		List<Object> params = new ArrayList<>();
 		params.add(BusinessStatus.ACTIVE.getStatus());
-		params.add(member.getMemberId());
+		
+		// Restrict to the member owner when editing business details
+		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter("settings") || StringUtil.isEmpty(businessId)) {
+			sql.append("where member_id = ? ");
+			params.add(member.getMemberId());
+		} else if (req.hasParameter("storeFront") && !StringUtil.isEmpty(businessId)) {
+			sql.append("where 1=1 ");
+		}
 		
 		// Return only a specific business if selected
 		if (!StringUtil.isEmpty(businessId)) {
@@ -258,7 +265,7 @@ public class BusinessAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		if (req.hasParameter("businessInfo")) {
+		if (req.hasParameter(REQ_BUSINESS_INFO)) {
 			saveForm(req);
 		} else {
 			try {

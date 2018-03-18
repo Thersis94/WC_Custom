@@ -43,6 +43,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private Map<String, String> attributes;
 	private String subCategoryCd;
 	private String categoryCd;
+	private String categoryName;
 	private BusinessStatus status;
 	private Date createDate;
 	private Date updateDate;
@@ -294,6 +295,21 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setCategoryCd(String categoryCd) {
 		this.categoryCd = categoryCd;
+	}
+
+	/**
+	 * @return the categoryName
+	 */
+	@Column(name="category_nm", isReadOnly=true)
+	public String getCategoryName() {
+		return categoryName;
+	}
+
+	/**
+	 * @param categoryName the categoryName to set
+	 */
+	public void setCategoryName(String categoryName) {
+		this.categoryName = categoryName;
 	}
 
 	/**
