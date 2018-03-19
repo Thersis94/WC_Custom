@@ -8,6 +8,7 @@ import com.depuysynthes.srt.data.RequestDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
+import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
@@ -110,6 +111,14 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 			if(req.hasParameter(SRT_PROJECT_ID)) {
 				loadDataFromForms(req);
+
+				SRTMilestoneAction sma = new SRTMilestoneAction();
+				sma.setAttributes(attributes);
+				sma.setDBConnection(dbConn);
+
+				//Retrieve list of Milestones from DB for Request.
+				List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), null, false);
+				req.setAttribute("SRT_MILESTONES", milestones);
 			}
 
 			putModuleData(projects.getRowData(), projects.getTotal(), false);

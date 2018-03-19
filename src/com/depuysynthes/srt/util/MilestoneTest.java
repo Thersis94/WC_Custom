@@ -50,6 +50,7 @@ public class MilestoneTest {
 		SRTProjectVO p = new SRTProjectVO();
 		p.setProjectId("Test 1");
 		p.setCreateDt(Convert.getCurrentTimestamp());
+		p.addLedgerDate("projectStartDt", Convert.getCurrentTimestamp());
 		p.setEngineerId("user");
 		p.setDesignerId("designer");
 		target = p;
@@ -65,7 +66,7 @@ public class MilestoneTest {
 		m.setOrganizationId("US_SPINE");
 		MilestoneRuleVO rule1 = new MilestoneRuleVO();
 		rule1.setMilestoneRuleId("rule1");
-		rule1.setFieldNm("createDt");
+		rule1.setFieldNm("projectStartDt");
 		rule1.setOperandType(Operator.NOT_EMPTY);
 		m.addRule(rule1);
 		milestones.add(m);
@@ -90,7 +91,7 @@ public class MilestoneTest {
 		rule3.setFieldNm("designerId");
 		rule3.setOperandType(Operator.NOT_EMPTY);
 		d.addRule(rule3);
-		milestones.add(e);
+		milestones.add(d);
 	}
 
 
@@ -116,6 +117,6 @@ public class MilestoneTest {
 	@Test
 	public void testDesigner() {
 		util.checkGates(target, milestones);
-		assertTrue(target.getMilestone("DESIGNER_START") == null);
+		assertTrue(target.getMilestone("DESIGNER_START") != null);
 	}
 }

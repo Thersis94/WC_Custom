@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -83,7 +84,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * @param milestoneId
 	 * @param loadRules - Load Rules in addition to Milestone data.
 	 */
-	private List<SRTProjectMilestoneVO> loadMilestoneData(String opCoId, String milestoneId, boolean loadRules) {
+	public List<SRTProjectMilestoneVO> loadMilestoneData(String opCoId, String milestoneId, boolean loadRules) {
 		List<SRTProjectMilestoneVO> milestones = loadMilestones(opCoId, milestoneId);
 
 		/*
@@ -379,11 +380,12 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 			try(PreparedStatement ps = dbConn.prepareStatement(saveMilestonesSql())) {
 				UUIDGenerator uuid = new UUIDGenerator();
 				for(SRTProjectMilestoneVO m : newMilestones) {
+					Date milestoneDt = p.getLedgerDates().get(m.getMilestoneId());
 					int i = 1;
 					ps.setString(i++, m.getProjectId());
 					ps.setString(i++, m.getMilestoneId());
 					ps.setString(i++, uuid.getUUID());
-					ps.setTimestamp(i++, Convert.getCurrentTimestamp());
+					ps.setTimestamp(i++, milestoneDt != null ? Convert.formatTimestamp(milestoneDt) : Convert.getCurrentTimestamp());
 					ps.addBatch();
 				}
 				ps.executeBatch();

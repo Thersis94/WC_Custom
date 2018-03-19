@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,11 +75,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private List<SRTMasterRecordVO> masterRecords;
 	private SRTRequestVO request;
 	private Map<String, SRTProjectMilestoneVO> milestones;
+	private Map<String, Date> ledgerDates;
 
 	public SRTProjectVO() {
 		notes = new ArrayList<>();
 		masterRecords = new ArrayList<>();
 		milestones = new LinkedHashMap<>();
+		ledgerDates = new HashMap<>();
 	}
 
 	public SRTProjectVO(ActionRequest req) {
@@ -108,6 +111,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 			this.setSrtContact(project.getSrtContact());
 			this.setProjectStatus("UNASSIGNED");
 			this.setProjectType("NEW");
+			this.setCreateDt(Convert.getCurrentTimestamp());
 			for(SRTMasterRecordVO mr : project.getMasterRecords()) {
 				this.addMasterRecord(new SRTMasterRecordVO(mr.getMasterRecordId()));
 			}
@@ -420,6 +424,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	 */
 	public Map<String, SRTProjectMilestoneVO> getMilestones() {
 		return milestones;
+	}
+
+	/**
+	 * @return the ledgerDates
+	 */
+	public Map<String, Date> getLedgerDates() {
+		return ledgerDates;
 	}
 
 	/**
@@ -745,8 +756,15 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
-	 * @param milestoneId - the milestoneId to be added
-	 * @param milestoneDt - the date the milstone was achieved.
+	 * @param ledgerDates the ledgerDates to set.
+	 */
+	public void setLedgerDates(Map<String, Date> ledgerDates) {
+		this.ledgerDates = ledgerDates;
+	}
+
+	/**
+	 * Add a Milestone Record to the Milestones Map.
+	 * @param milestone - the milestone to be added
 	 */
 	@BeanSubElement
 	@Override
@@ -757,11 +775,42 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 		}
 	}
 
+	/**
+	 * Add a LedgerDate to the ledgers Map.
+	 * @param ledgerType - The ledgerType to be added
+	 * @param ledgerDate - The ledgerDate to be added
+	 */
+	public void addLedgerDate(String ledgerType, Date ledgerDate) {
+		if(!StringUtil.isEmpty(ledgerType) && ledgerDate != null) {
+			ledgerDates.put(ledgerType, ledgerDate);
+		}
+	}
+
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.workflow.milestones.MilestoneIntfc#removeMilestone(java.lang.String)
 	 */
 	@Override
 	public void removeMilestone(String milestoneId) {
 		milestones.remove(milestoneId);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.workflow.milestones.MilestoneIntfc#getData()
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public <C extends Comparable<C>> C getFieldValue(String fieldName) {
+		C data = null;
+		try {
+			if(ledgerDates.containsKey(fieldName)) {
+				data = (C) ledgerDates.get(fieldName);
+			} else {
+				data = MilestoneIntfc.super.getFieldValue(fieldName);
+			}
+		} catch (NoSuchFieldException e) {
+			mLog.error("Error Processing Code", e);
+		}
+
+		return data;
 	}
 }
