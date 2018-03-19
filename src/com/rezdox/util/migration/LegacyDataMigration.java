@@ -14,6 +14,14 @@ import java.util.Map;
 // Log4j
 import org.apache.log4j.PropertyConfigurator;
 
+import com.rezdox.action.ResidenceAction;
+import com.rezdox.api.ZillowAPIManager;
+import com.rezdox.vo.ResidenceAttributeVO;
+import com.rezdox.vo.ResidenceVO;
+import com.rezdox.vo.ZillowPropertyVO;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 //SMTBaseLibs
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
@@ -106,7 +114,8 @@ public class LegacyDataMigration extends CommandLineUtil {
 			migrateRewards();
 			migrateMemberRewards();
 			migrateAlbums();
-			//TODO: addZestimates() addPaypalButtons()
+			migrateRoomInfo();
+			addResidenceZestimates();
 		} catch(Exception e) {
 			log.error("Failed to migrate data.", e);
 		}
@@ -290,7 +299,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 	 * @return
 	 * @throws Exception 
 	 */
-	protected void migrateResidences() throws Exception {
+	protected void migrateResidences() {
 		log.info("Migrating Residence Table");
 		
 		// move base residence data to new data model
@@ -1191,6 +1200,125 @@ public class LegacyDataMigration extends CommandLineUtil {
 			photoPs.executeBatch();
 		} catch (Exception sqle) {
 			log.error("Error migrating album photos. ", sqle);
+		}
+	}
+	
+	/**
+	 * Migrates Residence Rooms With Name/Dimensions
+	 */
+	protected void migrateRoomInfo() {
+		log.info("Migrating Residence Rooms");
+		StringBuilder roomSql = new StringBuilder(150);
+		roomSql.append("insert into custom.rezdox_room (room_id, residence_id, room_type_cd, room_nm, length_foot_no, ");
+		roomSql.append("length_inch_no, width_foot_no, width_inch_no, height_foot_no, height_inch_no, create_dt) ");
+		roomSql.append("values (?,?,?,?,?,?,?,?,?,?,?) ");
+
+		StringBuilder legacyRoomSql = new StringBuilder(150);
+		legacyRoomSql.append("select residence_id, value_txt from custom.rezdox_residence_attribute ");
+		legacyRoomSql.append("where slug_txt = 'RESIDENCE_ROOM_DETAILS' and value_txt != '' ");
+		
+		try (PreparedStatement roomPs = dbConn.prepareStatement(roomSql.toString());) {
+			buildRoomPs(roomPs, legacyRoomSql);
+			roomPs.executeBatch();
+		} catch (Exception sqle) {
+			log.error("Error migrating residence room details. ", sqle);
+		}
+	}
+
+	/**
+	 * Setup prepared statement for adding rooms with data
+	 * 
+	 * @param roomPs
+	 * @param legacyRoomSql
+	 * @throws Exception
+	 */
+	private void buildRoomPs(PreparedStatement roomPs, StringBuilder legacyRoomSql) throws Exception {
+		try (PreparedStatement legacyRoomPs = dbConn.prepareStatement(legacyRoomSql.toString())) {
+			ResultSet rs = legacyRoomPs.executeQuery();
+			while (rs.next()) {
+				String residenceId = rs.getString("residence_id");
+				String[] rooms = rs.getString("value_txt").split(FOUR_PIPES);
+				
+				processRooms(residenceId, rooms, roomPs);
+			}
+		} catch (Exception e) {
+			throw new Exception("Error retrieving legacy room data.", e);
+		}
+	}
+	
+	/**
+	 * Helper to take an array of rooms that was split from one field in the legacy data
+	 * and add individual records to the new data model for each.
+	 * 
+	 * @param residenceId
+	 * @param rooms - array of room data
+	 * @param roomPs - the prepared statement we are building
+	 * @throws SQLException
+	 */
+	private void processRooms(String residenceId, String[] rooms, PreparedStatement roomPs) throws SQLException {
+		for (String room : rooms) {
+			String[] roomDetails = room.split(TWO_PIPES);
+			
+			int idx = 0;
+			roomPs.setString(++idx, new UUIDGenerator().getUUID());
+			roomPs.setString(++idx, residenceId);
+			roomPs.setString(++idx, retrieveRoomTypeCd(roomDetails[0]));
+			roomPs.setString(++idx, roomDetails[1]);
+			roomPs.setInt(++idx, Convert.formatInteger(roomDetails[2]));
+			roomPs.setInt(++idx, Convert.formatInteger(roomDetails[3]));
+			roomPs.setInt(++idx, Convert.formatInteger(roomDetails[4]));
+			roomPs.setInt(++idx, Convert.formatInteger(roomDetails[5]));
+			roomPs.setInt(++idx, Convert.formatInteger(roomDetails[6]));
+			roomPs.setInt(++idx, Convert.formatInteger(roomDetails[7]));
+			roomPs.setTimestamp(++idx, Convert.getCurrentTimestamp());
+			roomPs.addBatch();
+		}
+	}
+	
+	/**
+	 * Gets a room type code for the given room name
+	 * 
+	 * @param roomTypeName
+	 * @throws SQLException 
+	 */
+	private String retrieveRoomTypeCd(String roomTypeName) throws SQLException {
+		String roomTypeCd = "";
+		String sql = "select room_type_cd from custom.rezdox_room_type where type_nm = ? ";
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, roomTypeName);
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				roomTypeCd = rs.getString(1);
+			}
+		}
+		
+		return roomTypeCd;
+	}
+	
+	/**
+	 * Adds zestimate data for each of the residences
+	 * 
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	protected void addResidenceZestimates() throws DatabaseException, InvalidDataException {
+		DBProcessor dbp = new DBProcessor(dbConn);
+		List<ResidenceVO> residences = dbp.executeSelect("select * from custom.rezdox_residence ", new ArrayList<>(), new ResidenceVO());
+		
+		for (ResidenceVO residence : residences) {
+			ResidenceAttributeVO zestimate = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_ZESTIMATE, "");
+			
+			try {
+				ZillowAPIManager zillowApi = new ZillowAPIManager();
+				ZillowPropertyVO property = zillowApi.retrieveZillowId(residence);
+				zestimate.setValueText(property.getValueEstimate().toString());
+			} catch (Exception e) {
+				// Save an empty Zestimate if the address wasn't found, this is a required attribute
+			}
+			
+			dbp.save(zestimate);
 		}
 	}
 }

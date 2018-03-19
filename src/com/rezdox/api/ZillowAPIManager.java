@@ -159,6 +159,9 @@ public class ZillowAPIManager {
 	 */
 	protected ZillowPropertyVO parseZillowResponse(byte[] data, boolean extended) throws InvalidDataException {
 		Element docEle = createXMLDocument(data);
+		if (docEle.getElementsByTagName("zpid").getLength() == 0)
+			throw new InvalidDataException("No Zillow data retrieved for the given address.");
+			
         String zpid = docEle.getElementsByTagName("zpid").item(0).getTextContent();
         double latitude = Convert.formatDouble(docEle.getElementsByTagName("latitude").item(0).getTextContent());
         double longitude = Convert.formatDouble(docEle.getElementsByTagName("longitude").item(0).getTextContent());

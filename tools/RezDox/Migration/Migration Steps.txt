@@ -33,6 +33,16 @@ run LegacyDataMigration.java
 
 run After Migration.sql script
 
+zip up files from rezdox cpanel
+/public_html/SITE/graphics
+	extract to /${binary}/org/REZDOX
+	rename "graphics" to "legacy"
+/public_html/SITE/uploads
+	extract to /${secureBinary}/org/REZDOX
+	rename "uploads" to "legacy"
+
+add paypal buttons through admintool membership data tool, these are specific to each instance
+
 ---------------
 Drop RezDox Custom Tables
 SELECT concat('drop table if exists custom.',relname,' cascade;' )

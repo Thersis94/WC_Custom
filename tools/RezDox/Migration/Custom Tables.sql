@@ -256,6 +256,7 @@ Create table custom.REZDOX_MEMBERSHIP
 	COST_NO Double precision NOT NULL,
 	QTY_NO Integer NOT NULL Default 1,
 	NEW_MBR_DFLT_FLG Integer NOT NULL Default 0,
+	PAYPAL_BUTTON_TXT Text,
 	CREATE_DT Timestamp NOT NULL,
 	UPDATE_DT Timestamp,
 constraint pk_REZDOX_MEMBERSHIP primary key (MEMBERSHIP_ID)
@@ -459,6 +460,7 @@ Create table custom.REZDOX_ROOM
 	ROOM_ID Varchar(32) NOT NULL,
 	RESIDENCE_ID Varchar(32) NOT NULL,
 	ROOM_TYPE_CD Varchar(32) NOT NULL,
+	ROOM_NM Varchar(100),
 	LENGTH_FOOT_NO Integer,
 	LENGTH_INCH_NO Integer,
 	WIDTH_FOOT_NO Integer,
