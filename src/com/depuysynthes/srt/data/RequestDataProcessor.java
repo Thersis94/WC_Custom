@@ -19,6 +19,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.FileWriterException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
@@ -160,7 +161,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 			//Generate Project Record if necessary.
 			if(project != null) {
 				project.setRequestId(request.getRequestId());
-				dbp.save(project);
+				new ProjectDataProcessor(dbConn, attributes, req).saveProjectRecord(project);
 			}
 
 		} catch(Exception e) {
@@ -182,6 +183,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		}
 		p.setProjectType("NEW");
 		p.setProjectStatus("UNASSIGNED");
+		p.setCreateDt(Convert.getCurrentTimestamp());
 
 		return p;
 	}

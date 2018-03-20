@@ -6,11 +6,16 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.depuysynthes.srt.SRTMasterRecordAction;
+import com.depuysynthes.srt.SRTMilestoneAction;
 import com.depuysynthes.srt.SRTProjectAction;
+import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTFileVO;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
+import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
@@ -122,14 +127,54 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		// Get the project data
 		SRTProjectVO project = new SRTProjectVO(req);
 
+		//Move Milestone Date Records off request onto ledgerMap. 
+		populateMilestoneRecords(project, data);
+
 		String [] masterRecordIds = req.getParameterValues(SRTMasterRecordAction.SRT_MASTER_RECORD_ID);
 
-		for(String masterRecordId : masterRecordIds) {
-			project.addMasterRecord(new SRTMasterRecordVO(masterRecordId));
+		if(masterRecordIds != null) {
+			for(String masterRecordId : masterRecordIds) {
+				project.addMasterRecord(new SRTMasterRecordVO(masterRecordId));
+			}
 		}
 
 		// Save the project record
 		saveProjectRecord(project);
+	}
+
+	/**
+	 * @param project
+	 * @param data 
+	 */
+	private void populateMilestoneRecords(SRTProjectVO project, FormTransactionVO data) {
+		SRTMilestoneAction sma = new SRTMilestoneAction();
+		sma.setAttributes(attributes);
+		sma.setDBConnection(dbConn);
+
+		//Retrieve list of Milestones from DB for Request.
+		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), null, false);
+
+		//Map List of Milestones to Map of MilestoneId, MilestoneVO.
+		Map<String, SRTProjectMilestoneVO> mMap = milestones.stream().collect(Collectors.toMap(SRTProjectMilestoneVO::getMilestoneId, Function.identity()));
+
+		//Get Iterator of formFieldVOs
+		Iterator<Map.Entry<String, FormFieldVO>> iter = data.getCustomData().entrySet().iterator();
+
+		//Loop FormFieldVos
+		while (iter.hasNext()) {
+
+			//Get Next FormField Entry
+			Map.Entry<String, FormFieldVO> entry = iter.next();
+
+			//Attempt to find a Milestone for the given slugTxt.
+			SRTProjectMilestoneVO mParam = mMap.get(entry.getValue().getSlugTxt());
+
+			//If we found an associated Milestone for the slugTxt, add it as a ledger Entry.
+			if (mParam != null) {
+				project.addLedgerDate(mParam.getMilestoneId(), Convert.formatDate(entry.getValue().getResponseText().trim()));
+				iter.remove();
+			}
+		}
 	}
 
 	public void saveProjectRecord(SRTProjectVO project) {
@@ -139,10 +184,24 @@ public class ProjectDataProcessor extends FormDataProcessor {
 			req.setParameter(SRTProjectAction.SRT_PROJECT_ID, project.getProjectId());
 
 			processMasterRecordXR(project);
+
+			processMilestones(project);
 		} catch(Exception e) {
 			log.error("Could not save SRT Request", e);
 		}
 	}
+
+	/**
+	 * @param project the Project Record to send through Milestone Processing.
+	 * @throws com.siliconmtn.db.util.DatabaseException 
+	 */
+	private void processMilestones(SRTProjectVO project) throws com.siliconmtn.db.util.DatabaseException {
+		SRTMilestoneAction sma = new SRTMilestoneAction();
+		sma.setAttributes(attributes);
+		sma.setDBConnection(dbConn);
+		sma.processProject(project);
+	}
+
 	/**
 	 * Process MasterRecordIds on request and add them as Master Record
 	 * Project Xr Records.
