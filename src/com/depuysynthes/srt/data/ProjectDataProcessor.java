@@ -19,6 +19,7 @@ import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.PrefixBeanDataMapper;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
@@ -130,13 +131,8 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		//Move Milestone Date Records off request onto ledgerMap. 
 		populateMilestoneRecords(project, data);
 
-		String [] masterRecordIds = req.getParameterValues(SRTMasterRecordAction.SRT_MASTER_RECORD_ID);
-
-		if(masterRecordIds != null) {
-			for(String masterRecordId : masterRecordIds) {
-				project.addMasterRecord(new SRTMasterRecordVO(masterRecordId));
-			}
-		}
+		//Add MasterRecords from the Request.
+		project.setMasterRecords(new PrefixBeanDataMapper<SRTMasterRecordVO>(new SRTMasterRecordVO()).populate(req.getParameterMap(), SRTMasterRecordAction.SRT_MASTER_RECORD_ID));
 
 		// Save the project record
 		saveProjectRecord(project);
@@ -152,7 +148,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		sma.setDBConnection(dbConn);
 
 		//Retrieve list of Milestones from DB for Request.
-		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), null, false);
+		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), null, null, false);
 
 		//Map List of Milestones to Map of MilestoneId, MilestoneVO.
 		Map<String, SRTProjectMilestoneVO> mMap = milestones.stream().collect(Collectors.toMap(SRTProjectMilestoneVO::getMilestoneId, Function.identity()));
@@ -183,13 +179,25 @@ public class ProjectDataProcessor extends FormDataProcessor {
 			dbp.save(project);
 			req.setParameter(SRTProjectAction.SRT_PROJECT_ID, project.getProjectId());
 
+			//Save Master Record XRs
 			processMasterRecordXR(project);
 
+			//Store current Status.
+			String stat = StringUtil.checkVal(project.getProjectStatus());
+
+			//Process Milestone Gates.
 			processMilestones(project);
+
+			//Check if status changed.  If so, update Project Record to reflect it.
+			if(!stat.equals(StringUtil.checkVal(project.getProjectStatus()))) {
+				dbp.save(project);
+			}
+
 		} catch(Exception e) {
 			log.error("Could not save SRT Request", e);
 		}
 	}
+
 
 	/**
 	 * @param project the Project Record to send through Milestone Processing.

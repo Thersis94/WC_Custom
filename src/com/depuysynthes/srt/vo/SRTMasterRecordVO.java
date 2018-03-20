@@ -42,6 +42,7 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	private String makeFromPartNos;
 	private String prodFamilyId;
 	private int totalBuilt;
+	private int partCount;
 	private boolean obsoleteFlg;
 	private String obsoleteReason;
 	private Date createDt;
@@ -156,6 +157,13 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	@Column(name="TOTAL_BUILT")
 	public int getTotalBuilt() {
 		return totalBuilt;
+	}
+
+	/**
+	 * @return the partCount
+	 */
+	public int getPartCount() {
+		return partCount;
 	}
 
 	/**
@@ -286,6 +294,13 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	 */
 	public void setTotalBuilt(int totalBuilt) {
 		this.totalBuilt = totalBuilt;
+	}
+
+	/**
+	 * @param partCount the partCount to set.
+	 */
+	public void setPartCount(int partCount) {
+		this.partCount = partCount;
 	}
 
 	/**

@@ -4,11 +4,12 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import com.depuysynthes.srt.vo.SRTProjectMilestoneVO.MilestoneTypeId;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -81,7 +82,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 		notes = new ArrayList<>();
 		masterRecords = new ArrayList<>();
 		milestones = new LinkedHashMap<>();
-		ledgerDates = new HashMap<>();
+		ledgerDates = new LinkedHashMap<>();
 	}
 
 	public SRTProjectVO(ActionRequest req) {
@@ -441,8 +442,8 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 		if(milestones == null || milestones.size() == 0) {
 			return "";
 		} else {
-			List<SRTProjectMilestoneVO> m = new ArrayList<>(milestones.values());
-			return m.get(m.size() - 1).getMilestoneId();
+			List<SRTProjectMilestoneVO> fMilestones = new ArrayList<>(milestones.values()).stream().filter(m -> MilestoneTypeId.STATUS.equals(m.getMilestoneTypeId())).collect(Collectors.toList());
+			return fMilestones.get(fMilestones.size() - 1).getMilestoneId();
 		}
 	}
 
