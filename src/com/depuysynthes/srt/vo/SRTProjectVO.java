@@ -808,7 +808,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 				data = MilestoneIntfc.super.getFieldValue(fieldName);
 			}
 		} catch (NoSuchFieldException e) {
-			mLog.error("Error Processing Code", e);
+			log.error("Error Processing Code", e);
 		}
 
 		return data;
