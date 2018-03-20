@@ -30,7 +30,7 @@ public class SRTUtil {
 	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
 	public static final String HOMEPAGE_REGISTER_FIELD_ID = null;
 	public static final String adminPath = "/manage";
-	public enum SrtPage {MASTER_RECORD("/master-record"), PROJECT("/projects"), REQUEST("/order-online");
+	public enum SrtPage {MASTER_RECORD("/master-record"), PROJECT("/projects"), REQUEST("/request-form");
 		private String urlPath;
 		private SrtPage(String urlPath) {
 			this.urlPath = urlPath;

@@ -9,6 +9,7 @@ import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
+import com.depuysynthes.srt.vo.SRTProjectMilestoneVO.MilestoneTypeId;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
@@ -22,7 +23,6 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
-import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
@@ -106,23 +106,24 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
+		MilestoneTypeId typeId = null;
+
 		if(req.hasParameter(SRT_PROJECT_ID) || req.hasParameter("json")) {
 			GridDataVO<SRTProjectVO> projects = loadProjects(req);
 
 			if(req.hasParameter(SRT_PROJECT_ID)) {
 				loadDataFromForms(req);
-
-				SRTMilestoneAction sma = new SRTMilestoneAction();
-				sma.setAttributes(attributes);
-				sma.setDBConnection(dbConn);
-
-				//Retrieve list of Milestones from DB for Request.
-				List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), null, false);
-				req.setAttribute("SRT_MILESTONES", milestones);
 			}
 
 			putModuleData(projects.getRowData(), projects.getTotal(), false);
+		} else {
+			typeId = MilestoneTypeId.STATUS;
 		}
+
+		//Retrieve list of Milestones from DB for Request.
+		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), typeId, null, false);
+		req.setAttribute("milestones", milestones);
 	}
 
 
@@ -248,16 +249,13 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
 
 		//Holds Engineering, Post Engineering, Unassigned, My Projects.
-		DisplayType displayType = EnumUtil.safeValueOf(DisplayType.class, req.getParameter("filterType"));
-		if(displayType == null) {
-			displayType = DisplayType.MY_PROJECTS;
-		}
+		String statusType = req.getParameter("statusType");
 
 		//We always set Op Co Id off user so they are restricted to their data set.
 		vals.add(roster.getOpCoId());
 
 		//Build Query and populate required vals at same time.
-		String sql = buildProjectRetrievalQuery(req, vals, displayType);
+		String sql = buildProjectRetrievalQuery(req, vals, statusType);
 
 		//Load Projects
 		GridDataVO<SRTProjectVO> projects = new DBProcessor(dbConn).executeSQLWithCount(sql, vals, new SRTProjectVO(), req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
@@ -282,7 +280,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * @param rowData
+	 * Load MilestoneData for the given project Records.
+	 * @param projects
 	 */
 	private void loadMilestoneDetails(List<SRTProjectVO> projects) {
 		SRTMilestoneAction sma = (SRTMilestoneAction) getConfiguredAction(SRTMilestoneAction.class.getName());
@@ -291,24 +290,24 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	/**
 	 * Loads Request Data when we are looking at a single record.
-	 * @param p
+	 * @param project
 	 * @param req
 	 */
-	private void loadDetailData(SRTProjectVO p, ActionRequest req) {
+	private void loadDetailData(SRTProjectVO project, ActionRequest req) {
 
 		//Load request Information and assign on Project Record.
-		req.setParameter(SRTRequestAction.SRT_REQUEST_ID, p.getRequestId());
+		req.setParameter(SRTRequestAction.SRT_REQUEST_ID, project.getRequestId());
 		SRTRequestAction sra = (SRTRequestAction) getConfiguredAction(SRTRequestAction.class.getName());
 		GridDataVO<SRTRequestVO> reqData = sra.loadRequests(req);
 		if(reqData != null && !reqData.getRowData().isEmpty()) {
-			p.setRequest(reqData.getRowData().get(0));
+			project.setRequest(reqData.getRowData().get(0));
 		}
 
 		//Load Master Record Data and assign on Project Record.
 		SRTMasterRecordAction smra = (SRTMasterRecordAction) getConfiguredAction(SRTMasterRecordAction.class.getName());
-		List<SRTMasterRecordVO> prodData = smra.loadMasterRecordXR(p);
+		List<SRTMasterRecordVO> prodData = smra.loadMasterRecordXR(project);
 		for(SRTMasterRecordVO mr : prodData) {
-			p.addMasterRecord(mr);
+			project.addMasterRecord(mr);
 		}
 	}
 
@@ -332,13 +331,12 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	/**
 	 * Builds the Project Retrieval Query.
-	 * @param displayType 
+	 * @param req 
 	 * @param vals 
-	 * @param rosterId
-	 * @param projectId
+	 * @param statusType
 	 * @return
 	 */
-	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals, DisplayType displayType) {
+	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals, String statusType) {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
@@ -383,7 +381,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		}
 
 		//Build Where Conditional and set and clause values on the vals list.
-		buildWhereClause(sql, req, vals, displayType);
+		buildWhereClause(sql, req, vals, statusType);
 
 		//Add Order By clause.
 		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(req.getParameter("orderBy"), "p.create_dt desc"));
@@ -396,42 +394,22 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 * @param sql
 	 * @param req
 	 * @param vals
-	 * @param displayType
+	 * @param statusType
 	 */
-	private void buildWhereClause(StringBuilder sql, ActionRequest req, List<Object> vals, DisplayType displayType) {
+	private void buildWhereClause(StringBuilder sql, ActionRequest req, List<Object> vals, String statusType) {
 		sql.append(DBUtil.WHERE_1_CLAUSE).append(" and p.OP_CO_ID = ? ");
 
 		if(req.hasParameter(SRT_PROJECT_ID)) {
 			sql.append("and p.PROJECT_ID = ? ");
 			vals.add(req.getParameter(SRT_PROJECT_ID));
+		} else if(!StringUtil.isEmpty(statusType)) {
+			sql.append("and p.PROJ_STAT_ID = ? ");
+			vals.add(statusType);
 		}
 
-		//If my Project, add roster ID for comparisons.  Else sort by status.
-		else {
+		if(req.getBooleanParameter("myProjectsFlg")) {
 			SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
-
-			/**
-			 * TODO - This is where the large filters against Projects is
-			 * done.  This probably ties into Milestones.  Waiting on
-			 * answers from Mike as to business rules for Engineering vs.
-			 * Production filters.
-			 */
-			switch(displayType) {
-				case ENGINEERING:
-					sql.append("and (engineer_id is not null and buyer_id is null) ");
-					break;
-				case MY_PROJECTS:
-					buildMyProjectsClause(sql, vals, roster);
-					break;
-				case PRODUCTION:
-					sql.append("and buyer_id is not null ");
-					break;
-				case UNASSIGNED:
-					sql.append("and engineer_id is null ");
-					break;
-				default:
-					break;
-			}
+			buildMyProjectsClause(sql, vals, roster);
 		}
 	}
 

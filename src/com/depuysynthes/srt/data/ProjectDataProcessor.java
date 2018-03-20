@@ -152,7 +152,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		sma.setDBConnection(dbConn);
 
 		//Retrieve list of Milestones from DB for Request.
-		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), null, false);
+		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), null, null, false);
 
 		//Map List of Milestones to Map of MilestoneId, MilestoneVO.
 		Map<String, SRTProjectMilestoneVO> mMap = milestones.stream().collect(Collectors.toMap(SRTProjectMilestoneVO::getMilestoneId, Function.identity()));

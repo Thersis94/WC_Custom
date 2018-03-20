@@ -21,12 +21,14 @@ import com.siliconmtn.workflow.milestones.MilestoneVO;
  ****************************************************************************/
 public class SRTProjectMilestoneVO extends MilestoneVO {
 
+	public enum MilestoneTypeId {DATE, STATUS}
 	/**
 	 *
 	 */
 	private static final long serialVersionUID = 1L;
 	private String projectMilestoneXRId;
 	private String projectId;
+	private MilestoneTypeId milestoneTypeId;
 	private Date milestoneDt;
 
 	public SRTProjectMilestoneVO() {
@@ -67,6 +69,7 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 		setCreateDt(util.getDateVal("CREATE_DT", rs));
 		setProjectId(util.getStringVal("PROJECT_ID", rs));
 		setMilestoneNm(util.getStringVal("MILESTONE_NM", rs));
+		setMilestoneTypeId(util.getEnumVal(MilestoneTypeId.class, "MILESTONE_TYPE_ID", rs));
 		setProjectMilestoneXRId(util.getStringVal("PROJ_MILESTONE_XR_ID", rs));
 		setMilestoneDt(util.getDateVal("MILESTONE_DT", rs));
 	}
@@ -86,11 +89,10 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 	}
 
 	/**
-	 * @return the milestoneId
+	 * @return the milestoneTypeId
 	 */
-	@Override
-	public String getMilestoneId() {
-		return super.getMilestoneId();
+	public MilestoneTypeId getMilestoneTypeId() {
+		return milestoneTypeId;
 	}
 
 	/**
@@ -112,6 +114,13 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 	 */
 	public void setProjectId(String projectId) {
 		this.projectId = projectId;
+	}
+
+	/**
+	 * @param milestoneTypeId the milestoneTypeId to set.
+	 */
+	public void setMilestoneTypeId(MilestoneTypeId milestoneTypeId) {
+		this.milestoneTypeId = milestoneTypeId;
 	}
 
 	/**
