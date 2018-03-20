@@ -200,7 +200,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 
 		//If we have a milestoneId on the request, save the Milestone.
 		MilestoneVO milestone = new MilestoneVO(req);
-		milestone.setRules(new PrefixBeanDataMapper<MilestoneRuleVO>(new MilestoneRuleVO()).populate(req.getParameterMap(), "fieldNm"));
+		milestone.setRules(new PrefixBeanDataMapper<MilestoneRuleVO>(new MilestoneRuleVO()).populate(req.getParameterMap(), MILESTONE_RULE_PREFIX));
 		saveMilestone(milestone);
 
 		sbUtil.moduleRedirect(req, msg, SrtAdmin.MILESTONE.getUrlPath());
@@ -363,7 +363,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * @param project
 	 * @throws DatabaseException
 	 */
-	public void processProject(SRTProjectVO project) throws DatabaseException {
+	public void processProject(SRTProjectVO project) {
 
 		//Ensure we have all milestones for this project from the db.
 		populateMilestones(Arrays.asList(project));
@@ -383,7 +383,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * @param project
 	 * @throws DatabaseException
 	 */
-	private void saveMilestones(SRTProjectVO project) throws DatabaseException {
+	private void saveMilestones(SRTProjectVO project) {
 
 		//Filter out new Milestones to save.
 		List<SRTProjectMilestoneVO> newMilestones = project.getMilestones()
@@ -392,23 +392,41 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 													.filter(m -> StringUtil.isEmpty(m.getProjectMilestoneXRId()))
 													.collect(Collectors.toList());
 
-		//Save any new Milestones in list.
-		if(!newMilestones.isEmpty()) {
-			try(PreparedStatement ps = dbConn.prepareStatement(saveMilestonesSql())) {
-				UUIDGenerator uuid = new UUIDGenerator();
-				for(SRTProjectMilestoneVO m : newMilestones) {
-					Date milestoneDt = project.getLedgerDates().get(m.getMilestoneId());
-					int i = 1;
-					ps.setString(i++, m.getProjectId());
-					ps.setString(i++, m.getMilestoneId());
-					ps.setString(i++, uuid.getUUID());
-					ps.setTimestamp(i++, milestoneDt != null ? Convert.formatTimestamp(milestoneDt) : Convert.getCurrentTimestamp());
-					ps.addBatch();
+		//If no new milestones generated, fast return.
+		if(newMilestones.isEmpty()) {
+			return;
+		}
+
+		//Prep Save Variables.
+		UUIDGenerator uuid = new UUIDGenerator();
+		int i;
+
+		//Save any new Milestones.
+		try(PreparedStatement ps = dbConn.prepareStatement(saveMilestonesSql())) {
+
+			//Save each new Milestone Record.
+			for(SRTProjectMilestoneVO m : newMilestones) {
+
+				/*
+				 * If this milestone controls project status, update
+				 * Project Status.
+				 */
+				if(MilestoneTypeId.STATUS.equals(m.getMilestoneTypeId())) {
+					project.setProjectStatus(m.getMilestoneId());
 				}
-				ps.executeBatch();
-			} catch (SQLException e) {
-				log.error("Error Saving Project Milestones.", e);
+
+				//Check if there is a ledger Date recorded for this.
+				Date milestoneDt = project.getLedgerDates().get(m.getMilestoneId());
+				i = 1;
+				ps.setString(i++, m.getProjectId());
+				ps.setString(i++, m.getMilestoneId());
+				ps.setString(i++, uuid.getUUID());
+				ps.setTimestamp(i++, milestoneDt != null ? Convert.formatTimestamp(milestoneDt) : Convert.getCurrentTimestamp());
+				ps.addBatch();
 			}
+			ps.executeBatch();
+		} catch (SQLException e) {
+			log.error("Error Saving Project Milestones.", e);
 		}
 	}
 
