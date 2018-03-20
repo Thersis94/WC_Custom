@@ -15,9 +15,13 @@ import java.util.Map;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.rezdox.action.ResidenceAction;
+import com.rezdox.api.SunNumberAPIManager;
+import com.rezdox.api.WalkScoreAPIManager;
 import com.rezdox.api.ZillowAPIManager;
 import com.rezdox.vo.ResidenceAttributeVO;
 import com.rezdox.vo.ResidenceVO;
+import com.rezdox.vo.SunNumberVO;
+import com.rezdox.vo.WalkScoreVO;
 import com.rezdox.vo.ZillowPropertyVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
@@ -115,7 +119,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			migrateMemberRewards();
 			migrateAlbums();
 			migrateRoomInfo();
-			addResidenceZestimates();
+			addResidenceApiData();
 		} catch(Exception e) {
 			log.error("Failed to migrate data.", e);
 		}
@@ -1298,27 +1302,42 @@ public class LegacyDataMigration extends CommandLineUtil {
 	}
 	
 	/**
-	 * Adds zestimate data for each of the residences
+	 * Adds Zestimate, WalkScore, Sun Number data for each of the residences
 	 * 
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	protected void addResidenceZestimates() throws DatabaseException, InvalidDataException {
+	protected void addResidenceApiData() throws DatabaseException, InvalidDataException {
 		DBProcessor dbp = new DBProcessor(dbConn);
 		List<ResidenceVO> residences = dbp.executeSelect("select * from custom.rezdox_residence ", new ArrayList<>(), new ResidenceVO());
 		
 		for (ResidenceVO residence : residences) {
-			ResidenceAttributeVO zestimate = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_ZESTIMATE, "");
+			List<ResidenceAttributeVO> attributes = new ArrayList<>();
+			ResidenceAttributeVO zestimateAttr = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_ZESTIMATE, "");
+			ResidenceAttributeVO walkScoreAttr = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_WALK_SCORE, "");
+			ResidenceAttributeVO sunNumberAttr = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_SUN_NUMBER, "");
 			
 			try {
 				ZillowAPIManager zillowApi = new ZillowAPIManager();
 				ZillowPropertyVO property = zillowApi.retrieveZillowId(residence);
-				zestimate.setValueText(property.getValueEstimate().toString());
+				zestimateAttr.setValueText(property.getValueEstimate().toString());
+				
+				WalkScoreAPIManager walkScoreApi = new WalkScoreAPIManager();
+				WalkScoreVO walkScore = walkScoreApi.retrieveWalkScore(residence);
+				walkScoreAttr.setValueText(Convert.formatInteger(walkScore.getWalkscore()).toString());
+				
+				SunNumberAPIManager sunNumberApi = new SunNumberAPIManager();
+				SunNumberVO sunNumber = sunNumberApi.retrieveSunNumber(residence);
+				sunNumberAttr.setValueText(sunNumber.getSunNumber());
 			} catch (Exception e) {
-				// Save an empty Zestimate if the address wasn't found, this is a required attribute
+				// Save empty values if the address isn't found, these are required attributes
 			}
 			
-			dbp.save(zestimate);
+			attributes.add(zestimateAttr);
+			attributes.add(walkScoreAttr);
+			attributes.add(sunNumberAttr);
+			
+			dbp.executeBatch(attributes);
 		}
 	}
 }

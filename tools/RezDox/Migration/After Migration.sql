@@ -81,3 +81,9 @@ delete from custom.rezdox_residence_attribute where slug_txt = 'RESIDENCE_ROOM_D
 -- Fill in empty zestimate values
 update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'RESIDENCE_ZESTIMATE' and value_txt = '';
 
+
+-- Give all rooms a name if they don't have one, based on the room type name
+update custom.rezdox_room set room_nm = rt.type_nm
+from custom.rezdox_room_type rt
+where custom.rezdox_room.room_type_cd = rt.room_type_cd and room_nm is null;
+
