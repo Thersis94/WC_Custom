@@ -11,12 +11,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.api.SunNumberAPIManager;
+import com.rezdox.api.WalkScoreAPIManager;
 import com.rezdox.api.ZillowAPIManager;
 import com.rezdox.data.ResidenceFormProcessor;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO.Group;
 import com.rezdox.vo.ResidenceAttributeVO;
 import com.rezdox.vo.ResidenceVO;
+import com.rezdox.vo.SunNumberVO;
+import com.rezdox.vo.WalkScoreVO;
 import com.rezdox.vo.ZillowPropertyVO;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
@@ -62,6 +66,8 @@ public class ResidenceAction extends SBActionAdapter {
 	public static final String PRIMARY_RESIDENCE = " Primary Residence";
 	public static final String UPGRADE_MSG = "You have reached your maximum residences. Please purchase a residence upgrade to continue.";
 	public static final String SLUG_RESIDENCE_ZESTIMATE = "RESIDENCE_ZESTIMATE";
+	public static final String SLUG_RESIDENCE_WALK_SCORE = "RESIDENCE_WALK_SCORE";
+	public static final String SLUG_RESIDENCE_SUN_NUMBER = "RESIDENCE_SUN_NUMBER";
 	
 	public enum ResidenceColumnName {
 		RESIDENCE_ID, CREATE_DT, UPDATE_DT
@@ -180,7 +186,10 @@ public class ResidenceAction extends SBActionAdapter {
 		}
 		
 		DBProcessor dbp = new DBProcessor(dbConn);
-		return dbp.executeSelect(sql.toString(), params, new ResidenceVO());
+		List<ResidenceVO> residences = dbp.executeSelect(sql.toString(), params, new ResidenceVO());
+		
+		// Prevent an unsupported operation exception when trying to add a residence to an empty list
+		return residences.isEmpty() ? new ArrayList<>() : residences;
 	}
 	
 	/**
@@ -263,11 +272,22 @@ public class ResidenceAction extends SBActionAdapter {
 		
 		// If this is a new residence, lookup residential API data + extended data for attributes
 		ZillowPropertyVO property = null;
+		SunNumberVO sunNumber = null;
+		WalkScoreVO walkScore = null;
 		if (newResidence) {
+			// Zillow
 			ZillowAPIManager zillow = new ZillowAPIManager();
 			property = zillow.retrievePropertyDetails(residence);
 			residence.setLatitude(property.getLatitude());
 			residence.setLongitude(property.getLongitude());
+			
+			// Sun Number
+			SunNumberAPIManager sunNumberApi = new SunNumberAPIManager();
+			sunNumber = sunNumberApi.retrieveSunNumber(residence);
+			
+			// Walk Score
+			WalkScoreAPIManager walkScoreApi = new WalkScoreAPIManager();
+			walkScore = walkScoreApi.retrieveWalkScore(residence);
 		}
 		
 		// Save the residence & attributes records
@@ -276,9 +296,14 @@ public class ResidenceAction extends SBActionAdapter {
 			dbp.save(residence);
 			req.setParameter(ResidenceAction.RESIDENCE_ID, residence.getResidenceId());
 			
+			// This must happen here to ensure we have a residence_id first, to pass to the attributes
 			if (property != null) {
-				dbp.executeBatch(mapZillowDataToAttributes(property, residence, req));
+				List<ResidenceAttributeVO> attributes = mapZillowDataToAttributes(property, residence, req);
+				attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_SUN_NUMBER, sunNumber.getSunNumber()));
+				attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_WALK_SCORE, Convert.formatInteger(walkScore.getWalkscore()).toString()));
+				dbp.executeBatch(attributes);	
 			}
+			
 		} catch(Exception e) {
 			throw new DatabaseException(e);
 		}
