@@ -44,6 +44,8 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 	
 	public static final String COMPANY_ID = "companyId";
 	public static final String SCENARIO_ID = "scenarioId";
+	public static final String REGION_CD = "regionCode";
+	public static final String YEAR_NO = "calendarYear";
 	
 	public FinancialDashImportAction() {
 		super();
@@ -169,7 +171,7 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 	 */
 	public FinancialDashImportReportVO buildReport(ActionRequest req) throws ActionException {
 		FinancialDashImportReportVO report = new FinancialDashImportReportVO();
-		String sql = getExportSql(Convert.formatBoolean(req.getParameter("isCompany")), req.hasParameter(COMPANY_ID));
+		String sql = getExportSql(Convert.formatBoolean(req.getParameter("isCompany")), req);
 		FinancialDashVO dash = new FinancialDashVO();
 		SmarttrakTree sections = getHierarchy(req);
 		dash.setData(req, sections);
@@ -182,7 +184,9 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 			ps.setString(++idx, req.getParameter(SCENARIO_ID));
 			for (int i = 0; i < 7; i++) ps.setString(++idx, user.getAccountId());
 			for (int i = 0; i < 7; i++) ps.setString(++idx, dash.getSectionId());
+			if (req.hasParameter(YEAR_NO)) ps.setInt(++idx, Convert.formatInteger(req.getParameter(YEAR_NO)));
 			if (req.hasParameter(COMPANY_ID)) ps.setString(++idx, req.getParameter(COMPANY_ID));
+			if (!"WW".equals(req.getParameter(REGION_CD))) ps.setString(++idx, req.getParameter(REGION_CD));
 
 			buildData(ps.executeQuery(), report);
 			
@@ -196,10 +200,10 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 	/**
 	 * Build the sql query used to generate the export report
 	 * @param isCompany
-	 * @param fullCompany
+	 * @param req
 	 * @return
 	 */
-	private String getExportSql(boolean isCompany, boolean fullCompany) {
+	private String getExportSql(boolean isCompany, ActionRequest req) {
 		StringBuilder sql = new StringBuilder(1000);
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
@@ -211,9 +215,9 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 		sql.append("left join custom.biomedgps_fd_scenario_overlay o on o.revenue_id = r.revenue_id and o.scenario_id = ? ");
 		sql.append("left join custom.biomedgps_fd_scenario s on s.scenario_id = ? ");
 		getCommonMidSql(sql, custom);
-		if (fullCompany) {
-			sql.append("and c.company_id = ? ");
-		}
+		if (req.hasParameter(YEAR_NO)) sql.append("and r.year_no = ? ");
+		if (req.hasParameter(COMPANY_ID)) sql.append("and c.company_id = ? ");
+		if (!"WW".equals(req.getParameter(REGION_CD))) sql.append("and r.region_cd = ? ");
 		if (isCompany) {
 			sql.append("order by company_nm, s1.section_nm, region_cd, year_no");
 		} else {
