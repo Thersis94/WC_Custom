@@ -9,7 +9,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
 /****************************************************************************
@@ -41,31 +40,31 @@ public class ProjectAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String residenceId = req.getParameter("residenceId");
-		//fail fast if we don't have a residenceId to query against
-		if (StringUtil.isEmpty(residenceId)) return;
 
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.*, "); //should this be honed?
-		sql.append("b.attribute_id, b.slug_txt, b.value_txt");
-		sql.append("c.category_nm, d.type_nm");
+		sql.append("b.attribute_id, b.slug_txt, b.value_txt, ");
+		sql.append("c.category_nm, d.type_nm, r.residence_nm, rr.room_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("REZDOX_PROJECT a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_ATTRIBUTE b on a.project_id=b.project_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_CATEGORY c on a.project_category_cd=c.project_category_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_TYPE d on a.project_type_cd=d.project_type_cd ");
-		sql.append("where a.residence_id=? ");
-		sql.append("order by cast(a.create_dt as date) desc, a.project_nm");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE r on a.residence_id=r.residence_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.status_flg=1 ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_ROOM rr on r.residence_id=rr.residence_id ");
+		sql.append("where rm.member_id=? ");
+		sql.append("order by cast(coalesce(a.update_dt, a.create_dt) as date) desc, a.project_nm");
 
 		List<Object> params = new ArrayList<>();
-		params.add(residenceId);
+		params.add(RezDoxUtils.getMemberId(req));
 
 		List<Object> data = null;
 		try {
 			DBProcessor db = new DBProcessor(getDBConnection(), schema);
-			data = db.executeSelect(sql.toString(), params, ProjectVO.class);
+			data = db.executeSelect(sql.toString(), params, new ProjectVO());
 		} catch (Exception e) {
-			log.error("could not load projects for residenceId=" + residenceId, e);
+			log.error("could not load projects for member", e);
 		}
 		putModuleData(data);
 	}

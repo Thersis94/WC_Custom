@@ -25,7 +25,7 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 	public enum ActionType {
 		PROJECT(ProjectAction.class), 
 		MATERIAL(ProjectMaterialAction.class);
-		
+
 		Class<? extends ActionInterface> c;
 		ActionType(Class<? extends ActionInterface> c) { this.c = c; }
 		public Class<? extends ActionInterface> getClassName() { return c; } 
@@ -49,17 +49,32 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 			actionMap.put(type.name(), type.getClassName());
 	}
 
-
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		loadActionByType(getType(req)).retrieve(req);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		loadActionByType(getType(req)).build(req);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
 
 	/**
 	 * reused helper to get the actionType off the request object.  Defaults to PROJECT
@@ -69,4 +84,5 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 	private String getType(ActionRequest req) {
 		return StringUtil.checkVal(req.getParameter("actionType"), ActionType.PROJECT.name()).toUpperCase();
 	}
+
 }

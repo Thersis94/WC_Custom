@@ -22,12 +22,16 @@ import com.siliconmtn.util.Convert;
 public class ProjectVO {
 
 	private String projectId;
+	private String projectName;
 	private String residenceId;
+	private String residenceName;
 	private String roomId;
+	private String roomName;
 	private String businessId;
 	private String projectCategoryCd;
+	private String projectCategoryName;
 	private String projectTypeCd;
-	private String projectName;
+	private String projectTypeName;
 	private double laborNo;
 	private double totalNo;
 	private int residenceViewFlg;
@@ -132,6 +136,26 @@ public class ProjectVO {
 		this.businessId = businessId;
 	}
 
+	@Column(name="room_nm", isReadOnly=true)
+	public String getRoomName() {
+		return roomName;
+	}
+
+	@Column(name="residence_nm", isReadOnly=true)
+	public String getResidenceName() {
+		return residenceName;
+	}
+
+	@Column(name="category_nm", isReadOnly=true)
+	public String getProjectCategoryName() {
+		return projectCategoryName;
+	}
+
+	@Column(name="type_nm", isReadOnly=true)
+	public String getProjectTypeName() {
+		return projectTypeName;
+	}
+
 
 	public void setProjectCategoryCd(String projectCategoryCd) {
 		this.projectCategoryCd = projectCategoryCd;
@@ -163,5 +187,21 @@ public class ProjectVO {
 
 	public void setMaterials(List<ProjectMaterialVO> materials) {
 		this.materials = materials;
+	}
+
+	public void setRoomName(String roomName) {
+		this.roomName = roomName;
+	}
+
+	public void setResidenceName(String residenceName) {
+		this.residenceName = residenceName;
+	}
+
+	public void setProjectCategoryName(String projectCategoryName) {
+		this.projectCategoryName = projectCategoryName;
+	}
+
+	public void setProjectTypeName(String projectTypeName) {
+		this.projectTypeName = projectTypeName;
 	}
 }
