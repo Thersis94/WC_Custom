@@ -87,6 +87,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
 	public static final String EUREPORT_ROLE_ID = "6f5c869a9b0e9b640a001421bce81c9b";
 	public static final String UPDATES_ROLE_ID = "edf3243498c048ca82a2f1041fa4b92e";
+	public static final String ADMIN_STAFF_ROLE_ID = "18fe05a156654c0999ea242e35f4addc";
 	
 	/**
 	 * @deprecated - use UPDATES_ROLE_ID for naming consistency -JM- 08.08.2017
