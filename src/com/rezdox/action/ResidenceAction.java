@@ -112,7 +112,7 @@ public class ResidenceAction extends SBActionAdapter {
 		if ("new".equalsIgnoreCase(residenceId) && !canAddNewResidence(residenceList, req)) {
 			// When adding a new residence, check to make sure the member has not reached their limit
 			sendRedirect(RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH, UPGRADE_MSG, req);
-		} else if (req.hasParameter("homeInfo")) {
+		} else if (req.hasParameter("homeInfo") || req.hasParameter("settings")) {
 			// Set the data to be returned
 			req.setAttribute(RESIDENCE_DATA, residenceList);
 			putModuleData(retrieveHomeInfoForm(req));
@@ -162,7 +162,7 @@ public class ResidenceAction extends SBActionAdapter {
 		// Using pivot table on the attributes to get additional data for display
 		StringBuilder sql = new StringBuilder(900);
 		sql.append("select r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt) as update_dt, ");
-		sql.append("beds_no, baths_no, coalesce(f_sqft_no, 0) as sqft_no, zestimate_no ");
+		sql.append("privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0) as sqft_no, zestimate_no ");
 		sql.append("from ").append(schema).append("rezdox_residence r inner join ");
 		sql.append(schema).append("rezdox_residence_member_xr m on r.residence_id = m.residence_id ");
 		sql.append("left join (SELECT * FROM crosstab('SELECT residence_id, slug_txt, value_txt FROM ").append(schema).append("rezdox_residence_attribute ORDER BY 1', ");
@@ -242,7 +242,7 @@ public class ResidenceAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		if (req.hasParameter("homeInfo")) {
+		if (req.hasParameter("homeInfo") || req.hasParameter("settings")) {
 			saveForm(req);
 		} else {
 			try {
