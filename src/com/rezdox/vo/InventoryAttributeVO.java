@@ -17,14 +17,14 @@ import com.siliconmtn.util.Convert;
  * @since Feb 26, 2018
  ****************************************************************************/
 @Table(name="REZDOX_TREASURE_ITEM_ATTRIBUTE")
-public class TreasureItemAttributeVO {
+public class InventoryAttributeVO {
 
 	private String attributeId;
 	private String treasureItemId;
 	private String slugTxt;
 	private String valueTxt;
 
-	public TreasureItemAttributeVO() {
+	public InventoryAttributeVO() {
 		super();
 	}
 

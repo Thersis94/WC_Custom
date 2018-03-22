@@ -22,7 +22,6 @@ import com.siliconmtn.util.Convert;
 public class DocumentVO {
 
 	private String documentId;
-	private String treasureItemId;
 	private String projectId;
 	private String documentName;
 	private String descriptionText;
@@ -45,11 +44,6 @@ public class DocumentVO {
 	@Column(name="document_id", isPrimaryKey=true)
 	public String getDocumentId() {
 		return documentId;
-	}
-
-	@Column(name="treasure_item_id")
-	public String getTreasureItemId() {
-		return treasureItemId;
 	}
 
 	@Column(name="project_id")
@@ -85,10 +79,6 @@ public class DocumentVO {
 
 	public void setDocumentId(String documentId) {
 		this.documentId = documentId;
-	}
-
-	public void setTreasureItemId(String treasureItemId) {
-		this.treasureItemId = treasureItemId;
 	}
 
 	public void setProjectId(String projectId) {

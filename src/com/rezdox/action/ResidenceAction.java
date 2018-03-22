@@ -35,7 +35,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
@@ -154,10 +153,6 @@ public class ResidenceAction extends SBActionAdapter {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String residenceId = req.getParameter(RESIDENCE_ID);
 		
-		// Show only residences that the member has access to
-		SMTSession session = req.getSession();
-		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
-		
 		// Using pivot table on the attributes to get additional data for display
 		StringBuilder sql = new StringBuilder(900);
 		sql.append("select r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt) as update_dt, ");
@@ -171,7 +166,7 @@ public class ResidenceAction extends SBActionAdapter {
 		sql.append("where member_id = ? ");
 		
 		List<Object> params = new ArrayList<>();
-		params.add(member.getMemberId());
+		params.add(RezDoxUtils.getMemberId(req));
 		
 		// Return only a specific residence if selected
 		if (!StringUtil.isEmpty(residenceId)) {
@@ -179,10 +174,33 @@ public class ResidenceAction extends SBActionAdapter {
 			params.add(residenceId);
 		}
 		
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		return dbp.executeSelect(sql.toString(), params, new ResidenceVO());
 	}
-	
+
+
+	/**
+	 * Return a list of Residences for the given member.
+	 * @param req
+	 * @return
+	 */
+	public List<ResidenceVO> listMyResidences(String memberId, String residenceId) {
+		String schema = getCustomSchema();
+		StringBuilder sql = new StringBuilder(900);
+		sql.append("select a.* from ").append(schema).append("rezdox_residence a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_residence_member_xr b ");
+		sql.append("on a.residence_id=b.residence_id and b.member_id=? and b.status_flg=1");
+		if (!StringUtil.isEmpty(residenceId)) sql.append(" where a.residence_id=?");
+
+		List<Object> params = new ArrayList<>();
+		params.add(memberId);
+		if (!StringUtil.isEmpty(residenceId)) params.add(residenceId);
+
+		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
+		return dbp.executeSelect(sql.toString(), params, new ResidenceVO());
+	}
+
+
 	/**
 	 * Retrieves the Residence Home Information form & saved form data
 	 * 
@@ -190,7 +208,7 @@ public class ResidenceAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected FormVO retrieveHomeInfoForm(ActionRequest req) {
-		String formId = getFormId();
+		String formId = RezDoxUtils.getFormId(getAttributes());
 		log.debug("Retrieving Residence Form: " + formId);
 		
 		// Update Zestimate before form load, per requirements
@@ -208,16 +226,6 @@ public class ResidenceAction extends SBActionAdapter {
 		req.setAttribute(FormAction.FORM_DATA, dc);
 		
 		return dc.getForm();
-	}
-	
-	/**
-	 * Get's the form id associated to the action
-	 * 
-	 * @return
-	 */
-	private String getFormId() {
-		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		return (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 	}
 	
 	/* (non-Javadoc)
@@ -240,7 +248,7 @@ public class ResidenceAction extends SBActionAdapter {
 	 * Saves a residence form builder form
 	 */
 	protected void saveForm(ActionRequest req) {
-		String formId = getFormId();
+		String formId = RezDoxUtils.getFormId(getAttributes());
 
 		// Place ActionInit on the Attributes map for the Data Save Handler.
 		attributes.put(Constants.ACTION_DATA, actionInit);
@@ -300,27 +308,22 @@ public class ResidenceAction extends SBActionAdapter {
 		// Record already exists if this isn't a new residence, don't need another here
 		if (!newResidence) return;
 		
-		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(150);
-		sql.append(DBUtil.INSERT_CLAUSE).append(schema).append("rezdox_residence_member_xr (residence_member_xr_id, ");
-		sql.append("member_id, residence_id, status_flg, create_dt) ");
+		sql.append(DBUtil.INSERT_CLAUSE).append(schema).append("rezdox_residence_member_xr ");
+		sql.append("(residence_member_xr_id, member_id, residence_id, status_flg, create_dt) ");
 		sql.append("values (?,?,?,?,?)");
 		log.debug(sql);
-		
-		// Get the member adding this residence
-		SMTSession session = req.getSession();
-		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, new UUIDGenerator().getUUID());
-			ps.setString(2, member.getMemberId());
+			ps.setString(2, RezDoxUtils.getMemberId(req));
 			ps.setString(3, req.getParameter(ResidenceAction.RESIDENCE_ID));
 			ps.setInt(4, 1); // Newly added residences are always active
 			ps.setTimestamp(5, Convert.getCurrentTimestamp());
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
-			log.error("Could not save RezDox Member/Residence XR ", sqle);
-			throw new DatabaseException(sqle);
+			throw new DatabaseException("Could not save RezDox Member/Residence XR", sqle);
 		}
 	}
 	
@@ -360,7 +363,7 @@ public class ResidenceAction extends SBActionAdapter {
 	private List<String> getSlugTxtList(ActionRequest req) {
 		List<String> slugs = new ArrayList<>();
 		
-		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadForm(getFormId(), req);
+		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadForm(RezDoxUtils.getFormId(getAttributes()), req);
 		FormVO residenceForm = dc.getForm();
 		
 		// Loop over the templates to get form field slug texts

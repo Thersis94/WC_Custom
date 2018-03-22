@@ -1,5 +1,12 @@
 package com.rezdox.action;
 
+import java.util.Map;
+
+import com.rezdox.vo.MemberVO;
+import com.siliconmtn.action.ActionRequest;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.constants.Constants;
+
 /****************************************************************************
  * <b>Title:</b> RezDoxUtils.java<br/>
  * <b>Description:</b> 
@@ -25,7 +32,31 @@ public class RezDoxUtils {
 	public static final String SUBSCRIPTION_UPGRADE_PATH = "/subscribe";
 
 
+
 	private RezDoxUtils() {
 		//default constructor not used in static classes
+	}
+
+
+	/**
+	 * Get's the form id associated to the action off the attributes Map.
+	 * The RezDox actions store this in the attribute1 slot.
+	 * @param attributes
+	 * @return
+	 */
+	public static String getFormId(Map<String, Object> attributes) {
+		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		return (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
+	}
+
+
+	/**
+	 * Returns the memberId from session (UserDataVO)
+	 * @param req
+	 * @return
+	 */
+	public static String getMemberId(ActionRequest req) {
+		MemberVO member = (MemberVO) req.getSession().getAttribute(Constants.USER_DATA);
+		return member.getMemberId();
 	}
 }
