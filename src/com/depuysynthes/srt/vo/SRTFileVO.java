@@ -27,6 +27,7 @@ public class SRTFileVO extends BeanDataVO {
 	 */
 	private static final long serialVersionUID = 1L;
 	private String fileId;
+	private String profileDocumentId;
 	private String requestId;
 	private String masterRecordId;
 	private String rosterId;
@@ -55,6 +56,13 @@ public class SRTFileVO extends BeanDataVO {
 		return fileId;
 	}
 
+	/**
+	 * @return the profileDocumentId
+	 */
+	@Column(name="PROFILE_DOCUMENT_ID")
+	public String getProfileDocumentId() {
+		return profileDocumentId;
+	}
 	/**
 	 * @return the requestId
 	 */
@@ -116,6 +124,13 @@ public class SRTFileVO extends BeanDataVO {
 	 */
 	public void setFileId(String fileId) {
 		this.fileId = fileId;
+	}
+
+	/**
+	 * @param profileDocumentId the profileDocumentId to set.
+	 */
+	public void setProfileDocumentId(String profileDocumentId) {
+		this.profileDocumentId = profileDocumentId;
 	}
 
 	/**
