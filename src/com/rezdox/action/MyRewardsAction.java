@@ -9,11 +9,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
 import com.rezdox.vo.MemberRewardVO;
 import com.rezdox.vo.MemberVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -62,7 +66,7 @@ public class MyRewardsAction extends SimpleActionAdapter {
 		setAttributes(attributes);
 	}
 
-	/**
+	/*
 	 * Display the user's points, and a list of available rewards if the Widget is in focus
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -70,14 +74,6 @@ public class MyRewardsAction extends SimpleActionAdapter {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		SMTSession ses = req.getSession();
-
-		// Note: if the user's points change during their visit, simply apss this parameter to refresh them.
-		if (!req.hasParameter(Constants.PAGE_MODULE_ID) && !req.hasParameter("refreshPoints") && ses.getAttribute(MY_POINTS) != null) {
-			//if we're not on the points page, not refreshing, and the session tally is already loaded...we're done here.
-			return;
-		}
-
 		// Load a list of rewards - inclusive of the ones this user has cashed in.
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 		req.setAttribute("allRewards", ra.loadRewards(null));
@@ -92,11 +88,20 @@ public class MyRewardsAction extends SimpleActionAdapter {
 		for (MemberRewardVO vo : rewards)
 			points += vo.getPointsNo();
 
-		ses.setAttribute(MY_POINTS, points);
+		//set the total in a cookie.  This may be excessive for repeat calls to the rewards page, but ensures cached data is flushed
+		HttpServletResponse resp = (HttpServletResponse) getAttribute(GlobalConfig.HTTP_RESPONSE);
+		CookieUtil.add(resp, MY_POINTS, String.valueOf(points), "/", -1);
+
+		//if this is the ajax call, we only want to return a point count, not reward data
+		if (req.hasParameter("pointsOnly")) {
+			putModuleData(points);
+		} else {
+			mod.setAttribute(MY_POINTS, points); //for JSP, which won't see the cookie if just created
+		}
 	}
 
 
-	/**
+	/*
 	 * form-submittal - the user is cashing in points for a reward.
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
