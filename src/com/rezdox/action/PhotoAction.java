@@ -1,6 +1,7 @@
 package com.rezdox.action;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -111,6 +112,8 @@ public class PhotoAction extends SimpleActionAdapter {
 		try {
 			if (req.hasParameter("isDelete")) {
 				dbp.delete(photo);
+			} else if (req.hasParameter("partialEdit")) {
+				savePhotoUpdate(photo, dbp);
 			} else {
 				dbp.save(photo);
 			}
@@ -119,5 +122,27 @@ public class PhotoAction extends SimpleActionAdapter {
 		}
 		
 		this.putModuleData(photo.getPhotoId(), 1, false);
+	}
+	
+	/**
+	 * Saves edited data when only partial data is submitted
+	 * 
+	 * @param photo
+	 */
+	public void savePhotoUpdate(PhotoVO photo, DBProcessor dbp) {
+		String schema = getCustomSchema();
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("rezdox_photo ");
+		sql.append("set photo_nm = ?, desc_txt = ? ");
+		sql.append("where photo_id = ? ");
+		
+		List<String> fields = Arrays.asList("photo_nm", "desc_txt", "photo_id");
+		
+		try {
+			dbp.executeSqlUpdate(sql.toString(), photo, fields);
+		} catch (Exception e) {
+			log.error("Could not update RezDox photo data", e);
+		}
 	}
 }

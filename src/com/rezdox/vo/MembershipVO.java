@@ -33,6 +33,7 @@ public class MembershipVO implements Serializable  {
 	private double costNo;
 	private int quantityNo;
 	private int newMemberDefaultFlag;
+	private String paypalButtonText;
 	private Date createDate;
 	private Date updateDate;
 
@@ -73,6 +74,7 @@ public class MembershipVO implements Serializable  {
 		setCostNo(Convert.formatDouble(req.getParameter("costNo")));
 		setQuantityNo(Convert.formatInteger(req.getParameter("quantityNo")));
 		setNewMemberDefaultFlag(Convert.formatInteger(req.getParameter("newMemberDefaultFlag")));
+		setPaypalButtonText(req.getParameter("paypalButtonText"));
 	}
 
 	/**
@@ -192,6 +194,21 @@ public class MembershipVO implements Serializable  {
 	 */
 	public void setNewMemberDefaultFlag(int newMemberDefaultFlag) {
 		this.newMemberDefaultFlag = newMemberDefaultFlag;
+	}
+
+	/**
+	 * @return the paypalButtonText
+	 */
+	@Column(name="paypal_button_txt")
+	public String getPaypalButtonText() {
+		return paypalButtonText;
+	}
+
+	/**
+	 * @param paypalButtonText the paypalButtonText to set
+	 */
+	public void setPaypalButtonText(String paypalButtonText) {
+		this.paypalButtonText = paypalButtonText;
 	}
 
 	/**
