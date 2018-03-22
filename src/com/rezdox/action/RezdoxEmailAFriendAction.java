@@ -11,12 +11,8 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTSession;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.tools.EmailFriendAction;
 import com.smt.sitebuilder.common.constants.Constants;
-
-
-
 /****************************************************************************
  * <b>Title</b>: RezdoxEmailAFriend.java
  * <b>Project</b>: WC_Custom
@@ -38,7 +34,7 @@ public class RezdoxEmailAFriendAction extends EmailFriendAction{
 	 */
 	@Override 
 	public void build(ActionRequest req)  throws ActionException {
-		log.debug("########### reqbuild in action called");
+		log.debug("reqbuild in action called");
 		
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
@@ -53,22 +49,17 @@ public class RezdoxEmailAFriendAction extends EmailFriendAction{
 			log.error("could not load busines data ",e);
 		}
 		
-		log.debug("########### business: " + bvo);
+		log.debug("business: " + bvo);
 		
 		Map<String, Object> emailData = new HashMap <>();
 		
-				//default email a friend only gets the name from the form 
+		//default email a friend only gets the name from the form 
 		emailData.put("memberName", member.getFullName());
-		
-		log.debug("############ name "+ member.getFullName());
-		
 		emailData.put("businessName", bvo.getBusinessName());
 		emailData.put("businessId", bvo.getBusinessId());
 		
 		attributes.put(EmailFriendAction.MESSAGE_DATA_MAP, emailData);
 		
 		super.build(req);
-		
 	}
-	
 }
