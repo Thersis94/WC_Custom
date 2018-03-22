@@ -87,3 +87,30 @@ update custom.rezdox_room set room_nm = rt.type_nm
 from custom.rezdox_room_type rt
 where custom.rezdox_room.room_type_cd = rt.room_type_cd and room_nm is null;
 
+
+--move the documents tied to treasure items over to the photos table.
+INSERT INTO custom.rezdox_photo (photo_id, album_id, treasure_item_id, project_id, photo_nm, desc_txt, image_url, thumbnail_url, order_no, create_dt, update_dt)
+SELECT document_id, null, treasure_item_id, project_id, document_nm, description_txt, file_pth, null,null,create_dt, update_dt
+from custom.rezdox_document where treasure_item_id is not null;
+
+--delete the documents just migrated to the photos table.
+delete from custom.rezdox_document where treasure_item_id is not null;
+
+--drop the link between the treasure_item and document tables
+alter table custom.rezdox_document drop treasure_item_id;
+
+--drop beneficiary_member_id from treasure_item and replace with a text field
+alter table custom.rezdox_treasure_item drop beneficiary_member_id;
+alter table custom.rezdox_treasure_item add beneficiary_nm varchar(100);
+
+--populate the treasure_item.beneficiary_nm column using the data from the _attribute table.
+update custom.rezdox_treasure_item a set beneficiary_nm=b.value_txt
+from custom.rezdox_treasure_item_attribute b
+where a.treasure_item_id=b.treasure_item_id and b.value_txt != '-' and b.slug_txt='BENEFICIARY';
+
+--drop the above data from the _attribute table, so it's not duplicate & orphan.
+delete from custom.rezdox_treasure_item_attribute where slug_txt='BENEFICIARY';
+
+--purge legacy data placeholders that are meaningless and inconvenience users
+delete from custom.rezdox_treasure_item_attribute where value_txt='' or value_txt='-' or value_txt='1970-01-01';
+
