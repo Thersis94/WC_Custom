@@ -1,9 +1,12 @@
 package com.depuysynthes.srt;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTNoteVO;
+import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -39,26 +42,25 @@ public class SRTNoteAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String projectId = req.getParameter(SRTProjectAction.SRT_PROJECT_ID);
 
-		String requestId = req.getParameter(SRTRequestAction.SRT_REQUEST_ID);
-
-		if(!StringUtil.isEmpty(projectId) || !StringUtil.isEmpty(requestId)) {
-			List<SRTNoteVO> notes = loadNotes(projectId, requestId);
-			putModuleData(notes);
+		if(!StringUtil.isEmpty(projectId)) {
+			List<SRTNoteVO> notes = loadNotes(projectId);
+			putModuleData(notes, notes.size(), false);
 		}
 	}
 
 	/**
+	 * Loads Notes for a given projectId, optionally filtered to a single
+	 * noteId.
 	 * @param projectId
+	 * @param noteId
 	 * @return
 	 */
-	private List<SRTNoteVO> loadNotes(String projectId, String requestId) {
-		String sql = buildNoteLoadSql(projectId, requestId);
+	private List<SRTNoteVO> loadNotes(String projectId) {
+		String sql = buildNoteLoadSql(projectId);
 
 		List<Object> vals = new ArrayList<>();
 		if(!StringUtil.isEmpty(projectId)) {
 			vals.add(projectId);
-		} else if(!StringUtil.isEmpty(requestId)) {
-			vals.add(requestId);
 		}
 
 		List<SRTNoteVO> data = new DBProcessor(dbConn).executeSelect(sql, vals, new SRTNoteVO());
@@ -70,11 +72,10 @@ public class SRTNoteAction extends SimpleActionAdapter {
 
 	/**
 	 * Build the Note Loading Sql.
-	 * @param requestId
 	 * @param projectId
 	 * @return
 	 */
-	private String buildNoteLoadSql(String projectId, String requestId) {
+	private String buildNoteLoadSql(String projectId) {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select n.*, p.first_nm, p.last_nm from ").append(custom);
@@ -84,8 +85,6 @@ public class SRTNoteAction extends SimpleActionAdapter {
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if(!StringUtil.isEmpty(projectId)) {
 			sql.append("and n.project_id = ? ");
-		} else if(!StringUtil.isEmpty(requestId)) {
-			sql.append("and n.request_id = ? ");
 		}
 
 		return sql.toString();
@@ -93,7 +92,15 @@ public class SRTNoteAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+
+		//Build a Note off the Request.
 		SRTNoteVO note = new SRTNoteVO(req);
+		SRTRosterVO roster = SRTUtil.getRoster(req);
+
+		//Set RosterData
+		note.setRosterId(roster.getRosterId());
+		note.setFirstName(roster.getFirstName());
+		note.setLastName(roster.getLastName());
 
 		//Save the note
 		saveNote(note);
@@ -102,7 +109,11 @@ public class SRTNoteAction extends SimpleActionAdapter {
 		 * Place the note back on moduleData.  This is intended to be
 		 * called via ajax and we want to return the proper note.
 		 */
-		putModuleData(note);
+		if(StringUtil.isEmpty(note.getNoteId())) {
+			putModuleData(null, 0, false, "Could not Create Note.");
+		} else {
+			putModuleData(Arrays.asList(note), 1, false);
+		}
 	}
 
 	/**
@@ -111,7 +122,7 @@ public class SRTNoteAction extends SimpleActionAdapter {
 	 */
 	private void saveNote(SRTNoteVO note) {
 		try {
-			new DBProcessor(dbConn).save(note);
+			new DBProcessor(dbConn, getCustomSchema()).save(note);
 		} catch(Exception e) {
 			log.error("Unable to save Note.", e);
 		}
