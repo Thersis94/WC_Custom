@@ -95,7 +95,7 @@ public class PhotoAction extends SimpleActionAdapter {
 			sql.append("or album_id = ? ");
 			params.add(opts.getAlbumId());
 		}
-		sql.append("order by coalesce(update_dt, create_dt) desc, photo_nm "); //most recent first, or by name?  Can be changed per UI reqs.
+		sql.append("order by order_no, coalesce(update_dt, create_dt), photo_nm "); //most recent first, or by name?  Can be changed per UI reqs.
 		
 		DBProcessor dbp = new DBProcessor(dbConn);
 		return dbp.executeSelect(sql.toString(), params, new PhotoVO());

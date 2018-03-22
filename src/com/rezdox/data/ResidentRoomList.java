@@ -7,9 +7,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
 /****************************************************************************
@@ -42,17 +40,13 @@ public class ResidentRoomList extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String custom = getCustomSchema();
-		List<Object> params = new ArrayList<>();
-		String residenceId = req.getParameter("residenceId");
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select rr.room_type_cd as key, rt.type_nm as value from ").append(custom).append("rezdox_room rr ");
-		sql.append(DBUtil.INNER_JOIN).append(custom).append("rezdox_room_type rt on rr.room_type_cd=rt.room_type_cd ");
+		sql.append("select rr.room_id as key, rr.room_nm as value from ").append(custom).append("rezdox_room rr ");
+		sql.append("where rr.residence_id=? ");
+		sql.append("order by rr.room_nm ");
 
-		if (!StringUtil.isEmpty(residenceId) && !"all".equalsIgnoreCase(residenceId)) {
-			sql.append("where rr.residence_id=? ");
-			params.add(req.getParameter("residenceId"));
-		}
-		sql.append("order by rt.room_category_cd, rt.room_type_cd ");
+		List<Object> params = new ArrayList<>();
+		params.add(req.getParameter("residenceId"));
 
 		DBProcessor db = new DBProcessor(getDBConnection(), custom);
 		List<GenericVO> data = db.executeSelect(sql.toString(), params, new GenericVO());

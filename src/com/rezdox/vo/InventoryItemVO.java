@@ -1,5 +1,6 @@
 package com.rezdox.vo;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -7,7 +8,10 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataMapper;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title:</b> TreasureItemVO.java<br/>
@@ -19,7 +23,8 @@ import com.siliconmtn.util.Convert;
  * @version 1.0
  * @since Feb 26, 2018
  ****************************************************************************/
-public class TreasureItemVO {
+@Table(name="rezdox_treasure_item")
+public class InventoryItemVO {
 
 	private String treasureItemId;
 	private String ownerMemberId;
@@ -27,16 +32,20 @@ public class TreasureItemVO {
 	private String roomId;
 	private String treasureCategoryCd;
 	private String treasureCategoryName;
-	private String beneficiaryMemberId;
+	private String beneficiaryName;
 	private String itemName;
-	private double valiationNo;
+	private double valuationNo;
 	private int quantityNo;
 	private List<PhotoVO> photos;
 	private List<DocumentVO> documents;
-	private List<TreasureItemAttributeVO> itemAttributes;
+	private List<InventoryAttributeVO> itemAttributes;
 
-	public TreasureItemVO() {
+	//cosmetic values
+	private String roomName;
+
+	public InventoryItemVO() {
 		super();
+		photos = new ArrayList<>();
 	}
 
 	@Column(name="treasure_item_id", isPrimaryKey=true)
@@ -48,9 +57,15 @@ public class TreasureItemVO {
 	 * @param req
 	 * @return
 	 */
-	public static TreasureItemVO instanceOf(ActionRequest req) {
-		TreasureItemVO vo = new TreasureItemVO();
+	public static InventoryItemVO instanceOf(ActionRequest req) {
+		InventoryItemVO vo = new InventoryItemVO();
 		BeanDataMapper.parseBean(vo, req.getParameterMap());
+
+		//if the owner was not specifically passed, presume the logged-in user:
+		if (StringUtil.isEmpty(vo.getOwnerMemberId())) {
+			MemberVO owner = (MemberVO) req.getSession().getAttribute(Constants.USER_DATA);
+			vo.setOwnerMemberId(owner.getMemberId());
+		}
 		return vo;
 	}
 
@@ -79,9 +94,9 @@ public class TreasureItemVO {
 		return treasureCategoryName;
 	}
 
-	@Column(name="beneficiary_member_id")
-	public String getBeneficiaryMemberId() {
-		return beneficiaryMemberId;
+	@Column(name="beneficiary_nm")
+	public String getBeneficiaryName() {
+		return beneficiaryName;
 	}
 
 	@Column(name="item_nm")
@@ -90,8 +105,8 @@ public class TreasureItemVO {
 	}
 
 	@Column(name="valuation_no")
-	public double getValiationNo() {
-		return valiationNo;
+	public double getValuationNo() {
+		return valuationNo;
 	}
 
 	@Column(name="quantity_no")
@@ -99,18 +114,15 @@ public class TreasureItemVO {
 		return quantityNo;
 	}
 
-	//@BeanSubElement  - This method is NOT annotated because it's not part of the SQL query that populates this VO.
 	public List<PhotoVO> getPhotos() {
 		return photos;
 	}
 
-	//@BeanSubElement  - This method is NOT annotated because it's not part of the SQL query that populates this VO.
 	public List<DocumentVO> getDocuments() {
 		return documents;
 	}
 
-	@BeanSubElement
-	public List<TreasureItemAttributeVO> getItemAttributes() {
+	public List<InventoryAttributeVO> getItemAttributes() {
 		return itemAttributes;
 	}
 
@@ -125,6 +137,11 @@ public class TreasureItemVO {
 		return Convert.getCurrentTimestamp();
 	}
 
+	@Column(name="room_nm", isReadOnly=true)
+	public String getRoomName() {
+		return roomName;
+	}
+
 
 	public void setTreasureItemId(String treasureItemId) {
 		this.treasureItemId = treasureItemId;
@@ -135,35 +152,40 @@ public class TreasureItemVO {
 	}
 
 	public void setOwnerMemberId(String ownerMemberId) {
-		this.ownerMemberId = ownerMemberId;
+		this.ownerMemberId = StringUtil.checkVal(ownerMemberId, null);
 	}
 
 	public void setResidenceId(String residenceId) {
-		this.residenceId = residenceId;
+		this.residenceId = StringUtil.checkVal(residenceId, null);
 	}
 
 	public void setRoomId(String roomId) {
-		this.roomId = roomId;
+		this.roomId = StringUtil.checkVal(roomId, null);
 	}
 
 	public void setTreasureCategoryCd(String treasureCategoryCd) {
-		this.treasureCategoryCd = treasureCategoryCd;
+		this.treasureCategoryCd = StringUtil.checkVal(treasureCategoryCd, null);
 	}
 
-	public void setBeneficiaryMemberId(String beneficiaryMemberId) {
-		this.beneficiaryMemberId = beneficiaryMemberId;
+	public void setBeneficiaryName(String beneficiaryName) {
+		this.beneficiaryName = beneficiaryName;
 	}
 
 	public void setItemName(String itemName) {
 		this.itemName = itemName;
 	}
 
-	public void setValiationNo(double valiationNo) {
-		this.valiationNo = valiationNo;
+	public void setValuationNo(double valuationNo) {
+		this.valuationNo = valuationNo;
 	}
 
 	public void setQuantityNo(int quantityNo) {
 		this.quantityNo = quantityNo;
+	}
+
+	@BeanSubElement
+	public void addPhoto(PhotoVO photo) {
+		photos.add(photo);
 	}
 
 	public void setPhotos(List<PhotoVO> photos) {
@@ -174,7 +196,11 @@ public class TreasureItemVO {
 		this.documents = documents;
 	}
 
-	public void setItemAttributes(List<TreasureItemAttributeVO> itemAttributes) {
+	public void setItemAttributes(List<InventoryAttributeVO> itemAttributes) {
 		this.itemAttributes = itemAttributes;
+	}
+
+	public void setRoomName(String roomName) {
+		this.roomName = roomName;
 	}
 }
