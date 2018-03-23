@@ -7,6 +7,7 @@ import com.biomed.smarttrak.admin.report.AccountReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
+import com.biomed.smarttrak.admin.report.EmailMetricsReportAction;
 import com.biomed.smarttrak.admin.report.LinkReportAction;
 import com.biomed.smarttrak.admin.report.LinkWebReportVO;
 import com.biomed.smarttrak.admin.report.SupportReportAction;
@@ -56,7 +57,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 		USAGE_ROLLUP_DAILY,
 		USAGE_ROLLUP_MONTHLY,
 		SUPPORT,
-		LINK;
+		LINK,
+		EMAIL_METRICS;
 	}
 
 	/**
@@ -116,6 +118,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 				rpt = generateLinkReport(req);
 				doRedirect = false;
 				break;
+			case EMAIL_METRICS:
+				rpt = generateMetricsReport(req);
 			default:
 				break;
 		}
@@ -315,5 +319,19 @@ public class ReportFacadeAction extends SBActionAdapter {
 		} catch (Exception e) {
 			throw new ActionException("Unknown report type, " + reportType);
 		}
+	}
+	
+	/**
+	 * Build the email metrics report
+	 * @param req
+	 * @return
+	 */
+	private AbstractSBReportVO generateMetricsReport(ActionRequest req) throws ActionException {
+		EmailMetricsReportAction emr = new EmailMetricsReportAction();
+		emr.setActionInit(actionInit);
+		emr.setAttributes(attributes);
+		emr.setDBConnection(dbConn);
+		
+		return emr.buildReport(req);
 	}
 }
