@@ -169,6 +169,7 @@ public class EmailMetricsReportAction extends SBActionAdapter{
 	 * @return
 	 */
 	private String buildReportSQL(ActionRequest req) {
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql =  new StringBuilder(500);
 		sql.append("select a.account_nm, p.email_address_txt, inst.campaign_instance_id, count(distinct l.campaign_log_id) as sent, inst.instance_nm, ");
 		sql.append("l.success_flg, count(inst.campaign_instance_id) as count, resp.response_type_id, l.notes_txt ");
@@ -177,8 +178,8 @@ public class EmailMetricsReportAction extends SBActionAdapter{
 		sql.append("inner join email_campaign_log l on inst.campaign_instance_id=l.campaign_instance_id ");
 		sql.append("inner join profile p on l.profile_id=p.profile_id ");
 		sql.append("left join email_response resp on l.campaign_log_id=resp.campaign_log_id and resp.response_type_id='EMAIL_OPEN' ");
-		sql.append("inner join custom.biomedgps_user u on u.profile_id = p.profile_id ");
-		sql.append("inner join custom.biomedgps_account a on u.account_id = a.account_id ");
+		sql.append("inner join ").append(customDb).append("biomedgps_user u on u.profile_id = p.profile_id ");
+		sql.append("inner join ").append(customDb).append("biomedgps_account a on u.account_id = a.account_id ");
 		sql.append("where camp.organization_id= ? ");
 		if (req.hasParameter(ACCOUNT_ID)) sql.append("and a.account_id = ? ");
 		if (req.hasParameter(CAMPAIGN_INSTANCE_ID)) sql.append("and inst.campaign_instance_id = ? ");

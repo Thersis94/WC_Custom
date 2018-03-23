@@ -36,6 +36,8 @@ public class EmailMetricsReportVO extends AbstractSBReportVO {
 
 	public EmailMetricsReportVO(Map<String, Object> data) {
 		setData(data);
+		wb = new HSSFWorkbook();
+        percentFormat = new DecimalFormat("##.##%");
 	}
 
 	/* (non-Javadoc)
@@ -110,7 +112,5 @@ public class EmailMetricsReportVO extends AbstractSBReportVO {
 	public void setData(Object o) {
 		Map<String, Object> data = (Map<String, Object>)o;
 		emails = (List<EmailMetricsVO>) data.get("emails");
-		wb = new HSSFWorkbook();
-        percentFormat = new DecimalFormat("##.##%");
 	}
 }
