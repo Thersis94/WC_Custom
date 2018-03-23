@@ -81,6 +81,14 @@ public class ResidenceFormProcessor extends FormDataProcessor {
 	}
 	
 	/**
+	 * Slugs that are not updatable by the user, values should not be managed in the form processor
+	 */
+	public enum SkipSlug {
+		RESIDENCE_ZESTIMATE, RESIDENCE_IMPROVEMENTS_VALUE, RESIDENCE_POTENTIAL_VALUE, RESIDENCE_WALK_SCORE,
+		RESIDENCE_SUN_NUMBER, RESIDENCE_TRANSIT_SCORE
+	}
+	
+	/**
 	 * Maps submitted form builder parameter names to those expected in the business table 
 	 */
 	private Map<String, GenericVO> fileMap;
@@ -217,6 +225,9 @@ public class ResidenceFormProcessor extends FormDataProcessor {
 		List<FormFieldVO> newFormFields = new ArrayList<>();
 		
 		for (FormFieldVO vo : data.getCustomData().values()) {
+			SkipSlug skipSlug = EnumUtil.safeValueOf(SkipSlug.class, vo.getSlugTxt());
+			if (skipSlug != null) continue;
+			
 			oldFormFields.add(vo);
 
 			// Save valid responses.
