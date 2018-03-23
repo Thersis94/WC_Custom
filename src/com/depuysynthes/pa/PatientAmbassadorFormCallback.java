@@ -7,6 +7,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
+import com.smt.sitebuilder.action.form.FormActionVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -50,6 +51,8 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 
 		FormTransactionVO trans = dc.getTransactions().values().iterator().next();
 
+		FormActionVO form = (FormActionVO) req.getAttribute(FormAction.FORM_DATA);
+
 		if("Yes".equals(trans.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0))) {
 			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 
@@ -64,8 +67,7 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 				mail.addRecipients(trans.getEmailAddress());
 				mail.setSubject("Patient Ambassador Consent Document");
 				mail.setFrom(senderEmail);
-				//TODO - Need to fix later.
-				//mail.setHtmlBody(dc.getForm().getOrgConsentText());
+				mail.setHtmlBody(form.getOrgConsentText());
 
 				MessageSender ms = new MessageSender(attributes, dbConn);
 				ms.sendMessage(mail);
