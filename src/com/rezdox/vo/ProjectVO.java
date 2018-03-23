@@ -6,6 +6,7 @@ import java.util.List;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -23,6 +24,7 @@ public class ProjectVO {
 
 	private String projectId;
 	private String projectName;
+	private String descriptionText;
 	private String residenceId;
 	private String residenceName;
 	private String roomId;
@@ -34,6 +36,8 @@ public class ProjectVO {
 	private String projectTypeName;
 	private double laborNo;
 	private double totalNo;
+	private UserDataVO homeowner;
+	private Date endDate;
 	private int residenceViewFlg;
 	private int businessViewFlg;
 	private List<ProjectMaterialVO> materials;
@@ -109,6 +113,16 @@ public class ProjectVO {
 		return Convert.getCurrentTimestamp();
 	}
 
+	@Column(name="end_dt")
+	public Date getEndDate() {
+		return endDate;
+	}
+
+	@Column(name="desc_txt")
+	public String getDescriptionText() {
+		return descriptionText;
+	}
+
 	//@BeanSubElement  - This method is NOT annotated because it's not part of the SQL query that populates this VO.
 	public List<ProjectMaterialVO> getMaterials() {
 		return materials;
@@ -117,23 +131,6 @@ public class ProjectVO {
 	@BeanSubElement
 	public List<ProjectAttributeVO> getAttributes() {
 		return attributes;
-	}
-
-
-	public void setProjectId(String projectId) {
-		this.projectId = projectId;
-	}
-
-	public void setResidenceId(String residenceId) {
-		this.residenceId = residenceId;
-	}
-
-	public void setRoomId(String roomId) {
-		this.roomId = roomId;
-	}
-
-	public void setBusinessId(String businessId) {
-		this.businessId = businessId;
 	}
 
 	@Column(name="room_nm", isReadOnly=true)
@@ -156,6 +153,24 @@ public class ProjectVO {
 		return projectTypeName;
 	}
 
+
+
+
+	public void setProjectId(String projectId) {
+		this.projectId = projectId;
+	}
+
+	public void setResidenceId(String residenceId) {
+		this.residenceId = residenceId;
+	}
+
+	public void setRoomId(String roomId) {
+		this.roomId = roomId;
+	}
+
+	public void setBusinessId(String businessId) {
+		this.businessId = businessId;
+	}
 
 	public void setProjectCategoryCd(String projectCategoryCd) {
 		this.projectCategoryCd = projectCategoryCd;
@@ -203,5 +218,31 @@ public class ProjectVO {
 
 	public void setProjectTypeName(String projectTypeName) {
 		this.projectTypeName = projectTypeName;
+	}
+
+	public void setEndDate(Date endDate) {
+		this.endDate = endDate;
+	}
+
+	public UserDataVO getHomeowner() {
+		return homeowner;
+	}
+
+	public void setHomeowner(UserDataVO homeowner) {
+		this.homeowner = homeowner;
+	}
+
+	public void setHomeownerProfileId(String profileId) {
+		if (getHomeowner() == null) setHomeowner(new UserDataVO());
+		getHomeowner().setProfileId(profileId);
+	}
+
+	@Column(name="homeowner_profile_id", isReadOnly=true)
+	public String getHomeownerProfileId() {
+		return getHomeowner() != null ? getHomeowner().getProfileId() : null;
+	}
+
+	public void setDescriptionText(String descriptionText) {
+		this.descriptionText = descriptionText;
 	}
 }

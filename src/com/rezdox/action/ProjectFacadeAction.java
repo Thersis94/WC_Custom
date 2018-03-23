@@ -23,8 +23,7 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 	 * Actions supported by the facade/controller
 	 */
 	public enum ActionType {
-		PROJECT(ProjectAction.class), 
-		MATERIAL(ProjectMaterialAction.class);
+		PROJECT(ProjectAction.class);
 
 		Class<? extends ActionInterface> c;
 		ActionType(Class<? extends ActionInterface> c) { this.c = c; }

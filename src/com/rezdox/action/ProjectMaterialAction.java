@@ -1,7 +1,9 @@
 package com.rezdox.action;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import com.rezdox.vo.ProjectMaterialVO;
 import com.siliconmtn.action.ActionException;
@@ -9,6 +11,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
@@ -33,17 +36,37 @@ public class ProjectMaterialAction extends SimpleActionAdapter {
 		super(arg0);
 	}
 
+	/**
+	 * overloaded constructor to simplify calling actions
+	 * @param dbConnection
+	 * @param attributes
+	 */
+	public ProjectMaterialAction(SMTDBConnection dbConnection, Map<String, Object> attributes) {
+		this();
+		setDBConnection(dbConnection);
+		setAttributes(attributes);
+	}
+
 
 	/*
-	 * Retrieves a list of project materials tied to the given projectId.
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		putModuleData(retrieveMaterials(req));
+	}
+
+
+	/**
+	 * Retrieves a list of project materials tied to the given projectId.
+	 * @param req
+	 * @return
+	 */
+	public List<ProjectMaterialVO> retrieveMaterials(ActionRequest req) {
 		String projectId = req.getParameter("projectId");
 		//fail fast if we don't have a projectId to query against
-		if (StringUtil.isEmpty(projectId)) return;
+		if (StringUtil.isEmpty(projectId)) return Collections.emptyList();
 
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(300);
@@ -54,17 +77,18 @@ public class ProjectMaterialAction extends SimpleActionAdapter {
 		sql.append("on a.project_material_id=b.project_material_id ");
 		sql.append("where project_id=? ");
 		sql.append("order by material_nm");
+		log.debug(sql);
 
-		List<Object> params = new ArrayList<>();
-		params.add(projectId);
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		return db.executeSelect(sql.toString(), Arrays.asList(projectId), new ProjectMaterialVO());
+	}
 
-		List<Object> data = null;
-		try {
-			DBProcessor db = new DBProcessor(getDBConnection(), schema);
-			data = db.executeSelect(sql.toString(), params, ProjectMaterialVO.class);
-		} catch (Exception e) {
-			log.error("could not load project materials for projectId=" + projectId, e);
-		}
-		putModuleData(data);
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+		throw new RuntimeException("not coded yet");
 	}
 }
