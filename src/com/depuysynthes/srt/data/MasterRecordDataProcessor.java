@@ -130,6 +130,8 @@ public class MasterRecordDataProcessor extends AbstractDataProcessor {
 
 		saveMasterRecordData(mrv);
 
+		data.setFormSubmittalId(mrv.getMasterRecordId());
+
 		log.debug("Process Master Record");
 	}
 

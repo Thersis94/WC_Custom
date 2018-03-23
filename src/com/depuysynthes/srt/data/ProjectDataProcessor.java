@@ -136,6 +136,8 @@ public class ProjectDataProcessor extends FormDataProcessor {
 
 		// Save the project record
 		saveProjectRecord(project);
+
+		data.setFormSubmittalId(project.getProjectId());
 	}
 
 	/**

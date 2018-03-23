@@ -73,6 +73,9 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String qualityEngineerNm;
 	private String requestorNm;
 
+	//Stores if there is a lock.
+	private boolean lockStatus;
+
 	private List<SRTMasterRecordVO> masterRecords;
 	private SRTRequestVO request;
 	private Map<String, SRTProjectMilestoneVO> milestones;
@@ -388,6 +391,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	@Column(name="UPDATE_DT", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDt() {
 		return updateDt;
+	}
+
+	/**
+	 * @return the lockStatus
+	 */
+	@Column(name="LOCK_STATUS", isReadOnly=true)
+	public boolean getLockStatus() {
+		return lockStatus;
 	}
 
 	/**
@@ -711,6 +722,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @param lockStatus the lockStatus to set.
+	 */
+	public void setLockStatus(boolean lockStatus) {
+		this.lockStatus = lockStatus;
+	}
+
+	/**
 	 * @param masterRecords the masterRecords to set.
 	 */
 	public void setMasterRecords(List<SRTMasterRecordVO> masterRecords) {
@@ -809,7 +827,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 				data = MilestoneIntfc.super.getFieldValue(fieldName);
 			}
 		} catch (NoSuchFieldException e) {
-			log.error("Error Processing Code", e);
+			log.warn(StringUtil.join("Field ", fieldName, " not on available."), e);
 		}
 
 		return data;
