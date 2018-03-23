@@ -46,7 +46,12 @@ public class EmailMetricsReportAction extends SBActionAdapter{
 	}
 	
 	
-	
+	/**
+	 * Customize the file name if possible to reflect the data in the report.
+	 * @param req
+	 * @param emails
+	 * @return
+	 */
 	private String buildFileName(ActionRequest req, List<EmailMetricsVO> emails) {
 		StringBuilder fileName = new StringBuilder(256);
 		
@@ -71,7 +76,12 @@ public class EmailMetricsReportAction extends SBActionAdapter{
 	}
 
 
-
+	/**
+	 * Load all emails needed for the report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
 	private List<EmailMetricsVO> getEmails(ActionRequest req) throws ActionException {
 		String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
 		try (PreparedStatement ps = dbConn.prepareStatement(buildReportSQL(req))) {
@@ -90,39 +100,47 @@ public class EmailMetricsReportAction extends SBActionAdapter{
 	}
 	
 	
-	
-	private List<EmailMetricsVO> parseResults(ResultSet rs) throws SQLException {
+	/**
+	 * Create the list of emails from the result set.
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	private List<EmailMetricsVO> parseResults(ResultSet rs) throws ActionException {
 		List<EmailMetricsVO> emails = new ArrayList<>();
 		String currentInstance = "";
 		EmailMetricsVO email = null;
-		while (rs.next()) {
-			if (!currentInstance.equals(rs.getString("email_address_txt"))) {
-				addEmail(email, emails);
-				email = new EmailMetricsVO();
-				email.setAccountName(rs.getString("account_nm"));
-				email.setCampaignName(rs.getString("instance_nm"));
-				email.setEmailAddress(rs.getString("email_address_txt"));
-				email.setNotesText(rs.getString("notes_txt"));
-				currentInstance = rs.getString("email_address_txt");
-			}
-			addCounts(rs, email);
-		}
-		// Add dangling email
-		addEmail(email, emails);
 		try {
+			while (rs.next()) {
+				if (!currentInstance.equals(rs.getString("email_address_txt"))) {
+					addEmail(email, emails);
+					email = new EmailMetricsVO();
+					email.setAccountName(rs.getString("account_nm"));
+					email.setCampaignName(rs.getString("instance_nm"));
+					email.setEmailAddress(rs.getString("email_address_txt"));
+					email.setNotesText(rs.getString("notes_txt"));
+					currentInstance = rs.getString("email_address_txt");
+				}
+				addCounts(rs, email);
+			}
+			addEmail(email, emails);
 			StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
 			for (EmailMetricsVO metric : emails) 
 				metric.setEmailAddress(se.decrypt(metric.getEmailAddress()));
-		} catch(Exception e) {
-			log.error("Filed to decrypt");
+
+			return emails;
+		} catch (Exception e) {
+			throw new ActionException(e);
 		}
-		
-		
-		return emails;
 	}
 
 
-
+	/**
+	 * Determine which counts need to be updated and do so.
+	 * @param rs
+	 * @param email
+	 * @throws SQLException
+	 */
 	private void addCounts(ResultSet rs, EmailMetricsVO email) throws SQLException {
 		if (OPEN_ID.equals(rs.getString("response_type_id"))) {
 			email.setOpens(rs.getInt("count"));
@@ -133,14 +151,22 @@ public class EmailMetricsReportAction extends SBActionAdapter{
 	}
 
 
-
+	/**
+	 * Add the email to the list.
+	 * @param email
+	 * @param emails
+	 */
 	private void addEmail(EmailMetricsVO email, List<EmailMetricsVO> emails) {
 		if (email != null)
 			emails.add(email);
 	}
 
 
-
+	/**
+	 * Create the report sql.
+	 * @param req
+	 * @return
+	 */
 	private String buildReportSQL(ActionRequest req) {
 		StringBuilder sql =  new StringBuilder(500);
 		sql.append("select a.account_nm, p.email_address_txt, inst.campaign_instance_id, count(distinct l.campaign_log_id) as sent, inst.instance_nm, ");
