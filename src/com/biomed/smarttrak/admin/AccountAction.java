@@ -211,6 +211,7 @@ public class AccountAction extends SBActionAdapter {
 		}
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
 		params.add(AdminControllerAction.STAFF_ROLE_ID);
+		params.add(AdminControllerAction.ADMIN_STAFF_ROLE_ID);
 		
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  accounts = db.executeSelect(sql, params, new AccountVO());
@@ -246,7 +247,7 @@ public class AccountAction extends SBActionAdapter {
 				sql.append("and rd.value_txt = ? ");
 			}
 		}
-		sql.append("and b.site_id=? and b.role_id=? ");
+		sql.append("and b.site_id=? and b.role_id in (?, ?) ");
 		log.debug(sql);
 		
 		return sql.toString();
