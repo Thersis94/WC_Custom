@@ -30,11 +30,12 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class EmailMetricsReportAction extends SBActionAdapter{
 	
-	private final String OPEN_ID = "EMAIL_OPEN";
-	private final String CAMPAIGN_INSTANCE_ID = "campaignInsanceId";
-	private final String ACCOUNT_ID = "accountId";
-	private final String START_DATE = "startDt";
-	private final String END_DATE = "endDt";
+	private static final String OPEN_ID = "EMAIL_OPEN";
+	private static final String CAMPAIGN_INSTANCE_ID = "campaignInsanceId";
+	private static final String ACCOUNT_ID = "accountId";
+	private static final String START_DATE = "startDt";
+	private static final String END_DATE = "endDt";
+	private static final String EMAIL_ADDRESS_TXT = "email_address_txt";
 	
 	public EmailMetricsReportVO buildReport(ActionRequest req) throws ActionException {
 		Map<String, Object> data = new HashMap<>();
@@ -112,14 +113,14 @@ public class EmailMetricsReportAction extends SBActionAdapter{
 		EmailMetricsVO email = null;
 		try {
 			while (rs.next()) {
-				if (!currentInstance.equals(rs.getString("email_address_txt"))) {
+				if (!currentInstance.equals(rs.getString(EMAIL_ADDRESS_TXT))) {
 					addEmail(email, emails);
 					email = new EmailMetricsVO();
 					email.setAccountName(rs.getString("account_nm"));
 					email.setCampaignName(rs.getString("instance_nm"));
-					email.setEmailAddress(rs.getString("email_address_txt"));
+					email.setEmailAddress(rs.getString(EMAIL_ADDRESS_TXT));
 					email.setNotesText(rs.getString("notes_txt"));
-					currentInstance = rs.getString("email_address_txt");
+					currentInstance = rs.getString(EMAIL_ADDRESS_TXT);
 				}
 				addCounts(rs, email);
 			}

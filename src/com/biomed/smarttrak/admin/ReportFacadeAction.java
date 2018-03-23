@@ -120,6 +120,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 				break;
 			case EMAIL_METRICS:
 				rpt = generateMetricsReport(req);
+				break;
 			default:
 				break;
 		}
