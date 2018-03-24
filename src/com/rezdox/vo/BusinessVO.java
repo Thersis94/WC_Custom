@@ -44,6 +44,8 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private String subCategoryCd;
 	private String categoryCd;
 	private String categoryName;
+	private int totalReviewsNo;
+	private double avgRatingNo;
 	private BusinessStatus status;
 	private Date createDate;
 	private Date updateDate;
@@ -310,6 +312,36 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setCategoryName(String categoryName) {
 		this.categoryName = categoryName;
+	}
+
+	/**
+	 * @return the totalReviewsNo
+	 */
+	@Column(name="total_reviews_no", isReadOnly=true)
+	public int getTotalReviewsNo() {
+		return totalReviewsNo;
+	}
+
+	/**
+	 * @param totalReviewsNo the totalReviewsNo to set
+	 */
+	public void setTotalReviewsNo(int totalReviewsNo) {
+		this.totalReviewsNo = totalReviewsNo;
+	}
+
+	/**
+	 * @return the avgRatingNo
+	 */
+	@Column(name="avg_rating_no", isReadOnly=true)
+	public double getAvgRatingNo() {
+		return avgRatingNo;
+	}
+
+	/**
+	 * @param avgRatingNo the avgRatingNo to set
+	 */
+	public void setAvgRatingNo(double avgRatingNo) {
+		this.avgRatingNo = avgRatingNo;
 	}
 
 	/**

@@ -35,8 +35,8 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 
 	public BusinessReviewVO() {
 		super();
-		setMember(new MemberVO());
-		setBusiness(new BusinessVO());
+		member = new MemberVO();
+		business = new BusinessVO();
 	}
 	
 	/**
