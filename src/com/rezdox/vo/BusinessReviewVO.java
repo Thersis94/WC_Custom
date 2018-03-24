@@ -30,6 +30,7 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 	private BusinessVO business;
 	private int ratingNo;
 	private String reviewText;
+	private int moderatedFlag;
 	private Date createDate;
 	private Date updateDate;
 
@@ -150,6 +151,21 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 	 */
 	public void setReviewText(String reviewText) {
 		this.reviewText = reviewText;
+	}
+
+	/**
+	 * @return the moderatedFlag
+	 */
+	@Column(name="moderated_flg")
+	public int getModeratedFlag() {
+		return moderatedFlag;
+	}
+
+	/**
+	 * @param moderatedFlag the moderatedFlag to set
+	 */
+	public void setModeratedFlag(int moderatedFlag) {
+		this.moderatedFlag = moderatedFlag;
 	}
 
 	/**

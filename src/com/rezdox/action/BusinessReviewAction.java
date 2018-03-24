@@ -101,18 +101,47 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		// Get the review data
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		List<BusinessReviewVO> reviews = dbp.executeSelect(sql.toString(), params, new BusinessReviewVO());
-		
-		// Decrypted member profile names
-		List<MemberVO> members = new ArrayList<>();
-		for (BusinessReviewVO review : reviews) {
-			members.add(review.getMember());
-		}
-		// Not using ProfileManagerFactory populateRecords here because we don't want to expose member data
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>) members, (String)getAttribute(Constants.ENCRYPT_KEY));
+		decryptMemberNames(reviews);
 		
 		return reviews;
 	}
 
+	/**
+	 * Returns a list of reviews that have not yet been moderated
+	 * 
+	 * @return
+	 */
+	protected List<BusinessReviewVO> retrieveUnmoderatedReviews() {
+		// Use the base query
+		StringBuilder sql = getBaseReviewSql();
+		sql.append("where moderated_flg = ? ");
+		
+		// Get everything in the system that hasn't been moderated
+		List<Object> params = new ArrayList<>();
+		params.add(0);
+		
+		// Get/return the data
+		DBProcessor dbp = new DBProcessor(dbConn);
+		List<BusinessReviewVO> reviews = dbp.executeSelect(sql.toString(), params, new BusinessReviewVO());
+		decryptMemberNames(reviews);
+		
+		return reviews;
+	}
+	
+	/**
+	 * Decrypts member names on the reviews
+	 */
+	protected void decryptMemberNames(List<BusinessReviewVO> reviews) {
+		// Decrypt member profile names
+		List<MemberVO> members = new ArrayList<>();
+		for (BusinessReviewVO review : reviews) {
+			members.add(review.getMember());
+		}
+		
+		// Not using ProfileManagerFactory populateRecords here because we don't want to expose member data
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>) members, (String)getAttribute(Constants.ENCRYPT_KEY));
+	}
+	
 	/**
 	 * Returns the base sql needed for getting business reviews.
 	 * May be appended to as necessary depending on usage.
@@ -124,7 +153,7 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(200);
 		
 		sql.append("select br.business_review_id, br.member_id, br.business_id, br.rating_no, br.review_txt, br.create_dt, br.update_dt, ");
-		sql.append("m.profile_id, m.privacy_flg, m.profile_pic_pth, b.business_nm, b.photo_url, p.first_nm, p.last_nm  ");
+		sql.append("br.moderated_flg, m.profile_id, m.privacy_flg, m.profile_pic_pth, b.business_nm, b.photo_url, p.first_nm, p.last_nm  ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review br ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member m on br.member_id = m.member_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on br.business_id = b.business_id ");
@@ -143,7 +172,7 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		DBProcessor dbp = new DBProcessor(dbConn);
 		
 		// Ensure the member editing/deleting, is the member who left the review originally
-		if (!(StringUtil.isEmpty(review.getBusinessReviewId())) && !req.hasParameter("adminModerate")) {
+		if (!(StringUtil.isEmpty(review.getBusinessReviewId())) && !req.hasParameter(BusinessAdminDataTool.REQ_ADMIN_MODERATE)) {
 			List<BusinessReviewVO> existingReview = retrieveReviews(req);
 			if (!RezDoxUtils.getMemberId(req).equals(existingReview.get(0).getMemberId())) {
 				return;
