@@ -39,6 +39,8 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
+import com.smt.sitebuilder.action.user.ProfileRoleManager;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
@@ -47,6 +49,7 @@ import com.smt.sitebuilder.data.vo.FormTemplateVO;
 import com.smt.sitebuilder.data.vo.FormVO;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.QueryParamVO;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: ResidenceAction.java<p/>
@@ -62,6 +65,9 @@ public class ResidenceAction extends SBActionAdapter {
 	
 	public static final String RESIDENCE_DATA = "residenceData";
 	public static final String RESIDENCE_ID = "residenceId";
+	public static final String REZDOX_RESIDENCE_ROLE_ID = "REZDOX_RESIDENCE";
+	public static final String REZDOX_RESIDENCE_ROLE_NAME = "RezDox Residence Role";
+	public static final int REZDOX_RESIDENCE_ROLE_LEVEL = 25;
 	public static final String PRIMARY_RESIDENCE = " Primary Residence";
 	public static final String UPGRADE_MSG = "You have reached your maximum residences. Please purchase a residence upgrade to continue.";
 	public static final String SLUG_RESIDENCE_ZESTIMATE = "RESIDENCE_ZESTIMATE";
@@ -242,17 +248,63 @@ public class ResidenceAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.debug("residence build called");
 		if (req.hasParameter("homeInfo") || req.hasParameter("settings")) {
 			saveForm(req);
 		} else {
 			try {
+				//get the residence 
+				ResidenceVO residence = new ResidenceVO(req);
+				boolean newResidence = StringUtil.isEmpty(residence.getResidenceId());
+				
 				putModuleData(saveResidence(req), 1, false);
+				SMTSession session = req.getSession();
+				MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
+
+				SubscriptionAction sa = new SubscriptionAction();
+				sa.setDBConnection(dbConn);
+				sa.setAttributes(attributes);				
+				int count = sa.getResidenceUsage(member.getMemberId());
+				
+				if (newResidence && count == 1) {
+					SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+					req.setSession(changeMemebersRole(session, site, member));
+				}
+
 			} catch (Exception e) {
 				throw new ActionException("Could not save residence", e);
 			}
 		}
 	}
 	
+	/**
+	 * updates the members record and the session with the new role.
+	 * @param member 
+	 * @param site 
+	 * @param session 
+	 * @return 
+	 * @throws DatabaseException 
+	 * 
+	 */
+	private SMTSession changeMemebersRole(SMTSession session, SiteVO site, MemberVO member) throws DatabaseException {
+		//if new and final count is one change roll
+	
+		ProfileRoleManager prm = new ProfileRoleManager();
+		log.debug("change role for site and member " + site.getSiteId()+"|"+ member.getProfileId());
+		SBUserRole role = ((SBUserRole)session.getAttribute(Constants.ROLE_DATA));
+		prm.removeRole(role.getProfileRoleId(), dbConn);
+		prm.addRole( member.getProfileId(), site.getSiteId(), REZDOX_RESIDENCE_ROLE_ID, 20, dbConn);
+		
+		role.setRoleId(REZDOX_RESIDENCE_ROLE_ID);
+		role.setRoleLevel(REZDOX_RESIDENCE_ROLE_LEVEL); 
+		role.setRoleName(REZDOX_RESIDENCE_ROLE_NAME);
+		
+		role.setProfileRoleId(prm.checkRole(member.getProfileId(),  site.getSiteId(), dbConn));
+		session.setAttribute(Constants.ROLE_DATA, role);				
+		return session;
+		
+	}
+
 	/**
 	 * Saves a residence form builder form
 	 */
@@ -276,6 +328,7 @@ public class ResidenceAction extends SBActionAdapter {
 	public ResidenceVO saveResidence(ActionRequest req) throws DatabaseException, InvalidDataException {
 		// Get the residence data
 		ResidenceVO residence = new ResidenceVO(req);
+		
 		boolean newResidence = StringUtil.isEmpty(residence.getResidenceId());
 		
 		// If this is a new residence, lookup residential API data + extended data for attributes
@@ -284,6 +337,14 @@ public class ResidenceAction extends SBActionAdapter {
 		WalkScoreVO walkScore = null;
 		if (newResidence) {
 			// Zillow
+			String zAddress = residence.getAddress();
+			
+			String[] addressTokens = zAddress.split(",");
+			residence.setAddress(addressTokens[0].trim());
+			residence.setCity(addressTokens[1].trim());
+			residence.setState(addressTokens[2].trim());
+			residence.setCountry(addressTokens[3].trim());
+			
 			ZillowAPIManager zillow = new ZillowAPIManager();
 			property = zillow.retrievePropertyDetails(residence);
 			residence.setLatitude(property.getLatitude());

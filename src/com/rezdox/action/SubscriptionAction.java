@@ -146,7 +146,7 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	 * @param memberId
 	 * @return
 	 */
-	private int getResidenceUsage(String memberId) {
+	protected int getResidenceUsage(String memberId) {
 		String schema = getCustomSchema();
 		
 		StringBuilder sql = new StringBuilder(150);
@@ -174,7 +174,7 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	 * @param memberId
 	 * @return
 	 */
-	private int getBusinessUsage(String memberId) {
+	protected int getBusinessUsage(String memberId) {
 		String schema = getCustomSchema();
 		
 		StringBuilder sql = new StringBuilder(150);
