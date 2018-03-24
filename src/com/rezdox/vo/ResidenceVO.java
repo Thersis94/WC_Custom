@@ -8,6 +8,7 @@ import java.util.Map;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.gis.GeocodeLocation;
@@ -34,9 +35,10 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	private Date lastSoldDate;
 	private Date forSaleDate;
 	private int privacyFlag;
-	private Map<String, Object> attributes;
+	private Map<String, Object> attributes = new HashMap<>();
 	private Date createDate;
 	private Date updateDate;
+	private double projectsTotal;
 	
 	/**
 	 * Special use keys for values from the attributes table in the attibutes map
@@ -48,7 +50,6 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 
 	public ResidenceVO() {
 		super();
-		attributes = new HashMap<>();
 	}
 
 	/**
@@ -224,6 +225,14 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	}
 	
 	/**
+	 * @param attributes the attributes to set
+	 */
+	@BeanSubElement
+	public void addAttribute(ResidenceAttributeVO attr) {
+		this.attributes.put(attr.getSlugText(), attr.getValueText());
+	}
+	
+	/**
 	 * @return the latitude
 	 */
 	@Override
@@ -269,5 +278,20 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	/**
+	 * @return the projectsTotal
+	 */
+	@Column(name="projects_total", isReadOnly=true)
+	public double getProjectsTotal() {
+		return projectsTotal;
+	}
+
+	/**
+	 * @param projectsTotal the projectsTotal to set
+	 */
+	public void setProjectsTotal(double projectsTotal) {
+		this.projectsTotal = projectsTotal;
 	}
 }
