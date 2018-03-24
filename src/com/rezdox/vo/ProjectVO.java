@@ -1,13 +1,20 @@
 package com.rezdox.vo;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.rezdox.data.ProjectFormProcessor.FormSlug;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataMapper;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> ProjectVO.java<br/>
@@ -42,10 +49,22 @@ public class ProjectVO {
 	private int businessViewFlg;
 	private List<ProjectMaterialVO> materials;
 	private List<ProjectAttributeVO> attributes;
+	private Map<String, String> attributeMap;
 
 
 	public ProjectVO() {
 		super();
+		attributes = new ArrayList<>();
+	}
+
+	/**
+	 * @param req
+	 * @return
+	 */
+	public static ProjectVO instanceOf(ActionRequest req) {
+		ProjectVO vo = new ProjectVO();
+		BeanDataMapper.parseBean(vo, req.getParameterMap());
+		return vo;
 	}
 
 	@Column(name="project_id", isPrimaryKey=true)
@@ -123,14 +142,43 @@ public class ProjectVO {
 		return descriptionText;
 	}
 
-	//@BeanSubElement  - This method is NOT annotated because it's not part of the SQL query that populates this VO.
 	public List<ProjectMaterialVO> getMaterials() {
 		return materials;
 	}
 
-	@BeanSubElement
 	public List<ProjectAttributeVO> getAttributes() {
 		return attributes;
+	}
+
+	@BeanSubElement
+	public void addAttribute(ProjectAttributeVO attr) {
+		attributes.add(attr);
+	}
+
+	public void addAttribute(String slug, String value) {
+		ProjectAttributeVO attr = new ProjectAttributeVO();
+		attr.setSlugTxt(slug);
+		attr.setValueTxt(value);
+		attributes.add(attr);
+	}
+
+	/**
+	 * @param projectOwner
+	 * @return
+	 */
+	public String getAttribute(String slug) {
+		if (attributeMap == null) buildAttributeMap();
+		return attributeMap.get(slug);
+	}
+
+	/**
+	 * one-time builder of the attributes map
+	 */
+	private void buildAttributeMap() {
+		attributeMap = new HashMap<>();
+		if (attributes == null) return;
+		for (ProjectAttributeVO vo : attributes)
+			attributeMap.put(vo.getSlugTxt(),  vo.getValueTxt());
 	}
 
 	@Column(name="room_nm", isReadOnly=true)
@@ -140,7 +188,7 @@ public class ProjectVO {
 
 	@Column(name="residence_nm", isReadOnly=true)
 	public String getResidenceName() {
-		return residenceName;
+		return StringUtil.checkVal(residenceName, getAttribute(FormSlug.PROJECT_NAME.name()));
 	}
 
 	@Column(name="category_nm", isReadOnly=true)
@@ -161,23 +209,23 @@ public class ProjectVO {
 	}
 
 	public void setResidenceId(String residenceId) {
-		this.residenceId = residenceId;
+		this.residenceId = StringUtil.checkVal(residenceId, null);
 	}
 
 	public void setRoomId(String roomId) {
-		this.roomId = roomId;
+		this.roomId = StringUtil.checkVal(roomId, null);
 	}
 
 	public void setBusinessId(String businessId) {
-		this.businessId = businessId;
+		this.businessId = StringUtil.checkVal(businessId, null);
 	}
 
 	public void setProjectCategoryCd(String projectCategoryCd) {
-		this.projectCategoryCd = projectCategoryCd;
+		this.projectCategoryCd = StringUtil.checkVal(projectCategoryCd, null);
 	}
 
 	public void setProjectTypeCd(String projectTypeCd) {
-		this.projectTypeCd = projectTypeCd;
+		this.projectTypeCd = StringUtil.checkVal(projectTypeCd, null);
 	}
 
 	public void setProjectName(String projectName) {
@@ -244,5 +292,20 @@ public class ProjectVO {
 
 	public void setDescriptionText(String descriptionText) {
 		this.descriptionText = descriptionText;
+	}
+
+
+	/**
+	 * used in JSPs - homogenizes Connected and Non-Connected customer contact
+	 * @return
+	 */
+	public UserDataVO getOwner() {
+		if (homeowner != null && !StringUtil.isEmpty(homeowner.getProfileId())) return homeowner;
+
+		homeowner = new UserDataVO();
+		homeowner.setName(getAttribute(FormSlug.PROJECT_OWNER.name()));
+		homeowner.setEmailAddress(getAttribute(FormSlug.PROJECT_EMAIL.name()));
+		homeowner.setMainPhone(getAttribute(FormSlug.PROJECT_PHONE.name()));
+		return homeowner;
 	}
 }
