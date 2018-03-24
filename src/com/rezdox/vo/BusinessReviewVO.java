@@ -5,6 +5,7 @@ import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -25,8 +26,8 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 	private static final long serialVersionUID = -5304473466685432141L;
 
 	private String businessReviewId;
-	private String memberId;
-	private String businessId;
+	private MemberVO member;
+	private BusinessVO business;
 	private int ratingNo;
 	private String reviewText;
 	private Date createDate;
@@ -34,6 +35,8 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 
 	public BusinessReviewVO() {
 		super();
+		setMember(new MemberVO());
+		setBusiness(new BusinessVO());
 	}
 	
 	/**
@@ -64,14 +67,29 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 	 */
 	@Column(name="member_id")
 	public String getMemberId() {
-		return memberId;
+		return member.getMemberId();
 	}
 
 	/**
 	 * @param memberId the memberId to set
 	 */
 	public void setMemberId(String memberId) {
-		this.memberId = memberId;
+		member.setMemberId(memberId);
+	}
+
+	/**
+	 * @return the member
+	 */
+	public MemberVO getMember() {
+		return member;
+	}
+
+	/**
+	 * @param member the member to set
+	 */
+	@BeanSubElement
+	public void setMember(MemberVO member) {
+		this.member = member;
 	}
 
 	/**
@@ -79,14 +97,29 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 	 */
 	@Column(name="business_id")
 	public String getBusinessId() {
-		return businessId;
+		return business.getBusinessId();
 	}
 
 	/**
 	 * @param businessId the businessId to set
 	 */
 	public void setBusinessId(String businessId) {
-		this.businessId = businessId;
+		business.setBusinessId(businessId);
+	}
+
+	/**
+	 * @return the business
+	 */
+	public BusinessVO getBusiness() {
+		return business;
+	}
+
+	/**
+	 * @param business the business to set
+	 */
+	@BeanSubElement
+	public void setBusiness(BusinessVO business) {
+		this.business = business;
 	}
 
 	/**
