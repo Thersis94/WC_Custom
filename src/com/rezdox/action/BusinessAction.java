@@ -285,17 +285,13 @@ public class BusinessAction extends SBActionAdapter {
 			
 			saveForm(req);
 
-			SMTSession session = req.getSession();
-			MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
-
-			SubscriptionAction sa = new SubscriptionAction();
-			sa.setDBConnection(dbConn);
-			sa.setAttributes(attributes);				
-			int count = sa.getBusinessUsage(member.getMemberId());
+			SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
+			
+			int count = sa.getBusinessUsage(RezDoxUtils.getMemberId(req));
 			if (newBusiness && count == 1) {
 				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 				try {
-					req.setSession(changeMemebersRole(session, site, member));
+					req.setSession(changeMemebersRole(req, site));
 				} catch (DatabaseException e) {
 					log.error("could not update member vo", e);
 				}
@@ -310,14 +306,17 @@ public class BusinessAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * @param req 
 	 * @param session
 	 * @param site
 	 * @param member
 	 * @return
 	 * @throws DatabaseException 
 	 */
-	private SMTSession changeMemebersRole(SMTSession session, SiteVO site, MemberVO member) throws DatabaseException {
+	private SMTSession changeMemebersRole(ActionRequest req, SiteVO site) throws DatabaseException {
 		ProfileRoleManager prm = new ProfileRoleManager();
+		SMTSession session = req.getSession();
+		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 		log.debug("change role for site and member " + site.getSiteId()+"|"+ member.getProfileId());
 		SBUserRole role = ((SBUserRole)session.getAttribute(Constants.ROLE_DATA));
 		prm.removeRole(role.getProfileRoleId(), dbConn);

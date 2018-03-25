@@ -258,17 +258,15 @@ public class ResidenceAction extends SBActionAdapter {
 				boolean newResidence = StringUtil.isEmpty(residence.getResidenceId());
 				
 				putModuleData(saveResidence(req), 1, false);
-				SMTSession session = req.getSession();
-				MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 
 				SubscriptionAction sa = new SubscriptionAction();
 				sa.setDBConnection(dbConn);
 				sa.setAttributes(attributes);				
-				int count = sa.getResidenceUsage(member.getMemberId());
+				int count = sa.getResidenceUsage(RezDoxUtils.getMemberId(req));
 				
 				if (newResidence && count == 1) {
 					SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-					req.setSession(changeMemebersRole(session, site, member));
+					req.setSession(changeMemebersRole(req, site));
 				}
 
 			} catch (Exception e) {
@@ -279,6 +277,7 @@ public class ResidenceAction extends SBActionAdapter {
 	
 	/**
 	 * updates the members record and the session with the new role.
+	 * @param req 
 	 * @param member 
 	 * @param site 
 	 * @param session 
@@ -286,9 +285,12 @@ public class ResidenceAction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * 
 	 */
-	private SMTSession changeMemebersRole(SMTSession session, SiteVO site, MemberVO member) throws DatabaseException {
+	private SMTSession changeMemebersRole(ActionRequest req,SiteVO site) throws DatabaseException {
 		ProfileRoleManager prm = new ProfileRoleManager();
+		SMTSession session = req.getSession();
+		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 		log.debug("change role for site and member " + site.getSiteId()+"|"+ member.getProfileId());
+		
 		SBUserRole role = ((SBUserRole)session.getAttribute(Constants.ROLE_DATA));
 		prm.removeRole(role.getProfileRoleId(), dbConn);
 		prm.addRole( member.getProfileId(), site.getSiteId(), REZDOX_RESIDENCE_ROLE_ID, 20, dbConn);
