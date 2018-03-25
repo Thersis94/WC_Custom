@@ -26,11 +26,29 @@ public class RezDoxUtils {
 	public static final String NEW_REGISTRANT_REWARD = "SIGNUP";
 
 	/**
+	 * Root path for the member portal site
+	 */
+	public static final String MEMBER_ROOT_PATH = "/member";
+
+	/**
 	 * Path to redirect to when the user is required to subscribe before they can
 	 * continue with the action they were trying to take.
 	 */
-	public static final String SUBSCRIPTION_UPGRADE_PATH = "/subscribe";
-
+	public static final String SUBSCRIPTION_UPGRADE_PATH = MEMBER_ROOT_PATH + "/subscribe";
+	
+	/**
+	 * Paths to various parts of the site
+	 * WARNING: Only use these in the case where one action's view has links to a separate page/action
+	 * TODO: Add these to their respective places in the jsp files 
+	 */
+	public static final String RESIDENCE_PATH = MEMBER_ROOT_PATH + "/residence";
+	public static final String ROOMS_PATH = MEMBER_ROOT_PATH + "/rooms";
+	public static final String BUSINESS_PATH = MEMBER_ROOT_PATH + "/business";
+	public static final String REVIEW_PATH = MEMBER_ROOT_PATH + "/review";
+	public static final String ALBUM_PATH = MEMBER_ROOT_PATH + "/gallery";
+	public static final String PHOTO_PATH = MEMBER_ROOT_PATH + "/photo";
+	public static final String PROFILE_PATH = MEMBER_ROOT_PATH + "/profile";
+	public static final String PROJECT_PATH = MEMBER_ROOT_PATH + "/projects";
 
 	private RezDoxUtils() {
 		//default constructor not used in static classes

@@ -65,7 +65,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		// Set data for new members
 		member.setRegisterSubmittalId((String) req.getAttribute("registerSubmittalId"));
 		member.setStatusFlg(1);
-		member.setPrivacyFlg(0);
+		member.setPrivacyFlg(MemberVO.Privacy.PRIVATE.getCode());
 
 		// Save member data
 		DBProcessor dbp = new DBProcessor(dbConn);

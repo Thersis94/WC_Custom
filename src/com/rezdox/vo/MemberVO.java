@@ -40,12 +40,11 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 
 	/**
 	 * RezDox privacy flags.
-	 * TODO: Descriptions for privacy types TBD
 	 */
 	public enum Privacy {
-		TYPE_0(0, "Type 0"),
-		TYPE_1(1, "Type 1"),
-		TYPE_2(2, "Type 2");
+		PUBLIC(0, "Public"),
+		CONNECTIONS(1, "Connections Only"),
+		PRIVATE(2, "Private");
 
 		private int cd;
 		private String label;
@@ -222,6 +221,24 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 		return super.getProfileId();
 	}
 
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#getProfileId()
+	 */
+	@Override
+	@Column(name="first_nm", isReadOnly=true)
+	public String getFirstName() {
+		return super.getFirstName();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#getProfileId()
+	 */
+	@Override
+	@Column(name="last_nm", isReadOnly=true)
+	public String getLastName() {
+		return super.getLastName();
+	}
+	
 	@Column(name="business_id", isReadOnly=true)
 	public String getBusinessId() {
 		return businessId;

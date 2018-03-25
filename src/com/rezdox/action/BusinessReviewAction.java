@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.rezdox.vo.BusinessReviewVO;
+import com.rezdox.vo.MemberVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -12,7 +13,10 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.user.HumanNameIntfc;
+import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: BusinessReviewAction.java<p/>
@@ -57,6 +61,11 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		List<BusinessReviewVO> reviewList = retrieveReviews(req);
 		putModuleData(reviewList, reviewList.size(), false);
+		
+		if (req.hasParameter("businessId")) {
+			BusinessAction ba = new BusinessAction(dbConn, attributes);
+			req.setAttribute(BusinessAction.BUSINESS_DATA, ba.retrieveBusinesses(req));
+		}
 	}
 
 	/**
@@ -64,8 +73,9 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 	 * 
 	 * @param req
 	 * @return
+	 * @throws ActionException 
 	 */
-	protected List<BusinessReviewVO> retrieveReviews(ActionRequest req) {
+	protected List<BusinessReviewVO> retrieveReviews(ActionRequest req) throws ActionException {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		BusinessReviewVO options = new BusinessReviewVO(req);
@@ -74,22 +84,64 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		sql.append("where 1=0 ");
 
 		if (!StringUtil.isEmpty(options.getBusinessReviewId())) {
-			sql.append("or business_review_id = ? ");
+			sql.append("or br.business_review_id = ? ");
 			params.add(options.getBusinessReviewId());
 
-		} else if (!StringUtil.isEmpty(options.getMemberId())) {
-			sql.append("or member_id = ? ");
-			params.add(options.getMemberId());
-			
 		} else if (!StringUtil.isEmpty(options.getBusinessId())) {
-			sql.append("or business_id = ? ");
+			sql.append("or br.business_id = ? ");
 			params.add(options.getBusinessId());
-		}
 
+		} else {
+			sql.append("or br.member_id = ? ");
+			params.add(RezDoxUtils.getMemberId(req));
+		}
+		
+		sql.append("order by create_dt desc ");
+
+		// Get the review data
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		return dbp.executeSelect(sql.toString(), params, new BusinessReviewVO());
+		List<BusinessReviewVO> reviews = dbp.executeSelect(sql.toString(), params, new BusinessReviewVO());
+		decryptMemberNames(reviews);
+		
+		return reviews;
 	}
 
+	/**
+	 * Returns a list of reviews that have not yet been moderated
+	 * 
+	 * @return
+	 */
+	protected List<BusinessReviewVO> retrieveUnmoderatedReviews() {
+		// Use the base query
+		StringBuilder sql = getBaseReviewSql();
+		sql.append("where moderated_flg = ? ");
+		
+		// Get everything in the system that hasn't been moderated
+		List<Object> params = new ArrayList<>();
+		params.add(0);
+		
+		// Get/return the data
+		DBProcessor dbp = new DBProcessor(dbConn);
+		List<BusinessReviewVO> reviews = dbp.executeSelect(sql.toString(), params, new BusinessReviewVO());
+		decryptMemberNames(reviews);
+		
+		return reviews;
+	}
+	
+	/**
+	 * Decrypts member names on the reviews
+	 */
+	protected void decryptMemberNames(List<BusinessReviewVO> reviews) {
+		// Decrypt member profile names
+		List<MemberVO> members = new ArrayList<>();
+		for (BusinessReviewVO review : reviews) {
+			members.add(review.getMember());
+		}
+		
+		// Not using ProfileManagerFactory populateRecords here because we don't want to expose member data
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>) members, (String)getAttribute(Constants.ENCRYPT_KEY));
+	}
+	
 	/**
 	 * Returns the base sql needed for getting business reviews.
 	 * May be appended to as necessary depending on usage.
@@ -100,8 +152,12 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		
-		sql.append("select business_review_id, member_id, business_id, rating_no, review_txt, create_dt, update_dt ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review ");
+		sql.append("select br.business_review_id, br.member_id, br.business_id, br.rating_no, br.review_txt, br.create_dt, br.update_dt, ");
+		sql.append("br.moderated_flg, m.profile_id, m.privacy_flg, m.profile_pic_pth, b.business_nm, b.photo_url, p.first_nm, p.last_nm  ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review br ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member m on br.member_id = m.member_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on br.business_id = b.business_id ");
+		sql.append(DBUtil.INNER_JOIN).append("profile p on m.profile_id = p.profile_id ");
 		
 		return sql;
 	}
@@ -114,7 +170,15 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		BusinessReviewVO review = new BusinessReviewVO(req);
 		DBProcessor dbp = new DBProcessor(dbConn);
-
+		
+		// Ensure the member editing/deleting, is the member who left the review originally
+		if (!(StringUtil.isEmpty(review.getBusinessReviewId())) && !req.hasParameter(BusinessAdminDataTool.REQ_ADMIN_MODERATE)) {
+			List<BusinessReviewVO> existingReview = retrieveReviews(req);
+			if (!RezDoxUtils.getMemberId(req).equals(existingReview.get(0).getMemberId())) {
+				return;
+			}
+		}
+		
 		try {
 			if (req.hasParameter("isDelete")) {
 				dbp.delete(review);
@@ -125,6 +189,6 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 			log.error("Could not save or delete business review", e);
 		}
 
-		putModuleData(review, 1, false);
+		putModuleData(review.getBusinessReviewId(), 1, false);
 	}
 }

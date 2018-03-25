@@ -114,3 +114,23 @@ delete from custom.rezdox_treasure_item_attribute where slug_txt='BENEFICIARY';
 --purge legacy data placeholders that are meaningless and inconvenience users
 delete from custom.rezdox_treasure_item_attribute where value_txt='' or value_txt='-' or value_txt='1970-01-01';
 
+--move the documents tied to projects over to the photos table.
+INSERT INTO custom.rezdox_photo (photo_id, album_id, treasure_item_id, project_id, photo_nm, desc_txt, image_url, thumbnail_url, order_no, create_dt, update_dt)
+SELECT document_id, null, null, project_id, document_nm, description_txt, file_pth, null,null,create_dt, update_dt
+from custom.rezdox_document where project_id is not null;
+
+--delete the documents just migrated to the photos table.
+delete from custom.rezdox_document where project_id is not null;
+
+--drop the document table - it's empty now.
+drop table custom.rezdox_document;
+
+-- new fields in project
+alter table custom.rezdox_project add END_DT timestamp;
+alter table custom.rezdox_project add DESC_TXT varchar;
+
+--bring endDate over from create or update dates...that's all we know?
+update custom.rezdox_project set end_dt=coalesce(update_dt, create_dt) where end_dt is null;
+
+-- Add moderated flag to business reviews
+alter table custom.rezdox_member_business_review add moderated_flg Integer Default 0;
