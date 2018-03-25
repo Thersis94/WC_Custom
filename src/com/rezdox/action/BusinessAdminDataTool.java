@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import com.rezdox.data.BusinessCategoryList;
+import com.rezdox.vo.BusinessReviewVO;
 import com.rezdox.vo.BusinessVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -29,6 +30,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class BusinessAdminDataTool extends SimpleActionAdapter {
 	public static final String REQ_APPROVE_BUSINESS = "approveBusiness";
+	public static final String REQ_APPROVE_REVIEW = "approveReview";
+	public static final String REQ_DELETE_REVIEW = "deleteReview";
+	public static final String REQ_ADMIN_MODERATE = "adminModerate";
 	
 	public BusinessAdminDataTool() {
 		super();
@@ -56,8 +60,11 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 			BusinessAction ba = new BusinessAction(getDBConnection(), getAttributes());
 			List<BusinessVO> businesses = ba.retrievePendingBusinesses();
 			putModuleData(businesses);
-		} else {
-			// TODO: Retrieve business reviews for moderation
+			
+		} else if (req.hasParameter("reviewModeration")) {
+			BusinessReviewAction revAction = new BusinessReviewAction(getDBConnection(), getAttributes());
+			List<BusinessReviewVO> reviews = revAction.retrieveUnmoderatedReviews();
+			putModuleData(reviews);
 		}
 	}
 
@@ -76,8 +83,14 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 			business.setBusinessId(req.getParameter(BusinessAction.REQ_BUSINESS_ID));
 			business.setStatusCode(Convert.formatInteger(req.getParameter(REQ_APPROVE_BUSINESS)));
 			msg = setBusinessStatus(business);
-		} else {
-			// TODO: Handle moderation of business reviews
+			
+		} else if (req.hasParameter(REQ_APPROVE_REVIEW)) {
+			// Set values required for moderation of review
+			BusinessReviewVO businessReview = new BusinessReviewVO();
+			businessReview.setBusinessReviewId(req.getParameter("businessReviewId"));
+			businessReview.setModeratedFlag(Convert.formatInteger(req.getParameter(REQ_APPROVE_REVIEW)));
+			msg = setReviewStatus(businessReview);
+			
 		}
 
 		adminRedirect(req, msg, (String) getAttribute(AdminConstants.ADMIN_TOOL_PATH));
@@ -90,9 +103,14 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
-		// TODO: Delete a business review after admin moderation
+		if (req.hasParameter(REQ_DELETE_REVIEW)) {
+			req.setParameter(REQ_ADMIN_MODERATE, "1");
+			req.setParameter("isDelete", "1");
+			
+			BusinessReviewAction revAction = new BusinessReviewAction(getDBConnection(), getAttributes());
+			revAction.build(req);
+		}
 	}
-
 
 	/**
 	 * Approve or deny a business.  
@@ -112,6 +130,30 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			log.error("Could not approve or deny business ", sqle);
+			return (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE); 
+		}
+		
+		return (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+	}
+
+	/**
+	 * Approve a review
+	 *
+	 * @param mrv
+	 */
+	private String setReviewStatus(BusinessReviewVO businessReview) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("rezdox_member_business_review ");
+		sql.append("set moderated_flg = ? ");
+		sql.append("where business_review_id = ? ");
+		log.debug(sql);
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, businessReview.getModeratedFlag());
+			ps.setString(2, businessReview.getBusinessReviewId());
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			log.error("Could not moderate review ", sqle);
 			return (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE); 
 		}
 		

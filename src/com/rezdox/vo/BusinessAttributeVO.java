@@ -4,6 +4,7 @@ import java.util.Date;
 
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
 <p><b>Title</b>: BusinessAttributeVO.java</p>
@@ -42,6 +43,15 @@ public class BusinessAttributeVO {
 		this.businessId = businessId;
 		this.slugText = slugText;
 		this.valueText = valueText;
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this);
 	}
 
 	/**

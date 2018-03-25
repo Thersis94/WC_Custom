@@ -4,6 +4,7 @@ package com.rezdox.vo;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.BusinessAction.BusinessStatus;
@@ -44,6 +45,8 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private String subCategoryCd;
 	private String categoryCd;
 	private String categoryName;
+	private int totalReviewsNo;
+	private double avgRatingNo;
 	private BusinessStatus status;
 	private Date createDate;
 	private Date updateDate;
@@ -252,6 +255,14 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	public void addAttribute(BusinessAttributeVO attribute) {
 		this.attributes.put(attribute.getSlugText(), attribute.getValueText());
 	}
+	
+	/**
+	 * Adds a collection of attributes to the map
+	 * @param attrs
+	 */
+	public void addAttributes(List<BusinessAttributeVO> attrs) {
+		for (BusinessAttributeVO attr : attrs) addAttribute(attr);
+	}
 
 	/**
 	 * @return the summaryText
@@ -310,6 +321,36 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setCategoryName(String categoryName) {
 		this.categoryName = categoryName;
+	}
+
+	/**
+	 * @return the totalReviewsNo
+	 */
+	@Column(name="total_reviews_no", isReadOnly=true)
+	public int getTotalReviewsNo() {
+		return totalReviewsNo;
+	}
+
+	/**
+	 * @param totalReviewsNo the totalReviewsNo to set
+	 */
+	public void setTotalReviewsNo(int totalReviewsNo) {
+		this.totalReviewsNo = totalReviewsNo;
+	}
+
+	/**
+	 * @return the avgRatingNo
+	 */
+	@Column(name="avg_rating_no", isReadOnly=true)
+	public double getAvgRatingNo() {
+		return avgRatingNo;
+	}
+
+	/**
+	 * @param avgRatingNo the avgRatingNo to set
+	 */
+	public void setAvgRatingNo(double avgRatingNo) {
+		this.avgRatingNo = avgRatingNo;
 	}
 
 	/**
