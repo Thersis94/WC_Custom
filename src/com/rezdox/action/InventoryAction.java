@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.rezdox.data.HomeInventoryFormProcessor;
+import com.rezdox.data.InventoryFormProcessor;
 import com.rezdox.vo.PhotoVO;
 import com.rezdox.vo.ResidenceVO;
 import static com.rezdox.action.ResidenceAction.RESIDENCE_ID;
@@ -114,7 +114,7 @@ public class InventoryAction extends SimpleActionAdapter {
 
 		// Get the form and the saved data for re-display onto the form.
 		DataManagerUtil util = new DataManagerUtil(getAttributes(), getDBConnection());
-		return util.loadFormWithData(formId, req, query, HomeInventoryFormProcessor.class);
+		return util.loadFormWithData(formId, req, query, InventoryFormProcessor.class);
 	}
 
 
@@ -212,7 +212,7 @@ public class InventoryAction extends SimpleActionAdapter {
 			// Call DataManagerUtil to save the form.
 			String formId = RezDoxUtils.getFormId(getAttributes());
 			DataManagerUtil util = new DataManagerUtil(getAttributes(), getDBConnection());
-			util.saveForm(formId, req, HomeInventoryFormProcessor.class);
+			util.saveForm(formId, req, InventoryFormProcessor.class);
 		}
 
 		//redirect the user if the request wasn't made over ajax

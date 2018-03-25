@@ -10,6 +10,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
@@ -23,7 +24,6 @@ import com.siliconmtn.util.user.HumanNameIntfc;
  @since Jan 18, 2018
  <b>Changes:</b> 
  ***************************************************************************/
-
 @Table(name="REZDOX_MEMBER")
 public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable {
 	private static final long serialVersionUID = 6973805787915145277L;
@@ -34,6 +34,9 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	private int privacyFlg;
 	private String profilePicPath;
 	private Date createDate;
+
+	//tied to login
+	private String businessId;
 
 	/**
 	 * RezDox privacy flags.
@@ -46,12 +49,12 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 
 		private int cd;
 		private String label;
-		
+
 		private Privacy(int cd, String lbl) {
 			this.cd = cd;
 			this.label = lbl;
 		}
-		
+
 		public int getCode() { return cd; }
 		public String getLabel() { return label; }
 	}
@@ -62,12 +65,12 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 
 		private int cd;
 		private String label;
-		
+
 		private Status(int cd, String lbl) {
 			this.cd = cd;
 			this.label = lbl;
 		}
-		
+
 		public int getCode() { return cd; }
 		public String getLabel() { return label; }
 	}
@@ -98,7 +101,7 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 		setPrivacyFlg(Convert.formatInteger(req.getParameter("privacyFlg")));
 		setProfilePicPath(req.getParameter("profilePicPath"));
 	}
-	
+
 	/**
 	 * @return the memberId
 	 */
@@ -169,7 +172,7 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	public void setStatusFlg(int status) {
 		this.statusFlg = status;
 	}
-	
+
 	public String getStatusName() {
 		for (Status s : Status.values()) {
 			if (s.getCode() == getStatusFlg())
@@ -209,7 +212,7 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	public void setProfilePicPath(String profilePicPath) {
 		this.profilePicPath = profilePicPath;
 	}
-	
+
 	/**
 	 * Override for db processor to add profile_id to the member record
 	 */
@@ -217,5 +220,39 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	@Column(name="profile_id")
 	public String getProfileId() {
 		return super.getProfileId();
+	}
+
+	@Column(name="business_id", isReadOnly=true)
+	public String getBusinessId() {
+		return businessId;
+	}
+
+	public void setBusinessId(String businessId) {
+		this.businessId = businessId;
+	}
+
+	public boolean isBusinessUser() {
+		return !StringUtil.isEmpty(getBusinessId());
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object o) {
+		if (!super.equals(o)) return false;
+		MemberVO vo = (MemberVO)o;
+		return StringUtil.checkVal(vo.getMemberId()).equals(getMemberId());
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		return super.hashCode() + StringUtil.checkVal(getMemberId()).hashCode();
 	}
 }

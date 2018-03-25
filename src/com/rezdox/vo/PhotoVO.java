@@ -9,6 +9,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
  <p><b>Title</b>: PhotoVO.java</p>
@@ -76,7 +77,7 @@ public class PhotoVO extends BeanDataVO implements Serializable {
 	 * @param albumId the albumId to set
 	 */
 	public void setAlbumId(String albumId) {
-		this.albumId = albumId;
+		this.albumId = StringUtil.checkVal(albumId, null);
 	}
 
 	/**
@@ -91,7 +92,7 @@ public class PhotoVO extends BeanDataVO implements Serializable {
 	 * @param treasureItemId the treasureItemId to set
 	 */
 	public void setTreasureItemId(String treasureItemId) {
-		this.treasureItemId = treasureItemId;
+		this.treasureItemId = StringUtil.checkVal(treasureItemId, null);
 	}
 
 	/**
@@ -106,7 +107,7 @@ public class PhotoVO extends BeanDataVO implements Serializable {
 	 * @param projectId the projectId to set
 	 */
 	public void setProjectId(String projectId) {
-		this.projectId = projectId;
+		this.projectId = StringUtil.checkVal(projectId, null);
 	}
 
 	/**
