@@ -47,6 +47,7 @@ public class RezDoxUtils {
 	public static final String REVIEW_PATH = MEMBER_ROOT_PATH + "/review";
 	public static final String ALBUM_PATH = MEMBER_ROOT_PATH + "/gallery";
 	public static final String PHOTO_PATH = MEMBER_ROOT_PATH + "/photo";
+	public static final String PROFILE_PATH = MEMBER_ROOT_PATH + "/profile";
 	public static final String PROJECT_PATH = MEMBER_ROOT_PATH + "/projects";
 
 	private RezDoxUtils() {
