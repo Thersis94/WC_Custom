@@ -27,13 +27,16 @@ import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.user.LocationManager;
+import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
 import com.smt.sitebuilder.data.vo.FormVO;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.QueryParamVO;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: BusinessAction.java<p/>
@@ -51,6 +54,9 @@ public class BusinessAction extends SBActionAdapter {
 	public static final String REQ_BUSINESS_ID = "businessId";
 	public static final String REQ_BUSINESS_INFO = "businessInfo";
 	public static final String UPGRADE_MSG = "You have reached your maximum businesses. Please purchase a business upgrade to continue.";
+	public static final String REZDOX_BUSINESS_ROLE_ID = "REZDOX_BUSINESS";
+	public static final String REZDOX_BUSINESS_ROLE_NAME = "RezDox Business Role";
+	public static final int REZDOX_BUSINESS_ROLE_LEVEL = 35;
 	private static final Class<BusinessFormProcessor> BUSINESS_FORM_PROCESSOR = BusinessFormProcessor.class;
 	
 	public enum BusinessColumnName {
@@ -272,10 +278,26 @@ public class BusinessAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.debug("business build called ");
 		if (req.hasParameter(REQ_BUSINESS_INFO)) {
+			BusinessVO business = new BusinessVO(req);
+			boolean newBusiness = StringUtil.isEmpty(business.getBusinessId());
+			
 			saveForm(req);
+
+			SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
+			
+			int count = sa.getBusinessUsage(RezDoxUtils.getMemberId(req));
+			if (newBusiness && count == 1) {
+				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+				try {
+					req.setSession(changeMemebersRole(req, site));
+				} catch (DatabaseException e) {
+					log.error("could not update member vo", e);
+				}
+			}
 		} else {
-			try {
+			try {				
 				putModuleData(saveBusiness(req), 1, false);
 			} catch (Exception e) {
 				throw new ActionException("Could not save business", e);
@@ -283,6 +305,32 @@ public class BusinessAction extends SBActionAdapter {
 		}
 	}
 	
+	/**
+	 * @param req 
+	 * @param session
+	 * @param site
+	 * @param member
+	 * @return
+	 * @throws DatabaseException 
+	 */
+	private SMTSession changeMemebersRole(ActionRequest req, SiteVO site) throws DatabaseException {
+		ProfileRoleManager prm = new ProfileRoleManager();
+		SMTSession session = req.getSession();
+		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
+		log.debug("change role for site and member " + site.getSiteId()+"|"+ member.getProfileId());
+		SBUserRole role = ((SBUserRole)session.getAttribute(Constants.ROLE_DATA));
+		prm.removeRole(role.getProfileRoleId(), dbConn);
+		prm.addRole( member.getProfileId(), site.getSiteId(), REZDOX_BUSINESS_ROLE_ID, 20, dbConn);
+		
+		role.setRoleId(REZDOX_BUSINESS_ROLE_ID);
+		role.setRoleLevel(REZDOX_BUSINESS_ROLE_LEVEL); 
+		role.setRoleName(REZDOX_BUSINESS_ROLE_NAME);
+		
+		role.setProfileRoleId(prm.checkRole(member.getProfileId(),  site.getSiteId(), dbConn));
+		session.setAttribute(Constants.ROLE_DATA, role);				
+		return session;
+	}
+
 	/**
 	 * Saves a business form builder form
 	 * 

@@ -34,7 +34,7 @@ public class RezDoxUtils {
 	 * Path to redirect to when the user is required to subscribe before they can
 	 * continue with the action they were trying to take.
 	 */
-	public static final String SUBSCRIPTION_UPGRADE_PATH = MEMBER_ROOT_PATH + "/subscribe";
+	public static final String SUBSCRIPTION_UPGRADE_PATH = MEMBER_ROOT_PATH + "/store";
 	
 	/**
 	 * Paths to various parts of the site
