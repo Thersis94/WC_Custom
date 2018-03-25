@@ -287,8 +287,6 @@ public class ResidenceAction extends SBActionAdapter {
 	 * 
 	 */
 	private SMTSession changeMemebersRole(SMTSession session, SiteVO site, MemberVO member) throws DatabaseException {
-		//if new and final count is one change roll
-	
 		ProfileRoleManager prm = new ProfileRoleManager();
 		log.debug("change role for site and member " + site.getSiteId()+"|"+ member.getProfileId());
 		SBUserRole role = ((SBUserRole)session.getAttribute(Constants.ROLE_DATA));
