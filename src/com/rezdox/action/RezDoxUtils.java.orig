@@ -34,6 +34,7 @@ public class RezDoxUtils {
 	 * Path to redirect to when the user is required to subscribe before they can
 	 * continue with the action they were trying to take.
 	 */
+<<<<<<< HEAD
 	public static final String SUBSCRIPTION_UPGRADE_PATH = MEMBER_ROOT_PATH + "/subscribe";
 	
 	/**
@@ -49,6 +50,10 @@ public class RezDoxUtils {
 	public static final String PHOTO_PATH = MEMBER_ROOT_PATH + "/photo";
 	public static final String PROFILE_PATH = MEMBER_ROOT_PATH + "/profile";
 	public static final String PROJECT_PATH = MEMBER_ROOT_PATH + "/projects";
+=======
+	public static final String SUBSCRIPTION_UPGRADE_PATH = "/subscribe";
+
+>>>>>>> 1a8db2e3e2a17d3115401aad5bb119c444f27245
 
 	private RezDoxUtils() {
 		//default constructor not used in static classes

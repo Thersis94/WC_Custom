@@ -1,8 +1,13 @@
 package com.rezdox.vo;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataMapper;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -27,9 +32,21 @@ public class ProjectMaterialVO {
 	private int quantityNo;
 	private double costNo;
 	private List<ProjectMaterialAttributeVO> attributes;
+	private Map<String, String> attributeMap;
 
 	public ProjectMaterialVO() {
 		super();
+		attributes = new ArrayList<>();
+	}
+
+	/**
+	 * @param req
+	 * @return
+	 */
+	public static ProjectMaterialVO instanceOf(ActionRequest req) {
+		ProjectMaterialVO vo = new ProjectMaterialVO();
+		BeanDataMapper.parseBean(vo, req.getParameterMap());
+		return vo;
 	}
 
 	@Column(name="project_material_id", isPrimaryKey=true)
@@ -67,9 +84,27 @@ public class ProjectMaterialVO {
 		return Convert.getCurrentTimestamp();
 	}
 
-	@BeanSubElement
 	public List<ProjectMaterialAttributeVO> getAttributes() {
 		return attributes;
+	}
+
+	/**
+	 * @param projectOwner
+	 * @return
+	 */
+	public String getAttribute(String slug) {
+		if (attributeMap == null) buildAttributeMap();
+		return attributeMap.get(slug);
+	}
+
+	/**
+	 * one-time builder of the attributes map
+	 */
+	private void buildAttributeMap() {
+		attributeMap = new HashMap<>();
+		if (attributes == null) return;
+		for (ProjectMaterialAttributeVO vo : attributes)
+			attributeMap.put(vo.getSlugTxt(),  vo.getValueTxt());
 	}
 
 
@@ -95,5 +130,10 @@ public class ProjectMaterialVO {
 
 	public void setAttributes(List<ProjectMaterialAttributeVO> attributes) {
 		this.attributes = attributes;
+	}
+
+	@BeanSubElement
+	public void addAttribute(ProjectMaterialAttributeVO attr) {
+		attributes.add(attr);
 	}
 }

@@ -90,13 +90,18 @@ public class PhotoAction extends SimpleActionAdapter {
 		} else if (!StringUtil.isEmpty(opts.getTreasureItemId())) {
 			sql.append("or treasure_item_id=? ");
 			params.add(opts.getTreasureItemId());
+			
+		} else if (!StringUtil.isEmpty(opts.getProjectId())) {
+			sql.append("or project_id=? ");
+			params.add(opts.getProjectId());
 
 		} else if (!StringUtil.isEmpty(opts.getAlbumId())) {
 			sql.append("or album_id = ? ");
 			params.add(opts.getAlbumId());
 		}
 		sql.append("order by order_no, coalesce(update_dt, create_dt), photo_nm "); //most recent first, or by name?  Can be changed per UI reqs.
-		
+		log.debug(sql);
+
 		DBProcessor dbp = new DBProcessor(dbConn);
 		return dbp.executeSelect(sql.toString(), params, new PhotoVO());
 	}
