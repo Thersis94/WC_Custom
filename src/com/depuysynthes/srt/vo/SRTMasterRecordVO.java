@@ -162,6 +162,7 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	/**
 	 * @return the partCount
 	 */
+	@Column(name="PART_COUNT", isReadOnly=true)
 	public int getPartCount() {
 		return partCount;
 	}

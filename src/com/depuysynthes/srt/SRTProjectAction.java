@@ -1,7 +1,13 @@
 package com.depuysynthes.srt;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.depuysynthes.srt.data.ProjectDataProcessor;
 import com.depuysynthes.srt.data.RequestDataProcessor;
@@ -21,6 +27,8 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
@@ -31,6 +39,8 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
+import com.smt.sitebuilder.util.LockUtil;
+import com.smt.sitebuilder.util.LockVO;
 
 /****************************************************************************
  * <b>Title:</b> SRTProjectAction.java
@@ -47,6 +57,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	public enum DisplayType {ENGINEERING, PRODUCTION, UNASSIGNED, MY_PROJECTS}
 	public static final String SRT_PROJECT_ID = "projectId";
+	private static final String SRT_PROJECT_LOCKS = "srtProjectLocks";
 
 	public SRTProjectAction() {
 		super();
@@ -114,11 +125,23 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 			if(req.hasParameter(SRT_PROJECT_ID)) {
 				loadDataFromForms(req);
+				req.setAttribute("ownsLock", StringUtil.checkVal(manageLock(req, false)));
 			}
 
 			putModuleData(projects.getRowData(), projects.getTotal(), false);
 		} else {
 			typeId = MilestoneTypeId.STATUS;
+		}
+
+		/*
+		 * Always Ensure we have a valid up to date Lock Map.  Should only
+		 * be relevant on first hit to the system.  Ensures that if a user
+		 * leaves and session times out before save is hit to release locks,
+		 * the next time they log in and access the project page, their
+		 * old locks are loaded.
+		 */
+		if(req.getSession().getAttribute(SRT_PROJECT_LOCKS) == null) {
+			req.getSession().setAttribute(SRT_PROJECT_LOCKS, getMyLocks(req));
 		}
 
 		//Retrieve list of Milestones from DB for Request.
@@ -135,8 +158,13 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			splitProject(req);
 		} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
 			copy(req);
+		} else if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
+			releaseLocks(req);
 		} else {
 			saveProject(req);
+
+			//Release all Locks on save.
+			releaseLocks(req);
 		}
 
 		//Redirect the User.
@@ -166,10 +194,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			return;
 		}
 
-		//Save off existing Master Records.
-		List<SRTMasterRecordVO> masterRecords = p.getMasterRecords();
-
-		//overwrite current Master Recods with new Empty List.
+		//overwrite current Master Records with new Empty List.
 		p.setMasterRecords(new ArrayList<>());
 
 		/*
@@ -183,24 +208,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			//Get ProjectDataProcessor for Saving Records.
 			ProjectDataProcessor pdp = new ProjectDataProcessor(dbConn, attributes, req);
 
-			for(int i = 0; i < masterRecords.size(); i++) {
-
-				//Add the current Master Record.
-				p.addMasterRecord(masterRecords.get(i));
-
-				//Save the Project.
-				pdp.saveProjectRecord(p);
-
-				//TODO - Do we need to clone Milestone Records/Dates?
-
-				/*
-				 * Wipe out the ProjectId.  Ensure first call is an update
-				 * and all future are inserts.
-				 */
-				p.setProjectId(null);
-				p.setCoProjectId(null);
-				p.setMasterRecords(new ArrayList<>());
-			}
+			//Save the Project.
+			pdp.saveProjectRecord(p);
 
 			dbConn.commit();
 			dbConn.setAutoCommit(autoCommit);
@@ -246,16 +255,14 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 */
 	private GridDataVO<SRTProjectVO> loadProjects(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
-		SRTRosterVO roster = (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
 
 		//Holds Engineering, Post Engineering, Unassigned, My Projects.
 		String statusType = req.getParameter("statusType");
 
-		//We always set Op Co Id off user so they are restricted to their data set.
-		vals.add(roster.getOpCoId());
-
 		//Build Query and populate required vals at same time.
 		String sql = buildProjectRetrievalQuery(req, vals, statusType);
+
+		log.debug(sql);
 
 		//Load Projects
 		GridDataVO<SRTProjectVO> projects = new DBProcessor(dbConn).executeSQLWithCount(sql, vals, new SRTProjectVO(), req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
@@ -340,7 +347,10 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
-		sql.append("req.surgeon_first_nm, req.surgeon_last_nm ");
+		sql.append("req.surgeon_first_nm, req.surgeon_last_nm, ");
+		sql.append("case when l.lock_id is not null then true else false end as LOCK_STATUS, ");
+		sql.append("m.milestone_nm as proj_stat_txt, ");
+		sql.append("type.label_txt as PROJ_TYPE_TXT ");
 		//If this isn't a detail load, get Names for display purposes.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
 			sql.append(", concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
@@ -353,11 +363,26 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(custom).append("DPY_SYN_SRT_REQUEST req ");
 		sql.append("on p.request_id = req.request_id ");
 
+		//Load Lock Status
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("RECORD_LOCK l ");
+		sql.append("on l.record_id = p.project_id and unlock_dt is null ");
+
 		//Get Requestor Information
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER r ");
 		sql.append("on req.ROSTER_ID = r.ROSTER_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE pr ");
 		sql.append("on r.PROFILE_ID = pr.PROFILE_ID ");
+
+		//Load Human Friendly Text for List Ref Values.
+
+		//Status
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom);
+		sql.append("DPY_SYN_SRT_MILESTONE m on p.PROJ_STAT_ID = m.milestone_id ");
+
+		//Project Type
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA type on ");
+		sql.append("type.value_txt = p.PROJ_TYPE_ID and type.list_id = ? ");
+		vals.add("PROJ_TYPE");
 
 		//Load Optional User Data if this isn't a detail view.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
@@ -398,6 +423,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 */
 	private void buildWhereClause(StringBuilder sql, ActionRequest req, List<Object> vals, String statusType) {
 		sql.append(DBUtil.WHERE_1_CLAUSE).append(" and p.OP_CO_ID = ? ");
+		vals.add(SRTUtil.getRoster(req).getOpCoId());
 
 		if(req.hasParameter(SRT_PROJECT_ID)) {
 			sql.append("and p.PROJECT_ID = ? ");
@@ -427,5 +453,95 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		vals.add(roster.getRosterId());
 		vals.add(roster.getRosterId());
 		vals.add(roster.getRosterId());
+	}
+
+	/**
+	 * Helper method that manages locking records and determining if a
+	 * user owns the lock on a record or not.
+	 * @param req
+	 * @param unlock
+	 * @return
+	 */
+	private boolean manageLock(ActionRequest req, boolean unlock) {
+		LockUtil locker = new LockUtil(dbConn);
+		Map<String, LockVO> activeLocks = getMyLocks(req);
+
+		String projectId = req.getParameter(SRT_PROJECT_ID);
+		SRTRosterVO rosterVO = SRTUtil.getRoster(req);
+		LockVO lock = null;
+		boolean ownsLock = true;
+
+		try {
+			if(unlock) {
+				locker.releaseLock(projectId, rosterVO);
+				activeLocks.remove(projectId);
+			} else {
+				lock = locker.getLock(projectId);
+				if(lock != null) {
+					ownsLock = lock.getLockedById().equals(rosterVO.getProfileId());
+				} else {
+					activeLocks.put(projectId, locker.createLock(projectId, "SRT_PROJECTS", rosterVO));
+				}
+			}
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Error Processing Code", e);
+		}
+
+		req.getSession().setAttribute(SRT_PROJECT_LOCKS, activeLocks);
+		return ownsLock;
+	}
+
+	/**
+	 * Helper method that releases all locks tied to the user.
+	 * @param req
+	 */
+	private void releaseLocks(ActionRequest req) {
+		LockUtil locker = new LockUtil(dbConn);
+		SRTRosterVO rosterVO = SRTUtil.getRoster(req);
+
+		Map<String, LockVO> locks = getMyLocks(req);
+		Iterator<Entry<String, LockVO>> iter = locks.entrySet().iterator();
+		while(iter.hasNext()) {
+			Entry<String, LockVO> e = iter.next();
+			LockVO lock = e.getValue();
+			if(lock.getUnlockDt() == null) {
+				try {
+					locker.releaseLock(lock.getRecordId(), rosterVO);
+				} catch (InvalidDataException | DatabaseException err) {
+					log.error(StringUtil.join("Unable to release Lock: ", lock.getRecordId()), err);
+				}
+				iter.remove();
+			}
+		}
+	}
+
+	/**
+	 * Helper method to get a Users Locks out of the system and ensure they
+	 * are on their session Object.  If already loaded, then just returns
+	 * the session map.
+	 * @param req
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	private Map<String, LockVO> getMyLocks(ActionRequest req) {
+		Map<String, LockVO> activeLocks = (Map<String, LockVO>) req.getSession().getAttribute(SRT_PROJECT_LOCKS);
+		if(activeLocks == null) {
+			activeLocks = new HashMap<>();
+			LockUtil locker = new LockUtil(dbConn);
+			SRTRosterVO rosterVO = SRTUtil.getRoster(req);
+			try {
+				List<LockVO> locks = locker.getUserLocks(rosterVO, "SRT_PROJECTS");
+
+				//Filter out all unlocked Records and convert to map.
+				activeLocks = locks
+							.stream()
+							.filter(l -> l.getUnlockDt() == null)
+							.collect(Collectors.toMap(LockVO::getRecordId, Function.identity()));
+			} catch (InvalidDataException e) {
+				log.error("Error Processing Code", e);
+			}
+		}
+
+		return activeLocks;
 	}
 }

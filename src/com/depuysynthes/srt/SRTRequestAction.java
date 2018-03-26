@@ -107,6 +107,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		List<Object> vals = new ArrayList<>();
 
 		SRTRosterVO roster = SRTUtil.getRoster(req);
+		vals.add("REQ_REASON");
 		//if user is not an admin, add rosterId.
 		if(req.hasParameter(SRT_REQUEST_ID)) {
 			vals.add(req.getParameter(SRT_REQUEST_ID));
@@ -156,12 +157,20 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	private String buildRequestLoadSql(boolean notAdmin, boolean hasRequestId) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select r.*, a.*, u.profile_id from ").append(schema);
+		sql.append("select r.*, a.*, u.profile_id, m.milestone_nm as PROJ_STAT_ID,");
+		sql.append("l.label_txt as REASON_FOR_REQUEST_TXT ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema);
 		sql.append("DPY_SYN_SRT_REQUEST r ");
 		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("DPY_SYN_SRT_ROSTER u on r.ROSTER_ID = u.ROSTER_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
 		sql.append("DPY_SYN_SRT_REQUEST_ADDRESS a on r.REQUEST_ID = a.REQUEST_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
+		sql.append("DPY_SYN_SRT_PROJECT p on p.request_id = r.request_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
+		sql.append("DPY_SYN_SRT_MILESTONE m on p.PROJ_STAT_ID = m.milestone_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA l on ");
+		sql.append("l.value_txt = r.reason_for_request and l.list_id = ? ");
 
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if(hasRequestId) {

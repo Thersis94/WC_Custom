@@ -56,7 +56,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		HOSPITAL_PO_NO("hospitalPONo"), SPECIAL_INSTRUCTIONS("specialInstructions"),
 		ACTUAL_ROI("actualRoi"), SRT_CONTACT("srtContact"),
 		ENGINEER_ID("engineerId"), DESIGNER_ID("designerId"), BUYER_ID("buyerId"),
-		QUALITY_ENGINEER_ID("qualityEngineerId"),
+		SALES_ROSTER_ID("rosterId"), QUALITY_ENGINEER_ID("qualityEngineerId"),
 		FUNCTIONAL_CHECK_ORDER_NO("funcCheckOrderNo"),
 		MAKE_FROM_SCRATCH("makeFromScratch"), MAKE_FROM_ORDER_NO("makeFromOrderNo"),
 		MFG_PO_TO_VENDOR("mfgPOToVendor"), SUPPLIER("supplierId"),
@@ -266,6 +266,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 				ps.setString(i++, uuid.getUUID());
 				ps.setString(i++, mrv.getMasterRecordId());
 				ps.setString(i++, project.getProjectId());
+				ps.setInt(i++, mrv.getPartCount());
 				ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 				ps.addBatch();
 			}
@@ -284,7 +285,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("dpy_syn_srt_master_record_project_xr (master_record_project_xr_id, ");
-		sql.append("master_record_id, project_id, create_Dt) values (?,?,?,?)");
+		sql.append("master_record_id, project_id, part_count, create_Dt) values (?,?,?,?,?)");
 		return sql.toString();
 	}
 

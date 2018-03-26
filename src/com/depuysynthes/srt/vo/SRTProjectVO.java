@@ -43,11 +43,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String coProjectId;
 	private String projectName;
 	private String projectType;
+	private String projectTypeTxt;
 	private String priority;
 	private String hospitalPONo;
 	private String specialInstructions;
 	private List<SRTNoteVO> notes;
 	private String projectStatus;
+	private String projectStatusTxt;
 	private BigDecimal actualRoi;
 	private String srtContact;
 	private String engineerId;
@@ -162,6 +164,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @return the projectTypeTxt
+	 */
+	@Column(name="PROJ_TYPE_TXT", isReadOnly=true)
+	public String getProjectTypeTxt() {
+		return projectTypeTxt;
+	}
+
+	/**
 	 * @return the priority
 	 */
 	@Column(name="PRIORITY_ID")
@@ -198,6 +208,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	@Column(name="proj_stat_id")
 	public String getProjectStatus() {
 		return projectStatus;
+	}
+
+	/**
+	 * @return the projectStatusTxt
+	 */
+	@Column(name="proj_stat_txt", isReadOnly=true)
+	public String getProjectStatusTxt() {
+		return projectStatusTxt;
 	}
 
 	/**
@@ -502,6 +520,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @param projectTypeTxt the projectTypeTxt to set.
+	 */
+	public void setProjectTypeTxt(String projectTypeTxt) {
+		this.projectTypeTxt = projectTypeTxt;
+	}
+
+	/**
 	 * @param priority the priority to set.
 	 */
 	public void setPriority(String priority) {
@@ -544,6 +569,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	 */
 	public void setProjectStatus(String projectStatus) {
 		this.projectStatus = projectStatus;
+	}
+
+	/**
+	 * @param projectStatusTxt the projectStatusTxt to set.
+	 */
+	public void setProjectStatusTxt(String projectStatusTxt) {
+		this.projectStatusTxt = projectStatusTxt;
 	}
 
 	/**

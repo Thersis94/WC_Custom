@@ -46,10 +46,13 @@ public class SRTRequestVO extends BeanDataVO {
 	private SRTRequestAddressVO requestAddress;
 	private int qtyNo;
 	private String reason;
+	private String reasonTxt;
 	private String chargeTo;
 	private String opCoId;
 	private Date createDt;
 	private Date updateDt;
+
+	private String projectStatus;
 
 	public SRTRequestVO() {
 		super();
@@ -196,6 +199,14 @@ public class SRTRequestVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the reason Text
+	 */
+	@Column(name="REASON_FOR_REQUEST_TXT", isReadOnly=true)
+	public String getReasonTxt() {
+		return reasonTxt;
+	}
+
+	/**
 	 * @return the chargeTo
 	 */
 	@Column(name="CHARGE_TO")
@@ -216,6 +227,14 @@ public class SRTRequestVO extends BeanDataVO {
 	@Column(name="OP_CO_ID")
 	public String getOpCoId() {
 		return opCoId;
+	}
+
+	/**
+	 * @return the Project Status
+	 */
+	@Column(name="PROJ_STAT_ID", isReadOnly=true)
+	public String getProjectStatus() {
+		return projectStatus;
 	}
 
 	@BeanSubElement
@@ -341,6 +360,13 @@ public class SRTRequestVO extends BeanDataVO {
 	}
 
 	/**
+	 * @param reasonTxt the reasonTxt to set.
+	 */
+	public void setReasonTxt(String reasonTxt) {
+		this.reasonTxt = reasonTxt;
+	}
+
+	/**
 	 * @param chargeTo the chargeTo to set.
 	 */
 	public void setChargeTo(String chargeTo) {
@@ -366,5 +392,9 @@ public class SRTRequestVO extends BeanDataVO {
 	 */
 	public void setOpCoId(String opCoId) {
 		this.opCoId = opCoId;
+	}
+
+	public void setProjectStatus(String projectStatus) {
+		this.projectStatus = projectStatus;
 	}
 }
