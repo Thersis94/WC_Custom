@@ -1,3 +1,10 @@
+On destination DB: 
+create org REZDOX
+ensure theme/layouts exist
+ensure widgets exist
+
+Run Camire's db-to-db site copy tool
+
 sudo apt-get install pgloader
 
 mysql -uroot -p
@@ -59,6 +66,7 @@ delete from profile_role where site_id='REZDOX_1';
 delete from register_submittal where site_id='REZDOX_1';
 
 ---------------
+Helpful Queries:
 select * from custom.rezdox_member;
 select * from profile where create_dt > '2018-01-18 00:00:00';
 select * from authentication where create_dt > '2018-01-18 00:00:00';
