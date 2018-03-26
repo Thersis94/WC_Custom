@@ -4,6 +4,7 @@ package com.rezdox.vo;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.BusinessAction.BusinessStatus;
@@ -253,6 +254,14 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	@BeanSubElement
 	public void addAttribute(BusinessAttributeVO attribute) {
 		this.attributes.put(attribute.getSlugText(), attribute.getValueText());
+	}
+	
+	/**
+	 * Adds a collection of attributes to the map
+	 * @param attrs
+	 */
+	public void addAttributes(List<BusinessAttributeVO> attrs) {
+		for (BusinessAttributeVO attr : attrs) addAttribute(attr);
 	}
 
 	/**

@@ -16,6 +16,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.UserDataVO;
 
 // WebCrescendo 3
@@ -91,5 +92,10 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		//apply the default reward give to all new users at first login
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 		ra.applyReward(RezDoxUtils.NEW_REGISTRANT_REWARD, member.getMemberId());
+		//set a member vo on the session so other rezdox actions have the right class
+		SMTSession session = req.getSession();
+		//set the new member so other actions can find its data
+		session.setAttribute(Constants.USER_DATA, member);
+		req.setParameter(Constants.REDIRECT_URL, RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH);
 	}
 }
