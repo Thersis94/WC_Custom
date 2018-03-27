@@ -6,12 +6,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.depuysynthes.srt.SRTMasterRecordAction;
 import com.depuysynthes.srt.SRTMilestoneAction;
 import com.depuysynthes.srt.SRTProjectAction;
+import com.depuysynthes.srt.util.SRTProjectIndexer;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTFileVO;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
@@ -175,6 +177,13 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		}
 	}
 
+	/**
+	 * Helper method that silos all DB Interactions for saving an SRT
+	 * Project record.  Is called from a variety of places and acts as
+	 * single point in the system where Project Records are saved.
+	 *
+	 * @param project
+	 */
 	public void saveProjectRecord(SRTProjectVO project) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
@@ -195,11 +204,27 @@ public class ProjectDataProcessor extends FormDataProcessor {
 				dbp.save(project);
 			}
 
+			//Update Project record in Solr
+			updateSolrProject(project);
+
 		} catch(Exception e) {
 			log.error("Could not save SRT Request", e);
 		}
 	}
 
+
+	/**
+	 * Call the Project Indexer so that changes are updated in solr as soon
+	 * as they're made by a user.
+	 * @param project
+	 */
+	private void updateSolrProject(SRTProjectVO project) {
+		Properties props = new Properties();
+		props.putAll(attributes);
+		SRTProjectIndexer indexer = new SRTProjectIndexer(props);
+		indexer.setDBConnection(dbConn);
+		indexer.indexItems(project.getProjectId());
+	}
 
 	/**
 	 * @param project the Project Record to send through Milestone Processing.
