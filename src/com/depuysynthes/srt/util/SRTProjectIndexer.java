@@ -75,6 +75,8 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 					}
 					p = new SRTProjectVO(rs);
 					p.setSolrIndex(INDEX_TYPE);
+					p.addRole(100);
+					p.addOrganization(SRTUtil.SRT_ORG_ID);
 				}
 
 				//Add Milestones as attributes on the SolrDocument
