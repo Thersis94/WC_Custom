@@ -1,6 +1,9 @@
 package com.rezdox.action;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -94,9 +97,14 @@ public class ProjectAction extends SimpleActionAdapter {
 		} else {
 			//calculate total valuation of all projects
 			double total = 0;
-			for (ProjectVO proj : data)
+			double improvementTotal = 0;
+			for (ProjectVO proj : data) {
 				total += proj.getTotalNo();
+				if ("IMPROVEMENT".equals(proj.getProjectCategoryCd()))
+					improvementTotal += proj.getTotalNo();
+			}
 			mod.setAttribute("totalValue", total);
+			mod.setAttribute("totalValueImprovements", improvementTotal * RezDoxUtils.IMPROVEMENTS_VALUE_COEF);
 		}
 	}
 
@@ -110,7 +118,7 @@ public class ProjectAction extends SimpleActionAdapter {
 	 * @param data
 	 * @throws ActionException
 	 */
-	private void loadTabSpecifics(ModuleVO mod, ActionRequest req, String page, 
+	protected void loadTabSpecifics(ModuleVO mod, ActionRequest req, String page, 
 			String projectId, List<ProjectVO> data) throws ActionException {
 		if ("edit".equals(page) || "view".equals(page)) {
 			//load the form if we're in edit mode
@@ -143,12 +151,11 @@ public class ProjectAction extends SimpleActionAdapter {
 	 * @param projectId
 	 * @return
 	 */
-	private List<ProjectVO> loadProjectList(ActionRequest req, String projectId) {
+	protected List<ProjectVO> loadProjectList(ActionRequest req, String projectId) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(1000);
-		sql.append("select a.*, "); //should this be honed?
-		sql.append("b.attribute_id, b.slug_txt, b.value_txt, ");
-		sql.append("c.category_nm, d.type_nm, r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id ");
+		sql.append("select a.*, b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
+		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("REZDOX_PROJECT a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_ATTRIBUTE b on a.project_id=b.project_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_CATEGORY c on a.project_category_cd=c.project_category_cd ");
@@ -156,7 +163,6 @@ public class ProjectAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_RESIDENCE r on a.residence_id=r.residence_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.status_flg=1 ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_MEMBER m on rm.member_id=m.member_id "); //this is the home owner
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE p on m.profile_id=p.profile_id "); //this is the home owner's profile
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_ROOM rr on r.residence_id=rr.residence_id ");
 		sql.append("where a.business_id=? and a.business_view_flg=1 ");
 		if (!StringUtil.isEmpty(projectId)) sql.append("and a.project_id=? ");
@@ -177,17 +183,19 @@ public class ProjectAction extends SimpleActionAdapter {
 	 * populate the UserDataVO for each homeowner for the loaded projects
 	 * @param data
 	 */
-	private void populateUserProfiles(List<ProjectVO> projects) {
+	protected void populateUserProfiles(List<ProjectVO> projects) {
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
-		List<UserDataVO> users = new ArrayList<>(projects.size());
+		Map<String, UserDataVO> userMap = new HashMap<>(projects.size());
 		UserDataVO user;
 		for (ProjectVO vo : projects) {
 			user = vo.getHomeowner();
 			if (user != null && !StringUtil.isEmpty(user.getProfileId()))
-				users.add(user);
+				userMap.put(user.getProfileId(), user);
 		}
-		if (users.isEmpty()) return;
+		if (userMap.isEmpty()) return;
 
+
+		List<UserDataVO> users = new ArrayList<>(userMap.values());
 		try {
 			pm.populateRecords(getDBConnection(), users);
 		} catch (DatabaseException e) {
@@ -196,7 +204,7 @@ public class ProjectAction extends SimpleActionAdapter {
 		}
 
 		//turn the list into a Map for fast lookups
-		Map<String, UserDataVO> userMap = users.stream().collect(Collectors.toMap(UserDataVO::getProfileId, Function.identity()));
+		userMap = users.stream().collect(Collectors.toMap(UserDataVO::getProfileId, Function.identity()));
 
 		//marry the users back to their project
 		for (ProjectVO vo : projects) {
@@ -296,8 +304,7 @@ public class ProjectAction extends SimpleActionAdapter {
 			saveMaterial(req);
 
 		} else if (req.hasParameter("deleteItem")) {
-			req.setParameter("isDelete", "1");
-			save(req);
+			hideProject(req);
 			doRedirect = true;
 
 		} else {
@@ -314,6 +321,29 @@ public class ProjectAction extends SimpleActionAdapter {
 		if (doRedirect) {
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			sendRedirect(page.getFullPath(), (String)getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE), req);
+		}
+	}
+
+
+	/**
+	 * Hides a project from the given user's view.
+	 * Projects never get deleted because they're viewable to multiple people - instead we hide them.
+	 * Support for isOwner bubbles up from HomeHistoryAction - a subclass.
+	 * @param req
+	 */
+	private void hideProject(ActionRequest req) {
+		StringBuilder sql = new StringBuilder (150);
+		String column = req.hasParameter("isOwner") ? "residence_view_flg" : "business_view_flg";
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("REZDOX_PROJECT set ");
+		sql.append(column).append("=0, update_dt=CURRENT_TIMESTAMP where project_id=?");
+		log.debug(sql);
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, req.getParameter(REQ_PROJECT_ID));
+			ps.executeUpdate();
+
+		} catch (SQLException sqle) {
+			log.error("could not hide project", sqle);
 		}
 	}
 

@@ -6,7 +6,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.rezdox.action.ResidenceAction;
 import com.rezdox.action.RezDoxUtils;
+import com.rezdox.vo.ResidenceVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -44,6 +46,36 @@ public class ProjectMyResidences extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		if (req.hasParameter("personal")) {
+			loadMyResidences(req);
+		} else {
+			loadBusinessContactResidences(req);
+		}
+	}
+
+
+	/**
+	 * Generates a list of residences tied to me - used on Home History log.
+	 * @param req
+	 */
+	private void loadMyResidences(ActionRequest req) {
+		ResidenceAction ra = new ResidenceAction(getDBConnection(), getAttributes());
+		List<ResidenceVO> residences = ra.listMyResidences(RezDoxUtils.getMemberId(req), null);
+		List<GenericVO> data = new ArrayList<>();
+
+		for (ResidenceVO vo : residences)
+			data.add(new GenericVO(vo.getResidenceId(), vo.getResidenceName()));
+
+		log.debug(String.format("loaded %d residences", data.size()));
+		putModuleData(data);
+	}
+
+
+	/**
+	 * Generates a list residences I'm connected to - tied to business' projects
+	 * @param req
+	 */
+	private void loadBusinessContactResidences(ActionRequest req) {
 		String schema = getCustomSchema();
 		String businessId = RezDoxUtils.getBusinessId(req);
 		StringBuilder sql = new StringBuilder(200);
@@ -77,7 +109,6 @@ public class ProjectMyResidences extends SimpleActionAdapter {
 		log.debug(String.format("loaded %d residences", data.size()));
 		putModuleData(data);
 	}
-
 
 	/**
 	 * helper to check for null/empty before appending the value, followed by its delimiter 
