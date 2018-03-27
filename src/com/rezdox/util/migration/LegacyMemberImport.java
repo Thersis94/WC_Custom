@@ -724,9 +724,9 @@ public class LegacyMemberImport extends CommandLineUtil {
 		sql.append("phone AS MAIN_PHONE_TXT, profilepic AS PROFILE_PIC, ");
 		sql.append("case when status='active' then 1 else 0 end AS STATUS, ");
 		sql.append("start AS DATE_JOINED, privacy AS PRIVACY_FLG, ");
-		sql.append("case when status='active' then '10' else null end AS ROLE_ID, ");
+		sql.append("case when status='active' then 'REZDOX_RES_BUS' else null end AS ROLE_ID, ");
 		sql.append("decrypt(decode(pw_pt1, 'hex'), 'RezDox', 'aes')::varchar as PW_PT1_TXT, decrypt(decode(pw_pt2, 'hex'), 'RezDox', 'aes')::varchar as PW_PT2_TXT, decrypt(decode(pw_pt3, 'hex'), 'RezDox', 'aes')::varchar as PW_PT3_TXT, ");
-		sql.append("'REZDOX' as ORGANIZATION_ID, 'REZDOX_1' as SITE_ID, 1 as ALLOW_COMM_FLG ");
+		sql.append("'REZDOX' as ORGANIZATION_ID, 'REZDOX_2' as SITE_ID, 1 as ALLOW_COMM_FLG ");
 		sql.append("from rezdox.member_tbl ");
 		sql.append("order by status desc, id; ");
 		return sql;
