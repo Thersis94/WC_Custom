@@ -298,7 +298,7 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	private String buildXrQuery() {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from ").append(schema).append("DPY_SYN_SRT_MASTER_RECORD_PROJECT_XR x ");
+		sql.append("select x.*, mr.title_txt, mr.part_no from ").append(schema).append("DPY_SYN_SRT_MASTER_RECORD_PROJECT_XR x ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("DPY_SYN_SRT_MASTER_RECORD mr ");
 		sql.append("on x.MASTER_RECORD_ID = mr.MASTER_RECORD_ID and x.PROJECT_ID = ? ");
 		sql.append(DBUtil.ORDER_BY).append("x.CREATE_DT");

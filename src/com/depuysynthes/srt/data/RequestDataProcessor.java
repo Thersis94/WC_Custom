@@ -132,6 +132,8 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 
 		//Save the Request and Address info and optional generate a Project
 		saveRequestData(request, address, project);
+
+		data.setFormSubmittalId(request.getRequestId());
 	}
 
 	/**

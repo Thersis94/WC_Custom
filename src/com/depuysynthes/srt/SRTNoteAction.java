@@ -12,6 +12,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -101,7 +102,7 @@ public class SRTNoteAction extends SimpleActionAdapter {
 		note.setRosterId(roster.getRosterId());
 		note.setFirstName(roster.getFirstName());
 		note.setLastName(roster.getLastName());
-
+		note.setCreateDt(Convert.getCurrentTimestamp());
 		//Save the note
 		saveNote(note);
 
