@@ -1,5 +1,7 @@
 package com.rezdox.action;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -95,9 +97,14 @@ public class ProjectAction extends SimpleActionAdapter {
 		} else {
 			//calculate total valuation of all projects
 			double total = 0;
-			for (ProjectVO proj : data)
+			double improvementTotal = 0;
+			for (ProjectVO proj : data) {
 				total += proj.getTotalNo();
+				if ("IMPROVEMENT".equals(proj.getProjectCategoryCd()))
+					improvementTotal += proj.getTotalNo();
+			}
 			mod.setAttribute("totalValue", total);
+			mod.setAttribute("totalValueImprovements", improvementTotal * RezDoxUtils.IMPROVEMENTS_VALUE_COEF);
 		}
 	}
 
@@ -297,8 +304,7 @@ public class ProjectAction extends SimpleActionAdapter {
 			saveMaterial(req);
 
 		} else if (req.hasParameter("deleteItem")) {
-			req.setParameter("isDelete", "1");
-			save(req);
+			hideProject(req);
 			doRedirect = true;
 
 		} else {
@@ -315,6 +321,29 @@ public class ProjectAction extends SimpleActionAdapter {
 		if (doRedirect) {
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			sendRedirect(page.getFullPath(), (String)getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE), req);
+		}
+	}
+
+
+	/**
+	 * Hides a project from the given user's view.
+	 * Projects never get deleted because they're viewable to multiple people - instead we hide them.
+	 * Support for isOwner bubbles up from HomeHistoryAction - a subclass.
+	 * @param req
+	 */
+	private void hideProject(ActionRequest req) {
+		StringBuilder sql = new StringBuilder (150);
+		String column = req.hasParameter("isOwner") ? "residence_view_flg" : "business_view_flg";
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("REZDOX_PROJECT set ");
+		sql.append(column).append("=0, update_dt=CURRENT_TIMESTAMP where project_id=?");
+		log.debug(sql);
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, req.getParameter(REQ_PROJECT_ID));
+			ps.executeUpdate();
+
+		} catch (SQLException sqle) {
+			log.error("could not hide project", sqle);
 		}
 	}
 

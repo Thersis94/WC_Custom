@@ -1,8 +1,14 @@
 package com.rezdox.action;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.ProjectVO;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -68,4 +74,41 @@ public class HomeHistoryAction extends ProjectAction {
 		return db.executeSelect(sql.toString(), params, new ProjectVO());
 	}
 
+
+	@Override
+	protected void populateUserProfiles(List<ProjectVO> projects) {
+		//populate the owner profiles (which are always me, but that's okay)
+		super.populateUserProfiles(projects);
+
+		//also populate the buisness profiles
+		populateBusinessProfiles(projects);
+	}
+
+
+	/**
+	 * populate the BusienssVO for each business for the loaded projects
+	 * @param data
+	 */
+	protected void populateBusinessProfiles(List<ProjectVO> projects) {
+		Set<String> ids = new HashSet<>(projects.size());
+
+		for (ProjectVO vo : projects) {
+			if (!StringUtil.isEmpty(vo.getBusinessId()))
+				ids.add(vo.getBusinessId());
+		}
+		if (ids.isEmpty()) return;
+
+
+		BusinessAction ba = new BusinessAction(getDBConnection(), getAttributes());
+		List<BusinessVO> data = ba.retrieveBusinesses(ids.toArray(new String[ids.size()]));
+
+		//turn the list into a Map for fast lookups
+		Map<String, BusinessVO> dataMap = data.stream().collect(Collectors.toMap(BusinessVO::getBusinessId, Function.identity()));
+
+		//marry the users back to their project
+		for (ProjectVO vo : projects) {
+			if (StringUtil.isEmpty(vo.getBusinessId())) continue;
+			vo.setBusiness(dataMap.get(vo.getBusinessId()));
+		}
+	}
 }

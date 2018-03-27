@@ -37,6 +37,7 @@ public class ProjectVO {
 	private String roomId;
 	private String roomName;
 	private String businessId;
+	private BusinessVO business;
 	private String projectCategoryCd;
 	private String projectCategoryName;
 	private String projectTypeCd;
@@ -307,5 +308,28 @@ public class ProjectVO {
 		homeowner.setEmailAddress(getAttribute(FormSlug.PROJECT_EMAIL.name()));
 		homeowner.setMainPhone(getAttribute(FormSlug.PROJECT_PHONE.name()));
 		return homeowner;
+	}
+
+
+	/**
+	 * used in JSPs - homogenizes Connected and Non-Connected Business (aka Provider, aka Vendor) contact.
+	 * @return
+	 */
+	public BusinessVO getProvider() {
+		if (business != null) return business;
+
+		business = new BusinessVO();
+		business.setBusinessName(getAttribute(FormSlug.PROJECT_OWNER.name()));
+		business.setEmailAddressText(getAttribute(FormSlug.PROJECT_EMAIL.name()));
+		business.setMainPhoneText(getAttribute(FormSlug.PROJECT_PHONE.name()));
+		return business;
+	}
+
+	public BusinessVO getBusiness() {
+		return business;
+	}
+
+	public void setBusiness(BusinessVO business) {
+		this.business = business;
 	}
 }

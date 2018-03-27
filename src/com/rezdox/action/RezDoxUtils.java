@@ -39,7 +39,6 @@ public class RezDoxUtils {
 	/**
 	 * Paths to various parts of the site
 	 * WARNING: Only use these in the case where one action's view has links to a separate page/action
-	 * TODO: Add these to their respective places in the jsp files 
 	 */
 	public static final String RESIDENCE_PATH = MEMBER_ROOT_PATH + "/residence";
 	public static final String ROOMS_PATH = MEMBER_ROOT_PATH + "/rooms";
@@ -49,6 +48,11 @@ public class RezDoxUtils {
 	public static final String PHOTO_PATH = MEMBER_ROOT_PATH + "/photo";
 	public static final String PROFILE_PATH = MEMBER_ROOT_PATH + "/profile";
 	public static final String PROJECT_PATH = MEMBER_ROOT_PATH + "/projects";
+
+	/**
+	 * coefficient modifier for putting a dollar value on home improvements (projects)
+	 */
+	public static final double IMPROVEMENTS_VALUE_COEF = .583;
 
 	private RezDoxUtils() {
 		//default constructor not used in static classes

@@ -57,9 +57,9 @@ public class ProjectFormProcessor extends FormDataProcessor {
 	 */
 	public enum FormSlug {
 		PROJECT_NAME, //residence name
-		PROJECT_OWNER, //homeowner name
-		PROJECT_EMAIL, //homeowner email 
-		PROJECT_PHONE; //homeowner phone 
+		PROJECT_OWNER, //homeowner name, also non-connected provider's name
+		PROJECT_EMAIL, //homeowner email, also non-connected provider's email
+		PROJECT_PHONE; //homeowner phone, also non-connected provider's phone
 	}
 
 	/**
@@ -146,6 +146,7 @@ public class ProjectFormProcessor extends FormDataProcessor {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (FormFieldVO formField : fields) {
 				for (String val : formField.getResponses()) {
+					if (StringUtil.isEmpty(val)) continue;
 					ps.setString(1, uuid.getUUID());
 					ps.setString(2, projectId);
 					ps.setString(3, StringUtil.checkVal(formField.getSlugTxt(), formField.getFormFieldGroupId()));
