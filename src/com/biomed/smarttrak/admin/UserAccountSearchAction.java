@@ -13,8 +13,6 @@ import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.user.ProfileManager;
-import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
@@ -50,8 +48,6 @@ public class UserAccountSearchAction extends SBActionAdapter {
 		
 		String[] splitSearchData = req.getParameter("searchData").toUpperCase().split(" ");
 		
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		
 		List<AccountVO> accounts = new ArrayList<>();
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(buildSQL(splitSearchData.length))) {
@@ -59,9 +55,9 @@ public class UserAccountSearchAction extends SBActionAdapter {
 			int pos = 1;
 			for (String searchData : splitSearchData) {
 				ps.setString(pos++, "%" + searchData + "%");
-				ps.setString(pos++, pm.getEncValue("SEARCH_FIRST_NM", searchData));
-				ps.setString(pos++, pm.getEncValue("SEARCH_LAST_NM", searchData));
-				ps.setString(pos++, pm.getEncValue("SEARCH_EMAIL_TXT", searchData));
+				ps.setString(pos++, "%" + searchData + "%");
+				ps.setString(pos++, "%" + searchData + "%");
+				ps.setString(pos++, "%" + searchData + "%");
 			}
 			
 			ResultSet rs = ps.executeQuery();
@@ -88,9 +84,9 @@ public class UserAccountSearchAction extends SBActionAdapter {
 			AccountVO account = new AccountVO();
 			account.setAccountId(rs.getString("ACCOUNT_ID"));
 			account.setAccountName(rs.getString("ACCOUNT_NM"));
-			account.setFirstName(se.decrypt(rs.getString("FIRST_NM")));
-			account.setLastName(se.decrypt(rs.getString("LAST_NM")));
-			account.setOwnerEmailAddr(se.decrypt(rs.getString("EMAIL_ADDRESS_TXT")));
+			account.setFirstName(rs.getString("FIRST_NM"));
+			account.setLastName(rs.getString("LAST_NM"));
+			account.setOwnerEmailAddr(rs.getString("EMAIL_ADDRESS_TXT"));
 			account.setOwnerProfileId(rs.getString("USER_ID"));
 			
 			accounts.add(account);
@@ -118,22 +114,21 @@ public class UserAccountSearchAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(750);
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
-		sql.append("SELECT a.ACCOUNT_ID, a.ACCOUNT_NM, p.FIRST_NM, p.LAST_NM, ");
-		sql.append("p.EMAIL_ADDRESS_TXT, u.USER_ID ");
+		sql.append("SELECT a.ACCOUNT_ID, a.ACCOUNT_NM, u.FIRST_NM, u.LAST_NM, ");
+		sql.append("u.EMAIL_ADDRESS_TXT, u.USER_ID ");
 		sql.append("FROM ").append(customDb).append("biomedgps_account a ");
 		sql.append("LEFT JOIN ").append(customDb).append("biomedgps_user u ");
 		sql.append("ON u.ACCOUNT_ID = a.ACCOUNT_ID ");
-		sql.append("LEFT JOIN PROFILE p on p.PROFILE_ID = u.PROFILE_ID ");
 		
 		sql.append("WHERE 1=2 ");
 		for (int i = 0; i < searchParams; i++) {
 			sql.append("OR UPPER(a.account_nm)  like ? ");
-			sql.append("OR p.search_first_nm = ? ");
-			sql.append("OR p.search_last_nm = ? ");
-			sql.append("OR p.search_email_txt = ? ");
+			sql.append("OR UPPER(u.first_nm) like ? ");
+			sql.append("OR UPPER(u.last_nm) like ? ");
+			sql.append("OR UPPER(u.email_address_txt) like ? ");
 		}
 		
-		sql.append("GROUP BY a.ACCOUNT_ID, a.ACCOUNT_NM, p.FIRST_NM, p.LAST_NM, p.EMAIL_ADDRESS_TXT, u.USER_ID ");
+		sql.append("GROUP BY a.ACCOUNT_ID, a.ACCOUNT_NM, u.FIRST_NM, u.LAST_NM, u.EMAIL_ADDRESS_TXT, u.USER_ID ");
 		
 		sql.append("ORDER BY a.account_id");
 		log.debug(sql);
