@@ -61,7 +61,8 @@ public class RezDoxLoginModule extends DBLoginModule {
 		// Get the member data
 		DBProcessor db = new DBProcessor(dbConn);
 		List<MemberVO> memberData = db.executeSelect(sql, params, new MemberVO());
-
+		if (memberData.isEmpty()) return null;
+		
 		// Populate the member/user data
 		MemberVO member = memberData.get(0);
 		member.setData(user.getDataMap());
