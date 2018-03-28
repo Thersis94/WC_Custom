@@ -210,8 +210,7 @@ public class AccountAction extends SBActionAdapter {
 			params.add(section.getOptionValue());
 		}
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
-		params.add(AdminControllerAction.STAFF_ROLE_ID);
-		params.add(AdminControllerAction.ADMIN_STAFF_ROLE_ID);
+		params.add(AdminControllerAction.STAFF_ROLE_LEVEL);
 		
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  accounts = db.executeSelect(sql, params, new AccountVO());
@@ -236,6 +235,7 @@ public class AccountAction extends SBActionAdapter {
 		if (loadTitles) sql.append(", rd.value_txt as title ");
 		sql.append("from profile a ");
 		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=? ");
+		sql.append("inner join role r on r.role_id=b.role_id ");
 		sql.append("inner join ").append(schema).append("biomedgps_user u on a.profile_id=u.profile_id and u.active_flg=1 "); //only active users
 		if (loadTitles || section != null)  {
 			sql.append("inner join register_submittal rsub on rsub.profile_id=a.profile_id ");			
@@ -247,7 +247,7 @@ public class AccountAction extends SBActionAdapter {
 				sql.append("and rd.value_txt = ? ");
 			}
 		}
-		sql.append("and b.site_id=? and b.role_id in (?, ?) ");
+		sql.append("and b.site_id=? and r.role_order_no >= ? ");
 		log.debug(sql);
 		
 		return sql.toString();
