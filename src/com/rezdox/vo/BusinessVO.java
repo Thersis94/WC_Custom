@@ -50,7 +50,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private BusinessStatus status;
 	private Date createDate;
 	private Date updateDate;
-	
+
 	/**
 	 * Special use keys for values from the attributes table in the attibutes map
 	 */
@@ -70,7 +70,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 		this();
 		populateData(req);
 	}
-	
+
 	/**
 	 * @return the businessId
 	 */
@@ -255,7 +255,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	public void addAttribute(BusinessAttributeVO attribute) {
 		this.attributes.put(attribute.getSlugText(), attribute.getValueText());
 	}
-	
+
 	/**
 	 * Adds a collection of attributes to the map
 	 * @param attrs

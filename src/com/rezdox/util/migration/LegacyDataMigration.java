@@ -842,7 +842,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 		log.info("Adding Payment Types");
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("insert into custom.rezdox_payment_type (payment_type_id, type_nm, create_dt) ");
-		sql.append("values (replace(newid(),'-',''), 'PayPal', getdate()) ");
+		sql.append("values ('9bab9efe5c0643aabd5ed0670d4c9b02', 'PayPal', getdate()) ");
 		executeSimpleMapping(sql, "payment type");
 	}
 	

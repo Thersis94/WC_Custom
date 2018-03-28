@@ -56,6 +56,23 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		log.debug("Running RezDox registration post-processor.");
 
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		
+		// Determine whether user is updating their profile or a new member
+		if (!(user instanceof MemberVO)) {
+			setupNewMember(user, req);
+		} else {
+			req.setParameter(Constants.REDIRECT_URL, RezDoxUtils.PROFILE_PATH);
+		}
+	}
+	
+	/**
+	 * Handles the required steps for setting up a new member
+	 * 
+	 * @param user
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void setupNewMember(UserDataVO user, ActionRequest req) throws ActionException {
 		MemberVO member = new MemberVO();
 
 		// Set user data onto the member
@@ -92,10 +109,12 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		//apply the default reward give to all new users at first login
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 		ra.applyReward(RezDoxUtils.NEW_REGISTRANT_REWARD, member.getMemberId());
+		
 		//set a member vo on the session so other rezdox actions have the right class
 		SMTSession session = req.getSession();
-		//set the new member so other actions can find its data
 		session.setAttribute(Constants.USER_DATA, member);
+		
+		// forward to the next step for setting up the member's account
 		req.setParameter(Constants.REDIRECT_URL, RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH);
 	}
 }

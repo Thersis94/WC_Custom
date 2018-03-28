@@ -206,6 +206,7 @@ public class ResidenceAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_residence_member_xr b ");
 		sql.append("on a.residence_id=b.residence_id and b.member_id=? and b.status_flg=1");
 		if (!StringUtil.isEmpty(residenceId)) sql.append(" where a.residence_id=?");
+		sql.append("order by a.residence_nm");
 
 		List<Object> params = new ArrayList<>();
 		params.add(memberId);

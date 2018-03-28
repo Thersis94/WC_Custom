@@ -134,3 +134,15 @@ update custom.rezdox_project set end_dt=coalesce(update_dt, create_dt) where end
 
 -- Add moderated flag to business reviews
 alter table custom.rezdox_member_business_review add moderated_flg Integer Default 0;
+
+-- cleanup
+update custom.rezdox_project_type set type_nm=replace(type_nm,'&amp;','&');
+update custom.rezdox_treasure_category set category_nm=replace(category_nm,'&amp;','&');
+delete from custom.rezdox_project_attribute where value_txt='' or value_txt='-' or value_txt=null or value_txt='()-';
+update custom.rezdox_project set desc_txt=replace(desc_txt,'&amp;','&');
+update custom.rezdox_project_attribute set value_txt=replace(value_txt,'&amp;','&');
+update custom.rezdox_treasure_item_attribute set value_txt=replace(value_txt,'&amp;','&');
+update custom.rezdox_project set project_nm=replace(project_nm,'&amp;','&');
+update custom.rezdox_project_attribute set slug_txt='PROJECT_OWNER' where slug_txt='PROJECT_WRITEIN1';
+alter table custom.rezdox_project alter column residence_id drop not null;
+

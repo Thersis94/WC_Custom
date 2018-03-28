@@ -28,12 +28,13 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 
 public class DecryptProfile {
-	public static final String DB_URL = "jdbc:postgresql://sonic:5432/tjohnson_webcrescendo_sb?defaultRowFetchSize=25&amp;prepareThreshold=3";
-    public static final String DB_DRIVER ="org.postgresql.Driver";
-    protected static final String[] DB_AUTH = new String[] {"ryan_user_sb", "sqll0gin"};
+	public static final String DB_URL = "jdbc:postgresql://sonic:5432/tjohnson_webcrescendo_sb";
+	public static final String DB_DRIVER ="org.postgresql.Driver";
+	protected static final String[] DB_AUTH = new String[] {"user", "pswd"};
+	private static final String ENC_KEY = null; //insert as needed, then remove.
     
-    // Add a logger
-    Logger log = Logger.getLogger(DecryptProfile.class);
+	// Add a logger
+	Logger log = Logger.getLogger(DecryptProfile.class);
     
 	/**
 	 * 
@@ -61,7 +62,7 @@ public class DecryptProfile {
 	 * @throws EncryptionException 
 	 */
 	public void processProfiles(Connection conn) throws SQLException, EncryptionException {
-		StringEncrypter se = new StringEncrypter("s1l1c0nmtnT3chm0l0g13$JC");
+		StringEncrypter se = new StringEncrypter(ENC_KEY);
 		String sql = "select member_id, b.first_nm, b.last_nm, b.email_address_txt from custom.rezdox_member a ";
 		sql += "inner join profile b on a.profile_id = b.profile_id";
 		
