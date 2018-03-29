@@ -53,6 +53,8 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	/**
 	 * Helper method that runs search against solr for all DocumentIds that
 	 * match loads Data for Projects, then exports data to Excel Sheet.
+	 * TODO - Need to retrieve all Solr Results for the current Query,
+	 * load Project Data for all of them and then export to Excel.
 	 * @param req
 	 * @throws ActionException
 	 */
