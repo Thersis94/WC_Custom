@@ -9,7 +9,6 @@ import com.biomed.smarttrak.vo.AccountVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -51,7 +50,6 @@ public class UserAccountSearchAction extends SBActionAdapter {
 		List<AccountVO> accounts = new ArrayList<>();
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(buildSQL(splitSearchData.length))) {
-			StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
 			int pos = 1;
 			for (String searchData : splitSearchData) {
 				ps.setString(pos++, "%" + searchData + "%");
