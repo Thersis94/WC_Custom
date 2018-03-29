@@ -146,3 +146,9 @@ update custom.rezdox_project set project_nm=replace(project_nm,'&amp;','&');
 update custom.rezdox_project_attribute set slug_txt='PROJECT_OWNER' where slug_txt='PROJECT_WRITEIN1';
 alter table custom.rezdox_project alter column residence_id drop not null;
 update custom.rezdox_project_attribute set slug_txt='PROJECT_OWNER' where slug_txt='PROJECT_PROVIDER';
+
+-- updates to data model
+alter table custom.rezdox_project add proj_discount_no decimal(7,5);
+alter table custom.rezdox_project add proj_tax_no decimal(7,5);
+alter table custom.rezdox_project add mat_discount_no decimal(7,5);
+alter table custom.rezdox_project add mat_tax_no decimal(7,5);
