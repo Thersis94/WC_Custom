@@ -1,15 +1,21 @@
 package com.rezdox.action;
 
+// JDK 1.8.x
 import java.util.Map;
 
+// App Libs
 import com.rezdox.vo.MemberVO;
+
+// SMT Base libs 3.5
 import com.siliconmtn.action.ActionRequest;
+
+// WC Libs 3.8
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title:</b> RezDoxUtils.java<br/>
- * <b>Description:</b> 
+ * <b>Description:</b> Utility class for defining constants and core info for the rezdox member portal
  * <br/>
  * <b>Copyright:</b> Copyright (c) 2018<br/>
  * <b>Company:</b> Silicon Mountain Technologies<br/>
@@ -54,8 +60,7 @@ public class RezDoxUtils {
 	/**
 	 * coefficient modifier for putting a dollar value on home improvements (projects)
 	 */
-	public static final double IMPROVEMENTS_VALUE_COEF = .583;
-	
+	public static final double IMPROVEMENTS_VALUE_COEF = .537;
 	
 	/**
 	 * Org Roles for the site
