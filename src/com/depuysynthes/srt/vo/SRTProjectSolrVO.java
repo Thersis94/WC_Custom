@@ -73,7 +73,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the opCoId
 	 */
 	@Column(name="op_co_id")
-	@SolrField(name="opCoId_t")
+	@SolrField(name="opCoId_s")
 	public String getOpCoId() {
 		return opCoId;
 	}
@@ -90,7 +90,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the category
 	 */
 	@Column(name="op_co_id")
-	@SolrField(name="category_t")
+	@SolrField(name="category_s")
 	public String getCategory() {
 		return category;
 	}
@@ -115,7 +115,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the projectStatus
 	 */
 	@Column(name="proj_stat_id")
-	@SolrField(name="projectStatus_t")
+	@SolrField(name="projectStatus_s")
 	public String getProjectStatus() {
 		return projectStatus;
 	}
@@ -124,7 +124,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the engineerId
 	 */
 	@Column(name="engineer_id")
-	@SolrField(name="engineerId_t")
+	@SolrField(name="engineerId_s")
 	public String getEngineerId() {
 		return engineerId;
 	}
@@ -133,7 +133,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the designerId
 	 */
 	@Column(name="designer_id")
-	@SolrField(name="designerId_t")
+	@SolrField(name="designerId_s")
 	public String getDesignerId() {
 		return designerId;
 	}
@@ -142,7 +142,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the qualityEngineerId
 	 */
 	@Column(name="quality_engineer_id")
-	@SolrField(name="qaId_t")
+	@SolrField(name="qaId_s")
 	public String getQualityEngineerId() {
 		return qualityEngineerId;
 	}
@@ -151,7 +151,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the supplier
 	 */
 	@Column(name="supplier_id")
-	@SolrField(name="supplierId_t")
+	@SolrField(name="supplierId_s")
 	public String getSupplier() {
 		return supplier;
 	}
@@ -160,7 +160,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the territoryId
 	 */
 	@Column(name="request_territory_id")
-	@SolrField(name="territoryId_t")
+	@SolrField(name="territoryId_s")
 	public String getTerritoryId() {
 		return territoryId;
 	}
