@@ -530,6 +530,18 @@ constraint pk_REZDOX_ALBUM primary key (ALBUM_ID)
 ) Without Oids;
 
 
+Create table custom.REZDOX_INVITATION
+(
+	INVITATION_ID Varchar(32) NOT NULL,
+	MEMBER_ID Varchar(32) NOT NULL,
+	EMAIL_ADDRESS_TXT Varchar(100) NOT NULL,
+	STATUS_FLG Integer NOT NULL Default 0,
+	CREATE_DT Timestamp NOT NULL,
+	UPDATE_DT Timestamp,
+constraint pk_REZDOX_INVITATION primary key (INVITATION_ID)
+) Without Oids;
+
+
 /* Create Foreign Keys */
 
 Alter table custom.REZDOX_PROJECT add Constraint RESIDENCE_PROJECT_FKEY foreign key (RESIDENCE_ID) references custom.REZDOX_RESIDENCE (RESIDENCE_ID) on update restrict on delete restrict;
@@ -575,6 +587,8 @@ Alter table custom.REZDOX_CONNECTION add Constraint MEMBER_CONNECTEE_FKEY foreig
 Alter table custom.REZDOX_TREASURE_ITEM add Constraint OWNER_MEMBER_TREASURE_ITEM_FKEY foreign key (OWNER_MEMBER_ID) references custom.REZDOX_MEMBER (MEMBER_ID) on update restrict on delete cascade;
 
 Alter table custom.REZDOX_TREASURE_ITEM add Constraint BENEFICIARY_MEMBER_TREASURE_ITEM_FKEY foreign key (BENEFICIARY_MEMBER_ID) references custom.REZDOX_MEMBER (MEMBER_ID) on update restrict on delete set null;
+
+Alter table custom.REZDOX_INVITATION add Constraint MEMBER_INVITATION_FKEY foreign key (MEMBER_ID) references custom.REZDOX_MEMBER (MEMBER_ID) on update restrict on delete cascade;
 
 Alter table custom.REZDOX_BUSINESS_ATTRIBUTE add Constraint BUSINESS_ATTRIBUTE_FKEY foreign key (BUSINESS_ID) references custom.REZDOX_BUSINESS (BUSINESS_ID) on update restrict on delete cascade;
 
