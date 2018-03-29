@@ -63,7 +63,7 @@ public class UserAccountSearchAction extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next())
-				buildAccount(rs, se, accounts);
+				buildAccount(rs, accounts);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
@@ -79,7 +79,7 @@ public class UserAccountSearchAction extends SBActionAdapter {
 	 * @param se
 	 * @param accounts
 	 */
-	private void buildAccount(ResultSet rs, StringEncrypter se, List<AccountVO> accounts) {
+	private void buildAccount(ResultSet rs, List<AccountVO> accounts) {
 		try {
 			AccountVO account = new AccountVO();
 			account.setAccountId(rs.getString("ACCOUNT_ID"));
