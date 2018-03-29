@@ -72,10 +72,15 @@ public class DashboardAction extends SimpleActionAdapter {
 		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
 		// Retrieve the business or residence data based upon the user role
-		if ("REZDOX_RESIDENCE".equalsIgnoreCase(role.getRoleId()))
+		if (RezDoxUtils.REZDOX_RESIDENCE_ROLE.equalsIgnoreCase(role.getRoleId())) {
 			this.setModuleData(getResidenceData(member, schema));
-		else 
+		} else if (RezDoxUtils.REZDOX_BUSINESS_ROLE.equalsIgnoreCase(role.getRoleId())) { 
 			this.setModuleData(getBusinessData(member, schema));
+		} else { 
+			Map<String, Object> allData = getBusinessData(member, schema);
+			allData.putAll(getResidenceData(member, schema));
+			this.setModuleData(allData);
+		}
 	}
 	
 	/**

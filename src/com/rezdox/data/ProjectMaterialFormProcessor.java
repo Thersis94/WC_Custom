@@ -135,6 +135,7 @@ public class ProjectMaterialFormProcessor extends FormDataProcessor {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (FormFieldVO formField : fields) {
 				for (String val : formField.getResponses()) {
+					if (StringUtil.isEmpty(val)) continue;
 					ps.setString(1, uuid.getUUID());
 					ps.setString(2, projectMaterialId);
 					ps.setString(3, StringUtil.checkVal(formField.getSlugTxt(), formField.getFormFieldGroupId()));
