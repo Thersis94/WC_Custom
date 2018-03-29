@@ -272,4 +272,13 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	public int hashCode() {
 		return super.hashCode() + StringUtil.checkVal(getMemberId()).hashCode();
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this);
+	}
 }

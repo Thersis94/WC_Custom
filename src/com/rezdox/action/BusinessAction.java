@@ -310,6 +310,10 @@ public class BusinessAction extends SBActionAdapter {
 				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 				try {
 					req.setSession(changeMemebersRole(req, site));
+					
+					// This is the user's first business, give a reward to anyone that might have invited them
+					InvitationAction ia = new InvitationAction(dbConn, attributes);
+					ia.applyInviterRewards(req, RezDoxUtils.REWARD_BUSINESS_INVITE);
 				} catch (DatabaseException e) {
 					log.error("could not update member vo", e);
 				}

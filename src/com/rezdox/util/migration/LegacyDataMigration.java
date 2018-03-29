@@ -119,6 +119,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			migrateMemberRewards();
 			migrateAlbums();
 			migrateRoomInfo();
+			migrateInvitations();
 			addResidenceApiData();
 		} catch(Exception e) {
 			log.error("Failed to migrate data.", e);
@@ -1219,7 +1220,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 
 		StringBuilder legacyRoomSql = new StringBuilder(150);
 		legacyRoomSql.append("select residence_id, value_txt from custom.rezdox_residence_attribute ");
-		legacyRoomSql.append("where slug_txt = 'RESIDENCE_ROOM_DETAILS' and value_txt != '' ");
+		legacyRoomSql.append("where form_field_id = 'RESIDENCE_ROOM_DETAILS' and value_txt != '' ");
 		
 		try (PreparedStatement roomPs = dbConn.prepareStatement(roomSql.toString());) {
 			buildRoomPs(roomPs, legacyRoomSql);
@@ -1299,6 +1300,18 @@ public class LegacyDataMigration extends CommandLineUtil {
 		}
 		
 		return roomTypeCd;
+	}
+	
+	/**
+	 * Migrates invitations sent by members
+	 */
+	protected void migrateInvitations() {
+		log.info("Migrating Invitations");
+		StringBuilder inviteSql = new StringBuilder(250);
+		inviteSql.append("insert into custom.rezdox_invitation(invitation_id, member_id, email_address_txt, status_flg, create_dt) ");
+		inviteSql.append("select cast(id as varchar), right(pro1, -1), email, 1, datetime ");
+		inviteSql.append("from rezdox.invite_tbl where type='invite' ");
+		executeSimpleMapping(inviteSql, "invitation");
 	}
 	
 	/**
