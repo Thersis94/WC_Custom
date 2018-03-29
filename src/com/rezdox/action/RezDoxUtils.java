@@ -24,6 +24,13 @@ public class RezDoxUtils {
 	 * The site admin can change which reward "SIGNUP" actually binds to in the WC admintool.
 	 */
 	public static final String NEW_REGISTRANT_REWARD = "SIGNUP";
+	
+	/**
+	 * More available rewards bound to certain activities in the system
+	 */
+	public static final String REWARD_CREATE_BUSINESS = "CREATE_BUS";
+	public static final String REWARD_BUSINESS_INVITE = "INVITE_BUS";
+	public static final String REWARD_HOMEOWNER_INVITE = "INVITE_MEM";
 
 	/**
 	 * Root path for the member portal site
@@ -81,6 +88,17 @@ public class RezDoxUtils {
 	}
 
 
+	/**
+	 * Returns the member from session (UserDataVO)
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public static MemberVO getMember(ActionRequest req) {
+		return (MemberVO) req.getSession().getAttribute(Constants.USER_DATA);
+	}
+
+	
 	/**
 	 * Returns the memberId from session (UserDataVO)
 	 * @param req

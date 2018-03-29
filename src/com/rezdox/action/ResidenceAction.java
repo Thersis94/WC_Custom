@@ -268,6 +268,10 @@ public class ResidenceAction extends SBActionAdapter {
 				if (newResidence && count == 1) {
 					SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 					req.setSession(changeMemebersRole(req, site));
+					
+					// This is the user's first residence, give a reward to anyone that might have invited them
+					InvitationAction ia = new InvitationAction(dbConn, attributes);
+					ia.applyInviterRewards(req, RezDoxUtils.REWARD_HOMEOWNER_INVITE);
 				}
 
 			} catch (Exception e) {
