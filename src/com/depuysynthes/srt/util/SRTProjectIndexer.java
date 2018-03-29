@@ -14,6 +14,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.depuysynthes.srt.vo.SRTProjectSolrVO;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.LastNameComparator;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -92,6 +94,9 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 		LastNameComparator c = new LastNameComparator();
 		c.decryptNames(new ArrayList<>(projects.values()), config.getProperty(Constants.ENCRYPT_KEY));
 
+		//Descrypt Other Names.
+		decryptNames(projects);
+
 		//Add Project Data
 		populateProjectData(projects);
 
@@ -99,6 +104,22 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 		return new ArrayList<>(projects.values());
 	}
 
+	/**
+	 * Decrypts Engineer, Designer and QA Names as they come from Profile.
+	 * @param projects
+	 */
+	private void decryptNames(Map<String, SRTProjectSolrVO> projects) {
+		try {
+			StringEncrypter se = new StringEncrypter((String) config.getProperty(Constants.ENCRYPT_KEY));
+			for(SRTProjectSolrVO p : projects.values()) {
+				p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
+				p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
+				p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
+			}
+		} catch (EncryptionException e) {
+			log.error("Error Processing Code", e);
+		}
+	}
 	/**
 	 * Load Master Record Data into the Project Map.
 	 * @param projects
@@ -141,13 +162,16 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 	 * @return
 	 */
 	protected String buildRetrieveSql(String projectId) {
-		StringBuilder sql = new StringBuilder(800);
+		StringBuilder sql = new StringBuilder(1600);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select p.project_id as document_id, p.op_co_id, project_name as title, ");
 		sql.append("p.create_dt as update_dt, hospital_po, engineer_id, designer_id, "); 
 		sql.append("quality_engineer_id, make_from_order_no, buyer_id, supplier_id, ");
-		sql.append("concat(r.surgeon_first_nm, ' ', r.surgeon_last_nm), r.request_territory_id, "); 
-		sql.append("profile.first_nm, profile.last_nm, p.proj_stat_id, m.MILESTONE_ID, m.MILESTONE_DT ");
+		sql.append("concat(trim(both ' ' from r.surgeon_first_nm), ' ', trim(both ' ' from r.surgeon_last_nm)) as surgeon_nm, r.request_territory_id, "); 
+		sql.append("profile.first_nm, profile.last_nm, p.proj_stat_id, m.MILESTONE_ID, m.MILESTONE_DT, ");
+		sql.append("concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
+		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
+		sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(customDb);
 		sql.append("DPY_SYN_SRT_PROJECT p ");
 		sql.append(DBUtil.INNER_JOIN).append(customDb);
@@ -161,6 +185,25 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb);
 		sql.append("dpy_syn_srt_project_milestone_xr m ");
 		sql.append("on p.project_id = m.project_id ");
+
+		//Get Optional Engineer Information
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DPY_SYN_SRT_ROSTER e ");
+		sql.append("on p.ENGINEER_ID = e.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE ep ");
+		sql.append("on e.PROFILE_ID = ep.PROFILE_ID ");
+
+		//Get Optional Designer Information
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DPY_SYN_SRT_ROSTER d ");
+		sql.append("on p.DESIGNER_ID = d.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE dp ");
+		sql.append("on d.PROFILE_ID = dp.PROFILE_ID ");
+
+		//Get Optional QA Engineer Information
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DPY_SYN_SRT_ROSTER q ");
+		sql.append("on p.QUALITY_ENGINEER_ID = q.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE qp ");
+		sql.append("on q.PROFILE_ID = qp.PROFILE_ID ");
+
 		if(!StringUtil.isEmpty(projectId)) {
 			sql.append(DBUtil.WHERE_CLAUSE).append("p.PROJECT_ID = ? ");
 		}

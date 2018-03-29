@@ -14,6 +14,7 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title:</b> SRTSearchAction.java
@@ -106,8 +107,8 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	 */
 	public void prepSolrRequest(ActionRequest req) {
 
-		//Set Full Match Query
-		req.setParameter("searchData", "*:*", true);
+		//Clear Query used to get here.
+		req.setParameter("searchData", "");
 
 		//Convert Bootstrap Table Pagination to Solr Pagination
 		if(req.hasParameter("limit")) {
@@ -115,10 +116,25 @@ public class SRTSearchAction extends SimpleActionAdapter {
 			req.setParameter("page", Integer.toString(req.getIntegerParameter("offset") / req.getIntegerParameter("limit", 25)));
 		}
 
+		//Convert Bootstrap Table Sort to Solr Sort
+		if(req.hasParameter("sort")) {
+			req.setParameter("fieldSort", req.getParameter("sort"));
+			req.setParameter("sortDirection", req.getParameter("order"));
+			req.setParameter("allowCustom", Boolean.TRUE.toString());
+		}
+
 		//Add OpCo FQ to list of fqs on the request.
 		List<String> values = new ArrayList<>();
 		if(req.hasParameter("fq"))
 			values.addAll(Arrays.asList(req.getParameterValues("fq")));
+
+		//Build Date Range
+		if(req.hasParameter("dateRangeStart") || req.hasParameter("dateRangeEnd"))
+			values.add("updateDate:" + SolrActionUtil.makeSolrDateRange(req.getParameter("dateRangeStart"), req.getParameter("dateRangeEnd")));
+
+		//Build ShipDate Range
+		if(req.hasParameter("shipDateRangeStart") || req.hasParameter("shipDateRangeEnd"))
+			values.add("shipDt_d:" + SolrActionUtil.makeSolrDateRange(req.getParameter("shipDateRangeStart"), req.getParameter("shipDateRangeEnd")));
 
 		values.add("opCoId_s:" + SRTUtil.getOpCO(req));
 		req.setParameter("fq", values.toArray(new String [values.size()]), true);

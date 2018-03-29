@@ -37,8 +37,11 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	private String category;
 	private String projectStatus;
 	private String engineerId;
+	private String engineerNm;
 	private String designerId;
+	private String designerNm;
 	private String qualityEngineerId;
+	private String qualityEngineerNm;
 	private String supplier;
 	private String territoryId;
 	private List<String> productFamilies;
@@ -130,6 +133,15 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	}
 
 	/**
+	 * @return the engineerNm
+	 */
+	@Column(name="engineer_nm")
+	@SolrField(name="engineerNm_s")
+	public String getEngineerNm() {
+		return engineerNm;
+	}
+
+	/**
 	 * @return the designerId
 	 */
 	@Column(name="designer_id")
@@ -139,12 +151,30 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	}
 
 	/**
+	 * @return the designerNm
+	 */
+	@Column(name="designer_nm")
+	@SolrField(name="designerNm_s")
+	public String getDesignerNm() {
+		return designerNm;
+	}
+
+	/**
 	 * @return the qualityEngineerId
 	 */
 	@Column(name="quality_engineer_id")
 	@SolrField(name="qaId_s")
 	public String getQualityEngineerId() {
 		return qualityEngineerId;
+	}
+
+	/**
+	 * @return the qualityEngineerNm
+	 */
+	@Column(name="quality_engineer_nm")
+	@SolrField(name="qaNm_s")
+	public String getQualityEngineerNm() {
+		return qualityEngineerNm;
 	}
 
 	/**
@@ -185,7 +215,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the surgeonName
 	 */
-	@Column(name="surgeon_name")
+	@Column(name="surgeon_nm")
 	@SolrField(name="surgeonName_s")
 	public String getSurgeonName() {
 		return surgeonName;
@@ -357,5 +387,26 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 
 	public void addPartNumbers(String partNumbers) {
 		this.partNumbers.add(partNumbers);
+	}
+
+	/**
+	 * @param engineerNm the engineerNm to set
+	 */
+	public void setEngineerNm(String engineerNm) {
+		this.engineerNm = engineerNm;
+	}
+
+	/**
+	 * @param designerNm the designerNm to set
+	 */
+	public void setDesignerNm(String designerNm) {
+		this.designerNm = designerNm;
+	}
+
+	/**
+	 * @param qualityEngineerNm the qualityEngineerNm to set
+	 */
+	public void setQualityEngineerNm(String qualityEngineerNm) {
+		this.qualityEngineerNm = qualityEngineerNm;
 	}
 }

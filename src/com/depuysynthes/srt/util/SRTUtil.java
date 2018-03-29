@@ -85,9 +85,9 @@ public class SRTUtil {
 		if(firstLast == null || firstLast.length == 0) {
 			return "";
 		} else if(firstLast.length == 1) {
-			return se.decrypt(firstLast[0]);
+			return StringUtil.checkVal(se.decrypt(firstLast[0])).trim();
 		} else {
-			return StringUtil.join(se.decrypt(firstLast[0]), " ", se.decrypt(firstLast[1]));
+			return StringUtil.join(StringUtil.checkVal(se.decrypt(firstLast[0])).trim(), " ", StringUtil.checkVal(se.decrypt(firstLast[1])).trim());
 		}
 	}
 
