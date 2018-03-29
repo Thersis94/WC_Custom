@@ -41,29 +41,88 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		if(req.hasParameter("export")) {
+			exportResults(req);
+		} else if(req.hasParameter("searchData")){
+			searchSolr(req);
+		}
+	}
 
-		List<SolrResponseVO> resp = new ArrayList<>();
+
+	/**
+	 * Helper method that runs search against solr for all DocumentIds that
+	 * match loads Data for Projects, then exports data to Excel Sheet.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void exportResults(ActionRequest req) throws ActionException {
+		SolrResponseVO resp;
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 
-		String searchData = StringUtil.checkVal(req.getParameter("searchData"));
-		req.setParameter("searchData", searchData.toLowerCase(), true);
+		prepSolrRequest(req);
 
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		req.setParameter("pmid", mod.getPageModuleId());
+		resp = getResults(req);
+
+		List<String> projectIds = getAllData(resp, req);
+	}
+
+	/**
+	 * Gather all the projectIds from the solr response and return list of
+	 * projectIds.
+	 * @param resp
+	 * @return
+	 */
+	private List<String> getAllData(SolrResponseVO resp, ActionRequest req) {
+
+		return null;
+	}
+
+	/**
+	 * Run standard Search against Solr.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void searchSolr(ActionRequest req) throws ActionException {
+		String searchData = StringUtil.checkVal(req.getParameter("searchData"));
+		SolrResponseVO resp;
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+
+		prepSolrRequest(req);
+
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		req.setParameter("pmid", mod.getPageModuleId());
+		resp = getResults(req);
+
+		putModuleData(resp, (int)resp.getTotalResponses(), false);
+		req.setParameter("searchData", searchData, true);
+	}
+
+	/**
+	 * Manages Transposing and setting any relevant params on the req before
+	 * solr search is called.
+	 * @param req
+	 */
+	public void prepSolrRequest(ActionRequest req) {
+
+		//Set Full Match Query
+		req.setParameter("searchData", "*:*", true);
+
+		//Convert Bootstrap Table Pagination to Solr Pagination
+		if(req.hasParameter("limit")) {
+			req.setParameter("rpp", req.getParameter("limit"));
+			req.setParameter("page", Integer.toString(req.getIntegerParameter("offset") / req.getIntegerParameter("limit", 25)));
+		}
+
+		//Add OpCo FQ to list of fqs on the request.
 		List<String> values = new ArrayList<>();
-		if(req.hasParameter("fq")) 
+		if(req.hasParameter("fq"))
 			values.addAll(Arrays.asList(req.getParameterValues("fq")));
 
 		values.add("opCoId_s:" + SRTUtil.getOpCO(req));
 		req.setParameter("fq", values.toArray(new String [values.size()]), true);
-
-		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		req.setParameter("pmid", mod.getPageModuleId());
-		resp.add(getResults(req));
-
-		putModuleData(resp);
-		req.setParameter("searchData", searchData, true);
 	}
-
-
 	/**
 	 * Create a solr action and call retrieve on it to get the search results
 	 * @param req

@@ -9,20 +9,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.Logger;
-
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO.MilestoneTypeId;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.annotations.SolrField;
-import com.siliconmtn.data.parser.BeanDataMapper;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.workflow.milestones.MilestoneIntfc;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title:</b> SRTProjectVO.java
@@ -36,13 +31,12 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @since Feb 5, 2018
  ****************************************************************************/
 @Table(name="DPY_SYN_SRT_PROJECT")
-public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTProjectMilestoneVO> {
-
-	private Logger log;
+public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjectMilestoneVO> {
 
 	/**
 	 *
 	 */
+	private static final long serialVersionUID = 1L;
 	private String projectId;
 	private String requestId;
 	private String opCoId;
@@ -61,7 +55,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	private String engineerId;
 	private String designerId;
 	private String qualityEngineerId;
-
 	private boolean makeFromScratch;
 	private String funcCheckOrderNo;
 	private String makeFromOrderNo;
@@ -74,13 +67,13 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	private String mfgDtChangeReason;
 	private String warehouseSalesOrderNo;
 	private Date createDt;
+	private Date updateDt;
 
 	//Helper Values.  Not on DB Record
 	private String engineerNm;
 	private String designerNm;
 	private String qualityEngineerNm;
 	private String requestorNm;
-	private String rosterId;
 
 	//Stores if there is a lock.
 	private boolean lockStatus;
@@ -95,19 +88,16 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 		masterRecords = new ArrayList<>();
 		milestones = new LinkedHashMap<>();
 		ledgerDates = new LinkedHashMap<>();
-		log = Logger.getLogger(getClass());
 	}
 
 	public SRTProjectVO(ActionRequest req) {
 		this();
-		BeanDataMapper.parseBean(this, req.getParameterMap());
-		this.setDocumentId(req.getParameter("projectId"));
-		this.setProjectName(req.getParameter("projectName"));
+		populateData(req);
 	}
 
 	public SRTProjectVO(ResultSet rs) {
 		this();
-		new DBProcessor(null).executePopulate(this, rs, null);
+		populateData(rs);
 	}
 
 	/**
@@ -139,14 +129,13 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 */
 	@Column(name="PROJECT_ID", isPrimaryKey=true)
 	public String getProjectId() {
-		return super.getDocumentId();
+		return projectId;
 	}
 
 	/**
 	 * @return the opCoId
 	 */
 	@Column(name="OP_CO_ID")
-	@SolrField(name="opCoId_s")
 	public String getOpCoId() {
 		return opCoId;
 	}
@@ -155,7 +144,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the coProjectId
 	 */
 	@Column(name="CO_PROJECT_ID")
-	@SolrField(name="coProjectId_s")
 	public String getCoProjectId() {
 		return coProjectId;
 	}
@@ -164,14 +152,13 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 */
 	@Column(name="PROJECT_NAME")
 	public String getProjectName() {
-		return super.getTitle();
+		return projectName;
 	}
 
 	/**
 	 * @return the projectType
 	 */
 	@Column(name="PROJ_TYPE_ID")
-	@SolrField(name="projectType_s")
 	public String getProjectType() {
 		return projectType;
 	}
@@ -188,7 +175,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the priority
 	 */
 	@Column(name="PRIORITY_ID")
-	@SolrField(name="priority_s")
 	public String getPriority() {
 		return priority;
 	}
@@ -197,7 +183,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the hospitalPONo
 	 */
 	@Column(name="HOSPITAL_PO")
-	@SolrField(name="hospitalPO_s")
 	public String getHospitalPONo() {
 		return hospitalPONo;
 	}
@@ -206,7 +191,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the specialInstructions
 	 */
 	@Column(name="SPECIAL_INSTRUCTIONS")
-	@SolrField(name="specialInstructions_s")
 	public String getSpecialInstructions() {
 		return specialInstructions;
 	}
@@ -222,7 +206,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the projectStatus
 	 */
 	@Column(name="proj_stat_id")
-	@SolrField(name="projectStatus_s")
 	public String getProjectStatus() {
 		return projectStatus;
 	}
@@ -243,7 +226,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	}
 
 	@Column(name="ACTUAL_ROI")
-	@SolrField(name="actualRoi_i")
 	public double getActualRoiDbl() {
 		return actualRoi != null ? actualRoi.doubleValue() : BigDecimal.ZERO.doubleValue();
 	}
@@ -260,7 +242,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the engineerId
 	 */
 	@Column(name="ENGINEER_ID")
-	@SolrField(name="engineerId_s")
 	public String getEngineerId() {
 		return engineerId;
 	}
@@ -277,7 +258,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the designerId
 	 */
 	@Column(name="DESIGNER_ID")
-	@SolrField(name="designerId_s")
 	public String getDesignerId() {
 		return designerId;
 	}
@@ -294,7 +274,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the qualityEngineerId
 	 */
 	@Column(name="QUALITY_ENGINEER_ID")
-	@SolrField(name="qualityEngineerId_s")
 	public String getQualityEngineerId() {
 		return qualityEngineerId;
 	}
@@ -319,7 +298,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the makeFromScratch
 	 */
 	@Column(name="MAKE_FROM_SCRATCH_NO")
-	@SolrField(name="makeFromScratch_i")
 	public int getMakeFromScratchFlg() {
 		return Convert.formatInteger(makeFromScratch);
 	}
@@ -327,7 +305,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the funcCheckOrderNo
 	 */
 	@Column(name="FUNCT_CHECK_ORDER_NO")
-	@SolrField(name="funcCheckOrderNo_s")
 	public String getFuncCheckOrderNo() {
 		return funcCheckOrderNo;
 	}
@@ -336,7 +313,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the makeFromOrderNo
 	 */
 	@Column(name="MAKE_FROM_ORDER_NO")
-	@SolrField(name="makeFromOrderNo_s")
 	public String getMakeFromOrderNo() {
 		return makeFromOrderNo;
 	}
@@ -345,7 +321,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the buyerId
 	 */
 	@Column(name="BUYER_ID")
-	@SolrField(name="buyerId_s")
 	public String getBuyerId() {
 		return buyerId;
 	}
@@ -354,7 +329,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the mfgPOToVendor
 	 */
 	@Column(name="MFG_PO_TO_VENDOR")
-	@SolrField(name="mfgPOToVendor_s")
 	public String getMfgPOToVendor() {
 		return mfgPOToVendor;
 	}
@@ -363,7 +337,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the supplierId
 	 */
 	@Column(name="SUPPLIER_ID")
-	@SolrField(name="supplierId_s")
 	public String getSupplierId() {
 		return supplierId;
 	}
@@ -379,7 +352,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the projectHold
 	 */
 	@Column(name="PROJECT_HOLD_FLG")
-	@SolrField(name="projectHold_i")
 	public int getProjectHoldFlg() {
 		return Convert.formatInteger(projectHold);
 	}
@@ -395,7 +367,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the projectCancelled
 	 */
 	@Column(name="PROJECT_CANCELLED_FLG")
-	@SolrField(name="projectCancelled_i")
 	public int getProjectCancelledFlg() {
 		return Convert.formatInteger(projectCancelled);
 	}
@@ -404,7 +375,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the warehouseTrackingNo
 	 */
 	@Column(name="WAREHOUSE_TRACKING_NO")
-	@SolrField(name="warehouseTrackingNo_s")
 	public String getWarehouseTrackingNo() {
 		return warehouseTrackingNo;
 	}
@@ -413,7 +383,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the mfgDtChangeReason
 	 */
 	@Column(name="MFG_DT_CHG_REASON_ID")
-	@SolrField(name="mfgDateChangeReasonId_s")
 	public String getMfgDtChangeReason() {
 		return mfgDtChangeReason;
 	}
@@ -422,7 +391,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the warehouseSalesOrderNo
 	 */
 	@Column(name="WAREHOUSE_SALES_NO")
-	@SolrField(name="warehouseSalesNo_s")
 	public String getWarehouseSalesOrderNo() {
 		return warehouseSalesOrderNo;
 	}
@@ -439,9 +407,8 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 * @return the updateDt
 	 */
 	@Column(name="UPDATE_DT", isUpdateOnly=true, isAutoGen=true)
-	@Override
 	public Date getUpdateDt() {
-		return super.getUpdateDt();
+		return updateDt;
 	}
 
 	/**
@@ -450,15 +417,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	@Column(name="LOCK_STATUS", isReadOnly=true)
 	public boolean getLockStatus() {
 		return lockStatus;
-	}
-
-	/**
-	 * @return the rosterId
-	 */
-	@Column(name="ROSTER_ID", isReadOnly=true)
-	@SolrField(name="rosterId_s")
-	public String getRosterId() {
-		return rosterId;
 	}
 
 	/**
@@ -531,7 +489,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 */
 	public void setProjectId(String projectId) {
 		this.projectId = projectId;
-		super.setDocumentId(projectId);
 	}
 
 	/**
@@ -553,7 +510,6 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	 */
 	public void setProjectName(String projectName) {
 		this.projectName = projectName;
-		super.setTitle(projectName);
 	}
 
 	/**
@@ -791,17 +747,17 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	}
 
 	/**
+	 * @param updateDt the updateDt to set.
+	 */
+	public void setUpdateDt(Date updateDt) {
+		this.updateDt = updateDt;
+	}
+
+	/**
 	 * @param lockStatus the lockStatus to set.
 	 */
 	public void setLockStatus(boolean lockStatus) {
 		this.lockStatus = lockStatus;
-	}
-
-	/**
-	 * @param rosterId the rosterId to set.
-	 */
-	public void setRosterId(String rosterId) {
-		this.rosterId = rosterId;
 	}
 
 	/**
@@ -865,7 +821,7 @@ public class SRTProjectVO extends SolrDocumentVO implements MilestoneIntfc<SRTPr
 	@Override
 	public void addMilestone(SRTProjectMilestoneVO milestone) {
 		if(milestone != null && !StringUtil.isEmpty(milestone.getMilestoneId())) {
-			milestone.setProjectId(getDocumentId());
+			milestone.setProjectId(projectId);
 			milestones.put(milestone.getMilestoneId(), milestone);
 		}
 	}
