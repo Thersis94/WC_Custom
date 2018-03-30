@@ -152,3 +152,4 @@ alter table custom.rezdox_project add proj_discount_no decimal(7,5);
 alter table custom.rezdox_project add proj_tax_no decimal(7,5);
 alter table custom.rezdox_project add mat_discount_no decimal(7,5);
 alter table custom.rezdox_project add mat_tax_no decimal(7,5);
+alter table custom.REZDOX_RESIDENCE_MEMBER_XR add update_dt timestamp;

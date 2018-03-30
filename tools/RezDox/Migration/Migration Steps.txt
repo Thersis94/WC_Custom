@@ -48,6 +48,8 @@ run LegacyDataMigration.java
 
 run After Migration.sql script
 
+run DecryptProfile.java (copies name/email from profile to member)
+
 zip up files from rezdox cpanel
 /public_html/SITE/graphics
 	extract to /${binary}/org/REZDOX
@@ -55,6 +57,8 @@ zip up files from rezdox cpanel
 /public_html/SITE/uploads
 	extract to /${secureBinary}/org/REZDOX
 	rename "uploads" to "legacy"
+
+zip up dev binary files & load through admintool
 
 add paypal buttons through admintool membership data tool, these are specific to each instance
 
