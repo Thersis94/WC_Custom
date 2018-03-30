@@ -25,9 +25,9 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class SRTUtil {
 
 	public static final String SRT_ORG_ID = "DPY_SYN";
+	public static final String PUBLIC_SITE_ID = "DPY_SYN_38";
 
 	//TODO Update with actual Values when decided.  Potentially pull from config.
-	public static final String PUBLIC_SITE_ID = "DPY_SYN_HUDDLE_2";
 	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
 	public static final String HOMEPAGE_REGISTER_FIELD_ID = null;
 	public static final String ADMIN_PATH = "/manage";
