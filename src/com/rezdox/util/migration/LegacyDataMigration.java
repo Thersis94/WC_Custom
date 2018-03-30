@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ import java.util.Map;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.rezdox.action.ResidenceAction;
+import com.rezdox.action.RezDoxUtils;
 import com.rezdox.api.SunNumberAPIManager;
 import com.rezdox.api.WalkScoreAPIManager;
 import com.rezdox.api.ZillowAPIManager;
@@ -120,6 +122,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			migrateAlbums();
 			migrateRoomInfo();
 			migrateInvitations();
+			updateRoles();
 			addResidenceApiData();
 		} catch(Exception e) {
 			log.error("Failed to migrate data.", e);
@@ -1312,6 +1315,87 @@ public class LegacyDataMigration extends CommandLineUtil {
 		inviteSql.append("select cast(id as varchar), right(pro1, -1), email, 1, datetime ");
 		inviteSql.append("from rezdox.invite_tbl where type='invite' ");
 		executeSimpleMapping(inviteSql, "invitation");
+	}
+	
+	/**
+	 * Updates each member's role based on number of residences and businesses they have
+	 */
+	protected void updateRoles() {
+		log.info("Updating Member Roles");
+		
+		Map<String, String> profileRoles = determineRoles();
+
+		StringBuilder updateQry = new StringBuilder(100);
+		updateQry.append("update profile_role set role_id = ? where profile_id = ? and site_id = 'REZDOX_2' ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(updateQry.toString())) {
+			Iterator<Map.Entry<String, String>> iter = profileRoles.entrySet().iterator();
+			while (iter.hasNext()) {
+				Map.Entry<String, String> entry = iter.next();
+				String profileId = entry.getKey();
+				String roleId = entry.getValue();
+				log.debug("Updating " + profileId + " to " + roleId);
+				
+				ps.setString(1, roleId);
+				ps.setString(2, profileId);
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		} catch (Exception sqle) {
+			log.error("Error updating member roles. ", sqle);
+		}
+	}
+	
+	/**
+	 * Makes determination of number of residences and/or businesses each member has,
+	 * and then assigns an appropriate role.
+	 * 
+	 * No Residences or Businesses = Registered (10)
+	 * Residences With No Businesses = REZDOX_RESIDENCE
+	 * Businesses With No Residences = REZDOX_BUSINESS
+	 * Residences and Businesses = REZDOX_RES_BUS
+	 */
+	private Map<String, String> determineRoles() {
+		log.info("Determining Member Roles from Residence and Business Counts");
+		Map<String, String> profileRoles = new HashMap<>();
+		
+		StringBuilder countSql = new StringBuilder(600);
+		countSql.append("select res.profile_id, res_count, bus_count ");
+		countSql.append("from ");
+		countSql.append("(select m.member_id, m.profile_id, count(residence_member_xr_id) as res_count ");
+		countSql.append("from custom.rezdox_member m left join custom.rezdox_residence_member_xr rm on m.member_id = rm.member_id ");
+		countSql.append("group by m.member_id ");
+		countSql.append("order by m.member_id) res ");
+		countSql.append("left join ");
+		countSql.append("(select m.member_id, m.profile_id, count(business_member_xr_id) as bus_count ");
+		countSql.append("from custom.rezdox_member m left join custom.rezdox_business_member_xr bm on m.member_id = bm.member_id ");
+		countSql.append("group by m.member_id ");
+		countSql.append("order by m.member_id) bus ");
+		countSql.append("on res.member_id = bus.member_id ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(countSql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				String profileId = rs.getString("profile_id");
+				long resCount = rs.getLong("res_count");
+				long busCount = rs.getLong("bus_count");
+				
+				String roleId = "10";
+				if (resCount > 0 && busCount > 0) {
+					roleId = RezDoxUtils.REZDOX_RES_BUS_ROLE;
+				} else if (resCount > 0) {
+					roleId = RezDoxUtils.REZDOX_RESIDENCE_ROLE;
+				} else if (busCount > 0) {
+					roleId = RezDoxUtils.REZDOX_BUSINESS_ROLE;
+				}
+				
+				profileRoles.put(profileId, roleId);
+			}
+		} catch (Exception sqle) {
+			log.error("Error determining member roles. ", sqle);
+		}
+		
+		return profileRoles;
 	}
 	
 	/**
