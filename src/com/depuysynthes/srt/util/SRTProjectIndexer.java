@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,43 +66,58 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 	 * @return
 	 */
 	protected List<SolrDocumentVO> retrieveProjects(String projectId) {
-		Map<String, SRTProjectSolrVO> projects = new HashMap<>();
+		Map<String, SRTProjectSolrVO> projects;
 		String sql = buildRetrieveSql(projectId);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			if (projectId != null) ps.setString(1, projectId);
 
 			ResultSet rs = ps.executeQuery();
-			SRTProjectSolrVO p = null;
-			while (rs.next()) {
-				if(p == null || !p.getDocumentId().equals(rs.getString("DOCUMENT_ID"))) {
-					if(p != null) {
-						projects.put(p.getDocumentId(), p);
-					}
-					p = new SRTProjectSolrVO(rs);
-					p.setSolrIndex(INDEX_TYPE);
-					p.addRole(100);
-					p.addOrganization(SRTUtil.SRT_ORG_ID);
-				}
-			}
-			if(p != null)
-				projects.put(p.getDocumentId(), p);
+			projects = buildProjectsMap(rs);
+
+			//Decrypt User Names
+			LastNameComparator c = new LastNameComparator();
+			c.decryptNames(new ArrayList<>(projects.values()), config.getProperty(Constants.ENCRYPT_KEY));
+
+			//Descrypt Other Names.
+			decryptNames(projects);
+
+			//Add Project Data
+			populateProjectData(projects);
+
+			//Return Projects
+			return new ArrayList<>(projects.values());
 		} catch (SQLException e) {
 			log.error("could not retrieve products", e);
 		}
 
-		//Decrypt User Names
-		LastNameComparator c = new LastNameComparator();
-		c.decryptNames(new ArrayList<>(projects.values()), config.getProperty(Constants.ENCRYPT_KEY));
+		return Collections.emptyList();
+	}
 
-		//Descrypt Other Names.
-		decryptNames(projects);
+	/**
+	 * Iterated the ResultSet and Build the Projects Map.
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	private Map<String, SRTProjectSolrVO> buildProjectsMap(ResultSet rs) throws SQLException {
+		Map<String, SRTProjectSolrVO> projects = new HashMap<>();
+		SRTProjectSolrVO p = null;
+		while (rs.next()) {
+			if(p == null || !p.getDocumentId().equals(rs.getString("DOCUMENT_ID"))) {
+				if(p != null) {
+					projects.put(p.getDocumentId(), p);
+				}
+				p = new SRTProjectSolrVO(rs);
+				p.setSolrIndex(INDEX_TYPE);
+				p.addRole(100);
+				p.addOrganization(SRTUtil.SRT_ORG_ID);
+			}
+		}
+		if(p != null)
+			projects.put(p.getDocumentId(), p);
 
-		//Add Project Data
-		populateProjectData(projects);
-
-		//Return Projects
-		return new ArrayList<>(projects.values());
+		return projects;
 	}
 
 	/**
@@ -129,7 +145,7 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 			ResultSet rs = ps.executeQuery();
 
 			while(rs.next()) {
-				SRTProjectSolrVO p =projects.get(rs.getString("PROJECT_ID"));
+				SRTProjectSolrVO p =projects.get(rs.getString(PROJECT_ID));
 				p.addPartNumbers(rs.getString("PART_NO"));
 				p.addProductCategory(rs.getString("prod_cat_id"));
 				p.addProductFamily(rs.getString("prod_family_id"));

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.solr.common.SolrDocument;
+
 import com.depuysynthes.srt.util.SRTUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -29,6 +31,8 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  ****************************************************************************/
 public class SRTSearchAction extends SimpleActionAdapter {
 
+	public static final String REQ_SEARCH_DATA = "searchData";
+	public static final String REQ_BOOTSTRAP_LIMIT = "limit";
 	public SRTSearchAction() {
 		super();
 	}
@@ -44,7 +48,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("export")) {
 			exportResults(req);
-		} else if(req.hasParameter("searchData")){
+		} else if(req.hasParameter(REQ_SEARCH_DATA)){
 			searchSolr(req);
 		}
 	}
@@ -64,11 +68,20 @@ public class SRTSearchAction extends SimpleActionAdapter {
 
 		prepSolrRequest(req);
 
+		req.setParameter("rpp", Integer.toString(5000));
+		req.setParameter("page", Integer.toString(0));
+
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		req.setParameter("pmid", mod.getPageModuleId());
-		resp = getResults(req);
 
-		List<String> projectIds = getAllData(resp, req);
+		List<String> projectIds = new ArrayList<>();
+		do {
+			resp = getResults(req);
+			loadProjectIds(resp, projectIds);
+			req.setParameter("page", Integer.toString(resp.getNextPage()));
+			log.debug("Loading results for page " + resp.getPage() + " of " + resp.getPageCount());
+		}
+		while(projectIds.size() < resp.getTotalResponses());
 	}
 
 	/**
@@ -77,9 +90,10 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	 * @param resp
 	 * @return
 	 */
-	private List<String> getAllData(SolrResponseVO resp, ActionRequest req) {
-
-		return null;
+	private void loadProjectIds(SolrResponseVO resp, List<String> projectIds) {
+		for(SolrDocument d : resp.getResultDocuments()) {
+			projectIds.add(StringUtil.checkVal(d.getFieldValue("documentId")));
+		}
 	}
 
 	/**
@@ -88,7 +102,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void searchSolr(ActionRequest req) throws ActionException {
-		String searchData = StringUtil.checkVal(req.getParameter("searchData"));
+		String searchData = StringUtil.checkVal(req.getParameter(REQ_SEARCH_DATA));
 		SolrResponseVO resp;
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 
@@ -99,7 +113,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 		resp = getResults(req);
 
 		putModuleData(resp, (int)resp.getTotalResponses(), false);
-		req.setParameter("searchData", searchData, true);
+		req.setParameter(REQ_SEARCH_DATA, searchData, true);
 	}
 
 	/**
@@ -110,12 +124,12 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	public void prepSolrRequest(ActionRequest req) {
 
 		//Clear Query used to get here.
-		req.setParameter("searchData", "");
+		req.setParameter(REQ_SEARCH_DATA, "");
 
 		//Convert Bootstrap Table Pagination to Solr Pagination
-		if(req.hasParameter("limit")) {
-			req.setParameter("rpp", req.getParameter("limit"));
-			req.setParameter("page", Integer.toString(req.getIntegerParameter("offset") / req.getIntegerParameter("limit", 25)));
+		if(req.hasParameter(REQ_BOOTSTRAP_LIMIT)) {
+			req.setParameter("rpp", req.getParameter(REQ_BOOTSTRAP_LIMIT));
+			req.setParameter("page", Integer.toString(req.getIntegerParameter("offset") / req.getIntegerParameter(REQ_BOOTSTRAP_LIMIT, 25)));
 		}
 
 		//Convert Bootstrap Table Sort to Solr Sort
@@ -141,6 +155,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 		values.add("opCoId_s:" + SRTUtil.getOpCO(req));
 		req.setParameter("fq", values.toArray(new String [values.size()]), true);
 	}
+
 	/**
 	 * Create a solr action and call retrieve on it to get the search results
 	 * @param req
