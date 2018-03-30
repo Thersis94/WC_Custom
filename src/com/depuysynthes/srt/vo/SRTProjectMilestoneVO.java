@@ -29,6 +29,7 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 	private String projectMilestoneXRId;
 	private String projectId;
 	private MilestoneTypeId milestoneTypeId;
+	private String campaignInstanceId;
 	private Date milestoneDt;
 
 	public SRTProjectMilestoneVO() {
@@ -72,6 +73,7 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 		setMilestoneTypeId(util.getEnumVal(MilestoneTypeId.class, "MILESTONE_TYPE_ID", rs));
 		setProjectMilestoneXRId(util.getStringVal("PROJ_MILESTONE_XR_ID", rs));
 		setMilestoneDt(util.getDateVal("MILESTONE_DT", rs));
+		setCampaignInstanceId(util.getStringVal("CAMPAIGN_INSTANCE_ID", rs));
 	}
 
 	/**
@@ -103,6 +105,13 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 	}
 
 	/**
+	 * @return the campaignInstanceId
+	 */
+	public String getCampaignInstanceId() {
+		return campaignInstanceId;
+	}
+
+	/**
 	 * @param projectMilestoneXRId the projectMilestoneXRId to set.
 	 */
 	public void setProjectMilestoneXRId(String projectMilestoneXRId) {
@@ -128,5 +137,12 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 	 */
 	public void setMilestoneDt(Date milestoneDt) {
 		this.milestoneDt = milestoneDt;
+	}
+
+	/**
+	 * @param campaignInstanceId the campaignInstanceId to set.
+	 */
+	public void setCampaignInstanceId(String campaignInstanceId) {
+		this.campaignInstanceId = campaignInstanceId;
 	}
 }

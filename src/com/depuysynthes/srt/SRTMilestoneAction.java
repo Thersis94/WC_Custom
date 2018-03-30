@@ -6,11 +6,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.depuysynthes.srt.util.SRTEmailUtil;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.util.SRTUtil.SrtAdmin;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
@@ -75,10 +77,35 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 				req.setAttribute("parents", loadMilestoneData(opCoId, null, null, false));
 				req.setAttribute("fieldNames", ClassUtils.getComparableFieldNames(SRTProjectVO.class));
 				req.setAttribute("milestoneDates", loadMilestoneData(opCoId, MilestoneTypeId.DATE, null, false));
+				req.setAttribute("emailCampaigns", loadEmailCampaigns(opCoId));
 			}
 
 			putModuleData(milestones, milestones.size(), false);
 		}
+	}
+
+	/**
+	 * Load EmailCampaigns for this OpCo.
+	 * @param opCoId
+	 * @return
+	 */
+	private Map<String, String> loadEmailCampaigns(String opCoId) {
+		Map<String, String> campaigns = new HashMap<>();
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select instance_nm, campaign_instance_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append("email_campaign_instance ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("slug_txt like ? ");
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, new StringBuilder(50).append(opCoId).append("|%").toString());
+			ResultSet rs = ps.executeQuery();
+
+			while(rs.next()) {
+				campaigns.put(rs.getString("campaign_instance_id"), rs.getString("instance_nm"));
+			}
+		} catch (SQLException e) {
+			log.error("Error loading Email Campaigns", e);
+		}
+		return campaigns;
 	}
 
 	/**
@@ -199,7 +226,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 		//If we have a milestoneId on the request, save the Milestone.
-		MilestoneVO milestone = new MilestoneVO(req);
+		SRTProjectMilestoneVO milestone = new SRTProjectMilestoneVO(req);
 		milestone.setRules(new PrefixBeanDataMapper<MilestoneRuleVO>(new MilestoneRuleVO()).populate(req.getParameterMap(), MILESTONE_RULE_PREFIX));
 		saveMilestone(milestone);
 
@@ -210,7 +237,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * Save Milestone after Edit.
 	 * @param milestone
 	 */
-	private void saveMilestone(MilestoneVO milestone) {
+	private void saveMilestone(SRTProjectMilestoneVO milestone) {
 
 		/*
 		 * Wrap Milestone Update in transaction to ensure we always
@@ -253,7 +280,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * @param milestone
 	 * @throws SQLException
 	 */
-	private void saveMilestoneRecord(MilestoneVO milestone) throws SQLException {
+	private void saveMilestoneRecord(SRTProjectMilestoneVO milestone) throws SQLException {
 		boolean isInsert = StringUtil.isEmpty(milestone.getMilestoneId());
 
 		if(isInsert) {
@@ -264,6 +291,8 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 			ps.setString(i++, milestone.getMilestoneNm());
 			ps.setString(i++, milestone.getOrganizationId());
 			ps.setString(i++, StringUtil.checkVal(milestone.getParentId(), null));
+			ps.setString(i++, milestone.getMilestoneTypeId().name());
+			ps.setString(i++, milestone.getCampaignInstanceId());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setString(i++, milestone.getMilestoneId());
 			ps.executeUpdate();
@@ -281,12 +310,14 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		if(isInsert) {
 			sql.append(DBUtil.INSERT_CLAUSE).append(getCustomSchema());
 			sql.append("DPY_SYN_SRT_MILESTONE (MILESTONE_NM, OP_CO_ID, ");
-			sql.append("PARENT_ID, CREATE_DT, MILESTONE_ID) ");
-			sql.append("values (?,?,?,?,?)");
+			sql.append("PARENT_ID, MILESTONE_TYPE_ID, CAMPAIGN_INSTANCE_ID, ");
+			sql.append("CREATE_DT, MILESTONE_ID) ");
+			sql.append("values (?,?,?,?,?,?,?)");
 		} else {
 			sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema());
 			sql.append("DPY_SYN_SRT_MILESTONE set MILESTONE_NM = ?, ");
-			sql.append("OP_CO_ID = ?, PARENT_ID = ?, UPDATE_DT = ? ");
+			sql.append("OP_CO_ID = ?, PARENT_ID = ?, MILESTONE_TYPE_ID = ?, ");
+			sql.append("CAMPAIGN_INSTANCE_ID = ?, UPDATE_DT = ? ");
 			sql.append("where MILESTONE_ID = ?");
 		}
 		return sql.toString();
@@ -375,15 +406,15 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		new MilestoneUtil<SRTProjectMilestoneVO>().checkGates(project, milestones);
 
 		//Save New Milestones.
-		saveMilestones(project);
+		processNewMilestones(project);
 	}
 
 	/**
-	 * Save Project Milestones Xrs.
+	 * Process New Milestones.
 	 * @param project
 	 * @throws DatabaseException
 	 */
-	private void saveMilestones(SRTProjectVO project) {
+	private void processNewMilestones(SRTProjectVO project) {
 
 		//Filter out new Milestones to save.
 		List<SRTProjectMilestoneVO> newMilestones = project.getMilestones()
@@ -396,6 +427,28 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		if(newMilestones.isEmpty()) {
 			return;
 		}
+
+		//Save Milestone Data.
+		saveNewMilestones(project, newMilestones);
+
+		//Filter new Milestones down to just those with a campaignInstanceId
+		List<SRTProjectMilestoneVO> emailMilestones = newMilestones
+														.stream()
+														.filter(m -> !StringUtil.isEmpty(m.getCampaignInstanceId()))
+														.collect(Collectors.toList());
+
+		//Send Emails.
+		if(!emailMilestones.isEmpty())
+			postProcessMilestones(project, emailMilestones);
+
+	}
+
+	/**
+	 * Saves New Milestones to the db.
+	 * @param project
+	 * @param newMilestones
+	 */
+	private void saveNewMilestones(SRTProjectVO project, List<SRTProjectMilestoneVO> newMilestones) {
 
 		//Prep Save Variables.
 		UUIDGenerator uuid = new UUIDGenerator();
@@ -427,6 +480,18 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 			ps.executeBatch();
 		} catch (SQLException e) {
 			log.error("Error Saving Project Milestones.", e);
+		}
+	}
+
+	/**
+	 * Process New Milestones that have a CampaignInstanceId
+	 * @param project
+	 * @param newMilestones
+	 */
+	private void postProcessMilestones(SRTProjectVO project, List<SRTProjectMilestoneVO> newMilestones) {
+		SRTEmailUtil util = new SRTEmailUtil(dbConn, attributes);
+		for(SRTProjectMilestoneVO m : newMilestones) {
+			util.sendEmail(project.getProjectId(), m.getCampaignInstanceId());
 		}
 	}
 

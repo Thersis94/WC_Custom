@@ -12,7 +12,6 @@ import java.util.Properties;
 
 import org.apache.solr.client.solrj.SolrClient;
 
-import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.depuysynthes.srt.vo.SRTProjectSolrVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.security.EncryptionException;
@@ -136,19 +135,28 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 			log.error("Error Processing Code", e);
 		}
 	}
+
 	/**
 	 * Load Master Record Data into the Project Map.
 	 * @param projects
 	 */
 	private void populateProjectData(Map<String, SRTProjectSolrVO> projects) {
-		try(PreparedStatement ps = dbConn.prepareStatement(loadMasterRecordSql())) {
+		boolean singleSearch = projects.size() == 1;
+		try(PreparedStatement ps = dbConn.prepareStatement(loadMasterRecordSql(singleSearch))) {
+			if(singleSearch) {
+				ps.setString(1, projects.keySet().iterator().next());
+			}
+
 			ResultSet rs = ps.executeQuery();
 
 			while(rs.next()) {
-				SRTProjectSolrVO p =projects.get(rs.getString(PROJECT_ID));
-				p.addPartNumbers(rs.getString("PART_NO"));
-				p.addProductCategory(rs.getString("prod_cat_id"));
-				p.addProductFamily(rs.getString("prod_family_id"));
+				String pId = rs.getString(PROJECT_ID);
+				if(!StringUtil.isEmpty(pId) && projects.containsKey(pId)) {
+					SRTProjectSolrVO p =projects.get(pId);
+					p.addPartNumbers(rs.getString("PART_NO"));
+					p.addProductCategory(rs.getString("prod_cat_id"));
+					p.addProductFamily(rs.getString("prod_family_id"));
+				}
 			}
 		} catch (SQLException e) {
 			log.error("Error Processing Code", e);
@@ -157,9 +165,10 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 
 	/**
 	 * Create the sql for the master record retrieve
+	 * @param singleSearch 
 	 * @return
 	 */
-	private String loadMasterRecordSql() {
+	private String loadMasterRecordSql(boolean singleSearch) {
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select x.project_id, m.prod_cat_id, m.prod_family_id, ");
@@ -169,6 +178,9 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 		sql.append("dpy_syn_srt_master_record m ");
 		sql.append("on x.master_record_id = m.master_record_id ");
 
+		if(singleSearch) {
+			sql.append(DBUtil.WHERE_CLAUSE).append(" x.project_id = ? ");
+		}
 		return sql.toString();
 	}
 

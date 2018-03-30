@@ -186,9 +186,16 @@ public class ProjectDataProcessor extends FormDataProcessor {
 	 */
 	public void saveProjectRecord(SRTProjectVO project) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		boolean isInsert = StringUtil.isEmpty(project.getProjectId());
 		try {
 			dbp.save(project);
 			req.setParameter(SRTProjectAction.SRT_PROJECT_ID, project.getProjectId());
+
+			//Ensure Auot-populated Dates are on Project Record.
+			if(isInsert)
+				project.setCreateDt(Convert.getCurrentTimestamp());
+			else
+				project.setUpdateDt(Convert.getCurrentTimestamp());
 
 			//Save Master Record XRs
 			processMasterRecordXR(project);

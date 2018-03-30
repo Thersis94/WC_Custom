@@ -127,9 +127,11 @@ public class SRTSearchAction extends SimpleActionAdapter {
 		req.setParameter(REQ_SEARCH_DATA, "");
 
 		//Convert Bootstrap Table Pagination to Solr Pagination
-		if(req.hasParameter(REQ_BOOTSTRAP_LIMIT)) {
+		if(req.hasParameter(REQ_BOOTSTRAP_LIMIT) && ! req.getBooleanParameter("isExport")) {
 			req.setParameter("rpp", req.getParameter(REQ_BOOTSTRAP_LIMIT));
 			req.setParameter("page", Integer.toString(req.getIntegerParameter("offset") / req.getIntegerParameter(REQ_BOOTSTRAP_LIMIT, 25)));
+		} else {
+			req.setParameter("rpp", Integer.toString(5000));
 		}
 
 		//Convert Bootstrap Table Sort to Solr Sort
