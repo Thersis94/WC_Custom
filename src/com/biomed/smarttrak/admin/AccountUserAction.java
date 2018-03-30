@@ -146,7 +146,7 @@ public class AccountUserAction extends SBActionAdapter {
 
 		//perform the email send
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
-		ecbu.sendMessage(campInstId, recipients, config);
+		ecbu.sendMessage(config, recipients, campInstId);
 	}
 
 
@@ -173,7 +173,7 @@ public class AccountUserAction extends SBActionAdapter {
 
 		//perform the email send
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
-		ecbu.sendMessage(campInstId, recipients, config);
+		ecbu.sendMessage(config, recipients, campInstId);
 	}
 
 
@@ -265,26 +265,28 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	private void summateStatus(GenericVO data, ActionRequest req) {
-		Map<Integer, Integer> counts = new HashMap<>();
-		for (Status s : UserVO.Status.values())
-			counts.put(s.getCode(), Integer.valueOf(0));
 
 		Map<String, List<UserVO>> users = (Map<String, List<UserVO>>) data.getKey();
+
+		Map<String, Integer> active = new LinkedHashMap<>();
+		Map<String, Integer> open = new LinkedHashMap<>();
 		for (Map.Entry<String, List<UserVO>> entry : users.entrySet()) {
 			for (UserVO user : entry.getValue()) {
 				Integer sts = user.getStatusFlg();
-				counts.put(sts, 1+counts.get(sts));
+				if (sts == UserVO.Status.OPEN.getCode()) {
+					incrementStatus(open, entry.getKey());
+				}else if (sts == UserVO.Status.ACTIVE.getCode()) {
+					incrementStatus(active, entry.getKey());
+				}
 			}
 		}
-		//combine inactive users
-		users = (Map<String, List<UserVO>>) data.getValue();
-		for (Map.Entry<String, List<UserVO>> entry : users.entrySet()) {
-			for (UserVO user : entry.getValue()) {
-				Integer sts = user.getStatusFlg();
-				counts.put(sts, 1+counts.get(sts));
-			}
-		}
-		req.setAttribute("statusMap", counts);
+		req.setAttribute("statusMap", new GenericVO(active, open));
+	}
+	
+	private void incrementStatus(Map<String, Integer> status, String section) {
+		if (!status.containsKey(section)) 
+			status.put(section, 0);
+		status.put(section, status.get(section)+1);
 	}
 	
 	
