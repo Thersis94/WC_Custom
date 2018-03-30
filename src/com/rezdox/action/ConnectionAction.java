@@ -1,7 +1,9 @@
 package com.rezdox.action;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -19,6 +21,8 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
@@ -374,6 +378,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 			} catch (InvalidDataException | DatabaseException e) {
 				log.error("could not fill connection vo ",e);
 			}
+			
 			log.debug("# cvo "+cvo);
 			cvo.setApprovedFlag(req.getIntegerParameter("approvedFlag"));
 			
@@ -389,6 +394,46 @@ public class ConnectionAction extends SimpleActionAdapter {
 		} catch (InvalidDataException | DatabaseException e) {
 				log.error("could not save connection ",e);
 		}
+	
+		processEmails(cvo);
+	}
 
+	/**
+	 * sends an email when an a user starts or accepts a connection
+	 * @param cvo 
+	 */
+	private void processEmails(ConnectionVO cvo) {
+		if (cvo.getApprovedFlag() == 0 && !StringUtil.isEmpty(cvo.getSenderMemberId()) && !StringUtil.isEmpty(cvo.getRecipientMemberId())) {
+			MemberAction ma = new MemberAction(dbConn, attributes );
+			MemberVO sender = ma.retrieveMemberData(cvo.getSenderMemberId());
+			
+			Map<String, Object> dataMap = new HashMap<>();
+			dataMap.put("senderName", sender.getFirstName() + " " + sender.getLastName() );
+			
+			MemberVO toMember = ma.retrieveMemberData(cvo.getSenderMemberId());
+			
+			Map<String, String> rcptMap = new HashMap<>();
+			rcptMap.put(toMember.getProfileId(), toMember.getEmailAddress());
+			
+			EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+			util.sendMessage(dataMap, rcptMap, "CONNECTION_REQUEST" );
+		}
+		
+		if (cvo.getApprovedFlag() == 1) {
+			MemberAction ma = new MemberAction(dbConn, attributes );
+			MemberVO sender = ma.retrieveMemberData(cvo.getSenderMemberId());
+			
+			Map<String, Object> dataMap = new HashMap<>();
+			dataMap.put("senderName", sender.getFirstName() + " " + sender.getLastName() );
+
+			MemberVO toMember = ma.retrieveMemberData(cvo.getSenderMemberId());
+			
+			Map<String, String> rcptMap = new HashMap<>();
+			rcptMap.put(toMember.getProfileId(), toMember.getEmailAddress());
+			
+			EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+			util.sendMessage(dataMap, rcptMap, "CONNECTION_APPROVED" );
+		}
+		
 	}
 }
