@@ -50,6 +50,7 @@ import com.smt.sitebuilder.data.vo.FormVO;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.QueryParamVO;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.security.SBUserRoleContainer;
 
 /****************************************************************************
  * <b>Title</b>: ResidenceAction.java<p/>
@@ -65,9 +66,6 @@ public class ResidenceAction extends SBActionAdapter {
 	
 	public static final String RESIDENCE_DATA = "residenceData";
 	public static final String RESIDENCE_ID = "residenceId";
-	public static final String REZDOX_RESIDENCE_ROLE_ID = "REZDOX_RESIDENCE";
-	public static final String REZDOX_RESIDENCE_ROLE_NAME = "RezDox Residence Role";
-	public static final int REZDOX_RESIDENCE_ROLE_LEVEL = 25;
 	public static final String PRIMARY_RESIDENCE = " Primary Residence";
 	public static final String UPGRADE_MSG = "You have reached your maximum residences. Please purchase a residence upgrade to continue.";
 	public static final String SLUG_RESIDENCE_ZESTIMATE = "RESIDENCE_ZESTIMATE";
@@ -112,6 +110,13 @@ public class ResidenceAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		// If hitting this action with a business role or registered role, they are adding a new residence
+		// Their role will be upgraded appropriately after adding a new residence
+		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
+		if (RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId()) || SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL == role.getRoleLevel()) {
+			req.setParameter(RESIDENCE_ID, "new");
+		}
+		
 		List<ResidenceVO> residenceList = retrieveResidences(req);
 		String residenceId = req.getParameter(RESIDENCE_ID, "");
 
@@ -268,6 +273,10 @@ public class ResidenceAction extends SBActionAdapter {
 				if (newResidence && count == 1) {
 					SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 					req.setSession(changeMemebersRole(req, site));
+					
+					// This is the user's first residence, give a reward to anyone that might have invited them
+					InvitationAction ia = new InvitationAction(dbConn, attributes);
+					ia.applyInviterRewards(req, RezDoxUtils.REWARD_HOMEOWNER_INVITE);
 				}
 
 			} catch (Exception e) {
@@ -293,12 +302,24 @@ public class ResidenceAction extends SBActionAdapter {
 		log.debug("change role for site and member " + site.getSiteId()+"|"+ member.getProfileId());
 		
 		SBUserRole role = ((SBUserRole)session.getAttribute(Constants.ROLE_DATA));
-		prm.removeRole(role.getProfileRoleId(), dbConn);
-		prm.addRole( member.getProfileId(), site.getSiteId(), REZDOX_RESIDENCE_ROLE_ID, 20, dbConn);
 		
-		role.setRoleId(REZDOX_RESIDENCE_ROLE_ID);
-		role.setRoleLevel(REZDOX_RESIDENCE_ROLE_LEVEL); 
-		role.setRoleName(REZDOX_RESIDENCE_ROLE_NAME);
+		// Upgrade from Registered to Residence
+		String newRoleId = RezDoxUtils.REZDOX_RESIDENCE_ROLE;
+		String newRoleName = RezDoxUtils.REZDOX_RESIDENCE_ROLE_NAME;
+		int newRoleLevel = RezDoxUtils.REZDOX_RESIDENCE_ROLE_LEVEL;
+
+		// Upgrade from Business to Residence/Business Combo
+		if (RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId())) {
+			newRoleId = RezDoxUtils.REZDOX_RES_BUS_ROLE;
+			newRoleName = RezDoxUtils.REZDOX_RES_BUS_ROLE_NAME;
+			newRoleLevel = RezDoxUtils.REZDOX_RES_BUS_ROLE_LEVEL;
+		}
+		
+		prm.removeRole(role.getProfileRoleId(), dbConn);
+		prm.addRole(member.getProfileId(), site.getSiteId(), newRoleId, 20, dbConn);
+		role.setRoleId(newRoleId);
+		role.setRoleLevel(newRoleLevel); 
+		role.setRoleName(newRoleName);
 		
 		role.setProfileRoleId(prm.checkRole(member.getProfileId(),  site.getSiteId(), dbConn));
 		session.setAttribute(Constants.ROLE_DATA, role);				

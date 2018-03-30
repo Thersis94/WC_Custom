@@ -24,10 +24,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 3.0
  * @since Mar 19, 2018
  * @updates:
+ * 	TJ - Mar 28, 2018: Added invitation support.
  ****************************************************************************/
 public class RezdoxEmailAFriendAction extends EmailFriendAction{
 	
-
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.tools.EmailFriendAction#build(com.siliconmtn.action.ActionRequest)
@@ -36,6 +36,22 @@ public class RezdoxEmailAFriendAction extends EmailFriendAction{
 	public void build(ActionRequest req)  throws ActionException {
 		log.debug("reqbuild in action called");
 		
+		// Handle logic specific to the type of email a friend
+		String emailType = req.getParameter("emailType");
+		if ("invitation".equals(emailType)) {
+			sendInvitation(req);
+		} else {
+			referBusiness(req);
+		}
+	}
+	
+	/**
+	 * Mananges getting data required for sending a business referall
+	 * 
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void referBusiness(ActionRequest req) throws ActionException {
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 		
@@ -58,8 +74,47 @@ public class RezdoxEmailAFriendAction extends EmailFriendAction{
 		emailData.put("businessName", bvo.getBusinessName());
 		emailData.put("businessId", bvo.getBusinessId());
 		
+		sendEmail(req, emailData);
+	}
+	
+	/**
+	 * Sends an email with the given email parameters
+	 * 
+	 * @param req
+	 * @param emailData
+	 * @throws ActionException
+	 */
+	private void sendEmail(ActionRequest req, Map<String, Object> emailData) throws ActionException {
 		attributes.put(EmailFriendAction.MESSAGE_DATA_MAP, emailData);
-		
 		super.build(req);
+	}
+	
+	/**
+	 * Mananges data & logging required when sending an invitation to join RezDox
+	 * 
+	 * @param req
+	 * @throws ActionException 
+	 */
+	protected void sendInvitation(ActionRequest req) throws ActionException {
+		InvitationAction ia = new InvitationAction(dbConn, attributes);
+		ia.build(req);
+		
+		Map<String, Object> emailData = ia.getEmailData();
+		if (!emailData.isEmpty()) {
+			sendEmail(req, emailData);
+		}
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.tools.EmailFriendAction#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		if (req.hasParameter("json") && req.hasParameter("invitation")) {
+			InvitationAction ia = new InvitationAction(dbConn, attributes);
+			ia.retrieve(req);
+		} else {
+			super.retrieve(req);
+		}
 	}
 }
