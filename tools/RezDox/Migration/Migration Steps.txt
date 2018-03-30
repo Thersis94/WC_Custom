@@ -1,4 +1,15 @@
+On destination DB: 
+create org REZDOX
+ensure theme/layouts exist
+ensure widgets exist
+
+Ensure db scripts are run from WebCrescendo/tools/db/scripts
+
+Run Camire's db-to-db site copy tool
+
 sudo apt-get install pgloader
+
+Run/download backup of rezdoxgr_rezdox db from Rezdox Cpanel PHPMyAdmin
 
 mysql -uroot -p
 create database rezdox;
@@ -24,8 +35,12 @@ set pw_pt1 = HEX(CONVERT(AES_ENCRYPT(left(AES_DECRYPT(aespass, 'RezDox'),10), 'R
 pw_pt2 = HEX(CONVERT(AES_ENCRYPT(substring(AES_DECRYPT(aespass, 'RezDox'),11,10), 'RezDox') USING latin1)),
 pw_pt3 = HEX(CONVERT(AES_ENCRYPT(substring(AES_DECRYPT(aespass, 'RezDox'),21), 'RezDox') USING latin1));
 
-pgloader 'mysql://root:pw@sonic/rezdox' 'postgresql://sonic/tjohnson_webcrescendo_sb?user=wc_user&password=pw'
+Postgres:
 CREATE EXTENSION pgcrypto;
+
+pgloader 'mysql://root:pw@sonic/rezdox' 'postgresql://sonic/tjohnson_webcrescendo_sb?user=wc_user&password=pw'
+
+Update config values in WC_Custom/scripts/rezdox/migration_config.properties
 
 run Custom Tables.sql script
 
@@ -59,6 +74,7 @@ delete from profile_role where site_id='REZDOX_1';
 delete from register_submittal where site_id='REZDOX_1';
 
 ---------------
+Helpful Queries:
 select * from custom.rezdox_member;
 select * from profile where create_dt > '2018-01-18 00:00:00';
 select * from authentication where create_dt > '2018-01-18 00:00:00';

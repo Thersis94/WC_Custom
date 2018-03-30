@@ -97,7 +97,6 @@ public class ProjectMaterialAction extends SimpleActionAdapter {
 	}
 
 
-
 	/**
 	 * Retrieves a list of project materials tied to the given projectId.
 	 * @param req
@@ -130,6 +129,7 @@ public class ProjectMaterialAction extends SimpleActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), params, new ProjectMaterialVO());
 	}
+
 
 	/*
 	 * (non-Javadoc)
