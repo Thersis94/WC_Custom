@@ -242,12 +242,12 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 	@Override
 	public void indexItems(String... projectIds) {
 		SolrClient server = makeServer(); //the server will get closed by the auto-closeable util below.
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
+		try (SolrActionUtil util = new SolrActionUtil(server)) {
 			for (String projectId : projectIds) 
 				util.addDocuments(retrieveProjects(projectId));
 
 		} catch (Exception e) {
-			log.error("Failed to index product with id: " + projectIds, e);
+			log.error("Failed to index project with id: " + projectIds, e);
 		}
 	}
 }
