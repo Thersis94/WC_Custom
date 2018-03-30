@@ -30,7 +30,7 @@ public class RezDoxUtils {
 	 * The site admin can change which reward "SIGNUP" actually binds to in the WC admintool.
 	 */
 	public static final String NEW_REGISTRANT_REWARD = "SIGNUP";
-	
+
 	/**
 	 * More available rewards bound to certain activities in the system
 	 */
@@ -48,7 +48,7 @@ public class RezDoxUtils {
 	 * continue with the action they were trying to take.
 	 */
 	public static final String SUBSCRIPTION_UPGRADE_PATH = MEMBER_ROOT_PATH + "/store";
-	
+
 	/**
 	 * Paths to various parts of the site
 	 * WARNING: Only use these in the case where one action's view has links to a separate page/action
@@ -70,7 +70,7 @@ public class RezDoxUtils {
 	 * coefficient modifier for putting a dollar value on home improvements (projects)
 	 */
 	public static final double IMPROVEMENTS_VALUE_COEF = .537;
-	
+
 	/**
 	 * Org Roles for the site
 	 */
@@ -85,6 +85,13 @@ public class RezDoxUtils {
 	public static final String REZDOX_RES_BUS_ROLE = "REZDOX_RES_BUS";
 	public static final String REZDOX_RES_BUS_ROLE_NAME = "	RezDox Residence and Business Role";
 	public static final int REZDOX_RES_BUS_ROLE_LEVEL = 55;
+
+	/**
+	 * email slugs that correlated to the database/email campaigns.
+	 */
+	public enum EmailSlug {
+		TRANSFER_WAITING, TRANSFER_COMPLETE;
+	}
 
 	private RezDoxUtils() {
 		//default constructor not used in static classes
@@ -113,7 +120,7 @@ public class RezDoxUtils {
 		return (MemberVO) req.getSession().getAttribute(Constants.USER_DATA);
 	}
 
-	
+
 	/**
 	 * Returns the memberId from session (UserDataVO)
 	 * @param req

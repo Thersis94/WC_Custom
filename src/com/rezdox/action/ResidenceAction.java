@@ -63,7 +63,7 @@ import com.smt.sitebuilder.security.SBUserRoleContainer;
  * @since Feb 7, 2018
  ****************************************************************************/
 public class ResidenceAction extends SBActionAdapter {
-	
+
 	public static final String RESIDENCE_DATA = "residenceData";
 	public static final String RESIDENCE_ID = "residenceId";
 	public static final String PRIMARY_RESIDENCE = " Primary Residence";
@@ -71,7 +71,10 @@ public class ResidenceAction extends SBActionAdapter {
 	public static final String SLUG_RESIDENCE_ZESTIMATE = "RESIDENCE_ZESTIMATE";
 	public static final String SLUG_RESIDENCE_WALK_SCORE = "RESIDENCE_WALK_SCORE";
 	public static final String SLUG_RESIDENCE_SUN_NUMBER = "RESIDENCE_SUN_NUMBER";
-	
+
+	protected static final int STATUS_INACTIVE = 0;
+	protected static final int STATUS_ACTIVE = 1;
+
 	public enum ResidenceColumnName {
 		RESIDENCE_ID, CREATE_DT, UPDATE_DT
 	}
@@ -86,7 +89,7 @@ public class ResidenceAction extends SBActionAdapter {
 	public ResidenceAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/**
 	 * @param dbConnection
 	 * @param attributes
@@ -96,7 +99,7 @@ public class ResidenceAction extends SBActionAdapter {
 		setDBConnection(dbConnection);
 		setAttributes(attributes);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
 	 */
@@ -110,28 +113,52 @@ public class ResidenceAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		//if arriving to do a residence transfer:
+		if (req.hasParameter("approveTransfer")) {
+			new ResidenceTransferAction(dbConn, attributes).transferResidence(req);
+			return;
+		}
+
 		// If hitting this action with a business role or registered role, they are adding a new residence
 		// Their role will be upgraded appropriately after adding a new residence
 		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
 		if (RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId()) || SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL == role.getRoleLevel()) {
 			req.setParameter(RESIDENCE_ID, "new");
 		}
-		
-		List<ResidenceVO> residenceList = retrieveResidences(req);
-		String residenceId = req.getParameter(RESIDENCE_ID, "");
 
+		List<ResidenceVO> residenceList = retrieveResidences(req);
+		String residenceId = req.getParameter(RESIDENCE_ID);
+
+		// When adding a new residence, check to make sure the member has not reached their limit
+		// if so, redirect them to an upgrade path.
 		if ("new".equalsIgnoreCase(residenceId) && !canAddNewResidence(residenceList, req)) {
-			// When adding a new residence, check to make sure the member has not reached their limit
 			sendRedirect(RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH, UPGRADE_MSG, req);
+
 		} else if (req.hasParameter("homeInfo") || req.hasParameter("settings")) {
-			// Set the data to be returned
 			req.setAttribute(RESIDENCE_DATA, residenceList);
 			putModuleData(retrieveHomeInfoForm(req));
+
+		} else if (req.hasParameter("transfer")) {
+			if (req.hasParameter("loadData")) {
+				putModuleData(loadMembers(req));
+			} else {
+				putModuleData(residenceList, residenceList.size(), false);
+			}
+
 		} else {
 			putModuleData(residenceList, residenceList.size(), false);
 		}
 	}
-	
+
+	/**
+	 * @param req
+	 * @return
+	 */
+	private List<MemberVO> loadMembers(ActionRequest req) {
+		MemberAction ma = new MemberAction(getDBConnection(), getAttributes());
+		return ma.listMembers(req);
+	}
+
 	/**
 	 * Validates whether a new residence can be added by the member.
 	 * 
@@ -143,22 +170,22 @@ public class ResidenceAction extends SBActionAdapter {
 	private boolean canAddNewResidence(List<ResidenceVO> residenceList, ActionRequest req) throws ActionException {
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
-			
+
 		// Validate whether the member needs a residence upgrade
 		SubscriptionAction sa = (SubscriptionAction) ActionControllerFactoryImpl.loadAction(SubscriptionAction.class.getName(), this);
 		boolean needsUpgrade = sa.checkUpgrade(member, Group.HO);
-		
+
 		// Set default residence name per requirements
 		if (!needsUpgrade) {
 			ResidenceVO defaultResidence = new ResidenceVO();
 			defaultResidence.setResidenceName(member.getLastName() + PRIMARY_RESIDENCE);
 			residenceList.add(defaultResidence);
 		}
-		
+
 		// A residence can be added if they don't need an upgrade
 		return !needsUpgrade;
 	}
-	
+
 	/**
 	 * Retrieves base residence data
 	 * 
@@ -169,31 +196,31 @@ public class ResidenceAction extends SBActionAdapter {
 	protected List<ResidenceVO> retrieveResidences(ActionRequest req) {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String residenceId = req.getParameter(RESIDENCE_ID);
-		
+
 		// Using pivot table on the attributes to get additional data for display
 		StringBuilder sql = new StringBuilder(900);
 		sql.append("select r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt) as update_dt, ");
 		sql.append("privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0) as sqft_no, zestimate_no ");
 		sql.append("from ").append(schema).append("rezdox_residence r inner join ");
-		sql.append(schema).append("rezdox_residence_member_xr m on r.residence_id = m.residence_id ");
+		sql.append(schema).append("rezdox_residence_member_xr m on r.residence_id = m.residence_id and status_flg=1 ");
 		sql.append("left join (SELECT * FROM crosstab('SELECT residence_id, slug_txt, value_txt FROM ").append(schema).append("rezdox_residence_attribute ORDER BY 1', ");
 		sql.append("'SELECT DISTINCT slug_txt FROM ").append(schema).append("rezdox_residence_attribute WHERE slug_txt in (''bedrooms'',''bathrooms'',''finishedSqFt'', ''RESIDENCE_ZESTIMATE'') ORDER BY 1') ");
 		sql.append("AS (residence_id text, baths_no float, beds_no int, f_sqft_no int, zestimate_no float) ");
 		sql.append(") ra on r.residence_id = ra.residence_id ");
 		sql.append("where member_id = ? ");
-		
+
 		List<Object> params = new ArrayList<>();
 		params.add(RezDoxUtils.getMemberId(req));
-		
+
 		// Return only a specific residence if selected
 		if (!StringUtil.isEmpty(residenceId)) {
 			sql.append("and r.residence_id = ? ");
 			params.add(residenceId);
 		}
-		
+
 		DBProcessor dbp = new DBProcessor(dbConn);
 		List<ResidenceVO> residences = dbp.executeSelect(sql.toString(), params, new ResidenceVO());
-		
+
 		// Prevent an unsupported operation exception when trying to add a residence to an empty list
 		return residences.isEmpty() ? new ArrayList<>() : residences;
 	}
@@ -231,24 +258,24 @@ public class ResidenceAction extends SBActionAdapter {
 	protected FormVO retrieveHomeInfoForm(ActionRequest req) {
 		String formId = RezDoxUtils.getFormId(getAttributes());
 		log.debug("Retrieving Residence Form: " + formId);
-		
+
 		// Update Zestimate before form load, per requirements
 		ResidenceVO residence = ((List<ResidenceVO>) req.getAttribute(RESIDENCE_DATA)).get(0);
 		updateZestimate(residence);
-		
+
 		// Set the requried params
 		GenericQueryVO query = new GenericQueryVO(formId);
 		QueryParamVO param = new QueryParamVO(ResidenceColumnName.RESIDENCE_ID.name(), false);
 		param.setValues(req.getParameterValues(RESIDENCE_ID));
 		query.addConditional(param);
-		
+
 		// Get the form and the saved data for re-display onto the form.
 		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadFormWithData(formId, req, query, ResidenceFormProcessor.class);
 		req.setAttribute(FormAction.FORM_DATA, dc);
-		
+
 		return dc.getForm();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
@@ -257,23 +284,27 @@ public class ResidenceAction extends SBActionAdapter {
 		log.debug("residence build called");
 		if (req.hasParameter("homeInfo") || req.hasParameter("settings")) {
 			saveForm(req);
+
+		} else if (req.hasParameter("transferResidence")) {
+			new ResidenceTransferAction(dbConn, attributes).initateResidenceTransfer(req);
+
 		} else {
 			try {
 				//get the residence 
 				ResidenceVO residence = new ResidenceVO(req);
 				boolean newResidence = StringUtil.isEmpty(residence.getResidenceId());
-				
+
 				putModuleData(saveResidence(req), 1, false);
 
 				SubscriptionAction sa = new SubscriptionAction();
 				sa.setDBConnection(dbConn);
 				sa.setAttributes(attributes);				
 				int count = sa.getResidenceUsage(RezDoxUtils.getMemberId(req));
-				
+
 				if (newResidence && count == 1) {
 					SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 					req.setSession(changeMemebersRole(req, site));
-					
+
 					// This is the user's first residence, give a reward to anyone that might have invited them
 					InvitationAction ia = new InvitationAction(dbConn, attributes);
 					ia.applyInviterRewards(req, RezDoxUtils.REWARD_HOMEOWNER_INVITE);
@@ -284,7 +315,8 @@ public class ResidenceAction extends SBActionAdapter {
 			}
 		}
 	}
-	
+
+
 	/**
 	 * updates the members record and the session with the new role.
 	 * @param req 
@@ -300,9 +332,9 @@ public class ResidenceAction extends SBActionAdapter {
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 		log.debug("change role for site and member " + site.getSiteId()+"|"+ member.getProfileId());
-		
+
 		SBUserRole role = ((SBUserRole)session.getAttribute(Constants.ROLE_DATA));
-		
+
 		// Upgrade from Registered to Residence
 		String newRoleId = RezDoxUtils.REZDOX_RESIDENCE_ROLE;
 		String newRoleName = RezDoxUtils.REZDOX_RESIDENCE_ROLE_NAME;
@@ -314,17 +346,17 @@ public class ResidenceAction extends SBActionAdapter {
 			newRoleName = RezDoxUtils.REZDOX_RES_BUS_ROLE_NAME;
 			newRoleLevel = RezDoxUtils.REZDOX_RES_BUS_ROLE_LEVEL;
 		}
-		
+
 		prm.removeRole(role.getProfileRoleId(), dbConn);
 		prm.addRole(member.getProfileId(), site.getSiteId(), newRoleId, 20, dbConn);
 		role.setRoleId(newRoleId);
 		role.setRoleLevel(newRoleLevel); 
 		role.setRoleName(newRoleName);
-		
+
 		role.setProfileRoleId(prm.checkRole(member.getProfileId(),  site.getSiteId(), dbConn));
 		session.setAttribute(Constants.ROLE_DATA, role);				
 		return session;
-		
+
 	}
 
 	/**
@@ -339,7 +371,7 @@ public class ResidenceAction extends SBActionAdapter {
 		// Call DataManagerUtil to save the form.
 		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ResidenceFormProcessor.class);
 	}
-	
+
 	/**
 	 * Saves residence data
 	 * 
@@ -350,9 +382,9 @@ public class ResidenceAction extends SBActionAdapter {
 	public ResidenceVO saveResidence(ActionRequest req) throws DatabaseException, InvalidDataException {
 		// Get the residence data
 		ResidenceVO residence = new ResidenceVO(req);
-		
+
 		boolean newResidence = StringUtil.isEmpty(residence.getResidenceId());
-		
+
 		// If this is a new residence, lookup residential API data + extended data for attributes
 		ZillowPropertyVO property = null;
 		SunNumberVO sunNumber = null;
@@ -360,33 +392,33 @@ public class ResidenceAction extends SBActionAdapter {
 		if (newResidence) {
 			// Zillow
 			String zAddress = residence.getAddress();
-			
+
 			String[] addressTokens = zAddress.split(",");
 			residence.setAddress(addressTokens[0].trim());
 			residence.setCity(addressTokens[1].trim());
 			residence.setState(addressTokens[2].trim());
 			residence.setCountry(addressTokens[3].trim());
-			
+
 			ZillowAPIManager zillow = new ZillowAPIManager();
 			property = zillow.retrievePropertyDetails(residence);
 			residence.setLatitude(property.getLatitude());
 			residence.setLongitude(property.getLongitude());
-			
+
 			// Sun Number
 			SunNumberAPIManager sunNumberApi = new SunNumberAPIManager();
 			sunNumber = sunNumberApi.retrieveSunNumber(residence);
-			
+
 			// Walk Score
 			WalkScoreAPIManager walkScoreApi = new WalkScoreAPIManager();
 			walkScore = walkScoreApi.retrieveWalkScore(residence);
 		}
-		
+
 		// Save the residence & attributes records
 		DBProcessor dbp = new DBProcessor(dbConn);
 		try {
 			dbp.save(residence);
 			req.setParameter(ResidenceAction.RESIDENCE_ID, residence.getResidenceId());
-			
+
 			// This must happen here to ensure we have a residence_id first, to pass to the attributes
 			if (property != null) {
 				List<ResidenceAttributeVO> attributes = mapZillowDataToAttributes(property, residence, req);
@@ -394,18 +426,18 @@ public class ResidenceAction extends SBActionAdapter {
 				attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_WALK_SCORE, Convert.formatInteger(walkScore.getWalkscore()).toString()));
 				dbp.executeBatch(attributes);	
 			}
-			
+
 		} catch(Exception e) {
 			throw new DatabaseException(e);
 		}
-		
+
 		// Save the Residence/Member XR
 		saveResidenceMemberXR(req, newResidence);
-		
+
 		// Return the data
 		return residence;
 	}
-	
+
 	/**
 	 * Save the XR record between the residence and member
 	 * 
@@ -415,7 +447,7 @@ public class ResidenceAction extends SBActionAdapter {
 	protected void saveResidenceMemberXR(ActionRequest req, boolean newResidence) throws DatabaseException {
 		// Record already exists if this isn't a new residence, don't need another here
 		if (!newResidence) return;
-		
+
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.INSERT_CLAUSE).append(schema).append("rezdox_residence_member_xr ");
@@ -434,7 +466,7 @@ public class ResidenceAction extends SBActionAdapter {
 			throw new DatabaseException("Could not save RezDox Member/Residence XR", sqle);
 		}
 	}
-	
+
 	/**
 	 * Saves data from the Zillow property lookup to the residence attributes table
 	 * 
@@ -444,25 +476,25 @@ public class ResidenceAction extends SBActionAdapter {
 	private List<ResidenceAttributeVO> mapZillowDataToAttributes(ZillowPropertyVO property, ResidenceVO residence, ActionRequest req) {
 		List<ResidenceAttributeVO> attributes = new ArrayList<>();
 		Map<String, String> zillowData = property.getExtendedData();
-		
+
 		// Create attributes from Zillow data where there is a matching slug text.
 		// These are the only Zillow extended fields we care about.
 		for (String slugText : getSlugTxtList(req)) {
 			String valueText = zillowData.get(slugText);
-			
+
 			if (!StringUtil.isEmpty(valueText)) {
 				ResidenceAttributeVO attribute = new ResidenceAttributeVO(residence.getResidenceId(), slugText, valueText);
 				attributes.add(attribute);
 			}
 		}
-		
+
 		// Add additional non-extended attributes
 		ResidenceAttributeVO attribute = new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE, property.getValueEstimate().toString());
 		attributes.add(attribute);
-		
+
 		return attributes;
 	}
-	
+
 	/**
 	 * Gets a list of slugs for the residence form.
 	 * 
@@ -470,10 +502,10 @@ public class ResidenceAction extends SBActionAdapter {
 	 */
 	private List<String> getSlugTxtList(ActionRequest req) {
 		List<String> slugs = new ArrayList<>();
-		
+
 		DataContainer dc = new DataManagerUtil(attributes, dbConn).loadForm(RezDoxUtils.getFormId(getAttributes()), req);
 		FormVO residenceForm = dc.getForm();
-		
+
 		// Loop over the templates to get form field slug texts
 		for (FormTemplateVO template : residenceForm.getTemplateList()) {
 			for (FormFieldVO field : template.getFieldList()) {
@@ -482,10 +514,10 @@ public class ResidenceAction extends SBActionAdapter {
 				}
 			}
 		}
-		
+
 		return slugs;
 	}
-	
+
 	/**
 	 * Update the Zestimate data for a residence
 	 * 
@@ -496,25 +528,25 @@ public class ResidenceAction extends SBActionAdapter {
 		sql.append("select attribute_id, residence_id, slug_txt, value_txt, create_dt, update_dt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("rezdox_residence_attribute ");
 		sql.append(DBUtil.WHERE_CLAUSE).append(" residence_id = ? and slug_txt = ? ");
-		
+
 		List<Object> params = new ArrayList<>();
 		params.addAll(Arrays.asList(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE));
-		
+
 		DBProcessor dbp = new DBProcessor(dbConn);
 		List<ResidenceAttributeVO> attr = dbp.executeSelect(sql.toString(), params, new ResidenceAttributeVO());
-		
+
 		// Check to make sure we are updating at most once per day
 		ResidenceAttributeVO zestimate = attr.get(0);
 		Date lastUpdate = zestimate.getUpdateDate() == null ? zestimate.getCreateDate() : zestimate.getUpdateDate();
 		LocalDate now = LocalDate.now();
 		LocalDate prev = lastUpdate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 		int daysSinceLastUpdate = Period.between(prev, now).getDays();
-		
+
 		if (daysSinceLastUpdate >= 1) {
 			applyZestimateUpdate(residence, zestimate);
 		}
 	}
-	
+
 	/**
 	 * Applies an update to the residence Zestimate record
 	 * 
@@ -526,7 +558,7 @@ public class ResidenceAction extends SBActionAdapter {
 			ZillowAPIManager zillowApi = new ZillowAPIManager();
 			ZillowPropertyVO property = zillowApi.retrieveZillowId(residence);
 			zestimate.setValueText(property.getValueEstimate().toString());
-			
+
 			DBProcessor dbp = new DBProcessor(dbConn);
 			dbp.save(zestimate);
 		} catch (Exception e) {
