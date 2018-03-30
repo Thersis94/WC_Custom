@@ -44,6 +44,10 @@ public class ProjectVO {
 	private String projectTypeName;
 	private double laborNo;
 	private double totalNo;
+	private double projectDiscountNo;
+	private double projectTaxNo;
+	private double materialDiscountNo;
+	private double materialTaxNo;
 	private UserDataVO homeowner;
 	private Date endDate;
 	private int residenceViewFlg;
@@ -51,6 +55,8 @@ public class ProjectVO {
 	private List<ProjectMaterialVO> materials;
 	private List<ProjectAttributeVO> attributes;
 	private Map<String, String> attributeMap;
+
+	private Double productSubtotalNo;  //calculated internally - member avoids repeated reculations
 
 
 	public ProjectVO() {
@@ -331,5 +337,88 @@ public class ProjectVO {
 
 	public void setBusiness(BusinessVO business) {
 		this.business = business;
+	}
+
+	/**
+	 * tax & discounts get applied on the invoice page, not the Edit form, so these fours fields are annotated read-only
+	 * @return
+	 */
+	@Column(name="proj_discount_no", isReadOnly=true)
+	public double getProjectDiscountNo() {
+		return projectDiscountNo >= 1 ? projectDiscountNo/100 : projectDiscountNo;
+	}
+
+	@Column(name="proj_tax_no", isReadOnly=true)
+	public double getProjectTaxNo() {
+		return projectTaxNo >= 1 ? projectTaxNo/100 : projectTaxNo;
+	}
+
+	@Column(name="mat_discount_no", isReadOnly=true)
+	public double getMaterialDiscountNo() {
+		return materialDiscountNo >= 1 ? materialDiscountNo/100 : materialDiscountNo;
+	}
+
+	@Column(name="mat_tax_no", isReadOnly=true)
+	public double getMaterialTaxNo() {
+		return materialTaxNo >= 1 ? materialTaxNo/100 : materialTaxNo;
+	}
+
+	public void setProjectDiscountNo(double projectDiscountNo) {
+		this.projectDiscountNo = projectDiscountNo;
+	}
+
+	public void setProjectTaxNo(double projectTaxNo) {
+		this.projectTaxNo = projectTaxNo;
+	}
+
+	public void setMaterialDiscountNo(double materialDiscountNo) {
+		this.materialDiscountNo = materialDiscountNo;
+	}
+
+	public void setMaterialTaxNo(double materialTaxNo) {
+		this.materialTaxNo = materialTaxNo;
+	}
+
+	public double getAppliedDiscount() {
+		return Convert.round(getTotalNo() * getProjectDiscountNo(), 2);
+	}
+
+	public double getAppliedTax() {
+		return Convert.round((getTotalNo() - getAppliedDiscount()) * getProjectTaxNo(), 2);
+	}
+
+	public double getAppliedProjectTotal() {
+		return Convert.round(getTotalNo() - getAppliedDiscount() + getAppliedTax(), 2);
+	}
+
+	public double getMaterialSubtotal() {
+		if (productSubtotalNo != null) return productSubtotalNo.doubleValue();
+
+		double amt = 0;
+		List<ProjectMaterialVO> mats = getMaterials();
+		if (mats != null && !mats.isEmpty()) {
+			for (ProjectMaterialVO mat : mats)
+				amt += mat.getCostNo();
+		}
+
+		amt = Convert.round(amt, 2);
+		productSubtotalNo = Double.valueOf(amt);
+		return amt;
+	}
+
+	public double getAppliedMaterialDiscount() {
+		return Convert.round(getMaterialSubtotal() * getMaterialDiscountNo(), 2);
+	}
+
+	public double getAppliedMaterialTax() {
+		return Convert.round((getMaterialSubtotal() - getAppliedMaterialDiscount()) * getMaterialTaxNo(), 2);
+	}
+
+	public double getAppliedMaterialTotal() {
+		return Convert.round(getMaterialSubtotal() - getAppliedMaterialDiscount() + getAppliedMaterialTax(), 2);
+	}
+
+	public double getInvoiceTotal() {
+		return getAppliedProjectTotal() + getAppliedMaterialTotal();
 	}
 }

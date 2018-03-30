@@ -17,6 +17,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -24,6 +25,7 @@ import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
@@ -31,9 +33,11 @@ import com.smt.sitebuilder.data.DataManagerUtil;
 import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.QueryParamVO;
-
+import com.rezdox.data.InvoiceReportPDF;
 import com.rezdox.data.ProjectFormProcessor;
+import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.PhotoVO;
+import com.rezdox.vo.ProjectMaterialVO;
 import com.rezdox.vo.ProjectVO;
 
 /****************************************************************************
@@ -120,7 +124,8 @@ public class ProjectAction extends SimpleActionAdapter {
 	 */
 	protected void loadTabSpecifics(ModuleVO mod, ActionRequest req, String page, 
 			String projectId, List<ProjectVO> data) throws ActionException {
-		if ("edit".equals(page) || "view".equals(page)) {
+		boolean isInvoice = "invoice".equals(page);
+		if ("edit".equals(page) || "view".equals(page) || isInvoice) {
 			//load the form if we're in edit mode
 			DataContainer dc = loadForm(req);
 			mod.setAttribute("dataContainer", dc);
@@ -130,13 +135,19 @@ public class ProjectAction extends SimpleActionAdapter {
 				ProjectVO vo = data.get(0);
 				for (FormFieldVO ff: dc.getTransactions().get(projectId).getCustomData().values())
 					vo.addAttribute(ff.getSlugTxt(), ff.getResponseText());
+
+				if (isInvoice) {
+					//load the project materials
+					vo.setMaterials(loadInvoiceMaterials(req));
+					vo.setBusiness(loadBusiness(vo.getBusinessId()));
+				}
 			}
 
 		} else if ("materials".equals(page)) {
 			//load the project materials
 			loadMaterials(req);
-
 		}
+
 		//photos are used in two tabs
 		if ("files".equals(page) || "view".equals(page)) {
 			//load the photos/documents
@@ -144,6 +155,18 @@ public class ProjectAction extends SimpleActionAdapter {
 		}
 	}
 
+
+	/**
+	 * loads the business tied to this project for generating their invoice
+	 * @param req
+	 * @return
+	 */
+	private BusinessVO loadBusiness(String businessId) {
+		BusinessAction ba = new BusinessAction(getDBConnection(), getAttributes());
+		List<BusinessVO>  data = ba.retrieveBusinesses(businessId);
+		return (data != null &&  data.size() == 1) ? data.get(0) : new BusinessVO();
+
+	}
 
 	/**
 	 * load the list of projects to display - or one if we're in edit/view mode
@@ -275,6 +298,21 @@ public class ProjectAction extends SimpleActionAdapter {
 
 
 	/**
+	 * load a list of materials tied to this project
+	 * @param vo
+	 * @param req
+	 * @return 
+	 * @throws ActionException 
+	 */
+	private List<ProjectMaterialVO> loadInvoiceMaterials(ActionRequest req) {
+		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		mod.setAttribute(ModuleVO.ATTRIBUTE_1, mod.getAttribute(ModuleVO.ATTRIBUTE_2)); //transpose form2 into slot 1
+		setAttribute(Constants.ACTION_DATA, getActionInit());
+		return new ProjectMaterialAction(getDBConnection(), getAttributes()).retrieveMaterials(req);
+	}
+
+
+	/**
 	 * save materials tied to this project
 	 * @param req
 	 * @return 
@@ -296,6 +334,7 @@ public class ProjectAction extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		boolean doRedirect = false;
+		String url = "";
 
 		if (req.hasParameter("savePhoto")) {
 			savePhoto(req);
@@ -306,6 +345,14 @@ public class ProjectAction extends SimpleActionAdapter {
 		} else if (req.hasParameter("deleteItem")) {
 			hideProject(req);
 			doRedirect = true;
+
+		} else if (req.hasParameter("discounts")) {
+			saveDiscounts(req);
+			doRedirect = true;
+			url = StringUtil.join("?page=invoice&projectId=", req.getParameter(REQ_PROJECT_ID));
+
+		} else if (req.hasParameter("makePDF")) {
+			streamPDF(req);
 
 		} else {
 			// Place ActionInit on the Attributes map for the Data Save Handler.
@@ -320,7 +367,54 @@ public class ProjectAction extends SimpleActionAdapter {
 		//redirect the user if the request wasn't made over ajax
 		if (doRedirect) {
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-			sendRedirect(page.getFullPath(), (String)getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE), req);
+			url = page.getFullPath() + url;
+			sendRedirect(url, (String)getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE), req);
+		}
+	}
+
+
+	/**
+	 * Streams the PDF
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void streamPDF(ActionRequest req) throws ActionException {
+		retrieve(req);
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		String secBin = StringUtil.join((String)getAttribute(Constants.SEC_BINARY_DIRECTORY), 
+				(String)getAttribute(Constants.ORGANIZATION_ALIAS), site.getOrganizationId());
+
+		InvoiceReportPDF report = new InvoiceReportPDF(site.getFullSiteAlias(), secBin);
+		report.setData(mod.getActionData());
+
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+		req.setAttribute(Constants.BINARY_DOCUMENT, report);
+	}
+
+
+	/**
+	 * Save the4 discount columns to the DB - from the modal window on the Invoices tab
+	 * @param req
+	 */
+	private void saveDiscounts(ActionRequest req) {
+		StringBuilder sql = new StringBuilder (150);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("REZDOX_PROJECT set ");
+		sql.append("proj_discount_no=?, proj_tax_no=?, mat_discount_no=?, mat_tax_no=?, update_dt=? where project_id=?");
+		log.debug(sql);
+
+		ProjectVO vo = ProjectVO.instanceOf(req);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setDouble(1, vo.getProjectDiscountNo());
+			ps.setDouble(2, vo.getProjectTaxNo());
+			ps.setDouble(3, vo.getMaterialDiscountNo());
+			ps.setDouble(4, vo.getMaterialTaxNo());
+			ps.setTimestamp(5, Convert.getCurrentTimestamp());
+			ps.setString(6, vo.getProjectId());
+			ps.executeUpdate();
+
+		} catch (SQLException sqle) {
+			log.error("could not save project discounts & taxes", sqle);
 		}
 	}
 
