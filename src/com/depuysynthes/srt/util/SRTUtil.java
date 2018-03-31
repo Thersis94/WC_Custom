@@ -24,12 +24,13 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class SRTUtil {
 
+	public static final String SRT_ORG_ID = "DPY_SYN";
+	public static final String PUBLIC_SITE_ID = "DPY_SYN_38";
+
 	//TODO Update with actual Values when decided.  Potentially pull from config.
-	public static final String SRT_ORG_ID = "DPY_SYN_HUDDLE";
-	public static final String PUBLIC_SITE_ID = "DPY_SYN_HUDDLE_2";
 	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
 	public static final String HOMEPAGE_REGISTER_FIELD_ID = null;
-	public static final String adminPath = "/manage";
+	public static final String ADMIN_PATH = "/manage";
 	public enum SrtPage {MASTER_RECORD("/master-record"), PROJECT("/projects"), REQUEST("/request-form");
 		private String urlPath;
 		private SrtPage(String urlPath) {
@@ -40,7 +41,7 @@ public class SRTUtil {
 	public enum SrtAdmin {MILESTONE("/milestones");
 		private String urlPath;
 		private SrtAdmin(String urlPath) {
-			this.urlPath = StringUtil.join(adminPath, urlPath);
+			this.urlPath = StringUtil.join(ADMIN_PATH, urlPath);
 		}
 		public String getUrlPath() {return urlPath;}
 	}
@@ -85,9 +86,9 @@ public class SRTUtil {
 		if(firstLast == null || firstLast.length == 0) {
 			return "";
 		} else if(firstLast.length == 1) {
-			return se.decrypt(firstLast[0]);
+			return StringUtil.checkVal(se.decrypt(firstLast[0])).trim();
 		} else {
-			return StringUtil.join(se.decrypt(firstLast[0]), " ", se.decrypt(firstLast[1]));
+			return StringUtil.join(StringUtil.checkVal(se.decrypt(firstLast[0])).trim(), " ", StringUtil.checkVal(se.decrypt(firstLast[1])).trim());
 		}
 	}
 
