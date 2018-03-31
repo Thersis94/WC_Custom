@@ -21,7 +21,6 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -58,11 +57,10 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("R################## Connections retrieve called");
+		log.debug(" Connections retrieve called");
 		req.setAttribute(BUSINESS_OPTIONS, loadBusinessOptions(StringUtil.checkVal(RezDoxUtils.getMemberId(req))));
 		
 		if (req.getBooleanParameter("addConn")) {
-			log.debug("### called backend");
 			String search = StringUtil.checkVal(req.getParameter("search"));
 			String sendingId = StringUtil.checkVal(req.getParameter("sendingId"));
 			
@@ -73,13 +71,50 @@ public class ConnectionAction extends SimpleActionAdapter {
 			}
 		}
 		
+		loadPros(req);
+			
+		findConnections(req);
+		
+		generateConnCookie(req);
+	}
+	
+	/**
+	 * @param req
+	 */
+	private void loadPros(ActionRequest req) {
 		//populate a list of connections per request
 		if(req.getBooleanParameter("myPros")) {
-			//ret pros
-		}
+			StringBuilder sql = new StringBuilder();
+			String schema = getCustomSchema();
+			List<Object> params = new ArrayList<>();
 			
+			sql.append("select b.business_nm as value, b.business_id as key from ").append(schema).append("rezdox_connection a ");
+			sql.append("left outer join ").append(schema).append("rezdox_business b on a.rcpt_business_id = b.business_id ");
+			sql.append("left outer join ").append(schema).append("rezdox_business c on a.sndr_business_id = b.business_id ");
+			sql.append("where (sndr_business_id is not null or rcpt_business_id is not null) ");
+			sql.append("and approved_flg = 1  ");
+			sql.append("and (sndr_member_id = ? or rcpt_member_id= ? ) ");
+			sql.append("order by a.create_dt desc limit 5 ");
+			String memberId = RezDoxUtils.getMemberId(req);
+			params.add(memberId);
+			params.add(memberId);
+			
+			//generate a list of VO's
+			DBProcessor dbp = new DBProcessor(dbConn, schema);
+			List<GenericVO> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
+			
+			log.debug("### number of pros found " + data.size());
+
+			putModuleData(data);
+		}
+	}
+
+	/**
+	 * @param req
+	 */
+	private void findConnections(ActionRequest req) {
 		//if there is a target id use the token to identify the type of id sent and make the correct
-		//  request. getting member data is differnt then getting business data.  
+		//  request. getting member data is different then getting business data.  
 		if (!StringUtil.isEmpty(req.getParameter("targetId"))) {
 			String[] idParts = StringUtil.checkVal(req.getParameter("targetId")).split("_");
 			if (idParts != null && idParts.length > 0 && "m".equalsIgnoreCase(idParts[0])) {
@@ -90,6 +125,12 @@ public class ConnectionAction extends SimpleActionAdapter {
 			}
 		}
 		
+	}
+
+	/**
+	 * @param req
+	 */
+	private void generateConnCookie(ActionRequest req) {
 		if(req.getBooleanParameter("generateCookie")) {
 			int count = getMemeberConnectionCount(req);
 			log.debug(" found " +count+ "Connection");
@@ -98,7 +139,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 			CookieUtil.add(resp, "rezdoxConnectionPoints", String.valueOf(count), "/", -1);
 		}
 	}
-	
+
 	/**
 	 * gets the number of connections the member has
 	 * @param req 
@@ -285,8 +326,9 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("where slug_txt = 'BUSINESS_SUMMARY' ");
 		sql.append(") as d on b.business_id = d.business_id ");
 		sql.append("left outer join ( ");
-		sql.append("select business_id, category_nm from ").append(schema).append("rezdox_business_category_xr a ");
+		sql.append("select business_id, c.category_nm from ").append(schema).append("rezdox_business_category_xr a ");
 		sql.append("inner join ").append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
+		sql.append("inner join ").append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
 		sql.append("where sndr_").append(idField).append("_id = ? ");
 		params.add(targetId);
@@ -305,8 +347,9 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("where slug_txt = 'BUSINESS_SUMMARY' ");
 		sql.append(") as d on b.business_id = d.business_id ");
 		sql.append("left outer join ( ");
-		sql.append("select business_id, category_nm from ").append(schema).append("rezdox_business_category_xr a ");
+		sql.append("select business_id, c.category_nm from ").append(schema).append("rezdox_business_category_xr a ");
 		sql.append("inner join ").append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
+		sql.append("inner join ").append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
 		sql.append("where rcpt_").append(idField).append("_id = ? ");
 		params.add(targetId);
@@ -410,7 +453,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 			Map<String, Object> dataMap = new HashMap<>();
 			dataMap.put("senderName", sender.getFirstName() + " " + sender.getLastName() );
 			
-			MemberVO toMember = ma.retrieveMemberData(cvo.getSenderMemberId());
+			MemberVO toMember = ma.retrieveMemberData(cvo.getRecipientMemberId());
 			
 			Map<String, String> rcptMap = new HashMap<>();
 			rcptMap.put(toMember.getProfileId(), toMember.getEmailAddress());
