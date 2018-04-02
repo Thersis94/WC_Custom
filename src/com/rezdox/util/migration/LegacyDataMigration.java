@@ -68,8 +68,8 @@ public class LegacyDataMigration extends CommandLineUtil {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		/*LegacyMemberImport lmi = new LegacyMemberImport(args);
-		lmi.run();*/
+		LegacyMemberImport lmi = new LegacyMemberImport(args);
+		lmi.run();
 
 		LegacyDataMigration ldm = new LegacyDataMigration(args);
 		ldm.run();
@@ -88,7 +88,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 		log.info("Migration Started");
 		
 		try {
-			/*migrateResidences();
+			migrateResidences();
 			migrateResidenceMembers();
 			migrateResidenceAttributes();
 			migrateRoomTypes();
@@ -99,9 +99,9 @@ public class LegacyDataMigration extends CommandLineUtil {
 			migrateBusinessMembers();
 			migrateMemberMessages();
 			migrateNotifications();
-			migrateConnections();*/
+			migrateConnections();
 			createMemberships();
-			/*createPromotions();
+			createPromotions();
 			createMembershipPromotions();
 			createPaymentTypes();
 			migrateSubscriptions();
@@ -123,7 +123,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			migrateRoomInfo();
 			migrateInvitations();
 			updateRoles();
-			addResidenceApiData();*/
+			addResidenceApiData();
 		} catch(Exception e) {
 			log.error("Failed to migrate data.", e);
 		}
