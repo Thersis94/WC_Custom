@@ -20,6 +20,7 @@ import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.SQLTotalVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -66,6 +67,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param attributes
 	 */
 	public ConnectionAction(Connection dbConn, Map<String, Object> attributes) {
+		this();
 		this.setAttributes(attributes);
 		this.setDBConnection((SMTDBConnection) dbConn);
 	}
@@ -174,13 +176,17 @@ public class ConnectionAction extends SimpleActionAdapter {
 		List<Object> params = new ArrayList<>();
 		params.add(memberId);
 		params.add(memberId);
-		sql.append("select *  from ").append(schema).append("rezdox_connection where sndr_member_id = ? or rcpt_member_id = ? ");	
+		sql.append("select cast(count(*) as int) as total_rows_no  from ").append(schema).append("rezdox_connection where sndr_member_id = ? or rcpt_member_id = ? ");	
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		List<ConnectionVO> data = dbp.executeSelect(sql.toString(), params, new ConnectionVO());
+		List<SQLTotalVO> data = dbp.executeSelect(sql.toString(), params, new SQLTotalVO());
 		
 		log.debug(" sql " +sql.toString()+ "|"+params );
 		
-		return data.size();
+		if (data != null) {	
+			return data.get(0).getTotal();
+		}else {
+			return 0;
+		}
 	}
 
 
