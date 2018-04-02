@@ -143,6 +143,7 @@ public class ProjectFormProcessor extends FormDataProcessor {
 		sql.append("(attribute_id, project_id, slug_txt, value_txt, create_dt) values (?,?,?,?,?)");
 		log.debug(sql);
 
+		int batchSize = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (FormFieldVO formField : fields) {
 				for (String val : formField.getResponses()) {
@@ -153,9 +154,12 @@ public class ProjectFormProcessor extends FormDataProcessor {
 					ps.setString(4, val);
 					ps.setTimestamp(5, Convert.getCurrentTimestamp());
 					ps.addBatch();
+					++batchSize;
 				}
 			}
-			ps.executeBatch();
+			if (batchSize > 0) 
+				ps.executeBatch();
+
 		} catch (SQLException sqle) {
 			throw new DatabaseException("could not save RezDox project attributes", sqle);
 		}
