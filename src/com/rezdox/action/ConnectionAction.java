@@ -1,5 +1,6 @@
 package com.rezdox.action;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +20,7 @@ import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
@@ -47,6 +49,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 	public static final String STATE_SEARCH = "stateSearch";
 	public static final String APPROVED_FLAG = "approvedFlag";
 	public static final String CATEGORY_SEARCH = "categorySearch";
+	public static final String TARGET_ID = "targetId"; 
+	public static final String REZDOX_CONNECTION_POINTS = "rezdoxConnectionPoints";
 	
 	
 	public ConnectionAction() {
@@ -57,14 +61,26 @@ public class ConnectionAction extends SimpleActionAdapter {
 		super(arg0);
 	}
 	
+	/**
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public ConnectionAction(Connection dbConn, Map<String, Object> attributes) {
+		this.setAttributes(attributes);
+		this.setDBConnection((SMTDBConnection) dbConn);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug(" Connections retrieve called");
-		req.setAttribute(BUSINESS_OPTIONS, loadBusinessOptions(StringUtil.checkVal(RezDoxUtils.getMemberId(req))));
+		log.debug(" Connections retrieve called ");
+		
+		if(req.hasParameter("ListBusinesses")) {
+			putModuleData(loadBusinessOptions(StringUtil.checkVal(RezDoxUtils.getMemberId(req))));
+		}
 		
 		if (req.getBooleanParameter("addConn")) {
 			String search = StringUtil.checkVal(req.getParameter(SEARCH));
@@ -81,8 +97,10 @@ public class ConnectionAction extends SimpleActionAdapter {
 			
 		findConnections(req);
 		
-		generateConnCookie(req);
-	}
+		if(req.getBooleanParameter("generateCookie")) {
+			generateConnCookie(RezDoxUtils.getMemberId(req));
+		}
+	}	
 	
 	/**
 	 * @param req
@@ -107,11 +125,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 			
 			//generate a list of VO's
 			DBProcessor dbp = new DBProcessor(dbConn, schema);
-			List<GenericVO> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
-			
-			log.debug("### number of pros found " + data.size());
 
-			putModuleData(data);
+			putModuleData(dbp.executeSelect(sql.toString(), params, new GenericVO()));
 		}
 	}
 
@@ -121,8 +136,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 	private void findConnections(ActionRequest req) {
 		//if there is a target id use the token to identify the type of id sent and make the correct
 		//  request. getting member data is different then getting business data.  
-		if (!StringUtil.isEmpty(req.getParameter("targetId"))) {
-			String[] idParts = StringUtil.checkVal(req.getParameter("targetId")).split("_");
+		if (!StringUtil.isEmpty(req.getParameter(TARGET_ID))) {
+			String[] idParts = StringUtil.checkVal(req.getParameter(TARGET_ID)).split("_");
 			if (idParts != null && idParts.length > 0 && "m".equalsIgnoreCase(idParts[0])) {
 				setModuleData(generateConnections(idParts[1], MEMBER, req));
 			}	
@@ -134,29 +149,31 @@ public class ConnectionAction extends SimpleActionAdapter {
 	}
 
 	/**
+	 * controls generating the cookie
 	 * @param req
 	 */
-	private void generateConnCookie(ActionRequest req) {
-		if(req.getBooleanParameter("generateCookie")) {
-			int count = getMemeberConnectionCount(req);
+	private void generateConnCookie(String memberId) {
+			int count = getMemeberConnectionCount(memberId);
 			log.debug(" found " +count+ "Connection");
 			//set the total in a cookie.  This may be excessive for repeat calls to the rewards page, but ensures cached data is flushed
 			HttpServletResponse resp = (HttpServletResponse) getAttribute(GlobalConfig.HTTP_RESPONSE);
 			CookieUtil.add(resp, "rezdoxConnectionPoints", String.valueOf(count), "/", -1);
-		}
 	}
 
+	
 	/**
 	 * gets the number of connections the member has
 	 * @param req 
 	 * @return
 	 */
-	private int getMemeberConnectionCount(ActionRequest req) {
+	public int getMemeberConnectionCount(String memberId) {
+		if (memberId == null )return 0;
+		
 		StringBuilder sql = new StringBuilder();
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
-		params.add(RezDoxUtils.getMemberId(req));
-		params.add(RezDoxUtils.getMemberId(req));
+		params.add(memberId);
+		params.add(memberId);
 		sql.append("select *  from ").append(schema).append("rezdox_connection where sndr_member_id = ? or rcpt_member_id = ? ");	
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		List<ConnectionVO> data = dbp.executeSelect(sql.toString(), params, new ConnectionVO());
@@ -165,6 +182,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		
 		return data.size();
 	}
+
 
 	/**
 	 * controls when a business is looking for new connections
@@ -256,7 +274,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @return 
 	 */
 	private List<GenericVO> loadBusinessOptions(String memberId) {
-		log.debug("loading busines list for member");
+		log.debug("loading business list for member");
 		StringBuilder sql = new StringBuilder(230);
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
@@ -420,7 +438,6 @@ public class ConnectionAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		log.debug(" Connections build called");
 		ConnectionVO cvo = new ConnectionVO(req);
-		log.debug("# cvo "+cvo);
 		
 		String schema = getCustomSchema();
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
@@ -432,7 +449,6 @@ public class ConnectionAction extends SimpleActionAdapter {
 				log.error("could not fill connection vo ",e);
 			}
 			
-			log.debug("# cvo "+cvo);
 			cvo.setApprovedFlag(req.getIntegerParameter(APPROVED_FLAG));
 			
 		}
