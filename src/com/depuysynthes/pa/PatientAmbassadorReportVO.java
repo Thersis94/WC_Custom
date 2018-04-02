@@ -208,13 +208,9 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 					sb.append(s);
 					// add detail for hip or knee joint choice
 					if (s.toLowerCase().startsWith("hip")) {
-						sb.append("(");
-						sb.append(vo.getFieldById(PAFConst.INCISION_NM_ID.getId()).getResponses().get(0));
-						sb.append(")");
+						addJointResponse(sb,vo,PAFConst.INCISION_NM_ID);
 					} else if (s.toLowerCase().startsWith("knee")) {
-						sb.append("(");
-						sb.append(vo.getFieldById(PAFConst.IMPLANT_NM_ID.getId()).getResponses().get(0));
-						sb.append(")");
+						addJointResponse(sb,vo,PAFConst.IMPLANT_NM_ID);
 					}
 					i++;
 				}
@@ -437,6 +433,24 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 
 
 	/**
+	 * Adds a joint response value if it exists.
+	 * @param sb
+	 * @param vo
+	 * @param paf
+	 */
+	private void addJointResponse(StringBuilder sb, FormTransactionVO vo, PAFConst paf) {
+		FormFieldVO field = vo.getFieldById(paf.getId());
+		if (field != null
+				&& field.getResponses() != null
+				&& ! StringUtil.isEmpty(field.getResponses().get(0))) {
+			sb.append("(");
+			sb.append(field.getResponses().get(0));
+			sb.append(")");
+		}
+	}
+
+
+	/**
 	 * Helper methods for writing a pair of cells into a row.
 	 * @param r
 	 * @param value
@@ -446,6 +460,8 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		String value = (vo != null) ? vo.getResponseText() : "";
 		addRow(r,value,s);
 	}
+
+
 	private void addRow(int r, String value, Sheet s) {
 		Row row = s.createRow(r);
 		row.createCell(0).setCellValue(getHeaders().get(r));
