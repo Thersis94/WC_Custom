@@ -143,6 +143,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 	}
 
 	/**
+	 * Gather Milestones off Request.
 	 * @param project
 	 * @param data 
 	 */
@@ -157,22 +158,17 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		//Map List of Milestones to Map of MilestoneId, MilestoneVO.
 		Map<String, SRTProjectMilestoneVO> mMap = milestones.stream().collect(Collectors.toMap(SRTProjectMilestoneVO::getMilestoneId, Function.identity()));
 
-		//Get Iterator of formFieldVOs
-		Iterator<Map.Entry<String, FormFieldVO>> iter = data.getCustomData().entrySet().iterator();
+		List<SRTProjectMilestoneVO> reqMilestones = new PrefixBeanDataMapper<>(new SRTProjectMilestoneVO()).populate(req.getParameterMap(), "milestoneId");
 
-		//Loop FormFieldVos
-		while (iter.hasNext()) {
+		//Loop vals off Request
+		for(SRTProjectMilestoneVO m : reqMilestones) {
 
-			//Get Next FormField Entry
-			Map.Entry<String, FormFieldVO> entry = iter.next();
+			//Attempt to find a Milestone for the current req Milestone.
+			SRTProjectMilestoneVO mParam = mMap.get(m.getMilestoneId());
 
-			//Attempt to find a Milestone for the given slugTxt.
-			SRTProjectMilestoneVO mParam = mMap.get(entry.getValue().getSlugTxt());
-
-			//If we found an associated Milestone for the slugTxt, add it as a ledger Entry.
-			if (mParam != null) {
-				project.addLedgerDate(mParam.getMilestoneId(), Convert.formatDate(entry.getValue().getResponseText().trim()));
-				iter.remove();
+			//If we found an associated Milestone for the req Milestone, add it as a ledger Entry.
+			if (mParam != null && m.getMilestoneDt() != null) {
+				project.addLedgerDate(m.getMilestoneId(), m.getMilestoneDt());
 			}
 		}
 	}
