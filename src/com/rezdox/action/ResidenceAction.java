@@ -70,6 +70,7 @@ public class ResidenceAction extends SBActionAdapter {
 	public static final String UPGRADE_MSG = "You have reached your maximum residences. Please purchase a residence upgrade to continue.";
 	public static final String SLUG_RESIDENCE_ZESTIMATE = "RESIDENCE_ZESTIMATE";
 	public static final String SLUG_RESIDENCE_WALK_SCORE = "RESIDENCE_WALK_SCORE";
+	public static final String SLUG_RESIDENCE_TRANSIT_SCORE = "RESIDENCE_TRANSIT_SCORE";
 	public static final String SLUG_RESIDENCE_SUN_NUMBER = "RESIDENCE_SUN_NUMBER";
 
 	protected static final int STATUS_INACTIVE = 0;
@@ -427,6 +428,8 @@ public class ResidenceAction extends SBActionAdapter {
 				List<ResidenceAttributeVO> attributes = mapZillowDataToAttributes(property, residence, req);
 				attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_SUN_NUMBER, sunNumber.getSunNumber()));
 				attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_WALK_SCORE, Convert.formatInteger(walkScore.getWalkscore()).toString()));
+				String transitScore = walkScore.getTransit() == null ? "0" : Convert.formatInteger(walkScore.getTransit().getScore()).toString();
+				attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_TRANSIT_SCORE, transitScore));
 				dbp.executeBatch(attributes);	
 			}
 

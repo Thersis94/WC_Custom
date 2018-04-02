@@ -1412,6 +1412,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			List<ResidenceAttributeVO> attributes = new ArrayList<>();
 			ResidenceAttributeVO zestimateAttr = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_ZESTIMATE, "");
 			ResidenceAttributeVO walkScoreAttr = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_WALK_SCORE, "");
+			ResidenceAttributeVO transitScoreAttr = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_TRANSIT_SCORE, "");
 			ResidenceAttributeVO sunNumberAttr = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_SUN_NUMBER, "");
 			
 			try {
@@ -1423,6 +1424,10 @@ public class LegacyDataMigration extends CommandLineUtil {
 				WalkScoreVO walkScore = walkScoreApi.retrieveWalkScore(residence);
 				walkScoreAttr.setValueText(Convert.formatInteger(walkScore.getWalkscore()).toString());
 				
+				if (walkScore.getTransit() != null) {
+					transitScoreAttr.setValueText(Convert.formatInteger(walkScore.getTransit().getScore()).toString());
+				}
+				
 				SunNumberAPIManager sunNumberApi = new SunNumberAPIManager();
 				SunNumberVO sunNumber = sunNumberApi.retrieveSunNumber(residence);
 				sunNumberAttr.setValueText(sunNumber.getSunNumber());
@@ -1432,6 +1437,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			
 			attributes.add(zestimateAttr);
 			attributes.add(walkScoreAttr);
+			attributes.add(transitScoreAttr);
 			attributes.add(sunNumberAttr);
 			
 			dbp.executeBatch(attributes);
