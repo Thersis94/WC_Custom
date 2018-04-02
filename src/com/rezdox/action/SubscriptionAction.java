@@ -3,6 +3,8 @@ package com.rezdox.action;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.BusinessAction.BusinessStatus;
@@ -20,6 +22,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.session.SMTSession;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: SubscriptionAction.java<p/>
@@ -70,9 +73,30 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		if ((boolean) req.getAttribute("newMember")) return;
 		
 		// Get the possible memberships the member can subscribe to.
-		req.setParameter(MembershipAction.REQ_EXC_GROUP_CD, residenceCount > 0 ? Group.BU.name() : Group.HO.name());
+		req.setParameter(MembershipAction.REQ_EXC_GROUP_CD, getMembershipExclusions(req).toArray(new String[0]), true);
 		MembershipAction ma = new MembershipAction(dbConn, attributes);
 		putModuleData(ma.retrieveMemberships(req));
+	}
+	
+	/**
+	 * Checks the member's role to determine which subscriptions they don't have access to
+	 * 
+	 * @param req
+	 * @return
+	 */
+	private List<String> getMembershipExclusions(ActionRequest req) {
+		List<String> exclusions = new ArrayList<>();
+		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
+		
+		if (RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId())) {
+			// Exclude residence memberships if this is a business-only role
+			exclusions.add(Group.HO.name());
+		} else if (RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(role.getRoleId())) {
+			// Exclude business memberships if this is a residence-only role
+			exclusions.add(Group.BU.name());
+		}
+		
+		return exclusions;
 	}
 	
 	/**

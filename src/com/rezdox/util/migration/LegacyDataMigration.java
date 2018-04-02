@@ -68,8 +68,8 @@ public class LegacyDataMigration extends CommandLineUtil {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		LegacyMemberImport lmi = new LegacyMemberImport(args);
-		lmi.run();
+		/*LegacyMemberImport lmi = new LegacyMemberImport(args);
+		lmi.run();*/
 
 		LegacyDataMigration ldm = new LegacyDataMigration(args);
 		ldm.run();
@@ -88,7 +88,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 		log.info("Migration Started");
 		
 		try {
-			migrateResidences();
+			/*migrateResidences();
 			migrateResidenceMembers();
 			migrateResidenceAttributes();
 			migrateRoomTypes();
@@ -99,9 +99,9 @@ public class LegacyDataMigration extends CommandLineUtil {
 			migrateBusinessMembers();
 			migrateMemberMessages();
 			migrateNotifications();
-			migrateConnections();
+			migrateConnections();*/
 			createMemberships();
-			createPromotions();
+			/*createPromotions();
 			createMembershipPromotions();
 			createPaymentTypes();
 			migrateSubscriptions();
@@ -123,7 +123,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			migrateRoomInfo();
 			migrateInvitations();
 			updateRoles();
-			addResidenceApiData();
+			addResidenceApiData();*/
 		} catch(Exception e) {
 			log.error("Failed to migrate data.", e);
 		}
@@ -805,11 +805,11 @@ public class LegacyDataMigration extends CommandLineUtil {
 		log.info("Adding Memberships");
 		StringBuilder sql = new StringBuilder(600);
 		sql.append("insert into custom.rezdox_membership (membership_id, membership_nm, group_cd, status_flg, cost_no, qty_no, new_mbr_dflt_flg, create_dt) ");
-		sql.append("values (replace(newid(),'-',''), 'Residence', 'HO', 1, 9.99, 1, 1, getdate()), ");
-		sql.append("(replace(newid(),'-',''), 'Business', 'BU', 1, 79.99, 1, 1, getdate()), ");
-		sql.append("(replace(newid(),'-',''), '100 Connections', 'CO', 1, 99.99, 100, 1, getdate()), ");
-		sql.append("(replace(newid(),'-',''), '200 Connections', 'CO', 1, 179.99, 200, 0, getdate()), ");
-		sql.append("(replace(newid(),'-',''), '300 Connections', 'CO', 1, 239.99, 300, 0, getdate()) ");
+		sql.append("values ('RESIDENCE', 'Residence', 'HO', 1, 9.99, 1, 1, getdate()), ");
+		sql.append("('BUSINESS', 'Business', 'BU', 1, 79.99, 1, 1, getdate()), ");
+		sql.append("('CONNECTIONS100', '100 Connections', 'CO', 1, 99.99, 100, 1, getdate()), ");
+		sql.append("('CONNECTIONS200', '200 Connections', 'CO', 1, 179.99, 200, 0, getdate()), ");
+		sql.append("('CONNECTIONS300', '300 Connections', 'CO', 1, 239.99, 300, 0, getdate()) ");
 		executeSimpleMapping(sql, "membership");
 	}
 	

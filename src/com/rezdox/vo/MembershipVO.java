@@ -28,12 +28,13 @@ public class MembershipVO implements Serializable  {
 
 	private String membershipId;
 	private String membershipName;
+	private String descriptionText;
 	private Group group;
 	private int statusFlag;
 	private double costNo;
 	private int quantityNo;
 	private int newMemberDefaultFlag;
-	private String paypalButtonText;
+	private String paypalButtonId;
 	private Date createDate;
 	private Date updateDate;
 
@@ -69,12 +70,13 @@ public class MembershipVO implements Serializable  {
 	public void setData(ActionRequest req) {
 		setMembershipId(req.getParameter("membershipId"));
 		setMembershipName(req.getParameter("membershipName"));
+		setDescriptionText(req.getParameter("descriptionText"));
 		setGroupCode(req.getParameter("groupCode"));
 		setStatusFlag(Convert.formatInteger(req.getParameter("statusFlag")));
 		setCostNo(Convert.formatDouble(req.getParameter("costNo")));
 		setQuantityNo(Convert.formatInteger(req.getParameter("quantityNo")));
 		setNewMemberDefaultFlag(Convert.formatInteger(req.getParameter("newMemberDefaultFlag")));
-		setPaypalButtonText(req.getParameter("paypalButtonText"));
+		setPaypalButtonId(req.getParameter("paypalButtonId"));
 	}
 
 	/**
@@ -105,6 +107,21 @@ public class MembershipVO implements Serializable  {
 	 */
 	public void setMembershipName(String membershipName) {
 		this.membershipName = membershipName;
+	}
+
+	/**
+	 * @return the descriptionText
+	 */
+	@Column(name="description_txt")
+	public String getDescriptionText() {
+		return descriptionText;
+	}
+
+	/**
+	 * @param descriptionText the descriptionText to set
+	 */
+	public void setDescriptionText(String descriptionText) {
+		this.descriptionText = descriptionText;
 	}
 
 	/**
@@ -197,18 +214,18 @@ public class MembershipVO implements Serializable  {
 	}
 
 	/**
-	 * @return the paypalButtonText
+	 * @return the paypalButtonId
 	 */
-	@Column(name="paypal_button_txt")
-	public String getPaypalButtonText() {
-		return paypalButtonText;
+	@Column(name="paypal_button_id")
+	public String getPaypalButtonId() {
+		return paypalButtonId;
 	}
 
 	/**
-	 * @param paypalButtonText the paypalButtonText to set
+	 * @param paypalButtonId the paypalButtonId to set
 	 */
-	public void setPaypalButtonText(String paypalButtonText) {
-		this.paypalButtonText = paypalButtonText;
+	public void setPaypalButtonId(String paypalButtonId) {
+		this.paypalButtonId = paypalButtonId;
 	}
 
 	/**

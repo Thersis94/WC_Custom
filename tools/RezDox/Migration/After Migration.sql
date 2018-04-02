@@ -164,3 +164,7 @@ update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'R
 update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'RESIDENCE_TRANSIT_SCORE' and value_txt = '';
 update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'RESIDENCE_SUN_NUMBER' and value_txt = '';
 update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'RESIDENCE_SUN_NUMBER' and value_txt is null;
+
+-- changes to memberships, using button ids instead of full button html
+-- this query only needs to be run in staging after code push
+-- alter table custom.rezdox_membership drop paypal_button_txt;
