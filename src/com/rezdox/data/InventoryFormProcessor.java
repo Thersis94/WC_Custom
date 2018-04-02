@@ -77,7 +77,7 @@ public class InventoryFormProcessor extends FormDataProcessor {
 			CoreField param = EnumUtil.safeValueOf(CoreField.class, entry.getValue().getSlugTxt());
 			if (param != null) {
 				req.setParameter(param.getReqParam(), entry.getValue().getResponseText());
-				//log.debug(String.format("%s=%s", param.getReqParam(), entry.getValue().getResponseText()))
+				log.debug(String.format("%s=%s", param.getReqParam(), entry.getValue().getResponseText()));
 				iter.remove();
 			}
 		}
@@ -131,6 +131,7 @@ public class InventoryFormProcessor extends FormDataProcessor {
 		sql.append("(attribute_id, treasure_item_id, slug_txt, value_txt, create_dt) values (?,?,?,?,?)");
 		log.debug(sql);
 
+		int batchSize = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (FormFieldVO formField : fields) {
 				for (String val : formField.getResponses()) {
@@ -141,9 +142,12 @@ public class InventoryFormProcessor extends FormDataProcessor {
 					ps.setString(4, val);
 					ps.setTimestamp(5, Convert.getCurrentTimestamp());
 					ps.addBatch();
+					++batchSize;
 				}
 			}
-			ps.executeBatch();
+			if (batchSize > 0) 
+				ps.executeBatch();
+
 		} catch (SQLException sqle) {
 			throw new DatabaseException("could not save RezDox treasure items", sqle);
 		}

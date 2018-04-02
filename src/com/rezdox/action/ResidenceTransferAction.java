@@ -101,6 +101,7 @@ public class ResidenceTransferAction extends SimpleActionAdapter {
 		if (!RezDoxUtils.getMemberId(req).equals(req.getParameter("memberId")))
 			return;
 
+		String residenceId = req.getParameter("residenceId");
 		ResidenceAction ra = new ResidenceAction(getDBConnection(), getAttributes());
 		try {
 			ra.saveResidenceMemberXR(req, true);
@@ -108,11 +109,15 @@ public class ResidenceTransferAction extends SimpleActionAdapter {
 			log.error("could not create new residence_member_xr", de);
 		}
 
+		//detach any personal items/inventory from the old residence.  (They'll still remain with the owner)
+		InventoryAction ia = new InventoryAction(getDBConnection(), getAttributes());
+		ia.detachResidence(residenceId);
+
 		//need the residence address for the email
 		String schema = getCustomSchema();
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		String sql = StringUtil.join("select residence_nm as key from ", schema, "REZDOX_RESIDENCE where residence_id=?");
-		List<GenericVO> data = db.executeSelect(sql, Arrays.asList(req.getParameter("residenceId")), new GenericVO());
+		List<GenericVO> data = db.executeSelect(sql, Arrays.asList(residenceId), new GenericVO());
 		if (!data.isEmpty())
 			req.setParameter(RES_NAME, (String) data.get(0).getKey());
 
