@@ -168,3 +168,5 @@ update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'R
 -- changes to memberships, using button ids instead of full button html
 -- this query only needs to be run in staging after code push
 -- alter table custom.rezdox_membership drop paypal_button_txt;
+
+alter table custom.rezdox_reward add feature_flg int;
