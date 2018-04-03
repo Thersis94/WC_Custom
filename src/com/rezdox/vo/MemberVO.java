@@ -1,7 +1,7 @@
 package com.rezdox.vo;
 
-import java.io.Serializable;
 //Java 8
+import java.io.Serializable;
 import java.util.Date;
 
 // SMTBaseLibs
@@ -34,9 +34,6 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	private int privacyFlg;
 	private String profilePicPath;
 	private Date createDate;
-
-	//tied to login
-	private String businessId;
 
 	/**
 	 * RezDox privacy flags.
@@ -246,19 +243,6 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	@Column(name="email_address_txt", isReadOnly=true)
 	public String getEmailAddress() {
 		return super.getEmailAddress();
-	}
-
-	@Column(name="business_id", isReadOnly=true)
-	public String getBusinessId() {
-		return businessId;
-	}
-
-	public void setBusinessId(String businessId) {
-		this.businessId = businessId;
-	}
-
-	public boolean isBusinessUser() {
-		return !StringUtil.isEmpty(getBusinessId());
 	}
 
 

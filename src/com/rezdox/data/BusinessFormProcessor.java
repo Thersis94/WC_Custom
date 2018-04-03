@@ -81,6 +81,12 @@ public class BusinessFormProcessor extends FormDataProcessor {
 		public String getReqParam() { return reqParam; }
 		public String getDbField() { return dbField; }
 	}
+
+	/**
+	 * Special use keys for values from the attributes table in the attibutes map
+	 * Used in BusinessVO
+	 */
+	public static final String SLUG_BUSINESS_SUMMARY = "BUSINESS_SUMMARY";
 	
 	/**
 	 * Maps submitted form builder parameter names to those expected in the business table 

@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.rezdox.action.BusinessAction;
 import com.rezdox.action.ResidenceAction;
 import com.rezdox.action.RezDoxUtils;
 import com.rezdox.vo.ResidenceVO;
@@ -72,14 +73,14 @@ public class ProjectMyResidences extends SimpleActionAdapter {
 
 
 	/**
-	 * Generates a list residences I'm connected to - tied to business' projects
+	 * Generates a list of residences I'm connected to - tied to business' projects
 	 * @param req
 	 */
 	private void loadBusinessContactResidences(ActionRequest req) {
 		String schema = getCustomSchema();
-		String businessId = RezDoxUtils.getBusinessId(req);
+		String businessId = StringUtil.checkVal(req.getSession().getAttribute(BusinessAction.REQ_BUSINESS_ID));
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select r.residence_id, r.residence_nm, r.address_txt, r.city_nm, r.state_cd, r.zip_cd from ");
+		sql.append("select distinct r.residence_id, r.residence_nm, r.address_txt, r.city_nm, r.state_cd, r.zip_cd from ");
 		sql.append(schema).append("REZDOX_RESIDENCE r ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR mxr on r.residence_id=mxr.residence_id and mxr.status_flg=1 ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_CONNECTION c on mxr.member_id=c.sndr_member_id or mxr.member_id=c.rcpt_member_id ");

@@ -31,6 +31,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
 import com.smt.sitebuilder.data.vo.FormFieldVO;
+import com.smt.sitebuilder.data.vo.FormTransactionVO;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.QueryParamVO;
 import com.rezdox.data.InvoiceReportPDF;
@@ -55,6 +56,7 @@ import com.rezdox.vo.ProjectVO;
 public class ProjectAction extends SimpleActionAdapter {
 
 	protected static final String REQ_PROJECT_ID = "projectId";
+	protected static final String FILTER_DATA_LST = "filterListData";
 
 
 	public ProjectAction() {
@@ -87,6 +89,9 @@ public class ProjectAction extends SimpleActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String projectId = req.getParameter(REQ_PROJECT_ID);
 		String page = req.getParameter("page");
+
+		loadPrefilter(req, mod);
+
 		List<ProjectVO> data = loadProjectList(req, projectId);
 		populateUserProfiles(data);
 
@@ -95,21 +100,72 @@ public class ProjectAction extends SimpleActionAdapter {
 
 		//if we're looking at a single project, load additional pieces depending on which tab is being displayed
 		if (!StringUtil.isEmpty(projectId)) {
-
 			loadTabSpecifics(mod, req, page, projectId, data);
 
 		} else {
-			//calculate total valuation of all projects
-			double total = 0;
-			double improvementTotal = 0;
-			for (ProjectVO proj : data) {
-				total += proj.getTotalNo();
-				if ("IMPROVEMENT".equals(proj.getProjectCategoryCd()))
-					improvementTotal += proj.getTotalNo();
-			}
-			mod.setAttribute("totalValue", total);
-			mod.setAttribute("totalValueImprovements", improvementTotal * RezDoxUtils.IMPROVEMENTS_VALUE_COEF);
+			calculateValuation(mod, data);
 		}
+	}
+
+
+	/**
+	 * Calculate total valuation of all projects
+	 * @param mod
+	 * @param data
+	 */
+	protected void calculateValuation(ModuleVO mod, List<ProjectVO> data) {
+		double total = 0;
+		double improvementTotal = 0;
+		for (ProjectVO proj : data) {
+			total += proj.getTotalNo();
+			if ("IMPROVEMENT".equals(proj.getProjectCategoryCd()))
+				improvementTotal += proj.getTotalNo();
+		}
+		mod.setAttribute("totalValue", total);
+		mod.setAttribute("totalValueImprovements", improvementTotal * RezDoxUtils.IMPROVEMENTS_VALUE_COEF);
+	}
+
+	/**
+	 * The prefilter is the dropdown at the top of the list page.  For business users its a list of businesses (this action),
+	 * for HomeHistory its a list of residences - for which this method is overwritten in HomeHistoryAction.
+	 * @param req
+	 * @param mod
+	 */
+	protected void loadPrefilter(ActionRequest req, ModuleVO mod) {
+		//load a list of businesses.  If there's only one, then choose the 1st as the default if one wasn't provided.
+		List<BusinessVO> bizList = loadBusinessList(req);
+		if (!req.hasParameter(BusinessAction.REQ_BUSINESS_ID) && !bizList.isEmpty())
+			req.setParameter(BusinessAction.REQ_BUSINESS_ID, bizList.get(0).getBusinessId());
+
+		//make sure session is loaded - this gets used by our <select> list loaders (MyResidences)
+		String sesBizId = StringUtil.checkVal(req.getSession().getAttribute(BusinessAction.REQ_BUSINESS_ID));
+		if (!sesBizId.equals(req.getParameter(BusinessAction.REQ_BUSINESS_ID)))
+			req.getSession().setAttribute(BusinessAction.REQ_BUSINESS_ID, req.getParameter(BusinessAction.REQ_BUSINESS_ID));
+
+		log.debug(String.format("loaded %d businesses", bizList.size()));
+		mod.setAttribute(FILTER_DATA_LST, bizList);
+	}
+
+
+	/**
+	 * overloaded method purposefully kept generic.
+	 * In this case/class, we want to present a list of Businesses this member has access to.
+	 * @param projData
+	 * @param req
+	 * @return
+	 */
+	protected List<BusinessVO> loadBusinessList(ActionRequest req) {
+		String oldBizId = req.getParameter(BusinessAction.REQ_BUSINESS_ID);
+		if (!StringUtil.isEmpty(oldBizId)) 
+			req.setParameter(BusinessAction.REQ_BUSINESS_ID, "");
+
+		BusinessAction ba = new BusinessAction(getDBConnection(), getAttributes());
+		List<BusinessVO> bizList = ba.retrieveBusinesses(req);
+
+		if (!StringUtil.isEmpty(oldBizId)) //put this back the way we found it
+			req.setParameter(BusinessAction.REQ_BUSINESS_ID, oldBizId);
+
+		return bizList;
 	}
 
 
@@ -126,24 +182,10 @@ public class ProjectAction extends SimpleActionAdapter {
 			String projectId, List<ProjectVO> data) throws ActionException {
 		boolean isInvoice = "invoice".equals(page);
 		if ("edit".equals(page) || "view".equals(page) || isInvoice) {
-			//load the form if we're in edit mode
-			DataContainer dc = loadForm(req);
-			mod.setAttribute("dataContainer", dc);
-
-			if (data.size() == 1) {
-				//move the form data over to the VO for transparency in View display
-				ProjectVO vo = data.get(0);
-				for (FormFieldVO ff: dc.getTransactions().get(projectId).getCustomData().values())
-					vo.addAttribute(ff.getSlugTxt(), ff.getResponseText());
-
-				if (isInvoice) {
-					//load the project materials
-					vo.setMaterials(loadInvoiceMaterials(req));
-					vo.setBusiness(loadBusiness(vo.getBusinessId()));
-				}
-			}
+			loadProjectDetails(mod, req, projectId, data, isInvoice);
 
 		} else if ("materials".equals(page)) {
+			mod.setAttribute("projects", mod.getActionData());
 			//load the project materials
 			loadMaterials(req);
 		}
@@ -157,15 +199,48 @@ public class ProjectAction extends SimpleActionAdapter {
 
 
 	/**
-	 * loads the business tied to this project for generating their invoice
+	 * populates the project details needed for View
+	 * @param mod
+	 * @param req
+	 * @param projectId
+	 * @param data
+	 * @param isInvoice
+	 */
+	@SuppressWarnings("unchecked")
+	private void loadProjectDetails(ModuleVO mod, ActionRequest req, 
+			String projectId, List<ProjectVO> data, boolean isInvoice) {
+		//load the form if we're in edit mode
+		DataContainer dc = loadForm(req);
+		mod.setAttribute("dataContainer", dc);
+
+		if (data.size() == 1) {
+			//move the form data over to the ProjectVO for transparency in View display
+			ProjectVO vo = data.get(0);
+			FormTransactionVO trans = dc.getTransactions().get(projectId);
+			if (trans == null) trans = new FormTransactionVO();
+			for (FormFieldVO ff: trans.getCustomData().values())
+				vo.addAttribute(ff.getSlugTxt(), ff.getResponseText());
+
+			if (isInvoice) {
+				//load the project materials
+				vo.setMaterials(loadInvoiceMaterials(req));
+				vo.setBusiness(getBusiness((List<BusinessVO>)mod.getAttribute(FILTER_DATA_LST), vo.getBusinessId()));
+			}
+		}
+	}
+
+	/**
+	 * loads the business tied to this project for generating their invoice.
 	 * @param req
 	 * @return
 	 */
-	private BusinessVO loadBusiness(String businessId) {
-		BusinessAction ba = new BusinessAction(getDBConnection(), getAttributes());
-		List<BusinessVO>  data = ba.retrieveBusinesses(businessId);
-		return (data != null &&  data.size() == 1) ? data.get(0) : new BusinessVO();
-
+	private BusinessVO getBusiness(List<BusinessVO> data, String businessId) {
+		if (data == null || data.isEmpty()) return null;
+		for (BusinessVO vo : data) {
+			if (vo.getBusinessId().equals(businessId))
+				return vo;
+		}
+		return null;
 	}
 
 	/**
@@ -176,6 +251,8 @@ public class ProjectAction extends SimpleActionAdapter {
 	 */
 	protected List<ProjectVO> loadProjectList(ActionRequest req, String projectId) {
 		String schema = getCustomSchema();
+		List<Object> params = new ArrayList<>();
+
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select a.*, b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
 		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id ");
@@ -187,15 +264,17 @@ public class ProjectAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.status_flg=1 ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_MEMBER m on rm.member_id=m.member_id "); //this is the home owner
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_ROOM rr on r.residence_id=rr.residence_id ");
-		sql.append("where a.business_id=? and a.business_view_flg=1 ");
-		if (!StringUtil.isEmpty(projectId)) sql.append("and a.project_id=? ");
+		sql.append("where a.business_view_flg=1 ");
+
+		if (!StringUtil.isEmpty(projectId)) {
+			sql.append("and a.project_id=? ");
+			params.add(projectId);
+		} else { //list page - filter by businessId
+			sql.append("and a.business_id=? ");
+			params.add(req.getParameter(BusinessAction.REQ_BUSINESS_ID));
+		}
 		sql.append("order by a.end_dt desc, a.project_nm");
 		log.debug(sql);
-
-		List<Object> params = new ArrayList<>();
-		params.add(RezDoxUtils.getBusinessId(req));
-		if (!StringUtil.isEmpty(projectId)) params.add(projectId);
-
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), params, new ProjectVO());
@@ -345,6 +424,11 @@ public class ProjectAction extends SimpleActionAdapter {
 		} else if (req.hasParameter("deleteItem")) {
 			hideProject(req);
 			doRedirect = true;
+			if (req.hasParameter(ResidenceAction.RESIDENCE_ID)) {
+				url = StringUtil.join("?", ResidenceAction.RESIDENCE_ID, "=", req.getParameter(ResidenceAction.RESIDENCE_ID));
+			} else if (req.hasParameter(BusinessAction.REQ_BUSINESS_ID)) {
+				url = StringUtil.join("?", BusinessAction.REQ_BUSINESS_ID, "=", req.getParameter(BusinessAction.REQ_BUSINESS_ID));
+			}
 
 		} else if (req.hasParameter("discounts")) {
 			saveDiscounts(req);
@@ -429,11 +513,12 @@ public class ProjectAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder (150);
 		String column = req.hasParameter("isOwner") ? "residence_view_flg" : "business_view_flg";
 		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("REZDOX_PROJECT set ");
-		sql.append(column).append("=0, update_dt=CURRENT_TIMESTAMP where project_id=?");
+		sql.append(column).append("=?, update_dt=CURRENT_TIMESTAMP where project_id=?");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, req.getParameter(REQ_PROJECT_ID));
+			ps.setInt(1, Convert.formatInteger(req.getParameter("visibleFlg"), 0));
+			ps.setString(2, req.getParameter(REQ_PROJECT_ID));
 			ps.executeUpdate();
 
 		} catch (SQLException sqle) {
