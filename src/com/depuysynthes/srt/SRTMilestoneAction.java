@@ -560,8 +560,11 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 */
 	private String loadProjectMilestonesSql(int size) {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from ").append(getCustomSchema());
-		sql.append("DPY_SYN_SRT_PROJECT_MILESTONE_XR where PROJECT_ID in (");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
+		sql.append("DPY_SYN_SRT_PROJECT_MILESTONE_XR x ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("DPY_SYN_SRT_MILESTONE m  on x.milestone_id = m.milestone_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" PROJECT_ID in (");
 		DBUtil.preparedStatmentQuestion(size, sql);
 		sql.append(") order by PROJECT_ID");
 

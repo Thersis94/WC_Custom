@@ -537,7 +537,11 @@ public class SRTUserImport extends CommandLineUtil {
 		user.setWorkgroupId(StringUtil.checkVal(dataSet.get(ImportField.WORKGROUP_ID.name())));
 		user.setIsActive(Convert.formatBoolean(dataSet.get(ImportField.IS_ACTIVE.name())));
 		user.setCompanyRole(StringUtil.checkVal(dataSet.get(ImportField.ROLE_TXT.name())));
-		user.setOpCoId(StringUtil.checkVal(dataSet.get(ImportField.OP_CO_ID.name())));
+		if(user.getFullName().contains("EMEA")) {
+			user.setOpCoId("EMEA_SPINE");
+		} else {
+			user.setOpCoId(StringUtil.checkVal(dataSet.get(ImportField.OP_CO_ID.name())));
+		}
 		user.setRosterEmailAddress(StringUtil.checkVal(dataSet.get(ImportField.ROSTER_EMAIL_ADDRESS_TXT.name())));
 		user.setCoRosterId(StringUtil.checkVal(dataSet.get(ImportField.CO_ROSTER_ID.name())));
 
