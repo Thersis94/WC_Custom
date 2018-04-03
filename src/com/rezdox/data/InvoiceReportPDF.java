@@ -45,6 +45,8 @@ public class InvoiceReportPDF extends AbstractSBReportVO {
 		this.fqdn = fqdn;
 		this.imageBase = fqdn + relaImgBase;
 		setFileName("Invoice.pdf");
+		currency.setMaximumFractionDigits(2);
+		percent.setMaximumFractionDigits(2);
 	}
 
 

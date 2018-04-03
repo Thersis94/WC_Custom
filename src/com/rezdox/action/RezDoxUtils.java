@@ -127,18 +127,6 @@ public class RezDoxUtils {
 	 * @return
 	 */
 	public static String getMemberId(ActionRequest req) {
-		MemberVO member = (MemberVO) req.getSession().getAttribute(Constants.USER_DATA);
-		return member.getMemberId();
-	}
-
-
-	/**
-	 * Returns the businessId from session (UserDataVO)
-	 * @param req
-	 * @return
-	 */
-	public static String getBusinessId(ActionRequest req) {
-		MemberVO member = (MemberVO) req.getSession().getAttribute(Constants.USER_DATA);
-		return member.getBusinessId();
+		return getMember(req).getMemberId();
 	}
 }
