@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.BusinessAction.BusinessStatus;
+import com.rezdox.data.BusinessFormProcessor;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 // SMTBaseLibs
@@ -50,11 +51,6 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private BusinessStatus status;
 	private Date createDate;
 	private Date updateDate;
-
-	/**
-	 * Special use keys for values from the attributes table in the attibutes map
-	 */
-	private static final String SLUG_BUSINESS_SUMMARY = "BUSINESS_SUMMARY";
 
 	public BusinessVO() {
 		super();
@@ -268,14 +264,14 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 * @return the summaryText
 	 */
 	public String getSummaryText() {
-		return attributes.get(SLUG_BUSINESS_SUMMARY);
+		return attributes.get(BusinessFormProcessor.SLUG_BUSINESS_SUMMARY);
 	}
 
 	/**
 	 * @param summaryText the summaryText to set
 	 */
 	public void setSummaryText(String summaryText) {
-		attributes.put(SLUG_BUSINESS_SUMMARY, summaryText);
+		attributes.put(BusinessFormProcessor.SLUG_BUSINESS_SUMMARY, summaryText);
 	}
 
 	/**

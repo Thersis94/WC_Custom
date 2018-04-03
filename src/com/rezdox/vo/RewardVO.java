@@ -29,6 +29,7 @@ public class RewardVO {
 	private int pointsNo;
 	private int orderNo;
 	private int activeFlg;
+	private int featureFlg;
 	private String imageUrl;
 	private double currencyValueNo;
 
@@ -86,6 +87,11 @@ public class RewardVO {
 		return activeFlg;
 	}
 
+	@Column(name="feature_flg")
+	public int getFeatureFlg() {
+		return featureFlg;
+	}
+
 	@Column(name="image_url")
 	public String getImageUrl() {
 		return imageUrl;
@@ -141,6 +147,10 @@ public class RewardVO {
 
 	public void setActiveFlg(int activeFlg) {
 		this.activeFlg = activeFlg;
+	}
+
+	public void setFeatureFlg(int featureFlg) {
+		this.featureFlg = featureFlg;
 	}
 
 	public void setImageUrl(String imageUrl) {

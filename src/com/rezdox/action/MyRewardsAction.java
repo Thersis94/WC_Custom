@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +45,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class MyRewardsAction extends SimpleActionAdapter {
 
-	private static final String MY_POINTS = "rezdoxMemberRewardPoints";
+	public static final String MY_POINTS = "rezdoxMemberRewardPoints";
 
 
 	public MyRewardsAction() {
@@ -92,12 +93,7 @@ public class MyRewardsAction extends SimpleActionAdapter {
 		HttpServletResponse resp = (HttpServletResponse) getAttribute(GlobalConfig.HTTP_RESPONSE);
 		CookieUtil.add(resp, MY_POINTS, String.valueOf(points), "/", -1);
 
-		//if this is the ajax call, we only want to return a point count, not reward data
-		if (req.hasParameter("pointsOnly")) {
-			putModuleData(points);
-		} else {
-			mod.setAttribute(MY_POINTS, points); //for JSP, which won't see the cookie if just created
-		}
+		mod.setAttribute(MY_POINTS, points); //for JSP, which won't see the cookie if just created
 	}
 
 
@@ -163,7 +159,7 @@ public class MyRewardsAction extends SimpleActionAdapter {
 		}
 
 		//get point totals for each of these members.
-		Map<String, Integer> pointTotals = getPointTotals(memberIds);
+		Map<String, Integer> pointTotals = getPointTotals(memberIds, true);
 		for (MemberRewardVO vo : data) {
 			vo.setMyPointsNo(Convert.formatInteger(pointTotals.get(vo.getMemberId())));
 		}
@@ -176,13 +172,14 @@ public class MyRewardsAction extends SimpleActionAdapter {
 	 * @param memberIds
 	 * @return
 	 */
-	private Map<String, Integer> getPointTotals(List<String> memberIds) {
+	private Map<String, Integer> getPointTotals(List<String> memberIds, boolean approvedOnly) {
 		Map<String, Integer> data = new HashMap<>(memberIds.size());
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select member_id, sum(point_value_no) from ").append(getCustomSchema());
 		sql.append("REZDOX_MEMBER_REWARD where member_id in (");
 		DBUtil.preparedStatmentQuestion(memberIds.size(), sql);
-		sql.append(") and approval_flg=1 "); //only approved rewards counts towards their available total
+		sql.append(") ");
+		if (approvedOnly) sql.append(" and approval_flg=1 "); //only approved rewards counts towards their available total
 		sql.append("group by member_id");
 		log.debug(sql);
 
@@ -215,5 +212,18 @@ public class MyRewardsAction extends SimpleActionAdapter {
 		} catch (Exception e) {
 			return s;
 		}
+	}
+
+
+	/**
+	 * returns the number of points the given user has available to them.
+	 * used for number shown in left menu of theme.
+	 * @param memberId
+	 * @return
+	 */
+	public int getAvailablePoints(String memberId) {
+		Map<String, Integer> pts = this.getPointTotals(Arrays.asList(memberId), false);
+		Integer cnt = pts.get(memberId);
+		return cnt != null ? cnt : 0;
 	}
 }

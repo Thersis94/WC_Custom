@@ -90,16 +90,36 @@ public class MemberAction extends SBActionAdapter {
 		return dc.getForm();
 	}
 
+
 	/**
-	 * Retrieves member settings data for the specified member
+	 * Retrieves member settings data for the specified memberId
 	 * @param memberId
 	 * @return
 	 */
 	public MemberVO retrieveMemberData(String memberId) {
-		String sql = StringUtil.join(DBUtil.SELECT_FROM_STAR, getCustomSchema(), "rezdox_member where member_id=?");
+		return retrieveMemberData(memberId, null);
+	}
+
+	/**
+	 * Retrieves member settings data for the specified memberId or profileId
+	 * Overloaded to support the login module
+	 * @param memberId
+	 * @param profileId 
+	 * @return
+	 */
+	public MemberVO retrieveMemberData(String memberId, String profileId) {
+		String sql;
+		List<Object> params;
+		if (!StringUtil.isEmpty(profileId)) {
+			sql = StringUtil.join(DBUtil.SELECT_FROM_STAR, getCustomSchema(), "rezdox_member where profile_id=?");
+			params = Arrays.asList(profileId);
+		} else {
+			sql = StringUtil.join(DBUtil.SELECT_FROM_STAR, getCustomSchema(), "rezdox_member where member_id=?");
+			params = Arrays.asList(memberId);
+		}
 
 		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<MemberVO> data = dbp.executeSelect(sql, Arrays.asList(memberId), new MemberVO());
+		List<MemberVO> data = dbp.executeSelect(sql, params, new MemberVO());
 		return !data.isEmpty() ? data.get(0) : new MemberVO();
 	}
 
