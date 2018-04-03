@@ -6,8 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
 //SMTBaseLibs
 import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.UserDataVO;
@@ -15,7 +18,7 @@ import com.siliconmtn.security.UserDataVO;
 //WebCrescendo libs
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.DBLoginModule;
-
+import com.rezdox.action.ConnectionAction;
 //WC_Custom libs
 import com.rezdox.vo.MemberVO;
 
@@ -68,6 +71,10 @@ public class RezDoxLoginModule extends DBLoginModule {
 		member.setData(user.getDataMap());
 		member.setAttributes(user.getAttributes());
 		member.setAuthenticated(user.isAuthenticated());
+		
+		ConnectionAction ca = new ConnectionAction(dbConn, getAttributes());
+		HttpServletResponse resp = (HttpServletResponse) getAttribute(GlobalConfig.HTTP_RESPONSE);
+		CookieUtil.add(resp, ConnectionAction.REZDOX_CONNECTION_POINTS, String.valueOf(ca.getMemeberConnectionCount(member.getMemberId())), "/", -1);
 
 		return member;
 	}
