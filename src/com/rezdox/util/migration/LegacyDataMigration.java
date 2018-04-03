@@ -805,11 +805,11 @@ public class LegacyDataMigration extends CommandLineUtil {
 		log.info("Adding Memberships");
 		StringBuilder sql = new StringBuilder(600);
 		sql.append("insert into custom.rezdox_membership (membership_id, membership_nm, group_cd, status_flg, cost_no, qty_no, new_mbr_dflt_flg, create_dt) ");
-		sql.append("values (replace(newid(),'-',''), 'Residence', 'HO', 1, 9.99, 1, 1, getdate()), ");
-		sql.append("(replace(newid(),'-',''), 'Business', 'BU', 1, 79.99, 1, 1, getdate()), ");
-		sql.append("(replace(newid(),'-',''), '100 Connections', 'CO', 1, 99.99, 100, 1, getdate()), ");
-		sql.append("(replace(newid(),'-',''), '200 Connections', 'CO', 1, 179.99, 200, 0, getdate()), ");
-		sql.append("(replace(newid(),'-',''), '300 Connections', 'CO', 1, 239.99, 300, 0, getdate()) ");
+		sql.append("values ('RESIDENCE', 'Residence', 'HO', 1, 9.99, 1, 1, getdate()), ");
+		sql.append("('BUSINESS', 'Business', 'BU', 1, 79.99, 1, 1, getdate()), ");
+		sql.append("('CONNECTIONS100', '100 Connections', 'CO', 1, 99.99, 100, 1, getdate()), ");
+		sql.append("('CONNECTIONS200', '200 Connections', 'CO', 1, 179.99, 200, 0, getdate()), ");
+		sql.append("('CONNECTIONS300', '300 Connections', 'CO', 1, 239.99, 300, 0, getdate()) ");
 		executeSimpleMapping(sql, "membership");
 	}
 	
@@ -1412,6 +1412,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			List<ResidenceAttributeVO> attributes = new ArrayList<>();
 			ResidenceAttributeVO zestimateAttr = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_ZESTIMATE, "");
 			ResidenceAttributeVO walkScoreAttr = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_WALK_SCORE, "");
+			ResidenceAttributeVO transitScoreAttr = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_TRANSIT_SCORE, "");
 			ResidenceAttributeVO sunNumberAttr = new ResidenceAttributeVO(residence.getResidenceId(), ResidenceAction.SLUG_RESIDENCE_SUN_NUMBER, "");
 			
 			try {
@@ -1423,6 +1424,10 @@ public class LegacyDataMigration extends CommandLineUtil {
 				WalkScoreVO walkScore = walkScoreApi.retrieveWalkScore(residence);
 				walkScoreAttr.setValueText(Convert.formatInteger(walkScore.getWalkscore()).toString());
 				
+				if (walkScore.getTransit() != null) {
+					transitScoreAttr.setValueText(Convert.formatInteger(walkScore.getTransit().getScore()).toString());
+				}
+				
 				SunNumberAPIManager sunNumberApi = new SunNumberAPIManager();
 				SunNumberVO sunNumber = sunNumberApi.retrieveSunNumber(residence);
 				sunNumberAttr.setValueText(sunNumber.getSunNumber());
@@ -1432,6 +1437,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			
 			attributes.add(zestimateAttr);
 			attributes.add(walkScoreAttr);
+			attributes.add(transitScoreAttr);
 			attributes.add(sunNumberAttr);
 			
 			dbp.executeBatch(attributes);
