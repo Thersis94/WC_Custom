@@ -11,6 +11,7 @@ import java.util.Map;
 
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
+import com.biomed.smarttrak.vo.TeamVO;
 import com.biomed.smarttrak.vo.AccountVO.Status;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
@@ -325,9 +326,12 @@ public class AccountAction extends SBActionAdapter {
 				deactiveAccountUsers(account.getAccountId());
 			} else {
 				db.save(account);
-				//if an insert, set the generated ID on request for redirect
-				if(StringUtil.isEmpty(req.getParameter(ACCOUNT_ID))) 
+				// if an insert, set the generated ID on request for redirect
+				// and create the default team for the account.
+				if(StringUtil.isEmpty(req.getParameter(ACCOUNT_ID)))  {
 					req.setParameter(ACCOUNT_ID, account.getAccountId());
+					addDefaultTeam(req);
+				}
 				
 				//deactivate the users for the account if it has expired or becomes inactive
 				Date currentDt = Convert.formatStartDate(new Date());
@@ -341,6 +345,24 @@ public class AccountAction extends SBActionAdapter {
 		}
 	}
 	
+	
+	/**
+	 * Add a default team to the account.
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void addDefaultTeam(ActionRequest req) throws ActionException {
+		try {
+			DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+			TeamVO team = new TeamVO(req);
+			team.setTeamName("Default Team");
+			team.setDefaultFlg(1);
+			db.save(team);
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+	}
+
 	/**
 	 * Deactivates users from an associated account if the account has been set to inactive or expires
 	 * @param accountId

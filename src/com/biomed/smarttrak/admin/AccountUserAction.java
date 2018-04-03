@@ -29,6 +29,7 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.LastNameComparator;
 
@@ -283,6 +284,12 @@ public class AccountUserAction extends SBActionAdapter {
 		req.setAttribute("statusMap", new GenericVO(active, open));
 	}
 	
+	
+	/**
+	 * Ensure that a status count is present and increment it.
+	 * @param status
+	 * @param section
+	 */
 	private void incrementStatus(Map<String, Integer> status, String section) {
 		if (!status.containsKey(section)) 
 			status.put(section, 0);
@@ -646,10 +653,39 @@ public class AccountUserAction extends SBActionAdapter {
 
 		//save their UserVO (smarttrak user table)
 		saveRecord(user, false);
+		
+		// If this is a new user add them to the default account.
+		if (StringUtil.isEmpty(req.getParameter("userId")))
+			addToDefaultTeam(user);
 
 		setupRedirect(req);
 	}
 
+
+	/**
+	 * Add the user to the default team of thier account
+	 * @param user
+	 * @throws ActionException
+	 */
+	private void addToDefaultTeam(UserVO user) throws ActionException {
+		StringBuilder sql = new StringBuilder(200);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("insert into ").append(customDb).append("biomedgps_user_team_xr ");
+		sql.append("(user_team_xr_id, team_id, user_id, create_dt) ");
+		sql.append("select ?, team_id, ?, CURRENT_TIMESTAMP from ");
+		sql.append(customDb).append("biomedgps_team where ");
+		sql.append("account_id = ? and default_flg = 1 ");
+		log.debug(sql+"|"+user.getUserId()+"|"+user.getAccountId());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, new UUIDGenerator().getUUID());
+			ps.setString(2, user.getUserId());
+			ps.setString(3, user.getAccountId());
+			
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
 
 	/**
 	 * Handles the onBlur ajax call to quick-save the user's notes textarea
