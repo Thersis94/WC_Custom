@@ -251,12 +251,13 @@ Create table custom.REZDOX_MEMBERSHIP
 (
 	MEMBERSHIP_ID Varchar(32) NOT NULL,
 	MEMBERSHIP_NM Varchar(50) NOT NULL,
+	DESCRIPTION_TXT Text,
 	GROUP_CD Varchar(5) NOT NULL,
 	STATUS_FLG Integer NOT NULL Default 0,
 	COST_NO Double precision NOT NULL,
 	QTY_NO Integer NOT NULL Default 1,
 	NEW_MBR_DFLT_FLG Integer NOT NULL Default 0,
-	PAYPAL_BUTTON_TXT Text,
+	PAYPAL_BUTTON_ID Varchar(20),
 	CREATE_DT Timestamp NOT NULL,
 	UPDATE_DT Timestamp,
 constraint pk_REZDOX_MEMBERSHIP primary key (MEMBERSHIP_ID)

@@ -153,3 +153,18 @@ alter table custom.rezdox_project add proj_tax_no decimal(7,5);
 alter table custom.rezdox_project add mat_discount_no decimal(7,5);
 alter table custom.rezdox_project add mat_tax_no decimal(7,5);
 alter table custom.REZDOX_RESIDENCE_MEMBER_XR add update_dt timestamp;
+
+-- add profile data to member for easier searching
+alter table custom.rezdox_member add first_nm varchar(60);
+alter table custom.rezdox_member add last_nm varchar(80);
+alter table custom.rezdox_member add email_address_txt varchar(250);
+
+-- fill in empty values from api
+update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'RESIDENCE_WALK_SCORE' and value_txt = '';
+update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'RESIDENCE_TRANSIT_SCORE' and value_txt = '';
+update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'RESIDENCE_SUN_NUMBER' and value_txt = '';
+update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'RESIDENCE_SUN_NUMBER' and value_txt is null;
+
+-- changes to memberships, using button ids instead of full button html
+-- this query only needs to be run in staging after code push
+-- alter table custom.rezdox_membership drop paypal_button_txt;

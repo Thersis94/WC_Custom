@@ -1,21 +1,24 @@
 package com.rezdox.security;
 
 // Java 8
-import java.sql.Connection;
 import java.util.Map;
+import javax.servlet.http.HttpServletResponse;
 
 //SMTBaseLibs
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
 //WebCrescendo libs
 import com.smt.sitebuilder.security.DBLoginModule;
+import com.rezdox.action.ConnectionAction;
 
 //WC_Custom libs
 import com.rezdox.vo.MemberVO;
 import com.rezdox.action.MemberAction;
+import com.rezdox.action.MyRewardsAction;
 
 /*****************************************************************************
  <p><b>Title</b>: RezDoxLoginModule</p>
@@ -50,10 +53,11 @@ public class RezDoxLoginModule extends DBLoginModule {
 	@Override
 	public MemberVO loadUserData(String profileId, String authenticationId) {
 		UserDataVO user = super.loadUserData(profileId, authenticationId);
-		Connection dbConn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
+		SMTDBConnection dbConn = (SMTDBConnection) getAttribute(GlobalConfig.KEY_DB_CONN);
+		HttpServletResponse resp = (HttpServletResponse) getAttribute(GlobalConfig.HTTP_RESPONSE);
 
 		// Get the member data by calling the member action
-		MemberAction ma = new MemberAction(new SMTDBConnection(dbConn), getAttributes());
+		MemberAction ma = new MemberAction(dbConn, getAttributes());
 		MemberVO member = ma.retrieveMemberData(null, user.getProfileId());
 		if (StringUtil.isEmpty(member.getMemberId())) return null;
 
@@ -61,6 +65,15 @@ public class RezDoxLoginModule extends DBLoginModule {
 		member.setData(user.getDataMap());
 		member.setAttributes(user.getAttributes());
 		member.setAuthenticated(user.isAuthenticated());
+
+		//load a count of the user's connections into a cookie for display in the left menu
+		ConnectionAction ca = new ConnectionAction(dbConn, getAttributes());
+		CookieUtil.add(resp, ConnectionAction.REZDOX_CONNECTION_POINTS, String.valueOf(ca.getMemeberConnectionCount(member.getMemberId())), "/", -1);
+
+		//load a count of the user's RezRewards into a cookie for display in the left menu
+		MyRewardsAction rewards = new MyRewardsAction(dbConn, getAttributes());
+		int pts = rewards.getAvailablePoints(member.getMemberId());
+		CookieUtil.add(resp, MyRewardsAction.MY_POINTS, String.valueOf(pts), "/", -1);
 
 		return member;
 	}
