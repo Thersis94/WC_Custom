@@ -1,10 +1,12 @@
 package com.rezdox.action;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.rezdox.vo.BusinessReviewVO;
+import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.MemberVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -12,6 +14,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
@@ -75,7 +78,7 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected List<BusinessReviewVO> retrieveReviews(ActionRequest req) throws ActionException {
+	protected List<BusinessReviewVO> retrieveReviews(ActionRequest req) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		BusinessReviewVO options = new BusinessReviewVO(req);
@@ -184,11 +187,39 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 				dbp.delete(review);
 			} else {
 				dbp.save(review);
+				
+				if(!req.hasParameter(BusinessAdminDataTool.REQ_ADMIN_MODERATE)) {
+					sendReviewEmail(req);
+				}
 			}
 		} catch(Exception e) {
 			log.error("Could not save or delete business review", e);
 		}
 
 		putModuleData(review.getBusinessReviewId(), 1, false);
+	}
+	
+	/**
+	 * Sends notification to the business about a review that was left
+	 * 
+	 * @param req
+	 */
+	private void sendReviewEmail(ActionRequest req) {
+		// Get the details for the business in question, using the businessId from the request
+		BusinessAction ba = new BusinessAction(dbConn, attributes);
+		BusinessVO business = ba.retrieveBusinesses(req).get(0);
+		
+		// Create the data map for the email
+		Map<String, Object> dataMap = new HashMap<>();
+		dataMap.put("reviewerName", RezDoxUtils.getMember(req).getFullName());
+		dataMap.put("businessName", business.getBusinessName());
+
+		// Set the recipient
+		Map<String, String> rcptMap = new HashMap<>();
+		rcptMap.put(business.getMembers().get(0).getProfileId(), business.getEmailAddressText());
+		
+		// Send the email
+		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		util.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.REVIEW_BUSINESS.name());
 	}
 }

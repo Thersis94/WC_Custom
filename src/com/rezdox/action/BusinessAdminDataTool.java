@@ -2,8 +2,11 @@ package com.rezdox.action;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.rezdox.action.BusinessAction.BusinessStatus;
 import com.rezdox.data.BusinessCategoryList;
 import com.rezdox.vo.BusinessReviewVO;
 import com.rezdox.vo.BusinessVO;
@@ -11,6 +14,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -78,11 +82,15 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 		String msg = null;
 
 		if (req.hasParameter(REQ_APPROVE_BUSINESS)) {
-			// Set values required for approval or denial of business
-			BusinessVO business = new BusinessVO();
-			business.setBusinessId(req.getParameter(BusinessAction.REQ_BUSINESS_ID));
+			BusinessAction ba = new BusinessAction(dbConn, attributes);
+			BusinessVO business = ba.retrieveBusinesses(req).get(0);
+			
+			// Set value required for approval or denial of business
 			business.setStatusCode(Convert.formatInteger(req.getParameter(REQ_APPROVE_BUSINESS)));
 			msg = setBusinessStatus(business);
+			
+			// Send confirmation to the business member
+			sendApprovalStatusEmail(business);
 			
 		} else if (req.hasParameter(REQ_APPROVE_REVIEW)) {
 			// Set values required for moderation of review
@@ -134,6 +142,29 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 		}
 		
 		return (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+	}
+	
+	/**
+	 * Sends an email confirmation to the business member as to
+	 * whether the business was approved or denied
+	 * 
+	 * @param business
+	 */
+	private void sendApprovalStatusEmail(BusinessVO business) {
+		Map<String, Object> dataMap = new HashMap<>();
+		dataMap.put("businessName", business.getBusinessName());
+
+		Map<String, String> rcptMap = new HashMap<>();
+		rcptMap.put(business.getMembers().get(0).getProfileId(), business.getEmailAddressText());
+
+		// Send the appropriate email based on the approval status
+		String emailSlug = RezDoxUtils.EmailSlug.BUSINESS_APPROVED.name();
+		if (business.getStatus() == BusinessStatus.INACTIVE) {
+			emailSlug = RezDoxUtils.EmailSlug.BUSINESS_DECLINED.name();
+		}
+		
+		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		util.sendMessage(dataMap, rcptMap, emailSlug);
 	}
 
 	/**

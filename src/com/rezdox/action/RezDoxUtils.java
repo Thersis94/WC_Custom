@@ -90,7 +90,7 @@ public class RezDoxUtils {
 	 * email slugs that correlated to the database/email campaigns.
 	 */
 	public enum EmailSlug {
-		TRANSFER_WAITING, TRANSFER_COMPLETE;
+		TRANSFER_WAITING, TRANSFER_COMPLETE, BUSINESS_APPROVED, BUSINESS_DECLINED, INVITE_ACCEPTED, REVIEW_BUSINESS;
 	}
 
 	private RezDoxUtils() {
