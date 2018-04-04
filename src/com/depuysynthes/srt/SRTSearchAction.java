@@ -2,7 +2,9 @@ package com.depuysynthes.srt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.common.SolrDocument;
 
@@ -11,11 +13,14 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.workflow.WorkflowLookupUtil;
+import com.siliconmtn.workflow.data.WorkflowMessageVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.WorkflowSender;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -46,7 +51,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if(req.hasParameter("export")) {
+		if(req.getBooleanParameter("isExport")) {
 			exportResults(req);
 		} else if(req.hasParameter(REQ_SEARCH_DATA)){
 			searchSolr(req);
@@ -82,6 +87,22 @@ public class SRTSearchAction extends SimpleActionAdapter {
 			log.debug("Loading results for page " + resp.getPage() + " of " + resp.getPageCount());
 		}
 		while(projectIds.size() < resp.getTotalResponses());
+
+		WorkflowSender wfs = new WorkflowSender(attributes);
+		wfs.sendWorkflow(buildWorkflowMessage(projectIds, req.getParameter("emailAddress", "billy@siliconmtn.com")));
+	}
+
+	/**
+	 * @param projectIds
+	 * @return
+	 */
+	private WorkflowMessageVO buildWorkflowMessage(List<String> projectIds, String emailAddress) {
+		Map<String, Object> params = new HashMap<>();
+		params.put("projectId", projectIds);
+		params.put("DEST_EMAIL_ADDR", emailAddress);
+		WorkflowMessageVO wmv = new WorkflowMessageVO(new WorkflowLookupUtil(dbConn).lookupWorkflowId("REPORT", "SRT_REPORT"));
+		wmv.setParameters(params);
+		return wmv;
 	}
 
 	/**
@@ -127,11 +148,9 @@ public class SRTSearchAction extends SimpleActionAdapter {
 		req.setParameter(REQ_SEARCH_DATA, "");
 
 		//Convert Bootstrap Table Pagination to Solr Pagination
-		if(req.hasParameter(REQ_BOOTSTRAP_LIMIT) && ! req.getBooleanParameter("isExport")) {
+		if(req.hasParameter(REQ_BOOTSTRAP_LIMIT)) {
 			req.setParameter("rpp", req.getParameter(REQ_BOOTSTRAP_LIMIT));
 			req.setParameter("page", Integer.toString(req.getIntegerParameter("offset") / req.getIntegerParameter(REQ_BOOTSTRAP_LIMIT, 25)));
-		} else {
-			req.setParameter("rpp", Integer.toString(5000));
 		}
 
 		//Convert Bootstrap Table Sort to Solr Sort

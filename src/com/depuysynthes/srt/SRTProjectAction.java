@@ -68,7 +68,67 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	}
 
 	@Override
-	public void copy(ActionRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
+		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
+		MilestoneTypeId typeId = null;
+
+		if(req.hasParameter(SRT_PROJECT_ID) || req.hasParameter("json")) {
+			GridDataVO<SRTProjectVO> projects = loadProjects(req);
+
+			if(req.hasParameter(SRT_PROJECT_ID)) {
+				loadDataFromForms(req);
+				req.setAttribute("ownsLock", StringUtil.checkVal(manageLock(req, false)));
+			}
+
+			putModuleData(projects.getRowData(), projects.getTotal(), false);
+		} else {
+			typeId = MilestoneTypeId.STATUS;
+		}
+
+		/*
+		 * Always Ensure we have a valid up to date Lock Map.  Should only
+		 * be relevant on first hit to the system.  Ensures that if a user
+		 * leaves and session times out before save is hit to release locks,
+		 * the next time they log in and access the project page, their
+		 * old locks are loaded.
+		 */
+		if(req.getSession().getAttribute(SRT_PROJECT_LOCKS) == null) {
+			req.getSession().setAttribute(SRT_PROJECT_LOCKS, getMyLocks(req));
+		}
+
+		//Retrieve list of Milestones from DB for Request.
+		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), typeId, null, false);
+		req.setAttribute("milestones", milestones);
+	}
+
+
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+
+		//Determine what kind of build action is being performed.
+		if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
+			splitProject(req);
+		} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
+			copyProject(req);
+		} else if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
+			releaseLocks(req);
+		} else {
+			saveProject(req);
+
+			//Release all Locks on save.
+			releaseLocks(req);
+		}
+
+		//Redirect the User.
+		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), SrtPage.PROJECT.getUrlPath());
+	}
+
+	/**
+	 * Perform Copy of Project Record.
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void copyProject(ActionRequest req) throws ActionException {
 
 		//Load Roster Data.
 		SRTRosterAction sra = (SRTRosterAction)ActionControllerFactoryImpl.loadAction(SRTRosterAction.class.getName(), this);
@@ -113,62 +173,6 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		} catch (Exception e) {
 			log.error("Unable to add/copy Project.", e);
 		}
-	}
-
-	@Override
-	public void retrieve(ActionRequest req) throws ActionException {
-		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
-		MilestoneTypeId typeId = null;
-
-		if(req.hasParameter(SRT_PROJECT_ID) || req.hasParameter("json")) {
-			GridDataVO<SRTProjectVO> projects = loadProjects(req);
-
-			if(req.hasParameter(SRT_PROJECT_ID)) {
-				loadDataFromForms(req);
-				req.setAttribute("ownsLock", StringUtil.checkVal(manageLock(req, false)));
-			}
-
-			putModuleData(projects.getRowData(), projects.getTotal(), false);
-		} else {
-			typeId = MilestoneTypeId.STATUS;
-		}
-
-		/*
-		 * Always Ensure we have a valid up to date Lock Map.  Should only
-		 * be relevant on first hit to the system.  Ensures that if a user
-		 * leaves and session times out before save is hit to release locks,
-		 * the next time they log in and access the project page, their
-		 * old locks are loaded.
-		 */
-		if(req.getSession().getAttribute(SRT_PROJECT_LOCKS) == null) {
-			req.getSession().setAttribute(SRT_PROJECT_LOCKS, getMyLocks(req));
-		}
-
-		//Retrieve list of Milestones from DB for Request.
-		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), typeId, null, false);
-		req.setAttribute("milestones", milestones);
-	}
-
-
-	@Override
-	public void build(ActionRequest req) throws ActionException {
-
-		//Determine what kind of build action is being performed.
-		if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
-			splitProject(req);
-		} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
-			copy(req);
-		} else if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
-			releaseLocks(req);
-		} else {
-			saveProject(req);
-
-			//Release all Locks on save.
-			releaseLocks(req);
-		}
-
-		//Redirect the User.
-		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), SrtPage.PROJECT.getUrlPath());
 	}
 
 	/**
