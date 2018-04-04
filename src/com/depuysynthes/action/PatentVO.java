@@ -1,13 +1,14 @@
 package com.depuysynthes.action;
 
+// Java 8
 import java.sql.ResultSet;
 
-import com.siliconmtn.annotations.DataType;
-import com.siliconmtn.annotations.Importable;
+// SMTBaseLibs
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBModuleVO;
 
+// WebCrescendo libs
+import com.smt.sitebuilder.action.SBModuleVO;
 
 /**
  * **************************************************************************
@@ -19,54 +20,134 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * @author James McKain
  * @version 1.0
  * @since Dec 4, 2015
+ * Change Log:
+ * 2018-04-02: DBargerhuff, DS-392, implementing patent mgmt data tool
  ***************************************************************************
  */
 public class PatentVO extends SBModuleVO {
 	private static final long serialVersionUID = -7637893290584665787L;
-	public String company;
-	public String code;
-	public String item;
-	public String desc;
-	public String patents;
+	private int patentId;
+	private String company;
+	/**
+	 * Primary Bar Code of the Patent
+	 */
+	private String code;
+	/**
+	 * Reference
+	 */
+	private String item;
+	private String desc;
+	/**
+	 * Patent numbers specified for this patent record
+	 */
+	private String patents;
 	private String redirectAddress;
 	private String redirectName;
+	
+	private int statusFlag;
 
 	public PatentVO() {
 		super();
 	}
-
+	
 	public PatentVO(ResultSet rs) {
-		this();
+		super(rs);
 		DBUtil dbUtil = new DBUtil();
-		//this.company = dbUtil.getStringVal("company_nm", rs);
+		this.patentId = dbUtil.getIntVal("patent_id", rs);
+		this.company = dbUtil.getStringVal("company_nm", rs);
 		this.code = dbUtil.getStringVal("code_txt", rs);
 		this.item = dbUtil.getStringVal("item_txt", rs);
 		this.desc = dbUtil.getStringVal("desc_txt", rs);
 		this.patents = dbUtil.getStringVal("patents_txt", rs);
 		this.redirectAddress = dbUtil.getStringVal("redirect_address_txt", rs);
 		this.redirectName = dbUtil.getStringVal("redirect_nm", rs);
+		this.statusFlag = dbUtil.getIntVal("status_flg", rs);
 	}
 
+	/**
+	 * @return the patentId
+	 */
+	public int getPatentId() {
+		return patentId;
+	}
+
+	/**
+	 * @param patentId the patentId to set
+	 */
+	public void setPatentId(int patentId) {
+		this.patentId = patentId;
+	}
+
+	/**
+	 * @return the company
+	 */
 	public String getCompany() {
 		return company;
 	}
 
+	/**
+	 * @param company the company to set
+	 */
+	public void setCompany(String company) {
+		this.company = company;
+	}
+
+	/**
+	 * @return the code
+	 */
 	public String getCode() {
 		return code;
 	}
 
+	/**
+	 * @param code the code to set
+	 */
+	public void setCode(String code) {
+		this.code = code;
+	}
+
+	/**
+	 * @return the item
+	 */
 	public String getItem() {
 		return item;
 	}
 
+	/**
+	 * @param item the item to set
+	 */
+	public void setItem(String item) {
+		this.item = item;
+	}
+
+	/**
+	 * @return the desc
+	 */
 	public String getDesc() {
 		return desc;
 	}
 
+	/**
+	 * @param desc the desc to set
+	 */
+	public void setDesc(String desc) {
+		this.desc = desc;
+	}
+
+	/**
+	 * @return the patents
+	 */
 	public String getPatents() {
 		return patents;
 	}
-	
+
+	/**
+	 * @param patents the patents to set
+	 */
+	public void setPatents(String patents) {
+		this.patents = patents;
+	}
+
 	/**
 	 * @return the redirectAddress
 	 */
@@ -79,45 +160,38 @@ public class PatentVO extends SBModuleVO {
 	}
 
 	/**
+	 * @param redirectAddress the redirectAddress to set
+	 */
+	public void setRedirectAddress(String redirectAddress) {
+		this.redirectAddress = redirectAddress;
+	}
+
+	/**
 	 * @return the redirectName
 	 */
 	public String getRedirectName() {
 		return redirectName;
 	}
 
-	@Importable(name = "Operating Company", type = DataType.STRING)
-	public void setOperatingCompany(String company) {
-		this.company = company;
-	}
-
-	@Importable(name = "Bar Code", type = DataType.STRING)
-	public void setBarCode(String code) {
-		this.code = code;
-	}
-
-	@Importable(name = "Item Number", type = DataType.STRING)
-	public void setItemNumber(String item) {
-		this.item = item;
-	}
-
-	@Importable(name = "Product Description", type = DataType.STRING)
-	public void setProductDescription(String desc) {
-		this.desc = desc;
-	}
-
-	@Importable(name = "Patents", type = DataType.STRING)
-	public void setPatents(String patents) {
-		this.patents = patents;
-	}
-	
-	@Importable(name = "Redirect Address", type = DataType.STRING)
-	public void setRedirectAddress(String redirectAddress) {
-		this.redirectAddress = redirectAddress;
-	}
-	
-	@Importable(name = "Redirect Name", type = DataType.STRING)
+	/**
+	 * @param redirectName the redirectName to set
+	 */
 	public void setRedirectName(String redirectName) {
 		this.redirectName = redirectName;
 	}
-	
+
+	/**
+	 * @return the statusFlag
+	 */
+	public int getStatusFlag() {
+		return statusFlag;
+	}
+
+	/**
+	 * @param statusFlag the statusFlag to set
+	 */
+	public void setStatusFlag(int statusFlag) {
+		this.statusFlag = statusFlag;
+	}
+
 }
