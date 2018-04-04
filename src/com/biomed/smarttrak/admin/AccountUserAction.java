@@ -459,10 +459,38 @@ public class AccountUserAction extends SBActionAdapter {
 
 		//get more information about this one user, so we can display the edit screen.
 		//If this is an ADD, we don't need the additional lookups
-		if (loadProfileData)
+		if (loadProfileData) {
 			loadRegistration(req, users);
+			loadMarkets(users);
+		}
 
 		return users;
+	}
+
+	/**
+	 * Load all markets that the user is not supposed to see in the updates emails
+	 * @param users
+	 * @throws ActionException
+	 */
+	private void loadMarkets(List<Object> users) throws ActionException {
+		if (users == null || users.isEmpty() || users.size() != 1)
+			return;
+		
+		UserVO user = (UserVO) users.get(0);
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select section_id from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_user_updates_skip where user_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, user.getUserId());
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) 
+				user.addSkippedMarket(rs.getString("section_id"));
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
 	}
 
 	/**
@@ -657,10 +685,52 @@ public class AccountUserAction extends SBActionAdapter {
 		// If this is a new user add them to the default account.
 		if (StringUtil.isEmpty(req.getParameter("userId")))
 			addToDefaultTeam(user);
+		
+		addSkippedMarkets(user);
 
 		setupRedirect(req);
 	}
 
+
+	private void addSkippedMarkets(UserVO user) throws ActionException {
+		deleteOldSkips(user.getUserId());
+		
+		StringBuilder sql = new StringBuilder(120);
+		sql.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_user_updates_skip (user_updates_skip_id, user_id, section_id, create_dt)");
+		sql.append("values(?,?,?,?)");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			
+			for (String skip : user.getSkippedMarkets()) {
+				ps.setString(1, new UUIDGenerator().getUUID());
+				ps.setString(2, user.getUserId());
+				ps.setString(3, skip);
+				ps.setTimestamp(4, Convert.getCurrentTimestamp());
+				ps.addBatch();
+			}
+			
+			ps.executeBatch();
+			
+		} catch(SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+	private void deleteOldSkips(String userId) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("delete from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_user_updates_skip where user_id = ? ");
+		
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, userId);
+			
+			ps.executeUpdate();
+		} catch(SQLException e) {
+			throw new ActionException(e);
+		}
+	}
 
 	/**
 	 * Add the user to the default team of thier account
