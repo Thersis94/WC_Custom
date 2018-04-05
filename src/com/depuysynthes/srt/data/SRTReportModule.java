@@ -58,8 +58,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		try {
 			new MessageSender(attributes, getConnection()).sendMessage(buildEmail(buildReport(projectIds)));
 		} catch (InvalidDataException e) {
-			log.error(e);
-			throw new WorkflowModuleException("There was a problem building the EmailMessageVO.", e);
+			throw new WorkflowModuleException("There was a problem sending the report.", e);
 		}
 	}
 

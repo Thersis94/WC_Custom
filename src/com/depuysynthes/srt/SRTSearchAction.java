@@ -89,7 +89,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 		while(projectIds.size() < resp.getTotalResponses());
 
 		WorkflowSender wfs = new WorkflowSender(attributes);
-		wfs.sendWorkflow(buildWorkflowMessage(projectIds, req.getParameter("emailAddress", "billy@siliconmtn.com")));
+		wfs.sendWorkflow(buildWorkflowMessage(projectIds, req.getParameter("emailAddress")));
 	}
 
 	/**
