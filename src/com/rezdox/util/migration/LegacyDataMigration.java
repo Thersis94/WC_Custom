@@ -123,6 +123,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			migrateRoomInfo();
 			migrateInvitations();
 			updateRoles();
+			updateToSlugTxt();
 			addResidenceApiData();
 		} catch(Exception e) {
 			log.error("Failed to migrate data.", e);
@@ -1396,6 +1397,21 @@ public class LegacyDataMigration extends CommandLineUtil {
 		}
 		
 		return profileRoles;
+	}
+	
+	/**
+	 * Updates form_field_id to slug_txt in residence_attribute, required by the next piece that loads the API data
+	 */
+	protected void updateToSlugTxt() {
+		log.info("Updating Residence Attribute To Slug Text");
+		
+		StringBuilder renameSql = new StringBuilder(80);
+		renameSql.append("ALTER TABLE custom.REZDOX_RESIDENCE_ATTRIBUTE RENAME FORM_FIELD_ID TO SLUG_TXT");
+		executeSimpleMapping(renameSql, "residence slug_txt rename");
+		
+		StringBuilder resizeSql = new StringBuilder(85);
+		resizeSql.append("ALTER TABLE custom.REZDOX_RESIDENCE_ATTRIBUTE ALTER COLUMN SLUG_TXT TYPE Varchar(50)");
+		executeSimpleMapping(resizeSql, "residence slug_txt resize");
 	}
 	
 	/**

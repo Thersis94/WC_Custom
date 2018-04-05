@@ -15,6 +15,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -222,7 +223,34 @@ public class InvitationAction extends SBActionAdapter {
 			updateStatus(invite);
 			
 			ra.applyReward(rewardSlug, invite.getMemberId());
+			sendInviterEmail(req, invite.getMemberId());
 		}
+	}
+	
+	/**
+	 * Sends a confirmation to the member who invited the current user.
+	 * 
+	 * @param req
+	 * @param inviterMemberId
+	 */
+	private void sendInviterEmail(ActionRequest req, String inviterMemberId) {
+		// Get the data for the members involved
+		MemberAction ma = new MemberAction(dbConn, attributes);
+		MemberVO inviter = ma.retrieveMemberData(inviterMemberId);
+		MemberVO invited = RezDoxUtils.getMember(req);
+
+		// Put the mail merge data onto the map
+		Map<String, Object> dataMap = new HashMap<>();
+		dataMap.put("inviterName", inviter.getFullName());
+		dataMap.put("invitedName", invited.getFullName());
+
+		// Add the recipient
+		Map<String, String> rcptMap = new HashMap<>();
+		rcptMap.put(inviter.getProfileId(), inviter.getEmailAddress());
+		
+		// Send the email
+		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		util.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.INVITE_ACCEPTED.name());
 	}
 
 	/**

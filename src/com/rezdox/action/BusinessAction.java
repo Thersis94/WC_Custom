@@ -171,12 +171,13 @@ public class BusinessAction extends SBActionAdapter {
 
 		StringBuilder sql = new StringBuilder(1400);
 		sql.append("select b.business_id, business_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, ");
-		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, email_address_txt, website_url, photo_url, ad_file_url, ");
-		sql.append("privacy_flg, bsc.business_category_cd as sub_category_cd, bc.business_category_cd as category_cd, bc.category_nm, b.create_dt, ");
-		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, m.status_flg, attribute_id, slug_txt, value_txt, ");
-		sql.append("total_reviews_no, avg_rating_no ");
+		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, b.email_address_txt, website_url, photo_url, ad_file_url, ");
+		sql.append("b.privacy_flg, bsc.business_category_cd as sub_category_cd, bc.business_category_cd as category_cd, bc.category_nm, b.create_dt, ");
+		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, m.member_id, m.profile_id, bm.status_flg, ");
+		sql.append("attribute_id, slug_txt, value_txt, total_reviews_no, avg_rating_no ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b inner join ");
-		sql.append(schema).append("rezdox_business_member_xr m on b.business_id = m.business_id and m.status_flg >= ? ");
+		sql.append(schema).append("rezdox_business_member_xr bm on b.business_id = bm.business_id and bm.status_flg >= ? ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member m on bm.member_id = m.member_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id = bcx.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bsc on bcx.business_category_cd = bsc.business_category_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bsc.parent_cd = bc.business_category_cd ");
@@ -200,10 +201,6 @@ public class BusinessAction extends SBActionAdapter {
 	protected List<BusinessVO> retrieveBusinesses(ActionRequest req) {
 		String businessId = req.getParameter(REQ_BUSINESS_ID);
 
-		// Show only businesses that the member has access to
-		SMTSession session = req.getSession();
-		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
-
 		// Use the base query
 		StringBuilder sql = getBaseBusinessSql();
 
@@ -213,8 +210,8 @@ public class BusinessAction extends SBActionAdapter {
 
 		// Restrict to the member owner when editing business details
 		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter("settings") || StringUtil.isEmpty(businessId)) {
-			sql.append("where member_id = ? ");
-			params.add(member.getMemberId());
+			sql.append("where bm.member_id = ? ");
+			params.add(RezDoxUtils.getMemberId(req));
 		} else if (!StringUtil.isEmpty(businessId)) {
 			sql.append("where 1=1 ");
 		}

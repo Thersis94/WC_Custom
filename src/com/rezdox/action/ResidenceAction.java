@@ -32,13 +32,14 @@ import com.siliconmtn.db.DatabaseNote.DBType;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
+import com.smt.sitebuilder.action.user.LocationManager;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -381,64 +382,32 @@ public class ResidenceAction extends SBActionAdapter {
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	public ResidenceVO saveResidence(ActionRequest req) throws DatabaseException, InvalidDataException {
+	public ResidenceVO saveResidence(ActionRequest req) throws DatabaseException {
 		// Get the residence data
 		ResidenceVO residence = new ResidenceVO(req);
-
 		boolean newResidence = StringUtil.isEmpty(residence.getResidenceId());
 
-		// If this is a new residence, lookup residential API data + extended data for attributes
-		ZillowPropertyVO property = null;
-		SunNumberVO sunNumber = null;
-		WalkScoreVO walkScore = null;
-		if (newResidence) {
-			// Zillow
-			String zAddress = residence.getAddress();
-
-			String[] addressTokens = zAddress.split(",");
-			residence.setAddress(addressTokens[0].trim());
-			residence.setCity(addressTokens[1].trim());
-			residence.setState(addressTokens[2].trim());
-			residence.setCountry(addressTokens[3].trim());
-
-			ZillowAPIManager zillow = new ZillowAPIManager();
-			property = zillow.retrievePropertyDetails(residence);
-			residence.setLatitude(property.getLatitude());
-			residence.setLongitude(property.getLongitude());
-
-			// Sun Number
-			SunNumberAPIManager sunNumberApi = new SunNumberAPIManager();
-			sunNumber = sunNumberApi.retrieveSunNumber(residence);
-
-			// Walk Score
-			WalkScoreAPIManager walkScoreApi = new WalkScoreAPIManager();
-			walkScore = walkScoreApi.retrieveWalkScore(residence);
-		}
+		// Get geocode data for the residence
+		LocationManager lm = new LocationManager(residence);
+		GeocodeLocation gl = lm.geocode(attributes);
+		residence.setLatitude(gl.getLatitude());
+		residence.setLongitude(gl.getLongitude());
 
 		// Save the residence & attributes records
 		DBProcessor dbp = new DBProcessor(dbConn);
 		try {
 			dbp.save(residence);
 			req.setParameter(ResidenceAction.RESIDENCE_ID, residence.getResidenceId());
-
-			// This must happen here to ensure we have a residence_id first, to pass to the attributes
-			if (property != null) {
-				List<ResidenceAttributeVO> attributes = mapZillowDataToAttributes(property, residence, req);
-				attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_SUN_NUMBER, sunNumber.getSunNumber()));
-				attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_WALK_SCORE, Convert.formatInteger(walkScore.getWalkscore()).toString()));
-				String transitScore = walkScore.getTransit() == null ? "0" : Convert.formatInteger(walkScore.getTransit().getScore()).toString();
-				attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_TRANSIT_SCORE, transitScore));
-				dbp.executeBatch(attributes);	
-			}
-
 		} catch(Exception e) {
 			throw new DatabaseException(e);
 		}
 
 		// Save the Residence/Member XR
 		saveResidenceMemberXR(req, newResidence);
+		
+		// Retrieve and save data from the various APIs
+		retrieveApiData(req, residence, newResidence);
 
 		// Return the data
 		return residence;
@@ -470,6 +439,65 @@ public class ResidenceAction extends SBActionAdapter {
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			throw new DatabaseException("Could not save RezDox Member/Residence XR", sqle);
+		}
+	}
+	
+	/**
+	 * Retrieves API data from Zillow, WalkScore, and SunNumber
+	 * Stores the data out to residence attributes
+	 * 
+	 * NOTE: We try each piece individually so that an exception in one
+	 * doesn't prevent retrieval of subsequent calls.
+	 * 
+	 * @param residence
+	 * @param newResidence
+	 * @throws DatabaseException 
+	 */
+	protected void retrieveApiData(ActionRequest req, ResidenceVO residence, boolean newResidence) throws DatabaseException {
+		// This data should only be retrieved when a residence is first created
+		if (!newResidence) return;
+		
+		// Initialize list of attributes to save as a batch
+		List<ResidenceAttributeVO> attributes = new ArrayList<>();
+		
+		// Get the Zillow Data
+		try {
+			ZillowPropertyVO property = new ZillowAPIManager().retrievePropertyDetails(residence);
+			attributes.addAll(mapZillowDataToAttributes(property, residence, req));
+		} catch (Exception e) {
+			log.error("Unable to retrieve Zillow data for residence", e);
+			attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE, "0"));
+		}
+		
+		// Get the Sun Number Data
+		String sunNumberVal = null;
+		try {
+			SunNumberVO sunNumber = new SunNumberAPIManager().retrieveSunNumber(residence);
+			sunNumberVal = sunNumber.getSunNumber();
+		} catch (Exception e) {
+			log.error("Unable to retrieve Sun Number data for residence", e);
+		}
+		attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_SUN_NUMBER, StringUtil.isEmpty(sunNumberVal) ? "0" : sunNumberVal));		
+
+		// Get the Walk Score Data
+		String walkScoreVal = null;
+		String transitScoreVal = null;
+		try {
+			WalkScoreVO walkScore = new WalkScoreAPIManager().retrieveWalkScore(residence);
+			walkScoreVal = Convert.formatInteger(walkScore.getWalkscore()).toString();
+			transitScoreVal = walkScore.getTransit() != null ? Convert.formatInteger(walkScore.getTransit().getScore()).toString() : null;
+		} catch (Exception e) {
+			log.error("Unable to retrieve Walk Score data for residence", e);
+		}
+		attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_WALK_SCORE, StringUtil.isEmpty(walkScoreVal) ? "0" : walkScoreVal));
+		attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_TRANSIT_SCORE, StringUtil.isEmpty(transitScoreVal) ? "0" : transitScoreVal));
+		
+		// Save the retrieved attributes
+		DBProcessor dbp = new DBProcessor(dbConn);
+		try {
+			dbp.executeBatch(attributes);
+		} catch(Exception e) {
+			throw new DatabaseException(e);
 		}
 	}
 
