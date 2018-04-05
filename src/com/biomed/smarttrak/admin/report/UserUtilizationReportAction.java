@@ -412,7 +412,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			}
 			
 			// add registration field attribute here.
-			addFieldAttributes(rs, user, divisions);
+			divisions = addFieldAttributes(rs, user, divisions);
 			
 			// capture values for comparison
 			prevAcct = currAcct;
@@ -477,18 +477,20 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @param divisions
 	 * @throws SQLException
 	 */
-	protected void addFieldAttributes(ResultSet rs, UserVO user, List<String> divisions) throws SQLException {
-		String regFieldId = rs.getString("register_field_id");				
+	protected List<String> addFieldAttributes(ResultSet rs, UserVO user, List<String> divisions) throws SQLException {
+		String regFieldId = rs.getString("register_field_id");
 		if(RegistrationMap.DIVISIONS.getFieldId().equals(regFieldId)) {//add division to list
-			if(divisions == null) divisions = new ArrayList<>();	
+			if(divisions == null) divisions = new ArrayList<>();
 			divisions.add(rs.getString("option_desc"));	
 		}else {
 			if(divisions != null && !divisions.isEmpty()) {//add any previous divisions to attributes if available
-				user.addAttribute(RegistrationMap.DIVISIONS.getFieldId(), divisions);
+				user.addAttribute(RegistrationMap.DIVISIONS.getFieldId(), new ArrayList<>(divisions));
 				divisions.clear();
 			}
 			user.addAttribute(regFieldId, rs.getString("value_txt"));
 		}
+			
+		return divisions;
 	}
 	
 	/**
