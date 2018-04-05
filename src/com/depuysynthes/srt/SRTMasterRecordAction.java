@@ -54,38 +54,6 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 		super(init);
 	}
 
-	@Override
-	public void copy(ActionRequest req) throws ActionException {
-		if(req.hasParameter(SRT_MASTER_RECORD_ID)) {
-			GridDataVO<SRTMasterRecordVO> record = loadMasterRecordData(req);
-			if(!record.getRowData().isEmpty()) {
-
-				//Get first record available.
-				SRTMasterRecordVO r = record.getRowData().get(0);
-
-				//TODO - Get feedback on what fields need reset on a copy.
-				//Wipe out Master Record Id to ensure Copy
-				r.setMasterRecordId(null);
-
-				//Wipe out Part No so new one is created
-				r.setPartNo("replaceMe");
-
-				//Update title Text
-				r.setTitleTxt(StringUtil.join(r.getTitleTxt(), " (copy)"));
-
-				//Get a MasterRecordDataProcessor for Saving
-				MasterRecordDataProcessor mrdp = new MasterRecordDataProcessor(dbConn, attributes, req);
-
-				//Save
-				try {
-					mrdp.saveMasterRecordData(r);
-				} catch (DatabaseException e) {
-					log.error("Error Copying Record", e);
-				}
-			}
-		}
-	}
-
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
@@ -251,7 +219,7 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 
 		//Check if we're doing a copy or regular save.
 		if(req.hasParameter("isCopy")) {
-			copy(req);
+			copyMasterRecord(req);
 		} else {
 			saveMasterRecord(req);
 		}
@@ -264,6 +232,40 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 		} else {
 			//Redirect the User.
 			sbUtil.moduleRedirect(req, msg, SrtPage.MASTER_RECORD.getUrlPath());
+		}
+	}
+
+	/**
+	 * Copies a Master Record.
+	 * @param req
+	 */
+	private void copyMasterRecord(ActionRequest req) {
+		if(req.hasParameter(SRT_MASTER_RECORD_ID)) {
+			GridDataVO<SRTMasterRecordVO> record = loadMasterRecordData(req);
+			if(!record.getRowData().isEmpty()) {
+
+				//Get first record available.
+				SRTMasterRecordVO r = record.getRowData().get(0);
+
+				//Wipe out Master Record Id to ensure Copy
+				r.setMasterRecordId(null);
+
+				//Wipe out Part No so new one is created
+				r.setPartNo("replaceMe");
+
+				//Update title Text
+				r.setTitleTxt(StringUtil.join(r.getTitleTxt(), " (copy)"));
+
+				//Get a MasterRecordDataProcessor for Saving
+				MasterRecordDataProcessor mrdp = new MasterRecordDataProcessor(dbConn, attributes, req);
+
+				//Save
+				try {
+					mrdp.saveMasterRecordData(r);
+				} catch (DatabaseException e) {
+					log.error("Error Copying Record", e);
+				}
+			}
 		}
 	}
 

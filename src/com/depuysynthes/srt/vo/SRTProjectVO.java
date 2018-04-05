@@ -108,7 +108,6 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	public SRTProjectVO(SRTProjectVO project) {
 		this();
 
-		//TODO - What needs removed from the Project Record on a copy.
 		if(project != null) {
 			this.setOpCoId(project.getOpCoId());
 			this.setProjectName(project.getProjectName());

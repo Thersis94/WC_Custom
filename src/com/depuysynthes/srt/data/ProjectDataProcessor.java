@@ -131,7 +131,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		SRTProjectVO project = new SRTProjectVO(req);
 
 		//Move Milestone Date Records off request onto ledgerMap. 
-		populateMilestoneRecords(project, data);
+		populateMilestoneRecords(project);
 
 		//Add MasterRecords from the Request.
 		project.setMasterRecords(new PrefixBeanDataMapper<SRTMasterRecordVO>(new SRTMasterRecordVO()).populate(req.getParameterMap(), SRTMasterRecordAction.SRT_MASTER_RECORD_ID));
@@ -147,7 +147,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 	 * @param project
 	 * @param data 
 	 */
-	private void populateMilestoneRecords(SRTProjectVO project, FormTransactionVO data) {
+	private void populateMilestoneRecords(SRTProjectVO project) {
 		SRTMilestoneAction sma = new SRTMilestoneAction();
 		sma.setAttributes(attributes);
 		sma.setDBConnection(dbConn);
@@ -233,7 +233,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 	 * @param project the Project Record to send through Milestone Processing.
 	 * @throws com.siliconmtn.db.util.DatabaseException 
 	 */
-	private void processMilestones(SRTProjectVO project) throws com.siliconmtn.db.util.DatabaseException {
+	private void processMilestones(SRTProjectVO project) {
 		SRTMilestoneAction sma = new SRTMilestoneAction();
 		sma.setAttributes(attributes);
 		sma.setDBConnection(dbConn);
