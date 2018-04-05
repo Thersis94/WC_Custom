@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.user.LastNameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
@@ -367,6 +369,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		AccountVO acct = null;
 		List<UserVO> users = null;
 		Map<AccountVO, List<UserVO>> accounts = new LinkedHashMap<>();
+		List<String> divisions = null;
 		
 		while (rs.next()) {
 
@@ -380,12 +383,11 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 				// first time through or changed accounts
 				if (acct != null) {
 					users.add(user);
+					Collections.sort(users, new LastNameComparator()); //sort before adding to account
 					accounts.put(acct, users);
 				}
 				// init new acct
-				acct = new AccountVO();
-				acct.setAccountId(rs.getString("account_id"));
-				acct.setAccountName(rs.getString("account_nm"));
+				acct = formatNextAccount(rs);
 				
 				// init user list for this acct.
 				users = formatUsersList(users,true);
@@ -410,7 +412,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			}
 			
 			// add registration field attribute here.
-			user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
+			addFieldAttributes(rs, user, divisions);
 			
 			// capture values for comparison
 			prevAcct = currAcct;
@@ -424,6 +426,22 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		if (users == null || returnNewList) 
 			return new ArrayList<>();
 		return users;
+	}
+	
+	/**
+	 * Creates, populates, and returns a AccountVO based on result set data.
+	 * @return
+	 * @throws SQLException 
+	 */
+	protected AccountVO formatNextAccount(ResultSet rs) throws SQLException {
+		AccountVO account = new AccountVO();
+		account.setAccountId(rs.getString("account_id"));
+		account.setAccountName(rs.getString("account_nm"));
+		account.setTypeId(rs.getString("type_id"));
+		account.setStartDate(rs.getDate("start_dt"));
+		account.setExpirationDate(rs.getDate("acct_expire_dt"));
+		
+		return account;
 	}
 		
 	/**
@@ -441,10 +459,36 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			user.setLastName(se.decrypt(rs.getString("last_nm")));
 			user.setEmailAddress(se.decrypt(rs.getString("email_address_txt")));
 			user.setMainPhone(se.decrypt(rs.getString("phone_number_txt")));
+			user.setStatusFlg(rs.getInt("active_flg"));
+			user.setLicenseType(rs.getString("status_cd"));
+			user.setAcctOwnerFlg(rs.getInt("acct_owner_flg"));
+			user.setExpirationDate(rs.getDate("user_expire_dt"));
+			user.setLoginDate(rs.getDate("login_dt"));
 		} catch (Exception e) {
 			log.error("Error formatting user, " + profileId + ", " + e.getMessage());
 		}
 		return user;
+	}
+	
+	/**
+	 * Handles adding the registration field attributes associated to the UserVO to attributes map
+	 * @param rs
+	 * @param user
+	 * @param divisions
+	 * @throws SQLException
+	 */
+	protected void addFieldAttributes(ResultSet rs, UserVO user, List<String> divisions) throws SQLException {
+		String regFieldId = rs.getString("register_field_id");				
+		if(RegistrationMap.DIVISIONS.getFieldId().equals(regFieldId)) {//add division to list
+			if(divisions == null) divisions = new ArrayList<>();	
+			divisions.add(rs.getString("option_desc"));	
+		}else {
+			if(divisions != null && !divisions.isEmpty()) {//add any previous divisions to attributes if available
+				user.addAttribute(RegistrationMap.DIVISIONS.getFieldId(), divisions);
+				divisions.clear();
+			}
+			user.addAttribute(regFieldId, rs.getString("value_txt"));
+		}
 	}
 	
 	/**
@@ -455,11 +499,11 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 */
 	protected StringBuilder buildAccountsQuery(String schema, int licenseTypes, int numFields) {
 		StringBuilder sql = new StringBuilder(1000);
-		sql.append("select ac.account_id, ac.account_nm, ac.type_id, ac.start_dt, ac.expiration_dt, ");
-		sql.append("us.profile_id, us.user_id, us.status_cd, us.active_flg, us.expiration_dt, us.acct_owner_flg, ");
-		sql.append("pf.first_nm, pf.last_nm, pf.email_address_txt, max(login_dt) as login_dt, ");
+		sql.append("select ac.account_id, ac.account_nm, ac.type_id, ac.start_dt, ac.expiration_dt as acct_expire_dt, ");
+		sql.append("us.profile_id, us.user_id, us.status_cd, us.active_flg, us.expiration_dt as user_expire_dt, ");
+		sql.append("us.acct_owner_flg, pf.first_nm, pf.last_nm, pf.email_address_txt, max(login_dt) as login_dt, ");
 		sql.append("ph.phone_number_txt, ");
-		sql.append("rd.register_field_id, rd.value_txt ");
+		sql.append("rd.register_field_id, rd.value_txt, rfo.option_desc ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us ");
 		sql.append("on ac.account_id = us.account_id ");
@@ -486,10 +530,12 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			sql.append("?");
 		}
 		sql.append(") ");
+		sql.append("left join register_field_option rfo on rd.value_txt = rfo.option_value_txt ");
+		sql.append("and rd.register_field_id = rfo.register_field_id ");
 		sql.append("group by ac.account_id, ac.account_nm, ac.type_id, ac.start_dt, ac.expiration_dt, us.profile_id, ");
 		sql.append("us.user_id, us.status_cd, us.active_flg, us.expiration_dt, us.acct_owner_flg, pf.first_nm, pf.last_nm, ");
-		sql.append("pf.email_address_txt, ph.phone_number_txt, rd.register_field_id, rd.value_txt ");
-		sql.append("order by account_nm, pf.last_nm, profile_id");
+		sql.append("pf.email_address_txt, ph.phone_number_txt, rd.register_field_id, rd.value_txt, rfo.option_desc ");
+		sql.append("order by account_nm, pf.last_nm, profile_id, rd.register_field_id, rfo.option_desc");
 		return sql;
 	}
 	
