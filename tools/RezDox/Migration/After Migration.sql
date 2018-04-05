@@ -1,7 +1,4 @@
 -- Change FORM_FIELD_ID to SLUG_TXT
-ALTER TABLE custom.REZDOX_RESIDENCE_ATTRIBUTE RENAME FORM_FIELD_ID TO SLUG_TXT;
-ALTER TABLE custom.REZDOX_RESIDENCE_ATTRIBUTE ALTER COLUMN SLUG_TXT TYPE Varchar(50);
-
 ALTER TABLE custom.REZDOX_BUSINESS_ATTRIBUTE RENAME FORM_FIELD_ID TO SLUG_TXT;
 ALTER TABLE custom.REZDOX_BUSINESS_ATTRIBUTE ALTER COLUMN SLUG_TXT TYPE Varchar(50);
 
@@ -168,3 +165,5 @@ update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'R
 -- changes to memberships, using button ids instead of full button html
 -- this query only needs to be run in staging after code push
 -- alter table custom.rezdox_membership drop paypal_button_txt;
+
+alter table custom.rezdox_reward add feature_flg int;

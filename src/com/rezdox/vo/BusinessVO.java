@@ -2,6 +2,7 @@ package com.rezdox.vo;
 
 //Java 8
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +43,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private String photoUrl;
 	private String adFileUrl;
 	private int privacyFlag;
+	private List<MemberVO> members;
 	private Map<String, String> attributes;
 	private String subCategoryCd;
 	private String categoryCd;
@@ -54,6 +56,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 
 	public BusinessVO() {
 		super();
+		members = new ArrayList<>();
 		attributes = new HashMap<>();
 		mainPhone = new PhoneVO();
 		altPhone = new PhoneVO();
@@ -228,6 +231,28 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setPrivacyFlag(int privacyFlag) {
 		this.privacyFlag = privacyFlag;
+	}
+
+	/**
+	 * @return the members
+	 */
+	public List<MemberVO> getMembers() {
+		return members;
+	}
+
+	/**
+	 * @param members the members to set
+	 */
+	public void setMembers(List<MemberVO> members) {
+		this.members = members;
+	}
+
+	/**
+	 * @param member
+	 */
+	@BeanSubElement
+	public void addMember(MemberVO member) {
+		this.members.add(member);
 	}
 
 	/**
