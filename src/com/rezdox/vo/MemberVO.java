@@ -222,7 +222,7 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	 * @see com.siliconmtn.security.UserDataVO#getFirstName()
 	 */
 	@Override
-	@Column(name="first_nm", isReadOnly=true)
+	@Column(name="first_nm")
 	public String getFirstName() {
 		return super.getFirstName();
 	}
@@ -231,7 +231,7 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	 * @see com.siliconmtn.security.UserDataVO#getLastName()
 	 */
 	@Override
-	@Column(name="last_nm", isReadOnly=true)
+	@Column(name="last_nm")
 	public String getLastName() {
 		return super.getLastName();
 	}
@@ -240,7 +240,7 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	 * @see com.siliconmtn.security.UserDataVO#getEmailAddress()
 	 */
 	@Override
-	@Column(name="email_address_txt", isReadOnly=true)
+	@Column(name="email_address_txt")
 	public String getEmailAddress() {
 		return super.getEmailAddress();
 	}

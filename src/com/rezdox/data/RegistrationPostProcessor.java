@@ -61,10 +61,40 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		if (!(user instanceof MemberVO)) {
 			setupNewMember(user, req);
 		} else {
+			updateExistingMember(user);
 			req.setParameter(Constants.REDIRECT_URL, RezDoxUtils.PROFILE_PATH);
 		}
 	}
 	
+	/**
+	 * the fields in the member table need updated when a member updates their records.  
+	 * @param user
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void updateExistingMember(UserDataVO user) throws ActionException {
+		MemberVO member = (MemberVO)user; 
+		
+		saveMember(member);
+	}
+
+	/**
+	 * updates the data base with the target member
+	 * @param member
+	 * @throws ActionException 
+	 */
+	private void saveMember(MemberVO member) throws ActionException {
+		// Save member data
+		DBProcessor dbp = new DBProcessor(dbConn);
+		try {
+			dbp.save(member);
+		} catch (Exception e) {
+			log.error("could not save member records ",e);
+			throw new ActionException(e);
+		}
+		
+	}
+
 	/**
 	 * Handles the required steps for setting up a new member
 	 * 
@@ -84,14 +114,12 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		member.setRegisterSubmittalId((String) req.getAttribute("registerSubmittalId"));
 		member.setStatusFlg(1);
 		member.setPrivacyFlg(MemberVO.Privacy.PRIVATE.getCode());
+		
+		member.setFirstName(user.getFirstName());
+		member.setLastName(user.getLastName());
+		member.setEmailAddress(user.getEmailAddress());
 
-		// Save member data
-		DBProcessor dbp = new DBProcessor(dbConn);
-		try {
-			dbp.save(member);
-		} catch (Exception e) {
-			throw new ActionException(e);
-		}
+		saveMember(member);
 		
 		// Get default member subscription... the only default right now is "100 Connections".
 		// Free business and residence subscriptions are added by member selection after signing up.
