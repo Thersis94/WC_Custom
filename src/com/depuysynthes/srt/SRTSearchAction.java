@@ -9,6 +9,7 @@ import java.util.Map;
 import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.srt.util.SRTUtil;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -38,6 +39,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 
 	public static final String REQ_SEARCH_DATA = "searchData";
 	public static final String REQ_BOOTSTRAP_LIMIT = "limit";
+
 	public SRTSearchAction() {
 		super();
 	}
@@ -62,8 +64,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	/**
 	 * Helper method that runs search against solr for all DocumentIds that
 	 * match loads Data for Projects, then exports data to Excel Sheet.
-	 * TODO - Need to retrieve all Solr Results for the current Query,
-	 * load Project Data for all of them and then export to Excel.
+	 *
 	 * @param req
 	 * @throws ActionException
 	 */
@@ -79,6 +80,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		req.setParameter("pmid", mod.getPageModuleId());
 
+		//Load all Project Records for this search.
 		List<String> projectIds = new ArrayList<>();
 		do {
 			resp = getResults(req);
@@ -88,12 +90,16 @@ public class SRTSearchAction extends SimpleActionAdapter {
 		}
 		while(projectIds.size() < resp.getTotalResponses());
 
+		//Queue Workflow Message for SRT Report.
 		WorkflowSender wfs = new WorkflowSender(attributes);
 		wfs.sendWorkflow(buildWorkflowMessage(projectIds, req.getParameter("emailAddress")));
 	}
 
 	/**
+	 * Builds a WorkflowMessageVO for Enqueing an SRT Report Export for
+	 * emailing.
 	 * @param projectIds
+	 * @param emailAddress
 	 * @return
 	 */
 	private WorkflowMessageVO buildWorkflowMessage(List<String> projectIds, String emailAddress) {
@@ -185,9 +191,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	 */
 	private SolrResponseVO getResults(ActionRequest req) throws ActionException {
 		// Build the solr action
-		SolrAction sa = new SolrAction(actionInit);
-		sa.setDBConnection(dbConn);
-		sa.setAttributes(attributes);
+		SolrAction sa = (SolrAction) ActionControllerFactoryImpl.loadAction(SolrAction.class.getName(), this);
 		sa.retrieve(req);
 
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);

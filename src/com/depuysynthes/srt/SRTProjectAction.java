@@ -295,7 +295,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 * @param projects
 	 */
 	private void loadMilestoneDetails(List<SRTProjectVO> projects) {
-		SRTMilestoneAction sma = (SRTMilestoneAction) getConfiguredAction(SRTMilestoneAction.class.getName());
+		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
 		sma.populateMilestones(projects);
 	}
 
@@ -308,14 +308,14 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		//Load request Information and assign on Project Record.
 		req.setParameter(SRTRequestAction.SRT_REQUEST_ID, project.getRequestId());
-		SRTRequestAction sra = (SRTRequestAction) getConfiguredAction(SRTRequestAction.class.getName());
+		SRTRequestAction sra = (SRTRequestAction) ActionControllerFactoryImpl.loadAction(SRTRequestAction.class.getName(), this);
 		GridDataVO<SRTRequestVO> reqData = sra.loadRequests(req);
 		if(reqData != null && !reqData.getRowData().isEmpty()) {
 			project.setRequest(reqData.getRowData().get(0));
 		}
 
 		//Load Master Record Data and assign on Project Record.
-		SRTMasterRecordAction smra = (SRTMasterRecordAction) getConfiguredAction(SRTMasterRecordAction.class.getName());
+		SRTMasterRecordAction smra = (SRTMasterRecordAction) ActionControllerFactoryImpl.loadAction(SRTMasterRecordAction.class.getName(), this);
 		List<SRTMasterRecordVO> prodData = smra.loadMasterRecordXR(project);
 		for(SRTMasterRecordVO mr : prodData) {
 			project.addMasterRecord(mr);
@@ -336,7 +336,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 				p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
 			}
 		} catch (EncryptionException e) {
-			log.error("Error Processing Code", e);
+			log.error("Error Decrypting Project Names", e);
 		}
 	}
 
@@ -488,7 +488,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 				}
 			}
 		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Error Processing Code", e);
+			log.error("Error Managing Lock", e);
 		}
 
 		req.getSession().setAttribute(SRT_PROJECT_LOCKS, activeLocks);
@@ -542,7 +542,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 							.filter(l -> l.getUnlockDt() == null)
 							.collect(Collectors.toMap(LockVO::getRecordId, Function.identity()));
 			} catch (InvalidDataException e) {
-				log.error("Error Processing Code", e);
+				log.error("Error Retrieving Locks for a user", e);
 			}
 		}
 
