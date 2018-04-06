@@ -121,9 +121,15 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	}
 
 
+	/**
+	 * Load the viewed user's acls
+	 * @param req
+	 * @param sections
+	 * @return
+	 * @throws ActionException
+	 */
 	private List<Node> loadSectionsFromId(ActionRequest req, List<Node> sections) throws ActionException {
 		SmarttrakRoleVO role;
-		log.debug(req.getParameter("overrideUser")+"|"+"smarttrakAdmin".equals(req.getParameter("amid")));
 		if (req.hasParameter("overrideUser") && "smarttrakAdmin".equals(req.getParameter("amid"))) {
 			role = loadUser(req.getParameter("overrideUser"), req);
 		} else {
@@ -141,6 +147,13 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		return checkPermissions(sections, role, tool);
 	}
 
+	/**
+	 * Load the currently viewed user's information
+	 * @param profileId
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
 	private SmarttrakRoleVO loadUser(String profileId, ActionRequest req) throws ActionException {
 		UserVO user = new UserVO(req);
 		user.setProfileId(profileId);

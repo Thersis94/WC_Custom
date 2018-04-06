@@ -54,7 +54,6 @@ public class AnalystPostProcessor extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		String contactType = req.getParameter((String)getAttribute(CFG_ASK_AN_ANALYST_TYPE_ID));
 		UserVO vo = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
-		log.debug(vo.getSourceEmail());
 		attributes.put(BiomedSupportEmailUtil.SOURCE, new EmailRecipientVO(vo.getSourceId(), vo.getSourceEmail(), EmailRecipientVO.BCC));
 
 		if("Analyst".equals(contactType)) {

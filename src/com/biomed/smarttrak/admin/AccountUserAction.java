@@ -727,6 +727,11 @@ public class AccountUserAction extends SBActionAdapter {
 	}
 
 
+	/**
+	 * Add all markets that should be skipped in the updates emails.
+	 * @param user
+	 * @throws ActionException
+	 */
 	private void addSkippedMarkets(UserVO user) throws ActionException {
 		deleteOldSkips(user.getUserId());
 		
@@ -752,6 +757,11 @@ public class AccountUserAction extends SBActionAdapter {
 		}
 	}
 
+	/**
+	 * Flush out the current list of skips to make room for the new ones.
+	 * @param userId
+	 * @throws ActionException
+	 */
 	private void deleteOldSkips(String userId) throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("delete from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
