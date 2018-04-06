@@ -55,6 +55,7 @@ public class BusinessAction extends SBActionAdapter {
 	public static final String BUSINESS_DATA = "businessData";
 	public static final String REQ_BUSINESS_ID = "businessId";
 	public static final String REQ_BUSINESS_INFO = "businessInfo";
+	public static final String REQ_SETTINGS = "settings";
 	public static final String ATTR_GET_FOR_MEMBER = "getForMember";
 	public static final String UPGRADE_MSG = "You have reached your maximum businesses. Please purchase a business upgrade to continue.";
 	private static final Class<BusinessFormProcessor> BUSINESS_FORM_PROCESSOR = BusinessFormProcessor.class;
@@ -133,7 +134,7 @@ public class BusinessAction extends SBActionAdapter {
 		if ("new".equalsIgnoreCase(businessId) && !canAddNewBusiness(req)) {
 			// When adding a new business, check to make sure the member has not reached their limit
 			sendRedirect(RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH, UPGRADE_MSG, req);
-		} else if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter("settings")) {
+		} else if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter(REQ_SETTINGS)) {
 			// Set the data to be returned
 			req.setAttribute(BUSINESS_DATA, businessList);
 			putModuleData(retrieveBusinessInfoForm(req));
@@ -211,7 +212,7 @@ public class BusinessAction extends SBActionAdapter {
 		params.add(BusinessStatus.ACTIVE.getStatus());
 
 		// Restrict to the member owner when editing business details
-		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter("settings") || StringUtil.isEmpty(businessId) || req.getAttribute(ATTR_GET_FOR_MEMBER) != null) {
+		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter(REQ_SETTINGS) || StringUtil.isEmpty(businessId) || req.getAttribute(ATTR_GET_FOR_MEMBER) != null) {
 			sql.append("where bm.member_id = ? ");
 			params.add(RezDoxUtils.getMemberId(req));
 		} else if (!StringUtil.isEmpty(businessId)) {
@@ -280,7 +281,7 @@ public class BusinessAction extends SBActionAdapter {
 	 * @param req
 	 */
 	protected FormVO retrieveBusinessInfoForm(ActionRequest req) {
-		String formId = req.hasParameter("settings") ? RezDoxUtils.getAltFormId(getAttributes()) : RezDoxUtils.getFormId(getAttributes());
+		String formId = req.hasParameter(REQ_SETTINGS) ? RezDoxUtils.getAltFormId(getAttributes()) : RezDoxUtils.getFormId(getAttributes());
 		log.debug("Retrieving Business Form: " + formId);
 
 		// Set the requried params
@@ -316,7 +317,7 @@ public class BusinessAction extends SBActionAdapter {
 		}
 		
 		// Edit the business data
-		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter("settings")) {
+		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter(REQ_SETTINGS)) {
 			saveForm(req);
 
 			SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
@@ -388,7 +389,7 @@ public class BusinessAction extends SBActionAdapter {
 	 * @param req
 	 */
 	protected void saveForm(ActionRequest req) {
-		String formId =  req.hasParameter("settings") ? RezDoxUtils.getAltFormId(getAttributes()) : RezDoxUtils.getFormId(getAttributes());
+		String formId =  req.hasParameter(REQ_SETTINGS) ? RezDoxUtils.getAltFormId(getAttributes()) : RezDoxUtils.getFormId(getAttributes());
 
 		// Place ActionInit on the Attributes map for the Data Save Handler.
 		attributes.put(Constants.ACTION_DATA, actionInit);
