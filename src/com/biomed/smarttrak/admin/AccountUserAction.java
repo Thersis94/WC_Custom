@@ -145,7 +145,10 @@ public class AccountUserAction extends SBActionAdapter {
 		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_WELCOME_EML));
 		List<EmailRecipientVO> recipients = new ArrayList<>(2);
 		recipients.add(new EmailRecipientVO(u.getProfileId(), (String)config.get("emailAddress"), EmailRecipientVO.TO));
-		recipients.add(new EmailRecipientVO(req.getParameter("sourceId"), req.getParameter("sourceEmail"), EmailRecipientVO.BCC));
+		String sourceId = req.getParameter("sourceId");
+		String sourceEmail = addSourceEmail(sourceId);
+		if (sourceEmail.length() > 0)
+			recipients.add(new EmailRecipientVO(sourceId, sourceEmail, EmailRecipientVO.BCC));
 
 		//perform the email send
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
@@ -171,12 +174,42 @@ public class AccountUserAction extends SBActionAdapter {
 		config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
 
 		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_PSWD_RESET_EML));
-		Map<String, String> recipients = new HashMap<>();
-		recipients.put(u.getProfileId(), (String)config.get("emailAddress"));
+		List<EmailRecipientVO> recipients = new ArrayList<>(2);
+		recipients.add(new EmailRecipientVO(u.getProfileId(), (String)config.get("emailAddress"), EmailRecipientVO.TO));
+		String sourceId = req.getParameter("sourceId");
+		String sourceEmail = addSourceEmail(sourceId);
+		if (sourceEmail.length() > 0)
+			recipients.add(new EmailRecipientVO(sourceId, sourceEmail, EmailRecipientVO.BCC));
 
 		//perform the email send
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
 		ecbu.sendMessage(config, recipients, campInstId);
+	}
+	
+	
+	/**
+	 * Get the email address associated with the supplied source.
+	 * @param sourceId
+	 * @return
+	 */
+	private String addSourceEmail(String sourceId) {
+		String sql = "select email_address_txt from profile where profile_id = ? ";
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, sourceId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
+				String email = StringUtil.checkVal(rs.getString("email_address_txt"));
+				return se.decrypt(email);
+			}
+			
+		} catch (Exception e) {
+			log.warn("Failed to get source email with profile id " + sourceId);
+		}
+		return "";
 	}
 
 
