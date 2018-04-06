@@ -53,6 +53,8 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private int statusFlg;
 	// Markets that should not show up in the updates email
 	private List<String> skippedMarkets;
+	private String sourceId;
+	private String sourceEmail;
 
 	/**
 	 * Smarttrak status dropdowns - stored in the DB using code, label displayed on user mgmt screens.
@@ -666,5 +668,23 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 			return;
 		for (String skip : skippedMarkets)
 			addSkippedMarket(skip);
+	}
+
+	@Column(name="source_id", isInsertOnly=true)
+	public String getSourceId() {
+		return sourceId;
+	}
+
+	public void setSourceId(String sourceId) {
+		this.sourceId = sourceId;
+	}
+
+	@Column(name="source_email", isInsertOnly=true)
+	public String getSourceEmail() {
+		return sourceEmail;
+	}
+
+	public void setSourceEmail(String sourceEmail) {
+		this.sourceEmail = sourceEmail;
 	}
 }

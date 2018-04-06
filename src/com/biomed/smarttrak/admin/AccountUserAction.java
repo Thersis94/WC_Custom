@@ -24,6 +24,7 @@ import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -142,8 +143,9 @@ public class AccountUserAction extends SBActionAdapter {
 			config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
 
 		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_WELCOME_EML));
-		Map<String, String> recipients = new HashMap<>();
-		recipients.put(u.getProfileId(), (String)config.get("emailAddress"));
+		List<EmailRecipientVO> recipients = new ArrayList<>(2);
+		recipients.add(new EmailRecipientVO(u.getProfileId(), (String)config.get("emailAddress"), EmailRecipientVO.TO));
+		recipients.add(new EmailRecipientVO(req.getParameter("sourceId"), req.getParameter("sourceEmail"), EmailRecipientVO.BCC));
 
 		//perform the email send
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
