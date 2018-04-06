@@ -39,7 +39,7 @@ import com.smt.sitebuilder.util.PageViewVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserUtilizationReportAction.java</p>
- <p><b>Description: </b></p>
+ <p><b>Description: Action that gathers and combines data for utilization reporting and page counts.</b></p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
@@ -93,8 +93,8 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		String siteId = site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId();
 
 		boolean isDaily = Convert.formatBoolean(req.getParameter(PARAM_IS_DAILY));
-		dateStart = formatReportDate(req.getParameter("dateStart"), true, isDaily);
-		dateEnd = formatReportDate(req.getParameter("dateEnd"), false, isDaily);
+		dateStart = formatReportDate(req.getParameter(KEY_DATE_START), true, isDaily);
+		dateEnd = formatReportDate(req.getParameter(KEY_DATE_END), false, isDaily);
 
 		// 1. get user pageviews for the given start date.
 		List<PageViewVO> pageViews = retrieveBasePageViews(siteId,isDaily);

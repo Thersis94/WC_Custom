@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.admin.report;
 
+//Java 8
 import java.util.Map;
 
 //Apache POI 3.13
@@ -14,7 +15,7 @@ import com.siliconmtn.data.report.ExcelStyleFactory.Styles;
 /****************************************************************************
  * Title: UserUtilizationExcelReport.java <p/>
  * Project: WC_Custom <p/>
- * Description: <p/>
+ * Description: Custom monthly utilization report that handles individual excel cell styling<p/>
  * Copyright: Copyright (c) 2018<p/>
  * Company: Silicon Mountain Technologies<p/>
  * @author Devon Franklin

@@ -25,7 +25,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserUtilizationReportVO.java</p>
- <p><b>Description: </b></p>
+ <p><b>Description: Builds and formats the data for the monthly utilization report</b></p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
