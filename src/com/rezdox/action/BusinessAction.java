@@ -3,6 +3,7 @@ package com.rezdox.action;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -132,7 +133,7 @@ public class BusinessAction extends SBActionAdapter {
 		if ("new".equalsIgnoreCase(businessId) && !canAddNewBusiness(req)) {
 			// When adding a new business, check to make sure the member has not reached their limit
 			sendRedirect(RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH, UPGRADE_MSG, req);
-		} else if (req.hasParameter(REQ_BUSINESS_INFO)) {
+		} else if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter("settings")) {
 			// Set the data to be returned
 			req.setAttribute(BUSINESS_DATA, businessList);
 			putModuleData(retrieveBusinessInfoForm(req));
@@ -279,7 +280,7 @@ public class BusinessAction extends SBActionAdapter {
 	 * @param req
 	 */
 	protected FormVO retrieveBusinessInfoForm(ActionRequest req) {
-		String formId = RezDoxUtils.getFormId(getAttributes());
+		String formId = req.hasParameter("settings") ? RezDoxUtils.getAltFormId(getAttributes()) : RezDoxUtils.getFormId(getAttributes());
 		log.debug("Retrieving Business Form: " + formId);
 
 		// Set the requried params
@@ -315,7 +316,7 @@ public class BusinessAction extends SBActionAdapter {
 		}
 		
 		// Edit the business data
-		if (req.hasParameter(REQ_BUSINESS_INFO)) {
+		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter("settings")) {
 			saveForm(req);
 
 			SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
@@ -387,7 +388,7 @@ public class BusinessAction extends SBActionAdapter {
 	 * @param req
 	 */
 	protected void saveForm(ActionRequest req) {
-		String formId = RezDoxUtils.getFormId(getAttributes());
+		String formId =  req.hasParameter("settings") ? RezDoxUtils.getAltFormId(getAttributes()) : RezDoxUtils.getFormId(getAttributes());
 
 		// Place ActionInit on the Attributes map for the Data Save Handler.
 		attributes.put(Constants.ACTION_DATA, actionInit);
@@ -530,5 +531,27 @@ public class BusinessAction extends SBActionAdapter {
 		}
 
 		return attributes;
+	}
+	
+	/**
+	 * A partial update which updates specific business settings only on the business record
+	 * 
+	 * @param req
+	 */
+	public void saveSettings(ActionRequest req) {
+		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		
+		StringBuilder sql = new StringBuilder(100);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("rezdox_business set privacy_flg = ? where business_id = ? ");
+		
+		List<String> fields = new ArrayList<>();
+		fields.addAll(Arrays.asList("privacy_flg", "business_id"));
+		
+		DBProcessor dbp = new DBProcessor(dbConn);
+		try {
+			dbp.executeSqlUpdate(sql.toString(), new BusinessVO(req), fields);
+		} catch (Exception e) {
+			log.error("Couldn't save business settings", e);
+		}
 	}
 }
