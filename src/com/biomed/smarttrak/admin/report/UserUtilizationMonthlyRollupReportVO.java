@@ -53,6 +53,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	private static final String DIVISIONS = "DIVISIONS";
 	private static final String EXPIRATION_DT = "EXPIRATION_DATE";
 	public static final String LAST_LOGIN_DT = "LAST_LOGIN_DATE";
+	public static final String LAST_LOGIN_AGE = "LAST_LOGIN_AGE";
 	private static final String DAYS_SINCE_LAST_LOGIN = "DAYS_SINCE_LAST_LOGGED_IN";
 	
 
@@ -80,7 +81,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		log.debug("generateReport...");
 		
-		ExcelReport rpt = new ExcelReport(getHeader());
+		ExcelReport rpt = new UserUtilizationExcelReport(getHeader());
 		rpt.setTitleCell(buildReportTitle());
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
@@ -159,6 +160,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 				if (user.getLoginDate() == null) row.put(LAST_LOGIN_DT, "No activity"); 
 				else row.put(LAST_LOGIN_DT, user.getLoginDate());
 				row.put(DAYS_SINCE_LAST_LOGIN, user.getLoginAge(true));	
+				/* Add the login age to data map for reporting formatting. This particular field is utilized for styling 
+				 * and not meant for actual display, hence no matching header column entry*/
+				row.put(LAST_LOGIN_AGE, user.getLoginAge());
 				
 				/* Add monthly counts to user's row. We loop the month headers
 				 * List using the values as keys to retrieve a user's counts for a
