@@ -50,12 +50,14 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	private static final String EMAIL = "EMAIL_ADDRESS";
 	private static final String PHONE = "PHONE";
 	private static final String UPDATES = "UPDATES";
+	private static final String ACCOUNT_OWNER_FLAG = "ACCOUNT_OWNER";
 	private static final String DIVISIONS = "DIVISIONS";
+	private static final String USER_STATUS = "USER_STATUS";
 	private static final String EXPIRATION_DT = "EXPIRATION_DATE";
 	public static final String LAST_LOGIN_DT = "LAST_LOGIN_DATE";
 	public static final String LAST_LOGIN_AGE = "LAST_LOGIN_AGE";
 	private static final String DAYS_SINCE_LAST_LOGIN = "DAYS_SINCE_LAST_LOGGED_IN";
-	
+	public static final String NO_ACTIVITY = "No activity";
 
 	/**
 	 * 
@@ -155,10 +157,12 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 				pnf.setPhoneNumber(user.getMainPhone());
 				row.put(PHONE, pnf.getFormattedNumber());
 				row.put(UPDATES, StringUtil.capitalize(user.getUpdates()));
+				row.put(ACCOUNT_OWNER_FLAG, user.getAcctOwnerFlg() == 0 ? "No" : "Yes");
 				row.put(DIVISIONS, getUserDivisions(user));
-				row.put(EXPIRATION_DT, user.getExpirationDate());
-				if (user.getLoginDate() == null) row.put(LAST_LOGIN_DT, "No activity"); 
-				else row.put(LAST_LOGIN_DT, user.getLoginDate());
+				row.put(USER_STATUS, user.getLicenseName());
+				row.put(EXPIRATION_DT, Convert.formatDate(user.getExpirationDate(), Convert.DATE_SLASH_PATTERN));
+				if (user.getLoginDate() == null) row.put(LAST_LOGIN_DT, NO_ACTIVITY); 
+				else row.put(LAST_LOGIN_DT, Convert.formatDate(user.getLoginDate(), Convert.DATE_SLASH_PATTERN));
 				row.put(DAYS_SINCE_LAST_LOGIN, user.getLoginAge(true));	
 				/* Add the login age to data map for reporting formatting. This particular field is utilized for styling 
 				 * and not meant for actual display, hence no matching header column entry*/
@@ -331,7 +335,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		headerMap.put(EMAIL,"Email Address");
 		headerMap.put(PHONE,"Phone");
 		headerMap.put(UPDATES,"Update Frequency");
+		headerMap.put(ACCOUNT_OWNER_FLAG, "Account Lead");
 		headerMap.put(DIVISIONS, "Divisions");
+		headerMap.put(USER_STATUS, "License Type");
 		headerMap.put(EXPIRATION_DT, "Expiration Date");
 		headerMap.put(LAST_LOGIN_DT, "Last Logged In Date");
 		headerMap.put(DAYS_SINCE_LAST_LOGIN, "Days Since Last Logged In");

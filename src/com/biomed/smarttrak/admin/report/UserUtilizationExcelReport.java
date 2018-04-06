@@ -1,7 +1,5 @@
 package com.biomed.smarttrak.admin.report;
 
-//Java 8
-import java.util.Date;
 import java.util.Map;
 
 //Apache POI 3.13
@@ -49,9 +47,9 @@ public class UserUtilizationExcelReport extends ExcelReport {
 	 * @see com.siliconmtn.data.report.ExcelReport#setBodyCellStyle(org.apache.poi.ss.usermodel.Cell, java.util.Map, java.lang.String)
 	 */
 	@Override
-	protected void setBodyCellStyle(Cell c, Map<String, Object> rowData, String code) {
-		if(UserUtilizationMonthlyRollupReportVO.LAST_LOGIN_DT.equals(code) && 
-				rowData.get(UserUtilizationMonthlyRollupReportVO.LAST_LOGIN_DT) instanceof Date) {
+	protected void setBodyCellStyle(Cell c, Map<String, Object> rowData, String columnNm) {
+		String loginDt = (String)rowData.get(UserUtilizationMonthlyRollupReportVO.LAST_LOGIN_DT);
+		if(UserUtilizationMonthlyRollupReportVO.LAST_LOGIN_DT.equals(columnNm) && !UserUtilizationMonthlyRollupReportVO.NO_ACTIVITY.equals(loginDt)) {
 			
 			//set the background-color highlighting based on loginAge(similar to User list page legend)
 			CellStyle lastLoginStyle = wb.createCellStyle();
