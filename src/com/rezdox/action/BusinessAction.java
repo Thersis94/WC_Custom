@@ -54,6 +54,7 @@ public class BusinessAction extends SBActionAdapter {
 	public static final String BUSINESS_DATA = "businessData";
 	public static final String REQ_BUSINESS_ID = "businessId";
 	public static final String REQ_BUSINESS_INFO = "businessInfo";
+	public static final String ATTR_GET_FOR_MEMBER = "getForMember";
 	public static final String UPGRADE_MSG = "You have reached your maximum businesses. Please purchase a business upgrade to continue.";
 	private static final Class<BusinessFormProcessor> BUSINESS_FORM_PROCESSOR = BusinessFormProcessor.class;
 
@@ -209,7 +210,7 @@ public class BusinessAction extends SBActionAdapter {
 		params.add(BusinessStatus.ACTIVE.getStatus());
 
 		// Restrict to the member owner when editing business details
-		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter("settings") || StringUtil.isEmpty(businessId)) {
+		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter("settings") || StringUtil.isEmpty(businessId) || req.getAttribute(ATTR_GET_FOR_MEMBER) != null) {
 			sql.append("where bm.member_id = ? ");
 			params.add(RezDoxUtils.getMemberId(req));
 		} else if (!StringUtil.isEmpty(businessId)) {
@@ -299,11 +300,22 @@ public class BusinessAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("business build called ");
-		if (req.hasParameter(REQ_BUSINESS_INFO)) {
-			BusinessVO business = new BusinessVO(req);
-			boolean newBusiness = StringUtil.isEmpty(business.getBusinessId());
+		BusinessVO business = new BusinessVO(req);
+		boolean newBusiness = StringUtil.isEmpty(business.getBusinessId());
 
+		// Validate this member can edit the business data, prevent malicious editing
+		if (!newBusiness) {
+			req.setAttribute(ATTR_GET_FOR_MEMBER, true);
+			List<BusinessVO> memberBusiness = retrieveBusinesses(req);
+			req.removeAttribute(ATTR_GET_FOR_MEMBER);
+
+			if (memberBusiness.isEmpty()) {
+				return;
+			}
+		}
+		
+		// Edit the business data
+		if (req.hasParameter(REQ_BUSINESS_INFO)) {
 			saveForm(req);
 
 			SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
