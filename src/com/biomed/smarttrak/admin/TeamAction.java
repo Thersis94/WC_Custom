@@ -192,10 +192,29 @@ public class TeamAction extends SBActionAdapter {
 					req.setParameter(TEAM_ID, req.getParameter("pkId"));
 				db.delete(new TeamVO(req));
 			} else {
-				db.save(new TeamVO(req));
-				req.setParameter(TEAM_ID, db.getGeneratedPKId());
+				TeamVO team = new TeamVO(req);
+				db.save(team);
+				req.setParameter(TEAM_ID, team.getTeamId());
 			}
 		} catch (InvalidDataException | DatabaseException e) {
+			throw new ActionException(e);
+		}
+	}
+	
+	
+	/**
+	 * Add a default team to the supplied account.
+	 * @param req
+	 * @throws ActionException 
+	 */
+	public void addDefaultTeam(ActionRequest req) throws ActionException {
+		try {
+			DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+			TeamVO team = new TeamVO(req);
+			team.setTeamName("Default Team");
+			team.setDefaultFlg(1);
+			db.save(team);
+		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 	}

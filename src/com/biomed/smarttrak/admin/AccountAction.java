@@ -11,7 +11,6 @@ import java.util.Map;
 
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
-import com.biomed.smarttrak.vo.TeamVO;
 import com.biomed.smarttrak.vo.AccountVO.Status;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
@@ -352,15 +351,10 @@ public class AccountAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	private void addDefaultTeam(ActionRequest req) throws ActionException {
-		try {
-			DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-			TeamVO team = new TeamVO(req);
-			team.setTeamName("Default Team");
-			team.setDefaultFlg(1);
-			db.save(team);
-		} catch (Exception e) {
-			throw new ActionException(e);
-		}
+		TeamAction ta = new TeamAction(actionInit);
+		ta.setDBConnection(dbConn);
+		ta.setAttributes(attributes);
+		ta.addDefaultTeam(req);
 	}
 
 	/**

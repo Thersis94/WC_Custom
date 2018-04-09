@@ -741,9 +741,9 @@ public class AccountUserAction extends SBActionAdapter {
 		sql.append("values(?,?,?,?)");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			
+			UUIDGenerator gen = new UUIDGenerator();
 			for (String skip : user.getSkippedMarkets()) {
-				ps.setString(1, new UUIDGenerator().getUUID());
+				ps.setString(1, gen.getUUID());
 				ps.setString(2, user.getUserId());
 				ps.setString(3, skip);
 				ps.setTimestamp(4, Convert.getCurrentTimestamp());

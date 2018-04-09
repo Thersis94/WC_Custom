@@ -48,6 +48,12 @@ public class SmarttrakPasswordManager extends PasswordManager {
 		return emailVo;
 	}
 	
+	
+	/**
+	 * Get the email address of the user listed as the sales source for the supplied user
+	 * @param profileId
+	 * @return
+	 */
 	private String getSource(String profileId) {
 		StringBuilder sql = new StringBuilder(150);
 		
