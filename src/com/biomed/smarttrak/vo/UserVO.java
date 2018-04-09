@@ -51,6 +51,10 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private String loginOperSys;
 	private String loginBrowser;
 	private int statusFlg;
+	// Markets that should not show up in the updates email
+	private List<String> skippedMarkets;
+	private String sourceId;
+	private String sourceEmail;
 
 	/**
 	 * Smarttrak status dropdowns - stored in the DB using code, label displayed on user mgmt screens.
@@ -160,11 +164,13 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 
 	public UserVO() {
 		teams = new ArrayList<>();
+		skippedMarkets = new ArrayList<>();
 	}
 
 	public UserVO(ActionRequest req) {
 		super(req);
 		teams = new ArrayList<>();
+		skippedMarkets = new ArrayList<>();
 		setUserId(req.getParameter("userId"));
 		setAccountId(req.getParameter("accountId"));
 		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
@@ -175,8 +181,9 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		setGaAuthFlg(Convert.formatInteger(req.getParameter("gaAuthFlg")));
 		setMktAuthFlg(Convert.formatInteger(req.getParameter("mktAuthFlg")));
 		setAcctOwnerFlg(Convert.formatInteger(req.getParameter("acctOwnerFlg")));
+		if (req.hasParameter("skippedMarkets"))
+			setSkippedMarkets(req.getParameter("skippedMarkets").split("\\|"));
 	}
-
 
 	/**
 	 * @return the userId
@@ -642,5 +649,42 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 				return s.getLabel();
 		}
 		return "";
+	}
+
+	public List<String> getSkippedMarkets() {
+		return skippedMarkets;
+	}
+
+	public void setSkippedMarkets(List<String> skippedMarkets) {
+		this.skippedMarkets = skippedMarkets;
+	}
+	
+	public void addSkippedMarket(String skippedMarket) {
+		skippedMarkets.add(skippedMarket);
+	}
+
+	private void setSkippedMarkets(String[] skippedMarkets) {
+		if (skippedMarkets == null || skippedMarkets.length == 0)
+			return;
+		for (String skip : skippedMarkets)
+			addSkippedMarket(skip);
+	}
+
+	@Column(name="source_id", isInsertOnly=true)
+	public String getSourceId() {
+		return sourceId;
+	}
+
+	public void setSourceId(String sourceId) {
+		this.sourceId = sourceId;
+	}
+
+	@Column(name="source_email", isInsertOnly=true)
+	public String getSourceEmail() {
+		return sourceEmail;
+	}
+
+	public void setSourceEmail(String sourceEmail) {
+		this.sourceEmail = sourceEmail;
 	}
 }

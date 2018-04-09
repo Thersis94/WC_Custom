@@ -6,12 +6,17 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+
+import org.joda.time.DateTime;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.SmarttrakSolrAction;
+import com.biomed.smarttrak.security.SmartTRAKRoleModule;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.vo.SectionVO;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -20,13 +25,16 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.security.AuthorizationException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.solr.AccessControlQuery;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.DBRoleModule;
 
 /****************************************************************************
  * <b>Title</b>: ContentHierarchyAction.java
@@ -89,7 +97,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		List<Node> sections;
+		List<Node> sections = new ArrayList<>();
 		String sectionId = req.getParameter("sectionId");
 		Tree t = loadTree(null);
 		Tree.calculateTotalChildren(t.getRootNode());
@@ -99,15 +107,11 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		if (!StringUtil.isEmpty(sectionId)) {
 			//Put the requested Section Node on the request.
 			Node n = t.findNode(sectionId);
-			sections = new ArrayList<>();
 			sections.add(n);
 
-			if (req.hasParameter("amid") && !"smarttrakAdmin".equals(req.getParameter("amid"))) {
-				SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-
-				// Attempt to limit sections by the user's permissions
-				Section tool = SmarttrakSolrAction.determineSection(req);
-				sections = checkPermissions(sections, role, tool);
+			// Restrict the sections based on user id if not on the manage tool or if requested by the call
+			if (req.hasParameter("amid") && (!"smarttrakAdmin".equals(req.getParameter("amid")) || req.hasParameter("overrideUser"))) {
+				sections = loadSectionsFromId(req, sections);
 				log.debug("secs=" + sections.size());
 			}
 		} else {
@@ -116,6 +120,57 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		putModuleData(sections, sections.size(), false);
 	}
 
+
+	/**
+	 * Load the viewed user's acls
+	 * @param req
+	 * @param sections
+	 * @return
+	 * @throws ActionException
+	 */
+	private List<Node> loadSectionsFromId(ActionRequest req, List<Node> sections) throws ActionException {
+		SmarttrakRoleVO role;
+		if (req.hasParameter("overrideUser") && "smarttrakAdmin".equals(req.getParameter("amid"))) {
+			role = loadUser(req.getParameter("overrideUser"), req);
+		} else {
+			role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+		}
+
+		// Attempt to limit sections by the user's permissions
+		Section tool;
+		if (req.hasParameter("overrideTool") && "smarttrakAdmin".equals(req.getParameter("amid"))) {
+			tool = Section.valueOf(req.getParameter("overrideTool"));
+		} else {
+			tool = SmarttrakSolrAction.determineSection(req);
+		}
+		
+		return checkPermissions(sections, role, tool);
+	}
+
+	/**
+	 * Load the currently viewed user's information
+	 * @param profileId
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private SmarttrakRoleVO loadUser(String profileId, ActionRequest req) throws ActionException {
+		UserVO user = new UserVO(req);
+		user.setProfileId(profileId);
+		DateTime dtOrg = new DateTime(new Date());
+		user.setExpirationDate(dtOrg.plusDays(1).toDate());
+		
+		SmartTRAKRoleModule roleModule = new SmartTRAKRoleModule(attributes);
+		roleModule.addAttribute(DBRoleModule.DB_CONN, dbConn);
+		roleModule.addAttribute(DBRoleModule.HTTP_REQUEST, req);
+		roleModule.addAttribute(Constants.USER_DATA, user);
+		
+		try {
+			return (SmarttrakRoleVO) roleModule.getUserRole(profileId, ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getSiteId());
+		} catch (AuthorizationException e) {
+			throw new ActionException(e);
+		}
+	}
 
 	/**
 	 * Loop over the sections and make sure that the user has permission to access them
