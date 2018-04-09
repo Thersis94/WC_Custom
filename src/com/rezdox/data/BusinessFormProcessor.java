@@ -134,7 +134,11 @@ public class BusinessFormProcessor extends FormDataProcessor {
 		// Save the Business Data
 		BusinessAction ba = new BusinessAction(dbConn, attributes);
 		try {
-			ba.saveBusiness(req);
+			if (req.hasParameter("settings")) {
+				ba.saveSettings(req);
+			} else {
+				ba.saveBusiness(req);
+			}
 		} catch (Exception e) {
 			throw new DatabaseException("Could not save business", e);
 		}

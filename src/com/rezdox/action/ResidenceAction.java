@@ -32,6 +32,7 @@ import com.siliconmtn.db.DatabaseNote.DBType;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
@@ -569,13 +570,23 @@ public class ResidenceAction extends SBActionAdapter {
 		DBProcessor dbp = new DBProcessor(dbConn);
 		List<ResidenceAttributeVO> attr = dbp.executeSelect(sql.toString(), params, new ResidenceAttributeVO());
 
-		// Check to make sure we are updating at most once per day
-		ResidenceAttributeVO zestimate = attr.get(0);
-		Date lastUpdate = zestimate.getUpdateDate() == null ? zestimate.getCreateDate() : zestimate.getUpdateDate();
-		LocalDate now = LocalDate.now();
-		LocalDate prev = lastUpdate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-		int daysSinceLastUpdate = Period.between(prev, now).getDays();
+		ResidenceAttributeVO zestimate;
+		int daysSinceLastUpdate;
+		if (attr.isEmpty()) {
+			// If no previous Zestimate recorded, create a new one
+			zestimate = new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE, "0");
+			daysSinceLastUpdate = 1;
+			
+		} else {
+			// Check to make sure we are updating at most once per day
+			zestimate = attr.get(0);
+			Date lastUpdate = zestimate.getUpdateDate() == null ? zestimate.getCreateDate() : zestimate.getUpdateDate();
+			LocalDate now = LocalDate.now();
+			LocalDate prev = lastUpdate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+			daysSinceLastUpdate = Period.between(prev, now).getDays();
+		}
 
+		// Update only when required
 		if (daysSinceLastUpdate >= 1) {
 			applyZestimateUpdate(residence, zestimate);
 		}
@@ -589,14 +600,18 @@ public class ResidenceAction extends SBActionAdapter {
 	 */
 	private void applyZestimateUpdate(ResidenceVO residence, ResidenceAttributeVO zestimate) {
 		try {
-			ZillowAPIManager zillowApi = new ZillowAPIManager();
-			ZillowPropertyVO property = zillowApi.retrieveZillowId(residence);
+			ZillowPropertyVO property = new ZillowAPIManager().retrieveZillowId(residence);
 			zestimate.setValueText(property.getValueEstimate().toString());
+		} catch (InvalidDataException e) {
+			log.error("Could not retrieve Zestimate data for the residence", e);
+		}
 
+		// Save the required record, whether or not the API call was successful. This could be a new record.
+		try {
 			DBProcessor dbp = new DBProcessor(dbConn);
 			dbp.save(zestimate);
 		} catch (Exception e) {
-			log.error("Could not update zestimate value for residence", e);
+			log.error("Could not save the updated Zestimate", e);
 		}
 	}
 }
