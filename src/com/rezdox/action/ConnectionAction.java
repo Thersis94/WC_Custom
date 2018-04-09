@@ -347,7 +347,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("select connection_id, sndr_").append(idField).append("_id , b.business_id, 'sending', '', business_nm, b.photo_url, ");
 		sql.append("city_nm, state_cd, value_txt, cast(coalesce(rating, 0) as numeric) , b.create_dt, category_nm, approved_flg, privacy_flg ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.rcpt_member_id = b.business_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.rcpt_business_id = b.business_id ");
 		sql.append("left outer join ( ");
 		sql.append("select business_id, avg(rating_no) as rating from ").append(schema).append("rezdox_member_business_review ");
 		sql.append("group by business_id");
@@ -368,7 +368,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("select connection_id, b.business_id, rcpt_").append(idField).append("_id, 'receiving', '', business_nm, b.photo_url, ");
 		sql.append("city_nm, state_cd, value_txt, cast( coalesce(rating, 0)as numeric), b.create_dt, category_nm, approved_flg, privacy_flg ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.sndr_member_id = b.business_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.sndr_business_id = b.business_id ");
 		sql.append("left outer join ( ");
 		sql.append("select business_id, avg(rating_no) as rating from ").append(schema).append("rezdox_member_business_review ");
 		sql.append("group by business_id ");
