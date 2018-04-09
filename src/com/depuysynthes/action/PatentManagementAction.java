@@ -85,12 +85,12 @@ public class PatentManagementAction extends SBActionAdapter {
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		log.debug("list...");
-		List<PatentVO> patents = new ArrayList<>();
-
 		String patentId = StringUtil.checkVal(req.getParameter("patentId"),null);
-		// if 'add', return list with an empty VO for the view.
-		if (patentId == null && req.hasParameter("page")) {
-			patents.add(new PatentVO());
+
+		// Return empty data is no patent ID specified and this is not a search query.
+		if (patentId == null && ! req.hasParameter("searchVal")) {
+			List<PatentVO> patents = new ArrayList<>();
+			//REMOVE??? patents.add(new PatentVO());
 			putModuleData(patents);
 			return;
 		}

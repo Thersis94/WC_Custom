@@ -72,7 +72,7 @@ public class PatentActivityAction {
 			ps.setTimestamp(++idx, Convert.getCurrentTimestamp());
 			int val = ps.executeUpdate();
 			if (val == 0) 
-				throw new SQLException("Zero records inserted.");
+				throw new SQLException("No records inserted.");
 		} catch (Exception e) {
 			log.error(errMsg + patentId + "|" + profileId + "|" + activityType.name() + ", " + e);
 		}
