@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -13,12 +14,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 // WC custom
 import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.vo.UserVO.LicenseType;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
-
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -27,7 +29,7 @@ import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
+import com.siliconmtn.util.user.LastNameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
@@ -37,7 +39,7 @@ import com.smt.sitebuilder.util.PageViewVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserUtilizationReportAction.java</p>
- <p><b>Description: </b></p>
+ <p><b>Description: Action that gathers and combines data for utilization reporting and page counts.</b></p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
@@ -86,14 +88,13 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	public Map<String,Object> retrieveUserUtilization(ActionRequest req) throws ActionException {
-
 		StringEncrypter se = initStringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		String siteId = site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId();
 
 		boolean isDaily = Convert.formatBoolean(req.getParameter(PARAM_IS_DAILY));
-		dateStart = formatReportDate(req.getParameter("dateStart"), true, isDaily);
-		dateEnd = formatReportDate(req.getParameter("dateEnd"), false, isDaily);
+		dateStart = formatReportDate(req.getParameter(KEY_DATE_START), true, isDaily);
+		dateEnd = formatReportDate(req.getParameter(KEY_DATE_END), false, isDaily);
 
 		// 1. get user pageviews for the given start date.
 		List<PageViewVO> pageViews = retrieveBasePageViews(siteId,isDaily);
@@ -222,18 +223,18 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			Map<String,Map<String,Integer>> userPageCounts, String siteId) {
 		log.debug("retrieveAccountsUsers...");
 		Map<String,String> fieldMap = buildRegistrationFieldMap();
-		String[] profileIds = userPageCounts.keySet().toArray(new String[]{});
+		List<String> licenseTypes = buildLicenseTypeList();
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = buildAccountsQuery(schema, profileIds.length, fieldMap.size());
+		StringBuilder sql = buildAccountsQuery(schema, licenseTypes.size(), fieldMap.size());
 		log.debug("accounts SQL: " + sql.toString());
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int idx = 0;
 			ps.setString(++idx, STATUS_NO_INACTIVE);
-			ps.setString(++idx, STATUS_NO_INACTIVE);
-			for (String profileId : profileIds) {
-				ps.setString(++idx, profileId);
+			for (String type : licenseTypes) {
+				ps.setString(++idx, type);
 			}
+			ps.setInt(++idx, UserVO.Status.ACTIVE.getCode());
 			ps.setString(++idx, PhoneVO.HOME_PHONE);
 			ps.setString(++idx, siteId);
 			for (Map.Entry<String,String> field : fieldMap.entrySet()) {
@@ -257,11 +258,17 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @param userData
 	 */
 	protected void mergeData(Map<AccountVO,List<UserVO>> accounts, Map<String,Map<String,Integer>> userData) {
+		Set<String> profileIds = userData.keySet();//grab ids with matching page counts
+		
 		for (Map.Entry<AccountVO, List<UserVO>> acct : accounts.entrySet()) {
 			List<UserVO> acctUsers = acct.getValue();
 			for (UserVO user : acctUsers) {
-				// set this user's page count history as extended info.
-				user.setUserExtendedInfo(userData.get(user.getProfileId()));
+				//if the account user has extended info(page views) set this user's page count history as extended info.
+				if(profileIds.contains(user.getProfileId())) {
+					user.setUserExtendedInfo(userData.get(user.getProfileId()));
+				}else {// create a empty object for proper data rendering
+					user.setUserExtendedInfo(new HashMap<String, Integer>());
+				}
 			}
 		}
 	}
@@ -362,6 +369,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		AccountVO acct = null;
 		List<UserVO> users = null;
 		Map<AccountVO, List<UserVO>> accounts = new LinkedHashMap<>();
+		List<String> divisions = null;
 		
 		while (rs.next()) {
 
@@ -375,12 +383,11 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 				// first time through or changed accounts
 				if (acct != null) {
 					users.add(user);
+					Collections.sort(users, new LastNameComparator()); //sort before adding to account
 					accounts.put(acct, users);
 				}
 				// init new acct
-				acct = new AccountVO();
-				acct.setAccountId(rs.getString("account_id"));
-				acct.setAccountName(rs.getString("account_nm"));
+				acct = formatNextAccount(rs);
 				
 				// init user list for this acct.
 				users = formatUsersList(users,true);
@@ -405,7 +412,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			}
 			
 			// add registration field attribute here.
-			user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
+			divisions = addFieldAttributes(rs, user, divisions);
 			
 			// capture values for comparison
 			prevAcct = currAcct;
@@ -419,6 +426,22 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		if (users == null || returnNewList) 
 			return new ArrayList<>();
 		return users;
+	}
+	
+	/**
+	 * Creates, populates, and returns a AccountVO based on result set data.
+	 * @return
+	 * @throws SQLException 
+	 */
+	protected AccountVO formatNextAccount(ResultSet rs) throws SQLException {
+		AccountVO account = new AccountVO();
+		account.setAccountId(rs.getString("account_id"));
+		account.setAccountName(rs.getString("account_nm"));
+		account.setTypeId(rs.getString("type_id"));
+		account.setStartDate(rs.getDate("start_dt"));
+		account.setExpirationDate(rs.getDate("acct_expire_dt"));
+		
+		return account;
 	}
 		
 	/**
@@ -436,6 +459,11 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			user.setLastName(se.decrypt(rs.getString("last_nm")));
 			user.setEmailAddress(se.decrypt(rs.getString("email_address_txt")));
 			user.setMainPhone(se.decrypt(rs.getString("phone_number_txt")));
+			user.setStatusFlg(rs.getInt("active_flg"));
+			user.setLicenseType(rs.getString("status_cd"));
+			user.setAcctOwnerFlg(rs.getInt("acct_owner_flg"));
+			user.setExpirationDate(rs.getDate("user_expire_dt"));
+			user.setLoginDate(rs.getDate("login_dt"));
 		} catch (Exception e) {
 			log.error("Error formatting user, " + profileId + ", " + e.getMessage());
 		}
@@ -443,35 +471,58 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * Formats the accounts/account user query.
-	 * @param numProfileIds
+	 * Handles adding the registration field attributes associated to the UserVO to attributes map
+	 * @param rs
+	 * @param user
+	 * @param divisions
+	 * @throws SQLException
+	 */
+	protected List<String> addFieldAttributes(ResultSet rs, UserVO user, List<String> divisions) throws SQLException {
+		String regFieldId = rs.getString("register_field_id");
+		if(RegistrationMap.DIVISIONS.getFieldId().equals(regFieldId)) {//add division to list
+			if(divisions == null) divisions = new ArrayList<>();
+			divisions.add(rs.getString("option_desc"));	
+		}else {
+			if(divisions != null && !divisions.isEmpty()) {//add any previous divisions to attributes if available
+				user.addAttribute(RegistrationMap.DIVISIONS.getFieldId(), new ArrayList<>(divisions));
+				divisions.clear();
+			}
+			user.addAttribute(regFieldId, rs.getString("value_txt"));
+		}
+			
+		return divisions;
+	}
+	
+	/**
+	 * Formats the accounts/account user query. Retrieves all users for any active account
+	 * @param licenseTypes
 	 * @param numFields
 	 * @return
 	 */
-	protected StringBuilder buildAccountsQuery(String schema, int numProfileIds, int numFields) {
-		StringBuilder sql = new StringBuilder(925);
-		sql.append("select ac.account_id, ac.account_nm, ");
-		sql.append("us.profile_id, us.user_id, ");
-		sql.append("pf.first_nm, pf.last_nm, pf.email_address_txt, ");
+	protected StringBuilder buildAccountsQuery(String schema, int licenseTypes, int numFields) {
+		StringBuilder sql = new StringBuilder(1000);
+		sql.append("select ac.account_id, ac.account_nm, ac.type_id, ac.start_dt, ac.expiration_dt as acct_expire_dt, ");
+		sql.append("us.profile_id, us.user_id, us.status_cd, us.active_flg, us.expiration_dt as user_expire_dt, ");
+		sql.append("us.acct_owner_flg, pf.first_nm, pf.last_nm, pf.email_address_txt, max(login_dt) as login_dt, ");
 		sql.append("ph.phone_number_txt, ");
-		sql.append("rd.register_field_id, rd.value_txt ");
+		sql.append("rd.register_field_id, rd.value_txt, rfo.option_desc ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us ");
 		sql.append("on ac.account_id = us.account_id ");
-		sql.append("and ac.status_no != ? and us.status_cd != ? ");
-		sql.append("and us.profile_id in (");
-		for (int i = 0; i < numProfileIds; i++) {
-			if (i > 0) 
-				sql.append(",");
-			
+		sql.append("and ac.status_no != ? and (ac.expiration_dt is null or ac.expiration_dt >= CURRENT_DATE) ");
+		sql.append("and us.status_cd in (");
+		for (int i = 0; i < licenseTypes; i++) {
+			if (i > 0) sql.append(",");
 			sql.append("?");
 		}
-		sql.append(")");
+		sql.append(") ");
+		sql.append("and us.active_flg = ? and (us.expiration_dt is null or us.expiration_dt >= CURRENT_DATE) ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
+		sql.append("left join authentication_log alg on pf.authentication_id = alg.authentication_id ");
 		sql.append("left join phone_number ph on pf.profile_id = ph.profile_id ");
 		sql.append("and ph.phone_type_cd = ? ");
 		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
-		sql.append("and site_id = ? ");
+		sql.append("and rs.site_id = ? ");
 		sql.append("inner join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
 		sql.append("and rd.register_field_id in (");
 		for (int i = 0; i < numFields; i++) {
@@ -481,7 +532,12 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			sql.append("?");
 		}
 		sql.append(") ");
-		sql.append("order by account_nm, profile_id");
+		sql.append("left join register_field_option rfo on rd.value_txt = rfo.option_value_txt ");
+		sql.append("and rd.register_field_id = rfo.register_field_id ");
+		sql.append("group by ac.account_id, ac.account_nm, ac.type_id, ac.start_dt, ac.expiration_dt, us.profile_id, ");
+		sql.append("us.user_id, us.status_cd, us.active_flg, us.expiration_dt, us.acct_owner_flg, pf.first_nm, pf.last_nm, ");
+		sql.append("pf.email_address_txt, ph.phone_number_txt, rd.register_field_id, rd.value_txt, rfo.option_desc ");
+		sql.append("order by account_nm, pf.last_nm, profile_id, rd.register_field_id, rfo.option_desc");
 		return sql;
 	}
 	
@@ -493,7 +549,21 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		Map<String,String> fieldMap = new HashMap<>();
 		fieldMap.put(RegistrationMap.TITLE.getFieldId(), "Title");
 		fieldMap.put(RegistrationMap.UPDATES.getFieldId(), "Updates");
+		fieldMap.put(RegistrationMap.DIVISIONS.getFieldId(), "Divisions");
 		return fieldMap;
+	}
+	
+	/**
+	 * Builds a map of license types for applicable account users
+	 * @return
+	 */
+	protected List<String> buildLicenseTypeList(){
+		List<String> licenseTypes = new ArrayList<>();
+		licenseTypes.add(LicenseType.ACTIVE.getCode());
+		licenseTypes.add(LicenseType.COMPLIMENTARY.getCode());
+		licenseTypes.add(LicenseType.EXTRA.getCode());
+		licenseTypes.add(LicenseType.TRIAL.getCode());
+		return licenseTypes;
 	}
 
 	/**

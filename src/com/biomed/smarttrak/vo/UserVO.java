@@ -598,13 +598,21 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		if (title != null && !title.isEmpty())
 			getAttributes().put(RegistrationMap.TITLE.getFieldId(), title.get(0));
 	}
-
+	
 	/**
-	 * returns a constant int based on the last time the user logged-in to the website - used on Userrs list page (legend)
-	 * @param loginDate
+	 * Overload method version. Defaults to false for returning exact days since last logged in
 	 * @return
 	 */
 	public Integer getLoginAge() {
+		return getLoginAge(false);
+	}
+
+	/**
+	 * returns a constant int based on the last time the user logged-in to the website - used on Userrs list page (legend)
+	 * @param exactDays - pass true to return the exact number of days since last login 
+	 * @return
+	 */
+	public Integer getLoginAge(boolean exactDays) {
 		if (loginAge != -1) return loginAge;
 
 		if (loginDate == null) {
@@ -613,6 +621,10 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 			Instant instant = Instant.ofEpochMilli(loginDate.getTime());
 			LocalDate login = LocalDateTime.ofInstant(instant, ZoneId.systemDefault()).toLocalDate();
 			long days = DAYS.between(login, LocalDate.now());
+			if(exactDays) {
+				return (int) days;
+			}
+			
 			if (days < 30) {
 				loginAge = 30;
 			} else if (days <= 90) {
