@@ -30,6 +30,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.user.LocationManager;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
@@ -281,7 +282,7 @@ public class BusinessAction extends SBActionAdapter {
 	 * @param req
 	 */
 	protected FormVO retrieveBusinessInfoForm(ActionRequest req) {
-		String formId = req.hasParameter(REQ_SETTINGS) ? RezDoxUtils.getAltFormId(getAttributes()) : RezDoxUtils.getFormId(getAttributes());
+		String formId = req.hasParameter(REQ_SETTINGS) ? RezDoxUtils.getFormId(getAttributes(), ModuleVO.ATTRIBUTE_2) : RezDoxUtils.getFormId(getAttributes());
 		log.debug("Retrieving Business Form: " + formId);
 
 		// Set the requried params
@@ -389,7 +390,7 @@ public class BusinessAction extends SBActionAdapter {
 	 * @param req
 	 */
 	protected void saveForm(ActionRequest req) {
-		String formId =  req.hasParameter(REQ_SETTINGS) ? RezDoxUtils.getAltFormId(getAttributes()) : RezDoxUtils.getFormId(getAttributes());
+		String formId =  req.hasParameter(REQ_SETTINGS) ? RezDoxUtils.getFormId(getAttributes(), ModuleVO.ATTRIBUTE_2) : RezDoxUtils.getFormId(getAttributes());
 
 		// Place ActionInit on the Attributes map for the Data Save Handler.
 		attributes.put(Constants.ACTION_DATA, actionInit);

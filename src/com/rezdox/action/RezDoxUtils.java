@@ -106,20 +106,20 @@ public class RezDoxUtils {
 	 * @return
 	 */
 	public static String getFormId(Map<String, Object> attributes) {
-		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		return (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
+		return getFormId(attributes, ModuleVO.ATTRIBUTE_1);
 	}
 	
 	
 	/**
-	 * Get's a secondary form id used by the action
+	 * Get's an alternate form id used by the action
 	 * 
 	 * @param attributes
+	 * @param mapKey
 	 * @return
 	 */
-	public static String getAltFormId(Map<String, Object> attributes) {
+	public static String getFormId(Map<String, Object> attributes,  String mapKey) {
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		return (String) mod.getAttribute(ModuleVO.ATTRIBUTE_2);
+		return (String) mod.getAttribute(mapKey);
 	}
 
 
