@@ -1,24 +1,28 @@
 package com.rezdox.action;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import com.rezdox.data.RoomTypeList;
-import com.rezdox.vo.RoomVO;
+//SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
+//WC Core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
-
+//WC Custom
+import com.rezdox.data.RoomCategoryList;
+import com.rezdox.vo.RoomVO;
 
 /****************************************************************************
  * <b>Title</b>: RoomAction.java
@@ -54,47 +58,43 @@ public class RoomAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("Rooms Retrieve called ");
-		if (StringUtil.isEmpty(req.getParameter(RESIDENCE_ID)) && StringUtil.isEmpty(req.getParameter(ROOM_ID))) return;
-		String schema = getCustomSchema();
-		List<Object> params = new ArrayList<>();
-		
+		String roomId = req.getParameter(ROOM_ID);
+		if (StringUtil.isEmpty(req.getParameter(RESIDENCE_ID)) && StringUtil.isEmpty(roomId)) return;
+
 		//if there is just a residence get the list of rooms
-		if (!StringUtil.isEmpty(req.getParameter(RESIDENCE_ID)) && StringUtil.isEmpty(req.getParameter(ROOM_ID))) {
-			List<RoomVO> data = generateRoomList(req.getParameter(RESIDENCE_ID), schema, params);
+		if (!StringUtil.isEmpty(req.getParameter(RESIDENCE_ID)) && StringUtil.isEmpty(roomId)) {
+			List<RoomVO> data = generateRoomList(req.getParameter(RESIDENCE_ID));
 			log.debug("number of rooms found " + data.size() );
 			putModuleData(data);
-		}
-		
-		//if its a new room or an edit add the room type list
-		if (!StringUtil.isEmpty(req.getParameter(ROOM_ID))) {
-			RoomTypeList rtl = new RoomTypeList();
+
+		} else if (!StringUtil.isEmpty(roomId)) {
+			//if its a new room or an edit add the room category list
+			RoomCategoryList rtl = new RoomCategoryList();
 			rtl.setActionInit(actionInit);
 			rtl.setDBConnection(dbConn);
 			rtl.setAttributes(attributes);
-			
 			ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-			modVo.setAttribute(ROOM_TYPE_LIST, rtl.getCompleteRoomTypeList());
+			modVo.setAttribute(ROOM_TYPE_LIST, rtl.listData(req));
 			setAttribute(Constants.MODULE_DATA, modVo);
 		}
 
-		//if there is a room id and a residence id get that particular room, also generate the complete 
-		if (!StringUtil.isEmpty(req.getParameter(ROOM_ID)) && !NEW.equalsIgnoreCase(req.getParameter(ROOM_ID)) ) {
-			putModuleData(generateRoomDetail(req.getParameter(ROOM_ID), schema));
+		//if there is a room id and a residence id get that particular room, also generate the complete
+		if (!StringUtil.isEmpty(roomId) && !NEW.equalsIgnoreCase(roomId)) {
+			putModuleData(generateRoomDetail(roomId));
 		}
-				
 	}
-	
+
+
 	/**
 	 * generates the room data for the room for which data is requested.  
 	 * @return
 	 * @throws InvalidDataException 
 	 */
-	private RoomVO generateRoomDetail(String roomId, String schema) {
+	private RoomVO generateRoomDetail(String roomId) {
 		RoomVO vo = new RoomVO();
 		vo.setRoomId(StringUtil.checkVal(roomId));
-		
-		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
 			db.getByPrimaryKey(vo);
 		} catch (InvalidDataException | DatabaseException e) {
@@ -102,6 +102,7 @@ public class RoomAction extends SimpleActionAdapter {
 		}
 		return vo;
 	}
+
 
 	/**
 	 * generates a list of all the room vos linked to the residence
@@ -111,19 +112,18 @@ public class RoomAction extends SimpleActionAdapter {
 	 * @return 
 	 * 
 	 */
-	private List<RoomVO> generateRoomList(String resId, String schema, List<Object> params) {
+	private List<RoomVO> generateRoomList(String resId) {
+		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from ").append(schema).append("rezdox_room rr ");
-		sql.append("inner join ").append(schema).append("rezdox_room_type rt on rr.room_type_cd = rt.room_type_cd ");
-		sql.append("where residence_id = ? order by rr.room_nm");
-		
-		params.add(StringUtil.checkVal(resId));
-		log.debug("sql " + sql.toString() +"|"+ params);
-		
+		sql.append("select rr.*, c.category_nm from ").append(schema).append("rezdox_room rr ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_ROOM_CATEGORY c on rr.room_category_cd=c.room_category_cd ");
+		sql.append("where rr.residence_id=? order by rr.room_nm");
+		log.debug(sql +"|"+ resId);
+
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSelect(sql.toString(), params, new RoomVO());
-		
+		return db.executeSelect(sql.toString(), Arrays.asList(StringUtil.checkVal(resId)), new RoomVO());
 	}
+
 
 	/*
 	 * Load a Treasure Box from the DB - including all it's sub-components if a pkId was passed
@@ -132,15 +132,18 @@ public class RoomAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		RoomVO vo = new RoomVO(req);
-		
-		log.debug("room " + vo);
+		RoomVO vo = RoomVO.instanceOf(req);
+		log.debug("RoomVO: " + vo);
+
 		//clean out the 'new' string so the processor knows it is a new vo
-		if ("new".equalsIgnoreCase(vo.getRoomId())) {
+		if ("new".equalsIgnoreCase(vo.getRoomId()))
 			vo.setRoomId(null);
-		}
+
+		//ensure any rooms coming from the UI have a residenceId - prevent a hacker from contributing to the global scope
+		if (StringUtil.isEmpty(vo.getResidenceId()))
+			throw new ActionException("cannot save room without residenceId");
+
 		DBProcessor dbp = new DBProcessor(dbConn);
-		
 		try {
 			if (req.hasParameter("isDelete")) {
 				dbp.delete(vo);
@@ -148,26 +151,16 @@ public class RoomAction extends SimpleActionAdapter {
 				dbp.save(vo);
 			}
 		} catch(Exception e) {
-			log.error("Couldn't save RezDox room. ", e);
+			log.error("Couldn't save RezDox room", e);
 		}
-		
-		StringBuilder url = new StringBuilder(150);
+
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		
+		StringBuilder url = new StringBuilder(150);
 		url.append(page.getRequestURI());
-		
+
 		if (!StringUtil.isEmpty(req.getParameter(RESIDENCE_ID)))
-				url.append("?residenceId=").append(req.getParameter(RESIDENCE_ID));
-				
-		if (!StringUtil.isEmpty(req.getParameter(ROOM_ID)) && !Convert.formatBoolean(req.hasParameter("isDelete"))) {
-			url.append("&roomId=").append(vo.getRoomId());
-		}
-			
+			url.append("?residenceId=").append(req.getParameter(RESIDENCE_ID));
 
-		log.debug("REDIR=" + url);
-
-		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		sendRedirect(url.toString(), (String)getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE), req);
 	}
 }
-	
