@@ -4,6 +4,7 @@ package com.rezdox.security;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
+import com.siliconmtn.action.ActionRequest;
 //SMTBaseLibs
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -54,7 +55,8 @@ public class RezDoxLoginModule extends DBLoginModule {
 	public MemberVO loadUserData(String profileId, String authenticationId) {
 		UserDataVO user = super.loadUserData(profileId, authenticationId);
 		SMTDBConnection dbConn = (SMTDBConnection) getAttribute(GlobalConfig.KEY_DB_CONN);
-		HttpServletResponse resp = (HttpServletResponse) getAttribute(GlobalConfig.HTTP_RESPONSE);
+		ActionRequest req = (ActionRequest) getAttribute(GlobalConfig.ACTION_REQUEST);
+		HttpServletResponse resp = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
 
 		// Get the member data by calling the member action
 		MemberAction ma = new MemberAction(dbConn, getAttributes());
