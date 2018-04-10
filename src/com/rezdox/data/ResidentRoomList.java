@@ -1,6 +1,6 @@
 package com.rezdox.data;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.siliconmtn.action.ActionException;
@@ -39,19 +39,26 @@ public class ResidentRoomList extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		List<GenericVO> data = listRooms(req);
+		putModuleData(data, data.size(), false);
+	}
+
+	/**
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> listRooms(ActionRequest req) {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select rr.room_id as key, rr.room_nm as value from ").append(custom).append("rezdox_room rr ");
-		sql.append("where rr.residence_id=? ");
-		sql.append("order by rr.room_nm ");
+		sql.append("select room_id as key, room_nm as value from ").append(custom).append("rezdox_room ");
+		sql.append("where residence_id=? or residence_id is null ");
+		sql.append("order by room_nm");
+		log.debug(sql);
 
-		List<Object> params = new ArrayList<>();
-		params.add(req.getParameter("residenceId"));
-
+		List<Object> params = Arrays.asList(req.getParameter("residenceId"));
 		DBProcessor db = new DBProcessor(getDBConnection(), custom);
 		List<GenericVO> data = db.executeSelect(sql.toString(), params, new GenericVO());
 		log.debug(sql +" | params: "+ params + " | rooms: " + data.size());
-
-		putModuleData(data, data.size(), false);
+		return data;
 	}
 }

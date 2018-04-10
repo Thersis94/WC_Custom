@@ -1,10 +1,9 @@
 package com.rezdox.vo;
 
-import java.io.Serializable;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.data.parser.BeanDataMapper;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
@@ -21,16 +20,14 @@ import com.siliconmtn.util.StringUtil;
  * @since Mar 15, 2018
  * @updates:
  ****************************************************************************/
-
 @Table(name="REZDOX_ROOM")
-public class RoomVO extends BeanDataVO implements Serializable {
-	private static final long serialVersionUID = 7920523382245598314L;
-	
+public class RoomVO {
+
 	private String roomId;
-	private String typeName;
+	private String categoryName;
 	private String roomName;
 	private String residenceId;
-	private String roomTypeCode;
+	private String roomCategoryCode;
 	private Date createDate;
 	private Date updateDate;
 	private int lengthFootNo;
@@ -43,14 +40,22 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public RoomVO() {
 		super();
 	}
+
+
 	/**
+	 * Create a new VO using data auto-filled off the request.
+	 * Request parameter names must match setter method names, sans the "set".
+	 * e.g. setFirstName -> req.getParameter("firstName"); 
 	 * @param req
+	 * @return
 	 */
-	public RoomVO(ActionRequest req) {
-		this();
-		populateData(req);
+	public static RoomVO instanceOf(ActionRequest req) {
+		RoomVO vo = new RoomVO();
+		BeanDataMapper.parseBean(vo, req.getParameterMap());
+		return vo;
 	}
-	
+
+
 	/**
 	 * @return the roomId
 	 */
@@ -64,7 +69,7 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public void setRoomId(String roomId) {
 		this.roomId = roomId;
 	}
-	
+
 	/**
 	 * @return the residenceId
 	 */
@@ -72,7 +77,7 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public String getResidenceId() {
 		return residenceId;
 	}
-	
+
 	/**
 	 * @param residenceId the residenceId to set
 	 */
@@ -81,32 +86,35 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	}
 
 	/**
-	 * @return the roomTypeName
+	 * @return the roomCategoryName
 	 */
-	@Column(name="type_nm", isReadOnly=true)
-	public String getTypeName() {
-		return typeName;
+	@Column(name="category_nm", isReadOnly=true)
+	public String getCategoryName() {
+		return categoryName;
 	}
+
 	/**
-	 * @param roomTypeName the roomTypeName to set
+	 * @param roomCategoryName the roomCategoryName to set
 	 */
-	public void setTypeName(String typeName) {
-		
-		this.typeName = typeName;
+	public void setCategoryName(String catName) {
+		this.categoryName = catName;
 	}
+
 	/**
-	 * @return the roomTypeCode
+	 * @return the roomCategoryCode
 	 */
-	@Column(name="room_type_cd")
-	public String getRoomTypeCode() {
-		return roomTypeCode;
+	@Column(name="room_category_cd")
+	public String getRoomCategoryCode() {
+		return roomCategoryCode;
 	}
+
 	/**
-	 * @param roomTypeCode the roomTypeCode to set
+	 * @param roomCategoryCode the roomCategoryCode to set
 	 */
-	public void setRoomTypeCode(String roomTypeCode) {
-		this.roomTypeCode = roomTypeCode;
+	public void setRoomCategoryCode(String roomCategoryCode) {
+		this.roomCategoryCode = roomCategoryCode;
 	}
+
 	/**
 	 * @return the lengthFootNo
 	 */
@@ -114,12 +122,14 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public int getLengthFootNo() {
 		return lengthFootNo;
 	}
+
 	/**
 	 * @param lengthFootNo the lengthFootNo to set
 	 */
 	public void setLengthFootNo(int lengthFootNo) {
 		this.lengthFootNo = lengthFootNo;
 	}
+
 	/**
 	 * @return the widthFootNo
 	 */
@@ -127,12 +137,14 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public int getWidthFootNo() {
 		return widthFootNo;
 	}
+
 	/**
 	 * @param widthFootNo the widthFootNo to set
 	 */
 	public void setWidthFootNo(int widthFootNo) {
 		this.widthFootNo = widthFootNo;
 	}
+
 	/**
 	 * @return the lengthInchNo
 	 */
@@ -140,12 +152,14 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public int getLengthInchNo() {
 		return lengthInchNo;
 	}
+
 	/**
 	 * @param lengthInchNo the lengthInchNo to set
 	 */
 	public void setLengthInchNo(int lengthInchNo) {
 		this.lengthInchNo = lengthInchNo;
 	}
+
 	/**
 	 * @return the widthInchNo
 	 */
@@ -153,12 +167,14 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public int getWidthInchNo() {
 		return widthInchNo;
 	}
+
 	/**
 	 * @param widthInchNo the widthInchNo to set
 	 */
 	public void setWidthInchNo(int widthInchNo) {
 		this.widthInchNo = widthInchNo;
 	}
+
 	/**
 	 * @return the heightFootNo
 	 */
@@ -166,12 +182,14 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public int getHeightFootNo() {
 		return heightFootNo;
 	}
+
 	/**
 	 * @param heightFootNo the heightFootNo to set
 	 */
 	public void setHeightFootNo(int heightFootNo) {
 		this.heightFootNo = heightFootNo;
 	}
+
 	/**
 	 * @return the heightInchNo
 	 */
@@ -179,12 +197,14 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public int getHeightInchNo() {
 		return heightInchNo;
 	}
+
 	/**
 	 * @param heightInchNo the heightInchNo to set
 	 */
 	public void setHeightInchNo(int heightInchNo) {
 		this.heightInchNo = heightInchNo;
 	}
+
 	/**
 	 * @return the createDate
 	 */
@@ -192,12 +212,14 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public Date getCreateDate() {
 		return createDate;
 	}
+
 	/**
 	 * @param createDate the createDate to set
 	 */
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
 	}
+
 	/**
 	 * @return the updateDate
 	 */
@@ -205,12 +227,14 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public Date getUpdateDate() {
 		return updateDate;
 	}
+
 	/**
 	 * @param updateDate the updateDate to set
 	 */
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
 	}
+
 	/**
 	 * @return the roomName
 	 */
@@ -218,20 +242,20 @@ public class RoomVO extends BeanDataVO implements Serializable {
 	public String getRoomName() {
 		return roomName;
 	}
+
 	/**
 	 * @param roomName the roomName to set
 	 */
 	public void setRoomName(String roomName) {
 		this.roomName = roomName;
 	}
-	
+
 	/*
 	 * (non-Javadoc)
-	 * @see com.siliconmtn.data.parser.BeanDataVO#toString()
+	 * @see java.lang.Object#toString()
 	 */
 	@Override
 	public String toString() {
 		return StringUtil.getToString(this);
 	}
 }
-
