@@ -53,6 +53,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	public static final String CATEGORY_SEARCH = "categorySearch";
 	public static final String TARGET_ID = "targetId"; 
 	public static final String REZDOX_CONNECTION_POINTS = "rezdoxConnectionPoints";
+	private static final String ID_SUFFIX = "_id = ? ";
 
 
 	public ConnectionAction() {
@@ -113,7 +114,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	private void loadPros(ActionRequest req) {
 		//cache this list - it won't change often enough to be rebuilding on every pageview
 		if (!req.hasParameter("reloadPros") && req.getSession().getAttribute("MY_PROS") != null) return;
-		
+
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select b.*, m.first_nm, m.last_nm, m.profile_pic_pth from ").append(schema).append(REZDOX_CONNECTION_A);
@@ -161,7 +162,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		log.debug(" found " +count+ "Connection");
 		//set the total in a cookie.  This may be excessive for repeat calls to the rewards page, but ensures cached data is flushed
 		HttpServletResponse resp = (HttpServletResponse) getAttribute(GlobalConfig.HTTP_RESPONSE);
-		CookieUtil.add(resp, "rezdoxConnectionPoints", String.valueOf(count), "/", -1);
+		CookieUtil.add(resp, REZDOX_CONNECTION_POINTS, String.valueOf(count), "/", -1);
 	}
 
 
@@ -311,29 +312,23 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 */
 	private List<ConnectionReportVO> generateConnections(String targetId, String inqueryType, ActionRequest req) {
 		log.debug("generating connections");
-		String order = DBUtil.ORDER_BY + " approved_flg asc, create_dt desc ";
+		String order = "order by approved_flg asc, create_dt desc ";
 		if (req.hasParameter(DBUtil.TABLE_ORDER) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER)))
-			order = DBUtil.ORDER_BY + req.getParameter(DBUtil.TABLE_ORDER) + " " + req.getParameter("dir");
-
+			order = StringUtil.join(DBUtil.ORDER_BY, req.getParameter(DBUtil.TABLE_ORDER), " ", req.getParameter("dir"));
 
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
-
-		StringBuilder sql = new StringBuilder(2680);
-
-		String idField = BUSINESS; 
-		if (inqueryType.equals(MEMBER)) {
-			idField = MEMBER;
-		}
+		String idField = (inqueryType.equals(MEMBER)) ? MEMBER : BUSINESS;
 
 		//getting the records where target id sent the connection to an other member
+		StringBuilder sql = new StringBuilder(2680);
 		sql.append(DBUtil.SELECT_FROM_STAR);
 		sql.append("( select connection_id, sndr_").append(idField).append("_id as sndr_id, b.member_id as rcpt_id, 'sending' as direction_cd, b.first_nm, b.last_nm, b.profile_pic_pth, ");
 		sql.append("pa.city_nm, pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, b.create_dt, 'MEMBER' as category_nm, approved_flg, privacy_flg ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.rcpt_member_id = b.member_id ");
 		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
-		sql.append("where sndr_").append(idField).append("_id = ? ");
+		sql.append("where sndr_").append(idField).append(ID_SUFFIX);
 		params.add(targetId);
 		//getting the records where target id was sent a connection by an other memeber
 		sql.append(DBUtil.UNION_ALL);
@@ -342,7 +337,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A );
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.sndr_member_id = b.member_id ");
 		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
-		sql.append("where rcpt_").append(idField).append("_id = ? ");
+		sql.append("where rcpt_").append(idField).append(ID_SUFFIX);
 		params.add(targetId);
 		//getting the records where target id sent a connection to a business
 		sql.append(DBUtil.UNION_ALL);
@@ -350,20 +345,20 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("city_nm, state_cd, value_txt, cast(coalesce(rating, 0) as numeric) , b.create_dt, category_nm, approved_flg, privacy_flg ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.rcpt_member_id = b.business_id ");
-		sql.append("left outer join ( ");
-		sql.append("select business_id, avg(rating_no) as rating from ").append(schema).append("rezdox_member_business_review ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN);
+		sql.append("(select business_id, avg(rating_no) as rating from ").append(schema).append("rezdox_member_business_review ");
 		sql.append("group by business_id");
 		sql.append(") as r on b.business_id = r.business_id ");
-		sql.append("left outer join ( ");
-		sql.append("select business_id, value_txt from ").append(schema).append("rezdox_business_attribute ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN);
+		sql.append("(select business_id, value_txt from ").append(schema).append("rezdox_business_attribute ");
 		sql.append("where slug_txt = 'BUSINESS_SUMMARY' ");
 		sql.append(") as d on b.business_id = d.business_id ");
-		sql.append("left outer join ( ");
-		sql.append("select business_id, c.category_nm from ").append(schema).append("rezdox_business_category_xr a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN);
+		sql.append("(select business_id, c.category_nm from ").append(schema).append("rezdox_business_category_xr a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
-		sql.append("where sndr_").append(idField).append("_id = ? ");
+		sql.append("where sndr_").append(idField).append(ID_SUFFIX);
 		params.add(targetId);
 		//getting the records where a business sent a connection to the target id
 		sql.append(DBUtil.UNION_ALL);
@@ -371,34 +366,32 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("city_nm, state_cd, value_txt, cast( coalesce(rating, 0)as numeric), b.create_dt, category_nm, approved_flg, privacy_flg ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.sndr_member_id = b.business_id ");
-		sql.append("left outer join ( ");
-		sql.append("select business_id, avg(rating_no) as rating from ").append(schema).append("rezdox_member_business_review ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN);
+		sql.append("(select business_id, avg(rating_no) as rating from ").append(schema).append("rezdox_member_business_review ");
 		sql.append("group by business_id ");
 		sql.append(") as r on b.business_id = r.business_id ");
-		sql.append("left outer join ( ");
-		sql.append("select business_id, value_txt from ").append(schema).append("rezdox_business_attribute ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN);
+		sql.append("(select business_id, value_txt from ").append(schema).append("rezdox_business_attribute ");
 		sql.append("where slug_txt = 'BUSINESS_SUMMARY' ");
 		sql.append(") as d on b.business_id = d.business_id ");
-		sql.append("left outer join ( ");
-		sql.append("select business_id, c.category_nm from ").append(schema).append("rezdox_business_category_xr a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN);
+		sql.append("(select business_id, c.category_nm from ").append(schema).append("rezdox_business_category_xr a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
-		sql.append("where rcpt_").append(idField).append("_id = ? ");
+		sql.append("where rcpt_").append(idField).append(ID_SUFFIX);
 		params.add(targetId);
 		sql.append(") as all_member ");
 		//where for whole multiplexed union would go here
 		generateWhere(sql, req, params);
 		sql.append(order);
-
-		log.debug("sql " + sql.toString()+"|"+ params);
+		log.debug(sql+"|"+ params);
 
 		//generate a list of VO's
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
-
 		return dbp.executeSelect(sql.toString(), params, new ConnectionReportVO());
-
 	}
+
 
 	/**
 	 * @param sql
@@ -409,21 +402,21 @@ public class ConnectionAction extends SimpleActionAdapter {
 	private void generateWhere(StringBuilder sql, ActionRequest req, List<Object> params) {
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 
-		if(req.hasParameter(CATEGORY_SEARCH) && !"All".equalsIgnoreCase(StringUtil.checkVal(req.getParameter(CATEGORY_SEARCH)))){
+		if (req.hasParameter(CATEGORY_SEARCH) && !"All".equalsIgnoreCase(StringUtil.checkVal(req.getParameter(CATEGORY_SEARCH)))) {
 			String cs = req.getParameter(CATEGORY_SEARCH);
 			sql.append("and category_nm = ? ");
 			log.debug("category name " + cs);
 			params.add(cs);
 		}
 
-		if(req.hasParameter(STATE_SEARCH)) {
+		if (req.hasParameter(STATE_SEARCH)) {
 			String ss =  req.getParameter(STATE_SEARCH);
 			sql.append("and state_cd = ? ");
 			log.debug("state search " + ss);
 			params.add(ss);
 		}
 
-		if(req.hasParameter(SEARCH)) {
+		if (req.hasParameter(SEARCH)) {
 			String sp = StringUtil.checkVal(req.getParameter(SEARCH)).toLowerCase();
 			log.debug("search param " + sp);
 			sql.append("and (LOWER(first_nm) like ? or LOWER(last_nm) like ? ) ");
@@ -431,12 +424,13 @@ public class ConnectionAction extends SimpleActionAdapter {
 			params.add("%"+sp+"%");
 		}
 
-		if(req.getIntegerParameter(APPROVED_FLAG) != null && req.getIntegerParameter(APPROVED_FLAG) < 3 && req.getIntegerParameter(APPROVED_FLAG) >= 0) {
+		if (req.getIntegerParameter(APPROVED_FLAG) != null && req.getIntegerParameter(APPROVED_FLAG) < 3 && req.getIntegerParameter(APPROVED_FLAG) >= 0) {
 			sql.append("and approved_flg = ? ");
 			log.debug("approved "+req.getIntegerParameter(APPROVED_FLAG));
 			params.add(req.getIntegerParameter(APPROVED_FLAG));
 		}
 	}
+
 
 	/*
 	 * (non-Javadoc)
@@ -450,15 +444,13 @@ public class ConnectionAction extends SimpleActionAdapter {
 		String schema = getCustomSchema();
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 
-		if(req.getBooleanParameter("approvalUpdate")) {
+		if (req.getBooleanParameter("approvalUpdate")) {
 			try {
 				dbp.getByPrimaryKey(cvo);
 			} catch (InvalidDataException | DatabaseException e) {
 				log.error("could not fill connection vo ",e);
 			}
-
 			cvo.setApprovedFlag(req.getIntegerParameter(APPROVED_FLAG));
-
 		}
 
 		//if a business is the recipient instant approve
@@ -474,6 +466,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		processEmails(cvo);
 	}
+
 
 	/**
 	 * sends an email when an a user starts or accepts a connection
@@ -511,6 +504,5 @@ public class ConnectionAction extends SimpleActionAdapter {
 			EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
 			util.sendMessage(dataMap, rcptMap, "CONNECTION_APPROVED" );
 		}
-
 	}
 }
