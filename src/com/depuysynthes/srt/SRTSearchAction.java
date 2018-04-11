@@ -92,7 +92,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 
 		//Queue Workflow Message for SRT Report.
 		WorkflowSender wfs = new WorkflowSender(attributes);
-		wfs.sendWorkflow(buildWorkflowMessage(projectIds, req.getParameter("emailAddress")));
+		wfs.sendWorkflow(buildWorkflowMessage(projectIds, req.getParameter("emailAddress"), SRTUtil.getOpCO(req)));
 	}
 
 	/**
@@ -102,10 +102,11 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	 * @param emailAddress
 	 * @return
 	 */
-	private WorkflowMessageVO buildWorkflowMessage(List<String> projectIds, String emailAddress) {
+	private WorkflowMessageVO buildWorkflowMessage(List<String> projectIds, String emailAddress, String opCoId) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("projectId", projectIds);
 		params.put("DEST_EMAIL_ADDR", emailAddress);
+		params.put("opCoId", opCoId);
 		WorkflowMessageVO wmv = new WorkflowMessageVO(new WorkflowLookupUtil(dbConn).lookupWorkflowId("REPORT", "SRT_REPORT"));
 		wmv.setParameters(params);
 		return wmv;

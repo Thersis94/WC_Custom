@@ -334,6 +334,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 				p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
 				p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
 				p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
+				p.setBuyerNm(SRTUtil.decryptName(p.getBuyerNm(), se));
 			}
 		} catch (EncryptionException e) {
 			log.error("Error Decrypting Project Names", e);
@@ -349,7 +350,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 */
 	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals, String statusType) {
 		String custom = getCustomSchema();
-		StringBuilder sql = new StringBuilder(100);
+		StringBuilder sql = new StringBuilder(2000);
 		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
 		sql.append("req.surgeon_first_nm, req.surgeon_last_nm, ");
 		sql.append("case when l.lock_id is not null then true else false end as LOCK_STATUS, ");
@@ -359,7 +360,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
 			sql.append(", concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
 			sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
-			sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm ");
+			sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm, ");
+			sql.append("concat(bp.first_nm, ' ', bp.last_nm) as buyer_nm ");
 		}
 
 		//Joins to tables.
