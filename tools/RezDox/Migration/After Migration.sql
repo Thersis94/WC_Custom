@@ -167,3 +167,25 @@ update custom.rezdox_residence_attribute set value_txt = '0' where slug_txt = 'R
 -- alter table custom.rezdox_membership drop paypal_button_txt;
 
 alter table custom.rezdox_reward add feature_flg int;
+
+--alter the data structures
+alter table custom.rezdox_room add room_category_cd varchar(32);
+alter table custom.rezdox_room alter column residence_id drop not null;
+alter table custom.REZDOX_ROOM add Constraint ROOM_CATEGORY_FKEY foreign key (room_category_cd) 
+references custom.rezdox_room_category(room_category_cd) on update restrict on delete restrict;
+
+--move the types over to rooms
+INSERT INTO custom.rezdox_room (room_id, create_dt, room_nm, room_category_cd, room_type_cd)
+SELECT 'ROOM_TYPE_'+room_type_cd, create_dt, type_nm, room_category_cd, 119 from custom.rezdox_room_type;
+
+--update existing records who need room_category_cd
+update custom.rezdox_room a
+set room_category_cd=b.room_category_cd
+from custom.rezdox_room_type b
+where a.room_type_cd=b.room_type_cd and a.room_category_cd is null;
+
+--finish data structure changes
+alter table custom.rezdox_room alter column room_category_cd set not null;
+alter table custom.rezdox_room drop column room_type_cd;
+drop table custom.rezdox_room_type;
+update custom.rezdox_room_category set category_nm=initcap(category_nm);
