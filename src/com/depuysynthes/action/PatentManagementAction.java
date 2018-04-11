@@ -86,16 +86,16 @@ public class PatentManagementAction extends SBActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		log.debug("list...");
 		String patentId = StringUtil.checkVal(req.getParameter("patentId"),null);
+		List<PatentVO> patents = new ArrayList<>();
 
 		// Return empty data is no patent ID specified and this is not a search query.
 		if (patentId == null && ! req.hasParameter("searchVal")) {
-			List<PatentVO> patents = new ArrayList<>();
-			//REMOVE??? patents.add(new PatentVO());
 			putModuleData(patents);
 			return;
 		}
 
-		putModuleData(retrievePatentData(req));
+		patents = retrievePatentData(req);
+		putModuleData(patents, patents.size(),true);
 	}
 	
 	/**
@@ -228,9 +228,6 @@ public class PatentManagementAction extends SBActionAdapter {
 				if (req.hasParameter("searchVal"))
 					sql.append("and code_txt like ? ");
 				sql.append("order by code_txt ");
-				// TODO Remove DEBUG for testing ONLY
-				sql.append("limit 10");
-				// DEBUG remove after testing
 				break;
 		}
 
