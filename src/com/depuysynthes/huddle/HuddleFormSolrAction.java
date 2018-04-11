@@ -7,7 +7,7 @@ import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.form.designer.FormDesignerFacadeAction;
+import com.smt.sitebuilder.action.form.pdf.FormPDFAction;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -55,7 +55,7 @@ public class HuddleFormSolrAction extends SimpleActionAdapter {
 		 */
 		Object formData = null;
 		if (req.hasParameter("reqParam_1")) {
-			getFormBuilderFacadeAction(req.getParameter("reqParam_1")).retrieve(req);
+			getFormPDFAction(req.getParameter("reqParam_1")).retrieve(req);
 			mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 			formData = mod.getActionData();
 			
@@ -107,21 +107,21 @@ public class HuddleFormSolrAction extends SimpleActionAdapter {
 		 * FormBuilderFacadeActions build method.
 		 */
 		if(req.hasParameter("formId")) {
-			getFormBuilderFacadeAction(req.getParameter("formId")).build(req);
+			getFormPDFAction(req.getParameter("formId")).build(req);
 		}
 	}
 
 
 	/**
-	 * Helper method that manages building a FormBuilderFacadeAction instance.
+	 * Helper method that manages building a FormPDFAction instance.
 	 * @param formId
 	 * @return
 	 */
-	protected FormDesignerFacadeAction getFormBuilderFacadeAction(String formId) {
+	protected FormPDFAction getFormPDFAction(String formId) {
 		this.actionInit.setActionGroupId(formId);
-		FormDesignerFacadeAction fbfa = new FormDesignerFacadeAction(this.actionInit);
-		fbfa.setDBConnection(getDBConnection());
-		fbfa.setAttributes(getAttributes());
-		return fbfa;
+		FormPDFAction pdfa = new FormPDFAction(this.actionInit);
+		pdfa.setDBConnection(getDBConnection());
+		pdfa.setAttributes(getAttributes());
+		return pdfa;
 	}
 }
