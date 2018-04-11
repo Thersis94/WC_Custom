@@ -250,8 +250,7 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	 */
 	private void buildCssLinks(StringBuilder sb) {
 		StringBuilder modCom = new StringBuilder(150);
-		modCom.append(site.getFullSiteAlias()).append("/binary/themes/");
-		buildCSSLink(sb, "//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css");
+		modCom.append("http://").append(site.getSiteAlias()).append("/binary/themes/");
 		modCom.append(site.getTheme().getPageLocationName()).append("/scripts/gap_report.css");
 		buildCSSLink(sb, modCom.toString());
 	}
