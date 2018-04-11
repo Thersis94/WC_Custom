@@ -78,6 +78,9 @@ public class AccountUserAction extends SBActionAdapter {
 	protected static final String ACCOUNT_ID = AccountAction.ACCOUNT_ID; //req param
 	protected static final String USER_ID = "userId"; //req param
 	protected static final String PROFILE_ID = UpdatesEditionAction.PROFILE_ID;
+	private static final String WELCOME_STANDARD_SLUG = "BIOMED_WELCOME";
+	private static final String WELCOME_UPDATES_SLUG = "BIOMED_UPDATES_WELCOME";
+	
 
 	public AccountUserAction() {
 		super();
@@ -142,7 +145,10 @@ public class AccountUserAction extends SBActionAdapter {
 		if (Convert.formatBoolean(req.getParameter("passwordReset")))
 			config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
 
-		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_WELCOME_EML));
+		String campInstId = WELCOME_STANDARD_SLUG;
+		if ("T".equals(u.getLicenseType()) || "U".equals(u.getLicenseType()))
+			campInstId = WELCOME_UPDATES_SLUG;
+		
 		List<EmailRecipientVO> recipients = new ArrayList<>(2);
 		recipients.add(new EmailRecipientVO(u.getProfileId(), (String)config.get("emailAddress"), EmailRecipientVO.TO));
 		String sourceId = req.getParameter("sourceId");
