@@ -50,9 +50,8 @@ public class BriefcaseAction extends MyFavoritesAction {
 			executeRetrieve(req);
 		} catch (Exception e) {
 			ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-			mod.setError(e.getCause());
-			mod.setErrorCondition(Boolean.TRUE);
-			mod.setErrorMessage(e.getMessage());
+			// set cause (also sets error condition to true and sets message.)
+			mod.setError(e.getCause() != null ? e.getCause() : e);
 			if (req.hasParameter("amid")) mod.setDisplayPage(null); //circumvents going to view.
 		}
 	}
@@ -65,9 +64,8 @@ public class BriefcaseAction extends MyFavoritesAction {
 		try {
 			executeBuild(req);
 		} catch (Exception e) {
-			mod.setError(e.getCause());
-			mod.setErrorCondition(Boolean.TRUE);
-			mod.setErrorMessage(e.getMessage());
+			// set cause (also sets error condition to true and sets message.)
+			mod.setError(e.getCause() != null ? e.getCause() : e);
 		}
 	}
 	
