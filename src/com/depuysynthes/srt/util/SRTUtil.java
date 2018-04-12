@@ -27,6 +27,8 @@ public class SRTUtil {
 	public static final String SRT_ORG_ID = "DPY_SYN";
 	public static final String PUBLIC_SITE_ID = "DPY_SYN_38";
 	public static final String OP_CO_ID = "opCoId";
+	public static final String ADMIN_PATH = "/manage";
+	public static final String REGISTRATION_GRP_ID = "38ae1841baf997aec0a80255c7bd6f31";
 
 	public enum SRTLists {SRT_WORKGROUP, REQ_REASON, CHARGE_TO, QUALITY_SYSTEM,
 						PRODUCT_TYPE, COMPLEXITY, LABEL_STATUS, PROD_CAT,
@@ -34,10 +36,6 @@ public class SRTUtil {
 						PROJ_PRIORITY, MAKE_FROM_SCRATCH, PROJ_VENDOR, PROJ_STATUS,
 						PROJ_MFG_CHANGE_REASON}
 
-	//TODO Update with actual Values when decided.  Potentially pull from config.
-	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
-	public static final String HOMEPAGE_REGISTER_FIELD_ID = null;
-	public static final String ADMIN_PATH = "/manage";
 	public enum SrtPage {MASTER_RECORD("/master-record"), PROJECT("/projects"), REQUEST("/request-form");
 		private String urlPath;
 		private SrtPage(String urlPath) {
