@@ -410,6 +410,12 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			sql.append("on p.QUALITY_ENGINEER_ID = q.ROSTER_ID ");
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE qp ");
 			sql.append("on q.PROFILE_ID = qp.PROFILE_ID ");
+
+			//Get Optional QA Engineer Information
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER b ");
+			sql.append("on p.BUYER_ID = b.ROSTER_ID ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE bp ");
+			sql.append("on b.PROFILE_ID = bp.PROFILE_ID ");
 		}
 
 		//Build Where Conditional and set and clause values on the vals list.
