@@ -168,20 +168,20 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 		row.createCell(colNo++).setCellValue(p.getPriority());
 		row.createCell(colNo++).setCellValue(p.getHospitalPONo());
 		row.createCell(colNo++).setCellValue(p.getSpecialInstructions());
-		row.createCell(colNo++).setCellValue(p.getProjectStatusTxt());
+		row.createCell(colNo++).setCellValue(p.getProjectStatus());
 		row.createCell(colNo++).setCellValue(p.getActualRoiDbl());
 		row.createCell(colNo++).setCellValue(p.getSrtContact());
 		row.createCell(colNo++).setCellValue(p.getEngineerNm());
 		row.createCell(colNo++).setCellValue(p.getDesignerNm());
 		row.createCell(colNo++).setCellValue(p.getQualityEngineerNm());
-		row.createCell(colNo++).setCellValue(p.getMakeFromScratchFlg());
+		row.createCell(colNo++).setCellValue(Boolean.toString(p.isMakeFromScratch()));
 		row.createCell(colNo++).setCellValue(p.getFuncCheckOrderNo());
 		row.createCell(colNo++).setCellValue(p.getMakeFromOrderNo());
 		row.createCell(colNo++).setCellValue(p.getBuyerNm());
 		row.createCell(colNo++).setCellValue(p.getMfgPOToVendor());
 		row.createCell(colNo++).setCellValue(p.getSupplierId());
-		row.createCell(colNo++).setCellValue(p.getProjectHoldFlg());
-		row.createCell(colNo++).setCellValue(p.getProjectCancelledFlg());
+		row.createCell(colNo++).setCellValue(Boolean.toString(p.isProjectHold()));
+		row.createCell(colNo++).setCellValue(Boolean.toString(p.isProjectCancelled()));
 		row.createCell(colNo++).setCellValue(p.getWarehouseTrackingNo());
 		row.createCell(colNo++).setCellValue(p.getMfgDtChangeReason());
 		row.createCell(colNo++).setCellValue(p.getWarehouseSalesOrderNo());
@@ -239,7 +239,7 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 		row.createCell(colNo++).setCellValue(mr.getProdFamilyId());
 		row.createCell(colNo++).setCellValue(mr.getPartCount());
 		row.createCell(colNo++).setCellValue(mr.getTotalBuilt());
-		row.createCell(colNo++).setCellValue(mr.getObsoleteFlg());
+		row.createCell(colNo++).setCellValue(Boolean.toString(mr.isObsolete()));
 		row.createCell(colNo++).setCellValue(mr.getObsoleteReason());
 
 		buildMasterRecordAttributes(row, mr.getAttributes());

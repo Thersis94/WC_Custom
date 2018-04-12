@@ -14,6 +14,7 @@ import com.depuysynthes.srt.SRTMasterRecordAction;
 import com.depuysynthes.srt.SRTMilestoneAction;
 import com.depuysynthes.srt.SRTProjectAction;
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.util.SRTUtil.SRTLists;
 import com.depuysynthes.srt.vo.ProjectExportReportVO;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
@@ -48,8 +49,6 @@ import com.smt.sitebuilder.util.MessageSender;
  ****************************************************************************/
 public class SRTReportModule extends AbstractWorkflowModule {
 
-	private static final String OP_CO_ID = "opCoId";
-
 	/**
 	 * @param mod
 	 * @param conn
@@ -83,14 +82,29 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 * @throws EncryptionException
 	 */
 	private AbstractSBReportVO buildReport(List<String> projectIds) throws SQLException, EncryptionException {
+
+		//Load Processing Data.
 		List<SRTProjectMilestoneVO> milestones = loadMilestones();
-		Map<String, SRTProjectVO> projects = loadProjects(projectIds, milestones);
 		List<String> mrAttributes = loadMrAttributes();
-		loadMilestoneData(projects);
-		loadMasterRecordData(projects, mrAttributes);
-		checkMasterRecordData(projects, mrAttributes);
-		decryptNames(projects);
 		Map<String, Map<String, String>> lists = loadLists();
+
+		//Get all projects contained in projectIds list.
+		Map<String, SRTProjectVO> projects = loadProjects(projectIds, milestones);
+
+		//Load MilestoneData on Projects.
+		loadMilestoneData(projects);
+
+		//Load Master Record Data on Projects.
+		loadMasterRecordData(projects, mrAttributes);
+
+		//Ensure all Projects have a MasterRecord so that columns line up correctly.
+		checkMasterRecordData(projects, mrAttributes);
+
+		//Desrypt Name data on Project Records.
+		decryptNames(projects);
+
+		//Replace targeted columns with List Values.
+		updateListDataReferences(projects, lists);
 
 		//Store projects in reportData for Header Formatting.
 		ProjectExportReportVO reportData = new ProjectExportReportVO(projects, mrAttributes, milestones);
@@ -104,6 +118,40 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	}
 
 	/**
+	 * Update Data References in Project Records with Lists in Report.
+	 * @param projects
+	 * @param lists
+	 */
+	private void updateListDataReferences(Map<String, SRTProjectVO> projects, Map<String, Map<String, String>> lists) {
+		for(SRTProjectVO p : projects.values()) {
+			try {
+				//Update Project Data Values
+				p.setPriority(lists.get(SRTLists.PROJ_PRIORITY.name()).get(p.getPriority()));
+				p.setMfgDtChangeReason(lists.get(SRTLists.PROJ_MFG_CHANGE_REASON.name()).get(p.getMfgDtChangeReason()));
+				p.setProjectType(lists.get(SRTLists.PROJ_TYPE.name()).get(p.getProjectType()));
+				p.setSupplierId(lists.get(SRTLists.PROJ_VENDOR.name()).get(p.getSupplierId()));
+				p.setProjectStatus(lists.get(SRTLists.PROJ_STATUS.name()).get(p.getProjectStatus()));
+
+				//Update Request Data Values
+				SRTRequestVO r = p.getRequest();
+				r.setChargeTo(lists.get(SRTLists.CHARGE_TO.name()).get(r.getChargeTo()));
+				r.setReason(lists.get(SRTLists.REQ_REASON.name()).get(r.getReason()));
+
+				//Update Master Record Data Values
+				for(SRTMasterRecordVO m : p.getMasterRecords()) {
+					m.setComplexityId(lists.get(SRTLists.COMPLEXITY.name()).get(m.getComplexityId()));
+					m.setProdCatId(lists.get(SRTLists.PROD_CAT.name()).get(m.getProdCatId()));
+					m.setProdFamilyId(lists.get(SRTLists.PROD_FAMILY.name()).get(m.getProdFamilyId()));
+					m.setProdTypeId(lists.get(SRTLists.PRODUCT_TYPE.name()).get(m.getProdTypeId()));
+					m.setQualitySystemId(lists.get(SRTLists.QUALITY_SYSTEM.name()).get(m.getQualitySystemId()));
+				}
+			} catch (Exception e) {
+				log.debug("Problem translating field on record: " + p.getProjectId());
+			}
+		}
+	}
+
+	/**
 	 * Load Data Lists to replace GUID/Keys with Friendly Text.
 	 * @return
 	 * @throws SQLException
@@ -114,9 +162,20 @@ public class SRTReportModule extends AbstractWorkflowModule {
 			ps.setString(1, SRTUtil.SRT_ORG_ID);
 			ResultSet rs = ps.executeQuery();
 
+			String listKey = null;
+			Map<String, String> listData = new HashMap<>();
 			while(rs.next()) {
-
+				if(!rs.getString("LIST_ID").equals(listKey)) {
+					if(listKey != null) {
+						lists.put(listKey, listData);
+					}
+					listData = new HashMap<>();
+					listKey = rs.getString("LIST_ID");
+				}
+				listData.put(rs.getString("VALUE_TXT"), rs.getString("LABEL_TXT"));
 			}
+			if(listKey != null)
+				lists.put(listKey, listData);
 		}
 		return lists;
 	}
@@ -126,7 +185,12 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 * @return
 	 */
 	private String loadListsSql() {
-		return null;
+		StringBuilder sql = new StringBuilder(200);
+		sql.append(DBUtil.SELECT_FROM_STAR).append("list l ");
+		sql.append(DBUtil.INNER_JOIN).append("list_data d ");
+		sql.append("on l.list_id = d.list_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("l.organization_id = ?");
+		return sql.toString();
 	}
 
 	/**
@@ -153,7 +217,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 * @throws SQLException
 	 */
 	private List<SRTProjectMilestoneVO> loadMilestones() throws SQLException {
-		String opCoId = (String) mod.getConfig(OP_CO_ID).getValue();
+		String opCoId = (String) mod.getConfig(SRTUtil.OP_CO_ID).getValue();
 		SRTMilestoneAction sma = new SRTMilestoneAction();
 		sma.setAttributes(attributes);
 		sma.setDBConnection(getConnection());
@@ -166,7 +230,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 * @throws SQLException
 	 */
 	private List<String> loadMrAttributes() throws SQLException {
-		String opCoId = (String) mod.getConfig(OP_CO_ID).getValue();
+		String opCoId = (String) mod.getConfig(SRTUtil.OP_CO_ID).getValue();
 		SRTMasterRecordAction sma = new SRTMasterRecordAction();
 		sma.setAttributes(attributes);
 		sma.setDBConnection(getConnection());
@@ -204,8 +268,8 @@ public class SRTReportModule extends AbstractWorkflowModule {
 
 			SRTProjectVO p = null;
 			while(rs.next()) {
-				if(p == null || !p.getProjectId().equals(rs.getString("PROJECT_ID"))) {
-					p = projects.get(rs.getString("PROJECT_ID"));
+				if(p == null || !p.getProjectId().equals(rs.getString(SRTProjectAction.DB_PROJECT_ID))) {
+					p = projects.get(rs.getString(SRTProjectAction.DB_PROJECT_ID));
 				}
 				//Set MilestoneDt on related Milestone.
 				p.getMilestone(rs.getString("MILESTONE_ID")).setMilestoneDt(rs.getDate("MILESTONE_DT"));
@@ -247,7 +311,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 			SRTMasterRecordVO mr = null;
 			while(rs.next()) {
 				String mrId = rs.getString("MASTER_RECORD_ID");
-				String pId = rs.getString("PROJECT_ID");
+				String pId = rs.getString(SRTProjectAction.DB_PROJECT_ID);
 				if(mr != null && (!mr.getMasterRecordId().equals(mrId) || !mr.getXrProjectId().equals(pId))) {
 					projects.get(mr.getXrProjectId()).addMasterRecord(mr);
 					mr = buildNewMR(rs, mrAttributes);
@@ -365,7 +429,6 @@ public class SRTReportModule extends AbstractWorkflowModule {
 
 	/**
 	 * Load Project Sql.
-	 * TODO - Columns need individually listed.
 	 * @return
 	 */
 	private String getProjectSql(int projectCount) {

@@ -26,6 +26,13 @@ public class SRTUtil {
 
 	public static final String SRT_ORG_ID = "DPY_SYN";
 	public static final String PUBLIC_SITE_ID = "DPY_SYN_38";
+	public static final String OP_CO_ID = "opCoId";
+
+	public enum SRTLists {SRT_WORKGROUP, REQ_REASON, CHARGE_TO, QUALITY_SYSTEM,
+						PRODUCT_TYPE, COMPLEXITY, LABEL_STATUS, PROD_CAT,
+						PROD_FAMILY, DEPARTMENT, OBSOLETE, MILESTONE, PROJ_TYPE,
+						PROJ_PRIORITY, MAKE_FROM_SCRATCH, PROJ_VENDOR, PROJ_STATUS,
+						PROJ_MFG_CHANGE_REASON}
 
 	//TODO Update with actual Values when decided.  Potentially pull from config.
 	public static final String REGISTRATION_GRP_ID = "18d2a87d9daef5dfc0a8023743a91557";
@@ -45,6 +52,7 @@ public class SRTUtil {
 		}
 		public String getUrlPath() {return urlPath;}
 	}
+
 	private SRTUtil() {
 		//Hide Default Constructor.
 	}

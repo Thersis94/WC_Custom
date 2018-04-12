@@ -58,6 +58,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	public enum DisplayType {ENGINEERING, PRODUCTION, UNASSIGNED, MY_PROJECTS}
 	public static final String SRT_PROJECT_ID = "projectId";
 	private static final String SRT_PROJECT_LOCKS = "srtProjectLocks";
+	public static final String DB_PROJECT_ID = "PROJECT_ID";
 
 	public SRTProjectAction() {
 		super();
