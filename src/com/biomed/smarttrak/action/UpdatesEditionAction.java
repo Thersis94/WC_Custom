@@ -72,7 +72,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		// If it is then the user must be logged in to reach this point
 		// and can be redirected out to the original link address here.
 		if (req.hasParameter(UpdatesEditionDataLoader.REDIRECT_DEST)) {
-			String redirect = StringEncoder.urlDecode(req.getParameter(UpdatesEditionDataLoader.REDIRECT_DEST));
+			String redirect = StringEncoder.urlDecode(req.getParameter(UpdatesEditionDataLoader.REDIRECT_DEST).replace('|', '&'));
 			sendRedirect(redirect, "", req);
 			return;
 		}
