@@ -82,6 +82,12 @@ public class ConnectionAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug(" Connections retrieve called ");
 
+		// Member/business directory
+		if (req.hasParameter("directory")) {
+			new DirectoryAction(dbConn, attributes).getDirectory(req);
+			return;
+		}
+		
 		if (req.hasParameter("ListBusinesses")) {
 			putModuleData(loadBusinessOptions(StringUtil.checkVal(RezDoxUtils.getMemberId(req))));
 		}
