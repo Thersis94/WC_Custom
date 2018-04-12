@@ -74,6 +74,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String designerNm;
 	private String qualityEngineerNm;
 	private String requestorNm;
+	private String buyerNm;
 
 	//Stores if there is a lock.
 	private boolean lockStatus;
@@ -322,6 +323,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	@Column(name="BUYER_ID")
 	public String getBuyerId() {
 		return buyerId;
+	}
+
+	/**
+	 * @return the buyerNm
+	 */
+	@Column(name="BUYER_NM")
+	public String getBuyerNm() {
+		return buyerNm;
 	}
 
 	/**
@@ -676,6 +685,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @param buyerNm the buyerNm to set.
+	 */
+	public void setBuyerNm(String buyerNm) {
+		this.buyerNm = StringUtil.checkVal(buyerNm, null);
+	}
+
+	/**
 	 * @param mfgPOToVendor the mfgPOToVendor to set.
 	 */
 	public void setMfgPOToVendor(String mfgPOToVendor) {
@@ -822,6 +838,21 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 		if(milestone != null && !StringUtil.isEmpty(milestone.getMilestoneId())) {
 			milestone.setProjectId(projectId);
 			milestones.put(milestone.getMilestoneId(), milestone);
+		}
+	}
+
+	/**
+	 * Adds a milestone using id and date.
+	 * @param milestoneId
+	 * @param milestoneDt
+	 */
+	public void addMilestone(String milestoneId, Date milestoneDt) {
+		if(!StringUtil.isEmpty(milestoneId)) {
+			SRTProjectMilestoneVO milestone = new SRTProjectMilestoneVO(milestoneId, projectId);
+			if(milestoneDt != null) {
+				milestone.setMilestoneDt(milestoneDt);
+			}
+			milestones.put(milestoneId, milestone);
 		}
 	}
 

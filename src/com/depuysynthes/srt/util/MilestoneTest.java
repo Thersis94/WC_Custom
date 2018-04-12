@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,6 +32,9 @@ public class MilestoneTest {
 	private List<SRTProjectMilestoneVO> milestones;
 	private MilestoneUtil<SRTProjectMilestoneVO> util;
 
+	private static final String PROJECT_START = "PROJECT_START";
+	private static final String ENGINEER_START = "ENGINEER_START";
+	private static final String OP_CO = "US_SPINE";
 	/**
 	 * @throws java.lang.Exception
 	 */
@@ -62,8 +64,8 @@ public class MilestoneTest {
 	private void buildMilestoneVOs() {
 		milestones = new ArrayList<>();
 		SRTProjectMilestoneVO m = new SRTProjectMilestoneVO();
-		m.setMilestoneId("PROJECT_START");
-		m.setOrganizationId("US_SPINE");
+		m.setMilestoneId(PROJECT_START);
+		m.setOrganizationId(OP_CO);
 		MilestoneRuleVO rule1 = new MilestoneRuleVO();
 		rule1.setMilestoneRuleId("rule1");
 		rule1.setFieldNm("projectStartDt");
@@ -72,9 +74,9 @@ public class MilestoneTest {
 		milestones.add(m);
 
 		SRTProjectMilestoneVO e = new SRTProjectMilestoneVO();
-		e.setMilestoneId("ENGINEER_START");
-		e.setOrganizationId("US_SPINE");
-		e.setParentId("PROJECT_START");
+		e.setMilestoneId(ENGINEER_START);
+		e.setOrganizationId(OP_CO);
+		e.setParentId(PROJECT_START);
 		MilestoneRuleVO rule2 = new MilestoneRuleVO();
 		rule2.setMilestoneRuleId("rule2");
 		rule2.setFieldNm("engineerId");
@@ -84,8 +86,8 @@ public class MilestoneTest {
 
 		SRTProjectMilestoneVO d = new SRTProjectMilestoneVO();
 		d.setMilestoneId("DESIGNER_START");
-		d.setOrganizationId("US_SPINE");
-		d.setParentId("ENGINEER_START");
+		d.setOrganizationId(OP_CO);
+		d.setParentId(ENGINEER_START);
 		MilestoneRuleVO rule3 = new MilestoneRuleVO();
 		rule3.setMilestoneRuleId("rule3");
 		rule3.setFieldNm("designerId");
@@ -94,24 +96,16 @@ public class MilestoneTest {
 		milestones.add(d);
 	}
 
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@After
-	public void tearDown() throws Exception {
-	}
-
 	@Test
 	public void testStart() {
 		util.checkGates(target, milestones);
-		assertTrue(target.getMilestone("PROJECT_START") != null);
+		assertTrue(target.getMilestone(PROJECT_START) != null);
 	}
 
 	@Test
 	public void testEngineer() {
 		util.checkGates(target, milestones);
-		assertTrue(target.getMilestone("ENGINEER_START") != null);
+		assertTrue(target.getMilestone(ENGINEER_START) != null);
 	}
 
 	@Test

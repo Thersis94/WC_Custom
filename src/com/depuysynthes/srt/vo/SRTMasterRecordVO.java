@@ -2,7 +2,7 @@ package com.depuysynthes.srt.vo;
 
 import java.sql.ResultSet;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.siliconmtn.action.ActionRequest;
@@ -41,6 +41,7 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	private String prodCatId;
 	private String makeFromPartNos;
 	private String prodFamilyId;
+	private String xrProjectId;
 	private int totalBuilt;
 	private int partCount;
 	private boolean obsoleteFlg;
@@ -51,7 +52,7 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	private Map<String, String> attributes;
 
 	public SRTMasterRecordVO() {
-		attributes = new HashMap<>();
+		attributes = new LinkedHashMap<>();
 	}
 
 	public SRTMasterRecordVO(ActionRequest req) {
@@ -61,7 +62,8 @@ public class SRTMasterRecordVO extends BeanDataVO {
 
 	public SRTMasterRecordVO(ResultSet rs) {
 		this();
-		populateData(rs);
+		if(rs != null)
+			populateData(rs);
 	}
 
 	/*
@@ -204,6 +206,14 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	@Column(name="UPDATE_DT", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDt() {
 		return updateDt;
+	}
+
+	/**
+	 * @return the xrProjectId
+	 */
+	@Column(name="PROJECT_ID", isReadOnly=true)
+	public String getXrProjectId() {
+		return xrProjectId;
 	}
 
 	/**
@@ -358,5 +368,12 @@ public class SRTMasterRecordVO extends BeanDataVO {
 		if(!StringUtil.isEmpty(key)) {
 			attributes.put(key, value);
 		}
+	}
+
+	/**
+	 * @param xrProjectId the xrProjectId to set.
+	 */
+	public void setXrProjectId(String xrProjectId) {
+		this.xrProjectId = xrProjectId;
 	}
 }

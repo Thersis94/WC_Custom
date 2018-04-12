@@ -12,6 +12,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> SRTRequestVO.java
@@ -396,5 +397,12 @@ public class SRTRequestVO extends BeanDataVO {
 
 	public void setProjectStatus(String projectStatus) {
 		this.projectStatus = projectStatus;
+	}
+
+	/**
+	 * @return concatenated Surgeon Name.
+	 */
+	public String getSurgeonName() {
+		return StringUtil.join(surgeonFirstName, " ", surgeonLastName).trim();
 	}
 }

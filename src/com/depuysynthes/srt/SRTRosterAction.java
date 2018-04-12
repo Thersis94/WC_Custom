@@ -141,7 +141,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		log.debug("loaded " + data.size() + " users");
 
 		//decrypt the owner profiles
-		//decryptNames(data);
+		decryptNames(data);
 
 		return data;
 	}
@@ -207,8 +207,6 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		} else {
 			sql.append("and p.profile_id=? ");
 		}
-	
-		//sql.append("group by r.op_co_id ");
 
 		log.debug(sql);
 		return sql.toString();

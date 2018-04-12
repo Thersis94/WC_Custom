@@ -58,6 +58,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	public enum DisplayType {ENGINEERING, PRODUCTION, UNASSIGNED, MY_PROJECTS}
 	public static final String SRT_PROJECT_ID = "projectId";
 	private static final String SRT_PROJECT_LOCKS = "srtProjectLocks";
+	public static final String DB_PROJECT_ID = "PROJECT_ID";
 
 	public SRTProjectAction() {
 		super();
@@ -295,7 +296,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 * @param projects
 	 */
 	private void loadMilestoneDetails(List<SRTProjectVO> projects) {
-		SRTMilestoneAction sma = (SRTMilestoneAction) getConfiguredAction(SRTMilestoneAction.class.getName());
+		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
 		sma.populateMilestones(projects);
 	}
 
@@ -308,14 +309,14 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		//Load request Information and assign on Project Record.
 		req.setParameter(SRTRequestAction.SRT_REQUEST_ID, project.getRequestId());
-		SRTRequestAction sra = (SRTRequestAction) getConfiguredAction(SRTRequestAction.class.getName());
+		SRTRequestAction sra = (SRTRequestAction) ActionControllerFactoryImpl.loadAction(SRTRequestAction.class.getName(), this);
 		GridDataVO<SRTRequestVO> reqData = sra.loadRequests(req);
 		if(reqData != null && !reqData.getRowData().isEmpty()) {
 			project.setRequest(reqData.getRowData().get(0));
 		}
 
 		//Load Master Record Data and assign on Project Record.
-		SRTMasterRecordAction smra = (SRTMasterRecordAction) getConfiguredAction(SRTMasterRecordAction.class.getName());
+		SRTMasterRecordAction smra = (SRTMasterRecordAction) ActionControllerFactoryImpl.loadAction(SRTMasterRecordAction.class.getName(), this);
 		List<SRTMasterRecordVO> prodData = smra.loadMasterRecordXR(project);
 		for(SRTMasterRecordVO mr : prodData) {
 			project.addMasterRecord(mr);
@@ -334,9 +335,10 @@ public class SRTProjectAction extends SimpleActionAdapter {
 				p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
 				p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
 				p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
+				p.setBuyerNm(SRTUtil.decryptName(p.getBuyerNm(), se));
 			}
 		} catch (EncryptionException e) {
-			log.error("Error Processing Code", e);
+			log.error("Error Decrypting Project Names", e);
 		}
 	}
 
@@ -349,7 +351,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 */
 	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals, String statusType) {
 		String custom = getCustomSchema();
-		StringBuilder sql = new StringBuilder(100);
+		StringBuilder sql = new StringBuilder(2000);
 		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
 		sql.append("req.surgeon_first_nm, req.surgeon_last_nm, ");
 		sql.append("case when l.lock_id is not null then true else false end as LOCK_STATUS, ");
@@ -359,7 +361,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
 			sql.append(", concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
 			sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
-			sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm ");
+			sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm, ");
+			sql.append("concat(bp.first_nm, ' ', bp.last_nm) as buyer_nm ");
 		}
 
 		//Joins to tables.
@@ -488,7 +491,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 				}
 			}
 		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Error Processing Code", e);
+			log.error("Error Managing Lock", e);
 		}
 
 		req.getSession().setAttribute(SRT_PROJECT_LOCKS, activeLocks);
@@ -542,7 +545,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 							.filter(l -> l.getUnlockDt() == null)
 							.collect(Collectors.toMap(LockVO::getRecordId, Function.identity()));
 			} catch (InvalidDataException e) {
-				log.error("Error Processing Code", e);
+				log.error("Error Retrieving Locks for a user", e);
 			}
 		}
 
