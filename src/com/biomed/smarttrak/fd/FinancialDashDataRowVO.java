@@ -171,7 +171,7 @@ public class FinancialDashDataRowVO implements Serializable {
 				addColumn(qtr, yearIdx, maxYear, util, rs);
 				incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
 				incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + (maxYear-yearIdx));
-				calculateInactivity(qtr, yearIdx, util, rs, dashboard.getColHeaders(), qtr + "-" + (maxYear-yearIdx));
+				calculateInactivity(qtr, yearIdx, util, rs, dashboard.getColHeaders(), qtr + "-" + (maxYear-yearIdx), dashboard.showEmpty());
 				ids.put(yearIdx, util.getStringVal("REVENUE_ID_" + yearIdx, rs));
 			}
 		}
@@ -336,11 +336,16 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * 
 	 * @param qtr
 	 * @param yearIdx
+	 * @param showEmpty 
 	 * @param dollarValue
 	 * @throws SQLException 
 	 */
 	private void calculateInactivity(String qtr, int yearIdx, DBUtil util, ResultSet rs, 
-			FinancialDashColumnSet headers, String displayColNm) throws SQLException {
+			FinancialDashColumnSet headers, String displayColNm, boolean showEmpty) throws SQLException {
+		if (showEmpty) {
+			setInactive(false);
+			return;
+		}
 		// Inactivity only applies to company rows, not market rows
 		// Inactivity is onlycalcuated against columns contains Quarterly FD data
 		if (StringUtil.isEmpty(getCompanyId()) || !FinancialDashBaseAction.QTR_PATTERN.matcher(qtr).matches())

@@ -146,7 +146,7 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 				if (!fieldId.equals(rs.getString("FORM_FIELD_ID")) || !submittalId.equals(formSubmittalId)) {
 					if (field != null && vo != null)
 						vo.addCustomData(fieldId, field);
-					field = new FormFieldVO(rs, true);
+					field = new FormFieldVO(rs);
 					fieldId = rs.getString("FORM_FIELD_ID");
 				}
 				if (field != null)
