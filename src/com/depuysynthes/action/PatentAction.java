@@ -12,6 +12,7 @@ import com.siliconmtn.action.ActionRequest;
 
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -30,6 +31,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class PatentAction extends SimpleActionAdapter {
 
+	public static final String PATENT_ID = "patentId";
+	
 	public PatentAction () {
 		super();
 	}
@@ -67,18 +70,19 @@ public class PatentAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		//ensure we were given something to search for, otherwise a query is not needed (the search form is displayed)
 		if (!req.hasParameter("code")) return;
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select item_txt, desc_txt, code_txt, patents_txt, redirect_nm, redirect_address_txt from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("dpy_syn_patent where code_txt=? and action_id=? ");
+		sql.append("dpy_syn_patent where code_txt=? and organization_id=? ");
 		sql.append("limit 1 ");
-		log.debug(sql + "|" + req.getParameter("code") + "|" + actionInit.getActionId());
+		log.debug(sql + "|" + req.getParameter("code") + "|" + site.getOrganizationId());
 
 		//note this lookup only returns one record, ever.  0 or 1 matching to the searched value.
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, req.getParameter("code"));
-			ps.setString(2, actionInit.getActionId());
+			ps.setString(2, site.getOrganizationId());
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				super.putModuleData(new PatentVO(rs));
