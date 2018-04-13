@@ -41,7 +41,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	private Date dateStart;
 	private Date dateEnd;
 	private List<String> monthHeaders;
-	private static final String REPORT_TITLE = "Utilization Report - Monthly Rollup";
+	private static final String REPORT_TITLE = "Utilization Report - Pageview Monthly Rollup";
 	private static final String ACCOUNT_NAME = "ACCOUNT_NAME";
 	private static final String ACCOUNT_TYPE = "ACCOUNT_TYPE";
 	private static final String ACCOUNT_START_DT = "ACCOUNT_START_DATE";
@@ -58,9 +58,11 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	public static final String LAST_LOGIN_DT = "LAST_LOGIN_DATE";
 	public static final String LAST_LOGIN_AGE = "LAST_LOGIN_AGE";
 	private static final String DAYS_SINCE_LAST_LOGIN = "DAYS_SINCE_LAST_LOGGED_IN";
-	private static final String PROF = "HAS_PROF";
-	private static final String FD = "HAS_FD";
-	private static final String GA = "HAS_GA";
+	private static final String PROF = "PROF_MODULES";
+	private static final String FD = "FD_MODULES";
+	private static final String GA = "GA_MODULES";
+	private static final String TOTAL = "TOTAL";
+	private static final String AVERAGE = "AVERAGE";
 	public static final String NO_ACTIVITY = "No activity";
 
 	/**
@@ -150,6 +152,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 			// user vals
 			Map<String,Object> row;
 			Map<String,Integer> counts;
+			int userTotal = 0;
 
 			// loop account users
 			for (UserVO user : acct.getValue()) {
@@ -178,8 +181,11 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 				 * use a count value of zero. */
 				counts = (Map<String,Integer>)user.getUserExtendedInfo();
 				for (String monthKey : monthHeaders) {
-					manageTotals(row,counts,monthKey);
+					userTotal += manageTotals(row,counts,monthKey);
 				}
+				row.put(TOTAL, userTotal);
+				row.put(AVERAGE, (userTotal / monthHeaders.size()));
+				
 				rows.add(row);
 			}
 		}
@@ -193,8 +199,8 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	protected void addAccountColumns(AccountUsersVO acct, Map<String,Object> row) {
 		row.put(ACCOUNT_NAME, acct.getAccountName());
 		row.put(ACCOUNT_TYPE, acct.getTypeName());
-		row.put(ACCOUNT_START_DT, acct.getStartDate());
-		row.put(ACCOUNT_EXPIRATION_DT, acct.getExpirationDate());
+		row.put(ACCOUNT_START_DT, Convert.formatDate(acct.getStartDate(), Convert.DATE_SLASH_PATTERN));
+		row.put(ACCOUNT_EXPIRATION_DT, Convert.formatDate(acct.getExpirationDate(), Convert.DATE_SLASH_PATTERN));
 		addPermissionData(acct, row);
 	}
 	
@@ -383,9 +389,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		headerMap.put(ACCOUNT_TYPE, "Account Type");
 		headerMap.put(ACCOUNT_START_DT, "Account Start Date");
 		headerMap.put(ACCOUNT_EXPIRATION_DT, "Account Expiration Date");
-		headerMap.put(PROF, "Has Prof");
-		headerMap.put(FD, "Has FD");
-		headerMap.put(GA, "Has GA");
+		headerMap.put(PROF, "Prof Modules");
+		headerMap.put(FD, "FD Modules.");
+		headerMap.put(GA, "GA Modules");
 		headerMap.put(NAME,"Name");
 		headerMap.put(TITLE,"Title");
 		headerMap.put(EMAIL,"Email Address");
@@ -400,6 +406,8 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		for (String monthKey : monthHeaders) {
 			headerMap.put(monthKey, monthKey);
 		}
+		headerMap.put(TOTAL, "Total Views");
+		headerMap.put(AVERAGE, "Average Monthly");
 		return headerMap;
 	} 
 	
