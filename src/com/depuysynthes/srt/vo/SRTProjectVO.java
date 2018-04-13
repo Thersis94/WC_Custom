@@ -882,16 +882,11 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	@Override
 	public <C extends Comparable<C>> C getFieldValue(String fieldName) {
 		C data = null;
-		try {
-			if(ledgerDates.containsKey(fieldName)) {
-				data = (C) ledgerDates.get(fieldName);
-			} else {
-				data = MilestoneIntfc.super.getFieldValue(fieldName);
-			}
-		} catch (NoSuchFieldException e) {
-			log.warn(StringUtil.join("Field ", fieldName, " not on available."), e);
+		if(ledgerDates.containsKey(fieldName)) {
+			data = (C) ledgerDates.get(fieldName);
+		} else {
+			data = MilestoneIntfc.super.getFieldValue(fieldName);
 		}
-
 		return data;
 	}
 }
