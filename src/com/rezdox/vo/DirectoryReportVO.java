@@ -7,6 +7,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: DirectoryReportVO.java
@@ -31,6 +32,7 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 	private String connectionId;
 	private String firstName;
 	private String lastName;
+	private String initials;
 	private String profilePicPath;
 	private String cityName;
 	private String stateCode;
@@ -81,6 +83,12 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 	@Column(name="last_nm")
 	public String getLastName() {
 		return lastName;
+	}
+	/**
+	 * @return the initials
+	 */
+	public String getInitials() {
+		return initials;
 	}
 	/**
 	 * @return the profilePicPath
@@ -200,16 +208,32 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 		this.profilePicPath = profilePicPath;
 	}
 	/**
+	 * @param initials the initials to set
+	 */
+	public void setInitials(String initials) {
+		this.initials = initials;
+	}
+	/**
+	 * Sets user's initials based on first/last name in the VO
+	 * There could only be one name in the case of business categories
+	 */
+	private void setInitials() {
+		String name = StringUtil.checkVal(getFirstName()) + ' ' + StringUtil.checkVal(getLastName());
+		setInitials(StringUtil.abbreviate(name.trim(), 2).toUpperCase());
+	}
+	/**
 	 * @param lastName the lastName to set
 	 */
 	public void setLastName(String lastName) {
 		this.lastName = lastName;
+		setInitials();
 	}
 	/**
 	 * @param firstName the firstName to set
 	 */
 	public void setFirstName(String firstName) {
 		this.firstName = firstName;
+		setInitials();
 	}
 	/**
 	 * @param userId the userId to set
