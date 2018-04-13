@@ -8,20 +8,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 // WC Custom
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
 import com.biomed.smarttrak.vo.ProductVO;
 import com.biomed.smarttrak.vo.RegulationVO;
 import com.biomed.smarttrak.vo.SectionVO;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -29,8 +29,8 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WC Core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -253,7 +253,9 @@ public class ProductAction extends SimpleActionAdapter {
 		List<Object> results = db.executeSelect(sql.toString(), params, new ProductAttributeVO());
 		Tree t = buildAttributeTree();
 		Map<String, List<ProductAttributeVO>> attrMap = new TreeMap<>();
+		boolean isPreview = Convert.formatBoolean(getAttribute(Constants.PAGE_PREVIEW));
 		for (Object o : results) {
+			if(isPreview) adjustContentLinks((ProductAttributeVO)o); //adjust the links to manage links if in preview mode from manage tool 
 			addToAttributeMap(attrMap, t, (ProductAttributeVO)o, product);
 		}
 
@@ -299,6 +301,21 @@ public class ProductAction extends SimpleActionAdapter {
 		return t;
 	}
 
+	/**
+	 * Modifies public links to their corresponding manage tool link
+	 * @param attribute
+	 */
+	protected void adjustContentLinks(ProductAttributeVO attribute){
+		SiteVO siteData = (SiteVO)getAttribute(Constants.SITE_DATA);
+		BiomedLinkCheckerUtil linkUtil = new BiomedLinkCheckerUtil(dbConn, siteData);
+		
+		String attrType = attribute.getAttributeTypeCd();
+		if("LINK".equals(attrType)) {
+			attribute.setValueText(linkUtil.modifyPlainURL(attribute.getValueText()));
+		}else if("HTML".equals(attrType)) {
+			attribute.setValueText(linkUtil.modifySiteLinks(attribute.getValueText()));
+		}
+	}
 
 	/**
 	 * Add an attribute to map properly groups attributes according to ancestry.
