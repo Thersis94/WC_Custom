@@ -612,6 +612,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		licenseTypes.add(LicenseType.COMPLIMENTARY.getCode());
 		licenseTypes.add(LicenseType.EXTRA.getCode());
 		licenseTypes.add(LicenseType.TRIAL.getCode());
+		licenseTypes.add(LicenseType.UPDATES.getCode());
 		return licenseTypes;
 	}
 
