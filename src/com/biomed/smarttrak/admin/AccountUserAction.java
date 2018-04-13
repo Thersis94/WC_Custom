@@ -310,22 +310,39 @@ public class AccountUserAction extends SBActionAdapter {
 
 		Map<String, List<UserVO>> users = (Map<String, List<UserVO>>) data.getKey();
 
-		Map<String, Integer> active = new LinkedHashMap<>();
-		Map<String, Integer> open = new LinkedHashMap<>();
+		Map<String, Integer> licenses = new LinkedHashMap<>();
 		for (Map.Entry<String, List<UserVO>> entry : users.entrySet()) {
 			for (UserVO user : entry.getValue()) {
 				Integer sts = user.getStatusFlg();
-				if (sts == UserVO.Status.OPEN.getCode()) {
-					incrementStatus(open, entry.getKey());
-				}else if (sts == UserVO.Status.ACTIVE.getCode()) {
-					incrementStatus(active, entry.getKey());
+				if (sts == UserVO.Status.ACTIVE.getCode()) {
+					incrementActive(licenses, user.getLicenseType());
+				}else if (sts == UserVO.Status.OPEN.getCode()) {
+					incrementStatus(licenses, "O");
 				}
 			}
 		}
-		req.setAttribute("statusMap", new GenericVO(active, open));
+		req.setAttribute("statusMap", licenses);
 	}
 	
-	
+	/**
+	 * Increment the count provided the user has the appropriate license type
+	 * @param licenses
+	 * @param licenseType
+	 */
+	private void incrementActive(Map<String, Integer> licenses, String licenseType) {
+		log.debug(licenseType);
+		switch (licenseType) {
+		case "A":
+		case "E":
+		case "C":
+		case "U":
+			incrementStatus(licenses, licenseType);
+			break;
+		default:
+			// Skip everything else
+		}
+	}
+
 	/**
 	 * Ensure that a status count is present and increment it.
 	 * @param status
