@@ -122,6 +122,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		SRTRequestVO request = new SRTRequestVO(req);
 		SRTRequestAddressVO address = new SRTRequestAddressVO(req);
 		SRTProjectVO project = null;
+
 		/*
 		 * Store if this is an insert or not so we can decide if we create
 		 * a Project Record laster.
