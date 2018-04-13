@@ -14,6 +14,7 @@ import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.UserVO;
@@ -25,6 +26,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.DirectoryParser;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
@@ -95,7 +97,12 @@ public class InsightAction extends SimpleActionAdapter {
 			page.setTitleName(vo.getTitleTxt() + " | " + site.getSiteName());
 
 			overrideSolrRequest(sa, vo, req);
-
+			
+			//if this request is for manage tool, update appropriate public site links
+			if(Convert.formatBoolean(getAttribute(Constants.PAGE_PREVIEW))) {
+				adjustContentLinks(vo, req);
+			}
+			
 			// move the sol response mod from the mod data to some other area
 			transposeModData(mod, vo);
 
@@ -290,5 +297,21 @@ public class InsightAction extends SimpleActionAdapter {
 		// Generate the Node Paths using Node Names.
 		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
 		return t;
+	}
+	
+	/**
+	 * Modifies public links to their corresponding manage tool link
+	 * @param insight
+	 * @param req
+	 */
+	protected void adjustContentLinks(InsightVO insight, ActionRequest req) {
+		//create link checker util
+		SiteVO siteData = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		BiomedLinkCheckerUtil linkUtil = new BiomedLinkCheckerUtil(dbConn, siteData);
+		
+		//update links for main, abstract, and side content areas
+		insight.setContentTxt(linkUtil.modifySiteLinks(insight.getContentTxt()));	
+		insight.setAbstractTxt(linkUtil.modifySiteLinks(insight.getAbstractTxt()));	
+		insight.setSideContentTxt(linkUtil.modifySiteLinks(insight.getSideContentTxt()));				
 	}
 }
