@@ -52,23 +52,36 @@ public class BusinessCategoryList extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		List<GenericVO> data = retrieveCategories(req.getParameter("businessCat"));
+		putModuleData(data, data.size(),false);
+	}
+	
+	/**
+	 * Reusable retrieve to get the list outside of a Request
+	 * 
+	 * @param parentCode
+	 * @return
+	 */
+	public List<GenericVO> retrieveCategories(String parentCode) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select business_category_cd as key, category_nm as value from ");
 		sql.append(schema).append("rezdox_business_category ");
 		
-		if(!StringUtil.isEmpty(req.getParameter("businessCat"))) {
+		if(!StringUtil.isEmpty(parentCode)) {
 			sql.append("where parent_cd = ? ");
-			params.add(req.getParameter("businessCat"));
+			sql.append("order by category_nm ");
+			params.add(parentCode);
+		} else {
+			sql.append("where parent_cd is null ");
+			sql.append("order by order_no ");
 		}
-		
-		sql.append("order by business_category_cd ");
 		
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		List<GenericVO> data = db.executeSelect(sql.toString(), params, new GenericVO());
 		log.debug("sql " + sql.toString() + " params " + params + " size " + data.size());
-		putModuleData(data, data.size(),false);
+		return data;
 	}
 }
