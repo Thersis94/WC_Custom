@@ -7,6 +7,8 @@ import java.util.Map;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 
 //SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
@@ -41,6 +43,22 @@ public class UserUtilizationExcelReport extends ExcelReport {
 	 */
 	public UserUtilizationExcelReport(Map<String, String> headerMap, Styles s) {
 		super(headerMap, s);
+	}
+	
+	
+	/**
+	 * Overridden here to prevent expanding the title style out to lenght of report
+	 */
+	@Override
+	protected void addTitleCell(Sheet s,String title, int headerMapSize) {
+		Row r = s.createRow(s.getPhysicalNumberOfRows());
+		
+		//fill it with the title string.
+		Cell c = r.createCell(0);
+		c.setCellType(Cell.CELL_TYPE_STRING);
+
+		c.setCellValue(title);
+		c.setCellStyle(this.titleStyle);
 	}
 	
 	/*

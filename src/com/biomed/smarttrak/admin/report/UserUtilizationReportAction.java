@@ -15,9 +15,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 // WC custom
-import com.biomed.smarttrak.vo.AccountVO;
+import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.admin.AccountPermissionAction;
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.LicenseType;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
@@ -32,6 +33,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.LastNameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.PageViewRetriever;
@@ -108,7 +110,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			return formatReportDataMap(new HashMap<>());
 
 		// 4. get accounts and account users data for the profile IDs for which we found page views.
-		Map<AccountVO, List<UserVO>> accounts = retrieveAccountsUsers(se, pageCounts, siteId);
+		Map<AccountUsersVO, List<UserVO>> accounts = retrieveAccountsUsers(se, pageCounts, siteId, req);
 		log.debug("accounts map size: " + accounts.size());
 
 		// 5. merge accounts data and user page counts
@@ -122,7 +124,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @param accounts
 	 * @return
 	 */
-	protected Map<String,Object> formatReportDataMap(Map<AccountVO,List<UserVO>> accounts) {
+	protected Map<String,Object> formatReportDataMap(Map<AccountUsersVO,List<UserVO>> accounts) {
 		Map<String,Object> reportData = new HashMap<>();
 		reportData.put(KEY_DATE_START, reportDateStart);
 		reportData.put(KEY_DATE_END, reportDateEnd);
@@ -219,8 +221,8 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @param siteId
 	 * @return
 	 */
-	protected Map<AccountVO, List<UserVO>> retrieveAccountsUsers(StringEncrypter se, 
-			Map<String,Map<String,Integer>> userPageCounts, String siteId) {
+	protected Map<AccountUsersVO, List<UserVO>> retrieveAccountsUsers(StringEncrypter se, 
+			Map<String,Map<String,Integer>> userPageCounts, String siteId, ActionRequest req) {
 		log.debug("retrieveAccountsUsers...");
 		Map<String,String> fieldMap = buildRegistrationFieldMap();
 		List<String> licenseTypes = buildLicenseTypeList();
@@ -230,7 +232,6 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int idx = 0;
-			ps.setString(++idx, STATUS_NO_INACTIVE);
 			for (String type : licenseTypes) {
 				ps.setString(++idx, type);
 			}
@@ -240,10 +241,11 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			for (Map.Entry<String,String> field : fieldMap.entrySet()) {
 				ps.setString(++idx, field.getKey());
 			}
+			ps.setString(++idx, STATUS_NO_INACTIVE);
 
 			ResultSet rs = ps.executeQuery();
 
-			return parseAccountsUsersResults(rs,se);
+			return parseAccountsUsersResults(rs,se,req);
 
 		} catch (Exception e) {
 			log.error("Error retrieving accounts users, ", e);
@@ -257,10 +259,10 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @param accounts
 	 * @param userData
 	 */
-	protected void mergeData(Map<AccountVO,List<UserVO>> accounts, Map<String,Map<String,Integer>> userData) {
+	protected void mergeData(Map<AccountUsersVO,List<UserVO>> accounts, Map<String,Map<String,Integer>> userData) {
 		Set<String> profileIds = userData.keySet();//grab ids with matching page counts
 		
-		for (Map.Entry<AccountVO, List<UserVO>> acct : accounts.entrySet()) {
+		for (Map.Entry<AccountUsersVO, List<UserVO>> acct : accounts.entrySet()) {
 			List<UserVO> acctUsers = acct.getValue();
 			for (UserVO user : acctUsers) {
 				//if the account user has extended info(page views) set this user's page count history as extended info.
@@ -354,21 +356,21 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * Parses the result set from the accounts /account user query.
 	 * @param rs
 	 * @param se
+	 * @param req
 	 * @return
 	 * @throws SQLException
 	 */
-	protected Map<AccountVO,List<UserVO>> parseAccountsUsersResults(ResultSet rs, 
-			StringEncrypter se) throws SQLException {
-		
+	protected Map<AccountUsersVO,List<UserVO>> parseAccountsUsersResults(ResultSet rs, 
+			StringEncrypter se, ActionRequest req) throws SQLException {
 		String prevAcct = null;
 		String prevPid = null;
 		String currAcct;
 		String currPid;
 		
 		UserVO user = null;
-		AccountVO acct = null;
+		AccountUsersVO acct = null;
 		List<UserVO> users = null;
-		Map<AccountVO, List<UserVO>> accounts = new LinkedHashMap<>();
+		Map<AccountUsersVO, List<UserVO>> accounts = new LinkedHashMap<>();
 		List<String> divisions = null;
 		
 		while (rs.next()) {
@@ -381,11 +383,8 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 
 			if (! currAcct.equalsIgnoreCase(prevAcct)) {
 				// first time through or changed accounts
-				if (acct != null) {
-					users.add(user);
-					Collections.sort(users, new LastNameComparator()); //sort before adding to account
-					accounts.put(acct, users);
-				}
+				prepForNextAccount(accounts, acct, req, users, user);
+				
 				// init new acct
 				acct = formatNextAccount(rs);
 				
@@ -418,6 +417,9 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			prevAcct = currAcct;
 			prevPid = currPid;
 		}
+		
+		//make sure to add the last account
+		prepForNextAccount(accounts, acct, req, users, user);
 		log.debug("accounts map size: " + accounts.size());
 		return accounts;
 	}
@@ -429,12 +431,59 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	}
 	
 	/**
+	 * Manages storing data to current account and storing before next account is retrieved
+	 * @param accounts
+	 * @param acct
+	 * @param req
+	 * @param users
+	 * @param user
+	 */
+	protected void prepForNextAccount(Map<AccountUsersVO, List<UserVO>> accounts, AccountUsersVO acct, 
+			ActionRequest req, List<UserVO>users, UserVO user) {
+		if (acct == null || users == null) {
+			return;
+		}
+		
+		//prep the account then add to collection
+		boolean isDaily = Convert.formatBoolean(req.getParameter(PARAM_IS_DAILY));
+		if(!isDaily) addAccountPermissions(acct, req);
+		users.add(user);
+		Collections.sort(users, new LastNameComparator()); //sort before adding to account
+		accounts.put(acct, users);
+	}
+	
+	/**
+	 * Sets the sections with corresponding permissions to the matching account
+	 * @param account
+	 * @param req
+	 */
+	protected void addAccountPermissions(AccountUsersVO account, ActionRequest req) {
+		AccountPermissionAction apa = new AccountPermissionAction(actionInit);
+		apa.setAttributes(attributes);
+		apa.setDBConnection(dbConn);
+		//set the current accountId on request
+		req.setParameter(AccountAction.ACCOUNT_ID, account.getAccountId());
+		
+		try {//attempt to retrieve the permissions
+			apa.retrieve(req);
+		} catch (ActionException e) {
+			log.error("Error attempting to retrieve account permissions for account: " + account.getAccountId());
+		}
+		
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		if(mod != null) {
+			SmarttrakTree tree = (SmarttrakTree)mod.getActionData();
+			account.setPermissions(tree);
+		}
+	}
+	
+	/**
 	 * Creates, populates, and returns a AccountVO based on result set data.
 	 * @return
 	 * @throws SQLException 
 	 */
-	protected AccountVO formatNextAccount(ResultSet rs) throws SQLException {
-		AccountVO account = new AccountVO();
+	protected AccountUsersVO formatNextAccount(ResultSet rs) throws SQLException {
+		AccountUsersVO account = new AccountUsersVO();
 		account.setAccountId(rs.getString("account_id"));
 		account.setAccountName(rs.getString("account_nm"));
 		account.setTypeId(rs.getString("type_id"));
@@ -509,7 +558,6 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us ");
 		sql.append("on ac.account_id = us.account_id ");
-		sql.append("and ac.status_no != ? and (ac.expiration_dt is null or ac.expiration_dt >= CURRENT_DATE) ");
 		sql.append("and us.status_cd in (");
 		for (int i = 0; i < licenseTypes; i++) {
 			if (i > 0) sql.append(",");
@@ -534,6 +582,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		sql.append(") ");
 		sql.append("left join register_field_option rfo on rd.value_txt = rfo.option_value_txt ");
 		sql.append("and rd.register_field_id = rfo.register_field_id ");
+		sql.append("where ac.status_no != ? and (ac.expiration_dt is null or ac.expiration_dt >= CURRENT_DATE) ");
 		sql.append("group by ac.account_id, ac.account_nm, ac.type_id, ac.start_dt, ac.expiration_dt, us.profile_id, ");
 		sql.append("us.user_id, us.status_cd, us.active_flg, us.expiration_dt, us.acct_owner_flg, pf.first_nm, pf.last_nm, ");
 		sql.append("pf.email_address_txt, ph.phone_number_txt, rd.register_field_id, rd.value_txt, rfo.option_desc ");
@@ -563,6 +612,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		licenseTypes.add(LicenseType.COMPLIMENTARY.getCode());
 		licenseTypes.add(LicenseType.EXTRA.getCode());
 		licenseTypes.add(LicenseType.TRIAL.getCode());
+		licenseTypes.add(LicenseType.UPDATES.getCode());
 		return licenseTypes;
 	}
 

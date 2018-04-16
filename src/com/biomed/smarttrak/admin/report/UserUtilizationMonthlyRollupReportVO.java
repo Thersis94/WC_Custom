@@ -11,9 +11,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-// WC custom
-import com.biomed.smarttrak.vo.AccountVO;
+import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.PermissionVO;
 import com.biomed.smarttrak.vo.UserVO;
+import com.siliconmtn.data.Node;
 // SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -36,11 +37,11 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  ***************************************************************************/
 public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 
-	private Map<AccountVO, List<UserVO>> accounts;
+	private Map<AccountUsersVO, List<UserVO>> accounts;
 	private Date dateStart;
 	private Date dateEnd;
 	private List<String> monthHeaders;
-	private static final String REPORT_TITLE = "Utilization Report - Monthly Rollup";
+	private static final String REPORT_TITLE = "Utilization Report - Pageview Monthly Rollup";
 	private static final String ACCOUNT_NAME = "ACCOUNT_NAME";
 	private static final String ACCOUNT_TYPE = "ACCOUNT_TYPE";
 	private static final String ACCOUNT_START_DT = "ACCOUNT_START_DATE";
@@ -57,6 +58,11 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	public static final String LAST_LOGIN_DT = "LAST_LOGIN_DATE";
 	public static final String LAST_LOGIN_AGE = "LAST_LOGIN_AGE";
 	private static final String DAYS_SINCE_LAST_LOGIN = "DAYS_SINCE_LAST_LOGGED_IN";
+	private static final String PROF = "PROF_MODULES";
+	private static final String FD = "FD_MODULES";
+	private static final String GA = "GA_MODULES";
+	private static final String TOTAL = "TOTAL";
+	private static final String AVERAGE = "AVERAGE";
 	public static final String NO_ACTIVITY = "No activity";
 
 	/**
@@ -121,7 +127,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	@Override
 	public void setData(Object o) {
 		Map<String,Object> reportData = (Map<String,Object>) o;
-		this.accounts =  (Map<AccountVO, List<UserVO>>)reportData.get(UserUtilizationReportAction.KEY_REPORT_DATA);
+		this.accounts =  (Map<AccountUsersVO, List<UserVO>>)reportData.get(UserUtilizationReportAction.KEY_REPORT_DATA);
 		dateStart = (Date)reportData.get(UserUtilizationReportAction.KEY_DATE_START);
 		dateEnd = (Date)reportData.get(UserUtilizationReportAction.KEY_DATE_END);
 		formatMonthHeaders();
@@ -139,13 +145,14 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		pnf.setFormatType(PhoneNumberFormat.DASH_FORMATTING);
 				
 		// loop the account map
-		for (Map.Entry<AccountVO, List<UserVO>> acct : accounts.entrySet()) {
+		for (Map.Entry<AccountUsersVO, List<UserVO>> acct : accounts.entrySet()) {
 
-			AccountVO a = acct.getKey();
+			AccountUsersVO a = acct.getKey();
 
 			// user vals
 			Map<String,Object> row;
 			Map<String,Integer> counts;
+			int userTotal = 0;
 
 			// loop account users
 			for (UserVO user : acct.getValue()) {
@@ -174,14 +181,14 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 				 * use a count value of zero. */
 				counts = (Map<String,Integer>)user.getUserExtendedInfo();
 				for (String monthKey : monthHeaders) {
-					manageTotals(row,counts,monthKey);
+					userTotal += manageTotals(row,counts,monthKey);
 				}
+				row.put(TOTAL, userTotal);
+				row.put(AVERAGE, (userTotal / monthHeaders.size()));
+				
 				rows.add(row);
-
 			}
-
 		}
-
 	}
 	
 	/**
@@ -189,11 +196,63 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	 * @param acct
 	 * @param row
 	 */
-	protected void addAccountColumns(AccountVO acct, Map<String,Object> row) {
+	protected void addAccountColumns(AccountUsersVO acct, Map<String,Object> row) {
 		row.put(ACCOUNT_NAME, acct.getAccountName());
 		row.put(ACCOUNT_TYPE, acct.getTypeName());
-		row.put(ACCOUNT_START_DT, acct.getStartDate());
-		row.put(ACCOUNT_EXPIRATION_DT, acct.getExpirationDate());
+		row.put(ACCOUNT_START_DT, Convert.formatDate(acct.getStartDate(), Convert.DATE_SLASH_PATTERN));
+		row.put(ACCOUNT_EXPIRATION_DT, Convert.formatDate(acct.getExpirationDate(), Convert.DATE_SLASH_PATTERN));
+		addPermissionData(acct, row);
+	}
+	
+	/**
+	 * Handles adding the appropriate account permissions to row data
+	 * @param acct
+	 * @param row
+	 */
+	protected void addPermissionData(AccountUsersVO acct, Map<String,Object> row) {
+		SmarttrakTree t = acct.getPermissions();
+		if(t == null )  return; //nothing to do
+		List<String> profData = new ArrayList<>();
+		List<String> fdData = new ArrayList<>();
+		List<String> gaData = new ArrayList<>();
+		
+		PermissionVO acl;
+		for(Node node : t.preorderList()) {
+			//Permissions are enforced at depth level four, so check there
+			if(node.getDepthLevel() != 4) continue;
+			//add only the sections that have account permissions of PROF, FD, or GA
+			acl = (PermissionVO) node.getUserObject();
+			if(acl.isBrowseAuth()) {
+				profData.add(acl.getSectionNm());
+			}
+			if(acl.isFdAuth()) {
+				fdData.add(acl.getSectionNm());
+			}
+			if(acl.isGaAuth()) {
+				gaData.add(acl.getSectionNm());
+			}
+		}
+		
+		//add data to rows
+		row.put(PROF, formatPermissons(profData));
+		row.put(FD, formatPermissons(fdData));
+		row.put(GA, formatPermissons(gaData));	
+	}
+	
+	/**
+	 * Helper method to combine permission data into a delimitted string
+	 * @param permissions
+	 * @return
+	 */
+	protected String formatPermissons(List<String> permissions) {
+		StringBuilder data = new StringBuilder(500);
+		for (int i = 0; i < permissions.size(); i++) {
+			if(i > 0) {
+				data.append(",");
+			}
+			data.append(permissions.get(i));
+		}
+		return data.toString();
 	}
 	
 	/**
@@ -330,6 +389,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		headerMap.put(ACCOUNT_TYPE, "Account Type");
 		headerMap.put(ACCOUNT_START_DT, "Account Start Date");
 		headerMap.put(ACCOUNT_EXPIRATION_DT, "Account Expiration Date");
+		headerMap.put(PROF, "Prof Modules");
+		headerMap.put(FD, "FD Modules.");
+		headerMap.put(GA, "GA Modules");
 		headerMap.put(NAME,"Name");
 		headerMap.put(TITLE,"Title");
 		headerMap.put(EMAIL,"Email Address");
@@ -344,6 +406,8 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		for (String monthKey : monthHeaders) {
 			headerMap.put(monthKey, monthKey);
 		}
+		headerMap.put(TOTAL, "Total Views");
+		headerMap.put(AVERAGE, "Average Monthly");
 		return headerMap;
 	} 
 	
