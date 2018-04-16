@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
+import com.rezdox.action.RezDoxUtils.SortOrder;
 import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.ConnectionReportVO;
 import com.rezdox.vo.ConnectionVO;
@@ -26,6 +27,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
@@ -42,6 +44,9 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
  * @updates:
  ****************************************************************************/
 public class ConnectionAction extends SimpleActionAdapter {
+	// Maps the sort field values passed in to database fields
+	private Map<String, String> sortFields;
+
 	public static final String MEMBER = "member";
 	public static final String BUSINESS = "business";
 	public static final String CONNECTION_DATA = "connectionData";
@@ -54,11 +59,15 @@ public class ConnectionAction extends SimpleActionAdapter {
 	public static final String TARGET_ID = "targetId"; 
 	public static final String REZDOX_CONNECTION_POINTS = "rezdoxConnectionPoints";
 	private static final String ID_SUFFIX = "_id = ? ";
-
-
+	
 	public ConnectionAction() {
 		super();
-	}
+		sortFields = new HashMap<>();
+		sortFields.put("sortableName", "sortable_nm");
+		sortFields.put("cityName", "city_nm");
+		sortFields.put("stateCode", "state_cd");
+		sortFields.put(APPROVED_FLAG, "approved_flg");
+}
 
 	public ConnectionAction(ActionInitVO arg0) {
 		super(arg0);
@@ -185,7 +194,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 		List<Object> params = new ArrayList<>();
 		params.add(memberId);
 		params.add(memberId);
-		sql.append("select cast(count(*) as int) as total_rows_no  from ").append(schema).append("rezdox_connection where sndr_member_id = ? or rcpt_member_id = ? ");	
+		sql.append("select cast(count(*) as int) as total_rows_no  from ").append(schema).append("rezdox_connection ");
+		sql.append("where (sndr_member_id = ? or rcpt_member_id = ?) and approved_flg = 1 ");
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		List<SQLTotalVO> data = dbp.executeSelect(sql.toString(), params, new SQLTotalVO());
 
@@ -319,8 +329,10 @@ public class ConnectionAction extends SimpleActionAdapter {
 	private List<ConnectionReportVO> generateConnections(String targetId, String inqueryType, ActionRequest req) {
 		log.debug("generating connections");
 		String order = "order by approved_flg asc, create_dt desc ";
-		if (req.hasParameter(DBUtil.TABLE_ORDER) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER)))
-			order = StringUtil.join(DBUtil.ORDER_BY, req.getParameter(DBUtil.TABLE_ORDER), " ", req.getParameter("dir"));
+		if (req.hasParameter(DBUtil.TABLE_ORDER) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
+			String sortOrder = EnumUtil.safeValueOf(SortOrder.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase()).getSort();
+			order = StringUtil.join(DBUtil.ORDER_BY, sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), " ", sortOrder);
+		}
 
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
@@ -330,7 +342,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(2680);
 		sql.append(DBUtil.SELECT_FROM_STAR);
 		sql.append("( select connection_id, sndr_").append(idField).append("_id as sndr_id, b.member_id as rcpt_id, 'sending' as direction_cd, b.first_nm, b.last_nm, b.profile_pic_pth, ");
-		sql.append("pa.city_nm, pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, b.create_dt, 'MEMBER' as category_nm, approved_flg, privacy_flg ");
+		sql.append("pa.city_nm, pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, b.create_dt, 'MEMBER' as category_cd, approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm) as sortable_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.rcpt_member_id = b.member_id ");
 		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
@@ -339,7 +351,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//getting the records where target id was sent a connection by an other memeber
 		sql.append(DBUtil.UNION_ALL);
 		sql.append("select connection_id, b.member_id as sender_id, rcpt_").append(idField).append("_id as rcpt_id, 'receiving' as directionCd, b.first_nm, b.last_nm, b.profile_pic_pth, ");
-		sql.append("pa.city_nm, pa.state_cd, '', cast(0 as numeric) as rating, b.create_dt, 'MEMBER', approved_flg, privacy_flg ");
+		sql.append("pa.city_nm, pa.state_cd, '', cast(0 as numeric) as rating, b.create_dt, 'MEMBER', approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm)  ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A );
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.sndr_member_id = b.member_id ");
 		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
@@ -348,7 +360,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//getting the records where target id sent a connection to a business
 		sql.append(DBUtil.UNION_ALL);
 		sql.append("select connection_id, sndr_").append(idField).append("_id , b.business_id, 'sending', '', business_nm, b.photo_url, ");
-		sql.append("city_nm, state_cd, value_txt, cast(coalesce(rating, 0) as numeric) , b.create_dt, category_nm, approved_flg, privacy_flg ");
+		sql.append("city_nm, state_cd, value_txt, cast(coalesce(rating, 0) as numeric) , b.create_dt, business_category_cd, approved_flg, privacy_flg, business_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.rcpt_business_id = b.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
@@ -360,7 +372,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("where slug_txt = 'BUSINESS_SUMMARY' ");
 		sql.append(") as d on b.business_id = d.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
-		sql.append("(select business_id, c.category_nm from ").append(schema).append("rezdox_business_category_xr a ");
+		sql.append("(select business_id, c.business_category_cd from ").append(schema).append("rezdox_business_category_xr a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
@@ -369,7 +381,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//getting the records where a business sent a connection to the target id
 		sql.append(DBUtil.UNION_ALL);
 		sql.append("select connection_id, b.business_id, rcpt_").append(idField).append("_id, 'receiving', '', business_nm, b.photo_url, ");
-		sql.append("city_nm, state_cd, value_txt, cast( coalesce(rating, 0)as numeric), b.create_dt, category_nm, approved_flg, privacy_flg ");
+		sql.append("city_nm, state_cd, value_txt, cast( coalesce(rating, 0)as numeric), b.create_dt, business_category_cd, approved_flg, privacy_flg, business_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.sndr_business_id = b.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
@@ -381,7 +393,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("where slug_txt = 'BUSINESS_SUMMARY' ");
 		sql.append(") as d on b.business_id = d.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
-		sql.append("(select business_id, c.category_nm from ").append(schema).append("rezdox_business_category_xr a ");
+		sql.append("(select business_id, c.business_category_cd from ").append(schema).append("rezdox_business_category_xr a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
@@ -410,8 +422,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		if (req.hasParameter(CATEGORY_SEARCH) && !"All".equalsIgnoreCase(StringUtil.checkVal(req.getParameter(CATEGORY_SEARCH)))) {
 			String cs = req.getParameter(CATEGORY_SEARCH);
-			sql.append("and category_nm = ? ");
-			log.debug("category name " + cs);
+			sql.append("and category_cd = ? ");
+			log.debug("category code " + cs);
 			params.add(cs);
 		}
 

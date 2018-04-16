@@ -2,15 +2,18 @@ package com.rezdox.action;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.action.RezDoxUtils.SortOrder;
 import com.rezdox.vo.DirectoryReportVO;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
@@ -27,9 +30,15 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
  * <b>Changes:</b>
  ****************************************************************************/
 public class DirectoryAction extends SimpleActionAdapter {
+	// Maps the sort field values passed in to database fields
+	private Map<String, String> sortFields;
 
 	public DirectoryAction() {
 		super();
+		sortFields = new HashMap<>();
+		sortFields.put("firstName", "first_nm");
+		sortFields.put("cityName", "city_nm");
+		sortFields.put("stateCode", "state_cd");
 	}
 
 	/**
@@ -87,8 +96,10 @@ public class DirectoryAction extends SimpleActionAdapter {
 		
 		// Add ordering
 		String order = "order by first_nm asc ";
-		if (req.hasParameter(DBUtil.TABLE_ORDER) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER)))
-			order = StringUtil.join(DBUtil.ORDER_BY, req.getParameter(DBUtil.TABLE_ORDER), " ", req.getParameter("dir"));
+		if (req.hasParameter(DBUtil.TABLE_ORDER) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
+			String sortOrder = EnumUtil.safeValueOf(SortOrder.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase()).getSort();
+			order = StringUtil.join(DBUtil.ORDER_BY, sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), " ", sortOrder);
+		}
 		sql.append(order);
 		
 		log.debug("Directory SQL: " + sql + " | " + memberId);

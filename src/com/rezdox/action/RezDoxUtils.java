@@ -94,6 +94,25 @@ public class RezDoxUtils {
 		TRANSFER_WAITING, TRANSFER_COMPLETE, BUSINESS_APPROVED, BUSINESS_DECLINED, INVITE_ACCEPTED, REVIEW_BUSINESS;
 	}
 
+	/**
+	 * Sort orders passed by the Bootstrap tables.
+	 * Use these to map what is passed in, and prevent sql injection.
+	 * DO NOT use the passed values directly in queries.
+	 */
+	public enum SortOrder {
+		ASC("asc"), DESC("desc");
+		
+		private String sort;
+		
+		SortOrder(String sort) {
+			this.sort = sort;
+		}
+		
+		public String getSort() {
+			return sort;
+		}
+	}
+
 	private RezDoxUtils() {
 		//default constructor not used in static classes
 	}
