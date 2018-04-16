@@ -1,11 +1,12 @@
 package com.depuysynthes.action;
 
-// JDK 1.7
+// Java 8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-// SMT Base Libs
+//SMT Base Libs
+import com.depuysynthes.action.PatentActivityAction.ActivityType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -76,6 +77,7 @@ public class PatentAction extends SimpleActionAdapter {
 		sql.append("select item_txt, desc_txt, code_txt, patents_txt, redirect_nm, redirect_address_txt from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("dpy_syn_patent where code_txt=? and organization_id=? ");
+		sql.append("and status_flg=? ");
 		sql.append("limit 1 ");
 		log.debug(sql + "|" + req.getParameter("code") + "|" + site.getOrganizationId());
 
@@ -83,6 +85,7 @@ public class PatentAction extends SimpleActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, req.getParameter("code"));
 			ps.setString(2, site.getOrganizationId());
+			ps.setInt(3, ActivityType.ACTIVE.getTypeId());
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				super.putModuleData(new PatentVO(rs));
