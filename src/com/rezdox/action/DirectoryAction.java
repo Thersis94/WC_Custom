@@ -1,6 +1,7 @@
 package com.rezdox.action;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +56,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(1500);
+		String memberId = RezDoxUtils.getMemberId(req);
 		
 		// Member half of union
 		sql.append(DBUtil.SELECT_FROM_STAR);
@@ -64,9 +66,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append("profile_address pa on m.profile_id = pa.profile_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on (m.member_id = c.rcpt_member_id and c.sndr_member_id = ?) or (m.member_id = c.sndr_member_id and c.rcpt_member_id = ?) ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("m.member_id != ? ");
-		params.add(RezDoxUtils.getMemberId(req));
-		params.add(RezDoxUtils.getMemberId(req));
-		params.add(RezDoxUtils.getMemberId(req));
+		params.addAll(Arrays.asList(memberId, memberId, memberId));
 		
 		// Business half of union
 		sql.append(DBUtil.UNION_ALL);
@@ -80,8 +80,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bcs on bcx.business_category_cd = bcs.business_category_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bcs.parent_cd = bc.business_category_cd) ");
 		sql.append("as user_directory ");
-		params.add(RezDoxUtils.getMemberId(req));
-		params.add(RezDoxUtils.getMemberId(req));
+		params.addAll(Arrays.asList(memberId, memberId));
 		
 		// Generate the where clause
 		generateSqlWhere(sql, req, params);
@@ -92,7 +91,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 			order = StringUtil.join(DBUtil.ORDER_BY, req.getParameter(DBUtil.TABLE_ORDER), " ", req.getParameter("dir"));
 		sql.append(order);
 		
-		log.debug("Directory SQL: " + sql + " | " + RezDoxUtils.getMemberId(req));
+		log.debug("Directory SQL: " + sql + " | " + memberId);
 		
 		// Get the data
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
