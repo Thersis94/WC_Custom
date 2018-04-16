@@ -189,3 +189,6 @@ alter table custom.rezdox_room alter column room_category_cd set not null;
 alter table custom.rezdox_room drop column room_type_cd;
 drop table custom.rezdox_room_type;
 update custom.rezdox_room_category set category_nm=initcap(category_nm);
+
+-- remove non-business categories
+delete from custom.rezdox_business_category where category_nm in ('Members','Residences');
