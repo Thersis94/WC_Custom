@@ -263,7 +263,7 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	 */
 	@Override
 	public int hashCode() {
-		return super.hashCode() + StringUtil.checkVal(getMemberId()).hashCode();
+		return super.hashCode() + System.identityHashCode(this);
 	}
 
 	/*

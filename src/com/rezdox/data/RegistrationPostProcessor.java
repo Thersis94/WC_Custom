@@ -56,7 +56,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		log.debug("Running RezDox registration post-processor.");
 
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-		
+
 		// Determine whether user is updating their profile or a new member
 		if (!(user instanceof MemberVO)) {
 			setupNewMember(user, req);
@@ -65,7 +65,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 			req.setParameter(Constants.REDIRECT_URL, RezDoxUtils.PROFILE_PATH);
 		}
 	}
-	
+
 	/**
 	 * the fields in the member table need updated when a member updates their records.  
 	 * @param user
@@ -74,7 +74,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 	 */
 	private void updateExistingMember(UserDataVO user) throws ActionException {
 		MemberVO member = (MemberVO)user; 
-		
+
 		saveMember(member);
 	}
 
@@ -92,7 +92,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 			log.error("could not save member records ",e);
 			throw new ActionException(e);
 		}
-		
+
 	}
 
 	/**
@@ -114,13 +114,13 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		member.setRegisterSubmittalId((String) req.getAttribute("registerSubmittalId"));
 		member.setStatusFlg(1);
 		member.setPrivacyFlg(MemberVO.Privacy.PRIVATE.getCode());
-		
+
 		member.setFirstName(user.getFirstName());
 		member.setLastName(user.getLastName());
 		member.setEmailAddress(user.getEmailAddress());
 
 		saveMember(member);
-		
+
 		// Get default member subscription... the only default right now is "100 Connections".
 		// Free business and residence subscriptions are added by member selection after signing up.
 		MembershipAction ma = new MembershipAction(dbConn, attributes);
@@ -137,11 +137,11 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		//apply the default reward give to all new users at first login
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 		ra.applyReward(RezDoxUtils.NEW_REGISTRANT_REWARD, member.getMemberId());
-		
+
 		//set a member vo on the session so other rezdox actions have the right class
 		SMTSession session = req.getSession();
 		session.setAttribute(Constants.USER_DATA, member);
-		
+
 		// forward to the next step for setting up the member's account
 		req.setParameter(Constants.REDIRECT_URL, RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH);
 	}

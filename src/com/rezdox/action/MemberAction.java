@@ -16,6 +16,7 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
@@ -24,19 +25,16 @@ import com.smt.sitebuilder.data.vo.FormVO;
 
 /****************************************************************************
  * <b>Title</b>: MemberAction.java<p/>
- * <b>Description: Manages member settings.</b> 
+ * <b>Description: New user registration and logged-in user profile management/settings.
+ * Facades account creation, residence creation & related workflows.</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2018<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
- * @author Tim Johnson
+ * @author James McKain
  * @version 1.0
- * @since Mar 24, 2018
+ * @since Apr 16, 2018
  ****************************************************************************/
-public class MemberAction extends SBActionAdapter {
-
-	public enum MemberColumnName {
-		MEMBER_ID, CREATE_DT, UPDATE_DT
-	}
+public class MemberAction extends SimpleActionAdapter {
 
 	public MemberAction() {
 		super();
@@ -59,13 +57,6 @@ public class MemberAction extends SBActionAdapter {
 		setAttributes(attributes);
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void list(ActionRequest req) throws ActionException {
-		super.retrieve(req);
-	}
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -137,6 +128,7 @@ public class MemberAction extends SBActionAdapter {
 		MemberVO userData = (MemberVO) req.getSession().getAttribute(Constants.USER_DATA);
 		userData.setPrivacyFlg(member.getPrivacyFlg());
 		userData.setProfilePicPath(member.getProfilePicPath());
+		req.getSession().setAttribute(Constants.USER_DATA, userData);
 	}
 
 	/**
@@ -154,7 +146,7 @@ public class MemberAction extends SBActionAdapter {
 
 	/**
 	 * Saves partial member data
-	 * 
+	 * Called from MemberFormProcessor (for tab 2?)
 	 * @param req
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
@@ -182,6 +174,7 @@ public class MemberAction extends SBActionAdapter {
 	/**
 	 * Create a list of members in the system, agnostic of login ability or status.
 	 * used for the residence transfer UI.  Exclude the user ('self')
+	 * Called from ResidenceAction
 	 * @param req
 	 * @return
 	 */
