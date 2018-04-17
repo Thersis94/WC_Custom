@@ -6,7 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 //SMT Base Libs
-import com.depuysynthes.action.PatentActivityAction.ActivityType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -33,6 +32,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class PatentAction extends SimpleActionAdapter {
 
 	public static final String PATENT_ID = "patentId";
+	public static final int STATUS_ACTIVE = 20;
+	public static final int STATUS_INACTIVE = 5;
 	
 	public PatentAction () {
 		super();
@@ -40,16 +41,6 @@ public class PatentAction extends SimpleActionAdapter {
 
 	public PatentAction (ActionInitVO actionInit) {
 		super(actionInit);
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void update(ActionRequest req) throws ActionException {
-		super.update(req);
 	}
 
 
@@ -85,11 +76,10 @@ public class PatentAction extends SimpleActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, req.getParameter("code"));
 			ps.setString(2, site.getOrganizationId());
-			ps.setInt(3, ActivityType.ACTIVE.getTypeId());
+			ps.setInt(3, STATUS_ACTIVE);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				super.putModuleData(new PatentVO(rs));
-
 
 		} catch (SQLException sqle) {
 			log.error("could not load patents", sqle);

@@ -33,9 +33,7 @@ public class PatentActivityAction {
 	public enum ActivityType {
 		LIST(-1), // LIST is for retrieval only.
 		ADD(2),
-		UPDATE(3),
-		INACTIVE(5), // core.status table value for 'Disabled'
-		ACTIVE(20); // core.status table value for 'Active'
+		UPDATE(3);
 		
 		private int typeId;
 		private ActivityType(int typeId) {

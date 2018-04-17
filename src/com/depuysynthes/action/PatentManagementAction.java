@@ -151,23 +151,17 @@ public class PatentManagementAction extends SBActionAdapter {
 		log.debug("activityType: " + activityType);
 		int idx = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(buildQuery(req, activityType))) {
-			if (activityType.equals(ActivityType.ACTIVE) || 
-					activityType.equals(ActivityType.INACTIVE)) {
-				ps.setInt(++idx, pvo.getStatusFlag());
-				ps.setTimestamp(++idx, Convert.getCurrentTimestamp());
-			} else {
-				ps.setString(++idx, pvo.getActionId());
-				ps.setString(++idx, pvo.getOrganizationId());
-				ps.setString(++idx, pvo.getCompany());
-				ps.setString(++idx, pvo.getCode());
-				ps.setString(++idx, pvo.getItem());
-				ps.setString(++idx, pvo.getDesc());
-				ps.setString(++idx, pvo.getPatents());
-				ps.setString(++idx, pvo.getRedirectName());
-				ps.setString(++idx, pvo.getRedirectAddress());
-				ps.setInt(++idx, pvo.getStatusFlag());
-				ps.setTimestamp(++idx, Convert.getCurrentTimestamp());
-			}
+			ps.setString(++idx, pvo.getActionId());
+			ps.setString(++idx, pvo.getOrganizationId());
+			ps.setString(++idx, pvo.getCompany());
+			ps.setString(++idx, pvo.getCode());
+			ps.setString(++idx, pvo.getItem());
+			ps.setString(++idx, pvo.getDesc());
+			ps.setString(++idx, pvo.getPatents());
+			ps.setString(++idx, pvo.getRedirectName());
+			ps.setString(++idx, pvo.getRedirectAddress());
+			ps.setInt(++idx, pvo.getStatusFlag());
+			ps.setTimestamp(++idx, Convert.getCurrentTimestamp());
 
 			ResultSet rs = null;
 			if (activityType.equals(ActivityType.ADD)) {
@@ -238,12 +232,6 @@ public class PatentManagementAction extends SBActionAdapter {
 				sql.append("code_txt = ?, item_txt = ?, desc_txt = ?, patents_txt = ?, ");
 				sql.append("redirect_nm = ?, redirect_address_txt = ?, status_flg = ?, ");
 				sql.append("update_dt = ? where patent_id = ?");
-				break;
-			case INACTIVE:
-			case ACTIVE:
-				sql.append("update ").append(table);
-				sql.append("set status_flg = ?, update_dt = ? ");
-				sql.append("where patent_id = ?");
 				break;
 			default: // LIST
 				sql.append("select * from ").append(table);
