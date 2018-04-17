@@ -186,6 +186,13 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 		}
 	}
 
+	
+	/**
+	 * Create the hubspot field ased on the top level groups, gap analysis, and financial dashboard
+	 * @param user
+	 * @param acct
+	 * @return
+	 */
 	private String buildHubSpot(UserVO user, AccountUsersVO acct) {
 		Set<String> load = new HashSet<>();
 		String group = "";
