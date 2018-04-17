@@ -127,6 +127,7 @@ public class InsightAction extends ManagementAction {
 	 * @throws ActionException 
 	 */
 	private void loadPreview(ActionRequest req) throws ActionException {
+		setAttribute(Constants.PAGE_PREVIEW, true);
 		ActionInterface ai = new com.biomed.smarttrak.action.InsightAction();
 		ai.setActionInit(actionInit);
 		ai.setDBConnection(dbConn);
