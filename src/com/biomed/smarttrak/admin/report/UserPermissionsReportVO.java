@@ -3,15 +3,18 @@ package com.biomed.smarttrak.admin.report;
 // Java 8
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
 
 //WC custom
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.PermissionVO;
 import com.biomed.smarttrak.vo.UserVO;
-
 //SMTBaseLibs
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.report.ExcelReport;
@@ -49,6 +52,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 	private static final String FULL_NM = "FULL_NM";
 	private static final String HAS_FD = "HAS_FD";
 	private static final String HAS_GA = "HAS_GA";
+	private static final String HUBSPOT = "HUBSPOT";
 
 	/**
 	* Constructor
@@ -112,12 +116,14 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 				row.put(HAS_GA, checkFlag(acct.getGaAuthFlg(),user.getGaAuthFlg()));
 				// loop hierarchy.
 				addPermissions(row, acct.getPermissions());
+				row.put(HUBSPOT, buildHubSpot(user, acct));
 				rows.add(row);
 			}
 		}
 
 	}
-
+	
+	
 	/**
 	 * Compares account's flag value to user's flag value.
 	 * @param acctFlag
@@ -149,6 +155,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 		if (! accounts.isEmpty()) {
 			addSectionColumnHeaders(headerMap,accounts.get(0).getPermissions());
 		}
+		headerMap.put(HUBSPOT, "HubSpot Load");
 		return headerMap;
 	}
 	
@@ -177,6 +184,37 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 					break;
 			}
 		}
+	}
+
+	
+	/**
+	 * Create the hubspot field ased on the top level groups, gap analysis, and financial dashboard
+	 * @param user
+	 * @param acct
+	 * @return
+	 */
+	private String buildHubSpot(UserVO user, AccountUsersVO acct) {
+		Set<String> load = new HashSet<>();
+		String group = "";
+		for (Node n : acct.getPermissions().getPreorderList()) {
+			if (n.getDepthLevel() == 2) group = n.getNodeName();
+			if (n.getDepthLevel() != MAX_DEPTH_LEVEL) continue;
+			// Permissions are authoritative at level 4 so we use the level 4 perm
+			PermissionVO perm = (PermissionVO)n.getUserObject();
+			if (perm.isBrowseAuth())
+				load.add(group);
+		}
+		
+
+		if (checkFlag(acct.getFdAuthFlg(),user.getFdAuthFlg()))
+			load.add("FD");
+		
+		if (checkFlag(acct.getGaAuthFlg(),user.getGaAuthFlg()))
+			load.add("GA");
+		
+		if (load.isEmpty()) return "";
+		
+		return StringUtils.join(load, ", ");
 	}
 	
 	/**
