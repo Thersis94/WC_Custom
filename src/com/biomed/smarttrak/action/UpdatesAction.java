@@ -9,9 +9,11 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
+import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
 import com.biomed.smarttrak.vo.SectionVO;
@@ -27,6 +29,7 @@ import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -85,11 +88,30 @@ public class UpdatesAction extends SBActionAdapter {
 		if (resp != null && !resp.getResultDocuments().isEmpty()) {
 			List<Node> sections = loadSections(req);
 			sortFacets(sections, resp);
+			//adjust links only manage tool
+			 adjustContentLinks(resp.getResultDocuments(), mod, req);
 		}
 
 	}
 
-
+	/**
+	 * Modifies public links to their corresponding manage tool link
+	 * @param resp
+	 * @param req
+	 */
+	protected void adjustContentLinks(List<SolrDocument> resp,  ModuleVO mod, ActionRequest req) {
+		//The widget on the public site does not have a solr widget assigned to attribute_2 slot, return if not found
+		if(mod.getAttribute(ModuleVO.ATTRIBUTE_2) == null) return;
+		
+		BiomedLinkCheckerUtil linkUtil = new BiomedLinkCheckerUtil(dbConn, (SiteVO) req.getAttribute(Constants.SITE_DATA));
+		
+		//adjust the appropriate content links
+		for (SolrDocument solrDocument : resp) {
+			String content = (String)solrDocument.getFieldValue("summary");
+			solrDocument.setField("summary", linkUtil.modifySiteLinks(content));
+		}
+	}
+	
 	/**
 	 * Helper method manages sorting Facets according to Section Hierarchy Order Values.
 	 * Note: this method is shared with InsightAction
