@@ -77,7 +77,6 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
         super();
         setContentType("application/vnd.ms-excel");
         isHeaderAttachment(Boolean.TRUE);
-        setFileName(REPORT_TITLE.replace(' ', '-')+".xls");
         accounts = new HashMap<>();
         monthHeaders = new ArrayList<>();
 	}
@@ -88,9 +87,10 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	@Override
 	public byte[] generateReport() {
 		log.debug("generateReport...");
+		setFileName(buildReportTitle().replace(' ', '-')+".xls");
 		
 		ExcelReport rpt = new UserUtilizationExcelReport(getHeader());
-		rpt.setTitleCell(buildReportTitle());
+		//rpt.setTitleCell(buildReportTitle()); omit title
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
 		generateDataRows(rows);
@@ -108,13 +108,12 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		sb.append(REPORT_TITLE);
 		
 		if (dateStart != null) {
-			sb.append(" (");
-			sb.append(Convert.formatDate(dateStart,Convert.DATE_SLASH_MONTH_PATTERN));
+			sb.append("-");
+			sb.append(Convert.formatDate(dateStart,Convert.DATE_SLASH_PATTERN));
 			if (dateEnd != null) {
 				sb.append(" - ");
-				sb.append(Convert.formatDate(dateEnd,Convert.DATE_SLASH_MONTH_PATTERN));
+				sb.append(Convert.formatDate(dateEnd,Convert.DATE_SLASH_PATTERN));
 			}
-			sb.append(")");
 		}
 		
 		return sb.toString();
@@ -152,7 +151,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 			// user vals
 			Map<String,Object> row;
 			Map<String,Integer> counts;
-			int userTotal = 0;
+			double userTotal = 0;
 
 			// loop account users
 			for (UserVO user : acct.getValue()) {
@@ -184,7 +183,8 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 					userTotal += manageTotals(row,counts,monthKey);
 				}
 				row.put(TOTAL, userTotal);
-				row.put(AVERAGE, (userTotal / monthHeaders.size()));
+				row.put(AVERAGE, (Math.ceil(userTotal / monthHeaders.size())));
+				userTotal = 0;
 				
 				rows.add(row);
 			}
