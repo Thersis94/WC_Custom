@@ -32,8 +32,8 @@ public class PatentActivityAction {
 	
 	public enum ActivityType {
 		LIST(-1), // LIST is for retrieval only.
-		ADD(2),
-		UPDATE(3);
+		ADD(1),
+		UPDATE(2);
 		
 		private int typeId;
 		private ActivityType(int typeId) {

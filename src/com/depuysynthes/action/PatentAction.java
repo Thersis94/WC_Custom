@@ -32,8 +32,9 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class PatentAction extends SimpleActionAdapter {
 
 	public static final String PATENT_ID = "patentId";
+	// for consistency, status values reflect core WC status values (see core.STATUS db table)
 	public static final int STATUS_ACTIVE = 20;
-	public static final int STATUS_INACTIVE = 5;
+	public static final int STATUS_DISABLED = 5;
 	
 	public PatentAction () {
 		super();
