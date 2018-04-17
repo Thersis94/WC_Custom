@@ -252,9 +252,9 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	 */
 	@Override
 	public boolean equals(Object o) {
-		if (!super.equals(o)) return false;
+		if (o == null || !super.equals(o)) return false;
 		MemberVO vo = (MemberVO)o;
-		return StringUtil.checkVal(vo.getMemberId()).equals(getMemberId());
+		return this.hashCode() == vo.hashCode();
 	}
 
 	/*

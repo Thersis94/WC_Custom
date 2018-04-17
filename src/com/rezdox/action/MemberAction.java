@@ -4,24 +4,37 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+//WC Custom
 import com.rezdox.data.MemberFormProcessor;
 import com.rezdox.vo.MemberVO;
+import com.rezdox.vo.MembershipVO;
+import com.rezdox.vo.MembershipVO.Group;
+import com.rezdox.vo.PromotionVO;
+//SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
+//WC Core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
+import com.smt.sitebuilder.action.user.ProfileRoleManager;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
-import com.smt.sitebuilder.data.vo.FormVO;
+import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.security.UserLogin;
 
 /****************************************************************************
  * <b>Title</b>: MemberAction.java<p/>
@@ -71,10 +84,20 @@ public class MemberAction extends SimpleActionAdapter {
 		// Get the form
 		DataManagerUtil util = new DataManagerUtil(getAttributes(), getDBConnection());
 		DataContainer dc = util.loadForm(formId, req, MemberFormProcessor.class);
-		
-		ModuleVO mod = (ModuleVO) getAttribute(Contants.MODULE_DATA);
+
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		mod.setAttribute(FormAction.FORM_DATA, dc);
 		mod.setActionData(dc.getForm());
+	}
+
+
+	/**
+	 * overloaded for backwards compatability
+	 * @param memberId
+	 * @return
+	 */
+	public MemberVO retrieveMemberData(String memberId) {
+		return retrieveMemberData(memberId, null);
 	}
 
 
@@ -109,55 +132,72 @@ public class MemberAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		SMTSession session = req.getSession();
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		UserDataVO user = (UserDataVO) session.getAttribute(Constants.USER_DATA);
+		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
+
+		//support deleting a member entirely
+		if (req.hasParameter("deleteUser")) {
+			req.setParameter("memberId", member.getMemberId());
+			saveMember(req, true);
+			CookieUtil.remove(req, Constants.USER_COOKIE);
+			session.invalidate();
+			return;
+		}
 
 		//capture if this is a new user signing up for the first time.
-		boolean isNewUser = user == null || StringUtil.isEmpty(user.getProfileId());
+		boolean isNewUser = member == null || StringUtil.isEmpty(member.getProfileId());
 
-		//save the FormBuilder piece - this will save through to ProfileManager for us automatically
-		//TODO make sure profile manager is called along the way, but AFTER the form processor
+		//set orgProfileComm=1 for all users - they can only opt out from email campaigns
+		req.setParameter("allowCommunication", "1");
+		req.setParameter("countryCode", "US"); //for good measure - until they add it to the UI
+
+		//save the FormBuilder piece - this will save through to ProfileManager for us
 		saveForm(req);
 
 		//save the custom table - REZDOX_MEMBER
-		user = saveMember(req);
-		
-		//TODO user here will be missing all their profile data
+		member = saveMember(req, false);
+
+		//overseed the MemberVO with the profile data collected by the form processor
+		member.setData(req);
 
 		//save auth record
-		//TODO check if this is done upstream
-		saveAuthRecord(user);
+		saveAuthRecord(member);
 
 		//if new user - create a login account & log the user in for the first time
 		if (isNewUser) {
-			createProfileRole(user, site);
-			performLogin(user, site, req);
-			setupMembership(user, req);
+			createProfileRole(member, site);
+			performLogin(member, site, req);
+			setupMembership(member);
 		}
 
 		//put the member VO onto their session, refreshing any data that's already there.
-		req.getSession().setAttribute(Constants.USER_DATA, user);
-
-		//new users get welcomed with a dashboard redirect - setup by the login module already.
-		String redirPg = isNewUser ? RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH : RezDoxUtils.PROFILE_PATH;
-		sendRedirect(redirPg, null, req);
+		session.setAttribute(Constants.USER_DATA, member);
 	}
 
 
 	/**
-	 * TODO create or update the authentication record
-	 **/
-	private void saveAuthRecord(UserDataVO user) {
+	 * create or update the authentication record
+	 * @param user
+	 * @throws ActionException
+	 */
+	private void saveAuthRecord(UserDataVO user) throws ActionException {
 		UserLogin login = new UserLogin(getDBConnection(), getAttributes());
-		login.saveAuthRecord(user.getAuthenticationId(), user.getEmailAddress(), user.getPassword(), 0);
+		try {
+			login.saveAuthRecord(user.getAuthenticationId(), user.getEmailAddress(), user.getPassword(), 0);
+		} catch (DatabaseException e) {
+			throw new ActionException("could not createa auth record", e);
+		}
 	}
 
 
 	/**
-	 * TODO create the profile role record so the user can login
-	 **/
+	 * create the profile role record so the user can login
+	 * @param user
+	 * @param site
+	 * @throws ActionException
+	 */
 	private void createProfileRole(UserDataVO user, SiteVO site) throws ActionException {
 		ProfileRoleManager prm = new ProfileRoleManager();
-	//	try {
+		try {
 			if (!prm.roleExists(user.getProfileId(), site.getSiteId(), null, getDBConnection())) {
 				SBUserRole role = new SBUserRole(site.getSiteId());
 				role.setProfileId(user.getProfileId());
@@ -165,22 +205,26 @@ public class MemberAction extends SimpleActionAdapter {
 				role.setStatusId(SecurityController.STATUS_ACTIVE);
 				prm.addRole(role, getDBConnection());
 			}
-	//	} catch (Exception e) {
-	//		throw new ActionException("could not createa profile role", e);
-	//	}
+		} catch (Exception e) {
+			throw new ActionException("could not create profile role", e);
+		}
 	}
 
 
 	/**
-	 * TODO perform initial login for this new user
-	 **/
-	private void performLogin(UserDataVO user, SiteVO site, ActionRequest req) {
-	//	try {
+	 * perform initial login for this new user
+	 * @param user
+	 * @param site
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void performLogin(UserDataVO user, SiteVO site, ActionRequest req) throws ActionException {
+		try {
 			SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), getAttributes());
 			sc.authorizeUser(user, req, site, dbConn);
-	//	} catch (Exception e) {
-	//		throw new ActionException("could not auto-login user after registration", e);
-	//	}
+		} catch (Exception e) {
+			throw new ActionException("could not auto-login user after registration", e);
+		}
 	}
 
 
@@ -194,7 +238,7 @@ public class MemberAction extends SimpleActionAdapter {
 		setAttribute(Constants.ACTION_DATA, actionInit);
 
 		// Call DataManagerUtil to save the form.
-		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, MemberFormProcessor.class);
+		new DataManagerUtil(getAttributes(), getDBConnection()).saveForm(formId, req, MemberFormProcessor.class);
 	}
 
 
@@ -205,13 +249,17 @@ public class MemberAction extends SimpleActionAdapter {
 	 * @throws DatabaseException
 	 * @throws InvalidDataException
 	 */
-	public MemberVO saveMember(ActionRequest req) throws ActionException {
+	public MemberVO saveMember(ActionRequest req, boolean isDelete) throws ActionException {
 		MemberVO vo = new MemberVO(req);
 
 		// Save the member's updated settings
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
-			dbp.save(vo);
+			if (isDelete) {
+				dbp.delete(vo);
+			} else {
+				dbp.save(vo);
+			}
 		} catch(Exception e) {
 			throw new ActionException(e);
 		}
@@ -245,7 +293,7 @@ public class MemberAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void setupMembership(MemberVO member, ActionRequest req) throws ActionException {
+	private void setupMembership(MemberVO member) throws ActionException {
 		// Get default member subscription... the only default right now is "100 Connections".
 		// Free business and residence subscriptions are added by member selection after signing up.
 		MembershipAction ma = new MembershipAction(dbConn, attributes);

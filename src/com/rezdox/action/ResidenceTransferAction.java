@@ -83,7 +83,7 @@ public class ResidenceTransferAction extends SimpleActionAdapter {
 
 		//load the recipient member.  Done here and not passed on the request for security reasons.
 		MemberAction ma = new MemberAction(getDBConnection(), getAttributes());
-		MemberVO rcpt = ma.retrieveMemberData(req.getParameter("toMemberId"));
+		MemberVO rcpt = ma.retrieveMemberData(req.getParameter("toMemberId"), null);
 
 		sendInitiateEmail(req, sender, rcpt);
 
@@ -123,7 +123,7 @@ public class ResidenceTransferAction extends SimpleActionAdapter {
 
 		//load the recipient member.  Done here and not passed on the request for security reasons.
 		MemberAction ma = new MemberAction(getDBConnection(), getAttributes());
-		MemberVO prevOwner = ma.retrieveMemberData(req.getParameter("senderId"));
+		MemberVO prevOwner = ma.retrieveMemberData(req.getParameter("senderId"), null);
 
 		sendCompleteEmail(req, prevOwner, RezDoxUtils.getMember(req));
 
