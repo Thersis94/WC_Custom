@@ -47,6 +47,7 @@ public class FinancialDashVO extends SBModuleVO {
 	private int currentQtr;
 	private int currentYear;
 	private boolean behindLatest;
+	private boolean showEmpty;
 
 	/**
 	 * The month offset from the current date, for the financial dashboard to display as current
@@ -147,6 +148,7 @@ public class FinancialDashVO extends SBModuleVO {
 		boolean edit = Convert.formatBoolean(req.getParameter("editMode"));
 		String scenId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String compId = StringUtil.checkVal(req.getParameter("companyId"));
+		showEmpty = Convert.formatBoolean(req.getParameter("showEmpty"));
 
 		if (0 == getCurrentYear()) setCurrentQtrYear();
 		Integer calYr = Convert.formatInteger(req.getParameter("calendarYear"), getCurrentYear());
@@ -491,5 +493,13 @@ public class FinancialDashVO extends SBModuleVO {
 			setBehindLatest(true);
 		else
 			setBehindLatest(false);
+	}
+
+	public boolean showEmpty() {
+		return showEmpty;
+	}
+
+	public void setShowEmpty(boolean showEmpty) {
+		this.showEmpty = showEmpty;
 	}
 }
