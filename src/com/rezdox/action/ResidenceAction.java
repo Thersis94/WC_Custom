@@ -42,7 +42,9 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.user.LocationManager;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
@@ -294,6 +296,17 @@ public class ResidenceAction extends SBActionAdapter {
 		} else if (req.hasParameter("transferResidence")) {
 			new ResidenceTransferAction(dbConn, attributes).initateResidenceTransfer(req);
 
+		} else if (req.hasParameter("deleteResidence")) {
+			String msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+			try {
+				new DBProcessor(dbConn).delete(new ResidenceVO(req));
+			} catch (Exception e) {
+				log.error("could not delete residence", e);
+				msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
+			}
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			sendRedirect(page.getFullPath(), msg, req);
+			
 		} else {
 			try {
 				//get the residence 

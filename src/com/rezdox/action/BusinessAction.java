@@ -31,7 +31,9 @@ import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.user.LocationManager;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
@@ -128,7 +130,7 @@ public class BusinessAction extends SBActionAdapter {
 			req.setParameter(REQ_BUSINESS_ID, "new");
 			req.setParameter(REQ_BUSINESS_INFO, "1");
 		}
-		
+
 		List<BusinessVO> businessList = retrieveBusinesses(req);
 		String businessId = req.getParameter(REQ_BUSINESS_ID, "");
 
@@ -316,7 +318,7 @@ public class BusinessAction extends SBActionAdapter {
 				return;
 			}
 		}
-		
+
 		// Edit the business data
 		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter(REQ_SETTINGS)) {
 			saveForm(req);
@@ -328,7 +330,7 @@ public class BusinessAction extends SBActionAdapter {
 				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 				try {
 					req.setSession(changeMemebersRole(req, site));
-					
+
 					// This is the user's first business, give a reward to anyone that might have invited them
 					InvitationAction ia = new InvitationAction(dbConn, attributes);
 					ia.applyInviterRewards(req, RezDoxUtils.REWARD_BUSINESS_INVITE);
@@ -336,6 +338,18 @@ public class BusinessAction extends SBActionAdapter {
 					log.error("could not update member vo", e);
 				}
 			}
+
+		} else if (req.hasParameter("deleteBusiness")) {
+			String msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+			try {
+				new DBProcessor(dbConn).delete(business);
+			} catch (Exception e) {
+				log.error("could not delete buisness", e);
+				msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
+			}
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			sendRedirect(page.getFullPath(), msg, req);
+
 		} else {
 			try {				
 				putModuleData(saveBusiness(req), 1, false);
@@ -358,9 +372,9 @@ public class BusinessAction extends SBActionAdapter {
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 		log.debug("change role for site and member " + site.getSiteId()+"|"+ member.getProfileId());
-		
+
 		SBUserRole role = ((SBUserRole)session.getAttribute(Constants.ROLE_DATA));
-		
+
 		// Upgrade from Registered to Business
 		String newRoleId = RezDoxUtils.REZDOX_BUSINESS_ROLE;
 		String newRoleName = RezDoxUtils.REZDOX_BUSINESS_ROLE_NAME;
@@ -372,7 +386,7 @@ public class BusinessAction extends SBActionAdapter {
 			newRoleName = RezDoxUtils.REZDOX_RES_BUS_ROLE_NAME;
 			newRoleLevel = RezDoxUtils.REZDOX_RES_BUS_ROLE_LEVEL;
 		}
-		
+
 		prm.removeRole(role.getProfileRoleId(), dbConn);
 		prm.addRole(member.getProfileId(), site.getSiteId(), newRoleId, 20, dbConn);
 		role.setRoleId(newRoleId);
@@ -534,7 +548,7 @@ public class BusinessAction extends SBActionAdapter {
 
 		return attributes;
 	}
-	
+
 	/**
 	 * A partial update which updates specific business settings only on the business record
 	 * 
@@ -542,13 +556,13 @@ public class BusinessAction extends SBActionAdapter {
 	 */
 	public void saveSettings(ActionRequest req) {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		
+
 		StringBuilder sql = new StringBuilder(100);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("rezdox_business set privacy_flg = ? where business_id = ? ");
-		
+
 		List<String> fields = new ArrayList<>();
 		fields.addAll(Arrays.asList("privacy_flg", "business_id"));
-		
+
 		DBProcessor dbp = new DBProcessor(dbConn);
 		try {
 			dbp.executeSqlUpdate(sql.toString(), new BusinessVO(req), fields);
