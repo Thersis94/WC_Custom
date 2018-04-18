@@ -81,33 +81,35 @@ public class ProductExplorer extends SBActionAdapter {
 	 * solr equivalents
 	 */
 	private enum SearchField {
-		PRODUCT(CONTAINS_SEARCH, SearchDocumentHandler.TITLE, "Product Name"),
-		STATE(BEGIN_SEARCH, "search_state_s", "State"),
-		COUNTRY(EXACT_SEARCH, SearchDocumentHandler.COUNTRY, "Country"),
-		COMPANY(CONTAINS_SEARCH, "companysearch_s", "Company Name"),
-		SEGMENT(EXACT_SEARCH, SearchDocumentHandler.SECTION, "Segment"),
-		MARKET(EXACT_SEARCH, "target_market_ss", "Target Market"),
-		INDICATION(EXACT_SEARCH, "indication_ss", "Indication"),
-		TECH(EXACT_SEARCH, "technology_ss", "Technology"),
-		APPROACH(EXACT_SEARCH, "approach_ss", "Approach"),
-		CLASSIFICATION(EXACT_SEARCH, "classification_ss", "Classification"),
-		INTREG(EXACT_SEARCH, "intregionnm_ss", "International Region"),
-		INTPATH(EXACT_SEARCH, "intpathnm_ss", "International Path"),
-		INTSTATUS(EXACT_SEARCH, "intstatusnm_ss", "International Status"),
-		USPATH(EXACT_SEARCH, "uspathnm_ss", "US Path"),
-		USSTATUS(EXACT_SEARCH, "usstatusnm_ss", "US Status"),
-		ALLY(CONTAINS_SEARCH, "allysearch_ss", "Ally"),
-		OWNERSHIP(EXACT_SEARCH, "ownership_s", "Owner"),
-		ID(EXACT_SEARCH, SearchDocumentHandler.DOCUMENT_ID, "Product Id");
+		PRODUCT(CONTAINS_SEARCH, SearchDocumentHandler.TITLE, "Product Name", true),
+		STATE(BEGIN_SEARCH, "search_state_s", "State", false),
+		COUNTRY(EXACT_SEARCH, SearchDocumentHandler.COUNTRY, "Country", false),
+		COMPANY(CONTAINS_SEARCH, "companysearch_s", "Company Name", false),
+		SEGMENT(EXACT_SEARCH, SearchDocumentHandler.SECTION, "Segment", false),
+		MARKET(EXACT_SEARCH, "target_market_ss", "Target Market", false),
+		INDICATION(EXACT_SEARCH, "indication_ss", "Indication", false),
+		TECH(EXACT_SEARCH, "technology_ss", "Technology", false),
+		APPROACH(EXACT_SEARCH, "approach_ss", "Approach", false),
+		CLASSIFICATION(EXACT_SEARCH, "classification_ss", "Classification", false),
+		INTREG(EXACT_SEARCH, "intregionnm_ss", "International Region", false),
+		INTPATH(EXACT_SEARCH, "intpathnm_ss", "International Path", false),
+		INTSTATUS(EXACT_SEARCH, "intstatusnm_ss", "International Status", false),
+		USPATH(EXACT_SEARCH, "uspathnm_ss", "US Path", false),
+		USSTATUS(EXACT_SEARCH, "usstatusnm_ss", "US Status", false),
+		ALLY(CONTAINS_SEARCH, "allysearch_ss", "Ally", false),
+		OWNERSHIP(EXACT_SEARCH, "ownership_s", "Owner", false),
+		ID(EXACT_SEARCH, SearchDocumentHandler.DOCUMENT_ID, "Product Id", false);
 
 		private int searchType;
 		private String solrField;
 		private String fieldName;
+		private boolean querySearch;
 
-		SearchField(int searchType, String solrField, String fieldName) {
+		SearchField(int searchType, String solrField, String fieldName, boolean querySearch) {
 			this.searchType = searchType;
 			this.solrField = solrField;
 			this.fieldName = fieldName;
+			this.querySearch = querySearch;
 		}
 
 		public String getSolrField() {
@@ -120,6 +122,10 @@ public class ProductExplorer extends SBActionAdapter {
 
 		public int getSearchType() {
 			return searchType;
+		}
+		
+		public boolean isQuerySearch() {
+			return querySearch;
 		}
 	}
 
@@ -384,11 +390,33 @@ public class ProductExplorer extends SBActionAdapter {
 			if (!enumNames.contains(name) || StringUtil.isEmpty(req.getParameter(name))) continue;
 
 			SearchField search = SearchField.valueOf(name);
-			String value = buildValues(req.getParameterValues(name), search.getSearchType());
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, search.getSolrField(), value, BooleanType.AND));
+			if (search.isQuerySearch()) {
+				qData.setSearchData(buildQueryValue(req.getParameter(name), search, qData.getSearchData()));
+			} else {
+				String value = buildValues(req.getParameterValues(name), search.getSearchType());
+				qData.addSolrField(new SolrFieldVO(FieldType.FILTER, search.getSolrField(), value, BooleanType.AND));
+			}
 		}
 	}
 
+
+	/**
+	 * Create a searchData value that can be used with fields whose values can contain 
+	 * problematic end characters that do not play nice with filter queries
+	 * @param value
+	 * @param search
+	 * @param searchData
+	 * @return
+	 */
+	private String buildQueryValue(String value, SearchField search, String searchData) {
+		if (StringUtil.isEmpty(value)) return searchData;
+		StringBuilder queryValue = new StringBuilder(StringUtil.isEmpty(searchData)? "":searchData);
+		// Default search case that handles odd situations like ending with a +.
+		queryValue.append(" ").append(search.solrField).append(":").append(value);
+		// Standard search case
+		queryValue.append(" ").append(search.solrField).append(":").append(getSearchValue(value, search.getSearchType()));
+		return queryValue.toString();
+	}
 
 	/**
 	 * Build a solr compatible value field out of the supplied value array
@@ -644,7 +672,7 @@ public class ProductExplorer extends SBActionAdapter {
 		try {
 			UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 			EmailMessageVO msg = new EmailMessageVO();
-			msg.setSubject("Smarttrak Products");
+			msg.setSubject("SmartTRAK Products");
 			msg.addRecipient(req.getParameter("recipient"));
 			msg.setFrom("info@smarttrak.com");
 

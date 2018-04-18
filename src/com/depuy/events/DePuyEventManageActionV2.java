@@ -91,19 +91,9 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 				vo.setReminderDt(reminderDt.getTime());
 				
 				er.updateRSVP(vo);
-				er = null;
 
-				// set redirect page (used for public site redirects only)
-				StringBuilder redirectPg = new StringBuilder();
-				redirectPg.append(req.getRequestURI()).append(
-						"?facadeType=rsvp&reqType=closeModal");
-				redirectPg.append("&printerFriendlyTheme=true&hidePf=true");
-				redirectPg.append("&msg=").append(req.getAttribute("message"));
-				log.debug("nextPage=" + redirectPg);
-
-				req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-				req.setAttribute(Constants.REDIRECT_URL, redirectPg.toString());
-
+				// set redirect
+				buildRsvpListRedirect(req);
 				break;
 
 			case "report": 
@@ -152,7 +142,9 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 				era.setAttributes( this.attributes );
 				era.setDBConnection(dbConn);
 				era.importFile(req);
-				era = null;
+
+				// set redirect
+				buildRsvpListRedirect(req);
 				break;
 				
 			default:
@@ -222,5 +214,28 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 		// into the Map
 		super.putModuleData(data);
 		actionInit.setActionId(oldInitId);
+	}
+	
+	/**
+	 * Helper method for building proper redirect needed after modal submittal
+	 * @param req
+	 */
+	private void buildRsvpListRedirect(ActionRequest req) {
+		// set redirect page (used for public site redirects only)
+		StringBuilder redirectPg = new StringBuilder(200);
+		redirectPg.append(req.getRequestURI());
+		redirectPg.append("?facadeType=rsvp");
+		redirectPg.append("&reqType=rsvpList");
+		redirectPg.append("&eventEntryId=").append(req.getParameter("eventEntryId"));
+		redirectPg.append("&eventNm=").append(req.getParameter("eventNm"));
+		redirectPg.append("&eventCode=").append(req.getParameter("eventCode"));
+		redirectPg.append("&eventLocn=").append(req.getParameter("eventLocn"));
+		redirectPg.append("&eventType=").append(req.getParameter("eventType"));
+		redirectPg.append("&eventDt=").append(req.getParameter("eventDt"));
+
+		log.debug("nextPage=" + redirectPg);
+
+		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+		req.setAttribute(Constants.REDIRECT_URL, redirectPg.toString());
 	}
 }

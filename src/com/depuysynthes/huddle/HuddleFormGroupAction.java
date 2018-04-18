@@ -226,7 +226,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 	 */
 	private String getFormsSql(boolean isRetrieve) {
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select * from FB_FORM a ");
+		sql.append("select * from FORM_ACTION a ");
 		sql.append("inner join SB_ACTION b ");
 		sql.append("on a.ACTION_ID = b.ACTION_ID ");
 		// On list all forms are needed, retrieve only need ones assigned to the widget

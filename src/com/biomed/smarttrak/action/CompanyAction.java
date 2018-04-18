@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
@@ -28,6 +29,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.solr.AccessControlQuery;
 
@@ -314,7 +316,6 @@ public class CompanyAction extends SimpleActionAdapter {
 		}
 	}
 
-
 	/**
 	 * Get all locations supported by the supplied company and add them to the vo.
 	 * @param company
@@ -371,8 +372,9 @@ public class CompanyAction extends SimpleActionAdapter {
 
 		List<Object> results = db.executeSelect(sql.toString(), params, new CompanyAttributeVO());
 		filterAttributes(results, company, role);
+		//adjust the links to manage links if in preview mode from manage tool
+		if(Convert.formatBoolean(getAttribute(Constants.PAGE_PREVIEW))) adjustContentLinks(results); 
 	}
-
 
 	/**
 	 * Filter supplied attributes based on thier sections and the user's acl 
@@ -415,6 +417,25 @@ public class CompanyAction extends SimpleActionAdapter {
 		}
 	}
 
+	/**
+	 * Modifies public links to their corresponding manage tool link
+	 * @param attributes
+	 */
+	protected void adjustContentLinks(List<Object> attributes) {
+		SiteVO siteData = (SiteVO)getAttribute(Constants.SITE_DATA);
+		BiomedLinkCheckerUtil linkUtil = new BiomedLinkCheckerUtil(dbConn, siteData);
+		
+		//update the links accordingly
+		for (Object o : attributes) {
+			CompanyAttributeVO attr = (CompanyAttributeVO)o;
+			String attrTypeNm = attr.getAttributeTypeName();
+			if("LINK".equals(attrTypeNm)) {
+				attr.setValueText(linkUtil.modifyPlainURL(attr.getValueText()));
+			}else if("HTML".equals(attrTypeNm)) {
+				attr.setValueText(linkUtil.modifySiteLinks(attr.getValueText()));
+			}
+		}
+	}
 
 	/**
 	 * Get all sections for the supplied company

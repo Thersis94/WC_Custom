@@ -231,6 +231,10 @@ public class ProductManagementAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	protected void retrievePreview(ActionRequest req) throws ActionException {
+		//set data for downstream
+		setAttribute(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
+		setAttribute(Constants.PAGE_PREVIEW, true);
+		
 		ProductAction pa = new ProductAction(actionInit);
 		pa.setDBConnection(dbConn);
 		pa.setAttributes(attributes);
