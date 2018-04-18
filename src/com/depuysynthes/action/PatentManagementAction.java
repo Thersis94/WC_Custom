@@ -11,7 +11,6 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 // SMTBaseLibs
-import com.depuysynthes.action.PatentActivityAction.ActivityType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -37,10 +36,16 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class PatentManagementAction extends SBActionAdapter {
 
 	private static Logger log = Logger.getLogger(PatentManagementAction.class.getName());
-	private static final String PATENT_TABLE = "DPY_SYN_PATENT";
+	static final String PATENT_TABLE = "dpy_syn_patent";
 	private static final String PARAM_SEARCH_VAL = "searchVal";
 	private static final String PARAM_ACTIVITY_TYPE= "activityType";
-	
+
+	public enum ActivityType {
+		ADD,
+		LIST,
+		UPDATE;
+	}
+
 	/**
 	* Constructor
 	*/
@@ -103,7 +108,7 @@ public class PatentManagementAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * Retrieves patent record data.
 	 * @param req
 	 * @return
 	 */
@@ -121,7 +126,6 @@ public class PatentManagementAction extends SBActionAdapter {
 
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				log.debug("patents text: " + rs.getString("patents_txt"));
 				patents.add(new PatentVO(rs));
 			}
 		} catch (SQLException sqle) {
@@ -136,9 +140,8 @@ public class PatentManagementAction extends SBActionAdapter {
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
-		// update
-		log.debug("update...");
-		String errMsg = "Patent record added/updated successfully.";
+		String errMsg = "Patent data updated successfully.";
+
 		// populate bean data from request
 		PatentVO pvo = new PatentVO();
 		pvo.populateData(req);
@@ -147,8 +150,52 @@ public class PatentManagementAction extends SBActionAdapter {
 		// determine activity type
 		ActivityType activityType = 
 				parseActivityType(StringUtil.checkVal(req.getParameter(PARAM_ACTIVITY_TYPE)));
-
 		log.debug("activityType: " + activityType);
+
+		try {
+			dbConn.setAutoCommit(false);
+			if (activityType.equals(ActivityType.ADD)) {
+				// insert new patent record
+				writePatentData(req,pvo,activityType);
+
+			} else if (activityType.equals(ActivityType.UPDATE)) {
+				// log history first to capture existing record
+				logHistory(pvo);
+				// update existing record
+				writePatentData(req,pvo,activityType);
+
+			}
+			dbConn.commit();
+		} catch (Exception e) {
+			// already logged it, capture err msg for redirect.
+			errMsg = e.getMessage();
+			try {
+				dbConn.rollback();
+			} catch (Exception e1) {
+				log.error("Error rolling back patent record transaction, ", e1);
+			}
+		} finally {
+			try {
+				dbConn.setAutoCommit(true);
+			} catch (Exception e2) {
+				log.error("Error resetting db connection autocommit, ", e2);
+			}
+		}
+
+		// redirect
+		sbUtil.adminRedirect(req, errMsg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+	}
+
+
+	/**
+	 * Writes the patent record data (either insert or update). 
+	 * @param req
+	 * @param pvo
+	 * @param activityType
+	 * @throws ActionException
+	 */
+	private void writePatentData(ActionRequest req, PatentVO pvo, 
+			ActivityType activityType) throws ActionException {
 		int idx = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(buildQuery(req, activityType))) {
 			ps.setString(++idx, pvo.getActionId());
@@ -161,6 +208,7 @@ public class PatentManagementAction extends SBActionAdapter {
 			ps.setString(++idx, pvo.getRedirectName());
 			ps.setString(++idx, pvo.getRedirectAddress());
 			ps.setInt(++idx, pvo.getStatusFlag());
+			ps.setString(++idx, pvo.getUpdateById());
 			ps.setTimestamp(++idx, Convert.getCurrentTimestamp());
 
 			ResultSet rs = null;
@@ -168,27 +216,16 @@ public class PatentManagementAction extends SBActionAdapter {
 				rs = ps.executeQuery();
 				if (rs.next())	
 					pvo.setPatentId(rs.getInt(1));
-				log.debug("added patent ID: " + pvo.getPatentId());
 			} else {
 				ps.setInt(++idx, pvo.getPatentId());
 				ps.executeUpdate();
 			}
-
+			log.debug("Wrote record data for patent ID: " + pvo.getPatentId());
 		} catch (SQLException sqle) {
-			errMsg = "Error adding/updating patent.";
+			String errMsg = "Error writing patent record.";
 			log.error(errMsg, sqle);
+			throw new ActionException(errMsg);
 		}
-
-		// log the activity
-		try {
-			logActivity(pvo.getPatentId(), activityType, pvo.getUpdateById());
-		} catch (Exception e) {
-			// set errMsg, already logged in underlying action
-			errMsg = e.getMessage();
-		}
-
-		// redirect
-		sbUtil.adminRedirect(req, errMsg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 
 
@@ -205,24 +242,26 @@ public class PatentManagementAction extends SBActionAdapter {
 		}
 	}
 
+
 	/**
 	 * Builds a SQL query based on the activity type argument.
 	 * @param activityType
 	 * @return
 	 */
 	private String buildQuery(ActionRequest req, ActivityType activityType) {
-		StringBuilder sql = new StringBuilder(200);
 		StringBuilder table = new StringBuilder(30);
 		table.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		table.append(PATENT_TABLE).append(" ");
+
+		StringBuilder sql = new StringBuilder(200);
 
 		switch(activityType) {
 			case ADD:
 				sql.append("insert into ").append(table);
 				sql.append("(action_id, organization_id, company_nm, ");
 				sql.append("code_txt, item_txt, desc_txt, patents_txt, redirect_nm, ");
-				sql.append("redirect_address_txt, status_flg, create_dt) ");
-				sql.append("values (?,?,?,?,?,?,?,?,?,?,?) ");
+				sql.append("redirect_address_txt, status_flg, profile_id, create_dt) ");
+				sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?) ");
 				// add clause to return the sequence ID genererated for this insert.
 				sql.append("returning patent_id");
 				break;
@@ -231,7 +270,7 @@ public class PatentManagementAction extends SBActionAdapter {
 				sql.append("set action_id = ?, organization_id = ?, company_nm = ?, ");
 				sql.append("code_txt = ?, item_txt = ?, desc_txt = ?, patents_txt = ?, ");
 				sql.append("redirect_nm = ?, redirect_address_txt = ?, status_flg = ?, ");
-				sql.append("update_dt = ? where patent_id = ?");
+				sql.append("profile_id = ?, update_dt = ? where patent_id = ?");
 				break;
 			default: // LIST
 				sql.append("select * from ").append(table);
@@ -244,7 +283,7 @@ public class PatentManagementAction extends SBActionAdapter {
 				break;
 		}
 
-		log.debug("patent SQL: " + sql);
+		log.debug("patent record SQL: " + sql);
 		return sql.toString();
 	}
 
@@ -254,10 +293,11 @@ public class PatentManagementAction extends SBActionAdapter {
 	 * @param patentId
 	 * @param activityType
 	 * @param profileId
+	 * @throws ActionException
 	 */
-	private void logActivity(int patentId, ActivityType activityType, String profileId) {
-		PatentActivityAction paa = new PatentActivityAction(attributes,dbConn);
-		paa.logActivity(patentId, activityType, profileId);
+	private void logHistory(PatentVO pvo) throws ActionException {
+		PatentHistoryManager paa = new PatentHistoryManager(attributes,dbConn);
+		paa.writePatentHistory(pvo);
 	}
 	
 }
