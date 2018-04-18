@@ -255,32 +255,28 @@ public class PatentManagementAction extends SBActionAdapter {
 
 		StringBuilder sql = new StringBuilder(200);
 
-		switch(activityType) {
-			case ADD:
-				sql.append("insert into ").append(table);
-				sql.append("(action_id, organization_id, company_nm, ");
-				sql.append("code_txt, item_txt, desc_txt, patents_txt, redirect_nm, ");
-				sql.append("redirect_address_txt, status_flg, profile_id, create_dt) ");
-				sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?) ");
-				// add clause to return the sequence ID genererated for this insert.
-				sql.append("returning patent_id");
-				break;
-			case UPDATE:
-				sql.append("update ").append(table);
-				sql.append("set action_id = ?, organization_id = ?, company_nm = ?, ");
-				sql.append("code_txt = ?, item_txt = ?, desc_txt = ?, patents_txt = ?, ");
-				sql.append("redirect_nm = ?, redirect_address_txt = ?, status_flg = ?, ");
-				sql.append("profile_id = ?, update_dt = ? where patent_id = ?");
-				break;
-			default: // LIST
-				sql.append("select * from ").append(table);
-				sql.append("where organization_id = ? ");
-				if (req.hasParameter(PatentAction.PATENT_ID))
-					sql.append("and patent_id = ? ");
-				if (req.hasParameter(PARAM_SEARCH_VAL))
-					sql.append("and code_txt like ? ");
-				sql.append("order by code_txt ");
-				break;
+		if (activityType.equals(ActivityType.ADD)) { 
+			sql.append("insert into ").append(table);
+			sql.append("(action_id, organization_id, company_nm, ");
+			sql.append("code_txt, item_txt, desc_txt, patents_txt, redirect_nm, ");
+			sql.append("redirect_address_txt, status_flg, profile_id, create_dt) ");
+			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?) ");
+			// add clause to return the sequence ID genererated for this insert.
+			sql.append("returning patent_id");
+		} else if (activityType.equals(ActivityType.UPDATE)) {
+			sql.append("update ").append(table);
+			sql.append("set action_id = ?, organization_id = ?, company_nm = ?, ");
+			sql.append("code_txt = ?, item_txt = ?, desc_txt = ?, patents_txt = ?, ");
+			sql.append("redirect_nm = ?, redirect_address_txt = ?, status_flg = ?, ");
+			sql.append("profile_id = ?, update_dt = ? where patent_id = ?");
+		} else {
+			sql.append("select * from ").append(table);
+			sql.append("where organization_id = ? ");
+			if (req.hasParameter(PatentAction.PATENT_ID))
+				sql.append("and patent_id = ? ");
+			if (req.hasParameter(PARAM_SEARCH_VAL))
+				sql.append("and code_txt like ? ");
+			sql.append("order by code_txt ");
 		}
 
 		log.debug("patent record SQL: " + sql);
