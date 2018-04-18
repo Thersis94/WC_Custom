@@ -16,6 +16,7 @@ import org.apache.solr.common.SolrDocument;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeVO;
 import com.biomed.smarttrak.vo.MarketVO;
@@ -28,6 +29,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 //WC Core
@@ -177,9 +179,13 @@ public class MarketAction extends SimpleActionAdapter {
 
 		List<Object> results = db.executeSelect(sql.toString(), params, new MarketAttributeVO());
 		Map<String, List<MarketAttributeVO>> attrMap = new HashMap<>();
+		boolean isPreview = Convert.formatBoolean(getAttribute(Constants.PAGE_PREVIEW));
 		for (Object o : results) {
 			MarketAttributeVO attr = (MarketAttributeVO)o;
 
+			//adjust the links to manage links if in preview mode from manage tool
+			if(isPreview) adjustContentLinks(attr); 
+			
 			if ("LINK".equals(attr.getAttributeTypeCd()) ||
 					"ATTACH".equals(attr.getAttributeTypeCd())) {
 				// Links need to be specailly sorted in order to display properly
@@ -195,6 +201,21 @@ public class MarketAction extends SimpleActionAdapter {
 		}
 	}
 
+	/**
+	 * Modifies public links to their corresponding manage tool link
+	 * @param attribute
+	 */
+	protected void adjustContentLinks(MarketAttributeVO attribute){
+		SiteVO siteData = (SiteVO)getAttribute(Constants.SITE_DATA);
+		BiomedLinkCheckerUtil linkUtil = new BiomedLinkCheckerUtil(dbConn, siteData);
+		
+		String attrType = attribute.getAttributeTypeCd();
+		if("LINK".equals(attrType)) {
+			attribute.setValueText(linkUtil.modifyPlainURL(attribute.getValueText()));
+		}else if("HTML".equals(attrType)) {
+			attribute.setValueText(linkUtil.modifySiteLinks(attribute.getValueText()));
+		}
+	}
 
 	/**
 	 * Add the link to the proper list, including specialized lists for attatchments

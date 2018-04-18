@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.common.constants.Operator;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataComparator;
@@ -21,7 +22,7 @@ import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerFacade;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.GenericQueryVO.ColumnName;
-import com.smt.sitebuilder.data.vo.GenericQueryVO.Operator;
+
 import com.smt.sitebuilder.data.vo.QueryParamVO;
 import com.smt.sitebuilder.security.SecurityController;
 
@@ -131,7 +132,7 @@ public class AlumniDatabaseAction extends SimpleActionAdapter {
 		//call the black box for our extended profile data
 		QueryParamVO param1 = new QueryParamVO();
 		param1.setColumnNm(ColumnName.FORM_SUBMITTAL_ID);
-		param1.setOperator(Operator.in);
+		param1.setOperator(Operator.IN);
 		param1.setValues(profileIds.toArray(new String[profileIds.size()]));
 
 		GenericQueryVO query = new GenericQueryVO(SIGMAPI_FORM);
@@ -140,7 +141,7 @@ public class AlumniDatabaseAction extends SimpleActionAdapter {
 
 		DataContainer dc = new DataContainer();
 		dc.setQuery(query);
-		DataManagerFacade dmf = new DataManagerFacade(attributes, dbConn);
+		DataManagerFacade dmf = new DataManagerFacade(attributes, dbConn, null);
 		dmf.loadTransactions(dc);
 
 		return dc;

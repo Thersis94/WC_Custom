@@ -6,10 +6,14 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.form.FormAction;
+import com.smt.sitebuilder.action.form.FormActionVO;
+import com.smt.sitebuilder.action.form.FormSubmittalAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
+import com.smt.sitebuilder.data.TransactionParserIntfc;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
 import com.smt.sitebuilder.util.MessageSender;
 
@@ -44,9 +48,11 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) {
-		DataContainer dc = (DataContainer)req.getAttribute("formDataVO");
+		DataContainer dc = (DataContainer)req.getAttribute(FormAction.FORM_DATA);
 
 		FormTransactionVO trans = dc.getTransactions().values().iterator().next();
+
+		FormActionVO form = (FormActionVO) req.getAttribute(FormSubmittalAction.FORM_ACTION_VO);
 
 		if("Yes".equals(trans.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0))) {
 			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
@@ -62,7 +68,7 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 				mail.addRecipients(trans.getEmailAddress());
 				mail.setSubject("Patient Ambassador Consent Document");
 				mail.setFrom(senderEmail);
-				mail.setHtmlBody(dc.getForm().getOrgConsentText());
+				mail.setHtmlBody(form.getOrgConsentText());
 
 				MessageSender ms = new MessageSender(attributes, dbConn);
 				ms.sendMessage(mail);
@@ -85,7 +91,7 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 	 * @param req
 	 */
 	private void formatRedirect(ActionRequest req) {
-		String hasReplacedJoint = req.getParameter("frm_" + PatientAmbassadorStoriesTool.PAFConst.HAS_REPLACED_ID.getId());
+		String hasReplacedJoint = req.getParameter(TransactionParserIntfc.FORM_FIELD_PREFIX + PatientAmbassadorStoriesTool.PAFConst.HAS_REPLACED_ID.getId());
 		if ("yes".equalsIgnoreCase(hasReplacedJoint)) return;
 
 		StringBuilder redir = new StringBuilder(300);
