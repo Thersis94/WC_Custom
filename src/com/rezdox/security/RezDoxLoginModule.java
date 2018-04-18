@@ -2,24 +2,21 @@ package com.rezdox.security;
 
 // Java 8
 import java.util.Map;
-import javax.servlet.http.HttpServletResponse;
 
+import com.rezdox.action.ConnectionAction;
+import com.rezdox.action.MemberAction;
+import com.rezdox.action.MyRewardsAction;
+//WC_Custom libs
+import com.rezdox.vo.MemberVO;
 import com.siliconmtn.action.ActionRequest;
 //SMTBaseLibs
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.common.http.CookieUtil;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-
 //WebCrescendo libs
 import com.smt.sitebuilder.security.DBLoginModule;
-import com.rezdox.action.ConnectionAction;
-
-//WC_Custom libs
-import com.rezdox.vo.MemberVO;
-import com.rezdox.action.MemberAction;
-import com.rezdox.action.MyRewardsAction;
 
 /*****************************************************************************
  <p><b>Title</b>: RezDoxLoginModule</p>
@@ -56,7 +53,6 @@ public class RezDoxLoginModule extends DBLoginModule {
 		UserDataVO user = super.loadUserData(profileId, authenticationId);
 		SMTDBConnection dbConn = (SMTDBConnection) getAttribute(GlobalConfig.KEY_DB_CONN);
 		ActionRequest req = (ActionRequest) getAttribute(GlobalConfig.ACTION_REQUEST);
-		HttpServletResponse resp = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
 
 		// Get the member data by calling the member action
 		MemberAction ma = new MemberAction(dbConn, getAttributes());
@@ -70,12 +66,12 @@ public class RezDoxLoginModule extends DBLoginModule {
 
 		//load a count of the user's connections into a cookie for display in the left menu
 		ConnectionAction ca = new ConnectionAction(dbConn, getAttributes());
-		CookieUtil.add(resp, ConnectionAction.REZDOX_CONNECTION_POINTS, String.valueOf(ca.getMemeberConnectionCount(member.getMemberId())), "/", -1);
+		CookieUtil.add(req, ConnectionAction.REZDOX_CONNECTION_POINTS, String.valueOf(ca.getMemeberConnectionCount(member.getMemberId())), "/", -1);
 
 		//load a count of the user's RezRewards into a cookie for display in the left menu
 		MyRewardsAction rewards = new MyRewardsAction(dbConn, getAttributes());
 		int pts = rewards.getAvailablePoints(member.getMemberId());
-		CookieUtil.add(resp, MyRewardsAction.MY_POINTS, String.valueOf(pts), "/", -1);
+		CookieUtil.add(req, MyRewardsAction.MY_POINTS, String.valueOf(pts), "/", -1);
 
 		return member;
 	}
