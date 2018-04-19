@@ -8,7 +8,6 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
-import com.rezdox.action.RezDoxUtils.SortOrder;
 import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.ConnectionReportVO;
 import com.rezdox.vo.ConnectionVO;
@@ -21,6 +20,7 @@ import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.DBUtil.SortDirection;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.SQLTotalVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -330,7 +330,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		log.debug("generating connections");
 		String order = "order by approved_flg asc, create_dt desc ";
 		if (req.hasParameter(DBUtil.TABLE_ORDER) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
-			String sortOrder = EnumUtil.safeValueOf(SortOrder.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase()).getSort();
+			String sortOrder = EnumUtil.safeValueOf(SortDirection.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase()).getSort();
 			order = StringUtil.join(DBUtil.ORDER_BY, sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), " ", sortOrder);
 		}
 

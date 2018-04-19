@@ -33,7 +33,6 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	private int statusFlg;
 	private int privacyFlg;
 	private String profilePicPath;
-	private String initials;
 	private Date createDate;
 
 	/**
@@ -211,28 +210,6 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	}
 
 	/**
-	 * @return the initials
-	 */
-	public String getInitials() {
-		return initials;
-	}
-
-	/**
-	 * @param initials the initials to set
-	 */
-	public void setInitials(String initials) {
-		this.initials = initials;
-	}
-	
-	/**
-	 * Sets the member's initials based on first/last name in the VO
-	 */
-	private void setInitials() {
-		String name = StringUtil.checkVal(getFirstName()) + ' ' + StringUtil.checkVal(getLastName());
-		setInitials(StringUtil.abbreviate(name.trim(), 2).toUpperCase());
-	}
-
-	/**
 	 * Override for db processor to add profile_id to the member record
 	 */
 	@Override
@@ -251,30 +228,12 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.UserDataVO#setFirstName(java.lang.String)
-	 */
-	@Override
-	public void setFirstName(String firstName) {
-		super.setFirstName(firstName);
-		setInitials();
-	}
-
-	/* (non-Javadoc)
 	 * @see com.siliconmtn.security.UserDataVO#getLastName()
 	 */
 	@Override
 	@Column(name="last_nm")
 	public String getLastName() {
 		return super.getLastName();
-	}
-	
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.UserDataVO#setLastName(java.lang.String)
-	 */
-	@Override
-	public void setLastName(String lastName) {
-		super.setLastName(lastName);
-		setInitials();
 	}
 
 	/* (non-Javadoc)

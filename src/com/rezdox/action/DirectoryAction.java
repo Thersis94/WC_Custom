@@ -6,11 +6,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.rezdox.action.RezDoxUtils.SortOrder;
 import com.rezdox.vo.DirectoryReportVO;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.DBUtil.SortDirection;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.EnumUtil;
@@ -97,7 +97,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		// Add ordering
 		String order = "order by first_nm asc ";
 		if (req.hasParameter(DBUtil.TABLE_ORDER) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
-			String sortOrder = EnumUtil.safeValueOf(SortOrder.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase()).getSort();
+			String sortOrder = EnumUtil.safeValueOf(SortDirection.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase()).getSort();
 			order = StringUtil.join(DBUtil.ORDER_BY, sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), " ", sortOrder);
 		}
 		sql.append(order);
