@@ -3,7 +3,6 @@ package com.biomed.smarttrak.admin.report;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map.Entry;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
