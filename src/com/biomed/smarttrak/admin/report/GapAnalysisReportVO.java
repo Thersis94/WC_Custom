@@ -267,7 +267,7 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 			StringBuilder cssPage = new StringBuilder(120);
 			cssPage.append(site.getFullSiteAlias()).append("/binary/themes/");
 			cssPage.append(site.getTheme().getPageLocationName()).append("/scripts/gap_report.css");
-			byte[] cssData = conn.retrieveDataViaPost(cssPage.toString(), new HashMap<>());
+			byte[] cssData = conn.retrieveData(cssPage.toString());
 			sb.append("<style>").append(new String(cssData)).append("</style>");
 		} catch (IOException e) {
 			log.error("Unable to retrieve style sheet.", e);
