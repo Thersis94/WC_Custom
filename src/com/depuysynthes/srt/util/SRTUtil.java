@@ -1,7 +1,14 @@
 package com.depuysynthes.srt.util;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang.StringEscapeUtils;
 
+import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -106,5 +113,23 @@ public class SRTUtil {
 	public static SRTRosterVO getRoster(ActionRequest req) {
 		return (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
 
+	}
+
+	/**
+	 * Convert list of Projects into map of projects.  Used in places where
+	 * we are loading data on Projects and need an efficient means of finding
+	 * the relevant SRTProjectVO.
+	 * @param projects
+	 * @return
+	 */
+	public static Map<String, SRTProjectVO> mapProjects(List<SRTProjectVO> projects) {
+		Map<String, SRTProjectVO> pMap;
+		if(projects != null) {
+			pMap = projects.stream().collect(Collectors.toMap(SRTProjectVO::getProjectId, Function.identity()));
+		} else {
+			pMap = new HashMap<>();
+		}
+
+		return pMap;
 	}
 }

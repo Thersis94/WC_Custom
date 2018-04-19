@@ -8,6 +8,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.user.HumanNameIntfc;
 
 /****************************************************************************
  * <b>Title:</b> SRTRoster.java
@@ -21,7 +22,7 @@ import com.siliconmtn.util.Convert;
  * @since Feb 5, 2018
  ****************************************************************************/
 @Table(name="DPY_SYN_SRT_ROSTER")
-public class SRTRosterVO extends UserDataVO {
+public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 
 	public enum Role {ADMIN, SALES_ROSTER, PUBLIC}
 

@@ -515,7 +515,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	public void populateMilestones(List<SRTProjectVO> projects) {
 
 		//Map Projects by ProjectId
-		Map<String, SRTProjectVO> pMap = projects.stream().collect(Collectors.toMap(SRTProjectVO::getProjectId, Function.identity()));
+		Map<String, SRTProjectVO> pMap = SRTUtil.mapProjects(projects);
 
 		//Create list of keys via pMap keySet.
 		List<String> vals = new ArrayList<>(pMap.keySet());

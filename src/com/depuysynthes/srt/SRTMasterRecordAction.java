@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -177,6 +176,9 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 		if(req.hasParameter("isSearch")) {
 			vals.add(req.getParameter("term").toLowerCase());
 			vals.add(req.getParameter("term").toLowerCase());
+		} else if(req.hasParameter("search")) {
+			vals.add(req.getParameter("search").toLowerCase());
+			vals.add(req.getParameter("search").toLowerCase());
 		} else if(req.hasParameter(SRT_MASTER_RECORD_ID)) {
 			vals.add(req.getParameter(SRT_MASTER_RECORD_ID));
 		}
@@ -191,7 +193,7 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	 */
 	private String listMasterRecordsSql(ActionRequest req) {
 		boolean getById = req.hasParameter(SRT_MASTER_RECORD_ID);
-		boolean isSearch = req.hasParameter("isSearch");
+		boolean isSearch = req.hasParameter("isSearch") || req.hasParameter("search");
 
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
@@ -286,24 +288,31 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 
 	/**
 	 * Load the Master Records associated with given SRTProjectVO
-	 * @param p
+	 * @param projects
 	 * @return
 	 */
-	public List<SRTMasterRecordVO> loadMasterRecordXR(SRTProjectVO p) {
-		return new DBProcessor(dbConn, getCustomSchema()).executeSelect(buildXrQuery(), Arrays.asList(p.getProjectId()), new SRTMasterRecordVO());
+	public List<SRTMasterRecordVO> loadMasterRecordXR(List<SRTProjectVO> projects) {
+		List<Object> vals = new ArrayList<>();
+		for(SRTProjectVO p : projects) {
+			vals.add(p.getProjectId());
+		}
+
+		return new DBProcessor(dbConn, getCustomSchema()).executeSelect(buildXrQuery(vals.size()), vals, new SRTMasterRecordVO());
 	}
 
 	/**
 	 * Build the Master Record Lookup Query against the Xr Table.
+	 * @param size 
 	 * @return
 	 */
-	private String buildXrQuery() {
+	private String buildXrQuery(int size) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select x.*, mr.title_txt, mr.part_no from ").append(schema).append("DPY_SYN_SRT_MASTER_RECORD_PROJECT_XR x ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("DPY_SYN_SRT_MASTER_RECORD mr ");
-		sql.append("on x.MASTER_RECORD_ID = mr.MASTER_RECORD_ID and x.PROJECT_ID = ? ");
-		sql.append(DBUtil.ORDER_BY).append("x.CREATE_DT");
+		sql.append("on x.MASTER_RECORD_ID = mr.MASTER_RECORD_ID and x.PROJECT_ID in (");
+		DBUtil.preparedStatmentQuestion(size, sql);
+		sql.append(") ").append(DBUtil.ORDER_BY).append("x.CREATE_DT");
 		return sql.toString();
 	}
 }

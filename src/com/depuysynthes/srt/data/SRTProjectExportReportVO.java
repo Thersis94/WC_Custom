@@ -5,10 +5,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.depuysynthes.srt.vo.ProjectExportReportVO;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
@@ -56,7 +56,7 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 	@Override
 	public byte[] generateReport() {
 		//Build Excel File
-		try(Workbook wb = new HSSFWorkbook()) {
+		try(Workbook wb = new XSSFWorkbook()) {
 			Sheet sheet = wb.createSheet("Projects");
 
 			//Build Header Rows
