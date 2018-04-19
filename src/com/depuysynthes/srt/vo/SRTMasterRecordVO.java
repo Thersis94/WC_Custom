@@ -50,6 +50,7 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	private Date updateDt;
 	private SRTFileVO prodImg;
 	private Map<String, String> attributes;
+	private String projectId;
 
 	public SRTMasterRecordVO() {
 		attributes = new LinkedHashMap<>();
@@ -167,6 +168,14 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	@Column(name="PART_COUNT", isReadOnly=true)
 	public int getPartCount() {
 		return partCount;
+	}
+
+	/**
+	 * @return the projectId.
+	 */
+	@Column(name="PROJECT_ID", isReadOnly=true)
+	public String getProjectId() {
+		return projectId;
 	}
 
 	/**
@@ -312,6 +321,13 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	 */
 	public void setPartCount(int partCount) {
 		this.partCount = partCount;
+	}
+
+	/**
+	 * @param projectId the projectId to set.
+	 */
+	public void setProjectId(String projectId) {
+		this.projectId = projectId;
 	}
 
 	/**

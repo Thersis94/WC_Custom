@@ -133,8 +133,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		//Load Roster Data.
 		SRTRosterAction sra = (SRTRosterAction)ActionControllerFactoryImpl.loadAction(SRTRosterAction.class.getName(), this);
-		List<SRTRosterVO> rosters = sra.loadRosterUsers(req);
-		SRTRosterVO roster = rosters.get(0);
+		GridDataVO<SRTRosterVO> rosters = sra.loadRosterUsers(req);
+		SRTRosterVO roster = rosters.getRowData().get(0);
 
 		//Save the Request and set Roster Data on it.
 		SRTRequestVO request = new SRTRequestVO(req);
@@ -274,11 +274,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		if(!projects.getRowData().isEmpty()) {
 
-			//If this is a detail request, load additional data.
-			if(req.hasParameter(SRT_PROJECT_ID)) {
-				SRTProjectVO p = projects.getRowData().get(0);
-				loadDetailData(p, req);
-			}
+			loadDetailData(projects.getRowData(), req);
 
 			//Decrypt Project Record Name Fields.
 			decryptProjectNames(projects);
@@ -302,24 +298,32 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	/**
 	 * Loads Request Data when we are looking at a single record.
-	 * @param project
+	 * @param projects
 	 * @param req
 	 */
-	private void loadDetailData(SRTProjectVO project, ActionRequest req) {
+	private void loadDetailData(List<SRTProjectVO> projects, ActionRequest req) {
 
 		//Load request Information and assign on Project Record.
-		req.setParameter(SRTRequestAction.SRT_REQUEST_ID, project.getRequestId());
-		SRTRequestAction sra = (SRTRequestAction) ActionControllerFactoryImpl.loadAction(SRTRequestAction.class.getName(), this);
-		GridDataVO<SRTRequestVO> reqData = sra.loadRequests(req);
-		if(reqData != null && !reqData.getRowData().isEmpty()) {
-			project.setRequest(reqData.getRowData().get(0));
+		if(req.hasParameter(SRT_PROJECT_ID)) {
+			SRTProjectVO p = projects.get(0);
+			req.setParameter(SRTRequestAction.SRT_REQUEST_ID, p.getRequestId());
+			SRTRequestAction sra = (SRTRequestAction) ActionControllerFactoryImpl.loadAction(SRTRequestAction.class.getName(), this);
+			GridDataVO<SRTRequestVO> reqData = sra.loadRequests(req);
+			if(reqData != null && !reqData.getRowData().isEmpty()) {
+				p.setRequest(reqData.getRowData().get(0));
+			}
 		}
+
+		//Build Map of Projects
+		Map<String, SRTProjectVO> pMap = SRTUtil.mapProjects(projects);
 
 		//Load Master Record Data and assign on Project Record.
 		SRTMasterRecordAction smra = (SRTMasterRecordAction) ActionControllerFactoryImpl.loadAction(SRTMasterRecordAction.class.getName(), this);
-		List<SRTMasterRecordVO> prodData = smra.loadMasterRecordXR(project);
+		List<SRTMasterRecordVO> prodData = smra.loadMasterRecordXR(projects);
+
+		//Add Master Records to relevant Project record.
 		for(SRTMasterRecordVO mr : prodData) {
-			project.addMasterRecord(mr);
+			pMap.get(mr.getProjectId()).addMasterRecord(mr);
 		}
 	}
 
@@ -439,7 +443,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		vals.add(SRTUtil.getRoster(req).getOpCoId());
 
 		if(req.hasParameter(SRT_PROJECT_ID)) {
-			sql.append("and p.PROJECT_ID = ? ");
+			sql.append("and p.PROJECT_ID = ? or p.CO_PROJECT_ID = ? ");
+			vals.add(req.getParameter(SRT_PROJECT_ID));
 			vals.add(req.getParameter(SRT_PROJECT_ID));
 		} else if(!StringUtil.isEmpty(statusType)) {
 			sql.append("and p.PROJ_STAT_ID = ? ");
