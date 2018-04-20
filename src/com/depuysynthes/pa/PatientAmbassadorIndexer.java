@@ -143,11 +143,11 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 				// one to the vo and create a new field vo.
 				// This needs to be done before the vo so that all fields are
 				// associated with the proper submissions.
-				if (!fieldId.equals(rs.getString("FORM_FIELD_ID")) || !submittalId.equals(formSubmittalId)) {
+				if (!fieldId.equals(rs.getString("FORM_FIELD_GROUP_ID")) || !submittalId.equals(formSubmittalId)) {
 					if (field != null && vo != null)
 						vo.addCustomData(fieldId, field);
 					field = new FormFieldVO(rs);
-					fieldId = rs.getString("FORM_FIELD_ID");
+					fieldId = rs.getString("FORM_FIELD_GROUP_ID");
 				}
 				if (field != null)
 					field.addResponse(rs.getString("VALUE_TXT"));
@@ -184,13 +184,14 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	 * @return
 	 */
 	private String getSubmittalRecordQuery() {
-		StringBuilder sb = new StringBuilder(750);
+		StringBuilder sb = new StringBuilder(800);
 		sb.append("SELECT fs.*, fd.* FROM FORM_SUBMITTAL fs ");
+		sb.append("inner join sb_action a on fs.form_id = a.attrib1_txt ");
 		sb.append("left join FORM_DATA fd on fd.FORM_SUBMITTAL_ID = fs.FORM_SUBMITTAL_ID ");
 		sb.append("left join FORM_DATA filter on filter.FORM_SUBMITTAL_ID = fs.FORM_SUBMITTAL_ID ");
-		sb.append("and filter.VALUE_TXT='published' and filter.FORM_FIELD_ID=? ");
-		sb.append("WHERE FORM_ID = ? and filter.FORM_DATA_ID is not null ");
-		sb.append("ORDER BY fs.FORM_SUBMITTAL_ID, fd.FORM_FIELD_ID");
+		sb.append("and filter.VALUE_TXT='published' and filter.FORM_FIELD_GROUP_ID=? ");
+		sb.append("WHERE action_id = ? and filter.FORM_DATA_ID is not null ");
+		sb.append("ORDER BY fs.FORM_SUBMITTAL_ID, fd.FORM_FIELD_GROUP_ID");
 		return sb.toString();
 	}
 
