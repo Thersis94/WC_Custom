@@ -146,8 +146,10 @@ public class GridExcelManager {
 		
 		//set the value and style for the appropriate cell type
 		String detailType = StringUtil.isEmpty(detail.getDetailType()) ? RowStyle.DATA.toString() : detail.getDetailType();
-		if(!StringUtil.isEmpty(value) && !RowStyle.HEADING.equals(RowStyle.valueOf(detailType))) {
-			boolean isPercent = setNumericValue(value, cell);
+		//remove any non-relevant characters(currency symbols, commas, percents, etc.) If empty, not a number value
+		String numericValue  = value.replaceAll("[^\\d\\.]","");
+		if(!StringUtil.isEmpty(numericValue) && !RowStyle.HEADING.equals(RowStyle.valueOf(detailType))) {
+			boolean isPercent = setNumericValue(numericValue, cell);
 
 			//determine if a currency symbol is present
 			String curSymbol = "";
@@ -173,8 +175,8 @@ public class GridExcelManager {
 	 */
 	private boolean setNumericValue(String value, Cell cell) {
 		boolean isPercent = false;
-		//parse value into number, remove any non-relevant characters(currency symbols, commas, percents, etc.)
- 	   Double numberVal = Double.parseDouble(value.replaceAll("[^\\d\\.\\-]",""));
+		//parse value into number
+ 	   Double numberVal = Double.parseDouble(value);
  	   
  	   if(value.indexOf('%') > -1) {
  		   numberVal = numberVal / 100; //divide to account for later percentage formatting
