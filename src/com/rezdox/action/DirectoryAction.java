@@ -94,11 +94,14 @@ public class DirectoryAction extends SimpleActionAdapter {
 		// Generate the where clause
 		generateSqlWhere(sql, req, params);
 		
-		// Add ordering
+		// Create default ordering
 		String order = "order by first_nm asc ";
-		if (req.hasParameter(DBUtil.TABLE_ORDER) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
-			SortDirection sortDirection = EnumUtil.safeValueOf(SortDirection.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase());
-			order = StringUtil.join(DBUtil.ORDER_BY, sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), " ", sortDirection.name());
+		
+		// If sort/order parameters passed use them instead
+		if (!StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_SORT)) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
+			String sortField = StringUtil.checkVal(sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), "first_nm");
+			SortDirection sortDirection = EnumUtil.safeValueOf(SortDirection.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase(), SortDirection.ASC);
+			order = StringUtil.join(DBUtil.ORDER_BY, sortField, " ", sortDirection.name());
 		}
 		sql.append(order);
 		

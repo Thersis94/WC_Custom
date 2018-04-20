@@ -328,10 +328,15 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 */
 	private List<ConnectionReportVO> generateConnections(String targetId, String inqueryType, ActionRequest req) {
 		log.debug("generating connections");
+		
+		// Sort on two fields in default view
 		String order = "order by approved_flg asc, create_dt desc ";
-		if (req.hasParameter(DBUtil.TABLE_ORDER) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
-			SortDirection sortDirection = EnumUtil.safeValueOf(SortDirection.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase());
-			order = StringUtil.join(DBUtil.ORDER_BY, sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), " ", sortDirection.name());
+		
+		// Otherwise sort on one selected field if sort & order are passed
+		if (!StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_SORT)) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
+			String sortField = StringUtil.checkVal(sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), "approved_flg");
+			SortDirection sortDirection = EnumUtil.safeValueOf(SortDirection.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase(), SortDirection.ASC);
+			order = StringUtil.join(DBUtil.ORDER_BY, sortField, " ", sortDirection.name());
 		}
 
 		String schema = getCustomSchema();
