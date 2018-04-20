@@ -7,6 +7,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ConnectionReportVO.java
@@ -34,13 +35,15 @@ public class ConnectionReportVO extends BeanDataVO implements Serializable {
 	private String directionCode;
 	private String firstName;
 	private String lastName;
+	private String sortableName;
+	private String initials;
 	private String profilePicPath;
 	private String cityName;
 	private String stateCode;
 	private String businessSummary;
 	private double rating;
 	private Date createDate;
-	private String categoryName;
+	private String categoryCode;
 	private int approvedFlag;
 	private int privacyFlag;
 	
@@ -100,6 +103,19 @@ public class ConnectionReportVO extends BeanDataVO implements Serializable {
 		return lastName;
 	}
 	/**
+	 * @return the sortableName
+	 */
+	@Column(name="sortable_nm")
+	public String getSortableName() {
+		return sortableName;
+	}
+	/**
+	 * @return the initials
+	 */
+	public String getInitials() {
+		return initials;
+	}
+	/**
 	 * @return the profilePicPath
 	 */
 	@Column(name="profile_pic_pth")
@@ -142,11 +158,11 @@ public class ConnectionReportVO extends BeanDataVO implements Serializable {
 		return createDate;
 	}
 	/**
-	 * @return the categoryName
+	 * @return the categoryCode
 	 */
-	@Column(name="category_nm")
-	public String getCategoryName() {
-		return categoryName;
+	@Column(name="category_cd")
+	public String getCategoryCode() {
+		return categoryCode;
 	}
 	/**
 	 * @return the approvedFlag
@@ -175,10 +191,10 @@ public class ConnectionReportVO extends BeanDataVO implements Serializable {
 		this.approvedFlag = approvedFlag;
 	}
 	/**
-	 * @param categoryName the categoryName to set
+	 * @param categoryCode the categoryCode to set
 	 */
-	public void setCategoryName(String categoryName) {
-		this.categoryName = categoryName;
+	public void setCategoryCode(String categoryCode) {
+		this.categoryCode = categoryCode;
 	}
 	/**
 	 * @param createDate the createDate to set
@@ -215,6 +231,25 @@ public class ConnectionReportVO extends BeanDataVO implements Serializable {
 	 */
 	public void setProfilePicPath(String profilePicPath) {
 		this.profilePicPath = profilePicPath;
+	}
+	/**
+	 * @param initials the initials to set
+	 */
+	public void setInitials(String initials) {
+		this.initials = initials;
+	}
+	/**
+	 * Sets user's initials based on first/last name
+	 * There could only be one name in the case of a business
+	 */
+	private void setInitials() {
+		setInitials(StringUtil.abbreviate(getSortableName(), 2).toUpperCase());
+	}	/**
+	 * @param sortableName the sortableName to set
+	 */
+	public void setSortableName(String sortableName) {
+		this.sortableName = sortableName;
+		setInitials();
 	}
 	/**
 	 * @param lastName the lastName to set
