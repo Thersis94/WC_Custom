@@ -108,11 +108,11 @@ public class DashboardAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(1144);
 		sql.append("select 'all_reviews_avg' as attribute_id, 'all_reviews_avg' as slug_txt, avg(rating_no)::text as value_txt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(BUS_REVIEW_TABLE);
-		sql.append(WHERE_BUSINESS_ID).append(BUS_ID_GROUP);
+		sql.append(WHERE_BUSINESS_ID).append("and parent_id is null ").append(BUS_ID_GROUP);
 		sql.append(DBUtil.UNION);
 		sql.append("select 'all_reviews_total', 'all_reviews_total', count(*)::text "); 
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(BUS_REVIEW_TABLE);
-		sql.append(WHERE_BUSINESS_ID).append(RECENT_SQL).append(BUS_ID_GROUP);
+		sql.append(WHERE_BUSINESS_ID).append("and parent_id is null ").append(RECENT_SQL).append(BUS_ID_GROUP);
 		sql.append(DBUtil.UNION);
 		sql.append("select 'all_projects_count', 'all_projects_count', count(*)::text "); 
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_TABLE);
@@ -201,7 +201,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(768);
 		sql.append("select count(*) as key, coalesce(sum(rating_no), 0) as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(BUS_REVIEW_TABLE);
-		sql.append("where member_id = ? ");
+		sql.append("where member_id = ? and parent_id is null ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<GenericVO> data = db.executeSelect(sql.toString(), Arrays.asList(memberId), new GenericVO());

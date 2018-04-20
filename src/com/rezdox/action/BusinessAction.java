@@ -192,7 +192,7 @@ public class BusinessAction extends SBActionAdapter {
 		// Review summary data
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(");
 		sql.append("select business_id, cast(count(*) as integer) as total_reviews_no, cast(sum(rating_no) as double precision) / count(*) as avg_rating_no ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review group by business_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review where parent_id is null group by business_id ");
 		sql.append(") as rev on b.business_id = rev.business_id ");
 
 		return sql;

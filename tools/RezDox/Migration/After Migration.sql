@@ -192,3 +192,13 @@ update custom.rezdox_room_category set category_nm=initcap(category_nm);
 
 -- remove non-business categories
 delete from custom.rezdox_business_category where category_nm in ('Members','Residences');
+
+-- changes so reviews can have comments/replies
+alter table custom.rezdox_member_business_review alter column member_id drop not null;
+alter table custom.rezdox_member_business_review alter column business_id drop not null;
+alter table custom.rezdox_member_business_review alter column rating_no drop not null;
+alter table custom.rezdox_member_business_review add parent_id varchar(32);
+alter table custom.rezdox_member_business_review add group_id varchar(32);
+alter table custom.REZDOX_MEMBER_BUSINESS_REVIEW add Constraint BUSINESS_REVIEW_PARENT_SKEY foreign key (PARENT_ID) references custom.REZDOX_MEMBER_BUSINESS_REVIEW (BUSINESS_REVIEW_ID) on update restrict on delete cascade;
+alter table custom.REZDOX_MEMBER_BUSINESS_REVIEW add Constraint BUSINESS_REVIEW_GROUP_SKEY foreign key (GROUP_ID) references custom.REZDOX_MEMBER_BUSINESS_REVIEW (BUSINESS_REVIEW_ID) on update restrict on delete cascade;
+update custom.rezdox_member_business_review set group_id = business_review_id;

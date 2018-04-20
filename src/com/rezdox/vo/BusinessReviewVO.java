@@ -8,6 +8,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
 <p><b>Title</b>: BusinessReviewVO.java</p>
@@ -26,11 +27,14 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 	private static final long serialVersionUID = -5304473466685432141L;
 
 	private String businessReviewId;
+	private String parentId;
+	private String groupId;
 	private MemberVO member;
 	private BusinessVO business;
 	private int ratingNo;
 	private String reviewText;
 	private int moderatedFlag;
+	private long replyCount;
 	private Date createDate;
 	private Date updateDate;
 
@@ -61,6 +65,36 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 	 */
 	public void setBusinessReviewId(String businessReviewId) {
 		this.businessReviewId = businessReviewId;
+	}
+
+	/**
+	 * @return the parentId
+	 */
+	@Column(name="parent_id")
+	public String getParentId() {
+		return parentId;
+	}
+
+	/**
+	 * @param parentId the parentId to set
+	 */
+	public void setParentId(String parentId) {
+		this.parentId = StringUtil.checkVal(parentId, null);
+	}
+
+	/**
+	 * @return the groupId
+	 */
+	@Column(name="group_id")
+	public String getGroupId() {
+		return groupId;
+	}
+
+	/**
+	 * @param groupId the groupId to set
+	 */
+	public void setGroupId(String groupId) {
+		this.groupId = StringUtil.checkVal(groupId, null);
 	}
 
 	/**
@@ -105,7 +139,7 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 	 * @param businessId the businessId to set
 	 */
 	public void setBusinessId(String businessId) {
-		business.setBusinessId(businessId);
+		business.setBusinessId(StringUtil.checkVal(businessId, null));
 	}
 
 	/**
@@ -166,6 +200,21 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 	 */
 	public void setModeratedFlag(int moderatedFlag) {
 		this.moderatedFlag = moderatedFlag;
+	}
+
+	/**
+	 * @return the replyCount
+	 */
+	@Column(name="reply_count", isReadOnly=true)
+	public long getReplyCount() {
+		return replyCount;
+	}
+
+	/**
+	 * @param replyCount the replyCount to set
+	 */
+	public void setReplyCount(long replyCount) {
+		this.replyCount = replyCount;
 	}
 
 	/**
