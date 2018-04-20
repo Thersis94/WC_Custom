@@ -97,8 +97,8 @@ public class DirectoryAction extends SimpleActionAdapter {
 		// Add ordering
 		String order = "order by first_nm asc ";
 		if (req.hasParameter(DBUtil.TABLE_ORDER) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
-			String sortOrder = EnumUtil.safeValueOf(SortDirection.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase()).getSort();
-			order = StringUtil.join(DBUtil.ORDER_BY, sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), " ", sortOrder);
+			SortDirection sortDirection = EnumUtil.safeValueOf(SortDirection.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase());
+			order = StringUtil.join(DBUtil.ORDER_BY, sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), " ", sortDirection.name());
 		}
 		sql.append(order);
 		

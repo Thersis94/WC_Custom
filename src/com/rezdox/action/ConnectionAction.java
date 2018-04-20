@@ -330,8 +330,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 		log.debug("generating connections");
 		String order = "order by approved_flg asc, create_dt desc ";
 		if (req.hasParameter(DBUtil.TABLE_ORDER) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
-			String sortOrder = EnumUtil.safeValueOf(SortDirection.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase()).getSort();
-			order = StringUtil.join(DBUtil.ORDER_BY, sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), " ", sortOrder);
+			SortDirection sortDirection = EnumUtil.safeValueOf(SortDirection.class, req.getParameter(DBUtil.TABLE_ORDER).toUpperCase());
+			order = StringUtil.join(DBUtil.ORDER_BY, sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), " ", sortDirection.name());
 		}
 
 		String schema = getCustomSchema();
