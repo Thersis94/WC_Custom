@@ -18,6 +18,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.ApplicationException;
@@ -50,7 +51,7 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
 import com.smt.sitebuilder.security.WCUtil;
-
+import com.biomed.smarttrak.vo.AccountVO;
 //WC_Custom
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
@@ -822,5 +823,98 @@ public class AccountUserAction extends SBActionAdapter {
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
+	}
+	
+	
+	
+	public Map<AccountVO, Map<String, Integer>> loadAccountCounts() throws ActionException {
+		String sql = getCountSQL();
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ResultSet rs = ps.executeQuery();
+			return parseCountResults(rs);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+	
+	
+	private Map<AccountVO, Map<String, Integer>> parseCountResults(ResultSet rs) throws SQLException {
+		Map<AccountVO, Map<String, Integer>> results = new LinkedHashMap<>();
+		AccountVO account = new AccountVO();
+		account.setAccountId("");
+		Map<String, Integer> counts = Collections.emptyMap();
+		DBProcessor db = new DBProcessor(dbConn);
+		while (rs.next()) {
+			if (!account.getAccountId().equals(rs.getString("account_id"))) {
+				addAccount(account, counts, results);
+				account = new AccountVO();
+				db.executePopulate(account, rs);
+				counts = new HashMap<>();
+			}
+			
+			if (Status.OPEN.getCode() == rs.getInt("active_flg")) {
+				incrementStatus(counts, "O");
+			} else {
+				incrementActive(counts, rs.getString("status_cd"));
+			}
+		}
+		return results;
+	}
+	
+	/**
+	 * Increment the count provided the user has the appropriate license type
+	 * @param licenses
+	 * @param licenseType
+	 */
+	private void incrementActive(Map<String, Integer> licenses, String licenseType) {
+		if (StringUtil.isEmpty(licenseType)) return;
+		switch (licenseType) {
+		case "A":
+		case "E":
+		case "C":
+		case "U":
+			incrementStatus(licenses, licenseType);
+			break;
+		default:
+			// Skip everything else
+		}
+	}
+
+	/**
+	 * Ensure that a status count is present and increment it.
+	 * @param status
+	 * @param section
+	 */
+	private void incrementStatus(Map<String, Integer> status, String section) {
+		if (!status.containsKey(section)) 
+			status.put(section, 0);
+		status.put(section, status.get(section)+1);
+	}
+	
+	
+	
+
+	private void addAccount(AccountVO account, Map<String, Integer> counts,
+			Map<AccountVO, Map<String, Integer>> results) {
+		if ("".equals(account.getAccountId())) return;
+		
+		results.put(account, counts);
+	}
+
+	/**
+	 * Get the sql for listing active users and open seats for all accounts
+	 * @return
+	 */
+	private String getCountSQL() {
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("select a.account_id, a.account_nm, u.active_flg, u.status_cd, a.start_dt, a.expiration_dt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customDb).append("biomedgps_account a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("biomedgps_user u ");
+		sql.append("on a.account_id = u.account_id and u.active_flg != 0 ");
+		sql.append("order by a.account_nm asc ");
+		log.debug(sql);
+		return sql.toString();
 	}
 }
