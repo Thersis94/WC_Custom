@@ -826,7 +826,11 @@ public class AccountUserAction extends SBActionAdapter {
 	}
 	
 	
-	
+	/**
+	 * Load all accounts and thier seats
+	 * @return
+	 * @throws ActionException
+	 */
 	public Map<AccountVO, Map<String, Integer>> loadAccountCounts() throws ActionException {
 		String sql = getCountSQL();
 		
@@ -839,6 +843,12 @@ public class AccountUserAction extends SBActionAdapter {
 	}
 	
 	
+	/**
+	 * Parse the results into a map of accounts and thier seat counts
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
 	private Map<AccountVO, Map<String, Integer>> parseCountResults(ResultSet rs) throws SQLException {
 		Map<AccountVO, Map<String, Integer>> results = new LinkedHashMap<>();
 		AccountVO account = new AccountVO();
@@ -894,7 +904,12 @@ public class AccountUserAction extends SBActionAdapter {
 	
 	
 	
-
+	/**
+	 * Add the account to the results map.
+	 * @param account
+	 * @param counts
+	 * @param results
+	 */
 	private void addAccount(AccountVO account, Map<String, Integer> counts,
 			Map<AccountVO, Map<String, Integer>> results) {
 		if ("".equals(account.getAccountId())) return;
