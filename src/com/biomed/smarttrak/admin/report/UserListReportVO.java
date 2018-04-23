@@ -71,7 +71,6 @@ public class UserListReportVO extends AbstractSBReportVO {
 
 	// other fields
 	private static final String DATE_JOINED = "DATE_JOINED";
-	protected static final String LAST_LOGIN_DT = "LAST_LOGIN_DT";
 	protected static final String OS = "OS";
 	protected static final String BROWSER = "BROWSER";
 	protected static final String DEVICE_TYPE = "DEVICE_TYPE";
@@ -80,7 +79,6 @@ public class UserListReportVO extends AbstractSBReportVO {
 	private static final String EMPTY_STRING = "";
 	private static final String LIST_DELIMITER = ",";
 	private static final String USER_FD_VAL = "FD";
-	private static final String LOGIN_DATE_NULL_VAL = "Never";
 	private static final String DEFAULT_COUNTRY = "US";
 	
 	/**
@@ -101,7 +99,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		log.debug("generateReport...");
 
-		ExcelReport rpt = new ExcelReport(getHeader());
+		ExcelReport rpt = new SmarttrakExcelReport(getHeader());
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
 		generateDataRows(rows);
@@ -152,7 +150,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(FULL_NM, user.getFullName());
 				row.put(EMAIL,user.getEmailAddress());
 				row.put(ACCT_OWNER_FLAG, user.getAcctOwnerFlg() == 1 ? "Yes" : "No");
-				row.put(LAST_LOGIN_DT, formatDate((Date)user.getAttribute(LAST_LOGIN_DT),true));
+				row.put(SmarttrakExcelReport.LAST_LOGIN_DT, formatDate(user.getLoginDate(),true));
 				row.put(PAGEVIEWS, user.getAttribute(PAGEVIEWS));
 				row.put(MAIN_PHONE,formatPhoneNumber(pnf,user.getMainPhone(),user.getCountryCode()));
 				row.put(MOBILE_PHONE,formatPhoneNumber(pnf,user.getMobilePhone(),user.getCountryCode()));
@@ -176,6 +174,10 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(RegistrationMap.JOBCATEGORY.name(), user.getJobCategory());
 				row.put(RegistrationMap.JOBLEVEL.name(), user.getJobLevel());
 				row.put(RegistrationMap.INDUSTRY.name(), user.getIndustry());
+				/* Add the login age to data map for reporting formatting. This particular field is utilized for styling 
+				 * and not meant for actual display, hence no matching header column entry*/
+				row.put(SmarttrakExcelReport.LAST_LOGIN_AGE, user.getLoginAge());
+				
 				rows.add(row);
 			}
 		}
@@ -211,7 +213,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	 */
 	protected String formatDate(Date date, boolean isLoginDate) {
 		if (isLoginDate && date == null) {
-			return LOGIN_DATE_NULL_VAL;
+			return SmarttrakExcelReport.NO_ACTIVITY;
 		}                                       
 		return Convert.formatDate(date, DATE_DASH_PATTERN);
 	}
@@ -260,7 +262,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(FULL_NM, "Full Name");
 		headerMap.put(EMAIL,"Email Address");
 		headerMap.put(ACCT_OWNER_FLAG, "Account Lead");
-		headerMap.put(LAST_LOGIN_DT,"Last Login");
+		headerMap.put(SmarttrakExcelReport.LAST_LOGIN_DT,"Last Login");
 		headerMap.put(PAGEVIEWS, "Page Views");
 		headerMap.put(MAIN_PHONE,"Phone");
 		headerMap.put(MOBILE_PHONE,"Mobile Phone");

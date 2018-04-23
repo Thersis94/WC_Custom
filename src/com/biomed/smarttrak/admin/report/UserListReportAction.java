@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -122,7 +123,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				userAttribs = new HashMap<>();
-				userAttribs.put(UserListReportVO.LAST_LOGIN_DT, rs.getDate("login_dt"));
+				userAttribs.put(SmarttrakExcelReport.LAST_LOGIN_DT, rs.getDate("login_dt"));
 				userAttribs.put(UserListReportVO.OS,rs.getString("oper_sys_txt"));
 				userAttribs.put(UserListReportVO.BROWSER,rs.getString("browser_txt"));
 				userAttribs.put(UserListReportVO.DEVICE_TYPE,rs.getString("device_txt"));
@@ -178,9 +179,22 @@ public class UserListReportAction extends SimpleActionAdapter {
 				// now add auth attributes if they exist.
 				userAttribs = authAttribs.get(user.getAuthenticationId());
 				if (userAttribs == null || userAttribs.isEmpty()) continue;
-				for (Map.Entry<String,Object> loginAttrib : userAttribs.entrySet()) {
-					user.addAttribute(loginAttrib.getKey(), loginAttrib.getValue());
-				}
+				setUserExtendedData(user, userAttribs);
+			}
+		}
+	}
+	
+	/**
+	 * Helper method that sets the user's extended data appropriately
+	 * @param user
+	 * @param userAttribs
+	 */
+	protected void setUserExtendedData(UserVO user, Map<String,Object> userAttribs) {
+		for (Map.Entry<String,Object> loginAttrib : userAttribs.entrySet()) {
+			if(SmarttrakExcelReport.LAST_LOGIN_DT.equals(loginAttrib.getKey())) {
+				user.setLoginDate((Date)loginAttrib.getValue());
+			}else {
+				user.addAttribute(loginAttrib.getKey(), loginAttrib.getValue());
 			}
 		}
 	}
