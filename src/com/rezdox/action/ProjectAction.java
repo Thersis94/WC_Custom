@@ -133,7 +133,7 @@ public class ProjectAction extends SimpleActionAdapter {
 	 */
 	protected void loadPrefilter(ActionRequest req, ModuleVO mod) {
 		//load a list of businesses.  If there's only one, then choose the 1st as the default if one wasn't provided.
-		List<BusinessVO> bizList = loadBusinessList(req);
+		List<BusinessVO> bizList = RezDoxUtils.loadBusinessList(req, getDBConnection(), getAttributes());
 		if (!req.hasParameter(BusinessAction.REQ_BUSINESS_ID) && !bizList.isEmpty())
 			req.setParameter(BusinessAction.REQ_BUSINESS_ID, bizList.get(0).getBusinessId());
 
@@ -144,28 +144,6 @@ public class ProjectAction extends SimpleActionAdapter {
 
 		log.debug(String.format("loaded %d businesses", bizList.size()));
 		mod.setAttribute(FILTER_DATA_LST, bizList);
-	}
-
-
-	/**
-	 * overloaded method purposefully kept generic.
-	 * In this case/class, we want to present a list of Businesses this member has access to.
-	 * @param projData
-	 * @param req
-	 * @return
-	 */
-	protected List<BusinessVO> loadBusinessList(ActionRequest req) {
-		String oldBizId = req.getParameter(BusinessAction.REQ_BUSINESS_ID);
-		if (!StringUtil.isEmpty(oldBizId)) 
-			req.setParameter(BusinessAction.REQ_BUSINESS_ID, "");
-
-		BusinessAction ba = new BusinessAction(getDBConnection(), getAttributes());
-		List<BusinessVO> bizList = ba.retrieveBusinesses(req);
-
-		if (!StringUtil.isEmpty(oldBizId)) //put this back the way we found it
-			req.setParameter(BusinessAction.REQ_BUSINESS_ID, oldBizId);
-
-		return bizList;
 	}
 
 

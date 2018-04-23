@@ -1,18 +1,26 @@
 package com.rezdox.action;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
+import com.rezdox.data.ProjectMyProviders;
 import com.rezdox.vo.BusinessReviewVO;
 import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.MemberVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.common.http.CookieUtil;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.SQLTotalVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -20,6 +28,8 @@ import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: BusinessReviewAction.java<p/>
@@ -32,6 +42,8 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
  * @since Mar 8, 2018
  ****************************************************************************/
 public class BusinessReviewAction extends SimpleActionAdapter {
+	
+	public static final String COOKIE_REVIEW_COUNT = "rezdoxReviewCount";
 
 	public BusinessReviewAction() {
 		super();
@@ -62,12 +74,20 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		List<BusinessReviewVO> reviewList = retrieveReviews(req);
-		putModuleData(reviewList, reviewList.size(), false);
-		
-		if (req.hasParameter("businessId")) {
-			BusinessAction ba = new BusinessAction(dbConn, attributes);
-			req.setAttribute(BusinessAction.BUSINESS_DATA, ba.retrieveBusinesses(req));
+		if (req.hasParameter("getCount")) {
+			HttpServletResponse resp = (HttpServletResponse) getAttribute(GlobalConfig.HTTP_RESPONSE);
+			CookieUtil.add(resp, COOKIE_REVIEW_COUNT, String.valueOf(getReviewCount(RezDoxUtils.getMemberId(req))), "/", -1);
+		} else {
+			retrieveLists(req);
+
+			List<BusinessReviewVO> reviewList = retrieveReviews(req);
+			putModuleData(reviewList, reviewList.size(), false);
+			
+			// Business info for the business whose reviews are being shown
+			if (req.hasParameter(BusinessAction.REQ_BUSINESS_ID)) {
+				BusinessAction ba = new BusinessAction(dbConn, attributes);
+				req.setAttribute(BusinessAction.BUSINESS_DATA, ba.retrieveBusinesses(req));
+			}
 		}
 	}
 
@@ -151,6 +171,51 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		sql.append("group by parent_id) rep on br.business_review_id = rep.parent_id ");
 		
 		return sql;
+	}
+	
+	/**
+	 * Gets lists for the member to switch between businesses
+	 * 
+	 * @param req
+	 */
+	private void retrieveLists(ActionRequest req) {
+		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
+		
+		// List of all businesses this member owns - My Businesses Reviews
+		if ((RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId()) || RezDoxUtils.REZDOX_RES_BUS_ROLE.equals(role.getRoleId())) && !req.hasParameter("getMyReviews")) {
+			List<BusinessVO> businessList = RezDoxUtils.loadBusinessList(req, dbConn, attributes);
+			req.setAttribute("businessList", businessList);
+			if (!req.hasParameter(BusinessAction.REQ_BUSINESS_ID) && !businessList.isEmpty()) {
+				req.setParameter(BusinessAction.REQ_BUSINESS_ID, businessList.get(0).getBusinessId());
+			}
+		}
+
+		// List of all businesses this user is connected to and can therefore leave a review for - My Reviews
+		ProjectMyProviders pmp = new ProjectMyProviders(dbConn, attributes);
+		List<GenericVO> providerList = pmp.retrieveMyProviders(RezDoxUtils.getMemberId(req));
+		req.setAttribute("providerList", providerList);
+	}
+
+	/**
+	 * Gets the number of reviews left for this member's businesses.
+	 * 
+	 * @param memberId
+	 * @return
+	 */
+	public int getReviewCount(String memberId) {
+		String schema = getCustomSchema();
+
+		// Build the query
+		StringBuilder sql = new StringBuilder();
+		sql.append("select cast(count(*) as int) as total_rows_no from ").append(schema).append("rezdox_member_business_review mbr ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_member_xr bmx on mbr.business_id = bmx.business_id and bmx.member_id = ? ");
+		sql.append("where parent_id is null ");
+		log.debug("Review Count Sql: " + sql.toString() + "|" + memberId);
+
+		// Get & return the data
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		List<SQLTotalVO> data = dbp.executeSelect(sql.toString(), Arrays.asList(memberId), new SQLTotalVO());
+		return data == null ? 0 : data.get(0).getTotal();
 	}
 
 	/* 
