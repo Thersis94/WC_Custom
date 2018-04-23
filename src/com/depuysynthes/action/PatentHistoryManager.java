@@ -54,10 +54,10 @@ public class PatentHistoryManager {
 			ps.setInt(++idx, pvo.getPatentId());
 			int val = ps.executeUpdate();
 			if (val == 0)
-				throw new SQLException("No historical patent record inserted.");
+				throw new SQLException("No patent history record inserted.");
 		} catch (SQLException sqle) {
 			log.error(errMsg + pvo.getPatentId() + "|" + pvo.getUpdateById() + ", " + sqle.getMessage());
-			throw new ActionException("Error inserting historical patent record.");
+			throw new ActionException("Patent management failed.  Error saving patent history.");
 		}
 	}
 
