@@ -3,11 +3,15 @@ package com.depuysynthes.srt.vo;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import com.depuysynthes.srt.util.SRTUtil;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataMapper;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 
 /****************************************************************************
@@ -65,6 +69,11 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	public SRTRosterVO(ActionRequest req) {
 		super(req);
 		setData(req);
+		BeanDataMapper.parseBean(this, req.getParameterMap());
+
+		if(StringUtil.isEmpty(opCoId)) {
+			opCoId = SRTUtil.getOpCO(req);
+		}
 	}
 
 
@@ -75,6 +84,7 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	public SRTRosterVO(ResultSet rs) {
 		super(rs);
 		setData(rs);
+		new DBProcessor(null).executePopulate(this, rs, null);
 	}
 
 	/**
