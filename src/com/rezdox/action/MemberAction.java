@@ -1,5 +1,7 @@
 package com.rezdox.action;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +12,7 @@ import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO;
 import com.rezdox.vo.MembershipVO.Group;
 import com.rezdox.vo.PromotionVO;
+
 //SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -23,6 +26,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+
 //WC Core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
@@ -157,7 +161,7 @@ public class MemberAction extends SimpleActionAdapter {
 		member = saveMember(req, false);
 
 		//overseed the MemberVO with the profile data collected by the form processor
-		member.setData(req);
+		member.setData(req, true);
 
 		//save auth record
 		saveAuthRecord(member);
@@ -181,10 +185,28 @@ public class MemberAction extends SimpleActionAdapter {
 	 */
 	private void saveAuthRecord(UserDataVO user) throws ActionException {
 		UserLogin login = new UserLogin(getDBConnection(), getAttributes());
+		String newAuthId = null;
 		try {
-			login.saveAuthRecord(user.getAuthenticationId(), user.getEmailAddress(), user.getPassword(), 0);
+			if (StringUtil.isEmpty(user.getAuthenticationId()))
+				user.setAuthenticationId(login.checkAuth(user.getEmailAddress()));
+
+			newAuthId = login.saveAuthRecord(user.getAuthenticationId(), user.getEmailAddress(), user.getPassword(), 0);
+			log.debug(String.format("authIds: %s || %s", user.getAuthenticationId(), newAuthId));
 		} catch (DatabaseException e) {
-			throw new ActionException("could not createa auth record", e);
+			throw new ActionException("could not create auth record", e);
+		}
+
+		//coming off registration, update the user's profile with the new authId.  This is out of place, but because of the FormProcessor creating the profile
+		if (newAuthId != user.getAuthenticationId()) { //when this is commonly true user.getAuthenticationId()==nulll
+			user.setAuthenticationId(newAuthId);
+			String sql = "update profile set authentication_id=? where profile_id=?";
+			try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+				ps.setString(1, newAuthId);
+				ps.setString(2,  user.getProfileId());
+				ps.executeUpdate();
+			} catch (SQLException sqle) {
+				log.error("could not save authId to profile", sqle);
+			}
 		}
 	}
 
@@ -261,7 +283,7 @@ public class MemberAction extends SimpleActionAdapter {
 				dbp.save(vo);
 			}
 		} catch(Exception e) {
-			throw new ActionException(e);
+			throw new ActionException("could not save member", e);
 		}
 		return vo;
 	}

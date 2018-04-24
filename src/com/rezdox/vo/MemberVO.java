@@ -90,7 +90,16 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	 */
 	@Override
 	public void setData(ActionRequest req) {
+		setData(req, false);
+	}
+
+	/**
+	 * Sets data from the request.  Use an override to skip setting local variables; applicable when overseeding (see MemberAction)
+	 * @param req
+	 */
+	public void setData(ActionRequest req, boolean skipLocal) {
 		super.setData(req);
+		if (skipLocal) return;
 		setMemberId(req.getParameter("memberId"));
 		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
 		setStatusFlg(Convert.formatInteger(req.getParameter("statusFlg")));
