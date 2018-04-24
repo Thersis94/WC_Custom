@@ -84,7 +84,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on (b.business_id = c.rcpt_business_id and c.sndr_member_id = ?) or (b.business_id = c.sndr_business_id and c.rcpt_member_id = ?) ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_attribute ba on b.business_id = ba.business_id and slug_txt = 'BUSINESS_SUMMARY' ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select business_id, avg(rating_no) as rating ").append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review group by business_id) as r on b.business_id = r.business_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select business_id, avg(rating_no) as rating ").append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review where parent_id is null group by business_id) as r on b.business_id = r.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id = bcx.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bcs on bcx.business_category_cd = bcs.business_category_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bcs.parent_cd = bc.business_category_cd) ");

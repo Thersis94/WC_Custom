@@ -427,7 +427,9 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 * Sets the businesses initials based on the business name set in the VO
 	 */
 	private void setInitials() {
-		setInitials(StringUtil.abbreviate(getBusinessName().trim(), 2).toUpperCase());
+		if (getBusinessName() != null) {
+			setInitials(StringUtil.abbreviate(getBusinessName().trim(), 2).toUpperCase());
+		}
 	}
 
 	/**

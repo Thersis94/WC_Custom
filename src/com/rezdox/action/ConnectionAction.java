@@ -370,7 +370,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.rcpt_business_id = b.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
 		sql.append("(select business_id, avg(rating_no) as rating from ").append(schema).append("rezdox_member_business_review ");
-		sql.append("group by business_id");
+		sql.append("where parent_id is null group by business_id");
 		sql.append(") as r on b.business_id = r.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
 		sql.append("(select business_id, value_txt from ").append(schema).append("rezdox_business_attribute ");
@@ -391,7 +391,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.sndr_business_id = b.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
 		sql.append("(select business_id, avg(rating_no) as rating from ").append(schema).append("rezdox_member_business_review ");
-		sql.append("group by business_id ");
+		sql.append("where parent_id is null group by business_id ");
 		sql.append(") as r on b.business_id = r.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
 		sql.append("(select business_id, value_txt from ").append(schema).append("rezdox_business_attribute ");

@@ -8,10 +8,10 @@ import com.rezdox.vo.MemberVO;
 
 // SMT Base libs 3.5
 import com.siliconmtn.action.ActionRequest;
-
 // WC Libs 3.8
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title:</b> RezDoxUtils.java<br/>
@@ -66,6 +66,7 @@ public class RezDoxUtils {
 	public static final String HOME_HISTORY_PATH = MEMBER_ROOT_PATH + "/history";
 	public static final String REWARD_PATH = MEMBER_ROOT_PATH + "/rewards";
 	public static final String CONNECTION_PATH = MEMBER_ROOT_PATH + "/Connections";
+	public static final String JOIN_PATH = "/join";
 
 	/**
 	 * coefficient modifier for putting a dollar value on home improvements (projects)
@@ -141,5 +142,25 @@ public class RezDoxUtils {
 	 */
 	public static String getMemberId(ActionRequest req) {
 		return getMember(req).getMemberId();
+	}
+	
+	/**
+	 * Checks if the user's role is a residence role
+	 * 
+	 * @param role
+	 * @return
+	 */
+	public static boolean isResidenceRole(SBUserRole role) {
+		return REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || REZDOX_RES_BUS_ROLE.equals(role.getRoleId());
+	}
+	
+	/**
+	 * Checks if the user's role is a business role
+	 * 
+	 * @param role
+	 * @return
+	 */
+	public static boolean isBusinessRole(SBUserRole role) {
+		return REZDOX_BUSINESS_ROLE.equals(role.getRoleId()) || REZDOX_RES_BUS_ROLE.equals(role.getRoleId());
 	}
 }
