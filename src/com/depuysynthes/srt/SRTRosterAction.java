@@ -11,7 +11,9 @@ import java.util.Map;
 import java.util.Set;
 
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.util.SRTUtil.SRTList;
 import com.depuysynthes.srt.vo.SRTRosterVO;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -27,6 +29,7 @@ import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.list.ListAction;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
 import com.smt.sitebuilder.action.registration.ResponseLoader;
 import com.smt.sitebuilder.action.registration.SubmittalAction;
@@ -58,6 +61,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 
 	public static final String REQ_CHECK_USER_BY_EMAIL = "checkUserByEmail";
 	public static final String REQ_ROSTER_ID = "rosterId";
+	public static String USER_TABLE_NAME = "userTableName";
 	public SRTRosterAction() {
 		super();
 	}
@@ -71,6 +75,11 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		req.setAttribute("workgroups", loadWorkgroups());
+		req.setAttribute("territories", loadSRTList(SRTUtil.SRTList.SRT_TERRITORIES, req));
+		req.setAttribute("regions", loadSRTList(SRTUtil.SRTList.SRT_REGION, req));
+		req.setAttribute("areas", loadSRTList(SRTUtil.SRTList.SRT_AREA, req));
+
 		if (req.hasParameter(REQ_CHECK_USER_BY_EMAIL)) {
 			checkForExistingUser(req);
 			return;
@@ -78,8 +87,21 @@ public class SRTRosterAction extends SimpleActionAdapter {
 			GridDataVO<SRTRosterVO> users = loadRosterUsers(req);
 			putModuleData(users.getRowData(), users.getTotal(), false);
 		}
+	}
 
-		req.setAttribute("workgroups", loadWorkgroups());
+	/**
+	 * Loads List Data for the given SRTList.
+	 * @param territory
+	 * @return
+	 * @throws ActionException
+	 */
+	@SuppressWarnings("unchecked")
+	private List<GenericVO> loadSRTList(SRTList listId, ActionRequest req) throws ActionException {
+		log.debug(listId);
+		req.setParameter(ListAction.REQ_LIST_ID, listId.name());
+		ActionControllerFactoryImpl.loadAction(ListAction.class.getName(), this).retrieve(req);
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		return (List<GenericVO>) mod.getActionData();
 	}
 
 	/**
