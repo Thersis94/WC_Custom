@@ -235,7 +235,7 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	public String getFirstName() {
 		return super.getFirstName();
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.security.UserDataVO#getLastName()
 	 */

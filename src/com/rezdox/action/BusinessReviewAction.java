@@ -214,9 +214,10 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		dataMap.put("reviewerName", RezDoxUtils.getMember(req).getFullName());
 		dataMap.put("businessName", business.getBusinessName());
 
-		// Set the recipient
+		// Set the recipient. Send to the business email address.
 		Map<String, String> rcptMap = new HashMap<>();
-		rcptMap.put(business.getMembers().get(0).getProfileId(), business.getEmailAddressText());
+		MemberVO recipient = business.getMembers().entrySet().iterator().next().getValue();
+		rcptMap.put(recipient.getProfileId(), business.getEmailAddressText());
 		
 		// Send the email
 		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
