@@ -66,6 +66,7 @@ public class RezDoxUtils {
 	public static final String HOME_HISTORY_PATH = MEMBER_ROOT_PATH + "/history";
 	public static final String REWARD_PATH = MEMBER_ROOT_PATH + "/rewards";
 	public static final String CONNECTION_PATH = MEMBER_ROOT_PATH + "/Connections";
+	public static final String JOIN_PATH = "/join";
 
 	/**
 	 * coefficient modifier for putting a dollar value on home improvements (projects)
