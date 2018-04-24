@@ -279,6 +279,25 @@ public class BusinessAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Get a list of Businesses this member has access to.
+	 * 
+	 * @param req
+	 * @return
+	 */
+	protected List<BusinessVO> loadBusinessList(ActionRequest req) {
+		String oldBizId = req.getParameter(BusinessAction.REQ_BUSINESS_ID);
+		if (!StringUtil.isEmpty(oldBizId)) 
+			req.setParameter(BusinessAction.REQ_BUSINESS_ID, "");
+
+		List<BusinessVO> bizList = retrieveBusinesses(req);
+
+		if (!StringUtil.isEmpty(oldBizId)) //put this back the way we found it
+			req.setParameter(BusinessAction.REQ_BUSINESS_ID, oldBizId);
+
+		return bizList;
+	}
+
+	/**
 	 * Retrieves the Business Information form & saved form data
 	 * 
 	 * @param req

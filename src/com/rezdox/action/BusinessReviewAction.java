@@ -182,8 +182,8 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
 		
 		// List of all businesses this member owns - My Businesses Reviews
-		if ((RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId()) || RezDoxUtils.REZDOX_RES_BUS_ROLE.equals(role.getRoleId())) && !req.hasParameter("getMyReviews")) {
-			List<BusinessVO> businessList = RezDoxUtils.loadBusinessList(req, dbConn, attributes);
+		if (RezDoxUtils.isBusinessRole(role) && !req.hasParameter("getMyReviews")) {
+			List<BusinessVO> businessList = new BusinessAction(dbConn, attributes).loadBusinessList(req);
 			req.setAttribute("businessList", businessList);
 			if (!req.hasParameter(BusinessAction.REQ_BUSINESS_ID) && !businessList.isEmpty()) {
 				req.setParameter(BusinessAction.REQ_BUSINESS_ID, businessList.get(0).getBusinessId());

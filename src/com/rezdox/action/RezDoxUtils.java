@@ -1,20 +1,17 @@
 package com.rezdox.action;
 
-import java.util.List;
 // JDK 1.8.x
 import java.util.Map;
 
-import com.rezdox.vo.BusinessVO;
 // App Libs
 import com.rezdox.vo.MemberVO;
 
 // SMT Base libs 3.5
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.pool.SMTDBConnection;
-import com.siliconmtn.util.StringUtil;
 // WC Libs 3.8
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title:</b> RezDoxUtils.java<br/>
@@ -145,25 +142,24 @@ public class RezDoxUtils {
 	public static String getMemberId(ActionRequest req) {
 		return getMember(req).getMemberId();
 	}
-
-
+	
 	/**
-	 * Get a list of Businesses this member has access to.
+	 * Checks if the user's role is a residence role
 	 * 
-	 * @param req
+	 * @param role
 	 * @return
 	 */
-	protected static List<BusinessVO> loadBusinessList(ActionRequest req, SMTDBConnection dbConnection, Map<String, Object> attributes) {
-		String oldBizId = req.getParameter(BusinessAction.REQ_BUSINESS_ID);
-		if (!StringUtil.isEmpty(oldBizId)) 
-			req.setParameter(BusinessAction.REQ_BUSINESS_ID, "");
-
-		BusinessAction ba = new BusinessAction(dbConnection, attributes);
-		List<BusinessVO> bizList = ba.retrieveBusinesses(req);
-
-		if (!StringUtil.isEmpty(oldBizId)) //put this back the way we found it
-			req.setParameter(BusinessAction.REQ_BUSINESS_ID, oldBizId);
-
-		return bizList;
+	public static boolean isResidenceRole(SBUserRole role) {
+		return REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || REZDOX_RES_BUS_ROLE.equals(role.getRoleId());
+	}
+	
+	/**
+	 * Checks if the user's role is a business role
+	 * 
+	 * @param role
+	 * @return
+	 */
+	public static boolean isBusinessRole(SBUserRole role) {
+		return REZDOX_BUSINESS_ROLE.equals(role.getRoleId()) || REZDOX_RES_BUS_ROLE.equals(role.getRoleId());
 	}
 }

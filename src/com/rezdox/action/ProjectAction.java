@@ -133,7 +133,7 @@ public class ProjectAction extends SimpleActionAdapter {
 	 */
 	protected void loadPrefilter(ActionRequest req, ModuleVO mod) {
 		//load a list of businesses.  If there's only one, then choose the 1st as the default if one wasn't provided.
-		List<BusinessVO> bizList = RezDoxUtils.loadBusinessList(req, getDBConnection(), getAttributes());
+		List<BusinessVO> bizList = new BusinessAction(getDBConnection(), getAttributes()).loadBusinessList(req);
 		if (!req.hasParameter(BusinessAction.REQ_BUSINESS_ID) && !bizList.isEmpty())
 			req.setParameter(BusinessAction.REQ_BUSINESS_ID, bizList.get(0).getBusinessId());
 
