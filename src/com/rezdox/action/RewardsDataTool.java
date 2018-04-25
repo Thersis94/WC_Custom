@@ -13,8 +13,11 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
+import com.smt.sitebuilder.common.constants.Constants;
 
 
 /****************************************************************************
@@ -69,15 +72,29 @@ public class RewardsDataTool extends SimpleActionAdapter {
 	@Override
 	public void update(ActionRequest req) throws ActionException {
 		String msg = null;
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
 		if (req.hasParameter(REQ_MEMBER_REWARD_ID)) {
-			//deal with reward approvals and rejection transparently
+			//member reward approval - rejection is a call to delete(req) directly from the browser
 			MemberRewardVO mrv = new MemberRewardVO();
 			mrv.setApprovalFlg(1);
 			mrv.setMemberRewardId(req.getParameter(REQ_MEMBER_REWARD_ID));
 			msg = approveMemberReward(mrv);
+
+			//notify the user their reward was approved
+			RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+			notifyUtil.sendToMember(RezDoxNotifier.Message.REWARD_APPRVD, null, null, req.getParameter("memberId"));
+
 		} else {
-			msg = save(RewardVO.instanceOf(req), false);
+			RewardVO vo = RewardVO.instanceOf(req);
+			boolean isNew = StringUtil.isEmpty(vo.getRewardId());
+			msg = save(vo, false);
+
+			//tell the world we've added a new reward!
+			if (isNew && "REDEEM".equals(vo.getRewardTypeCd()) && vo.getActiveFlg() == 1) {
+				RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+				notifyUtil.sendToAllMembers(RezDoxNotifier.Message.REWARD_NEW, null, null);
+			}
 		}
 
 		adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));

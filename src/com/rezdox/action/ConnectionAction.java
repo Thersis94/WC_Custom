@@ -2,11 +2,10 @@ package com.rezdox.action;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletResponse;
 
 import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.ConnectionReportVO;
@@ -16,7 +15,6 @@ import com.rezdox.vo.MyProVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
@@ -30,6 +28,8 @@ import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: ConnectionAction.java
@@ -59,7 +59,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	public static final String TARGET_ID = "targetId"; 
 	public static final String REZDOX_CONNECTION_POINTS = "rezdoxConnectionPoints";
 	private static final String ID_SUFFIX = "_id = ? ";
-	
+
 	public ConnectionAction() {
 		super();
 		sortFields = new HashMap<>();
@@ -67,7 +67,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sortFields.put("cityName", "city_nm");
 		sortFields.put("stateCode", "state_cd");
 		sortFields.put(APPROVED_FLAG, "approved_flg");
-}
+	}
 
 	public ConnectionAction(ActionInitVO arg0) {
 		super(arg0);
@@ -89,14 +89,14 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug(" Connections retrieve called ");
+		log.debug("Connections retrieve called");
 
 		// Member/business directory
 		if (req.hasParameter("directory")) {
 			new DirectoryAction(dbConn, attributes).getDirectory(req);
 			return;
 		}
-		
+
 		if (req.hasParameter("ListBusinesses")) {
 			putModuleData(loadBusinessOptions(StringUtil.checkVal(RezDoxUtils.getMemberId(req))));
 		}
@@ -118,7 +118,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 			findConnections(req);
 
 		if (req.getBooleanParameter("generateCookie"))
-			generateConnCookie(RezDoxUtils.getMemberId(req));
+			generateConnCookie(req);
 	}
 
 
@@ -172,12 +172,11 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * controls generating the cookie
 	 * @param req
 	 */
-	private void generateConnCookie(String memberId) {
-		int count = getMemeberConnectionCount(memberId);
+	private void generateConnCookie(ActionRequest req) {
+		int count = getMemeberConnectionCount(RezDoxUtils.getMemberId(req));
 		log.debug(" found " +count+ "Connection");
 		//set the total in a cookie.  This may be excessive for repeat calls to the rewards page, but ensures cached data is flushed
-		HttpServletResponse resp = (HttpServletResponse) getAttribute(GlobalConfig.HTTP_RESPONSE);
-		CookieUtil.add(resp, REZDOX_CONNECTION_POINTS, String.valueOf(count), "/", -1);
+		CookieUtil.add(req, REZDOX_CONNECTION_POINTS, String.valueOf(count), "/", -1);
 	}
 
 
@@ -187,25 +186,20 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public int getMemeberConnectionCount(String memberId) {
-		if (memberId == null )return 0;
+		if (memberId == null) return 0;
 
-		StringBuilder sql = new StringBuilder();
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		params.add(memberId);
 		params.add(memberId);
+		StringBuilder sql = new StringBuilder(200);
 		sql.append("select cast(count(*) as int) as total_rows_no  from ").append(schema).append("rezdox_connection ");
 		sql.append("where (sndr_member_id = ? or rcpt_member_id = ?) and approved_flg = 1 ");
+		log.debug(sql + "|"+params );
+
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		List<SQLTotalVO> data = dbp.executeSelect(sql.toString(), params, new SQLTotalVO());
-
-		log.debug(" sql " +sql.toString()+ "|"+params );
-
-		if (data != null) {	
-			return data.get(0).getTotal();
-		}else {
-			return 0;
-		}
+		return data != null && !data.isEmpty() ? data.get(0).getTotal() : 0;
 	}
 
 
@@ -217,7 +211,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 */
 	private List<BusinessVO> searchBusiness(String search, String sendingId) {
 		log.debug("searching businesses");
-		StringBuilder sql = new StringBuilder(88);
+		StringBuilder sql = new StringBuilder(250);
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		String[] idParts = sendingId.split("_");
@@ -240,10 +234,10 @@ public class ConnectionAction extends SimpleActionAdapter {
 			params.add(idParts[1]);
 			params.add(idParts[1]);
 		}
-		sql.append("else '-1' end as business_id from ").append(schema).append("rezdox_connection group by business_id ) ");
-		sql.append(" order by business_nm asc ");
+		sql.append("else '-1' end as business_id from ").append(schema).append("rezdox_connection group by business_id) ");
+		sql.append("order by business_nm asc ");
+		log.debug(sql +"|"+params);
 
-		log.debug("sql " + sql.toString() +"|"+params);
 		//generate a list of VO's
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		return dbp.executeSelect(sql.toString(), params, new BusinessVO());
@@ -257,7 +251,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 */
 	private List<MemberVO> searchMembers(String search, String sendingId) {
 		log.debug("searching members");
-		StringBuilder sql = new StringBuilder(88);
+		StringBuilder sql = new StringBuilder(250);
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		String[] idParts = sendingId.split("_");
@@ -267,13 +261,13 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("and member_id != ? and member_id not in ( select case  ");
 		params.add(idParts[1]);
 
-		if("m".equalsIgnoreCase(idParts[0])) {
+		if ("m".equalsIgnoreCase(idParts[0])) {
 			//member looking for member
 			sql.append("when sndr_member_id is not null and sndr_member_id = ? and rcpt_member_id is not null then rcpt_member_id ");
 			sql.append("when rcpt_member_id is not null and rcpt_member_id = ? and sndr_member_id is not null then sndr_member_id ");
 			params.add(idParts[1]);
 			params.add(idParts[1]);
-		}else {
+		} else {
 			//business looking for member
 			sql.append("when sndr_business_id is not null and sndr_business_id = ? and rcpt_member_id is not null then rcpt_member_id ");
 			sql.append("when rcpt_business_id is not null and rcpt_business_id = ? and sndr_member_id is not null then sndr_member_id ");
@@ -283,8 +277,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		sql.append("else '-1' end as member_id from ").append(schema).append("rezdox_connection group by member_id ) ");
 		sql.append(" order by last_nm, first_nm asc ");
+		log.debug(sql+"|"+params);
 
-		log.debug("sql " + sql.toString() +"|"+params);
 		//generate a list of VO's
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		List<MemberVO> data = dbp.executeSelect(sql.toString(), params, new MemberVO());
@@ -299,22 +293,17 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @return 
 	 */
 	private List<GenericVO> loadBusinessOptions(String memberId) {
-		log.debug("loading business list for member");
-		StringBuilder sql = new StringBuilder(230);
 		String schema = getCustomSchema();
-		List<Object> params = new ArrayList<>();
-
+		StringBuilder sql = new StringBuilder(230);
 		sql.append("select b.business_nm as value, b.business_id as key from ").append(schema).append("rezdox_business_member_xr bmxr ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on bmxr.business_id = b.business_id and bmxr.member_id = ? ");
-		params.add(memberId);
-
-		log.debug(" sql " + sql.toString() +"|"+ memberId);
+		log.debug(sql +"|"+ memberId);
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		List<GenericVO> data = dbp.executeSelect(sql.toString(), params, new GenericVO());
+		List<GenericVO> data = dbp.executeSelect(sql.toString(), Arrays.asList(memberId), new GenericVO());
 
 		if (data != null)
-			log.debug("number of business found for member " + data.size());
+			log.debug("number of businesses found for member " + data.size());
 
 		return data;
 	}
@@ -328,10 +317,10 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 */
 	private List<ConnectionReportVO> generateConnections(String targetId, String inqueryType, ActionRequest req) {
 		log.debug("generating connections");
-		
+
 		// Sort on two fields in default view
 		String order = "order by approved_flg asc, create_dt desc ";
-		
+
 		// Otherwise sort on one selected field if sort & order are passed
 		if (!StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_SORT)) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
 			String sortField = StringUtil.checkVal(sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), "approved_flg");
@@ -463,9 +452,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		log.debug(" Connections build called");
 		ConnectionVO cvo = new ConnectionVO(req);
-
-		String schema = getCustomSchema();
-		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 
 		if (req.getBooleanParameter("approvalUpdate")) {
 			try {
@@ -487,7 +474,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 			log.error("could not save connection ",e);
 		}
 
-		processEmails(cvo);
+		processEmails(cvo, req);
 	}
 
 
@@ -495,37 +482,34 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * sends an email when an a user starts or accepts a connection
 	 * @param cvo 
 	 */
-	private void processEmails(ConnectionVO cvo) {
+	private void processEmails(ConnectionVO cvo, ActionRequest req) {
+		MemberAction ma = new MemberAction(dbConn, attributes );
+		MemberVO sender = ma.retrieveMemberData(cvo.getSenderMemberId());
+		Map<String, Object> dataMap = new HashMap<>();
+		Map<String, String> rcptMap = new HashMap<>();
+		EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+
 		if (cvo.getApprovedFlag() == 0 && !StringUtil.isEmpty(cvo.getSenderMemberId()) && !StringUtil.isEmpty(cvo.getRecipientMemberId())) {
-			MemberAction ma = new MemberAction(dbConn, attributes );
-			MemberVO sender = ma.retrieveMemberData(cvo.getSenderMemberId());
-
-			Map<String, Object> dataMap = new HashMap<>();
-			dataMap.put("senderName", sender.getFirstName() + " " + sender.getLastName() );
-
 			MemberVO toMember = ma.retrieveMemberData(cvo.getRecipientMemberId());
-
-			Map<String, String> rcptMap = new HashMap<>();
-			rcptMap.put(toMember.getProfileId(), toMember.getEmailAddress());
-
-			EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-			util.sendMessage(dataMap, rcptMap, "CONNECTION_REQUEST" );
-		}
-
-		if (cvo.getApprovedFlag() == 1) {
-			MemberAction ma = new MemberAction(dbConn, attributes );
-			MemberVO sender = ma.retrieveMemberData(cvo.getSenderMemberId());
-
-			Map<String, Object> dataMap = new HashMap<>();
 			dataMap.put("senderName", sender.getFirstName() + " " + sender.getLastName() );
-
-			MemberVO toMember = ma.retrieveMemberData(cvo.getSenderMemberId());
-
-			Map<String, String> rcptMap = new HashMap<>();
 			rcptMap.put(toMember.getProfileId(), toMember.getEmailAddress());
 
-			EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-			util.sendMessage(dataMap, rcptMap, "CONNECTION_APPROVED" );
+			emailer.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.CONNECTION_REQUEST.name());
+
+			//add the browser notification
+			notifyUtil.send(RezDoxNotifier.Message.CONNECTION_REQ, dataMap, null, toMember.getProfileId());
+
+		} else if (cvo.getApprovedFlag() == 1) {
+			MemberVO toMember = ma.retrieveMemberData(cvo.getSenderMemberId());
+			dataMap.put("senderName", sender.getFirstName() + " " + sender.getLastName());
+			rcptMap.put(toMember.getProfileId(), toMember.getEmailAddress());
+
+			emailer.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.CONNECTION_APPROVED.name());
+
+			//add the browser notification
+			notifyUtil.send(RezDoxNotifier.Message.CONNECTION_APPRVD, dataMap, null, toMember.getProfileId());
 		}
 	}
 }
