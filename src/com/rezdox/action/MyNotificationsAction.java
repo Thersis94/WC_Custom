@@ -62,12 +62,12 @@ public class MyNotificationsAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		int count = 0;
 		String profileId = RezDoxUtils.getMember(req).getProfileId();
-		NotificationLogUtil util = new NotificationLogUtil(getDBConnection());
-		
+
 		if (req.hasParameter("countOnly")) {
-			count = util.getNotificationCount(RezDoxUtils.MEMBER_SITE_ID, profileId);
+			count = getCount(profileId);
 		} else {
 			//get the actual notifications so we can print them on-screen
+			NotificationLogUtil util = new NotificationLogUtil(getDBConnection());
 			List<NotificationLogVO> data = util.getNotifications(RezDoxUtils.MEMBER_SITE_ID, profileId);
 			count = data.size();
 			putModuleData(data);
@@ -75,6 +75,17 @@ public class MyNotificationsAction extends SimpleActionAdapter {
 
 		//set the total in a cookie.  This may be excessive for repeat calls to the dashboard page, but ensures cached data is regularly flushed
 		CookieUtil.add(req, MY_NOTIFS, String.valueOf(count), "/", -1);
+	}
+
+
+	/**
+	 * returns a count of notifications for the given user
+	 * @param profileId
+	 * @return
+	 */
+	public int getCount(String profileId) {
+		NotificationLogUtil util = new NotificationLogUtil(getDBConnection());
+		return util.getNotificationCount(RezDoxUtils.MEMBER_SITE_ID, profileId);
 	}
 
 
@@ -94,7 +105,7 @@ public class MyNotificationsAction extends SimpleActionAdapter {
 		SMTCookie cook = req.getCookie(MY_NOTIFS);
 		int cnt = cook != null ? Convert.formatInteger(cook.getValue()) : 1;
 		cnt = cnt > 0 ? cnt-1 : 0;
-		
+
 		CookieUtil.add(req, MY_NOTIFS, String.valueOf(cnt), "/", -1);
 	}	
 }
