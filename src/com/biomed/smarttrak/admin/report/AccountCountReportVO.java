@@ -31,18 +31,18 @@ public class AccountCountReportVO extends AbstractSBReportVO {
 
 	private static final long serialVersionUID = -7988553133841657758L;
 	private Map<AccountVO, Map<String, Integer>> accounts;
-	private String REPORT_TITLE = "Account User Counts.xlsx";
+	private static final String REPORT_TITLE = "Account User Counts.xlsx";
 	protected transient HSSFWorkbook wb;
-	
+
 	/**
-	* Constructor
-	*/
+	 * Constructor
+	 */
 	public AccountCountReportVO() {
-        super();
+		super();
 		setContentType("application/vnd.ms-excel");
 		isHeaderAttachment(Boolean.TRUE);
-        setFileName(REPORT_TITLE);
-        accounts = new LinkedHashMap<>();
+		setFileName(REPORT_TITLE);
+		accounts = new LinkedHashMap<>();
 		wb = new HSSFWorkbook();
 	}
 
@@ -57,7 +57,7 @@ public class AccountCountReportVO extends AbstractSBReportVO {
 		//Create Excel Sheet inside the Workbook
 		HSSFSheet sheet = wb.createSheet();
 		HSSFRow row = sheet.createRow(rowCnt++);
-		addTitleRow(sheet, row);
+		addTitleRow(row);
 
 		addDataRows(sheet, rowCnt);
 
@@ -88,7 +88,7 @@ public class AccountCountReportVO extends AbstractSBReportVO {
 			row.createCell(cellCnt).setCellValue(getSeatCount(e.getValue(), "U"));
 		}
 	}
-	
+
 	/**
 	 * Check to see if there is seat data for the supplied type.
 	 * If it is missing return 0.
@@ -107,7 +107,7 @@ public class AccountCountReportVO extends AbstractSBReportVO {
 	 * @param sheet
 	 * @param row
 	 */
-	private void addTitleRow(HSSFSheet sheet, HSSFRow row) {
+	private void addTitleRow(HSSFRow row) {
 		int cellCnt = 0;
 		row.createCell(cellCnt++).setCellValue("Account");
 		row.createCell(cellCnt++).setCellValue("Start Date");
