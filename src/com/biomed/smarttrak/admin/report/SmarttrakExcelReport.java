@@ -15,7 +15,7 @@ import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.data.report.ExcelStyleFactory.Styles;
 
 /****************************************************************************
- * Title: UserUtilizationExcelReport.java <p/>
+ * Title: SmarttrakExcelReport.java <p/>
  * Project: WC_Custom <p/>
  * Description: Custom monthly utilization report that handles individual excel cell styling<p/>
  * Copyright: Copyright (c) 2018<p/>
@@ -25,15 +25,18 @@ import com.siliconmtn.data.report.ExcelStyleFactory.Styles;
  * @since Apr 4, 2018
  ****************************************************************************/
 
-public class UserUtilizationExcelReport extends ExcelReport {
+public class SmarttrakExcelReport extends ExcelReport {
 	private static final long serialVersionUID = 1L;
-	
+	//constants to related to last login date
+	public static final String LAST_LOGIN_DT = "LAST_LOGIN_DT";
+	public static final String LAST_LOGIN_AGE = "LAST_LOGIN_AGE";
+	public static final String NO_ACTIVITY = "No Activity";
 	
 	/**
 	 * Constructor
 	 * @param headerMap
 	 */
-	public UserUtilizationExcelReport(Map<String, String> headerMap) {
+	public SmarttrakExcelReport(Map<String, String> headerMap) {
 		super(headerMap);
 	}
 	
@@ -41,7 +44,7 @@ public class UserUtilizationExcelReport extends ExcelReport {
 	 * @param headerMap
 	 * @param s
 	 */
-	public UserUtilizationExcelReport(Map<String, String> headerMap, Styles s) {
+	public SmarttrakExcelReport(Map<String, String> headerMap, Styles s) {
 		super(headerMap, s);
 	}
 	
@@ -67,13 +70,13 @@ public class UserUtilizationExcelReport extends ExcelReport {
 	 */
 	@Override
 	protected void setBodyCellStyle(Cell c, Map<String, Object> rowData, String columnNm) {
-		String loginDt = (String)rowData.get(UserUtilizationMonthlyRollupReportVO.LAST_LOGIN_DT);
-		if(UserUtilizationMonthlyRollupReportVO.LAST_LOGIN_DT.equals(columnNm) && !UserUtilizationMonthlyRollupReportVO.NO_ACTIVITY.equals(loginDt)) {
+		String loginDt = (String)rowData.get(LAST_LOGIN_DT);
+		if(LAST_LOGIN_DT.equals(columnNm) && !NO_ACTIVITY.equals(loginDt) && rowData.get(LAST_LOGIN_AGE) != null) {
 			
 			//set the background-color highlighting based on loginAge(similar to User list page legend)
 			CellStyle lastLoginStyle = wb.createCellStyle();
 			lastLoginStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
-			int loginAge = (int) rowData.get(UserUtilizationMonthlyRollupReportVO.LAST_LOGIN_AGE);
+			int loginAge = (int) rowData.get(LAST_LOGIN_AGE);
 			
 			if (loginAge <= 30) {
 				lastLoginStyle.setFillForegroundColor(IndexedColors.GREEN.getIndex());

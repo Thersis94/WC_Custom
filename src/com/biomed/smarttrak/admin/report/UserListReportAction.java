@@ -5,13 +5,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 // WC custom
 import com.biomed.smarttrak.vo.UserVO;
-
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -20,7 +21,7 @@ import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
+import com.siliconmtn.util.user.LastNameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
@@ -122,7 +123,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				userAttribs = new HashMap<>();
-				userAttribs.put(UserListReportVO.LAST_LOGIN_DT, rs.getDate("login_dt"));
+				userAttribs.put(SmarttrakExcelReport.LAST_LOGIN_DT, rs.getDate("login_dt"));
 				userAttribs.put(UserListReportVO.OS,rs.getString("oper_sys_txt"));
 				userAttribs.put(UserListReportVO.BROWSER,rs.getString("browser_txt"));
 				userAttribs.put(UserListReportVO.DEVICE_TYPE,rs.getString("device_txt"));
@@ -178,9 +179,22 @@ public class UserListReportAction extends SimpleActionAdapter {
 				// now add auth attributes if they exist.
 				userAttribs = authAttribs.get(user.getAuthenticationId());
 				if (userAttribs == null || userAttribs.isEmpty()) continue;
-				for (Map.Entry<String,Object> loginAttrib : userAttribs.entrySet()) {
-					user.addAttribute(loginAttrib.getKey(), loginAttrib.getValue());
-				}
+				setUserExtendedData(user, userAttribs);
+			}
+		}
+	}
+	
+	/**
+	 * Helper method that sets the user's extended data appropriately
+	 * @param user
+	 * @param userAttribs
+	 */
+	protected void setUserExtendedData(UserVO user, Map<String,Object> userAttribs) {
+		for (Map.Entry<String,Object> loginAttrib : userAttribs.entrySet()) {
+			if(SmarttrakExcelReport.LAST_LOGIN_DT.equals(loginAttrib.getKey())) {
+				user.setLoginDate((Date)loginAttrib.getValue());
+			}else {
+				user.addAttribute(loginAttrib.getKey(), loginAttrib.getValue());
 			}
 		}
 	}
@@ -192,11 +206,12 @@ public class UserListReportAction extends SimpleActionAdapter {
 	protected StringBuilder buildAccountsUsersQuery(String schema) {
 		StringBuilder sql = new StringBuilder(650);
 		sql.append("select ac.account_id, ac.account_nm, ac.expiration_dt as acct_expiration_dt, ac.status_no, ");
+		sql.append("ac.start_dt as acct_start_dt, ac.classification_id, ac.type_id, us.acct_owner_flg, ");
 		sql.append("us.status_cd, us.expiration_dt, us.fd_auth_flg, us.create_dt, us.active_flg as active_flg, ");
 		sql.append("pf.profile_id, pf.authentication_id, pf.first_nm, pf.last_nm, pf.email_address_txt, ");
 		sql.append("pfa.address_txt, pfa.address2_txt, pfa.city_nm, pfa.state_cd, pfa.zip_cd, pfa.country_cd, ");
 		sql.append("ph.phone_number_txt, ph.phone_type_cd, ");
-		sql.append("rd.register_field_id, rd.value_txt, us.user_id ");
+		sql.append("rd.register_field_id, rd.value_txt, us.user_id, rfo.option_desc ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us on ac.account_id = us.account_id ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
@@ -204,6 +219,8 @@ public class UserListReportAction extends SimpleActionAdapter {
 		sql.append("left join phone_number ph on pf.profile_id = ph.profile_id ");
 		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
 		sql.append("inner join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
+		sql.append("left join register_field_option rfo on rd.register_field_id = rfo.register_field_id ");  
+		sql.append("and rd.value_txt = rfo.option_value_txt ");
 		sql.append("order by ac.account_id, us.user_id, us.profile_id, phone_type_cd");
 		log.debug("user retrieval SQL: " + sql.toString());
 		return sql;
@@ -257,7 +274,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 		UserVO user = new UserVO();
 		AccountUsersVO account = new AccountUsersVO();
 		List<AccountUsersVO> accounts = new ArrayList<>();
-
+		
 		while (rs.next()) {
 			currAcctId = rs.getString("account_id");
 			currPid = rs.getString("profile_id");
@@ -267,6 +284,9 @@ public class UserListReportAction extends SimpleActionAdapter {
 				// acct changed, capture 'previous' user and account
 				if (prevAcctId != null) {
 					account.addUser(user);
+					//sort list of users
+					List<UserVO> users = account.getUsers();
+					Collections.sort(users, new LastNameComparator());
 					accounts.add(account);
 				}
 
@@ -290,7 +310,11 @@ public class UserListReportAction extends SimpleActionAdapter {
 			}
 
 			// add registration record for the current user.
-			user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
+			if(rs.getString("option_desc") != null) {
+				user.addAttribute(rs.getString("register_field_id"), rs.getString("option_desc"));	
+			}else {
+				user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
+			}
 
 			prevAcctId = currAcctId;
 			prevPid = currPid;
@@ -318,8 +342,11 @@ public class UserListReportAction extends SimpleActionAdapter {
 		AccountUsersVO account = new AccountUsersVO();
 		account.setAccountId(rs.getString("account_id"));
 		account.setAccountName(rs.getString("account_nm"));
+		account.setStartDate(rs.getDate("acct_start_dt"));
 		account.setExpirationDate(rs.getDate("acct_expiration_dt"));
 		account.setStatusNo(rs.getString("status_no"));
+		account.setTypeId(rs.getString("type_id"));
+		account.setClassificationId(rs.getInt("classification_id"));
 		return account;
 	}
 
@@ -347,6 +374,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 		user.setZipCode(rs.getString("zip_cd"));
 		user.setCountryCode(rs.getString("country_cd"));
 		user.setStatusFlg(rs.getInt("active_flg"));
+		user.setAcctOwnerFlg(rs.getInt("acct_owner_flg"));
 
 		// decrypt encrypted fields and set.
 		try {

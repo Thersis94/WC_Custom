@@ -16,7 +16,6 @@ import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
-
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
@@ -40,16 +39,19 @@ public class UserListReportVO extends AbstractSBReportVO {
 	
 	private List<AccountUsersVO> accounts;
 	private static final String REPORT_TITLE = "User List Export";
+	private static final String DATE_DASH_PATTERN = "MM-dd-yyyy";
 	// account fields
 	private static final String ACCT_EXPIRE = "ACCT_EXPIRE";
 	private static final String ACCT_NM = "ACCT_NM";
 	private static final String ACCT_STATUS = "ACCT_STATUS";
 	private static final String ACCT_ID = "ACCT_ID";
+	private static final String ACCT_START_DT = "ACCT_START_DT";
+	private static final String ACCT_TYPE = "ACCT_TYPE";
+	private static final String ACCT_CLASSIFICATION = "ACCT_CLASSIFICATION";
 
 	// profile fields
 	private static final String USER_STATUS = "USER_STATUS";
-	private static final String FIRST_NM = "FIRST_NM";
-	private static final String LAST_NM = "LAST_NM";
+	private static final String FULL_NM = "FULL_NM";
 	private static final String EMAIL = "EMAIL";
 	private static final String ADDRESS1 = "ADDRESS1";
 	private static final String ADDRESS2 = "ADDRESS2";
@@ -65,10 +67,10 @@ public class UserListReportVO extends AbstractSBReportVO {
 	private static final String USER_EXPIRE = "USER_EXPIRE";
 	private static final String HAS_FD = "HAS_FD";
 	private static final String USER_ID = "USER_ID";
+	private static final String ACCT_OWNER_FLAG = "ACCT_OWNER_FLAG";
 
 	// other fields
 	private static final String DATE_JOINED = "DATE_JOINED";
-	protected static final String LAST_LOGIN_DT = "LAST_LOGIN_DT";
 	protected static final String OS = "OS";
 	protected static final String BROWSER = "BROWSER";
 	protected static final String DEVICE_TYPE = "DEVICE_TYPE";
@@ -77,7 +79,6 @@ public class UserListReportVO extends AbstractSBReportVO {
 	private static final String EMPTY_STRING = "";
 	private static final String LIST_DELIMITER = ",";
 	private static final String USER_FD_VAL = "FD";
-	private static final String LOGIN_DATE_NULL_VAL = "Never";
 	private static final String DEFAULT_COUNTRY = "US";
 	
 	/**
@@ -98,7 +99,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		log.debug("generateReport...");
 
-		ExcelReport rpt = new ExcelReport(getHeader());
+		ExcelReport rpt = new SmarttrakExcelReport(getHeader());
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
 		generateDataRows(rows);
@@ -135,18 +136,21 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row = new HashMap<>();
 				row.put(ACCT_ID, acct.getAccountId());
 				row.put(ACCT_NM, acct.getAccountName());
+				row.put(ACCT_START_DT, formatDate(acct.getStartDate(), false));
 				row.put(ACCT_EXPIRE, formatDate(acct.getExpirationDate(),false));
 				row.put(ACCT_STATUS, acct.getStatusName());
+				row.put(ACCT_TYPE, acct.getTypeName());
+				row.put(ACCT_CLASSIFICATION, acct.getClassificationName());
 				row.put(USER_STATUS, user.getStatusName());
 				row.put(LICENSE_TYPE, user.getLicenseName());
 				row.put(USER_ID, user.getUserId());
 				row.put(USER_EXPIRE, formatDate(user.getExpirationDate(),false));
 				row.put(RegistrationMap.COMPANY.name(),user.getCompany());
 				row.put(RegistrationMap.TITLE.name(),user.getTitle());
-				row.put(FIRST_NM,user.getFirstName());
-				row.put(LAST_NM,user.getLastName());
+				row.put(FULL_NM, user.getFullName());
 				row.put(EMAIL,user.getEmailAddress());
-				row.put(LAST_LOGIN_DT, formatDate((Date)user.getAttribute(LAST_LOGIN_DT),true));
+				row.put(ACCT_OWNER_FLAG, user.getAcctOwnerFlg() == 1 ? "Yes" : "No");
+				row.put(SmarttrakExcelReport.LAST_LOGIN_DT, formatDate(user.getLoginDate(),true));
 				row.put(PAGEVIEWS, user.getAttribute(PAGEVIEWS));
 				row.put(MAIN_PHONE,formatPhoneNumber(pnf,user.getMainPhone(),user.getCountryCode()));
 				row.put(MOBILE_PHONE,formatPhoneNumber(pnf,user.getMobilePhone(),user.getCountryCode()));
@@ -170,6 +174,10 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(RegistrationMap.JOBCATEGORY.name(), user.getJobCategory());
 				row.put(RegistrationMap.JOBLEVEL.name(), user.getJobLevel());
 				row.put(RegistrationMap.INDUSTRY.name(), user.getIndustry());
+				/* Add the login age to data map for reporting formatting. This particular field is utilized for styling 
+				 * and not meant for actual display, hence no matching header column entry*/
+				row.put(SmarttrakExcelReport.LAST_LOGIN_AGE, user.getLoginAge());
+				
 				rows.add(row);
 			}
 		}
@@ -205,9 +213,9 @@ public class UserListReportVO extends AbstractSBReportVO {
 	 */
 	protected String formatDate(Date date, boolean isLoginDate) {
 		if (isLoginDate && date == null) {
-			return LOGIN_DATE_NULL_VAL;
-		}
-		return Convert.formatDate(date,Convert.DATE_SLASH_ABBREV_PATTERN);
+			return SmarttrakExcelReport.NO_ACTIVITY;
+		}                                       
+		return Convert.formatDate(date, DATE_DASH_PATTERN);
 	}
 	
 	/**
@@ -240,19 +248,22 @@ public class UserListReportVO extends AbstractSBReportVO {
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put(ACCT_ID, "Account Id");
 		headerMap.put(ACCT_NM,"Account Name");
+		headerMap.put(ACCT_START_DT, "Account Start Date");
 		headerMap.put(ACCT_EXPIRE,"Account Expiration");
 		headerMap.put(ACCT_STATUS,"Account Status");
+		headerMap.put(ACCT_TYPE, "Account Type");
+		headerMap.put(ACCT_CLASSIFICATION ,"Account Classification");
 		headerMap.put(USER_STATUS,"User Status");
 		headerMap.put(LICENSE_TYPE,"License Type");
 		headerMap.put(USER_ID, "User Id");
 		headerMap.put(USER_EXPIRE,"User Expiration");
 		headerMap.put(RegistrationMap.COMPANY.name(),"Company");
 		headerMap.put(RegistrationMap.TITLE.name(),"Title");
-		headerMap.put(FIRST_NM,"First");
-		headerMap.put(LAST_NM,"Last");
+		headerMap.put(FULL_NM, "Full Name");
 		headerMap.put(EMAIL,"Email Address");
-		headerMap.put(LAST_LOGIN_DT,"Last Login");
-		headerMap.put(PAGEVIEWS, "Hits");
+		headerMap.put(ACCT_OWNER_FLAG, "Account Lead");
+		headerMap.put(SmarttrakExcelReport.LAST_LOGIN_DT,"Last Login");
+		headerMap.put(PAGEVIEWS, "Page Views");
 		headerMap.put(MAIN_PHONE,"Phone");
 		headerMap.put(MOBILE_PHONE,"Mobile Phone");
 		headerMap.put(ADDRESS1,"Address 1");
