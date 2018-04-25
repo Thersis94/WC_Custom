@@ -1,5 +1,6 @@
 package com.rezdox.action;
 
+import java.util.List;
 import java.util.Map;
 
 //SMTBaseLibs
@@ -8,9 +9,12 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.db.pool.SMTDBConnection;
-
+import com.siliconmtn.http.session.SMTCookie;
+import com.siliconmtn.util.Convert;
 //WC Core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.tools.NotificationLogUtil;
+import com.smt.sitebuilder.action.tools.NotificationLogVO;
 
 /****************************************************************************
  * <b>Title:</b> MyNotificationsAction.java<br/>
@@ -47,6 +51,7 @@ public class MyNotificationsAction extends SimpleActionAdapter {
 		setAttributes(attributes);
 	}
 
+
 	/*
 	 * Display the user's points, and a list of available rewards if the Widget is in focus
 	 * (non-Javadoc)
@@ -55,22 +60,41 @@ public class MyNotificationsAction extends SimpleActionAdapter {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		//TODO update this to be dynamic once we have a data-stor for the notifs.
-		int count = 5;
+		int count = 0;
+		String profileId = RezDoxUtils.getMember(req).getProfileId();
+		NotificationLogUtil util = new NotificationLogUtil(getDBConnection());
+		
+		if (req.hasParameter("countOnly")) {
+			count = util.getNotificationCount(RezDoxUtils.MEMBER_SITE_ID, profileId);
+		} else {
+			//get the actual notifications so we can print them on-screen
+			List<NotificationLogVO> data = util.getNotifications(RezDoxUtils.MEMBER_SITE_ID, profileId);
+			count = data.size();
+			putModuleData(data);
+		}
 
-		//set the total in a cookie.  This may be excessive for repeat calls to the rewards page, but ensures cached data is flushed
+		//set the total in a cookie.  This may be excessive for repeat calls to the dashboard page, but ensures cached data is regularly flushed
 		CookieUtil.add(req, MY_NOTIFS, String.valueOf(count), "/", -1);
 	}
 
 
 	/*
-	 * form-submittal - the user is cashing in points for a reward.
+	 * form-submittal - the user is marking a notification as read - thereby hiding it from view.
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		//flush the session value so it's reloaded after the redirect
-		CookieUtil.remove(req, MY_NOTIFS);
+		if (req.hasParameter("markRead")) {
+			NotificationLogUtil util = new NotificationLogUtil(getDBConnection());
+			util.markRead(req.getParameter("markRead"));
+		}
+
+		//decrement the cookie and re-set it
+		SMTCookie cook = req.getCookie(MY_NOTIFS);
+		int cnt = cook != null ? Convert.formatInteger(cook.getValue()) : 1;
+		cnt = cnt > 0 ? cnt-1 : 0;
+		
+		CookieUtil.add(req, MY_NOTIFS, String.valueOf(cnt), "/", -1);
 	}	
 }

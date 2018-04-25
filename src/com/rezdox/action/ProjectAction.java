@@ -9,6 +9,13 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.rezdox.action.RezDoxNotifier.Message;
+import com.rezdox.data.InvoiceReportPDF;
+import com.rezdox.data.ProjectFormProcessor;
+import com.rezdox.vo.BusinessVO;
+import com.rezdox.vo.PhotoVO;
+import com.rezdox.vo.ProjectMaterialVO;
+import com.rezdox.vo.ProjectVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -19,7 +26,6 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -34,12 +40,6 @@ import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.QueryParamVO;
-import com.rezdox.data.InvoiceReportPDF;
-import com.rezdox.data.ProjectFormProcessor;
-import com.rezdox.vo.BusinessVO;
-import com.rezdox.vo.PhotoVO;
-import com.rezdox.vo.ProjectMaterialVO;
-import com.rezdox.vo.ProjectVO;
 
 /****************************************************************************
  * <b>Title:</b> ProjectAction.java<br/>
@@ -517,13 +517,42 @@ public class ProjectAction extends SimpleActionAdapter {
 			if (req.hasParameter("isDelete")) {
 				db.delete(vo);
 			} else {
+				boolean isNew = StringUtil.isEmpty(vo.getProjectId());
 				db.save(vo);
 				//transpose the primary key
 				req.setParameter(REQ_PROJECT_ID, vo.getProjectId());
+
+				//if this was an add, from a business to a linked residence (view=pending), then notify those members of the new home history log (entry)
+				if (isNew && vo.getResidenceViewFlg() == -1 && !StringUtil.isEmpty(vo.getResidenceId()))
+					notifyHomeowners(vo, req);
 			}
 
 		} catch (Exception e) {
 			throw new ActionException("could not save project", e);
 		}
+	}
+
+
+	/**
+	 * Notify the residence's members of the new home history log (entry) that's pending their approval.
+	 * @param vo
+	 * @param req
+	 */
+	private void notifyHomeowners(ProjectVO vo, ActionRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+		String[] profileIds = notifyUtil.getProfileIds(vo.getResidenceId(), true);
+
+		//quit while we're ahead if there's nobody to inform
+		if (profileIds == null || profileIds.length == 0) return;
+
+		//get the company name from the BusinessAction
+		BusinessAction ba = new BusinessAction(getDBConnection(), getAttributes());
+		List<BusinessVO> bizList = ba.retrieveBusinesses(vo.getBusinessId());
+		BusinessVO biz = bizList != null && !bizList.isEmpty() ? bizList.get(0) : new BusinessVO();
+		Map<String, Object> params = new HashMap<>();
+		params.put("companyName", StringUtil.checkVal(biz.getBusinessName(), "A RezDox Business")); //fallback to something somewhat elegant
+
+		notifyUtil.send(Message.PROJ_SHARE, params, null, profileIds);
 	}
 }

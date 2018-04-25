@@ -1,14 +1,12 @@
 package com.rezdox.action;
 
-// JDK 1.8.x
+// Java 8
 import java.util.Map;
 
-// App Libs
+//WC Custom
 import com.rezdox.vo.MemberVO;
-
-// SMT Base libs 3.5
+// SMTBaseLibs
 import com.siliconmtn.action.ActionRequest;
-// WC Libs 3.8
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -87,12 +85,19 @@ public class RezDoxUtils {
 	public static final String REZDOX_RES_BUS_ROLE = "REZDOX_RES_BUS";
 	public static final String REZDOX_RES_BUS_ROLE_NAME = "	RezDox Residence and Business Role";
 	public static final int REZDOX_RES_BUS_ROLE_LEVEL = 55;
+	
+	/**
+	 * Used for setting notifications from outside of the sub-site context; like in the admintool.
+	 */
+	public static final String MEMBER_SITE_ID = "REZDOX_1";
 
 	/**
 	 * email slugs that correlated to the database/email campaigns.
 	 */
 	public enum EmailSlug {
-		TRANSFER_WAITING, TRANSFER_COMPLETE, BUSINESS_APPROVED, BUSINESS_DECLINED, INVITE_ACCEPTED, REVIEW_BUSINESS;
+		TRANSFER_WAITING, TRANSFER_COMPLETE, BUSINESS_APPROVED, 
+		BUSINESS_DECLINED, INVITE_ACCEPTED, REVIEW_BUSINESS, 
+		CONNECTION_REQUEST, CONNECTION_APPROVED;
 	}
 
 	private RezDoxUtils() {
@@ -109,11 +114,10 @@ public class RezDoxUtils {
 	public static String getFormId(Map<String, Object> attributes) {
 		return getFormId(attributes, ModuleVO.ATTRIBUTE_1);
 	}
-	
-	
+
+
 	/**
 	 * Get's an alternate form id used by the action
-	 * 
 	 * @param attributes
 	 * @param mapKey
 	 * @return
@@ -126,7 +130,6 @@ public class RezDoxUtils {
 
 	/**
 	 * Returns the member from session (UserDataVO)
-	 * 
 	 * @param req
 	 * @return
 	 */
@@ -143,20 +146,18 @@ public class RezDoxUtils {
 	public static String getMemberId(ActionRequest req) {
 		return getMember(req).getMemberId();
 	}
-	
+
 	/**
 	 * Checks if the user's role is a residence role
-	 * 
 	 * @param role
 	 * @return
 	 */
 	public static boolean isResidenceRole(SBUserRole role) {
 		return REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || REZDOX_RES_BUS_ROLE.equals(role.getRoleId());
 	}
-	
+
 	/**
 	 * Checks if the user's role is a business role
-	 * 
 	 * @param role
 	 * @return
 	 */
