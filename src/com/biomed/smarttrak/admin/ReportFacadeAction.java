@@ -2,6 +2,7 @@ package com.biomed.smarttrak.admin;
 
 import javax.servlet.http.HttpServletResponse;
 
+import com.biomed.smarttrak.admin.report.AccountCountReportVO;
 //WC custom
 import com.biomed.smarttrak.admin.report.AccountReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
@@ -49,6 +50,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 	
 	public enum ReportType {
 		ACCOUNT_REPORT,
+		ACCOUNT_COUNTS,
 		ACTIVITY_LOG,
 		COMPANY_SEGMENTS,
 		USER_LIST,
@@ -90,6 +92,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case ACCOUNT_REPORT:
 				rpt = generateAccountReport(req);
 				doRedirect = false;
+				break;
+			case ACCOUNT_COUNTS:
+				rpt = generateCountsReport(req);
 				break;
 			case ACTIVITY_LOG:
 				rpt = generateActivityLogReport(req);
@@ -189,6 +194,23 @@ public class ReportFacadeAction extends SBActionAdapter {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		rpt.setSite(site);
 		rpt.setData(ara.retrieveAccountsList(req));
+		return rpt;
+	}
+
+
+	/**
+	 * Generates the Account report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateCountsReport(ActionRequest req) 
+			throws ActionException {
+		AccountUserAction aua = new AccountUserAction();
+		aua.setDBConnection(dbConn);
+		aua.setAttributes(getAttributes());
+		AccountCountReportVO rpt = new AccountCountReportVO();
+		rpt.setData(aua.loadAccountCounts());
 		return rpt;
 	}
 
