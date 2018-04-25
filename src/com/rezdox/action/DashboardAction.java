@@ -127,7 +127,7 @@ public class DashboardAction extends SimpleActionAdapter {
 			sql.append("where a.business_view_flg != 0 ");
 			params.add(member.getMemberId());
 		}
-		sql.append("order by 3 desc"); //most recent first, homogenized
+		sql.append("order by 3 desc limit 5"); //most recent first, homogenized
 		log.debug(sql);
 
 		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
