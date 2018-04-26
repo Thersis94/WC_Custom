@@ -30,6 +30,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: ConnectionAction.java
@@ -127,8 +128,10 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void loadPros(ActionRequest req) {
+		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
+
 		//cache this list - it won't change often enough to be rebuilding on every pageview
-		if (!req.hasParameter("reloadPros") && req.getSession().getAttribute("MY_PROS") != null) return;
+		if ((!req.hasParameter("reloadPros") && req.getSession().getAttribute("MY_PROS") != null) || role == null || role.getRoleLevel() == 0) return;
 
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
