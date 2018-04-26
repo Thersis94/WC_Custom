@@ -66,7 +66,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 
 	public static final String REQ_CHECK_USER_BY_EMAIL = "checkUserByEmail";
 	public static final String REQ_ROSTER_ID = "rosterId";
-	public static String USER_TABLE_NAME = "userTableName";
+	public static final String USER_TABLE_NAME = "userTableName";
 	public SRTRosterAction() {
 		super();
 	}
