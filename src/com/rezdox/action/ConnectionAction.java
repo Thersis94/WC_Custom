@@ -219,9 +219,13 @@ public class ConnectionAction extends SimpleActionAdapter {
 		List<Object> params = new ArrayList<>();
 		String[] idParts = sendingId.split("_");
 
-		sql.append("select * from ").append(schema).append("rezdox_business where LOWER(business_nm) like ? ");
+		sql.append("select * from ").append(schema).append("rezdox_business b ");
+		sql.append(DBUtil.INNER_JOIN).append("(select business_id from ").append(schema).append("rezdox_business_member_xr where status_flg = 1 group by business_id) bmxa on b.business_id = bmxa.business_id ");
+		
+		sql.append("where LOWER(business_nm) like ? ");
 		params.add("%"+search.toLowerCase()+"%");
-		sql.append("and business_id != ? and business_id not in ( select case  ");
+		
+		sql.append("and b.business_id != ? and b.business_id not in ( select case  ");
 		params.add(idParts[1]);
 
 		if("m".equalsIgnoreCase(idParts[0])) {
