@@ -90,7 +90,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		if(role != null && role.getRoleLevel() > 0) {
 			sql.append("c.connection_id, ");
 		} else {
-			sql.append("'placeholder' as connection_id, ");
+			sql.append("'' as connection_id, ");
 		}
 		sql.append("b.business_nm as first_nm, '' as last_nm, b.photo_url as profile_pic_pth, b.city_nm, b.state_cd, ba.value_txt as business_summary, ");
 		sql.append("cast(coalesce(r.rating, 0) as numeric) as rating, bc.business_category_cd as category_cd, b.privacy_flg, b.create_dt, b.business_id || '_b' as unique_id ");
