@@ -314,7 +314,9 @@ public class BiomedSupportEmailUtil {
 
 			//Build Config
 			Map<String, Object> config = getBaseConfig(t);
-			r.getValue().add((EmailRecipientVO) attributes.get(SOURCE));
+			EmailRecipientVO recip = (EmailRecipientVO) attributes.get(SOURCE);
+			if (recip != null && !StringUtil.isEmpty(recip.getProfileId()))
+				r.getValue().add(recip);
 
 			//Get Emails
 			ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ADMIN_NEW_TICKET_CAMP_INST_ID));
