@@ -128,10 +128,10 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void loadPros(ActionRequest req) {
-		//cache this list - it won't change often enough to be rebuilding on every pageview
-		if (!req.hasParameter("reloadPros") && req.getSession().getAttribute("MY_PROS") != null) return;
-
 		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
+
+		//cache this list - it won't change often enough to be rebuilding on every pageview
+		if ((!req.hasParameter("reloadPros") && req.getSession().getAttribute("MY_PROS") != null) || role == null || role.getRoleLevel() == 0) return;
 
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
@@ -139,21 +139,15 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS b on a.rcpt_business_id=b.business_id or a.sndr_business_id=b.business_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_MEMBER_XR mxr on b.business_id=mxr.business_id and mxr.status_flg=1 ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_MEMBER m on m.member_id=mxr.member_id and m.status_flg=1 ");
-		sql.append("where a.approved_flg=1 ");
-		if(role != null && role.getRoleLevel() > 0) {
-			sql.append("and a.sndr_member_id=? or a.rcpt_member_id=?) and m.member_id != ? ");  //exclude connections to 'myself'
-		}
+		sql.append("where (a.sndr_member_id=? or a.rcpt_member_id=?) and m.member_id != ? and a.approved_flg=1 ");  //exclude connections to 'myself'
 		sql.append("order by a.create_dt desc limit 6");
 		log.debug(sql);
 
+		String memberId = RezDoxUtils.getMemberId(req);
 		List<Object> params = new ArrayList<>();
-		if(role != null && role.getRoleLevel() > 0) {
-			String memberId = RezDoxUtils.getMemberId(req);
-
-			params.add(memberId);
-			params.add(memberId);
-			params.add(memberId);
-		}
+		params.add(memberId);
+		params.add(memberId);
+		params.add(memberId);
 
 		//generate a list of VO's
 		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
