@@ -126,7 +126,8 @@ public class BusinessAction extends SBActionAdapter {
 		// If hitting this action with a residence role or registered role, they are adding a new business
 		// Their role will be upgraded appropriately after adding a new business
 		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
-		if (RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL == role.getRoleLevel()) {
+		if ((RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL == role.getRoleLevel())
+				&& !req.hasParameter("storeFront")) {
 			req.setParameter(REQ_BUSINESS_ID, "new");
 			req.setParameter(REQ_BUSINESS_INFO, "1");
 		}
