@@ -30,6 +30,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: ConnectionAction.java
@@ -130,21 +131,29 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//cache this list - it won't change often enough to be rebuilding on every pageview
 		if (!req.hasParameter("reloadPros") && req.getSession().getAttribute("MY_PROS") != null) return;
 
+		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
+
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select b.*, m.first_nm, m.last_nm, m.profile_pic_pth from ").append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS b on a.rcpt_business_id=b.business_id or a.sndr_business_id=b.business_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_MEMBER_XR mxr on b.business_id=mxr.business_id and mxr.status_flg=1 ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_MEMBER m on m.member_id=mxr.member_id and m.status_flg=1 ");
-		sql.append("where (a.sndr_member_id=? or a.rcpt_member_id=?) and m.member_id != ? and a.approved_flg=1 ");  //exclude connections to 'myself'
+		sql.append("where a.approved_flg=1 ");
+		if(role != null && role.getRoleLevel() > 0) {
+			sql.append("and a.sndr_member_id=? or a.rcpt_member_id=?) and m.member_id != ? ");  //exclude connections to 'myself'
+		}
 		sql.append("order by a.create_dt desc limit 6");
 		log.debug(sql);
 
-		String memberId = RezDoxUtils.getMemberId(req);
 		List<Object> params = new ArrayList<>();
-		params.add(memberId);
-		params.add(memberId);
-		params.add(memberId);
+		if(role != null && role.getRoleLevel() > 0) {
+			String memberId = RezDoxUtils.getMemberId(req);
+
+			params.add(memberId);
+			params.add(memberId);
+			params.add(memberId);
+		}
 
 		//generate a list of VO's
 		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
