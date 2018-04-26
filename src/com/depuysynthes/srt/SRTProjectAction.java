@@ -139,7 +139,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		//Save the Request and set Roster Data on it.
 		SRTRequestVO request = new SRTRequestVO(req);
 		request.setRequestor(roster);
-		request.setReqTerritoryId(roster.getTerritory());
+		request.setReqTerritoryId(roster.getTerritoryId());
 
 		try {
 

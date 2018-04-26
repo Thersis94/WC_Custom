@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +19,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.data.report.GenericReport;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
@@ -27,8 +29,11 @@ import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.parser.AnnotationParser;
+import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.WebCrescendoReport;
 import com.smt.sitebuilder.action.list.ListAction;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
 import com.smt.sitebuilder.action.registration.ResponseLoader;
@@ -75,6 +80,12 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+
+		if(req.getBooleanParameter("exportForm")) {
+			processExportReq(req);
+			return;
+		}
+
 		req.setAttribute("workgroups", loadWorkgroups());
 		req.setAttribute("territories", loadSRTList(SRTUtil.SRTList.SRT_TERRITORIES, req));
 		req.setAttribute("regions", loadSRTList(SRTUtil.SRTList.SRT_REGION, req));
@@ -87,8 +98,26 @@ public class SRTRosterAction extends SimpleActionAdapter {
 			GridDataVO<SRTRosterVO> users = loadRosterUsers(req);
 			putModuleData(users.getRowData(), users.getTotal(), false);
 		}
+
+
 	}
 
+	private void processExportReq(ActionRequest req) throws ActionException {
+		AnnotationParser parser;
+		String format = req.getParameter("format");
+		try {
+			parser = new AnnotationParser(Arrays.asList(SRTRosterVO.class), format);
+		} catch (InvalidDataException e) {
+			throw new ActionException("Could not load export file", e);
+		}
+
+		// Updated Code to use Standard Report Redir methods.
+		AbstractSBReportVO rpt = new WebCrescendoReport(new GenericReport());
+		rpt.setFileName("SRT User Import Form." + format);
+		rpt.setData(parser.getTemplate());
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+	}
 	/**
 	 * Loads List Data for the given SRTList.
 	 * @param territory
@@ -272,6 +301,10 @@ public class SRTRosterAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		if(req.hasParameter("filePathText")) {
+			ActionControllerFactoryImpl.loadAction(SRTRosterImportAction.class.getName(), this).build(req);
+			return;
+		}
 		//ajax hook for quick-saving notes:
 		if (req.hasParameter("saveStatus")) {
 			saveStatus(req);
@@ -298,7 +331,6 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		//Send User back to Roster Edit Page with updated data.
 		setupRedirect(req);
 	}
-
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
