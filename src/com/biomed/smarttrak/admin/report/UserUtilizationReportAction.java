@@ -511,6 +511,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			user.setStatusFlg(rs.getInt("active_flg"));
 			user.setLicenseType(rs.getString("status_cd"));
 			user.setAcctOwnerFlg(rs.getInt("acct_owner_flg"));
+			user.setCreateDate(rs.getDate("user_create_dt"));
 			user.setExpirationDate(rs.getDate("user_expire_dt"));
 			user.setLoginDate(rs.getDate("login_dt"));
 		} catch (Exception e) {
@@ -553,7 +554,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		sql.append("select ac.account_id, ac.account_nm, ac.type_id, ac.start_dt, ac.expiration_dt as acct_expire_dt, ");
 		sql.append("us.profile_id, us.user_id, us.status_cd, us.active_flg, us.expiration_dt as user_expire_dt, ");
 		sql.append("us.acct_owner_flg, pf.first_nm, pf.last_nm, pf.email_address_txt, max(login_dt) as login_dt, ");
-		sql.append("ph.phone_number_txt, ");
+		sql.append("ph.phone_number_txt, us.create_dt as user_create_dt, ");
 		sql.append("rd.register_field_id, rd.value_txt, rfo.option_desc ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us ");
