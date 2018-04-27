@@ -46,7 +46,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	private static final String ACCOUNT_TYPE = "ACCOUNT_TYPE";
 	private static final String ACCOUNT_START_DT = "ACCOUNT_START_DATE";
 	private static final String ACCOUNT_EXPIRATION_DT = "ACCOUNT_EXPIRATION_DATE";
-	private static final String NAME = "NAME";
+	private static final String FULL_NAME = "FULL_NAME";
+	private static final String FIRST_NAME = "FIRST_NAME";
+	private static final String LAST_NAME = "LAST_NAME";
 	private static final String TITLE = "TITLE";
 	private static final String EMAIL = "EMAIL_ADDRESS";
 	private static final String PHONE = "PHONE";
@@ -54,6 +56,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	private static final String ACCOUNT_OWNER_FLAG = "ACCOUNT_OWNER";
 	private static final String DIVISIONS = "DIVISIONS";
 	private static final String USER_STATUS = "USER_STATUS";
+	private static final String USER_CREATE_DT = "USER_CREATE_DT";
 	private static final String EXPIRATION_DT = "EXPIRATION_DATE";
 	public static final String LAST_LOGIN_DT = "LAST_LOGIN_DATE";
 	public static final String LAST_LOGIN_AGE = "LAST_LOGIN_AGE";
@@ -157,15 +160,18 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 			for (UserVO user : acct.getValue()) {
 				row = new HashMap<>();
 				addAccountColumns(a, row);
-				row.put(NAME, se.decodeValue(user.getFullName()));
+				row.put(FULL_NAME, se.decodeValue(user.getFullName()));
+				row.put(FIRST_NAME, se.decodeValue(user.getFirstName()));
+				row.put(LAST_NAME, se.decodeValue(user.getLastName()));
 				row.put(TITLE, se.decodeValue(user.getTitle()));
 				row.put(EMAIL,user.getEmailAddress());
 				pnf.setPhoneNumber(user.getMainPhone());
 				row.put(PHONE, pnf.getFormattedNumber());
 				row.put(UPDATES, StringUtil.capitalize(user.getUpdates()));
 				row.put(ACCOUNT_OWNER_FLAG, user.getAcctOwnerFlg() == 0 ? "No" : "Yes");
-				row.put(DIVISIONS, getUserDivisions(user));
+				row.put(DIVISIONS, user.getPrimaryDivision());
 				row.put(USER_STATUS, user.getLicenseName());
+				row.put(USER_CREATE_DT, Convert.formatDate(user.getCreateDate(), Convert.DATE_SLASH_PATTERN));
 				row.put(EXPIRATION_DT, Convert.formatDate(user.getExpirationDate(), Convert.DATE_SLASH_PATTERN));
 				if (user.getLoginDate() == null) row.put(LAST_LOGIN_DT, NO_ACTIVITY); 
 				else row.put(LAST_LOGIN_DT, Convert.formatDate(user.getLoginDate(), Convert.DATE_SLASH_PATTERN));
@@ -253,24 +259,6 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 			data.append(permissions.get(i));
 		}
 		return data.toString();
-	}
-	
-	/**
-	 * Retrieves any applicable divisions for the user and formats for report
-	 * @param user
-	 * @return
-	 */
-	protected String getUserDivisions(UserVO user) {
-		List<String> divisions = user.getDivisions();
-		StringBuilder divs = new StringBuilder(150);
-		
-		if(divisions != null && !divisions.isEmpty()) {
-			for (int i = 0; i < user.getDivisions().size(); i++) {
-				if(i > 0) divs.append(",");
-				divs.append(user.getDivisions().get(i));
-			}
-		}
-		return divs.toString();
 	}
 	
 	/**
@@ -392,7 +380,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		headerMap.put(PROF, "Prof Modules");
 		headerMap.put(FD, "FD Modules.");
 		headerMap.put(GA, "GA Modules");
-		headerMap.put(NAME,"Name");
+		headerMap.put(FULL_NAME,"Full Name");
+		headerMap.put(FIRST_NAME,"First Name");
+		headerMap.put(LAST_NAME,"Last Name");
 		headerMap.put(TITLE,"Title");
 		headerMap.put(EMAIL,"Email Address");
 		headerMap.put(PHONE,"Phone");
@@ -400,6 +390,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		headerMap.put(ACCOUNT_OWNER_FLAG, "Account Lead");
 		headerMap.put(DIVISIONS, "Divisions");
 		headerMap.put(USER_STATUS, "License Type");
+		headerMap.put(USER_CREATE_DT, "Create Date");
 		headerMap.put(EXPIRATION_DT, "Expiration Date");
 		headerMap.put(LAST_LOGIN_DT, "Last Logged In Date");
 		headerMap.put(DAYS_SINCE_LAST_LOGIN, "Days Since Last Logged In");
