@@ -58,6 +58,8 @@ zip up files from rezdox cpanel
 	extract to /${secureBinary}/org/REZDOX
 	rename "uploads" to "legacy"
 
+copy /${secureBinary}/org/REZDOX/legacy/profile/* to /${binary}/org/REZDOX/legacy/profile/
+
 zip up dev binary files & load through admintool
 
 add paypal buttons through admintool membership data tool, these are specific to each instance
