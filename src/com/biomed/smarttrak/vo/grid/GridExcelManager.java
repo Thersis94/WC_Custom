@@ -6,9 +6,9 @@ import java.util.List;
 
 // Log4j 1.2.17
 import org.apache.log4j.Logger;
-
 // Apache POI
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFDataFormat;
 import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.hssf.usermodel.HSSFPalette;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -16,14 +16,13 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.util.CellRangeAddress;
 
 // App Libs
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 import com.biomed.smarttrak.admin.vo.GridVO.RowStyle;
-
 // SMT Base Libs
 import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.util.Convert;
@@ -43,7 +42,7 @@ import com.siliconmtn.util.StringUtil;
 public class GridExcelManager {
 
 	private Logger log = Logger.getLogger(GridExcelManager.class);
-
+	
 	/**
 	 * 
 	 */
@@ -86,25 +85,7 @@ public class GridExcelManager {
 			}
 
 			// Add the rows of data
-			for (GridDetailVO detail : details ) {
-				row = sheet.createRow(ctr++);
-				row.setHeightInPoints((int)(1.5 * sheet.getDefaultRowHeightInPoints()));
-				cell = row.createCell(0);
-				cell.setCellValue(detail.getLabel());
-				HSSFCellStyle style = getRowStyle(workbook, detail.getDetailType(), false);
-				style.setAlignment(HSSFCellStyle.ALIGN_LEFT);
-				cell.setCellStyle(style);
-
-				for (int i=0; i < (numberCols); i++) {
-					cell = row.createCell(i + 1);
-					boolean neg = false;
-					if (Convert.formatDouble(detail.getValues()[i]) < 0) neg = true;
-					if (neg) log.info("Val: " + detail.getDetailType() + "|" + detail.getValues()[i] + "|" + Convert.formatDouble(detail.getValues()[i]));
-
-					cell.setCellValue(detail.getValues()[i]);
-					cell.setCellStyle(getRowStyle(workbook, detail.getDetailType(), neg));
-				}
-			}
+			addDataRows(details, workbook, sheet, ctr, numberCols);
 
 			// resize all of the columns
 			for (int i=0; i < numberCols; i++) sheet.autoSizeColumn(i);
@@ -121,6 +102,89 @@ public class GridExcelManager {
 		}
 
 		return data;
+	}
+	
+	/**
+	 * Handles adding the data values to the rows
+	 * @param details
+	 * @param workbook
+	 * @param sheet
+	 * @param ctr
+	 * @param numberCols
+	 */
+	private void addDataRows(List<GridDetailVO> details, HSSFWorkbook workbook, HSSFSheet sheet, int ctr, int numberCols) {
+		Row row;
+		Cell cell;
+		for (GridDetailVO detail : details ) {
+			row = sheet.createRow(ctr++);
+			row.setHeightInPoints((int)(1.5 * sheet.getDefaultRowHeightInPoints()));
+			cell = row.createCell(0);
+			cell.setCellValue(detail.getLabel());
+			HSSFCellStyle style = getRowStyle(workbook, detail.getDetailType(), false);
+			style.setAlignment(HSSFCellStyle.ALIGN_LEFT);
+			cell.setCellStyle(style);
+
+			//set data values
+			for (int i=0; i < (numberCols); i++) {
+				cell = row.createCell(i + 1);
+				addCellValue(workbook, cell, detail, detail.getValues()[i]);	
+			}
+		}
+	}
+	
+	/**
+	 * Adds the value to the cell with appropriate styling
+	 * @param value
+	 * @param cell
+	 * @param detail
+	 * @return
+	 */
+	private void addCellValue(HSSFWorkbook workbook, Cell cell, GridDetailVO detail, String value) {
+		boolean neg = false;
+		if (Convert.formatDouble(value) < 0) neg = true;
+		if (neg) log.info("Val: " + detail.getDetailType() + "|" + value + "|" + Convert.formatDouble(value));
+		
+		//set the value and style for the appropriate cell type
+		String detailType = StringUtil.isEmpty(detail.getDetailType()) ? RowStyle.DATA.toString() : detail.getDetailType();
+		//remove any non-relevant characters(currency symbols, commas, percents, etc.) If empty, not a number value
+		String numericValue  = value.replaceAll("[^\\d\\.]","");
+		if(!StringUtil.isEmpty(numericValue) && !RowStyle.HEADING.equals(RowStyle.valueOf(detailType))) {
+			boolean isPercent = setNumericValue(numericValue, cell);
+
+			//determine if a currency symbol is present
+			String curSymbol = "";
+			if(!isPercent && value.substring(0, 1).matches("\\D")) 
+				curSymbol = value.substring(0, 1);	
+	       	   
+			//apply cell style including number formatting
+			HSSFCellStyle cellStyle = getRowStyle(workbook, detailType, neg);
+			setStyleDataFormat(workbook, cellStyle, isPercent, curSymbol);
+			cell.setCellStyle(cellStyle);
+		}else {
+			cell.setCellValue(value);
+			cell.setCellStyle(getRowStyle(workbook, detailType, neg));
+		}
+		
+	}
+	
+	/**
+	 * Sets the numeric value for the cell and determines if value was a percentage
+	 * @param value
+	 * @param cell
+	 * @return
+	 */
+	private boolean setNumericValue(String value, Cell cell) {
+		boolean isPercent = false;
+		//parse value into number
+ 	   Double numberVal = Double.parseDouble(value);
+ 	   
+ 	   if(value.indexOf('%') > -1) {
+ 		   numberVal = numberVal / 100; //divide to account for later percentage formatting
+ 		   isPercent = true;
+ 	   }
+ 	   cell.setCellValue(numberVal);
+ 	   cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+ 	   return isPercent;
 	}
 
 
@@ -186,6 +250,7 @@ public class GridExcelManager {
 	 * builds the appropriate styles for the sheet 
 	 * @param workbook
 	 * @param type
+	 * @param neg
 	 * @return
 	 */
 	public HSSFCellStyle getRowStyle(HSSFWorkbook workbook, String type, boolean neg) {
@@ -213,6 +278,7 @@ public class GridExcelManager {
 	/**
 	 * Gets the styles for headings
 	 * @param workbook
+	 * @param neg
 	 * @return
 	 */
 	public HSSFCellStyle getTotalStyle(HSSFWorkbook workbook, boolean neg) {
@@ -225,14 +291,14 @@ public class GridExcelManager {
 		HSSFFont font = getBaseFont(workbook, neg);
 		style.setFont(font);
 		font.setColor(HSSFColor.BLACK.index);
-		font.setBold(true);
-
+		font.setBold(true);	
 		return style;
 	}
 
 	/**
 	 * Gets the styles for headings
 	 * @param workbook
+	 * @param neg
 	 * @return
 	 */
 	public HSSFCellStyle getSubTotalStyle(HSSFWorkbook workbook, boolean neg) {
@@ -247,13 +313,13 @@ public class GridExcelManager {
 		font.setItalic(true);
 		font.setBold(true);
 		style.setFont(font);
-
 		return style;
 	}
 
 	/**
 	 * Gets the styles for Data elements
 	 * @param workbook
+	 * @param neg
 	 * @return
 	 */
 	public HSSFCellStyle getDataStyle(HSSFWorkbook workbook, boolean neg) {
@@ -261,7 +327,6 @@ public class GridExcelManager {
 
 		HSSFFont font = getBaseFont(workbook, neg);
 		style.setFont(font);
-
 		return style;
 	}
 
@@ -320,6 +385,22 @@ public class GridExcelManager {
 		font.setItalic(false);
 
 		return font;
+	}
+	
+	/**
+	 * Helper method that sets the appropriate data format for the cell
+	 * @param workbook
+	 * @param style
+	 * @param isPercent
+	 * @param currencySymbol
+	 */
+	private void setStyleDataFormat(HSSFWorkbook workbook, HSSFCellStyle style, boolean isPercent, String currencySymbol) {
+		HSSFDataFormat df = workbook.createDataFormat();
+		if(isPercent) {
+			style.setDataFormat(df.getFormat("0.0%"));
+		}else {
+			style.setDataFormat(df.getFormat(currencySymbol +"#,##0"));
+		}
 	}
 }
 
