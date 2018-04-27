@@ -490,33 +490,104 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param cvo 
 	 */
 	private void processEmails(ConnectionVO cvo, ActionRequest req) {
-		MemberAction ma = new MemberAction(dbConn, attributes );
-		MemberVO sender = ma.retrieveMemberData(cvo.getSenderMemberId());
-		Map<String, Object> dataMap = new HashMap<>();
-		Map<String, String> rcptMap = new HashMap<>();
 		EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
 
 		if (cvo.getApprovedFlag() == 0 && !StringUtil.isEmpty(cvo.getSenderMemberId()) && !StringUtil.isEmpty(cvo.getRecipientMemberId())) {
-			MemberVO toMember = ma.retrieveMemberData(cvo.getRecipientMemberId());
-			dataMap.put("senderName", sender.getFirstName() + " " + sender.getLastName() );
-			rcptMap.put(toMember.getProfileId(), toMember.getEmailAddress());
-
-			emailer.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.CONNECTION_REQUEST.name());
-
-			//add the browser notification
-			notifyUtil.send(RezDoxNotifier.Message.CONNECTION_REQ, dataMap, null, toMember.getProfileId());
-
+			sendRequestEmail(cvo, emailer, notifyUtil);
 		} else if (cvo.getApprovedFlag() == 1) {
-			MemberVO toMember = ma.retrieveMemberData(cvo.getSenderMemberId());
-			dataMap.put("senderName", sender.getFirstName() + " " + sender.getLastName());
-			rcptMap.put(toMember.getProfileId(), toMember.getEmailAddress());
+			sendApprovedEmail(cvo, emailer, notifyUtil);
+		}
+	}
+	
+	/**
+	 * Email received by a recipient when someone wants to connect with them.
+	 * 
+	 * @param cvo
+	 * @param emailer
+	 * @param notifyUtil
+	 */
+	private void sendRequestEmail(ConnectionVO cvo, EmailCampaignBuilderUtil emailer, RezDoxNotifier notifyUtil) {
+		Map<String, Object> dataMap = new HashMap<>();
+		Map<String, String> emailMap = new HashMap<>();
 
-			emailer.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.CONNECTION_APPROVED.name());
+		// Pass the email map for the user we want to send the email/notification to
+		addUserToMap(cvo.getSenderMemberId(), cvo.getSenderBusinessId(), "senderName", dataMap, null);
+		addUserToMap(cvo.getRecipientMemberId(), cvo.getRecipientBusinessId(), "recipientName", dataMap, emailMap);
+		
+		// Send the email notification
+		emailer.sendMessage(dataMap, emailMap, RezDoxUtils.EmailSlug.CONNECTION_REQUEST.name());
 
-			//add the browser notification
-			notifyUtil.send(RezDoxNotifier.Message.CONNECTION_APPRVD, dataMap, null, toMember.getProfileId());
+		// Add the browser notification
+		String notifyProfileId = emailMap.entrySet().iterator().next().getKey();
+		notifyUtil.send(RezDoxNotifier.Message.CONNECTION_REQ, dataMap, null, notifyProfileId);
+
+	}
+	
+	/**
+	 * Email received by a sender when connection is approved.
+	 * 
+	 * @param cvo
+	 * @param emailer
+	 * @param notifyUtil
+	 */
+	private void sendApprovedEmail(ConnectionVO cvo, EmailCampaignBuilderUtil emailer, RezDoxNotifier notifyUtil) {
+		Map<String, Object> dataMap = new HashMap<>();
+		Map<String, String> emailMap = new HashMap<>();
+
+		// Pass the email map for the user we want to send the email/notification to
+		addUserToMap(cvo.getSenderMemberId(), cvo.getSenderBusinessId(), "senderName", dataMap, emailMap);
+		addUserToMap(cvo.getRecipientMemberId(), cvo.getRecipientBusinessId(), "recipientName", dataMap, null);
+
+		// Send the email notification
+		emailer.sendMessage(dataMap, emailMap, RezDoxUtils.EmailSlug.CONNECTION_APPROVED.name());
+
+		// Add the browser notification
+		String notifyProfileId = emailMap.entrySet().iterator().next().getKey();
+		notifyUtil.send(RezDoxNotifier.Message.CONNECTION_APPRVD, dataMap, null, notifyProfileId);
+	}
+	
+	/**
+	 * Only pass the email map if you intend to send the email/notification to this user.
+	 * 
+	 * @param memberId
+	 * @param businessId
+	 * @param key
+	 * @param dataMap
+	 * @param emailMap
+	 */
+	private void addUserToMap(String memberId, String businessId, String key, Map<String, Object> dataMap, Map<String, String> emailMap) {
+		String name = null;
+		String profileId = null;
+		String emailAddress = null;
+		
+		// Determine if this key should be populated by the member or business
+		if (!StringUtil.isEmpty(memberId)) {
+			MemberAction ma = new MemberAction(dbConn, attributes);
+			MemberVO member = ma.retrieveMemberData(memberId);
+			name = member.getFirstName() + " " + member.getLastName();
+			profileId = member.getProfileId();
+			emailAddress = member.getEmailAddress();
+		} else {
+			ActionRequest bizReq = new ActionRequest();
+			bizReq.setParameter(BusinessAction.REQ_BUSINESS_ID, businessId);
+			BusinessAction ba = new BusinessAction(dbConn, attributes);
+			BusinessVO business = ba.retrieveBusinesses(bizReq).get(0);
+			MemberVO member = business.getMembers().entrySet().iterator().next().getValue();
+			name = business.getBusinessName();
+			
+			// Get a profile id (required for sending emails), but use the business email address
+			profileId = member.getProfileId();
+			emailAddress = business.getEmailAddressText();
+		}
+		
+		// Add the name to the map
+		dataMap.put(key, name);
+		
+		// If the email map was passed, add the email address
+		if (emailMap != null) {
+			emailMap.put(profileId, emailAddress);
 		}
 	}
 }
