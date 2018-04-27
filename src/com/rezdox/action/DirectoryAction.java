@@ -95,6 +95,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		sql.append("b.business_nm as first_nm, '' as last_nm, b.photo_url as profile_pic_pth, b.city_nm, b.state_cd, ba.value_txt as business_summary, ");
 		sql.append("cast(coalesce(r.rating, 0) as numeric) as rating, bc.business_category_cd as category_cd, b.privacy_flg, b.create_dt, b.business_id || '_b' as unique_id ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b ");
+		sql.append(DBUtil.INNER_JOIN).append("(select business_id from ").append(schema).append("rezdox_business_member_xr where status_flg = 1 group by business_id) bmxa on b.business_id = bmxa.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_attribute ba on b.business_id = ba.business_id and slug_txt = 'BUSINESS_SUMMARY' ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select business_id, avg(rating_no) as rating ").append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review where parent_id is null group by business_id) as r on b.business_id = r.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id = bcx.business_id ");

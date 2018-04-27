@@ -47,7 +47,7 @@ public class RezDoxNotifier {
 	public enum Message {
 		BLOG_NEW("New Home Improvement Information, Insights & Trends Blog posted"),
 		CONNECTION_REQ("${senderName} wants to connect with you"),
-		CONNECTION_APPRVD("${senderName} accepted your connection request"),
+		CONNECTION_APPRVD("${recipientName} accepted your connection request"),
 		RESIDENCE_TRANS_PENDING("A Residence transfer is waiting in your email"),
 		RESIDENCE_TRANS_COMPLETE("A Residence transfer you initiated is complete"),
 		REWARD_NEW("A new gift card has been added to RezRewards"),
