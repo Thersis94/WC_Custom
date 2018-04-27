@@ -3,11 +3,17 @@ package com.depuysynthes.srt.vo;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import com.depuysynthes.srt.util.SRTUtil;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.annotations.DataType;
+import com.siliconmtn.annotations.Importable;
+import com.siliconmtn.data.parser.BeanDataMapper;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 
 /****************************************************************************
@@ -41,7 +47,6 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	private String accountNo;
 	private String region;
 	private String area;
-	private String territory;
 	private String engineeringContact;
 	private String companyRole;
 	private String rosterEmailAddress;
@@ -65,6 +70,11 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	public SRTRosterVO(ActionRequest req) {
 		super(req);
 		setData(req);
+		BeanDataMapper.parseBean(this, req.getParameterMap());
+
+		if(StringUtil.isEmpty(opCoId)) {
+			opCoId = SRTUtil.getOpCO(req);
+		}
 	}
 
 
@@ -75,6 +85,7 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	public SRTRosterVO(ResultSet rs) {
 		super(rs);
 		setData(rs);
+		new DBProcessor(null).executePopulate(this, rs, null);
 	}
 
 	/**
@@ -128,7 +139,7 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return the accountNo
 	 */
-	@Column(name="ACOUNT_NO")
+	@Column(name="ACCOUNT_NO")
 	public String getAccountNo() {
 		return accountNo;
 	}
@@ -147,14 +158,6 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	@Column(name="AREA")
 	public String getArea() {
 		return area;
-	}
-
-	/**
-	 * @return the territory
-	 */
-	@Column(name="TERRITORY")
-	public String getTerritory() {
-		return territory;
 	}
 
 	/**
@@ -211,8 +214,17 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	}
 
 	/**
+	 * @param accountNo the accountNo to set.
+	 */
+	@Importable(name="Account #", type=DataType.STRING, index=12)
+	public void setAccountNo(String accountNo) {
+		this.accountNo = accountNo;
+	}
+
+	/**
 	 * @param workgroupId the workgroupId to set.
 	 */
+	@Importable(name="WorkgroupId", type=DataType.STRING, index=13, isRequired=true)
 	public void setWorkgroupId(String workgroupId) {
 		this.workgroupId = workgroupId;
 	}
@@ -220,6 +232,7 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @param wwid the wwid to set.
 	 */
+	@Importable(name="WWID", type=DataType.STRING, index=14, isRequired=true)
 	public void setWwid(String wwid) {
 		this.wwid = wwid;
 	}
@@ -227,20 +240,15 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @param territoryId the territoryId to set.
 	 */
+	@Importable(name="Territory Id", type=DataType.STRING, index=15)
 	public void setTerritoryId(String territoryId) {
 		this.territoryId = territoryId;
 	}
 
 	/**
-	 * @param accountNo the accountNo to set.
-	 */
-	public void setAccountNo(String accountNo) {
-		this.accountNo = accountNo;
-	}
-
-	/**
 	 * @param region the region to set.
 	 */
+	@Importable(name="Region", type=DataType.STRING, index=16)
 	public void setRegion(String region) {
 		this.region = region;
 	}
@@ -248,20 +256,15 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @param area the area to set.
 	 */
+	@Importable(name="Area", type=DataType.STRING, index=17)
 	public void setArea(String area) {
 		this.area = area;
 	}
 
 	/**
-	 * @param territory the territory to set.
-	 */
-	public void setTerritory(String territory) {
-		this.territory = territory;
-	}
-
-	/**
 	 * @param engineeringContact the engineeringContact to set.
 	 */
+	@Importable(name="Engineering Contact", type=DataType.STRING, index=18)
 	public void setEngineeringContact(String engineeringContact) {
 		this.engineeringContact = engineeringContact;
 	}
@@ -379,5 +382,104 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 
 	public void setRosterEmailAddress(String rosterEmailAddress) {
 		this.rosterEmailAddress = rosterEmailAddress;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setFirstName(java.lang.String)
+	 */
+	@Override
+	@Importable(name="First Name", type=DataType.STRING, index=1, isRequired=true)
+	public void setFirstName(String firstName) {
+		super.setFirstName(firstName);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setLastName(java.lang.String)
+	 */
+	@Override
+	@Importable(name="Last Name", type=DataType.STRING, index=2, isRequired=true)
+	public void setLastName(String lastName) {
+		super.setLastName(lastName);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setEmailAddress(java.lang.String)
+	 */
+	@Override
+	@Importable(name="Email Address", type=DataType.STRING, index=3, isRequired=true)
+	public void setEmailAddress(String emailAddress) {
+		super.setEmailAddress(emailAddress);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setMainPhone(java.lang.String)
+	 */
+	@Override
+	@Importable(name="Main Phone No", type=DataType.STRING, index=4)
+	public void setMainPhone(String mainPhone) {
+		super.setMainPhone(mainPhone);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setMobilePhone(java.lang.String)
+	 */
+	@Override
+	@Importable(name="Mobile Phone No", type=DataType.STRING, index=5)
+	public void setMobilePhone(String mobilePhone) {
+		super.setMobilePhone(mobilePhone);
+	}
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setAddress(java.lang.String)
+	 */
+	@Override
+	@Importable(name="Address", type=DataType.STRING, index=6)
+	public void setAddress(String address) {
+		super.setAddress(address);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setAddress2(java.lang.String)
+	 */
+	@Override
+	@Importable(name="Address 2", type=DataType.STRING, index=7)
+	public void setAddress2(String address2) {
+		super.setAddress2(address2);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setCity(java.lang.String)
+	 */
+	@Override
+	@Importable(name="City", type=DataType.STRING, index=8)
+	public void setCity(String city) {
+		super.setCity(city);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setState(java.lang.String)
+	 */
+	@Override
+	@Importable(name="State Cd", type=DataType.STRING, index=9)
+	public void setState(String state) {
+		super.setState(state);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setZipCode(java.lang.String)
+	 */
+	@Override
+	@Importable(name="Zip Code", type=DataType.STRING, index=10)
+	public void setZipCode(String zipCode) {
+		super.setZipCode(zipCode);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setCountryCode(java.lang.String)
+	 */
+	@Override
+	@Importable(name="Country Cd", type=DataType.STRING, index=11)
+	public void setCountryCode(String country) {
+		super.setCountryCode(country);
 	}
 }

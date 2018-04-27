@@ -37,11 +37,11 @@ public class SRTUtil {
 	public static final String ADMIN_PATH = "/manage";
 	public static final String REGISTRATION_GRP_ID = "38ae1841baf997aec0a80255c7bd6f31";
 
-	public enum SRTLists {SRT_WORKGROUP, REQ_REASON, CHARGE_TO, QUALITY_SYSTEM,
+	public enum SRTList {SRT_WORKGROUP, REQ_REASON, CHARGE_TO, QUALITY_SYSTEM,
 						PRODUCT_TYPE, COMPLEXITY, LABEL_STATUS, PROD_CAT,
 						PROD_FAMILY, DEPARTMENT, OBSOLETE, MILESTONE, PROJ_TYPE,
 						PROJ_PRIORITY, MAKE_FROM_SCRATCH, PROJ_VENDOR, PROJ_STATUS,
-						PROJ_MFG_CHANGE_REASON}
+						PROJ_MFG_CHANGE_REASON, SRT_TERRITORIES, SRT_AREA, SRT_REGION}
 
 	public enum SrtPage {MASTER_RECORD("/master-record"), PROJECT("/projects"), REQUEST("/request-form");
 		private String urlPath;

@@ -4,7 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -12,22 +12,29 @@ import java.util.Map;
 import java.util.Set;
 
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.util.SRTUtil.SRTList;
 import com.depuysynthes.srt.vo.SRTRosterVO;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.data.report.GenericReport;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.user.HumanNameIntfc;
-import com.siliconmtn.util.user.LastNameComparator;
+import com.siliconmtn.util.parser.AnnotationParser;
+import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.WebCrescendoReport;
+import com.smt.sitebuilder.action.list.ListAction;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
 import com.smt.sitebuilder.action.registration.ResponseLoader;
 import com.smt.sitebuilder.action.registration.SubmittalAction;
@@ -59,6 +66,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 
 	public static final String REQ_CHECK_USER_BY_EMAIL = "checkUserByEmail";
 	public static final String REQ_ROSTER_ID = "rosterId";
+	public static final String USER_TABLE_NAME = "userTableName";
 	public SRTRosterAction() {
 		super();
 	}
@@ -72,13 +80,76 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+
+		if(req.getBooleanParameter("exportForm")) {
+			processExportReq(req);
+			return;
+		}
+
+		req.setAttribute("workgroups", loadWorkgroups());
+		req.setAttribute("territories", loadSRTList(SRTUtil.SRTList.SRT_TERRITORIES, req));
+		req.setAttribute("regions", loadSRTList(SRTUtil.SRTList.SRT_REGION, req));
+		req.setAttribute("areas", loadSRTList(SRTUtil.SRTList.SRT_AREA, req));
+
 		if (req.hasParameter(REQ_CHECK_USER_BY_EMAIL)) {
 			checkForExistingUser(req);
 			return;
+		} else if (req.hasParameter("amid") || req.hasParameter(REQ_ROSTER_ID)) {
+			GridDataVO<SRTRosterVO> users = loadRosterUsers(req);
+			putModuleData(users.getRowData(), users.getTotal(), false);
 		}
-		List<SRTRosterVO> users = loadRosterUsers(req);
 
-		putModuleData(users);
+
+	}
+
+	private void processExportReq(ActionRequest req) throws ActionException {
+		AnnotationParser parser;
+		String format = req.getParameter("format");
+		try {
+			parser = new AnnotationParser(Arrays.asList(SRTRosterVO.class), format);
+		} catch (InvalidDataException e) {
+			throw new ActionException("Could not load export file", e);
+		}
+
+		// Updated Code to use Standard Report Redir methods.
+		AbstractSBReportVO rpt = new WebCrescendoReport(new GenericReport());
+		rpt.setFileName("SRT User Import Form." + format);
+		rpt.setData(parser.getTemplate());
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+	}
+	/**
+	 * Loads List Data for the given SRTList.
+	 * @param territory
+	 * @return
+	 * @throws ActionException
+	 */
+	@SuppressWarnings("unchecked")
+	private List<GenericVO> loadSRTList(SRTList listId, ActionRequest req) throws ActionException {
+		log.debug(listId);
+		req.setParameter(ListAction.REQ_LIST_ID, listId.name());
+		ActionControllerFactoryImpl.loadAction(ListAction.class.getName(), this).retrieve(req);
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		return (List<GenericVO>) mod.getActionData();
+	}
+
+	/**
+	 * @param opCO
+	 * @return
+	 */
+	private List<GenericVO> loadWorkgroups() {
+		return new DBProcessor(dbConn, getCustomSchema()).executeSelect(loadWorkgroupsSql(), null, new GenericVO());
+	}
+
+	/**
+	 * @return
+	 */
+	private String loadWorkgroupsSql() {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select workgroup_id as key, workgroup_nm as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("DPY_SYN_SRT_WORKGROUP order by workgroup_nm");
+		return sql.toString();
 	}
 
 	/**
@@ -92,58 +163,41 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	public List<SRTRosterVO> loadRosterUsers(ActionRequest req) throws ActionException {
+	public GridDataVO<SRTRosterVO> loadRosterUsers(ActionRequest req) throws ActionException {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String rosterId = req.hasParameter(REQ_ROSTER_ID) ? req.getParameter(REQ_ROSTER_ID) : null;
 		String opCoId = ((SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA)).getOpCoId();
-		String profileId = req.hasParameter(UserAction.REQ_PROFILE_ID) ? req.getParameter(UserAction.REQ_PROFILE_ID) : null; 
+		String workgroupId = req.getParameter("workgroupId");
 		boolean loadProfileData = false;
 
 		//Build Sql
-		String sql = formatRetrieveQuery(schema, rosterId, profileId);
+		String sql = formatRetrieveQuery(schema, rosterId, workgroupId);
 
 		//Build Params
 		List<Object> params = new ArrayList<>();
 		params.add(opCoId);
-		if (StringUtil.isEmpty(profileId) && rosterId != null) {
+		if (!StringUtil.isEmpty(rosterId)) {
 			params.add(rosterId);
 			loadProfileData = true;
-		} else {
-			params.add(profileId);
-			loadProfileData = true;
+		}
+		if(!StringUtil.isEmpty(workgroupId)) {
+			params.add(workgroupId);
 		}
 
-		//Call Execute the Query with given params.
-		List<SRTRosterVO> users = executeUserQuery(sql, params);
+		GridDataVO<SRTRosterVO> rosters = new DBProcessor(dbConn, getCustomSchema()).executeSQLWithCount(sql, params, new SRTRosterVO(), req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
 
-		//get more information about this one user, so we can display the edit screen.
-		//If this is an ADD, we don't need the additional lookups
+		if(!rosters.getRowData().isEmpty()) {
+			try {
+				ProfileManagerFactory.getInstance(attributes).populateRecords(dbConn, rosters.getRowData());
+			} catch (com.siliconmtn.exception.DatabaseException e) {
+				log.error("Error Loading Profile Data for Rosters", e);
+			}
+		}
+
 		if (loadProfileData)
-			loadRegistration(req, users);
+			loadRegistration(req, rosters.getRowData());
 
-		return users;
-	}
-
-	/**
-	 * Helper method that manages talking to DBProcessor and decrypting UserData.
-	 * @param req
-	 * @param sql
-	 * @param params
-	 * @param loadProfileData
-	 * @return
-	 * @throws ActionException
-	 */
-	protected List<SRTRosterVO> executeUserQuery(String sql, List<Object> params) {
-		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		log.debug(params);
-		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<SRTRosterVO>  data = db.executeSelect(sql, params, new SRTRosterVO());
-		log.debug("loaded " + data.size() + " users");
-
-		//decrypt the owner profiles
-		decryptNames(data);
-
-		return data;
+		return rosters;
 	}
 
 	/**
@@ -181,33 +235,23 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * loop and decrypt owner names, which came from the profile table
-	 * @param accounts
-	 */
-	@SuppressWarnings("unchecked")
-	protected void decryptNames(List<SRTRosterVO> data) {
-		LastNameComparator c = new LastNameComparator();
-		c.decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
-		Collections.sort(data, c);
-	}
-
-	/**
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	protected String formatRetrieveQuery(String schema, String rosterId, String profileId) {
+	protected String formatRetrieveQuery(String schema, String rosterId, String workgroupId) {
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select r.*, p.first_nm, p.last_nm, p.email_address_txt ");
-		sql.append("from profile p ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("dpy_syn_srt_roster r on r.profile_id=p.profile_id ");
+		sql.append(DBUtil.SELECT_FROM_STAR);
+		sql.append(schema).append("dpy_syn_srt_roster ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
-		if (StringUtil.isEmpty(profileId)) {
-			sql.append("and r.op_co_id=? ");
-			if (rosterId != null) sql.append("and r.roster_id=? ");
-		} else {
-			sql.append("and p.profile_id=? ");
+		sql.append("and op_co_id=? ");
+		if (!StringUtil.isEmpty(rosterId)) {
+			sql.append("and roster_id=? ");
 		}
 
+		if(!StringUtil.isEmpty(workgroupId)) {
+			sql.append("and workgroup_id = ?");
+		}
+		sql.append(DBUtil.ORDER_BY).append(" workgroup_id");
 		log.debug(sql);
 		return sql.toString();
 	}
@@ -223,8 +267,9 @@ public class SRTRosterAction extends SimpleActionAdapter {
 
 		String email = req.getParameter(REQ_CHECK_USER_BY_EMAIL).toUpperCase();
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("select a.roster_id, b.profile_id, a.op_co_id from ").append(schema).append("dpy_syn_srt_roster a ");
-		sql.append("right outer join profile b on a.profile_id=b.profile_id ");
+		sql.append("select a.roster_id, b.profile_id, a.op_co_id from profile b ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("dpy_syn_srt_roster a ");
+		sql.append("on a.profile_id=b.profile_id ");
 		if(isEmailSearch) {
 			sql.append("and b.search_email_txt = ? ");
 		} else {
@@ -240,11 +285,12 @@ public class SRTRosterAction extends SimpleActionAdapter {
 				ps.setString(1, se.encrypt(email));
 			else 
 				ps.setString(1, req.getParameter("wwid"));
+			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				data.put("ROSTER_ID", rs.getString(1));
-				data.put("PROFILE_ID", rs.getString(2));
-				data.put("OP_CO_ID", rs.getString(3));
+				data.put(REQ_ROSTER_ID, rs.getString(1));
+				data.put(UserAction.REQ_PROFILE_ID, rs.getString(2));
+				data.put(SRTUtil.OP_CO_ID, rs.getString(3));
 			}
 		} catch (Exception e) {
 			log.error("could not search existing users by email", e);
@@ -255,6 +301,10 @@ public class SRTRosterAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		if(req.hasParameter("filePathText")) {
+			ActionControllerFactoryImpl.loadAction(SRTRosterImportAction.class.getName(), this).build(req);
+			return;
+		}
 		//ajax hook for quick-saving notes:
 		if (req.hasParameter("saveStatus")) {
 			saveStatus(req);
@@ -265,7 +315,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 
 		//save auth
 		saveAuthRecord(user);
-		
+
 		//save their WC profile
 		callProfileManager(user, req, true);
 
@@ -278,9 +328,9 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		//save their RosterVO (SRT_ROSTER table)
 		saveRecord(user, false);
 
+		//Send User back to Roster Edit Page with updated data.
 		setupRedirect(req);
 	}
-
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
@@ -398,11 +448,11 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 * @param role
 	 * @param user
 	 */
-	protected void setRoleId(SBUserRole role, SRTRosterVO user){
+	protected void setRoleId(SBUserRole role, SRTRosterVO user) {
 		//determine the role id
 		if (user.isAdmin()) {
 			role.setRoleId(Integer.toString(SecurityController.ADMIN_ROLE_LEVEL));
-		} else if(user.isActive()){
+		} else if(user.isActive()) {
 			role.setRoleId(Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL));
 		} else {
 			role.setRoleId(Integer.toString(SecurityController.PUBLIC_ROLE_LEVEL));
@@ -444,9 +494,9 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		StringBuilder url = new StringBuilder(200);
 		url.append(page.getFullPath());
-		url.append("?actionType=").append(req.getParameter("actionType"));
-		url.append("&rosterId=").append(req.getParameter(REQ_ROSTER_ID));
+		url.append("?rosterId=").append(req.getParameter(REQ_ROSTER_ID));
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 	}
 
 

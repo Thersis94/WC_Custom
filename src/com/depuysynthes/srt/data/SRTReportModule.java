@@ -14,7 +14,7 @@ import com.depuysynthes.srt.SRTMasterRecordAction;
 import com.depuysynthes.srt.SRTMilestoneAction;
 import com.depuysynthes.srt.SRTProjectAction;
 import com.depuysynthes.srt.util.SRTUtil;
-import com.depuysynthes.srt.util.SRTUtil.SRTLists;
+import com.depuysynthes.srt.util.SRTUtil.SRTList;
 import com.depuysynthes.srt.vo.ProjectExportReportVO;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
@@ -126,24 +126,24 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		for(SRTProjectVO p : projects.values()) {
 			try {
 				//Update Project Data Values
-				p.setPriority(lists.get(SRTLists.PROJ_PRIORITY.name()).get(p.getPriority()));
-				p.setMfgDtChangeReason(lists.get(SRTLists.PROJ_MFG_CHANGE_REASON.name()).get(p.getMfgDtChangeReason()));
-				p.setProjectType(lists.get(SRTLists.PROJ_TYPE.name()).get(p.getProjectType()));
-				p.setSupplierId(lists.get(SRTLists.PROJ_VENDOR.name()).get(p.getSupplierId()));
-				p.setProjectStatus(lists.get(SRTLists.PROJ_STATUS.name()).get(p.getProjectStatus()));
+				p.setPriority(lists.get(SRTList.PROJ_PRIORITY.name()).get(p.getPriority()));
+				p.setMfgDtChangeReason(lists.get(SRTList.PROJ_MFG_CHANGE_REASON.name()).get(p.getMfgDtChangeReason()));
+				p.setProjectType(lists.get(SRTList.PROJ_TYPE.name()).get(p.getProjectType()));
+				p.setSupplierId(lists.get(SRTList.PROJ_VENDOR.name()).get(p.getSupplierId()));
+				p.setProjectStatus(lists.get(SRTList.PROJ_STATUS.name()).get(p.getProjectStatus()));
 
 				//Update Request Data Values
 				SRTRequestVO r = p.getRequest();
-				r.setChargeTo(lists.get(SRTLists.CHARGE_TO.name()).get(r.getChargeTo()));
-				r.setReason(lists.get(SRTLists.REQ_REASON.name()).get(r.getReason()));
+				r.setChargeTo(lists.get(SRTList.CHARGE_TO.name()).get(r.getChargeTo()));
+				r.setReason(lists.get(SRTList.REQ_REASON.name()).get(r.getReason()));
 
 				//Update Master Record Data Values
 				for(SRTMasterRecordVO m : p.getMasterRecords()) {
-					m.setComplexityId(lists.get(SRTLists.COMPLEXITY.name()).get(m.getComplexityId()));
-					m.setProdCatId(lists.get(SRTLists.PROD_CAT.name()).get(m.getProdCatId()));
-					m.setProdFamilyId(lists.get(SRTLists.PROD_FAMILY.name()).get(m.getProdFamilyId()));
-					m.setProdTypeId(lists.get(SRTLists.PRODUCT_TYPE.name()).get(m.getProdTypeId()));
-					m.setQualitySystemId(lists.get(SRTLists.QUALITY_SYSTEM.name()).get(m.getQualitySystemId()));
+					m.setComplexityId(lists.get(SRTList.COMPLEXITY.name()).get(m.getComplexityId()));
+					m.setProdCatId(lists.get(SRTList.PROD_CAT.name()).get(m.getProdCatId()));
+					m.setProdFamilyId(lists.get(SRTList.PROD_FAMILY.name()).get(m.getProdFamilyId()));
+					m.setProdTypeId(lists.get(SRTList.PRODUCT_TYPE.name()).get(m.getProdTypeId()));
+					m.setQualitySystemId(lists.get(SRTList.QUALITY_SYSTEM.name()).get(m.getQualitySystemId()));
 				}
 			} catch (Exception e) {
 				log.debug("Problem translating field on record: " + p.getProjectId());

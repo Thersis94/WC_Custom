@@ -1,5 +1,7 @@
 package com.depuysynthes.srt.util;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,6 +13,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
 
 import org.apache.log4j.PropertyConfigurator;
 
@@ -18,6 +22,7 @@ import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.CommandLineUtil;
@@ -65,6 +70,7 @@ public class SRTUserImport extends CommandLineUtil {
 	private String adminRole;
 	private String viewOnlyRole;
 	private String opCoId;
+	private boolean throwErrors;
 
 	enum ImportField {
 		ACCOUNT_NO,
@@ -89,21 +95,38 @@ public class SRTUserImport extends CommandLineUtil {
 		OP_CO_ID,
 		IS_ADMIN,
 		CO_ROSTER_ID,
-		ENGINEERING_CONTACT
+		ENGINEERING_CONTACT,
+		WWID
 	}
 
 	/**
 	 * @param args
 	 */
-	public SRTUserImport(String[] args) {
+	public SRTUserImport(String ... args) {
 		super(args);
-		PropertyConfigurator.configure(SOURCE_FILE_LOG);
+		if(Files.exists(Paths.get(SOURCE_FILE_LOG))) {
+			PropertyConfigurator.configure(SOURCE_FILE_LOG);
+		}
 		queries = initQueryStatements();
 		duplicateProfiles = new LinkedHashMap<>();
 		processedProfiles = new LinkedHashMap<>();
 		failedSourceUserInserts = new LinkedHashMap<>();
 		failedSourceUserProfileUpdates = new LinkedHashMap<>();
 		failedSourceUserAuthenticationUpdates = new LinkedHashMap<>();
+	}
+
+	/**
+	 * Constructor that takes Attributes map as config.
+	 * @param smtdbConnection 
+	 * @param attributes
+	 */
+	public SRTUserImport(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		this();
+		this.dbConn = dbConn;
+		props = new Properties();
+		for(Entry<String, Object> conf : attributes.entrySet()) {
+			props.setProperty(conf.getKey(), StringUtil.checkVal(conf.getValue()));
+		}
 	}
 
 	public static void main(String[] args) {
@@ -141,6 +164,67 @@ public class SRTUserImport extends CommandLineUtil {
 	}
 
 	/**
+	 * Entry point for Excel Upload.  Performs insert of new users.  Existing
+	 * users have been updated or deactivated by this point.
+	 * @param rosters
+	 * @throws Exception 
+	 */
+	public void importUsers(List<SRTRosterVO> rosters) throws Exception {
+		startTimeInMillis = Calendar.getInstance().getTimeInMillis();
+
+		throwErrors = true;
+
+		populatePropVars();
+
+		List<Map<String, Object>> records = convertRoster(rosters);
+
+		insertRecords(records);
+	}
+
+	/**
+	 * Converts a list of RosterVOs to List of MapData
+	 * @param rosters
+	 * @return
+	 */
+	private List<Map<String, Object>> convertRoster(List<SRTRosterVO> rosters) {
+		List<Map<String, Object>> rosterData = new ArrayList<>();
+		Map<String, Object> rData;
+		for(SRTRosterVO roster : rosters) {
+
+			//Ensure we don't add existing users.
+			if(StringUtil.isEmpty(roster.getProfileId())) {
+				rData = new HashMap<>();
+				rData.put(ImportField.ACCOUNT_NO.name(), roster.getAccountNo());
+				rData.put(ImportField.IS_ACTIVE.name(), Integer.toString(roster.getIsActive()));
+				rData.put(ImportField.EMAIL_ADDRESS_TXT.name(), roster.getEmailAddress());
+				rData.put(ImportField.ROSTER_EMAIL_ADDRESS_TXT.name(), roster.getEmailAddress());
+				rData.put(ImportField.FIRST_NM.name(), roster.getFirstName());
+				rData.put(ImportField.LAST_NM.name(), roster.getLastName());
+				rData.put(ImportField.USER_NAME.name(), roster.getFullName());
+				rData.put(ImportField.ADDRESS_TXT.name(), roster.getAddress());
+				rData.put(ImportField.CITY_NM.name(), roster.getCity());
+				rData.put(ImportField.STATE_CD.name(), roster.getState());
+				rData.put(ImportField.ZIP_CD.name(), roster.getZipCode());
+				rData.put(ImportField.PASSWORD_TXT.name(), roster.getPassword());
+				rData.put(ImportField.ROLE_TXT.name(), roster.getCompanyRole());
+				rData.put(ImportField.WORKGROUP_ID.name(), roster.getWorkgroupId());
+				rData.put(ImportField.ALLOW_COMM_FLG.name(), 1);
+				rData.put(ImportField.TERRITORY_ID.name(), roster.getTerritoryId());
+				rData.put(ImportField.REGION_ID.name(), roster.getRegion());
+				rData.put(ImportField.AREA_ID.name(), roster.getArea());
+				rData.put(ImportField.MOBILE_PHONE_TXT.name(), roster.getMobilePhone());
+				rData.put(ImportField.OP_CO_ID.name(), roster.getOpCoId());
+				rData.put(ImportField.IS_ADMIN.name(), Integer.toString(roster.getIsAdmin()));
+				rData.put(ImportField.CO_ROSTER_ID.name(), roster.getCoRosterId());
+				rData.put(ImportField.ENGINEERING_CONTACT.name(), roster.getEngineeringContact());
+				rData.put(ImportField.WWID.name(), roster.getWwid());
+				rosterData.add(rData);
+			}
+		}
+		return rosterData;
+	}
+
+	/**
 	 * 
 	 */
 	private void populatePropVars() {
@@ -151,7 +235,7 @@ public class SRTUserImport extends CommandLineUtil {
 		registeredRole = props.getProperty("registeredRole");
 		adminRole = props.getProperty("adminRole");
 		viewOnlyRole = props.getProperty("viewOnlyRole");
-		opCoId = props.getProperty("opCoId");
+		opCoId = props.getProperty(SRTUtil.OP_CO_ID);
 	}
 
 	/**
@@ -165,11 +249,10 @@ public class SRTUserImport extends CommandLineUtil {
 
 		// create config map
 		Map<String, Object> config = new HashMap<>();
-		config.put(Constants.ENCRYPT_KEY, props.getProperty("encryptionKey"));
-		config.put(Constants.GEOCODE_CLASS, props.getProperty("geocodeClass"));
-		config.put(Constants.GEOCODE_URL, props.getProperty("geocodeUrl"));
-		config.put(Constants.ENCRYPT_KEY, props.getProperty("encryptionKey"));
-		config.put(Constants.CFG_PASSWORD_SALT, props.getProperty("passwordSalt"));
+		config.put(Constants.ENCRYPT_KEY, props.getProperty(Constants.ENCRYPT_KEY));
+		config.put(Constants.GEOCODE_CLASS, props.getProperty(Constants.GEOCODE_CLASS));
+		config.put(Constants.GEOCODE_URL, props.getProperty(Constants.GEOCODE_URL));
+		config.put(Constants.CFG_PASSWORD_SALT, props.getProperty(Constants.CFG_PASSWORD_SALT));
 
 		// init profile managers
 	    ProfileManager pm = new SBProfileManager(config);
@@ -222,6 +305,9 @@ public class SRTUserImport extends CommandLineUtil {
 
 			} catch(Exception ex) {
 				log.error("Error processing source ID " + user.getCoRosterId() + ", ", ex);
+				if(throwErrors) {
+					throw ex;
+				}
 			}
 
 			// if valid profile, insert reg records, create biomedgps user, update profile/auth.
@@ -549,7 +635,7 @@ public class SRTUserImport extends CommandLineUtil {
 			user.setDeactivatedDt(Convert.getCurrentTimestamp());
 		}
 
-		user.setTerritory(StringUtil.checkVal(dataSet.get(ImportField.TERRITORY_ID.name())));
+		user.setTerritoryId(StringUtil.checkVal(dataSet.get(ImportField.TERRITORY_ID.name())));
 		user.setRegion(StringUtil.checkVal(dataSet.get(ImportField.REGION_ID.name())));
 		user.setArea(StringUtil.checkVal(dataSet.get(ImportField.AREA_ID.name())));
 		user.setAccountNo(StringUtil.checkVal(dataSet.get(ImportField.ACCOUNT_NO.name())));
@@ -591,7 +677,7 @@ public class SRTUserImport extends CommandLineUtil {
 	protected void sanitizeFieldData(Map<String,Object> record) {
 		String tmpVal = StringUtil.checkVal(record.get(ImportField.ROLE_TXT.name()));
 		record.put(ImportField.ROLE_TXT.name(), checkRole(tmpVal));
-		tmpVal = (String) record.get(ImportField.IS_ACTIVE.name());
+		tmpVal = StringUtil.checkVal(record.get(ImportField.IS_ACTIVE.name()));
 		record.put(ImportField.IS_ACTIVE.name(), Convert.formatInteger(Convert.formatBoolean(tmpVal)));
 	}
 
