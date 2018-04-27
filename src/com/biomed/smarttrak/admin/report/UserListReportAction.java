@@ -210,7 +210,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 		sql.append("us.status_cd, us.expiration_dt, us.fd_auth_flg, us.create_dt, us.active_flg as active_flg, ");
 		sql.append("pf.profile_id, pf.authentication_id, pf.first_nm, pf.last_nm, pf.email_address_txt, ");
 		sql.append("pfa.address_txt, pfa.address2_txt, pfa.city_nm, pfa.state_cd, pfa.zip_cd, pfa.country_cd, ");
-		sql.append("ph.phone_number_txt, ph.phone_type_cd, ");
+		sql.append("ph.phone_number_txt, ph.phone_type_cd, us.create_dt as user_create_dt, ");
 		sql.append("rd.register_field_id, rd.value_txt, us.user_id, rfo.option_desc ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us on ac.account_id = us.account_id ");
@@ -375,7 +375,8 @@ public class UserListReportAction extends SimpleActionAdapter {
 		user.setCountryCode(rs.getString("country_cd"));
 		user.setStatusFlg(rs.getInt("active_flg"));
 		user.setAcctOwnerFlg(rs.getInt("acct_owner_flg"));
-
+		user.setCreateDate(rs.getDate("user_create_dt"));
+		
 		// decrypt encrypted fields and set.
 		try {
 			//name & email

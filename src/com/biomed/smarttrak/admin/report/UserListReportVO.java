@@ -13,6 +13,7 @@ import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 //SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
@@ -52,6 +53,8 @@ public class UserListReportVO extends AbstractSBReportVO {
 	// profile fields
 	private static final String USER_STATUS = "USER_STATUS";
 	private static final String FULL_NM = "FULL_NM";
+	private static final String FIRST_NM = "FIRST_NM";
+	private static final String LAST_NM = "LAST_NM";
 	private static final String EMAIL = "EMAIL";
 	private static final String ADDRESS1 = "ADDRESS1";
 	private static final String ADDRESS2 = "ADDRESS2";
@@ -64,6 +67,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 
 	// SmartTRAK user fields
 	private static final String LICENSE_TYPE = "LICENSE_TYPE";
+	private static final String USER_CREATE_DT = "USER_CREATE_DT";
 	private static final String USER_EXPIRE = "USER_EXPIRE";
 	private static final String HAS_FD = "HAS_FD";
 	private static final String USER_ID = "USER_ID";
@@ -77,7 +81,6 @@ public class UserListReportVO extends AbstractSBReportVO {
 	protected static final String PAGEVIEWS = "PAGEVIEWS";
 
 	private static final String EMPTY_STRING = "";
-	private static final String LIST_DELIMITER = ",";
 	private static final String USER_FD_VAL = "FD";
 	private static final String DEFAULT_COUNTRY = "US";
 	
@@ -123,6 +126,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	private void generateDataRows(List<Map<String, Object>> rows) {
+		StringEncoder se = new StringEncoder();
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
 		
 		// loop the account map
@@ -135,7 +139,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 			for (UserVO user : acct.getUsers()) {
 				row = new HashMap<>();
 				row.put(ACCT_ID, acct.getAccountId());
-				row.put(ACCT_NM, acct.getAccountName());
+				row.put(ACCT_NM, se.decodeValue(acct.getAccountName()));
 				row.put(ACCT_START_DT, formatDate(acct.getStartDate(), false));
 				row.put(ACCT_EXPIRE, formatDate(acct.getExpirationDate(),false));
 				row.put(ACCT_STATUS, acct.getStatusName());
@@ -144,32 +148,35 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(USER_STATUS, user.getStatusName());
 				row.put(LICENSE_TYPE, user.getLicenseName());
 				row.put(USER_ID, user.getUserId());
+				row.put(USER_CREATE_DT, user.getCreateDate());
 				row.put(USER_EXPIRE, formatDate(user.getExpirationDate(),false));
-				row.put(RegistrationMap.COMPANY.name(),user.getCompany());
-				row.put(RegistrationMap.TITLE.name(),user.getTitle());
-				row.put(FULL_NM, user.getFullName());
+				row.put(RegistrationMap.COMPANY.name(), se.decodeValue(user.getCompany()));
+				row.put(RegistrationMap.TITLE.name(), se.decodeValue(user.getTitle()));
+				row.put(FULL_NM, se.decodeValue(user.getFullName()));
+				row.put(FIRST_NM, se.decodeValue(user.getFirstName()));
+				row.put(LAST_NM, se.decodeValue(user.getLastName()));
 				row.put(EMAIL,user.getEmailAddress());
 				row.put(ACCT_OWNER_FLAG, user.getAcctOwnerFlg() == 1 ? "Yes" : "No");
 				row.put(SmarttrakExcelReport.LAST_LOGIN_DT, formatDate(user.getLoginDate(),true));
 				row.put(PAGEVIEWS, user.getAttribute(PAGEVIEWS));
 				row.put(MAIN_PHONE,formatPhoneNumber(pnf,user.getMainPhone(),user.getCountryCode()));
 				row.put(MOBILE_PHONE,formatPhoneNumber(pnf,user.getMobilePhone(),user.getCountryCode()));
-				row.put(ADDRESS1,user.getAddress());
-				row.put(ADDRESS2,user.getAddress2());
+				row.put(ADDRESS1, se.decodeValue(user.getAddress()));
+				row.put(ADDRESS2, se.decodeValue(user.getAddress2()));
 				row.put(CITY_NM,user.getCity());
 				row.put(STATE_CD,user.getState());
 				row.put(POSTAL_CD,user.getZipCode());
 				row.put(COUNTRY_CD,user.getCountryCode());
-				row.put(RegistrationMap.SOURCE.name(), user.getSource());
+				row.put(RegistrationMap.SOURCE.name(), se.decodeValue(user.getSource()));
 				row.put(RegistrationMap.UPDATES.name(), StringUtil.capitalize(user.getUpdates()));
 				row.put(RegistrationMap.FAVORITEUPDATES.name(), StringUtil.capitalize(user.getFavoriteUpdates()));
 				row.put(DATE_JOINED, formatDate(user.getCreateDate(),false));
-				row.put(RegistrationMap.DIVISIONS.name(), formatUserDivisions(user.getDivisions()));
+				row.put(RegistrationMap.DIVISIONS.name(), se.decodeValue(user.getPrimaryDivision()));
 				row.put(OS, user.getAttribute(OS));
 				row.put(BROWSER, user.getAttribute(BROWSER));
 				row.put(DEVICE_TYPE, user.getAttribute(DEVICE_TYPE));
 				row.put(HAS_FD, formatUserFDFlag(user.getFdAuthFlg()));
-				row.put(RegistrationMap.NOTES.name(), user.getNotes());
+				row.put(RegistrationMap.NOTES.name(), se.decodeValue(user.getNotes()));
 				row.put(RegistrationMap.COMPANYURL.name(), user.getCompanyUrl());
 				row.put(RegistrationMap.JOBCATEGORY.name(), user.getJobCategory());
 				row.put(RegistrationMap.JOBLEVEL.name(), user.getJobLevel());
@@ -217,19 +224,6 @@ public class UserListReportVO extends AbstractSBReportVO {
 		}                                       
 		return Convert.formatDate(date, DATE_DASH_PATTERN);
 	}
-	
-	/**
-	 * Parses user divisions list into a delimited String.
-	 * @param divisions
-	 * @return
-	 */
-	protected String formatUserDivisions(List<String> divisions) {
-		String divs = EMPTY_STRING;
-		if (divisions != null && ! divisions.isEmpty()) {
-			divs = StringUtil.getDelimitedList(divisions.toArray(new String[]{}), false, LIST_DELIMITER);
-		}
-		return divs;
-	}
 
 	/**
 	 * Formats the value displayed for the user's FD field.
@@ -256,10 +250,13 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(USER_STATUS,"User Status");
 		headerMap.put(LICENSE_TYPE,"License Type");
 		headerMap.put(USER_ID, "User Id");
+		headerMap.put(USER_CREATE_DT, "User Create Date");
 		headerMap.put(USER_EXPIRE,"User Expiration");
 		headerMap.put(RegistrationMap.COMPANY.name(),"Company");
 		headerMap.put(RegistrationMap.TITLE.name(),"Title");
 		headerMap.put(FULL_NM, "Full Name");
+		headerMap.put(FIRST_NM, "First Name");
+		headerMap.put(LAST_NM, "Last Name");
 		headerMap.put(EMAIL,"Email Address");
 		headerMap.put(ACCT_OWNER_FLAG, "Account Lead");
 		headerMap.put(SmarttrakExcelReport.LAST_LOGIN_DT,"Last Login");
