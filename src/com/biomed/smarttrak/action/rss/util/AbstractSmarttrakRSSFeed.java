@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.action.rss.util;
 
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,7 +12,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
+
+import org.apache.log4j.Logger;
 
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.RSSFilterAction.FilterType;
@@ -19,12 +23,12 @@ import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFilterVO;
+
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
-import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -42,7 +46,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 3.0
  * @since May 21, 2017
  ****************************************************************************/
-public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
+public abstract class AbstractSmarttrakRSSFeed {
 
 	protected static final String SPAN_CLASS_HIT = "<span class='hit'>";
 	protected static final String UPDATE_RSS_SQL = "update RSS_ENTITY set is_active = ? where rss_entity_id = ?";
@@ -51,12 +55,16 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	protected static final String PUBMED_ENTITY_ID = "pubmedEntityId";
 	protected static final String IS_DEBUG = "isDebug";
 
+	protected Logger log;
+	protected Properties props;
+	protected Connection dbConn;
 	protected String customDb;
 	protected String replaceSpanText;
 	protected String mockUserAgent;
 	protected Map<FilterType, Map<String, List<RSSFilterVO>>> filters;
 	protected List<RSSFeedGroupVO> groups;
 	protected UUIDGenerator uuid;
+	protected String feedName;
 
 	private Map<String, Long> accessTimes;
 	private static final long LAG_TIME_MS = 2000;
@@ -66,17 +74,17 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * @param args
 	 */
 	public AbstractSmarttrakRSSFeed(String[] args) {
-		super(args);
-		loadProperties("scripts/bmg_smarttrak/rss_config.properties");
-		loadDBConnection(props);
+		log = Logger.getLogger(getClass());
 		filters = new EnumMap<>(FilterType.class);
 		groups = new ArrayList<>();
 		uuid = new UUIDGenerator();
-		customDb = props.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		replaceSpanText = props.getProperty(REPLACE_SPAN);
-		mockUserAgent = props.getProperty("mockUserAgent");
 		accessTimes = new HashMap<>(5000);
 	}
+
+	/**
+	 * Abstract run method to be implemented by concrete subclasses.
+	 */
+	public abstract void run();
 
 
 	protected String buildUpdateFeedStatusStatement() {
@@ -280,7 +288,6 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 	 * Retrieves all the Feeds for Biomedgps smarttrak.
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	protected void loadFilters(String rssEntityId) {
 		Map<String, List<RSSFilterVO>> omits = new HashMap<>();
 		Map<String, List<RSSFilterVO>> reqs = new HashMap<>();
@@ -479,4 +486,40 @@ public abstract class AbstractSmarttrakRSSFeed extends CommandLineUtil {
 		}
 		accessTimes.put(domain, System.currentTimeMillis());
 	}
+
+	/**
+	 * @param props the props to set
+	 */
+	public void setProps(Properties props) {
+		this.props = props;
+		initCommonProperties();
+	}
+
+	private void initCommonProperties() {
+		customDb = props.getProperty(Constants.CUSTOM_DB_SCHEMA);
+		replaceSpanText = props.getProperty(REPLACE_SPAN);
+		mockUserAgent = props.getProperty("mockUserAgent");
+	}
+
+	/**
+	 * @param dbConn the dbConn to set
+	 */
+	public void setDbConn(Connection dbConn) {
+		this.dbConn = dbConn;
+	}
+
+	/**
+	 * @return the feedName
+	 */
+	public String getFeedName() {
+		return feedName;
+	}
+
+	/**
+	 * @param feedName the feedName to set
+	 */
+	public void setFeedName(String feedName) {
+		this.feedName = feedName;
+	}
+
 }

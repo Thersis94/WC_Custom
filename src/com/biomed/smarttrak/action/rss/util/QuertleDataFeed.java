@@ -57,6 +57,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	public QuertleDataFeed(String[] args) {
 		super(args);
+		feedName = "Quertle RSS Data Feed";
 	}
 
 

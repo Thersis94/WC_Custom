@@ -52,6 +52,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 		} catch (ParserConfigurationException | SAXException e) {
 			log.error("Error Instantiating Sax Parser", e);
 		}
+		feedName = "Pubmed RSS Data Feed";
 	}
 
 	public static void main(String[] args) {
@@ -127,7 +128,6 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 * Method returns List of required RSSFilterTerms.
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	protected List<RSSFilterTerm> retrieveRequiredTerms() {
 		List<Object> vals = new ArrayList<>();
 		vals.add(FilterType.R.name());
@@ -139,7 +139,6 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 * Method returns list of omit RSSFilterTerms.
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	protected Map<String, List<RSSFilterTerm>> retrieveOmitTerms() {
 		Map<String, List<RSSFilterTerm>> terms = new HashMap<>();
 		List<Object> vals =Arrays.asList(FilterType.O.name());

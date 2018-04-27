@@ -44,6 +44,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		} catch (ParserConfigurationException | SAXException e) {
 			log.error("Error Instantiating Sax Parser", e);
 		}
+		feedName = "RSS Data Feed";
 	}
 
 
@@ -197,7 +198,6 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * Retrieves all the Feeds for Biomedgps smarttrak.
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	private List<SmarttrakRssEntityVO> loadFeeds() {
 		List<Object> vals = new ArrayList<>();
 		vals.add(AdminControllerAction.BIOMED_ORG_ID);
