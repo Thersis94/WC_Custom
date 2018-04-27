@@ -31,7 +31,7 @@ public class AccountCountReportVO extends AbstractSBReportVO {
 
 	private static final long serialVersionUID = -7988553133841657758L;
 	private Map<AccountVO, Map<String, Integer>> accounts;
-	private static final String REPORT_TITLE = "Account User Counts.xlsx";
+	private static final String REPORT_TITLE = "Account User Counts.xls";
 	protected transient HSSFWorkbook wb;
 
 	/**
