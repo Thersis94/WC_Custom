@@ -142,6 +142,7 @@ public class UpdatesWeeklyReportAction extends UpdatesEditionAction {
 		if (req.hasParameter("reloadList"))
 			req.setAttribute("reload", req.getParameter("reloadList"));
 		req.setParameter("orderSort", "true");
+		req.setParameter("modifyLinks", "true");
 		super.retrieve(req);
 	}
 

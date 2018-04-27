@@ -441,15 +441,17 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			}
 		}
 
-		//the 'having' clause ensures we have financial data in at least one quarter/column
-		sql.append("having ");
-		sql.append("sum(r.Q1_NO) > 0 or sum(r.Q2_NO) > 0 or sum(r.Q3_NO) > 0 or sum(r.Q4_NO) > 0 ");
-		sql.append("or sum(r2.Q1_NO) > 0 or sum(r2.Q2_NO) > 0 or sum(r2.Q3_NO) > 0 or sum(r2.Q4_NO) > 0 ");
+		if (!dash.showEmpty()) {
+			//the 'having' clause ensures we have financial data in at least one quarter/column
+			sql.append("having ");
+			sql.append("sum(r.Q1_NO) > 0 or sum(r.Q2_NO) > 0 or sum(r.Q3_NO) > 0 or sum(r.Q4_NO) > 0 ");
+			sql.append("or sum(r2.Q1_NO) > 0 or sum(r2.Q2_NO) > 0 or sum(r2.Q3_NO) > 0 or sum(r2.Q4_NO) > 0 ");
 
-		DisplayType dt = dash.getColHeaders().getDisplayType();
-		int dataYears = getDataYears(dt, dash.getCurrentYear());
-		for (int yr = 3; yr <= dataYears; yr++) {
-			sql.append("or sum(r").append(yr).append(".Q1_NO) > 0 or sum(r").append(yr).append(".Q2_NO) > 0 or sum(r").append(yr).append(".Q3_NO) > 0 or sum(r").append(yr).append(".Q4_NO) > 0 ");
+			DisplayType dt = dash.getColHeaders().getDisplayType();
+			int dataYears = getDataYears(dt, dash.getCurrentYear());
+			for (int yr = 3; yr <= dataYears; yr++) {
+				sql.append("or sum(r").append(yr).append(".Q1_NO) > 0 or sum(r").append(yr).append(".Q2_NO) > 0 or sum(r").append(yr).append(".Q3_NO) > 0 or sum(r").append(yr).append(".Q4_NO) > 0 ");
+			}
 		}
 
 		sql.append("order by ROW_NM").append(dash.getEditMode() ? ", CASE r.REGION_CD WHEN 'US' THEN 1 WHEN 'EU' THEN 2 ELSE 3 END" : "");

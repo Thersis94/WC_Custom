@@ -72,6 +72,12 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		IMPLANT_NM_ID("c79b06eadba570b3c0a80255f51d6312"),
 		PERMISSION_TO_CONTACT("163adc3c2cadfa83c0a80255deabac8c"),
 		AGREED_CONSENT_ID(""),
+		FIRST_NM("f536599c804b4aec82ae62a2e47d02c5"),
+		LAST_NM("d8b59cbc15d341aab1cbb5400b2455e6"),
+		EMAIL_ADDRESS("8175fe87846847779b0d6db3e525cde8"),
+		CITY_NM("132f22fd8e174adba1a944cf78acdd7d"),
+		STATE_CD("52b6eb8f7eca4ccba22e0b7f8e857fea"),
+		ZIP_CD("66f1df3528874dfd97c6d22ba9569a03"),
 
 		//the ID of the form itself (containing all these fields)
 		FORM_ID("c0a80241bb7b15cc1bff05ed771c527d");
@@ -315,7 +321,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 */
 	private String getInsertQuery() {
 		StringBuilder sb = new StringBuilder(130);
-		sb.append("insert into FORM_DATA (FORM_FIELD_ID, FORM_SUBMITTAL_ID, ");
+		sb.append("insert into FORM_DATA (form_field_group_id, FORM_SUBMITTAL_ID, ");
 		sb.append("DATA_ENC_FLG, VALUE_TXT, CREATE_DT, FORM_DATA_ID) values(?,?,?,?,?,?)");
 		return sb.toString();
 	}
@@ -452,7 +458,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 	/**
 	 * Builds the search query for the Submittal List.  We always filter by
-	 * FORM_ID, the Joint FORM_FIELD_ID and the hidden flag parameter.  Optionally 
+	 * FORM_ID, the Joint form_field_group_id and the hidden flag parameter.  Optionally 
 	 * can further filter by City, State or selected Joint.
 	 * @param state - Optional State field for filtering
 	 * @param city - Optional City field for filtering
@@ -470,13 +476,13 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			sb.append(", cast(e.VALUE_TXT as varchar) as HIDE ");
 		sb.append("from FORM_SUBMITTAL a ");
 		sb.append("inner join FORM_DATA b on a.FORM_SUBMITTAL_ID = b.FORM_SUBMITTAL_ID ");
-		sb.append("left outer join form_data fd on a.FORM_SUBMITTAL_ID = fd.FORM_SUBMITTAL_ID and fd.FORM_FIELD_ID= ? ");
-		sb.append("left outer join FORM_DATA f on a.FORM_SUBMITTAL_ID = f.FORM_SUBMITTAL_ID and f.FORM_FIELD_ID= ? ");
+		sb.append("left outer join form_data fd on a.FORM_SUBMITTAL_ID = fd.FORM_SUBMITTAL_ID and fd.form_field_group_id= ? ");
+		sb.append("left outer join FORM_DATA f on a.FORM_SUBMITTAL_ID = f.FORM_SUBMITTAL_ID and f.form_field_group_id= ? ");
 		if (filterHidden)
-			sb.append("left outer join FORM_DATA e on a.FORM_SUBMITTAL_ID = e.FORM_SUBMITTAL_ID and e.FORM_FIELD_ID= ? ");
+			sb.append("left outer join FORM_DATA e on a.FORM_SUBMITTAL_ID = e.FORM_SUBMITTAL_ID and e.form_field_group_id= ? ");
 		sb.append("left outer join PROFILE c on a.PROFILE_ID = c.PROFILE_ID ");
 		sb.append("left outer join PROFILE_ADDRESS d on c.PROFILE_ID = d.PROFILE_ID ");
-		sb.append("where FORM_ID = ? and b.FORM_FIELD_ID = ? and a.CREATE_DT between ? and ? ");
+		sb.append("where FORM_ID = ? and b.form_field_group_id = ? and a.CREATE_DT between ? and ? ");
 
 		//Add Optional Params to Where Clause
 		if(state.length() > 0)
@@ -501,18 +507,18 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 */
 	private String getLeadsQuery() {
 		StringBuilder sb = new StringBuilder(750);
-		sb.append("select distinct a.*, b.form_field_id, b.value_txt ");
+		sb.append("select distinct a.*, b.form_field_group_id, b.value_txt ");
 		sb.append("from FORM_SUBMITTAL a ");
 		sb.append("inner join FORM_DATA b on a.FORM_SUBMITTAL_ID = b.FORM_SUBMITTAL_ID ");
 		sb.append("inner join FORM_DATA x on b.FORM_SUBMITTAL_ID = x.FORM_SUBMITTAL_ID ");
-		sb.append("and x.form_field_id = ? and cast(x.value_txt as varchar) = ? ");
+		sb.append("and x.form_field_group_id = ? and cast(x.value_txt as varchar) = ? ");
 		sb.append("left outer join PROFILE c on a.PROFILE_ID = c.PROFILE_ID ");
 		sb.append("left outer join PROFILE_ADDRESS d on c.PROFILE_ID = d.PROFILE_ID ");
 		sb.append("where FORM_ID = ? and a.CREATE_DT between ? and ? ");
 
 		//Add Ordering for newest first.
 		sb.append("and (a.robot_flg is null or a.robot_flg=0) ");
-		sb.append("group by a.FORM_SUBMITTAL_ID, b.form_field_id, b.value_txt ");
+		sb.append("group by a.FORM_SUBMITTAL_ID, b.form_field_group_id, b.value_txt ");
 		sb.append("order by a.CREATE_DT desc");
 
 		return sb.toString();
