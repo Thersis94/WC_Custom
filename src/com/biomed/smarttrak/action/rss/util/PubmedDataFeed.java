@@ -2,13 +2,14 @@ package com.biomed.smarttrak.action.rss.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
-
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -21,6 +22,7 @@ import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFilterTerm;
+
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 
@@ -44,22 +46,16 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	/**
 	 * @param args
 	 */
-	public PubmedDataFeed(String[] args) {
-		super(args);
+	public PubmedDataFeed(Connection dbConn, Properties props) {
+		super(dbConn,props);
 		factory = SAXParserFactory.newInstance();
 		try {
 			saxParser = factory.newSAXParser();
 		} catch (ParserConfigurationException | SAXException e) {
 			log.error("Error Instantiating Sax Parser", e);
 		}
-		feedName = "Pubmed RSS Data Feed";
+		feedName = "Pubmed RSS Feed";
 	}
-
-	public static void main(String[] args) {
-		PubmedDataFeed pdf = new PubmedDataFeed(args);
-		pdf.run();
-	}
-
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.util.CommandLineUtil#run()

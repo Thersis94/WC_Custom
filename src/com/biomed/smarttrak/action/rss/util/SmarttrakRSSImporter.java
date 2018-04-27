@@ -80,23 +80,19 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		AbstractSmarttrakRSSFeed asf = null;
 		switch (ast) {
 			case PUBMED:
-				asf = new PubmedDataFeed(args);
+				asf = new PubmedDataFeed(dbConn,props);
 				break;
 			case QUERTLE:
-				asf = new QuertleDataFeed(args);
+				asf = new QuertleDataFeed(dbConn,props);
 				break;
 			case RSS:
-				asf = new RSSDataFeed(args);
+				asf = new RSSDataFeed(dbConn,props);
 				break;
 		}
 		if (asf != null) {
-			// init the asf
-			asf.setDbConn(dbConn);
-			asf.setProps(props);
-			feedList.add(asf.getFeedName());
-
 			log.info("****************   Beginning " + ast + " Feed ****************");
 			asf.run();
+			feedList.add(asf.getFeedName());
 		}
 	}
 

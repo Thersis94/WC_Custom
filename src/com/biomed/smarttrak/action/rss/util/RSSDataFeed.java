@@ -2,13 +2,14 @@ package com.biomed.smarttrak.action.rss.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
-
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -19,6 +20,7 @@ import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.SmarttrakRssEntityVO;
+
 import com.siliconmtn.db.orm.DBProcessor;
 
 /****************************************************************************
@@ -36,24 +38,15 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	private SAXParserFactory factory;
 	private SAXParser saxParser;
 
-	public RSSDataFeed(String[] args) {
-		super(args);
+	public RSSDataFeed(Connection dbConn, Properties props) {
+		super(dbConn, props);
 		factory = SAXParserFactory.newInstance();
 		try {
 			saxParser = factory.newSAXParser();
 		} catch (ParserConfigurationException | SAXException e) {
 			log.error("Error Instantiating Sax Parser", e);
 		}
-		feedName = "RSS Data Feed";
-	}
-
-
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		RSSDataFeed rdf = new RSSDataFeed(args);
-		rdf.run();
+		feedName = "RSS Feed";
 	}
 
 

@@ -73,7 +73,12 @@ public abstract class AbstractSmarttrakRSSFeed {
 	/**
 	 * @param args
 	 */
-	public AbstractSmarttrakRSSFeed(String[] args) {
+	public AbstractSmarttrakRSSFeed(Connection dbConn, Properties props) {
+		this.dbConn = dbConn;
+		this.props = props;
+		customDb = props.getProperty(Constants.CUSTOM_DB_SCHEMA);
+		replaceSpanText = props.getProperty(REPLACE_SPAN);
+		mockUserAgent = props.getProperty("mockUserAgent");
 		log = Logger.getLogger(getClass());
 		filters = new EnumMap<>(FilterType.class);
 		groups = new ArrayList<>();
@@ -485,27 +490,6 @@ public abstract class AbstractSmarttrakRSSFeed {
 			}
 		}
 		accessTimes.put(domain, System.currentTimeMillis());
-	}
-
-	/**
-	 * @param props the props to set
-	 */
-	public void setProps(Properties props) {
-		this.props = props;
-		initCommonProperties();
-	}
-
-	private void initCommonProperties() {
-		customDb = props.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		replaceSpanText = props.getProperty(REPLACE_SPAN);
-		mockUserAgent = props.getProperty("mockUserAgent");
-	}
-
-	/**
-	 * @param dbConn the dbConn to set
-	 */
-	public void setDbConn(Connection dbConn) {
-		this.dbConn = dbConn;
 	}
 
 	/**
