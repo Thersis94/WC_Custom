@@ -26,6 +26,7 @@ import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
+import com.smt.sitebuilder.action.list.ListAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -222,19 +223,19 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 
 		if(!idLookup) {
 			//Join out for List Values.
-			DBUtil.buildListJoin(sql, "lqs", "mr.quality_system_id");
+			ListAction.buildListJoin(sql, "lqs", "mr.quality_system_id");
 			vals.add(SRTUtil.SRTList.QUALITY_SYSTEM.name());
 
-			DBUtil.buildListJoin(sql, "lpt", "mr.prod_type_id");
+			ListAction.buildListJoin(sql, "lpt", "mr.prod_type_id");
 			vals.add(SRTUtil.SRTList.PRODUCT_TYPE.name());
 
-			DBUtil.buildListJoin(sql, "lc", "mr.complexity_id");
+			ListAction.buildListJoin(sql, "lc", "mr.complexity_id");
 			vals.add(SRTUtil.SRTList.COMPLEXITY.name());
 
-			DBUtil.buildListJoin(sql, "lpc", "mr.prod_cat_id");
+			ListAction.buildListJoin(sql, "lpc", "mr.prod_cat_id");
 			vals.add(SRTUtil.SRTList.PROD_CAT.name());
 
-			DBUtil.buildListJoin(sql, "lpf", "mr.prod_family_id");
+			ListAction.buildListJoin(sql, "lpf", "mr.prod_family_id");
 			vals.add(SRTUtil.SRTList.PROD_FAMILY.name());
 		}
 

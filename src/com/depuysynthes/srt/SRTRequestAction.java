@@ -187,12 +187,12 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		sql.append("DPY_SYN_SRT_PROJECT p on p.request_id = r.request_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
 		sql.append("DPY_SYN_SRT_MILESTONE m on p.PROJ_STAT_ID = m.milestone_id ");
-		DBUtil.buildListJoin(sql, "l", "r.reason_for_request");
+		ListAction.buildListJoin(sql, "l", "r.reason_for_request");
 		vals.add(SRTList.REQ_REASON.name());
 		if(!req.hasParameter(SRT_REQUEST_ID)) {
-			DBUtil.buildListJoin(sql, "lct", "r.charge_to");
+			ListAction.buildListJoin(sql, "lct", "r.charge_to");
 			vals.add(SRTList.CHARGE_TO.name());
-			DBUtil.buildListJoin(sql, "lt", "r.request_territory_id");
+			ListAction.buildListJoin(sql, "lt", "r.request_territory_id");
 			vals.add(SRTList.SRT_TERRITORIES.name());
 		}
 
