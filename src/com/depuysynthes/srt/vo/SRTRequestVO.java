@@ -12,7 +12,6 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> SRTRequestVO.java
@@ -53,7 +52,9 @@ public class SRTRequestVO extends BeanDataVO {
 	private Date createDt;
 	private Date updateDt;
 
+	//Helper Values.
 	private String projectStatus;
+	private String surgeonNm;
 
 	public SRTRequestVO() {
 		super();
@@ -231,11 +232,19 @@ public class SRTRequestVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the Project Status
+	 * @return the projectStatus
 	 */
 	@Column(name="PROJ_STAT_ID", isReadOnly=true)
 	public String getProjectStatus() {
 		return projectStatus;
+	}
+
+	/**
+	 * @return the surgeonNm
+	 */
+	@Column(name="SURGEON_NM", isReadOnly=true)
+	public String getSurgeonNm() {
+		return surgeonNm;
 	}
 
 	@BeanSubElement
@@ -400,9 +409,9 @@ public class SRTRequestVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return concatenated Surgeon Name.
+	 * @param surgeonNm the surgeonNm to set.
 	 */
-	public String getSurgeonName() {
-		return StringUtil.join(surgeonFirstName, " ", surgeonLastName).trim();
+	public void setSurgeonNm(String surgeonNm) {
+		this.surgeonNm = surgeonNm;
 	}
 }

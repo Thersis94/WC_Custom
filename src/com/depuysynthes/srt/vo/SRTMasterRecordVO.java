@@ -44,7 +44,7 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	private String xrProjectId;
 	private int totalBuilt;
 	private int partCount;
-	private boolean obsoleteFlg;
+	private int obsoleteFlg;
 	private String obsoleteReason;
 	private Date createDt;
 	private Date updateDt;
@@ -183,14 +183,14 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	 */
 	@Column(name="OBSOLETE_FLG")
 	public int getObsoleteFlg() {
-		return Convert.formatInteger(obsoleteFlg);
+		return obsoleteFlg;
 	}
 
 	/**
 	 * @return the isObsolete
 	 */
 	public boolean isObsolete() {
-		return obsoleteFlg;
+		return Convert.formatBoolean(obsoleteFlg);
 	}
 
 	/**
@@ -334,11 +334,11 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	 * @param isObsolete the isObsolete to set.
 	 */
 	public void setObsolete(boolean obsoleteFlg) {
-		this.obsoleteFlg = obsoleteFlg;
+		this.obsoleteFlg = Convert.formatInteger(obsoleteFlg);
 	}
 
-	public void setObsoleteFlg(int isObsolete) {
-		this.obsoleteFlg = Convert.formatBoolean(obsoleteFlg);
+	public void setObsoleteFlg(int obsoleteFlg) {
+		this.obsoleteFlg = obsoleteFlg;
 	}
 	/**
 	 * @param obsoleteReason the obsoleteReason to set.

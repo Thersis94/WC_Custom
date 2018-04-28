@@ -75,9 +75,11 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String qualityEngineerNm;
 	private String requestorNm;
 	private String buyerNm;
+	private String surgeonNm;
 
 	//Stores if there is a lock.
 	private boolean lockStatus;
+	private String lockedById;
 
 	private List<SRTMasterRecordVO> masterRecords;
 	private SRTRequestVO request;
@@ -287,6 +289,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @return the surgeonNm
+	 */
+	@Column(name="SURGEON_NM", isReadOnly=true)
+	public String getSurgeonNm() {
+		return StringUtil.checkVal(surgeonNm);
+	}
+
+	/**
 	 * @return the makeFromScratch
 	 */
 	@Column(name="MAKE_FROM_SCRATCH_NO")
@@ -425,6 +435,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	@Column(name="LOCK_STATUS", isReadOnly=true)
 	public boolean getLockStatus() {
 		return lockStatus;
+	}
+
+	/**
+	 * @return the lockedById
+	 */
+	@Column(name="LOCKED_BY_ID", isReadOnly=true)
+	public String getLockedById() {
+		return lockedById;
 	}
 
 	/**
@@ -650,6 +668,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @param surgeonNm the surgeonNm to set.
+	 */
+	public void setSurgeonNm(String surgeonNm) {
+		this.surgeonNm = surgeonNm;
+	}
+
+	/**
 	 * @param makeFromScratch the makeFromScratch to set.
 	 */
 	public void setMakeFromScratch(boolean makeFromScratch) {
@@ -773,6 +798,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	 */
 	public void setLockStatus(boolean lockStatus) {
 		this.lockStatus = lockStatus;
+	}
+
+	/**
+	 * @param lockedById the lockedById to set.
+	 */
+	public void setLockedById(String lockedById) {
+		this.lockedById = lockedById;
 	}
 
 	/**
