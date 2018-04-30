@@ -1,0 +1,90 @@
+On destination DB: 
+create org REZDOX
+ensure theme/layouts exist
+ensure widgets exist
+
+Ensure db scripts are run from WebCrescendo/tools/db/scripts
+
+Run Camire's db-to-db site copy tool
+
+sudo apt-get install pgloader
+
+Run/download backup of rezdoxgr_rezdox db from Rezdox Cpanel PHPMyAdmin
+
+mysql -uroot -p
+create database rezdox;
+show databases;
+quit;
+
+mysql -uroot -p rezdox < rezdoxgr_rezdox.sql
+update benefits_tbl set startdate='1970-01-01' where startdate ='0000-00-00 00:00:00';
+update benefits_tbl set expiredate='1970-01-01' where expiredate ='0000-00-00 00:00:00';
+update payments_tbl set startdate='1970-01-01' where startdate ='0000-00-00 00:00:00';
+update payments_tbl set expiredate='1970-01-01' where expiredate ='0000-00-00 00:00:00';
+update member_tbl set payment_due='1970-01-01' where payment_due ='0000-00-00';
+update member_tbl set last_login='1970-01-01' where last_login ='0000-00-00 00:00:00';
+update products_tbl set pwarranty='1970-01-01' where pwarranty ='0000-00-00';
+update treasure_tbl set warranty='1970-01-01' where warranty ='0000-00-00';
+update subscriptions_tbl set payment_due='1970-01-01' where payment_due ='0000-00-00';
+ALTER TABLE `rezdox`.`member_tbl` 
+ADD COLUMN `pw_pt1` VARCHAR(50) NOT NULL AFTER `payment_due`,
+ADD COLUMN `pw_pt2` VARCHAR(50) NOT NULL AFTER `pw_pt1`,
+ADD COLUMN `pw_pt3` VARCHAR(50) NOT NULL AFTER `pw_pt2`;
+update rezdox.member_tbl
+set pw_pt1 = HEX(CONVERT(AES_ENCRYPT(left(AES_DECRYPT(aespass, 'RezDox'),10), 'RezDox') USING latin1)),
+pw_pt2 = HEX(CONVERT(AES_ENCRYPT(substring(AES_DECRYPT(aespass, 'RezDox'),11,10), 'RezDox') USING latin1)),
+pw_pt3 = HEX(CONVERT(AES_ENCRYPT(substring(AES_DECRYPT(aespass, 'RezDox'),21), 'RezDox') USING latin1));
+
+Postgres:
+CREATE EXTENSION pgcrypto;
+
+pgloader 'mysql://root:pw@sonic/rezdox' 'postgresql://sonic/tjohnson_webcrescendo_sb?user=wc_user&password=pw'
+
+Update config values in WC_Custom/scripts/rezdox/migration_config.properties
+
+run Custom Tables.sql script
+
+run LegacyDataMigration.java
+
+run After Migration.sql script
+
+run DecryptProfile.java (copies name/email from profile to member)
+
+zip up files from rezdox cpanel
+/public_html/SITE/graphics
+	extract to /${binary}/org/REZDOX
+	rename "graphics" to "legacy"
+/public_html/SITE/uploads
+	extract to /${secureBinary}/org/REZDOX
+	rename "uploads" to "legacy"
+
+zip up dev binary files & load through admintool
+
+add paypal buttons through admintool membership data tool, these are specific to each instance
+
+---------------
+Drop RezDox Custom Tables
+SELECT concat('drop table if exists custom.',relname,' cascade;' )
+FROM pg_stat_user_tables 
+WHERE schemaname='custom' and relname like 'rezdox_%'
+ORDER BY relname;
+
+---------------
+Reset Member Data:
+delete from custom.rezdox_member;
+delete from profile where create_dt > '2018-01-18 00:00:00';
+delete from authentication where create_dt > '2018-01-18 00:00:00';
+delete from profile_role where site_id='REZDOX_1';
+delete from register_submittal where site_id='REZDOX_1';
+
+---------------
+Helpful Queries:
+select * from custom.rezdox_member;
+select * from profile where create_dt > '2018-01-18 00:00:00';
+select * from authentication where create_dt > '2018-01-18 00:00:00';
+select * from profile_address where create_dt > '2018-01-18 00:00:00';
+
+---------------
+Possible Conversion After Postgres Import:
+alter table rezdox.member_tbl add column password_string_txt text;
+update rezdox.member_tbl set password_string_txt = cast(aespass as varchar);

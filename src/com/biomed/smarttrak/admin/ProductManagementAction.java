@@ -24,6 +24,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -230,6 +231,10 @@ public class ProductManagementAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	protected void retrievePreview(ActionRequest req) throws ActionException {
+		//set data for downstream
+		setAttribute(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
+		setAttribute(Constants.PAGE_PREVIEW, true);
+		
 		ProductAction pa = new ProductAction(actionInit);
 		pa.setDBConnection(dbConn);
 		pa.setAttributes(attributes);
@@ -658,10 +663,9 @@ public class ProductManagementAction extends ManagementAction {
 		product = (ProductVO) db.executeSelect(sql.toString(), params, new ProductVO()).get(0);
 
 		Tree t = loadDefaultTree();
-
 		req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		req.getSession().setAttribute("productName", product.getProductName());
-		req.getSession().setAttribute("productShortName", product.getShortName());
+		req.getSession().setAttribute("productNameParam", StringEncoder.urlEncode(product.getProductName()));
 
 		String jsonType = req.getParameter("jsonType");
 		if ("alliance".equals(jsonType)) {
