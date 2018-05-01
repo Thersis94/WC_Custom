@@ -23,7 +23,6 @@ import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
-import com.smt.sitebuilder.action.list.ListAction;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -188,12 +187,12 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		sql.append("DPY_SYN_SRT_PROJECT p on p.request_id = r.request_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
 		sql.append("DPY_SYN_SRT_MILESTONE m on p.PROJ_STAT_ID = m.milestone_id ");
-		ListAction.buildListJoin(sql, "l", "r.reason_for_request");
+		SRTUtil.buildListJoin(sql, "l", "r.reason_for_request");
 		vals.add(SRTList.REQ_REASON.name());
 		if(!req.hasParameter(SRT_REQUEST_ID)) {
-			ListAction.buildListJoin(sql, "lct", "r.charge_to");
+			SRTUtil.buildListJoin(sql, "lct", "r.charge_to");
 			vals.add(SRTList.CHARGE_TO.name());
-			ListAction.buildListJoin(sql, "lt", "r.request_territory_id");
+			SRTUtil.buildListJoin(sql, "lt", "r.request_territory_id");
 			vals.add(SRTList.SRT_TERRITORIES.name());
 		}
 

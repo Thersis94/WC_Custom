@@ -1,5 +1,7 @@
 package com.depuysynthes.srt;
 
+import static com.siliconmtn.util.MapUtil.entry;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,11 +35,9 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.MapUtil;
-import static com.siliconmtn.util.MapUtil.entry;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
-import com.smt.sitebuilder.action.list.ListAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -401,7 +401,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		sql.append("DPY_SYN_SRT_MILESTONE m on p.PROJ_STAT_ID = m.milestone_id ");
 
 		//Project Type
-		ListAction.buildListJoin(sql, "type", "p.proj_type_id");
+		SRTUtil.buildListJoin(sql, "type", "p.proj_type_id");
 		vals.add(SRTList.PROJ_TYPE);
 
 		//Load Optional User Data if this isn't a detail view.
