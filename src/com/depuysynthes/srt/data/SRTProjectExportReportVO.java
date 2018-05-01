@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -43,7 +44,7 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 1L;
 
 	public SRTProjectExportReportVO() {
-		this("Search Results Export.xlsx");
+		this("Search Results Export.xls");
 	}
 
 	public SRTProjectExportReportVO(String fileName) {
@@ -56,7 +57,7 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 	@Override
 	public byte[] generateReport() {
 		//Build Excel File
-		try(Workbook wb = new XSSFWorkbook()) {
+		try(Workbook wb = getWorkbook()) {
 			Sheet sheet = wb.createSheet("Projects");
 
 			//Build Header Rows
@@ -84,7 +85,21 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 
 
 	/**
-	 * Build Header Row of Excel Report.
+	 * Helper method returns proper Workbook Type.
+	 * @return
+	 */
+	private Workbook getWorkbook() {
+		if(this.fileName.endsWith(".xlsx")) {
+			log.debug("Generating xlsx Workbook.");
+			return new XSSFWorkbook();
+		} else {
+			log.debug("Generating xls Workbook.");
+			return new HSSFWorkbook();
+		}
+	}
+
+	/**
+	 * Build Header XSSFRow of Excel Report.
 	 * @param sheet
 	 */
 	private void buildHeadersRow(Sheet sheet) {
@@ -140,7 +155,7 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * Builds Actual Row in Excel Sheet.
+	 * Builds Actual XSSFRow in Excel Sheet.
 	 * @param sheet
 	 * @param p
 	 * @param mr
@@ -195,7 +210,7 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 	private void buildRequestCells(Row row, SRTRequestVO r) {
 		row.createCell(colNo++).setCellValue(r.getRequestId());
 		row.createCell(colNo++).setCellValue(r.getHospitalName());
-		row.createCell(colNo++).setCellValue(r.getSurgeonName());
+		row.createCell(colNo++).setCellValue(r.getSurgeonNm());
 		row.createCell(colNo++).setCellValue(r.getDescription());
 		row.createCell(colNo++).setCellValue(r.getReqTerritoryId());
 		row.createCell(colNo++).setCellValue(r.getEstimatedRoiDbl());
