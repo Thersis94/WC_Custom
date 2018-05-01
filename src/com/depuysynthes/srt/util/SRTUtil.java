@@ -11,6 +11,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
@@ -131,5 +132,18 @@ public class SRTUtil {
 		}
 
 		return pMap;
+	}
+
+	/**
+	 * Builds an outer join query against a list_data element.  Make sure
+	 * set PreparedStatementValue for the ListId.
+	 * @param sql - Lookup Query
+	 * @param alias - Alias for the list_data join
+	 * @param columnNm - Column we're matching against
+	 */
+	public static void buildListJoin(StringBuilder sql, String alias, String columnNm) {
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" list_data ").append(alias);
+		sql.append(" on ").append(alias).append(".value_txt = ").append(columnNm);
+		sql.append(" and ").append(alias).append(".list_id = ? ");
 	}
 }

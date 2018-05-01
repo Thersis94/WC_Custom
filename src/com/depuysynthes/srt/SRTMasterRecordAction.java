@@ -1,5 +1,7 @@
 package com.depuysynthes.srt;
 
+import static com.siliconmtn.util.MapUtil.entry;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,6 +22,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
@@ -44,7 +47,19 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 
 	public static final String SRT_MASTER_RECORD_ID = "masterRecordId";
 	public static final String MASTER_RECORD_DATA = "masterRecordData";
-
+	public static final String SRT_MASTER_RECORD_PART_NO = "partNo";
+	protected static final Map<String, String> sortCols = MapUtil.asMap (
+			entry(SRT_MASTER_RECORD_PART_NO, "mr.part_no"),
+			entry("titleTxt", "mr.title_txt"),
+			entry("totalBuilt", "mr.total_built"),
+			entry("obsoleteFlg", "mr.obsolete_flg"),
+			entry("qualitySystemId", "quality_system_id"),
+			entry("prodTypeId", "prod_type_id"),
+			entry("complexityId", "complexity_id"),
+			entry("prodCatId", "prod_cat_id"),
+			entry("prodFamilyId", "prod_family_id"),
+			entry("createDt", "mr.create_dt")
+			);
 	public SRTMasterRecordAction() {
 		super();
 	}
@@ -56,7 +71,7 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if(req.hasParameter(SRT_MASTER_RECORD_ID) || req.hasParameter("json")) {
+		if((req.hasParameter(SRT_MASTER_RECORD_ID) || req.hasParameter(SRT_MASTER_RECORD_PART_NO)) || req.hasParameter("json")) {
 			GridDataVO<SRTMasterRecordVO> masterRecords = loadMasterRecordData(req);
 
 			putModuleData(masterRecords.getRowData(), masterRecords.getTotal(), false);
@@ -172,47 +187,101 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	 */
 	private GridDataVO<SRTMasterRecordVO> loadMasterRecords(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
-		vals.add(SRTUtil.getOpCO(req));
-		if(req.hasParameter("isSearch")) {
-			vals.add(req.getParameter("term").toLowerCase());
-			vals.add(req.getParameter("term").toLowerCase());
-		} else if(req.hasParameter("search")) {
-			vals.add(req.getParameter("search").toLowerCase());
-			vals.add(req.getParameter("search").toLowerCase());
-		} else if(req.hasParameter(SRT_MASTER_RECORD_ID)) {
-			vals.add(req.getParameter(SRT_MASTER_RECORD_ID));
-		}
 		int limit = req.getIntegerParameter("limit", 10);
 		int offset = req.getIntegerParameter("offset", 0);
-		return new DBProcessor(dbConn).executeSQLWithCount(listMasterRecordsSql(req), vals, new SRTMasterRecordVO(), limit, offset);
+		return new DBProcessor(dbConn).executeSQLWithCount(listMasterRecordsSql(req, vals), vals, new SRTMasterRecordVO(), limit, offset);
 	}
 
 	/**
 	 * Build the Master Record Retrieval Query.
+	 * @param vals 
 	 * @return
 	 */
-	private String listMasterRecordsSql(ActionRequest req) {
-		boolean getById = req.hasParameter(SRT_MASTER_RECORD_ID);
-		boolean isSearch = req.hasParameter("isSearch") || req.hasParameter("search");
-
+	private String listMasterRecordsSql(ActionRequest req, List<Object> vals) {
+		boolean idLookup = req.hasParameter(SRT_MASTER_RECORD_ID) || req.hasParameter(SRT_MASTER_RECORD_PART_NO);
 		String custom = getCustomSchema();
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from ").append(custom);
+		StringBuilder sql = new StringBuilder(1200);
+
+		if(!idLookup) {
+			sql.append("select mr.master_record_id, mr.op_co_id, mr.part_no, ");
+			sql.append("mr.title_txt, mr.make_from_part_nos, mr.total_built, ");
+			sql.append("mr.obsolete_flg, mr.obsolete_reason, mr.create_dt, ");
+			sql.append("lqs.label_txt as quality_system_id, lpt.label_txt as prod_type_id, ");
+			sql.append("lc.label_txt as complexity_id, lpc.label_txt as prod_cat_id, ");
+			sql.append("lpf.label_txt as prod_family_id ");
+		} else {
+			sql.append("select mr.*, f.* ");
+		}
+
+		sql.append(DBUtil.FROM_CLAUSE).append(custom);
 		sql.append("DPY_SYN_SRT_MASTER_RECORD mr ");
-		if(getById) {
+		if(idLookup) {
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_FILE f ");
 			sql.append("on mr.MASTER_RECORD_ID = f.MASTER_RECORD_ID ");
 		}
-		sql.append(DBUtil.WHERE_CLAUSE).append(" mr.OP_CO_ID = ? ");
-		if(isSearch) {
-			sql.append("and lower(mr.part_no) like '%' + ? + '%' or lower(mr.title_txt) like '%' + ? + '%' ");
+
+		if(!idLookup) {
+			//Join out for List Values.
+			SRTUtil.buildListJoin(sql, "lqs", "mr.quality_system_id");
+			vals.add(SRTUtil.SRTList.QUALITY_SYSTEM.name());
+
+			SRTUtil.buildListJoin(sql, "lpt", "mr.prod_type_id");
+			vals.add(SRTUtil.SRTList.PRODUCT_TYPE.name());
+
+			SRTUtil.buildListJoin(sql, "lc", "mr.complexity_id");
+			vals.add(SRTUtil.SRTList.COMPLEXITY.name());
+
+			SRTUtil.buildListJoin(sql, "lpc", "mr.prod_cat_id");
+			vals.add(SRTUtil.SRTList.PROD_CAT.name());
+
+			SRTUtil.buildListJoin(sql, "lpf", "mr.prod_family_id");
+			vals.add(SRTUtil.SRTList.PROD_FAMILY.name());
 		}
-		else if(getById) {
-			sql.append("and mr.master_record_id = ? ");
-		}
-		sql.append("order by ").append(StringUtil.checkVal(req.getParameter("order"), "mr.create_dt desc"));
+
+		//Build Where Clause
+		buildWhereListClause(sql, req, vals);
+
+		//Add Order By clause.
+		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(sortCols.get(req.getParameter("sort")), sortCols.get("createDt")));
+		sql.append(" ").append(StringUtil.checkVal(req.getParameter("order"), "desc"));
 
 		return sql.toString();
+	}
+
+	/**
+	 * Helper method builds the Where clause for MasterRecord Lookup.
+	 * Manages setting data on the vals which will return by ref.
+	 * @param sql
+	 * @param req
+	 * @param vals
+	 */
+	private void buildWhereListClause(StringBuilder sql, ActionRequest req, List<Object> vals) {
+		boolean isSearch = req.hasParameter("isSearch") || req.hasParameter("search");
+
+		sql.append(DBUtil.WHERE_CLAUSE).append(" mr.OP_CO_ID = ? ");
+		vals.add(SRTUtil.getOpCO(req));
+
+		/*
+		 * Search comes in 2 different ways.
+		 * search - From MasterRecord BS Table
+		 * term - From Project MasterRecord TypeAhead
+		 */
+		if(isSearch) {
+			sql.append("and lower(mr.part_no) like '%' + ? + '%' or lower(mr.title_txt) like '%' + ? + '%' ");
+			if(req.hasParameter("isSearch")) {
+				vals.add(req.getParameter("term").toLowerCase());
+				vals.add(req.getParameter("term").toLowerCase());
+			} else {
+				vals.add(req.getParameter("search").toLowerCase());
+				vals.add(req.getParameter("search").toLowerCase());
+			}
+		} else if(req.hasParameter(SRT_MASTER_RECORD_ID)) {
+			sql.append("and mr.master_record_id = ? ");
+			vals.add(req.getParameter(SRT_MASTER_RECORD_ID));
+		} else if (req.hasParameter(SRT_MASTER_RECORD_PART_NO)) {
+			sql.append("and mr.part_no = ? ");
+			vals.add(req.getParameter(SRT_MASTER_RECORD_PART_NO));
+		}
 	}
 
 	@Override

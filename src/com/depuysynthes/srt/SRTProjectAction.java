@@ -1,5 +1,7 @@
 package com.depuysynthes.srt;
 
+import static com.siliconmtn.util.MapUtil.entry;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -12,6 +14,7 @@ import java.util.stream.Collectors;
 import com.depuysynthes.srt.data.ProjectDataProcessor;
 import com.depuysynthes.srt.data.RequestDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.util.SRTUtil.SRTList;
 import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
@@ -31,6 +34,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
@@ -41,6 +45,7 @@ import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
 import com.smt.sitebuilder.util.LockUtil;
 import com.smt.sitebuilder.util.LockVO;
+
 
 /****************************************************************************
  * <b>Title:</b> SRTProjectAction.java
@@ -59,6 +64,13 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	public static final String SRT_PROJECT_ID = "projectId";
 	private static final String SRT_PROJECT_LOCKS = "srtProjectLocks";
 	public static final String DB_PROJECT_ID = "PROJECT_ID";
+	protected static final Map<String, String> sortCols = MapUtil.asMap (
+		entry("projectName", "p.project_name"),
+		entry("surgeonNm", "surgeon_nm"),
+		entry("projectTypeTxt", "p.proj_type_id"),
+		entry("projectStatusTxt", "p.proj_stat_id"),
+		entry("createDt", "p.create_dt")
+	);
 
 	public SRTProjectAction() {
 		super();
@@ -267,8 +279,6 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		//Build Query and populate required vals at same time.
 		String sql = buildProjectRetrievalQuery(req, vals, statusType);
 
-		log.debug(sql);
-
 		//Load Projects
 		GridDataVO<SRTProjectVO> projects = new DBProcessor(dbConn).executeSQLWithCount(sql, vals, new SRTProjectVO(), req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
 
@@ -357,9 +367,9 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		String custom = getCustomSchema();
 		StringBuilder sql = new StringBuilder(2000);
 		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
-		sql.append("req.surgeon_first_nm, req.surgeon_last_nm, ");
+		sql.append("concat(req.surgeon_first_nm, ' ', req.surgeon_last_nm) as SURGEON_NM, ");
 		sql.append("case when l.lock_id is not null then true else false end as LOCK_STATUS, ");
-		sql.append("m.milestone_nm as proj_stat_txt, ");
+		sql.append("l.LOCKED_BY_ID, m.milestone_nm as proj_stat_txt, ");
 		sql.append("type.label_txt as PROJ_TYPE_TXT ");
 		//If this isn't a detail load, get Names for display purposes.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
@@ -391,9 +401,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		sql.append("DPY_SYN_SRT_MILESTONE m on p.PROJ_STAT_ID = m.milestone_id ");
 
 		//Project Type
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA type on ");
-		sql.append("type.value_txt = p.PROJ_TYPE_ID and type.list_id = ? ");
-		vals.add("PROJ_TYPE");
+		SRTUtil.buildListJoin(sql, "type", "p.proj_type_id");
+		vals.add(SRTList.PROJ_TYPE);
 
 		//Load Optional User Data if this isn't a detail view.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
@@ -426,7 +435,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		buildWhereClause(sql, req, vals, statusType);
 
 		//Add Order By clause.
-		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(req.getParameter("orderBy"), "p.create_dt desc"));
+		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(sortCols.get(req.getParameter("sort")), sortCols.get("createDt")));
+		sql.append(" ").append(StringUtil.checkVal(req.getParameter("order"), "desc"));
 
 		return sql.toString();
 	}
@@ -449,6 +459,11 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		} else if(!StringUtil.isEmpty(statusType)) {
 			sql.append("and p.PROJ_STAT_ID = ? ");
 			vals.add(statusType);
+		}
+
+		if(req.hasParameter("search")) {
+			sql.append("and lower(p.PROJECT_NAME) like ? ");
+			vals.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
 
 		if(req.getBooleanParameter("myProjectsFlg")) {
