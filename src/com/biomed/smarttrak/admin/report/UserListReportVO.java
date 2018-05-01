@@ -72,13 +72,12 @@ public class UserListReportVO extends AbstractSBReportVO {
 	private static final String HAS_FD = "HAS_FD";
 	private static final String USER_ID = "USER_ID";
 	private static final String ACCT_OWNER_FLAG = "ACCT_OWNER_FLAG";
-
+	
 	// other fields
 	private static final String DATE_JOINED = "DATE_JOINED";
 	protected static final String OS = "OS";
 	protected static final String BROWSER = "BROWSER";
 	protected static final String DEVICE_TYPE = "DEVICE_TYPE";
-	protected static final String PAGEVIEWS = "PAGEVIEWS";
 
 	private static final String EMPTY_STRING = "";
 	private static final String USER_FD_VAL = "FD";
@@ -158,7 +157,8 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(EMAIL,user.getEmailAddress());
 				row.put(ACCT_OWNER_FLAG, user.getAcctOwnerFlg() == 1 ? "Yes" : "No");
 				row.put(SmarttrakExcelReport.LAST_LOGIN_DT, formatDate(user.getLoginDate(),true));
-				row.put(PAGEVIEWS, user.getAttribute(PAGEVIEWS));
+				row.put(SmarttrakExcelReport.DAYS_SINCE_LAST_LOGIN, user.getLoginAge(true));
+				row.put(SmarttrakExcelReport.LOGIN_ACTIVITY_FLAG, user.getLoginLegendText());
 				row.put(MAIN_PHONE,formatPhoneNumber(pnf,user.getMainPhone(),user.getCountryCode()));
 				row.put(MOBILE_PHONE,formatPhoneNumber(pnf,user.getMobilePhone(),user.getCountryCode()));
 				row.put(ADDRESS1, se.decodeValue(user.getAddress()));
@@ -181,9 +181,6 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(RegistrationMap.JOBCATEGORY.name(), user.getJobCategory());
 				row.put(RegistrationMap.JOBLEVEL.name(), user.getJobLevel());
 				row.put(RegistrationMap.INDUSTRY.name(), user.getIndustry());
-				/* Add the login age to data map for reporting formatting. This particular field is utilized for styling 
-				 * and not meant for actual display, hence no matching header column entry*/
-				row.put(SmarttrakExcelReport.LAST_LOGIN_AGE, user.getLoginAge());
 				
 				rows.add(row);
 			}
@@ -260,7 +257,8 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(EMAIL,"Email Address");
 		headerMap.put(ACCT_OWNER_FLAG, "Account Lead");
 		headerMap.put(SmarttrakExcelReport.LAST_LOGIN_DT,"Last Login");
-		headerMap.put(PAGEVIEWS, "Page Views");
+		headerMap.put(SmarttrakExcelReport.DAYS_SINCE_LAST_LOGIN, "Days Since Last Login");
+		headerMap.put(SmarttrakExcelReport.LOGIN_ACTIVITY_FLAG, "Login Activity Flag");
 		headerMap.put(MAIN_PHONE,"Phone");
 		headerMap.put(MOBILE_PHONE,"Mobile Phone");
 		headerMap.put(ADDRESS1,"Address 1");

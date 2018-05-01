@@ -30,6 +30,8 @@ public class SmarttrakExcelReport extends ExcelReport {
 	//constants to related to last login date
 	public static final String LAST_LOGIN_DT = "LAST_LOGIN_DT";
 	public static final String LAST_LOGIN_AGE = "LAST_LOGIN_AGE";
+	public static final String DAYS_SINCE_LAST_LOGIN = "DAYS_SINCE_LAST_LOGIN";
+	public static final String LOGIN_ACTIVITY_FLAG = "LOGIN_ACTIVITY_FLAG";
 	public static final String NO_ACTIVITY = "No Activity";
 	
 	/**
