@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.ResidenceAction;
+import com.rezdox.action.RezDoxUtils;
 import com.rezdox.vo.ResidenceVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
@@ -119,6 +120,7 @@ public class ResidenceFormProcessor extends FormDataProcessor {
 			// Add parameters to the request to be saved to the residence table
 			ResidenceField param = EnumUtil.safeValueOf(ResidenceField.class, entry.getValue().getSlugTxt());
 			if (param != null) {
+				RezDoxUtils.validateDataType(entry.getValue());
 				req.setParameter(param.getReqParam(), entry.getValue().getResponseText());
 				iter.remove();
 			}
@@ -232,6 +234,7 @@ public class ResidenceFormProcessor extends FormDataProcessor {
 
 			// Save valid responses.
 			if (vo.getResponses() != null && !vo.getResponses().isEmpty() && !StringUtil.isEmpty(vo.getSlugTxt())) {
+				RezDoxUtils.validateDataType(vo);
 				newFormFields.add(vo);
 			}
 		}

@@ -87,6 +87,7 @@ public class MemberFormProcessor extends FormDataProcessor {
 
 			// Add parameters to the request to be saved to the member or wc-profile tables
 			if (param != null) {
+				RezDoxUtils.validateDataType(entry.getValue());
 				String response = param.isFile() ? saveFile(req, entry.getKey(), param.getReqParam()) : entry.getValue().getResponseText();
 				req.setParameter(param.getReqParam(), response);
 			}

@@ -1,5 +1,8 @@
 package com.rezdox.action;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 // Java 8
 import java.util.Map;
 
@@ -7,8 +10,11 @@ import java.util.Map;
 import com.rezdox.vo.MemberVO;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
@@ -164,5 +170,42 @@ public class RezDoxUtils {
 	 */
 	public static boolean isBusinessRole(SBUserRole role) {
 		return REZDOX_BUSINESS_ROLE.equals(role.getRoleId()) || REZDOX_RES_BUS_ROLE.equals(role.getRoleId());
+	}
+	
+	/**
+	 * Validates a Form Builder form field, setting the data correctly for its type.
+	 * The data is always stored as a String.
+	 * 
+	 * @param vo
+	 */
+	public static void validateDataType(FormFieldVO formField) {
+		// Nothing to do if no data types associated to this field
+		if (StringUtil.isEmpty(formField.getDataType())) 
+			return;
+		
+		// We are only interested in saving validated responses
+		List<String> validResponses = new ArrayList<>();
+		
+		// Look at the responses and validate according to the associated type
+		for (String response : formField.getResponses()) {
+			switch (formField.getDataType()) {
+				case "NUMBER":
+					validResponses.add(Convert.formatInteger(response).toString());
+					break;
+				case "DECIMAL":
+				case "CURRENCY":
+					validResponses.add(Convert.formatDouble(response).toString());
+					break;
+				case "DATE":
+					Date responseDate = Convert.parseDateUnknownPattern(response);
+					validResponses.add(Convert.formatDate(responseDate, Convert.DATE_DASH_PATTERN));
+					break;
+				default: 
+					validResponses.add(response);
+			}
+		}
+		
+		// Put the valid responses back on to the vo for further processing/saving
+		formField.setResponses(validResponses);
 	}
 }
