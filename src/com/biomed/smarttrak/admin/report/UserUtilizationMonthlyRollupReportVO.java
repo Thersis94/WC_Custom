@@ -58,15 +58,12 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	private static final String USER_STATUS = "USER_STATUS";
 	private static final String USER_CREATE_DT = "USER_CREATE_DT";
 	private static final String EXPIRATION_DT = "EXPIRATION_DATE";
-	public static final String LAST_LOGIN_DT = "LAST_LOGIN_DATE";
-	public static final String LAST_LOGIN_AGE = "LAST_LOGIN_AGE";
 	private static final String DAYS_SINCE_LAST_LOGIN = "DAYS_SINCE_LAST_LOGGED_IN";
 	private static final String PROF = "PROF_MODULES";
 	private static final String FD = "FD_MODULES";
 	private static final String GA = "GA_MODULES";
 	private static final String TOTAL = "TOTAL";
 	private static final String AVERAGE = "AVERAGE";
-	public static final String NO_ACTIVITY = "No activity";
 
 	/**
 	 * 
@@ -92,7 +89,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		log.debug("generateReport...");
 		setFileName(buildReportTitle().replace(' ', '-')+".xls");
 		
-		ExcelReport rpt = new UserUtilizationExcelReport(getHeader());
+		ExcelReport rpt = new SmarttrakExcelReport(getHeader());
 		//rpt.setTitleCell(buildReportTitle()); omit title
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
@@ -173,12 +170,12 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 				row.put(USER_STATUS, user.getLicenseName());
 				row.put(USER_CREATE_DT, Convert.formatDate(user.getCreateDate(), Convert.DATE_SLASH_PATTERN));
 				row.put(EXPIRATION_DT, Convert.formatDate(user.getExpirationDate(), Convert.DATE_SLASH_PATTERN));
-				if (user.getLoginDate() == null) row.put(LAST_LOGIN_DT, NO_ACTIVITY); 
-				else row.put(LAST_LOGIN_DT, Convert.formatDate(user.getLoginDate(), Convert.DATE_SLASH_PATTERN));
+				if (user.getLoginDate() == null) row.put(SmarttrakExcelReport.LAST_LOGIN_DT, SmarttrakExcelReport.NO_ACTIVITY); 
+				else row.put(SmarttrakExcelReport.LAST_LOGIN_DT, Convert.formatDate(user.getLoginDate(), Convert.DATE_SLASH_PATTERN));
 				row.put(DAYS_SINCE_LAST_LOGIN, user.getLoginAge(true));	
 				/* Add the login age to data map for reporting formatting. This particular field is utilized for styling 
 				 * and not meant for actual display, hence no matching header column entry*/
-				row.put(LAST_LOGIN_AGE, user.getLoginAge());
+				row.put(SmarttrakExcelReport.LAST_LOGIN_AGE, user.getLoginAge());
 				
 				/* Add monthly counts to user's row. We loop the month headers
 				 * List using the values as keys to retrieve a user's counts for a
@@ -392,7 +389,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		headerMap.put(USER_STATUS, "License Type");
 		headerMap.put(USER_CREATE_DT, "Create Date");
 		headerMap.put(EXPIRATION_DT, "Expiration Date");
-		headerMap.put(LAST_LOGIN_DT, "Last Logged In Date");
+		headerMap.put(SmarttrakExcelReport.LAST_LOGIN_DT, "Last Logged In Date");
 		headerMap.put(DAYS_SINCE_LAST_LOGIN, "Days Since Last Logged In");
 		for (String monthKey : monthHeaders) {
 			headerMap.put(monthKey, monthKey);

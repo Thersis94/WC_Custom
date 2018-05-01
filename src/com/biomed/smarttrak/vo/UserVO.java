@@ -157,6 +157,21 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		public String getReqParam() { return reqParam; }
 		public boolean isArray() { return isArray; }
 	}
+	
+	/**
+	 * Maps last logins to the appropriate login legend color(based on account Users legend page)
+	 */
+	public enum LoginLegend{
+		NO_ACTIVITY(0, "No Activity"), GREEN(30, "Green"), YELLOW(60, "Yellow"), RED(90, "Red");
+		private int lastLoginAge; //the corresponding login age
+		private String displayText;
+		private LoginLegend(int lastLoginAge, String displayText) {
+			this.lastLoginAge = lastLoginAge;
+			this.displayText = displayText;
+		}
+		public int getLastLoginAge() { return lastLoginAge;}
+		public String getDisplayText() { return this.displayText; }
+	} 
 
 	public UserVO() {
 		teams = new ArrayList<>();
@@ -634,6 +649,25 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 			}
 		}
 		return loginAge;
+	}
+	
+	/**
+	 * Retrieves the appropriate last login legend color text based on the user's login Age
+	 * @return
+	 */
+	public String getLoginLegendText() {
+		int age = getLoginAge(); //retrieve the login age
+		
+		if(age == -1 || age == 0) {
+			return LoginLegend.NO_ACTIVITY.getDisplayText();
+		}else if(LoginLegend.GREEN.getLastLoginAge() == age) {
+			return LoginLegend.GREEN.getDisplayText();
+		}else if(LoginLegend.YELLOW.getLastLoginAge() == age) {
+			return LoginLegend.YELLOW.getDisplayText();
+		}else {
+			return LoginLegend.RED.getDisplayText();
+		}
+		
 	}
 
 	@Column(name="active_flg")
