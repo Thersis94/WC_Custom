@@ -4,24 +4,19 @@ import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
 
-import com.depuysynthes.huddle.HuddleUtils;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.user.LoginAction;
-import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SAMLLoginModule;
 
 /****************************************************************************
  * <b>Title:</b> SRTSSOLoginModule.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> SSO Implementation of the SRT Login Module.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -48,7 +43,9 @@ public class SRTSSOLoginModule extends SAMLLoginModule {
 	 */
 	public SRTRosterVO loadSRTUser(UserDataVO wcUser) throws AuthenticationException {
 		//Attempt to retrieve SRT Roster record from Database.
-		List<SRTRosterVO> users = new DBProcessor((Connection) getAttribute(GlobalConfig.KEY_DB_CONN)).executeSelect(buildRosterSql(), Arrays.asList(wcUser.getProfileId()), new SRTRosterVO());
+		Connection conn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
+		List<Object> vals = Arrays.asList(wcUser.getProfileId());
+		List<SRTRosterVO> users = new DBProcessor(conn).executeSelect(buildRosterSql(), vals, new SRTRosterVO());
 		log.info(users);
 		if(!users.isEmpty()) {
 			return matchUser(wcUser, users);
