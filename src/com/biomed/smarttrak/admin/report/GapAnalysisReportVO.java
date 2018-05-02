@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.admin.report;
 
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Map.Entry;
@@ -12,6 +13,7 @@ import com.biomed.smarttrak.vo.GapTableVO;
 import com.biomed.smarttrak.vo.GapTableVO.ColumnKey;
 import com.siliconmtn.data.report.PDFReport;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -235,7 +237,7 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 		sb.append("<head>");
 		sb.append("<meta http-equiv=\"content-type\" content=\"text/html;charset=UTF-8\">");
 		sb.append("<title>").append(REPORT_TITLE).append("</title>");
-		buildCssLinks(sb);
+		buildCssBlock(sb);
 		int width = 210;
 		Collection<GapColumnVO> children = table.getHeaderCols().get(ColumnKey.CHILD.name()).values();
 		width += children.size() * 73;
@@ -245,32 +247,30 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * Helper method that builds CSS Links for the Report.
-	 * @return
-	 */
-	private void buildCssLinks(StringBuilder sb) {
-		StringBuilder modCom = new StringBuilder(150);
-		modCom.append(site.getFullSiteAlias()).append("/binary/themes/");
-		buildCSSLink(sb, "//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css");
-		modCom.append(site.getTheme().getPageLocationName()).append("/scripts/gap_report.css");
-		buildCSSLink(sb, modCom.toString());
-	}
-
-	/**
-	 * Build a CSS Link for the Document.
-	 * @param bootstrapCss
-	 * @return
-	 */
-	private void buildCSSLink(StringBuilder sb, String bootstrapCss) {
-		sb.append("<link type=\"text/css\" rel=\"stylesheet\" href=\"").append(bootstrapCss).append("\">");
-	}
-
-	/**
 	 * Build the DocType Element.
 	 * @return
 	 */
 	private void getDocType(StringBuilder doc) {
 		doc.append("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\r\n");
+	}
+	
+	/**
+	 * Retrieve the gap_report css file and transcribe it to the stringbuilder
+	 * in order to circumvent issues itextrenderer has with getting files from
+	 * strictly https sites.
+	 * @param sb
+	 */
+	private void buildCssBlock(StringBuilder sb) {
+		try {
+			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
+			StringBuilder cssPage = new StringBuilder(120);
+			cssPage.append(site.getFullSiteAlias()).append("/binary/themes/");
+			cssPage.append(site.getTheme().getPageLocationName()).append("/scripts/gap_report.css");
+			byte[] cssData = conn.retrieveData(cssPage.toString());
+			sb.append("<style>").append(new String(cssData)).append("</style>");
+		} catch (IOException e) {
+			log.error("Unable to retrieve style sheet.", e);
+		}
 	}
 
 	/* (non-Javadoc)
