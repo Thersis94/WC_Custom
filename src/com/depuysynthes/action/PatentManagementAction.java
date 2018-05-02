@@ -37,7 +37,9 @@ public class PatentManagementAction extends SBActionAdapter {
 
 	private static Logger log = Logger.getLogger(PatentManagementAction.class.getName());
 	static final String PATENT_TABLE = "dpy_syn_patent";
-	private static final String PARAM_SEARCH_VAL = "searchVal";
+	private static final String PARAM_SEARCH_BARCODE = "searchBarcode";
+	private static final String PARAM_SEARCH_COMPANY = "searchCompany";
+	private static final String PARAM_SEARCH_DESC = "searchDescription";
 	private static final String PARAM_ACTIVITY_TYPE= "activityType";
 
 	public enum ActivityType {
@@ -93,12 +95,11 @@ public class PatentManagementAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		log.debug("list...");
 		String patentId = StringUtil.checkVal(req.getParameter(PatentAction.PATENT_ID),null);
 		List<PatentVO> patents = new ArrayList<>();
 
 		// Return empty data is no patent ID specified and this is not a search query.
-		if (patentId == null && ! req.hasParameter(PARAM_SEARCH_VAL)) {
+		if (patentId == null && ! isSearch(req)) {
 			putModuleData(patents);
 			return;
 		}
@@ -106,7 +107,20 @@ public class PatentManagementAction extends SBActionAdapter {
 		patents = retrievePatentData(req);
 		putModuleData(patents, patents.size(),true);
 	}
-	
+
+
+	/**
+	 * Helper method for determining if this is a search request
+	 * @param req
+	 * @return
+	 */
+	private boolean isSearch(ActionRequest req) {
+		return (req.hasParameter(PARAM_SEARCH_COMPANY) ||
+				req.hasParameter(PARAM_SEARCH_DESC) ||
+				req.hasParameter(PARAM_SEARCH_BARCODE));
+	}
+
+
 	/**
 	 * Retrieves patent record data.
 	 * @param req
@@ -121,8 +135,12 @@ public class PatentManagementAction extends SBActionAdapter {
 			ps.setString(++idx, req.getParameter("organizationId"));
 			if (req.hasParameter(PatentAction.PATENT_ID)) 
 				ps.setInt(++idx, Convert.formatInteger(req.getParameter(PatentAction.PATENT_ID)));
-			if (req.hasParameter(PARAM_SEARCH_VAL))
-				ps.setString(++idx, "%"+req.getParameter(PARAM_SEARCH_VAL)+"%");
+			if (req.hasParameter(PARAM_SEARCH_BARCODE))
+				ps.setString(++idx, "%"+req.getParameter(PARAM_SEARCH_BARCODE)+"%");
+			if (req.hasParameter(PARAM_SEARCH_COMPANY)) 
+				ps.setString(++idx, "%"+req.getParameter(PARAM_SEARCH_COMPANY).toUpperCase()+"%");
+			if (req.hasParameter(PARAM_SEARCH_DESC)) 
+				ps.setString(++idx, "%"+req.getParameter(PARAM_SEARCH_DESC).toUpperCase()+"%");
 
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
@@ -150,7 +168,6 @@ public class PatentManagementAction extends SBActionAdapter {
 		// determine activity type
 		ActivityType activityType = 
 				parseActivityType(StringUtil.checkVal(req.getParameter(PARAM_ACTIVITY_TYPE)));
-		log.debug("activityType: " + activityType);
 
 		try {
 			dbConn.setAutoCommit(false);
@@ -220,7 +237,6 @@ public class PatentManagementAction extends SBActionAdapter {
 				ps.setInt(++idx, pvo.getPatentId());
 				ps.executeUpdate();
 			}
-			log.debug("Wrote record data for patent ID: " + pvo.getPatentId());
 		} catch (SQLException sqle) {
 			String errMsg = "Error writing patent record.";
 			log.error(errMsg, sqle);
@@ -270,12 +286,17 @@ public class PatentManagementAction extends SBActionAdapter {
 			sql.append("redirect_nm = ?, redirect_address_txt = ?, status_flg = ?, ");
 			sql.append("profile_id = ?, update_dt = ? where patent_id = ?");
 		} else {
+			// default retrieve
 			sql.append("select * from ").append(table);
 			sql.append("where organization_id = ? ");
 			if (req.hasParameter(PatentAction.PATENT_ID))
 				sql.append("and patent_id = ? ");
-			if (req.hasParameter(PARAM_SEARCH_VAL))
+			if (req.hasParameter(PARAM_SEARCH_BARCODE))
 				sql.append("and code_txt like ? ");
+			if (req.hasParameter(PARAM_SEARCH_COMPANY))
+				sql.append("and upper(company_nm) like ? ");
+			if (req.hasParameter(PARAM_SEARCH_DESC))
+				sql.append("and upper(desc_txt) like ? ");
 			sql.append("order by code_txt ");
 		}
 

@@ -62,6 +62,8 @@ public class PatentVO extends SBModuleVO {
 		this.redirectAddress = dbUtil.getStringVal("redirect_address_txt", rs);
 		this.redirectName = dbUtil.getStringVal("redirect_nm", rs);
 		this.statusFlag = dbUtil.getIntVal("status_flg", rs);
+		this.createDate = dbUtil.getDateVal("create_dt", rs);
+		this.updateDate = dbUtil.getDateVal("update_dt", rs);
 	}
 
 	/**
