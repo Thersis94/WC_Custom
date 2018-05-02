@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.InventoryAction;
-import com.rezdox.action.RezDoxUtils;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -77,7 +76,6 @@ public class InventoryFormProcessor extends FormDataProcessor {
 			Map.Entry<String, FormFieldVO> entry = iter.next();
 			CoreField param = EnumUtil.safeValueOf(CoreField.class, entry.getValue().getSlugTxt());
 			if (param != null) {
-				RezDoxUtils.validateDataType(entry.getValue());
 				req.setParameter(param.getReqParam(), entry.getValue().getResponseText());
 				log.debug(String.format("%s=%s", param.getReqParam(), entry.getValue().getResponseText()));
 				iter.remove();
@@ -110,10 +108,8 @@ public class InventoryFormProcessor extends FormDataProcessor {
 		List<FormFieldVO> fields = new ArrayList<>(data.getCustomData().values().size());
 		for (FormFieldVO vo : data.getCustomData().values()) {
 			// Save valid responses
-			if (vo.getResponses() != null && !vo.getResponses().isEmpty()) {
-				RezDoxUtils.validateDataType(vo);
+			if (vo.getResponses() != null && !vo.getResponses().isEmpty())
 				fields.add(vo);
-			}
 		}
 
 		deleteSavedResponses();

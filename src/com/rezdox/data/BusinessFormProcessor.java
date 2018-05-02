@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.BusinessAction;
-import com.rezdox.action.RezDoxUtils;
 import com.rezdox.vo.BusinessVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
@@ -121,7 +120,6 @@ public class BusinessFormProcessor extends FormDataProcessor {
 			// Add parameters to the request to be saved to the business table
 			BusinessField param = EnumUtil.safeValueOf(BusinessField.class, entry.getValue().getSlugTxt());
 			if (param != null) {
-				RezDoxUtils.validateDataType(entry.getValue());
 				req.setParameter(param.getReqParam(), entry.getValue().getResponseText());
 				iter.remove();
 			}
@@ -241,7 +239,6 @@ public class BusinessFormProcessor extends FormDataProcessor {
 
 			// Save valid responses.
 			if (vo.getResponses() != null && !vo.getResponses().isEmpty() && !StringUtil.isEmpty(vo.getSlugTxt())) {
-				RezDoxUtils.validateDataType(vo);
 				newFormFields.add(vo);
 			}
 		}
