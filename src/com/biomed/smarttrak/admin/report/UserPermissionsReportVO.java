@@ -44,7 +44,8 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 	private static final String COLUMN_NAME_SPACER = " - ";
 
 	private List<AccountUsersVO> accounts;
-	private static final String REPORT_TITLE = "User Permissions Report";
+	private boolean showUsers;
+	private String reportTitle;
 	private static final String ACCT_ID = "ACCT_ID";
 	private static final String ACCT_NM = "ACCT_NM";
 	private static final String USER_ID = "USER_ID";
@@ -61,7 +62,6 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
         super();
         setContentType("application/vnd.ms-excel");
         isHeaderAttachment(Boolean.TRUE);
-        setFileName(REPORT_TITLE.replace(' ', '-')+".xls");
         accounts = new ArrayList<>();
 	}
 
@@ -71,9 +71,10 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 	@Override
 	public byte[] generateReport() {
 		log.debug("generateReport...");
+        setFileName(reportTitle.replace(' ', '-')+".xls");
 
 		ExcelReport rpt = new ExcelReport(getHeader());
-		rpt.setTitleCell(REPORT_TITLE);
+		rpt.setTitleCell(reportTitle);
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
 		generateDataRows(rows);
@@ -88,7 +89,15 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object o) {
-		this.accounts =  (List<AccountUsersVO>) o;
+		Map<String, Object> data = (Map<String, Object>) o;
+		this.accounts = (List<AccountUsersVO>) data.get("accounts");
+		this.showUsers = (boolean) data.get("showUsers");
+		if (this.showUsers) {
+			this.reportTitle = "User Permissions Report";
+		} else {
+			this.reportTitle = "Account Permissions Report";
+		}
+		
 	}
 	
 	/**
@@ -109,15 +118,20 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 				row = new HashMap<>();
 				row.put(ACCT_ID, acct.getAccountId());
 				row.put(ACCT_NM, acct.getAccountName());
-				row.put(USER_ID, user.getUserId());
-				row.put(EMAIL,user.getEmailAddress());
-				row.put(FULL_NM, user.getFullName());
-				row.put(HAS_FD, checkFlag(acct.getFdAuthFlg(),user.getFdAuthFlg()));
-				row.put(HAS_GA, checkFlag(acct.getGaAuthFlg(),user.getGaAuthFlg()));
+				if (showUsers) {
+					row.put(USER_ID, user.getUserId());
+					row.put(EMAIL,user.getEmailAddress());
+					row.put(FULL_NM, user.getFullName());
+				}
+				row.put(HAS_FD, checkFlag(acct.getFdAuthFlg(),user.getFdAuthFlg())? "True":"");
+				row.put(HAS_GA, checkFlag(acct.getGaAuthFlg(),user.getGaAuthFlg())? "True":"");
 				// loop hierarchy.
 				addPermissions(row, acct.getPermissions());
 				row.put(HUBSPOT, buildHubSpot(user, acct));
 				rows.add(row);
+				
+				// Only build one row if we aren't showing user data
+				if (!showUsers) break;
 			}
 		}
 
@@ -130,7 +144,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 	 * @param userFlag
 	 * @return
 	 */
-	protected Boolean checkFlag(int acctFlag, int userFlag) {
+	protected boolean checkFlag(int acctFlag, int userFlag) {
 		if (userFlag == 0) {
 			return Convert.formatBoolean(acctFlag);
 		} else {
@@ -146,9 +160,11 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put(ACCT_ID,"Account ID");
 		headerMap.put(ACCT_NM,"Account Name");
-		headerMap.put(USER_ID,"User ID");
-		headerMap.put(EMAIL,"Username");
-		headerMap.put(FULL_NM,"User Full Name");
+		if (showUsers) {
+			headerMap.put(USER_ID,"User ID");
+			headerMap.put(EMAIL,"Username");
+			headerMap.put(FULL_NM,"User Full Name");
+		}
 		headerMap.put(HAS_FD,"Has FD");
 		headerMap.put(HAS_GA,"Has GA");
 		// loop the first account's SmarttrakTree to get the hierarchy
@@ -227,7 +243,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 			if (n.getDepthLevel() != MAX_DEPTH_LEVEL) continue;
 			// Permissions are authoritative at level 4 so we use the level 4 perm
 			PermissionVO perm = (PermissionVO)n.getUserObject();
-			row.put(n.getNodeId(), perm.isBrowseAuth());
+			row.put(n.getNodeId(), perm.isBrowseAuth()? "True": "");
 		}
 	}
 	
