@@ -8,8 +8,13 @@ import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.security.saml.SAMLV2Constants;
+import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SAMLLoginModule;
 
@@ -30,6 +35,7 @@ public class SRTSSOLoginModule extends SAMLLoginModule {
 	public UserDataVO authenticateUser(String user, String pwd) throws AuthenticationException {
 		UserDataVO userData = super.authenticateUser(user, pwd);
 
+		//Convert UserDataVO to SRTRosterVO
 		return loadSRTUser(userData);
 	}
 
@@ -44,7 +50,7 @@ public class SRTSSOLoginModule extends SAMLLoginModule {
 	public SRTRosterVO loadSRTUser(UserDataVO wcUser) throws AuthenticationException {
 		//Attempt to retrieve SRT Roster record from Database.
 		Connection conn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
-		List<Object> vals = Arrays.asList(wcUser.getProfileId());
+		List<Object> vals = Arrays.asList(wcUser.getAttributes().get(SAMLV2Constants.NAME_ID_ELE));
 		List<SRTRosterVO> users = new DBProcessor(conn).executeSelect(buildRosterSql(), vals, new SRTRosterVO());
 		log.info(users);
 		if(!users.isEmpty()) {
@@ -65,20 +71,22 @@ public class SRTSSOLoginModule extends SAMLLoginModule {
 	private SRTRosterVO matchUser(UserDataVO wcUser, List<SRTRosterVO> users) {
 		SRTRosterVO roster = users.get(0);
 		roster.setData(wcUser.getDataMap());
+
 		//THIS NEEDS TO BE SET OFF ORIGINAL RECORD!
-		roster.setAuthenticated(wcUser.isAuthenticated());
+		if(!StringUtil.isEmpty(wcUser.getEmailAddress())) {
+			roster.setAuthenticated(wcUser.isAuthenticated());
+		}
 		return roster;
 	}
 
 	/**
 	 * Build the SRT Roster Lookup Query.
-	 * TODO - Update to use WWID if necessary Later On.
 	 * @return
 	 */
 	private String buildRosterSql() {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("DPY_SYN_SRT_ROSTER where profile_id = ? ");
+		sql.append("DPY_SYN_SRT_ROSTER where wwid = ? ");
 
 		return sql.toString();
 	}
@@ -91,8 +99,7 @@ public class SRTSSOLoginModule extends SAMLLoginModule {
 	public UserDataVO authenticateUser(String encProfileId) throws AuthenticationException {
 		UserDataVO userData = super.authenticateUser(encProfileId);
 
-		//redirect to the user's personal homepage.
-
+		//Convert UserDataVO to SRTRosterVO
 		return loadSRTUser(userData);
 	}
 
@@ -110,5 +117,47 @@ public class SRTSSOLoginModule extends SAMLLoginModule {
 		//set a parameter to invoke SSO and leverage the superclass implementation
 		req.setParameter(Constants.SSO_INITIATE, "true");
 		return super.canInitiateLogin(req);
+	}
+
+	/**
+	 * Manages the retrieval or creation of a user's authentication record
+	 * @param conn
+	 * @param user
+	 * @param site
+	 * @param pwd
+	 * @throws AuthenticationException
+	 */
+	@Override
+	public void manageAuthenticationRecord(Connection conn, UserDataVO user, SiteVO site, String pwd) throws AuthenticationException {
+
+		//If user doesn't have an email address, attempt to retrieve it.
+		if(StringUtil.isEmpty(user.getEmailAddress())) {
+			//Load the Roster User using WWID on user Attributes Map.
+			SRTRosterVO r = loadSRTUser(user);
+
+			//Copy data back to original User.  This primarily gets us ProfileId.
+			user.setData(r.getDataMap());
+
+			//Attempt to populate User with Profile Data so we can Authenticate.
+			matchEmailAddress(conn, user);
+		}
+
+		//Proceed with normal Authentication.
+		super.manageAuthenticationRecord(conn, user, site, pwd);
+	}
+
+
+	/**
+	 * Attempt to load ProfileData for the given user.  We are only passed
+	 * WWID from SSO so we need to get the EmailAddress for the user in
+	 * order to proceed with login.
+	 * @param user
+	 */
+	private void matchEmailAddress(Connection conn, UserDataVO user) {
+		try {
+			ProfileManagerFactory.getInstance(getAttributes()).populateRecords(conn, Arrays.asList(user));
+		} catch (DatabaseException e) {
+			log.error("Error Processing Code", e);
+		}
 	}
 }
