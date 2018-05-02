@@ -148,13 +148,14 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 		SMTChartVO chart = new SMTChartVO(data);
 		chart.setPrimaryXTitle(xTitle);
 		chart.setPrimaryYTitle(yTitle);
-		
-		SMTChartIntfc theChart = SMTChartFactory.getInstance(ProviderType.GOOGLE, chart, null);
-		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(ct, ProviderType.GOOGLE, full);
-		
+		chart.setTitle("My test title");
+		chart.setSubtitle("My subtitle");
+		SMTChartIntfc theChart = SMTChartFactory.getInstance(ProviderType.HIGH_CHARTS);
+		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(ct, ProviderType.HIGH_CHARTS, full);
 		options.getChartOptions().put("colors", CHART_COLORS.toArray());
 		options.addOptionsFromGridData(chart);
 		theChart.addCustomValues(options.getChartOptions());
+		theChart.processData(chart, ct);
 		
 		return theChart;
 	}
