@@ -130,7 +130,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	 */
 	private List<Node> loadSectionsFromId(ActionRequest req, List<Node> sections) throws ActionException {
 		SmarttrakRoleVO role;
-		if (req.hasParameter("overrideUser") && "smarttrakAdmin".equals(req.getParameter("amid"))) {
+		if (req.hasParameter("overrideUser")) {
 			role = loadUser(req.getParameter("overrideUser"), req);
 		} else {
 			role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
