@@ -322,7 +322,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param b
 	 * @return 
 	 */
-	private List<ConnectionReportVO> generateConnections(String targetId, String inqueryType, ActionRequest req) {
+	protected List<ConnectionReportVO> generateConnections(String targetId, String inqueryType, ActionRequest req) {
 		log.debug("generating connections");
 
 		// Sort on two fields in default view
@@ -447,6 +447,12 @@ public class ConnectionAction extends SimpleActionAdapter {
 			sql.append("and approved_flg = ? ");
 			log.debug("approved "+req.getIntegerParameter(APPROVED_FLAG));
 			params.add(req.getIntegerParameter(APPROVED_FLAG));
+		}
+		
+		if (req.hasParameter(BusinessAction.REQ_BUSINESS_ID)) {
+			String businessId = req.getParameter(BusinessAction.REQ_BUSINESS_ID);
+			sql.append("and category_cd != 'MEMBER' and ((rcpt_id = ? and direction_cd = 'sending') or (sndr_id = ? and direction_cd = 'receiving')) ");
+			params.addAll(Arrays.asList(businessId, businessId));
 		}
 	}
 

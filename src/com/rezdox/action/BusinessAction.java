@@ -11,6 +11,7 @@ import java.util.Map;
 import com.rezdox.data.BusinessFormProcessor;
 import com.rezdox.vo.BusinessAttributeVO;
 import com.rezdox.vo.BusinessVO;
+import com.rezdox.vo.ConnectionReportVO;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO.Group;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
@@ -144,6 +145,12 @@ public class BusinessAction extends SBActionAdapter {
 			putModuleData(retrieveBusinessInfoForm(req));
 		} else {
 			putModuleData(businessList, businessList.size(), false);
+		}
+		
+		if (req.hasParameter("storeFront")) {
+			ConnectionAction ca = new ConnectionAction(dbConn, attributes);
+			List<ConnectionReportVO> connections = ca.generateConnections(RezDoxUtils.getMemberId(req), ConnectionAction.MEMBER, req);
+			req.setAttribute("isConnected", !connections.isEmpty());
 		}
 	}
 
