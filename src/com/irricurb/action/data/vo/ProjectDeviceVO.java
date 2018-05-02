@@ -37,6 +37,7 @@ public class ProjectDeviceVO extends DeviceVO {
 	private String serialNumberText;
 	private Double longitudeNumber = 0.0;
 	private Double latitudeNumber = 0.0;
+	private String networkdGatewayText;
 	private String statusCode;
 	
 	// Sub-bean Elements
@@ -171,6 +172,21 @@ public class ProjectDeviceVO extends DeviceVO {
 		return zone;
 	}
 	
+	/**
+	 * @return the networkdGatewayText
+	 */
+	@Column(name="network_gateway_txt")
+	public String getNetworkdGatewayText() {
+		return networkdGatewayText;
+	}
+
+	/**
+	 * @param networkdGatewayText the networkdGatewayText to set
+	 */
+	public void setNetworkdGatewayText(String networkdGatewayText) {
+		this.networkdGatewayText = networkdGatewayText;
+	}
+
 	/**
 	 * @param projectDeviceId the projectDeviceId to set
 	 */
