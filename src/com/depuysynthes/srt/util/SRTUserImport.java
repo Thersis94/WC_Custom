@@ -36,6 +36,7 @@ import com.smt.sitebuilder.admin.action.OrganizationAction;
 import com.smt.sitebuilder.admin.action.SiteAction;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.security.SBUserRoleContainer;
 import com.smt.sitebuilder.security.UserLogin;
 
 /****************************************************************************
@@ -206,7 +207,7 @@ public class SRTUserImport extends CommandLineUtil {
 				rData.put(ImportField.STATE_CD.name(), roster.getState());
 				rData.put(ImportField.ZIP_CD.name(), roster.getZipCode());
 				rData.put(ImportField.PASSWORD_TXT.name(), roster.getPassword());
-				rData.put(ImportField.ROLE_TXT.name(), roster.getCompanyRole());
+				rData.put(ImportField.ROLE_TXT.name(), SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL);
 				rData.put(ImportField.WORKGROUP_ID.name(), roster.getWorkgroupId());
 				rData.put(ImportField.ALLOW_COMM_FLG.name(), 1);
 				rData.put(ImportField.TERRITORY_ID.name(), roster.getTerritoryId());
