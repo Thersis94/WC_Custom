@@ -90,7 +90,7 @@ public class ProjectMapAction extends SBActionAdapter {
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ic_project_device a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_device b on a.device_id = b.device_id ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("project_zone_id = ? ");
-		log.info(sql + "|" + zoneId);
+		log.debug(sql + "|" + zoneId);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), Arrays.asList(new  Object[] {zoneId }), new ProjectDeviceVO());

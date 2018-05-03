@@ -82,7 +82,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 			String projectId = (String) req.getSession().getAttribute(ProjectSelectionAction.PROJECT_LOOKUP);
 			log.debug("Project ID: " + projectId);
 			GridDataVO<ProjectDeviceVO>  data = getProjectDevices(req, projectId);
-			log.info(data);
+			log.debug(data);
 			setModuleData(data);
 		}
 	}
