@@ -63,7 +63,8 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	private static final String GA = "GA_MODULES";
 	private static final String TOTAL = "TOTAL";
 	private static final String AVERAGE = "AVERAGE";
-
+	private static final String SECTION_SEPARATOR = " - ";
+	
 	/**
 	 * 
 	 */
@@ -182,7 +183,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 					userTotal += manageTotals(row,counts,monthKey);
 				}
 				row.put(TOTAL, userTotal);
-				row.put(AVERAGE, (Math.ceil(userTotal / monthHeaders.size())));
+				row.put(AVERAGE, (Math.round(userTotal / monthHeaders.size())));
 				userTotal = 0;
 				
 				rows.add(row);
@@ -216,19 +217,19 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		List<String> gaData = new ArrayList<>();
 		
 		PermissionVO acl;
-		for(Node node : t.preorderList()) {
+		for(Node node : t.preorderList()) {			
 			//Permissions are enforced at depth level four, so check there
 			if(node.getDepthLevel() != 4) continue;
-			//add only the sections that have account permissions of PROF, FD, or GA
+			//add only the sections, with parent names, that have account permissions of PROF, FD, or GA
 			acl = (PermissionVO) node.getUserObject();
-			if(acl.isBrowseAuth()) {
-				profData.add(acl.getSectionNm());
+			if(acl.isBrowseAuth()) {				
+				profData.add(node.getParentName() +SECTION_SEPARATOR+ acl.getSectionNm());
 			}
 			if(acl.isFdAuth()) {
-				fdData.add(acl.getSectionNm());
+				fdData.add(node.getParentName() +SECTION_SEPARATOR+ acl.getSectionNm());
 			}
 			if(acl.isGaAuth()) {
-				gaData.add(acl.getSectionNm());
+				gaData.add(node.getParentName() +SECTION_SEPARATOR+ acl.getSectionNm());
 			}
 		}
 		
