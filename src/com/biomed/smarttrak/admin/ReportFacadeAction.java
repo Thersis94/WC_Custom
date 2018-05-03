@@ -210,7 +210,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		aua.setDBConnection(dbConn);
 		aua.setAttributes(getAttributes());
 		AccountCountReportVO rpt = new AccountCountReportVO();
-		rpt.setData(aua.loadAccountCounts());
+		rpt.setData(aua.loadAccountCounts(req));
 		return rpt;
 	}
 
