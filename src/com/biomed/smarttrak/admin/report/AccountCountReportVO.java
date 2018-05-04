@@ -91,8 +91,8 @@ public class AccountCountReportVO extends AbstractSBReportVO {
 			int openComp = getSeatCount(e.getValue(), "OC");
 			int activeUpdates = getSeatCount(e.getValue(), "AU");
 			int openUpdates = getSeatCount(e.getValue(), "OU");
-			int filled = activeUsers + activeExtra + activeTrial + activeComp + activeUpdates;
-			int open = openUsers + openExtra + openTrial + openComp + openUpdates;
+			int filled = activeUsers + activeExtra;
+			int open = openUsers + openExtra;
 			int total = filled + open;
 			row.createCell(cellCnt++).setCellValue(e.getKey().getAccountName());
 			row.createCell(cellCnt++).setCellValue(e.getKey().getAccountId());
