@@ -869,10 +869,21 @@ public class AccountUserAction extends SBActionAdapter {
 				counts = new HashMap<>();
 			}
 			
-			incrementActive(counts, rs.getString("status_cd"), rs.getInt("active_flg"));
+			incrementActive(counts, rs.getString("status_cd"), true, rs.getInt("active_flg"));
 		}
 		return results;
 	}
+	
+	
+	/**
+	 * Overloaded version of the increment status that can be used by summateStatus
+	 * @param licenses
+	 * @param licenseType
+	 */
+	protected void incrementActive(Map<String, Integer> licenses, String licenseType) {
+		incrementActive(licenses, licenseType, false, 0);
+	}
+	
 	
 	/**
 	 * Increment the count provided the user has the appropriate license type
@@ -880,9 +891,11 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param licenseType
 	 * @param i 
 	 */
-	private void incrementActive(Map<String, Integer> licenses, String licenseType, int status) {
+	private void incrementActive(Map<String, Integer> licenses, String licenseType, boolean isReport, int status) {
 		if (StringUtil.isEmpty(licenseType)) return;
-		String activeType = status == 1? "A":"O";
+		String activeType = "";
+		if (isReport)
+			activeType = status == 1? "A":"O";
 		switch (licenseType) {
 		case "A":
 		case "E":
