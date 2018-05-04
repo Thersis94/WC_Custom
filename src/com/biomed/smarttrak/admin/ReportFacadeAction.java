@@ -1,5 +1,8 @@
 package com.biomed.smarttrak.admin;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.servlet.http.HttpServletResponse;
 
 import com.biomed.smarttrak.admin.report.AccountCountReportVO;
@@ -56,6 +59,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		COMPANY_SEGMENTS,
 		USER_LIST,
 		USER_PERMISSIONS,
+		ACCOUNT_PERMISSIONS,
 		USAGE_ROLLUP_DAILY,
 		USAGE_ROLLUP_MONTHLY,
 		SUPPORT,
@@ -108,7 +112,10 @@ public class ReportFacadeAction extends SBActionAdapter {
 				rpt = generateUserListReport(req);
 				break;
 			case USER_PERMISSIONS:
-				rpt = generateUserPermissionsReport(req);
+				rpt = generateUserPermissionsReport(req, true);
+				break;
+			case ACCOUNT_PERMISSIONS:
+				rpt = generateUserPermissionsReport(req, false);
 				break;
 			case USAGE_ROLLUP_DAILY:
 				rpt = generateUserUtilizationReport(req,true);
@@ -277,14 +284,17 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected AbstractSBReportVO generateUserPermissionsReport(ActionRequest req) 
+	protected AbstractSBReportVO generateUserPermissionsReport(ActionRequest req, boolean showUsers) 
 			throws ActionException {
 		UserPermissionsReportAction upra = new UserPermissionsReportAction();
 		upra.setDBConnection(dbConn);
 		upra.setAttributes(getAttributes());
 
 		AbstractSBReportVO rpt = new UserPermissionsReportVO();
-		rpt.setData(upra.retrieveUserPermissions(req));
+		Map<String, Object> data = new HashMap<>(2);
+		data.put("accounts", upra.retrieveUserPermissions(req));
+		data.put("showUsers", showUsers);
+		rpt.setData(data);
 		return rpt;
 
 	}
