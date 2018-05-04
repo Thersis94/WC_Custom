@@ -10,6 +10,7 @@ import java.util.Map;
 
 //WC custom
 import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.vo.UserVO.LoginLegend;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 //SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
@@ -40,7 +41,6 @@ public class UserListReportVO extends AbstractSBReportVO {
 	
 	private List<AccountUsersVO> accounts;
 	private static final String REPORT_TITLE = "User List Export";
-	private static final String DATE_DASH_PATTERN = "MM-dd-yyyy";
 	// account fields
 	private static final String ACCT_EXPIRE = "ACCT_EXPIRE";
 	private static final String ACCT_NM = "ACCT_NM";
@@ -83,6 +83,12 @@ public class UserListReportVO extends AbstractSBReportVO {
 	private static final String USER_FD_VAL = "FD";
 	private static final String DEFAULT_COUNTRY = "US";
 	
+	//constants related to last login date
+	public static final String LAST_LOGIN_DT = "LAST_LOGIN_DT";
+	protected static final String DAYS_SINCE_LAST_LOGIN = "DAYS_SINCE_LAST_LOGIN";
+	protected static final String LOGIN_ACTIVITY_FLAG = "LOGIN_ACTIVITY_FLAG";
+	protected static final String NO_ACTIVITY = "No Activity";
+	
 	/**
 	* Constructor
 	*/
@@ -101,7 +107,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		log.debug("generateReport...");
 
-		ExcelReport rpt = new SmarttrakExcelReport(getHeader());
+		ExcelReport rpt = new ExcelReport(getHeader());
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
 		generateDataRows(rows);
@@ -156,9 +162,9 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(LAST_NM, se.decodeValue(user.getLastName()));
 				row.put(EMAIL,user.getEmailAddress());
 				row.put(ACCT_OWNER_FLAG, user.getAcctOwnerFlg() == 1 ? "Yes" : "No");
-				row.put(SmarttrakExcelReport.LAST_LOGIN_DT, formatDate(user.getLoginDate(),true));
-				row.put(SmarttrakExcelReport.DAYS_SINCE_LAST_LOGIN, user.getLoginAge(true));
-				row.put(SmarttrakExcelReport.LOGIN_ACTIVITY_FLAG, user.getLoginLegendText());
+				row.put(LAST_LOGIN_DT, formatDate(user.getLoginDate(),true));
+				row.put(DAYS_SINCE_LAST_LOGIN, user.getLoginAge(true));
+				row.put(LOGIN_ACTIVITY_FLAG, formatActivityText(user));
 				row.put(MAIN_PHONE,formatPhoneNumber(pnf,user.getMainPhone(),user.getCountryCode()));
 				row.put(MOBILE_PHONE,formatPhoneNumber(pnf,user.getMobilePhone(),user.getCountryCode()));
 				row.put(ADDRESS1, se.decodeValue(user.getAddress()));
@@ -186,6 +192,20 @@ public class UserListReportVO extends AbstractSBReportVO {
 			}
 		}
 
+	}
+	
+	/**
+	 * Formats the activity color text based on customer requirements
+	 * @param user
+	 * @return
+	 */
+	protected String formatActivityText(UserVO user) {
+		String activityTxt = user.getLoginLegendColorText();
+		
+		if(activityTxt.equals(LoginLegend.NO_ACTIVITY.getColorText())){
+			activityTxt = LoginLegend.NO_ACTIVITY.getDisplayText();
+		}
+		return activityTxt;
 	}
 	
 	/**
@@ -217,9 +237,9 @@ public class UserListReportVO extends AbstractSBReportVO {
 	 */
 	protected String formatDate(Date date, boolean isLoginDate) {
 		if (isLoginDate && date == null) {
-			return SmarttrakExcelReport.NO_ACTIVITY;
+			return NO_ACTIVITY;
 		}                                       
-		return Convert.formatDate(date, DATE_DASH_PATTERN);
+		return Convert.formatDate(date, Convert.DATE_DASH_SIMPLE_YEAR_PATTERN);
 	}
 
 	/**
@@ -256,9 +276,9 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(LAST_NM, "Last Name");
 		headerMap.put(EMAIL,"Email Address");
 		headerMap.put(ACCT_OWNER_FLAG, "Account Lead");
-		headerMap.put(SmarttrakExcelReport.LAST_LOGIN_DT,"Last Login");
-		headerMap.put(SmarttrakExcelReport.DAYS_SINCE_LAST_LOGIN, "Days Since Last Login");
-		headerMap.put(SmarttrakExcelReport.LOGIN_ACTIVITY_FLAG, "Login Activity Flag");
+		headerMap.put(LAST_LOGIN_DT,"Last Login");
+		headerMap.put(DAYS_SINCE_LAST_LOGIN, "Days Since Last Login");
+		headerMap.put(LOGIN_ACTIVITY_FLAG, "Login Activity Flag");
 		headerMap.put(MAIN_PHONE,"Phone");
 		headerMap.put(MOBILE_PHONE,"Mobile Phone");
 		headerMap.put(ADDRESS1,"Address 1");
