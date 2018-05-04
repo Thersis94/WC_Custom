@@ -87,7 +87,7 @@ public class UserUtilizationMonthlyRollupReportVO extends UserListReportVO {
 		//rpt.setTitleCell(buildReportTitle()); omit title
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
-		generateDataRows(rows);
+		buildDataRows(rows);
 
 		rpt.setData(rows);
 		return rpt.generateReport();
@@ -132,7 +132,7 @@ public class UserUtilizationMonthlyRollupReportVO extends UserListReportVO {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private void generateDataRows(List<Map<String, Object>> rows) {
+	private void buildDataRows(List<Map<String, Object>> rows) {
 		StringEncoder se = new StringEncoder();
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
 		pnf.setFormatType(PhoneNumberFormat.DASH_FORMATTING);
@@ -373,6 +373,7 @@ public class UserUtilizationMonthlyRollupReportVO extends UserListReportVO {
 	 * builds the header map for the excel report
 	 * @return
 	 */
+	@Override
 	protected HashMap<String, String> getHeader() {
 		// this header is intentionally left blank.
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
