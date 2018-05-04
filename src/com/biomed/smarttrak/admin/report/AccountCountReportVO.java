@@ -114,7 +114,7 @@ public class AccountCountReportVO extends AbstractSBReportVO {
 			row.createCell(cellCnt++).setCellValue(formatOpenPercent(open, total));
 			row.createCell(cellCnt++).setCellValue(e.getKey().getClassificationName());
 			row.createCell(cellCnt++).setCellValue(buildPermissions(e.getKey().getPermissions(), true));
-			row.createCell(cellCnt++).setCellValue(buildPermissions(e.getKey().getPermissions(), false));
+			row.createCell(cellCnt).setCellValue(buildPermissions(e.getKey().getPermissions(), false));
 		}
 	}
 
@@ -195,7 +195,7 @@ public class AccountCountReportVO extends AbstractSBReportVO {
 		row.createCell(cellCnt++).setCellValue("Percent Open");
 		row.createCell(cellCnt++).setCellValue("Classification");
 		row.createCell(cellCnt++).setCellValue("GA Modules");
-		row.createCell(cellCnt++).setCellValue("FD Modules");
+		row.createCell(cellCnt).setCellValue("FD Modules");
 	}
 
 
