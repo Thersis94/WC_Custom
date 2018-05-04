@@ -21,8 +21,6 @@ import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
-// WebCrescendo
-import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserUtilizationReportVO.java</p>
@@ -35,7 +33,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  @since Feb 21, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
+public class UserUtilizationMonthlyRollupReportVO extends UserListReportVO {
 
 	private Map<AccountUsersVO, List<UserVO>> accounts;
 	private Date dateStart;
@@ -89,7 +87,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		log.debug("generateReport...");
 		setFileName(buildReportTitle().replace(' ', '-')+".xls");
 		
-		ExcelReport rpt = new SmarttrakExcelReport(getHeader());
+		ExcelReport rpt = new ExcelReport(getHeader());
 		//rpt.setTitleCell(buildReportTitle()); omit title
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
@@ -170,10 +168,10 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 				row.put(USER_STATUS, user.getLicenseName());
 				row.put(USER_CREATE_DT, Convert.formatDate(user.getCreateDate(), Convert.DATE_SLASH_PATTERN));
 				row.put(EXPIRATION_DT, Convert.formatDate(user.getExpirationDate(), Convert.DATE_SLASH_PATTERN));
-				if (user.getLoginDate() == null) row.put(SmarttrakExcelReport.LAST_LOGIN_DT, SmarttrakExcelReport.NO_ACTIVITY); 
-				else row.put(SmarttrakExcelReport.LAST_LOGIN_DT, Convert.formatDate(user.getLoginDate(), Convert.DATE_SLASH_PATTERN));
-				row.put(SmarttrakExcelReport.DAYS_SINCE_LAST_LOGIN, user.getLoginAge(true));	
-				row.put(SmarttrakExcelReport.LOGIN_ACTIVITY_FLAG, user.getLoginLegendText());
+				if (user.getLoginDate() == null) row.put(LAST_LOGIN_DT, NO_ACTIVITY); 
+				else row.put(LAST_LOGIN_DT, Convert.formatDate(user.getLoginDate(), Convert.DATE_SLASH_PATTERN));
+				row.put(DAYS_SINCE_LAST_LOGIN, user.getLoginAge(true));	
+				row.put(LOGIN_ACTIVITY_FLAG, formatActivityText(user));
 				/* Add monthly counts to user's row. We loop the month headers
 				 * List using the values as keys to retrieve a user's counts for a
 				 * given month.  If no key/value exists on the user's map, we 
@@ -386,9 +384,9 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		headerMap.put(USER_STATUS, "License Type");
 		headerMap.put(USER_CREATE_DT, "Create Date");
 		headerMap.put(EXPIRATION_DT, "Expiration Date");
-		headerMap.put(SmarttrakExcelReport.LAST_LOGIN_DT, "Last Logged In Date");
-		headerMap.put(SmarttrakExcelReport.DAYS_SINCE_LAST_LOGIN, "Days Since Last Logged In");
-		headerMap.put(SmarttrakExcelReport.LOGIN_ACTIVITY_FLAG, "Login Activity Flag");
+		headerMap.put(LAST_LOGIN_DT, "Last Logged In Date");
+		headerMap.put(DAYS_SINCE_LAST_LOGIN, "Days Since Last Logged In");
+		headerMap.put(LOGIN_ACTIVITY_FLAG, "Login Activity Flag");
 		for (String monthKey : monthHeaders) {
 			headerMap.put(monthKey, monthKey);
 		}
