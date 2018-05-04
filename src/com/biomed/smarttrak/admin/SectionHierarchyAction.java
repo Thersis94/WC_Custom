@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
@@ -156,9 +155,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	private SmarttrakRoleVO loadUser(String profileId, ActionRequest req) throws ActionException {
 		UserVO user = new UserVO(req);
 		user.setProfileId(profileId);
-		Date dt = new Date();
 		Calendar c = Calendar.getInstance(); 
-		c.setTime(dt); 
 		c.add(Calendar.DATE, 1);
 		user.setExpirationDate( c.getTime());
 		
