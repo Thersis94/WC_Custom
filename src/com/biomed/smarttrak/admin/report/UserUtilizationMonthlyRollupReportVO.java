@@ -21,8 +21,6 @@ import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
-// WebCrescendo
-import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserUtilizationReportVO.java</p>
@@ -35,7 +33,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  @since Feb 21, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
+public class UserUtilizationMonthlyRollupReportVO extends UserListReportVO {
 
 	private Map<AccountUsersVO, List<UserVO>> accounts;
 	private Date dateStart;
@@ -58,16 +56,13 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	private static final String USER_STATUS = "USER_STATUS";
 	private static final String USER_CREATE_DT = "USER_CREATE_DT";
 	private static final String EXPIRATION_DT = "EXPIRATION_DATE";
-	public static final String LAST_LOGIN_DT = "LAST_LOGIN_DATE";
-	public static final String LAST_LOGIN_AGE = "LAST_LOGIN_AGE";
-	private static final String DAYS_SINCE_LAST_LOGIN = "DAYS_SINCE_LAST_LOGGED_IN";
 	private static final String PROF = "PROF_MODULES";
 	private static final String FD = "FD_MODULES";
 	private static final String GA = "GA_MODULES";
 	private static final String TOTAL = "TOTAL";
 	private static final String AVERAGE = "AVERAGE";
-	public static final String NO_ACTIVITY = "No activity";
-
+	private static final String SECTION_SEPARATOR = " - ";
+	
 	/**
 	 * 
 	 */
@@ -92,11 +87,11 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		log.debug("generateReport...");
 		setFileName(buildReportTitle().replace(' ', '-')+".xls");
 		
-		ExcelReport rpt = new UserUtilizationExcelReport(getHeader());
+		ExcelReport rpt = new ExcelReport(getHeader());
 		//rpt.setTitleCell(buildReportTitle()); omit title
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
-		generateDataRows(rows);
+		buildDataRows(rows);
 
 		rpt.setData(rows);
 		return rpt.generateReport();
@@ -141,7 +136,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private void generateDataRows(List<Map<String, Object>> rows) {
+	private void buildDataRows(List<Map<String, Object>> rows) {
 		StringEncoder se = new StringEncoder();
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
 		pnf.setFormatType(PhoneNumberFormat.DASH_FORMATTING);
@@ -176,10 +171,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 				if (user.getLoginDate() == null) row.put(LAST_LOGIN_DT, NO_ACTIVITY); 
 				else row.put(LAST_LOGIN_DT, Convert.formatDate(user.getLoginDate(), Convert.DATE_SLASH_PATTERN));
 				row.put(DAYS_SINCE_LAST_LOGIN, user.getLoginAge(true));	
-				/* Add the login age to data map for reporting formatting. This particular field is utilized for styling 
-				 * and not meant for actual display, hence no matching header column entry*/
-				row.put(LAST_LOGIN_AGE, user.getLoginAge());
-				
+				row.put(LOGIN_ACTIVITY_FLAG, formatActivityText(user));
 				/* Add monthly counts to user's row. We loop the month headers
 				 * List using the values as keys to retrieve a user's counts for a
 				 * given month.  If no key/value exists on the user's map, we 
@@ -189,7 +181,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 					userTotal += manageTotals(row,counts,monthKey);
 				}
 				row.put(TOTAL, userTotal);
-				row.put(AVERAGE, (Math.ceil(userTotal / monthHeaders.size())));
+				row.put(AVERAGE, (Math.round(userTotal / monthHeaders.size())));
 				userTotal = 0;
 				
 				rows.add(row);
@@ -223,19 +215,19 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		List<String> gaData = new ArrayList<>();
 		
 		PermissionVO acl;
-		for(Node node : t.preorderList()) {
+		for(Node node : t.preorderList()) {			
 			//Permissions are enforced at depth level four, so check there
 			if(node.getDepthLevel() != 4) continue;
-			//add only the sections that have account permissions of PROF, FD, or GA
+			//add only the sections, with parent names, that have account permissions of PROF, FD, or GA
 			acl = (PermissionVO) node.getUserObject();
-			if(acl.isBrowseAuth()) {
-				profData.add(acl.getSectionNm());
+			if(acl.isBrowseAuth()) {				
+				profData.add(node.getParentName() +SECTION_SEPARATOR+ acl.getSectionNm());
 			}
 			if(acl.isFdAuth()) {
-				fdData.add(acl.getSectionNm());
+				fdData.add(node.getParentName() +SECTION_SEPARATOR+ acl.getSectionNm());
 			}
 			if(acl.isGaAuth()) {
-				gaData.add(acl.getSectionNm());
+				gaData.add(node.getParentName() +SECTION_SEPARATOR+ acl.getSectionNm());
 			}
 		}
 		
@@ -370,6 +362,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	 * builds the header map for the excel report
 	 * @return
 	 */
+	@Override
 	protected HashMap<String, String> getHeader() {
 		// this header is intentionally left blank.
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
@@ -394,6 +387,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		headerMap.put(EXPIRATION_DT, "Expiration Date");
 		headerMap.put(LAST_LOGIN_DT, "Last Logged In Date");
 		headerMap.put(DAYS_SINCE_LAST_LOGIN, "Days Since Last Logged In");
+		headerMap.put(LOGIN_ACTIVITY_FLAG, "Login Activity Flag");
 		for (String monthKey : monthHeaders) {
 			headerMap.put(monthKey, monthKey);
 		}
