@@ -74,11 +74,8 @@ public class UserListReportAction extends SimpleActionAdapter {
 		// 2. retrieve login attributes
 		Map<String,Map<String,Object>> authAttributes = retrieveAuthAttributes(schema, siteId);
 
-		// 3. retrieve pageviews counts
-		Map<String,Integer> userPageCounts = retrieveUserPageCounts(siteId);
-
-		// 4. Merge data and return.
-		mergeData(accounts, authAttributes, userPageCounts);
+		// 3. Merge data and return.
+		mergeData(accounts, authAttributes);
 
 		return accounts;
 	}
@@ -123,7 +120,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				userAttribs = new HashMap<>();
-				userAttribs.put(SmarttrakExcelReport.LAST_LOGIN_DT, rs.getDate("login_dt"));
+				userAttribs.put(UserListReportVO.LAST_LOGIN_DT, rs.getDate("login_dt"));
 				userAttribs.put(UserListReportVO.OS,rs.getString("oper_sys_txt"));
 				userAttribs.put(UserListReportVO.BROWSER,rs.getString("browser_txt"));
 				userAttribs.put(UserListReportVO.DEVICE_TYPE,rs.getString("device_txt"));
@@ -138,43 +135,17 @@ public class UserListReportAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Retrieves a users cumulative total of page views.
-	 * @param siteId
-	 * @return
-	 */
-	protected Map<String,Integer> retrieveUserPageCounts(String siteId) {
-		log.debug("retrieveUserPageCounts...");
-		StringBuilder sql = buildUserPageCountsQuery();
-		Map<String,Integer> pageCounts = new HashMap<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, siteId);
-			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				pageCounts.put(rs.getString("profile_id"),Convert.formatInteger(rs.getInt("page_count")));
-			}
-
-		} catch (SQLException sqle) {
-			log.error("Error retrieving user page counts, ", sqle);
-		}
-
-		return pageCounts;
-	}
-
-	/**
 	 * Merges last login data with account users.
 	 * @param accounts
 	 * @param lastLogins
 	 */
-	protected void mergeData(List<AccountUsersVO> accounts, 
-			Map<String,Map<String,Object>> authAttribs, Map<String,Integer> userPageCounts) {
+	protected void mergeData(List<AccountUsersVO> accounts, Map<String,Map<String,Object>> authAttribs) {
 		log.debug("mergeData...");
 		Map<String,Object> userAttribs;
 		for (AccountUsersVO account : accounts) {
 
 			List<UserVO> users = account.getUsers();
 			for (UserVO user : users) {
-				// add page counts first
-				user.addAttribute(UserListReportVO.PAGEVIEWS, userPageCounts.get(user.getProfileId()));
 
 				// now add auth attributes if they exist.
 				userAttribs = authAttribs.get(user.getAuthenticationId());
@@ -191,7 +162,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 */
 	protected void setUserExtendedData(UserVO user, Map<String,Object> userAttribs) {
 		for (Map.Entry<String,Object> loginAttrib : userAttribs.entrySet()) {
-			if(SmarttrakExcelReport.LAST_LOGIN_DT.equals(loginAttrib.getKey())) {
+			if(UserListReportVO.LAST_LOGIN_DT.equals(loginAttrib.getKey())) {
 				user.setLoginDate((Date)loginAttrib.getValue());
 			}else {
 				user.addAttribute(loginAttrib.getKey(), loginAttrib.getValue());
@@ -221,7 +192,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 		sql.append("inner join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
 		sql.append("left join register_field_option rfo on rd.register_field_id = rfo.register_field_id ");  
 		sql.append("and rd.value_txt = rfo.option_value_txt ");
-		sql.append("order by ac.account_id, us.user_id, us.profile_id, phone_type_cd");
+		sql.append("order by ac.account_id, us.user_id, us.profile_id, phone_type_cd ");
 		log.debug("user retrieval SQL: " + sql.toString());
 		return sql;
 	}
@@ -240,19 +211,6 @@ public class UserListReportAction extends SimpleActionAdapter {
 		sql.append("inner join authentication_log al on pf.authentication_id = al.authentication_id ");
 		sql.append("where site_id = ? ) rank_filter where rank = 1 order by authentication_id ");
 		log.debug("last login retrieval SQL: " + sql.toString());
-		return sql;
-	}
-
-	/**
-	 * Builds the user page count query.
-	 * @return
-	 */
-	protected StringBuilder buildUserPageCountsQuery() {
-		StringBuilder sql = new StringBuilder(115);
-		sql.append("select profile_id, count(profile_id) as page_count ");
-		sql.append("from pageview_user where site_id = ? ");
-		sql.append("group by profile_id");
-		log.debug("page count retrieval: " + sql.toString());
 		return sql;
 	}
 

@@ -157,6 +157,27 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		public String getReqParam() { return reqParam; }
 		public boolean isArray() { return isArray; }
 	}
+	
+	/**
+	 * Maps last logins to the appropriate login legend color(based on account Users legend page)
+	 */
+	public enum LoginLegend{
+		NO_ACTIVITY(0, "No Activity", "None"), 
+		LESS_THAN_30_DAYS(30, "Less than 30 days", "Green"), 
+		LESS_THAN_90_DAYS(60, "Less than 90 days", "Yellow"),
+		GREATER_THAN_90_DAYS(90, "Greater than 90 days", "Red");
+		private int lastLoginAge; //the corresponding login age
+		private String displayText;
+		private String colorText;
+		private LoginLegend(int lastLoginAge, String displayText, String colorText) {
+			this.lastLoginAge = lastLoginAge;
+			this.displayText = displayText;
+			this.colorText = colorText;
+		}
+		public int getLastLoginAge() { return lastLoginAge;}
+		public String getDisplayText() { return this.displayText; }
+		public String getColorText() { return this.colorText; }
+	} 
 
 	public UserVO() {
 		teams = new ArrayList<>();
@@ -634,6 +655,25 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 			}
 		}
 		return loginAge;
+	}
+	
+	/**
+	 * Retrieves the appropriate last login legend color text based on the user's login Age
+	 * @return
+	 */
+	public String getLoginLegendColorText() {
+		int age = getLoginAge(); //retrieve the login age
+		
+		if(age == -1 || age == 0) {
+			return LoginLegend.NO_ACTIVITY.getColorText();
+		}else if(LoginLegend.LESS_THAN_30_DAYS.getLastLoginAge() == age) {
+			return LoginLegend.LESS_THAN_30_DAYS.getColorText();
+		}else if(LoginLegend.LESS_THAN_90_DAYS.getLastLoginAge() == age) {
+			return LoginLegend.LESS_THAN_90_DAYS.getColorText();
+		}else {
+			return LoginLegend.GREATER_THAN_90_DAYS.getColorText();
+		}
+		
 	}
 
 	@Column(name="active_flg")
