@@ -5,11 +5,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-
-import org.joda.time.DateTime;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.SmarttrakSolrAction;
@@ -157,8 +155,9 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	private SmarttrakRoleVO loadUser(String profileId, ActionRequest req) throws ActionException {
 		UserVO user = new UserVO(req);
 		user.setProfileId(profileId);
-		DateTime dtOrg = new DateTime(new Date());
-		user.setExpirationDate(dtOrg.plusDays(1).toDate());
+		Calendar c = Calendar.getInstance(); 
+		c.add(Calendar.DATE, 1);
+		user.setExpirationDate( c.getTime());
 		
 		SmartTRAKRoleModule roleModule = new SmartTRAKRoleModule(attributes);
 		roleModule.addAttribute(DBRoleModule.DB_CONN, dbConn);
