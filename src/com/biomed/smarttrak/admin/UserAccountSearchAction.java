@@ -45,18 +45,17 @@ public class UserAccountSearchAction extends SBActionAdapter {
 		// If no search data is provided return.
 		if (!req.hasParameter("searchData")) return;
 		
-		String[] splitSearchData = req.getParameter("searchData").toUpperCase().split(" ");
+		// Search by entire phrase with spaces removed so that it can be properly
+		// compared to the first+last combo in the query.
+		String searchData = req.getParameter("searchData").toUpperCase().replace(" ", "");
 		
 		List<AccountVO> accounts = new ArrayList<>();
 		
-		try (PreparedStatement ps = dbConn.prepareStatement(buildSQL(splitSearchData.length))) {
+		try (PreparedStatement ps = dbConn.prepareStatement(buildSQL())) {
 			int pos = 1;
-			for (String searchData : splitSearchData) {
-				ps.setString(pos++, "%" + searchData + "%");
-				ps.setString(pos++, "%" + searchData + "%");
-				ps.setString(pos++, "%" + searchData + "%");
-				ps.setString(pos++, "%" + searchData + "%");
-			}
+			ps.setString(pos++, "%" + searchData + "%");
+			ps.setString(pos++, "%" + searchData + "%");
+			ps.setString(pos, "%" + searchData + "%");
 			
 			ResultSet rs = ps.executeQuery();
 			
@@ -108,7 +107,7 @@ public class UserAccountSearchAction extends SBActionAdapter {
 	 * Create an sql query to search both the accounts and the users in those accounts
 	 * @return
 	 */
-	protected String buildSQL(int searchParams) {
+	protected String buildSQL() {
 		StringBuilder sql = new StringBuilder(750);
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
@@ -118,13 +117,10 @@ public class UserAccountSearchAction extends SBActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("biomedgps_user u ");
 		sql.append("ON u.ACCOUNT_ID = a.ACCOUNT_ID ");
 		
-		sql.append("WHERE 1=2 ");
-		for (int i = 0; i < searchParams; i++) {
-			sql.append("OR UPPER(a.account_nm)  like ? ");
-			sql.append("OR UPPER(u.first_nm) like ? ");
-			sql.append("OR UPPER(u.last_nm) like ? ");
-			sql.append("OR UPPER(u.email_address_txt) like ? ");
-		}
+		sql.append("WHERE ");
+		sql.append("UPPER(a.account_nm)  like ? ");
+		sql.append("OR UPPER(u.first_nm + u.last_nm) like ? ");
+		sql.append("OR UPPER(u.email_address_txt) like ? ");
 		
 		sql.append("GROUP BY a.ACCOUNT_ID, a.ACCOUNT_NM, u.FIRST_NM, u.LAST_NM, u.EMAIL_ADDRESS_TXT, u.USER_ID ");
 		
