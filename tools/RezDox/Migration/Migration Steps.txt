@@ -88,3 +88,15 @@ select * from profile_address where create_dt > '2018-01-18 00:00:00';
 Possible Conversion After Postgres Import:
 alter table rezdox.member_tbl add column password_string_txt text;
 update rezdox.member_tbl set password_string_txt = cast(aespass as varchar);
+
+
+---------------
+Queries for generating core data from existing instance:
+select * from core.module_type where organization_id = 'REZDOX';
+select * from core.module_display where organization_id = 'REZDOX' or display_page_nm like '/custom/rezdox%' or module_type_id in (select module_type_id from core.module_type where organization_id = 'REZDOX');
+select * from core.organization_module where organization_id = 'REZDOX';
+select * from core.theme where organization_id = 'REZDOX';
+select * from core.theme_menu where theme_id in (select theme_id from theme where organization_id = 'REZDOX');
+select * from core.theme_stylesheet where theme_id in (select theme_id from theme where organization_id = 'REZDOX');
+select * from core.theme_element where theme_id in (select theme_id from theme where organization_id = 'REZDOX');
+select * from core.role where organization_id = 'REZDOX';
