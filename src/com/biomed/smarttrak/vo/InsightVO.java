@@ -77,6 +77,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	private Date updateDt;
 	private long countNumber = 0;
 	private List<InsightXRVO> sections;
+	private List<String> sectionIds;
 	private List<ProfileDocumentVO> profileDocuments;
 	private String userId;
 
@@ -136,6 +137,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	public InsightVO() {
 		super(BiomedInsightIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
+		sectionIds = new ArrayList<>();
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
 		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 	}
@@ -224,6 +226,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	 * @param loadSections
 	 */
 	public void configureSolrHierarchies(Tree t) {
+		System.out.println("Configuring.");
 		for (InsightXRVO uxr : sections) {
 			if (StringUtil.isEmpty(uxr.getSectionId()))
 				continue;
@@ -232,6 +235,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 			if(n != null && !StringUtil.isEmpty(n.getFullPath())) {
 				super.addHierarchies(n.getFullPath());
 				SectionVO sec = (SectionVO) n.getUserObject();
+				sectionIds.add(n.getNodeId());
 				super.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 			}
 		}
@@ -725,5 +729,14 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 
 	public void setSliderFlg(int visibleFlg) {
 		this.sliderFlg = visibleFlg;
+	}
+
+	@SolrField(name="sectionid_ss")
+	public List<String> getSectionIds() {
+		return sectionIds;
+	}
+
+	public void setSectionIds(List<String> sectionIds) {
+		this.sectionIds = sectionIds;
 	}
 }
