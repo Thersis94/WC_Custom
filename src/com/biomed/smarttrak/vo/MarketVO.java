@@ -224,7 +224,8 @@ public class MarketVO extends AuthorVO {
 			marketSection = new SectionVO();
 		marketSection.setSectionId(id);
 	}
-	
+
+	@SolrField(name="sectionid_ss")
 	@Column(name="section_id", isReadOnly=true)
 	public String getSectionId() {
 		return marketSection.getSectionId();

@@ -52,7 +52,6 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		//fail fast is there's no search going on
 		if (!req.hasParameter("searchData")) return;
-		
 		List<SolrResponseVO> resp = new ArrayList<>();
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 
@@ -64,22 +63,27 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 		req.setParameter("pmid", mod.getPageModuleId());
 		resp.add(getResults(req));
 
+		// If fq parameters are defined use them of setting them on the update and insight searches
+		boolean hasFq = req.hasParameter("fq");
+
 		//skip the 2nd search if we're just doing an "MLT" on companies and products.
 		if (!req.hasParameter("amid")) {
-			req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + BiomedInsightIndexer.INDEX_TYPE);
+			if (!hasFq)
+				req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + BiomedInsightIndexer.INDEX_TYPE);
 			req.setAttribute(SmarttrakSolrAction.SECTION, Section.INSIGHT);
 			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 			resp.add(getResults(req));
 
 			//query updates separtely from insights, because they use a different ACL
-			req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + UpdateIndexer.INDEX_TYPE);
+			// If fq parameters are defined use them
+			if (!hasFq)
+				req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + UpdateIndexer.INDEX_TYPE);
 			req.setAttribute(SmarttrakSolrAction.SECTION, Section.UPDATES_EDITION);
 			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 			resp.add(getResults(req));
 			//unclear why this is needed, but it is.  If we don't flush the FQ in gets picked-up by the 1st query.  yes, illogical!  -JM- 08.29.17
 			req.setParameter("fq", null);
 		}
-		
 		putModuleData(resp);
 		req.setParameter("searchData", searchData, true);
 	}
