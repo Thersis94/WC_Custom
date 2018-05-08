@@ -38,6 +38,7 @@ public class ProjectDeviceVO extends DeviceVO {
 	private Double longitudeNumber = 0.0;
 	private Double latitudeNumber = 0.0;
 	private String networkGatewayText;
+	private String networkAddressText;
 	private String statusCode;
 	
 	// Sub-bean Elements
@@ -178,6 +179,21 @@ public class ProjectDeviceVO extends DeviceVO {
 	@Column(name="network_gateway_txt")
 	public String getNetworkGatewayText() {
 		return networkGatewayText;
+	}
+
+	/**
+	 * @return the networkAddressText
+	 */
+	@Column(name="network_address_txt")
+	public String getNetworkAddressText() {
+		return networkAddressText;
+	}
+
+	/**
+	 * @param networkAddressText the networkAddressText to set
+	 */
+	public void setNetworkAddressText(String networkAddressText) {
+		this.networkAddressText = networkAddressText;
 	}
 
 	/**

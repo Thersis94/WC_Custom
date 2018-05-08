@@ -167,22 +167,22 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		
 		StringBuilder sql = new StringBuilder(400);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ic_device icd ");
+		sql.append("select icd.*, display_type_cd, unit_txt,b.*, device_attribute_xr_id, value_txt from ").append(getCustomSchema()).append("ic_device icd ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_attribute_device a on icd.device_id = a.device_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_device_attribute b on a.device_attribute_id = b.device_attribute_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ic_device_attribute_xr c ");
-		sql.append("on a.attribute_device_id = c.attribute_device_id and project_device_id = ? ");
+		sql.append("on b.device_attribute_id = c.device_attribute_id and project_device_id = ? ");
 		sql.append(DBUtil.WHERE_CLAUSE).append(" a.device_id in ( ");
 		sql.append("select device_id from ").append(getCustomSchema()).append("ic_project_device where project_device_id = ? ");
 		sql.append(") order by b.attribute_nm ");
-		log.debug(sql + "|" + StringUtil.checkVal(req.getStringParameter("projectDeviceId")));
+		log.info(sql + "|" + StringUtil.checkVal(req.getStringParameter("projectDeviceId")));
 		
 		List<Object> params = new ArrayList<>();
 		params.add(StringUtil.checkVal(req.getStringParameter("projectDeviceId")));
 		params.add(StringUtil.checkVal(req.getStringParameter("projectDeviceId")));
 
 		// Get the data and then assign the options
-		List<ProjectDeviceAttributeVO> data = dbp.executeSelect(sql.toString(), params, new ProjectDeviceAttributeVO()); 
+		List<ProjectDeviceAttributeVO> data = dbp.executeSelect(sql.toString(), params, new ProjectDeviceAttributeVO(), "device_attribute_id"); 
 		for (ProjectDeviceAttributeVO attr : data) {
 			getDeviceAttributeOptions(dbp, attr);
 		}

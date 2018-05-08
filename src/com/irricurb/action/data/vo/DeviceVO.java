@@ -130,14 +130,6 @@ public class DeviceVO extends BeanDataVO {
 	public String getIcon() {
 		return icon;
 	}
-
-	/**
-	 * @return the networkTypeCode
-	 */
-	@Column(name="network_type_cd")
-	public String getNetworkTypeCode() {
-		return networkTypeCode;
-	}
 	
 	/**
 	 * @return the type
@@ -153,6 +145,29 @@ public class DeviceVO extends BeanDataVO {
 	@BeanSubElement
 	public DeviceManufacturerVO getManufacturer() {
 		return manufacturer;
+	}
+
+	/**
+	 * @return the networkTypeCode
+	 */
+	@Column(name="network_type_cd")
+	public String getNetworkTypeCode() {
+		return networkTypeCode;
+	}
+
+	/**
+	 * @return the deviceClassName
+	 */
+	@Column(name="class_nm")
+	public String getDeviceClassName() {
+		return deviceClassName;
+	}
+
+	/**
+	 * @param deviceClassName the deviceClassName to set
+	 */
+	public void setDeviceClassName(String deviceClassName) {
+		this.deviceClassName = deviceClassName;
 	}
 
 	/**
@@ -245,20 +260,5 @@ public class DeviceVO extends BeanDataVO {
 	 */
 	public NetworkTypeVO getNetwork() {
 		return network;
-	}
-
-	/**
-	 * @return the deviceClassName
-	 */
-	@Column(name="class_nm")
-	public String getDeviceClassName() {
-		return deviceClassName;
-	}
-
-	/**
-	 * @param deviceClassName the deviceClassName to set
-	 */
-	public void setDeviceClassName(String deviceClassName) {
-		this.deviceClassName = deviceClassName;
 	}
 }
