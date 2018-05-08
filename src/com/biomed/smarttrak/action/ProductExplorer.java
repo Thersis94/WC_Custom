@@ -672,7 +672,7 @@ public class ProductExplorer extends SBActionAdapter {
 		try {
 			UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 			EmailMessageVO msg = new EmailMessageVO();
-			msg.setSubject("Smarttrak Products");
+			msg.setSubject("SmartTRAK Products");
 			msg.addRecipient(req.getParameter("recipient"));
 			msg.setFrom("info@smarttrak.com");
 

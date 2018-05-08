@@ -150,7 +150,7 @@ public class FinancialDashImportReportVO extends AbstractSBReportVO {
 	 */
 	private int createRow(Row row, int i, boolean writeStarter, int cellCount, Map<Integer, List<FinancialDashRevenueDataRowVO>> dataGroup) {
 		if (!dataGroup.containsKey(i)) {
-			cellCount += 4;
+			cellCount += 7;
 		} else {
 			for (FinancialDashRevenueDataRowVO dataRow : dataGroup.get(i)) {
 				Cell cell = null;

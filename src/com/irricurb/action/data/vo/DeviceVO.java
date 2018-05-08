@@ -33,10 +33,11 @@ public class DeviceVO extends BeanDataVO {
 	private String deviceId;
 	private String manufacturerId;
 	private String deviceTypeCode;
-	private String networkTypeCode;
 	private String name;
 	private String modelNumber;
 	private String icon;
+	private String networkTypeCode;
+	private String deviceClassName;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -244,5 +245,20 @@ public class DeviceVO extends BeanDataVO {
 	 */
 	public NetworkTypeVO getNetwork() {
 		return network;
+	}
+
+	/**
+	 * @return the deviceClassName
+	 */
+	@Column(name="class_nm")
+	public String getDeviceClassName() {
+		return deviceClassName;
+	}
+
+	/**
+	 * @param deviceClassName the deviceClassName to set
+	 */
+	public void setDeviceClassName(String deviceClassName) {
+		this.deviceClassName = deviceClassName;
 	}
 }

@@ -14,6 +14,7 @@ import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
 import com.biomed.smarttrak.security.SecurityController;
+import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateVO.AnnouncementType;
 import com.biomed.smarttrak.vo.UpdateXRVO;
@@ -32,6 +33,7 @@ import com.siliconmtn.util.DateUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
@@ -72,7 +74,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		// If it is then the user must be logged in to reach this point
 		// and can be redirected out to the original link address here.
 		if (req.hasParameter(UpdatesEditionDataLoader.REDIRECT_DEST)) {
-			String redirect = StringEncoder.urlDecode(req.getParameter(UpdatesEditionDataLoader.REDIRECT_DEST));
+			String redirect = StringEncoder.urlDecode(req.getParameter(UpdatesEditionDataLoader.REDIRECT_DEST).replace('|', '&'));
 			sendRedirect(redirect, "", req);
 			return;
 		}
@@ -94,6 +96,9 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, false);
 		//load the updates that should be displayed
 		List<UpdateVO> updates = fetchUpdates(req);
+
+		//adjust appropriate public links if applicable(updates weekly report)
+		adjustContentLinks(updates, req);
 
 		//loop the updates and create a Node on the hierarchy for each of their parent levels (Update Type)
 		for (UpdateVO vo : updates) {
@@ -312,6 +317,23 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		actInf.retrieve(req);
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		return (List<UpdateVO>) mod.getActionData();
+	}
+	
+	/**
+	 * Modifies public links to their corresponding manage tool link
+	 * @param updates
+	 * @param req
+	 */
+	protected void adjustContentLinks(List<UpdateVO> updates, ActionRequest req) {
+		if(!req.hasParameter("modifyLinks")) return; //only perform modification if requested
+		
+		SiteVO siteData = (SiteVO)getAttribute(Constants.SITE_DATA);
+		BiomedLinkCheckerUtil linkUtil = new BiomedLinkCheckerUtil(dbConn, siteData);
+		
+		//update the appropriate links
+		for (UpdateVO vo : updates) {
+			vo.setMessageTxt(linkUtil.modifySiteLinks(vo.getMessageTxt()));
+		}
 	}
 
 

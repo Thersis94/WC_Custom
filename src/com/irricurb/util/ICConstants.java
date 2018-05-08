@@ -26,10 +26,32 @@ public class ICConstants {
 	 * Key in the SC to store information for the project on the controller
 	 */
 	public static final String IC_PROJECT = "IC_PROJECT";
+	
+	/**
+	 * Key value for the encryption key
+	 */
+	public static final String IC_ENCRYPT_KEY = "icEncryptKey";
 
 	/**
 	 * Key in SC to retrieve the url of the portal
 	 */
 	public static final String PORTAL_URL_KEY = "portalUrl";
+	
+	/**
+	 * Key in SC to retrieve the security key for the app
+	 */
+	public static final String SECURITY_KEY = "securityKey";
+	
+	// Error Response Section
+	
+	/**
+	 * Sets the error code and message for the unauthorized request error
+	 */
+	public static final String SECURITY_ERROR_RESPONSE = "IC-ERROR-01: Unauthorized Request, Invalid Security Key";
+	
+	/**
+	 * If the request parameters are not correctly passed, return the error message below 
+	 */
+	public static final String REQUEST_ERROR_RESPONSE = "IC-ERROR-02:you must pass data for the type and json";
 }
 
