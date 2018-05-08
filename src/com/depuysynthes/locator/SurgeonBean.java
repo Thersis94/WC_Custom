@@ -2,6 +2,9 @@ package com.depuysynthes.locator;
 
 // Java 7
 import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -25,7 +28,7 @@ import com.google.gson.JsonObject;
  * Feb 10, 2016: David Bargerhuff: Created class.
  ****************************************************************************/
 public class SurgeonBean implements Serializable {
-	
+
 	private static final long serialVersionUID = -6729600355066995890L;
     private int statusId;
     private int surgeonId;
@@ -39,6 +42,11 @@ public class SurgeonBean implements Serializable {
     private String redirectUrl2;
     private String emailAddress;
     private String degreeDesc;
+    private String educationText;
+    private String certificationText;
+    private String licenseStateCode;
+    private int practiceMonth;
+    private int practiceYear;
     private List<Integer> specialties;
     private List<Integer> procedures;
     private List<Integer> products;
@@ -47,7 +55,7 @@ public class SurgeonBean implements Serializable {
     private List<String> affiliations;
     private double primaryDistance;
     private String uniqueId;
-    
+
     public SurgeonBean(JsonElement jsonElement) {
     	specialties = new ArrayList<>();
     	procedures = new ArrayList<>();
@@ -56,7 +64,7 @@ public class SurgeonBean implements Serializable {
     	affiliations = new ArrayList<>();
     	this.parseData(jsonElement);
     }
-    
+
     /**
      * Parses the surgeon JSON data.
      * @param rs
@@ -76,15 +84,20 @@ public class SurgeonBean implements Serializable {
     		if (jS.has("redirectUrl2")) redirectUrl2 = jS.get("redirectUrl2").getAsString();
     		if (jS.has("emailAddress")) emailAddress = jS.get("emailAddress").getAsString();
     		if (jS.has("degreeDesc")) degreeDesc = jS.get("degreeDesc").getAsString();
+    		if(jS.has("educationText")) educationText = jS.get("educationText").getAsString();
+    		if(jS.has("certificationText")) certificationText = jS.get("certificationText").getAsString();
+    		if(jS.has("licenseStateCode")) licenseStateCode = jS.get("licenseStateCode").getAsString();
+    		if(jS.has("practiceMonth")) practiceMonth = jS.get("practiceMonth").getAsInt();
+    		if(jS.has("practiceYear")) practiceYear = jS.get("practiceYear").getAsInt();
     		parseLocations(jS.getAsJsonArray("locations"));
     		specialties = parseIntegerList(jS.getAsJsonArray("specialties"));
     		procedures = parseIntegerList(jS.getAsJsonArray("procedures"));
     		products = parseIntegerList(jS.getAsJsonArray("products"));
-    		parseAffiliations(jS.getAsJsonArray("affiliations")); 
-    		
+    		parseAffiliations(jS.getAsJsonArray("affiliations"));
+
     	}
     }
-    
+
     /**
      * Parses the JSON array and returns it as a List of Integers.
      * @param jsonArray
@@ -102,7 +115,7 @@ public class SurgeonBean implements Serializable {
     	if (iList == null) iList = new ArrayList<>();
     	return iList;
     }
-    
+
     /**
      * Parses the affiliations JSON
      * @param jsonArray
@@ -115,7 +128,7 @@ public class SurgeonBean implements Serializable {
     		}
     	}
     }
-    
+
     /**
      * Parses the surgeon's locations.
      * @param jLocations
@@ -129,7 +142,7 @@ public class SurgeonBean implements Serializable {
     		locationSize = locations.size();
     	}
     }
-    
+
 	/**
 	 * @return the statusId
 	 */
@@ -291,11 +304,11 @@ public class SurgeonBean implements Serializable {
 	public void setSpecialties(List<Integer> specialties) {
 		this.specialties = specialties;
 	}
-	
+
 	public void addSpecialty(Integer spec) {
 		this.specialties.add(spec);
 	}
-	
+
 	/**
 	 * @return the procedures
 	 */
@@ -308,11 +321,11 @@ public class SurgeonBean implements Serializable {
 	public void setProcedures(List<Integer> procedures) {
 		this.procedures = procedures;
 	}
-	
+
 	public void addProcedure(Integer proc) {
 		this.procedures.add(proc);
 	}
-	
+
 	/**
 	 * @return the products
 	 */
@@ -325,11 +338,11 @@ public class SurgeonBean implements Serializable {
 	public void setProducts(List<Integer> products) {
 		this.products = products;
 	}
-	
+
 	public void addProduct(Integer prod) {
 		this.products.add(prod);
 	}
-	
+
 	/**
 	 * @return the locations
 	 */
@@ -342,7 +355,7 @@ public class SurgeonBean implements Serializable {
 	public void setLocations(List<LocationBean> locations) {
 		this.locations = locations;
 	}
-	
+
 	public void addLocation(LocationBean location) {
 		if (locations == null) locations = new ArrayList<>();
 		this.locations.add(location);
@@ -361,14 +374,14 @@ public class SurgeonBean implements Serializable {
 	public void setAffiliations(List<String> affiliations) {
 		this.affiliations = affiliations;
 	}
-	
+
 	/**
 	 * Sets affiliation values using either a String or a comma-delimited String
 	 * @param affiliations
 	 */
 	public void setAffiliations(String affiliations) {
 		if (affiliations == null || affiliations.length() == 0) return;
-		if (affiliations.indexOf(",") > -1) {
+		if (affiliations.indexOf(',') > -1) {
 			String[] sa = affiliations.split(",");
 			for (int i = 0; i < sa.length; i++) {
 				this.addAffiliation(sa[i]);
@@ -377,7 +390,7 @@ public class SurgeonBean implements Serializable {
 			this.addAffiliation(affiliations);
 		}
 	}
-	
+
 	public void addAffiliation(String affiliation) {
 		if (affiliations == null) affiliations = new ArrayList<>();
 		if (affiliation == null || affiliation.length() == 0) return;
@@ -402,10 +415,10 @@ public class SurgeonBean implements Serializable {
 	 * @return the primaryDistance
 	 */
 	public double getPrimaryDistance() {
-		if (primaryDistance == 0.0) {
-			if (locations != null && locations.size() > 0) {
-				primaryDistance = locations.get(0).getDistance();
-			}
+		if (primaryDistance == 0.0 &&
+				locations != null &&
+					! locations.isEmpty()) {
+						primaryDistance = locations.get(0).getDistance();
 		}
 		return primaryDistance;
 	}
@@ -421,7 +434,7 @@ public class SurgeonBean implements Serializable {
 	 * @return the uniqueId
 	 */
 	public String getUniqueId() {
-		if (locations != null && locations.size() > 0) {
+		if (locations != null && ! locations.isEmpty()) {
 			uniqueId = locations.get(0).getUniqueId();
 			return uniqueId;
 		} else {
@@ -436,4 +449,91 @@ public class SurgeonBean implements Serializable {
 		return locationSize;
 	}
 
+	/**
+	 * @return the educationText
+	 */
+	public String getEducationText() {
+		return educationText;
+	}
+
+	/**
+	 * @param educationText the educationText to set
+	 */
+	public void setEducationText(String educationText) {
+		this.educationText = educationText;
+	}
+
+	/**
+	 * @return the certificationText
+	 */
+	public String getCertificationText() {
+		return certificationText;
+	}
+
+	/**
+	 * @param certificationText the certificationText to set
+	 */
+	public void setCertificationText(String certificationText) {
+		this.certificationText = certificationText;
+	}
+
+	/**
+	 * @return the licenseStateCode
+	 */
+	public String getLicenseStateCode() {
+		return licenseStateCode;
+	}
+
+	/**
+	 * @param licenseStateCode the licenseStateCode to set
+	 */
+	public void setLicenseStateCode(String licenseStateCode) {
+		this.licenseStateCode = licenseStateCode;
+	}
+
+	/**
+	 * @return the practiceMonth
+	 */
+	public int getPracticeMonth() {
+		return practiceMonth;
+	}
+
+	/**
+	 * @param practiceMonth the practiceMonth to set
+	 */
+	public void setPracticeMonth(int practiceMonth) {
+		this.practiceMonth = practiceMonth;
+	}
+
+	/**
+	 * @return the practiceYear
+	 */
+	public int getPracticeYear() {
+		return practiceYear;
+	}
+
+	/**
+	 * @param practiceYear the practiceYear to set
+	 */
+	public void setPracticeYear(int practiceYear) {
+		this.practiceYear = practiceYear;
+	}
+	/**
+	 * Helper method for the JSTL view - calculates the surgeon's number of years in practice.
+	 * @return
+	 */
+	public int getYearsInPractice() {
+		int elapsedYears = 0;
+		if (practiceYear > 0) {
+			LocalDate now = Instant.now().atZone(ZoneId.systemDefault()).toLocalDate();
+			elapsedYears = now.getYear() - practiceYear;
+			if (practiceMonth > now.getMonth().getValue()) {
+				/* If the practice month value is greater than current month value,
+				 * subtract one from the elapsed years value. */
+				elapsedYears -= 1;
+			}
+		}
+
+		return elapsedYears;
+	}
 }
