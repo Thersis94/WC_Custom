@@ -226,7 +226,6 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	 * @param loadSections
 	 */
 	public void configureSolrHierarchies(Tree t) {
-		System.out.println("Configuring.");
 		for (InsightXRVO uxr : sections) {
 			if (StringUtil.isEmpty(uxr.getSectionId()))
 				continue;
