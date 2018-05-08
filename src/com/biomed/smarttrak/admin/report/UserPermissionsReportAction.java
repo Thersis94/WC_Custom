@@ -147,7 +147,7 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 	 * @param req
 	 * @param accounts
 	 */
-	protected void retrieveAccountPermissions(ActionRequest req, 
+	public void retrieveAccountPermissions(ActionRequest req, 
 			List<AccountUsersVO> accounts) {
 		log.debug("retrieveAccountPermissions...");
 		long start = Calendar.getInstance().getTimeInMillis();
