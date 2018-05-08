@@ -10,13 +10,14 @@ import java.util.Map;
 
 //WC custom
 import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.vo.UserVO.LoginLegend;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 //SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
-
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
@@ -45,9 +46,13 @@ public class UserListReportVO extends AbstractSBReportVO {
 	private static final String ACCT_NM = "ACCT_NM";
 	private static final String ACCT_STATUS = "ACCT_STATUS";
 	private static final String ACCT_ID = "ACCT_ID";
+	private static final String ACCT_START_DT = "ACCT_START_DT";
+	private static final String ACCT_TYPE = "ACCT_TYPE";
+	private static final String ACCT_CLASSIFICATION = "ACCT_CLASSIFICATION";
 
 	// profile fields
 	private static final String USER_STATUS = "USER_STATUS";
+	private static final String FULL_NM = "FULL_NM";
 	private static final String FIRST_NM = "FIRST_NM";
 	private static final String LAST_NM = "LAST_NM";
 	private static final String EMAIL = "EMAIL";
@@ -62,23 +67,27 @@ public class UserListReportVO extends AbstractSBReportVO {
 
 	// SmartTRAK user fields
 	private static final String LICENSE_TYPE = "LICENSE_TYPE";
+	private static final String USER_CREATE_DT = "USER_CREATE_DT";
 	private static final String USER_EXPIRE = "USER_EXPIRE";
 	private static final String HAS_FD = "HAS_FD";
 	private static final String USER_ID = "USER_ID";
-
+	private static final String ACCT_OWNER_FLAG = "ACCT_OWNER_FLAG";
+	
 	// other fields
 	private static final String DATE_JOINED = "DATE_JOINED";
-	protected static final String LAST_LOGIN_DT = "LAST_LOGIN_DT";
 	protected static final String OS = "OS";
 	protected static final String BROWSER = "BROWSER";
 	protected static final String DEVICE_TYPE = "DEVICE_TYPE";
-	protected static final String PAGEVIEWS = "PAGEVIEWS";
 
 	private static final String EMPTY_STRING = "";
-	private static final String LIST_DELIMITER = ",";
 	private static final String USER_FD_VAL = "FD";
-	private static final String LOGIN_DATE_NULL_VAL = "Never";
 	private static final String DEFAULT_COUNTRY = "US";
+	
+	//constants related to last login date
+	public static final String LAST_LOGIN_DT = "LAST_LOGIN_DT";
+	protected static final String DAYS_SINCE_LAST_LOGIN = "DAYS_SINCE_LAST_LOGIN";
+	protected static final String LOGIN_ACTIVITY_FLAG = "LOGIN_ACTIVITY_FLAG";
+	protected static final String NO_ACTIVITY = "No Activity";
 	
 	/**
 	* Constructor
@@ -122,6 +131,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	private void generateDataRows(List<Map<String, Object>> rows) {
+		StringEncoder se = new StringEncoder();
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
 		
 		// loop the account map
@@ -134,46 +144,68 @@ public class UserListReportVO extends AbstractSBReportVO {
 			for (UserVO user : acct.getUsers()) {
 				row = new HashMap<>();
 				row.put(ACCT_ID, acct.getAccountId());
-				row.put(ACCT_NM, acct.getAccountName());
+				row.put(ACCT_NM, se.decodeValue(acct.getAccountName()));
+				row.put(ACCT_START_DT, formatDate(acct.getStartDate(), false));
 				row.put(ACCT_EXPIRE, formatDate(acct.getExpirationDate(),false));
 				row.put(ACCT_STATUS, acct.getStatusName());
+				row.put(ACCT_TYPE, acct.getTypeName());
+				row.put(ACCT_CLASSIFICATION, acct.getClassificationName());
 				row.put(USER_STATUS, user.getStatusName());
 				row.put(LICENSE_TYPE, user.getLicenseName());
 				row.put(USER_ID, user.getUserId());
+				row.put(USER_CREATE_DT, user.getCreateDate());
 				row.put(USER_EXPIRE, formatDate(user.getExpirationDate(),false));
-				row.put(RegistrationMap.COMPANY.name(),user.getCompany());
-				row.put(RegistrationMap.TITLE.name(),user.getTitle());
-				row.put(FIRST_NM,user.getFirstName());
-				row.put(LAST_NM,user.getLastName());
+				row.put(RegistrationMap.COMPANY.name(), se.decodeValue(user.getCompany()));
+				row.put(RegistrationMap.TITLE.name(), se.decodeValue(user.getTitle()));
+				row.put(FULL_NM, se.decodeValue(user.getFullName()));
+				row.put(FIRST_NM, se.decodeValue(user.getFirstName()));
+				row.put(LAST_NM, se.decodeValue(user.getLastName()));
 				row.put(EMAIL,user.getEmailAddress());
-				row.put(LAST_LOGIN_DT, formatDate((Date)user.getAttribute(LAST_LOGIN_DT),true));
-				row.put(PAGEVIEWS, user.getAttribute(PAGEVIEWS));
+				row.put(ACCT_OWNER_FLAG, user.getAcctOwnerFlg() == 1 ? "Yes" : "No");
+				row.put(LAST_LOGIN_DT, formatDate(user.getLoginDate(),true));
+				row.put(DAYS_SINCE_LAST_LOGIN, user.getLoginAge(true));
+				row.put(LOGIN_ACTIVITY_FLAG, formatActivityText(user));
 				row.put(MAIN_PHONE,formatPhoneNumber(pnf,user.getMainPhone(),user.getCountryCode()));
 				row.put(MOBILE_PHONE,formatPhoneNumber(pnf,user.getMobilePhone(),user.getCountryCode()));
-				row.put(ADDRESS1,user.getAddress());
-				row.put(ADDRESS2,user.getAddress2());
+				row.put(ADDRESS1, se.decodeValue(user.getAddress()));
+				row.put(ADDRESS2, se.decodeValue(user.getAddress2()));
 				row.put(CITY_NM,user.getCity());
 				row.put(STATE_CD,user.getState());
 				row.put(POSTAL_CD,user.getZipCode());
 				row.put(COUNTRY_CD,user.getCountryCode());
-				row.put(RegistrationMap.SOURCE.name(), user.getSource());
+				row.put(RegistrationMap.SOURCE.name(), se.decodeValue(user.getSource()));
 				row.put(RegistrationMap.UPDATES.name(), StringUtil.capitalize(user.getUpdates()));
 				row.put(RegistrationMap.FAVORITEUPDATES.name(), StringUtil.capitalize(user.getFavoriteUpdates()));
 				row.put(DATE_JOINED, formatDate(user.getCreateDate(),false));
-				row.put(RegistrationMap.DIVISIONS.name(), formatUserDivisions(user.getDivisions()));
+				row.put(RegistrationMap.DIVISIONS.name(), se.decodeValue(user.getPrimaryDivision()));
 				row.put(OS, user.getAttribute(OS));
 				row.put(BROWSER, user.getAttribute(BROWSER));
 				row.put(DEVICE_TYPE, user.getAttribute(DEVICE_TYPE));
 				row.put(HAS_FD, formatUserFDFlag(user.getFdAuthFlg()));
-				row.put(RegistrationMap.NOTES.name(), user.getNotes());
+				row.put(RegistrationMap.NOTES.name(), se.decodeValue(user.getNotes()));
 				row.put(RegistrationMap.COMPANYURL.name(), user.getCompanyUrl());
 				row.put(RegistrationMap.JOBCATEGORY.name(), user.getJobCategory());
 				row.put(RegistrationMap.JOBLEVEL.name(), user.getJobLevel());
 				row.put(RegistrationMap.INDUSTRY.name(), user.getIndustry());
+				
 				rows.add(row);
 			}
 		}
 
+	}
+	
+	/**
+	 * Formats the activity color text based on customer requirements
+	 * @param user
+	 * @return
+	 */
+	protected String formatActivityText(UserVO user) {
+		String activityTxt = user.getLoginLegendColorText();
+		
+		if(activityTxt.equals(LoginLegend.NO_ACTIVITY.getColorText())){
+			activityTxt = LoginLegend.NO_ACTIVITY.getDisplayText();
+		}
+		return activityTxt;
 	}
 	
 	/**
@@ -205,22 +237,9 @@ public class UserListReportVO extends AbstractSBReportVO {
 	 */
 	protected String formatDate(Date date, boolean isLoginDate) {
 		if (isLoginDate && date == null) {
-			return LOGIN_DATE_NULL_VAL;
-		}
-		return Convert.formatDate(date,Convert.DATE_SLASH_ABBREV_PATTERN);
-	}
-	
-	/**
-	 * Parses user divisions list into a delimited String.
-	 * @param divisions
-	 * @return
-	 */
-	protected String formatUserDivisions(List<String> divisions) {
-		String divs = EMPTY_STRING;
-		if (divisions != null && ! divisions.isEmpty()) {
-			divs = StringUtil.getDelimitedList(divisions.toArray(new String[]{}), false, LIST_DELIMITER);
-		}
-		return divs;
+			return NO_ACTIVITY;
+		}                                       
+		return Convert.formatDate(date, Convert.DATE_DASH_SIMPLE_YEAR_PATTERN);
 	}
 
 	/**
@@ -240,19 +259,26 @@ public class UserListReportVO extends AbstractSBReportVO {
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put(ACCT_ID, "Account Id");
 		headerMap.put(ACCT_NM,"Account Name");
+		headerMap.put(ACCT_START_DT, "Account Start Date");
 		headerMap.put(ACCT_EXPIRE,"Account Expiration");
 		headerMap.put(ACCT_STATUS,"Account Status");
+		headerMap.put(ACCT_TYPE, "Account Type");
+		headerMap.put(ACCT_CLASSIFICATION ,"Account Classification");
 		headerMap.put(USER_STATUS,"User Status");
 		headerMap.put(LICENSE_TYPE,"License Type");
 		headerMap.put(USER_ID, "User Id");
+		headerMap.put(USER_CREATE_DT, "User Create Date");
 		headerMap.put(USER_EXPIRE,"User Expiration");
 		headerMap.put(RegistrationMap.COMPANY.name(),"Company");
 		headerMap.put(RegistrationMap.TITLE.name(),"Title");
-		headerMap.put(FIRST_NM,"First");
-		headerMap.put(LAST_NM,"Last");
+		headerMap.put(FULL_NM, "Full Name");
+		headerMap.put(FIRST_NM, "First Name");
+		headerMap.put(LAST_NM, "Last Name");
 		headerMap.put(EMAIL,"Email Address");
+		headerMap.put(ACCT_OWNER_FLAG, "Account Lead");
 		headerMap.put(LAST_LOGIN_DT,"Last Login");
-		headerMap.put(PAGEVIEWS, "Hits");
+		headerMap.put(DAYS_SINCE_LAST_LOGIN, "Days Since Last Login");
+		headerMap.put(LOGIN_ACTIVITY_FLAG, "Login Activity Flag");
 		headerMap.put(MAIN_PHONE,"Phone");
 		headerMap.put(MOBILE_PHONE,"Mobile Phone");
 		headerMap.put(ADDRESS1,"Address 1");
