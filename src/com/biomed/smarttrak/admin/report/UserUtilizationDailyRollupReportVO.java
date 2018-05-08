@@ -8,14 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-// WC custom
-import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UserVO;
-
 // SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.Convert;
-
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
@@ -32,7 +28,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  ***************************************************************************/
 public class UserUtilizationDailyRollupReportVO extends AbstractSBReportVO {
 
-	private Map<AccountVO, List<UserVO>> accounts;
+	private Map<AccountUsersVO, List<UserVO>> accounts;
 	private Date dateStart;
 	private Date dateEnd;
 	private static final String REPORT_TITLE = "Usage Report - Daily Rollup";
@@ -106,7 +102,7 @@ public class UserUtilizationDailyRollupReportVO extends AbstractSBReportVO {
 	@Override
 	public void setData(Object o) {
 		Map<String,Object> reportData = (Map<String,Object>) o;
-		this.accounts =  (Map<AccountVO, List<UserVO>>)reportData.get(UserUtilizationReportAction.KEY_REPORT_DATA);
+		this.accounts =  (Map<AccountUsersVO, List<UserVO>>)reportData.get(UserUtilizationReportAction.KEY_REPORT_DATA);
 		dateStart = (Date)reportData.get(UserUtilizationReportAction.KEY_DATE_START);
 		dateEnd = (Date)reportData.get(UserUtilizationReportAction.KEY_DATE_END);
 	}
@@ -120,9 +116,9 @@ public class UserUtilizationDailyRollupReportVO extends AbstractSBReportVO {
 	private void generateDataRows(List<Map<String, Object>> rows) {
 				
 		// loop the account map
-		for (Map.Entry<AccountVO, List<UserVO>> acct : accounts.entrySet()) {
+		for (Map.Entry<AccountUsersVO, List<UserVO>> acct : accounts.entrySet()) {
 
-			AccountVO a = acct.getKey();
+			AccountUsersVO a = acct.getKey();
 
 			// user vals
 			Map<String,Object> row;
