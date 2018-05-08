@@ -11,22 +11,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-// WC custom
-import com.biomed.smarttrak.vo.AccountVO;
+import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.PermissionVO;
 import com.biomed.smarttrak.vo.UserVO;
-
+import com.siliconmtn.data.Node;
 // SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
 
-// WebCrescendo
-import com.smt.sitebuilder.action.AbstractSBReportVO;
-
 /*****************************************************************************
  <p><b>Title</b>: UserUtilizationReportVO.java</p>
- <p><b>Description: </b></p>
+ <p><b>Description: Builds and formats the data for the monthly utilization report</b></p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
@@ -35,20 +33,36 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  @since Feb 21, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
+public class UserUtilizationMonthlyRollupReportVO extends UserListReportVO {
 
-	private Map<AccountVO, List<UserVO>> accounts;
+	private Map<AccountUsersVO, List<UserVO>> accounts;
 	private Date dateStart;
 	private Date dateEnd;
 	private List<String> monthHeaders;
-	private static final String REPORT_TITLE = "Utilization Report - Monthly Rollup";
-	private static final String NAME = "NAME";
+	private static final String REPORT_TITLE = "Utilization Report - Pageview Monthly Rollup";
+	private static final String ACCOUNT_NAME = "ACCOUNT_NAME";
+	private static final String ACCOUNT_TYPE = "ACCOUNT_TYPE";
+	private static final String ACCOUNT_START_DT = "ACCOUNT_START_DATE";
+	private static final String ACCOUNT_EXPIRATION_DT = "ACCOUNT_EXPIRATION_DATE";
+	private static final String FULL_NAME = "FULL_NAME";
+	private static final String FIRST_NAME = "FIRST_NAME";
+	private static final String LAST_NAME = "LAST_NAME";
 	private static final String TITLE = "TITLE";
 	private static final String EMAIL = "EMAIL_ADDRESS";
 	private static final String PHONE = "PHONE";
 	private static final String UPDATES = "UPDATES";
+	private static final String ACCOUNT_OWNER_FLAG = "ACCOUNT_OWNER";
+	private static final String DIVISIONS = "DIVISIONS";
+	private static final String USER_STATUS = "USER_STATUS";
+	private static final String USER_CREATE_DT = "USER_CREATE_DT";
+	private static final String EXPIRATION_DT = "EXPIRATION_DATE";
+	private static final String PROF = "PROF_MODULES";
+	private static final String FD = "FD_MODULES";
+	private static final String GA = "GA_MODULES";
 	private static final String TOTAL = "TOTAL";
-
+	private static final String AVERAGE = "AVERAGE";
+	private static final String SECTION_SEPARATOR = " - ";
+	
 	/**
 	 * 
 	 */
@@ -61,7 +75,6 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
         super();
         setContentType("application/vnd.ms-excel");
         isHeaderAttachment(Boolean.TRUE);
-        setFileName(REPORT_TITLE.replace(' ', '-')+".xls");
         accounts = new HashMap<>();
         monthHeaders = new ArrayList<>();
 	}
@@ -72,12 +85,13 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	@Override
 	public byte[] generateReport() {
 		log.debug("generateReport...");
-
+		setFileName(buildReportTitle().replace(' ', '-')+".xls");
+		
 		ExcelReport rpt = new ExcelReport(getHeader());
-		rpt.setTitleCell(buildReportTitle());
+		//rpt.setTitleCell(buildReportTitle()); omit title
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
-		generateDataRows(rows);
+		buildDataRows(rows);
 
 		rpt.setData(rows);
 		return rpt.generateReport();
@@ -92,13 +106,12 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 		sb.append(REPORT_TITLE);
 		
 		if (dateStart != null) {
-			sb.append(" (");
-			sb.append(Convert.formatDate(dateStart,Convert.DATE_SLASH_MONTH_PATTERN));
+			sb.append("-");
+			sb.append(Convert.formatDate(dateStart,Convert.DATE_SLASH_PATTERN));
 			if (dateEnd != null) {
 				sb.append(" - ");
-				sb.append(Convert.formatDate(dateEnd,Convert.DATE_SLASH_MONTH_PATTERN));
+				sb.append(Convert.formatDate(dateEnd,Convert.DATE_SLASH_PATTERN));
 			}
-			sb.append(")");
 		}
 		
 		return sb.toString();
@@ -111,7 +124,7 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	@Override
 	public void setData(Object o) {
 		Map<String,Object> reportData = (Map<String,Object>) o;
-		this.accounts =  (Map<AccountVO, List<UserVO>>)reportData.get(UserUtilizationReportAction.KEY_REPORT_DATA);
+		this.accounts =  (Map<AccountUsersVO, List<UserVO>>)reportData.get(UserUtilizationReportAction.KEY_REPORT_DATA);
 		dateStart = (Date)reportData.get(UserUtilizationReportAction.KEY_DATE_START);
 		dateEnd = (Date)reportData.get(UserUtilizationReportAction.KEY_DATE_END);
 		formatMonthHeaders();
@@ -123,154 +136,141 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private void generateDataRows(List<Map<String, Object>> rows) {
-
+	private void buildDataRows(List<Map<String, Object>> rows) {
+		StringEncoder se = new StringEncoder();
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
 		pnf.setFormatType(PhoneNumberFormat.DASH_FORMATTING);
 				
 		// loop the account map
-		for (Map.Entry<AccountVO, List<UserVO>> acct : accounts.entrySet()) {
+		for (Map.Entry<AccountUsersVO, List<UserVO>> acct : accounts.entrySet()) {
 
-			Map<String,Integer> acctTotals = new HashMap<>();
-			AccountVO a = acct.getKey();
-
-			// add acct header row(s)
-			addAccountHeader(rows,a.getAccountName());
+			AccountUsersVO a = acct.getKey();
 
 			// user vals
 			Map<String,Object> row;
 			Map<String,Integer> counts;
-			int userTotal = 0;
+			double userTotal = 0;
 
 			// loop account users
 			for (UserVO user : acct.getValue()) {
 				row = new HashMap<>();
-				row.put(NAME, user.getFullName());
-				row.put(TITLE, user.getTitle());
+				addAccountColumns(a, row);
+				row.put(FULL_NAME, se.decodeValue(user.getFullName()));
+				row.put(FIRST_NAME, se.decodeValue(user.getFirstName()));
+				row.put(LAST_NAME, se.decodeValue(user.getLastName()));
+				row.put(TITLE, se.decodeValue(user.getTitle()));
 				row.put(EMAIL,user.getEmailAddress());
 				pnf.setPhoneNumber(user.getMainPhone());
 				row.put(PHONE, pnf.getFormattedNumber());
 				row.put(UPDATES, StringUtil.capitalize(user.getUpdates()));
-				
+				row.put(ACCOUNT_OWNER_FLAG, user.getAcctOwnerFlg() == 0 ? "No" : "Yes");
+				row.put(DIVISIONS, user.getPrimaryDivision());
+				row.put(USER_STATUS, user.getLicenseName());
+				row.put(USER_CREATE_DT, Convert.formatDate(user.getCreateDate(), Convert.DATE_SLASH_PATTERN));
+				row.put(EXPIRATION_DT, Convert.formatDate(user.getExpirationDate(), Convert.DATE_SLASH_PATTERN));
+				if (user.getLoginDate() == null) row.put(LAST_LOGIN_DT, NO_ACTIVITY); 
+				else row.put(LAST_LOGIN_DT, Convert.formatDate(user.getLoginDate(), Convert.DATE_SLASH_PATTERN));
+				row.put(DAYS_SINCE_LAST_LOGIN, user.getLoginAge(true));	
+				row.put(LOGIN_ACTIVITY_FLAG, formatActivityText(user));
 				/* Add monthly counts to user's row. We loop the month headers
 				 * List using the values as keys to retrieve a user's counts for a
 				 * given month.  If no key/value exists on the user's map, we 
 				 * use a count value of zero. */
 				counts = (Map<String,Integer>)user.getUserExtendedInfo();
 				for (String monthKey : monthHeaders) {
-					userTotal += manageTotals(acctTotals,row,counts,monthKey);
+					userTotal += manageTotals(row,counts,monthKey);
 				}
 				row.put(TOTAL, userTotal);
-				rows.add(row);
+				row.put(AVERAGE, (Math.round(userTotal / monthHeaders.size())));
 				userTotal = 0;
-
+				
+				rows.add(row);
 			}
-
-			// acct footer row(s)
-			addAccountFooter(rows, a.getAccountName(), acctTotals);
 		}
-
+	}
+	
+	/**
+	 * Handles adding the columns associated to the user's account
+	 * @param acct
+	 * @param row
+	 */
+	protected void addAccountColumns(AccountUsersVO acct, Map<String,Object> row) {
+		row.put(ACCOUNT_NAME, acct.getAccountName());
+		row.put(ACCOUNT_TYPE, acct.getTypeName());
+		row.put(ACCOUNT_START_DT, Convert.formatDate(acct.getStartDate(), Convert.DATE_SLASH_PATTERN));
+		row.put(ACCOUNT_EXPIRATION_DT, Convert.formatDate(acct.getExpirationDate(), Convert.DATE_SLASH_PATTERN));
+		addPermissionData(acct, row);
+	}
+	
+	/**
+	 * Handles adding the appropriate account permissions to row data
+	 * @param acct
+	 * @param row
+	 */
+	protected void addPermissionData(AccountUsersVO acct, Map<String,Object> row) {
+		SmarttrakTree t = acct.getPermissions();
+		if(t == null )  return; //nothing to do
+		List<String> profData = new ArrayList<>();
+		List<String> fdData = new ArrayList<>();
+		List<String> gaData = new ArrayList<>();
+		
+		PermissionVO acl;
+		for(Node node : t.preorderList()) {			
+			//Permissions are enforced at depth level four, so check there
+			if(node.getDepthLevel() != 4) continue;
+			//add only the sections, with parent names, that have account permissions of PROF, FD, or GA
+			acl = (PermissionVO) node.getUserObject();
+			if(acl.isBrowseAuth()) {				
+				profData.add(node.getParentName() +SECTION_SEPARATOR+ acl.getSectionNm());
+			}
+			if(acl.isFdAuth()) {
+				fdData.add(node.getParentName() +SECTION_SEPARATOR+ acl.getSectionNm());
+			}
+			if(acl.isGaAuth()) {
+				gaData.add(node.getParentName() +SECTION_SEPARATOR+ acl.getSectionNm());
+			}
+		}
+		
+		//add data to rows
+		row.put(PROF, formatPermissons(profData));
+		row.put(FD, formatPermissons(fdData));
+		row.put(GA, formatPermissons(gaData));	
+	}
+	
+	/**
+	 * Helper method to combine permission data into a delimitted string
+	 * @param permissions
+	 * @return
+	 */
+	protected String formatPermissons(List<String> permissions) {
+		StringBuilder data = new StringBuilder(500);
+		for (int i = 0; i < permissions.size(); i++) {
+			if(i > 0) {
+				data.append(",");
+			}
+			data.append(permissions.get(i));
+		}
+		return data.toString();
 	}
 	
 	/**
 	 * Manages the monthly page view totals for an account.
-	 * @param acctTotals
 	 * @param currRow
 	 * @param counts
 	 * @param monthKey
 	 * @return
 	 */
-	protected int manageTotals(Map<String,Integer>acctTotals, 
-			Map<String,Object> currRow, Map<String,Integer> counts, String monthKey) {
+	protected int manageTotals(Map<String,Object> currRow, Map<String,Integer> counts, String monthKey) {
 		int mCnt = 0;
 		if (counts == null) 
 			return mCnt;
 		
 		if (counts.get(monthKey) != null) {
 			mCnt = counts.get(monthKey);
-			updateAccountTotal(acctTotals,monthKey,mCnt);
+
 		}
 		currRow.put(monthKey,mCnt);
 		return mCnt;
-	}
-
-	/**
-	 * Updates the page view totals for an account.
-	 * @param acctTotals
-	 * @param monthKey
-	 * @param countVal
-	 */
-	protected void updateAccountTotal(Map<String,Integer> acctTotals, String monthKey, int countVal) {
-		if (acctTotals.get(monthKey) != null) {
-			acctTotals.put(monthKey, acctTotals.get(monthKey) + countVal);
-		} else {
-			acctTotals.put(monthKey, countVal);
-		}
-	}
-
-	/**
-	 * Formats the account's header row.
-	 * @param rows
-	 * @param acctNm
-	 */
-	protected void addAccountHeader(List<Map<String,Object>> rows, 
-			String acctNm) {
-		
-		// add account name row.
-		Map<String,Object> row = new HashMap<>();
-		row.put(NAME,acctNm);
-		row.put(TITLE,"");
-		row.put(EMAIL,"");
-		row.put(PHONE,"");
-		row.put(UPDATES,"");
-		for (String monthKey : monthHeaders) {
-			row.put(monthKey, "");
-		}
-		row.put(TOTAL,"");
-		rows.add(row);
-	}
-
-	/**
-	 * Builds the account's footer row.
-	 * @param rows
-	 * @param acctNm
-	 * @param acctTotals
-	 */
-	protected void addAccountFooter(List<Map<String,Object>> rows, String acctNm, 
-			Map<String,Integer> acctTotals) {
-		Map<String,Object> row = new HashMap<>();
-		row.put(NAME,"Total");
-		row.put(TITLE,"");
-		row.put(EMAIL,"");
-		row.put(PHONE,"");
-		row.put(UPDATES,"");
-
-		Integer monthVal;
-		int acctTotal = 0;
-		int monthTotal = 0;
-		for (String monthKey : monthHeaders) {
-			monthVal = acctTotals.get(monthKey);
-			if (monthVal != null) 
-				monthTotal = monthVal;
-
-			row.put(monthKey, monthTotal);
-			acctTotal += monthTotal;
-			monthTotal = 0;
-		}
-		row.put(TOTAL, acctTotal);
-		rows.add(row);
-		
-		row = new HashMap<>();
-		row.put(NAME,"");
-		row.put(TITLE,"");
-		row.put(EMAIL,"");
-		row.put(PHONE,"");
-		row.put(UPDATES,"");
-		for (String monthKey : monthHeaders) {
-			row.put(monthKey, "");
-		}
-		row.put(TOTAL,"");
-		rows.add(row);
 	}
 
 	/**
@@ -362,18 +362,37 @@ public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 	 * builds the header map for the excel report
 	 * @return
 	 */
+	@Override
 	protected HashMap<String, String> getHeader() {
 		// this header is intentionally left blank.
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
-		headerMap.put(NAME,"Name");
+		headerMap.put(ACCOUNT_NAME, "Account Name");
+		headerMap.put(ACCOUNT_TYPE, "Account Type");
+		headerMap.put(ACCOUNT_START_DT, "Account Start Date");
+		headerMap.put(ACCOUNT_EXPIRATION_DT, "Account Expiration Date");
+		headerMap.put(PROF, "Prof Modules");
+		headerMap.put(FD, "FD Modules.");
+		headerMap.put(GA, "GA Modules");
+		headerMap.put(FULL_NAME,"Full Name");
+		headerMap.put(FIRST_NAME,"First Name");
+		headerMap.put(LAST_NAME,"Last Name");
 		headerMap.put(TITLE,"Title");
 		headerMap.put(EMAIL,"Email Address");
 		headerMap.put(PHONE,"Phone");
 		headerMap.put(UPDATES,"Update Frequency");
+		headerMap.put(ACCOUNT_OWNER_FLAG, "Account Lead");
+		headerMap.put(DIVISIONS, "Divisions");
+		headerMap.put(USER_STATUS, "License Type");
+		headerMap.put(USER_CREATE_DT, "Create Date");
+		headerMap.put(EXPIRATION_DT, "Expiration Date");
+		headerMap.put(LAST_LOGIN_DT, "Last Logged In Date");
+		headerMap.put(DAYS_SINCE_LAST_LOGIN, "Days Since Last Logged In");
+		headerMap.put(LOGIN_ACTIVITY_FLAG, "Login Activity Flag");
 		for (String monthKey : monthHeaders) {
 			headerMap.put(monthKey, monthKey);
 		}
-		headerMap.put(TOTAL,"Total");
+		headerMap.put(TOTAL, "Total Views");
+		headerMap.put(AVERAGE, "Average Monthly");
 		return headerMap;
 	} 
 	
