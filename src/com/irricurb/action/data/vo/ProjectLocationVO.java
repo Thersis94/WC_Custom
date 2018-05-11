@@ -36,6 +36,7 @@ public class ProjectLocationVO extends GeocodeLocation {
 	private String projectLocationId;
 	private String projectId;
 	private String name;
+	private String networkAddress;
 	private int manualFlag;
 	
 	// Collections
@@ -169,6 +170,21 @@ public class ProjectLocationVO extends GeocodeLocation {
 	 */
 	public void setZones(List<ProjectZoneVO> zones) {
 		this.zones = zones;
+	}
+
+	/**
+	 * @return the networkAddress
+	 */
+	@Column(name="network_address_txt")
+	public String getNetworkAddress() {
+		return networkAddress;
+	}
+
+	/**
+	 * @param networkAddress the networkAddress to set
+	 */
+	public void setNetworkAddress(String networkAddress) {
+		this.networkAddress = networkAddress;
 	}
 
 }

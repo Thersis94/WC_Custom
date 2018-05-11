@@ -1,29 +1,33 @@
 package com.irricurb.action.project;
 
 // JDK 1.8.x
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.Date;
 
 // Google Gson 2.4
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 // App Libs
 import com.irricurb.action.data.vo.DeviceDataVO;
 import com.irricurb.action.data.vo.DeviceEntityDataVO;
 import com.irricurb.action.data.vo.ProjectDeviceAttributeVO;
 import com.irricurb.action.data.vo.ProjectDeviceVO;
+import com.irricurb.action.data.vo.ProjectLocationVO;
+import com.irricurb.util.ControllerUtil;
+import com.irricurb.util.ICConstants;
 
 // SMT Base Libs 3.3
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.filter.fileupload.Constants;
+import com.siliconmtn.security.AuthorizationException;
+import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 
@@ -71,12 +75,15 @@ public class DataRecieverAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		log.info("Data Received");
+		String msg = null;
 		String typeVal = StringUtil.checkVal(req.getParameter("type")).toUpperCase();
 		DataType type = EnumUtil.safeValueOf(DataType.class, typeVal, DataType.DEVICE);
-		String json = req.getStringParameter("data", "");
-		log.info(json);
-
+		
 		try {
+			String json = URLDecoder.decode(req.getStringParameter("data", ""), "UTF-8");
+			// checkSecurityKey(req);
+			
 			if(type.equals(DataType.SENSOR)) {
 				processSensor(json);
 			} else {
@@ -84,8 +91,45 @@ public class DataRecieverAction extends SimpleActionAdapter {
 			}
 		} catch (Exception e) {
 			log.error("Failed to process data", e);
-			putModuleData(null, 0, false, e.getMessage(), true);
+			msg = e.getMessage();
 		}
+		
+		putModuleData(null, 0, false, msg, msg != null );
+	}
+	
+	/**
+	 * Validates the security key to authenticate that the request is valid
+	 * @param req
+	 * @throws UnsupportedEncodingException
+	 * @throws EncryptionException
+	 * @throws AuthorizationException
+	 */
+	protected void checkSecurityKey(ActionRequest req) throws UnsupportedEncodingException, EncryptionException, AuthorizationException {
+		/// Make sure the security key is recognized
+		String secKey = URLDecoder.decode(req.getParameter(ICConstants.SECURITY_KEY), "UTF-8");
+		
+		String projectLocationId = req.getParameter("projectLocationId");
+		ProjectLocationVO projectLoc = getProjectLocation(projectLocationId, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		String encKey = (String) attributes.get(ICConstants.IC_ENCRYPT_KEY);
+		ControllerUtil.checkAuthorization(encKey, secKey, projectLoc.getProjectId(), req.getRemoteAddr(), projectLoc.getNetworkAddress());
+	
+	}
+	
+	/**
+	 * 
+	 * @param locationId
+	 * @param schema
+	 * @return
+	 */
+	public ProjectLocationVO getProjectLocation(String locationId, String schema) {
+		ProjectLocationVO loc = new ProjectLocationVO();
+		loc.setProjectLocationId(locationId);
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		try {
+			db.getByPrimaryKey(loc);
+		} catch(Exception e) { /* nothing to do as an empty project id will result in no auth */ }
+		
+		return loc;
 	}
 	
 	/**
@@ -100,42 +144,11 @@ public class DataRecieverAction extends SimpleActionAdapter {
 		// Updates or inserts each attribute into the table
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		for (ProjectDeviceAttributeVO attr : data.getAttributes()) {
-			attr.setProjectDeviceId(data.getProjectDeviceId());
-			getDeviceIds(db, attr);
-			log.info(attr);
-			db.save(attr);
+			updateDeviceValue(db, attr);
 		}
 		
 	}
 	
-	/**
-	 * Retrieves the proper keys for the attributes being sent
-	 * @param db
-	 * @param attr
-	 */
-	public void getDeviceIds(DBProcessor db, ProjectDeviceAttributeVO attr) {
-		StringBuilder sql = new StringBuilder(256); 
-		sql.append("select device_attribute_xr_id as key, c.attribute_device_id as value from ");
-		sql.append(getCustomSchema()).append("ic_project_device a ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_device b ");
-		sql.append("on a.device_id = b.device_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_attribute_device c ");
-		sql.append("on b.device_id = c.device_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ic_device_attribute_xr d ");
-		sql.append("on c.attribute_device_id = d.attribute_device_id ");
-		sql.append("where a.project_device_id = ? and c.device_attribute_id = ? ");
-		
-		List<Object> params = new ArrayList<>(2); 
-		params.add(attr.getProjectDeviceId());
-		params.add(attr.getDeviceAttributeId());
-		log.debug(sql + "|" + params);
-		List<GenericVO> items = db.executeSelect(sql.toString(), params, new GenericVO());
-		log.info(items);
-		if (! items.isEmpty()) {
-			attr.setDeviceAttributeXrId((String)items.get(0).getKey());
-			attr.setAttributeDeviceId((String)items.get(0).getValue());
-		}
-	}
 	
 	/**
 	 * 
@@ -145,26 +158,30 @@ public class DataRecieverAction extends SimpleActionAdapter {
 	 */
 	public void processSensor(String json) throws InvalidDataException, DatabaseException {
 		if (json.isEmpty()) throw new InvalidDataException("No JSON Data Available");
+		
+		log.info("Sensor: " + json);
 		Gson g = new Gson();
-		log.info("Ok Here");
-		Type listType = new TypeToken<ArrayList<DeviceDataVO>>(){}.getType();
-		List<DeviceDataVO> readings = g.fromJson(json, listType);
-		log.info(readings);
+		ProjectDeviceVO device = g.fromJson(json, ProjectDeviceVO.class);
 		
 		// Save the reading master entry
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		
-		for (DeviceDataVO data : readings) {
-			db.save(data);
+		DeviceDataVO data = new DeviceDataVO();
+		data.setReadingDate(device.getCreateDate());
+		data.setProjectDeviceId(device.getProjectDeviceId());
+		data.setCreateDate(new Date());
+		db.save(data);
 			
-			// Save the data for each reading
-			for (DeviceEntityDataVO reading:  data.getReadings()) {
-				reading.setProjectDeviceDataId(data.getProjectDeviceDataId());
-				db.save(reading);
-				
-				// Update the sensor value that's stored in the DB.
-				updateSensorValue(db, data.getProjectDeviceId(), reading.getDeviceAttributeId(), reading.getReadingValue());
-			}
+		// Save the data for each reading
+		for (ProjectDeviceAttributeVO attr:  device.getAttributes()) {
+			DeviceEntityDataVO reading = new DeviceEntityDataVO();
+			reading.setProjectDeviceDataId(data.getProjectDeviceDataId());
+			reading.setDeviceAttributeId(attr.getDeviceAttributeId());
+			reading.setReadingValue(Convert.formatDouble(attr.getValue()));
+			reading.setCreateDate(new Date());
+			db.save(reading);
+			
+			// Update the sensor value that's stored in the DB.
+			updateDeviceValue(db, attr);
 		}
 	}
 	
@@ -177,39 +194,20 @@ public class DataRecieverAction extends SimpleActionAdapter {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	protected void updateSensorValue(DBProcessor db, String projectDeviceId, String deviceAttributeId, double value) 
+	protected void updateDeviceValue(DBProcessor db, ProjectDeviceAttributeVO devAttr) 
 	throws InvalidDataException, DatabaseException {
 		StringBuilder sql = new StringBuilder(256);
-		sql.append("select device_attribute_xr_id as key, c.attribute_device_id as value from ");
-		sql.append(getCustomSchema()).append("ic_project_device a ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_device b ");
-		sql.append("on a.device_id = b.device_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ic_attribute_device c ");
-		sql.append("on b.device_id = c.device_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ic_device_attribute_xr d ");
-		sql.append("on c.attribute_device_id = d.attribute_device_id ");
-		sql.append("where a.project_device_id = ? and c.device_attribute_id = ? ");
-		
-		List<Object> params = new ArrayList<>(2); 
-		params.add(projectDeviceId);
-		params.add(deviceAttributeId);
-		log.info(sql + "|" + params);
-		
-		// Get the AProj device attribute id
-		List<GenericVO> xrIds = db.executeSelect(sql.toString(), params, new GenericVO());
-		String xrId = null, attrDeviceId = null;
-		if (!xrIds.isEmpty()) {
-			xrId = (String) xrIds.get(0).getKey();
-			attrDeviceId = (String) xrIds.get(0).getValue();
-		}
+		sql.append("delete from ").append(getCustomSchema()).append("ic_device_attribute_xr ");
+		sql.append("where project_device_id =").append(StringUtil.checkVal(devAttr.getProjectDeviceId(), true));
+		sql.append(" and device_attribute_id = ").append(StringUtil.checkVal(devAttr.getDeviceAttributeId(), true));
+		db.executeSQLCommand(sql.toString());
 		
 		// Assign the values to the bean and update the table
 		ProjectDeviceAttributeVO attr = new ProjectDeviceAttributeVO();
-		attr.setDeviceAttributeXrId(xrId);
-		attr.setProjectDeviceId(projectDeviceId);
-		attr.setAttributeDeviceId(attrDeviceId);
-		attr.setValue(value + "");
-		db.save(attr);
+		attr.setProjectDeviceId(devAttr.getProjectDeviceId());
+		attr.setDeviceAttributeId(devAttr.getDeviceAttributeId());
+		attr.setValue(devAttr.getValue());
+		db.insert(attr);
 	}
 
 }

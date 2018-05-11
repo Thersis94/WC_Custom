@@ -42,6 +42,19 @@ public class ICConstants {
 	 */
 	public static final String SECURITY_KEY = "securityKey";
 	
+	/**
+	 * Key in SC to store the projectId
+	 */
+	public static final String PROJECT_ID = "projectId";
+
+	/**
+	 * Key in SC to store the projectLocationId
+	 */
+	public static final String PROJECT_LOCATION_ID = "projectLocationId";
+	
+	
+	public static final String CONTROLLER_COMMAND_SERVLET = "controllerCommandServlet";
+	
 	// Error Response Section
 	
 	/**
