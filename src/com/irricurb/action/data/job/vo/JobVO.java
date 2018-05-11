@@ -1,7 +1,7 @@
 package com.irricurb.action.data.job.vo;
 
 // JDK 1.8.x
-import java.sql.Date;
+import java.util.Date;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
