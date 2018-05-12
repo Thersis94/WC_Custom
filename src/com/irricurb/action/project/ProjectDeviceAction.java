@@ -180,7 +180,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 			if (! success) throw new IOException();
 			
 		} catch(Exception e) {
-			throw new IOException("Unable to communicate with the Project Controller");
+			throw new IOException("Unable to communicate with the Project Controller",e);
 		}
 	}
 	
