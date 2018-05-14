@@ -2,8 +2,10 @@ package com.irricurb.server;
 
 // JDK 1.8.x
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -13,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 // Log4j 1.2.17
 import org.apache.log4j.Logger;
 
+import com.irricurb.lookup.DeviceAttributeEnum;
 // SMTBase Libs
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.util.Convert;
@@ -37,13 +40,25 @@ public class LEDRingServer {
 
 	private static final int NUMBER_THREADS = 10;
 	private static final Executor THREAD_POOL = Executors.newFixedThreadPool(NUMBER_THREADS);
-	private static final int PORT_NUMBER = 1234;
+	private static final int DEFAULT_PORT_NUMBER = 1234;
 	public static final String LIGHTS_ACTIVE = "lightsActive";
 	
 	private static Logger log = Logger.getLogger(LEDRingServer.class);
-	private static boolean shutdown = false;
-	private static boolean lightsActive = false;
-	private static boolean closeLights = false;
+	private boolean lightsActive = false;
+	private boolean closeLights = false;
+	private InetAddress address;
+	private int port;
+	
+	/**
+	 * 
+	 * @param address
+	 * @param port
+	 * @throws UnknownHostException
+	 */
+	public LEDRingServer(String address, int port) throws UnknownHostException {
+		this.address = InetAddress.getByName(address);
+		this.port = port;
+	}
 	
 	/**
 	 * 
@@ -51,17 +66,25 @@ public class LEDRingServer {
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
-		log.info("Starting server on port: " + PORT_NUMBER + "| Lights Running: " + lightsActive);
+		
+		LEDRingServer server = new LEDRingServer("0.0.0.0", DEFAULT_PORT_NUMBER);
+		server.startServer();
+	}
+	
+	/**
+	 * 
+	 * @throws IOException
+	 */
+	public void startServer() throws IOException {
+		log.info("Starting server on port: " + port);
 		
 		while (true) {
-			try (ServerSocket socket = new ServerSocket(PORT_NUMBER)) {
+			try (ServerSocket serverSocket = new ServerSocket(port, 10, address)) {
+				
 				// Read the request and spawn a thread to handle the request
-				final Socket connection = socket.accept();
+				final Socket connection = serverSocket.accept();
 				Runnable task = () -> handleRequest(connection);
 				THREAD_POOL.execute(task);
-				
-				// Look for the shutdown signal and close the server
-				if (shutdown) break; 
 			}
 		}
 	}
@@ -69,7 +92,7 @@ public class LEDRingServer {
 	/**
 	 * 
 	 */
-	private static void ledRingManager() {
+	private void ledRingManager() {
 		lightsActive = true;
 		while (true) {
 			
@@ -92,10 +115,10 @@ public class LEDRingServer {
 	
 	
 	/**
-	 * 
+	 * Parses the request and performs the requested action
 	 * @param s
 	 */
-	private static void handleRequest(Socket s) {
+	private void handleRequest(Socket s) {
 		
 		// Manage the request and response
 		RequestVO req = new RequestVO(s);
@@ -110,11 +133,25 @@ public class LEDRingServer {
 		if (! lightsActive && Convert.formatBoolean(req.getParameter("start"))) {
 			Runnable task = () -> ledRingManager();
 			THREAD_POOL.execute(task);
+		
+		} else if (lightsActive && Convert.formatBoolean(req.getParameter("start"))) {
+			success = false;
+			errorMsg = ResponseHandler.ErrorCode.RING_RUNNING.getDisplay();
+
 		} else if (lightsActive && Convert.formatBoolean(req.getParameter("stop"))) {
 			closeLights = true;
+			
+		} else if (! lightsActive && Convert.formatBoolean(req.getParameter("stop"))) {
+			success = false;
+			errorMsg = ResponseHandler.ErrorCode.RING_STOPPED.getDisplay();
+		
+			
+		} else if (Convert.formatBoolean(req.getParameter("status"))) {
+			resData.put(DeviceAttributeEnum.ENGAGE.name(), lightsActive ? "On" : "Off");
+			
 		} else {
 			success = false;
-			errorMsg = "Unable to Process Request, invalid data";
+			errorMsg = ResponseHandler.ErrorCode.INVALID_DATA.getDisplay();
 		}
 		
 		resData.put(GlobalConfig.SUCCESS_KEY, success);
@@ -123,10 +160,11 @@ public class LEDRingServer {
 		// Send the response
 		try {
 			res.sendResponse(resData);
-			
 		} catch (IOException e) {
 			log.error("Failed respond to client request: ", e);
 		}
+		
+		
 
 		
 		return;

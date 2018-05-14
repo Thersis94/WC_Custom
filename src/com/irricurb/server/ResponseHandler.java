@@ -30,6 +30,32 @@ public class ResponseHandler {
 	private Map<String, String> headers = new HashMap<>(8);
 	protected static final Logger log = Logger.getLogger(ResponseHandler.class);
 	
+	// Error Responses
+	public enum ErrorCode {
+		INVALID_DATA (" Unable to Process Request, invalid data"),
+		RING_RUNNING ("LED Light Ring is already started"),
+		RING_STOPPED ("LED Light Ring is already stopped");
+		
+		// Member variable for the Name of the enum 
+		private String display;
+		
+		/**
+		 * Constructor to add the enum name
+		 * @param name
+		 */
+		ErrorCode(String display) {
+			this.display = display;
+		}
+		
+		/**
+		 * Returns the name of the enum
+		 * @return
+		 */
+		public String getDisplay() {
+			return this.name() + " : " + this.display + display;
+		}
+	}
+	
 	/**
 	 * 
 	 */
