@@ -207,7 +207,7 @@ public class ResidenceAction extends SBActionAdapter {
 	 */
 	@DatabaseNote(type = DBType.POSTGRES)
 	protected List<ResidenceVO> retrieveResidences(ActionRequest req) {
-		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String schema = getCustomSchema();
 		String residenceId = req.getParameter(RESIDENCE_ID);
 
 		// Using pivot table on the attributes to get additional data for display

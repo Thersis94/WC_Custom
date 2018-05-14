@@ -181,11 +181,15 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("select 'recent_projects_value', 'recent_projects_value', sum(total_no)::text "); 
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_TABLE);
 		sql.append(WHERE_BUSINESS_ID).append(RECENT_SQL).append(BUS_ID_GROUP);
+		sql.append(DBUtil.UNION);
+		sql.append("select 'bus_connections', 'bus_connections', count(*)::text "); 
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_connection");
+		sql.append(DBUtil.WHERE_CLAUSE).append("(sndr_business_id=? or rcpt_business_id=?) and approved_flg=1 ");
 		sql.append("order by slug_txt ");
 
 		// Add the attributes to the business
 		DBProcessor db = new DBProcessor(getDBConnection());
-		List<Object> vals = Arrays.asList(bId,bId,bId,bId,bId,bId);
+		List<Object> vals = Arrays.asList(bId,bId,bId,bId,bId,bId,bId,bId);
 		bus.addAttributes(db.executeSelect(sql.toString(), vals, new BusinessAttributeVO()));
 	}
 
@@ -199,8 +203,8 @@ public class DashboardAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select b.* ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business_member_xr a ");  
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.business_id = b.business_id "); 
-		sql.append("where member_id = ? order by business_nm");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.business_id=b.business_id "); 
+		sql.append("where member_id=? and a.status_flg=1 order by business_nm");
 
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<BusinessVO> businesses = db.executeSelect(sql.toString(), Arrays.asList(memberId), new BusinessVO());
@@ -215,13 +219,11 @@ public class DashboardAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected Map<String, Object> getResidenceData(MemberVO member, String schema) {
-
 		Map<String, Object> data = new HashMap<>();
 		data.put("residence", getResidenceInfo(member.getMemberId(), schema));
 		data.put("rewards", getRewardsInfo(member.getMemberId(), schema));
 		data.put("connections", getConnections(member.getMemberId(), schema));
 		data.put("reviews", getReviews(member.getMemberId(), schema));
-
 		return data;
 	}
 
@@ -234,9 +236,7 @@ public class DashboardAction extends SimpleActionAdapter {
 	protected GenericVO getConnections(String memberId, String schema) {
 		StringBuilder sql = new StringBuilder(256);
 		sql.append("select count(*) as key from ").append(schema).append("rezdox_connection ");
-		sql.append("where (sndr_member_id = ? ");
-		sql.append("or rcpt_member_id = ? ) ");
-		sql.append("and approved_flg = 1 ");
+		sql.append("where (sndr_member_id=? or rcpt_member_id=?) and approved_flg=1");
 
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<GenericVO> data = db.executeSelect(sql.toString(), Arrays.asList(memberId, memberId), new GenericVO());
@@ -253,7 +253,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(768);
 		sql.append("select count(*) as key, coalesce(sum(rating_no), 0) as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(BUS_REVIEW_TABLE);
-		sql.append("where member_id = ? and parent_id is null ");
+		sql.append("where member_id=? and parent_id is null ");
 
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<GenericVO> data = db.executeSelect(sql.toString(), Arrays.asList(memberId), new GenericVO());
@@ -268,24 +268,34 @@ public class DashboardAction extends SimpleActionAdapter {
 	 */
 	protected List<ResidenceVO> getResidenceInfo(String memberId, String schema) {
 		StringBuilder sql = new StringBuilder(768);
-		sql.append("select c.*, d.*, coalesce(p.project_total, 0) as projects_total ");
+		sql.append("select c.*, d.*, coalesce(p.project_total, 0) as projects_total, coalesce(i.inventory_total, 0) as inventory_total ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_member_xr b ");
-		sql.append("inner join ").append(schema).append("rezdox_residence c on b.residence_id = c.residence_id ");
-		sql.append("left outer join ").append(schema).append("rezdox_residence_attribute d ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_residence c on b.residence_id = c.residence_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_residence_attribute d ");
 		sql.append("on c.residence_id = d.residence_id ");
 		sql.append("and slug_txt in ('lastSoldPrice', 'RESIDENCE_ZESTIMATE', 'RESIDENCE_WALK_SCORE', ");
 		sql.append("'RESIDENCE_TRANSIT_SCORE', 'RESIDENCE_SUN_NUMBER') ");
-		sql.append("left outer join ( ");
-		sql.append("select a.residence_id, sum(total_no) as project_total ");
+		//join projects for IMPROVEMENT projects total
+		sql.append(DBUtil.LEFT_OUTER_JOIN);
+		sql.append("(select a.residence_id, sum(total_no) as project_total ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_member_xr a ");
-		sql.append("inner join ").append(schema).append("rezdox_project b on a.residence_id = b.residence_id ");
-		sql.append("where a.member_id = ? ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_project b on a.residence_id=b.residence_id and b.project_category_cd='IMPROVEMENT' and b.residence_view_flg=1 ");
+		sql.append("where a.member_id=? and a.status_flg=1 ");
 		sql.append("group by a.residence_id ");
-		sql.append(") as p on c.residence_id = p.residence_id ");
-		sql.append("where b.member_id = ? ");
+		sql.append(") as p on c.residence_id=p.residence_id ");
+		//join inventory (treasure box) for personal items total
+		sql.append(DBUtil.LEFT_OUTER_JOIN);
+		sql.append("(select a.residence_id, sum(valuation_no) as inventory_total ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_member_xr a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_treasure_item b on a.residence_id=b.residence_id ");
+		sql.append("where a.member_id=? and a.status_flg=1 ");
+		sql.append("group by a.residence_id ");
+		sql.append(") as i on c.residence_id=i.residence_id ");
+		sql.append("where b.member_id=? and b.status_flg=1");
+		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection());
-		return db.executeSelect(sql.toString(), Arrays.asList(memberId, memberId), new ResidenceVO(), "residence_id");
+		return db.executeSelect(sql.toString(), Arrays.asList(memberId, memberId, memberId), new ResidenceVO(), "residence_id");
 	}
 
 	/**
@@ -298,10 +308,10 @@ public class DashboardAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select a.member_id, coalesce(sum(point_value_no), 0) as key, ");
 		sql.append("coalesce(recent_rewards_total, 0) as value ");
-		sql.append("from ").append(schema).append("rezdox_member_reward a ");
-		sql.append("left outer join ( ");
-		sql.append("select member_id, sum(point_value_no) recent_rewards_total ");
-		sql.append("from ").append(schema).append("rezdox_member_reward ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_reward a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN);
+		sql.append("(select member_id, sum(point_value_no) recent_rewards_total ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_reward ");
 		sql.append("where member_id = ? ");
 		sql.append(RECENT_SQL);
 		sql.append("group by member_id ");
@@ -316,4 +326,3 @@ public class DashboardAction extends SimpleActionAdapter {
 		return new GenericVO(0,0);
 	}
 }
-

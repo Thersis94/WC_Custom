@@ -48,11 +48,6 @@ public class InventoryItemVO {
 		photos = new ArrayList<>();
 	}
 
-	@Column(name="treasure_item_id", isPrimaryKey=true)
-	public String getTreasureItemId() {
-		return treasureItemId;
-	}
-
 	/**
 	 * @param req
 	 * @return
@@ -67,6 +62,11 @@ public class InventoryItemVO {
 			vo.setOwnerMemberId(owner.getMemberId());
 		}
 		return vo;
+	}
+
+	@Column(name="treasure_item_id", isPrimaryKey=true)
+	public String getTreasureItemId() {
+		return treasureItemId;
 	}
 
 	@Column(name="owner_member_id")

@@ -274,6 +274,8 @@ public class InventoryAction extends SimpleActionAdapter {
 				db.delete(vo);
 			} else {
 				db.save(vo);
+				//set pkId for downstream _attribute saving
+				req.setParameter(REQ_TREASURE_ITEM_ID, vo.getTreasureItemId());
 			}
 
 		} catch (Exception e) {

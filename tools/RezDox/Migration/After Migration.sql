@@ -203,3 +203,6 @@ alter table custom.rezdox_member_business_review add group_id varchar(32);
 alter table custom.REZDOX_MEMBER_BUSINESS_REVIEW add Constraint BUSINESS_REVIEW_PARENT_SKEY foreign key (PARENT_ID) references custom.REZDOX_MEMBER_BUSINESS_REVIEW (BUSINESS_REVIEW_ID) on update restrict on delete cascade;
 alter table custom.REZDOX_MEMBER_BUSINESS_REVIEW add Constraint BUSINESS_REVIEW_GROUP_SKEY foreign key (GROUP_ID) references custom.REZDOX_MEMBER_BUSINESS_REVIEW (BUSINESS_REVIEW_ID) on update restrict on delete cascade;
 update custom.rezdox_member_business_review set group_id = business_review_id;
+
+--remove stock photos from members - so their initials display on the website
+update custom.rezdox_member set profile_pic_pth=null where len(profile_pic_pth)=0 or profile_pic_pth='/legacy/profile/full/default-member.gif';
