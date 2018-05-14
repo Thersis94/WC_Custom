@@ -66,5 +66,10 @@ public class ICConstants {
 	 * If the request parameters are not correctly passed, return the error message below 
 	 */
 	public static final String REQUEST_ERROR_RESPONSE = "IC-ERROR-02:you must pass data for the type and json";
+	
+	/**
+	 *  JSON error codes
+	 */
+	public static final String ERR_JSON_ACTION = "jsonActionError";
 }
 
