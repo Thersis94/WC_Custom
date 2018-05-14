@@ -8,10 +8,11 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.BasicConfigurator;
 // Log4j 1.2.17
 import org.apache.log4j.Logger;
 
@@ -39,11 +40,12 @@ import com.smt.sitebuilder.common.constants.ErrorCodes;
 public class LEDRingServer {
 
 	private static final int NUMBER_THREADS = 10;
-	private static final Executor THREAD_POOL = Executors.newFixedThreadPool(NUMBER_THREADS);
 	private static final int DEFAULT_PORT_NUMBER = 1234;
+	private static final String DEFAULT_IP_ADDRESS = "0.0.0.0";
 	public static final String LIGHTS_ACTIVE = "lightsActive";
 	
 	private static Logger log = Logger.getLogger(LEDRingServer.class);
+	private final ExecutorService threadPool = Executors.newFixedThreadPool(NUMBER_THREADS);
 	private boolean lightsActive = false;
 	private boolean closeLights = false;
 	private InetAddress address;
@@ -61,13 +63,23 @@ public class LEDRingServer {
 	}
 	
 	/**
-	 * 
-	 * @param args
+	 * Starts the server
+	 * @param args args[0] is the ip address for the server (0.0.0.0 if null or not passed) and
+	 * args[1] for the port number of the server (1234 if null or not passed) 
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
+		BasicConfigurator.configure();
 		
-		LEDRingServer server = new LEDRingServer("0.0.0.0", DEFAULT_PORT_NUMBER);
+		// Check for args passed in on the command line.  Use the defaults if not passed. 
+		String serverAddress = DEFAULT_IP_ADDRESS;
+		int serverPort = DEFAULT_PORT_NUMBER;
+		if (args != null) {
+			if (args.length > 0 && args[0] != null) serverAddress = args[0];
+			if (args.length > 1 && args[1] != null) serverPort = Convert.formatInteger(args[1]);
+		}
+		
+		LEDRingServer server = new LEDRingServer(serverAddress, serverPort);
 		server.startServer();
 	}
 	
@@ -76,7 +88,7 @@ public class LEDRingServer {
 	 * @throws IOException
 	 */
 	public void startServer() throws IOException {
-		log.info("Starting server on port: " + port);
+		log.info("Starting server on address: " + address.getHostAddress() + ":" + port);
 		
 		while (true) {
 			try (ServerSocket serverSocket = new ServerSocket(port, 10, address)) {
@@ -84,7 +96,7 @@ public class LEDRingServer {
 				// Read the request and spawn a thread to handle the request
 				final Socket connection = serverSocket.accept();
 				Runnable task = () -> handleRequest(connection);
-				THREAD_POOL.execute(task);
+				threadPool.execute(task);
 			}
 		}
 	}
@@ -99,20 +111,41 @@ public class LEDRingServer {
 			log.info("Inside Light Manager");
 			try {
 				TimeUnit.SECONDS.sleep(3);
+				
+				// Check to see if a request was received to turn off the manager
+				if (closeLights) {
+					log.info("Shutting lights off");
+					lightsActive = false; 
+					closeLights = false;
+					throw new InterruptedException("closing thread");
+				}
 			} catch (InterruptedException e) {
-				log.error("Unable to pause thread", e);
-			}
-			
-			// Check to see if a request was received to turn off the manager
-			if (closeLights) {
-				log.info("Shutting lights off");
-				lightsActive = false; 
-				closeLights = false;
+				Thread.currentThread().interrupt(); 
 				break;
 			}
+			
+
 		}
 	}
 	
+	/**
+	 * Gracefully shuts down the ring server
+	 */
+	public void shutdown() {
+		log.info("Shutting Down the Server, waiting for threads");
+		 threadPool.shutdown(); // Disable new tasks from being submitted
+		 
+		 try {
+		     // Wait a while for existing tasks to terminate
+		     if (!threadPool.awaitTermination(1, TimeUnit.SECONDS)) {
+		    	 threadPool.shutdownNow(); // Cancel currently executing tasks
+		     }
+		     
+		 } catch (InterruptedException ie) {
+			 Thread.currentThread().interrupt(); 
+			 threadPool.shutdownNow();
+		 }
+	}
 	
 	/**
 	 * Parses the request and performs the requested action
@@ -127,12 +160,13 @@ public class LEDRingServer {
 		// Build the Json Output
 		Map<String, Object> resData = new HashMap<>();
 		boolean success = true;
+		boolean shutdown = false;
 		String errorMsg = "";
 		
 		// Open the thread for managing the ring
 		if (! lightsActive && Convert.formatBoolean(req.getParameter("start"))) {
 			Runnable task = () -> ledRingManager();
-			THREAD_POOL.execute(task);
+			threadPool.execute(task);
 		
 		} else if (lightsActive && Convert.formatBoolean(req.getParameter("start"))) {
 			success = false;
@@ -148,6 +182,11 @@ public class LEDRingServer {
 			
 		} else if (Convert.formatBoolean(req.getParameter("status"))) {
 			resData.put(DeviceAttributeEnum.ENGAGE.name(), lightsActive ? "On" : "Off");
+
+		} else if (Convert.formatBoolean(req.getParameter("shutdown"))) {
+			shutdown = true;
+			resData.put("STATUS", ResponseHandler.ErrorCode.SERVER_SHUTDOWN.getDisplay());
+			shutdown();
 			
 		} else {
 			success = false;
@@ -164,9 +203,12 @@ public class LEDRingServer {
 			log.error("Failed respond to client request: ", e);
 		}
 		
-		
-
-		
+		// Shutting down the server if requested
+		if (shutdown) {
+			log.info("Stopped");
+			System.exit(0);
+		}
+		 
 		return;
 	}
 }
