@@ -41,11 +41,15 @@ public class RequestVO {
 	 * 
 	 * @param requestUrl
 	 */
-	public RequestVO(Socket socket) throws IOException {
-		
-		BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		webServerAddress = socket.getInetAddress().toString();
-		requestUrl = in.readLine();
+	public RequestVO(Socket socket) {
+		try {
+			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			webServerAddress = socket.getInetAddress().toString();
+			requestUrl = in.readLine();
+			
+		} catch (IOException e) {
+			log.error("Failed respond to client request: ", e);
+		}
 		
 		if (! (requestUrl == null || requestUrl.isEmpty() || requestUrl.indexOf('/') == -1)) {
 			requestUrl =  (requestUrl.substring(requestUrl.indexOf(' ') + 1, requestUrl.lastIndexOf(' ')));
@@ -102,6 +106,17 @@ public class RequestVO {
 				parameters.get(kv[0]).add(kv[1]);
 			}
 		}
+	}
+	
+	/**
+	 * gets a parameter from the qs
+	 * @param key
+	 * @return
+	 */
+	public String getParameter(String key) {
+		if (parameters.get(key) != null)
+			return parameters.get(key).get(0);
+		else return null;
 	}
 
 	/**

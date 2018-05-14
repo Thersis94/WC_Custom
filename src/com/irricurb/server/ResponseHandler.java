@@ -8,6 +8,8 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.google.gson.Gson;
+
 /****************************************************************************
  * <b>Title</b>: ResponseHandler.java
  * <b>Project</b>: WC_Custom
@@ -36,7 +38,7 @@ public class ResponseHandler {
 		this.socket = socket;
 		
 		headers.put("","HTTP/1.0 200");
-		headers.put("Content-type","text/html");
+		headers.put("Content-type","application/json");
 		headers.put("Server-name", "irriCURB LED Ring Server");
 	}
 	
@@ -45,12 +47,14 @@ public class ResponseHandler {
 	 * @param message
 	 * @throws IOException
 	 */
-	public void sendResponse(String message) throws IOException {
+	public void sendResponse(Map<String, Object> message) throws IOException {
+		Gson g = new Gson();
+		String json = g.toJson(message);
 		try (PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-			putHeader("Content-Length", message.length() + "");
+			putHeader("Content-Length", json.length() + "");
 			writeHeader(out);
 			out.println("");
-			out.println(message);
+			out.println(json);
 			out.flush();
 		}
 	}
@@ -63,7 +67,6 @@ public class ResponseHandler {
 		for (Map.Entry<String, String> kv : headers.entrySet()) {
 			if (kv.getKey().isEmpty()) out.println(kv.getValue());
 			else out.println(kv.getKey() + ":" + kv.getValue());
-			log.info(kv.getKey() + ":" + kv.getValue());
 		}
 	}
 	
