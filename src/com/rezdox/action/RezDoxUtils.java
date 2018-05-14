@@ -63,6 +63,7 @@ public class RezDoxUtils {
 	public static final String PROFILE_PATH = MEMBER_ROOT_PATH + "/profile";
 	public static final String PROJECT_PATH = MEMBER_ROOT_PATH + "/projects";
 	public static final String HOME_HISTORY_PATH = MEMBER_ROOT_PATH + "/history";
+	public static final String INVENTORY_PATH = MEMBER_ROOT_PATH + "/inventory";
 	public static final String REWARD_PATH = MEMBER_ROOT_PATH + "/rewards";
 	public static final String CONNECTION_PATH = MEMBER_ROOT_PATH + "/Connections";
 	public static final String JOIN_PATH = "/join";
