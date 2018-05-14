@@ -13,7 +13,7 @@ import com.google.gson.Gson;
 /****************************************************************************
  * <b>Title</b>: ResponseHandler.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> //TODO Change Me
+ * <b>Description: </b> Manages sending the response to the calling device
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -34,7 +34,8 @@ public class ResponseHandler {
 	public enum ErrorCode {
 		INVALID_DATA (" Unable to Process Request, invalid data"),
 		RING_RUNNING ("LED Light Ring is already started"),
-		RING_STOPPED ("LED Light Ring is already stopped");
+		RING_STOPPED ("LED Light Ring is already stopped"),
+		SERVER_SHUTDOWN ("The LED Ring Server is stopping");
 		
 		// Member variable for the Name of the enum 
 		private String display;
@@ -52,7 +53,7 @@ public class ResponseHandler {
 		 * @return
 		 */
 		public String getDisplay() {
-			return this.name() + " : " + this.display + display;
+			return this.name() + " : " + this.display;
 		}
 	}
 	
