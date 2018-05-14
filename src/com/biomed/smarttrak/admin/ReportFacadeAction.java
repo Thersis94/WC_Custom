@@ -1,12 +1,17 @@
 package com.biomed.smarttrak.admin;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.servlet.http.HttpServletResponse;
 
+import com.biomed.smarttrak.admin.report.AccountCountReportVO;
 //WC custom
 import com.biomed.smarttrak.admin.report.AccountReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
+import com.biomed.smarttrak.admin.report.EmailMetricsReportAction;
 import com.biomed.smarttrak.admin.report.LinkReportAction;
 import com.biomed.smarttrak.admin.report.LinkWebReportVO;
 import com.biomed.smarttrak.admin.report.SupportReportAction;
@@ -49,14 +54,17 @@ public class ReportFacadeAction extends SBActionAdapter {
 	
 	public enum ReportType {
 		ACCOUNT_REPORT,
+		ACCOUNT_COUNTS,
 		ACTIVITY_LOG,
 		COMPANY_SEGMENTS,
 		USER_LIST,
 		USER_PERMISSIONS,
+		ACCOUNT_PERMISSIONS,
 		USAGE_ROLLUP_DAILY,
 		USAGE_ROLLUP_MONTHLY,
 		SUPPORT,
-		LINK;
+		LINK,
+		EMAIL_METRICS;
 	}
 
 	/**
@@ -91,6 +99,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 				rpt = generateAccountReport(req);
 				doRedirect = false;
 				break;
+			case ACCOUNT_COUNTS:
+				rpt = generateCountsReport(req);
+				break;
 			case ACTIVITY_LOG:
 				rpt = generateActivityLogReport(req);
 				break;
@@ -101,7 +112,10 @@ public class ReportFacadeAction extends SBActionAdapter {
 				rpt = generateUserListReport(req);
 				break;
 			case USER_PERMISSIONS:
-				rpt = generateUserPermissionsReport(req);
+				rpt = generateUserPermissionsReport(req, true);
+				break;
+			case ACCOUNT_PERMISSIONS:
+				rpt = generateUserPermissionsReport(req, false);
 				break;
 			case USAGE_ROLLUP_DAILY:
 				rpt = generateUserUtilizationReport(req,true);
@@ -115,6 +129,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case LINK:
 				rpt = generateLinkReport(req);
 				doRedirect = false;
+				break;
+			case EMAIL_METRICS:
+				rpt = generateMetricsReport(req);
 				break;
 			default:
 				break;
@@ -192,6 +209,23 @@ public class ReportFacadeAction extends SBActionAdapter {
 		return rpt;
 	}
 
+
+	/**
+	 * Generates the Account report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateCountsReport(ActionRequest req) 
+			throws ActionException {
+		AccountUserAction aua = new AccountUserAction();
+		aua.setDBConnection(dbConn);
+		aua.setAttributes(getAttributes());
+		AccountCountReportVO rpt = new AccountCountReportVO();
+		rpt.setData(aua.loadAccountCounts(req));
+		return rpt;
+	}
+
 	/**
 	 * Generates the activity log report report.
 	 * @param req
@@ -250,14 +284,17 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected AbstractSBReportVO generateUserPermissionsReport(ActionRequest req) 
+	protected AbstractSBReportVO generateUserPermissionsReport(ActionRequest req, boolean showUsers) 
 			throws ActionException {
 		UserPermissionsReportAction upra = new UserPermissionsReportAction();
 		upra.setDBConnection(dbConn);
 		upra.setAttributes(getAttributes());
 
 		AbstractSBReportVO rpt = new UserPermissionsReportVO();
-		rpt.setData(upra.retrieveUserPermissions(req));
+		Map<String, Object> data = new HashMap<>(2);
+		data.put("accounts", upra.retrieveUserPermissions(req));
+		data.put("showUsers", showUsers);
+		rpt.setData(data);
 		return rpt;
 
 	}
@@ -315,5 +352,19 @@ public class ReportFacadeAction extends SBActionAdapter {
 		} catch (Exception e) {
 			throw new ActionException("Unknown report type, " + reportType);
 		}
+	}
+	
+	/**
+	 * Build the email metrics report
+	 * @param req
+	 * @return
+	 */
+	private AbstractSBReportVO generateMetricsReport(ActionRequest req) throws ActionException {
+		EmailMetricsReportAction emr = new EmailMetricsReportAction();
+		emr.setActionInit(actionInit);
+		emr.setAttributes(attributes);
+		emr.setDBConnection(dbConn);
+		
+		return emr.buildReport(req);
 	}
 }
