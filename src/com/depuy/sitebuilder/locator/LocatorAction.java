@@ -97,6 +97,13 @@ public class LocatorAction extends SBActionAdapter {
     public static final String LOCATOR_SESSION_DATA_KEY_V2 = "results";
     
     /**
+     * Constant for locator session variable set when locator form is loaded.  If session
+     * variable does not exist when locator search is requested, the search is prevented.
+     * Used to mitigate locator bot attacks.
+     */
+    public static final String LOCATOR_FORM_ORIGIN = "locatorFormOrigin";
+
+    /**
      * 
      */
     public LocatorAction() {
@@ -349,20 +356,25 @@ public class LocatorAction extends SBActionAdapter {
         ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
 
         if (locatorSubmit) {
-            // If the call is to the locator results, bypass the below
+            // If the call is to the locator results and originates from a locator form, bypass the below
         	if (surveyId.isEmpty() && (registrationId.isEmpty() || locRegSubmitted)) {
-        		log.debug("Going straight to results");
-        		req.setAttribute("NoRegistration", Boolean.TRUE);
-        		return;
+            	if (isSubmitFromLocatorForm(req)) {
+            		log.debug("Going straight to results");
+            		req.setAttribute("NoRegistration", Boolean.TRUE);
+            	}
+            	return;
         	}
-        	
+
         	req.getSession().setAttribute(LOCATOR_SUBMITTAL_DATA, new LocatorSubmittalVO(req));
         	mod.setActionData(new LocatorVO());
 	        attributes.put(Constants.MODULE_DATA, mod);
-	        
+
         } else {
         	// retrieve locator from cache or db
         	retrieveLocator(req,mod,locRegSubmitted);
+
+        	// Set a session value to signal a locator form load
+        	req.getSession().setAttribute(LOCATOR_FORM_ORIGIN, "true");
         }
         
         // If the user has submitted a survey or registraton, don't get the data
@@ -377,6 +389,25 @@ public class LocatorAction extends SBActionAdapter {
     }
     
     /**
+     * Checks to see if 
+     * @param req
+     * @return
+     */
+    private boolean isSubmitFromLocatorForm(ActionRequest req) {
+    	if (Convert.formatBoolean(req.getSession().getAttribute(LOCATOR_FORM_ORIGIN)))
+    		return true;
+
+		/* If locator search was submitted without first going through a form, the submittal
+		 * is suspicious.  To prevent bots we negate the request params that 'allow' the view to execute
+		 * a search, and set an empty results container on the session as if the search had been completed
+		 * with no results. */
+		//req.setParameter("locatorSubmit", null);
+		req.setParameter("newSearch", null);
+		req.getSession().setAttribute(LOCATOR_SESSION_DATA_KEY_V2, new ResultsContainer());    	
+    	return false;
+    }
+    
+    /**
      * Retrieves the locator from cache or db.
      * @param req
      * @param mod
@@ -385,12 +416,12 @@ public class LocatorAction extends SBActionAdapter {
      */
     private void retrieveLocator(ActionRequest req, ModuleVO mod, boolean locRegSubmitted) 
     		throws ActionException {
+    	log.debug("retrieveLocator...");
 		String cacheKey = mod.getPageModuleId();
 		ModuleVO cachedMod = super.readFromCache(cacheKey);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		boolean isPreview = page.isPreviewMode();
-		log.debug("isPreview: " + isPreview);
-		log.debug("cacheKey: " + cacheKey);
+		log.debug("isPreview | cacheKey: " + isPreview + "|" + cacheKey);
 		
 		if (cachedMod == null || isPreview) {
 			cachedMod = loadLocatorData(req);
