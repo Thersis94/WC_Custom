@@ -1,0 +1,22 @@
+1.	Update DB connections in pgLoader Scripts, WC_Custom/scripts/srt/user_import_config.properties to be pointed to proper Locations
+2.	Ensure db connection is pointed at proper location and run pgloader scripts with aabnp.load and customs.load found in WC_Custom/tools/SRT (>1 min)
+		./pgloader aabnp.load
+		./pgloader customs.load
+
+3.	Run V20180131.140600--feature-srt-2-migration-script.sql (~1min)
+4.	Run Site Copy of SRT to target Instance.  Raptor Depuy DB is current master for exports and the insert record to access that location in admintool is below. (~1min)
+	jdbc:postgresql://playstation:5432/raptor_webcrescendo_depuyb?defaultRowFetchSize=25&amp;prepareThreshold=3|org.postgresql.Driver|raptor|sqll0gin
+
+5.	Verify Copy successful and update WC_Custom/scripts/srt/user_import_config.properties SiteId if different than new and ensure db connection is pointed at proper location.  Production is looking like it will expect DPY_SYN_38 unless things change.
+
+6.  Run WC_Custom/srt/com/depuysynthes/srt/util/SRTUserImport to import users (Takes awhile ~25-30 min locally).
+
+7.  Run V20180213.211400--feature-srt-2-migration-script-part-2.sql to migrate SRT Data to Custom Tables. (2-5 min);
+
+8.	Update and Run Solr Indexers with (~1min)
+		customIndex_XX=com.depuysynthes.srt.util.SRTProjectIndexer
+
+9.	Add Billy as User to site and verify everything looks good.
+10.	Rebind Solr Search to SRT Solr Search Action.  Is not updating properly atm.
+
+Total Migration Timeframe ~40min
