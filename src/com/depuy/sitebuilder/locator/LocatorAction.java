@@ -340,8 +340,6 @@ public class LocatorAction extends SBActionAdapter {
      */
     @Override
     public void retrieve(ActionRequest req) throws ActionException {
-    	log.debug("LocatorAction retrieve...");
-    	
     	Boolean locatorSubmit = Convert.formatBoolean(req.getParameter("locatorSubmit"));
     	String surveyId = StringUtil.checkVal(req.getParameter("surveyId"));
     	String registrationId = StringUtil.checkVal(req.getParameter("registrationId"));
@@ -354,7 +352,6 @@ public class LocatorAction extends SBActionAdapter {
         	locatorSubmit + "|" + surveyId.length() + "|" +  registrationId.length() + "|" + locRegSubmitted);
 
         ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
-
         if (locatorSubmit) {
             // If the call is to the locator results and originates from a locator form, bypass the below
         	if (surveyId.isEmpty() && (registrationId.isEmpty() || locRegSubmitted)) {
@@ -401,7 +398,6 @@ public class LocatorAction extends SBActionAdapter {
 		 * is suspicious.  To prevent bots we negate the request params that 'allow' the view to execute
 		 * a search, and set an empty results container on the session as if the search had been completed
 		 * with no results. */
-		//req.setParameter("locatorSubmit", null);
 		req.setParameter("newSearch", null);
 		req.getSession().setAttribute(LOCATOR_SESSION_DATA_KEY_V2, new ResultsContainer());    	
     	return false;
@@ -416,7 +412,6 @@ public class LocatorAction extends SBActionAdapter {
      */
     private void retrieveLocator(ActionRequest req, ModuleVO mod, boolean locRegSubmitted) 
     		throws ActionException {
-    	log.debug("retrieveLocator...");
 		String cacheKey = mod.getPageModuleId();
 		ModuleVO cachedMod = super.readFromCache(cacheKey);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
