@@ -281,6 +281,8 @@ public class ProjectDeviceVO extends DeviceVO {
 	 */
 	@BeanSubElement
 	public void addAttribute(ProjectDeviceAttributeVO attribute) {
+		//only add if the attribute info is present
+		if (attribute != null && !StringUtil.checkVal(attribute.getDeviceAttributeId()).isEmpty())
 		attributes.add(attribute);
 	}
 }
