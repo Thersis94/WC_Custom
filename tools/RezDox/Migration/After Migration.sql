@@ -206,3 +206,10 @@ update custom.rezdox_member_business_review set group_id = business_review_id;
 
 --remove stock photos from members - so their initials display on the website
 update custom.rezdox_member set profile_pic_pth=null where len(profile_pic_pth)=0 or profile_pic_pth='/legacy/profile/full/default-member.gif';
+
+-- make sure we don't have an non-integer sale prices:
+update custom.rezdox_residence_attribute set value_txt='0' where slug_txt='lastSoldPrice' and (value_txt='' or value_txt is null);
+
+--remove all inactive accounts
+delete from profile_role where profile_id in (select profile_id from custom.rezdox_member where status_flg=0) and site_id like 'REZDOX_%';
+delete from custom.rezdox_member where status_flg=0;
