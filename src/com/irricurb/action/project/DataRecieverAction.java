@@ -2,12 +2,15 @@ package com.irricurb.action.project;
 
 // JDK 1.8.x
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Type;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 // Google Gson 2.4
 import com.google.gson.Gson;
-
+import com.google.gson.reflect.TypeToken;
 // App Libs
 import com.irricurb.action.data.vo.DeviceDataVO;
 import com.irricurb.action.data.vo.DeviceEntityDataVO;
@@ -85,7 +88,7 @@ public class DataRecieverAction extends SimpleActionAdapter {
 			// checkSecurityKey(req);
 			
 			if(type.equals(DataType.SENSOR)) {
-				processSensor(json);
+				processSensor(json, req.getBooleanParameter("multiple"));
 			} else {
 				processDevice(json);
 			}
@@ -149,39 +152,53 @@ public class DataRecieverAction extends SimpleActionAdapter {
 		
 	}
 	
-	
 	/**
 	 * 
 	 * @param json
+	 * @param multiple defines whether or not multiple devices are sent or if a single device is sent.
+	 * If multiple devices, the json encoded data is of the List<ProjectDeviceVO> type, otherwise, the data
+	 * is sent as a ProjectDeviceVO object.
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	public void processSensor(String json) throws InvalidDataException, DatabaseException {
+	public void processSensor(String json, boolean multiple) throws InvalidDataException, DatabaseException {
 		if (json.isEmpty()) throw new InvalidDataException("No JSON Data Available");
 		
 		log.info("Sensor: " + json);
 		Gson g = new Gson();
-		ProjectDeviceVO device = g.fromJson(json, ProjectDeviceVO.class);
+		
+		List<ProjectDeviceVO> devices = new ArrayList<>();
+		
+		if (multiple) {
+			Type type = new TypeToken<ArrayList<ProjectDeviceVO>>() {}.getType();
+			devices = g.fromJson(json, type);
+		} else {
+			devices.add(g.fromJson(json, ProjectDeviceVO.class));
+		}
 		
 		// Save the reading master entry
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		DeviceDataVO data = new DeviceDataVO();
-		data.setReadingDate(device.getCreateDate());
-		data.setProjectDeviceId(device.getProjectDeviceId());
-		data.setCreateDate(new Date());
-		db.save(data);
+		
+		for (ProjectDeviceVO device : devices) {
+			DeviceDataVO data = new DeviceDataVO();
+			data.setReadingDate(device.getReadingDate());
+			data.setProjectDeviceId(device.getProjectDeviceId());
+			data.setCreateDate(new Date());
+			db.save(data);
+			log.info("RD: " + device.getReadingDate());
 			
-		// Save the data for each reading
-		for (ProjectDeviceAttributeVO attr:  device.getAttributes()) {
-			DeviceEntityDataVO reading = new DeviceEntityDataVO();
-			reading.setProjectDeviceDataId(data.getProjectDeviceDataId());
-			reading.setDeviceAttributeId(attr.getDeviceAttributeId());
-			reading.setReadingValue(Convert.formatDouble(attr.getValue()));
-			reading.setCreateDate(new Date());
-			db.save(reading);
-			
-			// Update the sensor value that's stored in the DB.
-			updateDeviceValue(db, attr);
+			// Save the data for each reading
+			for (ProjectDeviceAttributeVO attr:  device.getAttributes()) {
+				DeviceEntityDataVO reading = new DeviceEntityDataVO();
+				reading.setProjectDeviceDataId(data.getProjectDeviceDataId());
+				reading.setDeviceAttributeId(attr.getDeviceAttributeId());
+				reading.setReadingValue(Convert.formatDouble(attr.getValue()));
+				reading.setCreateDate(new Date());
+				db.save(reading);
+				
+				// Update the sensor value that's stored in the DB.
+				updateDeviceValue(db, attr);
+			}
 		}
 	}
 	

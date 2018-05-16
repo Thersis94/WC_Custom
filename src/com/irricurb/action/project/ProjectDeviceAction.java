@@ -113,16 +113,15 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 * @param pdvo
 	 */
 	public void updateDeviceAtrributes(ProjectDeviceAttributeVO pdvo) {
-		log.info("Processing: " + pdvo);
 		try {
 			// Send a request to the device so the change takes place in the real world device
 			sendAtttributeController(getProjectDevice(pdvo));
 
 			// Update the record in the database
-			
 			updateDeviceAttribute(pdvo);
 			
 		} catch (Exception e) {
+			log.error("error", e);
 			// Update the value to its original state so the UI can be reset
 			pdvo.setValue(getCurrentAttributeValue(pdvo.getDeviceAttributeXrId()));
 			
@@ -166,9 +165,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		
 		try {
 			url += "?type=COMMAND&json=" + URLEncoder.encode(json, "UTF-8");
-			
 			byte[] res = conn.retrieveData(url);
-			log.info("Server Response: " + new String(res));
 			
 			// Check the response and make sure it was successfully implemented
 			if (res == null) throw new IOException();
