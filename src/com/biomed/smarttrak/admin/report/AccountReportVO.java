@@ -54,7 +54,6 @@ public class AccountReportVO extends AbstractSBReportVO {
 	private static final String CSS_DIVISION_USER = "divisionUser";
 	private static final String CSS_DIVISION_ACCT_OWNER = "acctOwner";
 	private static final String CSS_ACCT_SUMMARY_HEADER = "acctSummaryHeader";
-	private static final String CSS_ACCT_SUMMARY_ITEM = "acctSummaryItem";
 	private static final String CSS_USER_STATUS_CD = "userStatusCode";
 
 	private List<AccountUsersVO> accounts;
@@ -121,8 +120,6 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	private void generateBody(StringBuilder sb) {
 		// loop accounts and process
-		int activeAccounts = accounts.size();
-
 		sb.append("<body>");
 		startDiv(sb, CSS_ACCT_REPORT_WRAPPER);
 
@@ -144,6 +141,11 @@ public class AccountReportVO extends AbstractSBReportVO {
 
 	}
 
+	/**
+	 * Add rows that contain non date account information
+	 * @param sb
+	 * @param acct
+	 */
 	private void addDataRows(StringBuilder sb, AccountUsersVO acct) {
 		startDiv(sb, null);
 		sb.append("Account Classification: ").append(acct.getClassificationName());
@@ -295,6 +297,10 @@ public class AccountReportVO extends AbstractSBReportVO {
 		
 	}
 
+	/**
+	 * Add the open license information for the summary
+	 * @param sb
+	 */
 	private void addOpenLicensesRow(StringBuilder sb) {
 		int openSeats = 0;
 		for (AccountUsersVO acct : accounts)
@@ -304,6 +310,10 @@ public class AccountReportVO extends AbstractSBReportVO {
 		closeDiv(sb);
 	}
 
+	/**
+	 * Create the table and its headers
+	 * @param sb
+	 */
 	private void openTable(StringBuilder sb) {
 		sb.append("<table><thead><tr><th colspan='3'></th><th colspan='5'># License Type</th></tr>");
 		sb.append("<th>Account Type</th><th>Account Classification</th><th># Accounts</th><th>ST User</th>");
@@ -311,10 +321,19 @@ public class AccountReportVO extends AbstractSBReportVO {
 		sb.append("<tbody>");
 	}
 
+	/**
+	 * Close the table
+	 * @param sb
+	 */
 	private void closeTable(StringBuilder sb) {
 		sb.append("</tbody></table>");
 	}
 
+	/**
+	 * Add a data row
+	 * @param sb
+	 * @param counts
+	 */
 	private void addTotalRow(StringBuilder sb, Map<String, Integer> counts) {
 		sb.append("<tr><td colspan='2'></td><td>").append(counts.get("account")).append("</td>").append("<td>").append(counts.get("active")).append("</td>");
 		sb.append("<td>").append(counts.get("extra")).append("</td>").append("<td>").append(counts.get("comp")).append("</td>");
@@ -326,6 +345,13 @@ public class AccountReportVO extends AbstractSBReportVO {
 		
 	}
 
+	/**
+	 * Get the totals for the supplied class and type combo and add that row
+	 * @param sb
+	 * @param counts
+	 * @param classificationId
+	 * @param typeId
+	 */
 	private void addSummaryRow(StringBuilder sb, Map<String, Integer> counts, int classificationId, String typeId) {
 		int activeCnt = 0;
 		int extraCnt = 0;
@@ -346,6 +372,18 @@ public class AccountReportVO extends AbstractSBReportVO {
 		
 	}
 	
+	/**
+	 * Add a table row with the supplied numbers and add the numbers to the table
+	 * @param sb
+	 * @param classificationId
+	 * @param typeId
+	 * @param activeCnt
+	 * @param extraCnt
+	 * @param compCnt
+	 * @param updateCnt
+	 * @param acctCnt
+	 * @param counts
+	 */
 	private void addTableRow(StringBuilder sb, int classificationId, String typeId, int activeCnt, int extraCnt, int compCnt, int updateCnt, int acctCnt,
 			Map<String, Integer> counts) {
 		sb.append("<tr><td>").append(Classification.getFromId(classificationId).getLabel()).append("</td>");
@@ -360,6 +398,12 @@ public class AccountReportVO extends AbstractSBReportVO {
 		addCount(counts, "account", acctCnt);
 	}
 
+	/**
+	 * Ensure that the key exists and add the supplied amount to that key's value
+	 * @param counts
+	 * @param key
+	 * @param count
+	 */
 	private void addCount(Map<String, Integer> counts, String key, int count) {
 		if (!counts.containsKey(key))
 			counts.put(key, 0);
