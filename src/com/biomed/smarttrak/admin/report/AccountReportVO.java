@@ -8,6 +8,8 @@ import java.util.Map;
 
 //WC custom
 import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.AccountVO.Classification;
+import com.biomed.smarttrak.vo.AccountVO.Type;
 import com.biomed.smarttrak.vo.PermissionVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
@@ -52,9 +54,15 @@ public class AccountReportVO extends AbstractSBReportVO {
 	private static final String CSS_DIVISION_USER = "divisionUser";
 	private static final String CSS_DIVISION_ACCT_OWNER = "acctOwner";
 	private static final String CSS_ACCT_SUMMARY_HEADER = "acctSummaryHeader";
-	private static final String CSS_ACCT_SUMMARY_ITEM = "acctSummaryItem";
 	private static final String CSS_USER_STATUS_CD = "userStatusCode";
-
+	private static final String ACTIVE_CNT = "active";
+	private static final String EXTRA_CNT = "extra";
+	private static final String COMP_CNT = "comp";
+	private static final String UPDATE_CNT = "update";
+	private static final String ACCOUNT_CNT = "account";
+	private static final String OPEN_TD = "<td>";
+	private static final String CLOSE_TD = "</td>";
+	
 	private List<AccountUsersVO> accounts;
 	private Map<String,Map<String,String>> fieldOptions;
 	private SiteVO site;
@@ -119,11 +127,6 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	private void generateBody(StringBuilder sb) {
 		// loop accounts and process
-		int activeAccounts = accounts.size();
-		int totalSubscribers = 0;
-		int totalAdded = 0;
-		int totalComplementary = 0;
-
 		sb.append("<body>");
 		startDiv(sb, CSS_ACCT_REPORT_WRAPPER);
 
@@ -131,20 +134,29 @@ public class AccountReportVO extends AbstractSBReportVO {
 		for (AccountUsersVO acct : accounts) {
 			startDiv(sb,CSS_ACCT_ITEM_WRAPPER);
 			addAccountRow(sb,acct);
+			addDataRows(sb,acct);
 			addAccountDatesRows(sb,acct);
 			addAccountSegmentRows(sb,acct);
 			addDivisions(sb,acct,fieldOptions.get(RegistrationMap.DIVISIONS.getFieldId()));
 			closeDiv(sb);
-			totalSubscribers += acct.getTotalDivisionUsers();
-			totalAdded += acct.getAddedCount();
-			totalComplementary += acct.getComplementaryCount();
 		}
-		addSummaryRows(sb,activeAccounts,totalSubscribers,totalAdded,totalComplementary);
+		addSummaryRows(sb);
 
 		// close the report wrapper
 		closeDiv(sb);
 		sb.append("</body>");
 
+	}
+
+	/**
+	 * Add rows that contain non date account information
+	 * @param sb
+	 * @param acct
+	 */
+	private void addDataRows(StringBuilder sb, AccountUsersVO acct) {
+		startDiv(sb, null);
+		sb.append("Account Classification: ").append(acct.getClassificationName());
+		closeDiv(sb);
 	}
 
 	/**
@@ -159,7 +171,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 				(acct.getAddedCount() + 
 						acct.getComplementaryCount() + 
 						acct.getUpdatesOnlyCount());
-		if (totUsers > 0) 	sb.append(" (").append(totUsers).append(")");
+		if (totUsers > 0) 	sb.append(" (").append(totUsers).append(" Licenses, ").append(acct.getOpenSeatsCnt()).append(" Open)");
 		if (acct.getAddedCount() > 0) {
 			sb.append(" ");
 			sb.append(acct.getAddedCount());
@@ -217,7 +229,8 @@ public class AccountReportVO extends AbstractSBReportVO {
 					break;
 				case 4:
 					PermissionVO perms = (PermissionVO)seg.getUserObject();
-					appendSegment(lvl4,seg.getNodeName(),perms.isBrowseAuth(),cnt);
+					appendSegment(lvl4,seg.getNodeName(),perms,cnt);
+					
 					if (perms.isBrowseAuth()) cnt++;
 					break;
 				default:
@@ -249,14 +262,18 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * Used by the method that builds the account segment rows.
 	 * @param sb
 	 * @param segName
-	 * @param addSegment
+	 * @param perms
 	 * @param cnt
 	 */
-	protected void appendSegment(StringBuilder sb, String segName, boolean addSegment, int cnt) {
-		if (addSegment) {
+	protected void appendSegment(StringBuilder sb, String segName, PermissionVO perms, int cnt) {
+		if (perms.isBrowseAuth()) {
 			if (cnt > 1) sb.append(",");
 			appendSpace(sb);
 			sb.append(segName);
+			if (perms.isFdAuth())
+				sb.append(" FD");
+			if (perms.isGaAuth())
+				sb.append(" GA");
 		}
 	}
 	
@@ -268,32 +285,119 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param totalAdded
 	 * @param totalComplimentary
 	 */
-	protected void addSummaryRows(StringBuilder sb, int totalAccounts, 
-			int totalSubscribers, int totalAdded, int totalComplimentary) {
+	protected void addSummaryRows(StringBuilder sb) {
 
 		startDiv(sb,CSS_ACCT_SUMMARY_HEADER);
 		sb.append("Account Summary ");
 		closeDiv(sb);
+		
+		openTable(sb);
+		Map<String, Integer> counts = new HashMap<>();
+		addSummaryRow(sb, counts, Classification.ORTHO.getId(), Type.FULL.getId());
+		addSummaryRow(sb, counts, Classification.WOUND.getId(), Type.FULL.getId());
+		addSummaryRow(sb, counts, Classification.COMBO.getId(), Type.FULL.getId());
+		addSummaryRow(sb, counts, Classification.NEURO.getId(), Type.FULL.getId());
+		addTotalRow(sb, counts);
+		closeTable(sb);
+		
+		addOpenLicensesRow(sb);
+		
+	}
 
-		startDiv(sb,CSS_ACCT_SUMMARY_ITEM);
-		sb.append("Active Accounts ");
-		sb.append(totalAccounts);
+	/**
+	 * Add the open license information for the summary
+	 * @param sb
+	 */
+	private void addOpenLicensesRow(StringBuilder sb) {
+		int openSeats = 0;
+		for (AccountUsersVO acct : accounts)
+			openSeats+= acct.getOpenSeatsCnt();
+		startDiv(sb, null);
+		sb.append("Included in total licenses are ").append(openSeats).append(" open seats.");
 		closeDiv(sb);
+	}
 
-		startDiv(sb,CSS_ACCT_SUMMARY_ITEM);
-		sb.append("Subscribers ");
-		sb.append(totalSubscribers);
-		closeDiv(sb);
+	/**
+	 * Create the table and its headers
+	 * @param sb
+	 */
+	private void openTable(StringBuilder sb) {
+		sb.append("<table><thead><tr><th colspan='3'></th><th colspan='5'># License Type</th></tr>");
+		sb.append("<th>Account Type</th><th>Account Classification</th><th># Accounts</th><th>ST User</th>");
+		sb.append("<th>ST Extra Seat</th><th>ST Complimentary</th><th>ST Updates Only</th><th>Grand Total</th></tr>");
+		sb.append("<tbody>");
+	}
 
-		startDiv(sb,CSS_ACCT_SUMMARY_ITEM);
-		sb.append("Added Seats ");
-		sb.append(totalAdded);
-		closeDiv(sb);
+	/**
+	 * Close the table
+	 * @param sb
+	 */
+	private void closeTable(StringBuilder sb) {
+		sb.append("</tbody></table>");
+	}
 
-		startDiv(sb,CSS_ACCT_SUMMARY_ITEM);
-		sb.append("Complimentary Seats ");
-		sb.append(totalComplimentary);
-		closeDiv(sb);
+	/**
+	 * Add a data row
+	 * @param sb
+	 * @param counts
+	 */
+	private void addTotalRow(StringBuilder sb, Map<String, Integer> counts) {
+		sb.append("<tr><td colspan='2'></td><td>").append(counts.get(ACCOUNT_CNT)).append(CLOSE_TD).append(OPEN_TD).append(counts.get(ACTIVE_CNT)).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(counts.get(EXTRA_CNT)).append(CLOSE_TD).append(OPEN_TD).append(counts.get(COMP_CNT)).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(counts.get(UPDATE_CNT)).append(CLOSE_TD).append(OPEN_TD);
+		sb.append(counts.get(ACTIVE_CNT)+counts.get(EXTRA_CNT)+counts.get(COMP_CNT)+counts.get(UPDATE_CNT)).append("</td></tr>");
+		
+		sb.append("<tr><td></td><td>Total Licenses</td><td colspan='4'>ST User + ST Extra Seat + ST Complimentary</td><td>");
+		sb.append(counts.get(ACTIVE_CNT)+counts.get(EXTRA_CNT)+counts.get(COMP_CNT)).append("</td><td></td></tr>");
+		
+	}
+
+	/**
+	 * Get the totals for the supplied class and type combo and add that row
+	 * @param sb
+	 * @param counts
+	 * @param classificationId
+	 * @param typeId
+	 */
+	private void addSummaryRow(StringBuilder sb, Map<String, Integer> counts, int classificationId, String typeId) {
+		int activeCnt = 0;
+		int extraCnt = 0;
+		int compCnt = 0;
+		int updateCnt = 0;
+		int acctCnt = 0;
+		for (AccountUsersVO acct : accounts) {
+			if (acct.getClassificationId() != classificationId 
+					|| !typeId.equals(acct.getTypeId())) continue;
+			acctCnt++;
+			activeCnt+= acct.getActiveSeatsCnt();
+			extraCnt+= acct.getAddedCount();
+			compCnt+= acct.getComplementaryCount();
+			updateCnt+= acct.getUpdatesOnlyCount();
+		}
+
+		sb.append("<tr><td>").append(Classification.getFromId(classificationId).getLabel()).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(Type.getFromId(typeId).getLabel()).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(acctCnt).append(CLOSE_TD).append(OPEN_TD).append(activeCnt).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(extraCnt).append(CLOSE_TD).append(OPEN_TD).append(compCnt).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(updateCnt).append(CLOSE_TD).append(OPEN_TD).append(acctCnt+extraCnt+compCnt+updateCnt).append("</td></tr>");
+		addCount(counts, ACTIVE_CNT, activeCnt);
+		addCount(counts, EXTRA_CNT, extraCnt);
+		addCount(counts, COMP_CNT, compCnt);
+		addCount(counts, UPDATE_CNT, updateCnt);
+		addCount(counts, ACCOUNT_CNT, acctCnt);
+		
+	}
+
+	/**
+	 * Ensure that the key exists and add the supplied amount to that key's value
+	 * @param counts
+	 * @param key
+	 * @param count
+	 */
+	private void addCount(Map<String, Integer> counts, String key, int count) {
+		if (!counts.containsKey(key))
+			counts.put(key, 0);
+		counts.put(key, counts.get(key) + count);
 	}
 
 	/**
@@ -403,18 +507,17 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param statCd
 	 */
 	protected void addUserLicenseType(StringBuilder sb, String licenseType) {
-		if (licenseType.equalsIgnoreCase(LicenseType.COMPLIMENTARY.getCode()) ||
-				licenseType.equalsIgnoreCase(LicenseType.UPDATES.getCode()) ||
-				licenseType.equalsIgnoreCase(LicenseType.EXTRA.getCode()) ||
-				licenseType.equalsIgnoreCase(LicenseType.COMPUPDATES.getCode())) {
+		LicenseType license = LicenseType.getTypeFromCode(licenseType);
+		if (license == LicenseType.COMPLIMENTARY || license == LicenseType.UPDATES ||
+				license == LicenseType.EXTRA || license == LicenseType.COMPUPDATES) {
 
 			startSpan(sb,CSS_USER_STATUS_CD);
 			appendSpace(sb);
 
-			if (licenseType.equalsIgnoreCase(LicenseType.EXTRA.getCode())) {
-				sb.append(LicenseType.ACTIVE.getCode());
+			if (license == LicenseType.EXTRA) {
+				sb.append(LicenseType.ACTIVE.getLabel());
 			} else {
-				sb.append(licenseType);
+				sb.append(license.getLabel());
 			}
 
 			closeSpan(sb);

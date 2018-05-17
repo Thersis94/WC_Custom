@@ -76,6 +76,24 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		}
 		public String getCode() { return cd; }
 		public String getLabel() { return label; }
+		
+		public static LicenseType getTypeFromCode(String code) {
+			if (code == null) return null;
+			switch (code) {
+				case "T": return LicenseType.COMPUPDATES;
+				case "A": return LicenseType.ACTIVE;
+				case "M": return LicenseType.EUREPORTS;
+				case "P": return LicenseType.EUPLUS;
+				case "K": return LicenseType.TRIAL;
+				case "C": return LicenseType.COMPLIMENTARY;
+				case "E": return LicenseType.EXTRA;
+				case "U": return LicenseType.UPDATES;
+				case "D": return LicenseType.TEST;
+				case "I": return LicenseType.INACTIVE;
+				case "S": return LicenseType.STAFF;
+				default: return null;
+			}
+		}
 	}
 
 	public enum Status {
