@@ -17,6 +17,7 @@ import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.AccountVO.Type;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
+import com.biomed.smarttrak.vo.UserVO.Status;
 import com.biomed.smarttrak.vo.UserVO.LicenseType;
 
 // SMTBaseLibs
@@ -105,6 +106,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			ps.setString(++idx, Type.FULL.getId());
 			ps.setString(++idx, LicenseType.INACTIVE.getCode());
 			ps.setString(++idx, LicenseType.INACTIVE.getCode());
+			ps.setInt(++idx, Status.INACTIVE.getCode());
 			for (int x = 0; x < regFields.size(); x++) {
 				ps.setString(++idx, regFields.get(x));
 			}
@@ -160,14 +162,14 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	protected StringBuilder buildAccountsUsersQuery(List<String> userRegFields) {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(650);
-		sql.append("select ac.account_id, ac.account_nm, ac.create_dt, ac.expiration_dt, ac.status_no, ");
-		sql.append("us.user_id, us.profile_id, us.status_cd, us.acct_owner_flg, ");
+		sql.append("select ac.account_id, ac.account_nm, ac.create_dt, ac.expiration_dt, ac.status_no, ac.classification_id, ac.type_id, ");
+		sql.append("us.user_id, us.profile_id, us.status_cd, us.active_flg, us.acct_owner_flg, ");
 		sql.append("pf.first_nm, pf.last_nm, pfa.country_cd, ");
 		sql.append("rd.register_field_id, rd.value_txt ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us ");
 		sql.append("on ac.account_id = us.account_id ");
-		sql.append("and ac.type_id = ? and ac.status_no != ? and us.status_cd != ? ");
+		sql.append("and ac.type_id = ? and ac.status_no != ? and us.status_cd != ? and us.active_flg != ? ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
 		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
@@ -262,6 +264,10 @@ public class AccountsReportAction extends SimpleActionAdapter {
 				 * count the user one time we do it here after we init the
 				 * user's division membership List.. */
 				acct.countLicenseType(user.getLicenseType());
+				// If this seat is open increment the open count.
+				if (user.getStatusFlg() == Status.OPEN.getCode()
+						&& (user.getLicenseType() == LicenseType.ACTIVE.getCode() || user.getLicenseType() == LicenseType.EXTRA.getCode())) 
+					acct.incrementOpenSeatsCnt();
 			} else {
 				divs = (List<String>)user.getAttribute(currFieldId);
 			}
@@ -305,6 +311,8 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		account.setCreateDate(rs.getDate("create_dt"));
 		account.setExpirationDate(rs.getDate("expiration_dt"));
 		account.setStatusNo(rs.getString("status_no"));
+		account.setClassificationId(rs.getInt("classification_id"));
+		account.setTypeId(rs.getString("type_id"));
 		return account;
 	}
 	
@@ -322,6 +330,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		user.setAccountId(rs.getString("account_id"));
 		user.setProfileId(rs.getString("profile_id"));
 		user.setLicenseType(rs.getString("status_cd"));
+		user.setStatusFlg(rs.getInt("active_flg"));
 		user.setAcctOwnerFlg(Convert.formatInteger(rs.getString("acct_owner_flg")));
 		user.setCountryCode(rs.getString("country_cd"));
 		// decrypt encrypted fields and set.
