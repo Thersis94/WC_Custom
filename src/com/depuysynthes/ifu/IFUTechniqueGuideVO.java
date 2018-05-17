@@ -22,17 +22,18 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 
 public class IFUTechniqueGuideVO {
-	
+
 	private String tgId;
 	private String tgName;
 	private String urlText;
 	private String dpySynMediaBinId;
+	private String origDpySynMediaBinId;
 	private String dpySynAssetName;
 	private String implId;
 	private int orderNo;
-	
+
 	public IFUTechniqueGuideVO() {
-			
+		super();
 	}
 
 	public IFUTechniqueGuideVO(ActionRequest req) {
@@ -43,7 +44,7 @@ public class IFUTechniqueGuideVO {
 		this.setImplId(req.getParameter("implId"));
 		this.setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 	}
-	
+
 	public IFUTechniqueGuideVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		this.setTgId(db.getStringVal("DEPUY_IFU_TG_ID", rs));
@@ -53,9 +54,10 @@ public class IFUTechniqueGuideVO {
 		this.setDpySynAssetName(db.getStringVal("TITLE_TXT", rs));
 		this.setOrderNo(db.getIntVal("ORDER_NO", rs));
 		this.setImplId(db.getStringVal("DEPUY_IFU_IMPL_ID", rs));
-		
+
 		//verify the asset is in Mediabin before we proclaim it is
 		if (!StringUtil.isEmpty(getDpySynMediaBinId()) && StringUtil.isEmpty(db.getStringVal("mediabin_present", rs))) {
+			setOrigDpySynMediaBinId(getDpySynMediaBinId());
 			setDpySynMediaBinId(null);
 		}
 	}
@@ -99,7 +101,7 @@ public class IFUTechniqueGuideVO {
 	public void setDpySynAssetName(String dpySynAssetName) {
 		this.dpySynAssetName = dpySynAssetName;
 	}
-	
+
 	public String getPublicUrl() {
 		if (this.dpySynMediaBinId != null) {
 			return IFUFacadeAction.MEDIABIN_PATH + this.getDpySynMediaBinId();
@@ -122,6 +124,14 @@ public class IFUTechniqueGuideVO {
 
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
+	}
+
+	public String getOrigDpySynMediaBinId() {
+		return origDpySynMediaBinId;
+	}
+
+	public void setOrigDpySynMediaBinId(String origDpySynMediaBinId) {
+		this.origDpySynMediaBinId = origDpySynMediaBinId;
 	}
 
 }
