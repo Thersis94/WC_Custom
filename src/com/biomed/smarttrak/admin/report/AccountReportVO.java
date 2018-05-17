@@ -55,7 +55,14 @@ public class AccountReportVO extends AbstractSBReportVO {
 	private static final String CSS_DIVISION_ACCT_OWNER = "acctOwner";
 	private static final String CSS_ACCT_SUMMARY_HEADER = "acctSummaryHeader";
 	private static final String CSS_USER_STATUS_CD = "userStatusCode";
-
+	private static final String ACTIVE_CNT = "active";
+	private static final String EXTRA_CNT = "extra";
+	private static final String COMP_CNT = "comp";
+	private static final String UPDATE_CNT = "update";
+	private static final String ACCOUNT_CNT = "account";
+	private static final String OPEN_TD = "<td>";
+	private static final String CLOSE_TD = "</td>";
+	
 	private List<AccountUsersVO> accounts;
 	private Map<String,Map<String,String>> fieldOptions;
 	private SiteVO site;
@@ -335,13 +342,13 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param counts
 	 */
 	private void addTotalRow(StringBuilder sb, Map<String, Integer> counts) {
-		sb.append("<tr><td colspan='2'></td><td>").append(counts.get("account")).append("</td>").append("<td>").append(counts.get("active")).append("</td>");
-		sb.append("<td>").append(counts.get("extra")).append("</td>").append("<td>").append(counts.get("comp")).append("</td>");
-		sb.append("<td>").append(counts.get("update")).append("</td>").append("<td>");
-		sb.append(counts.get("active")+counts.get("extra")+counts.get("comp")+counts.get("update")).append("</td></tr>");
+		sb.append("<tr><td colspan='2'></td><td>").append(counts.get(ACCOUNT_CNT)).append(CLOSE_TD).append(OPEN_TD).append(counts.get(ACTIVE_CNT)).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(counts.get(EXTRA_CNT)).append(CLOSE_TD).append(OPEN_TD).append(counts.get(COMP_CNT)).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(counts.get(UPDATE_CNT)).append(CLOSE_TD).append(OPEN_TD);
+		sb.append(counts.get(ACTIVE_CNT)+counts.get(EXTRA_CNT)+counts.get(COMP_CNT)+counts.get(UPDATE_CNT)).append("</td></tr>");
 		
 		sb.append("<tr><td></td><td>Total Licenses</td><td colspan='4'>ST User + ST Extra Seat + ST Complimentary</td><td>");
-		sb.append(counts.get("active")+counts.get("extra")+counts.get("comp")).append("</td><td></td></tr>");
+		sb.append(counts.get(ACTIVE_CNT)+counts.get(EXTRA_CNT)+counts.get(COMP_CNT)).append("</td><td></td></tr>");
 		
 	}
 
@@ -367,35 +374,18 @@ public class AccountReportVO extends AbstractSBReportVO {
 			compCnt+= acct.getComplementaryCount();
 			updateCnt+= acct.getUpdatesOnlyCount();
 		}
+
+		sb.append("<tr><td>").append(Classification.getFromId(classificationId).getLabel()).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(Type.getFromId(typeId).getLabel()).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(acctCnt).append(CLOSE_TD).append(OPEN_TD).append(activeCnt).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(extraCnt).append(CLOSE_TD).append(OPEN_TD).append(compCnt).append(CLOSE_TD);
+		sb.append(OPEN_TD).append(updateCnt).append(CLOSE_TD).append(OPEN_TD).append(acctCnt+extraCnt+compCnt+updateCnt).append("</td></tr>");
+		addCount(counts, ACTIVE_CNT, activeCnt);
+		addCount(counts, EXTRA_CNT, extraCnt);
+		addCount(counts, COMP_CNT, compCnt);
+		addCount(counts, UPDATE_CNT, updateCnt);
+		addCount(counts, ACCOUNT_CNT, acctCnt);
 		
-		addTableRow(sb, classificationId, typeId, activeCnt, extraCnt, compCnt, updateCnt, acctCnt, counts);
-		
-	}
-	
-	/**
-	 * Add a table row with the supplied numbers and add the numbers to the table
-	 * @param sb
-	 * @param classificationId
-	 * @param typeId
-	 * @param activeCnt
-	 * @param extraCnt
-	 * @param compCnt
-	 * @param updateCnt
-	 * @param acctCnt
-	 * @param counts
-	 */
-	private void addTableRow(StringBuilder sb, int classificationId, String typeId, int activeCnt, int extraCnt, int compCnt, int updateCnt, int acctCnt,
-			Map<String, Integer> counts) {
-		sb.append("<tr><td>").append(Classification.getFromId(classificationId).getLabel()).append("</td>");
-		sb.append("<td>").append(Type.getFromId(typeId).getLabel()).append("</td>");
-		sb.append("<td>").append(acctCnt).append("</td>").append("<td>").append(activeCnt).append("</td>");
-		sb.append("<td>").append(extraCnt).append("</td>").append("<td>").append(compCnt).append("</td>");
-		sb.append("<td>").append(updateCnt).append("</td>").append("<td>").append(acctCnt+extraCnt+compCnt+updateCnt).append("</td></tr>");
-		addCount(counts, "active", activeCnt);
-		addCount(counts, "extra", extraCnt);
-		addCount(counts, "comp", compCnt);
-		addCount(counts, "update", updateCnt);
-		addCount(counts, "account", acctCnt);
 	}
 
 	/**
