@@ -42,7 +42,6 @@ public class SurgeonBean implements Serializable {
     private String redirectUrl2;
     private String emailAddress;
     private String degreeDesc;
-    private String educationText;
     private String certificationText;
     private String licenseStateCode;
     private int practiceMonth;
@@ -53,6 +52,7 @@ public class SurgeonBean implements Serializable {
     private List<LocationBean> locations;
     private int locationSize;
     private List<String> affiliations;
+    private List<EducationBean> education;
     private double primaryDistance;
     private String uniqueId;
 
@@ -62,6 +62,7 @@ public class SurgeonBean implements Serializable {
     	products = new ArrayList<>();
     	locations = new ArrayList<>();
     	affiliations = new ArrayList<>();
+    	education = new ArrayList<>();
     	this.parseData(jsonElement);
     }
 
@@ -84,7 +85,6 @@ public class SurgeonBean implements Serializable {
     		if (jS.has("redirectUrl2")) redirectUrl2 = jS.get("redirectUrl2").getAsString();
     		if (jS.has("emailAddress")) emailAddress = jS.get("emailAddress").getAsString();
     		if (jS.has("degreeDesc")) degreeDesc = jS.get("degreeDesc").getAsString();
-    		if(jS.has("educationText")) educationText = jS.get("educationText").getAsString();
     		if(jS.has("certificationText")) certificationText = jS.get("certificationText").getAsString();
     		if(jS.has("licenseStateCode")) licenseStateCode = jS.get("licenseStateCode").getAsString();
     		if(jS.has("practiceMonth")) practiceMonth = jS.get("practiceMonth").getAsInt();
@@ -94,7 +94,8 @@ public class SurgeonBean implements Serializable {
     		procedures = parseIntegerList(jS.getAsJsonArray("procedures"));
     		products = parseIntegerList(jS.getAsJsonArray("products"));
     		parseAffiliations(jS.getAsJsonArray("affiliations"));
-
+    		if (jS.has("surgeonEducation")) 
+    			parseEducation(jS.get("surgeonEducation"));
     	}
     }
 
@@ -126,6 +127,40 @@ public class SurgeonBean implements Serializable {
     		while (jIter.hasNext()) {
     			affiliations.add(jIter.next().getAsString());
     		}
+    	}
+    }
+    
+    /**
+     * Parses the education JSON into EducationBeans
+     * @param json
+     */
+    private void parseEducation(JsonElement jEle) {
+    	if (jEle == null || jEle.isJsonNull()) return;
+
+    	try {
+    		JsonArray jArr = jEle.getAsJsonArray();
+    		for (int i = 0; i < jArr.size(); i++) {
+    			JsonElement je = jArr.get(i);
+    			if (je != null && ! je.isJsonNull()) {
+    				JsonObject jo = je.getAsJsonObject();
+    				if (! jo.isJsonNull()) {
+    					EducationBean eb = new EducationBean();
+    					if (jo.has("educationText")) 
+    						eb.setEducationText(jo.get("educationText").getAsString());
+    					if (jo.has("educationCityName")) 
+    						eb.setEducationCityName(jo.get("educationCityName").getAsString());
+    					if (jo.has("educationStateCode")) 
+    						eb.setEducationStateCode(jo.get("educationStateCode").getAsString());
+    					if (jo.has("yearStart")) 
+    						eb.setYearStart(jo.get("yearStart").getAsInt());
+    					if (jo.has("yearEnd")) 
+    						eb.setYearEnd(jo.get("yearEnd").getAsInt());
+    					education.add(eb);
+    				}
+    			}
+    		}
+    	} catch(Exception e) {
+    		return;
     	}
     }
 
@@ -450,20 +485,6 @@ public class SurgeonBean implements Serializable {
 	}
 
 	/**
-	 * @return the educationText
-	 */
-	public String getEducationText() {
-		return educationText;
-	}
-
-	/**
-	 * @param educationText the educationText to set
-	 */
-	public void setEducationText(String educationText) {
-		this.educationText = educationText;
-	}
-
-	/**
 	 * @return the certificationText
 	 */
 	public String getCertificationText() {
@@ -536,4 +557,19 @@ public class SurgeonBean implements Serializable {
 
 		return elapsedYears;
 	}
+
+	/**
+	 * @return the education
+	 */
+	public List<EducationBean> getEducation() {
+		return education;
+	}
+
+	/**
+	 * @param education the education to set
+	 */
+	public void setEducation(List<EducationBean> education) {
+		this.education = education;
+	}
+	
 }
