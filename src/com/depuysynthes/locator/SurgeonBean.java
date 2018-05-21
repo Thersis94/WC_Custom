@@ -142,26 +142,34 @@ public class SurgeonBean implements Serializable {
     		for (int i = 0; i < jArr.size(); i++) {
     			JsonElement je = jArr.get(i);
     			if (je != null && ! je.isJsonNull()) {
-    				JsonObject jo = je.getAsJsonObject();
-    				if (! jo.isJsonNull()) {
-    					EducationBean eb = new EducationBean();
-    					if (jo.has("educationText")) 
-    						eb.setEducationText(jo.get("educationText").getAsString());
-    					if (jo.has("educationCityName")) 
-    						eb.setEducationCityName(jo.get("educationCityName").getAsString());
-    					if (jo.has("educationStateCode")) 
-    						eb.setEducationStateCode(jo.get("educationStateCode").getAsString());
-    					if (jo.has("yearStart")) 
-    						eb.setYearStart(jo.get("yearStart").getAsInt());
-    					if (jo.has("yearEnd")) 
-    						eb.setYearEnd(jo.get("yearEnd").getAsInt());
-    					education.add(eb);
-    				}
+    				buildSurgeonEducation(je.getAsJsonObject());
     			}
     		}
     	} catch(Exception e) {
     		return;
     	}
+    }
+    
+    /**
+     * Helper method for building EducationVO from the
+     * supplied JsonObject.
+     * @param jo
+     */
+    private void buildSurgeonEducation(JsonObject jo) {
+		if (! jo.isJsonNull()) {
+			EducationBean eb = new EducationBean();
+			if (jo.has("educationText")) 
+				eb.setEducationText(jo.get("educationText").getAsString());
+			if (jo.has("educationCityName")) 
+				eb.setEducationCityName(jo.get("educationCityName").getAsString());
+			if (jo.has("educationStateCode")) 
+				eb.setEducationStateCode(jo.get("educationStateCode").getAsString());
+			if (jo.has("yearStart")) 
+				eb.setYearStart(jo.get("yearStart").getAsInt());
+			if (jo.has("yearEnd")) 
+				eb.setYearEnd(jo.get("yearEnd").getAsInt());
+			education.add(eb);
+		}    	
     }
 
     /**
@@ -450,7 +458,7 @@ public class SurgeonBean implements Serializable {
 	 * @return the primaryDistance
 	 */
 	public double getPrimaryDistance() {
-		if (primaryDistance == 0.0 &&
+		if (Double.compare(primaryDistance, 0.0) == 0 &&
 				locations != null &&
 					! locations.isEmpty()) {
 						primaryDistance = locations.get(0).getDistance();
