@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -154,6 +155,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	 */
 	public void setColumns(DBUtil util, ResultSet rs, FinancialDashVO dashboard) throws SQLException {
 		int maxYear = util.getIntVal("YEAR_NO", rs);
+		int year = Calendar.getInstance().get(Calendar.YEAR);
 
 		Map<Integer, Integer> cyTotals = new HashMap<>(); // calendar year totals without adjustment
 		Map<Integer, Integer> ytdTotals = new HashMap<>(); // totals with adjustments when the current year is not complete
@@ -168,9 +170,17 @@ public class FinancialDashDataRowVO implements Serializable {
 
 			if (FinancialDashBaseAction.QTR_PATTERN.matcher(qtr).matches()) {
 				int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
+				String quarterString = null;
+				// If we are in the current year always compar the the current year
+				// so that unreported quarters don't get used for the year to date comparison.
+				if (year == maxYear) {
+					quarterString = qtr + "-" + maxYear;
+				} else {
+					quarterString = qtr + "-" + (maxYear-yearIdx);
+				}
 				addColumn(qtr, yearIdx, maxYear, util, rs);
 				incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
-				incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), qtr + "-" + (maxYear-yearIdx));
+				incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), quarterString);
 				calculateInactivity(qtr, yearIdx, util, rs, dashboard.getColHeaders(), qtr + "-" + (maxYear-yearIdx), dashboard.showEmpty());
 				ids.put(yearIdx, util.getStringVal("REVENUE_ID_" + yearIdx, rs));
 			}
