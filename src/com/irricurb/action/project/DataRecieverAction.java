@@ -189,6 +189,8 @@ public class DataRecieverAction extends SimpleActionAdapter {
 			
 			// Save the data for each reading
 			for (ProjectDeviceAttributeVO attr:  device.getAttributes()) {
+				if (!"DATA".equalsIgnoreCase(attr.getDeviceAttributeTypeCode())) continue;
+				
 				DeviceEntityDataVO reading = new DeviceEntityDataVO();
 				reading.setProjectDeviceDataId(data.getProjectDeviceDataId());
 				reading.setDeviceAttributeId(attr.getDeviceAttributeId());
