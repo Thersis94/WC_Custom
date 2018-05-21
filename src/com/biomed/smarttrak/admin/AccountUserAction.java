@@ -326,36 +326,6 @@ public class AccountUserAction extends SBActionAdapter {
 		req.setAttribute("statusMap", licenses);
 	}
 	
-	/**
-	 * Increment the count provided the user has the appropriate license type
-	 * @param licenses
-	 * @param licenseType
-	 */
-	private void incrementActive(Map<String, Integer> licenses, String licenseType) {
-		log.debug(licenseType);
-		switch (licenseType) {
-		case "A":
-		case "E":
-		case "C":
-		case "U":
-			incrementStatus(licenses, licenseType);
-			break;
-		default:
-			// Skip everything else
-		}
-	}
-
-	/**
-	 * Ensure that a status count is present and increment it.
-	 * @param status
-	 * @param section
-	 */
-	private void incrementStatus(Map<String, Integer> status, String section) {
-		if (!status.containsKey(section)) 
-			status.put(section, 0);
-		status.put(section, status.get(section)+1);
-	}
-	
 	
 	/**
 	 * Builds a Map used to offer options in the Add User modal - for resuing open seats by Division
