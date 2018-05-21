@@ -114,7 +114,9 @@ public class DSPrivateAssetsImporter extends ShowpadMediaBinDecorator {
 	 */
 	@Override
 	protected boolean isOpcoAuthorized(String distChannel, String[] allowedOpCoNames, String tn) {
-		boolean isAuth =  StringUtil.isEmpty(distChannel) || "INT Mobile".equals(distChannel);
+		boolean isAuth =  StringUtil.isEmpty(distChannel) || "INT Mobile".equals(distChannel) 
+				//Note: remove the two conditionals above (legacy impl) once EMEA finishes converting all assets to match the below ("Showpad EMEA"). -JM- 05-19-18
+				|| StringUtil.stringContainsItem(distChannel, allowedOpCoNames);
 
 		if (isAuth && publicAssetIds.contains(tn)) {
 			log.debug("blocked - public asset " + tn);

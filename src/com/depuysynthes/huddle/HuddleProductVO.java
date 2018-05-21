@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.action.ActionRequest;
@@ -66,9 +68,12 @@ public class HuddleProductVO extends ProductVO {
 	
 	public Map<String, Object> getResources() {
 		Map<String, Object> vals = new LinkedHashMap<>();
-		for (Integer i : resourceMap.keySet()) {
-			String key = resourceMap.get(i);
-			vals.put(key, super.getProdAttributes().get(key));
+		/* DS-325: 2018-03-26 DBargerhuff
+		 * Make sure that the resourceMap keys are sorted naturally
+		 * otherwise the returned map will not render attribute order correctly */
+		SortedSet<Integer> keys = new TreeSet<>(resourceMap.keySet());
+		for (Integer key : keys) {
+			vals.put(resourceMap.get(key), super.getProdAttributes().get(resourceMap.get(key)));
 		}
 		return vals;
 	}
