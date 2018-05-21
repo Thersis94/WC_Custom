@@ -1,5 +1,8 @@
 package com.biomed.smarttrak.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 //Java 8
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,15 +12,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.UpdatesEditionAction;
+import com.biomed.smarttrak.admin.report.AccountUsersVO;
+import com.biomed.smarttrak.util.SmarttrakTree;
+//WC_Custom
+import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
+import com.biomed.smarttrak.vo.UserVO.Status;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.ApplicationException;
@@ -52,13 +61,6 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
 import com.smt.sitebuilder.security.WCUtil;
-
-//WC_Custom
-import com.biomed.smarttrak.vo.UserVO;
-import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
-import com.biomed.smarttrak.vo.UserVO.Status;
-import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.action.UpdatesEditionAction;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountUserAction.java</p>
@@ -322,36 +324,6 @@ public class AccountUserAction extends SBActionAdapter {
 			}
 		}
 		req.setAttribute("statusMap", licenses);
-	}
-	
-	/**
-	 * Increment the count provided the user has the appropriate license type
-	 * @param licenses
-	 * @param licenseType
-	 */
-	private void incrementActive(Map<String, Integer> licenses, String licenseType) {
-		log.debug(licenseType);
-		switch (licenseType) {
-		case "A":
-		case "E":
-		case "C":
-		case "U":
-			incrementStatus(licenses, licenseType);
-			break;
-		default:
-			// Skip everything else
-		}
-	}
-
-	/**
-	 * Ensure that a status count is present and increment it.
-	 * @param status
-	 * @param section
-	 */
-	private void incrementStatus(Map<String, Integer> status, String section) {
-		if (!status.containsKey(section)) 
-			status.put(section, 0);
-		status.put(section, status.get(section)+1);
 	}
 	
 	
@@ -998,5 +970,146 @@ public class AccountUserAction extends SBActionAdapter {
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
+	}
+	
+	
+	/**
+	 * Load all accounts and thier seats
+	 * @return
+	 * @throws ActionException
+	 */
+	public Map<AccountUsersVO, Map<String, Integer>> loadAccountCounts(ActionRequest req) throws ActionException {
+		String sql = getCountSQL();
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ResultSet rs = ps.executeQuery();
+			return parseCountResults(rs, req);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+	
+	
+	/**
+	 * Parse the results into a map of accounts and thier seat counts
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	private Map<AccountUsersVO, Map<String, Integer>> parseCountResults(ResultSet rs, ActionRequest req) throws SQLException {
+		Map<AccountUsersVO, Map<String, Integer>> results = new LinkedHashMap<>();
+		AccountUsersVO account = new AccountUsersVO();
+		account.setAccountId("");
+		Map<String, Integer> counts = Collections.emptyMap();
+		DBProcessor db = new DBProcessor(dbConn);
+		
+		AccountPermissionAction apa = new AccountPermissionAction(actionInit);
+		apa.setDBConnection(dbConn);
+		apa.setAttributes(attributes);
+		
+		while (rs.next()) {
+			if (!account.getAccountId().equals(rs.getString("account_id"))) {
+				addAccount(account, counts, results, apa, req);
+				account = new AccountUsersVO();
+				db.executePopulate(account, rs);
+				counts = new HashMap<>();
+			}
+			
+			incrementActive(counts, rs.getString("status_cd"), true, rs.getInt("active_flg"));
+		}
+		return results;
+	}
+	
+	
+	/**
+	 * Overloaded version of the increment status that can be used by summateStatus
+	 * @param licenses
+	 * @param licenseType
+	 */
+	protected void incrementActive(Map<String, Integer> licenses, String licenseType) {
+		incrementActive(licenses, licenseType, false, 0);
+	}
+	
+	
+	/**
+	 * Increment the count provided the user has the appropriate license type
+	 * @param licenses
+	 * @param licenseType
+	 * @param i 
+	 */
+	private void incrementActive(Map<String, Integer> licenses, String licenseType, boolean isReport, int status) {
+		if (StringUtil.isEmpty(licenseType)) return;
+		String activeType = "";
+		if (isReport)
+			activeType = status == 1? "A":"O";
+		switch (licenseType) {
+		case "A":
+		case "E":
+		case "C":
+		case "U":
+		case "K":
+			incrementStatus(licenses, activeType+licenseType);
+			break;
+		default:
+			// Skip everything else
+		}
+	}
+
+	/**
+	 * Ensure that a status count is present and increment it.
+	 * @param status
+	 * @param section
+	 * @param status2 
+	 */
+	private void incrementStatus(Map<String, Integer> licenses, String section) {
+		if (!licenses.containsKey(section)) 
+			licenses.put(section, 0);
+		licenses.put(section, licenses.get(section)+1);
+	}
+	
+	
+	
+	/**
+	 * Add the account to the results map.
+	 * @param account
+	 * @param counts
+	 * @param results
+	 * @param apa 
+	 * @param req 
+	 */
+	private void addAccount(AccountUsersVO account, Map<String, Integer> counts,
+			Map<AccountUsersVO, Map<String, Integer>> results, AccountPermissionAction apa, ActionRequest req) {
+		if ("".equals(account.getAccountId())) return;
+		req.setParameter("accountId", account.getAccountId());
+		try {
+			apa.retrieve(req);
+		} catch (Exception e) {
+			log.error("Could not retrieve account permissions for account ID: " + account.getAccountId());
+		}
+		// try to get to it
+		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
+		if (mod != null) {
+			SmarttrakTree t = (SmarttrakTree)mod.getActionData();
+			account.setPermissions(t);
+		}
+		
+		results.put(account, counts);
+	}
+
+	/**
+	 * Get the sql for listing active users and open seats for all accounts
+	 * @return
+	 */
+	private String getCountSQL() {
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("select a.account_id, a.account_nm, u.active_flg, u.status_cd, a.start_dt, a.expiration_dt, a.classification_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customDb).append("biomedgps_account a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("biomedgps_user u ");
+		sql.append("on a.account_id = u.account_id and u.active_flg != 0 ");
+		sql.append("where a.status_no = 'A' ");
+		sql.append("order by a.account_nm asc ");
+		log.debug(sql);
+		return sql.toString();
 	}
 }

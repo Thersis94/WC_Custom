@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 // J2EE libs
 import javax.servlet.http.HttpServletResponse;
@@ -17,6 +17,15 @@ import javax.servlet.http.HttpServletResponse;
 // Solr libs
 import org.apache.solr.common.SolrDocument;
 
+//WC Custom libs
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.SmarttrakSolrAction;
+import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
+import com.biomed.smarttrak.util.SmarttrakSolrUtil;
+import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.util.UpdateIndexer;
+import com.biomed.smarttrak.vo.UpdateVO;
+import com.biomed.smarttrak.vo.UpdateXRVO;
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -39,18 +48,10 @@ import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
-
-//WC Custom libs
-import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.action.SmarttrakSolrAction;
-import com.biomed.smarttrak.util.SmarttrakSolrUtil;
-import com.biomed.smarttrak.util.SmarttrakTree;
-import com.biomed.smarttrak.util.UpdateIndexer;
-import com.biomed.smarttrak.vo.UpdateVO;
-import com.biomed.smarttrak.vo.UpdateXRVO;
 
 /****************************************************************************
  * <b>Title</b>: UpdatesAction.java
@@ -161,6 +162,8 @@ public class UpdatesAction extends ManagementAction {
 			} else {
 				data = Collections.emptyList();
 			}
+			//adjust the content links only for the manage list page, since this page allows user to bounce externally
+			adjustContentLinks(data, req);
 		}
 
 		decryptNames(data);
@@ -322,6 +325,22 @@ public class UpdatesAction extends ManagementAction {
 		sa.retrieve(req);
 	}
 
+	/**
+	 * Modifies public links to their corresponding manage tool link
+	 * @param updates
+	 * @param req
+	 */
+	protected void adjustContentLinks(List<Object> updates, ActionRequest req) {
+		//create link checker util
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		BiomedLinkCheckerUtil linkUtil = new BiomedLinkCheckerUtil(dbConn, site);
+		
+		//modify appropriate content links for updates
+		for (Object o : updates) {
+			UpdateVO up = (UpdateVO)o;
+			up.setMessageTxt(linkUtil.modifySiteLinks(up.getMessageTxt()));
+		}
+	}
 
 	/**
 	 * Retrieve all the updates - called by the Solr OOB indexer

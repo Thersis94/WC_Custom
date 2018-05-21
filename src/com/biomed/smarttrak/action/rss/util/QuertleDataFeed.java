@@ -2,14 +2,15 @@ package com.biomed.smarttrak.action.rss.util;
 
 import java.io.IOException;
 import java.net.URL;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
-
 import javax.xml.namespace.QName;
 import javax.xml.ws.BindingProvider;
 import javax.xml.ws.handler.MessageContext;
@@ -17,6 +18,7 @@ import javax.xml.ws.handler.MessageContext;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
+
 import com.quertle.webservice.base.HitcountOption;
 import com.quertle.webservice.base.ResultAttributes;
 import com.quertle.webservice.base.SearchParams;
@@ -25,6 +27,7 @@ import com.quertle.webservice.base.SearchParams.PostFilters.Entry;
 import com.quertle.webservice.base.SearchWSImplementationsService;
 import com.quertle.webservice.base.SearchingSEI;
 import com.quertle.webservice.base.WSCheckFaultException;
+
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -55,8 +58,9 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	/**
 	 * @param args
 	 */
-	public QuertleDataFeed(String[] args) {
-		super(args);
+	public QuertleDataFeed(Connection dbConn, Properties props) {
+		super(dbConn,props);
+		feedName = "Quertle RSS Feed";
 	}
 
 
