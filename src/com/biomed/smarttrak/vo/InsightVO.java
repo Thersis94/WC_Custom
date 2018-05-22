@@ -129,6 +129,14 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 		public boolean getDisplayFlag() {
 			return this.displayFlag;
 		}
+		public static InsightType getFromCode(int typeCd) {
+			for(InsightType type : InsightType.values()){
+				if (type.getVal() == typeCd){
+					return type;
+				}
+			}
+			return null;
+		}
 	}
 
 	/**
