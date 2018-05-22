@@ -49,6 +49,7 @@ import com.smt.sitebuilder.data.vo.QueryParamVO;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SBUserRoleContainer;
 import com.smt.sitebuilder.security.SecurityController;
+import com.rezdox.action.RezDoxNotifier.Message;
 //WC Custom
 import com.rezdox.api.SunNumberAPIManager;
 import com.rezdox.api.WalkScoreAPIManager;
@@ -335,6 +336,9 @@ public class ResidenceAction extends SBActionAdapter {
 					// This is the user's first residence, give a reward to anyone that might have invited them
 					InvitationAction ia = new InvitationAction(dbConn, attributes);
 					ia.applyInviterRewards(req, RezDoxUtils.REWARD_HOMEOWNER_INVITE);
+
+					//Add First Residence Notifications
+					sendFirstResidenceNotifications(site, RezDoxUtils.getMemberId(req));
 				}
 
 			} catch (Exception e) {
@@ -343,6 +347,21 @@ public class ResidenceAction extends SBActionAdapter {
 		}
 	}
 
+
+	/**
+	 * Sends all the First Residence User Notifications.
+	 * @param memberId
+	 */
+	private void sendFirstResidenceNotifications(SiteVO site, String memberId) {
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+		notifyUtil.sendToMember(Message.NEW_RES_REWARDS, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_CONNECT, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_LOG, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_INVENTORY, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_EQUITY, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_PIC, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_PRIVACY, null, null, memberId);
+	}
 
 	/**
 	 * updates the members record and the session with the new role.
