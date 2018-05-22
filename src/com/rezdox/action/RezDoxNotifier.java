@@ -54,7 +54,21 @@ public class RezDoxNotifier {
 		REWARD_APPRVD("Your RezRewards gift card has been authorized"),
 		REVIEW_RCVD("Your business received a review from a RezDox user"),
 		REFFERAL("Your business has been referred by a RezDox user"),
-		PROJ_SHARE("${companyName} wants to share a recently completed project with you");
+		PROJ_SHARE("${companyName} wants to share a recently completed project with you"),
+		NEW_RES_PRIVACY("Adjust your privacy settings to your comfort zone."),
+		NEW_RES_PIC("Include a picture of your greatest asset."),
+		NEW_RES_EQUITY("The RezDox equity calculator captures the value of your home from the inside out in real time."),
+		NEW_RES_INVENTORY("Catalog the improvements, renovations, maintenance, and service performed on your home."),
+		NEW_RES_LOG("Record your personal possessions in your Home Inventory Log."),
+		NEW_RES_CONNECT("Connecty with members & businesses to enjoy the benefits of RexDox' ecosystem."),
+		NEW_RES_REWARDS("Watch your reward points grow when you perform activities."),
+		NEW_BUS_LOGO("Set up your business profile & add your company's logo."),
+		NEW_BUS_SERVICES("Tell RezDox members about the professional services you offer.  Help them Grow Equity"),
+		NEW_BUS_STOREFRONT("Build your virtual storefront.  Advertise your business on RezDox."),
+		NEW_BUS_INVITE("Invite your customers to join RezDox, giving them visibility to the deals you offer."),
+		NEW_BUS_CONNECT("Connect with members.  Link the work you performed to their Home History Log."),
+		NEW_BUS_ONLINE("Keep an online digital footprint of the work you performed for your customers."),
+		NEW_BUS_REWARDS("Watch your reward points grow.");
 
 		private String msg;
 		private Message(String msg) {

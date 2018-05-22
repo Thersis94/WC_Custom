@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.action.RezDoxNotifier.Message;
 import com.rezdox.data.BusinessFormProcessor;
 import com.rezdox.vo.BusinessAttributeVO;
 import com.rezdox.vo.BusinessVO;
@@ -361,6 +362,10 @@ public class BusinessAction extends SBActionAdapter {
 					// This is the user's first business, give a reward to anyone that might have invited them
 					InvitationAction ia = new InvitationAction(dbConn, attributes);
 					ia.applyInviterRewards(req, RezDoxUtils.REWARD_BUSINESS_INVITE);
+
+					//Send First Business Notifications.
+					sendFirstBusinessNotifications(site, RezDoxUtils.getMemberId(req));
+
 				} catch (DatabaseException e) {
 					log.error("could not update member vo", e);
 				}
@@ -384,6 +389,21 @@ public class BusinessAction extends SBActionAdapter {
 				throw new ActionException("Could not save business", e);
 			}
 		}
+	}
+
+	/**
+	 * Sends all the First Business User Notifications.
+	 * @param memberId
+	 */
+	private void sendFirstBusinessNotifications(SiteVO site, String memberId) {
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+		notifyUtil.sendToMember(Message.NEW_BUS_REWARDS, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_ONLINE, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_CONNECT, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_INVITE, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_STOREFRONT, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_SERVICES, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_LOGO, null, null, memberId);
 	}
 
 	/**
