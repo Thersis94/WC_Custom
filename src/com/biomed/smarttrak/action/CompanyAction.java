@@ -98,7 +98,7 @@ public class CompanyAction extends SimpleActionAdapter {
 				page.setTitleName(vo.getCompanyName() + " | " + site.getSiteName());
 				putModuleData(vo);
 			}
-		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
+		} else if (req.hasParameter("amid")){
 			retrieveCompanies(req);
 		}
 	}
