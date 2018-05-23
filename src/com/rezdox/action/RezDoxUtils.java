@@ -67,6 +67,7 @@ public class RezDoxUtils {
 	public static final String REWARD_PATH = MEMBER_ROOT_PATH + "/rewards";
 	public static final String CONNECTION_PATH = MEMBER_ROOT_PATH + "/Connections";
 	public static final String JOIN_PATH = "/join";
+	public static final String EARN_PATH = REWARD_PATH + "/earn";
 
 	/**
 	 * coefficient modifier for putting a dollar value on home improvements (projects)
