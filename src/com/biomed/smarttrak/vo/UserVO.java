@@ -562,18 +562,18 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		return super.getProfileId();
 	}
 
-	@Column(name="first_nm", isReadOnly=true)
+	@Column(name="first_nm")
 	public String getFirstName() {
 		return super.getFirstName();
 	}
 
-	@Column(name="last_nm", isReadOnly=true)
+	@Column(name="last_nm")
 	public String getLastName() {
 		return super.getLastName();
 	}
 
 	@Override
-	@Column(name="email_address_txt", isReadOnly=true)
+	@Column(name="email_address_txt")
 	public String getEmailAddress() {
 		return super.getEmailAddress();
 	}
