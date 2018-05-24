@@ -40,6 +40,7 @@ public class SectionVO implements Serializable {
 	private boolean isSelected;
 	private String groupNm;
 	private int isGapNo;
+	private String descTxt;
 
 	public SectionVO() {
 		super();
@@ -66,6 +67,7 @@ public class SectionVO implements Serializable {
 		setSectionNm(util.getStringVal("SECTION_NM", rs));
 		setOrderNo(util.getIntVal("ORDER_NO", rs));
 		setSolrTokenTxt(util.getStringVal("SOLR_TOKEN_TXT", rs));
+		setDescTxt(util.getStringVal("DESC_TXT", rs));
 		
 		// These values may not always be on a result set depending on where this is being set from
 		setFdPubYr(util.getIntVal("FD_PUB_YR", rs));
@@ -245,5 +247,14 @@ public class SectionVO implements Serializable {
 
 	public void setIsGapNo(int isGapNo) {
 		this.isGapNo = isGapNo;
+	}
+
+	@Column(name="DESC_TXT")
+	public String getDescTxt() {
+		return descTxt;
+	}
+
+	public void setDescTxt(String descTxt) {
+		this.descTxt = descTxt;
 	}
 }
