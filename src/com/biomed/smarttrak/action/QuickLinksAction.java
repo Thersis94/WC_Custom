@@ -196,7 +196,7 @@ public class QuickLinksAction extends SBActionAdapter {
 		
 		// loop pageviews looking for match.
 		for (PageViewVO page : section) {
-			if (primaryId.equalsIgnoreCase(page.getPageId())) {
+			if (primaryId.equalsIgnoreCase(page.getPageId()) || pkId.equalsIgnoreCase(page.getPageId())) {
 				return true;
 			}
 		}
