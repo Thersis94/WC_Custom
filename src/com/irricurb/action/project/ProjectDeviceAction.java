@@ -121,7 +121,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 			updateDeviceAttribute(pdvo);
 			
 		} catch (Exception e) {
-			log.error("error", e);
+			log.error("Unable to update device", e);
 			// Update the value to its original state so the UI can be reset
 			pdvo.setValue(getCurrentAttributeValue(pdvo.getDeviceAttributeXrId()));
 			
@@ -224,7 +224,6 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		List<Object> params =  Arrays.asList(pdvo.getProjectDeviceId(), pdvo.getDeviceAttributeId());
 		List<ProjectDeviceAttributeVO> items = db.executeSelect(sql.toString(),params, new ProjectDeviceAttributeVO());
 		if (! items.isEmpty()) pdvo.setDeviceAttributeXrId(items.get(0).getDeviceAttributeXrId());
-
 		db.save(pdvo);
 	}
 	
