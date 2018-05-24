@@ -3,7 +3,7 @@ package com.irricurb.lookup;
 /****************************************************************************
  * <b>Title</b>: DisplayTypeEnum.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO Put Something Here
+ * <b>Description: </b> Will hold the enum values fr the display type table
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 

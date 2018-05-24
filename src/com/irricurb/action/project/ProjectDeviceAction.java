@@ -212,7 +212,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	public void updateDeviceAttribute(ProjectDeviceAttributeVO pdvo) throws DatabaseException, InvalidDataException {
+	public void updateDeviceAttribute(ProjectDeviceAttributeVO pdvo) throws Exception {
 		// Get the DB Processor
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		
