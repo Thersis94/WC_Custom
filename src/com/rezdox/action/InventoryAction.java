@@ -46,6 +46,7 @@ import com.smt.sitebuilder.data.vo.QueryParamVO;
 public class InventoryAction extends SimpleActionAdapter {
 
 	protected static final String REQ_TREASURE_ITEM_ID = "treasureItemId";
+	private static final String REQ_ITEMS = "items";
 	private static final String EMPTY_RESID = "none";
 
 	public InventoryAction() {
@@ -173,28 +174,36 @@ public class InventoryAction extends SimpleActionAdapter {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select a.*, b.category_nm, c.photo_id, c.photo_nm, c.image_url, r.room_nm ");
+		sql.append("select a.*, b.category_nm, c.photo_id, c.photo_nm, c.image_url, r.room_nm, tia.value_txt as warranty_exp ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("REZDOX_TREASURE_ITEM a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_TREASURE_CATEGORY b on a.treasure_category_cd=b.treasure_category_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PHOTO c on a.treasure_item_id=c.treasure_item_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_ROOM r on a.room_id=r.room_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_TREASURE_ITEM_ATTRIBUTE tia on tia.treasure_item_id=a.treasure_item_id ");
+		sql.append("and tia.slug_txt='").append(InventoryFormProcessor.WARRANTY_SLUG).append("' ");
 		sql.append("where a.owner_member_id=? ");
+		params.add(RezDoxUtils.getMemberId(req));
+
 		if (EMPTY_RESID.equals(residenceId)) {
 			sql.append("and a.residence_id is null ");
 		} else if (!StringUtil.isEmpty(residenceId)) {
 			sql.append("and a.residence_id=? ");
+			params.add(residenceId);
 		}
-		if (!StringUtil.isEmpty(treasureItemId)) sql.append("and a.treasure_item_id=? ");
+		if (!StringUtil.isEmpty(treasureItemId)) {
+			sql.append("and a.treasure_item_id=? ");
+			params.add(treasureItemId);
+
+		} else if (!StringUtil.isEmpty(req.getParameter(REQ_ITEMS))) {
+			String[] items = req.getParameter(REQ_ITEMS).split(",");
+			sql.append("and a.treasure_item_id in (");
+			DBUtil.preparedStatmentQuestion(items.length, sql);
+			sql.append(") ");
+			params.addAll(Arrays.asList(items));
+		}
+
 		sql.append("order by a.item_nm");
 		log.debug(sql);
-
-		params.add(RezDoxUtils.getMemberId(req));
-
-		if (!StringUtil.isEmpty(residenceId) && !EMPTY_RESID.equals(residenceId)) //EMPTY_RESID gets passed for orphan inventory (not attached to a residence)
-			params.add(residenceId);
-
-		if (!StringUtil.isEmpty(treasureItemId)) 
-			params.add(treasureItemId);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), params, new InventoryItemVO());
@@ -224,6 +233,37 @@ public class InventoryAction extends SimpleActionAdapter {
 	}
 
 
+	/**
+	 * move items from on residence to another
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void moveItems(ActionRequest req) {
+		if (!req.hasParameter(REQ_ITEMS)) return;
+		String[] items = req.getParameter(REQ_ITEMS).split(",");
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("REZDOX_TREASURE_ITEM ");
+		sql.append("set residence_id=?, update_dt=? where treasure_item_id in (");
+		DBUtil.preparedStatmentQuestion(items.length, sql);
+		sql.append(") and owner_member_id=?");
+		log.debug(sql);
+
+		int x = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(++x, req.getParameter(RESIDENCE_ID));
+			ps.setTimestamp(++x, Convert.getCurrentTimestamp());
+			for (String id : items) {
+				ps.setString(++x, id);
+			}
+			ps.setString(++x, RezDoxUtils.getMemberId(req));
+			ps.executeUpdate();
+
+		} catch (SQLException sqle) {
+			log.error("could not move treasure items", sqle);
+		}
+	}
+
+
 	/*
 	 * form-submittal - the user is cashing in points for a reward.
 	 * (non-Javadoc)
@@ -241,6 +281,10 @@ public class InventoryAction extends SimpleActionAdapter {
 
 		} else if (req.hasParameter("savePhoto")) {
 			savePhoto(req);
+
+		} else if (req.hasParameter("moveItems")) {
+			moveItems(req);
+			doRedirect = true;
 
 		} else {
 			// Place ActionInit on the Attributes map for the Data Save Handler.
