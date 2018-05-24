@@ -42,6 +42,7 @@ public class InventoryItemVO {
 
 	//cosmetic values
 	private String roomName;
+	private String warrantyExp;
 
 	public InventoryItemVO() {
 		super();
@@ -202,5 +203,18 @@ public class InventoryItemVO {
 
 	public void setRoomName(String roomName) {
 		this.roomName = roomName;
+	}
+
+	@Column(name="warranty_exp", isReadOnly=true)
+	public String getWarrantyExp() {
+		return warrantyExp;
+	}
+
+	public void setWarrantyExp(String warrantyExp) {
+		this.warrantyExp = warrantyExp;
+	}
+
+	public Date getWarrantyExpDate() {
+		return !StringUtil.isEmpty(warrantyExp) ? Convert.formatDate(Convert.DATE_DASH_PATTERN, warrantyExp) : null;
 	}
 }
