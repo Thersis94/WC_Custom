@@ -27,22 +27,22 @@ public enum DeviceTypeEnum {
 	TEMPERATURE ("Temperature Sensor");
 	
 	// Member variable for the Name of the enum 
-	private String name;
+	private String formattedName;
 	
 	/**
 	 * Constructor to add the enum name
 	 * @param name
 	 */
-	DeviceTypeEnum(String name) {
-		this.name = name;
+	DeviceTypeEnum(String formattedName) {
+		this.formattedName = formattedName;
 	}
 	
 	/**
 	 * Returns the name of the enum
 	 * @return
 	 */
-	public String getName() {
-		return this.name;
+	public String getFormattedName() {
+		return this.formattedName;
 	}
 }
 
