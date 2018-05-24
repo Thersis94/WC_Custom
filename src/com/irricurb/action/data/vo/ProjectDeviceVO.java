@@ -3,7 +3,11 @@ package com.irricurb.action.data.vo;
 // JDK 1.8.x
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
+// IC Libs
+import com.irricurb.lookup.DeviceAttributeEnum;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -38,7 +42,9 @@ public class ProjectDeviceVO extends DeviceVO {
 	private Double longitudeNumber = 0.0;
 	private Double latitudeNumber = 0.0;
 	private String networkGatewayText;
+	private String networkAddressText;
 	private String statusCode;
+	private Date readingDate;
 	
 	// Sub-bean Elements
 	private List<ProjectDeviceAttributeVO> attributes = new ArrayList<>(16);
@@ -181,6 +187,21 @@ public class ProjectDeviceVO extends DeviceVO {
 	}
 
 	/**
+	 * @return the networkAddressText
+	 */
+	@Column(name="network_address_txt")
+	public String getNetworkAddressText() {
+		return networkAddressText;
+	}
+
+	/**
+	 * @param networkAddressText the networkAddressText to set
+	 */
+	public void setNetworkAddressText(String networkAddressText) {
+		this.networkAddressText = networkAddressText;
+	}
+
+	/**
 	 * @param networkGatewayText the networkGatewayText to set
 	 */
 	public void setNetworkGatewayText(String networkGatewayText) {
@@ -265,6 +286,36 @@ public class ProjectDeviceVO extends DeviceVO {
 	 */
 	@BeanSubElement
 	public void addAttribute(ProjectDeviceAttributeVO attribute) {
+		//only add if the attribute info is present
+		if (attribute != null && !StringUtil.checkVal(attribute.getDeviceAttributeId()).isEmpty())
 		attributes.add(attribute);
+	}
+
+	/**
+	 * Returns the attribute of the given type
+	 * @param type
+	 * @return
+	 */
+	public ProjectDeviceAttributeVO getAttributeByType(DeviceAttributeEnum type) {
+		for (ProjectDeviceAttributeVO attr : attributes) {
+			if (type.name().equalsIgnoreCase(attr.getDeviceAttributeId())) return attr;
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * @return the readingDate
+	 */
+	@Column(name="reading_dt", isReadOnly=true)
+	public Date getReadingDate() {
+		return readingDate;
+	}
+
+	/**
+	 * @param readingDate the readingDate to set
+	 */
+	public void setReadingDate(Date readingDate) {
+		this.readingDate = readingDate;
 	}
 }
