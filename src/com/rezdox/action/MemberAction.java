@@ -3,6 +3,7 @@ package com.rezdox.action;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +25,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
@@ -332,5 +334,28 @@ public class MemberAction extends SimpleActionAdapter {
 		//apply the default reward give to all new users at first login
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 		ra.applyReward(RezDoxUtils.NEW_REGISTRANT_REWARD, member.getMemberId());
+		
+		//send welcome email
+		sendWelcomeEmail(member);
+	}
+
+
+	/**
+	 * Leverages Email Campaigns to trigger a welcome email to the new member
+	 * @param member
+	 */
+	private void sendWelcomeEmail(MemberVO member) {
+		// Put the mail merge data onto the map
+		Map<String, Object> dataMap = new HashMap<>();
+		dataMap.put("firstName", member.getFirstName());
+		dataMap.put("emailAddress", member.getEmailAddress());
+
+		// Add the recipient
+		Map<String, String> rcptMap = new HashMap<>();
+		rcptMap.put(member.getProfileId(), member.getEmailAddress());
+		
+		// Send the email
+		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		util.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.WELCOME.name());
 	}
 }
