@@ -115,13 +115,13 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	public void updateDeviceAtrributes(ProjectDeviceAttributeVO pdvo) {
 		try {
 			// Send a request to the device so the change takes place in the real world device
-			sendAtttributeController(getProjectDevice(pdvo));
+			sendAttributeController(getProjectDevice(pdvo));
 
 			// Update the record in the database
 			updateDeviceAttribute(pdvo);
 			
 		} catch (Exception e) {
-			log.error("error", e);
+			log.error("Unable to update device", e);
 			// Update the value to its original state so the UI can be reset
 			pdvo.setValue(getCurrentAttributeValue(pdvo.getDeviceAttributeXrId()));
 			
@@ -154,7 +154,7 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 * @param device
 	 * @throws IOException
 	 */
-	public void sendAtttributeController(ProjectDeviceVO device) throws IOException {
+	public void sendAttributeController(ProjectDeviceVO device) throws IOException {
 		// Serialize the object
 		Gson g = new GsonBuilder().setExclusionStrategies(new ProjectLocationExclusionStrategy()).create();
 		String json = g.toJson(device);
@@ -212,9 +212,9 @@ public class ProjectDeviceAction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	public void updateDeviceAttribute(ProjectDeviceAttributeVO pdvo) throws DatabaseException, InvalidDataException {
+	public void updateDeviceAttribute(ProjectDeviceAttributeVO pdvo) throws Exception {
 		// Get the DB Processor
-		DBProcessor db = new DBProcessor(dbConn);
+		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		
 		// Check and make sure the xr_id doesn't exist. This is an edge case when there is no data in the 
 		// Status table and the item is updated 2 times in a row on the UI
@@ -224,7 +224,6 @@ public class ProjectDeviceAction extends SBActionAdapter {
 		List<Object> params =  Arrays.asList(pdvo.getProjectDeviceId(), pdvo.getDeviceAttributeId());
 		List<ProjectDeviceAttributeVO> items = db.executeSelect(sql.toString(),params, new ProjectDeviceAttributeVO());
 		if (! items.isEmpty()) pdvo.setDeviceAttributeXrId(items.get(0).getDeviceAttributeXrId());
-		
 		db.save(pdvo);
 	}
 	

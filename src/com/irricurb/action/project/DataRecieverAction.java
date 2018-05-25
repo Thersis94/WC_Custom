@@ -86,6 +86,7 @@ public class DataRecieverAction extends SimpleActionAdapter {
 		try {
 			String json = URLDecoder.decode(req.getStringParameter("data", ""), "UTF-8");
 			// checkSecurityKey(req);
+			//post demo the security keys will be impl
 			
 			if(type.equals(DataType.SENSOR)) {
 				processSensor(json, req.getBooleanParameter("multiple"));
@@ -139,7 +140,7 @@ public class DataRecieverAction extends SimpleActionAdapter {
 	 * 
 	 * @param json
 	 */
-	public void processDevice(String json) throws InvalidDataException, DatabaseException {
+	public void processDevice(String json) throws Exception {
 		if (json.isEmpty()) throw new InvalidDataException("No JSON Data Available");
 		Gson g = new Gson();
 		ProjectDeviceVO data = g.fromJson(json, ProjectDeviceVO.class);
@@ -161,7 +162,7 @@ public class DataRecieverAction extends SimpleActionAdapter {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	public void processSensor(String json, boolean multiple) throws InvalidDataException, DatabaseException {
+	public void processSensor(String json, boolean multiple) throws Exception {
 		if (json.isEmpty()) throw new InvalidDataException("No JSON Data Available");
 		
 		log.info("Sensor: " + json);
@@ -189,6 +190,8 @@ public class DataRecieverAction extends SimpleActionAdapter {
 			
 			// Save the data for each reading
 			for (ProjectDeviceAttributeVO attr:  device.getAttributes()) {
+				if (!"DATA".equalsIgnoreCase(attr.getDeviceAttributeTypeCode())) continue;
+				
 				DeviceEntityDataVO reading = new DeviceEntityDataVO();
 				reading.setProjectDeviceDataId(data.getProjectDeviceDataId());
 				reading.setDeviceAttributeId(attr.getDeviceAttributeId());

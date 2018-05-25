@@ -40,22 +40,22 @@ public enum DeviceAttributeEnum {
 	WATER_VOLUME ("Volume of Water Used");
 	
 	// Member variable for the Name of the enum 
-	private String name;
+	private String formattedName;
 	
 	/**
 	 * Constructor to add the enum name
 	 * @param name
 	 */
-	DeviceAttributeEnum(String name) {
-		this.name = name;
+	DeviceAttributeEnum(String formattedName) {
+		this.formattedName = formattedName;
 	}
 	
 	/**
 	 * Returns the name of the enum
 	 * @return
 	 */
-	public String getName() {
-		return this.name;
+	public String getFormattedName() {
+		return this.formattedName;
 	}
 }
 

@@ -15,12 +15,6 @@ package com.irricurb.util;
 
 public class ICConstants {
 	
-	/**
-	 * 
-	 */
-	private ICConstants() {
-		super();
-	}
 	
 	/**
 	 * Key in the SC to store information for the project on the controller
@@ -71,5 +65,9 @@ public class ICConstants {
 	 *  JSON error codes
 	 */
 	public static final String ERR_JSON_ACTION = "jsonActionError";
+	
+	private ICConstants() {
+		super();
+	}
 }
 

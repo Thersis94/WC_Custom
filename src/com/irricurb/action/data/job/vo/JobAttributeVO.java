@@ -76,6 +76,7 @@ public class JobAttributeVO extends JobAttributeBaseVO {
 	/**
 	 * @return the jobAttributeCode
 	 */
+	@Override
 	@Column(name="job_attribute_cd")
 	public String getJobAttributeCode() {
 		return jobAttributeCode;
@@ -92,6 +93,7 @@ public class JobAttributeVO extends JobAttributeBaseVO {
 	/**
 	 * @return the createDate
 	 */
+	@Override
 	@Column(name="create_dt", isInsertOnly=true)
 	public Date getCreateDate() {
 		return createDate;
@@ -114,6 +116,7 @@ public class JobAttributeVO extends JobAttributeBaseVO {
 	/**
 	 * @param jobAttributeCode the jobAttributeCode to set
 	 */
+	@Override
 	public void setJobAttributeCode(String jobAttributeCode) {
 		this.jobAttributeCode = jobAttributeCode;
 	}
@@ -128,6 +131,7 @@ public class JobAttributeVO extends JobAttributeBaseVO {
 	/**
 	 * @param createDate the createDate to set
 	 */
+	@Override
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
 	}
