@@ -3,7 +3,7 @@ package com.irricurb.lookup;
 /****************************************************************************
  * <b>Title</b>: NetworkTypeEnum.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO Put Something Here
+ * <b>Description: </b> Enum of network types that match the DB lookup table
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
