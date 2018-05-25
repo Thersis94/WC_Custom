@@ -3,7 +3,7 @@ package com.irricurb.lookup;
 /****************************************************************************
  * <b>Title</b>: DeviceTypeEnum.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Enum of device types thsat match the DB lookup table
+ * <b>Description: </b> Enum of device types that match the DB lookup table
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
