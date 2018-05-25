@@ -40,6 +40,7 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 	private double rating;
 	private Date createDate;
 	private String categoryCode;
+	private String categoryLvl2Code;
 	private int privacyFlag;
 	private String uniqueId;
 	
@@ -246,6 +247,14 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 	 */
 	public void setConnectionId(String connectionId) {
 		this.connectionId = connectionId;
+	}
+	
+	@Column(name="category_lvl2_cd")
+	public String getCategoryLvl2Code() {
+		return categoryLvl2Code;
+	}
+	public void setCategoryLvl2Code(String categoryLvl2Code) {
+		this.categoryLvl2Code = categoryLvl2Code;
 	}
 
 }

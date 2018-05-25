@@ -76,7 +76,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		if(role != null && role.getRoleLevel() > 0) {
 			memberId = RezDoxUtils.getMemberId(req);
 			sql.append("select m.member_id as user_id, c.connection_id, m.first_nm, m.last_nm, m.profile_pic_pth, pa.city_nm, ");
-			sql.append("pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, 'MEMBER' as category_cd, m.privacy_flg, m.create_dt, m.member_id || '_m' as unique_id ");
+			sql.append("pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, 'MEMBER' as category_cd, '' as category_lvl2_cd, m.privacy_flg, m.create_dt, m.member_id || '_m' as unique_id ");
 			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member m ");
 			sql.append(DBUtil.INNER_JOIN).append("profile_address pa on m.profile_id = pa.profile_id ");
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on (m.member_id = c.rcpt_member_id and c.sndr_member_id = ?) or (m.member_id = c.sndr_member_id and c.rcpt_member_id = ?) ");
@@ -93,7 +93,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 			sql.append("'' as connection_id, ");
 		}
 		sql.append("b.business_nm as first_nm, '' as last_nm, b.photo_url as profile_pic_pth, b.city_nm, b.state_cd, ba.value_txt as business_summary, ");
-		sql.append("cast(coalesce(r.rating, 0) as numeric) as rating, bc.business_category_cd as category_cd, b.privacy_flg, b.create_dt, b.business_id || '_b' as unique_id ");
+		sql.append("cast(coalesce(r.rating, 0) as numeric) as rating, bc.business_category_cd as category_cd, bcs.business_category_cd as category_lvl2_cd, b.privacy_flg, b.create_dt, b.business_id || '_b' as unique_id ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b ");
 		sql.append(DBUtil.INNER_JOIN).append("(select business_id from ").append(schema).append("rezdox_business_member_xr where status_flg = 1 group by business_id) bmxa on b.business_id = bmxa.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_attribute ba on b.business_id = ba.business_id and slug_txt = 'BUSINESS_SUMMARY' ");
