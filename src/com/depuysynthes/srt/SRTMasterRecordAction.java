@@ -242,7 +242,7 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 		buildWhereListClause(sql, req, vals);
 
 		//Add Order By clause.
-		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(sortCols.get(req.getParameter("sort")), sortCols.get("createDt")));
+		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(sortCols.get(req.getParameter("sort")), sortCols.get(SRT_MASTER_RECORD_PART_NO)));
 		sql.append(" ").append(StringUtil.checkVal(req.getParameter("order"), "desc"));
 
 		return sql.toString();
