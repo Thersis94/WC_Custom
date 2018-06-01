@@ -49,7 +49,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 	public DirectoryAction(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
+
 	/**
 	 * @param dbConnection
 	 * @param attributes
@@ -70,13 +70,14 @@ public class DirectoryAction extends SimpleActionAdapter {
 		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
 
 		String memberId = null;
-		
+
 		// Member half of union
 		sql.append(DBUtil.SELECT_FROM_STAR).append("(");
 		if(role != null && role.getRoleLevel() > 0) {
 			memberId = RezDoxUtils.getMemberId(req);
 			sql.append("select m.member_id as user_id, c.connection_id, m.first_nm, m.last_nm, m.profile_pic_pth, pa.city_nm, ");
-			sql.append("pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, 'MEMBER' as category_cd, '' as category_lvl2_cd, m.privacy_flg, m.create_dt, m.member_id || '_m' as unique_id ");
+			sql.append("pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, 'MEMBER' as category_cd, '' as category_lvl2_cd, ");
+			sql.append("m.privacy_flg, m.create_dt, m.member_id || '_m' as unique_id, '' as my_pro_id ");
 			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member m ");
 			sql.append(DBUtil.INNER_JOIN).append("profile_address pa on m.profile_id = pa.profile_id ");
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on (m.member_id = c.rcpt_member_id and c.sndr_member_id = ?) or (m.member_id = c.sndr_member_id and c.rcpt_member_id = ?) ");
@@ -87,20 +88,23 @@ public class DirectoryAction extends SimpleActionAdapter {
 
 		// Business half of union
 		sql.append("select b.business_id as user_id, ");
-		if(role != null && role.getRoleLevel() > 0) {
+		if (role != null && role.getRoleLevel() > 0) {
 			sql.append("c.connection_id, ");
 		} else {
 			sql.append("'' as connection_id, ");
 		}
 		sql.append("b.business_nm as first_nm, '' as last_nm, b.photo_url as profile_pic_pth, b.city_nm, b.state_cd, ba.value_txt as business_summary, ");
-		sql.append("cast(coalesce(r.rating, 0) as numeric) as rating, bc.business_category_cd as category_cd, bcs.business_category_cd as category_lvl2_cd, b.privacy_flg, b.create_dt, b.business_id || '_b' as unique_id ");
+		sql.append("cast(coalesce(r.rating, 0) as numeric) as rating, bc.business_category_cd as category_cd, bcs.business_category_cd as category_lvl2_cd, ");
+		sql.append("b.privacy_flg, b.create_dt, b.business_id || '_b' as unique_id, mp.my_pro_id ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b ");
-		sql.append(DBUtil.INNER_JOIN).append("(select business_id from ").append(schema).append("rezdox_business_member_xr where status_flg = 1 group by business_id) bmxa on b.business_id = bmxa.business_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_attribute ba on b.business_id = ba.business_id and slug_txt = 'BUSINESS_SUMMARY' ");
+		sql.append(DBUtil.INNER_JOIN).append("(select business_id from ").append(schema).append("rezdox_business_member_xr where status_flg=1 group by business_id) bmxa on b.business_id = bmxa.business_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_attribute ba on b.business_id = ba.business_id and slug_txt='BUSINESS_SUMMARY' ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select business_id, avg(rating_no) as rating ").append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review where parent_id is null group by business_id) as r on b.business_id = r.business_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id = bcx.business_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bcs on bcx.business_category_cd = bcs.business_category_cd ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bcs.parent_cd = bc.business_category_cd ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id=bcx.business_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bcs on bcx.business_category_cd=bcs.business_category_cd ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bcs.parent_cd=bc.business_category_cd ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_my_pro mp on mp.business_category_cd=bc.business_category_cd and mp.business_id=b.business_id and mp.member_id=? ");
+		params.add(memberId); //for my pros join
 		if(role != null && role.getRoleLevel() > 0) {
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on (b.business_id = c.rcpt_business_id and c.sndr_member_id = ?) or (b.business_id = c.sndr_business_id and c.rcpt_member_id = ?) ");
 			params.addAll(Arrays.asList(memberId, memberId));
@@ -111,7 +115,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		generateSqlWhere(sql, req, params);
 
 		// Create default ordering
-		String order = "order by first_nm asc ";
+		String order = "order by first_nm asc";
 		// If sort/order parameters passed use them instead
 		if (!StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_SORT)) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
 			String sortField = StringUtil.checkVal(sortFields.get(req.getParameter(DBUtil.TABLE_SORT)), "first_nm");
@@ -119,15 +123,15 @@ public class DirectoryAction extends SimpleActionAdapter {
 			order = StringUtil.join(DBUtil.ORDER_BY, sortField, " ", sortDirection.name());
 		}
 		sql.append(order);
-
-		log.debug("Directory SQL: " + sql + " | " + memberId);
+		log.debug(sql + " | " + memberId);
 
 		// Get the data
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		List<DirectoryReportVO> data = dbp.executeSelect(sql.toString(), params, new DirectoryReportVO(), "unique_id");
 		putModuleData(data, data.size(), false);
 	}
-	
+
+
 	/**
 	 * Creates the where clause for searching/filtering
 	 * 
@@ -155,5 +159,4 @@ public class DirectoryAction extends SimpleActionAdapter {
 			params.add("%" + search + "%");
 		}
 	}
-
 }

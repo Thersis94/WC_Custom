@@ -55,6 +55,7 @@ public class RezDoxNotifier {
 		REVIEW_RCVD("Your business received a review from a RezDox user"),
 		REFFERAL("Your business has been referred by a RezDox user"),
 		PROJ_SHARE("${companyName} wants to share a recently completed project with you"),
+		PROJ_SHARE_TO_BIZ("${firstName} ${lastName} wants to share a project completed at ${residenceName}"),
 		NEW_RES_PRIVACY("Adjust your privacy settings to your comfort zone."),
 		NEW_RES_PIC("Include a picture of your greatest asset."),
 		NEW_RES_EQUITY("The RezDox equity calculator captures the value of your home from the inside out in real time."),
