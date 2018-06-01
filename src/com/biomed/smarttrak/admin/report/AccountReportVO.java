@@ -141,11 +141,30 @@ public class AccountReportVO extends AbstractSBReportVO {
 			closeDiv(sb);
 		}
 		addSummaryRows(sb);
+		
+		addLegendRows(sb);
 
 		// close the report wrapper
 		closeDiv(sb);
 		sb.append("</body>");
 
+	}
+
+	/**
+	 * Add the legend at the bottom of the report.
+	 * @param sb
+	 */
+	private void addLegendRows(StringBuilder sb) {
+		sb.append("<span>[M] Manager</span><br/>");
+		sb.append("<span>[UK] United Kingdom</span><br/>");
+		sb.append("<span>[BD] Business Development</span><br/>");
+		sb.append("<span>[PM] Product Manager</span><br/>");
+		sb.append("<span>[Ex] Executive</span><br/>");
+		sb.append("<span>[SA] Sales associate</span><br/>");
+		sb.append("<span><b>U</b> Updates only</span><br/>");
+		sb.append("<span><b>C</b> Complimentary License</span><br/>");
+		sb.append("<span><b>A</b> Paid Extra License</span><br/>");
+		sb.append("<span><b>T</b> Trial License</span><br/>");
 	}
 
 	/**
@@ -167,19 +186,18 @@ public class AccountReportVO extends AbstractSBReportVO {
 	protected void addAccountRow(StringBuilder sb, AccountUsersVO acct) {
 		startDiv(sb,CSS_ACCT_HEADER);
 		sb.append(acct.getAccountName().toUpperCase());
-		int totUsers = acct.getTotalDivisionUsers() - 
-				(acct.getAddedCount() + 
-						acct.getComplementaryCount() + 
-						acct.getUpdatesOnlyCount());
+		int totUsers = acct.getActiveSeatsCnt() + acct.getAddedCount() + acct.getComplementaryCount() + acct.getUpdatesOnlyCount();
 		if (totUsers > 0) 	sb.append(" (").append(totUsers).append(" Licenses, ").append(acct.getOpenSeatsCnt()).append(" Open)");
 		if (acct.getAddedCount() > 0) {
 			sb.append(" ");
 			sb.append(acct.getAddedCount());
+			sb.append(" ");
 			sb.append(UserVO.LicenseType.ACTIVE.getCode()); 
 		}
 		if (acct.getComplementaryCount() > 0) {
 			sb.append(" ");
 			sb.append(acct.getComplementaryCount());
+			sb.append(" ");
 			sb.append(UserVO.LicenseType.COMPLIMENTARY.getCode()); 
 		}
 		closeDiv(sb);
@@ -195,7 +213,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 		startDiv(sb,CSS_ACCT_DATE);
 		sb.append("Start Date:");
 		appendSpace(sb);
-		sb.append(Convert.formatDate(acct.getCreateDate(),Convert.DATE_SHORT_MONTH));
+		sb.append(Convert.formatDate(acct.getStartDate(),Convert.DATE_SHORT_MONTH));
 		closeDiv(sb);
 		
 		startDiv(sb,CSS_ACCT_DATE);
@@ -322,7 +340,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 * @param sb
 	 */
 	private void openTable(StringBuilder sb) {
-		sb.append("<table><thead><tr><th colspan='3'></th><th colspan='5'># License Type</th></tr>");
+		sb.append("<table class='table table-condensed'><thead><tr><th colspan='3'></th><th colspan='5'># License Type</th></tr>");
 		sb.append("<th>Account Type</th><th>Account Classification</th><th># Accounts</th><th>ST User</th>");
 		sb.append("<th>ST Extra Seat</th><th>ST Complimentary</th><th>ST Updates Only</th><th>Grand Total</th></tr>");
 		sb.append("<tbody>");
@@ -515,9 +533,9 @@ public class AccountReportVO extends AbstractSBReportVO {
 			appendSpace(sb);
 
 			if (license == LicenseType.EXTRA) {
-				sb.append(LicenseType.ACTIVE.getLabel());
+				sb.append(LicenseType.ACTIVE.getCode());
 			} else {
-				sb.append(license.getLabel());
+				sb.append(license.getCode());
 			}
 
 			closeSpan(sb);

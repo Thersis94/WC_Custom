@@ -162,7 +162,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	protected StringBuilder buildAccountsUsersQuery(List<String> userRegFields) {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(650);
-		sql.append("select ac.account_id, ac.account_nm, ac.create_dt, ac.expiration_dt, ac.status_no, ac.classification_id, ac.type_id, ");
+		sql.append("select ac.account_id, ac.account_nm, ac.start_dt, ac.expiration_dt, ac.status_no, ac.classification_id, ac.type_id, ");
 		sql.append("us.user_id, us.profile_id, us.status_cd, us.active_flg, us.acct_owner_flg, ");
 		sql.append("pf.first_nm, pf.last_nm, pfa.country_cd, ");
 		sql.append("rd.register_field_id, rd.value_txt ");
@@ -215,14 +215,20 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 				// create new account
 				account = createBaseAccount(rs);
+				// Check to see if this user does not have divisions. If so, add them to the empty set now
+				if (!user.getAttributes().keySet().contains(RegistrationMap.DIVISIONS.getFieldId()))
+					addUserToAccountDivisions(account.getDivisions(), user, "");
 				// create new user
-				user = createBaseUser(se,rs);
+				user = createBaseUser(se,rs, account);
 
 			} else {
 				// same account, check for user change
 				if (! currPid.equals(prevPid)) {
+					// Check to see if this user does not have divisions. If so, add them to the empty set now
+					if (!user.getAttributes().keySet().contains(RegistrationMap.DIVISIONS.getFieldId()))
+						addUserToAccountDivisions(account.getDivisions(), user, "");
 					// user changed, create new user
-					user = createBaseUser(se,rs);
+					user = createBaseUser(se,rs, account);
 				}
 			}
 
@@ -236,6 +242,9 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 		// pick up the dangler
 		if (prevAcctId != null) {
+			// Check to see if this user does not have divisions. If so, add them to the empty set now
+			if (!user.getAttributes().keySet().contains(RegistrationMap.DIVISIONS.getFieldId()))
+				addUserToAccountDivisions(account.getDivisions(), user, "");
 			accounts.add(account);
 		}
 
@@ -259,15 +268,6 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			List<String> divs;
 			if (user.getAttribute(currFieldVal) == null) {
 				divs = new ArrayList<>();
-				/* We only count users who have a division association.  Since
-				 * a user can belong to more than one division, we only want to 
-				 * count the user one time we do it here after we init the
-				 * user's division membership List.. */
-				acct.countLicenseType(user.getLicenseType());
-				// If this seat is open increment the open count.
-				if (user.getStatusFlg() == Status.OPEN.getCode()
-						&& (user.getLicenseType() == LicenseType.ACTIVE.getCode() || user.getLicenseType() == LicenseType.EXTRA.getCode())) 
-					acct.incrementOpenSeatsCnt();
 			} else {
 				divs = (List<String>)user.getAttribute(currFieldId);
 			}
@@ -308,7 +308,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		AccountUsersVO account = new AccountUsersVO();
 		account.setAccountId(rs.getString("account_id"));
 		account.setAccountName(rs.getString("account_nm"));
-		account.setCreateDate(rs.getDate("create_dt"));
+		account.setStartDate(rs.getDate("start_dt"));
 		account.setExpirationDate(rs.getDate("expiration_dt"));
 		account.setStatusNo(rs.getString("status_no"));
 		account.setClassificationId(rs.getInt("classification_id"));
@@ -323,7 +323,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	protected UserVO createBaseUser(StringEncrypter se, 	ResultSet rs) throws SQLException {
+	protected UserVO createBaseUser(StringEncrypter se, ResultSet rs, AccountUsersVO acct) throws SQLException {
 		UserVO user = new UserVO();
 
 		// set unencrypted fields
@@ -340,7 +340,12 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		} catch (Exception e) {
 			log.warn("Warning: Unable to decrypt profile fields for profile ID " + user.getProfileId());
 		}
-
+		
+		acct.countLicenseType(user.getLicenseType());
+		if (user.getStatusFlg() == Status.OPEN.getCode()
+				&& (LicenseType.ACTIVE.getCode().equals(user.getLicenseType()) || LicenseType.EXTRA.getCode().equals(user.getLicenseType()))) 
+			acct.incrementOpenSeatsCnt();
+		
 		return user;
 	}
 	
@@ -406,6 +411,9 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		if (prevFieldId != null) {
 			optionsMap.put(prevFieldId, fieldOptionsMap);
 		}
+		
+		// Add the empty division option.
+		optionsMap.get(RegistrationMap.DIVISIONS.getFieldId()).put("", "No Division");
 		
 		return optionsMap;
 	}
