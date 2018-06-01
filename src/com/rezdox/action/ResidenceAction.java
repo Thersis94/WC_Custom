@@ -279,6 +279,11 @@ public class ResidenceAction extends SBActionAdapter {
 		// Update Zestimate before form load, per requirements
 		ResidenceVO residence = ((List<ResidenceVO>) req.getAttribute(RESIDENCE_DATA)).get(0);
 		updateZestimate(residence);
+		
+		//capture a hash of the address so we know if it changes when saved. (re-Zestimate required if so)
+		int addrHash = residence.getLocation().hashCode();
+		log.debug("set addr hash=" + addrHash);
+		req.getSession().setAttribute("REZ_ADDR_HASH", Integer.valueOf(addrHash));
 
 		// Set the requried params
 		GenericQueryVO query = new GenericQueryVO(formId);
@@ -491,8 +496,11 @@ public class ResidenceAction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 */
 	protected void retrieveApiData(ActionRequest req, ResidenceVO residence, boolean newResidence) throws DatabaseException {
-		// This data should only be retrieved when a residence is first created
-		if (!newResidence) return;
+		// This data should only be retrieved when a residence is first created, or when the address changes
+		int oldAddrHash = Convert.formatInteger((Integer)req.getSession().getAttribute("REZ_ADDR_HASH"));
+		int newAddrHash = residence.getLocation().hashCode();
+		log.debug(String.format("old address hash %d, new %d", oldAddrHash, newAddrHash));
+		if (!newResidence && oldAddrHash == newAddrHash) return;
 
 		// Initialize list of attributes to save as a batch
 		List<ResidenceAttributeVO> attributes = new ArrayList<>();
@@ -591,8 +599,7 @@ public class ResidenceAction extends SBActionAdapter {
 
 	/**
 	 * Update the Zestimate data for a residence
-	 * 
-	 * @param req
+	 * @param residence
 	 */
 	protected void updateZestimate(ResidenceVO residence) {
 		StringBuilder sql = new StringBuilder(250);
@@ -612,7 +619,7 @@ public class ResidenceAction extends SBActionAdapter {
 		if (attr.isEmpty()) {
 			// If no previous Zestimate recorded, create a new one
 			zestimate = new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE, "0");
-			daysSinceLastUpdate = 1;
+			daysSinceLastUpdate = 1000;
 
 		} else {
 			// Check to make sure we are updating at most once per day
@@ -624,14 +631,13 @@ public class ResidenceAction extends SBActionAdapter {
 		}
 
 		// Update only when required
-		if (daysSinceLastUpdate >= 1) {
+		if (daysSinceLastUpdate >= 1)
 			applyZestimateUpdate(residence, zestimate);
-		}
 	}
 
+	
 	/**
 	 * Applies an update to the residence Zestimate record
-	 * 
 	 * @param residence
 	 * @param zestimate
 	 */

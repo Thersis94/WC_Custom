@@ -34,6 +34,7 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	private int privacyFlg;
 	private String profilePicPath;
 	private Date createDate;
+	private String initials;
 
 	/**
 	 * RezDox privacy flags.
@@ -235,7 +236,17 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	public String getFirstName() {
 		return super.getFirstName();
 	}
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setFirstName(java.lang.String)
+	 */
+	@Override
+	public void setFirstName(String fn) {
+		super.setFirstName(fn);
+		setInitials();
+	}
+
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.security.UserDataVO#getLastName()
 	 */
@@ -243,6 +254,16 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	@Column(name="last_nm")
 	public String getLastName() {
 		return super.getLastName();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.siliconmtn.security.UserDataVO#setLastName(java.lang.String)
+	 */
+	@Override
+	public void setLastName(String ln) {
+		super.setLastName(ln);
+		setInitials();
 	}
 
 	/* (non-Javadoc)
@@ -282,5 +303,27 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	@Override
 	public String toString() {
 		return StringUtil.getToString(this);
+	}
+
+	/**
+	 * @return the initials
+	 */
+	public String getInitials() {
+		return initials;
+	}
+
+	/**
+	 * @param initials the initials to set
+	 */
+	public void setInitials(String initials) {
+		this.initials = initials;
+	}
+
+	/**
+	 * Sets user's initials based on first/last name
+	 * There could only be one name in the case of a business
+	 */
+	private void setInitials() {
+		setInitials(StringUtil.abbreviate(getFullName(), 2).toUpperCase());
 	}
 }

@@ -8,6 +8,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
@@ -37,6 +38,8 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 	private long replyCount;
 	private Date createDate;
 	private Date updateDate;
+
+	private String createDateStr;
 
 	public BusinessReviewVO() {
 		super();
@@ -224,12 +227,17 @@ public class BusinessReviewVO extends BeanDataVO implements Serializable {
 	public Date getCreateDate() {
 		return createDate;
 	}
+	
+	public String getCreateDateStr() {
+		return createDateStr;
+	}
 
 	/**
 	 * @param createDate the createDate to set
 	 */
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
+		this.createDateStr = Convert.formatDate(getCreateDate(), Convert.DATE_DASH_PATTERN);
 	}
 
 	/**

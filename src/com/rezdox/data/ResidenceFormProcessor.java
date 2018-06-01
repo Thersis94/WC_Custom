@@ -142,8 +142,6 @@ public class ResidenceFormProcessor extends FormDataProcessor {
 
 	/* 
 	 * Saves the files to secure binary
-	 * TODO: This should be genericized and moved to the RezDoxUtils class
-	 * 
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.data.AbstractDataProcessor#saveFiles(com.smt.sitebuilder.data.vo.FormTransactionVO)
 	 */

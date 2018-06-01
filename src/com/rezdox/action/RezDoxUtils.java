@@ -65,7 +65,8 @@ public class RezDoxUtils {
 	public static final String HOME_HISTORY_PATH = MEMBER_ROOT_PATH + "/history";
 	public static final String INVENTORY_PATH = MEMBER_ROOT_PATH + "/inventory";
 	public static final String REWARD_PATH = MEMBER_ROOT_PATH + "/rewards";
-	public static final String CONNECTION_PATH = MEMBER_ROOT_PATH + "/Connections";
+	public static final String CONNECTION_PATH = MEMBER_ROOT_PATH + "/connections";
+	public static final String DIRECTORY_PATH = MEMBER_ROOT_PATH + "/directory";
 	public static final String JOIN_PATH = "/join";
 	public static final String EARN_PATH = REWARD_PATH + "/earn";
 
@@ -100,7 +101,9 @@ public class RezDoxUtils {
 	public enum EmailSlug {
 		TRANSFER_WAITING, TRANSFER_COMPLETE, BUSINESS_APPROVED, 
 		BUSINESS_DECLINED, INVITE_ACCEPTED, REVIEW_BUSINESS, 
-		CONNECTION_REQUEST, CONNECTION_APPROVED, WELCOME;
+		CONNECTION_REQUEST, CONNECTION_APPROVED, WELCOME, 
+		PROJ_ACCPT_BUSINESS, PROJ_ACCPT_HOMEOWNER, 
+		PROJ_SHARE_BUSINESS, PROJ_SHARE_HOMEOWNER;
 	}
 
 	private RezDoxUtils() {

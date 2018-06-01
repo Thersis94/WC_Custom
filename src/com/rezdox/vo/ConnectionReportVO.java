@@ -44,6 +44,7 @@ public class ConnectionReportVO extends BeanDataVO implements Serializable {
 	private double rating;
 	private Date createDate;
 	private String categoryCode;
+	private String subCategoryCode;
 	private int approvedFlag;
 	private int privacyFlag;
 	
@@ -244,7 +245,8 @@ public class ConnectionReportVO extends BeanDataVO implements Serializable {
 	 */
 	private void setInitials() {
 		setInitials(StringUtil.abbreviate(getSortableName(), 2).toUpperCase());
-	}	/**
+	}
+	/**
 	 * @param sortableName the sortableName to set
 	 */
 	public void setSortableName(String sortableName) {
@@ -286,6 +288,14 @@ public class ConnectionReportVO extends BeanDataVO implements Serializable {
 	 */
 	public void setConnectionId(String connectionId) {
 		this.connectionId = connectionId;
+	}
+
+	@Column(name="sub_category_cd", isReadOnly=true)
+	public String getSubCategoryCode() {
+		return subCategoryCode;
+	}
+	public void setSubCategoryCode(String subCategoryCode) {
+		this.subCategoryCode = subCategoryCode;
 	}
 
 }
