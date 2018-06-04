@@ -212,21 +212,18 @@ public class AccountsReportAction extends SimpleActionAdapter {
 					// add acct to accounts list.
 					accounts.add(account);
 				}
+				checkDivisions(user, account);
 
 				// create new account
 				account = createBaseAccount(rs);
-				// Check to see if this user does not have divisions. If so, add them to the empty set now
-				if (!user.getAttributes().keySet().contains(RegistrationMap.DIVISIONS.getFieldId()))
-					addUserToAccountDivisions(account.getDivisions(), user, "");
+				
 				// create new user
 				user = createBaseUser(se,rs, account);
 
 			} else {
 				// same account, check for user change
 				if (! currPid.equals(prevPid)) {
-					// Check to see if this user does not have divisions. If so, add them to the empty set now
-					if (!user.getAttributes().keySet().contains(RegistrationMap.DIVISIONS.getFieldId()))
-						addUserToAccountDivisions(account.getDivisions(), user, "");
+					checkDivisions(user, account);
 					// user changed, create new user
 					user = createBaseUser(se,rs, account);
 				}
@@ -242,13 +239,22 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 		// pick up the dangler
 		if (prevAcctId != null) {
-			// Check to see if this user does not have divisions. If so, add them to the empty set now
-			if (!user.getAttributes().keySet().contains(RegistrationMap.DIVISIONS.getFieldId()))
-				addUserToAccountDivisions(account.getDivisions(), user, "");
+			checkDivisions(user, account);
 			accounts.add(account);
 		}
 
 		return accounts;
+	}
+	
+	/**
+	 * Check to see if the user has any divisions.
+	 * If not add the No Divisions division
+	 * @param user
+	 * @param account
+	 */
+	private void checkDivisions(UserVO user, AccountUsersVO account) {
+		if (!user.getAttributes().keySet().contains(RegistrationMap.DIVISIONS.getFieldId()))
+			addUserToAccountDivisions(account.getDivisions(), user, "");
 	}
 
 	/**
