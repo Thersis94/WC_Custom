@@ -17,6 +17,8 @@ import javax.xml.parsers.SAXParserFactory;
 import org.xml.sax.SAXException;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
+import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.SmarttrakRssEntityVO;
@@ -161,8 +163,16 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	private void processArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Map<String, Set<String>> existsIds) {
 		for (RSSArticleVO article : articles) {
 			for (RSSFeedGroupVO fg : f.getGroups()) {
-				if (!articleExists(article.getArticleGuid(), fg.getFeedGroupId(), existsIds)) {
+				if (f.getUseFiltersNo() == 1 && !articleExists(article.getArticleGuid(), fg.getFeedGroupId(), existsIds)) {
 					applyFilter(article, fg.getFeedGroupId());
+				} else if (!articleExists(article.getArticleGuid(), fg.getFeedGroupId(), existsIds)) {
+					// Items that skip filters automatically pass for feed groups
+					RSSArticleFilterVO af = new RSSArticleFilterVO(article, fg.getFeedGroupId());
+					af.setFullArticleTxt(null);
+					af.setFilterArticleTxt(af.getArticleTxt());
+					af.setFilterTitleTxt(af.getTitleTxt());
+					af.setArticleStatus(ArticleStatus.N);
+					article.addFilteredText(af);
 				}
 			}
 			if (!article.getFilterVOs().isEmpty()) {
@@ -206,7 +216,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private String getFeedsSql() {
 		StringBuilder sql = new StringBuilder(375);
-		sql.append("select e.rss_entity_id, e.rss_url, e.rss_feed_nm, fsg.feed_group_id ");
+		sql.append("select e.rss_entity_id, e.rss_url, e.rss_feed_nm, fsg.feed_group_id, e.use_filters_no ");
 		sql.append("from rss_entity e inner join ").append(customDb).append("biomedgps_rss_entity bre ");
 		sql.append("on e.rss_entity_id = bre.rss_entity_id ");
 		sql.append("inner join ").append(customDb).append("biomedgps_feed_source_group_xr fsg ");
