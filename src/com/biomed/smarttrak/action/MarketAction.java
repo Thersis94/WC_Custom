@@ -81,13 +81,16 @@ public class MarketAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if (req.hasParameter("reqParam_1")) {
+		//call to Solr for a list of markets.  Solr will enforce permissions for us using ACLs
+		retrieveFromSolr(req);
+		
+		if (req.hasParameter(SolrAction.REQ_PARAM_1)) {
 			//if the user is not logged in then cannot see market detail pages.
 			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 			if (role == null)
 				SecurityController.throwAndRedirect(req);
 
-			MarketVO vo = retrieveFromDB(req.getParameter("reqParam_1"), req, true);
+			MarketVO vo = retrieveFromDB(req.getParameter(SolrAction.REQ_PARAM_1), req, true);
 
 			if (StringUtil.isEmpty(vo.getMarketName())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -103,11 +106,36 @@ public class MarketAction extends SimpleActionAdapter {
 			putModuleData(vo);
 
 		} else {
-			//call to Solr for a list of markets.  Solr will enforce permissions for us using ACLs
-			retrieveFromSolr(req);
+			loadPermissionsHierarchy(req);
 		}
 	}
 
+
+	/**
+	 * Load the full hierarchy so that the full list of second and third
+	 * level market sections can be displayed and then mark which sections
+	 * the user has permission to view.
+	 * @param req
+	 */
+	private void loadPermissionsHierarchy(ActionRequest req) {
+		// load the section hierarchy Tree from the hierarchy action
+		SectionHierarchyAction sha = new SectionHierarchyAction();
+		sha.setAttributes(getAttributes());
+		sha.setDBConnection(getDBConnection());
+		Tree hierarchy = sha.loadDefaultTree();
+		SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+		String acls = role.getAccessControlList(SmarttrakSolrAction.BROWSE_SECTION);
+		if (acls == null) return;
+		for (Node n : hierarchy.preorderList()) {
+			SectionVO sec = (SectionVO) n.getUserObject();
+			if (acls.contains(sec.getSolrTokenTxt())) {
+				sec.setSelected(true);
+			} else {
+				sec.setSelected(false);
+			}
+		}
+		putModuleData(hierarchy);
+	}
 
 	/**
 	 * Get the indicated market
@@ -116,6 +144,8 @@ public class MarketAction extends SimpleActionAdapter {
 	 */
 	public MarketVO retrieveFromDB(String marketId, ActionRequest req, boolean loadGraphs) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		if (marketId.startsWith("MARKET_"))
+			marketId = marketId.replace("MARKET_", "");
 		MarketVO market = new MarketVO();
 		market.setMarketId(marketId);
 		try {
@@ -289,16 +319,21 @@ public class MarketAction extends SimpleActionAdapter {
 		// Pass along the proper information for a search to be done.
 		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		// This should never use an id. Remove it from now.
+		String tempId = req.getParameter(SolrAction.REQ_PARAM_1);
+		req.setParameter(SolrAction.REQ_PARAM_1, null);
 
 		// Build the solr action
 		SolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 		sa.retrieve(req);
+		
+		req.setParameter(SolrAction.REQ_PARAM_1, tempId);
 
 		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SolrResponseVO res = (SolrResponseVO) mod.getActionData();
-		orderMarkets(res);
+		req.setAttribute("marketList", orderMarkets(res));
 	}
 
 
@@ -306,8 +341,9 @@ public class MarketAction extends SimpleActionAdapter {
 	 * Create a tree based on the markets in order to ensure proper parent child relationships
 	 * and place the list of root children into the module data
 	 * @param res
+	 * @return 
 	 */
-	protected void orderMarkets(SolrResponseVO res) {
+	protected List<Node> orderMarkets(SolrResponseVO res) {
 		List<Node> markets = new ArrayList<>();
 		for (SolrDocument doc : res.getResultDocuments()) {
 			Node n = new Node((String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID), (String) doc.getFieldValue("parentId_s"));
@@ -317,6 +353,6 @@ public class MarketAction extends SimpleActionAdapter {
 
 		Tree t = new Tree(markets);
 
-		putModuleData(t.getRootNode().getChildren());
+		return t.getRootNode().getChildren();
 	}
 }

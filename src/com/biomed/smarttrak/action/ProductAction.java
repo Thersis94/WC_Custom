@@ -92,7 +92,7 @@ public class ProductAction extends SimpleActionAdapter {
 			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 			page.setTitleName(vo.getProductName() + " | " + site.getSiteName());
 			putModuleData(vo);
-		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
+		} else if (req.hasParameter("amid")){
 			retrieveProducts(req);
 		}
 	}
