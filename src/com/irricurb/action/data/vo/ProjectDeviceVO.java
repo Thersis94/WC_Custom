@@ -105,6 +105,14 @@ public class ProjectDeviceVO extends DeviceVO {
 	public String getProjectDeviceId() {
 		return projectDeviceId;
 	}
+	
+	/**
+	 * Detwermines if there is a network gateway for this device
+	 * @return
+	 */
+	public boolean hasNetworkGateway() {
+		return (StringUtil.checkVal(networkGatewayText).isEmpty());
+	}
 
 	/**
 	 * @return the projectZoneId
