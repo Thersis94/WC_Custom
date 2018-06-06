@@ -1,5 +1,7 @@
 package com.rezdox.action;
 
+import static com.rezdox.action.ResidenceAction.RESIDENCE_ID;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -8,11 +10,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.action.RewardsAction.Reward;
 import com.rezdox.data.InventoryFormProcessor;
+import com.rezdox.vo.InventoryItemVO;
 import com.rezdox.vo.PhotoVO;
 import com.rezdox.vo.ResidenceVO;
-import static com.rezdox.action.ResidenceAction.RESIDENCE_ID;
-import com.rezdox.vo.InventoryItemVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -317,13 +319,30 @@ public class InventoryAction extends SimpleActionAdapter {
 			if (req.hasParameter("isDelete")) {
 				db.delete(vo);
 			} else {
+				boolean isNew = StringUtil.isEmpty(vo.getTreasureItemId());
 				db.save(vo);
 				//set pkId for downstream _attribute saving
 				req.setParameter(REQ_TREASURE_ITEM_ID, vo.getTreasureItemId());
+
+				if (isNew)
+					awardPoints(RezDoxUtils.getMemberId(req));
 			}
 
 		} catch (Exception e) {
 			throw new ActionException("could not save treasure item", e);
+		}
+	}
+
+
+	/**
+	 * @param memberId
+	 */
+	private void awardPoints(String memberId) {
+		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
+		try {
+			ra.applyReward(Reward.TREASURE_BOX.name(), memberId);
+		} catch (ActionException e) {
+			log.error("could not award reward points", e);
 		}
 	}
 

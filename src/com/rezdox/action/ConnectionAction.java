@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.action.RewardsAction.Reward;
 import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.ConnectionReportVO;
 import com.rezdox.vo.ConnectionVO;
@@ -57,7 +58,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	public static final String CATEGORY_SEARCH = "categorySearch";
 	public static final String TARGET_ID = "targetId"; 
 	public static final String REZDOX_CONNECTION_POINTS = "rezdoxConnectionPoints";
-	private static final String ID_SUFFIX = "_id = ? ";
+	private static final String ID_SUFFIX = "_id=? ";
 
 	public ConnectionAction() {
 		super();
@@ -248,7 +249,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 			params.add(idParts[1]);
 		}
 
-		sql.append("else '-1' end as member_id from ").append(schema).append("rezdox_connection group by member_id ) ");
+		sql.append("else '-1' end as member_id from ").append(schema).append("rezdox_connection where approved_flg >= 0 group by member_id ) ");
 		sql.append(" order by last_nm, first_nm asc ");
 		log.debug(sql+"|"+params);
 
@@ -313,7 +314,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.rcpt_member_id = b.member_id ");
 		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
-		sql.append("where sndr_").append(idField).append(ID_SUFFIX);
+		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
 		params.add(targetId);
 		//getting the records where target id was sent a connection by an other memeber
 		sql.append(DBUtil.UNION_ALL);
@@ -322,7 +323,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A );
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.sndr_member_id = b.member_id ");
 		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
-		sql.append("where rcpt_").append(idField).append(ID_SUFFIX);
+		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
 		params.add(targetId);
 		//getting the records where target id sent a connection to a business
 		sql.append(DBUtil.UNION_ALL);
@@ -343,7 +344,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
-		sql.append("where sndr_").append(idField).append(ID_SUFFIX);
+		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
 		params.add(targetId);
 		//getting the records where a business sent a connection to the target id
 		sql.append(DBUtil.UNION_ALL);
@@ -364,7 +365,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
-		sql.append("where rcpt_").append(idField).append(ID_SUFFIX);
+		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
 		params.add(targetId);
 		sql.append(") as all_member ");
 		//where for whole multiplexed union would go here
@@ -471,8 +472,9 @@ public class ConnectionAction extends SimpleActionAdapter {
 	/**
 	 * sends an email when an a user starts or accepts a connection
 	 * @param cvo 
+	 * @throws ActionException 
 	 */
-	private void processEmails(ConnectionVO cvo, ActionRequest req) {
+	private void processEmails(ConnectionVO cvo, ActionRequest req) throws ActionException {
 		EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
@@ -481,6 +483,13 @@ public class ConnectionAction extends SimpleActionAdapter {
 			sendRequestEmail(cvo, emailer, notifyUtil);
 		} else if (cvo.getApprovedFlag() == 1) {
 			sendApprovedEmail(cvo, emailer, notifyUtil);
+			
+			//award 25 points to the members involved in this transaction - we do not award points to businesses.
+			RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
+			if (!StringUtil.isEmpty(cvo.getSenderMemberId()))
+				ra.applyReward(Reward.CONNECT.name(), cvo.getSenderMemberId());
+			if (!StringUtil.isEmpty(cvo.getRecipientMemberId()))
+				ra.applyReward(Reward.CONNECT.name(), cvo.getRecipientMemberId());
 		}
 	}
 
