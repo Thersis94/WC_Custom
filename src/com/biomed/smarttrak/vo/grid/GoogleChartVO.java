@@ -134,7 +134,7 @@ public class GoogleChartVO implements Serializable, SMTGridIntfc {
 				cell = new GoogleChartCellVO();
 
 				// Store the data as a double and as a formatted string
-				cell.setValue(Convert.formatDouble(detail.getValues()[i], 0, true));
+				cell.setValue(Convert.formatDouble(detail.getValues()[i], 0.0, true));
 				cell.setFormat(detail.getValues()[i]);
 				total += (Double)cell.getValue();
 

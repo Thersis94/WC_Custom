@@ -8,9 +8,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.action.RezDoxNotifier.Message;
 import com.rezdox.data.BusinessFormProcessor;
 import com.rezdox.vo.BusinessAttributeVO;
 import com.rezdox.vo.BusinessVO;
+import com.rezdox.vo.ConnectionReportVO;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO.Group;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
@@ -126,7 +128,8 @@ public class BusinessAction extends SBActionAdapter {
 		// If hitting this action with a residence role or registered role, they are adding a new business
 		// Their role will be upgraded appropriately after adding a new business
 		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
-		if (RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL == role.getRoleLevel()) {
+		if ((RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL == role.getRoleLevel())
+				&& !req.hasParameter("storeFront")) {
 			req.setParameter(REQ_BUSINESS_ID, "new");
 			req.setParameter(REQ_BUSINESS_INFO, "1");
 		}
@@ -143,6 +146,12 @@ public class BusinessAction extends SBActionAdapter {
 			putModuleData(retrieveBusinessInfoForm(req));
 		} else {
 			putModuleData(businessList, businessList.size(), false);
+		}
+		
+		if (req.hasParameter("storeFront")) {
+			ConnectionAction ca = new ConnectionAction(dbConn, attributes);
+			List<ConnectionReportVO> connections = ca.generateConnections(RezDoxUtils.getMemberId(req), ConnectionAction.MEMBER, req);
+			req.setAttribute("isConnected", !connections.isEmpty());
 		}
 	}
 
@@ -192,7 +201,7 @@ public class BusinessAction extends SBActionAdapter {
 		// Review summary data
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(");
 		sql.append("select business_id, cast(count(*) as integer) as total_reviews_no, cast(sum(rating_no) as double precision) / count(*) as avg_rating_no ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review group by business_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review where parent_id is null group by business_id ");
 		sql.append(") as rev on b.business_id = rev.business_id ");
 
 		return sql;
@@ -279,6 +288,25 @@ public class BusinessAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Get a list of Businesses this member has access to.
+	 * 
+	 * @param req
+	 * @return
+	 */
+	protected List<BusinessVO> loadBusinessList(ActionRequest req) {
+		String oldBizId = req.getParameter(BusinessAction.REQ_BUSINESS_ID);
+		if (!StringUtil.isEmpty(oldBizId)) 
+			req.setParameter(BusinessAction.REQ_BUSINESS_ID, "");
+
+		List<BusinessVO> bizList = retrieveBusinesses(req);
+
+		if (!StringUtil.isEmpty(oldBizId)) //put this back the way we found it
+			req.setParameter(BusinessAction.REQ_BUSINESS_ID, oldBizId);
+
+		return bizList;
+	}
+
+	/**
 	 * Retrieves the Business Information form & saved form data
 	 * 
 	 * @param req
@@ -334,6 +362,10 @@ public class BusinessAction extends SBActionAdapter {
 					// This is the user's first business, give a reward to anyone that might have invited them
 					InvitationAction ia = new InvitationAction(dbConn, attributes);
 					ia.applyInviterRewards(req, RezDoxUtils.REWARD_BUSINESS_INVITE);
+
+					//Send First Business Notifications.
+					sendFirstBusinessNotifications(site, RezDoxUtils.getMemberId(req));
+
 				} catch (DatabaseException e) {
 					log.error("could not update member vo", e);
 				}
@@ -357,6 +389,21 @@ public class BusinessAction extends SBActionAdapter {
 				throw new ActionException("Could not save business", e);
 			}
 		}
+	}
+
+	/**
+	 * Sends all the First Business User Notifications.
+	 * @param memberId
+	 */
+	private void sendFirstBusinessNotifications(SiteVO site, String memberId) {
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+		notifyUtil.sendToMember(Message.NEW_BUS_REWARDS, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_ONLINE, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_CONNECT, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_INVITE, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_STOREFRONT, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_SERVICES, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_BUS_LOGO, null, null, memberId);
 	}
 
 	/**

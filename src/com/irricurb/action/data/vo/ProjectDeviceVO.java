@@ -3,7 +3,11 @@ package com.irricurb.action.data.vo;
 // JDK 1.8.x
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
+// IC Libs
+import com.irricurb.lookup.DeviceAttributeEnum;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -37,7 +41,10 @@ public class ProjectDeviceVO extends DeviceVO {
 	private String serialNumberText;
 	private Double longitudeNumber = 0.0;
 	private Double latitudeNumber = 0.0;
+	private String networkGatewayText;
+	private String networkAddressText;
 	private String statusCode;
+	private Date readingDate;
 	
 	// Sub-bean Elements
 	private List<ProjectDeviceAttributeVO> attributes = new ArrayList<>(16);
@@ -97,6 +104,14 @@ public class ProjectDeviceVO extends DeviceVO {
 	@Column(name="project_device_id", isPrimaryKey=true)
 	public String getProjectDeviceId() {
 		return projectDeviceId;
+	}
+	
+	/**
+	 * Detwermines if there is a network gateway for this device
+	 * @return
+	 */
+	public boolean hasNetworkGateway() {
+		return (StringUtil.checkVal(networkGatewayText).isEmpty());
 	}
 
 	/**
@@ -171,6 +186,36 @@ public class ProjectDeviceVO extends DeviceVO {
 		return zone;
 	}
 	
+	/**
+	 * @return the networkGatewayText
+	 */
+	@Column(name="network_gateway_txt")
+	public String getNetworkGatewayText() {
+		return networkGatewayText;
+	}
+
+	/**
+	 * @return the networkAddressText
+	 */
+	@Column(name="network_address_txt")
+	public String getNetworkAddressText() {
+		return networkAddressText;
+	}
+
+	/**
+	 * @param networkAddressText the networkAddressText to set
+	 */
+	public void setNetworkAddressText(String networkAddressText) {
+		this.networkAddressText = networkAddressText;
+	}
+
+	/**
+	 * @param networkGatewayText the networkGatewayText to set
+	 */
+	public void setNetworkGatewayText(String networkGatewayText) {
+		this.networkGatewayText = networkGatewayText;
+	}
+
 	/**
 	 * @param projectDeviceId the projectDeviceId to set
 	 */
@@ -249,6 +294,36 @@ public class ProjectDeviceVO extends DeviceVO {
 	 */
 	@BeanSubElement
 	public void addAttribute(ProjectDeviceAttributeVO attribute) {
+		//only add if the attribute info is present
+		if (attribute != null && !StringUtil.checkVal(attribute.getDeviceAttributeId()).isEmpty())
 		attributes.add(attribute);
+	}
+
+	/**
+	 * Returns the attribute of the given type
+	 * @param type
+	 * @return
+	 */
+	public ProjectDeviceAttributeVO getAttributeByType(DeviceAttributeEnum type) {
+		for (ProjectDeviceAttributeVO attr : attributes) {
+			if (type.name().equalsIgnoreCase(attr.getDeviceAttributeId())) return attr;
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * @return the readingDate
+	 */
+	@Column(name="reading_dt", isReadOnly=true)
+	public Date getReadingDate() {
+		return readingDate;
+	}
+
+	/**
+	 * @param readingDate the readingDate to set
+	 */
+	public void setReadingDate(Date readingDate) {
+		this.readingDate = readingDate;
 	}
 }

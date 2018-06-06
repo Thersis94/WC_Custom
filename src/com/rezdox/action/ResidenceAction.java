@@ -1,5 +1,6 @@
 package com.rezdox.action;
 
+//Java 8
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -11,6 +12,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.action.RewardsAction.Reward;
+import com.rezdox.action.RezDoxNotifier.Message;
+//WC Custom
 import com.rezdox.api.SunNumberAPIManager;
 import com.rezdox.api.WalkScoreAPIManager;
 import com.rezdox.api.ZillowAPIManager;
@@ -22,6 +26,7 @@ import com.rezdox.vo.ResidenceVO;
 import com.rezdox.vo.SunNumberVO;
 import com.rezdox.vo.WalkScoreVO;
 import com.rezdox.vo.ZillowPropertyVO;
+//SMTBaseLIbs
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -38,6 +43,7 @@ import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+//WC Core
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.user.LocationManager;
@@ -55,6 +61,7 @@ import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.QueryParamVO;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SBUserRoleContainer;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: ResidenceAction.java<p/>
@@ -129,6 +136,8 @@ public class ResidenceAction extends SBActionAdapter {
 		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
 		if (RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId()) || SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL == role.getRoleLevel()) {
 			req.setParameter(RESIDENCE_ID, "new");
+			if (SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL == role.getRoleLevel())
+				req.setParameter("isRegistration", "1"); //used in new.jsp to prefil the residence-address form
 		}
 
 		List<ResidenceVO> residenceList = retrieveResidences(req);
@@ -199,7 +208,7 @@ public class ResidenceAction extends SBActionAdapter {
 	 */
 	@DatabaseNote(type = DBType.POSTGRES)
 	protected List<ResidenceVO> retrieveResidences(ActionRequest req) {
-		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String schema = getCustomSchema();
 		String residenceId = req.getParameter(RESIDENCE_ID);
 
 		// Using pivot table on the attributes to get additional data for display
@@ -226,7 +235,7 @@ public class ResidenceAction extends SBActionAdapter {
 			params.add(residenceId);
 		}
 
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		List<ResidenceVO> residences = dbp.executeSelect(sql.toString(), params, new ResidenceVO());
 
 		// Prevent an unsupported operation exception when trying to add a residence to an empty list
@@ -271,6 +280,11 @@ public class ResidenceAction extends SBActionAdapter {
 		ResidenceVO residence = ((List<ResidenceVO>) req.getAttribute(RESIDENCE_DATA)).get(0);
 		updateZestimate(residence);
 
+		//capture a hash of the address so we know if it changes when saved. (re-Zestimate required if so)
+		int addrHash = residence.getLocation().hashCode();
+		log.debug("set addr hash=" + addrHash);
+		req.getSession().setAttribute("REZ_ADDR_HASH", Integer.valueOf(addrHash));
+
 		// Set the requried params
 		GenericQueryVO query = new GenericQueryVO(formId);
 		QueryParamVO param = new QueryParamVO(ResidenceColumnName.RESIDENCE_ID.name(), false);
@@ -299,34 +313,40 @@ public class ResidenceAction extends SBActionAdapter {
 		} else if (req.hasParameter("deleteResidence")) {
 			String msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 			try {
-				new DBProcessor(dbConn).delete(new ResidenceVO(req));
+				new DBProcessor(dbConn, getCustomSchema()).delete(new ResidenceVO(req));
 			} catch (Exception e) {
 				log.error("could not delete residence", e);
 				msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 			}
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			sendRedirect(page.getFullPath(), msg, req);
-			
+
 		} else {
 			try {
 				//get the residence 
 				ResidenceVO residence = new ResidenceVO(req);
-				boolean newResidence = StringUtil.isEmpty(residence.getResidenceId());
+				boolean isNew = StringUtil.isEmpty(residence.getResidenceId());
+
+				//get usage count before writing the table, the increment it.  This avoids read locks and uncomitted data issues
+				SubscriptionAction sa = new SubscriptionAction(getDBConnection(), getAttributes());		
+				int count = sa.getResidenceUsage(RezDoxUtils.getMemberId(req));
+				++count; //for the one we're adding.
 
 				putModuleData(saveResidence(req), 1, false);
 
-				SubscriptionAction sa = new SubscriptionAction();
-				sa.setDBConnection(dbConn);
-				sa.setAttributes(attributes);				
-				int count = sa.getResidenceUsage(RezDoxUtils.getMemberId(req));
-
-				if (newResidence && count == 1) {
+				if (isNew && count == 1) {
 					SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-					req.setSession(changeMemebersRole(req, site));
+					changeMemebersRole(req, site);
 
 					// This is the user's first residence, give a reward to anyone that might have invited them
 					InvitationAction ia = new InvitationAction(dbConn, attributes);
 					ia.applyInviterRewards(req, RezDoxUtils.REWARD_HOMEOWNER_INVITE);
+
+					//Add First Residence Notifications
+					sendFirstResidenceNotifications(site, RezDoxUtils.getMemberId(req));
+				} else if (isNew && count > 1) {
+					//award 100pts for subsequent residences
+					awardPoints(RezDoxUtils.getMemberId(req));
 				}
 
 			} catch (Exception e) {
@@ -335,6 +355,34 @@ public class ResidenceAction extends SBActionAdapter {
 		}
 	}
 
+
+	/**
+	 * @param memberId
+	 */
+	private void awardPoints(String memberId) {
+		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
+		try {
+			ra.applyReward(Reward.CREATE_RES2.name(), memberId);
+		} catch (ActionException e) {
+			log.error("could not award reward points", e);
+		}
+	}
+
+
+	/**
+	 * Sends all the First Residence User Notifications.
+	 * @param memberId
+	 */
+	private void sendFirstResidenceNotifications(SiteVO site, String memberId) {
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+		notifyUtil.sendToMember(Message.NEW_RES_REWARDS, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_CONNECT, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_LOG, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_INVENTORY, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_EQUITY, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_PIC, null, null, memberId);
+		notifyUtil.sendToMember(Message.NEW_RES_PRIVACY, null, null, memberId);
+	}
 
 	/**
 	 * updates the members record and the session with the new role.
@@ -346,7 +394,7 @@ public class ResidenceAction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * 
 	 */
-	private SMTSession changeMemebersRole(ActionRequest req,SiteVO site) throws DatabaseException {
+	private void changeMemebersRole(ActionRequest req, SiteVO site) throws DatabaseException {
 		ProfileRoleManager prm = new ProfileRoleManager();
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
@@ -366,17 +414,14 @@ public class ResidenceAction extends SBActionAdapter {
 			newRoleLevel = RezDoxUtils.REZDOX_RES_BUS_ROLE_LEVEL;
 		}
 
-		prm.removeRole(role.getProfileRoleId(), dbConn);
-		prm.addRole(member.getProfileId(), site.getSiteId(), newRoleId, 20, dbConn);
 		role.setRoleId(newRoleId);
 		role.setRoleLevel(newRoleLevel); 
 		role.setRoleName(newRoleName);
-
-		role.setProfileRoleId(prm.checkRole(member.getProfileId(),  site.getSiteId(), dbConn));
-		session.setAttribute(Constants.ROLE_DATA, role);				
-		return session;
-
+		role.setStatusId(SecurityController.STATUS_ACTIVE);
+		prm.addRole(role, dbConn); //re-save the user's role with the new/elevated level.
+		session.setAttribute(Constants.ROLE_DATA, role);
 	}
+
 
 	/**
 	 * Saves a residence form builder form
@@ -400,7 +445,7 @@ public class ResidenceAction extends SBActionAdapter {
 	public ResidenceVO saveResidence(ActionRequest req) throws DatabaseException {
 		// Get the residence data
 		ResidenceVO residence = new ResidenceVO(req);
-		boolean newResidence = StringUtil.isEmpty(residence.getResidenceId());
+		boolean isNew = StringUtil.isEmpty(residence.getResidenceId());
 
 		// Get geocode data for the residence
 		LocationManager lm = new LocationManager(residence);
@@ -409,19 +454,18 @@ public class ResidenceAction extends SBActionAdapter {
 		residence.setLongitude(gl.getLongitude());
 
 		// Save the residence & attributes records
-		DBProcessor dbp = new DBProcessor(dbConn);
 		try {
-			dbp.save(residence);
+			new DBProcessor(dbConn, getCustomSchema()).save(residence);
 			req.setParameter(ResidenceAction.RESIDENCE_ID, residence.getResidenceId());
 		} catch(Exception e) {
 			throw new DatabaseException(e);
 		}
 
 		// Save the Residence/Member XR
-		saveResidenceMemberXR(req, newResidence);
-		
+		saveResidenceMemberXR(req, isNew);
+
 		// Retrieve and save data from the various APIs
-		retrieveApiData(req, residence, newResidence);
+		retrieveApiData(req, residence, isNew);
 
 		// Return the data
 		return residence;
@@ -433,9 +477,9 @@ public class ResidenceAction extends SBActionAdapter {
 	 * @param newResidence
 	 * @throws DatabaseException
 	 */
-	protected void saveResidenceMemberXR(ActionRequest req, boolean newResidence) throws DatabaseException {
+	protected void saveResidenceMemberXR(ActionRequest req, boolean isNewResidence) throws DatabaseException {
 		// Record already exists if this isn't a new residence, don't need another here
-		if (!newResidence) return;
+		if (!isNewResidence) return;
 
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(150);
@@ -455,7 +499,7 @@ public class ResidenceAction extends SBActionAdapter {
 			throw new DatabaseException("Could not save RezDox Member/Residence XR", sqle);
 		}
 	}
-	
+
 	/**
 	 * Retrieves API data from Zillow, WalkScore, and SunNumber
 	 * Stores the data out to residence attributes
@@ -468,12 +512,15 @@ public class ResidenceAction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 */
 	protected void retrieveApiData(ActionRequest req, ResidenceVO residence, boolean newResidence) throws DatabaseException {
-		// This data should only be retrieved when a residence is first created
-		if (!newResidence) return;
-		
+		// This data should only be retrieved when a residence is first created, or when the address changes
+		int oldAddrHash = Convert.formatInteger((Integer)req.getSession().getAttribute("REZ_ADDR_HASH"));
+		int newAddrHash = residence.getLocation().hashCode();
+		log.debug(String.format("old address hash %d, new %d", oldAddrHash, newAddrHash));
+		if (!newResidence && oldAddrHash == newAddrHash) return;
+
 		// Initialize list of attributes to save as a batch
 		List<ResidenceAttributeVO> attributes = new ArrayList<>();
-		
+
 		// Get the Zillow Data
 		try {
 			ZillowPropertyVO property = new ZillowAPIManager().retrievePropertyDetails(residence);
@@ -482,7 +529,7 @@ public class ResidenceAction extends SBActionAdapter {
 			log.error("Unable to retrieve Zillow data for residence", e);
 			attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE, "0"));
 		}
-		
+
 		// Get the Sun Number Data
 		String sunNumberVal = null;
 		try {
@@ -505,9 +552,9 @@ public class ResidenceAction extends SBActionAdapter {
 		}
 		attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_WALK_SCORE, StringUtil.isEmpty(walkScoreVal) ? "0" : walkScoreVal));
 		attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_TRANSIT_SCORE, StringUtil.isEmpty(transitScoreVal) ? "0" : transitScoreVal));
-		
+
 		// Save the retrieved attributes
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		try {
 			dbp.executeBatch(attributes);
 		} catch(Exception e) {
@@ -568,19 +615,19 @@ public class ResidenceAction extends SBActionAdapter {
 
 	/**
 	 * Update the Zestimate data for a residence
-	 * 
-	 * @param req
+	 * @param residence
 	 */
 	protected void updateZestimate(ResidenceVO residence) {
-		StringBuilder sql = new StringBuilder(150);
+		StringBuilder sql = new StringBuilder(250);
+		String schema = getCustomSchema();
 		sql.append("select attribute_id, residence_id, slug_txt, value_txt, create_dt, update_dt ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("rezdox_residence_attribute ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_attribute ");
 		sql.append(DBUtil.WHERE_CLAUSE).append(" residence_id = ? and slug_txt = ? ");
 
 		List<Object> params = new ArrayList<>();
 		params.addAll(Arrays.asList(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE));
 
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		List<ResidenceAttributeVO> attr = dbp.executeSelect(sql.toString(), params, new ResidenceAttributeVO());
 
 		ResidenceAttributeVO zestimate;
@@ -588,8 +635,8 @@ public class ResidenceAction extends SBActionAdapter {
 		if (attr.isEmpty()) {
 			// If no previous Zestimate recorded, create a new one
 			zestimate = new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE, "0");
-			daysSinceLastUpdate = 1;
-			
+			daysSinceLastUpdate = 1000;
+
 		} else {
 			// Check to make sure we are updating at most once per day
 			zestimate = attr.get(0);
@@ -600,14 +647,13 @@ public class ResidenceAction extends SBActionAdapter {
 		}
 
 		// Update only when required
-		if (daysSinceLastUpdate >= 1) {
+		if (daysSinceLastUpdate >= 1)
 			applyZestimateUpdate(residence, zestimate);
-		}
 	}
+
 
 	/**
 	 * Applies an update to the residence Zestimate record
-	 * 
 	 * @param residence
 	 * @param zestimate
 	 */
@@ -621,7 +667,7 @@ public class ResidenceAction extends SBActionAdapter {
 
 		// Save the required record, whether or not the API call was successful. This could be a new record.
 		try {
-			DBProcessor dbp = new DBProcessor(dbConn);
+			DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 			dbp.save(zestimate);
 		} catch (Exception e) {
 			log.error("Could not save the updated Zestimate", e);
