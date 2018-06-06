@@ -52,16 +52,7 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
         actionMap.put(ProjectManageAction.MANAGE, ProjectManageAction.class);
         actionMap.put(ProjectMapAction.MAP, ProjectMapAction.class);
 	}
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-    public void copy(ActionRequest req) throws ActionException {
-		//empty for the time being
-	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
