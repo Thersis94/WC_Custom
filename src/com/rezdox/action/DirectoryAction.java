@@ -81,7 +81,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member m ");
 			sql.append(DBUtil.INNER_JOIN).append("profile_address pa on m.profile_id = pa.profile_id ");
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on (m.member_id = c.rcpt_member_id and c.sndr_member_id = ?) or (m.member_id = c.sndr_member_id and c.rcpt_member_id = ?) ");
-			sql.append(DBUtil.WHERE_CLAUSE).append("m.member_id != ? ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("m.member_id != ? ").append("and c.approved_flg >= 0 ");
 			params.addAll(Arrays.asList(memberId, memberId, memberId));
 			sql.append(DBUtil.UNION_ALL);
 		}
@@ -106,7 +106,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_my_pro mp on mp.business_category_cd=bc.business_category_cd and mp.business_id=b.business_id and mp.member_id=? ");
 		params.add(memberId); //for my pros join
 		if(role != null && role.getRoleLevel() > 0) {
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on (b.business_id = c.rcpt_business_id and c.sndr_member_id = ?) or (b.business_id = c.sndr_business_id and c.rcpt_member_id = ?) ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on ((b.business_id = c.rcpt_business_id and c.sndr_member_id = ?) or (b.business_id = c.sndr_business_id and c.rcpt_member_id = ?)) and c.approved_flg >= 0 ");
 			params.addAll(Arrays.asList(memberId, memberId));
 		}
 		sql.append(") as user_directory ");

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.rezdox.action.RewardsAction.Reward;
 import com.rezdox.action.RezDoxNotifier.Message;
 import com.rezdox.data.InvoiceReportPDF;
 import com.rezdox.data.ProjectFormProcessor;
@@ -520,8 +521,10 @@ public class ProjectAction extends SimpleActionAdapter {
 		//send email & notifications
 		if (visibleFlg == 1 && isOwner) {
 			sendEmail(RezDoxUtils.EmailSlug.PROJ_ACCPT_BUSINESS, req); // send to biz, owner accepted share from biz
+			awardPoints(true, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_RES); //reward the homeowner for accepting this project share onto their HHL.
 		} else if (visibleFlg == 1) {
 			sendEmail(RezDoxUtils.EmailSlug.PROJ_ACCPT_HOMEOWNER, req); // send to owner, biz accepted share from owner
+			awardPoints(true, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_BUS); //reward the business owner for accepting this project share onto their project list.
 		}
 	}
 
@@ -549,14 +552,18 @@ public class ProjectAction extends SimpleActionAdapter {
 			if (req.hasParameter("isDelete")) {
 				db.delete(vo);
 			} else {
+				boolean isNew = StringUtil.isEmpty(vo.getProjectId());
 				db.save(vo);
 				//transpose the primary key
 				req.setParameter(REQ_PROJECT_ID, vo.getProjectId());
 
 				if (req.hasParameter("isHomeowner")) { //HomeHistoryAction - alerts to go the business
 					notifyBiz(req, vo);
+					awardPoints(isNew, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_RES);
+
 				} else { //this action - alerts go to the homeowner
 					notifyRez(req, vo);
+					awardPoints(isNew, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_BUS);
 				}
 			}
 
@@ -565,6 +572,22 @@ public class ProjectAction extends SimpleActionAdapter {
 		}
 	}
 
+
+	/**
+	 * award points to the homeowner who just created an HHL entry
+	 * @param isNew
+	 * @param memberId
+	 * @throws ActionException 
+	 */
+	private void awardPoints(boolean isNewOrShare, String memberId, Reward reward) {
+		if (!isNewOrShare) return;
+		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
+		try {
+			ra.applyReward(reward.name(), memberId);
+		} catch (ActionException e) {
+			log.error("could not award reward points", e);
+		}
+	}
 
 	/**
 	 * If this was an add, from a business to a linked residence (view=pending), 

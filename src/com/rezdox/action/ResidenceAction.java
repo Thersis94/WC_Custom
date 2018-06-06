@@ -12,6 +12,20 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.action.RewardsAction.Reward;
+import com.rezdox.action.RezDoxNotifier.Message;
+//WC Custom
+import com.rezdox.api.SunNumberAPIManager;
+import com.rezdox.api.WalkScoreAPIManager;
+import com.rezdox.api.ZillowAPIManager;
+import com.rezdox.data.ResidenceFormProcessor;
+import com.rezdox.vo.MemberVO;
+import com.rezdox.vo.MembershipVO.Group;
+import com.rezdox.vo.ResidenceAttributeVO;
+import com.rezdox.vo.ResidenceVO;
+import com.rezdox.vo.SunNumberVO;
+import com.rezdox.vo.WalkScoreVO;
+import com.rezdox.vo.ZillowPropertyVO;
 //SMTBaseLIbs
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
@@ -29,7 +43,6 @@ import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-
 //WC Core
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
@@ -49,19 +62,6 @@ import com.smt.sitebuilder.data.vo.QueryParamVO;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SBUserRoleContainer;
 import com.smt.sitebuilder.security.SecurityController;
-import com.rezdox.action.RezDoxNotifier.Message;
-//WC Custom
-import com.rezdox.api.SunNumberAPIManager;
-import com.rezdox.api.WalkScoreAPIManager;
-import com.rezdox.api.ZillowAPIManager;
-import com.rezdox.data.ResidenceFormProcessor;
-import com.rezdox.vo.MemberVO;
-import com.rezdox.vo.MembershipVO.Group;
-import com.rezdox.vo.ResidenceAttributeVO;
-import com.rezdox.vo.ResidenceVO;
-import com.rezdox.vo.SunNumberVO;
-import com.rezdox.vo.WalkScoreVO;
-import com.rezdox.vo.ZillowPropertyVO;
 
 /****************************************************************************
  * <b>Title</b>: ResidenceAction.java<p/>
@@ -279,7 +279,7 @@ public class ResidenceAction extends SBActionAdapter {
 		// Update Zestimate before form load, per requirements
 		ResidenceVO residence = ((List<ResidenceVO>) req.getAttribute(RESIDENCE_DATA)).get(0);
 		updateZestimate(residence);
-		
+
 		//capture a hash of the address so we know if it changes when saved. (re-Zestimate required if so)
 		int addrHash = residence.getLocation().hashCode();
 		log.debug("set addr hash=" + addrHash);
@@ -327,12 +327,12 @@ public class ResidenceAction extends SBActionAdapter {
 				ResidenceVO residence = new ResidenceVO(req);
 				boolean isNew = StringUtil.isEmpty(residence.getResidenceId());
 
-				putModuleData(saveResidence(req), 1, false);
-
-				SubscriptionAction sa = new SubscriptionAction();
-				sa.setDBConnection(dbConn);
-				sa.setAttributes(attributes);				
+				//get usage count before writing the table, the increment it.  This avoids read locks and uncomitted data issues
+				SubscriptionAction sa = new SubscriptionAction(getDBConnection(), getAttributes());		
 				int count = sa.getResidenceUsage(RezDoxUtils.getMemberId(req));
+				++count; //for the one we're adding.
+
+				putModuleData(saveResidence(req), 1, false);
 
 				if (isNew && count == 1) {
 					SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -344,11 +344,27 @@ public class ResidenceAction extends SBActionAdapter {
 
 					//Add First Residence Notifications
 					sendFirstResidenceNotifications(site, RezDoxUtils.getMemberId(req));
+				} else if (isNew && count > 1) {
+					//award 100pts for subsequent residences
+					awardPoints(RezDoxUtils.getMemberId(req));
 				}
 
 			} catch (Exception e) {
 				throw new ActionException("Could not save residence", e);
 			}
+		}
+	}
+
+
+	/**
+	 * @param memberId
+	 */
+	private void awardPoints(String memberId) {
+		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
+		try {
+			ra.applyReward(Reward.CREATE_RES2.name(), memberId);
+		} catch (ActionException e) {
+			log.error("could not award reward points", e);
 		}
 	}
 
@@ -405,7 +421,7 @@ public class ResidenceAction extends SBActionAdapter {
 		prm.addRole(role, dbConn); //re-save the user's role with the new/elevated level.
 		session.setAttribute(Constants.ROLE_DATA, role);
 	}
-	
+
 
 	/**
 	 * Saves a residence form builder form
@@ -635,7 +651,7 @@ public class ResidenceAction extends SBActionAdapter {
 			applyZestimateUpdate(residence, zestimate);
 	}
 
-	
+
 	/**
 	 * Applies an update to the residence Zestimate record
 	 * @param residence

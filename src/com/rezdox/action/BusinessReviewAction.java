@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.action.RewardsAction.Reward;
 import com.rezdox.action.RezDoxNotifier.Message;
 import com.rezdox.data.ProjectMyProviders;
 import com.rezdox.vo.BusinessReviewVO;
@@ -273,11 +274,25 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 
 		if (newReview) {
 			dbp.insert(review);
+			awardPoints(review.getMemberId());
 		} else {
 			dbp.update(review);
 		}
 		//notify the business
 		notifyBusinessOwner(review, req);
+	}
+
+
+	/**
+	 * @param memberId
+	 */
+	private void awardPoints(String memberId) {
+		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
+		try {
+			ra.applyReward(Reward.REVIEW_BUS.name(), memberId);
+		} catch (ActionException e) {
+			log.error("could not award reward points", e);
+		}
 	}
 
 
