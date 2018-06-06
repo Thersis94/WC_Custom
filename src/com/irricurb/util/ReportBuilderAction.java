@@ -124,7 +124,6 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 		sql.append("group by serie_nm, order_nm, label_nm ");
 		sql.append("order by order_nm, serie_nm");
 		
-		
 		// retrieve the data
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<Object> params = new ArrayList<>();
@@ -149,10 +148,9 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 		SMTChartVO chart = new SMTChartVO(data);
 		chart.setPrimaryXTitle(xTitle);
 		chart.setPrimaryYTitle(yTitle);
-		
 		SMTChartIntfc theChart = SMTChartFactory.getInstance(ProviderType.GOOGLE, chart, null);
 		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(ct, ProviderType.GOOGLE, full);
-		
+
 		options.getChartOptions().put("colors", CHART_COLORS.toArray());
 		options.addOptionsFromGridData(chart);
 		theChart.addCustomValues(options.getChartOptions());

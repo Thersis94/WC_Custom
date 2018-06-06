@@ -10,6 +10,7 @@ import com.rezdox.action.BusinessAction.BusinessStatus;
 import com.rezdox.data.BusinessCategoryList;
 import com.rezdox.vo.BusinessReviewVO;
 import com.rezdox.vo.BusinessVO;
+import com.rezdox.vo.MemberVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -154,8 +155,10 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 		Map<String, Object> dataMap = new HashMap<>();
 		dataMap.put("businessName", business.getBusinessName());
 
+		// Set the recipient. Send to the business email address.
 		Map<String, String> rcptMap = new HashMap<>();
-		rcptMap.put(business.getMembers().get(0).getProfileId(), business.getEmailAddressText());
+		MemberVO recipient = business.getMembers().entrySet().iterator().next().getValue();
+		rcptMap.put(recipient.getProfileId(), business.getEmailAddressText());
 
 		// Send the appropriate email based on the approval status
 		String emailSlug = RezDoxUtils.EmailSlug.BUSINESS_APPROVED.name();

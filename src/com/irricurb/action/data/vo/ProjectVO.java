@@ -48,7 +48,7 @@ public class ProjectVO extends BeanDataVO {
 	/**
 	 * Values for the project status
 	 */
-	public enum ProjectStatusCd {
+	public enum ProjectStatusCode {
 		OPEN("Open"), 
 		ACTIVE("Active"), 
 		INPROGRESS("In Progress"),
@@ -57,7 +57,7 @@ public class ProjectVO extends BeanDataVO {
 		
 		private String statusName;
 		
-		ProjectStatusCd(String statusName) {
+		ProjectStatusCode(String statusName) {
 			this.statusName = statusName;
 		}
 		
@@ -182,7 +182,7 @@ public class ProjectVO extends BeanDataVO {
 	/**
 	 * @param statusCode the statusCode to set
 	 */
-	public void setStatus(ProjectStatusCd statusCode) {
+	public void setStatus(ProjectStatusCode statusCode) {
 		this.statusCode = statusCode.name();
 	}
 
