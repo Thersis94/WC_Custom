@@ -1,5 +1,6 @@
 package com.rezdox.action;
 
+//Java 8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,14 +11,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
-
-import com.rezdox.vo.MemberRewardVO;
-import com.rezdox.vo.MemberVO;
+//SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -26,11 +23,17 @@ import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
+//WC Core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+
+//WC Custom
+import com.rezdox.vo.MemberRewardVO;
+import com.rezdox.vo.MemberVO;
 
 /****************************************************************************
  * <b>Title:</b> MyRewardsAction.java<br/>
@@ -90,8 +93,7 @@ public class MyRewardsAction extends SimpleActionAdapter {
 			points += vo.getPointsNo();
 
 		//set the total in a cookie.  This may be excessive for repeat calls to the rewards page, but ensures cached data is flushed
-		HttpServletResponse resp = (HttpServletResponse) getAttribute(GlobalConfig.HTTP_RESPONSE);
-		CookieUtil.add(resp, MY_POINTS, String.valueOf(points), "/", -1);
+		CookieUtil.add(req, MY_POINTS, String.valueOf(points), "/", -1);
 
 		mod.setAttribute(MY_POINTS, points); //for JSP, which won't see the cookie if just created
 	}
