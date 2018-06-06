@@ -57,6 +57,7 @@ public class ProjectVO {
 	private Map<String, String> attributeMap;
 
 	private Double productSubtotalNo;  //calculated internally - member avoids repeated reculations
+	private String mainPhone;
 
 
 	public ProjectVO() {
@@ -326,6 +327,7 @@ public class ProjectVO {
 
 		business = new BusinessVO();
 		business.setBusinessName(getAttribute(FormSlug.PROJECT_OWNER.name()));
+		business.setMainPhoneText(getMainPhone());
 		business.setEmailAddressText(getAttribute(FormSlug.PROJECT_EMAIL.name()));
 		business.setMainPhoneText(getAttribute(FormSlug.PROJECT_PHONE.name()));
 		return business;
@@ -420,5 +422,14 @@ public class ProjectVO {
 
 	public double getInvoiceTotal() {
 		return getAppliedProjectTotal() + getAppliedMaterialTotal();
+	}
+
+	@Column(name="main_phone_txt", isReadOnly=true)
+	public String getMainPhone() {
+		return mainPhone;
+	}
+
+	public void setMainPhone(String mainPhone) {
+		this.mainPhone = mainPhone;
 	}
 }
