@@ -693,23 +693,26 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unchecked")
 	protected void saveQuery(ActionRequest req) throws ActionException {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_EXPLORER_QUERY (EXPLORER_QUERY_ID, USER_ID, QUERY_NM, QUERY_TXT, CREATE_DT) ");
-		sql.append("VALUES(?,?,?,?,?)");
+		boolean isUpdate = req.hasParameter("queryId");
+		String sql = buildSaveQuery(isUpdate);
+		
 		Map<String, String> entry = new HashMap<>();
-		entry.put("id", new UUIDGenerator().getUUID());
+		if(isUpdate) entry.put("id", req.getParameter("queryId"));
+		else entry.put("id", new UUIDGenerator().getUUID());
 		entry.put("name", req.getParameter("queryName"));
 		entry.put("url", buildUrl(req));
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+		entry.put("isNew", isUpdate ? "false" : "true");
+		
+		int index = 1;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
-			ps.setString(1, entry.get("id"));
-			ps.setString(2, user.getUserId());
-			ps.setString(3, entry.get("name"));
-			ps.setString(4, entry.get("url"));
-			ps.setTimestamp(5, Convert.getCurrentTimestamp());
+			if(!isUpdate) ps.setString(index++, entry.get("id"));
+			ps.setString(index++, user.getUserId());
+			ps.setString(index++, entry.get("name"));
+			ps.setString(index++, entry.get("url"));
+			ps.setTimestamp(index++, Convert.getCurrentTimestamp());
+			if(isUpdate) ps.setString(index++, entry.get("id"));
 
 			ps.executeUpdate();
 		} catch (SQLException e) {
@@ -717,13 +720,57 @@ public class ProductExplorer extends SBActionAdapter {
 		}
 
 		super.putModuleData(entry);
-
+		storeSessionQuery(req, entry, isUpdate);
+	}
+	
+	/**
+	 * Handles storing the retrieved query data out to session
+	 * @param req
+	 * @param entry
+	 * @param isUpdate
+	 */
+	@SuppressWarnings("unchecked")
+	protected void storeSessionQuery(ActionRequest req, Map<String, String> entry, boolean isUpdate) {
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
 			req.getSession().setAttribute(SAVED_QUERIES, new ArrayList<Map<String, String>>());
-
-		((List<Map<String, String>>)req.getSession().getAttribute(SAVED_QUERIES)).add(entry);
+		
+		if(isUpdate) {// update the existing map entry
+			List<Map<String, String>> entryList = ((List<Map<String, String>>)req.getSession().getAttribute(SAVED_QUERIES));
+			Map<String, String> tempMap;
+			for (int i = 0; i < entryList.size(); i++) {
+				tempMap = entryList.get(i);
+				if(tempMap.containsValue(entry.get("id"))) {
+					entryList.remove(i);
+					entryList.add(i, entry);
+					break;
+				}
+			}
+		}else {//otherwise add additional entry
+			((List<Map<String, String>>)req.getSession().getAttribute(SAVED_QUERIES)).add(entry);
+		}
 	}
+	
+	/**
+	 * Builds the appropriate explorer scenario query for either insert or update
+	 * @param isUpdate
+	 * @return
+	 */
+	protected String buildSaveQuery(boolean isUpdate) {
+		StringBuilder sql = new StringBuilder(200);
 
+		if(isUpdate) {
+			sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+			sql.append("BIOMEDGPS_EXPLORER_QUERY SET USER_ID =?, QUERY_NM =?, QUERY_TXT =?, ");
+			sql.append("UPDATE_DT =? WHERE EXPLORER_QUERY_ID =? ");
+		}else {
+			sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+			sql.append("BIOMEDGPS_EXPLORER_QUERY (EXPLORER_QUERY_ID, USER_ID, QUERY_NM, QUERY_TXT, CREATE_DT) ");
+			sql.append("VALUES(?,?,?,?,?)");
+		}
+		
+		log.debug("Save query sql: " + sql);
+		return sql.toString();
+	}
 
 	/**
 	 * Build a url that can be used to reload a saved product set from solr.
