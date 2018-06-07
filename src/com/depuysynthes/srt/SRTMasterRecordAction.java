@@ -360,13 +360,26 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	 * @param projects
 	 * @return
 	 */
-	public List<SRTMasterRecordVO> loadMasterRecordXR(List<SRTProjectVO> projects) {
+	public void populateMasterRecordXR(List<SRTProjectVO> projects) {
 		List<Object> vals = new ArrayList<>();
 		for(SRTProjectVO p : projects) {
 			vals.add(p.getProjectId());
 		}
 
-		return new DBProcessor(dbConn, getCustomSchema()).executeSelect(buildXrQuery(vals.size()), vals, new SRTMasterRecordVO());
+		/*
+		 * Load MasterRecordXrs using ProjectVO to prevent MasterRecordVO
+		 * aggregating XRs with same MasterRecordId
+		 */
+		List<SRTProjectVO> projXrs = new DBProcessor(dbConn, getCustomSchema()).executeSelect(buildXrQuery(vals.size()), vals, new SRTProjectVO());
+
+		if(!projXrs.isEmpty()) {
+			Map<String, SRTProjectVO> pMap = SRTUtil.mapProjects(projects);
+			//Migrate all masterRecordXR Results out of projectVO to List.
+			for(SRTProjectVO p : projXrs) {
+				pMap.get(p.getProjectId()).setMasterRecords(p.getMasterRecords());
+			}
+		}
+
 	}
 
 	/**
@@ -382,6 +395,7 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 		sql.append("on x.MASTER_RECORD_ID = mr.MASTER_RECORD_ID and x.PROJECT_ID in (");
 		DBUtil.preparedStatmentQuestion(size, sql);
 		sql.append(") ").append(DBUtil.ORDER_BY).append("x.CREATE_DT");
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 }

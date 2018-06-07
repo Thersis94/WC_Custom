@@ -16,7 +16,6 @@ import com.depuysynthes.srt.data.RequestDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.util.SRTUtil.SRTList;
 import com.depuysynthes.srt.util.SRTUtil.SrtPage;
-import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO.MilestoneTypeId;
 import com.depuysynthes.srt.vo.SRTProjectVO;
@@ -117,7 +116,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-
+		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		//Determine what kind of build action is being performed.
 		if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
 			splitProject(req);
@@ -126,15 +125,20 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		} else if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
 			releaseLocks(req);
 		} else {
-			saveProject(req);
+			if(manageLock(req, false)) {
+				saveProject(req);
 
-			//Release all Locks on save.
-			releaseLocks(req);
+				//Release all Locks on save.
+				releaseLocks(req);
+			} else {
+				msg = "You do not own the lock on this record.  Save Rejected.";
+			}
 		}
 
 		//Redirect the User.
-		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), SrtPage.PROJECT.getUrlPath());
+		sbUtil.moduleRedirect(req, msg, SrtPage.PROJECT.getUrlPath());
 	}
+
 
 	/**
 	 * Perform Copy of Project Record.
@@ -324,17 +328,9 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			}
 		}
 
-		//Build Map of Projects
-		Map<String, SRTProjectVO> pMap = SRTUtil.mapProjects(projects);
-
 		//Load Master Record Data and assign on Project Record.
 		SRTMasterRecordAction smra = (SRTMasterRecordAction) ActionControllerFactoryImpl.loadAction(SRTMasterRecordAction.class.getName(), this);
-		List<SRTMasterRecordVO> prodData = smra.loadMasterRecordXR(projects);
-
-		//Add Master Records to relevant Project record.
-		for(SRTMasterRecordVO mr : prodData) {
-			pMap.get(mr.getProjectId()).addMasterRecord(mr);
-		}
+		smra.populateMasterRecordXR(projects);
 	}
 
 	/**
