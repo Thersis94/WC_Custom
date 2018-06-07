@@ -200,6 +200,12 @@ public class AccountReportVO extends AbstractSBReportVO {
 			sb.append(" ");
 			sb.append(UserVO.LicenseType.COMPLIMENTARY.getCode()); 
 		}
+		if (acct.getUpdatesOnlyCount() > 0) {
+			sb.append(" ");
+			sb.append(acct.getUpdatesOnlyCount());
+			sb.append(" ");
+			sb.append(UserVO.LicenseType.UPDATES.getCode()); 
+		}
 		closeDiv(sb);
 		
 	}
