@@ -57,6 +57,7 @@ public class ProjectVO {
 	private Map<String, String> attributeMap;
 
 	private Double productSubtotalNo;  //calculated internally - member avoids repeated reculations
+	private String mainPhone;
 
 
 	public ProjectVO() {
@@ -326,6 +327,7 @@ public class ProjectVO {
 
 		business = new BusinessVO();
 		business.setBusinessName(getAttribute(FormSlug.PROJECT_OWNER.name()));
+		business.setMainPhoneText(getMainPhone());
 		business.setEmailAddressText(getAttribute(FormSlug.PROJECT_EMAIL.name()));
 		business.setMainPhoneText(getAttribute(FormSlug.PROJECT_PHONE.name()));
 		return business;
@@ -391,6 +393,7 @@ public class ProjectVO {
 		return Convert.round(getTotalNo() - getAppliedDiscount() + getAppliedTax(), 2);
 	}
 
+	@Column(name="raw_material_cost", isReadOnly=true)
 	public double getMaterialSubtotal() {
 		if (productSubtotalNo != null) return productSubtotalNo.doubleValue();
 
@@ -404,6 +407,10 @@ public class ProjectVO {
 		amt = Convert.round(amt, 2);
 		productSubtotalNo = Double.valueOf(amt);
 		return amt;
+	}
+
+	public void setMaterialSubtotal(double d) {
+		this.productSubtotalNo = d;
 	}
 
 	public double getAppliedMaterialDiscount() {
@@ -420,5 +427,18 @@ public class ProjectVO {
 
 	public double getInvoiceTotal() {
 		return getAppliedProjectTotal() + getAppliedMaterialTotal();
+	}
+
+	public double getInvoiceSubTotal() {
+		return getTotalNo() + getMaterialSubtotal();
+	}
+
+	@Column(name="main_phone_txt", isReadOnly=true)
+	public String getMainPhone() {
+		return mainPhone;
+	}
+
+	public void setMainPhone(String mainPhone) {
+		this.mainPhone = mainPhone;
 	}
 }

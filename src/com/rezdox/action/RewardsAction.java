@@ -42,6 +42,15 @@ public class RewardsAction extends SimpleActionAdapter {
 		super(arg0);
 	}
 
+
+	/*
+	 * Slugs in the database we award via code.  The point values & names are 
+	 * retrieved from the DB using the enum value as a Slug
+	 */
+	public enum Reward {
+		CONNECT, TREASURE_BOX, NEW_PROJ_RES, NEW_PROJ_BUS, REVIEW_BUS, CREATE_RES2
+	}
+	
 	/**
 	 * overloaded constructor to simplify calling actions
 	 * @param dbConnection

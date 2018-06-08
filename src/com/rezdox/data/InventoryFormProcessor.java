@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.InventoryAction;
+import com.rezdox.action.PhotoAction;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -49,6 +50,8 @@ public class InventoryFormProcessor extends FormDataProcessor {
 		private CoreField(String reqParam) { this.reqParam = reqParam; }
 		public String getReqParam() { return reqParam; }
 	}
+
+	public static final String WARRANTY_SLUG = "WARRANTY";
 
 	/**
 	 * @param conn
@@ -233,5 +236,17 @@ public class InventoryFormProcessor extends FormDataProcessor {
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
 		}
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.data.AbstractDataProcessor#saveFiles(com.smt.sitebuilder.data.vo.FormTransactionVO)
+	 */
+	@Override
+	protected void saveFiles(FormTransactionVO data) {
+		if (req == null || !req.hasFiles()) return;
+
+		new PhotoAction(dbConn, attributes).saveFiles(req);
 	}
 }
