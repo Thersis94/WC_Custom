@@ -19,6 +19,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
@@ -161,11 +162,9 @@ public class SRTEmailUtil {
 
 		//Build Recipient Map.  Right now assuming all emails go to original requestor.
 		SRTRosterVO roster = project.getRequest().getRequestor();
-		Map<String, String> recipients = new HashMap<>();
-		recipients.put(roster.getProfileId(), roster.getEmailAddress());
 
 		//Send Email.
-		ecbu.sendMessage(emailParams, recipients, campaignInstanceId);
+		ecbu.sendMessage(emailParams, Arrays.asList(new EmailRecipientVO(roster.getProfileId(), roster.getEmailAddress(), EmailRecipientVO.TO)), campaignInstanceId);
 	}
 
 	/**

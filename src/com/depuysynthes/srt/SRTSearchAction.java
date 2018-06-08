@@ -9,6 +9,7 @@ import java.util.Map;
 import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.srt.util.SRTUtil;
+import com.ram.workflow.modules.EmailWFM;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -105,7 +106,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	private WorkflowMessageVO buildWorkflowMessage(List<String> projectIds, String emailAddress, String opCoId) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("projectId", projectIds);
-		params.put("DEST_EMAIL_ADDR", emailAddress);
+		params.put(EmailWFM.DEST_EMAIL_ADDR, emailAddress);
 		params.put("opCoId", opCoId);
 		WorkflowMessageVO wmv = new WorkflowMessageVO(new WorkflowLookupUtil(dbConn).lookupWorkflowId("REPORT", "SRT_REPORT"));
 		wmv.setParameters(params);
