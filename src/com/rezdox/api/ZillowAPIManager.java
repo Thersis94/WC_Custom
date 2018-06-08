@@ -29,6 +29,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: APIManager.java
@@ -142,6 +143,8 @@ public class ZillowAPIManager {
 		try {
 			StringBuilder path = getBaseURL(RETRIEVE_DETAILS_URI);
 			path.append("&address=").append(URLEncoder.encode(loc.getAddress(), LOCALE));
+			if (!StringUtil.isEmpty(loc.getAddress2()))
+				path.append(",+").append(URLEncoder.encode(loc.getAddress2(), LOCALE));
 			path.append("&citystatezip=").append(URLEncoder.encode(csz.toString(), LOCALE));
 			data = conn.retrieveData(path.toString());
 		} catch(Exception e) {
