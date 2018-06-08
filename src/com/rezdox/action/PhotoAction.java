@@ -31,7 +31,8 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 public class PhotoAction extends SimpleActionAdapter {
 
 	private static final String RELA_FLDR = "/photo/inventory/";
-
+	public static final String UPLOAD_PATHS = "uploadPaths";
+	public static final String URL_ROOT="urlRoot";
 
 	public PhotoAction() {
 		super();
@@ -163,27 +164,42 @@ public class PhotoAction extends SimpleActionAdapter {
 	 * @param req
 	 * @param fpbdArr
 	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void saveFiles(ActionRequest req) {
-		String root = StringUtil.checkVal(attributes.get(Constants.SECURE_PATH_TO_BINARY));
-		root = StringUtil.join(root, ""+attributes.get(Constants.ORG_ALIAS), req.getParameter("organizationId"), RELA_FLDR, req.getParameter("treasureItemId"), "/");
-		log.debug("writing files to " + root);
+		List<String> uploadPaths;
+		String urlRoot;
+		if(req.getAttribute(UPLOAD_PATHS) != null) {
+			uploadPaths = (List)req.getAttribute(UPLOAD_PATHS);
+			urlRoot = (String) req.getAttribute(URL_ROOT);
+		} else {
+			String root = StringUtil.checkVal(attributes.get(Constants.SECURE_PATH_TO_BINARY));
+			root = StringUtil.join(root, ""+attributes.get(Constants.ORG_ALIAS), req.getParameter("organizationId"), RELA_FLDR, req.getParameter("treasureItemId"), "/");
+			log.debug("writing files to " + root);
 
-		String urlRoot = StringUtil.join(RELA_FLDR, req.getParameter("treasureItemId"), "/");
+			urlRoot = StringUtil.join(RELA_FLDR, req.getParameter("treasureItemId"), "/");
+			uploadPaths = Arrays.asList(urlRoot);
+		}
 
 		FileLoader fl = new FileLoader(getAttributes());
 		for (FilePartDataBean fpdb : req.getFiles()) {
-			fl.setFileName(fpdb.getFileName());
-			fl.setPath(root);
-			fl.setData(fpdb.getFileData());
-
-			try {
-				String fPath = StringUtil.join(urlRoot, fl.writeFiles());
-				log.debug("file written: " + fPath);
-				req.setParameter("photoName", fpdb.getFileName());
-				req.setParameter("imageUrl", fPath);
-				build(req);
-			} catch (Exception e) {
-				log.error("could not save inventory file", e);
+			boolean fileWritten = false;
+			for(String path : uploadPaths) {
+				fl.setFileName(fpdb.getFileName());
+				fl.setPath(path);
+				fl.setData(fpdb.getFileData());
+				try {
+					String fileUrl = fl.writeFiles();
+					if(!fileWritten) {
+						fileWritten = true;
+						String fPath = StringUtil.join(urlRoot, fileUrl);
+						log.debug("file written: " + fPath);
+						req.setParameter("photoName", fpdb.getFileName());
+						req.setParameter("imageUrl", fPath);
+						build(req);
+					}
+				} catch (Exception e) {
+					log.error("could not save inventory file", e);
+				}
 			}
 		}
 	}

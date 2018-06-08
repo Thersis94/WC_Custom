@@ -2,14 +2,17 @@ package com.rezdox.data;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.BusinessAction;
+import com.rezdox.action.PhotoAction;
 import com.rezdox.vo.BusinessVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
@@ -69,7 +72,7 @@ public class BusinessFormProcessor extends FormDataProcessor {
 	 * DB field names, request param names for form field slug_txt values that are file uploads
 	 */
 	public enum BusinessFile {
-		BUSINESS_UPLOADAD("adFileUrl", "ad_file_url"), BUSINESS_LOGO("photoUrl", "photo_url");
+		BUSINESS_LOGO("photoUrl", "photo_url");
 
 		private String reqParam;
 		private String dbField;
@@ -154,15 +157,16 @@ public class BusinessFormProcessor extends FormDataProcessor {
 	 */
 	@Override
 	protected void saveFiles(FormTransactionVO data) {
+
 		// Short term fix (per JC suggestion) to have business files accessible from public and secure
 		String publicBinaryPath = (String) attributes.get(com.siliconmtn.http.filter.fileupload.Constants.PATH_TO_BINARY);
 		String secBinaryPath = (String) attributes.get(com.siliconmtn.http.filter.fileupload.Constants.SECURE_PATH_TO_BINARY);
 		String orgId = ((SiteVO) req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
-		
+
 		// Root for the organization (RezDox)
 		String publicOrgRoot = publicBinaryPath + (String) attributes.get("orgAlias") + orgId;
 		String orgRoot = secBinaryPath + (String) attributes.get("orgAlias") + orgId;
-		
+
 		// Root for the business uploading a file
 		String rootBusinessPath = "/business/" + req.getParameter(BusinessAction.REQ_BUSINESS_ID) + "/";
 
@@ -171,32 +175,53 @@ public class BusinessFormProcessor extends FormDataProcessor {
 
 		// Store the files to the file system
 		List<String> dbFields = new ArrayList<>();
+		int i = 0;
+
+		//Track index of files we've already written.
+		Deque<Integer> processedFiles = new ArrayDeque<>();
 		try {
 			for(FilePartDataBean fpdb : req.getFiles()) {
-				for (String path : uploadPaths) {
-					FileLoader fl = new FileLoader(attributes);
-					fl.setData(fpdb.getFileData());
-					fl.setFileName(fpdb.getFileName());
-					fl.setPath(path);
-					fl.writeFiles();
-				}
-				
 				GenericVO field = fileMap.get(fpdb.getKey());
 				if (field != null) {
+					processedFiles.push(i);
+					for (String path : uploadPaths) {
+						FileLoader fl = new FileLoader(attributes);
+						fl.setData(fpdb.getFileData());
+						fl.setFileName(fpdb.getFileName());
+						fl.setPath(path);
+						fl.writeFiles();
+					}
 					req.setParameter((String) field.getKey(), rootBusinessPath + fpdb.getFileName());
 					dbFields.add((String) field.getValue());
 				}
+				i++;
 			}
 		} catch (Exception e) {
 			log.error("Could not write RezDox business file", e);
 		}
-		
+
+		//Remove Any Files that were already Written from the request.
+		Iterator<Integer> processedFilesIter = processedFiles.iterator();
+		while(processedFilesIter.hasNext()) {
+			req.getFiles().remove(processedFilesIter.next().intValue());
+		}
+
 		// Store file data to the db
 		if (!dbFields.isEmpty()) {
 			saveFileInfo(dbFields);
 		}
+
+		//Write any remaining files to the Photo System. (Ad Images)
+		if (req == null || !req.hasFiles() || req.getFiles().isEmpty()) {
+			return;
+		} else {
+			req.setParameter("descriptionText", BusinessVO.AD_FILE_KEY);
+			req.setAttribute(PhotoAction.UPLOAD_PATHS, uploadPaths);
+			req.setAttribute(PhotoAction.URL_ROOT, rootBusinessPath);
+			new PhotoAction(dbConn, attributes).saveFiles(req);
+		}
 	}
-	
+
 	/**
 	 * Save file data to the existing business record
 	 * 
@@ -242,7 +267,7 @@ public class BusinessFormProcessor extends FormDataProcessor {
 				newFormFields.add(vo);
 			}
 		}
-		
+
 		deleteSavedResponses(oldFormFields);
 		saveFieldData(newFormFields);
 	}

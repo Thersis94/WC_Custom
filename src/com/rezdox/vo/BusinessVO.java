@@ -2,6 +2,8 @@ package com.rezdox.vo;
 
 //Java 8
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +36,8 @@ import com.siliconmtn.util.StringUtil;
 public class BusinessVO extends GeocodeLocation implements Serializable {
 	private static final long serialVersionUID = -6288149815547303962L;
 
+	public static final String AD_FILE_KEY = "BUSINESS_AD";
+
 	private String businessId;
 	private String businessName;
 	private PhoneVO mainPhone;
@@ -41,7 +45,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private String emailAddressText;
 	private String websiteUrl;
 	private String photoUrl;
-	private String adFileUrl;
+	private Map<String, PhotoVO> adFileUrls;
 	private int privacyFlag;
 	private Map<String, MemberVO> members;
 	private Map<String, String> attributes;
@@ -59,6 +63,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 		super();
 		members = new HashMap<>();
 		attributes = new HashMap<>();
+		adFileUrls = new HashMap<>();
 		mainPhone = new PhoneVO();
 		altPhone = new PhoneVO();
 	}
@@ -191,7 +196,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	}
 
 	/**
-	 * @return the photoUrl
+	 * @return the first photoUrl if available.
 	 */
 	@Column(name="photo_url")
 	public String getPhotoUrl() {
@@ -206,18 +211,34 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	}
 
 	/**
-	 * @return the adFileUrl
+	 * @return the first adFileUrl if available.
 	 */
-	@Column(name="ad_file_url")
 	public String getAdFileUrl() {
-		return adFileUrl;
+		return !adFileUrls.isEmpty() ? new ArrayList<>(adFileUrls.values()).get(0).getImageUrl() : null;
 	}
 
 	/**
+	 * @return the adFileUrls
+	 */
+	public Collection<PhotoVO> getAdFileUrls() {
+		return adFileUrls.values();
+	}
+	/**
 	 * @param adFileUrl the adFileUrl to set
 	 */
-	public void setAdFileUrl(String adFileUrl) {
-		this.adFileUrl = adFileUrl;
+	public void setAdFileUrls(Map<String, PhotoVO> adFileUrls) {
+		this.adFileUrls = adFileUrls;
+	}
+
+	/**
+	 * Helper method for loading Photo Lists.
+	 * @param p
+	 */
+	@BeanSubElement
+	public void addPhoto(PhotoVO p) {
+		if(p != null && AD_FILE_KEY.equals(p.getDescriptionText()) && !adFileUrls.containsKey(p.getPhotoId())) {
+			adFileUrls.put(p.getPhotoId(), p);
+		}
 	}
 
 	/**
