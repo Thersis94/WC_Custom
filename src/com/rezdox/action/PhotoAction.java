@@ -177,7 +177,7 @@ public class PhotoAction extends SimpleActionAdapter {
 			log.debug("writing files to " + root);
 
 			urlRoot = StringUtil.join(RELA_FLDR, req.getParameter("treasureItemId"), "/");
-			uploadPaths = Arrays.asList(urlRoot);
+			uploadPaths = Arrays.asList(root);
 		}
 
 		FileLoader fl = new FileLoader(getAttributes());
