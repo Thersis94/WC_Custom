@@ -22,6 +22,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -48,6 +49,7 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	public static final String SRT_MASTER_RECORD_ID = "masterRecordId";
 	public static final String MASTER_RECORD_DATA = "masterRecordData";
 	public static final String SRT_MASTER_RECORD_PART_NO = "partNo";
+	public static final String MASTER_RECORD_PLACEHOLDER_TITLE = "MASTER_RECORD_PART_NO_HOLD";
 	protected static final Map<String, String> sortCols = MapUtil.asMap (
 			entry(SRT_MASTER_RECORD_PART_NO, "mr.part_no"),
 			entry("titleTxt", "mr.title_txt"),
@@ -76,6 +78,49 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 
 			putModuleData(masterRecords.getRowData(), masterRecords.getTotal(), false);
 		}
+	}
+
+	/**
+	 * Helper method for retrieving the next Available Part Number for
+	 * a master Record Entry from that database.
+	 * @param req
+	 * @return
+	 * @throws ActionException 
+	 */
+	private void loadNextAvailableKey(ActionRequest req) throws ActionException {
+		Integer nextPartNo = null;
+		try(PreparedStatement ps = dbConn.prepareStatement(loadNextKeySql())) {
+			ps.setString(1, SRTUtil.getOpCO(req));
+			ResultSet rs = ps.executeQuery();
+
+			if(rs.next()) {
+				nextPartNo = rs.getInt("part_no");
+
+				SRTMasterRecordVO mrv = new SRTMasterRecordVO();
+				mrv.setPartNo(nextPartNo.toString());
+				mrv.setTitleTxt(MASTER_RECORD_PLACEHOLDER_TITLE);
+				mrv.setOpCoId(SRTUtil.getOpCO(req));
+				mrv.setProdTypeId(MASTER_RECORD_PLACEHOLDER_TITLE);
+				new DBProcessor(dbConn, getCustomSchema()).save(mrv);
+
+				req.setAttribute(MASTER_RECORD_DATA, mrv);
+			}
+		} catch (SQLException | InvalidDataException | com.siliconmtn.db.util.DatabaseException e) {
+			throw new ActionException("Unable to get next Part No.", e);
+		}
+	}
+
+	/**
+	 * Builds Query to return next available partNo from the masterRecord
+	 * table for a given Op_co_id.
+	 * @return
+	 */
+	private String loadNextKeySql() {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select cast(max(substring(part_no FROM '[0-9]+')) as integer) + 1 as part_no ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("dpy_syn_srt_master_record ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("op_co_id = ?");
+		return sql.toString();
 	}
 
 	/**
@@ -261,6 +306,9 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 		sql.append(DBUtil.WHERE_CLAUSE).append(" mr.OP_CO_ID = ? ");
 		vals.add(SRTUtil.getOpCO(req));
 
+		sql.append("and mr.title_txt != ? ");
+		vals.add(MASTER_RECORD_PLACEHOLDER_TITLE);
+
 		/*
 		 * Search comes in 2 different ways.
 		 * search - From MasterRecord BS Table
@@ -289,7 +337,9 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 		//Check if we're doing a copy or regular save.
-		if(req.hasParameter("isCopy")) {
+		if(req.hasParameter("getNextAvailablePartNo")) {
+			loadNextAvailableKey(req);
+		} else if(req.hasParameter("isCopy")) {
 			copyMasterRecord(req);
 		} else {
 			saveMasterRecord(req);
