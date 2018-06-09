@@ -68,6 +68,8 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String warehouseSalesOrderNo;
 	private Date createDt;
 	private Date updateDt;
+	private Date surgDt;
+	private Date deliveryDt;
 
 	//Helper Values.  Not on DB Record
 	private String engineerNm;
@@ -76,6 +78,9 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String requestorNm;
 	private String buyerNm;
 	private String surgeonNm;
+	private int total;
+	private String distributorship;
+	private String supplierNm;
 
 	//Stores if there is a lock.
 	private boolean lockStatus;
@@ -299,7 +304,6 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	/**
 	 * @return the makeFromScratch
 	 */
-	@Column(name="MAKE_FROM_SCRATCH_NO")
 	public boolean isMakeFromScratch() {
 		return makeFromScratch;
 	}
@@ -307,7 +311,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	/**
 	 * @return the makeFromScratch
 	 */
-	@Column(name="MAKE_FROM_SCRATCH_NO")
+	@Column(name="MAKE_FROM_SCRATCH")
 	public int getMakeFromScratchFlg() {
 		return Convert.formatInteger(makeFromScratch);
 	}
@@ -359,6 +363,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 		return supplierId;
 	}
 
+	/**
+	 * @return the supplierNm
+	 */
+	@Column(name="SUPPLIER_NM")
+	public String getSupplierNm() {
+		return supplierNm;
+	}
 	/**
 	 * @return the projectHold
 	 */
@@ -427,6 +438,52 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	@Column(name="UPDATE_DT", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDt() {
 		return updateDt;
+	}
+
+	/**
+	 * @return the surgDt
+	 */
+	@Column(name="SURG_DT")
+	public Date getSurgDt() {
+		return surgDt;
+	}
+
+	/**
+	 * @return the deliveryDt
+	 */
+	@Column(name="DELIVERY_DT")
+	public Date getDeliveryDt() {
+		return deliveryDt;
+	}
+
+	/**
+	 * @return the total
+	 */
+	@Column(name="TOTAL", isReadOnly=true)
+	public int getTotal() {
+		return total;
+	}
+
+	/**
+	 * @param total the total to set.
+	 */
+	public void setTotal(int total) {
+		this.total = total;
+	}
+
+	/**
+	 * @return the territory
+	 */
+	@Column(name="distributorship", isReadOnly=true)
+	public String getDistributorship() {
+		return distributorship;
+	}
+
+	/**
+	 * @param territory the territory to set.
+	 */
+	public void setDistributorship(String distributorship) {
+		this.distributorship = distributorship;
 	}
 
 	/**
@@ -731,6 +788,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @param supplierNm the supplierNm to set.
+	 */
+	public void setSupplierNm(String supplierNm) {
+		this.supplierNm = supplierNm;
+	}
+
+	/**
 	 * @param projectHold the projectHold to set.
 	 */
 	public void setProjectHold(boolean projectHold) {
@@ -791,6 +855,20 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	 */
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
+	}
+
+	/**
+	 * @param surgDt the surgDt to set.
+	 */
+	public void setSurgDt(Date surgDt) {
+		this.surgDt = surgDt;
+	}
+
+	/**
+	 * @param deliveryDt the deliveryDt to set.
+	 */
+	public void setDeliveryDt(Date deliveryDt) {
+		this.deliveryDt = deliveryDt;
 	}
 
 	/**
@@ -895,6 +973,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	 */
 	public void addLedgerDate(String ledgerType, Date ledgerDate) {
 		if(!StringUtil.isEmpty(ledgerType) && ledgerDate != null) {
+			if("SURG_DT".equals(ledgerType)) {
+				this.surgDt = ledgerDate;
+			} else if("ORIG_MFG_DEL_DT".equals(ledgerType)) {
+				this.deliveryDt = ledgerDate;
+			} else if("REV_MFG_DEL_DT".equals(ledgerType)) {
+				this.deliveryDt = ledgerDate;
+			}
 			ledgerDates.put(ledgerType, ledgerDate);
 		}
 	}

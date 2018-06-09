@@ -68,7 +68,14 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		entry("surgeonNm", "surgeon_nm"),
 		entry("projectTypeTxt", "p.proj_type_id"),
 		entry("projectStatusTxt", "p.proj_stat_id"),
-		entry("createDt", "p.create_dt")
+		entry("createDt", "p.create_dt"),
+		entry("surgDt", "p.surg_dt"),
+		entry("deliveryDt", "p.delivery_dt"),
+		entry("distributorship", "dld.label_txt"),
+		entry("supplierNm", "sld.label_txt"),
+		entry("mfgPoToVendor", "p.mfg_po_to_vendor"),
+		entry("makeFromScratch", "p.make_from_scratch"),
+		entry("total", "t.total")
 	);
 
 	public SRTProjectAction() {
@@ -372,7 +379,12 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			sql.append(", concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
 			sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
 			sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm, ");
-			sql.append("concat(bp.first_nm, ' ', bp.last_nm) as buyer_nm ");
+			sql.append("concat(bp.first_nm, ' ', bp.last_nm) as buyer_nm, ");
+			sql.append("case when dld.label_txt is not null and dld.label_txt != '' then dld.label_txt else r.territory_id end as distributorship, t.total, sld.label_txt as supplier_nm ");
+		}
+		if("coProjectId".equals(req.getParameter("sort"))) {
+			sql.append(", case when priority_id = 'FASTEST' or surg_dt is not null then 1 else 0 end as priority_flg, ");
+			sql.append(" case when delivery_dt < current_timestamp then 1 else 0 end as lateFlg ");
 		}
 
 		//Joins to tables.
@@ -425,14 +437,37 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			sql.append("on p.BUYER_ID = b.ROSTER_ID ");
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE bp ");
 			sql.append("on b.PROFILE_ID = bp.PROFILE_ID ");
+
+			//Get Optional Supplier Nm
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA sld ");
+			sql.append("on sld.value_txt = p.supplier_id and sld.list_id = ? ");
+			vals.add(SRTUtil.SRTList.PROJ_VENDOR.name());
+
+			//Get Optional Distributorship
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA dld ");
+			sql.append("on dld.value_txt = r.territory_id and dld.list_id = ? ");
+			vals.add(SRTUtil.SRTList.SRT_TERRITORIES.name());
+
+			//Get Project Total
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select cast(sum(case when part_count is null then 0 else part_count end) as int) as total, ");
+			sql.append("project_id ").append(DBUtil.FROM_CLAUSE).append(custom);
+			sql.append("dpy_syn_srt_master_record_project_xr xr ");
+			sql.append(DBUtil.GROUP_BY).append(" project_id) as t on p.project_id = t.project_id ");
 		}
 
 		//Build Where Conditional and set and clause values on the vals list.
 		buildWhereClause(sql, req, vals, statusType);
 
-		//Add Order By clause.
-		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(sortCols.get(req.getParameter("sort")), sortCols.get("createDt")));
-		sql.append(" ").append(StringUtil.checkVal(req.getParameter("order"), "desc"));
+		//Add Order By clause.  Order by status (coProjectId) is special.
+		if("coProjectId".equals(req.getParameter("sort"))) {
+			String order = StringUtil.checkVal(req.getParameter("order"), "desc");
+			sql.append(DBUtil.ORDER_BY).append("lateFlg ").append(order);
+			sql.append(", priority_flg ").append(order).append(", project_hold_flg ").append(order);
+			sql.append(", delivery_dt ").append(order).append(", surg_dt ").append(order);
+		} else {
+			sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(sortCols.get(req.getParameter("sort")), sortCols.get("createDt")));
+			sql.append(" ").append(StringUtil.checkVal(req.getParameter("order"), "desc"));
+		}
 
 		return sql.toString();
 	}
