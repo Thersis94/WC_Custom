@@ -136,6 +136,15 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		//Add MasterRecords from the Request.
 		project.setMasterRecords(new PrefixBeanDataMapper<SRTMasterRecordVO>(new SRTMasterRecordVO()).populate(req.getParameterMap(), SRTMasterRecordAction.SRT_MASTER_RECORD_ID));
 
+		//Update Request Data.
+		if(!StringUtil.isEmpty(project.getProjectId()) && !StringUtil.isEmpty(project.getRequestId())) {
+			try {
+				new RequestDataProcessor(dbConn, attributes, req).updateRequestData(data);
+			} catch (com.siliconmtn.db.util.DatabaseException e) {
+				throw new DatabaseException(e);
+			}
+		}
+
 		// Save the project record
 		saveProjectRecord(project);
 
