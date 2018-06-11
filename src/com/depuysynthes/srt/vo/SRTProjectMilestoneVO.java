@@ -6,6 +6,8 @@ import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.workflow.milestones.MilestoneVO;
 
 /****************************************************************************
@@ -19,6 +21,7 @@ import com.siliconmtn.workflow.milestones.MilestoneVO;
  * @version 3.3.1
  * @since Mar 12, 2018
  ****************************************************************************/
+@Table(name="DPY_SYN_SRT_PROJECT_MILESTONE_XR")
 public class SRTProjectMilestoneVO extends MilestoneVO {
 
 	public enum MilestoneTypeId {DATE, STATUS}
@@ -79,6 +82,7 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 	/**
 	 * @return the projectMilestoneXRId
 	 */
+	@Column(name="PROJ_MILESTONE_XR_ID", isPrimaryKey=true)
 	public String getProjectMilestoneXRId() {
 		return projectMilestoneXRId;
 	}
@@ -86,6 +90,7 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 	/**
 	 * @return the projectId
 	 */
+	@Column(name="PROJECT_ID")
 	public String getProjectId() {
 		return projectId;
 	}
@@ -93,6 +98,7 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 	/**
 	 * @return the milestoneTypeId
 	 */
+	@Column(name="MILESTONE_TYPE_ID")
 	public MilestoneTypeId getMilestoneTypeId() {
 		return milestoneTypeId;
 	}
@@ -100,6 +106,7 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 	/**
 	 * @return the createDt
 	 */
+	@Column(name="MILESTONE_DT")
 	public Date getMilestoneDt() {
 		return milestoneDt;
 	}

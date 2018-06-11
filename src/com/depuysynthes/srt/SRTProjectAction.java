@@ -89,9 +89,10 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
-		MilestoneTypeId typeId = null;
+		MilestoneTypeId typeId = MilestoneTypeId.DATE;
 
 		if(req.hasParameter(SRT_PROJECT_ID) || req.hasParameter("json")) {
+
 			GridDataVO<SRTProjectVO> projects = loadProjects(req);
 
 			if(req.hasParameter(SRT_PROJECT_ID)) {
@@ -143,7 +144,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		}
 
 		//Redirect the User.
-		sbUtil.moduleRedirect(req, msg, SrtPage.PROJECT.getUrlPath());
+		//sbUtil.moduleRedirect(req, msg, SrtPage.PROJECT.getUrlPath());
 	}
 
 
@@ -368,6 +369,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 */
 	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals, String statusType) {
 		String custom = getCustomSchema();
+		String opCoId = SRTUtil.getOpCO(req);
 		StringBuilder sql = new StringBuilder(2000);
 		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
 		sql.append("concat(req.surgeon_first_nm, ' ', req.surgeon_last_nm) as SURGEON_NM, ");
@@ -410,7 +412,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		//Project Type
 		SRTUtil.buildListJoin(sql, "type", "p.proj_type_id");
-		vals.add(SRTList.PROJ_TYPE);
+		vals.add(SRTUtil.getListId(opCoId, SRTList.PROJ_TYPE));
 
 		//Load Optional User Data if this isn't a detail view.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
@@ -441,12 +443,12 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			//Get Optional Supplier Nm
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA sld ");
 			sql.append("on sld.value_txt = p.supplier_id and sld.list_id = ? ");
-			vals.add(SRTUtil.SRTList.PROJ_VENDOR.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.PROJ_VENDOR));
 
 			//Get Optional Distributorship
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA dld ");
 			sql.append("on dld.value_txt = r.territory_id and dld.list_id = ? ");
-			vals.add(SRTUtil.SRTList.SRT_TERRITORIES.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.SRT_TERRITORIES));
 
 			//Get Project Total
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select cast(sum(case when part_count is null then 0 else part_count end) as int) as total, ");

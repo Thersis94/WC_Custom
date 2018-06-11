@@ -85,11 +85,11 @@ public class SRTRosterAction extends SimpleActionAdapter {
 			processExportReq(req);
 			return;
 		}
-
+		String opCoId = SRTUtil.getOpCO(req);
 		req.setAttribute("workgroups", loadWorkgroups());
-		req.setAttribute("territories", loadSRTList(SRTUtil.SRTList.SRT_TERRITORIES, req));
-		req.setAttribute("regions", loadSRTList(SRTUtil.SRTList.SRT_REGION, req));
-		req.setAttribute("areas", loadSRTList(SRTUtil.SRTList.SRT_AREA, req));
+		req.setAttribute("territories", loadSRTList(SRTUtil.getListId(opCoId, SRTList.SRT_TERRITORIES), req));
+		req.setAttribute("regions", loadSRTList(SRTUtil.getListId(opCoId, SRTList.SRT_REGION), req));
+		req.setAttribute("areas", loadSRTList(SRTUtil.getListId(opCoId, SRTList.SRT_AREA), req));
 
 		if (req.hasParameter(REQ_CHECK_USER_BY_EMAIL)) {
 			checkForExistingUser(req);
@@ -125,9 +125,9 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	private List<GenericVO> loadSRTList(SRTList listId, ActionRequest req) throws ActionException {
+	private List<GenericVO> loadSRTList(String listId, ActionRequest req) throws ActionException {
 		log.debug(listId);
-		req.setParameter(ListAction.REQ_LIST_ID, listId.name());
+		req.setParameter(ListAction.REQ_LIST_ID, listId);
 		ActionControllerFactoryImpl.loadAction(ListAction.class.getName(), this).retrieve(req);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		return (List<GenericVO>) mod.getActionData();

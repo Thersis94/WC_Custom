@@ -12,6 +12,7 @@ import java.util.Map;
 
 import com.depuysynthes.srt.data.MasterRecordDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.util.SRTUtil.SRTList;
 import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
@@ -266,21 +267,22 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 		}
 
 		if(!idLookup) {
+			String opCoId = SRTUtil.getOpCO(req);
 			//Join out for List Values.
 			SRTUtil.buildListJoin(sql, "lqs", "mr.quality_system_id");
-			vals.add(SRTUtil.SRTList.QUALITY_SYSTEM.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.QUALITY_SYSTEM));
 
 			SRTUtil.buildListJoin(sql, "lpt", "mr.prod_type_id");
-			vals.add(SRTUtil.SRTList.PRODUCT_TYPE.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.PRODUCT_TYPE));
 
 			SRTUtil.buildListJoin(sql, "lc", "mr.complexity_id");
-			vals.add(SRTUtil.SRTList.COMPLEXITY.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.COMPLEXITY));
 
 			SRTUtil.buildListJoin(sql, "lpc", "mr.prod_cat_id");
-			vals.add(SRTUtil.SRTList.PROD_CAT.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.PROD_CAT));
 
 			SRTUtil.buildListJoin(sql, "lpf", "mr.prod_family_id");
-			vals.add(SRTUtil.SRTList.PROD_FAMILY.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.PROD_FAMILY));
 		}
 
 		//Build Where Clause
