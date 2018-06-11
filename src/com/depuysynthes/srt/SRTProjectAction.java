@@ -144,7 +144,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		}
 
 		//Redirect the User.
-		//sbUtil.moduleRedirect(req, msg, SrtPage.PROJECT.getUrlPath());
+		sbUtil.moduleRedirect(req, msg, SrtPage.PROJECT.getUrlPath());
 	}
 
 
