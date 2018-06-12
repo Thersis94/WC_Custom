@@ -14,6 +14,7 @@ import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
@@ -104,17 +105,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 	protected void saveFormData(FormTransactionVO data) throws DatabaseException {
 		log.debug("Saving SRT Request");
 
-		// Set the form fields that should not be saved as attributes, onto the request, with appropriate parameter names.
-		Iterator<Map.Entry<String, FormFieldVO>> iter = data.getCustomData().entrySet().iterator();
-		while (iter.hasNext()) {
-			Map.Entry<String, FormFieldVO> entry = iter.next();
-			RequestField param = EnumUtil.safeValueOf(RequestField.class, entry.getValue().getSlugTxt());
-			if (param != null) {
-				req.setParameter(param.getReqParam(), StringUtil.checkVal(entry.getValue().getResponseText()).trim());
-				log.debug(StringUtil.join(param.getReqParam(), " -- ", StringUtil.checkVal(entry.getValue().getResponseText()).trim()));
-				iter.remove();
-			}
-		}
+		translateToRequest(data);
 
 		log.debug("Creating Request.");
 
@@ -135,6 +126,25 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		saveRequestData(request, address, project);
 
 		data.setFormSubmittalId(request.getRequestId());
+	}
+
+	/**
+	 * Helper method manages Translating Form Data for the RequestVO
+	 * onto the ActionRequest
+	 * @param data
+	 */
+	private void translateToRequest(FormTransactionVO data) {
+		// Set the form fields that should not be saved as attributes, onto the request, with appropriate parameter names.
+		Iterator<Map.Entry<String, FormFieldVO>> iter = data.getCustomData().entrySet().iterator();
+		while (iter.hasNext()) {
+			Map.Entry<String, FormFieldVO> entry = iter.next();
+			RequestField param = EnumUtil.safeValueOf(RequestField.class, entry.getValue().getSlugTxt());
+			if (param != null) {
+				req.setParameter(param.getReqParam(), StringUtil.checkVal(entry.getValue().getResponseText()).trim());
+				log.debug(StringUtil.join(param.getReqParam(), " -- ", StringUtil.checkVal(entry.getValue().getResponseText()).trim()));
+				iter.remove();
+			}
+		}
 	}
 
 	/**
@@ -229,5 +239,64 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 				log.error("Error Processing Code", e);
 			}
 		}
+	}
+
+	/**
+	 * Used to update Request Fields on the Project Data Form.
+	 * @param data
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 */
+	public void updateRequestData(FormTransactionVO data) throws com.siliconmtn.db.util.DatabaseException {
+		translateToRequest(data);
+
+		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+
+		//Prep Request Record Update Fields.
+		List<String> fields = new ArrayList<>();
+		fields.add("charge_to");
+		fields.add("hospital_nm");
+		fields.add("surgeon_first_nm");
+		fields.add("surgeon_last_nm");
+		fields.add("reason_for_request");
+		fields.add("request_desc");
+		fields.add("estimated_roi");
+		fields.add("qty_no");
+
+		//Build Request Update Query
+		StringBuilder sql = new StringBuilder(300);
+		int cnt = 0;
+
+		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("DPY_SYN_SRT_REQUEST set ");
+		for (String field : fields) {
+			sql.append(cnt++ > 0 ? ", " : "").append(field).append(" = ? ");
+		}
+		sql.append(DBUtil.WHERE_CLAUSE).append("request_id = ?");
+		fields.add("request_id");
+
+		//Save request
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		dbp.executeSqlUpdate(sql.toString(), new SRTRequestVO(req), fields);
+
+		//Prep Request Address Record Update Fields
+		fields = new ArrayList<>();
+		fields.add("address_txt");
+		fields.add("address_2_txt");
+		fields.add("city_nm");
+		fields.add("state_cd");
+		fields.add("zip_cd");
+
+		//Build Request Address Update Query.
+		sql = new StringBuilder(300);
+		cnt = 0;
+
+		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("DPY_SYN_SRT_REQUEST_ADDRESS set ");
+		for (String field : fields) {
+			sql.append(cnt++ > 0 ? ", " : "").append(field).append(" = ? ");
+		}
+		sql.append(DBUtil.WHERE_CLAUSE).append("request_id = ?");
+		fields.add("request_id");
+
+		//Save Request Address.
+		dbp.executeSqlUpdate(sql.toString(), new SRTRequestAddressVO(req), fields);
 	}
 }
