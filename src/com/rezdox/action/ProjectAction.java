@@ -121,9 +121,9 @@ public class ProjectAction extends SimpleActionAdapter {
 		double total = 0;
 		double improvementTotal = 0;
 		for (ProjectVO proj : data) {
-			total += proj.getTotalNo();
+			total += proj.getInvoiceSubTotal();
 			if ("IMPROVEMENT".equals(proj.getProjectCategoryCd()))
-				improvementTotal += proj.getTotalNo();
+				improvementTotal += proj.getInvoiceSubTotal();
 		}
 		mod.setAttribute("totalValue", total);
 		mod.setAttribute("totalValueImprovements", improvementTotal * RezDoxUtils.IMPROVEMENTS_VALUE_COEF);
@@ -243,7 +243,7 @@ public class ProjectAction extends SimpleActionAdapter {
 
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select a.*, b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
-		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id ");
+		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id, sum(pm.cost_no) as raw_material_cost ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("REZDOX_PROJECT a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_ATTRIBUTE b on a.project_id=b.project_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_CATEGORY c on a.project_category_cd=c.project_category_cd ");
@@ -252,6 +252,7 @@ public class ProjectAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.status_flg=1 ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_MEMBER m on rm.member_id=m.member_id "); //this is the home owner
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_ROOM rr on a.room_id=rr.room_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_MATERIAL pm on a.project_id=pm.project_id ");
 		sql.append("where a.business_view_flg != 0 ");// 1=approved, -1=pending
 
 		if (!StringUtil.isEmpty(projectId)) {
@@ -261,6 +262,11 @@ public class ProjectAction extends SimpleActionAdapter {
 			sql.append("and a.business_id=? ");
 			params.add(req.getParameter(BusinessAction.REQ_BUSINESS_ID));
 		}
+		sql.append("group by a.project_id, a.residence_id, a.room_id, a.business_id, a.project_category_cd, a.project_type_cd, a.project_nm, ");
+		sql.append("a.labor_no, a.total_no, a.residence_view_flg, a.business_view_flg, a.create_dt, a.update_dt, a.end_dt, a.desc_txt, ");
+		sql.append("a.proj_discount_no, a.proj_tax_no, a.mat_discount_no, a.mat_tax_no, ");
+		sql.append("b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
+		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id ");
 		sql.append("order by a.end_dt desc, a.project_nm");
 		log.debug(sql);
 
