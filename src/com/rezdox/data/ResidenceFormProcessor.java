@@ -85,7 +85,7 @@ public class ResidenceFormProcessor extends FormDataProcessor {
 	 */
 	public enum SkipSlug {
 		RESIDENCE_ZESTIMATE, RESIDENCE_IMPROVEMENTS_VALUE, RESIDENCE_POTENTIAL_VALUE, RESIDENCE_WALK_SCORE,
-		RESIDENCE_SUN_NUMBER, RESIDENCE_TRANSIT_SCORE
+		RESIDENCE_SUN_NUMBER, RESIDENCE_TRANSIT_SCORE, HOMEDETAILS, RESIDENCE_TOTAL_SQFT
 	}
 	
 	/**
@@ -142,8 +142,6 @@ public class ResidenceFormProcessor extends FormDataProcessor {
 
 	/* 
 	 * Saves the files to secure binary
-	 * TODO: This should be genericized and moved to the RezDoxUtils class
-	 * 
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.data.AbstractDataProcessor#saveFiles(com.smt.sitebuilder.data.vo.FormTransactionVO)
 	 */
@@ -225,7 +223,7 @@ public class ResidenceFormProcessor extends FormDataProcessor {
 		List<FormFieldVO> newFormFields = new ArrayList<>();
 		
 		for (FormFieldVO vo : data.getCustomData().values()) {
-			SkipSlug skipSlug = EnumUtil.safeValueOf(SkipSlug.class, vo.getSlugTxt());
+			SkipSlug skipSlug = EnumUtil.safeValueOf(SkipSlug.class, vo.getSlugTxt().toUpperCase());
 			if (skipSlug != null) continue;
 			
 			oldFormFields.add(vo);

@@ -3,12 +3,23 @@ package com.rezdox.action;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.rezdox.action.RewardsAction.Reward;
+import com.rezdox.action.RezDoxNotifier.Message;
+import com.rezdox.data.InvoiceReportPDF;
+import com.rezdox.data.ProjectFormProcessor;
+import com.rezdox.vo.BusinessVO;
+import com.rezdox.vo.MemberVO;
+import com.rezdox.vo.PhotoVO;
+import com.rezdox.vo.ProjectMaterialVO;
+import com.rezdox.vo.ProjectVO;
+import com.rezdox.vo.ResidenceVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -19,7 +30,6 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -34,12 +44,6 @@ import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
 import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.QueryParamVO;
-import com.rezdox.data.InvoiceReportPDF;
-import com.rezdox.data.ProjectFormProcessor;
-import com.rezdox.vo.BusinessVO;
-import com.rezdox.vo.PhotoVO;
-import com.rezdox.vo.ProjectMaterialVO;
-import com.rezdox.vo.ProjectVO;
 
 /****************************************************************************
  * <b>Title:</b> ProjectAction.java<br/>
@@ -117,9 +121,9 @@ public class ProjectAction extends SimpleActionAdapter {
 		double total = 0;
 		double improvementTotal = 0;
 		for (ProjectVO proj : data) {
-			total += proj.getTotalNo();
+			total += proj.getInvoiceSubTotal();
 			if ("IMPROVEMENT".equals(proj.getProjectCategoryCd()))
-				improvementTotal += proj.getTotalNo();
+				improvementTotal += proj.getInvoiceSubTotal();
 		}
 		mod.setAttribute("totalValue", total);
 		mod.setAttribute("totalValueImprovements", improvementTotal * RezDoxUtils.IMPROVEMENTS_VALUE_COEF);
@@ -132,40 +136,24 @@ public class ProjectAction extends SimpleActionAdapter {
 	 * @param mod
 	 */
 	protected void loadPrefilter(ActionRequest req, ModuleVO mod) {
-		//load a list of businesses.  If there's only one, then choose the 1st as the default if one wasn't provided.
-		List<BusinessVO> bizList = loadBusinessList(req);
-		if (!req.hasParameter(BusinessAction.REQ_BUSINESS_ID) && !bizList.isEmpty())
-			req.setParameter(BusinessAction.REQ_BUSINESS_ID, bizList.get(0).getBusinessId());
+		String bizId = StringUtil.checkVal(req.getParameter(BusinessAction.REQ_BUSINESS_ID), 
+				(String)req.getSession().getAttribute(BusinessAction.REQ_BUSINESS_ID));
 
-		//make sure session is loaded - this gets used by our <select> list loaders (MyResidences)
-		String sesBizId = StringUtil.checkVal(req.getSession().getAttribute(BusinessAction.REQ_BUSINESS_ID));
-		if (!sesBizId.equals(req.getParameter(BusinessAction.REQ_BUSINESS_ID)))
-			req.getSession().setAttribute(BusinessAction.REQ_BUSINESS_ID, req.getParameter(BusinessAction.REQ_BUSINESS_ID));
+		//load a list of businesses.  If there's only one, then choose the 1st as the default if one wasn't provided.
+		List<BusinessVO> bizList = new BusinessAction(getDBConnection(), getAttributes()).loadBusinessList(req);
+		if (StringUtil.isEmpty(bizId) && !bizList.isEmpty()) {
+			bizId = bizList.get(0).getBusinessId();
+		}
+
+		//make sure session is loaded - this gets used by our <select> list loaders (MyBusinesses)
+		if (!bizId.equals(req.getSession().getAttribute(BusinessAction.REQ_BUSINESS_ID)))
+			req.getSession().setAttribute(BusinessAction.REQ_BUSINESS_ID, bizId);
+
+		//always make sure a healthy value is on the request, for JSPs
+		req.setParameter(BusinessAction.REQ_BUSINESS_ID, bizId);
 
 		log.debug(String.format("loaded %d businesses", bizList.size()));
 		mod.setAttribute(FILTER_DATA_LST, bizList);
-	}
-
-
-	/**
-	 * overloaded method purposefully kept generic.
-	 * In this case/class, we want to present a list of Businesses this member has access to.
-	 * @param projData
-	 * @param req
-	 * @return
-	 */
-	protected List<BusinessVO> loadBusinessList(ActionRequest req) {
-		String oldBizId = req.getParameter(BusinessAction.REQ_BUSINESS_ID);
-		if (!StringUtil.isEmpty(oldBizId)) 
-			req.setParameter(BusinessAction.REQ_BUSINESS_ID, "");
-
-		BusinessAction ba = new BusinessAction(getDBConnection(), getAttributes());
-		List<BusinessVO> bizList = ba.retrieveBusinesses(req);
-
-		if (!StringUtil.isEmpty(oldBizId)) //put this back the way we found it
-			req.setParameter(BusinessAction.REQ_BUSINESS_ID, oldBizId);
-
-		return bizList;
 	}
 
 
@@ -255,7 +243,7 @@ public class ProjectAction extends SimpleActionAdapter {
 
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select a.*, b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
-		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id ");
+		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id, sum(pm.cost_no) as raw_material_cost ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("REZDOX_PROJECT a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_ATTRIBUTE b on a.project_id=b.project_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_CATEGORY c on a.project_category_cd=c.project_category_cd ");
@@ -264,7 +252,8 @@ public class ProjectAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.status_flg=1 ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_MEMBER m on rm.member_id=m.member_id "); //this is the home owner
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_ROOM rr on a.room_id=rr.room_id ");
-		sql.append("where a.business_view_flg=1 ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_MATERIAL pm on a.project_id=pm.project_id ");
+		sql.append("where a.business_view_flg != 0 ");// 1=approved, -1=pending
 
 		if (!StringUtil.isEmpty(projectId)) {
 			sql.append("and a.project_id=? ");
@@ -273,6 +262,11 @@ public class ProjectAction extends SimpleActionAdapter {
 			sql.append("and a.business_id=? ");
 			params.add(req.getParameter(BusinessAction.REQ_BUSINESS_ID));
 		}
+		sql.append("group by a.project_id, a.residence_id, a.room_id, a.business_id, a.project_category_cd, a.project_type_cd, a.project_nm, ");
+		sql.append("a.labor_no, a.total_no, a.residence_view_flg, a.business_view_flg, a.create_dt, a.update_dt, a.end_dt, a.desc_txt, ");
+		sql.append("a.proj_discount_no, a.proj_tax_no, a.mat_discount_no, a.mat_tax_no, ");
+		sql.append("b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
+		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id ");
 		sql.append("order by a.end_dt desc, a.project_nm");
 		log.debug(sql);
 
@@ -453,6 +447,8 @@ public class ProjectAction extends SimpleActionAdapter {
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			url = page.getFullPath() + url;
 			sendRedirect(url, (String)getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE), req);
+		} else {
+			putModuleData(req.getParameter(REQ_PROJECT_ID));
 		}
 	}
 
@@ -510,20 +506,43 @@ public class ProjectAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void hideProject(ActionRequest req) {
+		boolean isOwner = req.hasParameter("isOwner");
+		int visibleFlg = Convert.formatInteger(req.getParameter("visibleFlg"), 0).intValue();
+
 		StringBuilder sql = new StringBuilder (150);
-		String column = req.hasParameter("isOwner") ? "residence_view_flg" : "business_view_flg";
+		String column = isOwner ? "residence_view_flg" : "business_view_flg";
 		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("REZDOX_PROJECT set ");
 		sql.append(column).append("=?, update_dt=CURRENT_TIMESTAMP where project_id=?");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setInt(1, Convert.formatInteger(req.getParameter("visibleFlg"), 0));
+			ps.setInt(1, visibleFlg);
 			ps.setString(2, req.getParameter(REQ_PROJECT_ID));
 			ps.executeUpdate();
 
 		} catch (SQLException sqle) {
 			log.error("could not hide project", sqle);
 		}
+
+		//send email & notifications
+		if (visibleFlg == 1 && isOwner) {
+			sendEmail(RezDoxUtils.EmailSlug.PROJ_ACCPT_BUSINESS, req); // send to biz, owner accepted share from biz
+			awardPoints(true, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_RES); //reward the homeowner for accepting this project share onto their HHL.
+		} else if (visibleFlg == 1) {
+			sendEmail(RezDoxUtils.EmailSlug.PROJ_ACCPT_HOMEOWNER, req); // send to owner, biz accepted share from owner
+			awardPoints(true, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_BUS); //reward the business owner for accepting this project share onto their project list.
+		}
+	}
+
+
+	/**
+	 * proxies off to the share action to deliver a specific email msg/workflow.
+	 * @param slugTxt
+	 * @param req
+	 */
+	protected void sendEmail(RezDoxUtils.EmailSlug slugTxt, ActionRequest req) {
+		ProjectShareAction psa = new ProjectShareAction(getDBConnection(), getAttributes());
+		psa.sendEmail(slugTxt, req);
 	}
 
 
@@ -539,13 +558,135 @@ public class ProjectAction extends SimpleActionAdapter {
 			if (req.hasParameter("isDelete")) {
 				db.delete(vo);
 			} else {
+				boolean isNew = StringUtil.isEmpty(vo.getProjectId());
 				db.save(vo);
 				//transpose the primary key
 				req.setParameter(REQ_PROJECT_ID, vo.getProjectId());
+
+				if (req.hasParameter("isHomeowner")) { //HomeHistoryAction - alerts to go the business
+					notifyBiz(req, vo);
+					awardPoints(isNew, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_RES);
+
+				} else { //this action - alerts go to the homeowner
+					notifyRez(req, vo);
+					awardPoints(isNew, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_BUS);
+				}
 			}
 
 		} catch (Exception e) {
 			throw new ActionException("could not save project", e);
 		}
+	}
+
+
+	/**
+	 * award points to the homeowner who just created an HHL entry
+	 * @param isNew
+	 * @param memberId
+	 * @throws ActionException 
+	 */
+	private void awardPoints(boolean isNewOrShare, String memberId, Reward reward) {
+		if (!isNewOrShare) return;
+		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
+		try {
+			ra.applyReward(reward.name(), memberId);
+		} catch (ActionException e) {
+			log.error("could not award reward points", e);
+		}
+	}
+
+	/**
+	 * If this was an add, from a business to a linked residence (view=pending), 
+	 * 	then notify those members of the new home history log (entry).  Also send 
+	 * if the project changed from an unlinked to a linked residence, send the notifications.
+	 * 
+	 * Send similar messages to business contacts; when a member creates a project linked to their business.
+	 * @param req
+	 * @param vo
+	 */
+	protected void notifyRez(ActionRequest req, ProjectVO vo) {
+		if (StringUtil.isEmpty(vo.getResidenceId())) return; //no connection, no notifications
+
+		//verify the residence is different from the last save-point.  If not don't re-send stuff.
+		String lastResId = req.getParameter("prevResidenceId");
+		if (vo.getResidenceId().equals(lastResId)) return;
+
+		alertRez(vo, req);
+		sendEmail(RezDoxUtils.EmailSlug.PROJ_SHARE_BUSINESS, req);
+	}
+
+	/**
+	 * Notify the residence's members of the new home history log (entry) that's pending their approval.
+	 * @param vo
+	 * @param req
+	 */
+	protected void alertRez(ProjectVO vo, ActionRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+		String[] profileIds = notifyUtil.getProfileIds(vo.getResidenceId(), true);
+
+		//quit while we're ahead if there's nobody to inform
+		if (profileIds == null || profileIds.length == 0) return;
+
+		//get the company name from the BusinessAction
+		BusinessAction ba = new BusinessAction(getDBConnection(), getAttributes());
+		List<BusinessVO> bizList = ba.retrieveBusinesses(vo.getBusinessId());
+		BusinessVO biz = bizList != null && !bizList.isEmpty() ? bizList.get(0) : new BusinessVO();
+		Map<String, Object> params = new HashMap<>();
+		params.put("companyName", StringUtil.checkVal(biz.getBusinessName(), "A RezDox Business")); //fallback to something somewhat elegant
+
+		notifyUtil.send(Message.PROJ_SHARE, params, null, profileIds);
+	}
+
+
+	/**
+	 * If this was an add, from a business to a linked residence (view=pending), 
+	 * 	then notify those members of the new home history log (entry).  Also send 
+	 * if the project changed from an unlinked to a linked residence, send the notifications.
+	 * 
+	 * Send similar messages to business contacts; when a member creates a project linked to their business.
+	 * @param req
+	 * @param vo
+	 */
+	protected void notifyBiz(ActionRequest req, ProjectVO vo) {
+		if (StringUtil.isEmpty(vo.getBusinessId())) return; //no connection, no notifications
+
+		//verify the business is different from the last save-point.  If not don't re-send stuff.
+		String lastBizId = req.getParameter("prevBusinessId");
+		if (vo.getBusinessId().equals(lastBizId)) return;
+
+		alertBiz(vo, req);
+		sendEmail(RezDoxUtils.EmailSlug.PROJ_SHARE_HOMEOWNER, req);
+	}
+
+
+	/**
+	 * Notify the residence's members of the new home history log (entry) that's pending their approval.
+	 * @param vo
+	 * @param req
+	 */
+	protected void alertBiz(ProjectVO vo, ActionRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+		String[] profileIds = notifyUtil.getProfileIds(vo.getBusinessId(), false);
+
+		//quit while we're ahead if there's nobody to inform
+		if (profileIds == null || profileIds.length == 0) return;
+
+		if (StringUtil.isEmpty(vo.getResidenceName())) {
+			String schema = getCustomSchema();
+			String sql = StringUtil.join("select residence_nm from ", schema, "rezdox_residence where residence_id=?");
+			DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
+			List<ResidenceVO> data = dbp.executeSelect(sql, Arrays.asList(vo.getResidenceId()), new ResidenceVO());
+			if (data.size() == 1) vo.setResidenceName(data.get(0).getResidenceName());
+		}
+
+		MemberVO member = RezDoxUtils.getMember(req);
+		Map<String, Object> params = new HashMap<>();
+		params.put("firstName", member.getFirstName());
+		params.put("lastName",  member.getLastName());
+		params.put("residenceName", StringUtil.checkVal(vo.getResidenceName(), "their home")); //fallback to something somewhat elegant
+
+		notifyUtil.send(Message.PROJ_SHARE_TO_BIZ, params, null, profileIds);
 	}
 }

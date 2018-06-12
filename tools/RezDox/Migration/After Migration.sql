@@ -18,6 +18,7 @@ update custom.rezdox_residence_attribute set slug_txt = 'bedrooms' where slug_tx
 update custom.rezdox_residence_attribute set slug_txt = 'bathrooms' where slug_txt = 'RESIDENCE_BATHS';
 update custom.rezdox_residence_attribute set slug_txt = 'finishedSqFt' where slug_txt = 'RESIDENCE_F_SQFT';
 update custom.rezdox_residence_attribute set slug_txt = 'unfinishedSqFt' where slug_txt = 'RESIDENCE_UF_SQFT';
+update custom.rezdox_residence_attribute set slug_txt = 'homedetails' where slug_txt = 'RESIDENCE_ZILLOW_HOMEDETAILS';
 
 
 -- Fix business category names with trailing new lines
@@ -192,3 +193,23 @@ update custom.rezdox_room_category set category_nm=initcap(category_nm);
 
 -- remove non-business categories
 delete from custom.rezdox_business_category where category_nm in ('Members','Residences');
+
+-- changes so reviews can have comments/replies
+alter table custom.rezdox_member_business_review alter column member_id drop not null;
+alter table custom.rezdox_member_business_review alter column business_id drop not null;
+alter table custom.rezdox_member_business_review alter column rating_no drop not null;
+alter table custom.rezdox_member_business_review add parent_id varchar(32);
+alter table custom.rezdox_member_business_review add group_id varchar(32);
+alter table custom.REZDOX_MEMBER_BUSINESS_REVIEW add Constraint BUSINESS_REVIEW_PARENT_SKEY foreign key (PARENT_ID) references custom.REZDOX_MEMBER_BUSINESS_REVIEW (BUSINESS_REVIEW_ID) on update restrict on delete cascade;
+alter table custom.REZDOX_MEMBER_BUSINESS_REVIEW add Constraint BUSINESS_REVIEW_GROUP_SKEY foreign key (GROUP_ID) references custom.REZDOX_MEMBER_BUSINESS_REVIEW (BUSINESS_REVIEW_ID) on update restrict on delete cascade;
+update custom.rezdox_member_business_review set group_id = business_review_id;
+
+--remove stock photos from members - so their initials display on the website
+update custom.rezdox_member set profile_pic_pth=null where len(profile_pic_pth)=0 or profile_pic_pth='/legacy/profile/full/default-member.gif';
+
+-- make sure we don't have an non-integer sale prices:
+update custom.rezdox_residence_attribute set value_txt='0' where slug_txt='lastSoldPrice' and (value_txt='' or value_txt is null);
+
+--remove all inactive accounts
+delete from profile_role where profile_id in (select profile_id from custom.rezdox_member where status_flg=0) and site_id like 'REZDOX_%';
+delete from custom.rezdox_member where status_flg=0;

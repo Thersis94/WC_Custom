@@ -1,6 +1,8 @@
 package com.rezdox.data;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import com.rezdox.action.RezDoxUtils;
 import com.siliconmtn.action.ActionException;
@@ -9,6 +11,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
 /****************************************************************************
@@ -31,14 +34,34 @@ public class ProjectMyProviders extends SimpleActionAdapter {
 		super(arg0);
 	}
 
+	/**
+	 * @param dbConnection
+	 * @param attributes
+	 */
+	public ProjectMyProviders(SMTDBConnection dbConnection, Map<String, Object> attributes) {
+		this();
+		setDBConnection(dbConnection);
+		setAttributes(attributes);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String schema = getCustomSchema();
 		String memberId = RezDoxUtils.getMemberId(req);
+		putModuleData(retrieveMyProviders(memberId));
+	}
+	
+	/**
+	 * Retrieves a list of the specified member's connected providers
+	 * 
+	 * @param memberId
+	 * @return
+	 */
+	public List<GenericVO> retrieveMyProviders(String memberId) {
+		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select b.business_id as key, b.business_nm as value from ");
 		sql.append(schema).append("REZDOX_BUSINESS b ");
@@ -48,6 +71,6 @@ public class ProjectMyProviders extends SimpleActionAdapter {
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		putModuleData(db.executeSelect(sql.toString(), Arrays.asList(memberId, memberId), new GenericVO()));
+		return db.executeSelect(sql.toString(), Arrays.asList(memberId, memberId), new GenericVO());
 	}
 }
