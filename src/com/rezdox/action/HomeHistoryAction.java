@@ -109,7 +109,7 @@ public class HomeHistoryAction extends ProjectAction {
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select a.*, b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
 		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id, ");
-		sql.append("biz.main_phone_txt ");
+		sql.append("biz.main_phone_txt, sum(pm.cost_no) as raw_material_cost ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("REZDOX_PROJECT a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_ATTRIBUTE b on a.project_id=b.project_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_CATEGORY c on a.project_category_cd=c.project_category_cd ");
@@ -119,6 +119,7 @@ public class HomeHistoryAction extends ProjectAction {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_MEMBER m on rm.member_id=m.member_id and m.member_id=? "); //this is the home owner
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_ROOM rr on a.room_id=rr.room_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_BUSINESS biz on a.business_id=biz.business_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_MATERIAL pm on a.project_id=pm.project_id ");
 		sql.append("where a.residence_view_flg != 0 "); // 1=approved, -1=pending
 
 		if (!StringUtil.isEmpty(projectId)) {
@@ -128,6 +129,11 @@ public class HomeHistoryAction extends ProjectAction {
 			sql.append("and a.residence_id=? ");
 			params.add(req.getParameter(ResidenceAction.RESIDENCE_ID));
 		}
+		sql.append("group by a.project_id, a.residence_id, a.room_id, a.business_id, a.project_category_cd, a.project_type_cd, a.project_nm, ");
+		sql.append("a.labor_no, a.total_no, a.residence_view_flg, a.business_view_flg, a.create_dt, a.update_dt, a.end_dt, a.desc_txt, ");
+		sql.append("a.proj_discount_no, a.proj_tax_no, a.mat_discount_no, a.mat_tax_no, ");
+		sql.append("b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
+		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id, biz.main_phone_txt ");
 		sql.append("order by a.end_dt desc, a.project_nm");
 		log.debug(sql);
 
