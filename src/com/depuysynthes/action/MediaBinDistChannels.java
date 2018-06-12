@@ -38,8 +38,8 @@ public class MediaBinDistChannels {
 		INTDS("INTDS.com", 2, "DPY_SYN_EMEA"),
 		USDS("USDS.com", 1, "DPY_SYN"),
 		DSI("DSI.com", 1, "DPY_SYN_INST"),
-		DSHuddle("DSHuddle.com", 1, "DPY_SYN_HUDDLE");
-		//SHOWPAD("Showpad EMEA", 3, "DPY_SYN_EMEA") -- this gets added, eventually.  Waiting on EMEA to drive it forward.
+		DSHuddle("DSHuddle.com", 1, "DPY_SYN_HUDDLE"),
+		SHOWPAD("Showpad EMEA", 3, "DPY_SYN_EMEA");
 
 		private String orgId;
 		private int typeCd;

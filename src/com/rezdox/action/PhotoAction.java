@@ -12,7 +12,10 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.databean.FilePartDataBean;
+import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
 /****************************************************************************
@@ -26,7 +29,10 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
  * @since Feb 19, 2018
  ****************************************************************************/
 public class PhotoAction extends SimpleActionAdapter {
-	
+
+	private static final String RELA_FLDR = "/photo/inventory/";
+
+
 	public PhotoAction() {
 		super();
 	}
@@ -64,7 +70,7 @@ public class PhotoAction extends SimpleActionAdapter {
 			req.setAttribute(GalleryAction.GALLERY_DATA, ga.retrieveAlbums(req));
 		}
 	}
-	
+
 	/**
 	 * Retrives the selected photos
 	 * 
@@ -74,23 +80,23 @@ public class PhotoAction extends SimpleActionAdapter {
 	protected List<PhotoVO> retrievePhotos(ActionRequest req) {
 		String schema = getCustomSchema();
 		PhotoVO opts = new PhotoVO(req);
-		
+
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select photo_id, album_id, treasure_item_id, project_id, photo_nm, desc_txt, ");
 		sql.append("image_url, thumbnail_url, order_no, create_dt, update_dt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_photo ");
 		sql.append("where 1=0 ");
-		
+
 		List<Object> params = new ArrayList<>();
-		
+
 		if (!StringUtil.isEmpty(opts.getPhotoId())) {
 			sql.append("or photo_id = ? ");
 			params.add(opts.getPhotoId());	
-		
+
 		} else if (!StringUtil.isEmpty(opts.getTreasureItemId())) {
 			sql.append("or treasure_item_id=? ");
 			params.add(opts.getTreasureItemId());
-			
+
 		} else if (!StringUtil.isEmpty(opts.getProjectId())) {
 			sql.append("or project_id=? ");
 			params.add(opts.getProjectId());
@@ -105,7 +111,7 @@ public class PhotoAction extends SimpleActionAdapter {
 		DBProcessor dbp = new DBProcessor(dbConn);
 		return dbp.executeSelect(sql.toString(), params, new PhotoVO());
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
@@ -113,7 +119,7 @@ public class PhotoAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		PhotoVO photo = new PhotoVO(req);
 		DBProcessor dbp = new DBProcessor(dbConn);
-		
+
 		try {
 			if (req.hasParameter("isDelete")) {
 				dbp.delete(photo);
@@ -125,10 +131,10 @@ public class PhotoAction extends SimpleActionAdapter {
 		} catch(Exception e) {
 			log.error("Couldn't save RezDox photo. ", e);
 		}
-		
+
 		this.putModuleData(photo.getPhotoId(), 1, false);
 	}
-	
+
 	/**
 	 * Saves edited data when only partial data is submitted
 	 * 
@@ -136,18 +142,49 @@ public class PhotoAction extends SimpleActionAdapter {
 	 */
 	public void savePhotoUpdate(PhotoVO photo, DBProcessor dbp) {
 		String schema = getCustomSchema();
-		
+
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("rezdox_photo ");
 		sql.append("set photo_nm = ?, desc_txt = ? ");
 		sql.append("where photo_id = ? ");
-		
+
 		List<String> fields = Arrays.asList("photo_nm", "desc_txt", "photo_id");
-		
+
 		try {
 			dbp.executeSqlUpdate(sql.toString(), photo, fields);
 		} catch (Exception e) {
 			log.error("Could not update RezDox photo data", e);
+		}
+	}
+
+
+	/**
+	 * writes the files to disk, and then to DB.  Called from InventoryFormProcessor
+	 * @param req
+	 * @param fpbdArr
+	 */
+	public void saveFiles(ActionRequest req) {
+		String root = StringUtil.checkVal(attributes.get(Constants.SECURE_PATH_TO_BINARY));
+		root = StringUtil.join(root, ""+attributes.get(Constants.ORG_ALIAS), req.getParameter("organizationId"), RELA_FLDR, req.getParameter("treasureItemId"), "/");
+		log.debug("writing files to " + root);
+
+		String urlRoot = StringUtil.join(RELA_FLDR, req.getParameter("treasureItemId"), "/");
+
+		FileLoader fl = new FileLoader(getAttributes());
+		for (FilePartDataBean fpdb : req.getFiles()) {
+			fl.setFileName(fpdb.getFileName());
+			fl.setPath(root);
+			fl.setData(fpdb.getFileData());
+
+			try {
+				String fPath = StringUtil.join(urlRoot, fl.writeFiles());
+				log.debug("file written: " + fPath);
+				req.setParameter("photoName", fpdb.getFileName());
+				req.setParameter("imageUrl", fPath);
+				build(req);
+			} catch (Exception e) {
+				log.error("could not save inventory file", e);
+			}
 		}
 	}
 }

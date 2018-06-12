@@ -3,8 +3,10 @@ package com.rezdox.security;
 // Java 8
 import java.util.Map;
 
+import com.rezdox.action.BusinessReviewAction;
 import com.rezdox.action.ConnectionAction;
 import com.rezdox.action.MemberAction;
+import com.rezdox.action.MyNotificationsAction;
 import com.rezdox.action.MyRewardsAction;
 //WC_Custom libs
 import com.rezdox.vo.MemberVO;
@@ -64,6 +66,10 @@ public class RezDoxLoginModule extends DBLoginModule {
 		member.setAttributes(user.getAttributes());
 		member.setAuthenticated(user.isAuthenticated());
 
+		// Get the count of reviews to display in the left menu badge
+		BusinessReviewAction br = new BusinessReviewAction(dbConn, getAttributes());
+		CookieUtil.add(req, BusinessReviewAction.COOKIE_REVIEW_COUNT, String.valueOf(br.getReviewCount(member.getMemberId())), "/", -1);
+
 		//load a count of the user's connections into a cookie for display in the left menu
 		ConnectionAction ca = new ConnectionAction(dbConn, getAttributes());
 		CookieUtil.add(req, ConnectionAction.REZDOX_CONNECTION_POINTS, String.valueOf(ca.getMemeberConnectionCount(member.getMemberId())), "/", -1);
@@ -72,6 +78,11 @@ public class RezDoxLoginModule extends DBLoginModule {
 		MyRewardsAction rewards = new MyRewardsAction(dbConn, getAttributes());
 		int pts = rewards.getAvailablePoints(member.getMemberId());
 		CookieUtil.add(req, MyRewardsAction.MY_POINTS, String.valueOf(pts), "/", -1);
+
+		//load a count of the user's Notifications into a cookie for display in the left menu
+		MyNotificationsAction notifs = new MyNotificationsAction(dbConn, getAttributes());
+		pts = notifs.getCount(member.getProfileId());
+		CookieUtil.add(req, MyNotificationsAction.MY_NOTIFS, String.valueOf(pts), "/", -1);
 
 		return member;
 	}

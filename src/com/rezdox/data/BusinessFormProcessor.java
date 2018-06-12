@@ -3,6 +3,7 @@ package com.rezdox.data;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -153,27 +154,32 @@ public class BusinessFormProcessor extends FormDataProcessor {
 	 */
 	@Override
 	protected void saveFiles(FormTransactionVO data) {
+		// Short term fix (per JC suggestion) to have business files accessible from public and secure
+		String publicBinaryPath = (String) attributes.get(com.siliconmtn.http.filter.fileupload.Constants.PATH_TO_BINARY);
 		String secBinaryPath = (String) attributes.get(com.siliconmtn.http.filter.fileupload.Constants.SECURE_PATH_TO_BINARY);
 		String orgId = ((SiteVO) req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
 		
 		// Root for the organization (RezDox)
+		String publicOrgRoot = publicBinaryPath + (String) attributes.get("orgAlias") + orgId;
 		String orgRoot = secBinaryPath + (String) attributes.get("orgAlias") + orgId;
 		
 		// Root for the business uploading a file
 		String rootBusinessPath = "/business/" + req.getParameter(BusinessAction.REQ_BUSINESS_ID) + "/";
 
 		// Root upload path
-		String rootUploadPath = orgRoot + rootBusinessPath;
+		List<String> uploadPaths = Arrays.asList(publicOrgRoot + rootBusinessPath, orgRoot + rootBusinessPath);
 
 		// Store the files to the file system
 		List<String> dbFields = new ArrayList<>();
 		try {
 			for(FilePartDataBean fpdb : req.getFiles()) {
-				FileLoader fl = new FileLoader(attributes);
-				fl.setData(fpdb.getFileData());
-				fl.setFileName(fpdb.getFileName());
-				fl.setPath(rootUploadPath);
-				fl.writeFiles();
+				for (String path : uploadPaths) {
+					FileLoader fl = new FileLoader(attributes);
+					fl.setData(fpdb.getFileData());
+					fl.setFileName(fpdb.getFileName());
+					fl.setPath(path);
+					fl.writeFiles();
+				}
 				
 				GenericVO field = fileMap.get(fpdb.getKey());
 				if (field != null) {
