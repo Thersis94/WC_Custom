@@ -51,6 +51,7 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	private SRTFileVO prodImg;
 	private Map<String, String> attributes;
 	private String projectId;
+	private String mrProjectXRId;
 
 	public SRTMasterRecordVO() {
 		attributes = new LinkedHashMap<>();
@@ -80,6 +81,14 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	@Column(name="MASTER_RECORD_ID", isPrimaryKey=true)
 	public String getMasterRecordId() {
 		return masterRecordId;
+	}
+
+	/**
+	 * @return the mrProjectXRId
+	 */
+	@Column(name="MASTER_RECORD_PROJECT_XR_ID", isReadOnly=true)
+	public String getMrProjectXRId() {
+		return mrProjectXRId;
 	}
 
 	/**
@@ -244,6 +253,13 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	 */
 	public void setMasterRecordId(String masterRecordId) {
 		this.masterRecordId = masterRecordId;
+	}
+
+	/**
+	 * @param mrProjectXRId the mrProjectXRId to set.
+	 */
+	public void setMrProjectXRId(String mrProjectXRId) {
+		this.mrProjectXRId = mrProjectXRId;
 	}
 
 	/**
