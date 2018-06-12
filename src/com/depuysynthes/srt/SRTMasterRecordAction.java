@@ -414,8 +414,10 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	 */
 	public void populateMasterRecordXR(List<SRTProjectVO> projects) {
 
-		//Convert Project List to Map for ease of population.
-		Map<String, SRTProjectVO> pMap = SRTUtil.mapProjects(projects);
+		//Fail Fast if nothing to process.
+		if(projects == null || projects.isEmpty()) {
+			return;
+		}
 
 		//Lookup All Master Records with Attributes for projects.
 		try(PreparedStatement ps = dbConn.prepareStatement(buildXrQuery(projects.size()))) {
@@ -425,27 +427,45 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 			}
 
 			ResultSet rs = ps.executeQuery();
-			SRTMasterRecordVO mr = null;
-			while(rs.next()) {
 
-				//Manage creation and addition of MasterRecordVO to Project Record.
-				if(mr == null || !rs.getString("MASTER_RECORD_PROJECT_XR_ID").equals(mr.getMrProjectXRId())) {
-					if(mr != null) {
-						pMap.get(mr.getProjectId()).addMasterRecord(mr);
-					}
-					mr = new SRTMasterRecordVO(rs);
-				}
-
-				//Add Attributes to MasterRecord.
-				mr.addAttribute(rs.getString("attr_id"), rs.getString("value_txt"));
-			}
-
-			//Add Trailing Record.
-			if(mr != null) {
-				pMap.get(mr.getProjectId()).addMasterRecord(mr);
+			if(rs.next()) {
+				processAndPopulateMasterRecordXrs(rs, projects);
 			}
 		} catch (SQLException e) {
 			log.error("Error Processing Code", e);
+		}
+	}
+
+	/**
+	 * Iterate ResultSet from populateMasterRecordXR Query and populate
+	 * passed Projects with related MasterRecords. 
+	 * @param rs
+	 * @param projects
+	 * @throws SQLException 
+	 */
+	private void processAndPopulateMasterRecordXrs(ResultSet rs, List<SRTProjectVO> projects) throws SQLException {
+		//Convert Project List to Map for ease of population.
+		Map<String, SRTProjectVO> pMap = SRTUtil.mapProjects(projects);
+
+		SRTMasterRecordVO mr = null;
+
+		while(rs.next()) {
+
+			//Manage creation and addition of MasterRecordVO to Project Record.
+			if(mr == null || !rs.getString("MASTER_RECORD_PROJECT_XR_ID").equals(mr.getMrProjectXRId())) {
+				if(mr != null) {
+					pMap.get(mr.getProjectId()).addMasterRecord(mr);
+				}
+				mr = new SRTMasterRecordVO(rs);
+			}
+
+			//Add Attributes to MasterRecord.
+			mr.addAttribute(rs.getString("attr_id"), rs.getString("value_txt"));
+		}
+
+		//Add Trailing Record.
+		if(mr != null) {
+			pMap.get(mr.getProjectId()).addMasterRecord(mr);
 		}
 	}
 
