@@ -274,11 +274,12 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		sql.append(DBUtil.WHERE_CLAUSE).append("request_id = ?");
 		fields.add("request_id");
 
-		log.debug(RequestField.DESCRIPTION.getReqParam() + " : " + req.getParameter(RequestField.DESCRIPTION.getReqParam()));
 		SRTRequestVO reqVO = new SRTRequestVO(req);
 		//Save request
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		int resCnt = dbp.executeSqlUpdate(sql.toString(), reqVO, fields);
+
+		//If we saved the Request, Process the Address.
 		if(resCnt > 0) {
 
 			//Prep Request Address Record Update Fields
@@ -304,6 +305,8 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 			SRTRequestAddressVO reqAddrVO = new SRTRequestAddressVO(req);
 			DBProcessor dbp2 = new DBProcessor(dbConn, schema);
 			resCnt = dbp2.executeSqlUpdate(sql2.toString(), reqAddrVO, fields2);
+
+			//Check if we saved the Request Address.
 			if(resCnt == 0) {
 				throw new com.siliconmtn.db.util.DatabaseException("Unable to save Request Address");
 			}
