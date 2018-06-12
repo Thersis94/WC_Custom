@@ -1,18 +1,14 @@
 package com.rezdox.data;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.vo.BusinessCategoryVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
@@ -57,14 +53,14 @@ public class BusinessCategoryList extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		List<GenericVO> data = null;
+		List<?> data = null;
 
 		if (req.hasParameter("loadAll")) {
 			data = retrieveAllCategories();
 		} else {
 			data = retrieveCategories(req.getParameter("businessCat"));
 		}
-		putModuleData(data, data.size(),false);
+		putModuleData(data, data.size(), false);
 	}
 
 	/**
@@ -72,38 +68,14 @@ public class BusinessCategoryList extends SimpleActionAdapter {
 	 * @param data
 	 * @return
 	 */
-	private List<GenericVO> retrieveAllCategories() {
+	private List<BusinessCategoryVO> retrieveAllCategories() {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select business_category_cd, parent_cd, category_nm from ");
 		sql.append(getCustomSchema()).append("rezdox_business_category order by category_nm");
 		log.debug(sql);
 
-		List<Node> nodes = new ArrayList<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				Node n = new Node(rs.getString(1), rs.getString(2));
-				n.setNodeName(rs.getString(3));
-				nodes.add(n);
-			}
-
-		} catch (SQLException sqle) {
-			log.error("could not load all categories", sqle);
-		}
-
-		//sort the list using a Tree.
-		//turn the list of Nodes into a list of GenericVOs, so the return type is consistent.
-		nodes = new Tree(nodes).preorderList();
-		List<GenericVO> data = new ArrayList<>(nodes.size());
-		for (Node n : nodes) {
-			String name = n.getNodeName();
-			//indent child records
-			if (!StringUtil.isEmpty(n.getParentId())) name = "\t" + name;
-			
-			data.add(new GenericVO(n.getNodeId(), name));
-		}
-
-		return data;
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), null, new BusinessCategoryVO());
 	}
 
 
