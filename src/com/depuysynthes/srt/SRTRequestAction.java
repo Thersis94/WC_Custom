@@ -163,6 +163,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	 */
 	private String buildRequestLoadSql(ActionRequest req, List<Object> vals) {
 		String schema = getCustomSchema();
+		String opCoId = SRTUtil.getOpCO(req);
 		StringBuilder sql = new StringBuilder(1500);
 		if(req.hasParameter(SRT_REQUEST_ID)) {
 			sql.append("select r.*, a.*, u.profile_id, m.milestone_nm as PROJ_STAT_ID,");
@@ -188,12 +189,14 @@ public class SRTRequestAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
 		sql.append("DPY_SYN_SRT_MILESTONE m on p.PROJ_STAT_ID = m.milestone_id ");
 		SRTUtil.buildListJoin(sql, "l", "r.reason_for_request");
-		vals.add(SRTList.REQ_REASON.name());
+		vals.add(SRTUtil.getListId(opCoId, SRTList.REQ_REASON));
 		if(!req.hasParameter(SRT_REQUEST_ID)) {
 			SRTUtil.buildListJoin(sql, "lct", "r.charge_to");
-			vals.add(SRTList.CHARGE_TO.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.CHARGE_TO));
+
 			SRTUtil.buildListJoin(sql, "lt", "r.request_territory_id");
-			vals.add(SRTList.SRT_TERRITORIES.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.SRT_TERRITORIES));
+
 		}
 
 		//Build Where clause

@@ -5,10 +5,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -21,6 +24,8 @@ import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.data.parser.PrefixBeanDataMapper;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.util.DatabaseException;
@@ -50,6 +55,7 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
 public class SRTMilestoneAction extends SimpleActionAdapter {
 
 	public static final String MILESTONE_ID = "milestoneId";
+	public static final String DB_MILESTONE_ID = "MILESTONE_ID";
 	public static final String MILESTONE_RULE_PREFIX = "fieldNm";
 
 	public SRTMilestoneAction() {
@@ -147,7 +153,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 
 			while(rs.next()) {
-				mMap.get(rs.getString("MILESTONE_ID")).addRule(new MilestoneRuleVO(rs));
+				mMap.get(rs.getString(DB_MILESTONE_ID)).addRule(new MilestoneRuleVO(rs));
 			}
 		} catch (SQLException e) {
 			log.error("Error Loading Milestone Rules", e);
@@ -218,6 +224,8 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		if(type != null) {
 			sql.append("and MILESTONE_TYPE_ID = ? ");
 		}
+		sql.append("order by MILESTONE_TYPE_ID, PARENT_ID desc, MILESTONE_NM ");
+
 		return sql.toString();
 	}
 
@@ -293,6 +301,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 			ps.setString(i++, StringUtil.checkVal(milestone.getParentId(), null));
 			ps.setString(i++, milestone.getMilestoneTypeId().name());
 			ps.setString(i++, milestone.getCampaignInstanceId());
+			ps.setInt(i++, milestone.getOrderBy());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setString(i++, milestone.getMilestoneId());
 			ps.executeUpdate();
@@ -311,13 +320,13 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 			sql.append(DBUtil.INSERT_CLAUSE).append(getCustomSchema());
 			sql.append("DPY_SYN_SRT_MILESTONE (MILESTONE_NM, OP_CO_ID, ");
 			sql.append("PARENT_ID, MILESTONE_TYPE_ID, CAMPAIGN_INSTANCE_ID, ");
-			sql.append("CREATE_DT, MILESTONE_ID) ");
-			sql.append("values (?,?,?,?,?,?,?)");
+			sql.append("ORDER_BY, CREATE_DT, MILESTONE_ID) ");
+			sql.append("values (?,?,?,?,?,?,?,?)");
 		} else {
 			sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema());
 			sql.append("DPY_SYN_SRT_MILESTONE set MILESTONE_NM = ?, ");
 			sql.append("OP_CO_ID = ?, PARENT_ID = ?, MILESTONE_TYPE_ID = ?, ");
-			sql.append("CAMPAIGN_INSTANCE_ID = ?, UPDATE_DT = ? ");
+			sql.append("CAMPAIGN_INSTANCE_ID = ?, ORDER_BY = ?, UPDATE_DT = ? ");
 			sql.append("where MILESTONE_ID = ?");
 		}
 		return sql.toString();
@@ -392,36 +401,173 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * Run SRTProjectVO through available MilestoneFilters and add
 	 * Milestones as necessary.
 	 * @param project
-	 * @throws DatabaseException
 	 */
 	public void processProject(SRTProjectVO project) {
+		//Load Pre-Existing Milestones to compare against.
+		List<SRTProjectMilestoneVO> oldMilestones = loadProjectMilestones(Arrays.asList(project.getProjectId()));
 
-		//Ensure we have all milestones for this project from the db.
-		populateMilestones(Arrays.asList(project));
+		//Map old Milestones for ease of access.
+		Map<String, SRTProjectMilestoneVO> oldMilestonesMap = oldMilestones.stream().collect(Collectors.toMap(SRTProjectMilestoneVO::getMilestoneId, Function.identity()));
+
+		log.debug("MilestoneCount: " + oldMilestones.size());
+
+		//Remove current Milestones
+		flushMilestones(project.getProjectId());
 
 		//Load all Available Milestones for projects under this OpCo with rules.
 		List<SRTProjectMilestoneVO> milestones = loadMilestoneData(project.getOpCoId(), null, null, true);
 
+		//Sort Milestones into Proper Order.
+		milestones = orderMilestones(milestones);
+
 		//Run project through milestone rules.
 		new MilestoneUtil<SRTProjectMilestoneVO>().checkGates(project, milestones);
 
-		//Save New Milestones.
-		processNewMilestones(project);
+		//Update Milestone Dates.
+		updateMilestoneDates(project, oldMilestonesMap);
+
+		//Save new Milestones
+		processNewMilestones(project, oldMilestonesMap);
+
+		//Ensure Project Status is calculated Correctly.
+		project.setProjectStatus(project.calculateMilestoneStatus());
+	}
+
+	/**
+	 * Takes a list of Nodes and sorts them into hierarchical order.
+	 * @param milestones
+	 * @return
+	 */
+	private List<SRTProjectMilestoneVO> orderMilestones(List<SRTProjectMilestoneVO> milestones) {
+		List<Node> nodes = new ArrayList<>();
+
+		//Build list of Nodes from given milestones.
+		for(SRTProjectMilestoneVO m : milestones) {
+			Node n = new Node(m.getMilestoneId(), m.getParentId());
+			n.setUserObject(m);
+			nodes.add(n);
+		}
+
+		//Create Tree of Nodes
+		Tree t = new Tree(nodes);
+
+		//Convert back to list
+		nodes = t.getPreorderList();
+
+		//Convert List and return.
+		return nodes.stream().map(node -> (SRTProjectMilestoneVO)node.getUserObject()).collect(Collectors.toList());
+	}
+
+	/**
+	 * Update Milestone Status.  This may perform either deletions in
+	 * case of a Status Rollback due to change of Date Milestones or
+	 * insertions in case that a project status was upgraded.
+	 * @param project
+	 * @param statuses
+	 */
+	private void updateMilestoneDates(SRTProjectVO project, Map<String, SRTProjectMilestoneVO> oldMilestones) {
+		//Get all freshly generated Milestones
+		Map<String, SRTProjectMilestoneVO> newMilestones = project.getMilestones();
+
+		//Iterate Milestones
+		for(SRTProjectMilestoneVO m : newMilestones.values()) {
+
+			/*
+			 * If this is a Date Milestone, set Date off the Ledger Entries.
+			 * Else if this exists in the old MilestoneMap, set it from there (Pre-Set Status.)
+			 * Else use Current Date. (New Status.)
+			 */
+			if(MilestoneTypeId.DATE.equals(m.getMilestoneTypeId())) {
+				m.setMilestoneDt(project.getLedgerDates().get(m.getMilestoneId()));
+			} else if(oldMilestones.containsKey(m.getMilestoneId())) {
+				m.setMilestoneDt(oldMilestones.get(m.getMilestoneId()).getMilestoneDt());
+			} else {
+				m.setMilestoneDt(Convert.getCurrentTimestamp());
+			}
+			log.info(m.getMilestoneId() + " : " + m.getMilestoneDt());
+		}
+
+		//Determine if a state change has occurred.
+		if(isStatChange(newMilestones.values(), oldMilestones.values())) {
+			/*
+			 * Ensure most recent Status is updated with today as this was the most recent status change.
+			 * Handles rollback scenario.
+			 */
+			newMilestones
+				.values()
+				.stream()
+				.filter(m -> MilestoneTypeId.STATUS.equals(m.getMilestoneTypeId()))
+				.max(Comparator.comparing(SRTProjectMilestoneVO::getOrderBy))
+				.ifPresent(m -> m.setMilestoneDt(Convert.getCurrentTimestamp()));
+		}
+	}
+
+	/**
+	 * Check if the Status Has Changed.
+	 * @param values
+	 * @param oldMilestones
+	 * @return
+	 */
+	private boolean isStatChange(Collection<SRTProjectMilestoneVO> newMilestones, Collection<SRTProjectMilestoneVO> oldMilestones) {
+		int oldRank = -1;
+		int newRank = -1;
+		Optional<SRTProjectMilestoneVO> opt = oldMilestones
+				.stream()
+				.filter(m -> MilestoneTypeId.STATUS.equals(m.getMilestoneTypeId()))
+				.max(Comparator.comparing(SRTProjectMilestoneVO::getOrderBy));
+
+			if(opt.isPresent())
+				oldRank =  opt.get().getOrderBy();
+
+		opt = newMilestones
+				.stream()
+				.filter(m -> MilestoneTypeId.STATUS.equals(m.getMilestoneTypeId()))
+				.max(Comparator.comparing(SRTProjectMilestoneVO::getOrderBy));
+
+			if(opt.isPresent())
+				newRank =  opt.get().getOrderBy();
+
+		return newRank != oldRank;
+	}
+
+	/**
+	 * Flush Milestones XRs by projecytId and Type.
+	 * @param projectId
+	 * @param type
+	 * @param milestoneTypeIds
+	 */
+	private void flushMilestones(String projectId) {
+		try(PreparedStatement ps = dbConn.prepareStatement(flushMilestoneProjectXRSql())) {
+			int i = 1;
+			ps.setString(i++, projectId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Could not flush existing Milestones.", e);
+		}
+	}
+
+	/**
+	 * Return Sql to flush Milestone Project XR by ProjectId.
+	 * @return
+	 */
+	private String flushMilestoneProjectXRSql() {
+		StringBuilder sql = new StringBuilder(300);
+		sql.append(DBUtil.DELETE_CLAUSE).append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("DPY_SYN_SRT_PROJECT_MILESTONE_XR ").append(DBUtil.WHERE_CLAUSE);
+		sql.append("PROJECT_ID = ?");
+		return sql.toString();
 	}
 
 	/**
 	 * Process New Milestones.
 	 * @param project
+	 * @param oldMilestonesMap
 	 * @throws DatabaseException
 	 */
-	private void processNewMilestones(SRTProjectVO project) {
+	private void processNewMilestones(SRTProjectVO project, Map<String, SRTProjectMilestoneVO> oldMilestonesMap) {
 
-		//Filter out new Milestones to save.
-		List<SRTProjectMilestoneVO> newMilestones = project.getMilestones()
-													.values()
-													.stream()
-													.filter(m -> StringUtil.isEmpty(m.getProjectMilestoneXRId()))
-													.collect(Collectors.toList());
+		//We Flush Milestones now so everything is a newMilestone.
+		Collection<SRTProjectMilestoneVO> newMilestones = project.getMilestones().values();
 
 		//If no new milestones generated, fast return.
 		if(newMilestones.isEmpty()) {
@@ -431,10 +577,14 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		//Save Milestone Data.
 		saveNewMilestones(project, newMilestones);
 
-		//Filter new Milestones down to just those with a campaignInstanceId
+		/*
+		 * Filter new Milestones down to just those with a campaignInstanceId
+		 * that aren't in the old Milestones Map to prevent re-processing
+		 * of emails.
+		 */
 		List<SRTProjectMilestoneVO> emailMilestones = newMilestones
 														.stream()
-														.filter(m -> !StringUtil.isEmpty(m.getCampaignInstanceId()))
+														.filter(m -> !StringUtil.isEmpty(m.getCampaignInstanceId()) && !oldMilestonesMap.containsKey(m.getMilestoneId()))
 														.collect(Collectors.toList());
 
 		//Send Emails.
@@ -448,7 +598,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * @param project
 	 * @param newMilestones
 	 */
-	private void saveNewMilestones(SRTProjectVO project, List<SRTProjectMilestoneVO> newMilestones) {
+	private void saveNewMilestones(SRTProjectVO project, Collection<SRTProjectMilestoneVO> newMilestones) {
 
 		//Prep Save Variables.
 		UUIDGenerator uuid = new UUIDGenerator();
@@ -460,6 +610,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 			//Save each new Milestone Record.
 			for(SRTProjectMilestoneVO m : newMilestones) {
 
+				log.info("Processing Milestone: " + m.getMilestoneId());
 				/*
 				 * If this milestone controls project status, update
 				 * Project Status.
@@ -541,6 +692,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 			for(String projectId : projectIds) {
 				ps.setString(i++, projectId);
 			}
+			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
 
 			while(rs.next()) {

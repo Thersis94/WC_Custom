@@ -51,6 +51,7 @@ public class SRTUtil {
 		}
 		public String getUrlPath() {return urlPath;}
 	}
+
 	public enum SrtAdmin {MILESTONE("/milestones");
 		private String urlPath;
 		private SrtAdmin(String urlPath) {
@@ -61,6 +62,19 @@ public class SRTUtil {
 
 	private SRTUtil() {
 		//Hide Default Constructor.
+	}
+
+	/**
+	 * Helper method returns proper list_id for an OP_CO.
+	 * @param opCoId
+	 * @param list
+	 * @return
+	 */
+	public static String getListId(String opCoId, SRTList list) {
+		if(!StringUtil.isEmpty(opCoId) && list != null) {
+			return StringUtil.join(opCoId, "_", list.name());
+		}
+		return "";
 	}
 
 	/**

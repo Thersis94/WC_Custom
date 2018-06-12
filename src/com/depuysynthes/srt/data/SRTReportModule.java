@@ -123,27 +123,29 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 * @param lists
 	 */
 	private void updateListDataReferences(Map<String, SRTProjectVO> projects, Map<String, Map<String, String>> lists) {
+		String opCoId = (String) mod.getConfig(SRTUtil.OP_CO_ID).getValue();
+
 		for(SRTProjectVO p : projects.values()) {
 			try {
 				//Update Project Data Values
-				p.setPriority(lists.get(SRTList.PROJ_PRIORITY.name()).get(p.getPriority()));
-				p.setMfgDtChangeReason(lists.get(SRTList.PROJ_MFG_CHANGE_REASON.name()).get(p.getMfgDtChangeReason()));
-				p.setProjectType(lists.get(SRTList.PROJ_TYPE.name()).get(p.getProjectType()));
-				p.setSupplierId(lists.get(SRTList.PROJ_VENDOR.name()).get(p.getSupplierId()));
-				p.setProjectStatus(lists.get(SRTList.PROJ_STATUS.name()).get(p.getProjectStatus()));
+				p.setPriority(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_PRIORITY)).get(p.getPriority()));
+				p.setMfgDtChangeReason(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_MFG_CHANGE_REASON)).get(p.getMfgDtChangeReason()));
+				p.setProjectType(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_TYPE)).get(p.getProjectType()));
+				p.setSupplierId(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_VENDOR)).get(p.getSupplierId()));
+				p.setProjectStatus(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_STATUS)).get(p.getProjectStatus()));
 
 				//Update Request Data Values
 				SRTRequestVO r = p.getRequest();
-				r.setChargeTo(lists.get(SRTList.CHARGE_TO.name()).get(r.getChargeTo()));
-				r.setReason(lists.get(SRTList.REQ_REASON.name()).get(r.getReason()));
+				r.setChargeTo(lists.get(SRTUtil.getListId(opCoId, SRTList.CHARGE_TO)).get(r.getChargeTo()));
+				r.setReason(lists.get(SRTUtil.getListId(opCoId, SRTList.REQ_REASON)).get(r.getReason()));
 
 				//Update Master Record Data Values
 				for(SRTMasterRecordVO m : p.getMasterRecords()) {
-					m.setComplexityId(lists.get(SRTList.COMPLEXITY.name()).get(m.getComplexityId()));
-					m.setProdCatId(lists.get(SRTList.PROD_CAT.name()).get(m.getProdCatId()));
-					m.setProdFamilyId(lists.get(SRTList.PROD_FAMILY.name()).get(m.getProdFamilyId()));
-					m.setProdTypeId(lists.get(SRTList.PRODUCT_TYPE.name()).get(m.getProdTypeId()));
-					m.setQualitySystemId(lists.get(SRTList.QUALITY_SYSTEM.name()).get(m.getQualitySystemId()));
+					m.setComplexityId(lists.get(SRTUtil.getListId(opCoId, SRTList.COMPLEXITY)).get(m.getComplexityId()));
+					m.setProdCatId(lists.get(SRTUtil.getListId(opCoId, SRTList.PROD_CAT)).get(m.getProdCatId()));
+					m.setProdFamilyId(lists.get(SRTUtil.getListId(opCoId, SRTList.PROD_FAMILY)).get(m.getProdFamilyId()));
+					m.setProdTypeId(lists.get(SRTUtil.getListId(opCoId, SRTList.PRODUCT_TYPE)).get(m.getProdTypeId()));
+					m.setQualitySystemId(lists.get(SRTUtil.getListId(opCoId, SRTList.QUALITY_SYSTEM)).get(m.getQualitySystemId()));
 				}
 			} catch (Exception e) {
 				log.debug("Problem translating field on record: " + p.getProjectId());

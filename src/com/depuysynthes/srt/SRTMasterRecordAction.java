@@ -12,6 +12,7 @@ import java.util.Map;
 
 import com.depuysynthes.srt.data.MasterRecordDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.util.SRTUtil.SRTList;
 import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
@@ -266,21 +267,22 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 		}
 
 		if(!idLookup) {
+			String opCoId = SRTUtil.getOpCO(req);
 			//Join out for List Values.
 			SRTUtil.buildListJoin(sql, "lqs", "mr.quality_system_id");
-			vals.add(SRTUtil.SRTList.QUALITY_SYSTEM.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.QUALITY_SYSTEM));
 
 			SRTUtil.buildListJoin(sql, "lpt", "mr.prod_type_id");
-			vals.add(SRTUtil.SRTList.PRODUCT_TYPE.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.PRODUCT_TYPE));
 
 			SRTUtil.buildListJoin(sql, "lc", "mr.complexity_id");
-			vals.add(SRTUtil.SRTList.COMPLEXITY.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.COMPLEXITY));
 
 			SRTUtil.buildListJoin(sql, "lpc", "mr.prod_cat_id");
-			vals.add(SRTUtil.SRTList.PROD_CAT.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.PROD_CAT));
 
 			SRTUtil.buildListJoin(sql, "lpf", "mr.prod_family_id");
-			vals.add(SRTUtil.SRTList.PROD_FAMILY.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.PROD_FAMILY));
 		}
 
 		//Build Where Clause
@@ -406,30 +408,65 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Load the Master Records associated with given SRTProjectVO
+	 * Load the Master Records associated with given SRTProjectVOs
 	 * @param projects
 	 * @return
 	 */
 	public void populateMasterRecordXR(List<SRTProjectVO> projects) {
-		List<Object> vals = new ArrayList<>();
-		for(SRTProjectVO p : projects) {
-			vals.add(p.getProjectId());
+
+		//Fail Fast if nothing to process.
+		if(projects == null || projects.isEmpty()) {
+			return;
 		}
 
-		/*
-		 * Load MasterRecordXrs using ProjectVO to prevent MasterRecordVO
-		 * aggregating XRs with same MasterRecordId
-		 */
-		List<SRTProjectVO> projXrs = new DBProcessor(dbConn, getCustomSchema()).executeSelect(buildXrQuery(vals.size()), vals, new SRTProjectVO());
-
-		if(!projXrs.isEmpty()) {
-			Map<String, SRTProjectVO> pMap = SRTUtil.mapProjects(projects);
-			//Migrate all masterRecordXR Results out of projectVO to List.
-			for(SRTProjectVO p : projXrs) {
-				pMap.get(p.getProjectId()).setMasterRecords(p.getMasterRecords());
+		//Lookup All Master Records with Attributes for projects.
+		try(PreparedStatement ps = dbConn.prepareStatement(buildXrQuery(projects.size()))) {
+			int i = 1;
+			for(SRTProjectVO p : projects) {
+				ps.setString(i++, p.getProjectId());
 			}
+
+			ResultSet rs = ps.executeQuery();
+
+			if(rs.next()) {
+				processAndPopulateMasterRecordXrs(rs, projects);
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+	}
+
+	/**
+	 * Iterate ResultSet from populateMasterRecordXR Query and populate
+	 * passed Projects with related MasterRecords. 
+	 * @param rs
+	 * @param projects
+	 * @throws SQLException 
+	 */
+	private void processAndPopulateMasterRecordXrs(ResultSet rs, List<SRTProjectVO> projects) throws SQLException {
+		//Convert Project List to Map for ease of population.
+		Map<String, SRTProjectVO> pMap = SRTUtil.mapProjects(projects);
+
+		SRTMasterRecordVO mr = null;
+
+		while(rs.next()) {
+
+			//Manage creation and addition of MasterRecordVO to Project Record.
+			if(mr == null || !rs.getString("MASTER_RECORD_PROJECT_XR_ID").equals(mr.getMrProjectXRId())) {
+				if(mr != null) {
+					pMap.get(mr.getProjectId()).addMasterRecord(mr);
+				}
+				mr = new SRTMasterRecordVO(rs);
+			}
+
+			//Add Attributes to MasterRecord.
+			mr.addAttribute(rs.getString("attr_id"), rs.getString("value_txt"));
 		}
 
+		//Add Trailing Record.
+		if(mr != null) {
+			pMap.get(mr.getProjectId()).addMasterRecord(mr);
+		}
 	}
 
 	/**
@@ -439,12 +476,15 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	 */
 	private String buildXrQuery(int size) {
 		String schema = getCustomSchema();
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select x.*, mr.title_txt, mr.part_no from ").append(schema).append("DPY_SYN_SRT_MASTER_RECORD_PROJECT_XR x ");
+		StringBuilder sql = new StringBuilder(450 + size * 3);
+		sql.append("select x.*, mr.title_txt, mr.part_no, mr.make_from_part_nos, axr.attr_id, axr.value_txt, axr.attr_xr_id from ").append(schema).append("DPY_SYN_SRT_MASTER_RECORD_PROJECT_XR x ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("DPY_SYN_SRT_MASTER_RECORD mr ");
 		sql.append("on x.MASTER_RECORD_ID = mr.MASTER_RECORD_ID and x.PROJECT_ID in (");
 		DBUtil.preparedStatmentQuestion(size, sql);
-		sql.append(") ").append(DBUtil.ORDER_BY).append("x.CREATE_DT");
+		sql.append(") ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("dpy_syn_srt_mr_attr_xr axr ");
+		sql.append("on mr.master_record_id = axr.master_record_id ");
+		sql.append(DBUtil.ORDER_BY).append("x.project_id, mr.master_record_id");
 		log.debug(sql.toString());
 		return sql.toString();
 	}

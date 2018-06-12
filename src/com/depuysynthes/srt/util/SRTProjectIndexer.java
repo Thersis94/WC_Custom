@@ -156,6 +156,7 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 					p.addPartNumbers(rs.getString("PART_NO"));
 					p.addProductCategory(rs.getString("prod_cat_id"));
 					p.addProductFamily(rs.getString("prod_family_id"));
+					p.setSummary(p.toString());
 				}
 			}
 		} catch (SQLException e) {

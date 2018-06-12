@@ -139,7 +139,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		while (iter.hasNext()) {
 			Map.Entry<String, FormFieldVO> entry = iter.next();
 			RequestField param = EnumUtil.safeValueOf(RequestField.class, entry.getValue().getSlugTxt());
-			if (param != null) {
+			if (param != null && !entry.getValue().isDeactivated()) {
 				req.setParameter(param.getReqParam(), StringUtil.checkVal(entry.getValue().getResponseText()).trim());
 				log.debug(StringUtil.join(param.getReqParam(), " -- ", StringUtil.checkVal(entry.getValue().getResponseText()).trim()));
 				iter.remove();
@@ -196,6 +196,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		}
 		p.setProjectType("NEW");
 		p.setProjectStatus("UNASSIGNED");
+		p.setPriority("STANDARD");
 		p.setCreateDt(Convert.getCurrentTimestamp());
 
 		return p;
@@ -254,11 +255,11 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		//Prep Request Record Update Fields.
 		List<String> fields = new ArrayList<>();
 		fields.add("charge_to");
+		fields.add("request_desc");
 		fields.add("hospital_nm");
 		fields.add("surgeon_first_nm");
 		fields.add("surgeon_last_nm");
 		fields.add("reason_for_request");
-		fields.add("request_desc");
 		fields.add("estimated_roi");
 		fields.add("qty_no");
 
@@ -273,30 +274,44 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		sql.append(DBUtil.WHERE_CLAUSE).append("request_id = ?");
 		fields.add("request_id");
 
+		SRTRequestVO reqVO = new SRTRequestVO(req);
 		//Save request
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		dbp.executeSqlUpdate(sql.toString(), new SRTRequestVO(req), fields);
+		int resCnt = dbp.executeSqlUpdate(sql.toString(), reqVO, fields);
 
-		//Prep Request Address Record Update Fields
-		fields = new ArrayList<>();
-		fields.add("address_txt");
-		fields.add("address_2_txt");
-		fields.add("city_nm");
-		fields.add("state_cd");
-		fields.add("zip_cd");
+		//If we saved the Request, Process the Address.
+		if(resCnt > 0) {
 
-		//Build Request Address Update Query.
-		sql = new StringBuilder(300);
-		cnt = 0;
+			//Prep Request Address Record Update Fields
+			List<String> fields2 = new ArrayList<>();
+			fields2.add("address_txt");
+			fields2.add("address2_txt");
+			fields2.add("city_nm");
+			fields2.add("state_cd");
+			fields2.add("zip_cd");
 
-		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("DPY_SYN_SRT_REQUEST_ADDRESS set ");
-		for (String field : fields) {
-			sql.append(cnt++ > 0 ? ", " : "").append(field).append(" = ? ");
+			//Build Request Address Update Query.
+			StringBuilder sql2 = new StringBuilder(300);
+			cnt = 0;
+
+			sql2.append(DBUtil.UPDATE_CLAUSE).append(schema).append("DPY_SYN_SRT_REQUEST_ADDRESS set ");
+			for (String field : fields2) {
+				sql2.append(cnt++ > 0 ? ", " : "").append(field).append(" = ? ");
+			}
+			sql2.append(DBUtil.WHERE_CLAUSE).append("request_id = ?");
+			fields2.add("request_id");
+
+			//Save Request Address.
+			SRTRequestAddressVO reqAddrVO = new SRTRequestAddressVO(req);
+			DBProcessor dbp2 = new DBProcessor(dbConn, schema);
+			resCnt = dbp2.executeSqlUpdate(sql2.toString(), reqAddrVO, fields2);
+
+			//Check if we saved the Request Address.
+			if(resCnt == 0) {
+				throw new com.siliconmtn.db.util.DatabaseException("Unable to save Request Address");
+			}
+		} else {
+			throw new com.siliconmtn.db.util.DatabaseException("Unable to save Request");
 		}
-		sql.append(DBUtil.WHERE_CLAUSE).append("request_id = ?");
-		fields.add("request_id");
-
-		//Save Request Address.
-		dbp.executeSqlUpdate(sql.toString(), new SRTRequestAddressVO(req), fields);
 	}
 }

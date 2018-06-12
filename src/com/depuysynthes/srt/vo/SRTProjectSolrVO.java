@@ -28,10 +28,6 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 @Table(name="DPY_SYN_SRT_PROJECT")
 public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 
-	/**
-	 *
-	 */
-	private static final long serialVersionUID = 1L;
 	private String opCoId;
 	private Date shipDt;
 	private String category;
@@ -70,6 +66,16 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 		} catch (SQLException e) {
 			log.error("Error Processing Code", e);
 		}
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder text = new StringBuilder(400);
+		text.append(getTitle()).append(" ").append(getEngineerNm()).append(" ");
+		text.append(getDesignerNm()).append(" ").append(getSurgeonName()).append(" ");
+		text.append(getQualityEngineerNm()).append(" ").append(getSalesRepName());
+
+		return text.toString();
 	}
 
 	/**

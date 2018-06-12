@@ -21,7 +21,9 @@ import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.IndexBeanDataMapper;
 import com.siliconmtn.data.parser.PrefixBeanDataMapper;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
@@ -127,6 +129,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 			}
 		}
 
+		log.info("Loading Project");
 		// Get the project data
 		SRTProjectVO project = new SRTProjectVO(req);
 
@@ -167,7 +170,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		//Map List of Milestones to Map of MilestoneId, MilestoneVO.
 		Map<String, SRTProjectMilestoneVO> mMap = milestones.stream().collect(Collectors.toMap(SRTProjectMilestoneVO::getMilestoneId, Function.identity()));
 
-		List<SRTProjectMilestoneVO> reqMilestones = new PrefixBeanDataMapper<>(new SRTProjectMilestoneVO()).populate(req.getParameterMap(), "milestoneId");
+		List<SRTProjectMilestoneVO> reqMilestones = new IndexBeanDataMapper<>(new SRTProjectMilestoneVO()).populate(req.getParameterMap());
 
 		//Loop vals off Request
 		for(SRTProjectMilestoneVO m : reqMilestones) {
@@ -189,14 +192,25 @@ public class ProjectDataProcessor extends FormDataProcessor {
 	 *
 	 * @param project
 	 */
-	public void saveProjectRecord(SRTProjectVO project) {
-		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+	public void saveProjectRecord(SRTProjectVO project) throws DatabaseException{
+		boolean isAutoCommit = false;
 		boolean isInsert = StringUtil.isEmpty(project.getProjectId());
+
+		//Wrap entire Data Process in a DB Transactions.
 		try {
+
+			//Store current Commit Status.
+			isAutoCommit = dbConn.getAutoCommit();
+
+			//Turn off Auto Commit
+			dbConn.setAutoCommit(false);
+
+			//Save Project and update ProjectId on Request.
+			DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 			dbp.save(project);
 			req.setParameter(SRTProjectAction.SRT_PROJECT_ID, project.getProjectId());
 
-			//Ensure Auot-populated Dates are on Project Record.
+			//Ensure Auto-populated Dates are on Project Record.
 			if(isInsert)
 				project.setCreateDt(Convert.getCurrentTimestamp());
 			else
@@ -216,11 +230,31 @@ public class ProjectDataProcessor extends FormDataProcessor {
 				dbp.save(project);
 			}
 
+			/*
+			 * If The Database was in AutoCommit mode before, commit now.
+			 * All dangerous work is complete.
+			 */
+			if(isAutoCommit) {
+				dbConn.commit();
+			}
+
 			//Update Project record in Solr
 			updateSolrProject(project);
 
 		} catch(Exception e) {
-			log.error("Could not save SRT Request", e);
+
+			/*
+			 * If something happened while saving, Rollback the DB and throw
+			 * the Exception up the chain.
+			 */
+			log.error("Could not save SRT Project", e);
+			DBUtil.rollback(dbConn);
+			throw new DatabaseException("Error Saving SRT Project.", e);
+		} finally {
+
+			//If database was in autocommit mode originally, set it back.
+			if(isAutoCommit)
+				DBUtil.setAutoCommit(dbConn, isAutoCommit);
 		}
 	}
 
@@ -239,8 +273,9 @@ public class ProjectDataProcessor extends FormDataProcessor {
 	}
 
 	/**
+	 * Call out to MilestoneAction and process the Project Milestones.
+	 * This process is destructive so tread lightly.
 	 * @param project the Project Record to send through Milestone Processing.
-	 * @throws com.siliconmtn.db.util.DatabaseException 
 	 */
 	private void processMilestones(SRTProjectVO project) {
 		SRTMilestoneAction sma = new SRTMilestoneAction();

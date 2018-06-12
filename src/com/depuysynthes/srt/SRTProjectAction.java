@@ -89,9 +89,10 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
-		MilestoneTypeId typeId = null;
+		MilestoneTypeId typeId = MilestoneTypeId.DATE;
 
 		if(req.hasParameter(SRT_PROJECT_ID) || req.hasParameter("json")) {
+
 			GridDataVO<SRTProjectVO> projects = loadProjects(req);
 
 			if(req.hasParameter(SRT_PROJECT_ID)) {
@@ -123,27 +124,36 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
-		//Determine what kind of build action is being performed.
-		if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
-			splitProject(req);
-		} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
-			copyProject(req);
-		} else if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
-			releaseLocks(req);
-		} else {
-			if(manageLock(req, false)) {
-				saveProject(req);
-
-				//Release all Locks on save.
+		try {
+			//Determine what kind of build action is being performed.
+			if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
+				splitProject(req);
+			} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
+				copyProject(req);
+			} else if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
 				releaseLocks(req);
 			} else {
-				msg = "You do not own the lock on this record.  Save Rejected.";
-			}
-		}
+				if(manageLock(req, false)) {
+					saveProject(req);
 
-		//Redirect the User.
-		sbUtil.moduleRedirect(req, msg, SrtPage.PROJECT.getUrlPath());
+					//Release all Locks on save.
+					releaseLocks(req);
+				} else {
+					msg = "You do not own the lock on this record.  Save Rejected.";
+					mod.setErrorMessage((String)msg);
+				}
+			}
+
+			//Redirect the User.
+			sbUtil.moduleRedirect(req, msg, SrtPage.PROJECT.getUrlPath());
+		} catch(Exception e) {
+
+			//If an error occurred while building, set it on the Module for UI Alert.
+			log.error("Problem Saving Form", e);
+			mod.setError(e);
+		}
 	}
 
 
@@ -251,7 +261,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 * Save the Project Record on a Form Submission.
 	 * @param req
 	 */
-	private void saveProject(ActionRequest req) {
+	private void saveProject(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 
@@ -259,7 +269,13 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		attributes.put(Constants.ACTION_DATA, actionInit);
 
 		//Call DataManagerUtil to save the form.
-		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ProjectDataProcessor.class);
+		DataContainer dc = new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ProjectDataProcessor.class);
+
+		//Check for Errors and if present, send them up the chain for processing.
+		if(dc.getErrors() != null && !dc.getErrors().isEmpty()) {
+			Throwable t = new ArrayList<>(dc.getErrors().values()).get(0);
+			throw new ActionException("Unable to Save Project.", t);
+		}
 	}
 
 	/**
@@ -368,6 +384,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 */
 	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals, String statusType) {
 		String custom = getCustomSchema();
+		String opCoId = SRTUtil.getOpCO(req);
 		StringBuilder sql = new StringBuilder(2000);
 		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
 		sql.append("concat(req.surgeon_first_nm, ' ', req.surgeon_last_nm) as SURGEON_NM, ");
@@ -410,7 +427,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		//Project Type
 		SRTUtil.buildListJoin(sql, "type", "p.proj_type_id");
-		vals.add(SRTList.PROJ_TYPE);
+		vals.add(SRTUtil.getListId(opCoId, SRTList.PROJ_TYPE));
 
 		//Load Optional User Data if this isn't a detail view.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
@@ -441,12 +458,12 @@ public class SRTProjectAction extends SimpleActionAdapter {
 			//Get Optional Supplier Nm
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA sld ");
 			sql.append("on sld.value_txt = p.supplier_id and sld.list_id = ? ");
-			vals.add(SRTUtil.SRTList.PROJ_VENDOR.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.PROJ_VENDOR));
 
 			//Get Optional Distributorship
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA dld ");
 			sql.append("on dld.value_txt = r.territory_id and dld.list_id = ? ");
-			vals.add(SRTUtil.SRTList.SRT_TERRITORIES.name());
+			vals.add(SRTUtil.getListId(opCoId, SRTList.SRT_TERRITORIES));
 
 			//Get Project Total
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select cast(sum(case when part_count is null then 0 else part_count end) as int) as total, ");
