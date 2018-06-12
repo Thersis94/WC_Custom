@@ -124,27 +124,36 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
-		//Determine what kind of build action is being performed.
-		if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
-			splitProject(req);
-		} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
-			copyProject(req);
-		} else if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
-			releaseLocks(req);
-		} else {
-			if(manageLock(req, false)) {
-				saveProject(req);
-
-				//Release all Locks on save.
+		try {
+			//Determine what kind of build action is being performed.
+			if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
+				splitProject(req);
+			} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
+				copyProject(req);
+			} else if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
 				releaseLocks(req);
 			} else {
-				msg = "You do not own the lock on this record.  Save Rejected.";
-			}
-		}
+				if(manageLock(req, false)) {
+					saveProject(req);
 
-		//Redirect the User.
-		sbUtil.moduleRedirect(req, msg, SrtPage.PROJECT.getUrlPath());
+					//Release all Locks on save.
+					releaseLocks(req);
+				} else {
+					msg = "You do not own the lock on this record.  Save Rejected.";
+					mod.setErrorMessage((String)msg);
+				}
+			}
+
+			//Redirect the User.
+			sbUtil.moduleRedirect(req, msg, SrtPage.PROJECT.getUrlPath());
+		} catch(Exception e) {
+
+			//If an error occurred while building, set it on the Module for UI Alert.
+			log.error("Problem Saving Form", e);
+			mod.setError(e);
+		}
 	}
 
 
@@ -252,7 +261,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 * Save the Project Record on a Form Submission.
 	 * @param req
 	 */
-	private void saveProject(ActionRequest req) {
+	private void saveProject(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 
@@ -260,7 +269,13 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		attributes.put(Constants.ACTION_DATA, actionInit);
 
 		//Call DataManagerUtil to save the form.
-		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ProjectDataProcessor.class);
+		DataContainer dc = new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ProjectDataProcessor.class);
+
+		//Check for Errors and if present, send them up the chain for processing.
+		if(dc.getErrors() != null && !dc.getErrors().isEmpty()) {
+			Throwable t = new ArrayList<>(dc.getErrors().values()).get(0);
+			throw new ActionException("Unable to Save Project.", t);
+		}
 	}
 
 	/**

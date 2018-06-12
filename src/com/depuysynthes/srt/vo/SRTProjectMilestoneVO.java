@@ -73,6 +73,7 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 		setCreateDt(util.getDateVal("CREATE_DT", rs));
 		setProjectId(util.getStringVal("PROJECT_ID", rs));
 		setMilestoneNm(util.getStringVal("MILESTONE_NM", rs));
+		setOrderBy(util.getIntVal("ORDER_BY", rs));
 		setMilestoneTypeId(util.getEnumVal(MilestoneTypeId.class, "MILESTONE_TYPE_ID", rs));
 		setProjectMilestoneXRId(util.getStringVal("PROJ_MILESTONE_XR_ID", rs));
 		setMilestoneDt(util.getDateVal("MILESTONE_DT", rs));

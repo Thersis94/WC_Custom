@@ -196,6 +196,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		}
 		p.setProjectType("NEW");
 		p.setProjectStatus("UNASSIGNED");
+		p.setPriority("STANDARD");
 		p.setCreateDt(Convert.getCurrentTimestamp());
 
 		return p;

@@ -3,11 +3,12 @@ package com.depuysynthes.srt.vo;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO.MilestoneTypeId;
 import com.siliconmtn.action.ActionRequest;
@@ -547,16 +548,23 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
-	 * Retrieve latest status off the stack.
+	 * Calculates Status based on Highest Ranked Milestone.
 	 * @return
 	 */
-	public String getStatus() {
-		if(milestones == null || milestones.size() == 0) {
-			return "";
-		} else {
-			List<SRTProjectMilestoneVO> fMilestones = new ArrayList<>(milestones.values()).stream().filter(m -> MilestoneTypeId.STATUS.equals(m.getMilestoneTypeId())).collect(Collectors.toList());
-			return fMilestones.get(fMilestones.size() - 1).getMilestoneId();
+	public String calculateMilestoneStatus() {
+		String statusId = "";
+		if(milestones != null && !milestones.isEmpty()) {
+			Optional<SRTProjectMilestoneVO> opt = milestones
+				.values()
+				.stream()
+				.filter(m -> MilestoneTypeId.STATUS.equals(m.getMilestoneTypeId()))
+				.max(Comparator.comparing(SRTProjectMilestoneVO::getOrderBy));
+
+			if(opt.isPresent())
+				statusId =  opt.get().getMilestoneId();
 		}
+
+		return statusId;
 	}
 
 	/**
