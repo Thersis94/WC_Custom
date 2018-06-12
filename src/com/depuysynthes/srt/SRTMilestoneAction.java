@@ -566,7 +566,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 */
 	private void processNewMilestones(SRTProjectVO project, Map<String, SRTProjectMilestoneVO> oldMilestonesMap) {
 
-		//Filter out new Milestones to save.
+		//We Flush Milestones now so everything is a newMilestone.
 		Collection<SRTProjectMilestoneVO> newMilestones = project.getMilestones().values();
 
 		//If no new milestones generated, fast return.
