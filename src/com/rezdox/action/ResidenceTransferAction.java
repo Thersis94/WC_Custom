@@ -20,6 +20,7 @@ import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -67,6 +68,8 @@ public class ResidenceTransferAction extends SimpleActionAdapter {
 	 */
 	protected void initateResidenceTransfer(ActionRequest req) {
 		MemberVO sender = RezDoxUtils.getMember(req);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+
 		int cnt = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(getInitiateSql())) {
 			ps.setInt(1, ResidenceAction.STATUS_INACTIVE);
@@ -86,6 +89,10 @@ public class ResidenceTransferAction extends SimpleActionAdapter {
 		MemberVO rcpt = ma.retrieveMemberData(req.getParameter("toMemberId"), null);
 
 		sendInitiateEmail(req, sender, rcpt);
+
+		//post a notification to the recipient
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), null);
+		notifyUtil.send(RezDoxNotifier.Message.RESIDENCE_TRANS_PENDING, null, null, rcpt.getProfileId());
 
 		sendRedirect(req);
 	}
@@ -126,6 +133,11 @@ public class ResidenceTransferAction extends SimpleActionAdapter {
 		MemberVO prevOwner = ma.retrieveMemberData(req.getParameter("senderId"), null);
 
 		sendCompleteEmail(req, prevOwner, RezDoxUtils.getMember(req));
+
+		//post a notification to the recipient
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), null);
+		notifyUtil.send(RezDoxNotifier.Message.RESIDENCE_TRANS_COMPLETE, null, null, prevOwner.getProfileId());
 
 		sendRedirect(req);
 	}

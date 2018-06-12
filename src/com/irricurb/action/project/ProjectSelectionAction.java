@@ -130,7 +130,7 @@ public class ProjectSelectionAction extends SimpleActionAdapter {
 		if (cookies == null) return;
 		
 		for (SMTCookie cookie : cookies) {
-			log.info("Name: " + cookie.getName());
+			log.debug("Name: " + cookie.getName());
 			if (CUSTOMER_LOOKUP.equalsIgnoreCase(cookie.getName())) {
 				ses.setAttribute(CUSTOMER_LOOKUP, cookie.getValue());
 
