@@ -184,7 +184,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 			params.add(workgroupId);
 		}
 
-		GridDataVO<SRTRosterVO> rosters = new DBProcessor(dbConn, getCustomSchema()).executeSQLWithCount(sql, params, new SRTRosterVO(), req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
+		GridDataVO<SRTRosterVO> rosters = new DBProcessor(dbConn, getCustomSchema()).executeSQLWithCount(sql, params, new SRTRosterVO(), req.getIntegerParameter("limit", SRTUtil.DEFAULT_RPP), req.getIntegerParameter("offset", 0));
 
 		if(!rosters.getRowData().isEmpty()) {
 			try {

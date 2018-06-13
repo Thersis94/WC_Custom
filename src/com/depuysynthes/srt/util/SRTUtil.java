@@ -37,6 +37,7 @@ public class SRTUtil {
 	public static final String OP_CO_ID = "opCoId";
 	public static final String ADMIN_PATH = "/manage";
 	public static final String REGISTRATION_GRP_ID = "38ae1841baf997aec0a80255c7bd6f31";
+	public static final int DEFAULT_RPP = 25;
 
 	public enum SRTList {SRT_WORKGROUP, REQ_REASON, CHARGE_TO, QUALITY_SYSTEM,
 						PRODUCT_TYPE, COMPLEXITY, LABEL_STATUS, PROD_CAT,
