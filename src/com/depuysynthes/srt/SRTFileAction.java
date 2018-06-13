@@ -13,6 +13,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
@@ -76,7 +77,10 @@ public class SRTFileAction extends SimpleActionAdapter {
 	private List<SRTFileVO> loadFiles(String requestId, String masterRecordId) {
 		List<Object> vals = new ArrayList<>();
 		String sql = getLoadFilesSql(requestId, masterRecordId, vals);
-		return new DBProcessor(dbConn, getCustomSchema()).executeSelect(sql, vals, new SRTFileVO());
+		List<SRTFileVO> files = new DBProcessor(dbConn, getCustomSchema()).executeSelect(sql, vals, new SRTFileVO());
+		new NameComparator().decryptNames(files, (String) attributes.get(Constants.ENCRYPT_KEY));
+
+		return files;
 	}
 
 	/**
@@ -86,9 +90,16 @@ public class SRTFileAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	private String getLoadFilesSql(String requestId, String masterRecordId, List<Object> vals) {
+		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
-		sql.append("DPY_SYN_SRT_FILE ").append(DBUtil.WHERE_1_CLAUSE);
+		sql.append("select f.*, pr.first_nm, pr.last_nm ").append(DBUtil.FROM_CLAUSE).append(schema);
+		sql.append("DPY_SYN_SRT_FILE f ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("DPY_SYN_SRT_ROSTER r ");
+		sql.append("on f.ROSTER_ID = r.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE pr ");
+		sql.append("on r.PROFILE_ID = pr.PROFILE_ID ");
+
+		sql.append(DBUtil.WHERE_1_CLAUSE);
 
 		/*
 		 * Set MasterRecordId if requestId is empty.

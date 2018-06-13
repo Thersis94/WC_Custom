@@ -354,7 +354,6 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 			super.putModuleData(req.getAttribute(MASTER_RECORD_DATA));
 		} else {
 			//Redirect the User.
-			sbUtil.moduleRedirect(req, msg, SrtPage.MASTER_RECORD.getUrlPath());
 		}
 	}
 
