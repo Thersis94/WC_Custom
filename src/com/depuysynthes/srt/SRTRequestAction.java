@@ -123,7 +123,7 @@ public class SRTRequestAction extends SimpleActionAdapter {
 	public GridDataVO<SRTRequestVO> loadRequests(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
 
-		int limit = req.getIntegerParameter("limit", 10);
+		int limit = req.getIntegerParameter("limit", SRTUtil.DEFAULT_RPP);
 		int offset = req.getIntegerParameter("offset", 0);
 		GridDataVO<SRTRequestVO> requests = new DBProcessor(dbConn).executeSQLWithCount(buildRequestLoadSql(req, vals), vals, new SRTRequestVO(), limit, offset);
 

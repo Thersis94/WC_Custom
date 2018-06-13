@@ -233,7 +233,7 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 	 */
 	private GridDataVO<SRTMasterRecordVO> loadMasterRecords(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
-		int limit = req.getIntegerParameter("limit", 10);
+		int limit = req.getIntegerParameter("limit", SRTUtil.DEFAULT_RPP);
 		int offset = req.getIntegerParameter("offset", 0);
 		return new DBProcessor(dbConn).executeSQLWithCount(listMasterRecordsSql(req, vals), vals, new SRTMasterRecordVO(), limit, offset);
 	}

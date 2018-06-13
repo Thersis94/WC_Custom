@@ -307,7 +307,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		String sql = buildProjectRetrievalQuery(req, vals, statusType);
 
 		//Load Projects
-		GridDataVO<SRTProjectVO> projects = new DBProcessor(dbConn).executeSQLWithCount(sql, vals, new SRTProjectVO(), req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
+		GridDataVO<SRTProjectVO> projects = new DBProcessor(dbConn).executeSQLWithCount(sql, vals, new SRTProjectVO(), req.getIntegerParameter("limit", SRTUtil.DEFAULT_RPP), req.getIntegerParameter("offset", 0));
 
 		if(!projects.getRowData().isEmpty()) {
 
