@@ -9,6 +9,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title</b>: DeviceEntityDataVO.java
@@ -57,7 +58,18 @@ public class DeviceEntityDataVO extends BeanDataVO {
 	public DeviceEntityDataVO(ResultSet rs) {
 		super(rs);
 	}
-
+	
+	/**
+	 * 
+	 * @param devAttr
+	 */
+	public DeviceEntityDataVO(ProjectDeviceAttributeVO devAttr, String id) {
+		super();
+		this.setProjectDeviceDataId(id);
+		this.setReadingValue(Convert.formatDouble(devAttr.getValue()));
+		this.setDeviceAttributeId(devAttr.getDeviceAttributeId());
+	}
+	
 	/**
 	 * @return the dataEntityId
 	 */
