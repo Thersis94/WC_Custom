@@ -138,7 +138,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			if (req.hasParameter("excel")) {
 				buildExcelFile(req, grid);
 			} else if (! StringUtil.isEmpty(gridId)) { 
-				SMTChartVO chart = convertChart(grid, type, columns, stacked);
+				SMTChartVO chart = convertChart(grid, type, columns);
 				SMTChartOptionIntfc options = buildOptions(chart, type, pt, full, labelType, grid.getAbbreviateNumbers(), Convert.formatBoolean(req.getParameter(LOAD_TABLE)));
 				addDetailTypes(options, grid);
 				SMTChartIntfc gridData = retrieveChartData(chart, type, stacked, pt, options);
@@ -166,7 +166,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param stacked
 	 * @return
 	 */
-	private SMTChartVO convertChart(GridVO grid, ChartType type, List<Integer> columns, boolean stacked) {
+	private SMTChartVO convertChart(GridVO grid, ChartType type, List<Integer> columns) {
 		SMTChartVO chart = new SMTChartVO();
 		chart.setChartId(grid.getGridId());
 		chart.setCreateDate(grid.getCreateDate());
@@ -316,7 +316,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 				cols = sCols.stream().map(Convert::formatInteger).collect(Collectors.toList());
 			}
 			
-			SMTChartVO chart = convertChart(grid, ct, cols, stacked);
+			SMTChartVO chart = convertChart(grid, ct, cols);
 
 			// Retrieve the data for all of the charts
 			SMTChartOptionIntfc options = buildOptions(chart, ct, pt, full, labelType, grid.getAbbreviateNumbers(), loadTable);
