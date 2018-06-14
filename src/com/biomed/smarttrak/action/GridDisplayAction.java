@@ -447,7 +447,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			GoogleChartRowVO gRow = (GoogleChartRowVO) row;
 			for (int i=1; i < gRow.getC().size(); i++) {
 				GoogleChartCellVO c = gRow.getC().get(i);
-				c.setFormat(formatCellValue(StringUtil.checkVal(c.getValue())));
+				c.setFormat(formatCellValue(StringUtil.checkVal(c.getValue()), StringUtil.checkVal(c.getFormat())));
 			}
 		}
 	}
@@ -457,10 +457,14 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * Shorten the supplied value to a single decimal dollar amount
 	 * appended with a shorthand character for the magnitude.
 	 * @param value
+	 * @param formatValue
 	 * @return
 	 */
-	private String formatCellValue(String value) {
-		if (value.length() <= 3) return value;
+	private String formatCellValue(String value, String formatValue) {
+		// Decimal and 0 added by the system
+		if (value.indexOf('.') > -1)
+			value = value.substring(0, value.indexOf('.'));
+		if (value.length() <= 3) return formatValue; //return the original format value unchanged
 		
 		// Convert from scientific exponent to simple number if applicable.
 		if (value.indexOf('E') > -1) {
@@ -468,9 +472,6 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			value = StringUtil.padRight(value.replace(".", "").substring(0, value.indexOf('E')-1), '0', exp+1);
 		}
 
-		// Decimal and 0 added by the system
-		if (value.indexOf('.') > -1)
-			value = value.substring(0, value.indexOf('.'));
 		String suffix = "";
 		int pos = value.length()%3;
 		if (pos == 0) pos = 3;
@@ -528,11 +529,16 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			
 			String name = (String) gRow.getC().get(0).getValue();
 			String value = decimalFormat.format(gRow.getC().get(1).getValue());
+			String frmt = gRow.getC().get(1).getFormat();
 			
 			if (format) {
-				gRow.getC().get(0).setValue(name + " - $" + formatCellValue(StringUtil.removeNonNumeric(value)));
+				//NOTE: don't append currency symbol here as already handled when retrieving the chart data
+				gRow.getC().get(0).setValue(name + " - " + formatCellValue(StringUtil.removeNonNumeric(value), frmt));
 			} else {
-				gRow.getC().get(0).setValue(name + " - $" + value);
+				//add the appropriate currency symbol(if any) with value based on cell's format
+				String curSymbol = frmt.substring(0, 1).matches("\\D") ? frmt.substring(0, 1) : "";
+				String percentSymbol = frmt.indexOf('%') > -1 ? "%" : "";
+				gRow.getC().get(0).setValue(name + " - " + curSymbol + value + percentSymbol);
 			}
 		}
 
