@@ -59,6 +59,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	public static final int TOTAL_ONLY = 2;
 	public static final int NO_LABEL = 3;
 	
+	private static final String LOAD_TABLE = "loadTable";
+	
 	
 	enum ColorTheme {
 		COL_1(Collections.unmodifiableList(Arrays.asList("#5EBCD2"))),
@@ -110,7 +112,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		ChartType type = ChartType.valueOf(StringUtil.checkVal(req.getParameter("ct"), "NONE").toUpperCase());
 
 		// Check to see if there is a mapping for the grid when displaying a table
-		if (Convert.formatBoolean(req.getParameter("loadTable"))) lookupTableMap(req);
+		if (Convert.formatBoolean(req.getParameter(LOAD_TABLE))) lookupTableMap(req);
 
 		// Get the request data
 		String gridId = req.getParameter(GRID_ID);
@@ -129,15 +131,15 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 		// Process the data
 		if (grids != null && grids.length > 0) {
-			putModuleData(loadAllGrids(grids, full, stacked, pt, Convert.formatBoolean(req.getParameter("loadTable"))));
+			putModuleData(loadAllGrids(grids, full, stacked, pt, Convert.formatBoolean(req.getParameter(LOAD_TABLE))));
 		} else {
-			GridVO grid = loadSingleGrid(type, gridId, req);
+			GridVO grid = loadSingleGrid(gridId, req);
 			
 			if (req.hasParameter("excel")) {
 				buildExcelFile(req, grid);
 			} else if (! StringUtil.isEmpty(gridId)) { 
 				SMTChartVO chart = convertChart(grid, type, columns, stacked);
-				SMTChartOptionIntfc options = buildOptions(chart, type, pt, full, labelType, grid.getAbbreviateNumbers(), Convert.formatBoolean(req.getParameter("loadTable")));
+				SMTChartOptionIntfc options = buildOptions(chart, type, pt, full, labelType, grid.getAbbreviateNumbers(), Convert.formatBoolean(req.getParameter(LOAD_TABLE)));
 				addDetailTypes(options, grid);
 				SMTChartIntfc gridData = retrieveChartData(chart, type, stacked, pt, options);
 				
@@ -182,7 +184,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		for (GridDetailVO gDetail : grid.getDetails()) {
 			for (int i=0; i<grid.getSeries().length; i++) {
 				if (!columns .isEmpty() && columns.contains(i)) continue;
-				addDetail(gDetail, data, type, i, grid, stacked);
+				addDetail(gDetail, data, type, i, grid);
 			}
 		}
 		chart.processData(data);
@@ -200,7 +202,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param grid
 	 * @param stacked
 	 */
-	private void addDetail(GridDetailVO gDetail, List<SMTChartDetailVO> data, ChartType type, int i, GridVO grid, boolean stacked) {
+	private void addDetail(GridDetailVO gDetail, List<SMTChartDetailVO> data, ChartType type, int i, GridVO grid) {
 		if (i>=gDetail.getValues().length || (StringUtil.isEmpty(grid.getSeries()[i]) 
 				&& StringUtil.isEmpty(gDetail.getValues()[i]))) return;
 		SMTChartDetailVO cDetail = new SMTChartDetailVO();
@@ -224,13 +226,13 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private GridVO loadSingleGrid(ChartType type, String gridId, ActionRequest req ) {
+	private GridVO loadSingleGrid(String gridId, ActionRequest req ) {
 		boolean display = Convert.formatBoolean(req.getParameter("display"));
-		if (display && Convert.formatBoolean(req.getParameter("loadTable"))) display = false;
+		if (display && Convert.formatBoolean(req.getParameter(LOAD_TABLE))) display = false;
 		GridVO grid = getGridData(gridId, display);
 		
 		// If this grid has legacy data load that instead.
-		if (!StringUtil.isEmpty(grid.getLegacyId()) && Convert.formatBoolean(req.getParameter("loadTable"))) 
+		if (!StringUtil.isEmpty(grid.getLegacyId()) && Convert.formatBoolean(req.getParameter(LOAD_TABLE))) 
 			grid = getGridData(grid.getLegacyId(), display);
 		
 		return grid;
@@ -402,7 +404,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 		additionalOptions.put("labelType", labelType);
 		additionalOptions.put("abbreviateFlg", Convert.formatBoolean(abbreviateFlg));
-		additionalOptions.put("loadTable", loadTable);
+		additionalOptions.put(LOAD_TABLE, loadTable);
 		if (type == ChartType.PIE && labelType == ALL_LABELS) {
 			additionalOptions.put("modifyPieLabels", modifyPieLabels(grid));
 		}
@@ -418,28 +420,17 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	private Map<String, Object> loadParamMap(String key, Map<String, Object> container) {
 		Map<String, Object> loadedMap = (Map<String, Object>) container.get(key);
 		if (loadedMap == null) {
-			loadedMap = new HashMap<String, Object>();
+			loadedMap = new HashMap<>();
 			container.put(key, loadedMap);
 		}
 		return loadedMap;
 	}
 	
 	private List<String> loadColors(int count) {
-		switch (count) {
-			case 1: return ColorTheme.COL_1.getPallet();
-			case 2: return ColorTheme.COL_2.getPallet();
-			case 3: return ColorTheme.COL_3.getPallet();
-			case 4: return ColorTheme.COL_4.getPallet();
-			case 5: return ColorTheme.COL_5.getPallet();
-			case 6: return ColorTheme.COL_6.getPallet();
-			case 7: return ColorTheme.COL_7.getPallet();
-			case 8: return ColorTheme.COL_8.getPallet();
-			case 9: return ColorTheme.COL_9.getPallet();
-			case 10: return ColorTheme.COL_10.getPallet();
-			case 11: return ColorTheme.COL_11.getPallet();
-			case 12: 
-			default: return ColorTheme.COL_12.getPallet();
-		}
+		if (count > 12) count = 12;
+		String palletName = "COL_" + count;
+		ColorTheme pallet = ColorTheme.valueOf(palletName);
+		return pallet.getPallet();
 	}
 
 
@@ -568,9 +559,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		// If the total is 100 the percentage is functionally 
 		// the same as the value and appending it to the 
 		// label will result in needless duplication of data.
-		if (total.compareTo(new BigDecimal(100)) == 0) return false;
-		
-		return true;
+		return total.compareTo(new BigDecimal(100)) == 0;
 	}
 
 	/**
