@@ -5,8 +5,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import com.depuysynthes.srt.vo.SRTFileVO;
+import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -78,7 +81,14 @@ public class SRTFileAction extends SimpleActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		String sql = getLoadFilesSql(requestId, masterRecordId, vals);
 		List<SRTFileVO> files = new DBProcessor(dbConn, getCustomSchema()).executeSelect(sql, vals, new SRTFileVO());
-		new NameComparator().decryptNames(files, (String) attributes.get(Constants.ENCRYPT_KEY));
+
+		if(files != null && !files.isEmpty()) {
+			//Get All RosterVO's off SRTFileVO that aren't null.
+			List<SRTRosterVO> owners = files.stream().map(SRTFileVO::getOwner).filter(Objects::nonNull).collect(Collectors.toList());
+
+			//Decrypt them.
+			new NameComparator().decryptNames(owners, (String) attributes.get(Constants.ENCRYPT_KEY));
+		}
 
 		return files;
 	}

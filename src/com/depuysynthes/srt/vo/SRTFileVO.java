@@ -6,9 +6,9 @@ import java.util.Date;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.util.user.HumanNameIntfc;
 
 /****************************************************************************
  * <b>Title:</b> SRTFileVO.java
@@ -22,7 +22,7 @@ import com.siliconmtn.util.user.HumanNameIntfc;
  * @since Mar 1, 2018
  ****************************************************************************/
 @Table(name="DPY_SYN_SRT_FILE")
-public class SRTFileVO extends BeanDataVO implements HumanNameIntfc {
+public class SRTFileVO extends BeanDataVO {
 
 	/**
 	 *
@@ -37,8 +37,7 @@ public class SRTFileVO extends BeanDataVO implements HumanNameIntfc {
 	private String fileName;
 	private String filePathText;
 	private Date createDt;
-	private String firstName;
-	private String lastName;
+	private SRTRosterVO owner;
 	
 	public SRTFileVO() {
 		super();
@@ -189,37 +188,18 @@ public class SRTFileVO extends BeanDataVO implements HumanNameIntfc {
 		this.createDt = createDt;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.util.user.HumanNameIntfc#getFirstName()
+	/**
+	 * @return the owner
 	 */
-	@Override
-	@Column(name="FIRST_NM")
-	public String getFirstName() {
-		return firstName;
+	public SRTRosterVO getOwner() {
+		return owner;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.util.user.HumanNameIntfc#getLastName()
+	/**
+	 * @param owner the owner to set.
 	 */
-	@Override
-	@Column(name="LAST_NM")
-	public String getLastName() {
-		return lastName;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.util.user.HumanNameIntfc#setFirstName(java.lang.String)
-	 */
-	@Override
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.util.user.HumanNameIntfc#setLastName(java.lang.String)
-	 */
-	@Override
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
+	@BeanSubElement
+	public void setOwner(SRTRosterVO owner) {
+		this.owner = owner;
 	}
 }
