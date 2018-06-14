@@ -224,7 +224,10 @@ public class GapTableVO implements Serializable {
 		for(int k = 0; k < cNodes.size(); k++) {
 			Node c = cNodes.get(k);
 			if(!(c.getUserObject() instanceof SectionVO) || ((SectionVO)c.getUserObject()).isGapNo()) {
-				primChild.put(c.getNodeId(), new GapColumnVO(sectionId, altGroupNo, c.getNodeId(), c.getNodeName(), null));
+				String fullName = "";
+				if (c.getUserObject() instanceof com.biomed.smarttrak.admin.vo.GapColumnVO) 
+					fullName = ((com.biomed.smarttrak.admin.vo.GapColumnVO)c.getUserObject()).getColumnNm();
+				primChild.put(c.getNodeId(), new GapColumnVO(sectionId, altGroupNo, c.getNodeId(), c.getNodeName(), fullName));
 				altChild.put(p.getNodeId(), new GapColumnVO(sectionId, colGroupNo, p.getNodeId(), p.getNodeName(), null));
 				numKids++;
 			}

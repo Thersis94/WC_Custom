@@ -2,7 +2,6 @@ package com.rezdox.vo;
 
 //Java 8
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +16,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.security.PhoneVO;
+import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
  <p><b>Title</b>: BusinessVO.java</p>
@@ -43,7 +43,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private String photoUrl;
 	private String adFileUrl;
 	private int privacyFlag;
-	private List<MemberVO> members;
+	private Map<String, MemberVO> members;
 	private Map<String, String> attributes;
 	private String subCategoryCd;
 	private String categoryCd;
@@ -51,12 +51,13 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private int totalReviewsNo;
 	private double avgRatingNo;
 	private BusinessStatus status;
+	private String initials;
 	private Date createDate;
 	private Date updateDate;
 
 	public BusinessVO() {
 		super();
-		members = new ArrayList<>();
+		members = new HashMap<>();
 		attributes = new HashMap<>();
 		mainPhone = new PhoneVO();
 		altPhone = new PhoneVO();
@@ -98,6 +99,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setBusinessName(String businessName) {
 		this.businessName = businessName;
+		setInitials();
 	}
 
 	/**
@@ -236,14 +238,14 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	/**
 	 * @return the members
 	 */
-	public List<MemberVO> getMembers() {
+	public Map<String, MemberVO> getMembers() {
 		return members;
 	}
 
 	/**
 	 * @param members the members to set
 	 */
-	public void setMembers(List<MemberVO> members) {
+	public void setMembers(Map<String, MemberVO> members) {
 		this.members = members;
 	}
 
@@ -252,7 +254,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	@BeanSubElement
 	public void addMember(MemberVO member) {
-		this.members.add(member);
+		this.members.put(member.getMemberId(), member);
 	}
 
 	/**
@@ -404,6 +406,29 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 			if (businessStatus.getStatus() == statusCode) {
 				this.status = businessStatus;
 			}
+		}
+	}
+
+	/**
+	 * @return the initials
+	 */
+	public String getInitials() {
+		return initials;
+	}
+
+	/**
+	 * @param initials the initials to set
+	 */
+	public void setInitials(String initials) {
+		this.initials = initials;
+	}
+
+	/**
+	 * Sets the businesses initials based on the business name set in the VO
+	 */
+	private void setInitials() {
+		if (getBusinessName() != null) {
+			setInitials(StringUtil.abbreviate(getBusinessName().trim(), 2).toUpperCase());
 		}
 	}
 

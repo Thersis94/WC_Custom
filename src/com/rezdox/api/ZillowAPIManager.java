@@ -29,6 +29,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: APIManager.java
@@ -142,6 +143,8 @@ public class ZillowAPIManager {
 		try {
 			StringBuilder path = getBaseURL(RETRIEVE_DETAILS_URI);
 			path.append("&address=").append(URLEncoder.encode(loc.getAddress(), LOCALE));
+			if (!StringUtil.isEmpty(loc.getAddress2()))
+				path.append(",+").append(URLEncoder.encode(loc.getAddress2(), LOCALE));
 			path.append("&citystatezip=").append(URLEncoder.encode(csz.toString(), LOCALE));
 			data = conn.retrieveData(path.toString());
 		} catch(Exception e) {
@@ -231,7 +234,7 @@ public class ZillowAPIManager {
 	 * @return
 	 */
 	private List<String> getExtendedDataKeys() {
-		List<String> extendedDataMap = new ArrayList<>();
+		List<String> extendedDataMap = new ArrayList<>(15);
 		extendedDataMap.add("FIPScounty");
 		extendedDataMap.add("useCode");
 		extendedDataMap.add("taxAssessmentYear");
@@ -241,9 +244,9 @@ public class ZillowAPIManager {
 		extendedDataMap.add("finishedSqFt");
 		extendedDataMap.add("bathrooms");
 		extendedDataMap.add("bedrooms");
+		extendedDataMap.add("totalRooms");
 		extendedDataMap.add("lastSoldDate");
 		extendedDataMap.add("lastSoldPrice");
-		
 		return extendedDataMap;
 	}
 	
