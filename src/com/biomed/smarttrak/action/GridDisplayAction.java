@@ -59,18 +59,31 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	public static final int TOTAL_ONLY = 2;
 	public static final int NO_LABEL = 3;
 	
-	public static final List<String> CHART_COLORS_1 = Collections.unmodifiableList(Arrays.asList("#5EBCD2"));
-	public static final List<String> CHART_COLORS_2 = Collections.unmodifiableList(Arrays.asList("#85CBCF", "#3984B6"));
-	public static final List<String> CHART_COLORS_3 = Collections.unmodifiableList(Arrays.asList("#85CBCF", "#3984B6", "#1D2E81"));
-	public static final List<String> CHART_COLORS_4 = Collections.unmodifiableList(Arrays.asList("#9ED5CD", "#44A7CB", "#2E62A1", "#192574"));
-	public static final List<String> CHART_COLORS_5 = Collections.unmodifiableList(Arrays.asList("#B7DFCB", "#5ABAD1", "#3984B6", "#264992", "#161F63"));
-	public static final List<String> CHART_COLORS_6 = Collections.unmodifiableList(Arrays.asList("#B7DFCB", "#70C3D0", "#419DC5", "#316BA7", "#223B89", "#151E5E"));
-	public static final List<String> CHART_COLORS_7 = Collections.unmodifiableList(Arrays.asList("#C6E3CB", "#83CACF", "#47AED0", "#3984B6", "#2C5A9C", "#1E3082", "#141C59"));
-	public static final List<String> CHART_COLORS_8 = Collections.unmodifiableList(Arrays.asList("#CEE6CA", "#91D0CE", "#56B9D2", "#3F97C2", "#3371AA", "#274B93", "#1B277C", "#131A55"));
-	public static final List<String> CHART_COLORS_9 = Collections.unmodifiableList(Arrays.asList("#D5E9CA", "#9ED5CD", "#69C0D1", "#44A7CB", "#3984B6", "#2E62A1", "#233F8C", "#192473", "#121850"));
-	public static final List<String> CHART_COLORS_10 = Collections.unmodifiableList(Arrays.asList("#DCECC9", "#AADACC", "#78C6D0", "#48B3D3", "#3E94C0", "#3474AC", "#2A5599", "#203686", "#18216B", "#11174B"));
-	public static final List<String> CHART_COLORS_11 = Collections.unmodifiableList(Arrays.asList("#DCECC9", "#AFDCCC", "#83CACF", "#56B9D2", "#43A1C7", "#3984B6", "#3067A5", "#274B93", "#1E3082", "#172068", "#11174B"));
-	public static final List<String> CHART_COLORS_12 = Collections.unmodifiableList(Arrays.asList("#DCECC9", "#B3DDCC", "#8ACDCE", "#62BED2", "#46AACE", "#3D91BE", "#3577AE", "#2D5E9E", "#24448E", "#1C2B7F", "#162065", "#11174B"));
+	
+	enum ColorTheme {
+		COL_1(Collections.unmodifiableList(Arrays.asList("#5EBCD2"))),
+		COL_2(Collections.unmodifiableList(Arrays.asList("#85CBCF", "#3984B6"))),
+		COL_3(Collections.unmodifiableList(Arrays.asList("#85CBCF", "#3984B6", "#1D2E81"))),
+		COL_4(Collections.unmodifiableList(Arrays.asList("#9ED5CD", "#44A7CB", "#2E62A1", "#192574"))),
+		COL_5(Collections.unmodifiableList(Arrays.asList("#B7DFCB", "#5ABAD1", "#3984B6", "#264992", "#161F63"))),
+		COL_6(Collections.unmodifiableList(Arrays.asList("#B7DFCB", "#70C3D0", "#419DC5", "#316BA7", "#223B89", "#151E5E"))),
+		COL_7(Collections.unmodifiableList(Arrays.asList("#C6E3CB", "#83CACF", "#47AED0", "#3984B6", "#2C5A9C", "#1E3082", "#141C59"))),
+		COL_8(Collections.unmodifiableList(Arrays.asList("#CEE6CA", "#91D0CE", "#56B9D2", "#3F97C2", "#3371AA", "#274B93", "#1B277C", "#131A55"))),
+		COL_9(Collections.unmodifiableList(Arrays.asList("#D5E9CA", "#9ED5CD", "#69C0D1", "#44A7CB", "#3984B6", "#2E62A1", "#233F8C", "#192473", "#121850"))),
+		COL_10(Collections.unmodifiableList(Arrays.asList("#DCECC9", "#AADACC", "#78C6D0", "#48B3D3", "#3E94C0", "#3474AC", "#2A5599", "#203686", "#18216B", "#11174B"))),
+		COL_11(Collections.unmodifiableList(Arrays.asList("#DCECC9", "#AFDCCC", "#83CACF", "#56B9D2", "#43A1C7", "#3984B6", "#3067A5", "#274B93", "#1E3082", "#172068", "#11174B"))),
+		COL_12(Collections.unmodifiableList(Arrays.asList("#DCECC9", "#B3DDCC", "#8ACDCE", "#62BED2", "#46AACE", "#3D91BE", "#3577AE", "#2D5E9E", "#24448E", "#1C2B7F", "#162065", "#11174B")));
+		
+		private List<String> colorPallet;
+		
+		ColorTheme(List<String> colorPallet) {
+			this.colorPallet = colorPallet;
+		}
+		
+		public List<String> getPallet() {
+			return colorPallet;
+		}
+	}
 	
 	public GridDisplayAction() {
 		super();
@@ -413,19 +426,19 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	
 	private List<String> loadColors(int count) {
 		switch (count) {
-			case 1: return CHART_COLORS_1;
-			case 2: return CHART_COLORS_2;
-			case 3: return CHART_COLORS_3;
-			case 4: return CHART_COLORS_4;
-			case 5: return CHART_COLORS_5;
-			case 6: return CHART_COLORS_6;
-			case 7: return CHART_COLORS_7;
-			case 8: return CHART_COLORS_8;
-			case 9: return CHART_COLORS_9;
-			case 10: return CHART_COLORS_10;
-			case 11: return CHART_COLORS_11;
+			case 1: return ColorTheme.COL_1.getPallet();
+			case 2: return ColorTheme.COL_2.getPallet();
+			case 3: return ColorTheme.COL_3.getPallet();
+			case 4: return ColorTheme.COL_4.getPallet();
+			case 5: return ColorTheme.COL_5.getPallet();
+			case 6: return ColorTheme.COL_6.getPallet();
+			case 7: return ColorTheme.COL_7.getPallet();
+			case 8: return ColorTheme.COL_8.getPallet();
+			case 9: return ColorTheme.COL_9.getPallet();
+			case 10: return ColorTheme.COL_10.getPallet();
+			case 11: return ColorTheme.COL_11.getPallet();
 			case 12: 
-			default: return CHART_COLORS_12;
+			default: return ColorTheme.COL_12.getPallet();
 		}
 	}
 
