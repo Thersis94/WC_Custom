@@ -871,6 +871,8 @@ public class AccountUserAction extends SBActionAdapter {
 			
 			incrementActive(counts, rs.getString("status_cd"), true, rs.getInt("active_flg"));
 		}
+		addAccount(account, counts, results, apa, req);
+		
 		return results;
 	}
 	

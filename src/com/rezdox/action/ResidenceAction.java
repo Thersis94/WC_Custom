@@ -553,6 +553,9 @@ public class ResidenceAction extends SBActionAdapter {
 		attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_WALK_SCORE, StringUtil.isEmpty(walkScoreVal) ? "0" : walkScoreVal));
 		attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_TRANSIT_SCORE, StringUtil.isEmpty(transitScoreVal) ? "0" : transitScoreVal));
 
+		//delete the records we're about to add, to avoid duplicates.  DBProcessor does not support a hybrid batch add+update.
+		deleteExistingAttributes(residence.getResidenceId(), attributes);
+
 		// Save the retrieved attributes
 		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		try {
@@ -561,6 +564,32 @@ public class ResidenceAction extends SBActionAdapter {
 			throw new DatabaseException(e);
 		}
 	}
+
+
+	/**
+	 * deletes the attributes for this residence based on slugText
+	 * @param slugs
+	 */
+	protected void deleteExistingAttributes(String residenceId, List<ResidenceAttributeVO> attributes) {
+		if (attributes == null || attributes.isEmpty()) return;
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("delete from ").append(getCustomSchema()).append("REZDOX_RESIDENCE_ATTRIBUTE where slug_txt in (");
+		DBUtil.preparedStatmentQuestion(attributes.size(), sql);
+		sql.append(") and residence_id=?");
+		log.debug(sql);
+
+		int x=1;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (ResidenceAttributeVO vo : attributes)
+				ps.setString(x++, vo.getSlugText());
+			ps.setString(x, residenceId);
+			int cnt = ps.executeUpdate();
+			log.debug("deleted " + cnt + " residence attributes");
+		} catch (SQLException sqle) {
+			log.error("could not delete residence attributes", sqle);
+		}
+	}
+
 
 	/**
 	 * Saves data from the Zillow property lookup to the residence attributes table
@@ -624,8 +653,7 @@ public class ResidenceAction extends SBActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_attribute ");
 		sql.append(DBUtil.WHERE_CLAUSE).append(" residence_id = ? and slug_txt = ? ");
 
-		List<Object> params = new ArrayList<>();
-		params.addAll(Arrays.asList(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE));
+		List<Object> params = Arrays.asList(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE);
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		List<ResidenceAttributeVO> attr = dbp.executeSelect(sql.toString(), params, new ResidenceAttributeVO());
