@@ -17,6 +17,7 @@ import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.AccountVO.Type;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
+import com.biomed.smarttrak.vo.UserVO.Status;
 import com.biomed.smarttrak.vo.UserVO.LicenseType;
 
 // SMTBaseLibs
@@ -105,6 +106,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			ps.setString(++idx, Type.FULL.getId());
 			ps.setString(++idx, LicenseType.INACTIVE.getCode());
 			ps.setString(++idx, LicenseType.INACTIVE.getCode());
+			ps.setInt(++idx, Status.INACTIVE.getCode());
 			for (int x = 0; x < regFields.size(); x++) {
 				ps.setString(++idx, regFields.get(x));
 			}
@@ -160,14 +162,14 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	protected StringBuilder buildAccountsUsersQuery(List<String> userRegFields) {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(650);
-		sql.append("select ac.account_id, ac.account_nm, ac.create_dt, ac.expiration_dt, ac.status_no, ");
-		sql.append("us.user_id, us.profile_id, us.status_cd, us.acct_owner_flg, ");
+		sql.append("select ac.account_id, ac.account_nm, ac.start_dt, ac.expiration_dt, ac.status_no, ac.classification_id, ac.type_id, ");
+		sql.append("us.user_id, us.profile_id, us.status_cd, us.active_flg, us.acct_owner_flg, ");
 		sql.append("pf.first_nm, pf.last_nm, pfa.country_cd, ");
 		sql.append("rd.register_field_id, rd.value_txt ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us ");
 		sql.append("on ac.account_id = us.account_id ");
-		sql.append("and ac.type_id = ? and ac.status_no != ? and us.status_cd != ? ");
+		sql.append("and ac.type_id = ? and ac.status_no != ? and us.status_cd != ? and us.active_flg != ? ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
 		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
@@ -210,17 +212,20 @@ public class AccountsReportAction extends SimpleActionAdapter {
 					// add acct to accounts list.
 					accounts.add(account);
 				}
+				checkDivisions(user, account);
 
 				// create new account
 				account = createBaseAccount(rs);
+				
 				// create new user
-				user = createBaseUser(se,rs);
+				user = createBaseUser(se,rs, account);
 
 			} else {
 				// same account, check for user change
 				if (! currPid.equals(prevPid)) {
+					checkDivisions(user, account);
 					// user changed, create new user
-					user = createBaseUser(se,rs);
+					user = createBaseUser(se,rs, account);
 				}
 			}
 
@@ -234,10 +239,22 @@ public class AccountsReportAction extends SimpleActionAdapter {
 
 		// pick up the dangler
 		if (prevAcctId != null) {
+			checkDivisions(user, account);
 			accounts.add(account);
 		}
 
 		return accounts;
+	}
+	
+	/**
+	 * Check to see if the user has any divisions.
+	 * If not add the No Divisions division
+	 * @param user
+	 * @param account
+	 */
+	private void checkDivisions(UserVO user, AccountUsersVO account) {
+		if (!user.getAttributes().keySet().contains(RegistrationMap.DIVISIONS.getFieldId()))
+			addUserToAccountDivisions(account.getDivisions(), user, "");
 	}
 
 	/**
@@ -257,11 +274,6 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			List<String> divs;
 			if (user.getAttribute(currFieldVal) == null) {
 				divs = new ArrayList<>();
-				/* We only count users who have a division association.  Since
-				 * a user can belong to more than one division, we only want to 
-				 * count the user one time we do it here after we init the
-				 * user's division membership List.. */
-				acct.countLicenseType(user.getLicenseType());
 			} else {
 				divs = (List<String>)user.getAttribute(currFieldId);
 			}
@@ -302,9 +314,11 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		AccountUsersVO account = new AccountUsersVO();
 		account.setAccountId(rs.getString("account_id"));
 		account.setAccountName(rs.getString("account_nm"));
-		account.setCreateDate(rs.getDate("create_dt"));
+		account.setStartDate(rs.getDate("start_dt"));
 		account.setExpirationDate(rs.getDate("expiration_dt"));
 		account.setStatusNo(rs.getString("status_no"));
+		account.setClassificationId(rs.getInt("classification_id"));
+		account.setTypeId(rs.getString("type_id"));
 		return account;
 	}
 	
@@ -315,13 +329,14 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	protected UserVO createBaseUser(StringEncrypter se, 	ResultSet rs) throws SQLException {
+	protected UserVO createBaseUser(StringEncrypter se, ResultSet rs, AccountUsersVO acct) throws SQLException {
 		UserVO user = new UserVO();
 
 		// set unencrypted fields
 		user.setAccountId(rs.getString("account_id"));
 		user.setProfileId(rs.getString("profile_id"));
 		user.setLicenseType(rs.getString("status_cd"));
+		user.setStatusFlg(rs.getInt("active_flg"));
 		user.setAcctOwnerFlg(Convert.formatInteger(rs.getString("acct_owner_flg")));
 		user.setCountryCode(rs.getString("country_cd"));
 		// decrypt encrypted fields and set.
@@ -331,7 +346,12 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		} catch (Exception e) {
 			log.warn("Warning: Unable to decrypt profile fields for profile ID " + user.getProfileId());
 		}
-
+		
+		acct.countLicenseType(user.getLicenseType());
+		if (user.getStatusFlg() == Status.OPEN.getCode()
+				&& (LicenseType.ACTIVE.getCode().equals(user.getLicenseType()) || LicenseType.EXTRA.getCode().equals(user.getLicenseType()))) 
+			acct.incrementOpenSeatsCnt();
+		
 		return user;
 	}
 	
@@ -397,6 +417,9 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		if (prevFieldId != null) {
 			optionsMap.put(prevFieldId, fieldOptionsMap);
 		}
+		
+		// Add the empty division option.
+		optionsMap.get(RegistrationMap.DIVISIONS.getFieldId()).put("", "No Division");
 		
 		return optionsMap;
 	}
