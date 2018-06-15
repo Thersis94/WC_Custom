@@ -344,7 +344,12 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 				sectionIds = null; //consolidate alt scenarios
 			sql = buildManageUpdatesSQL(schema, sectionIds, orderSort);
 		} else {
-			sql = StringUtil.isEmpty(profileId) ? buildAllUpdatesSQL(schema, orderSort) : buildMyUpdatesSQL(schema, orderSort);
+			boolean isEmail = false;
+			// If this is being called for an email the data needs to be
+			// restricted to the user's set viewable content.
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			if (site == null) isEmail = true;
+			sql = StringUtil.isEmpty(profileId) ? buildAllUpdatesSQL(schema, orderSort) : buildMyUpdatesSQL(schema, orderSort, isEmail);
 		}
 		log.debug(sql + "|" + profileId + "|" + Convert.formatSQLDate(startDt) + "|" + Convert.formatSQLDate(endDt));
 
@@ -415,7 +420,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 * @param schema
 	 * @return
 	 */
-	protected String buildMyUpdatesSQL(String schema, boolean orderSort) {
+	protected String buildMyUpdatesSQL(String schema, boolean orderSort, boolean isEmail) {
 		StringBuilder sql = new StringBuilder(800);
 		appendSelect(sql);
 		sql.append("from profile p ");
@@ -430,10 +435,13 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_company c on c.company_id=coalesce(up.company_id,prod.company_id) "); //join from the update, or from the product. Prefer company
 		sql.append(LEFT_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
+		if (isEmail) sql.append(LEFT_JOIN).append(schema).append("biomedgps_user_updates_skip uus on uus.user_id = u.user_id and uus.section_id in (us.section_id, s2.parent_id, s3.parent_id, s3.section_id) ");
 		sql.append(LEFT_JOIN).append("site st on st.site_id = ?");
 		sql.append(LEFT_JOIN).append("site_alias sa on st.site_id = sa.site_id and sa.primary_flg = 1");
 		sql.append("where p.profile_id=? and up.email_flg=1 and up.status_cd in ('R','N') ");
 		sql.append("and coalesce(up.publish_dt, up.create_dt) >= ? and coalesce(up.publish_dt, up.create_dt) < ? ");
+		// Filter out anything that should be skipped
+		if (isEmail) sql.append("and uus.user_updates_skip_id is null ");
 		// Determine whether order no or publish dt has priority in the sort.
 		sql.append("order by up.type_cd, ");
 		if (orderSort) {
@@ -441,6 +449,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		} else {
 			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
 		}
+		log.debug(sql);
 		return sql.toString();
 	}
 
