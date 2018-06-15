@@ -15,7 +15,6 @@ import com.depuysynthes.srt.data.ProjectDataProcessor;
 import com.depuysynthes.srt.data.RequestDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.util.SRTUtil.SRTList;
-import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO.MilestoneTypeId;
 import com.depuysynthes.srt.vo.SRTProjectVO;
@@ -97,7 +96,9 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 			if(req.hasParameter(SRT_PROJECT_ID)) {
 				loadDataFromForms(req);
-				req.setAttribute("ownsLock", StringUtil.checkVal(manageLock(req, false)));
+				if(!req.getBooleanParameter("isCopyReq")) {
+					req.setAttribute("ownsLock", StringUtil.checkVal(manageLock(req, false)));
+				}
 			}
 
 			putModuleData(projects.getRowData(), projects.getTotal(), false);
@@ -128,12 +129,12 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
 			//Determine what kind of build action is being performed.
-			if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
+			if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
+				releaseLocks(req);
+			} else if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
 				splitProject(req);
 			} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
 				copyProject(req);
-			} else if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
-				releaseLocks(req);
 			} else {
 				if(manageLock(req, false)) {
 					saveProject(req);
@@ -142,12 +143,9 @@ public class SRTProjectAction extends SimpleActionAdapter {
 					releaseLocks(req);
 				} else {
 					msg = "You do not own the lock on this record.  Save Rejected.";
-					mod.setErrorMessage((String)msg);
+					throw new ActionException((String)msg);
 				}
 			}
-
-			//Redirect the User.
-			sbUtil.moduleRedirect(req, msg, SrtPage.PROJECT.getUrlPath());
 		} catch(Exception e) {
 
 			//If an error occurred while building, set it on the Module for UI Alert.

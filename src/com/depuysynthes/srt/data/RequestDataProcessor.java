@@ -85,6 +85,9 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		SRTFileVO file = new SRTFileVO(req);
 		file.setFileId(req.getParameter("profileDocumentId"));
 
+		//Prevent ProjectId getting Set on SRTRequest Uploads.
+		file.setProjectId(null);
+
 		//Save SRTFile Record now that it's successfully saved to DocumentAction.
 		files.add(file);
 	}

@@ -13,7 +13,6 @@ import java.util.Map;
 import com.depuysynthes.srt.data.MasterRecordDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.util.SRTUtil.SRTList;
-import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.siliconmtn.action.ActionException;
@@ -29,7 +28,6 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
@@ -336,7 +334,6 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 		//Check if we're doing a copy or regular save.
 		if(req.hasParameter("getNextAvailablePartNo")) {
@@ -354,7 +351,6 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 			super.putModuleData(req.getAttribute(MASTER_RECORD_DATA));
 		} else {
 			//Redirect the User.
-			sbUtil.moduleRedirect(req, msg, SrtPage.MASTER_RECORD.getUrlPath());
 		}
 	}
 

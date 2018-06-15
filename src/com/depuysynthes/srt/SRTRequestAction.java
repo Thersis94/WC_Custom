@@ -9,7 +9,6 @@ import java.util.Map;
 import com.depuysynthes.srt.data.RequestDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.util.SRTUtil.SRTList;
-import com.depuysynthes.srt.util.SRTUtil.SrtPage;
 import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
@@ -25,7 +24,6 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
@@ -92,9 +90,6 @@ public class SRTRequestAction extends SimpleActionAdapter {
 
 			//Call DataManagerUtil to save the form.
 			new DataManagerUtil(attributes, dbConn).saveForm(formId, req, RequestDataProcessor.class);
-
-			//Redirect the User.
-			sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), SrtPage.REQUEST.getUrlPath());
 		}
 	}
 
