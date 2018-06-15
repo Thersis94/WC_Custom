@@ -326,9 +326,12 @@ public class AccountAction extends SBActionAdapter {
 				deactiveAccountUsers(account.getAccountId());
 			} else {
 				db.save(account);
-				//if an insert, set the generated ID on request for redirect
-				if(StringUtil.isEmpty(req.getParameter(ACCOUNT_ID))) 
+				// if an insert, set the generated ID on request for redirect
+				// and create the default team for the account.
+				if(StringUtil.isEmpty(req.getParameter(ACCOUNT_ID)))  {
 					req.setParameter(ACCOUNT_ID, account.getAccountId());
+					addDefaultTeam(req);
+				}
 				
 				//deactivate the users for the account if it has expired or becomes inactive
 				Date currentDt = Convert.formatStartDate(new Date());
@@ -342,6 +345,19 @@ public class AccountAction extends SBActionAdapter {
 		}
 	}
 	
+	
+	/**
+	 * Add a default team to the account.
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void addDefaultTeam(ActionRequest req) throws ActionException {
+		TeamAction ta = new TeamAction(actionInit);
+		ta.setDBConnection(dbConn);
+		ta.setAttributes(attributes);
+		ta.addDefaultTeam(req);
+	}
+
 	/**
 	 * Deactivates users from an associated account if the account has been set to inactive or expires
 	 * @param accountId

@@ -13,7 +13,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.user.HumanNameIntfc;
-import com.siliconmtn.util.user.NameComparator;
+import com.siliconmtn.util.user.LastNameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -70,7 +70,7 @@ public class TeamMemberAction extends SBActionAdapter {
 
 		//decrypt the owner profiles
 		decryptNames(data);
-		Collections.sort(data, new NameComparator());
+		Collections.sort(data, new LastNameComparator());
 		
 		putModuleData(data);
 	}
@@ -82,7 +82,7 @@ public class TeamMemberAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void decryptNames(List<Object> data) {
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+		new LastNameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 
