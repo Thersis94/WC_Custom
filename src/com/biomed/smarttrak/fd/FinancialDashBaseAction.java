@@ -107,6 +107,10 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		dash.setCurrentQtrYear(dashType, latest);
 		dash.setData(req, sections);
 		dash.setBehindLatest(latest);
+		
+		
+		if (!req.hasParameter("isJson"))
+			req.setAttribute("sectionTree", sections);
 
 		// Filter out financial data requests (i.e initial page load vs. json call).
 		// Financial data is only needed on a json call or report request.
