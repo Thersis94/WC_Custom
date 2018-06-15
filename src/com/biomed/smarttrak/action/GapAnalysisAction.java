@@ -109,6 +109,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			putModuleData(getProductList(regionId, companyId, columnId, sectionId));
 
 		} else if (req.hasParameter("getState")) {
+			
 			UserVO vo = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 			String userId = StringUtil.checkVal(vo.getUserId());
 
@@ -145,7 +146,11 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	public void build(ActionRequest req) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		try {
-			dbp.save(new SaveStateVO(req));
+			if("delete".equals(req.getParameter("buildType"))) {
+				dbp.delete(new SaveStateVO(req));
+			}else {
+				dbp.save(new SaveStateVO(req));
+			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Problem Saving State Object.", e.getCause());
 		}
