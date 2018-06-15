@@ -19,6 +19,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
@@ -51,6 +52,7 @@ public class BiomedSupportEmailUtil {
 	public static final String ASSN_TICKET_CAMP_INST_ID = "assnTicketCampInstId";
 	public static final String STAT_TICKET_CAMP_INST_ID = "statTicketCampInstId";
 	public static final String ACT_TICKET_CAMP_INST_ID = "actTicketCampInstId";
+	public static final String SOURCE = "sourceRecipient";
 	private Logger log;
 	private List<String> adminEmails;
 	public enum EmailType {PUBLIC, ADMIN}
@@ -304,26 +306,29 @@ public class BiomedSupportEmailUtil {
 		//Get Admins
 		List<AccountVO> admins = getAdminEmails();
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.TICKET);
-		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
+		Map<EmailType, List<EmailRecipientVO>> recipients = getBaseRecipients(t, ChangeType.TICKET);
+		for(Entry<EmailType, List<EmailRecipientVO>> r : recipients.entrySet()) {
 
 			//Set Ticket Links.  These vary based on who is getting them.
 			t.setTicketLink(buildTicketLink(t, r.getKey()));
 
 			//Build Config
 			Map<String, Object> config = getBaseConfig(t);
+			EmailRecipientVO recip = (EmailRecipientVO) attributes.get(SOURCE);
+			if (recip != null && !StringUtil.isEmpty(recip.getProfileId()))
+				r.getValue().add(recip);
 
 			//Get Emails
-			ecbu.sendMessage((String)attributes.get(NEW_TICKET_CAMP_INST_ID), r.getValue(), config);
+			ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ADMIN_NEW_TICKET_CAMP_INST_ID));
 
 			if(r.getKey().equals(EmailType.ADMIN)) {
 				//New Tickets get sent to admins withing the adminEmails List.
 				for(AccountVO a : admins) {
 					if(adminEmails.contains(a.getOwnerEmailAddr())) {
-						r.getValue().put(a.getOwnerProfileId(), a.getOwnerEmailAddr());
+						r.getValue().add(new EmailRecipientVO(a.getOwnerProfileId(), a.getOwnerEmailAddr(), EmailRecipientVO.TO));
 					}
 				}
-				ecbu.sendMessage((String)attributes.get(ADMIN_NEW_TICKET_CAMP_INST_ID), r.getValue(), config);
+				ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ADMIN_NEW_TICKET_CAMP_INST_ID));
 			}
 		}
 	}
@@ -341,8 +346,8 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected void sendAssignedEmails(TicketEmailVO t) {
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.ASSIGNMENT);
-		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
+		Map<EmailType, List<EmailRecipientVO>> recipients = getBaseRecipients(t, ChangeType.ASSIGNMENT);
+		for(Entry<EmailType, List<EmailRecipientVO>> r : recipients.entrySet()) {
 
 			//Set Ticket Links.  These vary based on who is getting them.
 			t.setTicketLink(buildTicketLink(t, r.getKey()));
@@ -357,7 +362,7 @@ public class BiomedSupportEmailUtil {
 			config.put("createDtFmt", t.getCreateDtFmt());
 
 			//Get Emails
-			ecbu.sendMessage((String)attributes.get(ASSN_TICKET_CAMP_INST_ID), r.getValue(), config);
+			ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ASSN_TICKET_CAMP_INST_ID));
 		}
 	}
 
@@ -371,8 +376,8 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected void sendStatusEmails(TicketEmailVO t) {
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.STATUS);
-		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
+		Map<EmailType, List<EmailRecipientVO>> recipients = getBaseRecipients(t, ChangeType.STATUS);
+		for(Entry<EmailType, List<EmailRecipientVO>> r : recipients.entrySet()) {
 
 			//Set Ticket Links.  These vary based on who is getting them.
 			t.setTicketLink(buildTicketLink(t, r.getKey()));
@@ -384,7 +389,7 @@ public class BiomedSupportEmailUtil {
 			config.put("assignedLastNm", StringUtil.checkVal(t.getAssignedLastNm()));
 
 			//Get Emails
-			ecbu.sendMessage((String)attributes.get(STAT_TICKET_CAMP_INST_ID), r.getValue(), config);
+			ecbu.sendMessage(config, r.getValue(), (String)attributes.get(STAT_TICKET_CAMP_INST_ID));
 		}
 	}
 
@@ -414,19 +419,19 @@ public class BiomedSupportEmailUtil {
 	 * @param config
 	 * @return
 	 */
-	protected Map<EmailType, Map<String, String>> getBaseRecipients(TicketEmailVO t, ChangeType activity) {
-		Map<EmailType, Map<String, String>> recipients = new EnumMap<>(EmailType.class);
-		Map<String, String> admins = new HashMap<>();
-		Map<String, String> pub = new HashMap<>();
+	protected Map<EmailType, List<EmailRecipientVO>> getBaseRecipients(TicketEmailVO t, ChangeType activity) {
+		Map<EmailType, List<EmailRecipientVO>> recipients = new EnumMap<>(EmailType.class);
+		List<EmailRecipientVO> admins = new ArrayList<>();
+		List<EmailRecipientVO> pub = new ArrayList<>();
 
 		//Add Assignee
 		if(!StringUtil.isEmpty(t.getAssignedEmail())) {
-			admins.put(t.getAssignedId(), t.getAssignedEmail());
+			admins.add(new EmailRecipientVO(t.getAssignedId(), t.getAssignedEmail(), EmailRecipientVO.TO));
 		}
 
 		//Add Reporter unless this is an assignment email
 		if(!StringUtil.isEmpty(t.getReporterEmail()) && activity != ChangeType.ASSIGNMENT) {
-			pub.put(t.getReporterId(), t.getReporterEmail());
+			admins.add(new EmailRecipientVO(t.getReporterId(), t.getReporterEmail(), EmailRecipientVO.TO));
 		}
 
 		String ccAddresses = (String) attributes.get("ccAddresses");
@@ -447,7 +452,7 @@ public class BiomedSupportEmailUtil {
 	 * @param recipients
 	 * @param ccAddresses
 	 */
-	private void addCCRecipients(Map<String, String> recipients, String ccAddresses) {
+	private void addCCRecipients(List<EmailRecipientVO> recipients, String ccAddresses) {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		List<UserDataVO> users = new ArrayList<>();
 		for (String address : ccAddresses.split(",")) {
@@ -470,7 +475,7 @@ public class BiomedSupportEmailUtil {
 		}
 		
 		for (UserDataVO user : users) {
-			recipients.put(user.getProfileId(), user.getEmailAddress());
+			recipients.add(new EmailRecipientVO(user.getProfileId(), user.getEmailAddress(), EmailRecipientVO.TO));
 		}
 	}
 
@@ -484,8 +489,8 @@ public class BiomedSupportEmailUtil {
 	 */
 	protected void sendActivityEmails(TicketEmailVO t) {
 
-		Map<EmailType, Map<String, String>> recipients = getBaseRecipients(t, ChangeType.ACTIVITY);
-		for(Entry<EmailType, Map<String, String>> r : recipients.entrySet()) {
+		Map<EmailType, List<EmailRecipientVO>> recipients = getBaseRecipients(t, ChangeType.ACTIVITY);
+		for(Entry<EmailType, List<EmailRecipientVO>> r : recipients.entrySet()) {
 
 			//Set Ticket Links.  These vary based on who is getting them.
 			t.setTicketLink(buildTicketLink(t, r.getKey()));
@@ -501,7 +506,7 @@ public class BiomedSupportEmailUtil {
 			}
 
 			//Get Emails
-			ecbu.sendMessage((String)attributes.get(ACT_TICKET_CAMP_INST_ID), r.getValue(), config);
+			ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ACT_TICKET_CAMP_INST_ID));
 		}
 	}
 
