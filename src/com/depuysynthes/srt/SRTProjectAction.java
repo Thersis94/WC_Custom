@@ -135,8 +135,6 @@ public class SRTProjectAction extends SimpleActionAdapter {
 				splitProject(req);
 			} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
 				copyProject(req);
-			} else if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
-				releaseLocks(req);
 			} else {
 				if(manageLock(req, false)) {
 					saveProject(req);
@@ -148,9 +146,6 @@ public class SRTProjectAction extends SimpleActionAdapter {
 					throw new ActionException((String)msg);
 				}
 			}
-
-			//Redirect the User.
-			//sbUtil.moduleRedirect(req, msg, SrtPage.PROJECT.getUrlPath());
 		} catch(Exception e) {
 
 			//If an error occurred while building, set it on the Module for UI Alert.
