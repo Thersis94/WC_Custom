@@ -41,6 +41,10 @@ public class AccountUsersVO extends AccountVO {
 	private int compSeatsCnt;
 	// counter for 'Updates-only' seats
 	private int updatesOnlyCnt;
+	// Counter for Active seats
+	private int activeSeatsCnt;
+	// Counter for Open seats
+	private int openSeatsCnt;
 	
 	/**
 	* Constructor
@@ -143,6 +147,8 @@ public class AccountUsersVO extends AccountVO {
 			addedSeatsCnt++;
 		} else if (statusCode.equals(UserVO.LicenseType.UPDATES.getCode())) {
 			updatesOnlyCnt++;
+		} else if (statusCode.equals(UserVO.LicenseType.ACTIVE.getCode())) {
+			activeSeatsCnt++;
 		}
 	}
 	
@@ -192,6 +198,26 @@ public class AccountUsersVO extends AccountVO {
 	 */
 	public void setUpdatesOnlyCount(int seatsCnt) {
 		updatesOnlyCnt = seatsCnt;
+	}
+
+	public int getActiveSeatsCnt() {
+		return activeSeatsCnt;
+	}
+
+	public void setActiveSeatsCnt(int activeSeatsCnt) {
+		this.activeSeatsCnt = activeSeatsCnt;
+	}
+
+	public int getOpenSeatsCnt() {
+		return openSeatsCnt;
+	}
+
+	public void setOpenSeatsCnt(int openSeatsCnt) {
+		this.openSeatsCnt = openSeatsCnt;
+	}
+	
+	public void incrementOpenSeatsCnt() {
+		this.openSeatsCnt++;
 	}
 
 }
