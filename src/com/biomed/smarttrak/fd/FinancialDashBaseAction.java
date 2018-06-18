@@ -108,7 +108,6 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		dash.setData(req, sections);
 		dash.setBehindLatest(latest);
 		
-		
 		if (!req.hasParameter("isJson"))
 			req.setAttribute("sectionTree", sections);
 
