@@ -481,6 +481,11 @@ public class ProductExplorer extends SBActionAdapter {
 		qData.setRoleACL(roles.getAccessControlList());
 		qData.setAclTypeNo(10);
 		qData.setStartLocation(start);
+		
+		if (StringUtil.isEmpty(qData.getOrganizationId())) {
+			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+			qData.setOrganizationId(site.getOrganizationId());
+		}
 
 		sa.includeRoleACL(req, qData);
 

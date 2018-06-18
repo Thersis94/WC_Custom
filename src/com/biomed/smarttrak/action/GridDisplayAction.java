@@ -110,6 +110,12 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ChartType type = ChartType.valueOf(StringUtil.checkVal(req.getParameter("ct"), "NONE").toUpperCase());
+		
+		// Tables need to be handles specially. Default to a column type and set loadTable to ensure proper rendering
+		if (type == ChartType.TABLE) {
+			req.setParameter(LOAD_TABLE, "true");
+			type = ChartType.COLUMN;
+		}
 
 		// Check to see if there is a mapping for the grid when displaying a table
 		if (Convert.formatBoolean(req.getParameter(LOAD_TABLE))) lookupTableMap(req);
