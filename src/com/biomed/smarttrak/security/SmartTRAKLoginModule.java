@@ -12,7 +12,9 @@ import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.DjangoPasswordHasher;
+import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.SHAEncrypt;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -122,18 +124,22 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, ");
 		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, u.active_flg, a.type_id, ");
-		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg, a.account_nm ");
+		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg, a.account_nm, p.profile_id as source_id, p.email_address_txt as source_email ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
 		sql.append("inner join ").append(schema).append("biomedgps_account a on a.status_no='A' and u.account_id=a.account_id ");
+		sql.append("left outer join register_data rd on rd.register_submittal_id = u.register_submittal_id and register_field_id = ? ");
+		sql.append("left outer join profile p on p.profile_id = rd.value_txt ");
 		sql.append("where u.profile_id=? and u.active_flg > 0 order by t.team_nm"); //active > 0 includes Active and Demo.
 		log.debug(sql + user.getProfileId());
 
 		int iter = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, user.getProfileId());
+			ps.setString(1, UserVO.RegistrationMap.SOURCE.getFieldId());
+			ps.setString(2, user.getProfileId());
 			ResultSet rs = ps.executeQuery();
+			StringEncrypter se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
 			while (rs.next()) {
 				if (iter == 0) { //first run, get the fields from the _user table.  They're the same each time by.
 					user.setUserId(rs.getString("user_id"));
@@ -146,6 +152,8 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					user.setLicenseType(rs.getString("status_cd"));
 					user.setStatusFlg(rs.getInt("active_flg"));
 					user.setAccountName(rs.getString("account_nm"));
+					user.setSourceId(rs.getString("source_id"));
+					user.setSourceEmail(decrypt(se, rs.getString("source_email")));
 
 					// Account Type - used by the role module to restrict users to Updates Only (role) - just pass the "4" along to it.
 					String type = rs.getString("type_id");
@@ -158,10 +166,27 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 			}
 		} catch (SQLException sqle) {
 			log.error("could not query Smarttrak user/teams", sqle);
+		} catch (EncryptionException e) {
+			log.error("Failed to create String encrypter", e);
 		}
 
 		if (log.isDebugEnabled() && user.getTeams() != null)
 			log.debug("loaded " + user.getTeams().size() + " teams for " + user.getEmailAddress());
+	}
+
+	/**
+	 * Decrypt the supplied string
+	 * @param se
+	 * @param string
+	 * @return
+	 */
+	private String decrypt(StringEncrypter se, String string) {
+		if (StringUtil.isEmpty(string)) return null;
+		try {
+			return se.decrypt(string);
+		} catch (Exception e) {
+			return string;
+		}
 	}
 
 
