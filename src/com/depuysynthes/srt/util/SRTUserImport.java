@@ -20,7 +20,6 @@ import org.apache.log4j.PropertyConfigurator;
 
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 import com.depuysynthes.srt.vo.SRTRosterVO;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
@@ -36,7 +35,6 @@ import com.smt.sitebuilder.admin.action.OrganizationAction;
 import com.smt.sitebuilder.admin.action.SiteAction;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
-import com.smt.sitebuilder.security.SBUserRoleContainer;
 import com.smt.sitebuilder.security.UserLogin;
 
 /****************************************************************************
@@ -50,9 +48,9 @@ import com.smt.sitebuilder.security.UserLogin;
  * @version 3.3.1
  * @since Feb 8, 2018
  ****************************************************************************/
-public class SRTUserImport extends CommandLineUtil {
+public abstract class SRTUserImport extends CommandLineUtil {
 
-	private static final String SOURCE_FILE_CONFIG="scripts/srt/user_import_config.properties";
+	private static final String SOURCE_FILE_CONFIGs="scripts/srt/user_import_config.properties";
 	private static final String SOURCE_FILE_LOG="scripts/srt/user_import_log4j.properties";
 
 	// profile header vals
@@ -62,7 +60,8 @@ public class SRTUserImport extends CommandLineUtil {
 	private Map<String,String> failedSourceUserInserts;
 	private Map<String,String> failedSourceUserProfileUpdates;
 	private Map<String,String> failedSourceUserAuthenticationUpdates;
-	private long startTimeInMillis;
+	protected long startTimeInMillis;
+	protected String configFilePath;
 	private String schema;
 	private String siteId;
 	private String orgId;
@@ -70,8 +69,8 @@ public class SRTUserImport extends CommandLineUtil {
 	private String registeredRole;
 	private String adminRole;
 	private String viewOnlyRole;
-	private String opCoId;
-	private boolean throwErrors;
+	protected String opCoId;
+	protected boolean throwErrors;
 
 	enum ImportField {
 		ACCOUNT_NO,
@@ -130,11 +129,6 @@ public class SRTUserImport extends CommandLineUtil {
 		}
 	}
 
-	public static void main(String[] args) {
-		SRTUserImport udi = new SRTUserImport(args);
-		udi.run();
-	}
-
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.util.CommandLineUtil#run()
 	 */
@@ -164,71 +158,12 @@ public class SRTUserImport extends CommandLineUtil {
 		closeDBConnection();
 	}
 
-	/**
-	 * Entry point for Excel Upload.  Performs insert of new users.  Existing
-	 * users have been updated or deactivated by this point.
-	 * @param rosters
-	 * @throws Exception 
-	 */
-	public void importUsers(List<SRTRosterVO> rosters) throws Exception {
-		startTimeInMillis = Calendar.getInstance().getTimeInMillis();
 
-		throwErrors = true;
-
-		populatePropVars();
-
-		List<Map<String, Object>> records = convertRoster(rosters);
-
-		insertRecords(records);
-	}
-
-	/**
-	 * Converts a list of RosterVOs to List of MapData
-	 * @param rosters
-	 * @return
-	 */
-	private List<Map<String, Object>> convertRoster(List<SRTRosterVO> rosters) {
-		List<Map<String, Object>> rosterData = new ArrayList<>();
-		Map<String, Object> rData;
-		for(SRTRosterVO roster : rosters) {
-
-			//Ensure we don't add existing users.
-			if(StringUtil.isEmpty(roster.getProfileId())) {
-				rData = new HashMap<>();
-				rData.put(ImportField.ACCOUNT_NO.name(), roster.getAccountNo());
-				rData.put(ImportField.IS_ACTIVE.name(), Integer.toString(roster.getIsActive()));
-				rData.put(ImportField.EMAIL_ADDRESS_TXT.name(), roster.getEmailAddress());
-				rData.put(ImportField.ROSTER_EMAIL_ADDRESS_TXT.name(), roster.getEmailAddress());
-				rData.put(ImportField.FIRST_NM.name(), roster.getFirstName());
-				rData.put(ImportField.LAST_NM.name(), roster.getLastName());
-				rData.put(ImportField.USER_NAME.name(), roster.getFullName());
-				rData.put(ImportField.ADDRESS_TXT.name(), roster.getAddress());
-				rData.put(ImportField.CITY_NM.name(), roster.getCity());
-				rData.put(ImportField.STATE_CD.name(), roster.getState());
-				rData.put(ImportField.ZIP_CD.name(), roster.getZipCode());
-				rData.put(ImportField.PASSWORD_TXT.name(), roster.getPassword());
-				rData.put(ImportField.ROLE_TXT.name(), SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL);
-				rData.put(ImportField.WORKGROUP_ID.name(), roster.getWorkgroupId());
-				rData.put(ImportField.ALLOW_COMM_FLG.name(), 1);
-				rData.put(ImportField.TERRITORY_ID.name(), roster.getTerritoryId());
-				rData.put(ImportField.REGION_ID.name(), roster.getRegion());
-				rData.put(ImportField.AREA_ID.name(), roster.getArea());
-				rData.put(ImportField.MOBILE_PHONE_TXT.name(), roster.getMobilePhone());
-				rData.put(ImportField.OP_CO_ID.name(), roster.getOpCoId());
-				rData.put(ImportField.IS_ADMIN.name(), Integer.toString(roster.getIsAdmin()));
-				rData.put(ImportField.CO_ROSTER_ID.name(), roster.getCoRosterId());
-				rData.put(ImportField.ENGINEERING_CONTACT.name(), roster.getEngineeringContact());
-				rData.put(ImportField.WWID.name(), roster.getWwid());
-				rosterData.add(rData);
-			}
-		}
-		return rosterData;
-	}
 
 	/**
 	 * 
 	 */
-	private void populatePropVars() {
+	protected void populatePropVars() {
 		orgId = props.getProperty(OrganizationAction.ORGANIZATION_ID);
 		siteId = props.getProperty(SiteAction.SITE_ID);
 		schema = props.getProperty(Constants.CUSTOM_DB_SCHEMA);
@@ -740,18 +675,7 @@ public class SRTUserImport extends CommandLineUtil {
 	/**
 	 * @return
 	 */
-	protected StringBuilder buildMainQuery() {
-		StringBuilder megaQuery = new StringBuilder(2200);
-		megaQuery.append("select * from (");
-		megaQuery.append(buildAdminUserQuery());
-		megaQuery.append(" union ");
-		megaQuery.append(buildSalesRosterQuery());
-		megaQuery.append(" union ");
-		megaQuery.append(buildProjectUserQuery());
-		megaQuery.append(") as users ");
-		megaQuery.append("order by is_admin desc, CO_ROSTER_ID desc;");
-		return megaQuery;
-	}
+	protected abstract StringBuilder buildMainQuery();
 
 	/**
 	 * Creates map of query statements that have fixed number of
@@ -837,114 +761,5 @@ public class SRTUserImport extends CommandLineUtil {
 
 	}
 
-	/* (non-Javadoc)
-	 * @see com.depuysynthes.srt.util.SRTUserImport#buildMainQuery()
-	 */
-	protected StringBuilder buildProjectUserQuery() {
-		StringBuilder sql = new StringBuilder(1000);
-		sql.append("select ");
-		sql.append("case when first_nm is not null and first_nm != '' ");
-		sql.append("then first_nm else '(NO NAME)' end as first_nm, ");
-		sql.append("case when last_nm is not null and last_nm != '' ");
-		sql.append("then last_nm when first_nm is not null and first_nm != '' ");
-		sql.append("then first_nm else '(NO NAME)' end as last_nm, ");
-		sql.append("concat('\"', salesrep, '\"') as USER_NAME, ");
-		sql.append("0 as allow_comm_flg, ");
-		sql.append("null as wwid, ");
-		sql.append("'0' as IS_ACTIVE, ");
-		sql.append("'0' as ROLE_TXT, ");
-		sql.append("null as ADDRESS_TXT, ");
-		sql.append("null as CITY_NM, ");
-		sql.append("null as STATE_CD, ");
-		sql.append("null as ZIP_CD, ");
-		sql.append("null as EMAIL_ADDRESS_TXT, ");
-		sql.append("EMAIL_ADDRESS_TXT as ROSTER_EMAIL_ADDRESS_TXT, ");
-		sql.append("'6' as workgroup_id, ");
-		sql.append("null as PASSWORD_TXT, ");
-		sql.append("MOBILE_PHONE_TXT, ");
-		sql.append("cast(territoryid as varchar) as TERRITORY_ID, ");
-		sql.append("null as REGION_ID, ");
-		sql.append("null as AREA_ID, ");
-		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
-		sql.append("0 as is_admin, ");
-		sql.append("jdeacctnumber as ACCOUNT_NO, ");
-		sql.append("cast(projectid as varchar) as CO_ROSTER_ID, ");
-		sql.append("srtcontact as ENGINEERING_CONTACT ");
-		sql.append(DBUtil.FROM_CLAUSE).append("dbo.projects p ");
-		sql.append(DBUtil.WHERE_CLAUSE).append(" projectid not in ( ");
-		sql.append("select projectid ").append(DBUtil.FROM_CLAUSE);
-		sql.append("dbo.projects").append(DBUtil.WHERE_CLAUSE);
-		sql.append("jdeacctnumber in (select customerId from dbo.tbl_pt_sales_roster) ");
-		sql.append("or lower(salesrepemail) in (select lower(email) from dbo.tbl_pt_sales_roster) ");
-		sql.append("or concat(first_nm, ' ', last_nm) in (select firstlast from dbo.tbl_pt_sales_roster)) ");
-		sql.append("and p.projectid not in (");
-		sql.append("select cast(CO_ROSTER_ID as int) from custom.dpy_syn_srt_roster ");
-		sql.append("where CO_ROSTER_ID not like 'ADM_%' and CO_ROSTER_ID not like 'SR_%') ");
-		return sql;
-	}
 
-	protected StringBuilder buildSalesRosterQuery() {
-		StringBuilder sql = new StringBuilder(1000);
-		sql.append("select ");
-		sql.append("r.first_name as first_nm, ");
-		sql.append("r.last_name as last_nm, ");
-		sql.append("concat('\"', firstlast, '\"') as USER_NAME, ");
-		sql.append("1 as allow_comm_flg, ");
-		sql.append("r.wwid, ");
-		sql.append("'1' as IS_ACTIVE, ");
-		sql.append("'5' as ROLE_TXT, ");
-		sql.append("r.address as ADDRESS_TXT, ");
-		sql.append("r.city as CITY_NM, ");
-		sql.append("r.state as STATE_CD, ");
-		sql.append("r.zip as ZIP_CD, ");
-		sql.append("r.alt_email as EMAIL_ADDRESS_TXT, ");
-		sql.append("r.email as ROSTER_EMAIL_ADDRESS_TXT, ");
-		sql.append("'8' as workgroup_id, ");
-		sql.append("null as PASSWORD_TXT, ");
-		sql.append("r.cell_phone as MOBILE_PHONE_TXT, ");
-		sql.append("cast(r.territoryid as varchar) as TERRITORY_ID, ");
-		sql.append("cast(r.region as varchar) as REGION_ID, ");
-		sql.append("cast(r.area as varchar) as AREA_ID, ");
-		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
-		sql.append("0 as is_admin, ");
-		sql.append("customerid as ACCOUNT_NO, ");
-		sql.append("concat('SR_', r.id) as CO_ROSTER_ID, ");
-		sql.append("'replace' as ENGINEERING_CONTACT ");
-		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster r ");
-		sql.append("where concat('SR_', r.id) not in (select CO_ROSTER_ID from custom.dpy_syn_srt_roster) ");
-
-		return sql;
-	}
-
-	protected StringBuilder buildAdminUserQuery() {
-		StringBuilder sql = new StringBuilder(400);
-		sql.append("select ");
-		sql.append("userfirstname as first_nm, ");
-		sql.append("userlastname as last_nm, ");
-		sql.append("concat('\"', useremail, '\"') as USER_NAME, ");
-		sql.append("1 as allow_comm_flg, ");
-		sql.append("wwid as WWID, ");
-		sql.append("case when status = 'Active' then '1' else '0' end as IS_ACTIVE, ");
-		sql.append("cast (role as varchar) as ROLE_TXT, ");
-		sql.append("null as ADDRESS_TXT, ");
-		sql.append("null as CITY_NM, ");
-		sql.append("null as STATE_CD, ");
-		sql.append("null as ZIP_CD, ");
-		sql.append("lower(emailaddresstxt) as EMAIL_ADDRESS_TXT, ");
-		sql.append("lower(emailaddresstxt) as ROSTER_EMAIL_ADDRESS_TXT, ");
-		sql.append("cast(workgroupid as varchar) as workgroup_id, ");
-		sql.append("userpassword as PASSWORD_TXT, ");
-		sql.append("null as MOBILE_PHONE_TXT, ");
-		sql.append("'-1' as TERRITORY_ID, ");
-		sql.append("null as REGION_ID, ");
-		sql.append("null as AREA_ID, ");
-		sql.append("'").append(opCoId).append("' as OP_CO_ID, ");
-		sql.append("1 as is_admin, ");
-		sql.append("'US_SPINE_ADMIN' as ACCOUNT_NO, ");
-		sql.append("concat('ADM_', userid) as CO_ROSTER_ID, ");
-		sql.append("srtcontact2 as ENGINEERING_CONTACT ");
-		sql.append(DBUtil.FROM_CLAUSE).append("dbo.users ");
-		sql.append("where concat('ADM_', userid) not in (select CO_ROSTER_ID from custom.dpy_syn_srt_roster) ");
-		return sql;
-	}
 }
