@@ -178,8 +178,6 @@ public class UpdatesAction extends SBActionAdapter {
 			mod = new ModuleVO();
 			mod.setActionData(nodes);
 			mod.setPageModuleId(actionInit.getActionId());
-			mod.addCacheGroup(role.getSiteId());
-			mod.addCacheGroup(role.getOrganizationId());
 			super.writeToCache(mod);
 		}
 

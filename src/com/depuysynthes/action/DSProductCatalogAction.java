@@ -265,7 +265,6 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 
 		mod.setActionData(t);
 		mod.setCacheTimeout(86400*2); //refresh every 48hrs
-		mod.addCacheGroup(catalogId);
 		return mod;
 	}
 

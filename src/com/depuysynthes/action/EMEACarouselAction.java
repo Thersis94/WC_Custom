@@ -81,7 +81,6 @@ public class EMEACarouselAction extends SBActionAdapter {
 		
 		mod.setActionData(vo);
 		mod.setCacheTimeout(86400 *2); //refresh every 48hrs
-		mod.addCacheGroup("DS_PRODUCTS_EMEA"); //Add 
 		setAttribute(Constants.MODULE_DATA, mod);
 	}	
 	
