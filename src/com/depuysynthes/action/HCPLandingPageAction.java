@@ -137,11 +137,9 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		pcl.setDBConnection(dbConn);
 		
 		String[] tokens = pcl.separateIds((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
-		mod.addCacheGroup(tokens[0]); //the catalogId
 		Tree products = pcl.loadCatalog(tokens[0], tokens[1], false, req);
 		
 		tokens = pcl.separateIds((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_2));
-		mod.addCacheGroup(tokens[0]); //the catalogId
 		Tree procedures = pcl.loadCatalog(tokens[0], tokens[1], false, req);
 		
 		//prune the catalogs down to remove categories (categories are not pages, only products apepar on pages)
