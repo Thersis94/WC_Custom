@@ -50,7 +50,7 @@ import com.smt.sitebuilder.security.UserLogin;
  ****************************************************************************/
 public abstract class SRTUserImport extends CommandLineUtil {
 
-	private static final String SOURCE_FILE_CONFIGs="scripts/srt/user_import_config.properties";
+	private static final String SOURCE_FILE_CONFIG="scripts/srt/user_import_config.properties";
 	private static final String SOURCE_FILE_LOG="scripts/srt/user_import_log4j.properties";
 
 	// profile header vals
@@ -107,6 +107,9 @@ public abstract class SRTUserImport extends CommandLineUtil {
 		if(Files.exists(Paths.get(SOURCE_FILE_LOG))) {
 			PropertyConfigurator.configure(SOURCE_FILE_LOG);
 		}
+		if(Files.exists(Paths.get(SOURCE_FILE_CONFIG))) {
+			configFilePath = SOURCE_FILE_CONFIG;
+		}
 		queries = initQueryStatements();
 		duplicateProfiles = new LinkedHashMap<>();
 		processedProfiles = new LinkedHashMap<>();
@@ -137,7 +140,7 @@ public abstract class SRTUserImport extends CommandLineUtil {
 		startTimeInMillis = Calendar.getInstance().getTimeInMillis();
 
 		// load props
-		loadProperties(SOURCE_FILE_CONFIG);
+		loadProperties(configFilePath);
 
 		populatePropVars();
 

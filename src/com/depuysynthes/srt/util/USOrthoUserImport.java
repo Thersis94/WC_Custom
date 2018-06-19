@@ -1,5 +1,7 @@
 package com.depuysynthes.srt.util;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
@@ -8,7 +10,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 /****************************************************************************
  * <b>Title:</b> USOrthoUserImport.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> US Ortho Centric USer Importer for SRT Roster Data.
+ * <b>Description:</b> US Ortho Centric User Importer for SRT Roster Data.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -17,12 +19,18 @@ import com.siliconmtn.db.pool.SMTDBConnection;
  * @since Jun 18, 2018
  ****************************************************************************/
 public class USOrthoUserImport extends SRTUserImport {
+	private static final String SOURCE_FILE_CONFIG = "scripts/srt/ortho_user_import_config.properties";
 
 	/**
 	 * @param args
 	 */
 	public USOrthoUserImport(String ... args) {
 		super(args);
+
+		//Ensure Ortho Source config is used.
+		if(Files.exists(Paths.get(SOURCE_FILE_CONFIG))) {
+			configFilePath = SOURCE_FILE_CONFIG;
+		}
 	}
 
 	/**

@@ -8,7 +8,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 /****************************************************************************
  * <b>Title:</b> SRTLegacyUserImporter.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Standard SRT User Importer.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
