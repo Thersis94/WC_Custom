@@ -187,12 +187,16 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 		row.createCell(colNo++).setCellValue(p.getActualRoiDbl());
 		row.createCell(colNo++).setCellValue(p.getSrtContact());
 		row.createCell(colNo++).setCellValue(p.getEngineerNm());
+		row.createCell(colNo++).setCellValue(p.getSecondaryEngineerNm());
 		row.createCell(colNo++).setCellValue(p.getDesignerNm());
+		row.createCell(colNo++).setCellValue(p.getSecondaryDesignerNm());
 		row.createCell(colNo++).setCellValue(p.getQualityEngineerNm());
+		row.createCell(colNo++).setCellValue(p.getSecondaryQualityEngineerNm());
 		row.createCell(colNo++).setCellValue(Boolean.toString(p.isMakeFromScratch()));
 		row.createCell(colNo++).setCellValue(p.getFuncCheckOrderNo());
 		row.createCell(colNo++).setCellValue(p.getMakeFromOrderNo());
 		row.createCell(colNo++).setCellValue(p.getBuyerNm());
+		row.createCell(colNo++).setCellValue(p.getSecondaryBuyerNm());
 		row.createCell(colNo++).setCellValue(p.getMfgPOToVendor());
 		row.createCell(colNo++).setCellValue(p.getSupplierId());
 		row.createCell(colNo++).setCellValue(Boolean.toString(p.isProjectHold()));

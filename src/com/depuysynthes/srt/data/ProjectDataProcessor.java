@@ -47,7 +47,7 @@ import com.smt.sitebuilder.data.vo.FormTransactionVO;
  * <b>Description:</b> Data Transaction Handler for SRT Projects. 
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 3.3.1
  * @since Feb 28, 2018
@@ -59,9 +59,11 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		PROJECT_TYPE("projectType"), PRIORITY("priority"),
 		HOSPITAL_PO_NO("hospitalPONo"), SPECIAL_INSTRUCTIONS("specialInstructions"),
 		ACTUAL_ROI("actualRoi"), SRT_CONTACT("srtContact"),
-		ENGINEER_ID("engineerId"), DESIGNER_ID("designerId"), BUYER_ID("buyerId"),
-		SALES_ROSTER_ID("rosterId"), QUALITY_ENGINEER_ID("qualityEngineerId"),
-		FUNCTIONAL_CHECK_ORDER_NO("funcCheckOrderNo"),
+		ENGINEER_ID("engineerId"), SEC_ENGINEER_ID("secondaryEngineerId"),
+		DESIGNER_ID("designerId"), SEC_DESIGNER_ID("secondaryDesignerId"),
+		QUALITY_ENGINEER_ID("qualityEngineerId"), SEC_QUALITY_ENGINEER_ID("secondaryQualityEngineerId"),
+		BUYER_ID("buyerId"), SEC_BUYER_ID("secondaryBuyerId"),
+		SALES_ROSTER_ID("rosterId"), FUNCTIONAL_CHECK_ORDER_NO("funcCheckOrderNo"),
 		MAKE_FROM_SCRATCH("makeFromScratch"), MAKE_FROM_ORDER_NO("makeFromOrderNo"),
 		MFG_PO_TO_VENDOR("mfgPOToVendor"), SUPPLIER("supplierId"),
 		ON_HOLD_FLG("projectHold"), CANCELLED_FLG("projectCancelled"),
@@ -170,6 +172,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		//Map List of Milestones to Map of MilestoneId, MilestoneVO.
 		Map<String, SRTProjectMilestoneVO> mMap = milestones.stream().collect(Collectors.toMap(SRTProjectMilestoneVO::getMilestoneId, Function.identity()));
 
+		//Load Milestone Data off the Request.
 		List<SRTProjectMilestoneVO> reqMilestones = new IndexBeanDataMapper<>(new SRTProjectMilestoneVO()).populate(req.getParameterMap());
 
 		//Loop vals off Request

@@ -101,7 +101,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		checkMasterRecordData(projects, mrAttributes);
 
 		//Desrypt Name data on Project Records.
-		decryptNames(projects);
+		SRTUtil.decryptProjectData(new ArrayList<>(projects.values()), new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY)), null, null);
 
 		//Replace targeted columns with List Values.
 		updateListDataReferences(projects, lists);
@@ -237,22 +237,6 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		sma.setAttributes(attributes);
 		sma.setDBConnection(getConnection());
 		return new ArrayList<>(sma.loadRecordAttributes(null, opCoId).keySet());
-	}
-
-	/**
-	 * Decrypt Encrypted Fields on Project Records.
-	 * @param projects
-	 * @throws EncryptionException
-	 */
-	private void decryptNames(Map<String, SRTProjectVO> projects) throws EncryptionException {
-		StringEncrypter se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
-		for(SRTProjectVO p : projects.values()) {
-			p.setBuyerNm(SRTUtil.decryptName(p.getBuyerNm(), se));
-			p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
-			p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
-			p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
-			p.setRequestorNm(SRTUtil.decryptName(p.getRequestorNm(), se));
-		}
 	}
 
 	/**

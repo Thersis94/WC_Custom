@@ -17,7 +17,6 @@ import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.EncryptionException;
@@ -105,18 +104,18 @@ public class SRTEmailUtil {
 			ps.setString(1, projectId);
 			ResultSet rs = ps.executeQuery();
 
-			while(rs.next()) {
+			if(rs.next()) {
 				p = new SRTProjectVO(rs);
 				SRTRequestVO r = new SRTRequestVO(rs);
 				r.setRequestor(new SRTRosterVO(rs));
 				r.setRequestAddress(new SRTRequestAddressVO(rs));
 				p.setRequest(r);
-			}
-		} catch (SQLException e) {
-			log.error("Error Processing Code", e);
-		}
 
-		decryptProjectData(p);
+				SRTUtil.decryptProjectData(Arrays.asList(p), new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY)), ProfileManagerFactory.getInstance(attributes), dbConn);
+			}
+		} catch (SQLException | EncryptionException e) {
+			log.error("Unable to retrieve Project Data", e);
+		}
 
 		return p;
 	}
@@ -133,23 +132,6 @@ public class SRTEmailUtil {
 		url.append("?projectId=").append(p.getProjectId());
 
 		return url.toString();
-	}
-
-
-	/**
-	 * Helper method that decrypts Profile Data on the SRTProjectVO.
-	 * @param p
-	 */
-	protected void decryptProjectData(SRTProjectVO p) {
-		try {
-			StringEncrypter se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
-			p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
-			p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
-			p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
-			ProfileManagerFactory.getInstance(attributes).populateRecords(dbConn, Arrays.asList(p.getRequest().getRequestor()));
-		} catch (EncryptionException | DatabaseException e) {
-			log.error(e);
-		}
 	}
 
 	/**
