@@ -59,13 +59,14 @@ public class USOrthoUserImport extends SRTUserImport {
 		megaQuery.append(" union ");
 		megaQuery.append(buildSalesRosterQuery());
 		megaQuery.append(") as users ");
-		megaQuery.append("order by is_admin desc, CO_ROSTER_ID desc;");
+		megaQuery.append("order by is_admin desc, last_nm desc, first_nm desc, ADDRESS_TXT desc;");
 		return megaQuery;
 	}
 
 	protected StringBuilder buildSalesRosterQuery() {
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select ");
+		sql.append("null as USER_NAME, ");
 		sql.append("sales_first_nm as first_nm, ");
 		sql.append("sales_last_nm as last_nm, ");
 		sql.append("1 as allow_comm_flg, ");
@@ -73,27 +74,30 @@ public class USOrthoUserImport extends SRTUserImport {
 		sql.append("'1' as IS_ACTIVE, ");
 		sql.append("'5' as ROLE_TXT, ");
 		sql.append("shipping_address as ADDRESS_TXT, ");
+		sql.append("null as CITY_NM, ");
+		sql.append("null as STATE_CD, ");
+		sql.append("null as ZIP_CD, ");
 		sql.append("email_address_txt, ");
 		sql.append("email_address_txt as ROSTER_EMAIL_ADDRESS_TXT, ");
 		sql.append("'8' as workgroup_id, ");
 		sql.append("null as PASSWORD_TXT, ");
 		sql.append("null as MOBILE_PHONE_TXT, ");
-		sql.append("cast(territoryid as varchar) as TERRITORY_ID, ");
+		sql.append("cast(territory as varchar) as TERRITORY_ID, ");
 		sql.append("null as REGION_ID, ");
 		sql.append("null as AREA_ID, ");
 		sql.append("'US_ORTHO' as OP_CO_ID, ");
 		sql.append("0 as is_admin, ");
-		sql.append("US_ORTHO_REP as ACCOUNT_NO, ");
+		sql.append("'US_ORTHO_REP' as ACCOUNT_NO, ");
 		sql.append("null as CO_ROSTER_ID, ");
 		sql.append("'replace' as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.us_ortho_2014_2015 ");
-
 		return sql;
 	}
 
 	protected StringBuilder buildAdminUserQuery() {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select ");
+		sql.append("null as USER_NAME, ");
 		sql.append("split_part(user_nm, ' ', 1) as first_nm, ");
 		sql.append("split_part(user_nm, ' ', 2) as last_nm, ");
 		sql.append("1 as allow_comm_flg, ");
@@ -108,7 +112,7 @@ public class USOrthoUserImport extends SRTUserImport {
 		sql.append("lower(email_address_txt) as ROSTER_EMAIL_ADDRESS_TXT, ");
 		sql.append("role_txt as workgroup_id, ");
 		sql.append("null as PASSWORD_TXT, ");
-		sql.append("null as MAIN_PHONE_TXT, ");
+		sql.append("null as MOBILE_PHONE_TXT, ");
 		sql.append("null as TERRITORY_ID, ");
 		sql.append("null as REGION_ID, ");
 		sql.append("null as AREA_ID, ");
