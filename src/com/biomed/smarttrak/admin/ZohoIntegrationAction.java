@@ -15,7 +15,6 @@ import com.smt.sitebuilder.action.ticketing.TicketFacadeAction;
 import com.smt.sitebuilder.action.ticketing.vo.SupportBugVO;
 import com.smt.sitebuilder.action.ticketing.vo.SupportFieldsVO;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -52,6 +51,7 @@ public class ZohoIntegrationAction extends TicketFacadeAction {
 	 * As such set those parameters here to ensure that they cannot be overridden
 	 * to give the user access to areas they are not supposed to be able to reach.
 	 */
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		req.setParameter("projectId", PROJECT_ID);
 		req.setParameter(TICKET_TYPE_PARAM, TICKET_TYPE.BUG.toString());
@@ -81,7 +81,6 @@ public class ZohoIntegrationAction extends TicketFacadeAction {
 			cachedMod.setActionData(loadedMod.getActionData());
 			cachedMod.setCacheTimeout(CACHE_TIMEOUT);
 			cachedMod.setPageModuleId(SMARTTRAK_CACHE_KEY);
-			cachedMod.setCacheGroups(getCacheGroups(req));
 			super.writeToCache(cachedMod);
 		}
 		
@@ -90,16 +89,6 @@ public class ZohoIntegrationAction extends TicketFacadeAction {
 		} else {
 			super.putModuleData(cachedMod.getActionData(), cachedMod.getDataSize(), false);
 		}
-	}
-	
-	/**
-	 * Create an array of cache groups for the module.
-	 * @param req
-	 * @return
-	 */
-	private String[] getCacheGroups(ActionRequest req) {
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		return new String[] {site.getSiteId(), "ticket", "SUPPORT_TICKET"};
 	}
 	
 	/**
@@ -129,6 +118,7 @@ public class ZohoIntegrationAction extends TicketFacadeAction {
 		req.setAttribute("supportFields", fields);
 	}
 
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		req.setParameter("projectId", PROJECT_ID);
 		req.setParameter(TICKET_TYPE_PARAM, TICKET_TYPE.BUG.toString());

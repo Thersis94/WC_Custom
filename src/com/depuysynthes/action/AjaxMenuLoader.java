@@ -81,13 +81,11 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 
 		// retrieve the product catalog from the DB, pruned by prodRootNode
 		String[] tokens = pc.separateIds((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		mod.addCacheGroup(tokens[0]); //the catalogId
 		String prodRootNode = tokens[1];
 		Tree prodTree = pc.loadCatalog(tokens[0], prodRootNode, true, req);
 
 		// retrieve the procedure catalog from the DB, pruned by procRootNode
 		tokens = pc.separateIds((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
-		mod.addCacheGroup(tokens[0]); //the catalogId
 		String procRootNode = tokens[1];
 		//the merge method will put this onto the Map for us...
 		Tree procTree = pc.loadCatalog(tokens[0], procRootNode, true, req);
@@ -241,7 +239,6 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 			log.error("could not load menus", ae);
 
 		} finally {
-			mod.addCacheGroup(site.getSiteId());
 			mod.setActionData(menuMod.getActionData());
 			attributes.put(Constants.MODULE_DATA, mod);
 			ac = null;
