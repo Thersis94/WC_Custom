@@ -66,24 +66,23 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 		// If fq parameters are defined use them of setting them on the update and insight searches
 		boolean hasFq = req.hasParameter("fq");
 
-		//skip the 2nd search if we're just doing an "MLT" on companies and products.
-		if (!req.hasParameter("amid")) {
-			if (!hasFq)
-				req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + BiomedInsightIndexer.INDEX_TYPE);
-			req.setAttribute(SmarttrakSolrAction.SECTION, Section.INSIGHT);
-			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
-			resp.add(getResults(req));
+		// Counts are always required for everything so these searches still need to be done
+		if (!hasFq)
+			req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + BiomedInsightIndexer.INDEX_TYPE);
+		req.setAttribute(SmarttrakSolrAction.SECTION, Section.INSIGHT);
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
+		resp.add(getResults(req));
 
-			//query updates separtely from insights, because they use a different ACL
-			// If fq parameters are defined use them
-			if (!hasFq)
-				req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + UpdateIndexer.INDEX_TYPE);
-			req.setAttribute(SmarttrakSolrAction.SECTION, Section.UPDATES_EDITION);
-			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
-			resp.add(getResults(req));
-			//unclear why this is needed, but it is.  If we don't flush the FQ in gets picked-up by the 1st query.  yes, illogical!  -JM- 08.29.17
-			req.setParameter("fq", null);
-		}
+		//query updates separtely from insights, because they use a different ACL
+		// If fq parameters are defined use them
+		if (!hasFq)
+			req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + UpdateIndexer.INDEX_TYPE);
+		req.setAttribute(SmarttrakSolrAction.SECTION, Section.UPDATES_EDITION);
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
+		resp.add(getResults(req));
+		//unclear why this is needed, but it is.  If we don't flush the FQ in gets picked-up by the 1st query.  yes, illogical!  -JM- 08.29.17
+		req.setParameter("fq", null);
+		
 		putModuleData(resp);
 		req.setParameter("searchData", searchData, true);
 	}
