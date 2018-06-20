@@ -329,7 +329,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	/**
 	 * @return the qualityEngineerId
 	 */
-	@Column(name="QUALITY_ENGINEER_ID", isReadOnly=true)
+	@Column(name="QUALITY_ENGINEER_ID")
 	public String getQualityEngineerId() {
 		return qualityEngineerId;
 	}
@@ -345,7 +345,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	/**
 	 * @return the secondaryQualityEngineerId
 	 */
-	@Column(name="SEC_QUALITY_ENGINEER_ID", isReadOnly=true)
+	@Column(name="SEC_QUALITY_ENGINEER_ID")
 	public String getSecondaryQualityEngineerId() {
 		return secondaryQualityEngineerId;
 	}
@@ -361,7 +361,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	/**
 	 * @return the buyerId
 	 */
-	@Column(name="BUYER_ID", isReadOnly=true)
+	@Column(name="BUYER_ID")
 	public String getBuyerId() {
 		return buyerId;
 	}
@@ -377,7 +377,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	/**
 	 * @return the secondaryBuyerId
 	 */
-	@Column(name="SEC_BUYER_ID", isReadOnly=true)
+	@Column(name="SEC_BUYER_ID")
 	public String getSecondaryBuyerId() {
 		return secondaryBuyerId;
 	}
