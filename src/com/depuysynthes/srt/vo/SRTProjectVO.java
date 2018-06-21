@@ -54,12 +54,16 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private BigDecimal actualRoi;
 	private String srtContact;
 	private String engineerId;
+	private String secondaryEngineerId;
 	private String designerId;
+	private String secondaryDesignerId;
 	private String qualityEngineerId;
+	private String secondaryQualityEngineerId;
+	private String buyerId;
+	private String secondaryBuyerId;
 	private boolean makeFromScratch;
 	private String funcCheckOrderNo;
 	private String makeFromOrderNo;
-	private String buyerId;
 	private String mfgPOToVendor;
 	private String supplierId;
 	private boolean projectHold;
@@ -74,10 +78,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 
 	//Helper Values.  Not on DB Record
 	private String engineerNm;
+	private String secondaryEngineerNm;
 	private String designerNm;
+	private String secondaryDesignerNm;
 	private String qualityEngineerNm;
-	private String requestorNm;
+	private String secondaryQualityEngineerNm;
 	private String buyerNm;
+	private String secondaryBuyerNm;
+	private String requestorNm;
 	private String surgeonNm;
 	private int total;
 	private String distributorship;
@@ -106,7 +114,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 
 	public SRTProjectVO(ResultSet rs) {
 		this();
-		populateData(rs);
+		setData(rs);
 	}
 
 	/**
@@ -130,6 +138,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 				this.addMasterRecord(new SRTMasterRecordVO(mr.getMasterRecordId()));
 			}
 		}
+	}
+
+	/**
+	 * Populate Data from the ResultSet.
+	 * @param rs
+	 */
+	public void setData(ResultSet rs) {
+		populateData(rs);
 	}
 
 	/**
@@ -263,6 +279,22 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @return the secondaryEngineerId
+	 */
+	@Column(name="SEC_ENGINEER_ID")
+	public String getSecondaryEngineerId() {
+		return secondaryEngineerId;
+	}
+
+	/**
+	 * @return the secondaryEngineerNm
+	 */
+	@Column(name="SEC_ENGINEER_NM", isReadOnly=true)
+	public String getSecondaryEngineerNm() {
+		return secondaryEngineerNm;
+	}
+
+	/**
 	 * @return the designerId
 	 */
 	@Column(name="DESIGNER_ID")
@@ -279,6 +311,22 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @return the secondaryDesignerId
+	 */
+	@Column(name="SEC_DESIGNER_ID")
+	public String getSecondaryDesignerId() {
+		return secondaryDesignerId;
+	}
+
+	/**
+	 * @return the secondaryDesignerNm
+	 */
+	@Column(name="SEC_DESIGNER_NM", isReadOnly=true)
+	public String getSecondaryDesignerNm() {
+		return secondaryDesignerNm;
+	}
+
+	/**
 	 * @return the qualityEngineerId
 	 */
 	@Column(name="QUALITY_ENGINEER_ID")
@@ -287,15 +335,63 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
-	 * @return the designerNm
+	 * @return the qualityEngineerNm
 	 */
-	@Column(name="QUALITY_ENGINEER_NM", isReadOnly=true) 
+	@Column(name="QUALITY_ENGINEER_NM", isReadOnly=true)
 	public String getQualityEngineerNm() {
 		return qualityEngineerNm;
 	}
 
 	/**
-	 * @return the surgeonNm
+	 * @return the secondaryQualityEngineerId
+	 */
+	@Column(name="SEC_QUALITY_ENGINEER_ID")
+	public String getSecondaryQualityEngineerId() {
+		return secondaryQualityEngineerId;
+	}
+
+	/**
+	 * @return the secondaryQualityEngineerNm
+	 */
+	@Column(name="SEC_QUALITY_ENGINEER_NM", isReadOnly=true)
+	public String getSecondaryQualityEngineerNm() {
+		return secondaryQualityEngineerNm;
+	}
+
+	/**
+	 * @return the buyerId
+	 */
+	@Column(name="BUYER_ID")
+	public String getBuyerId() {
+		return buyerId;
+	}
+
+	/**
+	 * @return the buyerNm
+	 */
+	@Column(name="BUYER_NM", isReadOnly=true)
+	public String getBuyerNm() {
+		return buyerNm;
+	}
+
+	/**
+	 * @return the secondaryBuyerId
+	 */
+	@Column(name="SEC_BUYER_ID")
+	public String getSecondaryBuyerId() {
+		return secondaryBuyerId;
+	}
+
+	/**
+	 * @return the secondaryBuyerNm
+	 */
+	@Column(name="SEC_BUYER_NM", isReadOnly=true)
+	public String getSecondaryBuyerNm() {
+		return secondaryBuyerNm;
+	}
+
+	/**
+	 * @return the surgeonNm.000000
 	 */
 	@Column(name="SURGEON_NM", isReadOnly=true)
 	public String getSurgeonNm() {
@@ -330,22 +426,6 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	@Column(name="MAKE_FROM_ORDER_NO")
 	public String getMakeFromOrderNo() {
 		return makeFromOrderNo;
-	}
-
-	/**
-	 * @return the buyerId
-	 */
-	@Column(name="BUYER_ID")
-	public String getBuyerId() {
-		return buyerId;
-	}
-
-	/**
-	 * @return the buyerNm
-	 */
-	@Column(name="BUYER_NM")
-	public String getBuyerNm() {
-		return buyerNm;
 	}
 
 	/**
@@ -691,45 +771,115 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
-	 * @param engineerId the engineerId to set.
+	 * @param engineerId the EngineerId to set.
 	 */
 	public void setEngineerId(String engineerId) {
 		this.engineerId = StringUtil.checkVal(engineerId, null);
 	}
 
 	/**
-	 * @param engineerNm the engineerNm to set.
+	 * @param secondaryEngineerId the secondaryEngineerId to set.
 	 */
-	public void setEngineerNm(String engineerNm) {
-		this.engineerNm = engineerNm;
+	public void setSecondaryEngineerId(String secondaryEngineerId) {
+		this.secondaryEngineerId = StringUtil.checkVal(secondaryEngineerId, null);
 	}
 
 	/**
-	 * @param designerId the designerId to set.
+	 * @param DesignerId the DesignerId to set.
 	 */
 	public void setDesignerId(String designerId) {
 		this.designerId = StringUtil.checkVal(designerId, null);
 	}
 
 	/**
-	 * @param designerNm the designerNm to set.
+	 * @param secondaryDesignerId the secondaryDesignerId to set.
 	 */
-	public void setDesignerNm(String designerNm) {
-		this.designerNm = designerNm;
+	public void setSecondaryDesignerId(String secondaryDesignerId) {
+		this.secondaryDesignerId = StringUtil.checkVal(secondaryDesignerId, null);
 	}
 
 	/**
-	 * @param qualityEngineerId the qualityEngineerId to set.
+	 * @param QualityEngineerId the qualityEngineerId to set.
 	 */
 	public void setQualityEngineerId(String qualityEngineerId) {
 		this.qualityEngineerId = StringUtil.checkVal(qualityEngineerId, null);
 	}
 
 	/**
-	 * @param qualityEngineerNm the qualityEngineerNm to set.
+	 * @param secondaryQualityEngineerId the secondaryQualityEngineerId to set.
+	 */
+	public void setSecondaryQualityEngineerId(String secondaryQualityEngineerId) {
+		this.secondaryQualityEngineerId = StringUtil.checkVal(secondaryQualityEngineerId, null);
+	}
+
+	/**
+	 * @param buyerId the BuyerId to set.
+	 */
+	public void setBuyerId(String buyerId) {
+		this.buyerId = StringUtil.checkVal(buyerId, null);
+	}
+
+	/**
+	 * @param secondaryBuyerId the secondaryBuyerId to set.
+	 */
+	public void setSecondaryBuyerId(String secondaryBuyerId) {
+		this.secondaryBuyerId = StringUtil.checkVal(secondaryBuyerId, null);
+	}
+
+	/**
+	 * @param engineerNm the EngineerNm to set.
+	 */
+	public void setEngineerNm(String engineerNm) {
+		this.engineerNm = engineerNm;
+	}
+
+	/**
+	 * @param secondaryEngineerNm the secondaryEngineerNm to set.
+	 */
+	public void setSecondaryEngineerNm(String secondaryEngineerNm) {
+		this.secondaryEngineerNm = secondaryEngineerNm;
+	}
+
+	/**
+	 * @param designerNm the DesignerNm to set.
+	 */
+	public void setDesignerNm(String designerNm) {
+		this.designerNm = designerNm;
+	}
+
+	/**
+	 * @param secondaryDesignerNm the secondaryDesignerNm to set.
+	 */
+	public void setSecondaryDesignerNm(String secondaryDesignerNm) {
+		this.secondaryDesignerNm = secondaryDesignerNm;
+	}
+
+	/**
+	 * @param qualityEngineerNm the QualityEngineerNm to set.
 	 */
 	public void setQualityEngineerNm(String qualityEngineerNm) {
 		this.qualityEngineerNm = qualityEngineerNm;
+	}
+
+	/**
+	 * @param secondaryQualityEngineerNm the secondaryQualityEngineerNm to set.
+	 */
+	public void setSecondaryQualityEngineerNm(String secondaryQualityEngineerNm) {
+		this.secondaryQualityEngineerNm = secondaryQualityEngineerNm;
+	}
+
+	/**
+	 * @param buyerNm the BuyerNm to set.
+	 */
+	public void setBuyerNm(String buyerNm) {
+		this.buyerNm = buyerNm;
+	}
+
+	/**
+	 * @param secondaryBuyerNm the secondaryBuyerNm to set.
+	 */
+	public void setSecondaryBuyerNm(String secondaryBuyerNm) {
+		this.secondaryBuyerNm = secondaryBuyerNm;
 	}
 
 	/**
@@ -765,20 +915,6 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	 */
 	public void setMakeFromOrderNo(String makeFromOrderNo) {
 		this.makeFromOrderNo = makeFromOrderNo;
-	}
-
-	/**
-	 * @param buyerId the buyerId to set.
-	 */
-	public void setBuyerId(String buyerId) {
-		this.buyerId = StringUtil.checkVal(buyerId, null);
-	}
-
-	/**
-	 * @param buyerNm the buyerNm to set.
-	 */
-	public void setBuyerNm(String buyerNm) {
-		this.buyerNm = StringUtil.checkVal(buyerNm, null);
 	}
 
 	/**

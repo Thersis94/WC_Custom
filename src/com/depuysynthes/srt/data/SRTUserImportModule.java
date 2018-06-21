@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.depuysynthes.srt.SRTRosterImportAction;
-import com.depuysynthes.srt.util.SRTUserImport;
+import com.depuysynthes.srt.util.SRTRosterImporter;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.db.DBUtil;
@@ -195,7 +195,7 @@ public class SRTUserImportModule extends AbstractWorkflowModule {
 		attributes.putAll(WCConfigUtil.getSiteConfig(getConnection(), SRTUtil.PUBLIC_SITE_ID));
 
 		//Create new Importer with updated attributes map.
-		SRTUserImport importer = new SRTUserImport(getConnection(), attributes);
+		SRTRosterImporter importer = new SRTRosterImporter(getConnection(), attributes);
 
 		//Perform Import with newRosters.
 		importer.importUsers(new ArrayList<>(newRosters));

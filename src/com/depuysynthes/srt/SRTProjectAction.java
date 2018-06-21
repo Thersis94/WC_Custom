@@ -2,6 +2,9 @@ package com.depuysynthes.srt;
 
 import static com.siliconmtn.util.MapUtil.entry;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,6 +39,7 @@ import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -309,10 +313,19 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		if(!projects.getRowData().isEmpty()) {
 
+			//Load Roster Names
+			if(!req.hasParameter(SRT_PROJECT_ID)) {
+				loadRosterNameData(SRTUtil.mapProjects(projects.getRowData()));
+			}
+
 			loadDetailData(projects.getRowData(), req);
 
 			//Decrypt Project Record Name Fields.
-			decryptProjectNames(projects);
+			try {
+				SRTUtil.decryptProjectData(projects.getRowData(), new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY)), ProfileManagerFactory.getInstance(attributes), dbConn);
+			} catch (EncryptionException e) {
+				log.error("Error Processing Code", e);
+			}
 
 			//Add Milestone Data
 			loadMilestoneDetails(projects.getRowData());
@@ -320,6 +333,27 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		//Return Projects
 		return projects;
+	}
+
+	/**
+	 * Load User Names for Project Roster Records.
+	 * @param rowData
+	 */
+	private void loadRosterNameData(Map<String, SRTProjectVO> projectData) {
+		try(PreparedStatement ps = dbConn.prepareStatement(buildRosterNameSql(projectData.size()))) {
+			int i = 1;
+			for(SRTProjectVO p : projectData.values()) {
+				ps.setString(i++, p.getProjectId());
+			}
+
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				SRTProjectVO p = projectData.get(rs.getString(DB_PROJECT_ID));
+				p.setData(rs);
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
 	}
 
 	/**
@@ -355,22 +389,78 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Iterate Projects decrypting User names.
-	 * @param projects
+	 * Load Project Record Roster Names separately.
+	 * @param projectCount
+	 * @return
 	 */
-	private void decryptProjectNames(GridDataVO<SRTProjectVO> projects) {
-		try {
-			StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
-			for(SRTProjectVO p : projects.getRowData()) {
-				p.setRequestorNm(SRTUtil.decryptName(p.getRequestorNm(), se));
-				p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
-				p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
-				p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
-				p.setBuyerNm(SRTUtil.decryptName(p.getBuyerNm(), se));
-			}
-		} catch (EncryptionException e) {
-			log.error("Error Decrypting Project Names", e);
-		}
+	private String buildRosterNameSql(int projectCount) {
+		StringBuilder sql = new StringBuilder(600);
+		String custom = getCustomSchema();
+
+		sql.append("select p.project_id, concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
+		sql.append("concat(sep.first_nm, ' ', sep.last_nm) as sec_engineer_nm, ");
+		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
+		sql.append("concat(sdp.first_nm, ' ', sdp.last_nm) as sec_designer_nm, ");
+		sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm, ");
+		sql.append("concat(sqp.first_nm, ' ', sqp.last_nm) as sec_quality_engineer_nm, ");
+		sql.append("concat(bp.first_nm, ' ', bp.last_nm) as buyer_nm, ");
+		sql.append("concat(sbp.first_nm, ' ', sbp.last_nm) as sec_buyer_nm ");
+		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("DPY_SYN_SRT_PROJECT p ");
+
+		//Get Optional Engineer Information
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER e ");
+		sql.append("on p.ENGINEER_ID = e.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE ep ");
+		sql.append("on e.PROFILE_ID = ep.PROFILE_ID ");
+
+		//Get Optional Sec Engineer Information
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER se ");
+		sql.append("on p.SEC_ENGINEER_ID = se.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE sep ");
+		sql.append("on se.PROFILE_ID = sep.PROFILE_ID ");
+
+		//Get Optional Designer Information
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER d ");
+		sql.append("on p.DESIGNER_ID = d.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE dp ");
+		sql.append("on d.PROFILE_ID = dp.PROFILE_ID ");
+
+		//Get Optional Sec Designer Information
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER sd ");
+		sql.append("on p.SEC_DESIGNER_ID = sd.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE sdp ");
+		sql.append("on sd.PROFILE_ID = sdp.PROFILE_ID ");
+
+		//Get Optional QA Engineer Information
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER q ");
+		sql.append("on p.QUALITY_ENGINEER_ID = q.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE qp ");
+		sql.append("on q.PROFILE_ID = qp.PROFILE_ID ");
+
+		//Get Optional Sec QA Engineer Information
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER sq ");
+		sql.append("on p.SEC_QUALITY_ENGINEER_ID = sq.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE sqp ");
+		sql.append("on sq.PROFILE_ID = sqp.PROFILE_ID ");
+
+		//Get Optional Buyer Information
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER b ");
+		sql.append("on p.BUYER_ID = b.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE bp ");
+		sql.append("on b.PROFILE_ID = bp.PROFILE_ID ");
+
+		//Get Optional Sec Buyer Information
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER sb ");
+		sql.append("on p.SEC_BUYER_ID = sb.ROSTER_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE sbp ");
+		sql.append("on sb.PROFILE_ID = sbp.PROFILE_ID ");
+
+		sql.append(DBUtil.WHERE_CLAUSE).append(" p.PROJECT_ID in (");
+		DBUtil.preparedStatmentQuestion(projectCount, sql);
+		sql.append(")");
+
+		log.debug(sql.toString());
+		return sql.toString();
 	}
 
 	/**
@@ -391,11 +481,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		sql.append("type.label_txt as PROJ_TYPE_TXT ");
 		//If this isn't a detail load, get Names for display purposes.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
-			sql.append(", concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
-			sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
-			sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm, ");
-			sql.append("concat(bp.first_nm, ' ', bp.last_nm) as buyer_nm, ");
-			sql.append("case when dld.label_txt is not null and dld.label_txt != '' then dld.label_txt else r.territory_id end as distributorship, t.total, sld.label_txt as supplier_nm ");
+			sql.append(", case when dld.label_txt is not null and dld.label_txt != '' then dld.label_txt else r.territory_id end as distributorship, t.total, sld.label_txt as supplier_nm ");
 		}
 		if("coProjectId".equals(req.getParameter("sort"))) {
 			sql.append(", case when priority_id = 'FASTEST' or surg_dt is not null then 1 else 0 end as priority_flg, ");
@@ -429,29 +515,6 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		//Load Optional User Data if this isn't a detail view.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
-			//Get Optional Engineer Information
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER e ");
-			sql.append("on p.ENGINEER_ID = e.ROSTER_ID ");
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE ep ");
-			sql.append("on e.PROFILE_ID = ep.PROFILE_ID ");
-
-			//Get Optional Designer Information
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER d ");
-			sql.append("on p.DESIGNER_ID = d.ROSTER_ID ");
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE dp ");
-			sql.append("on d.PROFILE_ID = dp.PROFILE_ID ");
-
-			//Get Optional QA Engineer Information
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER q ");
-			sql.append("on p.QUALITY_ENGINEER_ID = q.ROSTER_ID ");
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE qp ");
-			sql.append("on q.PROFILE_ID = qp.PROFILE_ID ");
-
-			//Get Optional QA Engineer Information
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER b ");
-			sql.append("on p.BUYER_ID = b.ROSTER_ID ");
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE bp ");
-			sql.append("on b.PROFILE_ID = bp.PROFILE_ID ");
 
 			//Get Optional Supplier Nm
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA sld ");
