@@ -348,7 +348,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				SRTProjectVO p = projectData.get(rs.getString("PROJECT_ID"));
+				SRTProjectVO p = projectData.get(rs.getString(DB_PROJECT_ID));
 				p.setData(rs);
 			}
 		} catch (SQLException e) {

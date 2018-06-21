@@ -143,27 +143,19 @@ public class SRTUtil {
 			for(SRTProjectVO p : projects) {
 				//Decrypt Engineer Names
 				p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
-				if(!StringUtil.isEmpty(p.getSecondaryEngineerNm())) {
-					p.setSecondaryEngineerNm(SRTUtil.decryptName(p.getSecondaryEngineerNm(), se));
-				}
+				p.setSecondaryEngineerNm(SRTUtil.decryptName(p.getSecondaryEngineerNm(), se));
 
 				//Decrypt Designer Names
 				p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
-				if(!StringUtil.isEmpty(p.getSecondaryDesignerNm())) {
-					p.setSecondaryDesignerNm(SRTUtil.decryptName(p.getSecondaryDesignerNm(), se));
-				}
+				p.setSecondaryDesignerNm(SRTUtil.decryptName(p.getSecondaryDesignerNm(), se));
 
 				//Decrypt QualityEngineer Names
 				p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
-				if(!StringUtil.isEmpty(p.getSecondaryQualityEngineerNm())) {
-					p.setSecondaryQualityEngineerNm(SRTUtil.decryptName(p.getSecondaryQualityEngineerNm(), se));
-				}
+				p.setSecondaryQualityEngineerNm(SRTUtil.decryptName(p.getSecondaryQualityEngineerNm(), se));
 
 				//Decrypt Buyer Names
 				p.setBuyerNm(SRTUtil.decryptName(p.getBuyerNm(), se));
-				if(!StringUtil.isEmpty(p.getSecondaryBuyerNm())) {
-					p.setSecondaryBuyerNm(SRTUtil.decryptName(p.getSecondaryBuyerNm(), se));
-				}
+				p.setSecondaryBuyerNm(SRTUtil.decryptName(p.getSecondaryBuyerNm(), se));
 
 				//Decrypt name if available.
 				p.setRequestorNm(SRTUtil.decryptName(p.getRequestorNm(), se));
