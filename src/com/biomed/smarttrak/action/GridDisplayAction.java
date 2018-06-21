@@ -189,7 +189,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		List<SMTChartDetailVO> data = new ArrayList<>(grid.getDetails().size());
 		for (GridDetailVO gDetail : grid.getDetails()) {
 			for (int i=0; i<grid.getSeries().length; i++) {
-				if (!columns .isEmpty() && columns.contains(i)) continue;
+				if (!columns .isEmpty() && !columns.contains(i+1)) continue;
 				addDetail(gDetail, data, type, i, grid);
 			}
 		}
