@@ -196,7 +196,7 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 		sql.append("select p.project_id as document_id, p.op_co_id, project_name as title, ");
 		sql.append("p.create_dt as update_dt, hospital_po, engineer_id, designer_id, "); 
 		sql.append("quality_engineer_id, make_from_order_no, buyer_id, supplier_id, ");
-		sql.append("concat(trim(both ' ' from r.surgeon_first_nm), ' ', trim(both ' ' from r.surgeon_last_nm)) as surgeon_nm, r.request_territory_id, "); 
+		sql.append("r.surgeon_nm, r.request_territory_id, "); 
 		sql.append("profile.first_nm, profile.last_nm, p.proj_stat_id, m.MILESTONE_ID, m.MILESTONE_DT, ");
 		sql.append("concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
 		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");

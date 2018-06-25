@@ -475,7 +475,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		String opCoId = SRTUtil.getOpCO(req);
 		StringBuilder sql = new StringBuilder(2000);
 		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
-		sql.append("concat(req.surgeon_first_nm, ' ', req.surgeon_last_nm) as SURGEON_NM, ");
+		sql.append("req.SURGEON_NM, ");
 		sql.append("case when l.lock_id is not null then true else false end as LOCK_STATUS, ");
 		sql.append("l.LOCKED_BY_ID, m.milestone_nm as proj_stat_txt, ");
 		sql.append("type.label_txt as PROJ_TYPE_TXT ");
