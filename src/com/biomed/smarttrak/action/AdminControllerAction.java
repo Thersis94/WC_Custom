@@ -126,19 +126,42 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	}
 	
 	public enum LinkType {
-		GOOGLE("Google Finance"),HOMEPAGE("Homepage"),PRESS("Press Releases"),BIO("Biography"),LINKEDIN("LinkedIn&reg;"),
-		PRODUCT("Product Page"),ARTICLE("Article Link"),EARNINGS("Earnings Call Transcripts"),BROCHUE("Product Brochure"),
-		REPORT("Annual Report"),INVESTOR("Investor Page"),BLOG("Blog"),TWITTER("Twitter"),FACECBOOK("Facebook"),
-		KEY("Key Management"),SURGICAL("Surgical Technique");
+		GOOGLE("Google Finance", "fab fa-google fa-fw"),HOMEPAGE("Homepage", "fal fa-home fa-fw"),PRESS("Press Releases", "fal fa-file-alt fa-fw"),
+		BIO("Biography", "fal fa-book fa-fw"),LINKEDIN("LinkedIn&reg;", "fab fa-linkedin fa-fw"),PRODUCT("Product Page", "fal fa-archive fa-fw"),
+		ARTICLE("Article Link", "fal fa-file-alt fa-fw"),EARNINGS("Earnings Call Transcripts", "fal fa-file-alt fa-fw"),BROCHUE("Product Brochure", "fal fa-file-alt fa-fw"),
+		REPORT("Annual Report", "fal fa-file-alt fa-fw"),INVESTOR("Investor Page", "fal fa-newspaper fa-fw"),BLOG("Blog", "fal fa-file-alt fa-fw"),
+		TWITTER("Twitter", "fab fa-twitter fa-fw"),FACECBOOK("Facebook", "fab fa-facebook fa-fw"),
+		KEY("Key Management", "fal fa-file-alt fa-fw"),SURGICAL("Surgical Technique", "fal fa-file-alt fa-fw");
 		
 		private String name;
+		private String icon;
 		
-		LinkType(String name) {
+		LinkType(String name, String icon) {
 			this.name = name;
+			this.icon = icon;
 		}
 		
 		public String getName() {
 			return name;
+		}
+		
+		public String getIcon() {
+			return icon;
+		}
+		
+		public static LinkType getFromName(String name) {
+			switch (name) {
+				case "Homepage": return LinkType.HOMEPAGE;
+				case "LinkedIn&reg;": return LinkType.LINKEDIN;
+				case "Google Finance": return LinkType.GOOGLE;
+				case "Investor Page": return LinkType.INVESTOR;
+				case "Twitter": return LinkType.TWITTER;
+				case "Facebook": return LinkType.FACECBOOK;
+				case "Biography": return LinkType.BIO;
+				case "Product Page": return LinkType.PRODUCT;
+				case "Article Link":
+				default: return LinkType.ARTICLE;
+			}
 		}
 	}
 	
