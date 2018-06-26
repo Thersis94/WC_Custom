@@ -46,8 +46,8 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 
 	public enum RequestField {
 		REQUEST_ID(SRTRequestAction.SRT_REQUEST_ID), REQUESTOR_NM("requestorNm"),
-		HOSPITAL_NM("hospitalName"), SURGEON_FIRST_NM("surgeonFirstName"),
-		SURGEON_LAST_NM("surgeonLastName"), QTY("qtyNo"),
+		HOSPITAL_NM("hospitalName"), SURGEON_NM("surgeonNm"),
+		QTY("qtyNo"),
 		REASON_FOR_REQUEST("reason"), CHARGE_TO("chargeTo"),
 		DESCRIPTION("description"), ESTIMATE_ROI("estimatedRoi"),
 		TERRITORY_ID("reqTerritoryId"), ADDRESS_1("address"),
@@ -260,8 +260,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		fields.add("charge_to");
 		fields.add("request_desc");
 		fields.add("hospital_nm");
-		fields.add("surgeon_first_nm");
-		fields.add("surgeon_last_nm");
+		fields.add("surgeon_nm");
 		fields.add("reason_for_request");
 		fields.add("estimated_roi");
 		fields.add("qty_no");

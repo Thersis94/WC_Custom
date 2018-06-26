@@ -36,8 +36,7 @@ public class SRTRequestVO extends BeanDataVO {
 	private String rosterId;
 	private SRTRosterVO requestor;
 	private String hospitalName;
-	private String surgeonFirstName;
-	private String surgeonLastName;
+	private String surgeonNm;
 	private String description;
 	private String reqTerritoryId;
 	private List<GenericVO> fileUploads;
@@ -54,7 +53,6 @@ public class SRTRequestVO extends BeanDataVO {
 
 	//Helper Values.
 	private String projectStatus;
-	private String surgeonNm;
 
 	public SRTRequestVO() {
 		super();
@@ -105,22 +103,6 @@ public class SRTRequestVO extends BeanDataVO {
 	@Column(name="HOSPITAL_NM")
 	public String getHospitalName() {
 		return hospitalName;
-	}
-
-	/**
-	 * @return the surgeonFirstName
-	 */
-	@Column(name="SURGEON_FIRST_NM")
-	public String getSurgeonFirstName() {
-		return surgeonFirstName;
-	}
-
-	/**
-	 * @return the surgeonLastName
-	 */
-	@Column(name="SURGEON_LAST_NM")
-	public String getSurgeonLastName() {
-		return surgeonLastName;
 	}
 
 	/**
@@ -242,7 +224,7 @@ public class SRTRequestVO extends BeanDataVO {
 	/**
 	 * @return the surgeonNm
 	 */
-	@Column(name="SURGEON_NM", isReadOnly=true)
+	@Column(name="SURGEON_NM")
 	public String getSurgeonNm() {
 		return surgeonNm;
 	}
@@ -279,20 +261,6 @@ public class SRTRequestVO extends BeanDataVO {
 	 */
 	public void setHospitalName(String hospitalName) {
 		this.hospitalName = hospitalName;
-	}
-
-	/**
-	 * @param surgeonFirstName the surgeonFirstName to set.
-	 */
-	public void setSurgeonFirstName(String surgeonFirstName) {
-		this.surgeonFirstName = surgeonFirstName;
-	}
-
-	/**
-	 * @param surgeonLastName the surgeonLastName to set.
-	 */
-	public void setSurgeonLastName(String surgeonLastName) {
-		this.surgeonLastName = surgeonLastName;
 	}
 
 	/**

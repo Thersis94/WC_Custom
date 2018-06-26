@@ -424,7 +424,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
 		sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm, ");
 		sql.append("concat(bp.first_nm, ' ', bp.last_nm) as buyer_nm, ");
-		sql.append("concat(r.surgeon_first_nm, ' ', r.surgeon_last_nm) as surgeon_nm ");
+		sql.append("r.surgeon_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("dpy_syn_srt_project p ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("dpy_syn_srt_request r on p.request_id = r.request_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("dpy_syn_srt_roster u on r.roster_id = u.roster_id ");

@@ -165,11 +165,10 @@ public class SRTRequestAction extends SimpleActionAdapter {
 			sql.append("l.label_txt as REASON_FOR_REQUEST_TXT ");
 		} else {
 			sql.append("select r.request_id, r.roster_id, r.op_co_id, r.co_req_id, ");
-			sql.append("r.hospital_nm, r.surgeon_first_nm, r.surgeon_last_nm, ");
+			sql.append("r.hospital_nm, r.surgeon_nm, ");
 			sql.append("r.qty_no, r.request_desc, r.estimated_roi, r.create_dt, ");
 			sql.append("a.*, u.profile_id, m.milestone_nm as PROJ_STAT_ID, ");
 			sql.append("l.label_txt as REASON_FOR_REQUEST_TXT, ");
-			sql.append("concat(r.surgeon_first_nm, ' ', r.surgeon_last_nm) as SURGEON_NM, ");
 			sql.append("lct.label_txt as charge_to, lt.label_txt as request_territory_id ");
 		}
 
