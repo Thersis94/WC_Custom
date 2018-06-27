@@ -13,6 +13,7 @@ import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SolrUIVO;
+import com.depuysynthes.srt.vo.SolrUIVO.SearchType;
 import com.ram.workflow.modules.EmailWFM;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
@@ -48,8 +49,6 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	public static final String REQ_SEARCH_DATA = "searchData";
 	public static final String REQ_BOOTSTRAP_LIMIT = "limit";
 
-	public enum SearchType {PROJECT, MASTER_RECORD}
-
 	public SRTSearchAction() {
 		super();
 	}
@@ -67,12 +66,11 @@ public class SRTSearchAction extends SimpleActionAdapter {
 			exportResults(req);
 		} else if(req.hasParameter(REQ_SEARCH_DATA)){
 			searchSolr(req);
-		} else {
+		} else if(req.hasParameter("loadUIConfig")){
 			Map<String, SolrUIVO> formData = loadUIData(EnumUtil.safeValueOf(SearchType.class, req.getParameter("searchType", SearchType.PROJECT.toString())));
 			this.putModuleData(formData, formData.size(), false);
 		}
 	}
-
 
 	/**
 	 * Loads UI Data For Building the UI Configuration Options.
@@ -98,7 +96,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	 */
 	private String loadUiSql() {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(DBUtil.FROM_CLAUSE);
+		sql.append(DBUtil.SELECT_FROM_STAR);
 		sql.append(getCustomSchema()).append("DPY_SYN_SRT_SOLR_UI_CONFIG ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("SEARCH_TYPE = ?");
 		return sql.toString();
