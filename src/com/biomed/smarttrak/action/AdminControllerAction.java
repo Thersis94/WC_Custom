@@ -125,20 +125,45 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		public String getActionType() { return actionType;}
 	}
 	
+	private static final String DEFAULT_ICON = "fal fa-file-alt fa-fw";
+	
 	public enum LinkType {
-		GOOGLE("Google Finance"),HOMEPAGE("Homepage"),PRESS("Press Releases"),BIO("Biography"),LINKEDIN("LinkedIn&reg;"),
-		PRODUCT("Product Page"),ARTICLE("Article Link"),EARNINGS("Earnings Call Transcripts"),BROCHUE("Product Brochure"),
-		REPORT("Annual Report"),INVESTOR("Investor Page"),BLOG("Blog"),TWITTER("Twitter"),FACECBOOK("Facebook"),
-		KEY("Key Management"),SURGICAL("Surgical Technique");
+		GOOGLE("Google Finance", "fab fa-google fa-fw"),HOMEPAGE("Homepage", "fal fa-home fa-fw"),PRESS("Press Releases", DEFAULT_ICON),
+		BIO("Biography", "fal fa-book fa-fw"),LINKEDIN("LinkedIn&reg;", "fab fa-linkedin fa-fw"),PRODUCT("Product Page", "fal fa-archive fa-fw"),
+		ARTICLE("Article Link", DEFAULT_ICON),EARNINGS("Earnings Call Transcripts", DEFAULT_ICON),BROCHUE("Product Brochure", DEFAULT_ICON),
+		REPORT("Annual Report", DEFAULT_ICON),INVESTOR("Investor Page", "fal fa-newspaper fa-fw"),BLOG("Blog", DEFAULT_ICON),
+		TWITTER("Twitter", "fab fa-twitter fa-fw"),FACECBOOK("Facebook", "fab fa-facebook fa-fw"),
+		KEY("Key Management", DEFAULT_ICON),SURGICAL("Surgical Technique", DEFAULT_ICON);
 		
 		private String name;
+		private String icon;
 		
-		LinkType(String name) {
+		LinkType(String name, String icon) {
 			this.name = name;
+			this.icon = icon;
 		}
 		
 		public String getName() {
 			return name;
+		}
+		
+		public String getIcon() {
+			return icon;
+		}
+		
+		public static LinkType getFromName(String name) {
+			switch (name) {
+				case "Homepage": return LinkType.HOMEPAGE;
+				case "LinkedIn&reg;": return LinkType.LINKEDIN;
+				case "Google Finance": return LinkType.GOOGLE;
+				case "Investor Page": return LinkType.INVESTOR;
+				case "Twitter": return LinkType.TWITTER;
+				case "Facebook": return LinkType.FACECBOOK;
+				case "Biography": return LinkType.BIO;
+				case "Product Page": return LinkType.PRODUCT;
+				case "Article Link":
+				default: return LinkType.ARTICLE;
+			}
 		}
 	}
 	
