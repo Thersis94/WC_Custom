@@ -406,7 +406,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		
 		options.addOptionsFromGridData(grid);
 		
-		Map<String, Object> additionalOptions = new HashMap<>();
+		Map<String, Object> additionalOptions = new HashMap<>(4);
 
 		additionalOptions.put("labelType", labelType);
 		additionalOptions.put("abbreviateFlg", Convert.formatBoolean(abbreviateFlg));
@@ -417,6 +417,10 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		
 		options.getChartOptions().put("additionalOptions", additionalOptions);
 		
+		Map<String, Object> legend = new HashMap<>(1);
+		legend.put("enabled", false);
+		
+		options.getChartOptions().put("legend", legend);
 		return options;
 	}
 
