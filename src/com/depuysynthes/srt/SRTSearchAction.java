@@ -2,18 +2,25 @@ package com.depuysynthes.srt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.vo.SolrUIVO;
 import com.ram.workflow.modules.EmailWFM;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.workflow.WorkflowLookupUtil;
 import com.siliconmtn.workflow.data.WorkflowMessageVO;
@@ -41,6 +48,8 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	public static final String REQ_SEARCH_DATA = "searchData";
 	public static final String REQ_BOOTSTRAP_LIMIT = "limit";
 
+	public enum SearchType {PROJECT, MASTER_RECORD}
+
 	public SRTSearchAction() {
 		super();
 	}
@@ -58,9 +67,42 @@ public class SRTSearchAction extends SimpleActionAdapter {
 			exportResults(req);
 		} else if(req.hasParameter(REQ_SEARCH_DATA)){
 			searchSolr(req);
+		} else {
+			Map<String, SolrUIVO> formData = loadUIData(EnumUtil.safeValueOf(SearchType.class, req.getParameter("searchType", SearchType.PROJECT.toString())));
+			this.putModuleData(formData, formData.size(), false);
 		}
 	}
 
+
+	/**
+	 * Loads UI Data For Building the UI Configuration Options.
+	 * @param searchType
+	 * @return
+	 */
+	private Map<String, SolrUIVO> loadUIData(SearchType searchType) {
+		Map<String, SolrUIVO> formData;
+
+		List<SolrUIVO> data = new DBProcessor(dbConn, getCustomSchema()).executeSelect(loadUiSql(), Arrays.asList(searchType.name()), new SolrUIVO());
+
+		if(!data.isEmpty())
+			formData = data.stream().collect(Collectors.toMap(SolrUIVO::getSolrFieldId, Function.identity()));
+		else
+			formData = Collections.emptyMap();
+
+		return formData;
+	}
+
+	/**
+	 * Builds the UI config retrieval Query.
+	 * @return
+	 */
+	private String loadUiSql() {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(DBUtil.FROM_CLAUSE);
+		sql.append(getCustomSchema()).append("DPY_SYN_SRT_SOLR_UI_CONFIG ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("SEARCH_TYPE = ?");
+		return sql.toString();
+	}
 
 	/**
 	 * Helper method that runs search against solr for all DocumentIds that
