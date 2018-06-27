@@ -128,12 +128,12 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	private static final String DEFAULT_ICON = "fal fa-file-alt fa-fw";
 	
 	public enum LinkType {
-		GOOGLE("Google Finance", "fab fa-google fa-fw"),HOMEPAGE("Homepage", "fal fa-home fa-fw"),PRESS("Press Releases", DEFAULT_ICON),
-		BIO("Biography", "fal fa-book fa-fw"),LINKEDIN("LinkedIn&reg;", "fab fa-linkedin fa-fw"),PRODUCT("Product Page", "fal fa-archive fa-fw"),
-		ARTICLE("Article Link", DEFAULT_ICON),EARNINGS("Earnings Call Transcripts", DEFAULT_ICON),BROCHUE("Product Brochure", DEFAULT_ICON),
-		REPORT("Annual Report", DEFAULT_ICON),INVESTOR("Investor Page", "fal fa-newspaper fa-fw"),BLOG("Blog", DEFAULT_ICON),
+		GOOGLE("Google Finance", "fab fa-google fa-fw"),HOMEPAGE("Homepage", "fal fa-home fa-fw"),PRESS("Press Releases", "fal fa-newspaper fa-fw"),
+		BIO("Biography", "fal fa-user fa-fw"),LINKEDIN("LinkedIn&reg;", "fab fa-linkedin fa-fw"),PRODUCT("Product Page", DEFAULT_ICON),
+		ARTICLE("Article Link", DEFAULT_ICON),EARNINGS("Earnings Call Transcripts", "fal fa-phone fa-fw"),BROCHUE("Product Brochure", DEFAULT_ICON),
+		REPORT("Annual Report", DEFAULT_ICON),INVESTOR("Investor Page", DEFAULT_ICON),BLOG("Blog", DEFAULT_ICON),
 		TWITTER("Twitter", "fab fa-twitter fa-fw"),FACECBOOK("Facebook", "fab fa-facebook fa-fw"),
-		KEY("Key Management", DEFAULT_ICON),SURGICAL("Surgical Technique", DEFAULT_ICON);
+		KEY("Key Management", "fal fa-users fa-fw"),SURGICAL("Surgical Technique", "fal fa-stethoscope fa-fw");
 		
 		private String name;
 		private String icon;
