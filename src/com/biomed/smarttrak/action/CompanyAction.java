@@ -391,7 +391,6 @@ public class CompanyAction extends SimpleActionAdapter {
 
 			if (StringUtil.isEmpty(attr.getSectionId())) {
 				if ("LINK".equals(attr.getAttributeTypeName()) || "ATTACH".equals(attr.getAttributeTypeName())) {
-					log.debug(attr.getTitleText());
 					attr.setGroupName(LinkType.getFromName(attr.getTitleText()).getIcon());
 				}
 				
