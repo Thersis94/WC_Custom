@@ -59,7 +59,9 @@ public class ProjectFormProcessor extends FormDataProcessor {
 		PROJECT_NAME, //residence name
 		PROJECT_OWNER, //homeowner name, also non-connected provider's name
 		PROJECT_EMAIL, //homeowner email, also non-connected provider's email
-		PROJECT_PHONE; //homeowner phone, also non-connected provider's phone
+		PROJECT_PHONE, //homeowner phone, also non-connected provider's phone
+		PROJECT_ADDRESS, //non-connected homeowner (residence) address
+		PROJECT_CITY, PROJECT_STATE, PROJECT_ZIP_CODE;
 	}
 
 	/**

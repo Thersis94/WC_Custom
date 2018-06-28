@@ -483,17 +483,19 @@ public class ConnectionAction extends SimpleActionAdapter {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
 
-		if (cvo.getApprovedFlag() == 0 && !StringUtil.isEmpty(cvo.getSenderMemberId()) && !StringUtil.isEmpty(cvo.getRecipientMemberId())) {
+		//not yet approved and we have either a sending member or sending business.
+		if (cvo.getApprovedFlag() == 0 && (!StringUtil.isEmpty(cvo.getSenderMemberId()) || !StringUtil.isEmpty(cvo.getSenderBusinessId()))) {
 			sendRequestEmail(cvo, emailer, notifyUtil);
+
 		} else if (cvo.getApprovedFlag() == 1) {
 			sendApprovedEmail(cvo, emailer, notifyUtil);
 
 			//award 25 points to the members involved in this transaction - we do not award points to businesses.
 			RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 			if (!StringUtil.isEmpty(cvo.getSenderMemberId()))
-				ra.applyReward(Reward.CONNECT.name(), cvo.getSenderMemberId());
+				ra.applyReward(Reward.CONNECT.name(), cvo.getSenderMemberId(), req);
 			if (!StringUtil.isEmpty(cvo.getRecipientMemberId()))
-				ra.applyReward(Reward.CONNECT.name(), cvo.getRecipientMemberId());
+				ra.applyReward(Reward.CONNECT.name(), cvo.getRecipientMemberId(), req);
 		}
 	}
 

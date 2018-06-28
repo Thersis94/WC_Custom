@@ -41,10 +41,11 @@ import com.smt.sitebuilder.security.SBUserRole;
  ****************************************************************************/
 
 public class DashboardAction extends SimpleActionAdapter {
-	private static final String RECENT_SQL = "and create_dt > now() - interval '90 day' ";
+	private static final String RECENT_SQL = "and create_dt > CURRENT_DATE-90 ";
 	private static final String BUS_ID_GROUP = "group by business_id ";
 	private static final String BUS_REVIEW_TABLE = "rezdox_member_business_review ";
 	private static final String PROJECT_TABLE = "rezdox_project ";
+	private static final String PROJECT_COST_VIEW = "rezdox_project_cost_view ";
 	private static final String WHERE_BUSINESS_ID = "where business_id = ? ";
 
 	public DashboardAction() {
@@ -109,29 +110,35 @@ public class DashboardAction extends SimpleActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	private List<GenericVO> loadMyRecentProjects(MemberVO member, boolean isBusinessOnlyRole, boolean isResidenceOnlyRole) {
-		List<Object> params = new ArrayList<>();
 		String schema = getCustomSchema();
+		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
+		List<GenericVO> data = new ArrayList<>();
+		List<Object> params = Arrays.asList(member.getMemberId());
 		StringBuilder sql = new StringBuilder(400);
 		if (!isBusinessOnlyRole) {
 			sql.append("select 'SMT1'+a.project_id as key, a.project_nm as value, coalesce(a.update_dt, a.create_dt) from ").append(schema).append("REZDOX_PROJECT a ");
 			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE r on a.residence_id=r.residence_id ");
 			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.member_id=? and rm.status_flg=1 ");
 			sql.append("where a.residence_view_flg != 0 ");
-			params.add(member.getMemberId());
+			sql.append("order by 3 desc limit 5"); //most recent first
+			log.debug(sql);
+			data.addAll(dbp.executeSelect(sql.toString(), params, new GenericVO()));
+			log.debug("datasize=" + data.size());
 		}
+		
 		if (!isResidenceOnlyRole) {
-			if (!isBusinessOnlyRole) sql.append(DBUtil.UNION); //put a union if this is the 2nd half of the query
+			sql = new StringBuilder(400);
 			sql.append("select 'SMT2'+ a.project_id as key, a.project_nm as value, coalesce(a.update_dt, a.create_dt) from ").append(schema).append("REZDOX_PROJECT a ");
 			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS b on a.business_id=b.business_id ");
 			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_MEMBER_XR bm on b.business_id=bm.business_id and bm.member_id=? and bm.status_flg=1 ");
 			sql.append("where a.business_view_flg != 0 ");
-			params.add(member.getMemberId());
+			sql.append("order by 3 desc limit 5"); //most recent first
+			log.debug(sql);
+			data.addAll(dbp.executeSelect(sql.toString(), params, new GenericVO()));
+			log.debug("datasize=" + data.size());
 		}
-		sql.append("order by 3 desc limit 5"); //most recent first, homogenized
-		log.debug(sql);
 
-		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
-		return dbp.executeSelect(sql.toString(), params, new GenericVO());
+		return data;
 	}
 
 
@@ -170,16 +177,16 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_TABLE);
 		sql.append(WHERE_BUSINESS_ID).append(BUS_ID_GROUP);
 		sql.append(DBUtil.UNION);
-		sql.append("select 'all_projects_value', 'all_projects_value', sum(total_no)::text "); 
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_TABLE);
+		sql.append("select 'all_projects_value', 'all_projects_value', sum(project_cost+material_cost)::text "); 
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_COST_VIEW);
 		sql.append(WHERE_BUSINESS_ID).append(BUS_ID_GROUP);
 		sql.append(DBUtil.UNION);
 		sql.append("select 'recent_projects_count', 'recent_projects_count', count(*)::text "); 
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_TABLE);
 		sql.append(WHERE_BUSINESS_ID).append(RECENT_SQL).append(BUS_ID_GROUP);
 		sql.append(DBUtil.UNION);
-		sql.append("select 'recent_projects_value', 'recent_projects_value', sum(total_no)::text "); 
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_TABLE);
+		sql.append("select 'recent_projects_value', 'recent_projects_value', sum(project_cost+material_cost)::text"); 
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_COST_VIEW);
 		sql.append(WHERE_BUSINESS_ID).append(RECENT_SQL).append(BUS_ID_GROUP);
 		sql.append(DBUtil.UNION);
 		sql.append("select 'bus_connections', 'bus_connections', count(*)::text "); 
@@ -286,9 +293,10 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("'RESIDENCE_TRANSIT_SCORE', 'RESIDENCE_SUN_NUMBER') ");
 		//join projects for IMPROVEMENT projects total
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
-		sql.append("(select a.residence_id, sum(total_no) as project_total ");
+		sql.append("(select a.residence_id, sum(project_cost+material_cost)*? as project_total ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_member_xr a ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_project b on a.residence_id=b.residence_id and b.project_category_cd='IMPROVEMENT' and b.residence_view_flg=1 ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_project_cost_view b on a.residence_id=b.residence_id ");
+		sql.append("and b.is_improvement=1 and b.residence_view_flg=1 ");
 		sql.append("where a.member_id=? and a.status_flg=1 ");
 		sql.append("group by a.residence_id ");
 		sql.append(") as p on c.residence_id=p.residence_id ");
@@ -304,7 +312,8 @@ public class DashboardAction extends SimpleActionAdapter {
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection());
-		return db.executeSelect(sql.toString(), Arrays.asList(memberId, memberId, memberId), new ResidenceVO(), "residence_id");
+		List<Object> params = Arrays.asList(RezDoxUtils.IMPROVEMENTS_VALUE_COEF, memberId, memberId, memberId);
+		return db.executeSelect(sql.toString(), params, new ResidenceVO(), "residence_id");
 	}
 
 	/**
@@ -320,12 +329,12 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_reward a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
 		sql.append("(select member_id, sum(point_value_no) recent_rewards_total ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_reward ");
-		sql.append("where member_id = ? ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_reward a ");
+		sql.append("where member_id=? ");
 		sql.append(RECENT_SQL);
 		sql.append("group by member_id ");
-		sql.append(") as b on a.member_id = b.member_id ");
-		sql.append("where a.member_id = ? ");
+		sql.append(") as b on a.member_id=b.member_id ");
+		sql.append("where a.member_id=? ");
 		sql.append("group by a.member_id, recent_rewards_total ");
 
 		DBProcessor db = new DBProcessor(getDBConnection());

@@ -2,6 +2,7 @@ package com.rezdox.action;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -156,18 +158,17 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 		dataMap.put("businessName", business.getBusinessName());
 
 		// Set the recipient. Send to the business email address.
-		Map<String, String> rcptMap = new HashMap<>();
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
 		MemberVO recipient = business.getMembers().entrySet().iterator().next().getValue();
-		rcptMap.put(recipient.getProfileId(), business.getEmailAddressText());
+		rcpts.add(new EmailRecipientVO(recipient.getProfileId(), business.getEmailAddressText(), EmailRecipientVO.TO));
 
 		// Send the appropriate email based on the approval status
 		String emailSlug = RezDoxUtils.EmailSlug.BUSINESS_APPROVED.name();
-		if (business.getStatus() == BusinessStatus.INACTIVE) {
+		if (business.getStatus() == BusinessStatus.INACTIVE)
 			emailSlug = RezDoxUtils.EmailSlug.BUSINESS_DECLINED.name();
-		}
 		
 		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-		util.sendMessage(dataMap, rcptMap, emailSlug);
+		util.sendMessage(dataMap, rcpts, emailSlug);
 	}
 
 	/**
