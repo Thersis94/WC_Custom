@@ -25,6 +25,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -129,14 +130,16 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//if there is a target id use the token to identify the type of id sent and make the correct
 		//  request. getting member data is different then getting business data.
 		String[] idParts = StringUtil.checkVal(req.getParameter(TARGET_ID)).split("_");
+		if (idParts == null || idParts.length < 2) return; 
 
-		if (idParts != null && idParts.length > 0 && "m".equalsIgnoreCase(idParts[0])) {
+		if ("m".equalsIgnoreCase(idParts[0])) {
 			setModuleData(generateConnections(idParts[1], MEMBER, req));
 
-		} else  if (idParts != null && idParts.length > 0 && "b".equalsIgnoreCase(idParts[0])) {
+		} else  if ("b".equalsIgnoreCase(idParts[0])) {
 			setModuleData(generateConnections(idParts[1], BUSINESS, req));
 		}
 	}
+
 
 	/**
 	 * controls generating the cookie
@@ -307,6 +310,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		String idField = (inqueryType.equals(MEMBER)) ? MEMBER : BUSINESS;
 
 		//getting the records where target id sent the connection to an other member
+		String andIsApproved = "and a.approved_flg >= 0 ";
 		StringBuilder sql = new StringBuilder(2680);
 		sql.append(DBUtil.SELECT_FROM_STAR);
 		sql.append("( select connection_id, sndr_").append(idField).append("_id as sndr_id, b.member_id as rcpt_id, 'sending' as direction_cd, b.first_nm, b.last_nm, b.profile_pic_pth, ");
@@ -314,7 +318,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.rcpt_member_id = b.member_id ");
 		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
-		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
+		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		//getting the records where target id was sent a connection by an other memeber
 		sql.append(DBUtil.UNION_ALL);
@@ -323,7 +327,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A );
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.sndr_member_id = b.member_id ");
 		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
-		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
+		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		//getting the records where target id sent a connection to a business
 		sql.append(DBUtil.UNION_ALL);
@@ -344,7 +348,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
-		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
+		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		//getting the records where a business sent a connection to the target id
 		sql.append(DBUtil.UNION_ALL);
@@ -365,7 +369,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
-		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
+		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		sql.append(") as all_member ");
 		//where for whole multiplexed union would go here
@@ -483,7 +487,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 			sendRequestEmail(cvo, emailer, notifyUtil);
 		} else if (cvo.getApprovedFlag() == 1) {
 			sendApprovedEmail(cvo, emailer, notifyUtil);
-			
+
 			//award 25 points to the members involved in this transaction - we do not award points to businesses.
 			RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 			if (!StringUtil.isEmpty(cvo.getSenderMemberId()))
@@ -508,8 +512,13 @@ public class ConnectionAction extends SimpleActionAdapter {
 		addUserToMap(cvo.getSenderMemberId(), cvo.getSenderBusinessId(), "senderName", dataMap, null);
 		addUserToMap(cvo.getRecipientMemberId(), cvo.getRecipientBusinessId(), "recipientName", dataMap, emailMap);
 
+		//conver the map to a list
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
+		for (Map.Entry<String, String> entry : emailMap.entrySet())
+			rcpts.add(new EmailRecipientVO(entry.getKey(), entry.getValue(), EmailRecipientVO.TO));
+
 		// Send the email notification
-		emailer.sendMessage(dataMap, emailMap, RezDoxUtils.EmailSlug.CONNECTION_REQUEST.name());
+		emailer.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.CONNECTION_REQUEST.name());
 
 		// Add the browser notification
 		String notifyProfileId = emailMap.entrySet().iterator().next().getKey();
@@ -532,8 +541,13 @@ public class ConnectionAction extends SimpleActionAdapter {
 		addUserToMap(cvo.getSenderMemberId(), cvo.getSenderBusinessId(), "senderName", dataMap, emailMap);
 		addUserToMap(cvo.getRecipientMemberId(), cvo.getRecipientBusinessId(), "recipientName", dataMap, null);
 
+		//conver the map to a list
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
+		for (Map.Entry<String, String> entry : emailMap.entrySet())
+			rcpts.add(new EmailRecipientVO(entry.getKey(), entry.getValue(), EmailRecipientVO.TO));
+
 		// Send the email notification
-		emailer.sendMessage(dataMap, emailMap, RezDoxUtils.EmailSlug.CONNECTION_APPROVED.name());
+		emailer.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.CONNECTION_APPROVED.name());
 
 		// Add the browser notification
 		String notifyProfileId = emailMap.entrySet().iterator().next().getKey();

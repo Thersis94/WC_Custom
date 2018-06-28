@@ -155,7 +155,7 @@ public class DashboardAction extends SimpleActionAdapter {
 	 * @param bus
 	 * @param schema
 	 */
-	protected void getBusinessAttributes(BusinessVO bus, String schema) {
+	protected void getBusinessAttributes(BusinessVO bus, String schema, String memberId) {
 		String bId = bus.getBusinessId();
 		StringBuilder sql = new StringBuilder(1144);
 		sql.append("select 'all_reviews_avg' as attribute_id, 'all_reviews_avg' as slug_txt, avg(rating_no)::text as value_txt ");
@@ -185,11 +185,20 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("select 'bus_connections', 'bus_connections', count(*)::text "); 
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_connection");
 		sql.append(DBUtil.WHERE_CLAUSE).append("(sndr_business_id=? or rcpt_business_id=?) and approved_flg=1 ");
+		sql.append(DBUtil.UNION);
+		sql.append("select 'bus_connections', 'bus_connections', count(*)::text "); 
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_connection");
+		sql.append(DBUtil.WHERE_CLAUSE).append("(sndr_business_id=? or rcpt_business_id=?) and approved_flg=1 ");
+		sql.append(DBUtil.UNION);
+		sql.append("select 'bus_connections_lic', 'bus_connections_lic', sum(a.qty_no)::text "); 
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_subscription a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_membership b on a.membership_id=b.membership_id and b.group_cd='CO' ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("a.member_id=? ");
 		sql.append("order by slug_txt ");
 
 		// Add the attributes to the business
-		DBProcessor db = new DBProcessor(getDBConnection());
-		List<Object> vals = Arrays.asList(bId,bId,bId,bId,bId,bId,bId,bId);
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		List<Object> vals = Arrays.asList(bId,bId,bId,bId,bId,bId,bId,bId,bId,bId,memberId);
 		bus.addAttributes(db.executeSelect(sql.toString(), vals, new BusinessAttributeVO()));
 	}
 
@@ -208,7 +217,7 @@ public class DashboardAction extends SimpleActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<BusinessVO> businesses = db.executeSelect(sql.toString(), Arrays.asList(memberId), new BusinessVO());
-		for(BusinessVO business : businesses) getBusinessAttributes(business, schema);
+		for(BusinessVO business : businesses) getBusinessAttributes(business, schema, memberId);
 		return businesses;
 	}
 
