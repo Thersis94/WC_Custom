@@ -24,6 +24,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -274,7 +275,7 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 
 		if (newReview) {
 			dbp.insert(review);
-			awardPoints(review.getMemberId());
+			awardPoints(review.getMemberId(), req);
 		} else {
 			dbp.update(review);
 		}
@@ -286,10 +287,10 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 	/**
 	 * @param memberId
 	 */
-	private void awardPoints(String memberId) {
+	private void awardPoints(String memberId, ActionRequest req) {
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 		try {
-			ra.applyReward(Reward.REVIEW_BUS.name(), memberId);
+			ra.applyReward(Reward.REVIEW_BUS.name(), memberId, req);
 		} catch (ActionException e) {
 			log.error("could not award reward points", e);
 		}
@@ -313,7 +314,6 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 
 	/**
 	 * Sends notification to the business about a review that was left
-	 * 
 	 * @param req
 	 */
 	private void sendReviewEmail(ActionRequest req) {
@@ -327,12 +327,12 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		dataMap.put("businessName", business.getBusinessName());
 
 		// Set the recipient. Send to the business email address.
-		Map<String, String> rcptMap = new HashMap<>();
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
 		MemberVO recipient = business.getMembers().entrySet().iterator().next().getValue();
-		rcptMap.put(recipient.getProfileId(), business.getEmailAddressText());
+		rcpts.add(new EmailRecipientVO(recipient.getProfileId(), business.getEmailAddressText(), EmailRecipientVO.TO));
 
 		// Send the email
 		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-		util.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.REVIEW_BUSINESS.name());
+		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.REVIEW_BUSINESS.name());
 	}
 }
