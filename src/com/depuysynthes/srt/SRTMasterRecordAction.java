@@ -423,10 +423,7 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 			}
 
 			ResultSet rs = ps.executeQuery();
-
-			if(rs.next()) {
-				processAndPopulateMasterRecordXrs(rs, projects);
-			}
+			processAndPopulateMasterRecordXrs(rs, projects);
 		} catch (SQLException e) {
 			log.error("Error Processing Code", e);
 		}

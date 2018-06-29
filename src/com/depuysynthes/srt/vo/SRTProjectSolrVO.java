@@ -43,17 +43,39 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	private List<String> productFamilies;
 	private List<String> productCategory;
 	private List<String> partNumbers;
-	private String makeFromPartNos;
+
+	private String requestDescription;
 	private String surgeonName;
 	private String firstNm;
 	private String lastNm;
 	private String poNumber;
+
+	private List<String> productTitles;
+	private List<String> directShipEligibles;
+	private List<String> obsoleteFlags;
+	private List<String> qualitySystems;
+	private List<String> productTypes;
+	private List<String> makeFromPartNos;
+
+	private String projectNo;
+	private String projectType;
+	private String projectPriority;
+	private String specialInstructions;
+	private String mfgPoToVendor;
+	private String salesOrderFromWarehouse;
+	private String reasonForRequest;
 
 	public SRTProjectSolrVO() {
 		super();
 		productCategory = new ArrayList<>();
 		productFamilies = new ArrayList<>();
 		partNumbers = new ArrayList<>();
+		productTitles = new ArrayList<>();
+		directShipEligibles = new ArrayList<>();
+		obsoleteFlags = new ArrayList<>();
+		qualitySystems = new ArrayList<>();
+		productTypes = new ArrayList<>();
+		makeFromPartNos = new ArrayList<>();
 	}
 
 	public SRTProjectSolrVO(ResultSet rs) {
@@ -210,15 +232,6 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	}
 
 	/**
-	 * @return the makeFromPartNos
-	 */
-	@Column(name="make_from_order_no")
-	@SolrField(name="makeFromPartNos_s")
-	public String getMakeFromPartNos() {
-		return makeFromPartNos;
-	}
-
-	/**
 	 * @return the surgeonName
 	 */
 	@Column(name="surgeon_nm")
@@ -329,13 +342,6 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	}
 
 	/**
-	 * @param makeFromPartNos the makeFromPartNos to set.
-	 */
-	public void setMakeFromPartNos(String makeFromPartNos) {
-		this.makeFromPartNos = makeFromPartNos;
-	}
-
-	/**
 	 * @param surgeonName the surgeonName to set.
 	 */
 	public void setSurgeonName(String surgeonName) {
@@ -414,5 +420,265 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 */
 	public void setQualityEngineerNm(String qualityEngineerNm) {
 		this.qualityEngineerNm = qualityEngineerNm;
+	}
+
+	/**
+	 * @return the productTitles
+	 */
+	@SolrField(name="productTitles_ss")
+	public List<String> getProductTitles() {
+		return productTitles;
+	}
+
+	/**
+	 * @return the directShipEligible
+	 */
+	@SolrField(name="directShipEligibles_ss")
+	public List<String> getDirectShipEligibles() {
+		return directShipEligibles;
+	}
+
+	/**
+	 * @return the obsoleteFlags
+	 */
+	@SolrField(name="obsoleteFlags_ss")
+	public List<String> getObsoleteFlags() {
+		return obsoleteFlags;
+	}
+
+	/**
+	 * @return the qualitySystems
+	 */
+	@SolrField(name="qualitySystems_ss")
+	public List<String> getQualitySystems() {
+		return qualitySystems;
+	}
+
+	/**
+	 * @return the productTypes
+	 */
+	@SolrField(name="productTypes_ss")
+	public List<String> getProductTypes() {
+		return productTypes;
+	}
+
+	/**
+	 * @return the makeFromPartNos
+	 */
+	@SolrField(name="makeFromPartNos_ss")
+	public List<String> getMakeFromPartNos() {
+		return makeFromPartNos;
+	}
+
+	/**
+	 * @return the requestDescription
+	 */
+	@Column(name="request_desc")
+	@SolrField(name="requestDescription_s")
+	public String getRequestDescription() {
+		return requestDescription;
+	}
+
+	/**
+	 * @return the projectNo
+	 */
+	@Column(name="co_project_id")
+	@SolrField(name="coProjectId_s")
+	public String getProjectNo() {
+		return projectNo;
+	}
+
+	/**
+	 * @return the projectType
+	 */
+	@Column(name="proj_type_id")
+	@SolrField(name="projectType_s")
+	public String getProjectType() {
+		return projectType;
+	}
+
+	/**
+	 * @return the projectPriority
+	 */
+	@Column(name="priority_id")
+	@SolrField(name="priority_s")
+	public String getProjectPriority() {
+		return projectPriority;
+	}
+
+	/**
+	 * @return the specialInstructions
+	 */
+	@Column(name="special_instructions")
+	@SolrField(name="specialInstructions_s")
+	public String getSpecialInstructions() {
+		return specialInstructions;
+	}
+
+	/**
+	 * @return the mfgPoToVendor
+	 */
+	@Column(name="mfg_po_to_vendor")
+	@SolrField(name="mfgPoToVendor_s")
+	public String getMfgPoToVendor() {
+		return mfgPoToVendor;
+	}
+
+	/**
+	 * @return the salesOrderFromWarehouse
+	 */
+	@Column(name="warehouse_tracking_no")
+	@SolrField(name="warehouseTrackingNo_s")
+	public String getSalesOrderFromWarehouse() {
+		return salesOrderFromWarehouse;
+	}
+
+	/**
+	 * @return the reasonForRequest
+	 */
+	@Column(name="reason_for_request")
+	@SolrField(name="reasonForRequest_s")
+	public String getReasonForRequest() {
+		return reasonForRequest;
+	}
+
+	/**
+	 * @param productTitles the productTitles to set.
+	 */
+	public void setProductTitles(List<String> productTitles) {
+		this.productTitles = productTitles;
+	}
+
+	/**
+	 * @param directShipEligible the directShipEligible to set.
+	 */
+	public void setDirectShipEligibles(List<String> directShipEligibles) {
+		this.directShipEligibles = directShipEligibles;
+	}
+
+	/**
+	 * @param obsoleteFlags the obsoleteFlags to set.
+	 */
+	public void setObsoleteFlags(List<String> obsoleteFlags) {
+		this.obsoleteFlags = obsoleteFlags;
+	}
+
+	/**
+	 * @param qualitySystems the qualitySystems to set.
+	 */
+	public void setQualitySystems(List<String> qualitySystems) {
+		this.qualitySystems = qualitySystems;
+	}
+
+	/**
+	 * @param productTypes the productTypes to set.
+	 */
+	public void setProductTypes(List<String> productTypes) {
+		this.productTypes = productTypes;
+	}
+
+	/**
+	 * @param makeFromPartNos the makeFromPartNos to set.
+	 */
+	public void setMakeFromPartNos(List<String> makeFromPartNos) {
+		this.makeFromPartNos = makeFromPartNos;
+	}
+
+	/**
+	 * @param requestDescription the requestDescription to set.
+	 */
+	public void setRequestDescription(String requestDescription) {
+		this.requestDescription = requestDescription;
+	}
+
+	/**
+	 * @param projectNo the projectNo to set.
+	 */
+	public void setProjectNo(String projectNo) {
+		this.projectNo = projectNo;
+	}
+
+	/**
+	 * @param projectType the projectType to set.
+	 */
+	public void setProjectType(String projectType) {
+		this.projectType = projectType;
+	}
+
+	/**
+	 * @param projectPriority the projectPriority to set.
+	 */
+	public void setProjectPriority(String projectPriority) {
+		this.projectPriority = projectPriority;
+	}
+
+	/**
+	 * @param specialInstructions the specialInstructions to set.
+	 */
+	public void setSpecialInstructions(String specialInstructions) {
+		this.specialInstructions = specialInstructions;
+	}
+
+	/**
+	 * @param mfgPoToVendor the mfgPoToVendor to set.
+	 */
+	public void setMfgPoToVendor(String mfgPoToVendor) {
+		this.mfgPoToVendor = mfgPoToVendor;
+	}
+
+	/**
+	 * @param salesOrderFromWarehouse the salesOrderFromWarehouse to set.
+	 */
+	public void setSalesOrderFromWarehouse(String salesOrderFromWarehouse) {
+		this.salesOrderFromWarehouse = salesOrderFromWarehouse;
+	}
+
+	/**
+	 * @param reasonForRequest the reasonForRequest to set.
+	 */
+	public void setReasonForRequest(String reasonForRequest) {
+		this.reasonForRequest = reasonForRequest;
+	}
+
+	/**
+	 * @param productTitles the productTitle to set.
+	 */
+	public void addProductTitle(String productTitle) {
+		productTitles.add(productTitle);
+	}
+
+	/**
+	 * @param directShipEligible the directShipEligible to set.
+	 */
+	public void addDirectShipEligible(String directShipEligible) {
+		directShipEligibles.add(directShipEligible);
+	}
+
+	/**
+	 * @param obsoleteFlags the obsoleteFlag to set.
+	 */
+	public void addObsoleteFlags(String obsoleteFlag) {
+		obsoleteFlags.add(obsoleteFlag);
+	}
+
+	/**
+	 * @param qualitySystems the qualitySystem to set.
+	 */
+	public void addQualitySystems(String qualitySystem) {
+		qualitySystems.add(qualitySystem);
+	}
+
+	/**
+	 * @param productTypes the productType to set.
+	 */
+	public void addProductTypes(String productType) {
+		productTypes.add(productType);
+	}
+
+	/**
+	 * @param makeFromPartNo the makeFromPartNo to set.
+	 */
+	public void addMakeFromPartNo(String makeFromPartNo) {
+		makeFromPartNos.add(makeFromPartNo);
 	}
 }

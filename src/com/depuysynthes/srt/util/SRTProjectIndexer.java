@@ -143,8 +143,10 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 	private void populateProjectData(Map<String, SRTProjectSolrVO> projects) {
 		boolean singleSearch = projects.size() == 1;
 		try(PreparedStatement ps = dbConn.prepareStatement(loadMasterRecordSql(singleSearch))) {
+			int i = 1;
+			ps.setString(i++, "DIRECT_SHIP_ELIGIBLE");
 			if(singleSearch) {
-				ps.setString(1, projects.keySet().iterator().next());
+				ps.setString(i++, projects.keySet().iterator().next());
 			}
 
 			ResultSet rs = ps.executeQuery();
@@ -156,6 +158,13 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 					p.addPartNumbers(rs.getString("PART_NO"));
 					p.addProductCategory(rs.getString("prod_cat_id"));
 					p.addProductFamily(rs.getString("prod_family_id"));
+
+					p.addProductTitle(rs.getString("title_txt"));
+					p.addQualitySystems(rs.getString("quality_system_id"));
+					p.addProductTypes(rs.getString("prod_type_id"));
+					p.addMakeFromPartNo(rs.getString("make_from_part_nos"));
+					p.addDirectShipEligible(rs.getString("direct_ship_eligible"));
+					p.addObsoleteFlags(rs.getString("obsolete_flg"));
 					p.setSummary(p.toString());
 				}
 			}
@@ -173,11 +182,18 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select x.project_id, m.prod_cat_id, m.prod_family_id, ");
-		sql.append("m.part_no from ").append(customDb);
+		sql.append("m.part_no, m.title_txt, m.quality_system_id, m.prod_type_id, ");
+		sql.append("m.make_from_part_nos, m.obsolete_flg, ");
+		sql.append("mra.value_txt as direct_ship_eligible ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customDb);
 		sql.append("dpy_syn_srt_master_record_project_xr x ");
 		sql.append(DBUtil.INNER_JOIN).append(customDb);
 		sql.append("dpy_syn_srt_master_record m ");
 		sql.append("on x.master_record_id = m.master_record_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb);
+		sql.append("dpy_syn_srt_mr_attr_xr mra on ");
+		sql.append("m.master_record_id = mra.master_record_id and ");
+		sql.append("mra.attr_id = ? ");
 
 		if(singleSearch) {
 			sql.append(DBUtil.WHERE_CLAUSE).append(" x.project_id = ? ");
@@ -196,7 +212,9 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 		sql.append("select p.project_id as document_id, p.op_co_id, project_name as title, ");
 		sql.append("p.create_dt as update_dt, hospital_po, engineer_id, designer_id, "); 
 		sql.append("quality_engineer_id, make_from_order_no, buyer_id, supplier_id, ");
-		sql.append("r.surgeon_nm, r.request_territory_id, "); 
+		sql.append("r.surgeon_nm, r.request_territory_id, r.request_desc, p.co_project_id, ");
+		sql.append("p.proj_type_id, p.priority_id, p.special_instructions, ");
+		sql.append("p.mfg_po_to_vendor, p.warehouse_tracking_no, r.reason_for_request, ");
 		sql.append("profile.first_nm, profile.last_nm, p.proj_stat_id, m.MILESTONE_ID, m.MILESTONE_DT, ");
 		sql.append("concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
 		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
