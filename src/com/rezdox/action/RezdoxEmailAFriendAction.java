@@ -17,7 +17,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 /****************************************************************************
  * <b>Title</b>: RezdoxEmailAFriend.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Extends core email a friend action to
+ * <b>Description: </b> Extends core email a friend action to include loading the Business' profile data, to include in the email.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -27,7 +27,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @updates:
  * 	TJ - Mar 28, 2018: Added invitation support.
  ****************************************************************************/
-public class RezdoxEmailAFriendAction extends EmailFriendAction{
+public class RezdoxEmailAFriendAction extends EmailFriendAction {
 
 	/*
 	 * (non-Javadoc)
@@ -35,11 +35,8 @@ public class RezdoxEmailAFriendAction extends EmailFriendAction{
 	 */
 	@Override 
 	public void build(ActionRequest req)  throws ActionException {
-		log.debug("reqbuild in action called");
-
 		// Handle logic specific to the type of email a friend
-		String emailType = req.getParameter("emailType");
-		if ("invitation".equals(emailType)) {
+		if ("invitation".equals(req.getParameter("emailType"))) {
 			sendInvitation(req);
 		} else {
 			referBusiness(req);
@@ -65,7 +62,7 @@ public class RezdoxEmailAFriendAction extends EmailFriendAction{
 
 		//default email a friend only gets the name from the form
 		Map<String, Object> emailData = new HashMap<>();
-		emailData.put("memberName", member.getFullName());
+		emailData.put("senderName", member.getFullName());
 		emailData.put("businessName", bvo.getBusinessName());
 		emailData.put("businessId", bvo.getBusinessId());
 		sendEmail(req, emailData);

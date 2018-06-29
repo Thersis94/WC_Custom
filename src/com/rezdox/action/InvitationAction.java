@@ -16,6 +16,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -30,7 +31,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Mar 29, 2018
  ****************************************************************************/
 public class InvitationAction extends SBActionAdapter {
-	
+
 	private static final String REQ_RECIPIENT_EMAIL = "rcptEml";
 	private Map<String, Object> emailData;
 
@@ -71,7 +72,7 @@ public class InvitationAction extends SBActionAdapter {
 			saveInvitation(member, req);
 		}
 	}
-	
+
 	/**
 	 * Saves a new invitation, builds params that can be used for email sending
 	 * 
@@ -85,13 +86,13 @@ public class InvitationAction extends SBActionAdapter {
 		if (!invitations.isEmpty()) {
 			return;
 		}
-		
+
 		// Set the data on the VO
 		InvitationVO invite = new InvitationVO(req);
 		invite.setMemberId(RezDoxUtils.getMemberId(req));
 		invite.setStatusFlag(InvitationVO.Status.SENT.getCode());
 		invite.setEmailAddressText(req.getParameter(REQ_RECIPIENT_EMAIL));
-		
+
 		// Save the invitation record
 		DBProcessor dbp = new DBProcessor(dbConn);
 		try {
@@ -100,11 +101,11 @@ public class InvitationAction extends SBActionAdapter {
 			log.error("Could not save invitation", e);
 		}
 		putModuleData(invite.getInvitationId(), 1, false);
-		
+
 		// Put params onto the email data map
 		emailData.put("memberName", member.getFullName());
 	}
-	
+
 	/**
 	 * Updates the invitation status, building email params only if the status is "re-sent".
 	 * An invitationId must be passed on the request.
@@ -116,7 +117,7 @@ public class InvitationAction extends SBActionAdapter {
 	protected void updateInvitation(MemberVO member, ActionRequest req) throws ActionException {
 		// Update the status on the invitation record
 		updateStatus(new InvitationVO(req));
-		
+
 		// Build email params if the status is set to "re-send"
 		if (Convert.formatInteger(req.getParameter("statusFlag")) == InvitationVO.Status.RESENT.getCode()) {
 			InvitationVO invitation = retrieveInvitations(req).get(0);
@@ -124,7 +125,7 @@ public class InvitationAction extends SBActionAdapter {
 			emailData.put("memberName", member.getFullName());
 		}
 	}
-	
+
 	/**
 	 * Updates the status for an invitation.
 	 * Must pass the invitationId and statusFlg in the VO.
@@ -138,9 +139,9 @@ public class InvitationAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("rezdox_invitation ");
 		sql.append("set status_flg = ?, update_dt = current_timestamp where invitation_id = ? ");
-		
+
 		List<String> fields = Arrays.asList("status_flg", "invitation_id");
-		
+
 		DBProcessor dbp = new DBProcessor(dbConn);
 		try {
 			dbp.executeSqlUpdate(sql.toString(), invite, fields);
@@ -148,7 +149,7 @@ public class InvitationAction extends SBActionAdapter {
 			throw new ActionException("Could not update status on invitation record", e);
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.tools.EmailFriendAction#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
@@ -157,7 +158,7 @@ public class InvitationAction extends SBActionAdapter {
 		List<InvitationVO> invitations = retrieveInvitations(req);
 		putModuleData(invitations, invitations.size(), false);
 	}
-	
+
 	/**
 	 * Gets the base query for returning invitation data
 	 * 
@@ -169,7 +170,7 @@ public class InvitationAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select invitation_id, member_id, email_address_txt, status_flg, create_dt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_invitation ");
-		
+
 		return sql;
 	}
 
@@ -182,21 +183,21 @@ public class InvitationAction extends SBActionAdapter {
 	protected List<InvitationVO> retrieveInvitations(ActionRequest req) {
 		StringBuilder sql = getBaseRetrieveSql();
 		sql.append(DBUtil.WHERE_CLAUSE).append("member_id = ? and status_flg >= ? ");
-		
+
 		List<Object> params = new ArrayList<>();
 		params.add(RezDoxUtils.getMemberId(req));
-		
+
 		// Filter as required
 		if (req.hasParameter(REQ_RECIPIENT_EMAIL)) {
 			sql.append("and lower(email_address_txt) = ? ");
 			params.add(InvitationVO.Status.DELETED.getCode());
 			params.add(req.getParameter(REQ_RECIPIENT_EMAIL).trim().toLowerCase());
-			
+
 		} else if (req.hasParameter("invitationId")) {
 			sql.append("and invitation_id = ? ");
 			params.add(InvitationVO.Status.DELETED.getCode());
 			params.add(req.getParameter("invitationId"));
-			
+
 		} else {
 			params.add(InvitationVO.Status.SENT.getCode());
 		}
@@ -206,7 +207,7 @@ public class InvitationAction extends SBActionAdapter {
 		DBProcessor dbp = new DBProcessor(dbConn);
 		return dbp.executeSelect(sql.toString(), params, new InvitationVO());
 	}
-	
+
 	/**
 	 * Checks the current user against the invitation records,
 	 * and gives rewards to the person(s) who invited them.
@@ -216,17 +217,17 @@ public class InvitationAction extends SBActionAdapter {
 	 */
 	public void applyInviterRewards(ActionRequest req, String rewardSlug) throws ActionException {
 		List<InvitationVO> invites = retrieveRewardInvites(RezDoxUtils.getMember(req).getEmailAddress());
-		
+
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 		for (InvitationVO invite : invites) {
 			invite.setStatusFlag(InvitationVO.Status.JOINED.getCode());
 			updateStatus(invite);
-			
+
 			ra.applyReward(rewardSlug, invite.getMemberId());
 			sendInviterEmail(req, invite.getMemberId());
 		}
 	}
-	
+
 	/**
 	 * Sends a confirmation to the member who invited the current user.
 	 * 
@@ -245,13 +246,14 @@ public class InvitationAction extends SBActionAdapter {
 		dataMap.put("invitedName", invited.getFullName());
 
 		// Add the recipient
-		Map<String, String> rcptMap = new HashMap<>();
-		rcptMap.put(inviter.getProfileId(), inviter.getEmailAddress());
-		
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
+		rcpts.add(new EmailRecipientVO(inviter.getProfileId(), inviter.getEmailAddress(), EmailRecipientVO.TO));
+
 		// Send the email
 		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-		util.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.INVITE_ACCEPTED.name());
+		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.INVITE_ACCEPTED.name());
 	}
+
 
 	/**
 	 * Retrieves list of invites to reward members for inviting the given email address
@@ -262,10 +264,10 @@ public class InvitationAction extends SBActionAdapter {
 	private List<InvitationVO> retrieveRewardInvites(String emailAddress) {
 		StringBuilder sql = getBaseRetrieveSql();
 		sql.append(DBUtil.WHERE_CLAUSE).append("lower(email_address_txt) = ?  ");
-		
+
 		List<Object> params = new ArrayList<>();
 		params.add(emailAddress.trim().toLowerCase());
-		
+
 		DBProcessor dbp = new DBProcessor(dbConn);
 		return dbp.executeSelect(sql.toString(), params, new InvitationVO());
 	}
