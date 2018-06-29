@@ -65,7 +65,8 @@ public class MyProsAction extends SimpleActionAdapter {
 
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select a.my_pro_id, b.*, m.first_nm, m.last_nm, m.profile_pic_pth, bc.category_nm from ").append(schema).append("rezdox_my_pro a ");
+		sql.append("select a.my_pro_id, b.*, m.first_nm, m.last_nm, m.profile_pic_pth, bc.category_nm, bc.business_category_cd ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_my_pro a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS b on a.business_id=b.business_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_MEMBER_XR mxr on b.business_id=mxr.business_id and mxr.status_flg=1 ");  //biz owner
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_MEMBER m on m.member_id=mxr.member_id and m.status_flg=1 ");

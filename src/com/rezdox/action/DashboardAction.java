@@ -39,7 +39,6 @@ import com.smt.sitebuilder.security.SBUserRole;
  * @since Mar 23, 2018
  * @updates:
  ****************************************************************************/
-
 public class DashboardAction extends SimpleActionAdapter {
 	private static final String RECENT_SQL = "and create_dt > CURRENT_DATE-90 ";
 	private static final String BUS_ID_GROUP = "group by business_id ";
@@ -224,7 +223,9 @@ public class DashboardAction extends SimpleActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<BusinessVO> businesses = db.executeSelect(sql.toString(), Arrays.asList(memberId), new BusinessVO());
-		for(BusinessVO business : businesses) getBusinessAttributes(business, schema, memberId);
+		for(BusinessVO business : businesses) 
+			getBusinessAttributes(business, schema, memberId);
+
 		return businesses;
 	}
 

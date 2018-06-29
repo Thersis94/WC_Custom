@@ -237,7 +237,7 @@ public class BusinessAction extends SBActionAdapter {
 			params.add(businessId);
 		}
 
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		return dbp.executeSelect(sql.toString(), params, new BusinessVO());
 	}
 
@@ -264,7 +264,7 @@ public class BusinessAction extends SBActionAdapter {
 		for (String id : businessIds)
 			params.add(id);
 
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		return dbp.executeSelect(sql.toString(), params, new BusinessVO());
 	}
 
@@ -283,7 +283,7 @@ public class BusinessAction extends SBActionAdapter {
 		params.add(BusinessStatus.PENDING.getStatus());
 
 		// Get/return the data
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		return dbp.executeSelect(sql.toString(), params, new BusinessVO());
 	}
 
@@ -374,7 +374,7 @@ public class BusinessAction extends SBActionAdapter {
 		} else if (req.hasParameter("deleteBusiness")) {
 			String msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 			try {
-				new DBProcessor(dbConn).delete(business);
+				new DBProcessor(dbConn, getCustomSchema()).delete(business);
 			} catch (Exception e) {
 				log.error("could not delete buisness", e);
 				msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
@@ -478,7 +478,7 @@ public class BusinessAction extends SBActionAdapter {
 		business.setLongitude(gl.getLongitude());
 
 		// Save the business records
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		try {
 			dbp.save(business);
 			req.setParameter(BusinessAction.REQ_BUSINESS_ID, business.getBusinessId());
@@ -610,7 +610,7 @@ public class BusinessAction extends SBActionAdapter {
 		List<String> fields = new ArrayList<>();
 		fields.addAll(Arrays.asList("privacy_flg", "business_id"));
 
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		try {
 			dbp.executeSqlUpdate(sql.toString(), new BusinessVO(req), fields);
 		} catch (Exception e) {
