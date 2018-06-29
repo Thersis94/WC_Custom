@@ -798,7 +798,7 @@ public class ProductExplorer extends SBActionAdapter {
 				url.append("&").append(name).append("=").append(value);
 			}
 		}
-		url.append("&selNodes=").append(req.getParameter(SEL_NODES));
+		url.append("&selNodes=").append(StringUtil.checkVal(req.getParameter(SEL_NODES)));
 
 		return url.toString();
 	}
