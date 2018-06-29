@@ -4,8 +4,10 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.rezdox.action.RewardsAction.Reward;
 import com.rezdox.vo.BusinessVO;
@@ -31,6 +33,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: ConnectionAction.java
@@ -58,7 +61,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	public static final String APPROVED_FLAG = "approvedFlag";
 	public static final String CATEGORY_SEARCH = "categorySearch";
 	public static final String TARGET_ID = "targetId"; 
-	public static final String REZDOX_CONNECTION_POINTS = "rezdoxConnectionPoints";
+	public static final String CONNECTION_COOKIE = "rexdoxConnectionCount";
 	private static final String ID_SUFFIX = "_id=? ";
 
 	public ConnectionAction() {
@@ -113,7 +116,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 			}
 		}
 
-		new MyProsAction(dbConn, attributes).retrieve(req);
+		if (!req.hasParameter("generateCookie") && !req.hasParameter("amid")) //def don't need this when reloading the cookie.
+			new MyProsAction(dbConn, attributes).retrieve(req);
 
 		if (req.hasParameter(TARGET_ID))
 			findConnections(req);
@@ -130,7 +134,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//if there is a target id use the token to identify the type of id sent and make the correct
 		//  request. getting member data is different then getting business data.
 		String[] idParts = StringUtil.checkVal(req.getParameter(TARGET_ID)).split("_");
-		if (idParts == null || idParts.length < 2) return; 
+		if (idParts == null || idParts.length < 2 || !req.hasParameter("json")) return; 
 
 		if ("m".equalsIgnoreCase(idParts[0])) {
 			setModuleData(generateConnections(idParts[1], MEMBER, req));
@@ -142,14 +146,15 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 
 	/**
-	 * controls generating the cookie
+	 * Puts the # of connections in a cookie to display in the left menu
 	 * @param req
 	 */
 	private void generateConnCookie(ActionRequest req) {
-		int count = getMemeberConnectionCount(RezDoxUtils.getMemberId(req));
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		int count = getMemeberConnectionCount(RezDoxUtils.getMemberId(req), role != null ? role.getRoleId() : "");
 		log.debug(" found " +count+ "Connection");
 		//set the total in a cookie.  This may be excessive for repeat calls to the rewards page, but ensures cached data is flushed
-		CookieUtil.add(req, REZDOX_CONNECTION_POINTS, String.valueOf(count), "/", -1);
+		CookieUtil.add(req, CONNECTION_COOKIE, String.valueOf(count), "/", -1);
 	}
 
 
@@ -158,16 +163,41 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param req 
 	 * @return
 	 */
-	public int getMemeberConnectionCount(String memberId) {
-		if (memberId == null) return 0;
+	public int getMemeberConnectionCount(String memberId, String roleId) {
+		if (StringUtil.isEmpty(memberId)) return 0;
 
+		boolean printedBiz = false;
+		Set<String> bizIds = new HashSet<>();
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
-		params.add(memberId);
-		params.add(memberId);
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select cast(count(*) as int) as total_rows_no  from ").append(schema).append("rezdox_connection ");
-		sql.append("where (sndr_member_id = ? or rcpt_member_id = ?) and approved_flg = 1 ");
+		sql.append("where (");
+
+		//if not residence only, include their businesses
+		if (!RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(roleId)) {
+			List<GenericVO> myBusinesses = loadBusinessOptions(memberId);
+			for (GenericVO vo : myBusinesses)
+				bizIds.add((String)vo.getKey());
+
+			if (!bizIds.isEmpty()) {
+				printedBiz = true;
+				String qMarks = DBUtil.preparedStatmentQuestion(bizIds.size());
+				sql.append("sndr_business_id in (").append(qMarks).append(") or rcpt_business_id in (").append(qMarks).append(") ");
+				params.addAll(bizIds);
+				params.addAll(bizIds);
+			}
+		}
+
+		//not business only - include their personal account
+		if (!RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(roleId)) {
+			if (printedBiz) sql.append("or ");
+			sql.append("sndr_member_id=? or rcpt_member_id=? ");
+			params.add(memberId);
+			params.add(memberId);
+		}
+
+		sql.append(") and approved_flg=1");
 		log.debug(sql + "|"+params );
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
@@ -287,16 +317,16 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 	/**
 	 * @param targetId
-	 * @param inqueryType
+	 * @param inquiryType
 	 * @param req 
 	 * @param b
 	 * @return 
 	 */
-	protected List<ConnectionReportVO> generateConnections(String targetId, String inqueryType, ActionRequest req) {
+	protected List<ConnectionReportVO> generateConnections(String targetId, String inquiryType, ActionRequest req) {
 		log.debug("generating connections");
 
 		// Sort on two fields in default view
-		String order = "order by approved_flg asc, create_dt desc ";
+		String order = "order by approved_flg asc, create_dt desc";
 
 		// Otherwise sort on one selected field if sort & order are passed
 		if (!StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_SORT)) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
@@ -307,7 +337,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
-		String idField = (inqueryType.equals(MEMBER)) ? MEMBER : BUSINESS;
+		String idField = (inquiryType.equals(MEMBER)) ? MEMBER : BUSINESS;
 
 		//getting the records where target id sent the connection to an other member
 		String andIsApproved = "and a.approved_flg >= 0 ";
