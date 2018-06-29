@@ -188,7 +188,7 @@ public class BusinessAction extends SBActionAdapter {
 		sql.append("select b.business_id, business_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, ");
 		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, b.email_address_txt, website_url, photo_url, ad_file_url, ");
 		sql.append("b.privacy_flg, bsc.business_category_cd as sub_category_cd, bc.business_category_cd as category_cd, bc.category_nm, b.create_dt, ");
-		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, m.member_id, m.profile_id, bm.status_flg, ");
+		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, m.member_id, m.profile_id, m.first_nm, m.last_nm, bm.status_flg, ");
 		sql.append("attribute_id, slug_txt, value_txt, total_reviews_no, avg_rating_no ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b inner join ");
 		sql.append(schema).append("rezdox_business_member_xr bm on b.business_id = bm.business_id and bm.status_flg >= ? ");
