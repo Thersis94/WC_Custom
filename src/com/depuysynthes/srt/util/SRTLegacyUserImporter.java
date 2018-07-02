@@ -45,14 +45,14 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 	@Override
 	protected StringBuilder buildMainQuery() {
 		StringBuilder megaQuery = new StringBuilder(2200);
-		megaQuery.append("select * from (");
+		megaQuery.append(DBUtil.SELECT_FROM_STAR).append(" (");
 		megaQuery.append(buildAdminUserQuery());
 		megaQuery.append(" union ");
 		megaQuery.append(buildSalesRosterQuery());
 		megaQuery.append(" union ");
 		megaQuery.append(buildProjectUserQuery());
 		megaQuery.append(") as users ");
-		megaQuery.append("order by is_admin desc, CO_ROSTER_ID desc;");
+		megaQuery.append(DBUtil.ORDER_BY).append("is_admin desc, CO_ROSTER_ID desc;");
 		return megaQuery;
 	}
 
@@ -61,7 +61,7 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 	 */
 	protected StringBuilder buildProjectUserQuery() {
 		StringBuilder sql = new StringBuilder(1000);
-		sql.append("select ");
+		sql.append(DBUtil.SELECT_CLAUSE);
 		sql.append("case when first_nm is not null and first_nm != '' ");
 		sql.append("then first_nm else '(NO NAME)' end as first_nm, ");
 		sql.append("case when last_nm is not null and last_nm != '' ");
@@ -104,7 +104,7 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 
 	protected StringBuilder buildSalesRosterQuery() {
 		StringBuilder sql = new StringBuilder(1000);
-		sql.append("select ");
+		sql.append(DBUtil.SELECT_CLAUSE);
 		sql.append("r.first_name as first_nm, ");
 		sql.append("r.last_name as last_nm, ");
 		sql.append("concat('\"', firstlast, '\"') as USER_NAME, ");
@@ -137,7 +137,7 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 
 	protected StringBuilder buildAdminUserQuery() {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select ");
+		sql.append(DBUtil.SELECT_CLAUSE);
 		sql.append("userfirstname as first_nm, ");
 		sql.append("userlastname as last_nm, ");
 		sql.append("concat('\"', useremail, '\"') as USER_NAME, ");

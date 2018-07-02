@@ -13,7 +13,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
  * <b>Description:</b> US Ortho Centric User Importer for SRT Roster Data.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 3.3.1
  * @since Jun 18, 2018
@@ -101,7 +101,7 @@ public class USOrthoUserImport extends SRTUserImport {
 		sql.append("split_part(user_nm, ' ', 1) as first_nm, ");
 		sql.append("split_part(user_nm, ' ', 2) as last_nm, ");
 		sql.append("1 as allow_comm_flg, ");
-		sql.append("'' as wwid, ");
+		sql.append("wwid, ");
 		sql.append("'1' as IS_ACTIVE, ");
 		sql.append("ROLE_TXT, ");
 		sql.append("null as ADDRESS_TXT, ");
