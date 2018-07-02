@@ -7,10 +7,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,8 +35,6 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -297,6 +297,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	/**
 	 * Retrieve Projects according to request attributes.
 	 * @param req
+	 *
 	 * @return
 	 */
 	private GridDataVO<SRTProjectVO> loadProjects(ActionRequest req) {
@@ -313,19 +314,16 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		if(!projects.getRowData().isEmpty()) {
 
-			//Load Roster Names
+			//Load Name data
 			if(!req.hasParameter(SRT_PROJECT_ID)) {
-				loadRosterNameData(SRTUtil.mapProjects(projects.getRowData()));
+				try {
+					loadRosterNameData(SRTUtil.mapProjects(projects.getRowData()));
+				} catch (com.siliconmtn.exception.DatabaseException e) {
+					log.error("Error Loading Name Data", e);
+				}
 			}
 
 			loadDetailData(projects.getRowData(), req);
-
-			//Decrypt Project Record Name Fields.
-			try {
-				SRTUtil.decryptProjectData(projects.getRowData(), new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY)), ProfileManagerFactory.getInstance(attributes), dbConn);
-			} catch (EncryptionException e) {
-				log.error("Error Processing Code", e);
-			}
 
 			//Add Milestone Data
 			loadMilestoneDetails(projects.getRowData());
@@ -338,22 +336,152 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	/**
 	 * Load User Names for Project Roster Records.
 	 * @param rowData
+	 * @throws com.siliconmtn.exception.DatabaseException
 	 */
-	private void loadRosterNameData(Map<String, SRTProjectVO> projectData) {
-		try(PreparedStatement ps = dbConn.prepareStatement(buildRosterNameSql(projectData.size()))) {
+	private void loadRosterNameData(Map<String, SRTProjectVO> projectData) throws com.siliconmtn.exception.DatabaseException {
+		//Extract Distinct RosterIds from projectData.
+		Set<String> rosterIds = gatherRosterIds(projectData);
+
+		//If we have RosterIds to lookup, search ProfileData for them and update Project Record.
+		if(!rosterIds.isEmpty()) {
+			Map<String, SRTRosterVO> userNames = loadUserNames(rosterIds, projectData);
+			populateProjectNames(projectData, userNames);
+		}
+	}
+
+	/**
+	 * Build Set of distinct RosterIds off given ProjectData to minimize
+	 * the number of records we're looking for.
+	 * @param projectData
+	 * @return
+	 */
+	private Set<String> gatherRosterIds(Map<String, SRTProjectVO> projectData) {
+		Set<String> rosterIds = new HashSet<>();
+		for(SRTProjectVO p : projectData.values()) {
+			rosterIds.add(p.getEngineerId());
+			rosterIds.add(p.getSecondaryEngineerId());
+			rosterIds.add(p.getDesignerId());
+			rosterIds.add(p.getSecondaryDesignerId());
+			rosterIds.add(p.getQualityEngineerId());
+			rosterIds.add(p.getSecondaryQualityEngineerId());
+			rosterIds.add(p.getBuyerId());
+			rosterIds.add(p.getSecondaryBuyerId());
+			rosterIds.add(p.getRequest().getRosterId());
+		}
+		return rosterIds;
+	}
+
+	/**
+	 * Place Decrypted Name data on Projects.
+	 * @param projectData
+	 * @param userNames
+	 */
+	private void populateProjectNames(Map<String, SRTProjectVO> projectData, Map<String, SRTRosterVO> userNames) {
+		for(SRTProjectVO project : projectData.values()) {
+
+			//Check EngineerId exists on userNames Map, set EngineerNm
+			if(userNames.containsKey(project.getEngineerId())) {
+				project.setEngineerNm(userNames.get(project.getEngineerId()).getFullName());
+			}
+
+			//Check SecondaryEngineerId exists on userNames Map, set SecondaryEngineerNm
+			if(userNames.containsKey(project.getSecondaryEngineerId())) {
+				project.setSecondaryEngineerId(userNames.get(project.getSecondaryEngineerId()).getFullName());
+			}
+
+			//Check DesignerId exists on userNames Map, set DesignerNm
+			if(userNames.containsKey(project.getDesignerId())) {
+				project.setDesignerNm(userNames.get(project.getDesignerId()).getFullName());
+			}
+
+			//Check SecondaryDesignerId exists on userNames Map, set SecondaryDesignerNm
+			if(userNames.containsKey(project.getSecondaryDesignerId())) {
+				project.setSecondaryDesignerNm(userNames.get(project.getSecondaryDesignerId()).getFullName());
+			}
+
+			//Check QualityEngineerId exists on userNames Map, set QualityEngineerNm
+			if(userNames.containsKey(project.getQualityEngineerId())) {
+				project.setQualityEngineerNm(userNames.get(project.getQualityEngineerId()).getFullName());
+			}
+
+			//Check SecondaryQualityEngineerId exists on userNames Map, set SecondaryQualityEngineerNm
+			if(userNames.containsKey(project.getSecondaryQualityEngineerId())) {
+				project.setSecondaryQualityEngineerNm(userNames.get(project.getSecondaryQualityEngineerId()).getFullName());
+			}
+
+			//Check BuyerId exists on userNames Map, set BuyerNm
+			if(userNames.containsKey(project.getBuyerId())) {
+				project.setBuyerNm(userNames.get(project.getBuyerId()).getFullName());
+			}
+
+			//Check SecondaryBuyerId exists on userNames Map, set SecondaryBuyerNm
+			if(userNames.containsKey(project.getSecondaryBuyerId())) {
+				project.setSecondaryBuyerNm(userNames.get(project.getSecondaryBuyerId()).getFullName());
+			}
+
+			//Check RosterId exists on userNames Map, set RequestorNm
+			if(userNames.containsKey(project.getRequest().getRosterId())) {
+				project.setRequestorNm(userNames.get(project.getRequest().getRosterId()).getFullName());
+			}
+		}
+	}
+
+	/**
+	 * Convert Set of RosterIds to a Map of Decrypted UserDataVO's.
+	 * @param rosterIds
+	 * @param projectData
+	 * @return
+	 * @throws com.siliconmtn.exception.DatabaseException
+	 */
+	private Map<String, SRTRosterVO> loadUserNames(Set<String> rosterIds, Map<String, SRTProjectVO> projectData) throws com.siliconmtn.exception.DatabaseException {
+		Map<String, SRTRosterVO> userRecords = new HashMap<>();
+		try(PreparedStatement ps = dbConn.prepareStatement(loadProfileIdsSql(rosterIds.size()))) {
 			int i = 1;
-			for(SRTProjectVO p : projectData.values()) {
-				ps.setString(i++, p.getProjectId());
+			for(String rosterId : rosterIds) {
+				ps.setString(i++, rosterId);
 			}
 
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				SRTProjectVO p = projectData.get(rs.getString(DB_PROJECT_ID));
-				p.setData(rs);
+				userRecords.put(rs.getString(SRTRosterAction.DB_ROSTER_ID), new SRTRosterVO(rs));
 			}
 		} catch (SQLException e) {
 			log.error("Error Processing Code", e);
 		}
+
+		/*
+		 * Ensure Requestor VO's are added to userRecords so they'll get
+		 * decrypted as well.
+		 */
+		for(SRTProjectVO p : projectData.values()) {
+			if(p.getRequest() != null && p.getRequest().getRequestor() != null) {
+				userRecords.put(p.getRequest().getRosterId(), p.getRequest().getRequestor());
+			}
+		}
+
+		// Call ProfileManagerFactory to load and decrypt Name data.
+		ProfileManagerFactory.getInstance(attributes).populateRecords(dbConn, new ArrayList<>(userRecords.values()));
+
+		return userRecords;
+	}
+
+	/**
+	 * Load Profile Ids for all Roster Records.
+	 * @param projectCount
+	 * @return
+	 */
+	private String loadProfileIdsSql(int rosterCount) {
+		StringBuilder sql = new StringBuilder(200 + rosterCount * 3);
+
+		sql.append(DBUtil.SELECT_CLAUSE).append("profile_id, roster_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("DPY_SYN_SRT_ROSTER ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" ROSTER_ID in (");
+		DBUtil.preparedStatmentQuestion(rosterCount, sql);
+		sql.append(")");
+
+		log.debug(sql.toString());
+		return sql.toString();
 	}
 
 	/**
@@ -366,7 +494,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Loads Request Data when we are looking at a single record.
+	 * Loads Detail Data depending on view being presented.
 	 * @param projects
 	 * @param req
 	 */
@@ -389,81 +517,6 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Load Project Record Roster Names separately.
-	 * @param projectCount
-	 * @return
-	 */
-	private String buildRosterNameSql(int projectCount) {
-		StringBuilder sql = new StringBuilder(600);
-		String custom = getCustomSchema();
-
-		sql.append("select p.project_id, concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
-		sql.append("concat(sep.first_nm, ' ', sep.last_nm) as sec_engineer_nm, ");
-		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
-		sql.append("concat(sdp.first_nm, ' ', sdp.last_nm) as sec_designer_nm, ");
-		sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm, ");
-		sql.append("concat(sqp.first_nm, ' ', sqp.last_nm) as sec_quality_engineer_nm, ");
-		sql.append("concat(bp.first_nm, ' ', bp.last_nm) as buyer_nm, ");
-		sql.append("concat(sbp.first_nm, ' ', sbp.last_nm) as sec_buyer_nm ");
-		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("DPY_SYN_SRT_PROJECT p ");
-
-		//Get Optional Engineer Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER e ");
-		sql.append("on p.ENGINEER_ID = e.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE ep ");
-		sql.append("on e.PROFILE_ID = ep.PROFILE_ID ");
-
-		//Get Optional Sec Engineer Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER se ");
-		sql.append("on p.SEC_ENGINEER_ID = se.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE sep ");
-		sql.append("on se.PROFILE_ID = sep.PROFILE_ID ");
-
-		//Get Optional Designer Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER d ");
-		sql.append("on p.DESIGNER_ID = d.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE dp ");
-		sql.append("on d.PROFILE_ID = dp.PROFILE_ID ");
-
-		//Get Optional Sec Designer Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER sd ");
-		sql.append("on p.SEC_DESIGNER_ID = sd.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE sdp ");
-		sql.append("on sd.PROFILE_ID = sdp.PROFILE_ID ");
-
-		//Get Optional QA Engineer Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER q ");
-		sql.append("on p.QUALITY_ENGINEER_ID = q.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE qp ");
-		sql.append("on q.PROFILE_ID = qp.PROFILE_ID ");
-
-		//Get Optional Sec QA Engineer Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER sq ");
-		sql.append("on p.SEC_QUALITY_ENGINEER_ID = sq.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE sqp ");
-		sql.append("on sq.PROFILE_ID = sqp.PROFILE_ID ");
-
-		//Get Optional Buyer Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER b ");
-		sql.append("on p.BUYER_ID = b.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE bp ");
-		sql.append("on b.PROFILE_ID = bp.PROFILE_ID ");
-
-		//Get Optional Sec Buyer Information
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER sb ");
-		sql.append("on p.SEC_BUYER_ID = sb.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE sbp ");
-		sql.append("on sb.PROFILE_ID = sbp.PROFILE_ID ");
-
-		sql.append(DBUtil.WHERE_CLAUSE).append(" p.PROJECT_ID in (");
-		DBUtil.preparedStatmentQuestion(projectCount, sql);
-		sql.append(")");
-
-		log.debug(sql.toString());
-		return sql.toString();
-	}
-
-	/**
 	 * Builds the Project Retrieval Query.
 	 * @param req 
 	 * @param vals 
@@ -474,7 +527,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		String custom = getCustomSchema();
 		String opCoId = SRTUtil.getOpCO(req);
 		StringBuilder sql = new StringBuilder(2000);
-		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
+		sql.append("select p.*, req.ROSTER_ID, ");
 		sql.append("req.SURGEON_NM, ");
 		sql.append("case when l.lock_id is not null then true else false end as LOCK_STATUS, ");
 		sql.append("l.LOCKED_BY_ID, m.milestone_nm as proj_stat_txt, ");
@@ -500,8 +553,6 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		//Get Requestor Information
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER r ");
 		sql.append("on req.ROSTER_ID = r.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE pr ");
-		sql.append("on r.PROFILE_ID = pr.PROFILE_ID ");
 
 		//Load Human Friendly Text for List Ref Values.
 
