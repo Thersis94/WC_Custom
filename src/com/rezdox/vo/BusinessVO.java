@@ -2,6 +2,7 @@ package com.rezdox.vo;
 
 //Java 8
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +55,8 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private String initials;
 	private Date createDate;
 	private Date updateDate;
+
+	private MemberVO owner; // serialized to JSON and used in the Business Data Tool
 
 	public BusinessVO() {
 		super();
@@ -247,6 +250,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setMembers(Map<String, MemberVO> members) {
 		this.members = members;
+		setOwner();
 	}
 
 	/**
@@ -255,6 +259,17 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	@BeanSubElement
 	public void addMember(MemberVO member) {
 		this.members.put(member.getMemberId(), member);
+		setOwner();
+	}
+
+	/**
+	 * Presume owner is first member and peel them off the Map if not previously set.  
+	 * This is only used in the Data Tool for approving Businesses - its a workaround for Javascript/JSON pain.
+	 */
+	private void setOwner() {
+		if (owner != null || members == null || members.isEmpty()) 
+			return;
+		owner = new ArrayList<>(members.values()).get(0);
 	}
 
 	/**

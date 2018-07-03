@@ -2,6 +2,7 @@ package com.rezdox.action;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
@@ -172,7 +174,7 @@ public class MemberAction extends SimpleActionAdapter {
 		if (isNewUser) {
 			createProfileRole(member, site);
 			performLogin(member, site, req);
-			setupMembership(member);
+			setupMembership(member, req);
 		}
 
 		//put the member VO onto their session, refreshing any data that's already there.
@@ -317,7 +319,7 @@ public class MemberAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void setupMembership(MemberVO member) throws ActionException {
+	private void setupMembership(MemberVO member, ActionRequest req) throws ActionException {
 		// Get default member subscription... the only default right now is "100 Connections".
 		// Free business and residence subscriptions are added by member selection after signing up.
 		MembershipAction ma = new MembershipAction(dbConn, attributes);
@@ -333,8 +335,8 @@ public class MemberAction extends SimpleActionAdapter {
 
 		//apply the default reward give to all new users at first login
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
-		ra.applyReward(RezDoxUtils.NEW_REGISTRANT_REWARD, member.getMemberId());
-		
+		ra.applyReward(RezDoxUtils.NEW_REGISTRANT_REWARD, member.getMemberId(), req);
+
 		//send welcome email
 		sendWelcomeEmail(member);
 	}
@@ -351,11 +353,11 @@ public class MemberAction extends SimpleActionAdapter {
 		dataMap.put("emailAddress", member.getEmailAddress());
 
 		// Add the recipient
-		Map<String, String> rcptMap = new HashMap<>();
-		rcptMap.put(member.getProfileId(), member.getEmailAddress());
-		
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
+		rcpts.add(new EmailRecipientVO(member.getProfileId(), member.getEmailAddress(), EmailRecipientVO.TO));
+
 		// Send the email
 		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-		util.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.WELCOME.name());
+		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.WELCOME.name());
 	}
 }
