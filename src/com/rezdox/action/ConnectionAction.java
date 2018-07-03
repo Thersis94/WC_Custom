@@ -116,7 +116,9 @@ public class ConnectionAction extends SimpleActionAdapter {
 			}
 		}
 
-		if (!req.hasParameter("generateCookie") && !req.hasParameter("amid")) //def don't need this when reloading the cookie.
+		 // Don't need this when reloading the cookie, but otherwise MyProsAction 
+		// will fail-fast on it's own and is also checking for a cookie reload (trigger).
+		if (!req.hasParameter("generateCookie"))
 			new MyProsAction(dbConn, attributes).retrieve(req);
 
 		if (req.hasParameter(TARGET_ID))
