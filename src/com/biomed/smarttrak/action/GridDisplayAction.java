@@ -186,7 +186,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		chart.setTitle(grid.getTitle());
 		chart.setUpdateDate(grid.getUpdateDate());
 
-		List<SMTChartDetailVO> data = new ArrayList<>(grid.getDetails().size());
+		List<SMTChartDetailVO> data;
 		if (ChartType.COLUMN == type) {
 			data = convertColumnData(grid, type, columns);
 		} else {
@@ -211,7 +211,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		List<String> series = new ArrayList<>(grid.getDetails().size());
 		for (GridDetailVO gDetail : grid.getDetails()) {
 			
-			String serie = getSerie(type, gDetail, series);
+			String serie = getSerie(gDetail, series);
 			for (int i=0; i<grid.getSeries().length; i++) {
 				if (!columns .isEmpty() && !columns.contains(i+1)) continue;
 				addDetail(gDetail, data, type, i, grid, serie);
@@ -246,12 +246,11 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	/**
 	 * Create a unique series name for the row to prevent rows from being overwitten
 	 * by items with the same serie.
-	 * @param type
 	 * @param gDetail
 	 * @param series
 	 * @return
 	 */
-	private String getSerie(ChartType type, GridDetailVO gDetail, List<String> series) {
+	private String getSerie(GridDetailVO gDetail, List<String> series) {
 		StringBuilder serie = new StringBuilder(gDetail.getLabel());
 		while(series.contains(serie.toString())) {
 			serie.append(" ");
