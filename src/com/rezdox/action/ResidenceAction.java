@@ -211,29 +211,31 @@ public class ResidenceAction extends SBActionAdapter {
 		String schema = getCustomSchema();
 		String residenceId = req.getParameter(RESIDENCE_ID);
 
+		List<Object> params = new ArrayList<>();
+		params.add(RezDoxUtils.IMPROVEMENTS_VALUE_COEF);
+		params.add(RezDoxUtils.getMemberId(req));
+		
 		// Using pivot table on the attributes to get additional data for display
 		StringBuilder sql = new StringBuilder(900);
 		sql.append("select r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt) as update_dt, ");
-		sql.append("privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0) as sqft_no, zestimate_no, projects_total ");
+		sql.append("privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0) as sqft_no, zestimate_no, sum(pc.project_cost+pc.material_cost)*? as projects_total ");
 		sql.append("from ").append(schema).append("rezdox_residence r inner join ");
 		sql.append(schema).append("rezdox_residence_member_xr m on r.residence_id = m.residence_id and status_flg=1 ");
 		sql.append("left join (SELECT * FROM crosstab('SELECT residence_id, slug_txt, value_txt FROM ").append(schema).append("rezdox_residence_attribute ORDER BY 1', ");
 		sql.append("'SELECT DISTINCT slug_txt FROM ").append(schema).append("rezdox_residence_attribute WHERE slug_txt in (''bedrooms'',''bathrooms'',''finishedSqFt'', ''RESIDENCE_ZESTIMATE'') ORDER BY 1') ");
 		sql.append("AS (residence_id text, baths_no float, beds_no int, f_sqft_no int, zestimate_no float) ");
 		sql.append(") ra on r.residence_id = ra.residence_id ");
-		sql.append("left join (select residence_id, sum(total_no) as projects_total ");
-		sql.append("from ").append(schema).append("rezdox_project where project_category_cd = 'IMPROVEMENT' ");
-		sql.append("group by residence_id) impr on r.residence_id = impr.residence_id "); 
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_project_cost_view pc on r.residence_id=pc.residence_id and pc.is_improvement=1 ");
 		sql.append("where member_id = ? ");
-
-		List<Object> params = new ArrayList<>();
-		params.add(RezDoxUtils.getMemberId(req));
 
 		// Return only a specific residence if selected
 		if (!StringUtil.isEmpty(residenceId)) {
 			sql.append("and r.residence_id = ? ");
 			params.add(residenceId);
 		}
+		sql.append("group by r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, profile_pic_pth, ");
+		sql.append("coalesce(r.update_dt, r.create_dt), privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0), zestimate_no");
+		log.debug(sql);
 
 		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		List<ResidenceVO> residences = dbp.executeSelect(sql.toString(), params, new ResidenceVO());
@@ -346,7 +348,7 @@ public class ResidenceAction extends SBActionAdapter {
 					sendFirstResidenceNotifications(site, RezDoxUtils.getMemberId(req));
 				} else if (isNew && count > 1) {
 					//award 100pts for subsequent residences
-					awardPoints(RezDoxUtils.getMemberId(req));
+					awardPoints(RezDoxUtils.getMemberId(req), req);
 				}
 
 			} catch (Exception e) {
@@ -359,10 +361,10 @@ public class ResidenceAction extends SBActionAdapter {
 	/**
 	 * @param memberId
 	 */
-	private void awardPoints(String memberId) {
+	private void awardPoints(String memberId, ActionRequest req) {
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 		try {
-			ra.applyReward(Reward.CREATE_RES2.name(), memberId);
+			ra.applyReward(Reward.CREATE_RES2.name(), memberId, req);
 		} catch (ActionException e) {
 			log.error("could not award reward points", e);
 		}

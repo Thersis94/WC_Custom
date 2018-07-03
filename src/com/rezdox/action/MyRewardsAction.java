@@ -112,7 +112,7 @@ public class MyRewardsAction extends SimpleActionAdapter {
 
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
-			ra.applyReward(req.getParameter("rewardId"), member.getMemberId());
+			ra.applyReward(req.getParameter("rewardId"), member.getMemberId(), req);
 		} catch (ActionException ae) {
 			log.error(ae.getMessage(), ae);
 			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);

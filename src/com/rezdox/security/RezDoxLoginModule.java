@@ -70,9 +70,8 @@ public class RezDoxLoginModule extends DBLoginModule {
 		BusinessReviewAction br = new BusinessReviewAction(dbConn, getAttributes());
 		CookieUtil.add(req, BusinessReviewAction.COOKIE_REVIEW_COUNT, String.valueOf(br.getReviewCount(member.getMemberId())), "/", -1);
 
-		//load a count of the user's connections into a cookie for display in the left menu
-		ConnectionAction ca = new ConnectionAction(dbConn, getAttributes());
-		CookieUtil.add(req, ConnectionAction.REZDOX_CONNECTION_POINTS, String.valueOf(ca.getMemeberConnectionCount(member.getMemberId())), "/", -1);
+		//Flush the connections cookie - it can't be loaded until after the user's Role is, so it'll have to wait.
+		CookieUtil.remove(req, ConnectionAction.CONNECTION_COOKIE);
 
 		//load a count of the user's RezRewards into a cookie for display in the left menu
 		MyRewardsAction rewards = new MyRewardsAction(dbConn, getAttributes());
