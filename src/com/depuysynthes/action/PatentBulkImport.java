@@ -4,7 +4,10 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+
+import org.apache.log4j.PropertyConfigurator;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.exception.FileException;
@@ -21,8 +24,10 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
  <b>Title: </b>PatentBulkImport.java
- <b>Project: </b>
- <b>Description: </b>
+ <b>Project: </b> WC_Custom
+ <b>Description: </b>Bulk patent import script.  Reads and parses source file, writes
+ history records for currently active patents, disables those same currently active patents
+ and then imports the source records and makes them active.
  <b>Copyright: </b>(c) 2000 - 2018 SMT, All Rights Reserved
  <b>Company: Silicon Mountain Technologies</b>
  @author cobalt
@@ -32,14 +37,17 @@ import com.smt.sitebuilder.common.constants.Constants;
  ***************************************************************************/
 public class PatentBulkImport extends CommandLineUtil {
 
-	private final String propertiesPath = "/data/scripts/DSPatentBulkImport.properties";
+	private final String propertiesPath = "/data/git/WC_Custom/scripts/ds/patent-bulk-import.properties";
 	private String customDb;
+	List<String> messages;
 	
 	/**
 	* Constructor
 	*/
 	public PatentBulkImport(String[] args) {
 		super(args);
+		PropertyConfigurator.configure("/data/git/WC_Custom/scripts/ds/patent-bulk-import-log4j.properties");
+		messages = new ArrayList<>();
 	}
 
 	/**
@@ -69,14 +77,15 @@ public class PatentBulkImport extends CommandLineUtil {
 			if (! beans.isEmpty()) {
 				// process parsed beans.
 				processPatentBeans(beans);
+			} else {
+				errMsg = "No patents found to import.";
 			}
-			
-		 /* 7. Send email */
 			
 		} catch (Exception e) {
 			errMsg = e.getMessage();
 			
 		} finally {
+			// clean-up
 			closeDBConnection();
 		}
 		
@@ -107,9 +116,15 @@ public class PatentBulkImport extends CommandLineUtil {
 	 * @throws FileException
 	 */
 	private FilePartDataBean loadSourceFile() throws FileException {
+		String sourceFilePath = props.getProperty("sourceFilePath");
+		log.debug("loading source file from: " + sourceFilePath);
 		FileManager fm = new FileManager();
 		FilePartDataBean bean = new FilePartDataBean();
-		bean.setFileData(fm.retrieveFile(props.getProperty("sourceFilePath")));
+		bean.setFileName(sourceFilePath);
+		bean.setFileData(fm.retrieveFile(sourceFilePath));
+		log.debug("fpdb data size: " + (bean.getFileData() != null ? bean.getFileSize() : "null"));
+		log.debug("fileName | extension: " + bean.getFileName() + " | " + bean.getExtension());
+		messages.add("Loaded source file with size: " + bean.getFileSize());
 		return bean;
 	}
 
@@ -130,8 +145,9 @@ public class PatentBulkImport extends CommandLineUtil {
 
 			// Parser then returns the list of populated beans
 			beans = parser.parseFile(fpdb, true);
-
+			messages.add("Number of beans parsed from source file: " + beans.size());
 		} catch(InvalidDataException e) {
+			log.debug("Error parsing source data file, ", e);
 			throw new ActionException("Error parsing source data file, ", e);
 		}
 
@@ -163,16 +179,23 @@ public class PatentBulkImport extends CommandLineUtil {
 
 			// set org on each vo
 			vo.setOrganizationId(props.getProperty("organizationId"));
+			vo.setActionId(props.getProperty("actionId"));
+			vo.setStatusFlag(PatentAction.STATUS_ACTIVE);
 		}
+		
+		messages.add("Processing bulk patent import for company name: " + companyNm);
 		
 		// write history record for all current 'live' patent records for company.
 		writeHistoryByCompany(companyNm);
 
+		// disable all 'live' patents for the company
+		disableByCompany(companyNm);
+		
 		// delete all patents for the company
 		deleteByCompany(companyNm);
 
 		// import patents
-		 importBeans(beanList);
+		importBeans(beanList);
 
 		//commit only after the entire import succeeds
 		dbConn.commit();
@@ -202,7 +225,12 @@ public class PatentBulkImport extends CommandLineUtil {
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, companyNm);
-			ps.execute();
+			int count = 0;
+			if (! ps.execute()) {
+				count = ps.getUpdateCount();
+			}
+			
+			messages.add("Wrote " + count + " history records for existing 'live' patents'.");
 		}
 	}
 
@@ -211,7 +239,34 @@ public class PatentBulkImport extends CommandLineUtil {
 	 * @param actionId
 	 * @param companyNm
 	 */
+	private void disableByCompany(String companyNm) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("update ").append(customDb).append("dpy_syn_patent ");
+		sql.append("set status_flg = ? where company_nm=?");
+		log.debug(sql);
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, PatentAction.STATUS_DISABLED);
+			ps.setString(2, companyNm);
+			ps.executeUpdate();
+
+		} catch (SQLException sqle) {
+			log.error("could not delete company records", sqle);
+			 throw new ActionException(sqle);
+		}
+	}
+	
+	/**
+	 * deletes all existing records for the given companyNm
+	 * @param actionId
+	 * @param companyNm
+	 */
 	private void deleteByCompany(String companyNm) throws ActionException {
+		
+		// 2018-07-03 - DBargerhuff: Disabling until table constraint removed to allow deletion
+		int x = 1;
+		if (x == 1) return;
+		
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("delete from ").append(customDb).append("dpy_syn_patent ");
 		sql.append("where company_nm=?");
@@ -240,8 +295,9 @@ public class PatentBulkImport extends CommandLineUtil {
 		sql.append("insert into ").append(customDb);
 		sql.append(PatentManagementAction.PATENT_TABLE).append(" ");
 		sql.append("(action_id, organization_id, company_nm, code_txt, ");
-		sql.append("item_txt, desc_txt, patents_txt, redirect_nm, redirect_address_txt, create_dt) ");
-		sql.append("values (?,?,?,?,?,?,?,?,?,?)");
+		sql.append("item_txt, desc_txt, patents_txt, redirect_nm, redirect_address_txt, ");
+		sql.append("status_flg, profile_id, create_dt) ");
+		sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?)");
 		log.debug(sql);
 
 		 try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -252,7 +308,6 @@ public class PatentBulkImport extends CommandLineUtil {
 				 //code is required, skip any without it
 				 if (vo.getCode() == null || 
 						 vo.getCode().length() == 0) continue;
-// TODO verify table fields...
 				 ps.setString(1, vo.getActionId());
 				 ps.setString(2, vo.getOrganizationId());
 				 ps.setString(3, vo.getCompany());
@@ -262,7 +317,9 @@ public class PatentBulkImport extends CommandLineUtil {
 				 ps.setString(7, StringUtil.replace(vo.getPatents(), "|","; ")); //clean up the tokenized data and store it the way we'll need it for display
 				 ps.setString(8, vo.getRedirectName());
 				 ps.setString(9, vo.getRedirectAddress());
-				 ps.setTimestamp(10, Convert.getCurrentTimestamp());
+				 ps.setInt(10, vo.getStatusFlag());
+				 ps.setString(11, props.getProperty(")importProfileId"));
+				 ps.setTimestamp(12, Convert.getCurrentTimestamp());
 				 ps.addBatch();
 				 log.debug("added to batch: "+ vo.getCode());
 			 }
@@ -282,10 +339,15 @@ public class PatentBulkImport extends CommandLineUtil {
 	private void sendAdminEmail(String errMsg) { 
 		try {
 			EmailMessageVO evo = new EmailMessageVO();
-			evo.setFrom(props.getProperty("emailFrom"));
-			evo.addRecipient(props.getProperty("emailTo"));
-			evo.setSubject((errMsg == null ? "Success" : "FAILED") + " - DS Bulk Patent Import");
-			evo.setHtmlBody("");
+			evo.setFrom(props.getProperty("fromAddress"));
+			evo.addRecipient(props.getProperty("toAddress"));
+			evo.setSubject((errMsg == null ? "Success - " : "FAILED - ") + props.getProperty("subject"));
+			StringBuilder body = new StringBuilder(1000);
+			for (String msg : messages) {
+				body.append(msg).append("<br/>");
+			}
+			body.append("DS bulk patent import complete.<br/><br/>Error message is: ").append(errMsg);
+			evo.setHtmlBody(body.toString());
 			sendEmail(evo);
 		} catch (Exception e) {
 			log.error("Error sending admin email, ", e);
