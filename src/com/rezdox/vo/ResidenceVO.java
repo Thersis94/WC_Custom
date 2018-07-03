@@ -6,7 +6,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.rezdox.action.RezDoxUtils;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -319,7 +318,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	 * @return
 	 */
 	public double getRealMarketValue() {
-		return Convert.formatDouble(getZestimateNo()) + (getProjectsTotal() * RezDoxUtils.IMPROVEMENTS_VALUE_COEF);
+		return Convert.formatDouble(getZestimateNo()) + getProjectsTotal();
 	}
 
 	@Column(name="inventory_total", isReadOnly=true)

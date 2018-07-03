@@ -68,12 +68,13 @@ public class DirectoryAction extends SimpleActionAdapter {
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(1500);
 		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
+		if (role == null) role = new SBUserRole(); 
 
 		String memberId = null;
 
 		// Member half of union
 		sql.append(DBUtil.SELECT_FROM_STAR).append("(");
-		if(role != null && role.getRoleLevel() > 0) {
+		if (role.getRoleLevel() > 0) {
 			memberId = RezDoxUtils.getMemberId(req);
 			sql.append("select m.member_id as user_id, c.connection_id, m.first_nm, m.last_nm, m.profile_pic_pth, pa.city_nm, ");
 			sql.append("pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, 'MEMBER' as category_cd, '' as category_lvl2_cd, ");
@@ -88,7 +89,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 
 		// Business half of union
 		sql.append("select b.business_id as user_id, ");
-		if (role != null && role.getRoleLevel() > 0) {
+		if (role.getRoleLevel() > 0) {
 			sql.append("c.connection_id, ");
 		} else {
 			sql.append("'' as connection_id, ");
@@ -105,7 +106,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bcs.parent_cd=bc.business_category_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_my_pro mp on mp.business_category_cd=bc.business_category_cd and mp.business_id=b.business_id and mp.member_id=? ");
 		params.add(memberId); //for my pros join
-		if(role != null && role.getRoleLevel() > 0) {
+		if(role.getRoleLevel() > 0) {
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on ((b.business_id = c.rcpt_business_id and c.sndr_member_id = ?) or (b.business_id = c.sndr_business_id and c.rcpt_member_id = ?)) and c.approved_flg >= 0 ");
 			params.addAll(Arrays.asList(memberId, memberId));
 		}

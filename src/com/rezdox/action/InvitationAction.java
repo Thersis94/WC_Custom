@@ -223,7 +223,7 @@ public class InvitationAction extends SBActionAdapter {
 			invite.setStatusFlag(InvitationVO.Status.JOINED.getCode());
 			updateStatus(invite);
 
-			ra.applyReward(rewardSlug, invite.getMemberId());
+			ra.applyReward(rewardSlug, invite.getMemberId(), req);
 			sendInviterEmail(req, invite.getMemberId());
 		}
 	}

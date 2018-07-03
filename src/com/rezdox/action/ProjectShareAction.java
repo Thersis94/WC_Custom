@@ -1,5 +1,6 @@
 package com.rezdox.action;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +15,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
@@ -101,11 +103,11 @@ public class ProjectShareAction extends SimpleActionAdapter {
 		dataMap.put("projectName", projectNm);
 		dataMap.put("businessName", businessNm);
 
-		Map<String, String> rcptMap = new HashMap<>();
-		rcptMap.put(rcptProfileId, rcptEmail);
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
+		rcpts.add(new EmailRecipientVO(rcptProfileId, rcptEmail, EmailRecipientVO.TO));
 
 		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-		util.sendMessage(dataMap, rcptMap, slugTxt.name());
+		util.sendMessage(dataMap, rcpts, slugTxt.name());
 	}
 
 
