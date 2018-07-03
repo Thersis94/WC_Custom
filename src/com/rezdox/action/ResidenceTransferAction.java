@@ -2,6 +2,7 @@ package com.rezdox.action;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
@@ -157,11 +159,11 @@ public class ResidenceTransferAction extends SimpleActionAdapter {
 		dataMap.put("senderId", preOwner.getMemberId());
 		dataMap.put(ResidenceAction.RESIDENCE_ID, req.getParameter(ResidenceAction.RESIDENCE_ID));
 
-		Map<String, String> rcptMap = new HashMap<>();
-		rcptMap.put(newOwner.getProfileId(), newOwner.getEmailAddress());
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
+		rcpts.add(new EmailRecipientVO(newOwner.getProfileId(), newOwner.getEmailAddress(), EmailRecipientVO.TO));
 
 		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-		util.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.TRANSFER_WAITING.name());
+		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.TRANSFER_WAITING.name());
 	}
 
 
@@ -176,11 +178,11 @@ public class ResidenceTransferAction extends SimpleActionAdapter {
 		dataMap.put("rcptName", newOwner.getFirstName() + " " + newOwner.getLastName());
 		dataMap.put("address", StringEncoder.urlDecode(req.getParameter(RES_NAME)));
 
-		Map<String, String> rcptMap = new HashMap<>();
-		rcptMap.put(preOwner.getProfileId(), preOwner.getEmailAddress());
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
+		rcpts.add(new EmailRecipientVO(preOwner.getProfileId(), preOwner.getEmailAddress(), EmailRecipientVO.TO));
 
 		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-		util.sendMessage(dataMap, rcptMap, RezDoxUtils.EmailSlug.TRANSFER_COMPLETE.name());
+		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.TRANSFER_COMPLETE.name());
 	}
 
 

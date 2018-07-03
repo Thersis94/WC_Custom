@@ -527,10 +527,10 @@ public class ProjectAction extends SimpleActionAdapter {
 		//send email & notifications
 		if (visibleFlg == 1 && isOwner) {
 			sendEmail(RezDoxUtils.EmailSlug.PROJ_ACCPT_BUSINESS, req); // send to biz, owner accepted share from biz
-			awardPoints(true, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_RES); //reward the homeowner for accepting this project share onto their HHL.
+			awardPoints(true, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_RES, req); //reward the homeowner for accepting this project share onto their HHL.
 		} else if (visibleFlg == 1) {
 			sendEmail(RezDoxUtils.EmailSlug.PROJ_ACCPT_HOMEOWNER, req); // send to owner, biz accepted share from owner
-			awardPoints(true, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_BUS); //reward the business owner for accepting this project share onto their project list.
+			awardPoints(true, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_BUS, req); //reward the business owner for accepting this project share onto their project list.
 		}
 	}
 
@@ -565,11 +565,11 @@ public class ProjectAction extends SimpleActionAdapter {
 
 				if (req.hasParameter("isHomeowner")) { //HomeHistoryAction - alerts to go the business
 					notifyBiz(req, vo);
-					awardPoints(isNew, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_RES);
+					awardPoints(isNew, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_RES, req);
 
 				} else { //this action - alerts go to the homeowner
 					notifyRez(req, vo);
-					awardPoints(isNew, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_BUS);
+					awardPoints(isNew, RezDoxUtils.getMemberId(req), Reward.NEW_PROJ_BUS, req);
 				}
 			}
 
@@ -585,11 +585,11 @@ public class ProjectAction extends SimpleActionAdapter {
 	 * @param memberId
 	 * @throws ActionException 
 	 */
-	private void awardPoints(boolean isNewOrShare, String memberId, Reward reward) {
+	private void awardPoints(boolean isNewOrShare, String memberId, Reward reward, ActionRequest req) {
 		if (!isNewOrShare) return;
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 		try {
-			ra.applyReward(reward.name(), memberId);
+			ra.applyReward(reward.name(), memberId, req);
 		} catch (ActionException e) {
 			log.error("could not award reward points", e);
 		}
