@@ -185,14 +185,14 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		chart.setSubtitle(grid.getSubtitle());
 		chart.setTitle(grid.getTitle());
 		chart.setUpdateDate(grid.getUpdateDate());
-		
-		List<SMTChartDetailVO> data = new ArrayList<>(grid.getDetails().size());
-		for (GridDetailVO gDetail : grid.getDetails()) {
-			for (int i=0; i<grid.getSeries().length; i++) {
-				if (!columns .isEmpty() && !columns.contains(i+1)) continue;
-				addDetail(gDetail, data, type, i, grid);
-			}
+
+		List<SMTChartDetailVO> data;
+		if (ChartType.COLUMN == type) {
+			data = convertColumnData(grid, type, columns);
+		} else {
+			data = convertChartData(grid, type, columns);
 		}
+		
 		chart.processData(data);
 		
 		return chart;
@@ -200,25 +200,86 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	
 	
 	/**
+	 * Create the data for a column chart
+	 * @param grid
+	 * @param type
+	 * @param columns
+	 * @return
+	 */
+	private List<SMTChartDetailVO> convertColumnData(GridVO grid, ChartType type, List<Integer> columns) {
+		List<SMTChartDetailVO> data = new ArrayList<>(grid.getDetails().size());
+		List<String> series = new ArrayList<>(grid.getDetails().size());
+		for (GridDetailVO gDetail : grid.getDetails()) {
+			
+			String serie = getSerie(gDetail, series);
+			for (int i=0; i<grid.getSeries().length; i++) {
+				if (!columns .isEmpty() && !columns.contains(i+1)) continue;
+				addDetail(gDetail, data, type, i, grid, serie);
+			}
+		}
+		return data;
+	}
+
+	
+	/**
+	 * Create the data for a normal chart
+	 * @param grid
+	 * @param type
+	 * @param columns
+	 * @return
+	 */
+	private List<SMTChartDetailVO> convertChartData(GridVO grid, ChartType type, List<Integer> columns) {
+		List<SMTChartDetailVO> data = new ArrayList<>(grid.getDetails().size());
+		
+		for (GridDetailVO gDetail : grid.getDetails()) {
+			
+			for (int i=0; i<grid.getSeries().length; i++) {
+				if (!columns .isEmpty() && !columns.contains(i+1)) continue;
+				addDetail(gDetail, data, type, i, grid, grid.getSeries()[i]);
+			}
+		}
+		
+		return data;
+	}
+
+	
+	/**
+	 * Create a unique series name for the row to prevent rows from being overwitten
+	 * by items with the same serie.
+	 * @param gDetail
+	 * @param series
+	 * @return
+	 */
+	private String getSerie(GridDetailVO gDetail, List<String> series) {
+		StringBuilder serie = new StringBuilder(gDetail.getLabel());
+		while(series.contains(serie.toString())) {
+			serie.append(" ");
+		}
+		series.add(serie.toString());
+		return serie.toString();
+	}
+
+	/**
 	 * Add column/row information to the list.
 	 * @param gDetail
 	 * @param data
 	 * @param type
 	 * @param i
 	 * @param grid
+	 * @param series 
 	 * @param stacked
 	 */
-	private void addDetail(GridDetailVO gDetail, List<SMTChartDetailVO> data, ChartType type, int i, GridVO grid) {
+	private void addDetail(GridDetailVO gDetail, List<SMTChartDetailVO> data, ChartType type, int i, GridVO grid, String serie) {
 		if (i>=gDetail.getValues().length || (StringUtil.isEmpty(grid.getSeries()[i]) 
 				&& StringUtil.isEmpty(gDetail.getValues()[i]))) return;
 		SMTChartDetailVO cDetail = new SMTChartDetailVO();
 		if (ChartType.COLUMN == type) {
 			// Stacked column charts need to have thier series and detail swapped in order to stack properly
 			cDetail.setLabel(grid.getSeries()[i]);
-			cDetail.setSerie(gDetail.getLabel());
+			cDetail.setSerie(serie);
 		} else {
 			cDetail.setLabel(gDetail.getLabel());
-			cDetail.setSerie(grid.getSeries()[i]);
+			cDetail.setSerie(serie);
 		}
 		cDetail.setOrder(gDetail.getOrder());
 		cDetail.setValue(gDetail.getValues()[i]);
