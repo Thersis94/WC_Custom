@@ -199,6 +199,13 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	}
 	
 	
+	/**
+	 * Create the data for a column chart
+	 * @param grid
+	 * @param type
+	 * @param columns
+	 * @return
+	 */
 	private List<SMTChartDetailVO> convertColumnData(GridVO grid, ChartType type, List<Integer> columns) {
 		List<SMTChartDetailVO> data = new ArrayList<>(grid.getDetails().size());
 		List<String> series = new ArrayList<>(grid.getDetails().size());
@@ -213,6 +220,14 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		return data;
 	}
 
+	
+	/**
+	 * Create the data for a normal chart
+	 * @param grid
+	 * @param type
+	 * @param columns
+	 * @return
+	 */
 	private List<SMTChartDetailVO> convertChartData(GridVO grid, ChartType type, List<Integer> columns) {
 		List<SMTChartDetailVO> data = new ArrayList<>(grid.getDetails().size());
 		
@@ -227,6 +242,15 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		return data;
 	}
 
+	
+	/**
+	 * Create a unique series name for the row to prevent rows from being overwitten
+	 * by items with the same serie.
+	 * @param type
+	 * @param gDetail
+	 * @param series
+	 * @return
+	 */
 	private String getSerie(ChartType type, GridDetailVO gDetail, List<String> series) {
 		StringBuilder serie = new StringBuilder(gDetail.getLabel());
 		while(series.contains(serie.toString())) {
