@@ -2,6 +2,7 @@ package com.rezdox.action;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -38,7 +40,7 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 	public static final String REQ_APPROVE_REVIEW = "approveReview";
 	public static final String REQ_DELETE_REVIEW = "deleteReview";
 	public static final String REQ_ADMIN_MODERATE = "adminModerate";
-	
+
 	public BusinessAdminDataTool() {
 		super();
 	}
@@ -48,9 +50,10 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 	}
 
 
-	/**
-	 * Return a list of all the businesses requiring approval or business reviews
-	 * requiring moderation.
+	/*
+	 * Return a list of all the businesses requiring approval or business reviews requiring moderation.
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#list(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
@@ -65,7 +68,7 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 			BusinessAction ba = new BusinessAction(getDBConnection(), getAttributes());
 			List<BusinessVO> businesses = ba.retrievePendingBusinesses();
 			putModuleData(businesses);
-			
+
 		} else if (req.hasParameter("reviewModeration")) {
 			BusinessReviewAction revAction = new BusinessReviewAction(getDBConnection(), getAttributes());
 			List<BusinessReviewVO> reviews = revAction.retrieveUnmoderatedReviews();
@@ -85,21 +88,21 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 		if (req.hasParameter(REQ_APPROVE_BUSINESS)) {
 			BusinessAction ba = new BusinessAction(dbConn, attributes);
 			BusinessVO business = ba.retrieveBusinesses(req).get(0);
-			
+
 			// Set value required for approval or denial of business
 			business.setStatusCode(Convert.formatInteger(req.getParameter(REQ_APPROVE_BUSINESS)));
 			msg = setBusinessStatus(business);
-			
+
 			// Send confirmation to the business member
 			sendApprovalStatusEmail(business);
-			
+
 		} else if (req.hasParameter(REQ_APPROVE_REVIEW)) {
 			// Set values required for moderation of review
 			BusinessReviewVO businessReview = new BusinessReviewVO();
 			businessReview.setBusinessReviewId(req.getParameter("businessReviewId"));
 			businessReview.setModeratedFlag(Convert.formatInteger(req.getParameter(REQ_APPROVE_REVIEW)));
 			msg = setReviewStatus(businessReview);
-			
+
 		}
 
 		adminRedirect(req, msg, (String) getAttribute(AdminConstants.ADMIN_TOOL_PATH));
@@ -115,15 +118,14 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 		if (req.hasParameter(REQ_DELETE_REVIEW)) {
 			req.setParameter(REQ_ADMIN_MODERATE, "1");
 			req.setParameter("isDelete", "1");
-			
+
 			BusinessReviewAction revAction = new BusinessReviewAction(getDBConnection(), getAttributes());
 			revAction.build(req);
 		}
 	}
 
 	/**
-	 * Approve or deny a business.  
-	 *
+	 * Approve or deny a business.
 	 * @param mrv
 	 */
 	private String setBusinessStatus(BusinessVO business) {
@@ -141,14 +143,14 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 			log.error("Could not approve or deny business ", sqle);
 			return (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE); 
 		}
-		
+
 		return (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 	}
-	
+
+
 	/**
 	 * Sends an email confirmation to the business member as to
 	 * whether the business was approved or denied
-	 * 
 	 * @param business
 	 */
 	private void sendApprovalStatusEmail(BusinessVO business) {
@@ -156,23 +158,22 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 		dataMap.put("businessName", business.getBusinessName());
 
 		// Set the recipient. Send to the business email address.
-		Map<String, String> rcptMap = new HashMap<>();
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
 		MemberVO recipient = business.getMembers().entrySet().iterator().next().getValue();
-		rcptMap.put(recipient.getProfileId(), business.getEmailAddressText());
+		rcpts.add(new EmailRecipientVO(recipient.getProfileId(), business.getEmailAddressText(), EmailRecipientVO.TO));
 
 		// Send the appropriate email based on the approval status
 		String emailSlug = RezDoxUtils.EmailSlug.BUSINESS_APPROVED.name();
-		if (business.getStatus() == BusinessStatus.INACTIVE) {
+		if (business.getStatus() == BusinessStatus.INACTIVE)
 			emailSlug = RezDoxUtils.EmailSlug.BUSINESS_DECLINED.name();
-		}
-		
+
 		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-		util.sendMessage(dataMap, rcptMap, emailSlug);
+		util.sendMessage(dataMap, rcpts, emailSlug);
 	}
+
 
 	/**
 	 * Approve a review
-	 *
 	 * @param mrv
 	 */
 	private String setReviewStatus(BusinessReviewVO businessReview) {
@@ -190,7 +191,7 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 			log.error("Could not moderate review ", sqle);
 			return (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE); 
 		}
-		
+
 		return (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 	}
 }

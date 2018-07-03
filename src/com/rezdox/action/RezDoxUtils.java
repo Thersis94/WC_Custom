@@ -94,6 +94,11 @@ public class RezDoxUtils {
 	 * Used for setting notifications from outside of the sub-site context; like in the admintool.
 	 */
 	public static final String MEMBER_SITE_ID = "REZDOX_1";
+	
+	/**
+	 * Used for setting running Data Tool reports  in the admintool.
+	 */
+	public static final String MAIN_SITE_ID = "REZDOX_2";
 
 	/**
 	 * email slugs that correlated to the database/email campaigns.

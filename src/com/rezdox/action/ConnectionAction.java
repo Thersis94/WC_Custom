@@ -4,8 +4,10 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.rezdox.action.RewardsAction.Reward;
 import com.rezdox.vo.BusinessVO;
@@ -25,11 +27,13 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: ConnectionAction.java
@@ -57,7 +61,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	public static final String APPROVED_FLAG = "approvedFlag";
 	public static final String CATEGORY_SEARCH = "categorySearch";
 	public static final String TARGET_ID = "targetId"; 
-	public static final String REZDOX_CONNECTION_POINTS = "rezdoxConnectionPoints";
+	public static final String CONNECTION_COOKIE = "rexdoxConnectionCount";
 	private static final String ID_SUFFIX = "_id=? ";
 
 	public ConnectionAction() {
@@ -112,7 +116,10 @@ public class ConnectionAction extends SimpleActionAdapter {
 			}
 		}
 
-		new MyProsAction(dbConn, attributes).retrieve(req);
+		 // Don't need this when reloading the cookie, but otherwise MyProsAction 
+		// will fail-fast on it's own and is also checking for a cookie reload (trigger).
+		if (!req.hasParameter("generateCookie"))
+			new MyProsAction(dbConn, attributes).retrieve(req);
 
 		if (req.hasParameter(TARGET_ID))
 			findConnections(req);
@@ -129,24 +136,27 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//if there is a target id use the token to identify the type of id sent and make the correct
 		//  request. getting member data is different then getting business data.
 		String[] idParts = StringUtil.checkVal(req.getParameter(TARGET_ID)).split("_");
+		if (idParts == null || idParts.length < 2 || !req.hasParameter("json")) return; 
 
-		if (idParts != null && idParts.length > 0 && "m".equalsIgnoreCase(idParts[0])) {
+		if ("m".equalsIgnoreCase(idParts[0])) {
 			setModuleData(generateConnections(idParts[1], MEMBER, req));
 
-		} else  if (idParts != null && idParts.length > 0 && "b".equalsIgnoreCase(idParts[0])) {
+		} else  if ("b".equalsIgnoreCase(idParts[0])) {
 			setModuleData(generateConnections(idParts[1], BUSINESS, req));
 		}
 	}
 
+
 	/**
-	 * controls generating the cookie
+	 * Puts the # of connections in a cookie to display in the left menu
 	 * @param req
 	 */
 	private void generateConnCookie(ActionRequest req) {
-		int count = getMemeberConnectionCount(RezDoxUtils.getMemberId(req));
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		int count = getMemeberConnectionCount(RezDoxUtils.getMemberId(req), role != null ? role.getRoleId() : "");
 		log.debug(" found " +count+ "Connection");
 		//set the total in a cookie.  This may be excessive for repeat calls to the rewards page, but ensures cached data is flushed
-		CookieUtil.add(req, REZDOX_CONNECTION_POINTS, String.valueOf(count), "/", -1);
+		CookieUtil.add(req, CONNECTION_COOKIE, String.valueOf(count), "/", -1);
 	}
 
 
@@ -155,16 +165,41 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param req 
 	 * @return
 	 */
-	public int getMemeberConnectionCount(String memberId) {
-		if (memberId == null) return 0;
+	public int getMemeberConnectionCount(String memberId, String roleId) {
+		if (StringUtil.isEmpty(memberId)) return 0;
 
+		boolean printedBiz = false;
+		Set<String> bizIds = new HashSet<>();
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
-		params.add(memberId);
-		params.add(memberId);
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select cast(count(*) as int) as total_rows_no  from ").append(schema).append("rezdox_connection ");
-		sql.append("where (sndr_member_id = ? or rcpt_member_id = ?) and approved_flg = 1 ");
+		sql.append("where (");
+
+		//if not residence only, include their businesses
+		if (!RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(roleId)) {
+			List<GenericVO> myBusinesses = loadBusinessOptions(memberId);
+			for (GenericVO vo : myBusinesses)
+				bizIds.add((String)vo.getKey());
+
+			if (!bizIds.isEmpty()) {
+				printedBiz = true;
+				String qMarks = DBUtil.preparedStatmentQuestion(bizIds.size());
+				sql.append("sndr_business_id in (").append(qMarks).append(") or rcpt_business_id in (").append(qMarks).append(") ");
+				params.addAll(bizIds);
+				params.addAll(bizIds);
+			}
+		}
+
+		//not business only - include their personal account
+		if (!RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(roleId)) {
+			if (printedBiz) sql.append("or ");
+			sql.append("sndr_member_id=? or rcpt_member_id=? ");
+			params.add(memberId);
+			params.add(memberId);
+		}
+
+		sql.append(") and approved_flg=1");
 		log.debug(sql + "|"+params );
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
@@ -284,16 +319,16 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 	/**
 	 * @param targetId
-	 * @param inqueryType
+	 * @param inquiryType
 	 * @param req 
 	 * @param b
 	 * @return 
 	 */
-	protected List<ConnectionReportVO> generateConnections(String targetId, String inqueryType, ActionRequest req) {
+	protected List<ConnectionReportVO> generateConnections(String targetId, String inquiryType, ActionRequest req) {
 		log.debug("generating connections");
 
 		// Sort on two fields in default view
-		String order = "order by approved_flg asc, create_dt desc ";
+		String order = "order by approved_flg asc, create_dt desc";
 
 		// Otherwise sort on one selected field if sort & order are passed
 		if (!StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_SORT)) && !StringUtil.isEmpty(req.getParameter(DBUtil.TABLE_ORDER))) {
@@ -304,9 +339,10 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
-		String idField = (inqueryType.equals(MEMBER)) ? MEMBER : BUSINESS;
+		String idField = (inquiryType.equals(MEMBER)) ? MEMBER : BUSINESS;
 
 		//getting the records where target id sent the connection to an other member
+		String andIsApproved = "and a.approved_flg >= 0 ";
 		StringBuilder sql = new StringBuilder(2680);
 		sql.append(DBUtil.SELECT_FROM_STAR);
 		sql.append("( select connection_id, sndr_").append(idField).append("_id as sndr_id, b.member_id as rcpt_id, 'sending' as direction_cd, b.first_nm, b.last_nm, b.profile_pic_pth, ");
@@ -314,7 +350,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.rcpt_member_id = b.member_id ");
 		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
-		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
+		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		//getting the records where target id was sent a connection by an other memeber
 		sql.append(DBUtil.UNION_ALL);
@@ -323,7 +359,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A );
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.sndr_member_id = b.member_id ");
 		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
-		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
+		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		//getting the records where target id sent a connection to a business
 		sql.append(DBUtil.UNION_ALL);
@@ -344,7 +380,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
-		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
+		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		//getting the records where a business sent a connection to the target id
 		sql.append(DBUtil.UNION_ALL);
@@ -365,7 +401,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category b on a.business_category_cd = b.business_category_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_category c on b.parent_cd = c.business_category_cd ");
 		sql.append(") as cat on b.business_id = cat.business_id ");
-		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append("and a.approved_flg >= 0 ");
+		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		sql.append(") as all_member ");
 		//where for whole multiplexed union would go here
@@ -479,17 +515,19 @@ public class ConnectionAction extends SimpleActionAdapter {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
 
-		if (cvo.getApprovedFlag() == 0 && !StringUtil.isEmpty(cvo.getSenderMemberId()) && !StringUtil.isEmpty(cvo.getRecipientMemberId())) {
+		//not yet approved and we have either a sending member or sending business.
+		if (cvo.getApprovedFlag() == 0 && (!StringUtil.isEmpty(cvo.getSenderMemberId()) || !StringUtil.isEmpty(cvo.getSenderBusinessId()))) {
 			sendRequestEmail(cvo, emailer, notifyUtil);
+
 		} else if (cvo.getApprovedFlag() == 1) {
 			sendApprovedEmail(cvo, emailer, notifyUtil);
-			
+
 			//award 25 points to the members involved in this transaction - we do not award points to businesses.
 			RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 			if (!StringUtil.isEmpty(cvo.getSenderMemberId()))
-				ra.applyReward(Reward.CONNECT.name(), cvo.getSenderMemberId());
+				ra.applyReward(Reward.CONNECT.name(), cvo.getSenderMemberId(), req);
 			if (!StringUtil.isEmpty(cvo.getRecipientMemberId()))
-				ra.applyReward(Reward.CONNECT.name(), cvo.getRecipientMemberId());
+				ra.applyReward(Reward.CONNECT.name(), cvo.getRecipientMemberId(), req);
 		}
 	}
 
@@ -508,8 +546,13 @@ public class ConnectionAction extends SimpleActionAdapter {
 		addUserToMap(cvo.getSenderMemberId(), cvo.getSenderBusinessId(), "senderName", dataMap, null);
 		addUserToMap(cvo.getRecipientMemberId(), cvo.getRecipientBusinessId(), "recipientName", dataMap, emailMap);
 
+		//conver the map to a list
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
+		for (Map.Entry<String, String> entry : emailMap.entrySet())
+			rcpts.add(new EmailRecipientVO(entry.getKey(), entry.getValue(), EmailRecipientVO.TO));
+
 		// Send the email notification
-		emailer.sendMessage(dataMap, emailMap, RezDoxUtils.EmailSlug.CONNECTION_REQUEST.name());
+		emailer.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.CONNECTION_REQUEST.name());
 
 		// Add the browser notification
 		String notifyProfileId = emailMap.entrySet().iterator().next().getKey();
@@ -532,8 +575,13 @@ public class ConnectionAction extends SimpleActionAdapter {
 		addUserToMap(cvo.getSenderMemberId(), cvo.getSenderBusinessId(), "senderName", dataMap, emailMap);
 		addUserToMap(cvo.getRecipientMemberId(), cvo.getRecipientBusinessId(), "recipientName", dataMap, null);
 
+		//conver the map to a list
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
+		for (Map.Entry<String, String> entry : emailMap.entrySet())
+			rcpts.add(new EmailRecipientVO(entry.getKey(), entry.getValue(), EmailRecipientVO.TO));
+
 		// Send the email notification
-		emailer.sendMessage(dataMap, emailMap, RezDoxUtils.EmailSlug.CONNECTION_APPROVED.name());
+		emailer.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.CONNECTION_APPROVED.name());
 
 		// Add the browser notification
 		String notifyProfileId = emailMap.entrySet().iterator().next().getKey();

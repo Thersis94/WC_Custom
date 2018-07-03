@@ -59,13 +59,15 @@ public class MyProsAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
+		if (role == null || role.getRoleLevel() == 0) return;
 
 		//cache this list - it won't change often enough to be rebuilding on every pageview
-		if ((!req.hasParameter("reloadPros") && req.getSession().getAttribute("MY_PROS") != null) || role == null || role.getRoleLevel() == 0) return;
+		if (!req.hasParameter("reloadPros") && req.getSession().getAttribute("MY_PROS") != null) return;
 
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select a.my_pro_id, b.*, m.first_nm, m.last_nm, m.profile_pic_pth, bc.category_nm from ").append(schema).append("rezdox_my_pro a ");
+		sql.append("select a.my_pro_id, b.*, m.first_nm, m.last_nm, m.profile_pic_pth, bc.category_nm, bc.business_category_cd ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_my_pro a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS b on a.business_id=b.business_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_MEMBER_XR mxr on b.business_id=mxr.business_id and mxr.status_flg=1 ");  //biz owner
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_MEMBER m on m.member_id=mxr.member_id and m.status_flg=1 ");
