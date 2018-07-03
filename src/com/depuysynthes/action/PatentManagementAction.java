@@ -307,9 +307,7 @@ public class PatentManagementAction extends SBActionAdapter {
 
 	/**
 	 * Logs an activity record for the patent management operation.
-	 * @param patentId
-	 * @param activityType
-	 * @param profileId
+	 * @param pvo
 	 * @throws ActionException
 	 */
 	private void logHistory(PatentVO pvo) throws ActionException {
