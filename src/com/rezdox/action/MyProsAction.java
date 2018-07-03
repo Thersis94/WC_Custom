@@ -70,14 +70,14 @@ public class MyProsAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_my_pro a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS b on a.business_id=b.business_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_MEMBER_XR mxr on b.business_id=mxr.business_id and mxr.status_flg=1 ");  //biz owner
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_MEMBER m on m.member_id=mxr.member_id and m.status_flg=1 ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_MEMBER m on m.member_id=mxr.member_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_CATEGORY bc on a.business_category_cd=bc.business_category_cd ");
-		sql.append("where a.member_id=? and m.member_id != ? ");  //exclude connections to 'myself'
+		sql.append("where a.member_id=? ");
 		sql.append("order by a.create_dt desc");
 		log.debug(sql);
 
 		String memberId = RezDoxUtils.getMemberId(req);
-		List<Object> params = Arrays.asList(memberId, memberId);
+		List<Object> params = Arrays.asList(memberId);
 
 		//generate a list of VO's
 		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
