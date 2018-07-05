@@ -325,7 +325,7 @@ public class InventoryAction extends SimpleActionAdapter {
 				req.setParameter(REQ_TREASURE_ITEM_ID, vo.getTreasureItemId());
 
 				if (isNew)
-					awardPoints(RezDoxUtils.getMemberId(req));
+					awardPoints(RezDoxUtils.getMemberId(req), req);
 			}
 
 		} catch (Exception e) {
@@ -337,10 +337,10 @@ public class InventoryAction extends SimpleActionAdapter {
 	/**
 	 * @param memberId
 	 */
-	private void awardPoints(String memberId) {
+	private void awardPoints(String memberId, ActionRequest req) {
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
 		try {
-			ra.applyReward(Reward.TREASURE_BOX.name(), memberId);
+			ra.applyReward(Reward.TREASURE_BOX.name(), memberId, req);
 		} catch (ActionException e) {
 			log.error("could not award reward points", e);
 		}

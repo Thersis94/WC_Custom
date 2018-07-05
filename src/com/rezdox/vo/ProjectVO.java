@@ -314,6 +314,10 @@ public class ProjectVO {
 		homeowner.setName(getAttribute(FormSlug.PROJECT_OWNER.name()));
 		homeowner.setEmailAddress(getAttribute(FormSlug.PROJECT_EMAIL.name()));
 		homeowner.setMainPhone(getAttribute(FormSlug.PROJECT_PHONE.name()));
+		homeowner.setAddress(getAttribute(FormSlug.PROJECT_ADDRESS.name()));
+		homeowner.setCity(getAttribute(FormSlug.PROJECT_CITY.name()));
+		homeowner.setState(getAttribute(FormSlug.PROJECT_STATE.name()));
+		homeowner.setZipCode(getAttribute(FormSlug.PROJECT_ZIP_CODE.name()));
 		return homeowner;
 	}
 

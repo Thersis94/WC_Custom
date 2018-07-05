@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Map;
 
 import com.rezdox.vo.MemberRewardVO;
-import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.RewardVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -17,7 +17,6 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title:</b> RewardsAction.java<br/>
@@ -33,6 +32,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class RewardsAction extends SimpleActionAdapter {
 
 	protected static final String REQ_REWARD_ID = "rewardId";
+	public static final String COOKIE_NM = "rezdoxMemberRewardPoints";
 
 	public RewardsAction() {
 		super();
@@ -50,7 +50,7 @@ public class RewardsAction extends SimpleActionAdapter {
 	public enum Reward {
 		CONNECT, TREASURE_BOX, NEW_PROJ_RES, NEW_PROJ_BUS, REVIEW_BUS, CREATE_RES2
 	}
-	
+
 	/**
 	 * overloaded constructor to simplify calling actions
 	 * @param dbConnection
@@ -83,10 +83,9 @@ public class RewardsAction extends SimpleActionAdapter {
 		log.debug(sql);
 
 		String memberId = StringUtil.checkVal(req.getAttribute("member_id"), null);
-		if (memberId == null) {
-			MemberVO user = (MemberVO) req.getSession().getAttribute(Constants.USER_DATA);
-			memberId = user.getMemberId();
-		}
+		if (memberId == null)
+			memberId = RezDoxUtils.getMemberId(req);
+
 		List<Object> params = new ArrayList<>();
 		params.add(memberId);
 
@@ -97,12 +96,26 @@ public class RewardsAction extends SimpleActionAdapter {
 
 
 	/**
+	 * Apply the points and also remove the cookie - the browser will repopulate it with the u
+	 * pdated total after we have time to write to the DB.
+	 * @param rewardIdOrSlug
+	 * @param memberId
+	 * @param req
+	 * @throws ActionException
+	 */
+	public void applyReward(String rewardIdOrSlug, String memberId, ActionRequest req) throws ActionException {
+		this.applyReward(rewardIdOrSlug, memberId);
+		CookieUtil.remove(req, COOKIE_NM);
+	}
+
+
+	/**
 	 * Attach the given reward to the given user.
 	 * @param rewardIdOrSlug
 	 * @param memberId
 	 * @throws ActionException
 	 */
-	public void applyReward(String rewardIdOrSlug, String memberId) throws ActionException {
+	private void applyReward(String rewardIdOrSlug, String memberId) throws ActionException {
 		if (StringUtil.isEmpty(rewardIdOrSlug) || StringUtil.isEmpty(memberId))
 			throw new ActionException("Missing data");
 
