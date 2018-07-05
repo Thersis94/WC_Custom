@@ -1,5 +1,6 @@
 package com.depuysynthes.action;
 
+// Java 8
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -7,8 +8,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+// Apache Log4j
 import org.apache.log4j.PropertyConfigurator;
 
+// SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.exception.FileException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -20,6 +23,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.siliconmtn.util.parser.AnnotationParser;
 
+// WebCrescendo
 import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
