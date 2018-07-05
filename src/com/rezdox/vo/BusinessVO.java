@@ -420,6 +420,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 		for (BusinessStatus businessStatus : BusinessStatus.values()) {
 			if (businessStatus.getStatus() == statusCode) {
 				this.status = businessStatus;
+				break;
 			}
 		}
 	}
