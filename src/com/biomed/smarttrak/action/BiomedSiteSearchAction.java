@@ -9,6 +9,7 @@ import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -30,6 +31,11 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @since Apr 11, 2017
  ****************************************************************************/
 public class BiomedSiteSearchAction extends SBActionAdapter {
+	
+	private static final String[] SMARTSEARCH_OVERRIDES = new String[]{"indexType", "allysearch_ss", "shortnm_s", "companyshortnm_s", 
+			"productnames_ss", "productshortnames_ss", "productaliasnames_ss", "companytickersearch_s", "companyaliassearch_s", 
+			"metaKeywords", "companyshortnm_s", "ticker_s", "productnames_ss", "productshortnames_ss", "productaliasnames_ss", 
+			"contents", "alias_s", "shortnmsearch_s", "companysearch_s", "parentnm_s"};
 
 	public BiomedSiteSearchAction() {
 		super();
@@ -82,6 +88,18 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 		resp.add(getResults(req));
 		//unclear why this is needed, but it is.  If we don't flush the FQ in gets picked-up by the 1st query.  yes, illogical!  -JM- 08.29.17
 		req.setParameter("fq", null);
+		
+		// SmartSearch needs to get total results for a full search, but document information for
+		// a limited search. Do that limited search here if in a SmartSearch
+		if (Convert.formatBoolean(req.getParameter("smartSearch"))) {
+			req.setParameter("fieldOverride", SMARTSEARCH_OVERRIDES, true);
+
+			req.setAttribute(SmarttrakSolrAction.SECTION, SmarttrakSolrAction.BROWSE_SECTION);
+			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+			req.setParameter("pmid", mod.getPageModuleId());
+			resp.add(getResults(req));
+			req.setParameter("fieldOverride", null);
+		}
 		
 		putModuleData(resp);
 		req.setParameter("searchData", searchData, true);
