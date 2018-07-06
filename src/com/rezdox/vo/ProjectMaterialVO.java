@@ -136,4 +136,13 @@ public class ProjectMaterialVO {
 	public void addAttribute(ProjectMaterialAttributeVO attr) {
 		attributes.add(attr);
 	}
+
+
+	/**
+	 * total cost, as a calculation of qnty * unit cost
+	 * @return
+	 */
+	public double getTotalCostNo() {
+		return quantityNo * costNo;
+	}
 }

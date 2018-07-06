@@ -55,8 +55,9 @@ public class ProjectVO {
 	private List<ProjectMaterialVO> materials;
 	private List<ProjectAttributeVO> attributes;
 	private Map<String, String> attributeMap;
+	private int photoCnt;
 
-	private Double productSubtotalNo;  //calculated internally - member avoids repeated reculations
+	private double productSubtotalNo;
 	private String mainPhone;
 
 
@@ -397,20 +398,9 @@ public class ProjectVO {
 		return Convert.round(getTotalNo() - getAppliedDiscount() + getAppliedTax(), 2);
 	}
 
-	@Column(name="raw_material_cost", isReadOnly=true)
+	@Column(name="material_cost", isReadOnly=true)
 	public double getMaterialSubtotal() {
-		if (productSubtotalNo != null) return productSubtotalNo.doubleValue();
-
-		double amt = 0;
-		List<ProjectMaterialVO> mats = getMaterials();
-		if (mats != null && !mats.isEmpty()) {
-			for (ProjectMaterialVO mat : mats)
-				amt += mat.getCostNo();
-		}
-
-		amt = Convert.round(amt, 2);
-		productSubtotalNo = Double.valueOf(amt);
-		return amt;
+		return productSubtotalNo;
 	}
 
 	public void setMaterialSubtotal(double d) {
@@ -444,5 +434,14 @@ public class ProjectVO {
 
 	public void setMainPhone(String mainPhone) {
 		this.mainPhone = mainPhone;
+	}
+
+	@Column(name="photo_cnt", isReadOnly=true)
+	public int getPhotoCnt() {
+		return photoCnt;
+	}
+
+	public void setPhotoCnt(int photoCnt) {
+		this.photoCnt = photoCnt;
 	}
 }
