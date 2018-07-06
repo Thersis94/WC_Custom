@@ -84,7 +84,7 @@ public class GalleryAction extends SimpleActionAdapter {
 		AlbumVO opts = new AlbumVO(req);
 
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select a.album_id, residence_id, business_id, album_nm, a.create_dt, ");
+		sql.append("select a.album_id, residence_id, a.business_id, album_nm, a.create_dt, ");
 		sql.append("a.update_dt, (array_agg(image_url))[1] as image_url ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_album a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_photo p on a.album_id=p.album_id ");
@@ -99,7 +99,7 @@ public class GalleryAction extends SimpleActionAdapter {
 			params.add(opts.getResidenceId());
 			
 		} else if (!StringUtil.isEmpty(opts.getBusinessId())) {
-			sql.append("or business_id=? ");
+			sql.append("or a.business_id=? ");
 			params.add(opts.getBusinessId());
 		}
 		

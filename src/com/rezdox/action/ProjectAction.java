@@ -105,6 +105,12 @@ public class ProjectAction extends SimpleActionAdapter {
 		//if we're looking at a single project, load additional pieces depending on which tab is being displayed
 		if (!StringUtil.isEmpty(projectId)) {
 			loadTabSpecifics(mod, req, page, projectId, data);
+			//set a marker on the request to signal whether the invoice tab should be displayed to homeowners.
+			if (!data.isEmpty()) {
+				ProjectVO proj = data.get(0);
+				boolean isSharedProj = proj.getResidenceViewFlg() == 1 && proj.getBusinessViewFlg() == 1;
+				req.setAttribute("isSharedProj", isSharedProj);
+			}
 
 		} else {
 			calculateValuation(mod, data);
@@ -212,7 +218,8 @@ public class ProjectAction extends SimpleActionAdapter {
 			if (isInvoice) {
 				//load the project materials
 				vo.setMaterials(loadInvoiceMaterials(req));
-				vo.setBusiness(getBusiness((List<BusinessVO>)mod.getAttribute(FILTER_DATA_LST), vo.getBusinessId()));
+				if (vo.getBusiness() == null)
+					vo.setBusiness(getBusiness((List<BusinessVO>)mod.getAttribute(FILTER_DATA_LST), vo.getBusinessId()));
 			}
 		}
 	}
@@ -222,7 +229,7 @@ public class ProjectAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private BusinessVO getBusiness(List<BusinessVO> data, String businessId) {
+	protected BusinessVO getBusiness(List<BusinessVO> data, String businessId) {
 		if (data == null || data.isEmpty()) return null;
 		for (BusinessVO vo : data) {
 			if (vo.getBusinessId().equals(businessId))
@@ -243,7 +250,8 @@ public class ProjectAction extends SimpleActionAdapter {
 
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select a.*, b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
-		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id, sum(pm.cost_no) as raw_material_cost ");
+		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id, pc.material_cost, ");
+		sql.append("cast(sum(case when ph.photo_id is not null then 1 else 0 end) as integer) as photo_cnt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("REZDOX_PROJECT a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_ATTRIBUTE b on a.project_id=b.project_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_CATEGORY c on a.project_category_cd=c.project_category_cd ");
@@ -252,7 +260,8 @@ public class ProjectAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.status_flg=1 ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_MEMBER m on rm.member_id=m.member_id "); //this is the home owner
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_ROOM rr on a.room_id=rr.room_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_MATERIAL pm on a.project_id=pm.project_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_COST_VIEW pc on a.project_id=pc.project_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PHOTO ph on a.project_id=ph.project_id ");
 		sql.append("where a.business_view_flg != 0 ");// 1=approved, -1=pending
 
 		if (!StringUtil.isEmpty(projectId)) {
@@ -264,7 +273,7 @@ public class ProjectAction extends SimpleActionAdapter {
 		}
 		sql.append("group by a.project_id, a.residence_id, a.room_id, a.business_id, a.project_category_cd, a.project_type_cd, a.project_nm, ");
 		sql.append("a.labor_no, a.total_no, a.residence_view_flg, a.business_view_flg, a.create_dt, a.update_dt, a.end_dt, a.desc_txt, ");
-		sql.append("a.proj_discount_no, a.proj_tax_no, a.mat_discount_no, a.mat_tax_no, ");
+		sql.append("a.proj_discount_no, a.proj_tax_no, a.mat_discount_no, a.mat_tax_no, pc.material_cost, ");
 		sql.append("b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
 		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id ");
 		sql.append("order by a.end_dt desc, a.project_nm");

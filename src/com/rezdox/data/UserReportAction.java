@@ -122,7 +122,7 @@ public class UserReportAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(1000);
 		//residence members
 		if (!bizOnly) {
-			sql.append("select newid() as guid, m.create_dt as enroll_dt, '' as business_nm, m.first_nm, m.last_nm, m.email_address_txt, ");
+			sql.append("select m.member_id as guid, m.create_dt as enroll_dt, '' as business_nm, m.first_nm, m.last_nm, m.email_address_txt, ");
 			sql.append("role.role_nm, r.address_txt, r.address2_txt, r.city_nm, r.state_cd, r.zip_cd, ph.phone_number_txt, '' as website_url, ");
 			sql.append("case when rm.status_flg=0 then 'Inactive' when rm.status_flg < 0 then 'Residence Deleted' else 'Active' end as status_nm, ");
 			sql.append("'' as sub_category_nm, '' as category_nm ");
@@ -142,7 +142,7 @@ public class UserReportAction extends SimpleActionAdapter {
 
 		//business members
 		if (!resOnly) {
-			sql.append("select newid() as guid, m.create_dt as enroll_dt, b.business_nm, m.first_nm, m.last_nm, m.email_address_txt, ");
+			sql.append("select m.member_id as guid, m.create_dt as enroll_dt, b.business_nm, m.first_nm, m.last_nm, m.email_address_txt, ");
 			sql.append("role.role_nm, b.address_txt, b.address2_txt, b.city_nm, b.state_cd, b.zip_cd, b.main_phone_txt as phone_number_txt, b.website_url, ");
 			sql.append("case when bm.status_flg=0 then 'Pending' when bm.status_flg < 0 then 'Business Deleted' else 'Active' end as status_nm, ");
 			sql.append("subcat.category_nm as sub_category_nm, cat.category_nm ");
