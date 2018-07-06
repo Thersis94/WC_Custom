@@ -183,6 +183,11 @@ public class GridExcelManager {
  		   numberVal = numberVal / 100; //divide to account for later percentage formatting
  		   isPercent = true;
  	   }
+ 	   
+ 	   if (originalValue.indexOf('-') > -1) {
+ 		   numberVal = numberVal*-1;
+ 	   }
+ 	   
  	   cell.setCellValue(numberVal);
  	   cell.setCellType(Cell.CELL_TYPE_NUMERIC);
  	   return isPercent;
