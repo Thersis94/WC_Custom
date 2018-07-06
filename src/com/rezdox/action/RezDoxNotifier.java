@@ -87,10 +87,6 @@ public class RezDoxNotifier {
 		this.site = site;
 		this.dbConn = dbConn;
 		this.customDbSchema = customDbSchema;
-
-		//for the sake of notifications we want to use the /member subsiteId.
-		//we must override/enforce this because ajax calls to /json will have the wrong siteId by default
-		this.site.setSiteId(RezDoxUtils.MEMBER_SITE_ID);
 	}
 
 
@@ -116,7 +112,7 @@ public class RezDoxNotifier {
 		}
 
 		//create a notification for each of the recipients
-		util.createNotification(site.getSiteId(), message, url, null, rcptProfileIds);
+		util.createNotification(RezDoxUtils.MEMBER_SITE_ID, message, url, null, rcptProfileIds);
 	}
 
 
