@@ -340,6 +340,7 @@ public class BusinessAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		BusinessVO business = new BusinessVO(req);
 		boolean newBusiness = StringUtil.isEmpty(business.getBusinessId());
+		boolean notifyAdmin = false;
 
 		// Validate this member can edit the business data, prevent malicious editing
 		if (!newBusiness) {
@@ -375,6 +376,7 @@ public class BusinessAction extends SBActionAdapter {
 					log.error("could not update member vo", e);
 				}
 			}
+			notifyAdmin = newBusiness;
 
 		} else if (req.hasParameter("deleteBusiness")) {
 			String msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
@@ -392,13 +394,14 @@ public class BusinessAction extends SBActionAdapter {
 		} else {
 			try {				
 				putModuleData(saveBusiness(req), 1, false);
+				notifyAdmin = newBusiness;
 			} catch (Exception e) {
 				throw new ActionException("Could not save business", e);
 			}
 		}
 
 		//notify the admin if a new business got created - it requires approval
-		if (newBusiness) {
+		if (notifyAdmin) {
 			//repopulate the VO when what the form handler repositioned for us
 			business = new BusinessVO(req);
 			EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
