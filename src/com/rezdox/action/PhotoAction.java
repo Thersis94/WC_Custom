@@ -31,7 +31,8 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 public class PhotoAction extends SimpleActionAdapter {
 
 	private static final String RELA_FLDR = "/photo/inventory/";
-
+	public static final String UPLOAD_PATH = "uploadPath";
+	public static final String URL_ROOT="urlRoot";
 
 	public PhotoAction() {
 		super();
@@ -108,7 +109,7 @@ public class PhotoAction extends SimpleActionAdapter {
 		sql.append("order by order_no, coalesce(update_dt, create_dt), photo_nm "); //most recent first, or by name?  Can be changed per UI reqs.
 		log.debug(sql);
 
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		return dbp.executeSelect(sql.toString(), params, new PhotoVO());
 	}
 
@@ -118,7 +119,7 @@ public class PhotoAction extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		PhotoVO photo = new PhotoVO(req);
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 
 		try {
 			if (req.hasParameter("isDelete")) {
@@ -159,25 +160,31 @@ public class PhotoAction extends SimpleActionAdapter {
 
 
 	/**
-	 * writes the files to disk, and then to DB.  Called from InventoryFormProcessor
+	 * Write uploaded files to disk, and then to DB.  
+	 * Called from InventoryFormProcessor & BusinessFormProcessor
 	 * @param req
 	 * @param fpbdArr
 	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void saveFiles(ActionRequest req) {
-		String root = StringUtil.checkVal(attributes.get(Constants.SECURE_PATH_TO_BINARY));
-		root = StringUtil.join(root, ""+attributes.get(Constants.ORG_ALIAS), req.getParameter("organizationId"), RELA_FLDR, req.getParameter("treasureItemId"), "/");
-		log.debug("writing files to " + root);
+		String uploadPath;
+		String urlRoot;
+		if (req.getAttribute(UPLOAD_PATH) != null) {
+			uploadPath = (String)req.getAttribute(UPLOAD_PATH);
+			urlRoot = (String) req.getAttribute(URL_ROOT);
+		} else {
+			String root = StringUtil.checkVal(getAttribute(Constants.SECURE_PATH_TO_BINARY));
+			uploadPath = StringUtil.join(root, (String)getAttribute(Constants.ORG_ALIAS), req.getParameter("organizationId"), RELA_FLDR, req.getParameter("treasureItemId"), "/");
+			log.debug("writing files to " + root);
 
-		String urlRoot = StringUtil.join(RELA_FLDR, req.getParameter("treasureItemId"), "/");
+			urlRoot = StringUtil.join(RELA_FLDR, req.getParameter("treasureItemId"), "/");
+		}
 
 		FileLoader fl = new FileLoader(getAttributes());
 		for (FilePartDataBean fpdb : req.getFiles()) {
-			fl.setFileName(fpdb.getFileName());
-			fl.setPath(root);
-			fl.setData(fpdb.getFileData());
-
 			try {
-				String fPath = StringUtil.join(urlRoot, fl.writeFiles());
+				String fileUrl = fl.writeFiles(fpdb.getFileData(), uploadPath, fpdb.getFileName(), true, true);
+				String fPath = StringUtil.join(urlRoot, fileUrl);
 				log.debug("file written: " + fPath);
 				req.setParameter("photoName", fpdb.getFileName());
 				req.setParameter("imageUrl", fPath);

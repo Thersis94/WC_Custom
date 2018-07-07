@@ -10,9 +10,9 @@ import java.util.Map;
 import com.rezdox.action.BusinessAction.BusinessStatus;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO;
-import com.rezdox.vo.SubscriptionVO;
 import com.rezdox.vo.MembershipVO.Group;
 import com.rezdox.vo.PromotionVO;
+import com.rezdox.vo.SubscriptionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -35,7 +35,7 @@ import com.smt.sitebuilder.security.SBUserRole;
  * @since Feb 7, 2018
  ****************************************************************************/
 public class SubscriptionAction extends SimpleActionAdapter {
-	
+
 	public SubscriptionAction() {
 		super();
 	}
@@ -46,7 +46,7 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	public SubscriptionAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/**
 	 * @param dbConnection
 	 * @param attributes
@@ -65,19 +65,19 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
 		String memberId = member.getMemberId();
-		
+
 		// Check if this is a new member. New members get a free residence or a free business.
 		int residenceCount = getResidenceUsage(memberId);
 		int businessCount = getBusinessUsage(memberId);
 		req.setAttribute("newMember", residenceCount + businessCount == 0);
 		if ((boolean) req.getAttribute("newMember")) return;
-		
+
 		// Get the possible memberships the member can subscribe to.
 		req.setParameter(MembershipAction.REQ_EXC_GROUP_CD, getMembershipExclusions(req).toArray(new String[0]), true);
 		MembershipAction ma = new MembershipAction(dbConn, attributes);
 		putModuleData(ma.retrieveMemberships(req));
 	}
-	
+
 	/**
 	 * Checks the member's role to determine which subscriptions they don't have access to
 	 * 
@@ -87,7 +87,7 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	private List<String> getMembershipExclusions(ActionRequest req) {
 		List<String> exclusions = new ArrayList<>();
 		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
-		
+
 		if (RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId())) {
 			// Exclude residence memberships if this is a business-only role
 			exclusions.add(Group.HO.name());
@@ -95,10 +95,10 @@ public class SubscriptionAction extends SimpleActionAdapter {
 			// Exclude business memberships if this is a residence-only role
 			exclusions.add(Group.BU.name());
 		}
-		
+
 		return exclusions;
 	}
-	
+
 	/**
 	 * Checks if a member needs to purchase a subscription upgrade
 	 * 
@@ -109,19 +109,19 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	protected boolean checkUpgrade(MemberVO member, Group membershipGroup) throws ActionException {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		boolean needsUpgrade = true;
-		
+
 		StringBuilder sql = new StringBuilder(350);
 		sql.append("select sum(s.qty_no) as purchase_qty ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_subscription s inner join ");
 		sql.append(schema).append("rezdox_membership m on s.membership_id = m.membership_id ");
 		sql.append("where group_cd = ? and member_id = ? ");
 		sql.append("group by group_cd ");
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int idx = 0;
 			ps.setString(++idx, membershipGroup.toString());
 			ps.setString(++idx, member.getMemberId());
-			
+
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				// Check their purchases against their usage
@@ -138,10 +138,10 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		} catch (SQLException e) {
 			log.error("Unable to validate subscription purchase qty. ", e);
 		}
-		
+
 		return needsUpgrade;
 	}
-	
+
 	/**
 	 * Gets a member's subscription usage for a given membership type.
 	 * NOTE: This is different than the total subscriptions paid for.
@@ -163,7 +163,7 @@ public class SubscriptionAction extends SimpleActionAdapter {
 				throw new ActionException("Unsupported membership group type.");
 		}
 	}
-	
+
 	/**
 	 * Checks a member's usage of residence subscriptions
 	 * 
@@ -172,15 +172,15 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	 */
 	protected int getResidenceUsage(String memberId) {
 		String schema = getCustomSchema();
-		
+
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select count(residence_id) as usage_qty from ").append(schema);
 		sql.append("rezdox_residence_member_xr where member_id = ? and status_flg = 1 ");
-		
+
 		int usageQty = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, memberId);
-			
+
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				usageQty = rs.getInt(1);
@@ -188,10 +188,10 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		} catch (SQLException e) {
 			log.error("Unable to validate member residence usage. ", e);
 		}
-		
+
 		return usageQty;
 	}
-	
+
 	/**
 	 * Checks a member's usage of business subscriptions
 	 * 
@@ -200,16 +200,15 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	 */
 	protected int getBusinessUsage(String memberId) {
 		String schema = getCustomSchema();
-		
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select count(business_id) as usage_qty from ").append(schema);
 		sql.append("rezdox_business_member_xr where member_id = ? and status_flg > ? ");
-		
+
 		int usageQty = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, memberId);
 			ps.setInt(2, BusinessStatus.INACTIVE.getStatus());
-			
+
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				usageQty = rs.getInt(1);
@@ -217,7 +216,7 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		} catch (SQLException e) {
 			log.error("Unable to validate member business usage. ", e);
 		}
-		
+
 		return usageQty;
 	}
 
@@ -229,20 +228,20 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	 */
 	private int getConnectionUsage(String memberId) {
 		String schema = getCustomSchema();
-		
+
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select count(*) as usage_qty from ").append(schema).append("rezdox_connection c ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("rezdox_business_member_xr sbm on c.sndr_business_id = sbm.business_id and sbm.status_flg = 1 ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("rezdox_business_member_xr rbm on c.rcpt_business_id = rbm.business_id and rbm.status_flg = 1 ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_member_xr sbm on c.sndr_business_id = sbm.business_id and sbm.status_flg = 1 ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_member_xr rbm on c.rcpt_business_id = rbm.business_id and rbm.status_flg = 1 ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("approved_flg = 1 and (sndr_member_id = ? or rcpt_member_id = ? or sbm.member_id = ? or rbm.member_id = ?) ");
-		
+
 		int usageQty = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, memberId);
 			ps.setString(2, memberId);
 			ps.setString(3, memberId);
 			ps.setString(4, memberId);
-			
+
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				usageQty = rs.getInt(1);
@@ -250,10 +249,10 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		} catch (SQLException e) {
 			log.error("Unable to validate member connection usage. ", e);
 		}
-		
+
 		return usageQty;
 	}
-	
+
 	/**
 	 * Adds a membership subscription for a given member
 	 * 
@@ -270,9 +269,9 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		subscription.setCostNo(membership.getCostNo());
 		subscription.setDiscountNo(membership.getCostNo() * promotion.getDiscountPctNo() * -1);
 		subscription.setQuantityNo(membership.getQuantityNo());
-		
+
 		// Save the member's subscription
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		try {
 			dbp.save(subscription);
 		} catch (Exception e) {

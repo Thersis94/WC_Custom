@@ -30,6 +30,7 @@ public class PhotoVO extends BeanDataVO implements Serializable {
 	private String albumId;
 	private String treasureItemId;
 	private String projectId;
+	private String businessId;
 	private String photoName;
 	private String descriptionText;
 	private String imageUrl;
@@ -108,6 +109,21 @@ public class PhotoVO extends BeanDataVO implements Serializable {
 	 */
 	public void setProjectId(String projectId) {
 		this.projectId = StringUtil.checkVal(projectId, null);
+	}
+
+	/**
+	 * @return the businessId
+	 */
+	@Column(name="business_id")
+	public String getBusinessId() {
+		return businessId;
+	}
+
+	/**
+	 * @param businessId the businessId to set
+	 */
+	public void setBusinessId(String businessId) {
+		this.businessId = StringUtil.checkVal(businessId, null);
 	}
 
 	/**

@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +26,8 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -32,7 +35,6 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.user.LocationManager;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -44,6 +46,7 @@ import com.smt.sitebuilder.data.vo.GenericQueryVO;
 import com.smt.sitebuilder.data.vo.QueryParamVO;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SBUserRoleContainer;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: BusinessAction.java<p/>
@@ -128,6 +131,8 @@ public class BusinessAction extends SBActionAdapter {
 		// If hitting this action with a residence role or registered role, they are adding a new business
 		// Their role will be upgraded appropriately after adding a new business
 		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
+		log.debug("role=" + role.getRoleId());
+
 		if ((RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL == role.getRoleLevel())
 				&& !req.hasParameter("storeFront")) {
 			req.setParameter(REQ_BUSINESS_ID, "new");
@@ -147,11 +152,17 @@ public class BusinessAction extends SBActionAdapter {
 		} else {
 			putModuleData(businessList, businessList.size(), false);
 		}
-		
+
 		if (req.hasParameter("storeFront")) {
-			ConnectionAction ca = new ConnectionAction(dbConn, attributes);
-			List<ConnectionReportVO> connections = ca.generateConnections(RezDoxUtils.getMemberId(req), ConnectionAction.MEMBER, req);
-			req.setAttribute("isConnected", !connections.isEmpty());
+			String memberId = RezDoxUtils.getMemberId(req);
+			BusinessVO biz = !businessList.isEmpty() ? businessList.get(0) : new BusinessVO();
+			boolean isConnected = memberId.equals(biz.getOwner() != null ? biz.getOwner().getMemberId() : ""); //presume the owner is connected
+			if (!isConnected) {
+				ConnectionAction ca = new ConnectionAction(dbConn, attributes);
+				List<ConnectionReportVO> connections = ca.generateConnections(memberId, ConnectionAction.MEMBER, req);
+				isConnected = !connections.isEmpty();
+			}
+			req.setAttribute("isConnected", isConnected);
 		}
 	}
 
@@ -186,18 +197,18 @@ public class BusinessAction extends SBActionAdapter {
 
 		StringBuilder sql = new StringBuilder(1400);
 		sql.append("select b.business_id, business_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, ");
-		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, b.email_address_txt, website_url, photo_url, ad_file_url, ");
-		sql.append("b.privacy_flg, bsc.business_category_cd as sub_category_cd, bc.business_category_cd as category_cd, bc.category_nm, b.create_dt, ");
+		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, b.email_address_txt, website_url, photo_url, b.create_dt, b.privacy_flg, ");
+		sql.append("bsc.business_category_cd as sub_category_cd, bsc.category_nm as sub_category_nm, bc.business_category_cd as category_cd, bc.category_nm, ");
 		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, m.member_id, m.profile_id, m.first_nm, m.last_nm, bm.status_flg, ");
-		sql.append("attribute_id, slug_txt, value_txt, total_reviews_no, avg_rating_no ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b inner join ");
-		sql.append(schema).append("rezdox_business_member_xr bm on b.business_id = bm.business_id and bm.status_flg >= ? ");
+		sql.append("attribute_id, slug_txt, value_txt, total_reviews_no, avg_rating_no, p.photo_id, p.desc_txt, p.image_url ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_member_xr bm on b.business_id = bm.business_id and bm.status_flg >= ? ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member m on bm.member_id = m.member_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id = bcx.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bsc on bcx.business_category_cd = bsc.business_category_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bsc.parent_cd = bc.business_category_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_attribute ba on b.business_id = ba.business_id ");
-
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_photo p on b.business_id = p.business_id ");
 		// Review summary data
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(");
 		sql.append("select business_id, cast(count(*) as integer) as total_reviews_no, cast(sum(rating_no) as double precision) / count(*) as avg_rating_no ");
@@ -312,7 +323,7 @@ public class BusinessAction extends SBActionAdapter {
 	 * @param req
 	 */
 	protected FormVO retrieveBusinessInfoForm(ActionRequest req) {
-		String formId = req.hasParameter(REQ_SETTINGS) ? RezDoxUtils.getFormId(getAttributes(), ModuleVO.ATTRIBUTE_2) : RezDoxUtils.getFormId(getAttributes());
+		String formId = RezDoxUtils.getFormId(getAttributes());
 		log.debug("Retrieving Business Form: " + formId);
 
 		// Set the requried params
@@ -335,6 +346,7 @@ public class BusinessAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		BusinessVO business = new BusinessVO(req);
 		boolean newBusiness = StringUtil.isEmpty(business.getBusinessId());
+		boolean notifyAdmin = false;
 
 		// Validate this member can edit the business data, prevent malicious editing
 		if (!newBusiness) {
@@ -348,7 +360,7 @@ public class BusinessAction extends SBActionAdapter {
 		}
 
 		// Edit the business data
-		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter(REQ_SETTINGS)) {
+		if (req.hasParameter(REQ_BUSINESS_INFO)) {
 			saveForm(req);
 
 			SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
@@ -370,6 +382,7 @@ public class BusinessAction extends SBActionAdapter {
 					log.error("could not update member vo", e);
 				}
 			}
+			notifyAdmin = newBusiness;
 
 		} else if (req.hasParameter("deleteBusiness")) {
 			String msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
@@ -382,13 +395,51 @@ public class BusinessAction extends SBActionAdapter {
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			sendRedirect(page.getFullPath(), msg, req);
 
+		} else if (req.hasParameter("savePhoto")) {
+			savePhoto(req);
 		} else {
 			try {				
 				putModuleData(saveBusiness(req), 1, false);
+				notifyAdmin = newBusiness;
 			} catch (Exception e) {
 				throw new ActionException("Could not save business", e);
 			}
 		}
+
+		//notify the admin if a new business got created - it requires approval
+		if (notifyAdmin) {
+			//repopulate the VO when what the form handler repositioned for us
+			business = new BusinessVO(req);
+			EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			List<EmailRecipientVO> rcpts = new ArrayList<>();
+			rcpts.add(new EmailRecipientVO(null, site.getAdminEmail(), EmailRecipientVO.TO));
+			Map<String, Object> data = new HashMap<>();
+			data.put("businessName", business.getBusinessName());
+			data.put("phoneNumber", business.getMainPhoneText());
+			data.put("websiteUrl", business.getWebsiteUrl());
+			data.put("address", business.getAddress());
+			data.put("address2", business.getAddress2());
+			data.put("city", business.getCity());
+			data.put("state", business.getState());
+			data.put("zip", business.getZipCode());
+			data.put("category", StringUtil.checkVal(business.getCategoryName(), business.getCategoryCd()));
+			data.put("subcategory", business.getSubCategoryCd());
+			data.put("email", business.getEmailAddressText());
+
+			emailer.sendMessage(data, rcpts, RezDoxUtils.EmailSlug.BUSINESS_PENDING.name());
+		}
+	}
+
+	/**
+	 * load a list of photos tied to this treasure box item
+	 * @param vo
+	 * @param req
+	 * @return 
+	 * @throws ActionException 
+	 */
+	private void savePhoto(ActionRequest req) throws ActionException {
+		new PhotoAction(getDBConnection(), getAttributes()).build(req);
 	}
 
 	/**
@@ -435,7 +486,7 @@ public class BusinessAction extends SBActionAdapter {
 		}
 
 		prm.removeRole(role.getProfileRoleId(), dbConn);
-		prm.addRole(member.getProfileId(), site.getSiteId(), newRoleId, 20, dbConn);
+		prm.addRole(member.getProfileId(), site.getSiteId(), newRoleId, SecurityController.STATUS_ACTIVE, dbConn);
 		role.setRoleId(newRoleId);
 		role.setRoleLevel(newRoleLevel); 
 		role.setRoleName(newRoleName);
@@ -451,7 +502,7 @@ public class BusinessAction extends SBActionAdapter {
 	 * @param req
 	 */
 	protected void saveForm(ActionRequest req) {
-		String formId =  req.hasParameter(REQ_SETTINGS) ? RezDoxUtils.getFormId(getAttributes(), ModuleVO.ATTRIBUTE_2) : RezDoxUtils.getFormId(getAttributes());
+		String formId =  RezDoxUtils.getFormId(getAttributes());
 
 		// Place ActionInit on the Attributes map for the Data Save Handler.
 		attributes.put(Constants.ACTION_DATA, actionInit);
@@ -462,7 +513,6 @@ public class BusinessAction extends SBActionAdapter {
 
 	/**
 	 * Saves business data
-	 * 
 	 * @param req
 	 * @throws DatabaseException 
 	 */
