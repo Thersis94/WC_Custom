@@ -154,9 +154,15 @@ public class BusinessAction extends SBActionAdapter {
 		}
 
 		if (req.hasParameter("storeFront")) {
-			ConnectionAction ca = new ConnectionAction(dbConn, attributes);
-			List<ConnectionReportVO> connections = ca.generateConnections(RezDoxUtils.getMemberId(req), ConnectionAction.MEMBER, req);
-			req.setAttribute("isConnected", !connections.isEmpty());
+			String memberId = RezDoxUtils.getMemberId(req);
+			BusinessVO biz = !businessList.isEmpty() ? businessList.get(0) : new BusinessVO();
+			boolean isConnected = memberId.equals(biz.getOwner() != null ? biz.getOwner().getMemberId() : ""); //presume the owner is connected
+			if (!isConnected) {
+				ConnectionAction ca = new ConnectionAction(dbConn, attributes);
+				List<ConnectionReportVO> connections = ca.generateConnections(memberId, ConnectionAction.MEMBER, req);
+				isConnected = !connections.isEmpty();
+			}
+			req.setAttribute("isConnected", isConnected);
 		}
 	}
 

@@ -292,6 +292,10 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 			return;
 		owner = new ArrayList<>(members.values()).get(0);
 	}
+	
+	public MemberVO getOwner() {
+		return owner;
+	}
 
 	/**
 	 * @return the attributes
