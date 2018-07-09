@@ -330,8 +330,14 @@ public class PatentManagementAction extends SBActionAdapter {
 		paa.writePatentHistory(pvo);
 	}
 	
+	/**
+	 * Processes patent import file submitted via data tool
+	 * @param req
+	 */
 	private void processImportFile(ActionRequest req) {
-		// TODO finish this
+		/* 2018-07-06 - DBargerhuff
+		 * To be implemented at a later date.
+		 */
 	}
 	
 }

@@ -76,7 +76,7 @@ public class PatentBulkImport extends CommandLineUtil {
 			FilePartDataBean dataBean = loadSourceFile();
 
 			// parse the source file into a List of beans
-			ArrayList<Object> beans = parseSourceFile(dataBean);
+			List<Object> beans = parseSourceFile(dataBean);
 
 			if (! beans.isEmpty()) {
 				// process parsed beans.
@@ -139,7 +139,7 @@ public class PatentBulkImport extends CommandLineUtil {
 	 * @return
 	 * @throws Exception
 	 */
-	private ArrayList<Object> parseSourceFile(FilePartDataBean fpdb) 
+	private List<Object> parseSourceFile(FilePartDataBean fpdb) 
 			throws Exception {
 		log.debug("parseSourceFile...");
 		AnnotationParser parser;
@@ -165,11 +165,8 @@ public class PatentBulkImport extends CommandLineUtil {
 	 * @throws SQLException
 	 * @throws ActionException
 	 */
-	private void processPatentBeans(ArrayList<Object> beanList) 
+	private void processPatentBeans(List<Object> beanList) 
 			throws SQLException, ActionException {
-		//Disable the db autocommit for the insert batch
-		dbConn.setAutoCommit(false);
-
 		// capture history of existing 'live' records.
 		String companyNm = null;
 
@@ -186,24 +183,37 @@ public class PatentBulkImport extends CommandLineUtil {
 			vo.setActionId(props.getProperty("actionId"));
 			vo.setStatusFlag(PatentAction.STATUS_ACTIVE);
 		}
-		
+
 		messages.add("Processing bulk patent import for company name: " + companyNm);
-		
-		// write history record for all current 'live' patent records for company.
-		writeHistoryByCompany(companyNm);
 
-		// disable all 'live' patents for the company
-		disableByCompany(companyNm);
-		
-		// delete all patents for the company
-		deleteByCompany(companyNm);
+		//Disable the db autocommit for the insert batch
+		try {
+			dbConn.setAutoCommit(false);
 
-		// import patents
-		importBeans(beanList);
+			// write history record for all current 'live' patent records for company.
+			writeHistoryByCompany(companyNm);
 
-		//commit only after the entire import succeeds
-		dbConn.commit();
+			// disable all 'live' patents for the company
+			disableByCompany(companyNm);
+
+			// delete all patents for the company
+			deleteByCompany(companyNm);
+
+			// import patents
+			importBeans(beanList);
+
+			//commit only after the entire import succeeds
+			dbConn.commit();
+
+		} finally {
+			try {
+				// restore autocommit state
+				dbConn.setAutoCommit(true);
+			} catch (SQLException e) {}
+		}
+
 	}
+
 
 	/**
 	 * 
@@ -266,11 +276,6 @@ public class PatentBulkImport extends CommandLineUtil {
 	 * @param companyNm
 	 */
 	private void deleteByCompany(String companyNm) throws ActionException {
-		
-		// 2018-07-03 - DBargerhuff: Disabling until table constraint removed to allow deletion
-		int x = 1;
-		if (x == 1) return;
-		
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("delete from ").append(customDb).append("dpy_syn_patent ");
 		sql.append("where company_nm=?");
@@ -293,7 +298,7 @@ public class PatentBulkImport extends CommandLineUtil {
 	  * @param actionId
 	  * @throws ActionException
 	  */
-	 private void importBeans(ArrayList<Object> beanList) throws ActionException {
+	 private void importBeans(List<Object> beanList) throws ActionException {
 		 if (beanList == null || beanList.isEmpty()) return;
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("insert into ").append(customDb);
