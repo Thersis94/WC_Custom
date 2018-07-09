@@ -158,6 +158,22 @@ public class PatentManagementAction extends SBActionAdapter {
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
+		//save the Excel file if one was uploaded
+		if (req.getFile("importFile") != null) {
+			processImportFile(req);
+
+		} else {
+			managePatents(req);
+
+		}
+
+	}
+
+	/**
+	 * Manage patent update
+	 * @param req
+	 */
+	private void managePatents(ActionRequest req) {
 		String errMsg = "Patent data updated successfully.";
 
 		// populate bean data from request
@@ -202,7 +218,6 @@ public class PatentManagementAction extends SBActionAdapter {
 		// redirect
 		sbUtil.adminRedirect(req, errMsg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
-
 
 	/**
 	 * Writes the patent record data (either insert or update). 
@@ -313,6 +328,10 @@ public class PatentManagementAction extends SBActionAdapter {
 	private void logHistory(PatentVO pvo) throws ActionException {
 		PatentHistoryManager paa = new PatentHistoryManager(attributes,dbConn);
 		paa.writePatentHistory(pvo);
+	}
+	
+	private void processImportFile(ActionRequest req) {
+		// TODO finish this
 	}
 	
 }
