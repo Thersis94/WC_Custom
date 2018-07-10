@@ -60,6 +60,7 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	}
 
 	/**
+	 * Convert the given Feed Item from parser library to SMT RSSArticleVO.
 	 * @param i
 	 */
 	public RSSArticleVO(Item i) {
