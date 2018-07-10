@@ -372,38 +372,63 @@ public abstract class AbstractSmarttrakRSSFeed {
 			return;
 		}
 
-		//test against omit filters
-		if (omitFilters != null && omitFilters.containsKey(feedGroupId)) {
-			List<RSSFilterVO> rssFilters = omitFilters.get(feedGroupId);
-			for (RSSFilterVO filter: rssFilters) {
-				if (checkOmitMatch(af, filter)) {
-
-					// Null out FullArticleTxt to lessen memory overhead
-					af.setFullArticleTxt(null);
-					article.addFilteredText(af);
-					return;
-				}
-			}
+		//Check if the article passes any Omission Filters.
+		if (omitFilters != null && omitFilters.containsKey(feedGroupId) && applyOmissionFilters(omitFilters.get(feedGroupId), af, article)) {
+			return;
 		}
 
 		// If we haven't marked the article as omitted, check if we pass required filters.
 		Map<String, List<RSSFilterVO>> rFilter = filters.get(FilterType.R);
 
-		if (!ArticleStatus.R.equals(af.getArticleStatus()) && rFilter != null && rFilter.containsKey(feedGroupId)) {
-			List<RSSFilterVO> rssFilters = rFilter.get(feedGroupId);
-			for (RSSFilterVO filter: rssFilters) {
-				if (checkReqMatch(af, filter)) {
-					// Null out FullArticleTxt to lessen memory overhead
-					af.setFullArticleTxt(null);
-					article.addFilteredText(af);
-					return;
-				}
-			}
+		//Check if the article passes any Required Filters.
+		if (!ArticleStatus.R.equals(af.getArticleStatus()) && rFilter != null && rFilter.containsKey(feedGroupId) && applyRequired(rFilter.get(feedGroupId), af, article)) {
+			return;
 		}
 
 		article.addFilteredText(af);
 	}
 
+
+	/**
+	 * Perform Required Checks on the Article.
+	 * @param rssFilters
+	 * @param af
+	 * @param article
+	 * @return true if Required Filter is Triggered
+	 */
+	private boolean applyRequired(List<RSSFilterVO> rssFilters, RSSArticleFilterVO af, RSSArticleVO article) {
+		boolean isRequired = false;
+		for (RSSFilterVO filter: rssFilters) {
+			if (checkReqMatch(af, filter)) {
+				// Null out FullArticleTxt to lessen memory overhead
+				af.setFullArticleTxt(null);
+				article.addFilteredText(af);
+				isRequired = true;
+			}
+		}
+		return isRequired;
+	}
+
+	/**
+	 * Perform Omission Checks on the Article.
+	 * @param rssFilters
+	 * @param af
+	 * @param article
+	 * @return true if OmitFilter is Triggered
+	 */
+	private boolean applyOmissionFilters(List<RSSFilterVO> rssFilters, RSSArticleFilterVO af, RSSArticleVO article) {
+		boolean isOmitted = false;
+		for (RSSFilterVO filter: rssFilters) {
+			if (checkOmitMatch(af, filter)) {
+
+				// Null out FullArticleTxt to lessen memory overhead
+				af.setFullArticleTxt(null);
+				article.addFilteredText(af);
+				isOmitted = true;
+			}
+		}
+		return isOmitted;
+	}
 
 	/**
 	 * Check if we have a match on an Omit Filter.  If so, set Status Code R for Rejected.
