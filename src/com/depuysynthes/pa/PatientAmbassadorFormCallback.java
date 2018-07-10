@@ -32,7 +32,7 @@ import com.smt.sitebuilder.util.MessageSender;
  ****************************************************************************/
 public class PatientAmbassadorFormCallback extends SBActionAdapter {
 
-	private final String attuneImplantStoryValue = "attune";
+	private static final String ATTUNE_IMPLANT_STORY_VALUE = "attune";
 	public PatientAmbassadorFormCallback() {
 		super();
 	}
@@ -104,7 +104,7 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 			fieldVal = req.getParameter(TransactionParserIntfc.FORM_FIELD_PREFIX + PatientAmbassadorStoriesTool.PAFConst.IMPLANT_NM_ID.getId());
 			String implantNm = StringUtil.checkVal(fieldVal).toLowerCase();
 			// if implant is ATTUNE, set flag, otherwise return.
-			if (implantNm.startsWith(attuneImplantStoryValue)) {
+			if (implantNm.startsWith(ATTUNE_IMPLANT_STORY_VALUE)) {
 				isAttuneStory = true;
 			} else {
 				return;
