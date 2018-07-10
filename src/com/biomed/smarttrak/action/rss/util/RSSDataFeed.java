@@ -207,7 +207,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private String getFeedsSql() {
 		StringBuilder sql = new StringBuilder(375);
-		sql.append("select e.rss_entity_id, e.rss_url, e.rss_feed_nm, fsg.feed_group_id ");
+		sql.append("select e.rss_entity_id, e.rss_url, e.rss_feed_nm, fsg.feed_group_id, e.use_filters_no ");
 		sql.append("from rss_entity e inner join ").append(customDb).append("biomedgps_rss_entity bre ");
 		sql.append("on e.rss_entity_id = bre.rss_entity_id ");
 		sql.append("inner join ").append(customDb).append("biomedgps_feed_source_group_xr fsg ");
