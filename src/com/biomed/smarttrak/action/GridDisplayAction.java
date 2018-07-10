@@ -193,7 +193,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			data = convertChartData(grid, type, columns);
 		}
 		
-		chart.processData(data);
+		chart.processData(data, true);
 		
 		return chart;
 	}
