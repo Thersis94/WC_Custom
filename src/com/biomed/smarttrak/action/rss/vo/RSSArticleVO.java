@@ -192,7 +192,7 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	 * @param articleGuid the articleGuid to set.
 	 */
 	public void setArticleGuid(String articleGuid) {
-		this.articleGuid = articleGuid;
+		this.articleGuid = StringUtil.checkVal(articleGuid);
 	}
 
 	/**
