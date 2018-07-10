@@ -346,6 +346,10 @@ public class ResidenceAction extends SBActionAdapter {
 
 					//Add First Residence Notifications
 					sendFirstResidenceNotifications(site, RezDoxUtils.getMemberId(req));
+
+					//make sure the user has the proper role - this only causes further action when a business user adds their first residence.
+					confirmMemberRole(req);
+					
 				} else if (isNew && count > 1) {
 					//award 100pts for subsequent residences
 					awardPoints(RezDoxUtils.getMemberId(req), req);
@@ -357,6 +361,32 @@ public class ResidenceAction extends SBActionAdapter {
 		}
 	}
 
+
+	/**
+	 * Change business users to be hybrid (biz+res) - that's all we care about here.
+	 * @param req
+	 */
+	private void confirmMemberRole(ActionRequest req) {
+		SBUserRole role = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
+		if (role == null || !RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId())) 
+			return;
+
+		//change them to a hybrid role
+		role.setRoleId(RezDoxUtils.REZDOX_RES_BUS_ROLE);
+		role.setRoleLevel(RezDoxUtils.REZDOX_RES_BUS_ROLE_LEVEL);
+		role.setRoleName(RezDoxUtils.REZDOX_RES_BUS_ROLE_NAME);
+		req.getSession().setAttribute(Constants.ROLE_DATA, role);
+		
+		//preserve the change to the DB
+		try {
+			ProfileRoleManager prm = new ProfileRoleManager();
+			prm.removeRole(role.getProfileRoleId(), dbConn);
+			prm.addRole(role, dbConn);
+		} catch (DatabaseException e) {
+			log.error("could not change users role", e);
+		}
+	}
+	
 
 	/**
 	 * @param memberId
