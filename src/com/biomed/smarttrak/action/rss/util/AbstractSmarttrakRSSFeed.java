@@ -357,11 +357,20 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * Apply Filters to the articles.  Depending on if it is a Required or Omit
 	 * filter, perform desired workflow.
 	 * @param article
+	 * @param skipfilters 
 	 * @param filters
 	 */
-	protected void applyFilter(RSSArticleVO article, String feedGroupId) {
+	protected void applyFilter(RSSArticleVO article, String feedGroupId, Boolean useFilters) {
 		Map<String, List<RSSFilterVO>> omitFilters = filters.get(FilterType.O);
 		RSSArticleFilterVO af = new RSSArticleFilterVO(article, feedGroupId);
+
+		if(!useFilters) {
+			af.setFilterArticleTxt(af.getArticleTxt());
+			af.setArticleStatus(ArticleStatus.N);
+			af.setFilterTitleTxt(af.getTitleTxt());
+			article.addFilteredText(af);
+			return;
+		}
 
 		//test against omit filters
 		if (omitFilters != null && omitFilters.containsKey(feedGroupId)) {
