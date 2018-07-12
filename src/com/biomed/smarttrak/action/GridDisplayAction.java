@@ -116,14 +116,14 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			req.setParameter(LOAD_TABLE, "true");
 			type = ChartType.COLUMN;
 		}
-
+		boolean loadTable = Convert.formatBoolean(req.getParameter(LOAD_TABLE));
 		// Check to see if there is a mapping for the grid when displaying a table
-		if (Convert.formatBoolean(req.getParameter(LOAD_TABLE))) lookupTableMap(req);
+		if (loadTable) lookupTableMap(req);
 
 		// Get the request data
 		String gridId = req.getParameter(GRID_ID);
 		String[] grids = req.getParameterValues("grid");
-		boolean full = Convert.formatBoolean(req.getParameter("full"), false);
+		boolean full = Convert.formatBoolean(req.getParameter("full")) || loadTable;
 		boolean stacked = Convert.formatBoolean(req.getParameter("isStacked"), false);
 		int labelType = Convert.formatInteger(req.getParameter("labelType"));
 		ProviderType pt = ProviderType.valueOf(StringUtil.checkVal(req.getParameter("pt"), "HIGH_CHARTS").toUpperCase());
@@ -476,10 +476,22 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			additionalOptions.put("modifyPieLabels", modifyPieLabels(grid));
 		}
 		
+		if (full) {
+			Map<String, Object> yAxis = loadParamMap("yAxis", options.getChartOptions());
+			Map<String, Object> stackLabels = new HashMap<>();
+			stackLabels.put("enabled", true);
+			stackLabels.put("format", "${total:,.0f}");
+			yAxis.put("stackLabels", stackLabels);
+		}
+		
 		options.getChartOptions().put("additionalOptions", additionalOptions);
 		
 		Map<String, Object> legend = new HashMap<>(1);
-		legend.put("enabled", false);
+		if (full && ChartType.COLUMN == type) {
+			legend.put("enabled", true);
+		} else {
+			legend.put("enabled", false);
+		}
 		
 		options.getChartOptions().put("legend", legend);
 		return options;
