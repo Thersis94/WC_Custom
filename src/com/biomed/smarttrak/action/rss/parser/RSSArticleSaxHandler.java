@@ -1,4 +1,4 @@
-package com.biomed.smarttrak.action.rss.util;
+package com.biomed.smarttrak.action.rss.parser;
 
 import java.util.ArrayList;
 import java.util.Calendar;
