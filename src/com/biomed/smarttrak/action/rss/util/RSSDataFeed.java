@@ -1,7 +1,6 @@
 package com.biomed.smarttrak.action.rss.util;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -10,18 +9,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
-import org.xml.sax.SAXException;
+import java.util.stream.Collectors;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.SmarttrakRssEntityVO;
-
+import com.ernieyu.feedparser.Feed;
+import com.ernieyu.feedparser.FeedParser;
+import com.ernieyu.feedparser.FeedParserFactory;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title:</b> RSSDataFeed.java
@@ -35,17 +33,11 @@ import com.siliconmtn.db.orm.DBProcessor;
  * @since Apr 18, 2017
  ****************************************************************************/
 public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
-	private SAXParserFactory factory;
-	private SAXParser saxParser;
+	private FeedParser feedParser;
 
 	public RSSDataFeed(Connection dbConn, Properties props) {
 		super(dbConn, props);
-		factory = SAXParserFactory.newInstance();
-		try {
-			saxParser = factory.newSAXParser();
-		} catch (ParserConfigurationException | SAXException e) {
-			log.error("Error Instantiating Sax Parser", e);
-		}
+		feedParser = FeedParserFactory.newParser();
 		feedName = "RSS Feed";
 	}
 
@@ -72,7 +64,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		for(SmarttrakRssEntityVO f : feeds) {
 			//for some reason PubMed gets picked up here - skip over it.
 			if (f.getRssEntityId().equals(props.get(PUBMED_ENTITY_ID))) continue;
-			
+
 			try {
 				List<RSSArticleVO> articles = retrieveArticles(f.getRssUrl());
 				filterArticles(f, articles);
@@ -105,18 +97,27 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private List<RSSArticleVO> processArticleResult(byte[] results) {
 		List<RSSArticleVO> articles = Collections.emptyList();
+
 		if (results == null || results.length == 0) return articles;
 
 		try {
-			InputStream is = new ByteArrayInputStream(results);
-			RSSArticleSaxHandler handler = new RSSArticleSaxHandler();
-			saxParser.parse(is, handler);
-			articles = handler.getVos();
+			Feed feed = feedParser.parse(new ByteArrayInputStream(results));
+			articles = convertFeed(feed);
 		} catch(Exception se) {
 			log.error("Response was malformed: " + se.getMessage());
 		}
 		log.info("Loaded " + articles.size() + " articles.");
 		return articles;
+	}
+
+	/**
+	 * Convert the given Feed Object to our RSSArticleVO List Structure
+	 * and return it.
+	 * @param feed
+	 * @return
+	 */
+	private List<RSSArticleVO> convertFeed(Feed feed) {
+		return feed.getItemList().stream().map(RSSArticleVO::new).collect(Collectors.toList());
 	}
 
 
@@ -162,7 +163,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		for (RSSArticleVO article : articles) {
 			for (RSSFeedGroupVO fg : f.getGroups()) {
 				if (!articleExists(article.getArticleGuid(), fg.getFeedGroupId(), existsIds)) {
-					applyFilter(article, fg.getFeedGroupId());
+					applyFilter(article, fg.getFeedGroupId(), Convert.formatBoolean(f.getUseFiltersNo()));
 				}
 			}
 			if (!article.getFilterVOs().isEmpty()) {
@@ -206,12 +207,12 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private String getFeedsSql() {
 		StringBuilder sql = new StringBuilder(375);
-		sql.append("select e.rss_entity_id, e.rss_url, e.rss_feed_nm, fsg.feed_group_id ");
+		sql.append("select e.rss_entity_id, e.rss_url, e.rss_feed_nm, fsg.feed_group_id, e.use_filters_no ");
 		sql.append("from rss_entity e inner join ").append(customDb).append("biomedgps_rss_entity bre ");
 		sql.append("on e.rss_entity_id = bre.rss_entity_id ");
 		sql.append("inner join ").append(customDb).append("biomedgps_feed_source_group_xr fsg ");
 		sql.append("on bre.rss_entity_id = fsg.rss_entity_id ");
-		sql.append("where e.organization_id = ? ");
+		sql.append("where e.organization_id = ?");
 		return sql.toString();
 	}
 }
