@@ -472,7 +472,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		additionalOptions.put("labelType", labelType);
 		additionalOptions.put("abbreviateFlg", Convert.formatBoolean(abbreviateFlg));
 		additionalOptions.put(LOAD_TABLE, loadTable);
-		if (type == ChartType.PIE && labelType == ALL_LABELS) {
+		if (type == ChartType.PIE) {
 			additionalOptions.put("modifyPieLabels", modifyPieLabels(grid));
 		}
 		
