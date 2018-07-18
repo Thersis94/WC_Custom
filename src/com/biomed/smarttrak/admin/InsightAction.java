@@ -84,6 +84,7 @@ public class InsightAction extends ManagementAction {
 		sortMapper.put("insightType", "type_cd");
 		sortMapper.put("featuredFlg", "featured_flg");
 		sortMapper.put("orderNo", "order_no");
+		sortMapper.put("sectionFlg", "section_flg");
 	}
 
 	public InsightAction(ActionInitVO actionInit) {
@@ -183,7 +184,7 @@ public class InsightAction extends ManagementAction {
 		if (req.hasParameter(TITLE_BYPASS)) insightParamsMap.put(Fields.TITLE_BYPASS, req.getParameter(TITLE_BYPASS));
 		if (req.hasParameter("authorId")) insightParamsMap.put(Fields.CREATOR_PROFILE_ID, req.getParameter("authorId"));
 		if (req.hasParameter("featuredFlg")) insightParamsMap.put(Fields.FEATURED_FLG, req.getParameter("featuredFlg"));
-		log.debug(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
+		
 		insightParamsMap.put(Fields.START, req.getParameter("offset", "0"));
 		insightParamsMap.put(Fields.RPP, req.getParameter("limit","10"));
 		insightParamsMap.put(Fields.SORT, StringUtil.checkVal(sortMapper.get(req.getParameter("sort")), "publish_dt"));
@@ -467,6 +468,8 @@ public class InsightAction extends ManagementAction {
 			Map<Fields, String> insightParamsMap) {
 
 		sql.append("order by ").append(insightParamsMap.get(Fields.SORT)).append(" ").append(insightParamsMap.get(Fields.ORDER));
+		// Ties should be broken by publish date
+		sql.append(", publish_dt desc");
 
 		if (insightParamsMap.containsKey(Fields.RPP) && Convert.formatInteger(insightParamsMap.get(Fields.RPP)) > 0 && insightParamsMap.containsKey(Fields.START)){
 			sql.append(" limit ? offset ? ");
