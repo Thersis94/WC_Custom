@@ -234,7 +234,8 @@ public class ResidenceAction extends SBActionAdapter {
 			params.add(residenceId);
 		}
 		sql.append("group by r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, profile_pic_pth, ");
-		sql.append("coalesce(r.update_dt, r.create_dt), privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0), zestimate_no");
+		sql.append("coalesce(r.update_dt, r.create_dt), privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0), zestimate_no ");
+		sql.append("order by r.create_dt "); //show primary residence first, which is the 1st one created. REZDOX-275
 		log.debug(sql);
 
 		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
