@@ -40,8 +40,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class FeaturedInsightsAction extends SBActionAdapter {
-	
+
 	private static final String INSIGHT_ID = "insightId";
+	private static final String SECTION_TXT = "sectionTxt";
 
 	public FeaturedInsightsAction() {
 		super();
@@ -84,7 +85,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 		
 		List<Object> list = (List<Object>) ((ModuleVO)attributes.get(Constants.MODULE_DATA)).getActionData();
 		List<InsightVO> approvedDocs = new ArrayList<>(list.size());
-		String[] userRoles = req.getParameter("sectionTxt").split(",");
+		String[] userRoles = req.getParameter(SECTION_TXT).split(",");
 
 		//Load the Section Tree and set all the Hierarchies.
 		SmarttrakTree t = ai.loadDefaultTree();
@@ -155,10 +156,10 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 	 * @return
 	 */
 	private Set<String> buildSimulatedRole(ActionRequest req) {
-		if (!req.hasParameter("sectionTxt")) return Collections.emptySet();
+		if (!req.hasParameter(SECTION_TXT)) return Collections.emptySet();
 		
 		Set<String> solrPermissions = new HashSet<>();
-		for (String solrTxt : req.getParameterValues("sectionTxt")) {
+		for (String solrTxt : req.getParameterValues(SECTION_TXT)) {
 			solrPermissions.add(solrTxt);
 		}
 		return solrPermissions;
