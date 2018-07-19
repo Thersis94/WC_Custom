@@ -72,7 +72,7 @@ public class InsightAction extends ManagementAction {
 	protected enum Fields {
 		INSIGHT_ID, STATUS_CD, TYPE_CD, DATE_RANGE, START, RPP, SORT, ORDER,
 		SEARCH, ID_BYPASS, TITLE_BYPASS, CREATOR_PROFILE_ID, FEATURED_FLG, 
-		START_DATE, END_DATE, HIERACHIES;
+		START_DATE, END_DATE, HIERACHIES, SECTION_BYPASS;
 	}
 
 
@@ -186,7 +186,8 @@ public class InsightAction extends ManagementAction {
 		if (req.hasParameter("featuredFlg")) insightParamsMap.put(Fields.FEATURED_FLG, req.getParameter("featuredFlg"));
 		
 		insightParamsMap.put(Fields.START, req.getParameter("offset", "0"));
-		insightParamsMap.put(Fields.RPP, req.getParameter("limit","10"));
+		if (!Convert.formatBoolean(req.getParameter("retrieveAll")))
+			insightParamsMap.put(Fields.RPP, req.getParameter("limit","10"));
 		insightParamsMap.put(Fields.SORT, StringUtil.checkVal(sortMapper.get(req.getParameter("sort")), "publish_dt"));
 		insightParamsMap.put(Fields.ORDER, StringUtil.checkVal(req.getParameter("order"), "desc"));
 		insightParamsMap.put(Fields.SEARCH, StringUtil.checkVal(req.getParameter("search")).toUpperCase());
@@ -203,6 +204,8 @@ public class InsightAction extends ManagementAction {
 		String hierarchies = CookieUtil.getValue("insightMarkets", req.getCookies());
 		if (!StringUtil.isEmpty(hierarchies)) 
 			insightParamsMap.put(Fields.HIERACHIES, hierarchies);
+		if (Convert.formatBoolean(req.getParameter("sectionBypass"))) 
+			insightParamsMap.put(Fields.SECTION_BYPASS, "true");
 
 		List<Object> insights = getInsights(insightParamsMap);
 		decryptNames(insights);
@@ -549,7 +552,7 @@ public class InsightAction extends ManagementAction {
 	private static void generateJoinSectionOfQuery(StringBuilder sql, String schema, Map<Fields, String> insightParamsMap) {
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS)) 
-				|| !StringUtil.isEmpty(insightParamsMap.get(Fields.HIERACHIES))){
+				|| !StringUtil.isEmpty(insightParamsMap.get(Fields.HIERACHIES))|| !StringUtil.isEmpty(insightParamsMap.get(Fields.SECTION_BYPASS))){
 			sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
 			sql.append("on a.insight_id=b.insight_id ");
 		}
@@ -573,7 +576,8 @@ public class InsightAction extends ManagementAction {
 
 		sql.append(", p.first_nm, p.last_nm, p.profile_img ");
 
-		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS)))
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS))
+				|| !StringUtil.isEmpty(insightParamsMap.get(Fields.SECTION_BYPASS)))
 			sql.append(", b.section_id ");
 
 		sql.append("from ").append(schema).append("biomedgps_insight a ");
