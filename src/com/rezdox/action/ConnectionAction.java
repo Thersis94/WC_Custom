@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.rezdox.action.RewardsAction.Reward;
+import com.rezdox.action.RezDoxUtils.EmailSlug;
 import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.ConnectionReportVO;
 import com.rezdox.vo.ConnectionVO;
@@ -552,7 +553,9 @@ public class ConnectionAction extends SimpleActionAdapter {
 			rcpts.add(new EmailRecipientVO(entry.getKey(), entry.getValue(), EmailRecipientVO.TO));
 
 		// Send the email notification
-		emailer.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.CONNECTION_REQUEST.name());
+		EmailSlug slug = !StringUtil.isEmpty(cvo.getSenderBusinessId()) ? 
+				EmailSlug.CONNECTION_REQUEST_FRM_BIZ : EmailSlug.CONNECTION_REQUEST;
+		emailer.sendMessage(dataMap, rcpts, slug.name());
 
 		// Add the browser notification
 		String notifyProfileId = emailMap.entrySet().iterator().next().getKey();
