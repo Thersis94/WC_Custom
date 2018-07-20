@@ -8,9 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
-import java.util.TreeSet;
 
 //app libs 
 import org.apache.commons.lang.StringUtils;
@@ -19,17 +17,16 @@ import org.apache.solr.common.SolrDocument;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 //Wc_custom
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
-
 //baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.solr.AccessControlQuery;
-import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
-
 //Webcrescendo
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -82,9 +79,11 @@ public class FeaturedInsightAction extends InsightAction {
 		ProfileDocumentVO pvo = pda.getDocumentByProfileDocumentId(profileDocumentId);
 
 		StringBuilder sql = new StringBuilder(205);
-		sql.append("select  count(*) from profile_document pd ");
-		sql.append("inner join custom.biomedgps_insight bi on bi.insight_id = pd.feature_id ");
-		sql.append("where bi.featured_flg = '1' and profile_document_id = ? ");
+
+		sql.append("select count(*) from profile_document pd ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("biomedgps_insight bi on bi.insight_id = pd.feature_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("profile_document_id = ? ");
 
 		log.debug("sql: " + sql + "|" + profileDocumentId );
 
