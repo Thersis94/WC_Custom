@@ -214,7 +214,7 @@ public class ResidenceAction extends SBActionAdapter {
 		List<Object> params = new ArrayList<>();
 		params.add(RezDoxUtils.IMPROVEMENTS_VALUE_COEF);
 		params.add(RezDoxUtils.getMemberId(req));
-		
+
 		// Using pivot table on the attributes to get additional data for display
 		StringBuilder sql = new StringBuilder(900);
 		sql.append("select r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt) as update_dt, ");
@@ -350,7 +350,7 @@ public class ResidenceAction extends SBActionAdapter {
 
 					//make sure the user has the proper role - this only causes further action when a business user adds their first residence.
 					confirmMemberRole(req);
-					
+
 				} else if (isNew && count > 1) {
 					//award 100pts for subsequent residences
 					awardPoints(RezDoxUtils.getMemberId(req), req);
@@ -377,7 +377,7 @@ public class ResidenceAction extends SBActionAdapter {
 		role.setRoleLevel(RezDoxUtils.REZDOX_RES_BUS_ROLE_LEVEL);
 		role.setRoleName(RezDoxUtils.REZDOX_RES_BUS_ROLE_NAME);
 		req.getSession().setAttribute(Constants.ROLE_DATA, role);
-		
+
 		//preserve the change to the DB
 		try {
 			ProfileRoleManager prm = new ProfileRoleManager();
@@ -387,7 +387,7 @@ public class ResidenceAction extends SBActionAdapter {
 			log.error("could not change users role", e);
 		}
 	}
-	
+
 
 	/**
 	 * @param memberId
@@ -540,16 +540,18 @@ public class ResidenceAction extends SBActionAdapter {
 	 * NOTE: We try each piece individually so that an exception in one
 	 * doesn't prevent retrieval of subsequent calls.
 	 * 
+	 * @param req
 	 * @param residence
-	 * @param newResidence
+	 * @param isNewResidence
 	 * @throws DatabaseException 
 	 */
-	protected void retrieveApiData(ActionRequest req, ResidenceVO residence, boolean newResidence) throws DatabaseException {
+	protected void retrieveApiData(ActionRequest req, ResidenceVO residence, boolean isNewRes) 
+			throws DatabaseException {
 		// This data should only be retrieved when a residence is first created, or when the address changes
 		int oldAddrHash = Convert.formatInteger((Integer)req.getSession().getAttribute("REZ_ADDR_HASH"));
 		int newAddrHash = residence.getLocation().hashCode();
 		log.debug(String.format("old address hash %d, new %d", oldAddrHash, newAddrHash));
-		if (!newResidence && oldAddrHash == newAddrHash) return;
+		if (!isNewRes && oldAddrHash == newAddrHash) return;
 
 		// Initialize list of attributes to save as a batch
 		List<ResidenceAttributeVO> attributes = new ArrayList<>();
@@ -588,6 +590,9 @@ public class ResidenceAction extends SBActionAdapter {
 
 		//delete the records we're about to add, to avoid duplicates.  DBProcessor does not support a hybrid batch add+update.
 		deleteExistingAttributes(residence.getResidenceId(), attributes);
+
+		//preserve the list of slugs saved here, so they're not overwritten by the form handler
+		req.setAttribute("savedSlugs", attributes);
 
 		// Save the retrieved attributes
 		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
@@ -640,8 +645,8 @@ public class ResidenceAction extends SBActionAdapter {
 			String valueText = zillowData.get(slugText);
 
 			if (!StringUtil.isEmpty(valueText)) {
-				ResidenceAttributeVO attribute = new ResidenceAttributeVO(residence.getResidenceId(), slugText, valueText);
-				attributes.add(attribute);
+				attributes.add(new ResidenceAttributeVO(residence.getResidenceId(), slugText, valueText));
+				log.debug(String.format("got from Zillow: %s=%s", slugText, valueText));
 			}
 		}
 
