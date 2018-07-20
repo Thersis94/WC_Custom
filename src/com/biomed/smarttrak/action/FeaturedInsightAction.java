@@ -159,7 +159,7 @@ public class FeaturedInsightAction extends InsightAction {
 			checkDocumentForAuthorization(solDoc, userRoles, authorizedFeatures);
 		}
 		//change out results sets
-		transposeResults(solVo, prepareResults(authorizedFeatures, Convert.formatInteger((String) mod.getAttribute(ModuleVO.ATTRIBUTE_2),10)));
+		transposeResults(solVo, authorizedFeatures.subList(0, Convert.formatInteger((String) mod.getAttribute(ModuleVO.ATTRIBUTE_2),10)));
 	}
 	
 	
@@ -170,7 +170,7 @@ public class FeaturedInsightAction extends InsightAction {
 	 * @param currentDocs
 	 * @param maxResults
 	 * @return
-	 */
+	 
 	private List<SolrDocument> prepareResults(List<SolrDocument> currentDocs, int maxResults) {
 		if (currentDocs.isEmpty()) return new ArrayList<>();
 		
@@ -194,7 +194,7 @@ public class FeaturedInsightAction extends InsightAction {
 			acceptedDocs.add(randomDocs.get(loc));
 		}
 		return acceptedDocs;
-	}
+	}*/
 	
 
 	/**
@@ -202,7 +202,7 @@ public class FeaturedInsightAction extends InsightAction {
 	 * @param size
 	 * @param maxResults
 	 * @return
-	 */
+	
 	private Set<Integer> getRandomDocuments(int size, int maxResults) {
 		Set<Integer> randomNumbers = new TreeSet<>();
 		Random rng = new Random();
@@ -214,7 +214,7 @@ public class FeaturedInsightAction extends InsightAction {
 		}
 		
 		return randomNumbers;
-	}
+	} */
 
 	/**
 	 * @param authorizedFeatures 

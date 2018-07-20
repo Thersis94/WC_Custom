@@ -13,12 +13,11 @@ import java.util.Properties;
 import java.util.Set;
 
 import com.biomed.smarttrak.action.FeaturedInsightAction;
-import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
@@ -41,8 +40,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class FeaturedInsightsAction extends SBActionAdapter {
-	
+
 	private static final String INSIGHT_ID = "insightId";
+	private static final String SECTION_TXT = "sectionTxt";
 
 	public FeaturedInsightsAction() {
 		super();
@@ -70,15 +70,37 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unchecked")
 	private void loadFromDb(ActionRequest req) throws ActionException {
-		ActionInterface ai = new InsightAction();
+		InsightAction ai = new InsightAction();
 		req.setParameter("featuredFlg", "1");
-		req.setParameter("sort", "orderNo");
-		req.setParameter("order", "asc");
+		req.setParameter("sort", "sectionFlg");
+		req.setParameter("order", "desc");
+		req.setParameter("sectionBypass", "true");
+		req.setParameter("retrieveAll", "true");
 		ai.setActionInit(actionInit);
 		ai.setAttributes(attributes);
 		ai.setDBConnection(dbConn);
 		ai.retrieve(req);
+		
+		List<Object> list = (List<Object>) ((ModuleVO)attributes.get(Constants.MODULE_DATA)).getActionData();
+		List<InsightVO> approvedDocs = new ArrayList<>(list.size());
+		String[] userRoles = req.getParameter(SECTION_TXT).split(",");
+
+		//Load the Section Tree and set all the Hierarchies.
+		SmarttrakTree t = ai.loadDefaultTree();
+		for(Object o : list) {
+			InsightVO i = (InsightVO)o;
+			i.configureSolrHierarchies(t);
+			for (String perm : userRoles) {
+				if (i.getACLPermissions().contains(perm)) {
+					approvedDocs.add(i);
+					break;
+				}
+			}
+		}
+		
+		putModuleData(approvedDocs, approvedDocs.size(), false);
 	}
 	
 	/**
@@ -134,13 +156,12 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 	 * @return
 	 */
 	private Set<String> buildSimulatedRole(ActionRequest req) {
-		if (!req.hasParameter("sectionTxt")) return Collections.emptySet();
+		if (!req.hasParameter(SECTION_TXT)) return Collections.emptySet();
 		
 		Set<String> solrPermissions = new HashSet<>();
-		for (String solrTxt : req.getParameterValues("sectionTxt")) {
+		for (String solrTxt : req.getParameterValues(SECTION_TXT)) {
 			solrPermissions.add(solrTxt);
 		}
-		solrPermissions.add(SmarttrakRoleVO.PUBLIC_ACL);
 		return solrPermissions;
 	}
 
