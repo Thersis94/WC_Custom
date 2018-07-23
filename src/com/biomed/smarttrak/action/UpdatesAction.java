@@ -28,6 +28,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
+import com.smt.sitebuilder.action.tools.MyFavoritesAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -94,11 +95,7 @@ public class UpdatesAction extends SBActionAdapter {
 			//adjust links only manage tool
 			adjustContentLinks(resp.getResultDocuments(), mod, req);
 
-			if(docIds == null || docIds.isEmpty()) {
-				//docIds = loadFavoriteDocs(req);
-			}
-
-			Map<String,List<PageViewVO>> favs = (Map<String,List<PageViewVO>>)req.getSession().getAttribute("MY_FAVORITES");
+			Map<String,List<PageViewVO>> favs = (Map<String,List<PageViewVO>>)req.getSession().getAttribute(MyFavoritesAction.MY_FAVORITES);
 
 			flagFavorites(resp.getResultDocuments(), favs);
 		}
