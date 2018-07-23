@@ -14,7 +14,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.Convert;
@@ -63,8 +62,7 @@ public class InvitationAction extends SBActionAdapter {
 	 */
 	@Override 
 	public void build(ActionRequest req)  throws ActionException {
-		SMTSession session = req.getSession();
-		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
+		MemberVO member = (MemberVO) req.getSession().getAttribute(Constants.USER_DATA);
 
 		if (req.hasParameter("statusFlag")) {
 			updateInvitation(member, req);
@@ -94,7 +92,7 @@ public class InvitationAction extends SBActionAdapter {
 		invite.setEmailAddressText(req.getParameter(REQ_RECIPIENT_EMAIL));
 
 		// Save the invitation record
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		try {
 			dbp.save(invite);
 		} catch(Exception e) {
@@ -142,7 +140,7 @@ public class InvitationAction extends SBActionAdapter {
 
 		List<String> fields = Arrays.asList("status_flg", "invitation_id");
 
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		try {
 			dbp.executeSqlUpdate(sql.toString(), invite, fields);
 		} catch (Exception e) {
@@ -164,13 +162,10 @@ public class InvitationAction extends SBActionAdapter {
 	 * 
 	 * @return
 	 */
-	private StringBuilder getBaseRetrieveSql() {
-		String schema = getCustomSchema();
-
+	private StringBuilder getBaseRetrieveSql(String schema) {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select invitation_id, member_id, email_address_txt, status_flg, create_dt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_invitation ");
-
 		return sql;
 	}
 
@@ -181,7 +176,8 @@ public class InvitationAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected List<InvitationVO> retrieveInvitations(ActionRequest req) {
-		StringBuilder sql = getBaseRetrieveSql();
+		String schema = getCustomSchema();
+		StringBuilder sql = getBaseRetrieveSql(schema);
 		sql.append(DBUtil.WHERE_CLAUSE).append("member_id = ? and status_flg >= ? ");
 
 		List<Object> params = new ArrayList<>();
@@ -204,7 +200,7 @@ public class InvitationAction extends SBActionAdapter {
 
 		sql.append(DBUtil.ORDER_BY).append(" coalesce(update_dt, create_dt) desc ");
 
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		return dbp.executeSelect(sql.toString(), params, new InvitationVO());
 	}
 
@@ -230,7 +226,6 @@ public class InvitationAction extends SBActionAdapter {
 
 	/**
 	 * Sends a confirmation to the member who invited the current user.
-	 * 
 	 * @param req
 	 * @param inviterMemberId
 	 */
@@ -262,15 +257,14 @@ public class InvitationAction extends SBActionAdapter {
 	 * @return
 	 */
 	private List<InvitationVO> retrieveRewardInvites(String emailAddress) {
-		StringBuilder sql = getBaseRetrieveSql();
+		String schema = getCustomSchema();
+		StringBuilder sql = getBaseRetrieveSql(schema);
 		sql.append(DBUtil.WHERE_CLAUSE).append("lower(email_address_txt) = ?  ");
 
-		List<Object> params = new ArrayList<>();
-		params.add(emailAddress.trim().toLowerCase());
-
-		DBProcessor dbp = new DBProcessor(dbConn);
-		return dbp.executeSelect(sql.toString(), params, new InvitationVO());
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		return dbp.executeSelect(sql.toString(), Arrays.asList(emailAddress.trim().toLowerCase()), new InvitationVO());
 	}
+
 
 	/**
 	 * @return the emailData
