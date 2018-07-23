@@ -309,7 +309,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("where a.member_id=? and a.status_flg=1 ");
 		sql.append("group by a.residence_id ");
 		sql.append(") as i on c.residence_id=i.residence_id ");
-		sql.append("where b.member_id=? and b.status_flg=1");
+		sql.append("where b.member_id=? and b.status_flg=1 order by c.create_dt");
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection());
