@@ -132,6 +132,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		GapAnalysisReportVO rpt = new GapAnalysisReportVO((String) attributes.get(Constants.QS_PATH));
 		rpt.setData(gtv);
 		rpt.setSite((SiteVO)req.getAttribute(Constants.SITE_DATA));
+		rpt.setFileName(GapAnalysisReportVO.REPORT_TITLE);
+		rpt.isHeaderAttachment(true);
 
 		//Set Report on Attributes Map.
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);

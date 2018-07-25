@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
@@ -27,11 +28,13 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
+import com.smt.sitebuilder.action.tools.MyFavoritesAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.PageViewVO;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -63,6 +66,7 @@ public class UpdatesAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
@@ -89,9 +93,56 @@ public class UpdatesAction extends SBActionAdapter {
 			List<Node> sections = loadSections(req);
 			sortFacets(sections, resp);
 			//adjust links only manage tool
-			 adjustContentLinks(resp.getResultDocuments(), mod, req);
+			adjustContentLinks(resp.getResultDocuments(), mod, req);
+
+			Map<String,List<PageViewVO>> favs = (Map<String,List<PageViewVO>>)req.getSession().getAttribute(MyFavoritesAction.MY_FAVORITES);
+
+			flagFavorites(resp.getResultDocuments(), favs);
 		}
 
+	}
+
+	/**
+	 * Flag updates that match a users Favorites Preferences.
+	 * @param resultDocuments
+	 * @param mod
+	 * @param req
+	 */
+	private void flagFavorites(List<SolrDocument> resp, Map<String, List<PageViewVO>> favs) {
+		boolean isFav;
+
+		for (SolrDocument solrDocument : resp) {
+			isFav = false;
+
+			//If solrDocument has a documentUrl, can be favorited.
+			if(!StringUtil.isEmpty((String)solrDocument.getFieldValue(SearchDocumentHandler.DOCUMENT_URL))) {
+
+				List<PageViewVO> favPages = favs.get((String)solrDocument.getFieldValue(SearchDocumentHandler.CONTENT_TYPE));
+
+				isFav = checkFavPageUrl(solrDocument, favPages);
+			}
+			solrDocument.setField("isFavorite", isFav);
+		}
+	}
+
+	/**
+	 * Attempt to match the given solrDocument with a favorite Page.
+	 * @param solrDocument
+	 * @param favPages
+	 * @return
+	 */
+	private boolean checkFavPageUrl(SolrDocument solrDocument, List<PageViewVO> favPages) {
+		String docUrl = (String)solrDocument.getFieldValue(SearchDocumentHandler.DOCUMENT_URL);
+		boolean isFav = false;
+		if(favPages != null && !favPages.isEmpty()) {
+			for(PageViewVO p : favPages) {
+				if(docUrl.equals(p.getRequestUri())) {
+					isFav = true;
+					break;
+				}
+			}
+		}
+		return isFav;
 	}
 
 	/**
@@ -107,8 +158,8 @@ public class UpdatesAction extends SBActionAdapter {
 		
 		//adjust the appropriate content links
 		for (SolrDocument solrDocument : resp) {
-			String content = (String)solrDocument.getFieldValue("summary");
-			solrDocument.setField("summary", linkUtil.modifySiteLinks(content));
+			String content = (String)solrDocument.getFieldValue(SearchDocumentHandler.SUMMARY);
+			solrDocument.setField(SearchDocumentHandler.SUMMARY, linkUtil.modifySiteLinks(content));
 		}
 	}
 	
