@@ -58,8 +58,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	public static final int VALUE_ONLY = 1;
 	public static final int TOTAL_ONLY = 2;
 	public static final int NO_LABEL = 3;
-	
+
 	private static final String LOAD_TABLE = "loadTable";
+	private static final String ENABLED = "enabled";
 	
 	
 	enum ColorTheme {
@@ -483,7 +484,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		if (full) {
 			Map<String, Object> yAxis = loadParamMap("yAxis", options.getChartOptions());
 			Map<String, Object> stackLabels = new HashMap<>();
-			stackLabels.put("enabled", true);
+			stackLabels.put(ENABLED, true);
 			stackLabels.put("format", prefix +"{total:,.0f}");
 			yAxis.put("stackLabels", stackLabels);
 		}
@@ -492,9 +493,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		
 		Map<String, Object> legend = new HashMap<>(1);
 		if (full && ChartType.COLUMN == type) {
-			legend.put("enabled", true);
+			legend.put(ENABLED, true);
 		} else {
-			legend.put("enabled", false);
+			legend.put(ENABLED, false);
 		}
 		
 		options.getChartOptions().put("legend", legend);
