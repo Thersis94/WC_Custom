@@ -467,11 +467,15 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		
 		options.addOptionsFromGridData(grid);
 		
-		Map<String, Object> additionalOptions = new HashMap<>(4);
+		Map<String, Object> additionalOptions = new HashMap<>(6);
 
 		additionalOptions.put("labelType", labelType);
 		additionalOptions.put("abbreviateFlg", Convert.formatBoolean(abbreviateFlg));
+		additionalOptions.put("seriesLabel", grid.getSeriesLabel());
 		additionalOptions.put(LOAD_TABLE, loadTable);
+		String prefix = determinePrefix(grid.getSeries());
+		additionalOptions.put("prefix", prefix);
+		
 		if (type == ChartType.PIE) {
 			additionalOptions.put("modifyPieLabels", modifyPieLabels(grid));
 		}
@@ -480,7 +484,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			Map<String, Object> yAxis = loadParamMap("yAxis", options.getChartOptions());
 			Map<String, Object> stackLabels = new HashMap<>();
 			stackLabels.put("enabled", true);
-			stackLabels.put("format", "${total:,.0f}");
+			stackLabels.put("format", prefix +"{total:,.0f}");
 			yAxis.put("stackLabels", stackLabels);
 		}
 		
@@ -494,11 +498,36 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		}
 		
 		options.getChartOptions().put("legend", legend);
+		
+		Map<String, Object> style = new HashMap<>(2);
+		style.put("color", "#FF0000");
+		style.put("fontSize", "12px");
+
+		loadParamMap("credits", options.getChartOptions()).put("style", style);
+		
 		return options;
 	}
 
 	
-	
+	/**
+	 * check for a Euro or Dollar prefix to use in stacked totals
+	 * @param series
+	 * @return
+	 */
+	private String determinePrefix(Map<String, Map<String, SMTChartDetailVO>> series) {
+		
+		for (Map<String, SMTChartDetailVO> serie : series.values()) {
+			for (SMTChartDetailVO detail : serie.values()) {
+				if (StringUtil.isEmpty(detail.getValue()) ||
+						Character.isDigit(detail.getValue().charAt(0))) continue;
+				char c = detail.getValue().charAt(0);
+				if (c == '€' || c == '$') return StringUtil.checkVal(c);
+			}
+		}
+		
+		return "";
+	}
+
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> loadParamMap(String key, Map<String, Object> container) {
 		Map<String, Object> loadedMap = (Map<String, Object>) container.get(key);
@@ -635,7 +664,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		BigDecimal total = new BigDecimal(0);
 		for (Map<String, SMTChartDetailVO> series : chart.getSeries().values()) {
 			for (SMTChartDetailVO detail : series.values()) {
-				total = total.add(new BigDecimal(Convert.formatDouble(detail.getValue())));
+				if (detail.getValue() == null) continue;
+				total = total.add(new BigDecimal(StringUtil.removeNonNumericExceptDecimal(detail.getValue())));
 			}
 		}
 
