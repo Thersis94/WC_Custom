@@ -96,11 +96,33 @@ public class UpdatesAction extends SBActionAdapter {
 			adjustContentLinks(resp.getResultDocuments(), mod, req);
 
 			Map<String,List<PageViewVO>> favs = (Map<String,List<PageViewVO>>)req.getSession().getAttribute(MyFavoritesAction.MY_FAVORITES);
+
+			/*
+			 * Attempt to Flag Favorite Updates using Session Favorites if available.
+			 * Else, load Documents from DB and match that way.
+			 */
 			if(favs != null) {
 				flagFavorites(resp.getResultDocuments(), favs);
+			} else {
+				docIds = loadFavoriteDocs(req);
+				flagFavoritesByDocId(resp.getResultDocuments(), docIds);
 			}
 		}
 
+	}
+
+	/**
+	 * Flag updates that match a users Favorite Preferences via database call.
+	 * @param resultDocuments
+	 * @param docIds
+	 */
+	private void flagFavoritesByDocId(List<SolrDocument> resp, List<String> docIds) {
+		boolean isFav;
+		for (SolrDocument solrDocument : resp) {
+			isFav = docIds.contains((String)solrDocument.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
+			solrDocument.setField("isFavorite", isFav);
+		}
+		log.debug("Favorites Flagged");
 	}
 
 	/**
@@ -111,22 +133,18 @@ public class UpdatesAction extends SBActionAdapter {
 	 */
 	private void flagFavorites(List<SolrDocument> resp, Map<String, List<PageViewVO>> favs) {
 		boolean isFav;
-		try {
-			for (SolrDocument solrDocument : resp) {
-				isFav = false;
-				String docUrl = (String)solrDocument.getFieldValue(SearchDocumentHandler.DOCUMENT_URL);
-				//If solrDocument has a documentUrl, can be favorited.
-				if(!StringUtil.isEmpty(docUrl)) {
-					log.info(docUrl);
-					List<PageViewVO> favPages = favs.get((String)solrDocument.getFieldValue(SearchDocumentHandler.CONTENT_TYPE));
+		for (SolrDocument solrDocument : resp) {
+			isFav = false;
+			String docUrl = (String)solrDocument.getFieldValue(SearchDocumentHandler.DOCUMENT_URL);
+			//If solrDocument has a documentUrl, can be favorited.
+			if(!StringUtil.isEmpty(docUrl)) {
+				log.info(docUrl);
+				List<PageViewVO> favPages = favs.get((String)solrDocument.getFieldValue(SearchDocumentHandler.CONTENT_TYPE));
 
-					log.debug(favPages != null && !favPages.isEmpty());
-					isFav = checkFavPageUrl(solrDocument, favPages);
-				}
-				solrDocument.setField("isFavorite", isFav);
+				log.debug(favPages != null && !favPages.isEmpty());
+				isFav = checkFavPageUrl(solrDocument, favPages);
 			}
-		} catch(Exception e) {
-			log.error("Unable to flag", e);
+			solrDocument.setField("isFavorite", isFav);
 		}
 		log.debug("Favorites Flagged");
 	}
