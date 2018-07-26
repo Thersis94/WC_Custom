@@ -14,6 +14,7 @@ import com.depuysynthes.srt.vo.SRTRequestVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
@@ -45,8 +46,8 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 
 	public enum RequestField {
 		REQUEST_ID(SRTRequestAction.SRT_REQUEST_ID), REQUESTOR_NM("requestorNm"),
-		HOSPITAL_NM("hospitalName"), SURGEON_FIRST_NM("surgeonFirstName"),
-		SURGEON_LAST_NM("surgeonLastName"), QTY("qtyNo"),
+		HOSPITAL_NM("hospitalName"), SURGEON_NM("surgeonNm"),
+		QTY("qtyNo"),
 		REASON_FOR_REQUEST("reason"), CHARGE_TO("chargeTo"),
 		DESCRIPTION("description"), ESTIMATE_ROI("estimatedRoi"),
 		TERRITORY_ID("reqTerritoryId"), ADDRESS_1("address"),
@@ -84,6 +85,9 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		SRTFileVO file = new SRTFileVO(req);
 		file.setFileId(req.getParameter("profileDocumentId"));
 
+		//Prevent ProjectId getting Set on SRTRequest Uploads.
+		file.setProjectId(null);
+
 		//Save SRTFile Record now that it's successfully saved to DocumentAction.
 		files.add(file);
 	}
@@ -104,17 +108,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 	protected void saveFormData(FormTransactionVO data) throws DatabaseException {
 		log.debug("Saving SRT Request");
 
-		// Set the form fields that should not be saved as attributes, onto the request, with appropriate parameter names.
-		Iterator<Map.Entry<String, FormFieldVO>> iter = data.getCustomData().entrySet().iterator();
-		while (iter.hasNext()) {
-			Map.Entry<String, FormFieldVO> entry = iter.next();
-			RequestField param = EnumUtil.safeValueOf(RequestField.class, entry.getValue().getSlugTxt());
-			if (param != null) {
-				req.setParameter(param.getReqParam(), StringUtil.checkVal(entry.getValue().getResponseText()).trim());
-				log.debug(StringUtil.join(param.getReqParam(), " -- ", StringUtil.checkVal(entry.getValue().getResponseText()).trim()));
-				iter.remove();
-			}
-		}
+		translateToRequest(data);
 
 		log.debug("Creating Request.");
 
@@ -135,6 +129,25 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		saveRequestData(request, address, project);
 
 		data.setFormSubmittalId(request.getRequestId());
+	}
+
+	/**
+	 * Helper method manages Translating Form Data for the RequestVO
+	 * onto the ActionRequest
+	 * @param data
+	 */
+	private void translateToRequest(FormTransactionVO data) {
+		// Set the form fields that should not be saved as attributes, onto the request, with appropriate parameter names.
+		Iterator<Map.Entry<String, FormFieldVO>> iter = data.getCustomData().entrySet().iterator();
+		while (iter.hasNext()) {
+			Map.Entry<String, FormFieldVO> entry = iter.next();
+			RequestField param = EnumUtil.safeValueOf(RequestField.class, entry.getValue().getSlugTxt());
+			if (param != null && !entry.getValue().isDeactivated()) {
+				req.setParameter(param.getReqParam(), StringUtil.checkVal(entry.getValue().getResponseText()).trim());
+				log.debug(StringUtil.join(param.getReqParam(), " -- ", StringUtil.checkVal(entry.getValue().getResponseText()).trim()));
+				iter.remove();
+			}
+		}
 	}
 
 	/**
@@ -186,6 +199,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		}
 		p.setProjectType("NEW");
 		p.setProjectStatus("UNASSIGNED");
+		p.setPriority("STANDARD");
 		p.setCreateDt(Convert.getCurrentTimestamp());
 
 		return p;
@@ -228,6 +242,78 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 			} catch (com.siliconmtn.db.util.DatabaseException e) {
 				log.error("Error Processing Code", e);
 			}
+		}
+	}
+
+	/**
+	 * Used to update Request Fields on the Project Data Form.
+	 * @param data
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 */
+	public void updateRequestData(FormTransactionVO data) throws com.siliconmtn.db.util.DatabaseException {
+		translateToRequest(data);
+
+		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+
+		//Prep Request Record Update Fields.
+		List<String> fields = new ArrayList<>();
+		fields.add("charge_to");
+		fields.add("request_desc");
+		fields.add("hospital_nm");
+		fields.add("surgeon_nm");
+		fields.add("reason_for_request");
+		fields.add("estimated_roi");
+		fields.add("qty_no");
+
+		//Build Request Update Query
+		StringBuilder sql = new StringBuilder(300);
+		int cnt = 0;
+
+		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("DPY_SYN_SRT_REQUEST set ");
+		for (String field : fields) {
+			sql.append(cnt++ > 0 ? ", " : "").append(field).append(" = ? ");
+		}
+		sql.append(DBUtil.WHERE_CLAUSE).append("request_id = ?");
+		fields.add("request_id");
+
+		SRTRequestVO reqVO = new SRTRequestVO(req);
+		//Save request
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		int resCnt = dbp.executeSqlUpdate(sql.toString(), reqVO, fields);
+
+		//If we saved the Request, Process the Address.
+		if(resCnt > 0) {
+
+			//Prep Request Address Record Update Fields
+			List<String> fields2 = new ArrayList<>();
+			fields2.add("address_txt");
+			fields2.add("address2_txt");
+			fields2.add("city_nm");
+			fields2.add("state_cd");
+			fields2.add("zip_cd");
+
+			//Build Request Address Update Query.
+			StringBuilder sql2 = new StringBuilder(300);
+			cnt = 0;
+
+			sql2.append(DBUtil.UPDATE_CLAUSE).append(schema).append("DPY_SYN_SRT_REQUEST_ADDRESS set ");
+			for (String field : fields2) {
+				sql2.append(cnt++ > 0 ? ", " : "").append(field).append(" = ? ");
+			}
+			sql2.append(DBUtil.WHERE_CLAUSE).append("request_id = ?");
+			fields2.add("request_id");
+
+			//Save Request Address.
+			SRTRequestAddressVO reqAddrVO = new SRTRequestAddressVO(req);
+			DBProcessor dbp2 = new DBProcessor(dbConn, schema);
+			resCnt = dbp2.executeSqlUpdate(sql2.toString(), reqAddrVO, fields2);
+
+			//Check if we saved the Request Address.
+			if(resCnt == 0) {
+				throw new com.siliconmtn.db.util.DatabaseException("Unable to save Request Address");
+			}
+		} else {
+			throw new com.siliconmtn.db.util.DatabaseException("Unable to save Request");
 		}
 	}
 }

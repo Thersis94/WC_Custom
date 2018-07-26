@@ -14,7 +14,7 @@ import com.depuysynthes.srt.SRTMasterRecordAction;
 import com.depuysynthes.srt.SRTMilestoneAction;
 import com.depuysynthes.srt.SRTProjectAction;
 import com.depuysynthes.srt.util.SRTUtil;
-import com.depuysynthes.srt.util.SRTUtil.SRTLists;
+import com.depuysynthes.srt.util.SRTUtil.SRTList;
 import com.depuysynthes.srt.vo.ProjectExportReportVO;
 import com.depuysynthes.srt.vo.SRTMasterRecordVO;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
@@ -101,7 +101,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		checkMasterRecordData(projects, mrAttributes);
 
 		//Desrypt Name data on Project Records.
-		decryptNames(projects);
+		SRTUtil.decryptProjectData(new ArrayList<>(projects.values()), new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY)), null, null);
 
 		//Replace targeted columns with List Values.
 		updateListDataReferences(projects, lists);
@@ -110,7 +110,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		ProjectExportReportVO reportData = new ProjectExportReportVO(projects, mrAttributes, milestones);
 
 		//Create new Report and set data.
-		AbstractSBReportVO report = new SRTProjectExportReportVO("Search Results Export.xlsx");
+		AbstractSBReportVO report = new SRTProjectExportReportVO("Search Results Export.xls");
 		report.setData(reportData);
 
 		//Return Report
@@ -123,27 +123,29 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 * @param lists
 	 */
 	private void updateListDataReferences(Map<String, SRTProjectVO> projects, Map<String, Map<String, String>> lists) {
+		String opCoId = (String) mod.getConfig(SRTUtil.OP_CO_ID).getValue();
+
 		for(SRTProjectVO p : projects.values()) {
 			try {
 				//Update Project Data Values
-				p.setPriority(lists.get(SRTLists.PROJ_PRIORITY.name()).get(p.getPriority()));
-				p.setMfgDtChangeReason(lists.get(SRTLists.PROJ_MFG_CHANGE_REASON.name()).get(p.getMfgDtChangeReason()));
-				p.setProjectType(lists.get(SRTLists.PROJ_TYPE.name()).get(p.getProjectType()));
-				p.setSupplierId(lists.get(SRTLists.PROJ_VENDOR.name()).get(p.getSupplierId()));
-				p.setProjectStatus(lists.get(SRTLists.PROJ_STATUS.name()).get(p.getProjectStatus()));
+				p.setPriority(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_PRIORITY)).get(p.getPriority()));
+				p.setMfgDtChangeReason(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_MFG_CHANGE_REASON)).get(p.getMfgDtChangeReason()));
+				p.setProjectType(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_TYPE)).get(p.getProjectType()));
+				p.setSupplierId(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_VENDOR)).get(p.getSupplierId()));
+				p.setProjectStatus(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_STATUS)).get(p.getProjectStatus()));
 
 				//Update Request Data Values
 				SRTRequestVO r = p.getRequest();
-				r.setChargeTo(lists.get(SRTLists.CHARGE_TO.name()).get(r.getChargeTo()));
-				r.setReason(lists.get(SRTLists.REQ_REASON.name()).get(r.getReason()));
+				r.setChargeTo(lists.get(SRTUtil.getListId(opCoId, SRTList.CHARGE_TO)).get(r.getChargeTo()));
+				r.setReason(lists.get(SRTUtil.getListId(opCoId, SRTList.REQ_REASON)).get(r.getReason()));
 
 				//Update Master Record Data Values
 				for(SRTMasterRecordVO m : p.getMasterRecords()) {
-					m.setComplexityId(lists.get(SRTLists.COMPLEXITY.name()).get(m.getComplexityId()));
-					m.setProdCatId(lists.get(SRTLists.PROD_CAT.name()).get(m.getProdCatId()));
-					m.setProdFamilyId(lists.get(SRTLists.PROD_FAMILY.name()).get(m.getProdFamilyId()));
-					m.setProdTypeId(lists.get(SRTLists.PRODUCT_TYPE.name()).get(m.getProdTypeId()));
-					m.setQualitySystemId(lists.get(SRTLists.QUALITY_SYSTEM.name()).get(m.getQualitySystemId()));
+					m.setComplexityId(lists.get(SRTUtil.getListId(opCoId, SRTList.COMPLEXITY)).get(m.getComplexityId()));
+					m.setProdCatId(lists.get(SRTUtil.getListId(opCoId, SRTList.PROD_CAT)).get(m.getProdCatId()));
+					m.setProdFamilyId(lists.get(SRTUtil.getListId(opCoId, SRTList.PROD_FAMILY)).get(m.getProdFamilyId()));
+					m.setProdTypeId(lists.get(SRTUtil.getListId(opCoId, SRTList.PRODUCT_TYPE)).get(m.getProdTypeId()));
+					m.setQualitySystemId(lists.get(SRTUtil.getListId(opCoId, SRTList.QUALITY_SYSTEM)).get(m.getQualitySystemId()));
 				}
 			} catch (Exception e) {
 				log.debug("Problem translating field on record: " + p.getProjectId());
@@ -235,22 +237,6 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		sma.setAttributes(attributes);
 		sma.setDBConnection(getConnection());
 		return new ArrayList<>(sma.loadRecordAttributes(null, opCoId).keySet());
-	}
-
-	/**
-	 * Decrypt Encrypted Fields on Project Records.
-	 * @param projects
-	 * @throws EncryptionException
-	 */
-	private void decryptNames(Map<String, SRTProjectVO> projects) throws EncryptionException {
-		StringEncrypter se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
-		for(SRTProjectVO p : projects.values()) {
-			p.setBuyerNm(SRTUtil.decryptName(p.getBuyerNm(), se));
-			p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
-			p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
-			p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
-			p.setRequestorNm(SRTUtil.decryptName(p.getRequestorNm(), se));
-		}
 	}
 
 	/**
@@ -437,7 +423,8 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		sql.append("concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
 		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
 		sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm, ");
-		sql.append("concat(bp.first_nm, ' ', bp.last_nm) as buyer_nm ");
+		sql.append("concat(bp.first_nm, ' ', bp.last_nm) as buyer_nm, ");
+		sql.append("r.surgeon_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("dpy_syn_srt_project p ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("dpy_syn_srt_request r on p.request_id = r.request_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("dpy_syn_srt_roster u on r.roster_id = u.roster_id ");

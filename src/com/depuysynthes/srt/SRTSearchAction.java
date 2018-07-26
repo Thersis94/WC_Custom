@@ -2,17 +2,26 @@ package com.depuysynthes.srt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.vo.SRTSolrUIVO;
+import com.depuysynthes.srt.vo.SRTSolrUIVO.SearchType;
+import com.ram.workflow.modules.EmailWFM;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.workflow.WorkflowLookupUtil;
 import com.siliconmtn.workflow.data.WorkflowMessageVO;
@@ -39,6 +48,8 @@ public class SRTSearchAction extends SimpleActionAdapter {
 
 	public static final String REQ_SEARCH_DATA = "searchData";
 	public static final String REQ_BOOTSTRAP_LIMIT = "limit";
+	private static final String DATE_RANGE_START_PREFIX = "start_";
+	private static final String DATE_RANGE_END_PREFIX = "end_";
 
 	public SRTSearchAction() {
 		super();
@@ -57,9 +68,45 @@ public class SRTSearchAction extends SimpleActionAdapter {
 			exportResults(req);
 		} else if(req.hasParameter(REQ_SEARCH_DATA)){
 			searchSolr(req);
+		} else if(req.hasParameter("loadUIConfig")){
+			SearchType type = EnumUtil.safeValueOf(SearchType.class, req.getParameter("searchType", SearchType.PROJECT.toString()));
+			Map<String, SRTSolrUIVO> formData = loadUIData(type, SRTUtil.getOpCO(req));
+			this.putModuleData(formData, formData.size(), false);
 		}
 	}
 
+	/**
+	 * Loads UI Data For Building the UI Configuration Options.
+	 * @param searchType
+	 * @return
+	 */
+	private Map<String, SRTSolrUIVO> loadUIData(SearchType searchType, String opCoId) {
+		Map<String, SRTSolrUIVO> formData;
+
+		List<SRTSolrUIVO> data = new DBProcessor(dbConn, getCustomSchema()).executeSelect(loadUiSql(), Arrays.asList(searchType.name()), new SRTSolrUIVO());
+
+		if(!data.isEmpty()) {
+			data.stream().forEach(d -> d.setOpCoId(opCoId));
+			formData = data.stream().collect(Collectors.toMap(SRTSolrUIVO::getSolrFieldId, Function.identity()));
+		} else {
+			formData = Collections.emptyMap();
+		}
+
+		return formData;
+	}
+
+	/**
+	 * Builds the UI config retrieval Query.
+	 * @return
+	 */
+	private String loadUiSql() {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append(DBUtil.SELECT_FROM_STAR);
+		sql.append(getCustomSchema()).append("DPY_SYN_SRT_SOLR_UI_CONFIG ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("SEARCH_TYPE = ? ");
+		sql.append(DBUtil.ORDER_BY).append("LABEL_TXT desc ");
+		return sql.toString();
+	}
 
 	/**
 	 * Helper method that runs search against solr for all DocumentIds that
@@ -105,7 +152,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	private WorkflowMessageVO buildWorkflowMessage(List<String> projectIds, String emailAddress, String opCoId) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("projectId", projectIds);
-		params.put("DEST_EMAIL_ADDR", emailAddress);
+		params.put(EmailWFM.DEST_EMAIL_ADDR, emailAddress);
 		params.put("opCoId", opCoId);
 		WorkflowMessageVO wmv = new WorkflowMessageVO(new WorkflowLookupUtil(dbConn).lookupWorkflowId("REPORT", "SRT_REPORT"));
 		wmv.setParameters(params);
@@ -172,13 +219,14 @@ public class SRTSearchAction extends SimpleActionAdapter {
 		if(req.hasParameter("fq"))
 			values.addAll(Arrays.asList(req.getParameterValues("fq")));
 
-		//Build Date Range
-		if(req.hasParameter("dateRangeStart") || req.hasParameter("dateRangeEnd"))
-			values.add("updateDate:" + SolrActionUtil.makeSolrDateRange(req.getParameter("dateRangeStart"), req.getParameter("dateRangeEnd")));
-
-		//Build ShipDate Range
-		if(req.hasParameter("shipDateRangeStart") || req.hasParameter("shipDateRangeEnd"))
-			values.add("shipDt_d:" + SolrActionUtil.makeSolrDateRange(req.getParameter("shipDateRangeStart"), req.getParameter("shipDateRangeEnd")));
+		for(String paramNm : Collections.list(req.getParameterNames())) {
+			if(paramNm.startsWith(DATE_RANGE_START_PREFIX)) {
+				String solrFieldName = paramNm.substring(DATE_RANGE_START_PREFIX.length());
+				String endFieldName = StringUtil.join(DATE_RANGE_END_PREFIX, solrFieldName);
+				String dateTxt = SolrActionUtil.makeSolrDateRange(req.getParameter(paramNm), req.getParameter(endFieldName));
+				values.add(StringUtil.join(solrFieldName, ":", dateTxt));
+			}
+		}
 
 		values.add("opCoId_s:" + SRTUtil.getOpCO(req));
 		req.setParameter("fq", values.toArray(new String [values.size()]), true);
