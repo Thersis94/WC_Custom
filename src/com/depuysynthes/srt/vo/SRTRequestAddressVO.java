@@ -6,6 +6,7 @@ import java.util.Date;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.security.UserDataVO;
 
@@ -46,6 +47,15 @@ public class SRTRequestAddressVO extends Location {
 	public SRTRequestAddressVO(UserDataVO u) {
 		this();
 		setData(u);
+	}
+
+	/**
+	 * Store Given Location Data on this Address Record.
+	 * @param gl
+	 */
+	public SRTRequestAddressVO(GeocodeLocation gl) {
+		super(gl.getAddress(), gl.getCity(), gl.getState(), gl.getZipCode());
+		this.address2 = gl.getAddress2();
 	}
 
 	/**

@@ -1,13 +1,26 @@
 package com.depuysynthes.srt.util;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.log4j.Logger;
+
+import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -23,18 +36,20 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Feb 22, 2018
  ****************************************************************************/
 public class SRTUtil {
+	private static Logger log = Logger.getLogger(SRTUtil.class);
 
 	public static final String SRT_ORG_ID = "DPY_SYN";
 	public static final String PUBLIC_SITE_ID = "DPY_SYN_38";
 	public static final String OP_CO_ID = "opCoId";
 	public static final String ADMIN_PATH = "/manage";
 	public static final String REGISTRATION_GRP_ID = "38ae1841baf997aec0a80255c7bd6f31";
+	public static final int DEFAULT_RPP = 25;
 
-	public enum SRTLists {SRT_WORKGROUP, REQ_REASON, CHARGE_TO, QUALITY_SYSTEM,
+	public enum SRTList {SRT_WORKGROUP, REQ_REASON, CHARGE_TO, QUALITY_SYSTEM,
 						PRODUCT_TYPE, COMPLEXITY, LABEL_STATUS, PROD_CAT,
 						PROD_FAMILY, DEPARTMENT, OBSOLETE, MILESTONE, PROJ_TYPE,
 						PROJ_PRIORITY, MAKE_FROM_SCRATCH, PROJ_VENDOR, PROJ_STATUS,
-						PROJ_MFG_CHANGE_REASON}
+						PROJ_MFG_CHANGE_REASON, SRT_TERRITORIES, SRT_AREA, SRT_REGION}
 
 	public enum SrtPage {MASTER_RECORD("/master-record"), PROJECT("/projects"), REQUEST("/request-form");
 		private String urlPath;
@@ -43,6 +58,7 @@ public class SRTUtil {
 		}
 		public String getUrlPath() {return urlPath;}
 	}
+
 	public enum SrtAdmin {MILESTONE("/milestones");
 		private String urlPath;
 		private SrtAdmin(String urlPath) {
@@ -53,6 +69,19 @@ public class SRTUtil {
 
 	private SRTUtil() {
 		//Hide Default Constructor.
+	}
+
+	/**
+	 * Helper method returns proper list_id for an OP_CO.
+	 * @param opCoId
+	 * @param list
+	 * @return
+	 */
+	public static String getListId(String opCoId, SRTList list) {
+		if(!StringUtil.isEmpty(opCoId) && list != null) {
+			return StringUtil.join(opCoId, "_", list.name());
+		}
+		return "";
 	}
 
 	/**
@@ -99,12 +128,88 @@ public class SRTUtil {
 	}
 
 	/**
+	 * Helper method that decrypts Profile Data on the SRTProjectVO.
+	 * @param projects
+	 */
+	public static void decryptProjectData(List<SRTProjectVO> projects, StringEncrypter se, ProfileManager pm, Connection dbConn) {
+
+		//Fast Fail if proper params aren't passed.
+		if(se == null || (projects == null || projects.isEmpty())) {
+			return;
+		}
+
+		List<SRTRosterVO> requestors = new ArrayList<>();
+		try {
+			for(SRTProjectVO p : projects) {
+				//Decrypt Engineer Names
+				p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
+				p.setSecondaryEngineerNm(SRTUtil.decryptName(p.getSecondaryEngineerNm(), se));
+
+				//Decrypt Designer Names
+				p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
+				p.setSecondaryDesignerNm(SRTUtil.decryptName(p.getSecondaryDesignerNm(), se));
+
+				//Decrypt QualityEngineer Names
+				p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
+				p.setSecondaryQualityEngineerNm(SRTUtil.decryptName(p.getSecondaryQualityEngineerNm(), se));
+
+				//Decrypt Buyer Names
+				p.setBuyerNm(SRTUtil.decryptName(p.getBuyerNm(), se));
+				p.setSecondaryBuyerNm(SRTUtil.decryptName(p.getSecondaryBuyerNm(), se));
+
+				//Decrypt name if available.
+				p.setRequestorNm(SRTUtil.decryptName(p.getRequestorNm(), se));
+
+				//Add Requestor to list for processing if available.
+				if(p.getRequest() != null && p.getRequest().getRequestor() != null) {
+					requestors.add(p.getRequest().getRequestor());
+				}
+			}
+
+			if(pm != null && dbConn != null && !requestors.isEmpty()) {
+				pm.populateRecords(dbConn, requestors);
+			}
+		} catch (EncryptionException | DatabaseException e) {
+			log.error(e);
+		}
+	}
+	/**
 	 * Retrieve the Roster Records off the Request.
 	 * @param req
 	 * @return
 	 */
 	public static SRTRosterVO getRoster(ActionRequest req) {
 		return (SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA);
+	}
 
+	/**
+	 * Convert list of Projects into map of projects.  Used in places where
+	 * we are loading data on Projects and need an efficient means of finding
+	 * the relevant SRTProjectVO.
+	 * @param projects
+	 * @return
+	 */
+	public static Map<String, SRTProjectVO> mapProjects(List<SRTProjectVO> projects) {
+		Map<String, SRTProjectVO> pMap;
+		if(projects != null) {
+			pMap = projects.stream().collect(Collectors.toMap(SRTProjectVO::getProjectId, Function.identity()));
+		} else {
+			pMap = new HashMap<>();
+		}
+
+		return pMap;
+	}
+
+	/**
+	 * Builds an outer join query against a list_data element.  Make sure
+	 * set PreparedStatementValue for the ListId.
+	 * @param sql - Lookup Query
+	 * @param alias - Alias for the list_data join
+	 * @param columnNm - Column we're matching against
+	 */
+	public static void buildListJoin(StringBuilder sql, String alias, String columnNm) {
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" list_data ").append(alias);
+		sql.append(" on ").append(alias).append(".value_txt = ").append(columnNm);
+		sql.append(" and ").append(alias).append(".list_id = ? ");
 	}
 }
