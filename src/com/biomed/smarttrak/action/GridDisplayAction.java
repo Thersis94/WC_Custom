@@ -486,6 +486,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			Map<String, Object> stackLabels = new HashMap<>();
 			stackLabels.put(ENABLED, true);
 			stackLabels.put("format", prefix +"{total:,.0f}");
+			stackLabels.put("prefix", prefix);
 			yAxis.put("stackLabels", stackLabels);
 		}
 		
