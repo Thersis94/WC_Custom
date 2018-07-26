@@ -3,11 +3,12 @@ package com.depuysynthes.srt.vo;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO.MilestoneTypeId;
 import com.siliconmtn.action.ActionRequest;
@@ -53,12 +54,16 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private BigDecimal actualRoi;
 	private String srtContact;
 	private String engineerId;
+	private String secondaryEngineerId;
 	private String designerId;
+	private String secondaryDesignerId;
 	private String qualityEngineerId;
+	private String secondaryQualityEngineerId;
+	private String buyerId;
+	private String secondaryBuyerId;
 	private boolean makeFromScratch;
 	private String funcCheckOrderNo;
 	private String makeFromOrderNo;
-	private String buyerId;
 	private String mfgPOToVendor;
 	private String supplierId;
 	private boolean projectHold;
@@ -68,16 +73,27 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String warehouseSalesOrderNo;
 	private Date createDt;
 	private Date updateDt;
+	private Date surgDt;
+	private Date deliveryDt;
 
 	//Helper Values.  Not on DB Record
 	private String engineerNm;
+	private String secondaryEngineerNm;
 	private String designerNm;
+	private String secondaryDesignerNm;
 	private String qualityEngineerNm;
-	private String requestorNm;
+	private String secondaryQualityEngineerNm;
 	private String buyerNm;
+	private String secondaryBuyerNm;
+	private String requestorNm;
+	private String surgeonNm;
+	private int total;
+	private String distributorship;
+	private String supplierNm;
 
 	//Stores if there is a lock.
 	private boolean lockStatus;
+	private String lockedById;
 
 	private List<SRTMasterRecordVO> masterRecords;
 	private SRTRequestVO request;
@@ -98,7 +114,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 
 	public SRTProjectVO(ResultSet rs) {
 		this();
-		populateData(rs);
+		setData(rs);
 	}
 
 	/**
@@ -122,6 +138,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 				this.addMasterRecord(new SRTMasterRecordVO(mr.getMasterRecordId()));
 			}
 		}
+	}
+
+	/**
+	 * Populate Data from the ResultSet.
+	 * @param rs
+	 */
+	public void setData(ResultSet rs) {
+		populateData(rs);
 	}
 
 	/**
@@ -255,6 +279,22 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @return the secondaryEngineerId
+	 */
+	@Column(name="SEC_ENGINEER_ID")
+	public String getSecondaryEngineerId() {
+		return secondaryEngineerId;
+	}
+
+	/**
+	 * @return the secondaryEngineerNm
+	 */
+	@Column(name="SEC_ENGINEER_NM", isReadOnly=true)
+	public String getSecondaryEngineerNm() {
+		return secondaryEngineerNm;
+	}
+
+	/**
 	 * @return the designerId
 	 */
 	@Column(name="DESIGNER_ID")
@@ -271,6 +311,22 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @return the secondaryDesignerId
+	 */
+	@Column(name="SEC_DESIGNER_ID")
+	public String getSecondaryDesignerId() {
+		return secondaryDesignerId;
+	}
+
+	/**
+	 * @return the secondaryDesignerNm
+	 */
+	@Column(name="SEC_DESIGNER_NM", isReadOnly=true)
+	public String getSecondaryDesignerNm() {
+		return secondaryDesignerNm;
+	}
+
+	/**
 	 * @return the qualityEngineerId
 	 */
 	@Column(name="QUALITY_ENGINEER_ID")
@@ -279,17 +335,72 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
-	 * @return the designerNm
+	 * @return the qualityEngineerNm
 	 */
-	@Column(name="QUALITY_ENGINEER_NM", isReadOnly=true) 
+	@Column(name="QUALITY_ENGINEER_NM", isReadOnly=true)
 	public String getQualityEngineerNm() {
 		return qualityEngineerNm;
 	}
 
 	/**
+	 * @return the secondaryQualityEngineerId
+	 */
+	@Column(name="SEC_QUALITY_ENGINEER_ID")
+	public String getSecondaryQualityEngineerId() {
+		return secondaryQualityEngineerId;
+	}
+
+	/**
+	 * @return the secondaryQualityEngineerNm
+	 */
+	@Column(name="SEC_QUALITY_ENGINEER_NM", isReadOnly=true)
+	public String getSecondaryQualityEngineerNm() {
+		return secondaryQualityEngineerNm;
+	}
+
+	/**
+	 * @return the buyerId
+	 */
+	@Column(name="BUYER_ID")
+	public String getBuyerId() {
+		return buyerId;
+	}
+
+	/**
+	 * @return the buyerNm
+	 */
+	@Column(name="BUYER_NM", isReadOnly=true)
+	public String getBuyerNm() {
+		return buyerNm;
+	}
+
+	/**
+	 * @return the secondaryBuyerId
+	 */
+	@Column(name="SEC_BUYER_ID")
+	public String getSecondaryBuyerId() {
+		return secondaryBuyerId;
+	}
+
+	/**
+	 * @return the secondaryBuyerNm
+	 */
+	@Column(name="SEC_BUYER_NM", isReadOnly=true)
+	public String getSecondaryBuyerNm() {
+		return secondaryBuyerNm;
+	}
+
+	/**
+	 * @return the surgeonNm.000000
+	 */
+	@Column(name="SURGEON_NM", isReadOnly=true)
+	public String getSurgeonNm() {
+		return StringUtil.checkVal(surgeonNm);
+	}
+
+	/**
 	 * @return the makeFromScratch
 	 */
-	@Column(name="MAKE_FROM_SCRATCH_NO")
 	public boolean isMakeFromScratch() {
 		return makeFromScratch;
 	}
@@ -297,7 +408,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	/**
 	 * @return the makeFromScratch
 	 */
-	@Column(name="MAKE_FROM_SCRATCH_NO")
+	@Column(name="MAKE_FROM_SCRATCH")
 	public int getMakeFromScratchFlg() {
 		return Convert.formatInteger(makeFromScratch);
 	}
@@ -318,22 +429,6 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
-	 * @return the buyerId
-	 */
-	@Column(name="BUYER_ID")
-	public String getBuyerId() {
-		return buyerId;
-	}
-
-	/**
-	 * @return the buyerNm
-	 */
-	@Column(name="BUYER_NM")
-	public String getBuyerNm() {
-		return buyerNm;
-	}
-
-	/**
 	 * @return the mfgPOToVendor
 	 */
 	@Column(name="MFG_PO_TO_VENDOR")
@@ -349,6 +444,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 		return supplierId;
 	}
 
+	/**
+	 * @return the supplierNm
+	 */
+	@Column(name="SUPPLIER_NM")
+	public String getSupplierNm() {
+		return supplierNm;
+	}
 	/**
 	 * @return the projectHold
 	 */
@@ -420,11 +522,65 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @return the surgDt
+	 */
+	@Column(name="SURG_DT")
+	public Date getSurgDt() {
+		return surgDt;
+	}
+
+	/**
+	 * @return the deliveryDt
+	 */
+	@Column(name="DELIVERY_DT")
+	public Date getDeliveryDt() {
+		return deliveryDt;
+	}
+
+	/**
+	 * @return the total
+	 */
+	@Column(name="TOTAL", isReadOnly=true)
+	public int getTotal() {
+		return total;
+	}
+
+	/**
+	 * @param total the total to set.
+	 */
+	public void setTotal(int total) {
+		this.total = total;
+	}
+
+	/**
+	 * @return the territory
+	 */
+	@Column(name="distributorship", isReadOnly=true)
+	public String getDistributorship() {
+		return distributorship;
+	}
+
+	/**
+	 * @param territory the territory to set.
+	 */
+	public void setDistributorship(String distributorship) {
+		this.distributorship = distributorship;
+	}
+
+	/**
 	 * @return the lockStatus
 	 */
 	@Column(name="LOCK_STATUS", isReadOnly=true)
 	public boolean getLockStatus() {
 		return lockStatus;
+	}
+
+	/**
+	 * @return the lockedById
+	 */
+	@Column(name="LOCKED_BY_ID", isReadOnly=true)
+	public String getLockedById() {
+		return lockedById;
 	}
 
 	/**
@@ -472,16 +628,23 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
-	 * Retrieve latest status off the stack.
+	 * Calculates Status based on Highest Ranked Milestone.
 	 * @return
 	 */
-	public String getStatus() {
-		if(milestones == null || milestones.size() == 0) {
-			return "";
-		} else {
-			List<SRTProjectMilestoneVO> fMilestones = new ArrayList<>(milestones.values()).stream().filter(m -> MilestoneTypeId.STATUS.equals(m.getMilestoneTypeId())).collect(Collectors.toList());
-			return fMilestones.get(fMilestones.size() - 1).getMilestoneId();
+	public String calculateMilestoneStatus() {
+		String statusId = "";
+		if(milestones != null && !milestones.isEmpty()) {
+			Optional<SRTProjectMilestoneVO> opt = milestones
+				.values()
+				.stream()
+				.filter(m -> MilestoneTypeId.STATUS.equals(m.getMilestoneTypeId()))
+				.max(Comparator.comparing(SRTProjectMilestoneVO::getOrderBy));
+
+			if(opt.isPresent())
+				statusId =  opt.get().getMilestoneId();
 		}
+
+		return statusId;
 	}
 
 	/**
@@ -608,45 +771,122 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
-	 * @param engineerId the engineerId to set.
+	 * @param engineerId the EngineerId to set.
 	 */
 	public void setEngineerId(String engineerId) {
 		this.engineerId = StringUtil.checkVal(engineerId, null);
 	}
 
 	/**
-	 * @param engineerNm the engineerNm to set.
+	 * @param secondaryEngineerId the secondaryEngineerId to set.
 	 */
-	public void setEngineerNm(String engineerNm) {
-		this.engineerNm = engineerNm;
+	public void setSecondaryEngineerId(String secondaryEngineerId) {
+		this.secondaryEngineerId = StringUtil.checkVal(secondaryEngineerId, null);
 	}
 
 	/**
-	 * @param designerId the designerId to set.
+	 * @param DesignerId the DesignerId to set.
 	 */
 	public void setDesignerId(String designerId) {
 		this.designerId = StringUtil.checkVal(designerId, null);
 	}
 
 	/**
-	 * @param designerNm the designerNm to set.
+	 * @param secondaryDesignerId the secondaryDesignerId to set.
 	 */
-	public void setDesignerNm(String designerNm) {
-		this.designerNm = designerNm;
+	public void setSecondaryDesignerId(String secondaryDesignerId) {
+		this.secondaryDesignerId = StringUtil.checkVal(secondaryDesignerId, null);
 	}
 
 	/**
-	 * @param qualityEngineerId the qualityEngineerId to set.
+	 * @param QualityEngineerId the qualityEngineerId to set.
 	 */
 	public void setQualityEngineerId(String qualityEngineerId) {
 		this.qualityEngineerId = StringUtil.checkVal(qualityEngineerId, null);
 	}
 
 	/**
-	 * @param qualityEngineerNm the qualityEngineerNm to set.
+	 * @param secondaryQualityEngineerId the secondaryQualityEngineerId to set.
+	 */
+	public void setSecondaryQualityEngineerId(String secondaryQualityEngineerId) {
+		this.secondaryQualityEngineerId = StringUtil.checkVal(secondaryQualityEngineerId, null);
+	}
+
+	/**
+	 * @param buyerId the BuyerId to set.
+	 */
+	public void setBuyerId(String buyerId) {
+		this.buyerId = StringUtil.checkVal(buyerId, null);
+	}
+
+	/**
+	 * @param secondaryBuyerId the secondaryBuyerId to set.
+	 */
+	public void setSecondaryBuyerId(String secondaryBuyerId) {
+		this.secondaryBuyerId = StringUtil.checkVal(secondaryBuyerId, null);
+	}
+
+	/**
+	 * @param engineerNm the EngineerNm to set.
+	 */
+	public void setEngineerNm(String engineerNm) {
+		this.engineerNm = engineerNm;
+	}
+
+	/**
+	 * @param secondaryEngineerNm the secondaryEngineerNm to set.
+	 */
+	public void setSecondaryEngineerNm(String secondaryEngineerNm) {
+		this.secondaryEngineerNm = secondaryEngineerNm;
+	}
+
+	/**
+	 * @param designerNm the DesignerNm to set.
+	 */
+	public void setDesignerNm(String designerNm) {
+		this.designerNm = designerNm;
+	}
+
+	/**
+	 * @param secondaryDesignerNm the secondaryDesignerNm to set.
+	 */
+	public void setSecondaryDesignerNm(String secondaryDesignerNm) {
+		this.secondaryDesignerNm = secondaryDesignerNm;
+	}
+
+	/**
+	 * @param qualityEngineerNm the QualityEngineerNm to set.
 	 */
 	public void setQualityEngineerNm(String qualityEngineerNm) {
 		this.qualityEngineerNm = qualityEngineerNm;
+	}
+
+	/**
+	 * @param secondaryQualityEngineerNm the secondaryQualityEngineerNm to set.
+	 */
+	public void setSecondaryQualityEngineerNm(String secondaryQualityEngineerNm) {
+		this.secondaryQualityEngineerNm = secondaryQualityEngineerNm;
+	}
+
+	/**
+	 * @param buyerNm the BuyerNm to set.
+	 */
+	public void setBuyerNm(String buyerNm) {
+		this.buyerNm = buyerNm;
+	}
+
+	/**
+	 * @param secondaryBuyerNm the secondaryBuyerNm to set.
+	 */
+	public void setSecondaryBuyerNm(String secondaryBuyerNm) {
+		this.secondaryBuyerNm = secondaryBuyerNm;
+	}
+
+	/**
+	 * @param surgeonNm the surgeonNm to set.
+	 */
+	public void setSurgeonNm(String surgeonNm) {
+		this.surgeonNm = surgeonNm;
 	}
 
 	/**
@@ -678,20 +918,6 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
-	 * @param buyerId the buyerId to set.
-	 */
-	public void setBuyerId(String buyerId) {
-		this.buyerId = StringUtil.checkVal(buyerId, null);
-	}
-
-	/**
-	 * @param buyerNm the buyerNm to set.
-	 */
-	public void setBuyerNm(String buyerNm) {
-		this.buyerNm = StringUtil.checkVal(buyerNm, null);
-	}
-
-	/**
 	 * @param mfgPOToVendor the mfgPOToVendor to set.
 	 */
 	public void setMfgPOToVendor(String mfgPOToVendor) {
@@ -703,6 +929,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	 */
 	public void setSupplierId(String supplierId) {
 		this.supplierId = supplierId;
+	}
+
+	/**
+	 * @param supplierNm the supplierNm to set.
+	 */
+	public void setSupplierNm(String supplierNm) {
+		this.supplierNm = supplierNm;
 	}
 
 	/**
@@ -769,10 +1002,31 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @param surgDt the surgDt to set.
+	 */
+	public void setSurgDt(Date surgDt) {
+		this.surgDt = surgDt;
+	}
+
+	/**
+	 * @param deliveryDt the deliveryDt to set.
+	 */
+	public void setDeliveryDt(Date deliveryDt) {
+		this.deliveryDt = deliveryDt;
+	}
+
+	/**
 	 * @param lockStatus the lockStatus to set.
 	 */
 	public void setLockStatus(boolean lockStatus) {
 		this.lockStatus = lockStatus;
+	}
+
+	/**
+	 * @param lockedById the lockedById to set.
+	 */
+	public void setLockedById(String lockedById) {
+		this.lockedById = lockedById;
 	}
 
 	/**
@@ -863,6 +1117,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	 */
 	public void addLedgerDate(String ledgerType, Date ledgerDate) {
 		if(!StringUtil.isEmpty(ledgerType) && ledgerDate != null) {
+			if("SURG_DT".equals(ledgerType)) {
+				this.surgDt = ledgerDate;
+			} else if("ORIG_MFG_DEL_DT".equals(ledgerType)) {
+				this.deliveryDt = ledgerDate;
+			} else if("REV_MFG_DEL_DT".equals(ledgerType)) {
+				this.deliveryDt = ledgerDate;
+			}
 			ledgerDates.put(ledgerType, ledgerDate);
 		}
 	}

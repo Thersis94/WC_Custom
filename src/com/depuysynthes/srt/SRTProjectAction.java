@@ -1,19 +1,25 @@
 package com.depuysynthes.srt;
 
+import static com.siliconmtn.util.MapUtil.entry;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.depuysynthes.srt.data.ProjectDataProcessor;
 import com.depuysynthes.srt.data.RequestDataProcessor;
 import com.depuysynthes.srt.util.SRTUtil;
-import com.depuysynthes.srt.util.SRTUtil.SrtPage;
-import com.depuysynthes.srt.vo.SRTMasterRecordVO;
+import com.depuysynthes.srt.util.SRTUtil.SRTList;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectMilestoneVO.MilestoneTypeId;
 import com.depuysynthes.srt.vo.SRTProjectVO;
@@ -29,11 +35,11 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -41,6 +47,7 @@ import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerUtil;
 import com.smt.sitebuilder.util.LockUtil;
 import com.smt.sitebuilder.util.LockVO;
+
 
 /****************************************************************************
  * <b>Title:</b> SRTProjectAction.java
@@ -59,6 +66,20 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	public static final String SRT_PROJECT_ID = "projectId";
 	private static final String SRT_PROJECT_LOCKS = "srtProjectLocks";
 	public static final String DB_PROJECT_ID = "PROJECT_ID";
+	protected static final Map<String, String> sortCols = MapUtil.asMap (
+		entry("projectName", "p.project_name"),
+		entry("surgeonNm", "surgeon_nm"),
+		entry("projectTypeTxt", "p.proj_type_id"),
+		entry("projectStatusTxt", "p.proj_stat_id"),
+		entry("createDt", "p.create_dt"),
+		entry("surgDt", "p.surg_dt"),
+		entry("deliveryDt", "p.delivery_dt"),
+		entry("distributorship", "dld.label_txt"),
+		entry("supplierNm", "sld.label_txt"),
+		entry("mfgPoToVendor", "p.mfg_po_to_vendor"),
+		entry("makeFromScratch", "p.make_from_scratch"),
+		entry("total", "t.total")
+	);
 
 	public SRTProjectAction() {
 		super();
@@ -71,14 +92,17 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
-		MilestoneTypeId typeId = null;
+		MilestoneTypeId typeId = MilestoneTypeId.DATE;
 
 		if(req.hasParameter(SRT_PROJECT_ID) || req.hasParameter("json")) {
+
 			GridDataVO<SRTProjectVO> projects = loadProjects(req);
 
 			if(req.hasParameter(SRT_PROJECT_ID)) {
 				loadDataFromForms(req);
-				req.setAttribute("ownsLock", StringUtil.checkVal(manageLock(req, false)));
+				if(!req.getBooleanParameter("isCopyReq")) {
+					req.setAttribute("ownsLock", StringUtil.checkVal(manageLock(req, false)));
+				}
 			}
 
 			putModuleData(projects.getRowData(), projects.getTotal(), false);
@@ -105,24 +129,35 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
+		try {
+			//Determine what kind of build action is being performed.
+			if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
+				releaseLocks(req);
+			} else if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
+				splitProject(req);
+			} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
+				copyProject(req);
+			} else {
+				if(manageLock(req, false)) {
+					saveProject(req);
 
-		//Determine what kind of build action is being performed.
-		if(req.hasParameter("isSplit") && req.getBooleanParameter("isSplit")) {
-			splitProject(req);
-		} else if(req.hasParameter("isAdd") && req.getBooleanParameter("isAdd")) {
-			copyProject(req);
-		} else if(req.hasParameter("releaseLocks") && req.getBooleanParameter("releaseLocks")) {
-			releaseLocks(req);
-		} else {
-			saveProject(req);
+					//Release all Locks on save.
+					releaseLocks(req);
+				} else {
+					msg = "You do not own the lock on this record.  Save Rejected.";
+					throw new ActionException((String)msg);
+				}
+			}
+		} catch(Exception e) {
 
-			//Release all Locks on save.
-			releaseLocks(req);
+			//If an error occurred while building, set it on the Module for UI Alert.
+			log.error("Problem Saving Form", e);
+			mod.setError(e);
 		}
-
-		//Redirect the User.
-		sbUtil.moduleRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), SrtPage.PROJECT.getUrlPath());
 	}
+
 
 	/**
 	 * Perform Copy of Project Record.
@@ -133,13 +168,13 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		//Load Roster Data.
 		SRTRosterAction sra = (SRTRosterAction)ActionControllerFactoryImpl.loadAction(SRTRosterAction.class.getName(), this);
-		List<SRTRosterVO> rosters = sra.loadRosterUsers(req);
-		SRTRosterVO roster = rosters.get(0);
+		GridDataVO<SRTRosterVO> rosters = sra.loadRosterUsers(req);
+		SRTRosterVO roster = rosters.getRowData().get(0);
 
 		//Save the Request and set Roster Data on it.
 		SRTRequestVO request = new SRTRequestVO(req);
 		request.setRequestor(roster);
-		request.setReqTerritoryId(roster.getTerritory());
+		request.setReqTerritoryId(roster.getTerritoryId());
 
 		try {
 
@@ -228,7 +263,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 * Save the Project Record on a Form Submission.
 	 * @param req
 	 */
-	private void saveProject(ActionRequest req) {
+	private void saveProject(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		String formId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 
@@ -236,7 +271,13 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		attributes.put(Constants.ACTION_DATA, actionInit);
 
 		//Call DataManagerUtil to save the form.
-		new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ProjectDataProcessor.class);
+		DataContainer dc = new DataManagerUtil(attributes, dbConn).saveForm(formId, req, ProjectDataProcessor.class);
+
+		//Check for Errors and if present, send them up the chain for processing.
+		if(dc.getErrors() != null && !dc.getErrors().isEmpty()) {
+			Throwable t = new ArrayList<>(dc.getErrors().values()).get(0);
+			throw new ActionException("Unable to Save Project.", t);
+		}
 	}
 
 	/**
@@ -256,6 +297,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	/**
 	 * Retrieve Projects according to request attributes.
 	 * @param req
+	 *
 	 * @return
 	 */
 	private GridDataVO<SRTProjectVO> loadProjects(ActionRequest req) {
@@ -267,21 +309,21 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		//Build Query and populate required vals at same time.
 		String sql = buildProjectRetrievalQuery(req, vals, statusType);
 
-		log.debug(sql);
-
 		//Load Projects
-		GridDataVO<SRTProjectVO> projects = new DBProcessor(dbConn).executeSQLWithCount(sql, vals, new SRTProjectVO(), req.getIntegerParameter("limit", 10), req.getIntegerParameter("offset", 0));
+		GridDataVO<SRTProjectVO> projects = new DBProcessor(dbConn).executeSQLWithCount(sql, vals, new SRTProjectVO(), req.getIntegerParameter("limit", SRTUtil.DEFAULT_RPP), req.getIntegerParameter("offset", 0));
 
 		if(!projects.getRowData().isEmpty()) {
 
-			//If this is a detail request, load additional data.
-			if(req.hasParameter(SRT_PROJECT_ID)) {
-				SRTProjectVO p = projects.getRowData().get(0);
-				loadDetailData(p, req);
+			//Load Name data
+			if(!req.hasParameter(SRT_PROJECT_ID)) {
+				try {
+					loadRosterNameData(SRTUtil.mapProjects(projects.getRowData()));
+				} catch (com.siliconmtn.exception.DatabaseException e) {
+					log.error("Error Loading Name Data", e);
+				}
 			}
 
-			//Decrypt Project Record Name Fields.
-			decryptProjectNames(projects);
+			loadDetailData(projects.getRowData(), req);
 
 			//Add Milestone Data
 			loadMilestoneDetails(projects.getRowData());
@@ -289,6 +331,157 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 		//Return Projects
 		return projects;
+	}
+
+	/**
+	 * Load User Names for Project Roster Records.
+	 * @param rowData
+	 * @throws com.siliconmtn.exception.DatabaseException
+	 */
+	private void loadRosterNameData(Map<String, SRTProjectVO> projectData) throws com.siliconmtn.exception.DatabaseException {
+		//Extract Distinct RosterIds from projectData.
+		Set<String> rosterIds = gatherRosterIds(projectData);
+
+		//If we have RosterIds to lookup, search ProfileData for them and update Project Record.
+		if(!rosterIds.isEmpty()) {
+			Map<String, SRTRosterVO> userNames = loadUserNames(rosterIds, projectData);
+			populateProjectNames(projectData, userNames);
+		}
+	}
+
+	/**
+	 * Build Set of distinct RosterIds off given ProjectData to minimize
+	 * the number of records we're looking for.
+	 * @param projectData
+	 * @return
+	 */
+	private Set<String> gatherRosterIds(Map<String, SRTProjectVO> projectData) {
+		Set<String> rosterIds = new HashSet<>();
+		for(SRTProjectVO p : projectData.values()) {
+			rosterIds.add(p.getEngineerId());
+			rosterIds.add(p.getSecondaryEngineerId());
+			rosterIds.add(p.getDesignerId());
+			rosterIds.add(p.getSecondaryDesignerId());
+			rosterIds.add(p.getQualityEngineerId());
+			rosterIds.add(p.getSecondaryQualityEngineerId());
+			rosterIds.add(p.getBuyerId());
+			rosterIds.add(p.getSecondaryBuyerId());
+			rosterIds.add(p.getRequest().getRosterId());
+		}
+		return rosterIds;
+	}
+
+	/**
+	 * Place Decrypted Name data on Projects.
+	 * @param projectData
+	 * @param userNames
+	 */
+	private void populateProjectNames(Map<String, SRTProjectVO> projectData, Map<String, SRTRosterVO> userNames) {
+		for(SRTProjectVO project : projectData.values()) {
+
+			//Check EngineerId exists on userNames Map, set EngineerNm
+			if(userNames.containsKey(project.getEngineerId())) {
+				project.setEngineerNm(userNames.get(project.getEngineerId()).getFullName());
+			}
+
+			//Check SecondaryEngineerId exists on userNames Map, set SecondaryEngineerNm
+			if(userNames.containsKey(project.getSecondaryEngineerId())) {
+				project.setSecondaryEngineerId(userNames.get(project.getSecondaryEngineerId()).getFullName());
+			}
+
+			//Check DesignerId exists on userNames Map, set DesignerNm
+			if(userNames.containsKey(project.getDesignerId())) {
+				project.setDesignerNm(userNames.get(project.getDesignerId()).getFullName());
+			}
+
+			//Check SecondaryDesignerId exists on userNames Map, set SecondaryDesignerNm
+			if(userNames.containsKey(project.getSecondaryDesignerId())) {
+				project.setSecondaryDesignerNm(userNames.get(project.getSecondaryDesignerId()).getFullName());
+			}
+
+			//Check QualityEngineerId exists on userNames Map, set QualityEngineerNm
+			if(userNames.containsKey(project.getQualityEngineerId())) {
+				project.setQualityEngineerNm(userNames.get(project.getQualityEngineerId()).getFullName());
+			}
+
+			//Check SecondaryQualityEngineerId exists on userNames Map, set SecondaryQualityEngineerNm
+			if(userNames.containsKey(project.getSecondaryQualityEngineerId())) {
+				project.setSecondaryQualityEngineerNm(userNames.get(project.getSecondaryQualityEngineerId()).getFullName());
+			}
+
+			//Check BuyerId exists on userNames Map, set BuyerNm
+			if(userNames.containsKey(project.getBuyerId())) {
+				project.setBuyerNm(userNames.get(project.getBuyerId()).getFullName());
+			}
+
+			//Check SecondaryBuyerId exists on userNames Map, set SecondaryBuyerNm
+			if(userNames.containsKey(project.getSecondaryBuyerId())) {
+				project.setSecondaryBuyerNm(userNames.get(project.getSecondaryBuyerId()).getFullName());
+			}
+
+			//Check RosterId exists on userNames Map, set RequestorNm
+			if(userNames.containsKey(project.getRequest().getRosterId())) {
+				project.setRequestorNm(userNames.get(project.getRequest().getRosterId()).getFullName());
+			}
+		}
+	}
+
+	/**
+	 * Convert Set of RosterIds to a Map of Decrypted UserDataVO's.
+	 * @param rosterIds
+	 * @param projectData
+	 * @return
+	 * @throws com.siliconmtn.exception.DatabaseException
+	 */
+	private Map<String, SRTRosterVO> loadUserNames(Set<String> rosterIds, Map<String, SRTProjectVO> projectData) throws com.siliconmtn.exception.DatabaseException {
+		Map<String, SRTRosterVO> userRecords = new HashMap<>();
+		try(PreparedStatement ps = dbConn.prepareStatement(loadProfileIdsSql(rosterIds.size()))) {
+			int i = 1;
+			for(String rosterId : rosterIds) {
+				ps.setString(i++, rosterId);
+			}
+
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				userRecords.put(rs.getString(SRTRosterAction.DB_ROSTER_ID), new SRTRosterVO(rs));
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+
+		/*
+		 * Ensure Requestor VO's are added to userRecords so they'll get
+		 * decrypted as well.
+		 */
+		for(SRTProjectVO p : projectData.values()) {
+			if(p.getRequest() != null && p.getRequest().getRequestor() != null) {
+				userRecords.put(p.getRequest().getRosterId(), p.getRequest().getRequestor());
+			}
+		}
+
+		// Call ProfileManagerFactory to load and decrypt Name data.
+		ProfileManagerFactory.getInstance(attributes).populateRecords(dbConn, new ArrayList<>(userRecords.values()));
+
+		return userRecords;
+	}
+
+	/**
+	 * Load Profile Ids for all Roster Records.
+	 * @param projectCount
+	 * @return
+	 */
+	private String loadProfileIdsSql(int rosterCount) {
+		StringBuilder sql = new StringBuilder(200 + rosterCount * 3);
+
+		sql.append(DBUtil.SELECT_CLAUSE).append("profile_id, roster_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("DPY_SYN_SRT_ROSTER ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" ROSTER_ID in (");
+		DBUtil.preparedStatmentQuestion(rosterCount, sql);
+		sql.append(")");
+
+		log.debug(sql.toString());
+		return sql.toString();
 	}
 
 	/**
@@ -301,45 +494,26 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Loads Request Data when we are looking at a single record.
-	 * @param project
+	 * Loads Detail Data depending on view being presented.
+	 * @param projects
 	 * @param req
 	 */
-	private void loadDetailData(SRTProjectVO project, ActionRequest req) {
+	private void loadDetailData(List<SRTProjectVO> projects, ActionRequest req) {
 
 		//Load request Information and assign on Project Record.
-		req.setParameter(SRTRequestAction.SRT_REQUEST_ID, project.getRequestId());
-		SRTRequestAction sra = (SRTRequestAction) ActionControllerFactoryImpl.loadAction(SRTRequestAction.class.getName(), this);
-		GridDataVO<SRTRequestVO> reqData = sra.loadRequests(req);
-		if(reqData != null && !reqData.getRowData().isEmpty()) {
-			project.setRequest(reqData.getRowData().get(0));
+		if(req.hasParameter(SRT_PROJECT_ID)) {
+			SRTProjectVO p = projects.get(0);
+			req.setParameter(SRTRequestAction.SRT_REQUEST_ID, p.getRequestId());
+			SRTRequestAction sra = (SRTRequestAction) ActionControllerFactoryImpl.loadAction(SRTRequestAction.class.getName(), this);
+			GridDataVO<SRTRequestVO> reqData = sra.loadRequests(req);
+			if(reqData != null && !reqData.getRowData().isEmpty()) {
+				p.setRequest(reqData.getRowData().get(0));
+			}
 		}
 
 		//Load Master Record Data and assign on Project Record.
 		SRTMasterRecordAction smra = (SRTMasterRecordAction) ActionControllerFactoryImpl.loadAction(SRTMasterRecordAction.class.getName(), this);
-		List<SRTMasterRecordVO> prodData = smra.loadMasterRecordXR(project);
-		for(SRTMasterRecordVO mr : prodData) {
-			project.addMasterRecord(mr);
-		}
-	}
-
-	/**
-	 * Iterate Projects decrypting User names.
-	 * @param projects
-	 */
-	private void decryptProjectNames(GridDataVO<SRTProjectVO> projects) {
-		try {
-			StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
-			for(SRTProjectVO p : projects.getRowData()) {
-				p.setRequestorNm(SRTUtil.decryptName(p.getRequestorNm(), se));
-				p.setEngineerNm(SRTUtil.decryptName(p.getEngineerNm(), se));
-				p.setDesignerNm(SRTUtil.decryptName(p.getDesignerNm(), se));
-				p.setQualityEngineerNm(SRTUtil.decryptName(p.getQualityEngineerNm(), se));
-				p.setBuyerNm(SRTUtil.decryptName(p.getBuyerNm(), se));
-			}
-		} catch (EncryptionException e) {
-			log.error("Error Decrypting Project Names", e);
-		}
+		smra.populateMasterRecordXR(projects);
 	}
 
 	/**
@@ -351,18 +525,20 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 */
 	private String buildProjectRetrievalQuery(ActionRequest req, List<Object> vals, String statusType) {
 		String custom = getCustomSchema();
+		String opCoId = SRTUtil.getOpCO(req);
 		StringBuilder sql = new StringBuilder(2000);
-		sql.append("select p.*, concat(pr.first_nm, ' ', pr.last_nm) as requestor_nm, ");
-		sql.append("req.surgeon_first_nm, req.surgeon_last_nm, ");
+		sql.append("select p.*, req.ROSTER_ID, ");
+		sql.append("req.SURGEON_NM, ");
 		sql.append("case when l.lock_id is not null then true else false end as LOCK_STATUS, ");
-		sql.append("m.milestone_nm as proj_stat_txt, ");
+		sql.append("l.LOCKED_BY_ID, m.milestone_nm as proj_stat_txt, ");
 		sql.append("type.label_txt as PROJ_TYPE_TXT ");
 		//If this isn't a detail load, get Names for display purposes.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
-			sql.append(", concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
-			sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
-			sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm, ");
-			sql.append("concat(bp.first_nm, ' ', bp.last_nm) as buyer_nm ");
+			sql.append(", case when dld.label_txt is not null and dld.label_txt != '' then dld.label_txt else r.territory_id end as distributorship, t.total, sld.label_txt as supplier_nm ");
+		}
+		if("coProjectId".equals(req.getParameter("sort"))) {
+			sql.append(", case when priority_id = 'FASTEST' or surg_dt is not null then 1 else 0 end as priority_flg, ");
+			sql.append(" case when delivery_dt < current_timestamp then 1 else 0 end as lateFlg ");
 		}
 
 		//Joins to tables.
@@ -377,8 +553,6 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		//Get Requestor Information
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER r ");
 		sql.append("on req.ROSTER_ID = r.ROSTER_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE pr ");
-		sql.append("on r.PROFILE_ID = pr.PROFILE_ID ");
 
 		//Load Human Friendly Text for List Ref Values.
 
@@ -387,42 +561,42 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		sql.append("DPY_SYN_SRT_MILESTONE m on p.PROJ_STAT_ID = m.milestone_id ");
 
 		//Project Type
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA type on ");
-		sql.append("type.value_txt = p.PROJ_TYPE_ID and type.list_id = ? ");
-		vals.add("PROJ_TYPE");
+		SRTUtil.buildListJoin(sql, "type", "p.proj_type_id");
+		vals.add(SRTUtil.getListId(opCoId, SRTList.PROJ_TYPE));
 
 		//Load Optional User Data if this isn't a detail view.
 		if(!req.hasParameter(SRT_PROJECT_ID)) {
-			//Get Optional Engineer Information
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER e ");
-			sql.append("on p.ENGINEER_ID = e.ROSTER_ID ");
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE ep ");
-			sql.append("on e.PROFILE_ID = ep.PROFILE_ID ");
 
-			//Get Optional Designer Information
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER d ");
-			sql.append("on p.DESIGNER_ID = d.ROSTER_ID ");
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE dp ");
-			sql.append("on d.PROFILE_ID = dp.PROFILE_ID ");
+			//Get Optional Supplier Nm
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA sld ");
+			sql.append("on sld.value_txt = p.supplier_id and sld.list_id = ? ");
+			vals.add(SRTUtil.getListId(opCoId, SRTList.PROJ_VENDOR));
 
-			//Get Optional QA Engineer Information
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER q ");
-			sql.append("on p.QUALITY_ENGINEER_ID = q.ROSTER_ID ");
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE qp ");
-			sql.append("on q.PROFILE_ID = qp.PROFILE_ID ");
+			//Get Optional Distributorship
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("LIST_DATA dld ");
+			sql.append("on dld.value_txt = r.territory_id and dld.list_id = ? ");
+			vals.add(SRTUtil.getListId(opCoId, SRTList.SRT_TERRITORIES));
 
-			//Get Optional QA Engineer Information
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append(custom).append("DPY_SYN_SRT_ROSTER b ");
-			sql.append("on p.BUYER_ID = b.ROSTER_ID ");
-			sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE bp ");
-			sql.append("on b.PROFILE_ID = bp.PROFILE_ID ");
+			//Get Project Total
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select cast(sum(case when part_count is null then 0 else part_count end) as int) as total, ");
+			sql.append("project_id ").append(DBUtil.FROM_CLAUSE).append(custom);
+			sql.append("dpy_syn_srt_master_record_project_xr xr ");
+			sql.append(DBUtil.GROUP_BY).append(" project_id) as t on p.project_id = t.project_id ");
 		}
 
 		//Build Where Conditional and set and clause values on the vals list.
 		buildWhereClause(sql, req, vals, statusType);
 
-		//Add Order By clause.
-		sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(req.getParameter("orderBy"), "p.create_dt desc"));
+		//Add Order By clause.  Order by status (coProjectId) is special.
+		if("coProjectId".equals(req.getParameter("sort"))) {
+			String order = StringUtil.checkVal(req.getParameter("order"), "desc");
+			sql.append(DBUtil.ORDER_BY).append("lateFlg ").append(order);
+			sql.append(", priority_flg ").append(order).append(", project_hold_flg ").append(order);
+			sql.append(", delivery_dt ").append(order).append(", surg_dt ").append(order);
+		} else {
+			sql.append(DBUtil.ORDER_BY).append(StringUtil.checkVal(sortCols.get(req.getParameter("sort")), sortCols.get("createDt")));
+			sql.append(" ").append(StringUtil.checkVal(req.getParameter("order"), "desc"));
+		}
 
 		return sql.toString();
 	}
@@ -439,11 +613,17 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		vals.add(SRTUtil.getRoster(req).getOpCoId());
 
 		if(req.hasParameter(SRT_PROJECT_ID)) {
-			sql.append("and p.PROJECT_ID = ? ");
+			sql.append("and p.PROJECT_ID = ? or p.CO_PROJECT_ID = ? ");
+			vals.add(req.getParameter(SRT_PROJECT_ID));
 			vals.add(req.getParameter(SRT_PROJECT_ID));
 		} else if(!StringUtil.isEmpty(statusType)) {
 			sql.append("and p.PROJ_STAT_ID = ? ");
 			vals.add(statusType);
+		}
+
+		if(req.hasParameter("search")) {
+			sql.append("and lower(p.PROJECT_NAME) like ? ");
+			vals.add("%" + req.getParameter("search").toLowerCase() + "%");
 		}
 
 		if(req.getBooleanParameter("myProjectsFlg")) {
