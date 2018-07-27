@@ -1,4 +1,13 @@
 load database
-	from mssql://sa:sqll0gin@10.0.20.71:1433/customs
-	into postgresql://raptor:sqll0gin@playstation/raptor_webcrescendo_depuy
-excluding table names like 'tbl_pt_sales_roster' in schema 'dbo';
+	from mssql://sa:sqll0gin@10.0.20.213:1433/custom
+	into postgresql://raptor:sqll0gin@streetfighter/webcrescendo_dpy
+	including only table names like 'workgroups' in schema 'dbo'
+	including only table names like 'category' in schema 'dbo'
+	including only table names like 'productfamily' in schema 'dbo'
+	including only table names like 'vendors' in schema 'dbo'
+	including only table names like 'reasondatechange' in schema 'dbo'
+	including only table names like 'projects' in schema 'dbo'
+	including only table names like 'users' in schema 'dbo'
+	including only table names like 'originalrequest' in schema 'dbo'
+	including only table names like 'obsolete' in schema 'dbo'
+	including only table names like 'notes' in schema 'dbo';

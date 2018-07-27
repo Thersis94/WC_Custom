@@ -40,10 +40,10 @@ public class InvoiceReportPDF extends AbstractSBReportVO {
 	private NumberFormat currency = NumberFormat.getCurrencyInstance();
 	private NumberFormat percent = NumberFormat.getPercentInstance();
 
-	public InvoiceReportPDF(String fqdn, String relaImgBase) {
+	public InvoiceReportPDF(String fqdn, String diskImgBase) {
 		super();
 		this.fqdn = fqdn;
-		this.imageBase = fqdn + relaImgBase;
+		this.imageBase = diskImgBase;
 		setFileName("Invoice.pdf");
 		currency.setMaximumFractionDigits(2);
 		percent.setMaximumFractionDigits(2);
@@ -94,7 +94,7 @@ public class InvoiceReportPDF extends AbstractSBReportVO {
 		sb.append("<table class=\"invoice\" width='100%'>");
 		sb.append("<tr class='heading'>");
 		if (!StringUtil.isEmpty(biz.getPhotoUrl())) {
-			sb.append("<td width='50'><img src=\"").append(imageBase).append(biz.getPhotoUrl()).append("\" width=\"50\" alt=\"logo\" /></td>");
+			sb.append("<td width='50'><img src=\"file://").append(imageBase).append(biz.getPhotoUrl()).append("\" width=\"50\" alt=\"logo\" /></td>");
 			sb.append("<td><h1 class=\"black\">").append(biz.getBusinessName()).append("</h1></td>");
 		} else {
 			sb.append("<td colspan='2'><h1 class=\"black\">").append(biz.getBusinessName()).append("</h1></td>");

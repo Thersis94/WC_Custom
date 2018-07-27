@@ -85,7 +85,7 @@ public class SRTNoteAction extends SimpleActionAdapter {
 		sql.append("inner join PROFILE p on r.profile_id = p.profile_id ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if(!StringUtil.isEmpty(projectId)) {
-			sql.append("and n.project_id = ? ");
+			sql.append("and n.project_id = ? order by create_dt asc ");
 		}
 
 		return sql.toString();
