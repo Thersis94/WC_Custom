@@ -44,7 +44,8 @@ public class InventoryFormProcessor extends FormDataProcessor {
 	protected enum CoreField {
 		RESIDENCE("residenceId"), CATEGORY("treasureCategoryCd"), ROOM("roomId"), 
 		BENEFICIARY("beneficiaryName"), NAME("itemName"), COST("valuationNo"), QUANTITY("quantityNo"),
-		TREASURE_ITEM_ID("treasureItemId"); //ownerMemberId comes off session, in the VO constructor.
+		TREASURE_ITEM_ID("treasureItemId"), PRIVATE_INVENTORY_ITEM("privacyFlag");
+		//ownerMemberId is calculated in the action and put on the VO prior to saving
 
 		private String reqParam;
 		private CoreField(String reqParam) { this.reqParam = reqParam; }

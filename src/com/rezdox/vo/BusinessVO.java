@@ -529,4 +529,8 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	public void setSubCategoryName(String subCategoryName) {
 		this.subCategoryName = subCategoryName;
 	}
+
+	public boolean isShared() {
+		return BusinessStatus.SHARED == getStatus();
+	}
 }
