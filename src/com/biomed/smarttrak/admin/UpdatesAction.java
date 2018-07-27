@@ -115,6 +115,14 @@ public class UpdatesAction extends ManagementAction {
 		public String getText() {
 			return this.text;
 		}
+		public static UpdateType getFromCode(int typeCd) {
+			for(UpdateType type : UpdateType.values()){
+				if (type.getVal() == typeCd){
+					return type;
+				}
+			}
+			return null;
+		}
 	}
 
 	public UpdatesAction() {
