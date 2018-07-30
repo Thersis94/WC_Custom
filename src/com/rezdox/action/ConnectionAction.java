@@ -111,7 +111,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 			String sendingId = StringUtil.checkVal(req.getParameter("sendingId"));
 
 			if (MEMBER.equalsIgnoreCase(StringUtil.checkVal(req.getParameter("receiverType")))) {
-				putModuleData(searchMembers(search,sendingId));
+				putModuleData(searchMembers(search,sendingId, false));
 			} else {
 				putModuleData(searchBusiness(search,sendingId));
 			}
@@ -259,8 +259,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param sendingId 
 	 * @return
 	 */
-	private List<MemberVO> searchMembers(String search, String sendingId) {
-		log.debug("searching members");
+	public List<MemberVO> searchMembers(String search, String sendingId, boolean isConnected) {
+		log.debug("searching members for matches to " + search);
 		StringBuilder sql = new StringBuilder(250);
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
@@ -268,7 +268,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		sql.append("select * from ").append(schema).append("rezdox_member where LOWER(first_nm || ' ' || last_nm) like ? ");
 		params.add("%"+search.toLowerCase()+"%");
-		sql.append("and member_id != ? and member_id not in ( select case  ");
+		sql.append("and member_id != ? and member_id ");
+		sql.append(isConnected ? "" : "not").append(" in ( select case  "); //boolean toggle allows this method to be reused by SharingAction
 		params.add(idParts[1]);
 
 		if ("m".equalsIgnoreCase(idParts[0])) {
