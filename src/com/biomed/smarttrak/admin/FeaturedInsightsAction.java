@@ -74,7 +74,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 	private void loadFromDb(ActionRequest req) throws ActionException {
 		InsightAction ai = new InsightAction();
 		req.setParameter("featuredFlg", "1");
-		req.setParameter("sort", "sectionFlg");
+		req.setParameter("sort", "Published");
 		req.setParameter("order", "desc");
 		req.setParameter("sectionBypass", "true");
 		req.setParameter("retrieveAll", "true");
