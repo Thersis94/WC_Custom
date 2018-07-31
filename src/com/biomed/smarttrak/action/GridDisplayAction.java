@@ -189,9 +189,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 		List<SMTChartDetailVO> data;
 		if (ChartType.COLUMN == type) {
-			data = convertColumnData(grid, type, columns);
+			data = convertColumnData(grid, columns);
 		} else {
-			data = convertChartData(grid, type, columns);
+			data = convertChartData(grid, columns);
 		}
 		
 		chart.processData(data, true);
@@ -207,7 +207,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param columns
 	 * @return
 	 */
-	private List<SMTChartDetailVO> convertColumnData(GridVO grid, ChartType type, List<Integer> columns) {
+	private List<SMTChartDetailVO> convertColumnData(GridVO grid, List<Integer> columns) {
 		List<SMTChartDetailVO> data = new ArrayList<>(grid.getDetails().size());
 		List<String> series = new ArrayList<>(grid.getDetails().size());
 		for (GridDetailVO gDetail : grid.getDetails()) {
@@ -235,7 +235,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param columns
 	 * @return
 	 */
-	private List<SMTChartDetailVO> convertChartData(GridVO grid, ChartType type, List<Integer> columns) {
+	private List<SMTChartDetailVO> convertChartData(GridVO grid, List<Integer> columns) {
 		List<SMTChartDetailVO> data = new ArrayList<>(grid.getDetails().size());
 		List<String> names = new ArrayList<>();
 		
