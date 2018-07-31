@@ -189,9 +189,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 		List<SMTChartDetailVO> data;
 		if (ChartType.COLUMN == type) {
-			data = convertColumnData(grid, type, columns);
+			data = convertColumnData(grid, columns);
 		} else {
-			data = convertChartData(grid, type, columns);
+			data = convertChartData(grid, columns);
 		}
 		
 		chart.processData(data, true);
@@ -207,15 +207,21 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param columns
 	 * @return
 	 */
-	private List<SMTChartDetailVO> convertColumnData(GridVO grid, ChartType type, List<Integer> columns) {
+	private List<SMTChartDetailVO> convertColumnData(GridVO grid, List<Integer> columns) {
 		List<SMTChartDetailVO> data = new ArrayList<>(grid.getDetails().size());
 		List<String> series = new ArrayList<>(grid.getDetails().size());
 		for (GridDetailVO gDetail : grid.getDetails()) {
-			
+			// Each row needs to determine names seperately
+			List<String> names = new ArrayList<>();
 			String serie = getSerie(gDetail, series);
 			for (int i=0; i<grid.getSeries().length; i++) {
-				if (!columns .isEmpty() && !columns.contains(i+1)) continue;
-				addDetail(gDetail, data, type, i, grid, serie);
+				if (!columns.isEmpty() && !columns.contains(i+1)) continue;
+				String name = grid.getSeries()[i];
+				if (names.contains(name))
+					name = findNewName(names, name);
+				names.add(name);
+				
+				addDetail(gDetail, data, i, grid, serie, name);
 			}
 		}
 		return data;
@@ -229,21 +235,37 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param columns
 	 * @return
 	 */
-	private List<SMTChartDetailVO> convertChartData(GridVO grid, ChartType type, List<Integer> columns) {
+	private List<SMTChartDetailVO> convertChartData(GridVO grid, List<Integer> columns) {
 		List<SMTChartDetailVO> data = new ArrayList<>(grid.getDetails().size());
+		List<String> names = new ArrayList<>();
 		
 		for (GridDetailVO gDetail : grid.getDetails()) {
-			
+			String name = gDetail.getLabel();
+			if (names.contains(name))
+				name = findNewName(names, name);
+			names.add(name);
 			for (int i=0; i<grid.getSeries().length; i++) {
-				if (!columns .isEmpty() && !columns.contains(i+1)) continue;
-				addDetail(gDetail, data, type, i, grid, grid.getSeries()[i]);
+				if (!columns.isEmpty() && !columns.contains(i+1)) continue;
+				addDetail(gDetail, data, i, grid, grid.getSeries()[i], name);
 			}
 		}
 		
 		return data;
 	}
 
-	
+	/**
+	 * Ensure that the current column name doesn't already exist.
+	 * @param names
+	 * @param name
+	 * @return
+	 */
+	private String findNewName(List<String> names, String name) {
+		StringBuilder newName = new StringBuilder(StringUtil.checkVal(name));
+		while (names.contains(newName.toString()))
+			newName.append(" ");
+		return newName.toString();
+	}
+
 	/**
 	 * Create a unique series name for the row to prevent rows from being overwitten
 	 * by items with the same serie.
@@ -270,18 +292,12 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param series 
 	 * @param stacked
 	 */
-	private void addDetail(GridDetailVO gDetail, List<SMTChartDetailVO> data, ChartType type, int i, GridVO grid, String serie) {
+	private void addDetail(GridDetailVO gDetail, List<SMTChartDetailVO> data, int i, GridVO grid, String serie, String name) {
 		if (i>=gDetail.getValues().length || (StringUtil.isEmpty(grid.getSeries()[i]) 
 				&& StringUtil.isEmpty(gDetail.getValues()[i]))) return;
 		SMTChartDetailVO cDetail = new SMTChartDetailVO();
-		if (ChartType.COLUMN == type) {
-			// Stacked column charts need to have thier series and detail swapped in order to stack properly
-			cDetail.setLabel(grid.getSeries()[i]);
-			cDetail.setSerie(serie);
-		} else {
-			cDetail.setLabel(gDetail.getLabel());
-			cDetail.setSerie(serie);
-		}
+		cDetail.setLabel(name);
+		cDetail.setSerie(serie);
 		cDetail.setOrder(gDetail.getOrder());
 		cDetail.setValue(gDetail.getValues()[i]);
 		data.add(cDetail);
@@ -542,6 +558,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	
 	private List<String> loadColors(int count) {
 		if (count > 12) count = 12;
+		if (count == 0) count = 1;
 		String palletName = "COL_" + count;
 		ColorTheme pallet = ColorTheme.valueOf(palletName);
 		return pallet.getPallet();

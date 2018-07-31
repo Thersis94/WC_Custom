@@ -148,7 +148,7 @@ public class GridExcelManager {
 		String detailType = StringUtil.isEmpty(detail.getDetailType()) ? RowStyle.DATA.toString() : detail.getDetailType();
 		//remove any non-relevant characters(currency symbols, commas, percents, etc.) If empty, not a number value
 		String numericValue = StringUtil.checkVal(value).replaceAll("[^\\d\\.]","");
-		if(!StringUtil.isEmpty(numericValue) && !RowStyle.HEADING.equals(RowStyle.valueOf(detailType))) {
+		if(!StringUtil.isEmpty(numericValue) && !RowStyle.HEADING.equals(RowStyle.valueOf(detailType)) && (value.length() - numericValue.length()) < 4) {
 			boolean isPercent = setNumericValue(StringUtil.checkVal(value), numericValue, cell);
 
 			//determine if a currency symbol is present
