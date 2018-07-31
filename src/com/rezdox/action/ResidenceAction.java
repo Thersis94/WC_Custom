@@ -677,7 +677,7 @@ public class ResidenceAction extends SBActionAdapter {
 		}
 
 		// Add additional non-extended attributes
-		ResidenceAttributeVO attribute = new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE, property.getValueEstimate().toString());
+		ResidenceAttributeVO attribute = new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE, StringUtil.checkVal(property.getValueEstimate(), null));
 		attributes.add(attribute);
 
 		return attributes;
@@ -752,7 +752,7 @@ public class ResidenceAction extends SBActionAdapter {
 	private void applyZestimateUpdate(ResidenceVO residence, ResidenceAttributeVO zestimate) {
 		try {
 			ZillowPropertyVO property = new ZillowAPIManager().retrieveZillowId(residence);
-			zestimate.setValueText(property.getValueEstimate().toString());
+			zestimate.setValueText(StringUtil.checkVal(property.getValueEstimate(), null));
 		} catch (InvalidDataException e) {
 			log.error("Could not retrieve Zestimate data for the residence", e);
 		}
