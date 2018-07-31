@@ -253,7 +253,12 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		return data;
 	}
 
-	
+	/**
+	 * Ensure that the current column name doesn't already exist.
+	 * @param names
+	 * @param name
+	 * @return
+	 */
 	private String findNewName(List<String> names, String name) {
 		StringBuilder newName = new StringBuilder(StringUtil.checkVal(name));
 		while (names.contains(newName.toString()))
