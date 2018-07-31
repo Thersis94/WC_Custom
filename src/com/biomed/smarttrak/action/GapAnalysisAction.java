@@ -36,6 +36,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -151,7 +152,15 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			if("delete".equals(req.getParameter("buildType"))) {
 				dbp.delete(new SaveStateVO(req));
 			}else {
-				dbp.save(new SaveStateVO(req));
+				SaveStateVO ssv = new SaveStateVO(req);
+				if(StringUtil.isEmpty(ssv.getSaveStateId())) {
+					ssv.setSaveStateId(new UUIDGenerator().getUUID());
+					ssv.fixSaveState();
+					dbp.insert(ssv);
+				} else {
+					dbp.update(ssv);
+				}
+				this.putModuleData(ssv);
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Problem Saving State Object.", e.getCause());
