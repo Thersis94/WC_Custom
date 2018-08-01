@@ -45,7 +45,8 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private String emailAddressText;
 	private String websiteUrl;
 	private String photoUrl;
-	private Map<String, PhotoVO> adFileUrls;
+	private String adFileUrl;
+	private Map<String, PhotoVO> carouselFileUrls;
 	private int privacyFlag;
 	private Map<String, MemberVO> members;
 	private Map<String, String> attributes;
@@ -66,7 +67,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 		super();
 		members = new HashMap<>();
 		attributes = new HashMap<>();
-		adFileUrls = new HashMap<>();
+		carouselFileUrls = new HashMap<>();
 		mainPhone = new PhoneVO();
 		altPhone = new PhoneVO();
 	}
@@ -201,7 +202,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	/**
 	 * @return the first photoUrl if available.
 	 */
-	@Column(name="photo_url")
+	@Column(name="photo_url", isReadOnly=true)
 	public String getPhotoUrl() {
 		return photoUrl;
 	}
@@ -216,21 +217,20 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	/**
 	 * @return the first adFileUrl if available.
 	 */
+	@Column(name="ad_file_url", isReadOnly=true)
 	public String getAdFileUrl() {
-		return !adFileUrls.isEmpty() ? new ArrayList<>(adFileUrls.values()).get(0).getImageUrl() : null;
+		return adFileUrl; 
 	}
 
 	/**
-	 * @return the adFileUrls
-	 */
-	public Collection<PhotoVO> getAdFileUrls() {
-		return adFileUrls.values();
-	}
-	/**
 	 * @param adFileUrl the adFileUrl to set
 	 */
-	public void setAdFileUrls(Map<String, PhotoVO> adFileUrls) {
-		this.adFileUrls = adFileUrls;
+	public void setAdFileUrl(String adFileUrl) {
+		this.adFileUrl = adFileUrl;
+	}
+
+	public Collection<PhotoVO> getCarouselFileUrls() {
+		return carouselFileUrls.values();
 	}
 
 	/**
@@ -239,8 +239,8 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	@BeanSubElement
 	public void addPhoto(PhotoVO p) {
-		if(p != null && AD_FILE_KEY.equals(p.getDescriptionText()) && !adFileUrls.containsKey(p.getPhotoId())) {
-			adFileUrls.put(p.getPhotoId(), p);
+		if(p != null && AD_FILE_KEY.equals(p.getDescriptionText()) && !carouselFileUrls.containsKey(p.getPhotoId())) {
+			carouselFileUrls.put(p.getPhotoId(), p);
 		}
 	}
 
@@ -292,7 +292,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 			return;
 		owner = new ArrayList<>(members.values()).get(0);
 	}
-	
+
 	public MemberVO getOwner() {
 		return owner;
 	}
