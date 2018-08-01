@@ -6,9 +6,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 //WC custom
 import com.biomed.smarttrak.admin.AccountAction;
@@ -27,7 +29,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
+import com.siliconmtn.util.user.LastNameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -165,7 +167,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		sql.append("select ac.account_id, ac.account_nm, ac.start_dt, ac.expiration_dt, ac.status_no, ac.classification_id, ac.type_id, ");
 		sql.append("us.user_id, us.profile_id, us.status_cd, us.active_flg, us.acct_owner_flg, ");
 		sql.append("pf.first_nm, pf.last_nm, pfa.country_cd, ");
-		sql.append("rd.register_field_id, rd.value_txt ");
+		sql.append("rd.register_field_id, rd.value_txt, rfo.option_desc ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us ");
 		sql.append("on ac.account_id = us.account_id ");
@@ -180,6 +182,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			sql.append("?");
 		}
 		sql.append(") ");
+		sql.append("left join register_field_option rfo on rd.value_txt = rfo.option_value_txt  and rfo.register_field_id = rd.register_field_id ");
 		sql.append("order by ac.account_nm, us.profile_id, rd.register_field_id");
 		log.debug("accounts users retrieval SQL: " + sql.toString());
 		return sql;
@@ -230,7 +233,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			}
 
 			// add registration data from row for this user.
-			processUserRegistrationField(account, user,rs.getString("register_field_id"),rs.getString("value_txt"));
+			processUserRegistrationField(account, user,rs.getString("register_field_id"),rs.getString("value_txt"), rs.getString("option_desc"));
 
 			prevAcctId = currAcctId;
 			prevPid = currPid;
@@ -241,6 +244,11 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		if (prevAcctId != null) {
 			checkDivisions(user, account);
 			accounts.add(account);
+		}
+		
+		for (AccountUsersVO acct : accounts) {
+			for (Entry<String, List<UserVO>> division  : acct.getDivisions().entrySet())
+				Collections.sort(division.getValue(), new LastNameComparator());
 		}
 
 		return accounts;
@@ -254,7 +262,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	 */
 	private void checkDivisions(UserVO user, AccountUsersVO account) {
 		if (!user.getAttributes().keySet().contains(RegistrationMap.DIVISIONS.getFieldId()))
-			addUserToAccountDivisions(account.getDivisions(), user, "");
+			addUserToAccountDivisions(account.getDivisions(), user, "No Division");
 	}
 
 	/**
@@ -266,7 +274,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void processUserRegistrationField(AccountUsersVO acct, UserVO user, 
-			String currFieldId, String currFieldVal) {
+			String currFieldId, String currFieldVal, String fieldName) {
 		if (StringUtil.isEmpty(currFieldId) || StringUtil.isEmpty(currFieldVal)) return;
 		// process reg field value
 		if (RegistrationMap.DIVISIONS.getFieldId().equals(currFieldId)) {
@@ -282,7 +290,8 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			user.addAttribute(currFieldId, divs);
 
 			// add to the account's division map
-			addUserToAccountDivisions(acct.getDivisions(),user, currFieldVal);
+			log.debug(currFieldId+"|"+fieldName);
+			addUserToAccountDivisions(acct.getDivisions(),user, fieldName);
 
 		} else {
 			user.addAttribute(currFieldId, currFieldVal);
@@ -347,10 +356,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			log.warn("Warning: Unable to decrypt profile fields for profile ID " + user.getProfileId());
 		}
 		
-		acct.countLicenseType(user.getLicenseType());
-		if (user.getStatusFlg() == Status.OPEN.getCode()
-				&& (LicenseType.ACTIVE.getCode().equals(user.getLicenseType()) || LicenseType.EXTRA.getCode().equals(user.getLicenseType()))) 
-			acct.incrementOpenSeatsCnt();
+		acct.countLicenseType(user);
 		
 		return user;
 	}
