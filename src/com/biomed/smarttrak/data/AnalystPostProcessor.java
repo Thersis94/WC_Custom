@@ -125,9 +125,6 @@ public class AnalystPostProcessor extends SBActionAdapter {
 			//Save the TicketVO
 			db.save(t);
 
-			//Update the TicketId
-			t.setPrimaryKey(db.getGeneratedPKId());
-
 			//Set it on the Ticket Activity VO
 			tav.setTicketId(t.getTicketId());
 

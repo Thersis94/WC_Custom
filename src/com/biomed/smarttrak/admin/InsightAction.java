@@ -793,7 +793,7 @@ public class InsightAction extends ManagementAction {
 	private void saveInsight(DBProcessor db, InsightVO ivo, boolean isInsert) throws ActionException {
 		try {
 			db.save(ivo);
-			setInsightIdOnInsert(ivo, db, isInsert);
+			setInsightIdOnInsert(ivo, isInsert);
 			saveSections(ivo);
 
 		} catch (Exception e) {
@@ -852,17 +852,14 @@ public class InsightAction extends ManagementAction {
 
 	/**
 	 * sets the new insight vo on insert
-	 * @param db 
 	 * @param u 
 	 * @param isInsert
 	 */
-	private void setInsightIdOnInsert(InsightVO ivo, DBProcessor db, boolean isInsert) {
+	private void setInsightIdOnInsert(InsightVO ivo, boolean isInsert) {
 		if (!isInsert) return; //nothing to do if this is not an insert
 		
-		String insightId = ivo.getInsightId() != null ? ivo.getInsightId() : db.getGeneratedPKId();
-		ivo.setInsightId(db.getGeneratedPKId());
 		for(InsightXRVO uxr : ivo.getInsightSections()) {
-			uxr.setInsightId(insightId);
+			uxr.setInsightId(ivo.getInsightId());
 		}
 		
 	}
