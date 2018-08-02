@@ -55,7 +55,7 @@ public class APIValidator {
 		byte[] data = "Testing ...".getBytes();
 		
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
-		byte[] res = conn.postDocument(url, data, "application/json");
+		conn.postDocument(url, data, "application/json");
 	}
 	
 	/**

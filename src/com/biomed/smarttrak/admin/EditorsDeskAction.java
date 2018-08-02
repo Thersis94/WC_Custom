@@ -52,7 +52,7 @@ public class EditorsDeskAction extends SBActionAdapter {
 
 		try {
 			new ChangeLogUtil(dbConn, attributes).updateApprovalStatus(wcSyncId, profileId);
-		} catch (InvalidDataException | DatabaseException e) {
+		} catch (DatabaseException e) {
 			log.error("Problem updating Approval Record.", e);
 		}
 	}
