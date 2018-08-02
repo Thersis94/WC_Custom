@@ -63,8 +63,7 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 		if (!req.hasParameter(WIDGET_ACTION)) return;
 		
 		String key = StringUtil.checkVal(req.getParameter(WIDGET_ACTION));
-		
-		loadAction(key).retrieve(req);
+		loadActionByType(key).retrieve(req);
 	}
 	
 	/*
@@ -77,7 +76,6 @@ public class ProjectFacadeAction extends FacadeActionAdapter {
 		if (!req.hasParameter(WIDGET_ACTION)) return;
 		
 		String key = StringUtil.checkVal(req.getParameter(WIDGET_ACTION));
-		
-		loadAction(key).build(req);
+		loadActionByType(key).build(req);
 	}
 }
