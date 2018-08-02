@@ -101,6 +101,6 @@ public class FinancialDashAction extends FacadeActionAdapter {
 		req.setParameter(AdminControllerAction.ACTION_TYPE, actionType);
 
 		log.debug("Loading FD Action: " + actionType);
-		return super.loadAction(actionType);
+		return super.loadActionByType(actionType);
 	}
 }

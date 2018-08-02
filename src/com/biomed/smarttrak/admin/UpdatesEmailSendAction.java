@@ -14,6 +14,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.DatabaseException;
 // WC EmailCampaigns
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -128,8 +129,8 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 
 		//perform the email send
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
-		Map<String, String> recipients = new HashMap<>();
-		recipients.put((String)emailParams.get(UpdatesEditionAction.PROFILE_ID), (String)emailParams.get("emailAddress"));
+		List<EmailRecipientVO> recipients = new ArrayList<>();
+		recipients.add(new EmailRecipientVO((String) emailParams.get(UpdatesEditionAction.PROFILE_ID), (String)emailParams.get("emailAddress"), EmailRecipientVO.TO));
 		ecbu.sendMessage(emailParams, recipients, campInstId);
 	}
 

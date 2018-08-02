@@ -19,6 +19,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -134,10 +135,10 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 	 * Get the profile id of the supplied admin email
 	 * @return
 	 */
-	private Map<String, String> getAdminEmail() {
+	private List<EmailRecipientVO> getAdminEmail() {
 		String sql = "SELECT profile_id from profile where search_email_txt = ? ";
 		String emailAddress = StringUtil.checkVal(attributes.get(FEEDBACK_ADMIN_EMAIL));
-		Map<String, String> recipient = new HashMap<>();
+		List<EmailRecipientVO> recipient = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
 			StringEncrypter se = new StringEncrypter(encKey);
@@ -146,7 +147,7 @@ public class SmarttrakRSSFeedAction extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			
 			if (rs.next()) {
-				recipient.put(rs.getString("profile_id"), emailAddress);
+				recipient.add(new EmailRecipientVO(rs.getString("profile_id"), emailAddress, EmailRecipientVO.TO));
 			}
 			
 		} catch (Exception e) {

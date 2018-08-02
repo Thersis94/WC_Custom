@@ -859,10 +859,8 @@ public class InsightAction extends ManagementAction {
 	private void setInsightIdOnInsert(InsightVO ivo, DBProcessor db, boolean isInsert) {
 		if (!isInsert) return; //nothing to do if this is not an insert
 		
-		String insightId = ivo.getInsightId() != null ? ivo.getInsightId() : db.getGeneratedPKId();
-		ivo.setInsightId(db.getGeneratedPKId());
 		for(InsightXRVO uxr : ivo.getInsightSections()) {
-			uxr.setInsightId(insightId);
+			uxr.setInsightId(ivo.getInsightId());
 		}
 		
 	}
