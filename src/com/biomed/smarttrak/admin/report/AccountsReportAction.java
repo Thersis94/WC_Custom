@@ -108,6 +108,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			ps.setString(++idx, Type.FULL.getId());
 			ps.setString(++idx, LicenseType.INACTIVE.getCode());
 			ps.setString(++idx, LicenseType.INACTIVE.getCode());
+			ps.setString(++idx, LicenseType.COMPUPDATES.getCode());
 			ps.setInt(++idx, Status.INACTIVE.getCode());
 			for (int x = 0; x < regFields.size(); x++) {
 				ps.setString(++idx, regFields.get(x));
@@ -171,7 +172,7 @@ public class AccountsReportAction extends SimpleActionAdapter {
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us ");
 		sql.append("on ac.account_id = us.account_id ");
-		sql.append("and ac.type_id = ? and ac.status_no != ? and us.status_cd != ? and us.active_flg != ? ");
+		sql.append("and ac.type_id = ? and ac.status_no != ? and us.status_cd != ? and us.status_cd != ? and us.active_flg != ? ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
 		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
@@ -290,7 +291,6 @@ public class AccountsReportAction extends SimpleActionAdapter {
 			user.addAttribute(currFieldId, divs);
 
 			// add to the account's division map
-			log.debug(currFieldId+"|"+fieldName);
 			addUserToAccountDivisions(acct.getDivisions(),user, fieldName);
 
 		} else {
