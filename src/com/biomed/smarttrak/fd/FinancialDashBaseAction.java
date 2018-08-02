@@ -22,6 +22,7 @@ import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.biomed.smarttrak.vo.UserVO;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -32,6 +33,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -107,9 +109,14 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		dash.setCurrentQtrYear(dashType, latest);
 		dash.setData(req, sections);
 		dash.setBehindLatest(latest);
-		
-		if (!req.hasParameter("isJson"))
-			req.setAttribute("sectionTree", sections);
+
+		//Load filtered Sections from FinancialDashHierarchyAction
+		if (!req.hasParameter("isJson")) {
+			FinancialDashHierarchyAction fdha = (FinancialDashHierarchyAction) ActionControllerFactoryImpl.loadAction(FinancialDashHierarchyAction.class.getName(), this);
+			fdha.retrieve(req);
+			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+			req.setAttribute("sectionTree", mod.getActionData());
+		}
 
 		// Filter out financial data requests (i.e initial page load vs. json call).
 		// Financial data is only needed on a json call or report request.
