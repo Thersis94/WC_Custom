@@ -26,7 +26,11 @@ import net.sf.json.JSONObject;
 public class MIREmailMessageVO extends EmailMessageVO {
 
 	private static final long serialVersionUID = 4872242395454435789L;
+	private static final String REGION_EMAILS = "dpySynMirRegionEmails";
 	private static final String REGION = "region";
+	private static final String SUBREGION = "subRegion";
+	private static final String REGION_CANADA = "North America Canada";
+	private static final String SUBREGION_CANADA = "canada";
 
 	private MIRSubmissionVO vo;
 	private SiteVO site;
@@ -41,14 +45,15 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		setSubject("MIR Submission");
 		setInstance(InstanceName.DEPUY);
-
 		//attach any uploaded files:
 		if (req.hasFiles()) {
 			for (FilePartDataBean file : req.getFiles())
 				addAttachment(file.getFileName(), file.getFileData());
 		}
 
-		String rcpt = parseRecipient(req.getParameter(REGION), (String)attributes.get("dpySynMirRegionEmails"));
+		String rcpt = parseRecipient(req.getParameter(REGION),
+				req.getParameter(SUBREGION), (String)attributes.get(REGION_EMAILS));
+
 		try {
 			addRecipient(rcpt);
 			setFrom(site.getMainEmail());
@@ -65,13 +70,19 @@ public class MIREmailMessageVO extends EmailMessageVO {
 	 * @param string
 	 * @return
 	 */
-	private String parseRecipient(String region, String jsonObjStr) {
+	private String parseRecipient(String region, String subRegion, String jsonObjStr) {
 		String email = null;
+		String mailRegion = region;
+
+		// If subregion is Canada, use a different region to obtain a Canadian-specific recipient.
+		if (SUBREGION_CANADA.equalsIgnoreCase(subRegion))
+			mailRegion = REGION_CANADA;
+
 		//this array comes from sb_config - we can trust it to not be null.
 		JSONArray regionArr = JSONArray.fromObject(jsonObjStr);
 		for (int x=0; x < regionArr.size(); x++) {
 			JSONObject obj = regionArr.getJSONObject(x);
-			if (obj.optString(REGION).equalsIgnoreCase(region)) {
+			if (obj.optString(REGION).equalsIgnoreCase(mailRegion)) {
 				return obj.optString("email");
 			} else if ("default".equals(obj.optString(REGION))) {
 				//save the default incase we need a fallback plan.
