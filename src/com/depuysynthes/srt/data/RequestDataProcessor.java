@@ -284,32 +284,13 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		//If we saved the Request, Process the Address.
 		if(resCnt > 0) {
 
-			//Prep Request Address Record Update Fields
-			List<String> fields2 = new ArrayList<>();
-			fields2.add("address_txt");
-			fields2.add("address2_txt");
-			fields2.add("city_nm");
-			fields2.add("state_cd");
-			fields2.add("zip_cd");
-
-			//Build Request Address Update Query.
-			StringBuilder sql2 = new StringBuilder(300);
-			cnt = 0;
-
-			sql2.append(DBUtil.UPDATE_CLAUSE).append(schema).append("DPY_SYN_SRT_REQUEST_ADDRESS set ");
-			for (String field : fields2) {
-				sql2.append(cnt++ > 0 ? ", " : "").append(field).append(" = ? ");
-			}
-			sql2.append(DBUtil.WHERE_CLAUSE).append("request_id = ?");
-			fields2.add("request_id");
-
 			//Save Request Address.
 			SRTRequestAddressVO reqAddrVO = new SRTRequestAddressVO(req);
 			DBProcessor dbp2 = new DBProcessor(dbConn, schema);
-			resCnt = dbp2.executeSqlUpdate(sql2.toString(), reqAddrVO, fields2);
-
-			//Check if we saved the Request Address.
-			if(resCnt == 0) {
+			try {
+				dbp2.save(reqAddrVO);
+			} catch (InvalidDataException e) {
+				log.error("Error Saving Address", e);
 				throw new com.siliconmtn.db.util.DatabaseException("Unable to save Request Address");
 			}
 		} else {
