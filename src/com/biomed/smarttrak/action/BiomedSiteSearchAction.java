@@ -9,6 +9,7 @@ import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -30,6 +31,11 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @since Apr 11, 2017
  ****************************************************************************/
 public class BiomedSiteSearchAction extends SBActionAdapter {
+	
+	private static final String[] SMARTSEARCH_OVERRIDES = new String[]{"indexType", "allysearch_ss", "shortnm_s", "companyshortnm_s", 
+			"productnames_ss", "productshortnames_ss", "productaliasnames_ss", "companytickersearch_s", "companyaliassearch_s", 
+			"metaKeywords", "companyshortnm_s", "ticker_s", "productnames_ss", "productshortnames_ss", "productaliasnames_ss", 
+			"contents", "alias_s", "shortnmsearch_s", "companysearch_s", "parentnm_s"};
 
 	public BiomedSiteSearchAction() {
 		super();
@@ -52,7 +58,6 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		//fail fast is there's no search going on
 		if (!req.hasParameter("searchData")) return;
-		
 		List<SolrResponseVO> resp = new ArrayList<>();
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 
@@ -64,20 +69,36 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 		req.setParameter("pmid", mod.getPageModuleId());
 		resp.add(getResults(req));
 
-		//skip the 2nd search if we're just doing an "MLT" on companies and products.
-		if (!req.hasParameter("amid")) {
-			req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + BiomedInsightIndexer.INDEX_TYPE);
-			req.setAttribute(SmarttrakSolrAction.SECTION, Section.INSIGHT);
-			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
-			resp.add(getResults(req));
+		// If fq parameters are defined use them of setting them on the update and insight searches
+		boolean hasFq = req.hasParameter("fq");
 
-			//query updates separtely from insights, because they use a different ACL
+		// Counts are always required for everything so these searches still need to be done
+		if (!hasFq)
+			req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + BiomedInsightIndexer.INDEX_TYPE);
+		req.setAttribute(SmarttrakSolrAction.SECTION, Section.INSIGHT);
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
+		resp.add(getResults(req));
+
+		//query updates separtely from insights, because they use a different ACL
+		// If fq parameters are defined use them
+		if (!hasFq)
 			req.setParameter("fq", SearchDocumentHandler.INDEX_TYPE + ":" + UpdateIndexer.INDEX_TYPE);
-			req.setAttribute(SmarttrakSolrAction.SECTION, Section.UPDATES_EDITION);
-			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
+		req.setAttribute(SmarttrakSolrAction.SECTION, Section.UPDATES_EDITION);
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
+		resp.add(getResults(req));
+		//unclear why this is needed, but it is.  If we don't flush the FQ in gets picked-up by the 1st query.  yes, illogical!  -JM- 08.29.17
+		req.setParameter("fq", null);
+		
+		// SmartSearch needs to get total results for a full search, but document information for
+		// a limited search. Do that limited search here if in a SmartSearch
+		if (Convert.formatBoolean(req.getParameter("smartSearch"))) {
+			req.setParameter("fieldOverride", SMARTSEARCH_OVERRIDES, true);
+
+			req.setAttribute(SmarttrakSolrAction.SECTION, SmarttrakSolrAction.BROWSE_SECTION);
+			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+			req.setParameter("pmid", mod.getPageModuleId());
 			resp.add(getResults(req));
-			//unclear why this is needed, but it is.  If we don't flush the FQ in gets picked-up by the 1st query.  yes, illogical!  -JM- 08.29.17
-			req.setParameter("fq", null);
+			req.setParameter("fieldOverride", null);
 		}
 		
 		putModuleData(resp);

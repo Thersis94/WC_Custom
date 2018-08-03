@@ -248,8 +248,6 @@ public class CRMAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn, (String)attributes.get(Constants.DATA_FEED_SCHEMA));
 		try {
 			db.save(customer);
-			if (StringUtil.isEmpty(customer.getCustomerId()))
-				customer.setCustomerId(db.getGeneratedPKId());
 		} catch (Exception e) {
 
 			throw new ActionException(e);

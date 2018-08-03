@@ -236,7 +236,9 @@ public class InsightAction extends SimpleActionAdapter {
 
 		// Add a ModuleType filter if typeId was passed
 		if (req.hasParameter("typeId")) {
-			data.add(SearchDocumentHandler.MODULE_TYPE + ":" + req.getParameter("typeId"));
+			for (String s : req.getParameterValues("typeId")) {
+				data.add(SearchDocumentHandler.MODULE_TYPE + ":" + s);
+			}
 		}
 
 		// put the new list of filter queries back on the request

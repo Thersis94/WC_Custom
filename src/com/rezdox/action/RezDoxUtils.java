@@ -67,6 +67,7 @@ public class RezDoxUtils {
 	public static final String REWARD_PATH = MEMBER_ROOT_PATH + "/rewards";
 	public static final String CONNECTION_PATH = MEMBER_ROOT_PATH + "/connections";
 	public static final String DIRECTORY_PATH = MEMBER_ROOT_PATH + "/directory";
+	public static final String SHARE_PATH = MEMBER_ROOT_PATH + "/share";
 	public static final String JOIN_PATH = "/join";
 	public static final String EARN_PATH = REWARD_PATH + "/earn";
 
@@ -109,6 +110,7 @@ public class RezDoxUtils {
 		CONNECTION_REQUEST, CONNECTION_REQUEST_FRM_BIZ, CONNECTION_APPROVED, WELCOME, 
 		PROJ_ACCPT_BUSINESS, PROJ_ACCPT_HOMEOWNER, 
 		PROJ_SHARE_BUSINESS, PROJ_SHARE_HOMEOWNER,
+		BUSINESS_SHARED, RESIDENCE_SHARED, //see SharingAction
 		BUSINESS_PENDING;
 	}
 

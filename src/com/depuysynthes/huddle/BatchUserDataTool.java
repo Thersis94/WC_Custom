@@ -16,7 +16,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
@@ -146,11 +145,7 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 		if (profileIds == null || profileIds.length == 0) return cnt;
 
 		ProfileRoleManager prm = new ProfileRoleManager();
-		try {
-			cnt = prm.changeRoleStatus(dbConn, SecurityController.STATUS_DISABLED, siteId, profileIds);
-		} catch (DatabaseException de) {
-			log.error("could not save profile_role records", de);
-		}
+		cnt = prm.changeRoleStatus(dbConn, SecurityController.STATUS_DISABLED, siteId, profileIds);
 		log.debug("updatd " + cnt + " database records");
 		return cnt;
 	}
