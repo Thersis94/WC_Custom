@@ -73,7 +73,7 @@ public class MyProsAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_MEMBER m on m.member_id=mxr.member_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_CATEGORY bc on a.business_category_cd=bc.business_category_cd ");
 		sql.append("where a.member_id=? ");
-		sql.append("order by a.create_dt desc");
+		sql.append("order by coalesce(a.update_dt, a.create_dt) desc");
 		log.debug(sql);
 
 		String memberId = RezDoxUtils.getMemberId(req);
@@ -113,13 +113,14 @@ public class MyProsAction extends SimpleActionAdapter {
 	 * @param vo
 	 */
 	private void checkExisting(MyProVO vo) {
-		String sql = StringUtil.join("select my_pro_id from ", getCustomSchema(), "rezdox_my_pro where member_id=? and business_category_cd=?");
+		String sql = StringUtil.join("select my_pro_id from ", getCustomSchema(), 
+				"rezdox_my_pro where member_id=? order by coalesce(update_dt, create_dt) desc  offset 5 limit 1");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, vo.getMemberId());
-			ps.setString(2, vo.getCategoryId());
 			ResultSet rs = ps.executeQuery();
+			//if the user has 6 pros, update the incoming record so it replaces the oldest one (last in this RS).
 			if (rs.next())
 				vo.setMyProId(rs.getString(1));
 

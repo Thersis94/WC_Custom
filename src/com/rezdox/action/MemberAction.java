@@ -57,6 +57,9 @@ import com.smt.sitebuilder.security.UserLogin;
  ****************************************************************************/
 public class MemberAction extends SimpleActionAdapter {
 
+	public static final String REQ_MEMBER_ID = "memberId";
+
+
 	public MemberAction() {
 		super();
 	}
@@ -144,7 +147,7 @@ public class MemberAction extends SimpleActionAdapter {
 
 		//support deleting a member entirely
 		if (req.hasParameter("deleteUser")) {
-			req.setParameter("memberId", member.getMemberId());
+			req.setParameter(REQ_MEMBER_ID, member.getMemberId());
 			saveMember(req, true);
 			CookieUtil.remove(req, Constants.USER_COOKIE);
 			session.invalidate();

@@ -130,7 +130,7 @@ public class ProjectShareAction extends SimpleActionAdapter {
 		sql.append("where p.project_id=?");
 		log.debug(sql);
 
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
 		List<BusinessVO> data = dbp.executeSelect(sql.toString(), Arrays.asList(projectId), new BusinessVO());
 		return !data.isEmpty() ? data.get(0) : new BusinessVO();
 	}
@@ -153,7 +153,7 @@ public class ProjectShareAction extends SimpleActionAdapter {
 		sql.append("where p.project_id=?");
 		log.debug(sql);
 
-		DBProcessor dbp = new DBProcessor(getDBConnection());
+		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
 		List<MemberVO> data = dbp.executeSelect(sql.toString(), Arrays.asList(projectId), new MemberVO());
 		return !data.isEmpty() ? data.get(0) : new MemberVO();
 	}
