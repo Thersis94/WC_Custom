@@ -582,7 +582,6 @@ public class NoteAction extends SBActionAdapter {
 			if (vo.isNoteSaveable()) {
 				saveNote(vo, db);
 			}
-			if (vo.getNoteId() == null || vo.getNoteId().isEmpty())	vo.setNoteId(db.getGeneratedPKId());
 
 			if (!StringUtil.isEmpty(vo.getFilePathText()))
 				processProfileDocumentCreation(vo, req, user.getProfileId());

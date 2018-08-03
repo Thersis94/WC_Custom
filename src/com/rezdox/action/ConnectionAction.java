@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.rezdox.action.RewardsAction.Reward;
+import com.rezdox.action.RezDoxUtils.EmailSlug;
 import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.ConnectionReportVO;
 import com.rezdox.vo.ConnectionVO;
@@ -110,7 +111,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 			String sendingId = StringUtil.checkVal(req.getParameter("sendingId"));
 
 			if (MEMBER.equalsIgnoreCase(StringUtil.checkVal(req.getParameter("receiverType")))) {
-				putModuleData(searchMembers(search,sendingId));
+				putModuleData(searchMembers(search,sendingId, false));
 			} else {
 				putModuleData(searchBusiness(search,sendingId));
 			}
@@ -154,7 +155,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	private void generateConnCookie(ActionRequest req) {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		int count = getMemeberConnectionCount(RezDoxUtils.getMemberId(req), role != null ? role.getRoleId() : "");
-		log.debug(" found " +count+ "Connection");
+		log.debug("found " +count+ " connections");
 		//set the total in a cookie.  This may be excessive for repeat calls to the rewards page, but ensures cached data is flushed
 		CookieUtil.add(req, CONNECTION_COOKIE, String.valueOf(count), "/", -1);
 	}
@@ -172,9 +173,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 		Set<String> bizIds = new HashSet<>();
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select cast(count(*) as int) as total_rows_no  from ").append(schema).append("rezdox_connection ");
-		sql.append("where (");
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("select cast(sum(cnt) as int) as total_rows_no from (");
 
 		//if not residence only, include their businesses
 		if (!RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(roleId)) {
@@ -185,7 +185,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 			if (!bizIds.isEmpty()) {
 				printedBiz = true;
 				String qMarks = DBUtil.preparedStatmentQuestion(bizIds.size());
-				sql.append("sndr_business_id in (").append(qMarks).append(") or rcpt_business_id in (").append(qMarks).append(") ");
+				sql.append("select count(*) as cnt  from ").append(schema).append("rezdox_connection where ");
+				sql.append("(sndr_business_id in (").append(qMarks).append(") or rcpt_business_id in (").append(qMarks).append(")) and approved_flg=1 ");
 				params.addAll(bizIds);
 				params.addAll(bizIds);
 			}
@@ -193,14 +194,14 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		//not business only - include their personal account
 		if (!RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(roleId)) {
-			if (printedBiz) sql.append("or ");
-			sql.append("sndr_member_id=? or rcpt_member_id=? ");
+			if (printedBiz) sql.append(DBUtil.UNION);
+			sql.append("select count(*) as cnt  from ").append(schema).append("rezdox_connection ");
+			sql.append("where (sndr_member_id=? or rcpt_member_id=? ) and approved_flg=1 ");
 			params.add(memberId);
 			params.add(memberId);
 		}
-
-		sql.append(") and approved_flg=1");
-		log.debug(sql + "|"+params );
+		sql.append(") a"); //close shell/sumation query
+		log.debug(sql + " " + params);
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		List<SQLTotalVO> data = dbp.executeSelect(sql.toString(), params, new SQLTotalVO());
@@ -258,8 +259,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param sendingId 
 	 * @return
 	 */
-	private List<MemberVO> searchMembers(String search, String sendingId) {
-		log.debug("searching members");
+	public List<MemberVO> searchMembers(String search, String sendingId, boolean isConnected) {
+		log.debug("searching members for matches to " + search);
 		StringBuilder sql = new StringBuilder(250);
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
@@ -267,7 +268,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		sql.append("select * from ").append(schema).append("rezdox_member where LOWER(first_nm || ' ' || last_nm) like ? ");
 		params.add("%"+search.toLowerCase()+"%");
-		sql.append("and member_id != ? and member_id not in ( select case  ");
+		sql.append("and member_id != ? and member_id ");
+		sql.append(isConnected ? "" : "not").append(" in ( select case  "); //boolean toggle allows this method to be reused by SharingAction
 		params.add(idParts[1]);
 
 		if ("m".equalsIgnoreCase(idParts[0])) {
@@ -349,7 +351,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("pa.city_nm, pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, b.create_dt, 'MEMBER' as category_cd, '' as sub_category_cd, approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm) as sortable_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.rcpt_member_id = b.member_id ");
-		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" profile_address pa on b.profile_id = pa.profile_id ");
 		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		//getting the records where target id was sent a connection by an other memeber
@@ -358,7 +360,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("pa.city_nm, pa.state_cd, '', cast(0 as numeric) as rating, b.create_dt, 'MEMBER', '' as sub_category_cd, approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm)  ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A );
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.sndr_member_id = b.member_id ");
-		sql.append("inner join profile_address pa on b.profile_id = pa.profile_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" profile_address pa on b.profile_id = pa.profile_id ");
 		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		//getting the records where target id sent a connection to a business
@@ -552,7 +554,9 @@ public class ConnectionAction extends SimpleActionAdapter {
 			rcpts.add(new EmailRecipientVO(entry.getKey(), entry.getValue(), EmailRecipientVO.TO));
 
 		// Send the email notification
-		emailer.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.CONNECTION_REQUEST.name());
+		EmailSlug slug = !StringUtil.isEmpty(cvo.getSenderBusinessId()) ? 
+				EmailSlug.CONNECTION_REQUEST_FRM_BIZ : EmailSlug.CONNECTION_REQUEST;
+		emailer.sendMessage(dataMap, rcpts, slug.name());
 
 		// Add the browser notification
 		String notifyProfileId = emailMap.entrySet().iterator().next().getKey();

@@ -105,7 +105,6 @@ public class RSSTermsAction extends SBActionAdapter {
 	 * Helper method manages loading Filter Terms.
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	public List<RSSFilterTerm> loadTerms(String filterTermId, String filterTypeCode, String feedGroupCd) {
 		List<Object> vals = new ArrayList<>();
 		if(!StringUtil.isEmpty(filterTermId)) {

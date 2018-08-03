@@ -1,4 +1,4 @@
-package com.biomed.smarttrak.action.rss.util;
+package com.biomed.smarttrak.action.rss.parser;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -6,6 +6,8 @@ import java.util.Queue;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
+
+import com.biomed.smarttrak.action.rss.util.PubMedSearchResultVO;
 
 /****************************************************************************
  * <b>Title</b>: PubmedListSaxHandler.java
