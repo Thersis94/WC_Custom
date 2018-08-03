@@ -155,11 +155,21 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 	 * @param request - The SRTRequestVO to be saved.
 	 * @param address - The SRTRequestAddressVO to be saved.
 	 * @param project - The SRTProjectVO to be saved.
+	 * @throws DatabaseException 
 	 */
-	public void saveRequestData(SRTRequestVO request, SRTRequestAddressVO address, SRTProjectVO project) {
-		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+	public void saveRequestData(SRTRequestVO request, SRTRequestAddressVO address, SRTProjectVO project) throws DatabaseException {
+		boolean isAutoCommit = false;
 
+		//Wrap entire Data Process in a DB Transactions.
 		try {
+
+			//Store current Commit Status.
+			isAutoCommit = dbConn.getAutoCommit();
+
+			//Turn off Auto Commit
+			dbConn.setAutoCommit(false);
+
+			DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 
 			//Save the SRTRequestVO
 			dbp.save(request);
@@ -181,7 +191,14 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 			}
 
 		} catch(Exception e) {
-			log.error("Could not save SRT Request", e);
+			log.error("Could not save SRT Project", e);
+			DBUtil.rollback(dbConn);
+			throw new DatabaseException("Error Saving SRT Request.", e);
+		} finally {
+
+			//If database was in autocommit mode originally, set it back.
+			if(isAutoCommit)
+				DBUtil.setAutoCommit(dbConn, isAutoCommit);
 		}
 	}
 
