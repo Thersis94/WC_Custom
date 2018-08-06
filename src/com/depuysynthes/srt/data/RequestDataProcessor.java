@@ -155,11 +155,21 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 	 * @param request - The SRTRequestVO to be saved.
 	 * @param address - The SRTRequestAddressVO to be saved.
 	 * @param project - The SRTProjectVO to be saved.
+	 * @throws DatabaseException 
 	 */
-	public void saveRequestData(SRTRequestVO request, SRTRequestAddressVO address, SRTProjectVO project) {
-		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+	public void saveRequestData(SRTRequestVO request, SRTRequestAddressVO address, SRTProjectVO project) throws DatabaseException {
+		boolean isAutoCommit = false;
 
+		//Wrap entire Data Process in a DB Transactions.
 		try {
+
+			//Store current Commit Status.
+			isAutoCommit = dbConn.getAutoCommit();
+
+			//Turn off Auto Commit
+			dbConn.setAutoCommit(false);
+
+			DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 
 			//Save the SRTRequestVO
 			dbp.save(request);
@@ -181,7 +191,14 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 			}
 
 		} catch(Exception e) {
-			log.error("Could not save SRT Request", e);
+			log.error("Could not save SRT Project", e);
+			DBUtil.rollback(dbConn);
+			throw new DatabaseException("Error Saving SRT Request.", e);
+		} finally {
+
+			//If database was in autocommit mode originally, set it back.
+			if(isAutoCommit)
+				DBUtil.setAutoCommit(dbConn, isAutoCommit);
 		}
 	}
 
@@ -284,32 +301,13 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		//If we saved the Request, Process the Address.
 		if(resCnt > 0) {
 
-			//Prep Request Address Record Update Fields
-			List<String> fields2 = new ArrayList<>();
-			fields2.add("address_txt");
-			fields2.add("address2_txt");
-			fields2.add("city_nm");
-			fields2.add("state_cd");
-			fields2.add("zip_cd");
-
-			//Build Request Address Update Query.
-			StringBuilder sql2 = new StringBuilder(300);
-			cnt = 0;
-
-			sql2.append(DBUtil.UPDATE_CLAUSE).append(schema).append("DPY_SYN_SRT_REQUEST_ADDRESS set ");
-			for (String field : fields2) {
-				sql2.append(cnt++ > 0 ? ", " : "").append(field).append(" = ? ");
-			}
-			sql2.append(DBUtil.WHERE_CLAUSE).append("request_id = ?");
-			fields2.add("request_id");
-
 			//Save Request Address.
 			SRTRequestAddressVO reqAddrVO = new SRTRequestAddressVO(req);
 			DBProcessor dbp2 = new DBProcessor(dbConn, schema);
-			resCnt = dbp2.executeSqlUpdate(sql2.toString(), reqAddrVO, fields2);
-
-			//Check if we saved the Request Address.
-			if(resCnt == 0) {
+			try {
+				dbp2.save(reqAddrVO);
+			} catch (InvalidDataException e) {
+				log.error("Error Saving Address", e);
 				throw new com.siliconmtn.db.util.DatabaseException("Unable to save Request Address");
 			}
 		} else {
