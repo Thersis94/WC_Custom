@@ -277,9 +277,6 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 
 		try {
 			dbp.save(col);
-			if(StringUtil.isEmpty(col.getGaColumnId())) {
-				col.setGaColumnId(dbp.getGeneratedPKId());
-			}
 			saveAttributes(col);
 		} catch(Exception e) {
 			log.error("Problem saving Column.", e);

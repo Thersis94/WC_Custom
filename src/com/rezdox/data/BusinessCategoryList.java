@@ -69,12 +69,13 @@ public class BusinessCategoryList extends SimpleActionAdapter {
 	 * @return
 	 */
 	private List<BusinessCategoryVO> retrieveAllCategories() {
+		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select business_category_cd, parent_cd, category_nm from ");
-		sql.append(getCustomSchema()).append("rezdox_business_category order by category_nm");
+		sql.append(schema).append("rezdox_business_category order by category_nm");
 		log.debug(sql);
 
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), null, new BusinessCategoryVO());
 	}
 

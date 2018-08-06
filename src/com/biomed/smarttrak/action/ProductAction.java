@@ -92,7 +92,7 @@ public class ProductAction extends SimpleActionAdapter {
 			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 			page.setTitleName(vo.getProductName() + " | " + site.getSiteName());
 			putModuleData(vo);
-		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
+		} else if (req.hasParameter("amid")){
 			retrieveProducts(req);
 		}
 	}
@@ -138,11 +138,12 @@ public class ProductAction extends SimpleActionAdapter {
 		sql.append("ON xr.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
 		sql.append("ON xr.SECTION_ID = s.SECTION_ID ");
-		sql.append("WHERE p.COMPANY_ID = ? ");
+		sql.append("WHERE p.COMPANY_ID = ? and p.product_id != ? ");
 
 		List<String> addedItems = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, product.getCompanyId());
+			ps.setString(2, product.getProductId());
 
 			ResultSet rs = ps.executeQuery();
 

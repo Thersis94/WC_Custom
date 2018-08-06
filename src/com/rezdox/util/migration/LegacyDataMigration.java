@@ -31,9 +31,8 @@ import com.siliconmtn.exception.InvalidDataException;
 //SMTBaseLibs
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-
-import opennlp.tools.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: LegacyDataMigration.java<p/>
@@ -1434,7 +1433,7 @@ public class LegacyDataMigration extends CommandLineUtil {
 			try {
 				ZillowAPIManager zillowApi = new ZillowAPIManager();
 				ZillowPropertyVO property = zillowApi.retrieveZillowId(residence);
-				zestimateAttr.setValueText(property.getValueEstimate().toString());
+				zestimateAttr.setValueText(StringUtil.checkVal(property.getValueEstimate(), null));
 				
 				WalkScoreAPIManager walkScoreApi = new WalkScoreAPIManager();
 				WalkScoreVO walkScore = walkScoreApi.retrieveWalkScore(residence);

@@ -31,6 +31,7 @@ import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.DatabaseNote;
 import com.siliconmtn.db.DatabaseNote.DBType;
@@ -217,25 +218,29 @@ public class ResidenceAction extends SBActionAdapter {
 
 		// Using pivot table on the attributes to get additional data for display
 		StringBuilder sql = new StringBuilder(900);
-		sql.append("select r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt) as update_dt, ");
-		sql.append("privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0) as sqft_no, zestimate_no, sum(pc.project_cost+pc.material_cost)*? as projects_total ");
+		sql.append("select r.residence_id, residence_nm, address_txt, address2_txt, city_nm, ");
+		sql.append("state_cd, zip_cd, country_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt) as update_dt, ");
+		sql.append("privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0) as sqft_no, ");
+		sql.append("zestimate_no, sum(pc.project_cost+pc.material_cost)*? as projects_total, m.status_flg ");
 		sql.append("from ").append(schema).append("rezdox_residence r inner join ");
-		sql.append(schema).append("rezdox_residence_member_xr m on r.residence_id = m.residence_id and status_flg=1 ");
+		sql.append(schema).append("rezdox_residence_member_xr m on r.residence_id = m.residence_id and m.status_flg > 0 "); //1=mine, 2=shared w/me
 		sql.append("left join (SELECT * FROM crosstab('SELECT residence_id, slug_txt, value_txt FROM ").append(schema).append("rezdox_residence_attribute ORDER BY 1', ");
 		sql.append("'SELECT DISTINCT slug_txt FROM ").append(schema).append("rezdox_residence_attribute WHERE slug_txt in (''bedrooms'',''bathrooms'',''finishedSqFt'', ''RESIDENCE_ZESTIMATE'') ORDER BY 1') ");
 		sql.append("AS (residence_id text, baths_no float, beds_no int, f_sqft_no int, zestimate_no float) ");
 		sql.append(") ra on r.residence_id = ra.residence_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_project_cost_view pc on r.residence_id=pc.residence_id and pc.is_improvement=1 ");
-		sql.append("where member_id = ? ");
+		sql.append("where m.member_id=? ");
 
 		// Return only a specific residence if selected
 		if (!StringUtil.isEmpty(residenceId)) {
 			sql.append("and r.residence_id = ? ");
 			params.add(residenceId);
 		}
-		sql.append("group by r.residence_id, residence_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, profile_pic_pth, ");
-		sql.append("coalesce(r.update_dt, r.create_dt), privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0), zestimate_no ");
-		sql.append("order by r.create_dt "); //show primary residence first, which is the 1st one created. REZDOX-275
+		sql.append("group by r.residence_id, residence_nm, address_txt, address2_txt, city_nm, ");
+		sql.append("state_cd, zip_cd, country_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt), ");
+		sql.append("privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0), ");
+		sql.append("zestimate_no, m.status_flg ");
+		sql.append("order by coalesce(m.status_flg, 1), r.create_dt"); //show primary residence first, which is the 1st one created. REZDOX-275
 		log.debug(sql);
 
 		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
@@ -254,11 +259,11 @@ public class ResidenceAction extends SBActionAdapter {
 	public List<ResidenceVO> listMyResidences(String memberId, String residenceId) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(900);
-		sql.append("select a.* from ").append(schema).append("rezdox_residence a ");
+		sql.append("select a.*, b.status_flg from ").append(schema).append("rezdox_residence a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_residence_member_xr b ");
-		sql.append("on a.residence_id=b.residence_id and b.member_id=? and b.status_flg=1");
+		sql.append("on a.residence_id=b.residence_id and b.member_id=? and b.status_flg > 0 "); //1=active, 2=shared
 		if (!StringUtil.isEmpty(residenceId)) sql.append(" where a.residence_id=?");
-		sql.append("order by a.residence_nm");
+		sql.append("order by coalesce(b.status_flg, 1), a.create_dt");
 
 		List<Object> params = new ArrayList<>();
 		params.add(memberId);
@@ -266,6 +271,27 @@ public class ResidenceAction extends SBActionAdapter {
 
 		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
 		return dbp.executeSelect(sql.toString(), params, new ResidenceVO());
+	}
+
+
+	/**
+	 * Return the homeowner memberId for the given residence.  
+	 * Homeowner is the oldest person attached to the residence with status=1 in the _XR table.
+	 * Used when adding home inventory to ensure the homeowner gets ownership of anything added by a shared user.
+	 * @param req
+	 * @return
+	 */
+	public String getHomeownerMemberId(String residenceId) {
+		String schema = getCustomSchema();
+		StringBuilder sql = new StringBuilder(900);
+		sql.append("select member_id as key from ").append(schema).append("rezdox_residence_member_xr ");
+		sql.append("where residence_id=? and status_flg=1 "); //1=active, 2=shared
+		sql.append("order by create_dt limit 1");
+		log.debug(sql);
+
+		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
+		List<GenericVO> data = dbp.executeSelect(sql.toString(), Arrays.asList(residenceId), new GenericVO());
+		return (!data.isEmpty()) ? StringUtil.checkVal(data.get(0).getKey()) : "";
 	}
 
 
@@ -651,7 +677,7 @@ public class ResidenceAction extends SBActionAdapter {
 		}
 
 		// Add additional non-extended attributes
-		ResidenceAttributeVO attribute = new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE, property.getValueEstimate().toString());
+		ResidenceAttributeVO attribute = new ResidenceAttributeVO(residence.getResidenceId(), SLUG_RESIDENCE_ZESTIMATE, StringUtil.checkVal(property.getValueEstimate(), null));
 		attributes.add(attribute);
 
 		return attributes;
@@ -726,7 +752,7 @@ public class ResidenceAction extends SBActionAdapter {
 	private void applyZestimateUpdate(ResidenceVO residence, ResidenceAttributeVO zestimate) {
 		try {
 			ZillowPropertyVO property = new ZillowAPIManager().retrieveZillowId(residence);
-			zestimate.setValueText(property.getValueEstimate().toString());
+			zestimate.setValueText(StringUtil.checkVal(property.getValueEstimate(), null));
 		} catch (InvalidDataException e) {
 			log.error("Could not retrieve Zestimate data for the residence", e);
 		}

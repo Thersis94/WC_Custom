@@ -39,6 +39,7 @@ public class InventoryItemVO {
 	private List<PhotoVO> photos;
 	private List<DocumentVO> documents;
 	private List<InventoryAttributeVO> itemAttributes;
+	private int privacyFlag;
 
 	//cosmetic values
 	private String roomName;
@@ -216,5 +217,18 @@ public class InventoryItemVO {
 
 	public Date getWarrantyExpDate() {
 		return !StringUtil.isEmpty(warrantyExp) ? Convert.formatDate(Convert.DATE_DASH_PATTERN, warrantyExp) : null;
+	}
+
+	@Column(name="privacy_flg")
+	public int getPrivacyFlag() {
+		return privacyFlag;
+	}
+
+	public void setPrivacyFlag(int privacyFlag) {
+		this.privacyFlag = privacyFlag;
+	}
+
+	public boolean isPrivate() {
+		return 1 == privacyFlag;
 	}
 }

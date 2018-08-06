@@ -63,7 +63,6 @@ public class RSSSegmentAction extends SBActionAdapter {
 	 * Helper method Loads Group Segments XRs.
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	protected List<RSSFeedSegment> loadSegmentGroups() {
 		return new DBProcessor(dbConn).executeSelect(rssSegmentGroupRetrieveSql(), null, new RSSFeedSegment());
 	}
@@ -73,7 +72,6 @@ public class RSSSegmentAction extends SBActionAdapter {
 	 * @param segmentId
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	protected List<RSSFeedSegment> loadSegments(String segmentId) {
 		List<Object> vals = new ArrayList<>();
 		if(!StringUtil.isEmpty(segmentId)) {

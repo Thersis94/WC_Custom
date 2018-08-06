@@ -221,22 +221,32 @@ public class FinancialDashDataRowVO implements Serializable {
 
 	/**
 	 * Per the defined business rules:
-	 * For the current quarter, if any revenue data exists, then the term "Reporting" is displayed.
+	 * If all Sections are of the same Quarter then apply labeling rules to the next.
+	 * Otherwise if a Section is behind the current published level, apply labeling to those only.
+	 * If any revenue data exists, then the term "Reporting" is displayed.
 	 * If there is no revenue for the current quarter, then the term "Pending" is displayed.
-	 * However, if the section is marked as published for the current quarter, then the dollar value (or lack thereof) shows up.
-	 * 
+	 *
 	 * @param tree
+	 * @param currentQtr
+	 * @param currentYear
+	 * @param allSameQuarter 
 	 */
-	protected void setReportingPending(SmarttrakTree tree, int currentQtr, int currentYear) {
+	protected void setReportingPending(SmarttrakTree tree, int currentQtr, int currentYear, boolean allSameQuarter) {
 		Node node = tree.findNode(primaryKey);
 
 		// If node isn't found, this is a company row, and the value will be displayed
 		if (node != null) {
 			SectionVO section = (SectionVO) node.getUserObject();
 
-			// If the current year/qtr don't match the published year/qtr then we will mark the column reporting/pending.
-			if (currentQtr != section.getFdPubQtr() || currentYear != section.getFdPubYr())
+			/*
+			 * If all sections are of the same quarter, label over the next Quarter.
+			 * Otherwise if a sections Published Qtr/Year is behind the current, label over currentQtr for that section. 
+			 */
+			if(allSameQuarter) {
+				markColumnReportingPending(currentQtr + 1, currentYear);
+			} else if (section.getFdPubQtr() < currentQtr || section.getFdPubYr() < currentYear) {
 				markColumnReportingPending(currentQtr, currentYear);
+			}
 		}
 	}
 
