@@ -14,6 +14,7 @@ import com.biomed.smarttrak.fd.FinancialDashAction.DashType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -104,9 +105,9 @@ public class FinancialDashVO extends SBModuleVO {
 		log = Logger.getLogger(getClass());
 	}
 
-	public FinancialDashVO(ResultSet rs, SmarttrakTree sections) {
+	public FinancialDashVO(ResultSet rs, SmarttrakTree sections, DashType dashType) {
 		this();
-		setData(rs, sections);
+		setData(rs, sections, dashType);
 	}
 
 	public FinancialDashVO(ActionRequest req, SmarttrakTree sections) {
@@ -119,12 +120,18 @@ public class FinancialDashVO extends SBModuleVO {
 	 * 
 	 * @param rs
 	 */
-	public void setData(ResultSet rs, SmarttrakTree sections) {
+	public void setData(ResultSet rs, SmarttrakTree sections, DashType dashType) {
 		FinancialDashDataRowVO row;
+
+		boolean allSameQuarter = checkAllSameQuarter(sections);
 		try {
 			while (rs.next()) {
 				row = new FinancialDashDataRowVO(rs, this);
-				row.setReportingPending(sections, currentQtr, currentYear);
+
+				//If this is the Public View, calculate Labels.
+				if(DashType.COMMON.equals(dashType)) {
+					row.setReportingPending(sections, currentQtr, currentYear, allSameQuarter);
+				}
 				addRow(row);
 			}
 		} catch (SQLException sqle) {
@@ -132,6 +139,23 @@ public class FinancialDashVO extends SBModuleVO {
 		}
 	}
 
+	/**
+	 * Check if all Sections are in the same Published Quarter.
+	 * @param sections
+	 * @return
+	 */
+	public boolean checkAllSameQuarter(SmarttrakTree sections) {
+		for(Node n : sections.preorderList()) {
+			if(n.getUserObject() != null) {
+				SectionVO s = (SectionVO) n.getUserObject();
+				if(s.getFdPubQtr() != currentQtr) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
 	/**
 	 * Processes the request's options needed for generating the
 	 * requested table, chart, or report. Sets defaults where needed.

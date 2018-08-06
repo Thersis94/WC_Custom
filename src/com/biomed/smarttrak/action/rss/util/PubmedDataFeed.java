@@ -18,6 +18,8 @@ import org.xml.sax.SAXException;
 
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.RSSFilterAction.FilterType;
+import com.biomed.smarttrak.action.rss.parser.PubmedArticleSaxHandler;
+import com.biomed.smarttrak.action.rss.parser.PubmedListSaxHandler;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;

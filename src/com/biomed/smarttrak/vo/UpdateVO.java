@@ -110,10 +110,12 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private int sslFlg;
 	private String siteAliasUrl;
 	private int announcementType;
+	private List<String> sectionIds;
 
 	public UpdateVO() {
 		super(UpdateIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
+		sectionIds = new ArrayList<>();
 		addOrganization(AdminControllerAction.BIOMED_ORG_ID);
 		addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 	}
@@ -645,6 +647,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 				Node n = t.findNode(uxr.getSectionId());
 				if (n != null && !StringUtil.isEmpty(n.getFullPath())) {
 					super.addHierarchies(n.getFullPath());
+					sectionIds.add(n.getNodeId());
 					SectionVO sec = (SectionVO) n.getUserObject();
 					super.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 				}
@@ -768,5 +771,14 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 
 	public void setAnnouncementType(int announcementType) {
 		this.announcementType = announcementType;
+	}
+
+	@SolrField(name="sectionid_ss")
+	public List<String> getSectionIds() {
+		return sectionIds;
+	}
+
+	public void setSectionIds(List<String> sectionIds) {
+		this.sectionIds = sectionIds;
 	}
 }

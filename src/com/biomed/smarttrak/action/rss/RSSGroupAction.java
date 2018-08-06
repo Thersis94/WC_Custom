@@ -99,7 +99,6 @@ public class RSSGroupAction extends SBActionAdapter {
 	 * @param hasParameter
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	public List<RSSFeedGroupVO> loadGroupXrs(String filterId, String feedGroupId, String rssEntityId) {
 
 		List<Object> vals = new ArrayList<>();

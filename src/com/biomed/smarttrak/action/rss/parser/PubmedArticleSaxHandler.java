@@ -1,4 +1,4 @@
-package com.biomed.smarttrak.action.rss.util;
+package com.biomed.smarttrak.action.rss.parser;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -135,12 +135,7 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 		if (type == null) {
 			return;
 		}
-		boolean buildValue = (!data.containsKey(SearchType.PMID)
-				&& SearchType.PMID.equals(type))
-				|| (!SearchType.DAY.equals(type)
-						&& !SearchType.MONTH.equals(type)
-						&& !SearchType.YEAR.equals(type)
-						&& !SearchType.PMID.equals(type));
+		boolean buildValue = isBuildable();
 		String val = new String(ch, start, length);
 		if (isDate) {
 			data.put(type, val);
@@ -149,6 +144,16 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 		}
 	}
 
+	/**
+	 * Return if the current Buffer of text should be built into the data map.
+	 * @return
+	 */
+	private boolean isBuildable() {
+		boolean isPMID = (!data.containsKey(SearchType.PMID) && SearchType.PMID.equals(type));
+		boolean hasDate = !SearchType.DAY.equals(type) && !SearchType.MONTH.equals(type) && !SearchType.YEAR.equals(type) && !SearchType.PMID.equals(type);
+
+		return isPMID || hasDate;
+	}
 
 	/**
 	 * @param val

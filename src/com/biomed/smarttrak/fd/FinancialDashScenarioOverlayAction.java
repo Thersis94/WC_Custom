@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.fd.FinancialDashAction.DashType;
 import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.fd.FinancialDashVO.TableType;
 import com.biomed.smarttrak.util.SmarttrakTree;
@@ -68,7 +69,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * @param sections
 	 */
 	@Override
-	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections) {
+	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections, DashType dashType) {
 		String sql = getFinancialDataSql(dash);
 		DisplayType dt = dash.getColHeaders().getDisplayType();
 		
@@ -99,7 +100,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
 			
 			ResultSet rs = ps.executeQuery();
-			dash.setData(rs, sections);
+			dash.setData(rs, sections, dashType);
 		} catch (SQLException sqle) {
 			log.error("Unable to get financial dashboard data", sqle);
 		}

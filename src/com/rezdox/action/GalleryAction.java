@@ -104,6 +104,7 @@ public class GalleryAction extends SimpleActionAdapter {
 		}
 
 		sql.append("group by a.album_id");
+		log.debug(sql);
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		return dbp.executeSelect(sql.toString(), params, new AlbumVO());
