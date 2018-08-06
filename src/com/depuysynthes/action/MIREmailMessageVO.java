@@ -7,6 +7,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
+
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -27,9 +28,9 @@ public class MIREmailMessageVO extends EmailMessageVO {
 
 	private static final long serialVersionUID = 4872242395454435789L;
 	private static final String REGION_EMAILS = "dpySynMirRegionEmails";
-	private static final String REGION = "region";
-	private static final String SUBREGION = "subRegion";
-	private static final String REGION_CANADA = "North America Canada";
+	private static final String PARAM_REGION = "region";
+	private static final String PARAM_SUBREGION = "subregion";
+	private static final String REGION_CANADA = "North-America-Canada";
 	private static final String SUBREGION_CANADA = "canada";
 
 	private MIRSubmissionVO vo;
@@ -51,8 +52,8 @@ public class MIREmailMessageVO extends EmailMessageVO {
 				addAttachment(file.getFileName(), file.getFileData());
 		}
 
-		String rcpt = parseRecipient(req.getParameter(REGION),
-				req.getParameter(SUBREGION), (String)attributes.get(REGION_EMAILS));
+		String rcpt = parseRecipient(req.getParameter(PARAM_REGION),
+				req.getParameter(PARAM_SUBREGION), (String)attributes.get(REGION_EMAILS));
 
 		try {
 			addRecipient(rcpt);
@@ -60,6 +61,7 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		} catch (InvalidDataException e) {
 			log.error("could not set recipient emails", e);
 		}
+
 	}
 
 
@@ -82,9 +84,9 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		JSONArray regionArr = JSONArray.fromObject(jsonObjStr);
 		for (int x=0; x < regionArr.size(); x++) {
 			JSONObject obj = regionArr.getJSONObject(x);
-			if (obj.optString(REGION).equalsIgnoreCase(mailRegion)) {
+			if (obj.optString(PARAM_REGION).equalsIgnoreCase(mailRegion)) {
 				return obj.optString("email");
-			} else if ("default".equals(obj.optString(REGION))) {
+			} else if ("default".equals(obj.optString(PARAM_REGION))) {
 				//save the default incase we need a fallback plan.
 				email = obj.optString("email");
 			}
