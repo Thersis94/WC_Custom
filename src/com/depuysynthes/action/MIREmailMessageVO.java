@@ -117,18 +117,18 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		addHtmlRow(html, ++rowCnt, "HCP Type", StringUtil.checkVal(vo.getHcpType()));
 		addHtmlRow(html, ++rowCnt, "HCP Type (Other)", vo.getHcpTypeOther());
 		addHtmlRow(html, ++rowCnt, "HCP's Title", vo.getHcpTitle());
-		addHtmlRow(html, ++rowCnt, "HCP's First Name", vo.getFirstName());
-		addHtmlRow(html, ++rowCnt, "HCP's Last Name", vo.getLastName());
+		addHtmlRow(html, ++rowCnt, "HCP's First Name", trimValue(vo.getFirstName()));
+		addHtmlRow(html, ++rowCnt, "HCP's Last Name", trimValue(vo.getLastName()));
 		addHtmlRow(html, ++rowCnt, "HCP's Specialty", vo.getHcpSpecialty());
 		addHtmlRow(html, ++rowCnt, "HCP's Hospital / Institution / Office", vo.getHcpInstitution());
 		addHtmlRow(html, ++rowCnt, "Consent", vo.getConsentFlg());
 		// section 2 - Contact Information
 		addHtmlRow(html, ++rowCnt, "Desired Response Method", vo.getResponseType());
 		addHtmlRow(html, ++rowCnt, "Desired Response Method (Other)", vo.getResponseTypeOther());
-		addHtmlRow(html, ++rowCnt, "Street Address", vo.getAddress());
-		addHtmlRow(html, ++rowCnt, "City", vo.getCity());
-		addHtmlRow(html, ++rowCnt, "State / Province", vo.getState());
-		addHtmlRow(html, ++rowCnt, "ZIP / Postal Code", vo.getZipCode());
+		addHtmlRow(html, ++rowCnt, "Street Address", trimValue(vo.getAddress()));
+		addHtmlRow(html, ++rowCnt, "City", trimValue(vo.getCity()));
+		addHtmlRow(html, ++rowCnt, "State / Province", trimValue(vo.getState()));
+		addHtmlRow(html, ++rowCnt, "ZIP / Postal Code", trimValue(vo.getZipCode()));
 		addHtmlRow(html, ++rowCnt, "Country", vo.getCountryCode());
 		addHtmlRow(html, ++rowCnt, "Telephone", StringUtil.checkVal(vo.getMainPhone()));
 		addHtmlRow(html, ++rowCnt, "Fax", vo.getMobilePhone());
@@ -148,6 +148,17 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		return super.getHtmlBody();
 	}
 
+	/**
+	 * Trims the String argument and returns a String representing the
+	 * trimmed value.  If the String argument is null or empty, the String
+	 * passed in the argument is returned.
+	 * @param text
+	 * @return
+	 */
+	private String trimValue(String text) {
+		if (StringUtil.isEmpty(text)) return text;
+		return text.trim();
+	}
 
 	/**
 	 * Builder method for generating a row for the HTML table.
