@@ -1,6 +1,4 @@
-/**
- *
- */
+
 package com.biomed.smarttrak.admin;
 
 import java.util.List;

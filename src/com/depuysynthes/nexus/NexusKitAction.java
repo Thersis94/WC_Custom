@@ -1110,7 +1110,7 @@ public class NexusKitAction extends SimpleActionAdapter {
 					throw new ActionException(e);
 				}
 				attributes.put(Constants.SOLR_COLLECTION_NAME, getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
-				SolrActionUtil util = new SolrActionUtil(attributes, false);
+				SolrActionUtil util = new SolrActionUtil(attributes);
 				for (String s: req.getParameterValues("kitId")) {
 					util.removeDocument(s);
 				}
@@ -1286,7 +1286,7 @@ public class NexusKitAction extends SimpleActionAdapter {
 	private void addToSolr(NexusKitVO kit) throws ActionException {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		attributes.put(Constants.SOLR_COLLECTION_NAME, getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
-		try (SolrActionUtil util = new SolrActionUtil(attributes, false)) {
+		try (SolrActionUtil util = new SolrActionUtil(attributes)) {
 			util.addDocument(kit);
 		} catch (Exception e) {
 			throw new ActionException(e);
