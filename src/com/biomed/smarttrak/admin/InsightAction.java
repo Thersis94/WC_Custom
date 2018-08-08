@@ -774,7 +774,7 @@ public class InsightAction extends ManagementAction {
 	 * @param u
 	 */
 	protected void deleteFromSolr(InsightVO ivo) {
-		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes(), false)) {
+		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
 			sau.removeDocument(ivo.getDocumentId());
 		} catch (Exception e) {
 			log.error("Error Deleting from Solr.", e);
