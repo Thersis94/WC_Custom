@@ -225,7 +225,6 @@ public class UpdatesAction extends SBActionAdapter {
 				String[] parts = f.getName().split("~");
 				String endName = parts[parts.length -1];
 				if (endName.equals(n.getNodeName()) && !names.contains(f.getName())) {
-					log.debug(f.getName());
 					names.add(f.getName());
 					fNew.add(f.getName(), f.getCount());
 					break;
