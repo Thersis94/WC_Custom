@@ -3,6 +3,7 @@ package com.rezdox.vo;
 //Java 8
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.security.PhoneVO;
+import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
  <p><b>Title</b>: BusinessVO.java</p>
@@ -34,6 +36,8 @@ import com.siliconmtn.security.PhoneVO;
 public class BusinessVO extends GeocodeLocation implements Serializable {
 	private static final long serialVersionUID = -6288149815547303962L;
 
+	public static final String AD_FILE_KEY = "BUSINESS_AD";
+
 	private String businessId;
 	private String businessName;
 	private PhoneVO mainPhone;
@@ -42,22 +46,28 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	private String websiteUrl;
 	private String photoUrl;
 	private String adFileUrl;
+	private Map<String, PhotoVO> carouselFileUrls;
 	private int privacyFlag;
-	private List<MemberVO> members;
+	private Map<String, MemberVO> members;
 	private Map<String, String> attributes;
 	private String subCategoryCd;
 	private String categoryCd;
 	private String categoryName;
+	private String subCategoryName;
 	private int totalReviewsNo;
 	private double avgRatingNo;
 	private BusinessStatus status;
+	private String initials;
 	private Date createDate;
 	private Date updateDate;
 
+	private MemberVO owner; // serialized to JSON and used in the Business Data Tool
+
 	public BusinessVO() {
 		super();
-		members = new ArrayList<>();
+		members = new HashMap<>();
 		attributes = new HashMap<>();
+		carouselFileUrls = new HashMap<>();
 		mainPhone = new PhoneVO();
 		altPhone = new PhoneVO();
 	}
@@ -98,6 +108,7 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setBusinessName(String businessName) {
 		this.businessName = businessName;
+		setInitials();
 	}
 
 	/**
@@ -189,9 +200,9 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	}
 
 	/**
-	 * @return the photoUrl
+	 * @return the first photoUrl if available.
 	 */
-	@Column(name="photo_url")
+	@Column(name="photo_url", isReadOnly=true)
 	public String getPhotoUrl() {
 		return photoUrl;
 	}
@@ -204,11 +215,11 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	}
 
 	/**
-	 * @return the adFileUrl
+	 * @return the first adFileUrl if available.
 	 */
-	@Column(name="ad_file_url")
+	@Column(name="ad_file_url", isReadOnly=true)
 	public String getAdFileUrl() {
-		return adFileUrl;
+		return adFileUrl; 
 	}
 
 	/**
@@ -216,6 +227,21 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setAdFileUrl(String adFileUrl) {
 		this.adFileUrl = adFileUrl;
+	}
+
+	public Collection<PhotoVO> getCarouselFileUrls() {
+		return carouselFileUrls.values();
+	}
+
+	/**
+	 * Helper method for loading Photo Lists.
+	 * @param p
+	 */
+	@BeanSubElement
+	public void addPhoto(PhotoVO p) {
+		if(p != null && AD_FILE_KEY.equals(p.getDescriptionText()) && !carouselFileUrls.containsKey(p.getPhotoId())) {
+			carouselFileUrls.put(p.getPhotoId(), p);
+		}
 	}
 
 	/**
@@ -236,15 +262,16 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	/**
 	 * @return the members
 	 */
-	public List<MemberVO> getMembers() {
+	public Map<String, MemberVO> getMembers() {
 		return members;
 	}
 
 	/**
 	 * @param members the members to set
 	 */
-	public void setMembers(List<MemberVO> members) {
+	public void setMembers(Map<String, MemberVO> members) {
 		this.members = members;
+		setOwner();
 	}
 
 	/**
@@ -252,7 +279,22 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	@BeanSubElement
 	public void addMember(MemberVO member) {
-		this.members.add(member);
+		this.members.put(member.getMemberId(), member);
+		setOwner();
+	}
+
+	/**
+	 * Presume owner is first member and peel them off the Map if not previously set.  
+	 * This is only used in the Data Tool for approving Businesses - its a workaround for Javascript/JSON pain.
+	 */
+	private void setOwner() {
+		if (owner != null || members == null || members.isEmpty()) 
+			return;
+		owner = new ArrayList<>(members.values()).get(0);
+	}
+
+	public MemberVO getOwner() {
+		return owner;
 	}
 
 	/**
@@ -403,7 +445,31 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 		for (BusinessStatus businessStatus : BusinessStatus.values()) {
 			if (businessStatus.getStatus() == statusCode) {
 				this.status = businessStatus;
+				break;
 			}
+		}
+	}
+
+	/**
+	 * @return the initials
+	 */
+	public String getInitials() {
+		return initials;
+	}
+
+	/**
+	 * @param initials the initials to set
+	 */
+	public void setInitials(String initials) {
+		this.initials = initials;
+	}
+
+	/**
+	 * Sets the businesses initials based on the business name set in the VO
+	 */
+	private void setInitials() {
+		if (getBusinessName() != null) {
+			setInitials(StringUtil.abbreviate(getBusinessName().trim(), 2).toUpperCase());
 		}
 	}
 
@@ -453,5 +519,18 @@ public class BusinessVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	@Column(name="sub_category_nm", isReadOnly=true)
+	public String getSubCategoryName() {
+		return subCategoryName;
+	}
+
+	public void setSubCategoryName(String subCategoryName) {
+		this.subCategoryName = subCategoryName;
+	}
+
+	public boolean isShared() {
+		return BusinessStatus.SHARED == getStatus();
 	}
 }

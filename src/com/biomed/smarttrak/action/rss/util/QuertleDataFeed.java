@@ -133,11 +133,14 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		RSSArticleVO article;
 		// Iterate Results and Builds Article VOs.
 		for (ResultAttributes resultAttrs : results) {
+			long start = System.currentTimeMillis();
 			String id = searchType + resultAttrs.getApplicationNumber();
 
 			article = buildArticleVO(id, searchType, resultAttrs);
+			log.info("article VO took " + (System.currentTimeMillis()-start) + "ms");
 
 			applyFilters(article, articleGuids);
+			log.info("article filters took " + (System.currentTimeMillis()-start) + "ms");
 
 			// Remove the Full Article Text to lessen memory overhead.
 			article.setFullArticleTxt(null);
@@ -145,9 +148,9 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			if (!article.getFilterVOs().isEmpty()) {
 				storeArticle(article);
 			} else {
-				log.info("************** article below did not match filters ****************");
-				
+				log.info("************** article did not match filters, discarding ****************");
 			}
+			log.info("article took " + (System.currentTimeMillis()-start) + "ms");
 		}
 		// return the # of existing records, so we can report how many new ones we found in the logs.
 		return articleGuids.size();
@@ -164,7 +167,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		for (RSSFeedGroupVO g : groups) {
 			if (! articleExists(a.getArticleGuid(), g.getFeedGroupId(), articleGuids)) {
 				//Apply Matching Filters to article.
-				applyFilter(a, g.getFeedGroupId());
+				applyFilter(a, g.getFeedGroupId(), true);
 			}
 		}
 	}

@@ -90,7 +90,6 @@ public class RSSTypeAction extends SBActionAdapter {
 	 * Halper method manages loading RSS Feed Types.
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	public List<RSSFeedTypeVO> loadTypes(String feedTypeCd) {
 		List<Object> vals = new ArrayList<>();
 		if(!StringUtil.isEmpty(feedTypeCd)) {

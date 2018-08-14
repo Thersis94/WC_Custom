@@ -1,6 +1,10 @@
 package com.rezdox.action;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -10,6 +14,7 @@ import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO;
 import com.rezdox.vo.MembershipVO.Group;
 import com.rezdox.vo.PromotionVO;
+
 //SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -21,8 +26,11 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+
 //WC Core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
@@ -48,6 +56,9 @@ import com.smt.sitebuilder.security.UserLogin;
  * @since Apr 16, 2018
  ****************************************************************************/
 public class MemberAction extends SimpleActionAdapter {
+
+	public static final String REQ_MEMBER_ID = "memberId";
+
 
 	public MemberAction() {
 		super();
@@ -136,7 +147,7 @@ public class MemberAction extends SimpleActionAdapter {
 
 		//support deleting a member entirely
 		if (req.hasParameter("deleteUser")) {
-			req.setParameter("memberId", member.getMemberId());
+			req.setParameter(REQ_MEMBER_ID, member.getMemberId());
 			saveMember(req, true);
 			CookieUtil.remove(req, Constants.USER_COOKIE);
 			session.invalidate();
@@ -157,7 +168,7 @@ public class MemberAction extends SimpleActionAdapter {
 		member = saveMember(req, false);
 
 		//overseed the MemberVO with the profile data collected by the form processor
-		member.setData(req);
+		member.setData(req, true);
 
 		//save auth record
 		saveAuthRecord(member);
@@ -166,7 +177,7 @@ public class MemberAction extends SimpleActionAdapter {
 		if (isNewUser) {
 			createProfileRole(member, site);
 			performLogin(member, site, req);
-			setupMembership(member);
+			setupMembership(member, req);
 		}
 
 		//put the member VO onto their session, refreshing any data that's already there.
@@ -181,10 +192,28 @@ public class MemberAction extends SimpleActionAdapter {
 	 */
 	private void saveAuthRecord(UserDataVO user) throws ActionException {
 		UserLogin login = new UserLogin(getDBConnection(), getAttributes());
+		String newAuthId = null;
 		try {
-			login.saveAuthRecord(user.getAuthenticationId(), user.getEmailAddress(), user.getPassword(), 0);
+			if (StringUtil.isEmpty(user.getAuthenticationId()))
+				user.setAuthenticationId(login.checkAuth(user.getEmailAddress()));
+
+			newAuthId = login.saveAuthRecord(user.getAuthenticationId(), user.getEmailAddress(), user.getPassword(), 0);
+			log.debug(String.format("authIds: %s || %s", user.getAuthenticationId(), newAuthId));
 		} catch (DatabaseException e) {
-			throw new ActionException("could not createa auth record", e);
+			throw new ActionException("could not create auth record", e);
+		}
+
+		//coming off registration, update the user's profile with the new authId.  This is out of place, but because of the FormProcessor creating the profile
+		if (newAuthId != user.getAuthenticationId()) { //when this is commonly true user.getAuthenticationId()==nulll
+			user.setAuthenticationId(newAuthId);
+			String sql = "update profile set authentication_id=? where profile_id=?";
+			try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+				ps.setString(1, newAuthId);
+				ps.setString(2,  user.getProfileId());
+				ps.executeUpdate();
+			} catch (SQLException sqle) {
+				log.error("could not save authId to profile", sqle);
+			}
 		}
 	}
 
@@ -261,7 +290,7 @@ public class MemberAction extends SimpleActionAdapter {
 				dbp.save(vo);
 			}
 		} catch(Exception e) {
-			throw new ActionException(e);
+			throw new ActionException("could not save member", e);
 		}
 		return vo;
 	}
@@ -293,7 +322,7 @@ public class MemberAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void setupMembership(MemberVO member) throws ActionException {
+	private void setupMembership(MemberVO member, ActionRequest req) throws ActionException {
 		// Get default member subscription... the only default right now is "100 Connections".
 		// Free business and residence subscriptions are added by member selection after signing up.
 		MembershipAction ma = new MembershipAction(dbConn, attributes);
@@ -309,6 +338,29 @@ public class MemberAction extends SimpleActionAdapter {
 
 		//apply the default reward give to all new users at first login
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());
-		ra.applyReward(RezDoxUtils.NEW_REGISTRANT_REWARD, member.getMemberId());
+		ra.applyReward(RezDoxUtils.NEW_REGISTRANT_REWARD, member.getMemberId(), req);
+
+		//send welcome email
+		sendWelcomeEmail(member);
+	}
+
+
+	/**
+	 * Leverages Email Campaigns to trigger a welcome email to the new member
+	 * @param member
+	 */
+	private void sendWelcomeEmail(MemberVO member) {
+		// Put the mail merge data onto the map
+		Map<String, Object> dataMap = new HashMap<>();
+		dataMap.put("firstName", member.getFirstName());
+		dataMap.put("emailAddress", member.getEmailAddress());
+
+		// Add the recipient
+		List<EmailRecipientVO> rcpts = new ArrayList<>();
+		rcpts.add(new EmailRecipientVO(member.getProfileId(), member.getEmailAddress(), EmailRecipientVO.TO));
+
+		// Send the email
+		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.WELCOME.name());
 	}
 }

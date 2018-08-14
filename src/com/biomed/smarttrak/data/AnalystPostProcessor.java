@@ -4,6 +4,7 @@
 package com.biomed.smarttrak.data;
 
 import com.biomed.smarttrak.util.BiomedSupportEmailUtil;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -11,6 +12,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailMessageVO;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -51,6 +53,8 @@ public class AnalystPostProcessor extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		String contactType = req.getParameter((String)getAttribute(CFG_ASK_AN_ANALYST_TYPE_ID));
+		UserVO vo = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
+		attributes.put(BiomedSupportEmailUtil.SOURCE, new EmailRecipientVO(vo.getSourceId(), vo.getSourceEmail(), EmailRecipientVO.BCC));
 
 		if("Analyst".equals(contactType)) {
 			//If is Analyst Request
@@ -120,9 +124,6 @@ public class AnalystPostProcessor extends SBActionAdapter {
 
 			//Save the TicketVO
 			db.save(t);
-
-			//Update the TicketId
-			t.setPrimaryKey(db.getGeneratedPKId());
 
 			//Set it on the Ticket Activity VO
 			tav.setTicketId(t.getTicketId());

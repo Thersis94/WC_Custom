@@ -36,6 +36,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -108,7 +109,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 			String columnId = req.getParameter("columnId");
 			putModuleData(getProductList(regionId, companyId, columnId, sectionId));
 
-		} else if (req.hasParameter("getState")) {
+		} else if (req.hasParameter("getState") || !req.hasParameter("json")) {
+			
 			UserVO vo = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 			String userId = StringUtil.checkVal(vo.getUserId());
 
@@ -131,6 +133,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		GapAnalysisReportVO rpt = new GapAnalysisReportVO((String) attributes.get(Constants.QS_PATH));
 		rpt.setData(gtv);
 		rpt.setSite((SiteVO)req.getAttribute(Constants.SITE_DATA));
+		rpt.setFileName(GapAnalysisReportVO.REPORT_TITLE);
+		rpt.isHeaderAttachment(true);
 
 		//Set Report on Attributes Map.
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
@@ -145,7 +149,19 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	public void build(ActionRequest req) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		try {
-			dbp.save(new SaveStateVO(req));
+			if("delete".equals(req.getParameter("buildType"))) {
+				dbp.delete(new SaveStateVO(req));
+			}else {
+				SaveStateVO ssv = new SaveStateVO(req);
+				if(StringUtil.isEmpty(ssv.getSaveStateId())) {
+					ssv.setSaveStateId(new UUIDGenerator().getUUID());
+					ssv.fixSaveState();
+					dbp.insert(ssv);
+				} else {
+					dbp.update(ssv);
+				}
+				this.putModuleData(ssv);
+			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Problem Saving State Object.", e.getCause());
 		}
@@ -319,7 +335,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		if (hasSaveStateId)
 			sql.append("and save_state_id = ? ");
 
-		sql.append("order by order_no");
+		sql.append("order by layout_nm");
 		return sql.toString();
 	}
 

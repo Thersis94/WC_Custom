@@ -40,10 +40,10 @@ public class InvoiceReportPDF extends AbstractSBReportVO {
 	private NumberFormat currency = NumberFormat.getCurrencyInstance();
 	private NumberFormat percent = NumberFormat.getPercentInstance();
 
-	public InvoiceReportPDF(String fqdn, String relaImgBase) {
+	public InvoiceReportPDF(String fqdn, String diskImgBase) {
 		super();
 		this.fqdn = fqdn;
-		this.imageBase = fqdn + relaImgBase;
+		this.imageBase = diskImgBase;
 		setFileName("Invoice.pdf");
 		currency.setMaximumFractionDigits(2);
 		percent.setMaximumFractionDigits(2);
@@ -94,23 +94,23 @@ public class InvoiceReportPDF extends AbstractSBReportVO {
 		sb.append("<table class=\"invoice\" width='100%'>");
 		sb.append("<tr class='heading'>");
 		if (!StringUtil.isEmpty(biz.getPhotoUrl())) {
-			sb.append("<td width='50'><img src=\"").append(imageBase).append(biz.getPhotoUrl()).append("\" width=\"50\" alt=\"logo\" /></td>");
-			sb.append("<td><h1 class=\"emphColor\">").append(biz.getBusinessName()).append("</h1></td>");
+			sb.append("<td width='50'><img src=\"file://").append(imageBase).append(biz.getPhotoUrl()).append("\" width=\"50\" alt=\"logo\" /></td>");
+			sb.append("<td><h1 class=\"black\">").append(biz.getBusinessName()).append("</h1></td>");
 		} else {
-			sb.append("<td colspan='2'><h1>").append(biz.getBusinessName()).append("</h1></td>");
+			sb.append("<td colspan='2'><h1 class=\"black\">").append(biz.getBusinessName()).append("</h1></td>");
 		}
 		sb.append("<td width='200' align='right'><h2>INVOICE</h2></td></tr>\r\n");
 
 		sb.append("<tr>");
-		sb.append("<td colspan='2' class='emphColor'>");
+		sb.append("<td colspan='2' class='black'>");
 		sb.append(biz.getAddress()).append(", ").append(biz.getCity()).append(", ");
 		sb.append(biz.getState()).append(" ").append(biz.getZipCode()).append(CL_TD);
-		sb.append("<td align='right' class='emphColor'>");
+		sb.append("<td align='right' class='black'>");
 		sb.append(Convert.formatDate(new Date(), Convert.DATE_SHORT_MONTH)).append("</td></tr>\r\n");
 
 		sb.append("<tr class='customer'>");
 		sb.append("<td colspan='3' align='center'>");
-		sb.append("<span class=\"name\">").append(project.getOwner().getFirstName()).append(" ");
+		sb.append("<span class=\"name black\">").append(project.getOwner().getFirstName()).append(" ");
 		sb.append(project.getOwner().getLastName()).append("</span><br/>");
 		sb.append(project.getOwner().getAddress()).append("<br>");
 		sb.append(project.getOwner().getCity()).append(", ").append(project.getOwner().getState());

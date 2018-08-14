@@ -40,7 +40,7 @@ public class UpdatesWeeklyReportDataLoader extends UpdatesEditionDataLoader {
 	public void retrieve(ActionRequest req) throws ActionException {
 		req.setParameter("profileId", null);
 		req.setParameter("timeRangeCd", UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY);
-		req.setAttribute("isManageTool", true); //attribute - can't be spoofed by the browser
+		req.setAttribute(IS_MANAGE_TOOL, true); //attribute - can't be spoofed by the browser
 		super.retrieve(req);
 	}
 

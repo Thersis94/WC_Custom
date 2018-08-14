@@ -70,7 +70,7 @@ public class ProjectDeviceAttributeVO extends AttributeDevice {
 	public String getProjectDeviceId() {
 		return projectDeviceId;
 	}
-
+	
 	/**
 	 * @return the value
 	 */

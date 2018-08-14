@@ -21,7 +21,6 @@ import com.siliconmtn.util.Convert;
  @since Jan 26, 2018
  <b>Changes:</b> 
  ***************************************************************************/
-
 @Table(name="REZDOX_MEMBERSHIP")
 public class MembershipVO implements Serializable  {
 	private static final long serialVersionUID = -2721552856523040208L;
@@ -33,6 +32,7 @@ public class MembershipVO implements Serializable  {
 	private int statusFlag;
 	private double costNo;
 	private int quantityNo;
+	private int orderNo;
 	private int newMemberDefaultFlag;
 	private String paypalButtonId;
 	private Date createDate;
@@ -75,6 +75,7 @@ public class MembershipVO implements Serializable  {
 		setStatusFlag(Convert.formatInteger(req.getParameter("statusFlag")));
 		setCostNo(Convert.formatDouble(req.getParameter("costNo")));
 		setQuantityNo(Convert.formatInteger(req.getParameter("quantityNo")));
+		setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 		setNewMemberDefaultFlag(Convert.formatInteger(req.getParameter("newMemberDefaultFlag")));
 		setPaypalButtonId(req.getParameter("paypalButtonId"));
 	}
@@ -256,5 +257,14 @@ public class MembershipVO implements Serializable  {
 	 */
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	@Column(name="order_no")
+	public int getOrderNo() {
+		return orderNo;
+	}
+
+	public void setOrderNo(int orderNo) {
+		this.orderNo = orderNo;
 	}
 }

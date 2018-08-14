@@ -12,6 +12,7 @@ import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.gis.GeocodeLocation;
+import com.siliconmtn.util.Convert;
 
 /*****************************************************************************
  <p><b>Title</b>: ResidenceVO.java</p>
@@ -39,7 +40,9 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	private Date createDate;
 	private Date updateDate;
 	private double projectsTotal;
-	
+	private double inventoryTotal;
+	private int statusFlag; //comes from the member_xr - used to denote a shared residence
+
 	/**
 	 * Special use keys for values from the attributes table in the attibutes map
 	 */
@@ -47,6 +50,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	private static final String BATHS_NO = "bathsNo";
 	private static final String SQFT_NO = "sqftNo";
 	private static final String ZESTIMATE_NO = "zestimateNo";
+	private static final String LAST_SOLD = "lastSoldPrice";
 
 	public ResidenceVO() {
 		super();
@@ -59,7 +63,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 		this();
 		populateData(req);
 	}
-	
+
 	/**
 	 * @return the residenceId
 	 */
@@ -149,11 +153,11 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	public void setPrivacyFlag(int privacyFlag) {
 		this.privacyFlag = privacyFlag;
 	}
-	
+
 	/**
 	 * @return the bedsNo
 	 */
-	@Column(name="beds_no")
+	@Column(name="beds_no", isReadOnly=true)
 	public Integer getBedsNo() {
 		return (Integer) attributes.get(BEDS_NO);
 	}
@@ -168,7 +172,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	/**
 	 * @return the bathsNo
 	 */
-	@Column(name="baths_no")
+	@Column(name="baths_no", isReadOnly=true)
 	public Double getBathsNo() {
 		return (Double) attributes.get(BATHS_NO);
 	}
@@ -183,7 +187,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	/**
 	 * @return the sqftNo
 	 */
-	@Column(name="sqft_no")
+	@Column(name="sqft_no", isReadOnly=true)
 	public Integer getSqftNo() {
 		return (Integer) attributes.get(SQFT_NO);
 	}
@@ -198,7 +202,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	/**
 	 * @return the zestimateNo
 	 */
-	@Column(name="zestimate_no")
+	@Column(name="zestimate_no", isReadOnly=true)
 	public Double getZestimateNo() {
 		return (Double) attributes.get(ZESTIMATE_NO);
 	}
@@ -208,6 +212,21 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setZestimateNo(Double zestimateNo) {
 		attributes.put(ZESTIMATE_NO, zestimateNo);
+	}
+
+	/**
+	 * @return the lastSoldPrice
+	 */
+	@Column(name=LAST_SOLD, isReadOnly=true)
+	public Double getLastSold() {
+		return (Double) attributes.get(LAST_SOLD);
+	}
+
+	/**
+	 * @param zestimateNo the zestimateNo to set
+	 */
+	public void setLastSold(Double purchasePriceNo) {
+		attributes.put(LAST_SOLD, purchasePriceNo);
 	}
 
 	/**
@@ -223,7 +242,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	public void setAttributes(Map<String, Object> attributes) {
 		this.attributes = attributes;
 	}
-	
+
 	/**
 	 * @param attributes the attributes to set
 	 */
@@ -231,7 +250,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	public void addAttribute(ResidenceAttributeVO attr) {
 		this.attributes.put(attr.getSlugText(), attr.getValueText());
 	}
-	
+
 	/**
 	 * @return the latitude
 	 */
@@ -293,5 +312,35 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	 */
 	public void setProjectsTotal(double projectsTotal) {
 		this.projectsTotal = projectsTotal;
+	}
+
+	/**
+	 * returns a business-decision calculation of  lastSoldPrice + improvements (fractal)
+	 * @return
+	 */
+	public double getRealMarketValue() {
+		return Convert.formatDouble(getZestimateNo()) + getProjectsTotal();
+	}
+
+	@Column(name="inventory_total", isReadOnly=true)
+	public double getInventoryTotal() {
+		return inventoryTotal;
+	}
+
+	public void setInventoryTotal(double inventoryTotal) {
+		this.inventoryTotal = inventoryTotal;
+	}
+
+	@Column(name="status_flg", isReadOnly=true)
+	public int getStatusFlag() {
+		return statusFlag;
+	}
+
+	public void setStatusFlag(int statusFlag) {
+		this.statusFlag = statusFlag;
+	}
+
+	public boolean isShared() {
+		return 2 == statusFlag;
 	}
 }

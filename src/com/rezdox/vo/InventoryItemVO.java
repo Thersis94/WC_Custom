@@ -39,18 +39,15 @@ public class InventoryItemVO {
 	private List<PhotoVO> photos;
 	private List<DocumentVO> documents;
 	private List<InventoryAttributeVO> itemAttributes;
+	private int privacyFlag;
 
 	//cosmetic values
 	private String roomName;
+	private String warrantyExp;
 
 	public InventoryItemVO() {
 		super();
 		photos = new ArrayList<>();
-	}
-
-	@Column(name="treasure_item_id", isPrimaryKey=true)
-	public String getTreasureItemId() {
-		return treasureItemId;
 	}
 
 	/**
@@ -67,6 +64,11 @@ public class InventoryItemVO {
 			vo.setOwnerMemberId(owner.getMemberId());
 		}
 		return vo;
+	}
+
+	@Column(name="treasure_item_id", isPrimaryKey=true)
+	public String getTreasureItemId() {
+		return treasureItemId;
 	}
 
 	@Column(name="owner_member_id")
@@ -202,5 +204,31 @@ public class InventoryItemVO {
 
 	public void setRoomName(String roomName) {
 		this.roomName = roomName;
+	}
+
+	@Column(name="warranty_exp", isReadOnly=true)
+	public String getWarrantyExp() {
+		return warrantyExp;
+	}
+
+	public void setWarrantyExp(String warrantyExp) {
+		this.warrantyExp = warrantyExp;
+	}
+
+	public Date getWarrantyExpDate() {
+		return !StringUtil.isEmpty(warrantyExp) ? Convert.formatDate(Convert.DATE_DASH_PATTERN, warrantyExp) : null;
+	}
+
+	@Column(name="privacy_flg")
+	public int getPrivacyFlag() {
+		return privacyFlag;
+	}
+
+	public void setPrivacyFlag(int privacyFlag) {
+		this.privacyFlag = privacyFlag;
+	}
+
+	public boolean isPrivate() {
+		return 1 == privacyFlag;
 	}
 }

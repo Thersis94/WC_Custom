@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.InventoryAction;
+import com.rezdox.action.PhotoAction;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -43,12 +44,15 @@ public class InventoryFormProcessor extends FormDataProcessor {
 	protected enum CoreField {
 		RESIDENCE("residenceId"), CATEGORY("treasureCategoryCd"), ROOM("roomId"), 
 		BENEFICIARY("beneficiaryName"), NAME("itemName"), COST("valuationNo"), QUANTITY("quantityNo"),
-		TREASURE_ITEM_ID("treasureItemId"); //ownerMemberId comes off session, in the VO constructor.
+		TREASURE_ITEM_ID("treasureItemId"), PRIVATE_INVENTORY_ITEM("privacyFlag");
+		//ownerMemberId is calculated in the action and put on the VO prior to saving
 
 		private String reqParam;
 		private CoreField(String reqParam) { this.reqParam = reqParam; }
 		public String getReqParam() { return reqParam; }
 	}
+
+	public static final String WARRANTY_SLUG = "WARRANTY";
 
 	/**
 	 * @param conn
@@ -233,5 +237,17 @@ public class InventoryFormProcessor extends FormDataProcessor {
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
 		}
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.data.AbstractDataProcessor#saveFiles(com.smt.sitebuilder.data.vo.FormTransactionVO)
+	 */
+	@Override
+	protected void saveFiles(FormTransactionVO data) {
+		if (req == null || !req.hasFiles()) return;
+
+		new PhotoAction(dbConn, attributes).saveFiles(req);
 	}
 }

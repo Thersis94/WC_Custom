@@ -33,11 +33,13 @@ import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
+import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.LastNameComparator;
 
@@ -78,6 +80,9 @@ public class AccountUserAction extends SBActionAdapter {
 	protected static final String ACCOUNT_ID = AccountAction.ACCOUNT_ID; //req param
 	protected static final String USER_ID = "userId"; //req param
 	protected static final String PROFILE_ID = UpdatesEditionAction.PROFILE_ID;
+	private static final String WELCOME_STANDARD_SLUG = "BIOMED_WELCOME";
+	private static final String WELCOME_UPDATES_SLUG = "BIOMED_UPDATES_WELCOME";
+	
 
 	public AccountUserAction() {
 		super();
@@ -142,13 +147,20 @@ public class AccountUserAction extends SBActionAdapter {
 		if (Convert.formatBoolean(req.getParameter("passwordReset")))
 			config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
 
-		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_WELCOME_EML));
-		Map<String, String> recipients = new HashMap<>();
-		recipients.put(u.getProfileId(), (String)config.get("emailAddress"));
+		String campInstId = WELCOME_STANDARD_SLUG;
+		if ("T".equals(u.getLicenseType()) || "U".equals(u.getLicenseType()))
+			campInstId = WELCOME_UPDATES_SLUG;
+		
+		List<EmailRecipientVO> recipients = new ArrayList<>(2);
+		recipients.add(new EmailRecipientVO(u.getProfileId(), (String)config.get("emailAddress"), EmailRecipientVO.TO));
+		String sourceId = req.getParameter("sourceId");
+		String sourceEmail = addSourceEmail(sourceId);
+		if (sourceEmail.length() > 0)
+			recipients.add(new EmailRecipientVO(sourceId, sourceEmail, EmailRecipientVO.BCC));
 
 		//perform the email send
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
-		ecbu.sendMessage(campInstId, recipients, config);
+		ecbu.sendMessage(config, recipients, campInstId);
 	}
 
 
@@ -170,12 +182,42 @@ public class AccountUserAction extends SBActionAdapter {
 		config.put("passwordResetKey", makeResetKey(req, u.getEmailAddress()));
 
 		String campInstId = StringUtil.checkVal((String) getAttribute(CFG_PSWD_RESET_EML));
-		Map<String, String> recipients = new HashMap<>();
-		recipients.put(u.getProfileId(), (String)config.get("emailAddress"));
+		List<EmailRecipientVO> recipients = new ArrayList<>(2);
+		recipients.add(new EmailRecipientVO(u.getProfileId(), (String)config.get("emailAddress"), EmailRecipientVO.TO));
+		String sourceId = req.getParameter("sourceId");
+		String sourceEmail = addSourceEmail(sourceId);
+		if (sourceEmail.length() > 0)
+			recipients.add(new EmailRecipientVO(sourceId, sourceEmail, EmailRecipientVO.BCC));
 
 		//perform the email send
 		EmailCampaignBuilderUtil ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
-		ecbu.sendMessage(campInstId, recipients, config);
+		ecbu.sendMessage(config, recipients, campInstId);
+	}
+	
+	
+	/**
+	 * Get the email address associated with the supplied source.
+	 * @param sourceId
+	 * @return
+	 */
+	private String addSourceEmail(String sourceId) {
+		String sql = "select email_address_txt from profile where profile_id = ? ";
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, sourceId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
+				String email = StringUtil.checkVal(rs.getString("email_address_txt"));
+				return se.decrypt(email);
+			}
+			
+		} catch (Exception e) {
+			log.warn("Failed to get source email with profile id " + sourceId);
+		}
+		return "";
 	}
 
 
@@ -267,26 +309,21 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	private void summateStatus(GenericVO data, ActionRequest req) {
-		Map<Integer, Integer> counts = new HashMap<>();
-		for (Status s : UserVO.Status.values())
-			counts.put(s.getCode(), Integer.valueOf(0));
 
 		Map<String, List<UserVO>> users = (Map<String, List<UserVO>>) data.getKey();
+
+		Map<String, Integer> licenses = new LinkedHashMap<>();
 		for (Map.Entry<String, List<UserVO>> entry : users.entrySet()) {
 			for (UserVO user : entry.getValue()) {
 				Integer sts = user.getStatusFlg();
-				counts.put(sts, 1+counts.get(sts));
+				if (sts == UserVO.Status.ACTIVE.getCode()) {
+					incrementActive(licenses, user.getLicenseType());
+				}else if (sts == UserVO.Status.OPEN.getCode()) {
+					incrementStatus(licenses, "O");
+				}
 			}
 		}
-		//combine inactive users
-		users = (Map<String, List<UserVO>>) data.getValue();
-		for (Map.Entry<String, List<UserVO>> entry : users.entrySet()) {
-			for (UserVO user : entry.getValue()) {
-				Integer sts = user.getStatusFlg();
-				counts.put(sts, 1+counts.get(sts));
-			}
-		}
-		req.setAttribute("statusMap", counts);
+		req.setAttribute("statusMap", licenses);
 	}
 	
 	
@@ -452,10 +489,38 @@ public class AccountUserAction extends SBActionAdapter {
 
 		//get more information about this one user, so we can display the edit screen.
 		//If this is an ADD, we don't need the additional lookups
-		if (loadProfileData)
+		if (loadProfileData) {
 			loadRegistration(req, users);
+			loadMarkets(users);
+		}
 
 		return users;
+	}
+
+	/**
+	 * Load all markets that the user is not supposed to see in the updates emails
+	 * @param users
+	 * @throws ActionException
+	 */
+	private void loadMarkets(List<Object> users) throws ActionException {
+		if (users == null || users.isEmpty() || users.size() != 1)
+			return;
+		
+		UserVO user = (UserVO) users.get(0);
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select section_id from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_user_updates_skip where user_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, user.getUserId());
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) 
+				user.addSkippedMarket(rs.getString("section_id"));
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
 	}
 
 	/**
@@ -646,10 +711,91 @@ public class AccountUserAction extends SBActionAdapter {
 
 		//save their UserVO (smarttrak user table)
 		saveRecord(user, false);
+		
+		// If this is a new user add them to the default account.
+		if (StringUtil.isEmpty(req.getParameter("userId")))
+			addToDefaultTeam(user);
+		
+		addSkippedMarkets(user);
 
 		setupRedirect(req);
 	}
 
+
+	/**
+	 * Add all markets that should be skipped in the updates emails.
+	 * @param user
+	 * @throws ActionException
+	 */
+	private void addSkippedMarkets(UserVO user) throws ActionException {
+		deleteOldSkips(user.getUserId());
+		
+		StringBuilder sql = new StringBuilder(120);
+		sql.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_user_updates_skip (user_updates_skip_id, user_id, section_id, create_dt)");
+		sql.append("values(?,?,?,?)");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			UUIDGenerator gen = new UUIDGenerator();
+			for (String skip : user.getSkippedMarkets()) {
+				ps.setString(1, gen.getUUID());
+				ps.setString(2, user.getUserId());
+				ps.setString(3, skip);
+				ps.setTimestamp(4, Convert.getCurrentTimestamp());
+				ps.addBatch();
+			}
+			
+			ps.executeBatch();
+			
+		} catch(SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * Flush out the current list of skips to make room for the new ones.
+	 * @param userId
+	 * @throws ActionException
+	 */
+	private void deleteOldSkips(String userId) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("delete from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_user_updates_skip where user_id = ? ");
+		
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, userId);
+			
+			ps.executeUpdate();
+		} catch(SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * Add the user to the default team of thier account
+	 * @param user
+	 * @throws ActionException
+	 */
+	private void addToDefaultTeam(UserVO user) throws ActionException {
+		StringBuilder sql = new StringBuilder(200);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("insert into ").append(customDb).append("biomedgps_user_team_xr ");
+		sql.append("(user_team_xr_id, team_id, user_id, create_dt) ");
+		sql.append("select ?, team_id, ?, CURRENT_TIMESTAMP from ");
+		sql.append(customDb).append("biomedgps_team where ");
+		sql.append("account_id = ? and default_flg = 1 ");
+		log.debug(sql+"|"+user.getUserId()+"|"+user.getAccountId());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, new UUIDGenerator().getUUID());
+			ps.setString(2, user.getUserId());
+			ps.setString(3, user.getAccountId());
+			
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
 
 	/**
 	 * Handles the onBlur ajax call to quick-save the user's notes textarea
@@ -871,6 +1017,8 @@ public class AccountUserAction extends SBActionAdapter {
 			
 			incrementActive(counts, rs.getString("status_cd"), true, rs.getInt("active_flg"));
 		}
+		addAccount(account, counts, results, apa, req);
+		
 		return results;
 	}
 	

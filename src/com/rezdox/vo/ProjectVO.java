@@ -55,8 +55,10 @@ public class ProjectVO {
 	private List<ProjectMaterialVO> materials;
 	private List<ProjectAttributeVO> attributes;
 	private Map<String, String> attributeMap;
+	private int photoCnt;
 
-	private Double productSubtotalNo;  //calculated internally - member avoids repeated reculations
+	private double productSubtotalNo;
+	private String mainPhone;
 
 
 	public ProjectVO() {
@@ -313,6 +315,10 @@ public class ProjectVO {
 		homeowner.setName(getAttribute(FormSlug.PROJECT_OWNER.name()));
 		homeowner.setEmailAddress(getAttribute(FormSlug.PROJECT_EMAIL.name()));
 		homeowner.setMainPhone(getAttribute(FormSlug.PROJECT_PHONE.name()));
+		homeowner.setAddress(getAttribute(FormSlug.PROJECT_ADDRESS.name()));
+		homeowner.setCity(getAttribute(FormSlug.PROJECT_CITY.name()));
+		homeowner.setState(getAttribute(FormSlug.PROJECT_STATE.name()));
+		homeowner.setZipCode(getAttribute(FormSlug.PROJECT_ZIP_CODE.name()));
 		return homeowner;
 	}
 
@@ -326,6 +332,7 @@ public class ProjectVO {
 
 		business = new BusinessVO();
 		business.setBusinessName(getAttribute(FormSlug.PROJECT_OWNER.name()));
+		business.setMainPhoneText(getMainPhone());
 		business.setEmailAddressText(getAttribute(FormSlug.PROJECT_EMAIL.name()));
 		business.setMainPhoneText(getAttribute(FormSlug.PROJECT_PHONE.name()));
 		return business;
@@ -391,19 +398,13 @@ public class ProjectVO {
 		return Convert.round(getTotalNo() - getAppliedDiscount() + getAppliedTax(), 2);
 	}
 
+	@Column(name="material_cost", isReadOnly=true)
 	public double getMaterialSubtotal() {
-		if (productSubtotalNo != null) return productSubtotalNo.doubleValue();
+		return productSubtotalNo;
+	}
 
-		double amt = 0;
-		List<ProjectMaterialVO> mats = getMaterials();
-		if (mats != null && !mats.isEmpty()) {
-			for (ProjectMaterialVO mat : mats)
-				amt += mat.getCostNo();
-		}
-
-		amt = Convert.round(amt, 2);
-		productSubtotalNo = Double.valueOf(amt);
-		return amt;
+	public void setMaterialSubtotal(double d) {
+		this.productSubtotalNo = d;
 	}
 
 	public double getAppliedMaterialDiscount() {
@@ -420,5 +421,27 @@ public class ProjectVO {
 
 	public double getInvoiceTotal() {
 		return getAppliedProjectTotal() + getAppliedMaterialTotal();
+	}
+
+	public double getInvoiceSubTotal() {
+		return getTotalNo() + getMaterialSubtotal();
+	}
+
+	@Column(name="main_phone_txt", isReadOnly=true)
+	public String getMainPhone() {
+		return mainPhone;
+	}
+
+	public void setMainPhone(String mainPhone) {
+		this.mainPhone = mainPhone;
+	}
+
+	@Column(name="photo_cnt", isReadOnly=true)
+	public int getPhotoCnt() {
+		return photoCnt;
+	}
+
+	public void setPhotoCnt(int photoCnt) {
+		this.photoCnt = photoCnt;
 	}
 }

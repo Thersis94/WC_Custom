@@ -30,13 +30,13 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 
 public class ZillowPropertyVO extends BeanDataVO {
-	
+
 	/**
 	 * Serial Version UID for serialization
 	 */
 	private static final long serialVersionUID = 631356729462912155L;
 	private transient Logger log = Logger.getLogger(ZillowPropertyVO.class);
-	
+
 	// Member variables
 	private String zillowId;
 	private Integer valueEstimate;
@@ -47,18 +47,18 @@ public class ZillowPropertyVO extends BeanDataVO {
 	private double latitude;
 	private double longitude;
 	private Map<String, String> methodMapper = new HashMap<>(8);
-	
+
 	// Extended Data
 	private Map<String, String> extendedData = new HashMap<>(16);
-	
+
 	/**
 	 * 
 	 */
 	public ZillowPropertyVO() {
 		super();
-		
+
 	}
-	
+
 	/**
 	 * Takes the values from the XML and stores them into the 
 	 * @param values
@@ -67,7 +67,7 @@ public class ZillowPropertyVO extends BeanDataVO {
 		this();
 		assignMapper();
 		List<String> delItems = new ArrayList<>();
-		
+
 		for (Map.Entry<String, String> item: values.entrySet()) {
 			String methodName = methodMapper.get(item.getKey());
 			if (methodName == null) continue;
@@ -81,21 +81,21 @@ public class ZillowPropertyVO extends BeanDataVO {
 					m = this.getClass().getDeclaredMethod(methodName, Integer.class);
 					m.invoke(this, Convert.formatInteger(item.getValue()));
 				}
-				
+
 				// Once the value has been assigned, add to the list for removal
 				delItems.add(item.getKey());
 			} catch (Exception e) {
 				log.error("Unable to map values", e);
 			}
 		}
-		
+
 		// Remove assigned values
 		for(String key : delItems) { values.remove(key); }
-		
+
 		// If there are any items left in the map, add them to the extended data set
 		if (values.size() > 0) extendedData.putAll(values);
 	}
-	
+
 	/**
 	 * Assigns a setter to the Zillow key
 	 */
@@ -115,7 +115,7 @@ public class ZillowPropertyVO extends BeanDataVO {
 	public String toString() {
 		return StringUtil.getToString(this);
 	}
-	
+
 	/**
 	 * @return the zillowId
 	 */
@@ -178,7 +178,7 @@ public class ZillowPropertyVO extends BeanDataVO {
 	public void setLongitude(double longitude) {
 		this.longitude = longitude;
 	}
-	
+
 	/**
 	 * @param zillowId the zillowId to set
 	 */
@@ -240,6 +240,13 @@ public class ZillowPropertyVO extends BeanDataVO {
 	 */
 	public void setExtendedData(Map<String, String> extendedData) {
 		this.extendedData = extendedData;
+	}
+
+	/**
+	 * @param extendedData the extendedData to set
+	 */
+	public void addExtendedData(String key, String value) {
+		this.extendedData.put(key, value);
 	}
 
 }

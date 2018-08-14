@@ -1,17 +1,15 @@
 package com.rezdox.action;
 
-// JDK 1.8.x
+// Java 8
 import java.util.Map;
 
-// App Libs
+//WC Custom
 import com.rezdox.vo.MemberVO;
-
-// SMT Base libs 3.5
+// SMTBaseLibs
 import com.siliconmtn.action.ActionRequest;
-
-// WC Libs 3.8
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title:</b> RezDoxUtils.java<br/>
@@ -58,14 +56,20 @@ public class RezDoxUtils {
 	public static final String ROOMS_PATH = MEMBER_ROOT_PATH + "/rooms";
 	public static final String BUSINESS_PATH = MEMBER_ROOT_PATH + "/business";
 	public static final String NEW_MEMBER_BUSINESS_PATH = MEMBER_ROOT_PATH + "/new-business";
+	public static final String BUSINESS_STOREFRONT_PATH = MEMBER_ROOT_PATH + "/storefront";
 	public static final String REVIEW_PATH = MEMBER_ROOT_PATH + "/review";
 	public static final String ALBUM_PATH = MEMBER_ROOT_PATH + "/gallery";
 	public static final String PHOTO_PATH = MEMBER_ROOT_PATH + "/photo";
 	public static final String PROFILE_PATH = MEMBER_ROOT_PATH + "/profile";
 	public static final String PROJECT_PATH = MEMBER_ROOT_PATH + "/projects";
 	public static final String HOME_HISTORY_PATH = MEMBER_ROOT_PATH + "/history";
+	public static final String INVENTORY_PATH = MEMBER_ROOT_PATH + "/inventory";
 	public static final String REWARD_PATH = MEMBER_ROOT_PATH + "/rewards";
-	public static final String CONNECTION_PATH = MEMBER_ROOT_PATH + "/Connections";
+	public static final String CONNECTION_PATH = MEMBER_ROOT_PATH + "/connections";
+	public static final String DIRECTORY_PATH = MEMBER_ROOT_PATH + "/directory";
+	public static final String SHARE_PATH = MEMBER_ROOT_PATH + "/share";
+	public static final String JOIN_PATH = "/join";
+	public static final String EARN_PATH = REWARD_PATH + "/earn";
 
 	/**
 	 * coefficient modifier for putting a dollar value on home improvements (projects)
@@ -86,12 +90,28 @@ public class RezDoxUtils {
 	public static final String REZDOX_RES_BUS_ROLE = "REZDOX_RES_BUS";
 	public static final String REZDOX_RES_BUS_ROLE_NAME = "	RezDox Residence and Business Role";
 	public static final int REZDOX_RES_BUS_ROLE_LEVEL = 55;
+	
+	/**
+	 * Used for setting notifications from outside of the sub-site context; like in the admintool.
+	 */
+	public static final String MEMBER_SITE_ID = "REZDOX_1";
+	
+	/**
+	 * Used for setting running Data Tool reports  in the admintool.
+	 */
+	public static final String MAIN_SITE_ID = "REZDOX_2";
 
 	/**
 	 * email slugs that correlated to the database/email campaigns.
 	 */
 	public enum EmailSlug {
-		TRANSFER_WAITING, TRANSFER_COMPLETE, BUSINESS_APPROVED, BUSINESS_DECLINED, INVITE_ACCEPTED, REVIEW_BUSINESS;
+		TRANSFER_WAITING, TRANSFER_COMPLETE, BUSINESS_APPROVED, 
+		BUSINESS_DECLINED, INVITE_ACCEPTED, REVIEW_BUSINESS, 
+		CONNECTION_REQUEST, CONNECTION_REQUEST_FRM_BIZ, CONNECTION_APPROVED, WELCOME, 
+		PROJ_ACCPT_BUSINESS, PROJ_ACCPT_HOMEOWNER, 
+		PROJ_SHARE_BUSINESS, PROJ_SHARE_HOMEOWNER,
+		BUSINESS_SHARED, RESIDENCE_SHARED, //see SharingAction
+		BUSINESS_PENDING;
 	}
 
 	private RezDoxUtils() {
@@ -108,11 +128,10 @@ public class RezDoxUtils {
 	public static String getFormId(Map<String, Object> attributes) {
 		return getFormId(attributes, ModuleVO.ATTRIBUTE_1);
 	}
-	
-	
+
+
 	/**
 	 * Get's an alternate form id used by the action
-	 * 
 	 * @param attributes
 	 * @param mapKey
 	 * @return
@@ -125,7 +144,6 @@ public class RezDoxUtils {
 
 	/**
 	 * Returns the member from session (UserDataVO)
-	 * 
 	 * @param req
 	 * @return
 	 */
@@ -141,5 +159,23 @@ public class RezDoxUtils {
 	 */
 	public static String getMemberId(ActionRequest req) {
 		return getMember(req).getMemberId();
+	}
+
+	/**
+	 * Checks if the user's role is a residence role
+	 * @param role
+	 * @return
+	 */
+	public static boolean isResidenceRole(SBUserRole role) {
+		return REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || REZDOX_RES_BUS_ROLE.equals(role.getRoleId());
+	}
+
+	/**
+	 * Checks if the user's role is a business role
+	 * @param role
+	 * @return
+	 */
+	public static boolean isBusinessRole(SBUserRole role) {
+		return REZDOX_BUSINESS_ROLE.equals(role.getRoleId()) || REZDOX_RES_BUS_ROLE.equals(role.getRoleId());
 	}
 }

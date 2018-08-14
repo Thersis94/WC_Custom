@@ -33,7 +33,7 @@ import net.sf.json.JSONObject;
 public class GapTableVO implements Serializable {
 
 	private static final long serialVersionUID = 7621234595265372737L;
-	public static final int COL_GROUP_COUNT = 6;
+	public static final int COL_GROUP_COUNT = 4;
 	/**
 	 * Enum containing Sort Types.
 	 */
@@ -224,7 +224,10 @@ public class GapTableVO implements Serializable {
 		for(int k = 0; k < cNodes.size(); k++) {
 			Node c = cNodes.get(k);
 			if(!(c.getUserObject() instanceof SectionVO) || ((SectionVO)c.getUserObject()).isGapNo()) {
-				primChild.put(c.getNodeId(), new GapColumnVO(sectionId, altGroupNo, c.getNodeId(), c.getNodeName(), null));
+				String fullName = "";
+				if (c.getUserObject() instanceof com.biomed.smarttrak.admin.vo.GapColumnVO) 
+					fullName = ((com.biomed.smarttrak.admin.vo.GapColumnVO)c.getUserObject()).getColumnNm();
+				primChild.put(c.getNodeId(), new GapColumnVO(sectionId, altGroupNo, c.getNodeId(), c.getNodeName(), fullName));
 				altChild.put(p.getNodeId(), new GapColumnVO(sectionId, colGroupNo, p.getNodeId(), p.getNodeName(), null));
 				numKids++;
 			}
