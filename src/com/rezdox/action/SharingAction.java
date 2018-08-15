@@ -98,7 +98,7 @@ public class SharingAction extends SimpleActionAdapter {
 				lookup = "m_" + RezDoxUtils.getMemberId(req);
 			}
 			ConnectionAction ca = new ConnectionAction(getDBConnection(), getAttributes());
-			putModuleData(ca.searchMembers(req.getParameter("search"), lookup, true));
+			putModuleData(ca.searchMembers(req.getParameter("search"), lookup, true, false));
 		}
 	}
 

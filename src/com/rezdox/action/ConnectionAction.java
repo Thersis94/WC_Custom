@@ -111,7 +111,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 			String sendingId = StringUtil.checkVal(req.getParameter("sendingId"));
 
 			if (MEMBER.equalsIgnoreCase(StringUtil.checkVal(req.getParameter("receiverType")))) {
-				putModuleData(searchMembers(search,sendingId, false));
+				putModuleData(searchMembers(search,sendingId, false, true));
 			} else {
 				putModuleData(searchBusiness(search,sendingId));
 			}
@@ -259,14 +259,23 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param sendingId 
 	 * @return
 	 */
-	public List<MemberVO> searchMembers(String search, String sendingId, boolean isConnected) {
+	public List<MemberVO> searchMembers(String search, String sendingId, boolean isConnected, boolean isConnectionSearch) {
 		log.debug("searching members for matches to " + search);
 		StringBuilder sql = new StringBuilder(250);
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		String[] idParts = sendingId.split("_");
 
-		sql.append("select * from ").append(schema).append("rezdox_member where LOWER(first_nm || ' ' || last_nm) like ? ");
+		sql.append("select m.member_id, m.profile_id, m.first_nm, m.last_nm, m.email_address_txt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member m ");
+		//prohibit finding 'business only' members when finding connections (not when sharing) - only their businesses can be connected to, not them.
+		//after discussion with Mike this code was pulled because of edge cases where a business owner can't share their business with employees who are also business-only members.
+//		if (isConnectionSearch) {
+//			sql.append(DBUtil.LEFT_OUTER_JOIN).append("profile_role pr on m.profile_id=pr.profile_id and pr.site_id=? ");
+//			params.add(RezDoxUtils.MAIN_SITE_ID); //roles are tied to the parent site
+//		}
+		
+		sql.append("where LOWER(first_nm || ' ' || last_nm) like ? ");
 		params.add("%"+search.toLowerCase()+"%");
 		sql.append("and member_id != ? and member_id ");
 		sql.append(isConnected ? "" : "not").append(" in ( select case  "); //boolean toggle allows this method to be reused by SharingAction
@@ -287,6 +296,11 @@ public class ConnectionAction extends SimpleActionAdapter {
 		}
 
 		sql.append("else '-1' end as member_id from ").append(schema).append("rezdox_connection where approved_flg >= 0 group by member_id ) ");
+	// see note above for why this is commented.
+//		if (isConnectionSearch) {
+//			sql.append("and pr.role_id != ? ");
+//			params.add(RezDoxUtils.REZDOX_BUSINESS_ROLE);
+//		}
 		sql.append(" order by last_nm, first_nm asc ");
 		log.debug(sql+"|"+params);
 

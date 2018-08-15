@@ -20,6 +20,7 @@ import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -396,6 +397,9 @@ public class BusinessAction extends SBActionAdapter {
 				log.error("could not delete buisness", e);
 				msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 			}
+			//remove the connections cookie so it rebuilds after the redirect
+			CookieUtil.remove(req, ConnectionAction.CONNECTION_COOKIE);
+
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			sendRedirect(page.getFullPath(), msg, req);
 
