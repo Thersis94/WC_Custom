@@ -19,6 +19,8 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.constants.Constants;
 
+import net.sf.json.JSONObject;
+
 /****************************************************************************
  * <b>Title</b>: SaveStateVO.java
  * <b>Project</b>: WC_Custom
@@ -34,6 +36,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class SaveStateVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
+	private static final String SEL_SAVE_STATE_ID_KEY = "SEL_SAVE_STATE_ID";
 	private String saveStateId;
 	private String userId;
 	private String layoutNm;
@@ -190,5 +193,18 @@ public class SaveStateVO implements Serializable {
 		this.saveData = saveData;
 	}
 
-	
+	/**
+	 * Fix Save State Data and Ensure SEL_SAVE_STATE_ID value is present and
+	 * correct.
+	 */
+	@SuppressWarnings("unchecked")
+	public void fixSaveState() {
+		JSONObject json = JSONObject.fromObject(this.saveData);
+		if(!json.containsKey(SEL_SAVE_STATE_ID_KEY)) {
+			json.accumulate(SEL_SAVE_STATE_ID_KEY, this.saveStateId);
+		} else {
+			json.replace(SEL_SAVE_STATE_ID_KEY, saveStateId);
+		}
+		this.saveData = json.toString();
+	}
 }

@@ -2,9 +2,9 @@ package com.biomed.smarttrak.admin.report;
 
 // Java 8
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 // WC custom
 import com.biomed.smarttrak.util.SmarttrakTree;
@@ -52,7 +52,7 @@ public class AccountUsersVO extends AccountVO {
 	public AccountUsersVO() {
 		// contructor
 		users = new ArrayList<>();
-		divisions = new LinkedHashMap<>();
+		divisions = new TreeMap<>();
 	}
 
 	/**
@@ -132,22 +132,17 @@ public class AccountUsersVO extends AccountVO {
 
 	/**
 	 * Increments the count for certain user status values.
-	 * @param statusCode
-	 * @deprecated - fixed naming convention.  status[active|inactive] is not the same as license type
 	 */
-	@Deprecated
-	public void countUserStatus(String code) {
-		countLicenseType(code);
-	}
-	
-	public void countLicenseType(String statusCode) {
-		if (statusCode.equals(UserVO.LicenseType.COMPLIMENTARY.getCode())) {
+	public void countLicenseType(UserVO user) {
+		if (user.getStatusFlg() == com.biomed.smarttrak.vo.UserVO.Status.OPEN.getCode()) {
+			openSeatsCnt++;
+		} else if (user.getLicenseType().equals(UserVO.LicenseType.COMPLIMENTARY.getCode())) {
 			compSeatsCnt++;
-		} else if (statusCode.equals(UserVO.LicenseType.EXTRA.getCode())) {
+		} else if (user.getLicenseType().equals(UserVO.LicenseType.EXTRA.getCode())) {
 			addedSeatsCnt++;
-		} else if (statusCode.equals(UserVO.LicenseType.UPDATES.getCode())) {
+		} else if (user.getLicenseType().equals(UserVO.LicenseType.UPDATES.getCode())) {
 			updatesOnlyCnt++;
-		} else if (statusCode.equals(UserVO.LicenseType.ACTIVE.getCode())) {
+		} else if (user.getLicenseType().equals(UserVO.LicenseType.ACTIVE.getCode())) {
 			activeSeatsCnt++;
 		}
 	}

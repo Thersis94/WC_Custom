@@ -60,6 +60,7 @@ public class SRTEmployeeListAction extends SimpleActionAdapter {
 			List<GenericVO> data = employees
 					.stream()
 					.map(listDataVO -> new GenericVO(listDataVO.getValueTxt(), listDataVO.getLabelTxt()))
+					.sorted((employee1, employee2) -> ((String)employee1.getValue()).compareTo((String)employee2.getValue()))
 					.collect(Collectors.toList());
 			putModuleData(data, data.size(), false);
 		}

@@ -22,6 +22,7 @@ import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.biomed.smarttrak.vo.UserVO;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -32,6 +33,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -108,11 +110,19 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		dash.setData(req, sections);
 		dash.setBehindLatest(latest);
 
+		//Load filtered Sections from FinancialDashHierarchyAction
+		if (!req.hasParameter("isJson")) {
+			FinancialDashHierarchyAction fdha = (FinancialDashHierarchyAction) ActionControllerFactoryImpl.loadAction(FinancialDashHierarchyAction.class.getName(), this);
+			fdha.retrieve(req);
+			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+			req.setAttribute("sectionTree", mod.getActionData());
+		}
+
 		// Filter out financial data requests (i.e initial page load vs. json call).
 		// Financial data is only needed on a json call or report request.
 		// Default data/options are required for initial page load.
 		if (req.hasParameter("isJson") || req.hasParameter("isReport"))
-			getFinancialData(dash, sections);
+			getFinancialData(dash, sections, dashType);
 
 		if (req.hasParameter("isReport"))
 			processReport(req, dash, sections);
@@ -221,7 +231,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * 
 	 * @param dash
 	 */
-	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections) {
+	protected void getFinancialData(FinancialDashVO dash, SmarttrakTree sections, DashType dashType) {
 		String sql = getFinancialDataSql(dash);
 		int regionCnt = dash.getCountryTypes().size();
 		int sectionCnt = getQuerySectionCnt(dash);
@@ -246,7 +256,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
 
 			ResultSet rs = ps.executeQuery();
-			dash.setData(rs, sections);
+			dash.setData(rs, sections, dashType);
 		} catch (SQLException sqle) {
 			log.error("Unable to get financial dashboard data", sqle);
 		}

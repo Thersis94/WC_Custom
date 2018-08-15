@@ -44,12 +44,14 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	private String xrProjectId;
 	private int totalBuilt;
 	private int partCount;
-	private boolean obsoleteFlg;
+	private int obsoleteFlg;
 	private String obsoleteReason;
 	private Date createDt;
 	private Date updateDt;
 	private SRTFileVO prodImg;
 	private Map<String, String> attributes;
+	private String projectId;
+	private String mrProjectXRId;
 
 	public SRTMasterRecordVO() {
 		attributes = new LinkedHashMap<>();
@@ -79,6 +81,14 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	@Column(name="MASTER_RECORD_ID", isPrimaryKey=true)
 	public String getMasterRecordId() {
 		return masterRecordId;
+	}
+
+	/**
+	 * @return the mrProjectXRId
+	 */
+	@Column(name="MASTER_RECORD_PROJECT_XR_ID", isReadOnly=true)
+	public String getMrProjectXRId() {
+		return mrProjectXRId;
 	}
 
 	/**
@@ -170,18 +180,26 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the projectId.
+	 */
+	@Column(name="PROJECT_ID", isReadOnly=true)
+	public String getProjectId() {
+		return projectId;
+	}
+
+	/**
 	 * @return the isObsolete
 	 */
 	@Column(name="OBSOLETE_FLG")
 	public int getObsoleteFlg() {
-		return Convert.formatInteger(obsoleteFlg);
+		return obsoleteFlg;
 	}
 
 	/**
 	 * @return the isObsolete
 	 */
 	public boolean isObsolete() {
-		return obsoleteFlg;
+		return Convert.formatBoolean(obsoleteFlg);
 	}
 
 	/**
@@ -235,6 +253,13 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	 */
 	public void setMasterRecordId(String masterRecordId) {
 		this.masterRecordId = masterRecordId;
+	}
+
+	/**
+	 * @param mrProjectXRId the mrProjectXRId to set.
+	 */
+	public void setMrProjectXRId(String mrProjectXRId) {
+		this.mrProjectXRId = mrProjectXRId;
 	}
 
 	/**
@@ -315,14 +340,21 @@ public class SRTMasterRecordVO extends BeanDataVO {
 	}
 
 	/**
+	 * @param projectId the projectId to set.
+	 */
+	public void setProjectId(String projectId) {
+		this.projectId = projectId;
+	}
+
+	/**
 	 * @param isObsolete the isObsolete to set.
 	 */
 	public void setObsolete(boolean obsoleteFlg) {
-		this.obsoleteFlg = obsoleteFlg;
+		this.obsoleteFlg = Convert.formatInteger(obsoleteFlg);
 	}
 
-	public void setObsoleteFlg(int isObsolete) {
-		this.obsoleteFlg = Convert.formatBoolean(obsoleteFlg);
+	public void setObsoleteFlg(int obsoleteFlg) {
+		this.obsoleteFlg = obsoleteFlg;
 	}
 	/**
 	 * @param obsoleteReason the obsoleteReason to set.

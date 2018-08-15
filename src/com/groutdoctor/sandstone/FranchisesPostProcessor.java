@@ -13,8 +13,8 @@ import com.siliconmtn.util.StringUtil;
  * <b>Title</b>: FranchisesPostProcessor.java
  * <b>Project</b>: WC_Custom
  * <b>Description: </b> Post processor for Grout Doctor's "Info on Franchise
- * Opportunities" and "Join the Team" contact forms. Forwards the contact
- * data to be automatically processed in SandStone.
+ * Opportunities" contact forms. Forwards the contact data to be automatically
+ * processed in SandStone.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -26,6 +26,9 @@ public class FranchisesPostProcessor extends SandstoneAbstractPostProcessor {
 
 	public static final String SANDSTONE_MODULE = "franchises";
 	public static final String SANDSTONE_ACTION = "createNewFromAPI";
+	public static final String DEFAULT_FORM_TYPE = "info";
+	
+	private String formType;
 
 	public FranchisesPostProcessor() {
 		super();
@@ -63,6 +66,8 @@ public class FranchisesPostProcessor extends SandstoneAbstractPostProcessor {
 		params.put("address_1", StringUtil.checkVal(req.getParameter("pfl_ADDRESS_TXT")));
 		params.put("zipcode", StringUtil.checkVal(req.getParameter("pfl_ZIP_CD")));
 		
+		params.put("form_type", getFormType());
+		
 		// Submit the data to Sandstone for processing
 		submitToSandstone(params);
 	}
@@ -75,5 +80,13 @@ public class FranchisesPostProcessor extends SandstoneAbstractPostProcessor {
 	@Override
 	public String getSandstoneAction() {
 		return SANDSTONE_ACTION;
+	}
+
+	private String getFormType() {
+		return StringUtil.isEmpty(formType) ? DEFAULT_FORM_TYPE : formType;
+	}
+
+	protected void setFormType(String formType) {
+		this.formType = formType;
 	}
 }

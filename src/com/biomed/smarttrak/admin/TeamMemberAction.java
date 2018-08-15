@@ -134,8 +134,9 @@ public class TeamMemberAction extends SBActionAdapter {
 				db.delete(new TeamMemberVO(req));
 				putModuleData("deleted"); //unused placeholder to prevent redirection
 			} else {
-				db.save(new TeamMemberVO(req));
-				putModuleData(db.getGeneratedPKId());
+				TeamMemberVO member = new TeamMemberVO(req);
+				db.save(member);
+				putModuleData(member.getUserTeamXrId());
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);

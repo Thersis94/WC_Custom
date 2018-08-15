@@ -1,4 +1,4 @@
-package com.depuysynthes.huddle;
+package com.depuysynthes.security;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -11,7 +11,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 /****************************************************************************
  * <b>Title</b>: LoginAction.java<p/>
  * <b>Description: This action is tied to the Layout, at the public role level only.
- * If this module executes that means the user is not logged in; immediately initialte a login
+ * If this module executes that means the user is not logged in; immediately initiate a login
  * request, which is a redirect to SSO.</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2016<p/>

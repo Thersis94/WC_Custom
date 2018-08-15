@@ -41,6 +41,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	private Date updateDate;
 	private double projectsTotal;
 	private double inventoryTotal;
+	private int statusFlag; //comes from the member_xr - used to denote a shared residence
 
 	/**
 	 * Special use keys for values from the attributes table in the attibutes map
@@ -328,5 +329,18 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 
 	public void setInventoryTotal(double inventoryTotal) {
 		this.inventoryTotal = inventoryTotal;
+	}
+
+	@Column(name="status_flg", isReadOnly=true)
+	public int getStatusFlag() {
+		return statusFlag;
+	}
+
+	public void setStatusFlag(int statusFlag) {
+		this.statusFlag = statusFlag;
+	}
+
+	public boolean isShared() {
+		return 2 == statusFlag;
 	}
 }

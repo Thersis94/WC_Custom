@@ -3,8 +3,10 @@ package com.depuysynthes.srt.vo;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import com.depuysynthes.srt.util.SRTUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -35,6 +37,7 @@ public class SRTFileVO extends BeanDataVO {
 	private String fileName;
 	private String filePathText;
 	private Date createDt;
+	private SRTRosterVO owner;
 	
 	public SRTFileVO() {
 		super();
@@ -42,6 +45,9 @@ public class SRTFileVO extends BeanDataVO {
 
 	public SRTFileVO(ActionRequest req) {
 		populateData(req);
+
+		//File RosterId should always be the user that's performing the upload.
+		rosterId = SRTUtil.getRoster(req).getRosterId();
 	}
 
 	public SRTFileVO(ResultSet rs) {
@@ -180,5 +186,20 @@ public class SRTFileVO extends BeanDataVO {
 	 */
 	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
+	}
+
+	/**
+	 * @return the owner
+	 */
+	public SRTRosterVO getOwner() {
+		return owner;
+	}
+
+	/**
+	 * @param owner the owner to set.
+	 */
+	@BeanSubElement
+	public void setOwner(SRTRosterVO owner) {
+		this.owner = owner;
 	}
 }

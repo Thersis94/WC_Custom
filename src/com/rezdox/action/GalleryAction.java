@@ -63,7 +63,7 @@ public class GalleryAction extends SimpleActionAdapter {
 		if (req.hasParameter("residenceId")) {
 			ResidenceAction ra = new ResidenceAction(dbConn, attributes);
 			req.setAttribute(ResidenceAction.RESIDENCE_DATA, ra.retrieveResidences(req));
-			
+
 		} else if (req.hasParameter("businessId")) {
 			BusinessAction ba = new BusinessAction(dbConn, attributes);
 			req.setAttribute(BusinessAction.BUSINESS_DATA, ba.retrieveBusinesses(req));
@@ -97,13 +97,14 @@ public class GalleryAction extends SimpleActionAdapter {
 		} else if (!StringUtil.isEmpty(opts.getResidenceId())) {
 			sql.append("or residence_id=? ");
 			params.add(opts.getResidenceId());
-			
+
 		} else if (!StringUtil.isEmpty(opts.getBusinessId())) {
 			sql.append("or a.business_id=? ");
 			params.add(opts.getBusinessId());
 		}
-		
+
 		sql.append("group by a.album_id");
+		log.debug(sql);
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		return dbp.executeSelect(sql.toString(), params, new AlbumVO());
@@ -117,7 +118,7 @@ public class GalleryAction extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		AlbumVO album = new AlbumVO(req);
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 
 		try {
 			if (req.hasParameter("isDelete")) {

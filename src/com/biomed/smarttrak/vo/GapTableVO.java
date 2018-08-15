@@ -33,7 +33,7 @@ import net.sf.json.JSONObject;
 public class GapTableVO implements Serializable {
 
 	private static final long serialVersionUID = 7621234595265372737L;
-	public static final int COL_GROUP_COUNT = 6;
+	public static final int COL_GROUP_COUNT = 4;
 	/**
 	 * Enum containing Sort Types.
 	 */

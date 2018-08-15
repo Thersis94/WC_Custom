@@ -12,7 +12,6 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> SRTRequestVO.java
@@ -37,8 +36,7 @@ public class SRTRequestVO extends BeanDataVO {
 	private String rosterId;
 	private SRTRosterVO requestor;
 	private String hospitalName;
-	private String surgeonFirstName;
-	private String surgeonLastName;
+	private String surgeonNm;
 	private String description;
 	private String reqTerritoryId;
 	private List<GenericVO> fileUploads;
@@ -53,6 +51,7 @@ public class SRTRequestVO extends BeanDataVO {
 	private Date createDt;
 	private Date updateDt;
 
+	//Helper Values.
 	private String projectStatus;
 
 	public SRTRequestVO() {
@@ -104,22 +103,6 @@ public class SRTRequestVO extends BeanDataVO {
 	@Column(name="HOSPITAL_NM")
 	public String getHospitalName() {
 		return hospitalName;
-	}
-
-	/**
-	 * @return the surgeonFirstName
-	 */
-	@Column(name="SURGEON_FIRST_NM")
-	public String getSurgeonFirstName() {
-		return surgeonFirstName;
-	}
-
-	/**
-	 * @return the surgeonLastName
-	 */
-	@Column(name="SURGEON_LAST_NM")
-	public String getSurgeonLastName() {
-		return surgeonLastName;
 	}
 
 	/**
@@ -231,11 +214,19 @@ public class SRTRequestVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the Project Status
+	 * @return the projectStatus
 	 */
 	@Column(name="PROJ_STAT_ID", isReadOnly=true)
 	public String getProjectStatus() {
 		return projectStatus;
+	}
+
+	/**
+	 * @return the surgeonNm
+	 */
+	@Column(name="SURGEON_NM")
+	public String getSurgeonNm() {
+		return surgeonNm;
 	}
 
 	@BeanSubElement
@@ -270,20 +261,6 @@ public class SRTRequestVO extends BeanDataVO {
 	 */
 	public void setHospitalName(String hospitalName) {
 		this.hospitalName = hospitalName;
-	}
-
-	/**
-	 * @param surgeonFirstName the surgeonFirstName to set.
-	 */
-	public void setSurgeonFirstName(String surgeonFirstName) {
-		this.surgeonFirstName = surgeonFirstName;
-	}
-
-	/**
-	 * @param surgeonLastName the surgeonLastName to set.
-	 */
-	public void setSurgeonLastName(String surgeonLastName) {
-		this.surgeonLastName = surgeonLastName;
 	}
 
 	/**
@@ -400,9 +377,9 @@ public class SRTRequestVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return concatenated Surgeon Name.
+	 * @param surgeonNm the surgeonNm to set.
 	 */
-	public String getSurgeonName() {
-		return StringUtil.join(surgeonFirstName, " ", surgeonLastName).trim();
+	public void setSurgeonNm(String surgeonNm) {
+		this.surgeonNm = surgeonNm;
 	}
 }

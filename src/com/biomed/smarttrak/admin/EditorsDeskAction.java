@@ -10,7 +10,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.util.DatabaseException;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.changelog.ChangeLogUtil;
@@ -52,7 +51,7 @@ public class EditorsDeskAction extends SBActionAdapter {
 
 		try {
 			new ChangeLogUtil(dbConn, attributes).updateApprovalStatus(wcSyncId, profileId);
-		} catch (InvalidDataException | DatabaseException e) {
+		} catch (DatabaseException e) {
 			log.error("Problem updating Approval Record.", e);
 		}
 	}

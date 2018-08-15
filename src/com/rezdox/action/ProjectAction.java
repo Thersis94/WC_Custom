@@ -471,7 +471,12 @@ public class ProjectAction extends SimpleActionAdapter {
 		retrieve(req);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		String secBin = StringUtil.join((String)getAttribute(Constants.SEC_BINARY_DIRECTORY), 
+		/*
+		 * Use the DISK path to /secBinary, which aligns with a file:// protocol in the PDF rendered.
+		 * This skates permission issues, /secBinary is secure and the renderer cannot forward the user's credentials.
+		 * JM - 7.19.18 - REZDOX-270
+		 */
+		String secBin = StringUtil.join((String)getAttribute(Constants.SBINARY_PATH), 
 				(String)getAttribute(Constants.ORGANIZATION_ALIAS), site.getOrganizationId());
 
 		InvoiceReportPDF report = new InvoiceReportPDF(site.getFullSiteAlias(), secBin);
