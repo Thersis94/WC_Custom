@@ -83,7 +83,7 @@ public class CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail());
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
-			mail.addRecipient("kshull@ITS.JNJ.com");
+			mail.addRecipient("klemon1@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
@@ -127,7 +127,7 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addCC("kshull@ITS.JNJ.com");
+			mail.addCC("klemon1@ITS.JNJ.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.setSubject("Newspaper Options - Seminar " + sem.getRSVPCodes());
@@ -167,7 +167,7 @@ public class CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("kshull@ITS.JNJ.com");
+			mail.addCC("klemon1@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			if (! isCFSEM ){ //Additional recipients for DePuy Funded events
 				mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -213,7 +213,7 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addCC("kshull@ITS.JNJ.com");
+			mail.addCC("klemon1@ITS.JNJ.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.setSubject((isOnline ? "Online" : "Newspaper") + " Ad approval required - Seminar " + sem.getRSVPCodes());
@@ -295,7 +295,7 @@ public class CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			if (consignee.getEmail() != null) mail.addRecipient(consignee.getEmail());
 			mail.addBCC(site.getAdminEmail());
-			mail.addBCC("kshull@ITS.JNJ.com");
+			mail.addBCC("klemon1@ITS.JNJ.com");
 			mail.addBCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 
@@ -346,7 +346,7 @@ public class CoopAdsEmailer {
 				mail.addRecipient("Brittany.Neff@hmktgroup.com");
 				mail.addCC(sem.getOwner().getEmailAddress());
 				mail.addCC(site.getAdminEmail());
-				mail.addCC("kshull@ITS.JNJ.com");
+				mail.addCC("klemon1@ITS.JNJ.com");
 				mail.addCC("educationalseminars@dpyus.jnj.com");
 				mail.addCC("Francisco.Gonzalez@umj3.com");
 				mail.addCC("Evan.Pring@umj3.com");
@@ -359,7 +359,7 @@ public class CoopAdsEmailer {
 				//CFSEM recipients
 				mail.addRecipient("Brittany.Neff@hmktgroup.com");
 				mail.addCC(site.getAdminEmail());
-				mail.addCC("kshull@ITS.JNJ.com");
+				mail.addCC("klemon1@ITS.JNJ.com");
 			}
 
 			mail.setSubject(subject.toString());
@@ -438,7 +438,7 @@ public class CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("kshull@ITS.JNJ.com");
+			mail.addCC("klemon1@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject(subject);
@@ -505,7 +505,7 @@ public class CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("kshull@ITS.JNJ.com");
+			mail.addCC("klemon1@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -552,7 +552,7 @@ public class CoopAdsEmailer {
 			mail.setFrom(site.getMainEmail());
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("kshull@ITS.JNJ.com");
+			mail.addCC("klemon1@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
@@ -589,7 +589,7 @@ public class CoopAdsEmailer {
 			mail.setTextBody(msg.toString());
 
 			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("kshull@ITS.JNJ.com");
+			mail.addRecipient("klemon1@ITS.JNJ.com");
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
