@@ -1,5 +1,7 @@
 package com.biomed.smarttrak.action.rss.util;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -8,10 +10,11 @@ import java.util.List;
 import java.util.Locale;
 
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
-
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title:</b> SmarttrakRSSImporter.java
@@ -27,6 +30,7 @@ import com.siliconmtn.util.EnumUtil;
 public class SmarttrakRSSImporter extends CommandLineUtil {
 
 	private static final String SCRIPT_PROPERTIES_PATH = "scripts/bmg_smarttrak/rss_config.properties";
+	private static final int MAX_KEEP_DAYS = 60;
 	private List<String> feedList;
 	private long startTime;
 
@@ -51,6 +55,11 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		loadProperties(SCRIPT_PROPERTIES_PATH);
 		loadDBConnection(props);
 		startTime = Calendar.getInstance().getTimeInMillis();
+
+		//Flush Old Filtered Articles.
+		flushOldFilteredArticles();
+
+		//Process Feeds.
 		if(args == null || args.length == 0) {
 			//loop all types in the enum
 			for(ArticleSourceType s : ArticleSourceType.values()) {
@@ -133,5 +142,26 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 	 */
 	protected String fmtNo(long no) {
 		return NumberFormat.getNumberInstance(Locale.US).format(no);
+	}
+
+	/**
+	 * Flush out old Filtered Articles that are older than the flushDtCutoff
+	 * value and not flagged with the Kept(K) Status.
+	 * Defaulted to 60 Days for now but configurable via maxKeepDays value in
+	 * properties.
+	 */
+	private void flushOldFilteredArticles() {
+		int maxKeepDays = Integer.parseInt(props.getProperty("maxKeepDays", Integer.toString(MAX_KEEP_DAYS)));
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("delete from ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_rss_filtered_article ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("create_dt < current_date - ? and article_status_cd != 'K'");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, maxKeepDays);
+			int numDeleted = ps.executeUpdate();
+			log.info(String.format("Flushed %d unused filtered articles older than %d days", numDeleted, maxKeepDays));
+		} catch (SQLException e) {
+			log.error("Error Flushing Old Records", e);
+		}
 	}
 }

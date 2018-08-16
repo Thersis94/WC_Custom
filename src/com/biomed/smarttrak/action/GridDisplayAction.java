@@ -492,6 +492,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		additionalOptions.put(LOAD_TABLE, loadTable);
 		String prefix = determinePrefix(grid.getSeries());
 		additionalOptions.put("prefix", prefix);
+		additionalOptions.put("disclaimer", grid.getDisclaimer());
 		
 		if (type == ChartType.PIE) {
 			additionalOptions.put("modifyPieLabels", modifyPieLabels(grid));
@@ -516,12 +517,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		}
 		
 		options.getChartOptions().put("legend", legend);
-		
-		Map<String, Object> style = new HashMap<>(2);
-		style.put("color", "#FF0000");
-		style.put("fontSize", "12px");
 
-		loadParamMap("credits", options.getChartOptions()).put("style", style);
+		loadParamMap("credits", options.getChartOptions()).put("enabled", false);
 		
 		return options;
 	}
