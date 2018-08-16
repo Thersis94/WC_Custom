@@ -139,6 +139,7 @@ public class ProductAction extends SimpleActionAdapter {
 		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
 		sql.append("ON xr.SECTION_ID = s.SECTION_ID ");
 		sql.append("WHERE p.COMPANY_ID = ? and p.product_id != ? ");
+		sql.append("order by p.product_nm ");
 
 		List<String> addedItems = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
