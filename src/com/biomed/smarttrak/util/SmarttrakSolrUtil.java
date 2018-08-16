@@ -28,11 +28,14 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  ****************************************************************************/
 public class SmarttrakSolrUtil extends SolrActionUtil {
 
+	protected static final int ST_COMMIT_WITHIN_MS = 3000; //commit a little faster for ST
+
 	/**
 	 * @param attributes
 	 */
 	public SmarttrakSolrUtil(Map<String, Object> attributes) {
 		super(attributes);
+		commitWithinMs = ST_COMMIT_WITHIN_MS;
 	}
 
 	/**
@@ -40,14 +43,7 @@ public class SmarttrakSolrUtil extends SolrActionUtil {
 	 */
 	public SmarttrakSolrUtil(SolrClient server) {
 		super(server);
-	}
-
-	/**
-	 * @param attributes
-	 * @param hardCommit
-	 */
-	public SmarttrakSolrUtil(Map<String, Object> attributes, boolean hardCommit) {
-		super(attributes, hardCommit);
+		commitWithinMs = ST_COMMIT_WITHIN_MS;
 	}
 
 	@Override
@@ -78,8 +74,8 @@ public class SmarttrakSolrUtil extends SolrActionUtil {
 	public static Predicate<SolrDocumentVO> isInsecureDoc() {
 		return p -> !(p instanceof SecureSolrDocumentVO);
 	}
-	
-	
+
+
 	/**
 	 * Create the unchanged field value combo and a case insensitive search
 	 * version where the value has been reduced to lower case
