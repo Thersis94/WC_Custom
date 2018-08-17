@@ -1087,7 +1087,7 @@ public class MarketManagementAction extends ManagementAction {
 			try {
 				if (marketId.length() < AdminControllerAction.DOC_ID_MIN_LEN)
 					marketId = Section.MARKET.name() + "_" +marketId;
-				idx.purgeSingleItem(marketId);
+				idx.purgeSingleItem(marketId, false);
 			} catch (IOException e) {
 				log.warn("could not delete market from solr " + marketId, e);
 			}
