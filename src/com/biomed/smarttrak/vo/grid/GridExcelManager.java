@@ -225,7 +225,7 @@ public class GridExcelManager {
     	int prefixIndex = 0;
     	if (matcher.find())
     		prefixIndex = matcher.start() - 1;
-    	log.debug(numberVal+"|"+prefixIndex);
+    	
     	String prefix = "";
     	if (prefixIndex > 0)
         	prefix = numberVal.substring(0, prefixIndex);
