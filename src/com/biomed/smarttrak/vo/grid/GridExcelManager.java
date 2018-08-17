@@ -3,6 +3,8 @@ package com.biomed.smarttrak.vo.grid;
 // JDK 1.8.x
 import java.io.ByteArrayOutputStream;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // Log4j 1.2.17
 import org.apache.log4j.Logger;
@@ -85,7 +87,7 @@ public class GridExcelManager {
 			}
 
 			// Add the rows of data
-			addDataRows(details, workbook, sheet, ctr, numberCols);
+			addDataRows(details, workbook, sheet, ctr, numberCols, Convert.formatBoolean(grid.getAbbreviateNumbers()));
 
 			// resize all of the columns
 			for (int i=0; i < numberCols; i++) sheet.autoSizeColumn(i);
@@ -112,7 +114,7 @@ public class GridExcelManager {
 	 * @param ctr
 	 * @param numberCols
 	 */
-	private void addDataRows(List<GridDetailVO> details, HSSFWorkbook workbook, HSSFSheet sheet, int ctr, int numberCols) {
+	private void addDataRows(List<GridDetailVO> details, HSSFWorkbook workbook, HSSFSheet sheet, int ctr, int numberCols, boolean abbreviateNumbers) {
 		Row row;
 		Cell cell;
 		for (GridDetailVO detail : details ) {
@@ -127,7 +129,7 @@ public class GridExcelManager {
 			//set data values
 			for (int i=0; i < (numberCols); i++) {
 				cell = row.createCell(i + 1);
-				addCellValue(workbook, cell, detail, detail.getValues()[i]);	
+				addCellValue(workbook, cell, detail, detail.getValues()[i], abbreviateNumbers);	
 			}
 		}
 	}
@@ -139,7 +141,7 @@ public class GridExcelManager {
 	 * @param detail
 	 * @return
 	 */
-	private void addCellValue(HSSFWorkbook workbook, Cell cell, GridDetailVO detail, String value) {
+	private void addCellValue(HSSFWorkbook workbook, Cell cell, GridDetailVO detail, String value, boolean abbreviateNumbers) {
 		boolean neg = false;
 		if (Convert.formatDouble(value) < 0) neg = true;
 		if (neg) log.info("Val: " + detail.getDetailType() + "|" + value + "|" + Convert.formatDouble(value));
@@ -149,7 +151,7 @@ public class GridExcelManager {
 		//remove any non-relevant characters(currency symbols, commas, percents, etc.) If empty, not a number value
 		String numericValue = StringUtil.checkVal(value).replaceAll("[^\\d\\.]","");
 		if(!StringUtil.isEmpty(numericValue) && !RowStyle.HEADING.equals(RowStyle.valueOf(detailType)) && (value.replace(",", "").length() - numericValue.length()) < 4) {
-			boolean isPercent = setNumericValue(StringUtil.checkVal(value), numericValue, cell);
+			boolean isPercent = setNumericValue(StringUtil.checkVal(value), numericValue, cell, abbreviateNumbers);
 
 			//determine if a currency symbol is present
 			String curSymbol = "";
@@ -174,7 +176,7 @@ public class GridExcelManager {
 	 * @param cell
 	 * @return
 	 */
-	private boolean setNumericValue(String originalValue, String numericValue, Cell cell) {
+	private boolean setNumericValue(String originalValue, String numericValue, Cell cell, boolean abbreviateNumbers) {
 		boolean isPercent = false;
 		//parse value into number
  	   Double numberVal = Double.parseDouble(numericValue);
@@ -188,11 +190,73 @@ public class GridExcelManager {
  		   numberVal = numberVal*-1;
  	   }
  	   
- 	   cell.setCellValue(numberVal);
- 	   cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+ 	   if (abbreviateNumbers && !isPercent) {
+ 		  cell.setCellValue(abbreviateNumber(StringUtil.checkVal(numberVal)));
+ 	   } else {
+ 	 	   cell.setCellValue(numberVal);
+ 	 	   cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+ 	   }
+ 	   
  	   return isPercent;
 	}
 
+
+	/**
+	 * Truncate numbers if neccesary
+	 * @param numberVal
+	 * @return
+	 */
+	private String abbreviateNumber(String numberVal) {
+		String origVal = numberVal;
+		
+		// Convert from scientific exponent to simple number if applicable.
+		if (numberVal.indexOf('E') > -1) {
+			int exp = Convert.formatInteger(numberVal.substring(numberVal.indexOf('E')+1));
+			numberVal = StringUtil.padRight(numberVal.replace(".", "").substring(0, numberVal.indexOf('E')-1), '0', exp+1);
+		}
+		
+		if (numberVal.indexOf('.') > -1)
+			numberVal = numberVal.substring(0, numberVal.indexOf('.'));
+    	
+    	if (numberVal.length() <= 3) return origVal;
+		
+		Matcher matcher = Pattern.compile("\\d").matcher(numberVal);
+    	matcher.find();
+    	int prefixIndex = 0;
+    	if (matcher.find())
+    		prefixIndex = matcher.start() - 1;
+    	log.debug(numberVal+"|"+prefixIndex);
+    	String prefix = "";
+    	if (prefixIndex > 0)
+        	prefix = numberVal.substring(0, prefixIndex);
+		
+		String suffix = "";
+		int pos = numberVal.length()%3;
+		if (pos == 0) pos = 3;
+		switch ((int)Math.ceil((double)numberVal.length()/3)) {
+			case 2:
+				suffix = " K";
+				break;
+			case 3:
+				suffix = " M";
+				break;
+			case 4:
+				suffix = " B";
+				break;
+			case 5:
+				suffix = " T";
+				break;
+			default:
+				suffix = "";
+		}
+
+		StringBuilder formatted = new StringBuilder(pos + 4);
+
+		formatted.append(prefix).append(numberVal.substring(0, pos)).append(".");
+		formatted.append(numberVal.substring(pos, pos+1)).append(suffix);
+
+		return formatted.toString();
+	}
 
 	public void addHeadingLabel(HSSFWorkbook workbook, HSSFSheet sheet, int numColumns, String name) {
 		Row row = sheet.createRow(0);
