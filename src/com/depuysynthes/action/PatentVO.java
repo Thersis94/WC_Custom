@@ -14,7 +14,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
 
 /**
  * **************************************************************************
- * <b>Title</b>: PatentAction.PatentVO.java<p/>
+ * <b>Title</b>: PatentVO.java<p/>
  * <b>Description: Simple VO for Patent records coming from the database.</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2015<p/>

@@ -14,11 +14,13 @@ import org.apache.log4j.Logger;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.admin.action.OrganizationAction;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -36,6 +38,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class PatentManagementAction extends SBActionAdapter {
 
 	private static Logger log = Logger.getLogger(PatentManagementAction.class.getName());
+	static final String PARAM_IMPORT_FILE = "importFile";
 	static final String PATENT_TABLE = "dpy_syn_patent";
 	private static final String PARAM_SEARCH_BARCODE = "searchBarcode";
 	private static final String PARAM_SEARCH_COMPANY = "searchCompany";
@@ -159,14 +162,11 @@ public class PatentManagementAction extends SBActionAdapter {
 	@Override
 	public void update(ActionRequest req) throws ActionException {
 		//save the Excel file if one was uploaded
-		if (req.getFile("importFile") != null) {
+		if (req.getFile(PARAM_IMPORT_FILE) != null) {
 			processImportFile(req);
-
 		} else {
 			managePatents(req);
-
 		}
-
 	}
 
 	/**
@@ -335,9 +335,60 @@ public class PatentManagementAction extends SBActionAdapter {
 	 * @param req
 	 */
 	private void processImportFile(ActionRequest req) {
-		/* 2018-07-06 - DBargerhuff
-		 * To be implemented at a later date.
-		 */
+		/* Delegate the import file processing to the import utility */
+		PatentImportUtility util = new PatentImportUtility();
+		util.setDbConn(dbConn);
+		util.setCustomDbSchema((String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		util.setFilePartDataBean(req.getFile(PARAM_IMPORT_FILE));
+		util.setActionId(req.getParameter(SBActionAdapter.ACTION_ID));
+		util.setOrganizationId(req.getParameter(OrganizationAction.ORGANIZATION_ID));
+
+		// get user profile
+		UserDataVO admin = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		util.setImportProfileId(admin.getProfileId());
+
+		// import patents
+		util.importPatents();
+		
+		StringBuilder msg = formatMessage(util.getPatentCount(),util.getMessages(),util.isError());
+		
+		//return some stats to the administrator
+		super.adminRedirect(req, msg, buildRedirect(util.getPatentCount()));
+
+	}
+	
+	/**
+	 * Builds the import result response message.
+	 * @param count
+	 * @param messages
+	 * @param isError
+	 * @return
+	 */
+	private StringBuilder formatMessage(int count, List<String> messages, boolean isError) {
+		StringBuilder msg = new StringBuilder(500);
+		if (isError) {
+			msg.append("Error processing patent import source file.<br/>");
+		} else {
+			msg.append("Imported ").append(count).append(" patent records.");
+		}
+		
+		for (String message : messages) {
+			msg.append(message).append("<br/>");
+		}
+		return msg;
+	}
+	
+	/**
+	 * Append extra parameters to the redirect url so we can 
+	 * display import count
+	 * @param req
+	 * @return
+	 */
+	private String buildRedirect(int importCnt) {
+		StringBuilder redirect = new StringBuilder(150);
+		redirect.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+		redirect.append("?importCnt=").append(importCnt);
+		return redirect.toString();
 	}
 	
 }
