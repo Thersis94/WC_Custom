@@ -50,7 +50,7 @@ public class PatentImportUtility {
 	private Logger log = Logger.getLogger(getClass().getName());
 	private FilePartDataBean filePartDataBean;
 	private String customDbSchema;
-	private List<String> messages;
+	private String resultMsg;
 	private Connection dbConn;
 	private int patentCount;
 	private String actionId;
@@ -69,7 +69,7 @@ public class PatentImportUtility {
 	* Constructor
 	*/
 	public PatentImportUtility() {
-		messages = new ArrayList<>();
+		// empty by design
 	}
 	
 	/**
@@ -94,12 +94,12 @@ public class PatentImportUtility {
 				// process parsed beans.
 				processPatentBeans(beans);
 			} else {
-				messages.add("No patent records found in source file for import.");
+				resultMsg = "No patent records found in source file.";
 			}
 			
 		} catch (Exception e) {
 			isError = true;
-			messages.add(e.getMessage());
+			resultMsg = e.getMessage();
 		}
 
 	}
@@ -121,10 +121,10 @@ public class PatentImportUtility {
 
 			// Parser then returns the list of populated beans
 			beans = parser.parseFile(fpdb, true);
-			messages.add("Found " + beans.size() + " patent records for import in the source file.");
-			messages.add("Preserve patents flag set to: " + preservePatents);
+			log.info("Found " + beans.size() + " patent records for import in the source file.");
+			log.info("Preserve patents flag set to: " + preservePatents);
 		} catch(InvalidDataException e) {
-			log.debug("Error parsing source data file, ", e);
+			log.error("Error parsing source data file, ", e);
 			throw new ActionException("Error parsing source data file, ", e);
 		}
 
@@ -155,7 +155,7 @@ public class PatentImportUtility {
 			vo.setStatusFlag(PatentAction.STATUS_ACTIVE);
 		}
 
-		messages.add("Processed patent import for company name: " + companyName);
+		log.info("Processed patent import for company name: " + companyName);
 
 		//Disable the db autocommit for the insert batch
 		try {
@@ -178,6 +178,7 @@ public class PatentImportUtility {
 			//commit only after the entire import succeeds
 			dbConn.commit();
 
+			resultMsg = "Successfully imported patent records from source file.";
 		} finally {
 			try {
 				// restore autocommit state
@@ -219,7 +220,7 @@ public class PatentImportUtility {
 				count = ps.getUpdateCount();
 			}
 			
-			messages.add("Saved patent history for " + count + " patents being archived'.");
+			log.info("Saved patent history for " + count + " patents being archived'.");
 		}
 	}
 
@@ -245,7 +246,7 @@ public class PatentImportUtility {
 			 throw new ActionException(sqle);
 		}
 		
-		messages.add("Disabled all 'live' patents for " + companyName);
+		log.info("Disabled all 'live' patents for " + companyName);
 	}
 
 
@@ -269,7 +270,7 @@ public class PatentImportUtility {
 			 throw new ActionException(sqle);
 		}
 		
-		messages.add("Deleted all archived patents for " + companyName);
+		log.info("Deleted all archived patents for " + companyName);
 	}
 
 
@@ -312,8 +313,6 @@ public class PatentImportUtility {
 				 ps.setTimestamp(12, Convert.getCurrentTimestamp());
 				 ps.addBatch();
 
-				 log.debug("added to batch: "+ vo.getCode());
-
 				 patentCount++;
 			 }
 			 ps.executeBatch();
@@ -321,7 +320,7 @@ public class PatentImportUtility {
 			 throw new ActionException("Error inserting records into custom patent table.",e);
 		 }
 		 
-		 messages.add("Imported " + patentCount + " patents for " + companyName);
+		 log.info("Inserted " + patentCount + " patent records for " + companyName);
 	 }
 
 
@@ -333,14 +332,12 @@ public class PatentImportUtility {
 	 * @throws FileException
 	 */
 	private FilePartDataBean setFilePartDataBean(String sourceFilePath) throws FileException {
-		log.debug("loading source file from: " + sourceFilePath);
+		log.info("loading source file from: " + sourceFilePath);
 		FileManager fm = new FileManager();
 		FilePartDataBean bean = new FilePartDataBean();
 		bean.setFileName(sourceFilePath);
 		bean.setFileData(fm.retrieveFile(sourceFilePath));
-		log.debug("fpdb data size: " + (bean.getFileData() != null ? bean.getFileSize() : "null"));
-		log.debug("fileName | extension: " + bean.getFileName() + " | " + bean.getExtension());
-		messages.add("Loaded source file with size: " + bean.getFileSize());
+		log.info("Loaded source file with size: " + bean.getFileSize());
 		return bean;
 	}
 
@@ -423,8 +420,8 @@ public class PatentImportUtility {
 	/**
 	 * @return the messages
 	 */
-	public List<String> getMessages() {
-		return messages;
+	public String getResultMessage() {
+		return resultMsg;
 	}
 
 	/**

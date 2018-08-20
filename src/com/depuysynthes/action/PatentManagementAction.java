@@ -5,7 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // Log4j
 import org.apache.log4j.Logger;
@@ -14,6 +16,7 @@ import org.apache.log4j.Logger;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -98,17 +101,23 @@ public class PatentManagementAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		String patentId = StringUtil.checkVal(req.getParameter(PatentAction.PATENT_ID),null);
+		Map<String, Object> returnData = new HashMap<>();
 		List<PatentVO> patents = new ArrayList<>();
 
-		// Return empty data is no patent ID specified and this is not a search query.
-		if (patentId == null && ! isSearch(req)) {
-			putModuleData(patents);
-			return;
+		String patentId = StringUtil.checkVal(req.getParameter(PatentAction.PATENT_ID),null);
+
+		// retrieve the module data
+		super.list(req);
+		returnData.put(AdminConstants.ADMIN_MODULE_DATA, getAttribute(AdminConstants.ADMIN_MODULE_DATA));
+
+		// Return empty data if no patent ID specified and this is not a search query.
+		if (patentId != null || isSearch(req)) {
+			patents = retrievePatentData(req);
 		}
 
-		patents = retrievePatentData(req);
-		putModuleData(patents, patents.size(),true);
+		returnData.put("patents", patents);
+
+		putModuleData(returnData, patents.size(),true);
 	}
 
 
@@ -350,34 +359,12 @@ public class PatentManagementAction extends SBActionAdapter {
 		// import patents
 		util.importPatents();
 		
-		StringBuilder msg = formatMessage(util.getPatentCount(),util.getMessages(),util.isError());
-		
 		//return some stats to the administrator
-		super.adminRedirect(req, msg, buildRedirect(util.getPatentCount()));
+		super.adminRedirect(req, util.getResultMessage(), buildRedirect(util.getPatentCount()));
 
 	}
-	
-	/**
-	 * Builds the import result response message.
-	 * @param count
-	 * @param messages
-	 * @param isError
-	 * @return
-	 */
-	private StringBuilder formatMessage(int count, List<String> messages, boolean isError) {
-		StringBuilder msg = new StringBuilder(500);
-		if (isError) {
-			msg.append("Error processing patent import source file.<br/>");
-		} else {
-			msg.append("Imported ").append(count).append(" patent records.");
-		}
-		
-		for (String message : messages) {
-			msg.append(message).append("<br/>");
-		}
-		return msg;
-	}
-	
+
+
 	/**
 	 * Append extra parameters to the redirect url so we can 
 	 * display import count
