@@ -60,16 +60,23 @@ public class PatentBulkImport extends CommandLineUtil {
 			init(propertiesPath);
 
 			PatentImportUtility util = new PatentImportUtility(props);
+			util.setDbConn(dbConn);
+			util.setPreservePatents(true);
+
 			util.importPatents();
-						
+
+			messages.add(util.getResultMessage());
+
+		} catch (NullPointerException npe) {
+			errMsg = npe.toString();
+
 		} catch (Exception e) {
 			errMsg = e.getMessage();
-			
+
 		} finally {
 			// clean-up
 			closeDBConnection();
 		}
-		
 		// send admin email
 		sendAdminEmail(errMsg);
 	}
@@ -104,7 +111,11 @@ public class PatentBulkImport extends CommandLineUtil {
 			for (String msg : messages) {
 				body.append(msg).append("<br/>");
 			}
-			body.append("DS bulk patent import complete.<br/><br/>Error message is: ").append(errMsg);
+			body.append("DS bulk patent import complete.");
+			if (errMsg != null) {
+				body.append("<br/><br/>Error message is: ").append(errMsg);
+				body.append("<br/><br/>Check script log for more details.");
+			}
 			evo.setHtmlBody(body.toString());
 			sendEmail(evo);
 		} catch (Exception e) {

@@ -98,6 +98,7 @@ public class PatentImportUtility {
 			}
 			
 		} catch (Exception e) {
+			log.error("Error processing patents file, ", e);
 			isError = true;
 			resultMsg = e.getMessage();
 		}
@@ -113,7 +114,7 @@ public class PatentImportUtility {
 	 */
 	private List<Object> parseSourceFile(FilePartDataBean fpdb) 
 			throws Exception {
-		log.debug("parseSourceFile...");
+		log.debug("parseSourceFile...extension is: " + fpdb.getExtension());
 		AnnotationParser parser;
 		Map<Class<?>, Collection<Object>> beans;
 		try {
@@ -178,7 +179,7 @@ public class PatentImportUtility {
 			//commit only after the entire import succeeds
 			dbConn.commit();
 
-			resultMsg = "Successfully imported patent records from source file.";
+			resultMsg = formatResultsMessage();
 		} finally {
 			try {
 				// restore autocommit state
@@ -188,6 +189,21 @@ public class PatentImportUtility {
 			}
 		}
 
+	}
+
+
+	/**
+	 * Formats result message String. 
+	 * @param patentCount
+	 * @return
+	 */
+	private String formatResultsMessage() {
+		StringBuilder msg = new StringBuilder(100);
+		msg.append("Successfully imported <strong>");
+		msg.append(patentCount);
+		msg.append("</strong> patent records from source file for company ");
+		msg.append("<strong>").append(companyName).append("</strong>.");
+		return msg.toString();
 	}
 
 
@@ -209,18 +225,19 @@ public class PatentImportUtility {
 		sql.append("profile_id, coalesce(update_dt, create_dt) ");
 		sql.append("from ");
 		sql.append(customDbSchema).append(PatentManagementAction.PATENT_TABLE).append(" ");
-		sql.append("where company_nm = ?");
-		
+		sql.append("where company_nm = ? and status_flg = ?");
+
 		log.debug("writeHistoryByCompany SQL: " + sql + " | " + companyName);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, companyName);
+			ps.setInt(2, PatentAction.STATUS_ACTIVE);
 			int count = 0;
 			if (! ps.execute()) {
 				count = ps.getUpdateCount();
 			}
-			
-			log.info("Saved patent history for " + count + " patents being archived'.");
+
+			log.info("Archived patent history for " + count + " 'live' patents.");
 		}
 	}
 
@@ -328,17 +345,18 @@ public class PatentImportUtility {
 	 * Sets FilePartDataBean using the sourceFilePath argument passed to the method.  This
 	 * is a convenience method for scripts.
 	 * @param sourceFilePath
-	 * @return
 	 * @throws FileException
 	 */
-	private FilePartDataBean setFilePartDataBean(String sourceFilePath) throws FileException {
+	private void setFilePartDataBean(String sourceFilePath) throws FileException {
 		log.info("loading source file from: " + sourceFilePath);
 		FileManager fm = new FileManager();
 		FilePartDataBean bean = new FilePartDataBean();
 		bean.setFileName(sourceFilePath);
 		bean.setFileData(fm.retrieveFile(sourceFilePath));
+		bean.setExtensionByName(bean.getFileName());
 		log.info("Loaded source file with size: " + bean.getFileSize());
-		return bean;
+		log.info("Filename | extension: " + bean.getFileName() + "|" + bean.getExtension());
+		setFilePartDataBean(bean);
 	}
 
 
@@ -416,6 +434,12 @@ public class PatentImportUtility {
 		return patentCount;
 	}
 
+	/**
+	 * @return the companyName
+	 */
+	public String getCompanyName() {
+		return companyName;
+	}
 
 	/**
 	 * @return the messages
