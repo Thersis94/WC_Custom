@@ -16,7 +16,6 @@ import org.apache.log4j.Logger;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -101,23 +100,23 @@ public class PatentManagementAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		Map<String, Object> returnData = new HashMap<>();
-		List<PatentVO> patents = new ArrayList<>();
-
+		//Map<String, Object> returnData = new HashMap<>();
 		String patentId = StringUtil.checkVal(req.getParameter(PatentAction.PATENT_ID),null);
 
 		// retrieve the module data
-		super.list(req);
-		returnData.put(AdminConstants.ADMIN_MODULE_DATA, getAttribute(AdminConstants.ADMIN_MODULE_DATA));
-
-		// Return empty data if no patent ID specified and this is not a search query.
+		//super.list(req);
+		//returnData.put("patentModule", getAttribute(AdminConstants.ADMIN_MODULE_DATA));
+		
+		// Retrieve patent data if there is a patentId or if this is a searchy.
+		List<PatentVO> patents = new ArrayList<>();
 		if (patentId != null || isSearch(req)) {
 			patents = retrievePatentData(req);
 		}
-
-		returnData.put("patents", patents);
-
-		putModuleData(returnData, patents.size(),true);
+		putModuleData(patents, patents.size(),true);
+		// put patent List on map even if empty
+		//returnData.put("patentList", patents);
+		// put module data
+		//putModuleData(returnData, patents.size(),true);
 	}
 
 
@@ -351,7 +350,8 @@ public class PatentManagementAction extends SBActionAdapter {
 		util.setFilePartDataBean(req.getFile(PARAM_IMPORT_FILE));
 		util.setActionId(req.getParameter(SBActionAdapter.ACTION_ID));
 		util.setOrganizationId(req.getParameter(OrganizationAction.ORGANIZATION_ID));
-
+		util.setPreservePatents(true);
+		
 		// get user profile
 		UserDataVO admin = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		util.setImportProfileId(admin.getProfileId());
