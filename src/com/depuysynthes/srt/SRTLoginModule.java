@@ -3,13 +3,13 @@ package com.depuysynthes.srt;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.DBLoginModule;
 
@@ -27,19 +27,9 @@ import com.smt.sitebuilder.security.DBLoginModule;
  ****************************************************************************/
 public class SRTLoginModule extends DBLoginModule {
 
-	public SRTLoginModule() {
-		super();
-	}
-
-	public SRTLoginModule(Map<String, Object> config) {
-		super(config);
-	}
-
 	@Override
 	public UserDataVO authenticateUser(String user, String pwd) throws AuthenticationException {
 		UserDataVO userData = super.authenticateUser(user, pwd);
-
-		log.debug("USER IS AUTHENTICATED: " + userData.isAuthenticated());
 
 		return loadSRTUser(userData);
 	}
@@ -53,7 +43,9 @@ public class SRTLoginModule extends DBLoginModule {
 	 */
 	public SRTRosterVO loadSRTUser(UserDataVO wcUser) throws AuthenticationException {
 		//Attempt to retrieve SRT Roster record from Database.
-		List<SRTRosterVO> users = new DBProcessor((Connection) getAttribute(GlobalConfig.KEY_DB_CONN)).executeSelect(buildRosterSql(), Arrays.asList(wcUser.getProfileId()), new SRTRosterVO());
+		Connection conn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
+		List<Object> vals = Arrays.asList(wcUser.getProfileId());
+		List<SRTRosterVO> users = new DBProcessor(conn).executeSelect(buildRosterSql(), vals, new SRTRosterVO());
 		log.info(users);
 		if(!users.isEmpty()) {
 			return matchUser(wcUser, users);
@@ -73,14 +65,16 @@ public class SRTLoginModule extends DBLoginModule {
 	private SRTRosterVO matchUser(UserDataVO wcUser, List<SRTRosterVO> users) {
 		SRTRosterVO roster = users.get(0);
 		roster.setData(wcUser.getDataMap());
+
 		//THIS NEEDS TO BE SET OFF ORIGINAL RECORD!
-		roster.setAuthenticated(wcUser.isAuthenticated());
+		if(!StringUtil.isEmpty(wcUser.getEmailAddress())) {
+			roster.setAuthenticated(wcUser.isAuthenticated());
+		}
 		return roster;
 	}
 
 	/**
 	 * Build the SRT Roster Lookup Query.
-	 * TODO - Update to use WWID if necessary Later On.
 	 * @return
 	 */
 	private String buildRosterSql() {
