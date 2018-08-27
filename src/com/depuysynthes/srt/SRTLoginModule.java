@@ -20,7 +20,6 @@ import com.smt.sitebuilder.security.DBLoginModule;
  * tailored for SRT.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
- * TODO - Update to Use Saml once details are finalized.
  * @author Billy Larsen
  * @version 3.3.1
  * @since Feb 14, 2018
@@ -34,6 +33,17 @@ public class SRTLoginModule extends DBLoginModule {
 		return loadSRTUser(userData);
 	}
 
+	@Override
+	public UserDataVO loadUserData(String profileId, String authenticationId) {
+		UserDataVO userData = super.loadUserData(profileId, authenticationId);
+
+		if(userData != null) {
+			userData = loadSRTUser(userData);
+		}
+
+		return userData;
+	}
+
 	/**
 	 * Attempt to match the given wcUser to an SRT Roster Record verifying
 	 * their permission to access the system.
@@ -41,7 +51,7 @@ public class SRTLoginModule extends DBLoginModule {
 	 * @return
 	 * @throws AuthenticationException
 	 */
-	public SRTRosterVO loadSRTUser(UserDataVO wcUser) throws AuthenticationException {
+	public SRTRosterVO loadSRTUser(UserDataVO wcUser) {
 		//Attempt to retrieve SRT Roster record from Database.
 		Connection conn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
 		List<Object> vals = Arrays.asList(wcUser.getProfileId());
@@ -50,7 +60,7 @@ public class SRTLoginModule extends DBLoginModule {
 		if(!users.isEmpty()) {
 			return matchUser(wcUser, users);
 		} else {
-			throw new AuthenticationException("User not in Roster Table.");
+			return null;
 		}
 	}
 
