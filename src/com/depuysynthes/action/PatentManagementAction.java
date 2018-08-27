@@ -5,9 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 // Log4j
 import org.apache.log4j.Logger;
@@ -100,23 +98,15 @@ public class PatentManagementAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		//Map<String, Object> returnData = new HashMap<>();
 		String patentId = StringUtil.checkVal(req.getParameter(PatentAction.PATENT_ID),null);
 
-		// retrieve the module data
-		//super.list(req);
-		//returnData.put("patentModule", getAttribute(AdminConstants.ADMIN_MODULE_DATA));
-		
-		// Retrieve patent data if there is a patentId or if this is a searchy.
+		// Retrieve patent data if there is a patentId or if this is a search.
 		List<PatentVO> patents = new ArrayList<>();
 		if (patentId != null || isSearch(req)) {
 			patents = retrievePatentData(req);
 		}
+
 		putModuleData(patents, patents.size(),true);
-		// put patent List on map even if empty
-		//returnData.put("patentList", patents);
-		// put module data
-		//putModuleData(returnData, patents.size(),true);
 	}
 
 
@@ -350,8 +340,7 @@ public class PatentManagementAction extends SBActionAdapter {
 		util.setFilePartDataBean(req.getFile(PARAM_IMPORT_FILE));
 		util.setActionId(req.getParameter(SBActionAdapter.ACTION_ID));
 		util.setOrganizationId(req.getParameter(OrganizationAction.ORGANIZATION_ID));
-		util.setPreservePatents(true);
-		
+
 		// get user profile
 		UserDataVO admin = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		util.setImportProfileId(admin.getProfileId());

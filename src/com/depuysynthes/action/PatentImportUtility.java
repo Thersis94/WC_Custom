@@ -199,10 +199,10 @@ public class PatentImportUtility {
 	 */
 	private String formatResultsMessage() {
 		StringBuilder msg = new StringBuilder(100);
-		msg.append("Successfully imported <strong>");
+		msg.append("Successfully imported ");
 		msg.append(patentCount);
-		msg.append("</strong> patent records from source file for company ");
-		msg.append("<strong>").append(companyName).append("</strong>.");
+		msg.append(" patent records from source file for company ");
+		msg.append(companyName).append(".");
 		return msg.toString();
 	}
 
@@ -306,7 +306,7 @@ public class PatentImportUtility {
 		sql.append("item_txt, desc_txt, patents_txt, redirect_nm, redirect_address_txt, ");
 		sql.append("status_flg, profile_id, create_dt) ");
 		sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?)");
-		log.debug(sql);
+		log.debug("patent record insert sql: " + sql);
 
 		 try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			 for ( Object obj : beanList ) {
