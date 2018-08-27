@@ -27,13 +27,6 @@ import com.smt.sitebuilder.security.DBLoginModule;
 public class SRTLoginModule extends DBLoginModule {
 
 	@Override
-	public UserDataVO authenticateUser(String user, String pwd) throws AuthenticationException {
-		UserDataVO userData = super.authenticateUser(user, pwd);
-
-		return loadSRTUser(userData);
-	}
-
-	@Override
 	public UserDataVO loadUserData(String profileId, String authenticationId) {
 		UserDataVO userData = super.loadUserData(profileId, authenticationId);
 
@@ -56,7 +49,6 @@ public class SRTLoginModule extends DBLoginModule {
 		Connection conn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
 		List<Object> vals = Arrays.asList(wcUser.getProfileId());
 		List<SRTRosterVO> users = new DBProcessor(conn).executeSelect(buildRosterSql(), vals, new SRTRosterVO());
-		log.info(users);
 		if(!users.isEmpty()) {
 			return matchUser(wcUser, users);
 		} else {
@@ -93,18 +85,5 @@ public class SRTLoginModule extends DBLoginModule {
 		sql.append("DPY_SYN_SRT_ROSTER where profile_id = ? ");
 
 		return sql.toString();
-	}
-
-	/**
-	 * called via 'remember me' cookie logins:
-	 * Note: This is not a real use-case for Huddle b/c there is no login form.
-	 */
-	@Override
-	public UserDataVO authenticateUser(String encProfileId) throws AuthenticationException {
-		UserDataVO userData = super.authenticateUser(encProfileId);
-
-		//redirect to the user's personal homepage.
-
-		return loadSRTUser(userData);
 	}
 }
