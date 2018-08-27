@@ -3,13 +3,13 @@ package com.depuysynthes.srt;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.DBLoginModule;
 
@@ -20,28 +20,21 @@ import com.smt.sitebuilder.security.DBLoginModule;
  * tailored for SRT.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
- * TODO - Update to Use Saml once details are finalized.
  * @author Billy Larsen
  * @version 3.3.1
  * @since Feb 14, 2018
  ****************************************************************************/
 public class SRTLoginModule extends DBLoginModule {
 
-	public SRTLoginModule() {
-		super();
-	}
-
-	public SRTLoginModule(Map<String, Object> config) {
-		super(config);
-	}
-
 	@Override
-	public UserDataVO authenticateUser(String user, String pwd) throws AuthenticationException {
-		UserDataVO userData = super.authenticateUser(user, pwd);
+	public UserDataVO loadUserData(String profileId, String authenticationId) {
+		UserDataVO userData = super.loadUserData(profileId, authenticationId);
 
-		log.debug("USER IS AUTHENTICATED: " + userData.isAuthenticated());
+		if(userData != null) {
+			userData = loadSRTUser(userData);
+		}
 
-		return loadSRTUser(userData);
+		return userData;
 	}
 
 	/**
@@ -51,14 +44,15 @@ public class SRTLoginModule extends DBLoginModule {
 	 * @return
 	 * @throws AuthenticationException
 	 */
-	public SRTRosterVO loadSRTUser(UserDataVO wcUser) throws AuthenticationException {
+	public SRTRosterVO loadSRTUser(UserDataVO wcUser) {
 		//Attempt to retrieve SRT Roster record from Database.
-		List<SRTRosterVO> users = new DBProcessor((Connection) getAttribute(GlobalConfig.KEY_DB_CONN)).executeSelect(buildRosterSql(), Arrays.asList(wcUser.getProfileId()), new SRTRosterVO());
-		log.info(users);
+		Connection conn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
+		List<Object> vals = Arrays.asList(wcUser.getProfileId());
+		List<SRTRosterVO> users = new DBProcessor(conn).executeSelect(buildRosterSql(), vals, new SRTRosterVO());
 		if(!users.isEmpty()) {
 			return matchUser(wcUser, users);
 		} else {
-			throw new AuthenticationException("User not in Roster Table.");
+			return null;
 		}
 	}
 
@@ -73,14 +67,16 @@ public class SRTLoginModule extends DBLoginModule {
 	private SRTRosterVO matchUser(UserDataVO wcUser, List<SRTRosterVO> users) {
 		SRTRosterVO roster = users.get(0);
 		roster.setData(wcUser.getDataMap());
+
 		//THIS NEEDS TO BE SET OFF ORIGINAL RECORD!
-		roster.setAuthenticated(wcUser.isAuthenticated());
+		if(!StringUtil.isEmpty(wcUser.getEmailAddress())) {
+			roster.setAuthenticated(wcUser.isAuthenticated());
+		}
 		return roster;
 	}
 
 	/**
 	 * Build the SRT Roster Lookup Query.
-	 * TODO - Update to use WWID if necessary Later On.
 	 * @return
 	 */
 	private String buildRosterSql() {
@@ -89,18 +85,5 @@ public class SRTLoginModule extends DBLoginModule {
 		sql.append("DPY_SYN_SRT_ROSTER where profile_id = ? ");
 
 		return sql.toString();
-	}
-
-	/**
-	 * called via 'remember me' cookie logins:
-	 * Note: This is not a real use-case for Huddle b/c there is no login form.
-	 */
-	@Override
-	public UserDataVO authenticateUser(String encProfileId) throws AuthenticationException {
-		UserDataVO userData = super.authenticateUser(encProfileId);
-
-		//redirect to the user's personal homepage.
-
-		return loadSRTUser(userData);
 	}
 }
