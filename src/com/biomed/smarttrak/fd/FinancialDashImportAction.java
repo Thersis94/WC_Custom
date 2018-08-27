@@ -110,7 +110,7 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 		}
 		if (StringUtil.isEmpty(scenarioId)) return;
 			
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(125);
 		sql.append("delete from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_fd_scenario_overlay where scenario_id = ? and revenue_id = ?");
 		
