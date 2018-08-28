@@ -134,7 +134,8 @@ public class PatentImportUtility {
 	
 	
 	/**
-	 * 
+	 * Processes the patent records parsed from the import
+	 * source file.
 	 * @param beanList
 	 * @throws SQLException
 	 * @throws ActionException
@@ -208,7 +209,10 @@ public class PatentImportUtility {
 
 
 	/**
-	 * 
+	 * Inserts history records into the patent history table for all
+	 * currently 'active' patent records for the target operating
+	 * compnay.  This is performed prior to replacing all patent records
+	 * for the target operating company with the records being imported..
 	 * @param companyName
 	 * @throws SQLException
 	 */
@@ -268,7 +272,7 @@ public class PatentImportUtility {
 
 
 	/**
-	 * deletes all existing records for the given companyName
+	 * Deletes all existing records for the given companyName
 	 * @param actionId
 	 * @param companyName
 	 */
