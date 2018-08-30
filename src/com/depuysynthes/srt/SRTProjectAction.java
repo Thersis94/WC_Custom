@@ -91,7 +91,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
+		SRTMilestoneAction sma = ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class, this);
 		MilestoneTypeId typeId = MilestoneTypeId.DATE;
 
 		if(req.hasParameter(SRT_PROJECT_ID) || req.hasParameter("json")) {
@@ -167,7 +167,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	private void copyProject(ActionRequest req) throws ActionException {
 
 		//Load Roster Data.
-		SRTRosterAction sra = (SRTRosterAction)ActionControllerFactoryImpl.loadAction(SRTRosterAction.class.getName(), this);
+		SRTRosterAction sra = ActionControllerFactoryImpl.loadAction(SRTRosterAction.class, this);
 		GridDataVO<SRTRosterVO> rosters = sra.loadRosterUsers(req);
 		SRTRosterVO roster = rosters.getRowData().get(0);
 
@@ -489,7 +489,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 * @param projects
 	 */
 	private void loadMilestoneDetails(List<SRTProjectVO> projects) {
-		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
+		SRTMilestoneAction sma = ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class, this);
 		sma.populateMilestones(projects);
 	}
 
@@ -504,7 +504,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		if(req.hasParameter(SRT_PROJECT_ID)) {
 			SRTProjectVO p = projects.get(0);
 			req.setParameter(SRTRequestAction.SRT_REQUEST_ID, p.getRequestId());
-			SRTRequestAction sra = (SRTRequestAction) ActionControllerFactoryImpl.loadAction(SRTRequestAction.class.getName(), this);
+			SRTRequestAction sra = ActionControllerFactoryImpl.loadAction(SRTRequestAction.class, this);
 			GridDataVO<SRTRequestVO> reqData = sra.loadRequests(req);
 			if(reqData != null && !reqData.getRowData().isEmpty()) {
 				p.setRequest(reqData.getRowData().get(0));
@@ -512,7 +512,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		}
 
 		//Load Master Record Data and assign on Project Record.
-		SRTMasterRecordAction smra = (SRTMasterRecordAction) ActionControllerFactoryImpl.loadAction(SRTMasterRecordAction.class.getName(), this);
+		SRTMasterRecordAction smra = ActionControllerFactoryImpl.loadAction(SRTMasterRecordAction.class, this);
 		smra.populateMasterRecordXR(projects);
 	}
 

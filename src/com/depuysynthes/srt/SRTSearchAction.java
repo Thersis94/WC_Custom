@@ -240,7 +240,7 @@ public class SRTSearchAction extends SimpleActionAdapter {
 	 */
 	private SolrResponseVO getResults(ActionRequest req) throws ActionException {
 		// Build the solr action
-		SolrAction sa = (SolrAction) ActionControllerFactoryImpl.loadAction(SolrAction.class.getName(), this);
+		SolrAction sa = ActionControllerFactoryImpl.loadAction(SolrAction.class, this);
 		sa.retrieve(req);
 
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);

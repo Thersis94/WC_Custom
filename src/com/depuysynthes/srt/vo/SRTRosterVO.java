@@ -1,8 +1,10 @@
 package com.depuysynthes.srt.vo;
 
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.Date;
 
+import com.depuysynthes.srt.SRTRosterAction.SRTRole;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.DataType;
@@ -481,5 +483,29 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 	@Importable(name="Country Cd", type=DataType.STRING, index=11)
 	public void setCountryCode(String country) {
 		super.setCountryCode(country);
+	}
+
+	/**
+	 * Determine if this RosterVO Role is an Employee.
+	 * @return
+	 */
+	public boolean isEmployee() {
+		return Arrays.asList(SRTRole.SRT_EMPLOYEE.getWorkgroupIds()).contains(workgroupId);
+	}
+
+	/**
+	 * Determine if this RosterVO Role is a Sales Rep.
+	 * @return
+	 */
+	public boolean isSales() {
+		return Arrays.asList(SRTRole.SRT_SALES.getWorkgroupIds()).contains(workgroupId);
+	}
+
+	/**
+	 * Determine if this RosterVO Role is View Only.
+	 * @return
+	 */
+	public boolean isViewOnly() {
+		return Arrays.asList(SRTRole.SRT_VIEW_ONLY.getWorkgroupIds()).contains(workgroupId);
 	}
 }

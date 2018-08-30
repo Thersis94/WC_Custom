@@ -72,7 +72,7 @@ public class USOrthoUserImport extends SRTUserImport {
 		sql.append("1 as allow_comm_flg, ");
 		sql.append("'' as wwid, ");
 		sql.append("'1' as IS_ACTIVE, ");
-		sql.append("'5' as ROLE_TXT, ");
+		sql.append("'8' as ROLE_TXT, ");
 		sql.append("shipping_address as ADDRESS_TXT, ");
 		sql.append("null as CITY_NM, ");
 		sql.append("null as STATE_CD, ");
