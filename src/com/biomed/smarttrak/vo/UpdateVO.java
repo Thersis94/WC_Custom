@@ -255,7 +255,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		SimpleDateFormat sdf = new SimpleDateFormat("MMM. dd, yyyy");
 		displayLink.append("&mdash; ").append(sdf.format(getPublishDt()));
 		if(isAdmin) {
-			return new BiomedLinkCheckerUtil(null, null).modifyRelativeLinks(displayLink.toString());
+			return new BiomedLinkCheckerUtil().modifyRelativeLinks(displayLink.toString());
 		} else {
 			return displayLink.toString();
 		}
