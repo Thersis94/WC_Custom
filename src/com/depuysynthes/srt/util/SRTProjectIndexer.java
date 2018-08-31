@@ -110,6 +110,7 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 				p = new SRTProjectSolrVO(rs);
 				p.setSolrIndex(INDEX_TYPE);
 				p.addRole(100);
+				p.addRole(10);
 				p.addOrganization(SRTUtil.SRT_ORG_ID);
 			}
 		}
