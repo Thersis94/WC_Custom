@@ -70,7 +70,7 @@ public class USOrthoUserImport extends SRTUserImport {
 		sql.append("sales_first_nm as first_nm, ");
 		sql.append("sales_last_nm as last_nm, ");
 		sql.append("1 as allow_comm_flg, ");
-		sql.append("'' as wwid, ");
+		sql.append("'' as WWID, ");
 		sql.append("'1' as IS_ACTIVE, ");
 		sql.append("'8' as ROLE_TXT, ");
 		sql.append("shipping_address as ADDRESS_TXT, ");
@@ -101,7 +101,7 @@ public class USOrthoUserImport extends SRTUserImport {
 		sql.append("split_part(user_nm, ' ', 1) as first_nm, ");
 		sql.append("split_part(user_nm, ' ', 2) as last_nm, ");
 		sql.append("1 as allow_comm_flg, ");
-		sql.append("wwid, ");
+		sql.append("wwid as WWID, ");
 		sql.append("'1' as IS_ACTIVE, ");
 		sql.append("ROLE_TXT, ");
 		sql.append("null as ADDRESS_TXT, ");
