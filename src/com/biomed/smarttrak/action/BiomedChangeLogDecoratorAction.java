@@ -7,6 +7,7 @@ import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.MethodUtils;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -91,13 +92,7 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 
 		//Check if ActionType is configured for Change Logs.
-		boolean useChangeLog = false;
-		for(EditPath e : EditPath.values()) {
-			if(e.getActionType().equals(req.getParameter("actionType"))) {
-				useChangeLog = true;
-				break;
-			}
-		}
+		boolean useChangeLog = checkUseChangeLog(req);
 
 		/*
 		 * If Code is ChangeLoggable, go through ChangeLogAPI, else call build.
@@ -155,6 +150,23 @@ public class BiomedChangeLogDecoratorAction extends SBActionAdapter {
 		} else {
 			sai.build(req);
 		}
+	}
+
+	/**
+	 * Determine whether or not a change log should be used
+	 * @param req
+	 * @return
+	 */
+	private boolean checkUseChangeLog(ActionRequest req) {
+		if (Convert.formatBoolean(req.getParameter("bypassChangelog")))
+			return false;
+		
+		for(EditPath e : EditPath.values()) {
+			if(e.getActionType().equals(req.getParameter("actionType"))) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
