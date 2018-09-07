@@ -881,8 +881,15 @@ public class ProductManagementAction extends ManagementAction {
 				saveAttribute(attr, db);
 				break;
 			case ATTRIBUTE:
-				ProductAttributeTypeVO t = new ProductAttributeTypeVO(req);
-				saveAttributeType(t, db, Convert.formatBoolean(req.getParameter("insert")));
+				try {
+					ProductAttributeTypeVO t = new ProductAttributeTypeVO(req);
+					db.save(t);
+					if (StringUtil.isEmpty(t.getTypeCd()) && req.hasParameter("modulesetId"))
+						populateModuleSets(t, req);
+					putModuleData(t);
+				} catch (Exception e) {
+					throw new ActionException(e);
+				}
 				break;
 			case ALLIANCE:
 				ProductAllianceVO a = new ProductAllianceVO(req);
@@ -899,6 +906,28 @@ public class ProductManagementAction extends ManagementAction {
 		}
 	}
 
+	/**
+	 * Save all moduleset associations this detail should have. 
+	 */
+	private void populateModuleSets(ProductAttributeTypeVO t, ActionRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_product_moduleset_xr ");
+		sql.append("(product_moduleset_id, moduleset_id, attribute_id, create_dt)");
+		sql.append("values(?,?,?, CURRENT_TIMESTAMP)");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (String modulesetId : req.getParameterValues("modulesetId")) {
+				ps.setString(1, new UUIDGenerator().getUUID());
+				ps.setString(2, modulesetId);
+				ps.setString(3, t.getAttributeId());
+				t.addSectionIds(modulesetId);
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
 
 	/**
 	 * So all saves needed to update or insert a products core information.
@@ -1249,8 +1278,9 @@ public class ProductManagementAction extends ManagementAction {
 				status = findStatus(productId);
 			updateSolr(productId, status);
 		}
-
-		redirectRequest(msg, buildAction, req);
+		
+		if (!Convert.formatBoolean(req.getParameter("json")))
+			redirectRequest(msg, buildAction, req);
 	}
 
 
