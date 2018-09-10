@@ -69,7 +69,7 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 		sql.append("then first_nm else '(NO NAME)' end as last_nm, ");
 		sql.append("concat('\"', salesrep, '\"') as USER_NAME, ");
 		sql.append("0 as allow_comm_flg, ");
-		sql.append("null as wwid, ");
+		sql.append("null as WWID, ");
 		sql.append("'0' as IS_ACTIVE, ");
 		sql.append("'0' as ROLE_TXT, ");
 		sql.append("null as ADDRESS_TXT, ");
@@ -106,7 +106,7 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 		sql.append("r.last_name as last_nm, ");
 		sql.append("concat('\"', firstlast, '\"') as USER_NAME, ");
 		sql.append("1 as allow_comm_flg, ");
-		sql.append("r.wwid, ");
+		sql.append("r.wwid as WWID, ");
 		sql.append("'1' as IS_ACTIVE, ");
 		sql.append("'8' as ROLE_TXT, ");
 		sql.append("r.address as ADDRESS_TXT, ");

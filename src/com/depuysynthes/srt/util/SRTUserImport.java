@@ -637,6 +637,7 @@ public abstract class SRTUserImport extends CommandLineUtil {
 		user.setArea(StringUtil.checkVal(dataSet.get(ImportField.AREA_ID.name())));
 		user.setAccountNo(StringUtil.checkVal(dataSet.get(ImportField.ACCOUNT_NO.name())));
 		user.setEngineeringContact(StringUtil.checkVal(dataSet.get(ImportField.ENGINEERING_CONTACT.name())));
+		user.setWwid(StringUtil.checkVal(dataSet.get(ImportField.WWID.name()), null));
 		// parse user's email.
 
 		return user;
