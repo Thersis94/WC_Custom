@@ -65,7 +65,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void run() throws Exception {
-		List<String> projectIds = (List<String>) mod.getConfig(SRTProjectAction.SRT_PROJECT_ID).getValue();
+		List<String> projectIds = (List<String>) mod.getModuleConfig(SRTProjectAction.SRT_PROJECT_ID).getValue();
 
 		try {
 			new MessageSender(attributes, getConnection()).sendMessage(buildEmail(buildReport(projectIds)));
@@ -123,7 +123,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 * @param lists
 	 */
 	private void updateListDataReferences(Map<String, SRTProjectVO> projects, Map<String, Map<String, String>> lists) {
-		String opCoId = (String) mod.getConfig(SRTUtil.OP_CO_ID).getValue();
+		String opCoId = (String) mod.getModuleConfig(SRTUtil.OP_CO_ID).getValue();
 
 		for(SRTProjectVO p : projects.values()) {
 			try {
@@ -219,7 +219,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 * @throws SQLException
 	 */
 	private List<SRTProjectMilestoneVO> loadMilestones() throws SQLException {
-		String opCoId = (String) mod.getConfig(SRTUtil.OP_CO_ID).getValue();
+		String opCoId = (String) mod.getModuleConfig(SRTUtil.OP_CO_ID).getValue();
 		SRTMilestoneAction sma = new SRTMilestoneAction();
 		sma.setAttributes(attributes);
 		sma.setDBConnection(getConnection());
@@ -232,7 +232,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 * @throws SQLException
 	 */
 	private List<String> loadMrAttributes() throws SQLException {
-		String opCoId = (String) mod.getConfig(SRTUtil.OP_CO_ID).getValue();
+		String opCoId = (String) mod.getModuleConfig(SRTUtil.OP_CO_ID).getValue();
 		SRTMasterRecordAction sma = new SRTMasterRecordAction();
 		sma.setAttributes(attributes);
 		sma.setDBConnection(getConnection());
@@ -459,11 +459,11 @@ public class SRTReportModule extends AbstractWorkflowModule {
 
 		//Set Basic Parameters.
 		email.setInstance(InstanceName.DEPUY);
-		email.addRecipients(mod.getConfig(EmailWFM.DEST_EMAIL_ADDR).toString());
-		email.setSubject(mod.getConfig(EmailWFM.EMAIL_TITLE).toString());
+		email.addRecipients(mod.getModuleConfig(EmailWFM.DEST_EMAIL_ADDR).toString());
+		email.setSubject(mod.getModuleConfig(EmailWFM.EMAIL_TITLE).toString());
 
 		//Ensure that we only ever get one Source Email.
-		email.setFrom(mod.getConfig(EmailWFM.SRC_EMAIL_ADDR).getConfigValues().get(0).toString());
+		email.setFrom(mod.getModuleConfig(EmailWFM.SRC_EMAIL_ADDR).getConfigValues().get(0).toString());
 
 		//Set Optional Fields as necessary.
 		email.addAttachment(report.getFileName(), report.generateReport());

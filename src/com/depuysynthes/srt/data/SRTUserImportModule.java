@@ -67,9 +67,9 @@ public class SRTUserImportModule extends AbstractWorkflowModule {
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void run() throws Exception {
-		String tempTableName = (String) mod.getConfig(TEMP_TABLE_NM).getValue();
-		String fileNm = (String) mod.getConfig(FILE_NM).getValue();
-		String opCoId = (String) mod.getConfig(SRTUtil.OP_CO_ID).getValue();
+		String tempTableName = (String) mod.getModuleConfig(TEMP_TABLE_NM).getValue();
+		String fileNm = (String) mod.getModuleConfig(FILE_NM).getValue();
+		String opCoId = (String) mod.getModuleConfig(SRTUtil.OP_CO_ID).getValue();
 
 		//Load Temp Data from tempUserData Table
 		Map<String, SRTRosterVO> tempData = loadNewUserData(tempTableName, opCoId);
