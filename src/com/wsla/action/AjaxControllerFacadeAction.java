@@ -14,7 +14,10 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Manager for ajax actions
+ * <b>Description: </b> Manager for ajax actions.  This class will act as a 
+ * single interface / facade to multiple ajax actions.  These actions will typically
+ * be simple ajax request / response and will replace having to register each one as
+ * a widget.  More complex ajax actions should be registered with its own amid
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
