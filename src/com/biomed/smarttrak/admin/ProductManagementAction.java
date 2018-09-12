@@ -883,7 +883,8 @@ public class ProductManagementAction extends ManagementAction {
 			case ATTRIBUTE:
 				try {
 					ProductAttributeTypeVO t = new ProductAttributeTypeVO(req);
-					db.save(t);
+					if (checkDups(t))
+						db.save(t);
 					if (StringUtil.isEmpty(t.getTypeCd()) && req.hasParameter("modulesetId"))
 						populateModuleSets(t, req);
 					putModuleData(t);
@@ -904,6 +905,30 @@ public class ProductManagementAction extends ManagementAction {
 				break;
 			default:break;
 		}
+	}
+
+	/**
+	 * Ensure that the item we are adding is not already in the system
+	 * @param t
+	 * @return
+	 * @throws SQLException
+	 */
+	private boolean checkDups(ProductAttributeTypeVO t) throws SQLException {
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("select count(*) from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_product_attribute where attribute_nm = ? and parent_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, t.getAttributeName());
+			ps.setString(2, t.getParentId());
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next())
+				return rs.getInt(1) == 0;
+		}
+		
+		return true;
 	}
 
 	/**
