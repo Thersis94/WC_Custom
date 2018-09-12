@@ -61,8 +61,6 @@ public class PatentBulkImport extends CommandLineUtil {
 
 			PatentImportUtility util = new PatentImportUtility(props);
 			util.setDbConn(dbConn);
-			util.setPreservePatents(true);
-
 			util.importPatents();
 
 			messages.add(util.getResultMessage());
