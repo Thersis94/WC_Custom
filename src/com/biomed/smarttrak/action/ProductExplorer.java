@@ -526,6 +526,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unchecked")
 	private void getHierarchy(ActionRequest req) throws ActionException {
 		Set<String> allowedSections = getPopulatedHierarchies(req);
 
@@ -533,9 +534,10 @@ public class ProductExplorer extends SBActionAdapter {
 		sha.setAttributes(getAttributes());
 		sha.setDBConnection(getDBConnection());
 		sha.retrieve(req);
-		Tree t = (Tree) sha.getAttribute(Constants.MODULE_DATA);
+		ModuleVO mod = (ModuleVO) sha.getAttribute(Constants.MODULE_DATA);
+		List<Node> sections = (List<Node>) mod.getActionData();
 
-		putModuleData(filterTree(allowedSections, t.preorderList(true)));
+		putModuleData(filterTree(allowedSections, sections));
 	}
 
 	/**
