@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import com.rezdox.action.BusinessAction;
@@ -54,33 +55,20 @@ public class BusinessFormProcessor extends FormDataProcessor {
 		BUSINESS_STATE("state"), BUSINESS_ZIP("zipCode"), BUSINESS_COUNTRY("country"), BUSINESS_PHONE_1("mainPhoneText"),
 		BUSINESS_PHONE_2("altPhoneText"), BUSINESS_EMAIL_1("emailAddressText"), BUSINESS_WEBSITE("websiteUrl"),
 		BUSINESS_PRIVACY_FLAG("privacyFlag"), BUSINESS_CATEGORY("categoryCd"), BUSINESS_SUB_CATEGORY("subCategoryCd"),
-		BUSINESS_AD_FILE_URL("adFileUrl"), BUSINESS_PHOTO_URL("photoUrl");
+
+		BUSINESS_AD_IMAGE("adFileUrl", "ad_file_url"), BUSINESS_LOGO("photoUrl", "photo_url"),
+		//These two are hidden fields  that get transposed at the browser (into the two above).  
+		//We list them here so they won't be saved into the _attributes table as duplicate data
+		BUSINESS_AD_FILE_URL("adFileUrl"),BUSINESS_PHOTO_URL("photoUrl");
 
 		private String reqParam;
+		private String dbColNm;
 
-		private BusinessField(String reqParam) {
-			this.reqParam = reqParam;
-		}
-
+		private BusinessField(String reqParam) { this.reqParam = reqParam; }
+		private BusinessField(String reqParam, String dbCol) { this.reqParam = reqParam; this.dbColNm = dbCol; }
 		public String getReqParam() { return reqParam; }
-	}
-
-	/**
-	 * DB field names, request param names for form field slug_txt values that are file uploads
-	 */
-	public enum BusinessFile {
-		BUSINESS_LOGO("photoUrl", "photo_url");
-
-		private String reqParam;
-		private String dbField;
-
-		private BusinessFile(String reqParam, String dbField) {
-			this.reqParam = reqParam;
-			this.dbField = dbField;
-		}
-
-		public String getReqParam() { return reqParam; }
-		public String getDbField() { return dbField; }
+		public String getDBColNm() { return dbColNm; }
+		public boolean isFileUpload() { return !StringUtil.isEmpty(dbColNm); }
 	}
 
 	/**
@@ -120,35 +108,27 @@ public class BusinessFormProcessor extends FormDataProcessor {
 			// Add parameters to the request to be saved to the business table
 			BusinessField param = EnumUtil.safeValueOf(BusinessField.class, entry.getValue().getSlugTxt());
 			if (param != null) {
-				req.setParameter(param.getReqParam(), entry.getValue().getResponseText());
-				iter.remove();
-			}
-
-			// Get form builder parameter names for files and map them to their business table conterparts
-			BusinessFile fileParam = EnumUtil.safeValueOf(BusinessFile.class, entry.getValue().getSlugTxt());
-			if (fileParam != null) {
-				fileMap.put(entry.getValue().getFieldNm(), new GenericVO(fileParam.getReqParam(), fileParam.getDbField()));
+				if (param.isFileUpload()) {
+					//save special files separately, so we can upload them and put the file name into the DB after saving.
+					fileMap.put(entry.getValue().getFieldNm(), new GenericVO(param.getReqParam(), param.getDBColNm()));
+				} else {
+					req.setParameter(param.getReqParam(), entry.getValue().getResponseText());
+				}
 				iter.remove();
 			}
 		}
 
 		// Save the Business Data
-		BusinessAction ba = new BusinessAction(dbConn, attributes);
 		try {
-			if (req.hasParameter("settings")) {
-				ba.saveSettings(req);
-			} else {
-				ba.saveBusiness(req);
-			}
+			new BusinessAction(dbConn, attributes).saveBusiness(req);
 		} catch (Exception e) {
 			throw new DatabaseException("Could not save business", e);
 		}
 	}
 
 
-	/* 
+	/**
 	 * Saves the files to secure binary
-	 * 
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.data.AbstractDataProcessor#saveFiles(com.smt.sitebuilder.data.vo.FormTransactionVO)
 	 */
@@ -164,36 +144,29 @@ public class BusinessFormProcessor extends FormDataProcessor {
 
 		// Store the files to the file system
 		List<String> dbFields = new ArrayList<>();
-		int i = 0;
-
-		//Track index of files we've already written.
-		List<Integer> processedFiles = new ArrayList<>();
+		FileLoader fl = new FileLoader(attributes);
 		try {
-			for (FilePartDataBean fpdb : req.getFiles()) {
+			ListIterator<FilePartDataBean> iter = req.getFiles().listIterator();
+			while (iter.hasNext()) {
+				FilePartDataBean fpdb = iter.next();
 				GenericVO field = fileMap.get(fpdb.getKey());
-				if (field != null) {
-					processedFiles.add(i);
-					FileLoader fl = new FileLoader(attributes);
-					fl.setData(fpdb.getFileData());
-					fl.setFileName(fpdb.getFileName());
-					fl.setPath(uploadPath);
-					fl.writeFiles();
-					req.setParameter((String) field.getKey(), rootBusinessPath + fpdb.getFileName());
-					dbFields.add((String) field.getValue());
-				}
-				i++;
+				if (field == null) continue;
+
+				fl.setData(fpdb.getFileData());
+				fl.setFileName(fpdb.getFileName());
+				fl.setPath(uploadPath);
+				fl.writeFiles();
+				req.setParameter((String) field.getKey(), rootBusinessPath + fpdb.getFileName());
+				dbFields.add((String) field.getValue());
+				log.debug("processed " + fpdb.getKey() + " into " + field);
+				iter.remove();
 			}
 		} catch (Exception e) {
-			log.error("Could not write RezDox business file", e);
+			log.error("Could not write RezDox business files", e);
 		}
 
-		//Remove Any Files that were already Written from the request.
-		for (Integer x : processedFiles)
-			req.getFiles().remove(x.intValue());
-
 		// Store file data to the db
-		if (!dbFields.isEmpty())
-			saveFileInfo(dbFields);
+		saveFileInfo(dbFields);
 
 		//Write any remaining files to the Photo System. (Ad Images)
 		if (!req.getFiles().isEmpty()) {
@@ -204,26 +177,25 @@ public class BusinessFormProcessor extends FormDataProcessor {
 		}
 	}
 
+
 	/**
 	 * Save file data to the existing business record
-	 * 
 	 * @param dbFields
 	 */
 	private void saveFileInfo(List<String> dbFields) {
+		if (dbFields == null || dbFields.isEmpty()) return;
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("rezdox_business set ");
 
-		int cnt = 0;
-		for (String field : dbFields) {
-			sql.append(cnt++ > 0 ? ", " : "").append(field).append(" = ? ");
+		for (int x=0; x < dbFields.size(); x++) {
+			if (x > 0) sql.append(", ");
+			sql.append(dbFields.get(x)).append("=?");
 		}
-
-		sql.append("where business_id = ? ");
+		sql.append(" where business_id=?");
 		dbFields.add("business_id");
 
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		try {
 			dbp.executeSqlUpdate(sql.toString(), new BusinessVO(req), dbFields);
 		} catch (Exception e) {
@@ -237,7 +209,6 @@ public class BusinessFormProcessor extends FormDataProcessor {
 	@Override
 	protected void saveFieldData(FormTransactionVO data) throws DatabaseException {
 		log.debug("Saving RezDox Business Attributes");
-
 		List<FormFieldVO> oldFormFields = new ArrayList<>();
 		List<FormFieldVO> newFormFields = new ArrayList<>();
 
@@ -296,6 +267,7 @@ public class BusinessFormProcessor extends FormDataProcessor {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.DELETE_CLAUSE).append(" from ").append(schema).append("rezdox_business_attribute ");
 		sql.append("where business_id = ? and slug_txt = ? ");
+		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (FormFieldVO formField : oldFormFields) {
@@ -303,7 +275,9 @@ public class BusinessFormProcessor extends FormDataProcessor {
 				ps.setString(2, formField.getSlugTxt());
 				ps.addBatch();
 			}
-			ps.executeBatch();
+			int[] cnt = ps.executeBatch();
+			log.debug("deleted " + cnt.length + " saved responses");
+
 		} catch (SQLException sqle) {
 			log.error("Could not delete RexDox Business form field data.", sqle);
 		}

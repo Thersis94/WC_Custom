@@ -6,11 +6,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ernieyu.feedparser.Item;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> RSSArticleVO.java
@@ -55,6 +57,24 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	public RSSArticleVO(ResultSet rs) {
 		this();
 		populateData(rs);
+	}
+
+	/**
+	 * Convert the given Feed Item from parser library to SMT RSSArticleVO.
+	 * @param i
+	 */
+	public RSSArticleVO(Item i) {
+		this();
+		setArticleSourceType(ArticleSourceType.RSS);
+		setArticleGuid(StringUtil.checkVal(i.getGuid()));
+		setArticleTxt(StringUtil.checkVal(i.getDescription()).replace("\u00a0"," "));
+		setPublishDt(i.getPubDate());
+		setArticleUrl(i.getLink());
+		if(StringUtil.isEmpty(getArticleGuid())) {
+			setArticleGuid(i.getLink());
+		}
+		setTitleTxt(StringUtil.checkVal(i.getTitle()).replace("\u00a0"," "));
+		setPublicationName(i.getTitle());
 	}
 
 	/**
@@ -172,7 +192,7 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	 * @param articleGuid the articleGuid to set.
 	 */
 	public void setArticleGuid(String articleGuid) {
-		this.articleGuid = articleGuid;
+		this.articleGuid = StringUtil.checkVal(articleGuid);
 	}
 
 	/**

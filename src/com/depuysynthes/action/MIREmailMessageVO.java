@@ -7,6 +7,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
+
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -26,7 +27,11 @@ import net.sf.json.JSONObject;
 public class MIREmailMessageVO extends EmailMessageVO {
 
 	private static final long serialVersionUID = 4872242395454435789L;
-	private static final String REGION = "region";
+	private static final String REGION_EMAILS = "dpySynMirRegionEmails";
+	private static final String PARAM_REGION = "region";
+	private static final String PARAM_SUBREGION = "subregion";
+	private static final String REGION_CANADA = "North-America-Canada";
+	private static final String SUBREGION_CANADA = "canada";
 
 	private MIRSubmissionVO vo;
 	private SiteVO site;
@@ -41,20 +46,22 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		setSubject("MIR Submission");
 		setInstance(InstanceName.DEPUY);
-
 		//attach any uploaded files:
 		if (req.hasFiles()) {
 			for (FilePartDataBean file : req.getFiles())
 				addAttachment(file.getFileName(), file.getFileData());
 		}
 
-		String rcpt = parseRecipient(req.getParameter(REGION), (String)attributes.get("dpySynMirRegionEmails"));
+		String rcpt = parseRecipient(req.getParameter(PARAM_REGION),
+				req.getParameter(PARAM_SUBREGION), (String)attributes.get(REGION_EMAILS));
+
 		try {
 			addRecipient(rcpt);
 			setFrom(site.getMainEmail());
 		} catch (InvalidDataException e) {
 			log.error("could not set recipient emails", e);
 		}
+
 	}
 
 
@@ -65,15 +72,21 @@ public class MIREmailMessageVO extends EmailMessageVO {
 	 * @param string
 	 * @return
 	 */
-	private String parseRecipient(String region, String jsonObjStr) {
+	private String parseRecipient(String region, String subRegion, String jsonObjStr) {
 		String email = null;
+		String mailRegion = region;
+
+		// If subregion is Canada, use a different region to obtain a Canadian-specific recipient.
+		if (SUBREGION_CANADA.equalsIgnoreCase(subRegion))
+			mailRegion = REGION_CANADA;
+
 		//this array comes from sb_config - we can trust it to not be null.
 		JSONArray regionArr = JSONArray.fromObject(jsonObjStr);
 		for (int x=0; x < regionArr.size(); x++) {
 			JSONObject obj = regionArr.getJSONObject(x);
-			if (obj.optString(REGION).equalsIgnoreCase(region)) {
+			if (obj.optString(PARAM_REGION).equalsIgnoreCase(mailRegion)) {
 				return obj.optString("email");
-			} else if ("default".equals(obj.optString(REGION))) {
+			} else if ("default".equals(obj.optString(PARAM_REGION))) {
 				//save the default incase we need a fallback plan.
 				email = obj.optString("email");
 			}
@@ -104,18 +117,18 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		addHtmlRow(html, ++rowCnt, "HCP Type", StringUtil.checkVal(vo.getHcpType()));
 		addHtmlRow(html, ++rowCnt, "HCP Type (Other)", vo.getHcpTypeOther());
 		addHtmlRow(html, ++rowCnt, "HCP's Title", vo.getHcpTitle());
-		addHtmlRow(html, ++rowCnt, "HCP's First Name", vo.getFirstName());
-		addHtmlRow(html, ++rowCnt, "HCP's Last Name", vo.getLastName());
+		addHtmlRow(html, ++rowCnt, "HCP's First Name", trimValue(vo.getFirstName()));
+		addHtmlRow(html, ++rowCnt, "HCP's Last Name", trimValue(vo.getLastName()));
 		addHtmlRow(html, ++rowCnt, "HCP's Specialty", vo.getHcpSpecialty());
 		addHtmlRow(html, ++rowCnt, "HCP's Hospital / Institution / Office", vo.getHcpInstitution());
 		addHtmlRow(html, ++rowCnt, "Consent", vo.getConsentFlg());
 		// section 2 - Contact Information
 		addHtmlRow(html, ++rowCnt, "Desired Response Method", vo.getResponseType());
 		addHtmlRow(html, ++rowCnt, "Desired Response Method (Other)", vo.getResponseTypeOther());
-		addHtmlRow(html, ++rowCnt, "Street Address", vo.getAddress());
-		addHtmlRow(html, ++rowCnt, "City", vo.getCity());
-		addHtmlRow(html, ++rowCnt, "State / Province", vo.getState());
-		addHtmlRow(html, ++rowCnt, "ZIP / Postal Code", vo.getZipCode());
+		addHtmlRow(html, ++rowCnt, "Street Address", trimValue(vo.getAddress()));
+		addHtmlRow(html, ++rowCnt, "City", trimValue(vo.getCity()));
+		addHtmlRow(html, ++rowCnt, "State / Province", trimValue(vo.getState()));
+		addHtmlRow(html, ++rowCnt, "ZIP / Postal Code", trimValue(vo.getZipCode()));
 		addHtmlRow(html, ++rowCnt, "Country", vo.getCountryCode());
 		addHtmlRow(html, ++rowCnt, "Telephone", StringUtil.checkVal(vo.getMainPhone()));
 		addHtmlRow(html, ++rowCnt, "Fax", vo.getMobilePhone());
@@ -135,6 +148,17 @@ public class MIREmailMessageVO extends EmailMessageVO {
 		return super.getHtmlBody();
 	}
 
+	/**
+	 * Trims the String argument and returns a String representing the
+	 * trimmed value.  If the String argument is null or empty, the String
+	 * passed in the argument is returned.
+	 * @param text
+	 * @return
+	 */
+	private String trimValue(String text) {
+		if (StringUtil.isEmpty(text)) return text;
+		return text.trim();
+	}
 
 	/**
 	 * Builder method for generating a row for the HTML table.

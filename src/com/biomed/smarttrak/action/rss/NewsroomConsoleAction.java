@@ -152,7 +152,6 @@ public class NewsroomConsoleAction extends NewsroomAction {
 	 * @param req
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	private List<RSSEntityVO> loadSources(ActionRequest req) {
 		SMTCookie c = req.getCookie("ACTIVE_FEED_GROUP");
 		if(c != null) {
@@ -185,7 +184,6 @@ public class NewsroomConsoleAction extends NewsroomAction {
 	/**
 	 * @param req
 	 */
-	@SuppressWarnings("unchecked")
 	protected List<RSSFilterVO> loadNonGroupedFilters(ActionRequest req) {
 		SMTCookie c = req.getCookie("ACTIVE_FEED_GROUP");
 		if(c != null) {

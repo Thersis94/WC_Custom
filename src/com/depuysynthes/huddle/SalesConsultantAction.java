@@ -214,13 +214,8 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 		Map<String, SalesConsultantAlignVO> finalData = new HashMap<>(data.size());
 		SalesConsultantAlignVO vo;
 		try (SolrActionUtil util = new SolrActionUtil(getAttributes())) {
-			util.setHardCommit(false); //let the insert handle the commit of the delete; so we only fire one commit to Solr.
-			
 			//delete all existing Solr records, since we don't have a means of managing deltas
 			util.removeByQuery(SearchDocumentHandler.INDEX_TYPE, HuddleUtils.IndexType.HUDDLE_CONSULTANTS.toString());
-			
-			//insert all records loaded from the file
-			util.setHardCommit(true);
 			
 			for (Object obj : data) {
 				SalesConsultantAlignVO newVo = (SalesConsultantAlignVO) obj;

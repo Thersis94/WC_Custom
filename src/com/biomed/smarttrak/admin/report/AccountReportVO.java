@@ -13,6 +13,7 @@ import com.biomed.smarttrak.vo.AccountVO.Type;
 import com.biomed.smarttrak.vo.PermissionVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
+import com.biomed.smarttrak.vo.UserVO.Status;
 import com.biomed.smarttrak.vo.UserVO.LicenseType;
 
 //SMTBaseLibs
@@ -186,7 +187,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	protected void addAccountRow(StringBuilder sb, AccountUsersVO acct) {
 		startDiv(sb,CSS_ACCT_HEADER);
 		sb.append(acct.getAccountName().toUpperCase());
-		int totUsers = acct.getActiveSeatsCnt() + acct.getAddedCount() + acct.getComplementaryCount() + acct.getUpdatesOnlyCount();
+		int totUsers = acct.getActiveSeatsCnt() + acct.getAddedCount() + acct.getOpenSeatsCnt();
 		if (totUsers > 0) 	sb.append(" (").append(totUsers).append(" Licenses, ").append(acct.getOpenSeatsCnt()).append(" Open)");
 		if (acct.getAddedCount() > 0) {
 			sb.append(" ");
@@ -432,12 +433,10 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	protected void addDivisions(StringBuilder sb, 
 			AccountUsersVO acct, Map<String,String> divMap) {
-		String divName;
 		for (Map.Entry<String,List<UserVO>> division : acct.getDivisions().entrySet()) {
-			divName = divMap.get(division.getKey());
 			startDiv(sb,CSS_DIVISION_WRAPPER);
 			startSpan(sb,CSS_DIVISION_NAME);
-			sb.append(StringUtil.checkVal(divName));
+			sb.append(StringUtil.checkVal(division.getKey()));
 			closeSpan(sb);
 			closeDiv(sb);
 			addDivisionUsers(sb,division.getValue());
@@ -451,6 +450,9 @@ public class AccountReportVO extends AbstractSBReportVO {
 	 */
 	protected void addDivisionUsers(StringBuilder sb, List<UserVO> users) {
 		for (UserVO user : users) {
+			if (user.getStatusFlg() == Status.OPEN.getCode())
+				continue;
+			
 			if (user.getAcctOwnerFlg() == ACCT_OWNER_FLAG_TRUE) {
 				startDiv(sb,CSS_DIVISION_ACCT_OWNER);
 			} else {

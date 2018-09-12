@@ -72,7 +72,7 @@ public class InsightAction extends ManagementAction {
 	protected enum Fields {
 		INSIGHT_ID, STATUS_CD, TYPE_CD, DATE_RANGE, START, RPP, SORT, ORDER,
 		SEARCH, ID_BYPASS, TITLE_BYPASS, CREATOR_PROFILE_ID, FEATURED_FLG, 
-		START_DATE, END_DATE, HIERACHIES;
+		START_DATE, END_DATE, HIERACHIES, SECTION_BYPASS;
 	}
 
 
@@ -84,6 +84,7 @@ public class InsightAction extends ManagementAction {
 		sortMapper.put("insightType", "type_cd");
 		sortMapper.put("featuredFlg", "featured_flg");
 		sortMapper.put("orderNo", "order_no");
+		sortMapper.put("sectionFlg", "section_flg");
 	}
 
 	public InsightAction(ActionInitVO actionInit) {
@@ -183,9 +184,10 @@ public class InsightAction extends ManagementAction {
 		if (req.hasParameter(TITLE_BYPASS)) insightParamsMap.put(Fields.TITLE_BYPASS, req.getParameter(TITLE_BYPASS));
 		if (req.hasParameter("authorId")) insightParamsMap.put(Fields.CREATOR_PROFILE_ID, req.getParameter("authorId"));
 		if (req.hasParameter("featuredFlg")) insightParamsMap.put(Fields.FEATURED_FLG, req.getParameter("featuredFlg"));
-		log.debug(insightParamsMap.get(Fields.CREATOR_PROFILE_ID));
+		
 		insightParamsMap.put(Fields.START, req.getParameter("offset", "0"));
-		insightParamsMap.put(Fields.RPP, req.getParameter("limit","10"));
+		if (!Convert.formatBoolean(req.getParameter("retrieveAll")))
+			insightParamsMap.put(Fields.RPP, req.getParameter("limit","10"));
 		insightParamsMap.put(Fields.SORT, StringUtil.checkVal(sortMapper.get(req.getParameter("sort")), "publish_dt"));
 		insightParamsMap.put(Fields.ORDER, StringUtil.checkVal(req.getParameter("order"), "desc"));
 		insightParamsMap.put(Fields.SEARCH, StringUtil.checkVal(req.getParameter("search")).toUpperCase());
@@ -202,6 +204,8 @@ public class InsightAction extends ManagementAction {
 		String hierarchies = CookieUtil.getValue("insightMarkets", req.getCookies());
 		if (!StringUtil.isEmpty(hierarchies)) 
 			insightParamsMap.put(Fields.HIERACHIES, hierarchies);
+		if (Convert.formatBoolean(req.getParameter("sectionBypass"))) 
+			insightParamsMap.put(Fields.SECTION_BYPASS, "true");
 
 		List<Object> insights = getInsights(insightParamsMap);
 		decryptNames(insights);
@@ -467,6 +471,8 @@ public class InsightAction extends ManagementAction {
 			Map<Fields, String> insightParamsMap) {
 
 		sql.append("order by ").append(insightParamsMap.get(Fields.SORT)).append(" ").append(insightParamsMap.get(Fields.ORDER));
+		// Ties should be broken by publish date
+		sql.append(", publish_dt desc");
 
 		if (insightParamsMap.containsKey(Fields.RPP) && Convert.formatInteger(insightParamsMap.get(Fields.RPP)) > 0 && insightParamsMap.containsKey(Fields.START)){
 			sql.append(" limit ? offset ? ");
@@ -546,7 +552,7 @@ public class InsightAction extends ManagementAction {
 	private static void generateJoinSectionOfQuery(StringBuilder sql, String schema, Map<Fields, String> insightParamsMap) {
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS)) 
-				|| !StringUtil.isEmpty(insightParamsMap.get(Fields.HIERACHIES))){
+				|| !StringUtil.isEmpty(insightParamsMap.get(Fields.HIERACHIES))|| !StringUtil.isEmpty(insightParamsMap.get(Fields.SECTION_BYPASS))){
 			sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
 			sql.append("on a.insight_id=b.insight_id ");
 		}
@@ -570,7 +576,8 @@ public class InsightAction extends ManagementAction {
 
 		sql.append(", p.first_nm, p.last_nm, p.profile_img ");
 
-		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS)))
+		if (!StringUtil.isEmpty(insightParamsMap.get(Fields.INSIGHT_ID)) || Convert.formatBoolean(insightParamsMap.get(Fields.ID_BYPASS))
+				|| !StringUtil.isEmpty(insightParamsMap.get(Fields.SECTION_BYPASS)))
 			sql.append(", b.section_id ");
 
 		sql.append("from ").append(schema).append("biomedgps_insight a ");
@@ -767,7 +774,7 @@ public class InsightAction extends ManagementAction {
 	 * @param u
 	 */
 	protected void deleteFromSolr(InsightVO ivo) {
-		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes(), false)) {
+		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
 			sau.removeDocument(ivo.getDocumentId());
 		} catch (Exception e) {
 			log.error("Error Deleting from Solr.", e);
@@ -786,7 +793,7 @@ public class InsightAction extends ManagementAction {
 	private void saveInsight(DBProcessor db, InsightVO ivo, boolean isInsert) throws ActionException {
 		try {
 			db.save(ivo);
-			setInsightIdOnInsert(ivo, db, isInsert);
+			setInsightIdOnInsert(ivo, isInsert);
 			saveSections(ivo);
 
 		} catch (Exception e) {
@@ -845,17 +852,14 @@ public class InsightAction extends ManagementAction {
 
 	/**
 	 * sets the new insight vo on insert
-	 * @param db 
 	 * @param u 
 	 * @param isInsert
 	 */
-	private void setInsightIdOnInsert(InsightVO ivo, DBProcessor db, boolean isInsert) {
+	private void setInsightIdOnInsert(InsightVO ivo, boolean isInsert) {
 		if (!isInsert) return; //nothing to do if this is not an insert
 		
-		String insightId = ivo.getInsightId() != null ? ivo.getInsightId() : db.getGeneratedPKId();
-		ivo.setInsightId(db.getGeneratedPKId());
 		for(InsightXRVO uxr : ivo.getInsightSections()) {
-			uxr.setInsightId(insightId);
+			uxr.setInsightId(ivo.getInsightId());
 		}
 		
 	}

@@ -36,7 +36,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since March 14, 2018
  ****************************************************************************/
 public class BusinessAdminDataTool extends SimpleActionAdapter {
-	public static final String REQ_APPROVE_BUSINESS = "approveBusiness";
+	public static final String REQ_BUSINESS_STATUS = "businessStatus";
 	public static final String REQ_APPROVE_REVIEW = "approveReview";
 	public static final String REQ_DELETE_REVIEW = "deleteReview";
 	public static final String REQ_ADMIN_MODERATE = "adminModerate";
@@ -57,6 +57,7 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
+		req.setParameter("loadAll", "1");
 		BusinessCategoryList bcl = new BusinessCategoryList(dbConn, attributes);
 		bcl.retrieve(req);
 		req.setAttribute("categoryList", ((ModuleVO) bcl.getAttribute(Constants.MODULE_DATA)).getActionData());
@@ -85,12 +86,12 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 	public void update(ActionRequest req) throws ActionException {
 		String msg = null;
 
-		if (req.hasParameter(REQ_APPROVE_BUSINESS)) {
+		if (req.hasParameter(REQ_BUSINESS_STATUS)) {
 			BusinessAction ba = new BusinessAction(dbConn, attributes);
 			BusinessVO business = ba.retrieveBusinesses(req).get(0);
 
 			// Set value required for approval or denial of business
-			business.setStatusCode(Convert.formatInteger(req.getParameter(REQ_APPROVE_BUSINESS)));
+			business.setStatusCode(Convert.formatInteger(req.getParameter(REQ_BUSINESS_STATUS)));
 			msg = setBusinessStatus(business);
 
 			// Send confirmation to the business member
@@ -131,8 +132,7 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 	private String setBusinessStatus(BusinessVO business) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("rezdox_business_member_xr ");
-		sql.append("set status_flg = ? ");
-		sql.append("where business_id = ? ");
+		sql.append("set status_flg=? where business_id=? ");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -156,6 +156,7 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 	private void sendApprovalStatusEmail(BusinessVO business) {
 		Map<String, Object> dataMap = new HashMap<>();
 		dataMap.put("businessName", business.getBusinessName());
+		log.debug(business);
 
 		// Set the recipient. Send to the business email address.
 		List<EmailRecipientVO> rcpts = new ArrayList<>();

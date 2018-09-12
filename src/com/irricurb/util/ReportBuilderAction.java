@@ -148,7 +148,8 @@ public class ReportBuilderAction extends SimpleActionAdapter {
 		SMTChartVO chart = new SMTChartVO(data);
 		chart.setPrimaryXTitle(xTitle);
 		chart.setPrimaryYTitle(yTitle);
-		SMTChartIntfc theChart = SMTChartFactory.getInstance(ProviderType.GOOGLE, chart, null);
+		SMTChartIntfc theChart = SMTChartFactory.getInstance(ProviderType.GOOGLE);
+		theChart.processData(chart, ct);
 		SMTChartOptionIntfc options = SMTChartOptionFactory.getInstance(ct, ProviderType.GOOGLE, full);
 
 		options.getChartOptions().put("colors", CHART_COLORS.toArray());

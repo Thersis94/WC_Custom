@@ -115,6 +115,14 @@ public class UpdatesAction extends ManagementAction {
 		public String getText() {
 			return this.text;
 		}
+		public static UpdateType getFromCode(int typeCd) {
+			for(UpdateType type : UpdateType.values()){
+				if (type.getVal() == typeCd){
+					return type;
+				}
+			}
+			return null;
+		}
 	}
 
 	public UpdatesAction() {
@@ -653,7 +661,7 @@ public class UpdatesAction extends ManagementAction {
 	 * @param u
 	 */
 	protected void deleteFromSolr(UpdateVO u) {
-		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes(), false)) {
+		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
 			sau.removeDocument(u.getUpdateId());
 		} catch (Exception e) {
 			log.error("Error Deleting from Solr.", e);

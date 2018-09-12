@@ -77,6 +77,11 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
+
+			// 2018-08-24 DBargerhuff - added per DS-477
+			mail.addCC("jtabere1@its.jnj.com");;
+			mail.addCC("smccart4@its.jnj.com");
+
 			if (sem.getTgmEmail() != null && sem.getTgmEmail().length() > 0)
 				mail.addCC(sem.getTgmEmail().split(", "));
 			mail.setSubject(subject.toString());
@@ -90,7 +95,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		} catch (Exception me) {
 			log.error("EventPostcardSubmitEmail", me);
 		}
-		return;
+
 	}
 
 
@@ -140,7 +145,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		}
 
 		log.debug("done sending cancellation email");
-		return;
+
 	}
 
 
@@ -183,7 +188,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		} catch (Exception me) {
 			log.error("EventPostcardSubmitEmail", me);
 		}
-		return;
+
 	}
 
 	/**
@@ -263,7 +268,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		} catch (Exception me) {
 			log.error("sendAdvApprovedEmail", me);
 		}
-		return;
+
 	}
 	@Override
 	protected void orderConsumableBox(ActionRequest req) {
@@ -318,7 +323,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		} catch (Exception me) {
 			log.error("EventPostcardSubmitEmail", me);
 		}
-		return;
+
 	}
 
 	@Override
@@ -353,7 +358,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		} catch (Exception me) {
 			log.error("requestPostcardApprovalEmail", me);
 		}
-		return;
+
 	}
 
 	@Override
@@ -388,7 +393,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		} catch (Exception me) {
 			log.error("EventPostcardSubmitEmail", me);
 		}
-		return;
+
 	}
 
 	@Override
@@ -444,7 +449,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		} catch (Exception me) {
 			log.error("sendMedicalAffairsApprovedNotice", me);
 		}
-		return;
+
 	}
 
 	/**

@@ -20,6 +20,7 @@ import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -76,14 +77,10 @@ public class BusinessAction extends SBActionAdapter {
 	 * Business status
 	 */
 	public enum BusinessStatus {
-		INACTIVE(0), ACTIVE(1), PENDING(2);
+		INACTIVE(0), ACTIVE(1), SHARED(2), PENDING(100);
 
 		private int status;
-
-		private BusinessStatus(int status) {
-			this.status = status;
-		}
-
+		private BusinessStatus(int status) { this.status = status; }
 		public int getStatus() { return status; }
 	}
 
@@ -115,6 +112,7 @@ public class BusinessAction extends SBActionAdapter {
 		setAttributes(attributes);
 	}
 
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
 	 */
@@ -122,6 +120,7 @@ public class BusinessAction extends SBActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
+
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -131,10 +130,9 @@ public class BusinessAction extends SBActionAdapter {
 		// If hitting this action with a residence role or registered role, they are adding a new business
 		// Their role will be upgraded appropriately after adding a new business
 		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
-		log.debug("role=" + role.getRoleId());
 
-		if ((RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL == role.getRoleLevel())
-				&& !req.hasParameter("storeFront")) {
+		//preconfigure requests to create new businesses
+		if (!req.hasParameter("storeFront") && (RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL == role.getRoleLevel())) {
 			req.setParameter(REQ_BUSINESS_ID, "new");
 			req.setParameter(REQ_BUSINESS_INFO, "1");
 		}
@@ -145,30 +143,42 @@ public class BusinessAction extends SBActionAdapter {
 		if ("new".equalsIgnoreCase(businessId) && !canAddNewBusiness(req)) {
 			// When adding a new business, check to make sure the member has not reached their limit
 			sendRedirect(RezDoxUtils.SUBSCRIPTION_UPGRADE_PATH, UPGRADE_MSG, req);
+
 		} else if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter(REQ_SETTINGS)) {
 			// Set the data to be returned
 			req.setAttribute(BUSINESS_DATA, businessList);
 			putModuleData(retrieveBusinessInfoForm(req));
+
 		} else {
 			putModuleData(businessList, businessList.size(), false);
 		}
 
-		if (req.hasParameter("storeFront")) {
-			String memberId = RezDoxUtils.getMemberId(req);
-			BusinessVO biz = !businessList.isEmpty() ? businessList.get(0) : new BusinessVO();
-			boolean isConnected = memberId.equals(biz.getOwner() != null ? biz.getOwner().getMemberId() : ""); //presume the owner is connected
-			if (!isConnected) {
-				ConnectionAction ca = new ConnectionAction(dbConn, attributes);
-				List<ConnectionReportVO> connections = ca.generateConnections(memberId, ConnectionAction.MEMBER, req);
-				isConnected = !connections.isEmpty();
-			}
-			req.setAttribute("isConnected", isConnected);
-		}
+		if (req.hasParameter("storeFront"))
+			configureStorefront(req, businessList);
 	}
+
+
+	/**
+	 * Prepare for storefront display by determining if we the viewer is already connected to this business.
+	 * We use isConnected to conditionally display the green 'Connect' button.
+	 * @param req
+	 * @param businessList
+	 */
+	private void configureStorefront(ActionRequest req, List<BusinessVO> businessList) {
+		String memberId = RezDoxUtils.getMemberId(req);
+		BusinessVO biz = !businessList.isEmpty() ? businessList.get(0) : new BusinessVO();
+		boolean isConnected = memberId.equals(biz.getOwner() != null ? biz.getOwner().getMemberId() : ""); //presume the owner is connected
+		if (!isConnected) {
+			ConnectionAction ca = new ConnectionAction(dbConn, attributes);
+			List<ConnectionReportVO> connections = ca.generateConnections(memberId, ConnectionAction.MEMBER, req);
+			isConnected = !connections.isEmpty();
+		}
+		req.setAttribute("isConnected", isConnected);
+	}
+
 
 	/**
 	 * Validates whether a new business can be added by the member.
-	 * 
 	 * @param businessList
 	 * @param member
 	 * @return true if business can be added, false if not
@@ -186,18 +196,16 @@ public class BusinessAction extends SBActionAdapter {
 		return !needsUpgrade;
 	}
 
+
 	/**
 	 * Returns base business sql query. The where clause is left up to the calling method.
 	 * Note that the xr status flag parameter is added here and required for all queries.
-	 * 
 	 * @return
 	 */
-	private StringBuilder getBaseBusinessSql() {
-		String schema = getCustomSchema();
-
+	private StringBuilder getBaseBusinessSql(String schema) {
 		StringBuilder sql = new StringBuilder(1400);
 		sql.append("select b.business_id, business_nm, address_txt, address2_txt, city_nm, state_cd, zip_cd, country_cd, ");
-		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, b.email_address_txt, website_url, photo_url, b.create_dt, b.privacy_flg, ");
+		sql.append("latitude_no, longitude_no, main_phone_txt, alt_phone_txt, b.email_address_txt, website_url, photo_url, ad_file_url, b.create_dt, b.privacy_flg, ");
 		sql.append("bsc.business_category_cd as sub_category_cd, bsc.category_nm as sub_category_nm, bc.business_category_cd as category_cd, bc.category_nm, ");
 		sql.append("coalesce(b.update_dt, b.create_dt) as update_dt, m.member_id, m.profile_id, m.first_nm, m.last_nm, bm.status_flg, ");
 		sql.append("attribute_id, slug_txt, value_txt, total_reviews_no, avg_rating_no, p.photo_id, p.desc_txt, p.image_url ");
@@ -218,6 +226,7 @@ public class BusinessAction extends SBActionAdapter {
 		return sql;
 	}
 
+
 	/**
 	 * Retrieves base business data for a member
 	 * 
@@ -228,7 +237,9 @@ public class BusinessAction extends SBActionAdapter {
 		String businessId = req.getParameter(REQ_BUSINESS_ID);
 
 		// Use the base query
-		StringBuilder sql = getBaseBusinessSql();
+		String schema = getCustomSchema();
+		StringBuilder sql = getBaseBusinessSql(schema);
+		sql.append("where 1=1 ");
 
 		// Get everything that is active or pending
 		List<Object> params = new ArrayList<>();
@@ -236,19 +247,19 @@ public class BusinessAction extends SBActionAdapter {
 
 		// Restrict to the member owner when editing business details
 		if (req.hasParameter(REQ_BUSINESS_INFO) || req.hasParameter(REQ_SETTINGS) || StringUtil.isEmpty(businessId) || req.getAttribute(ATTR_GET_FOR_MEMBER) != null) {
-			sql.append("where bm.member_id = ? ");
+			sql.append("and bm.member_id=? ");
 			params.add(RezDoxUtils.getMemberId(req));
-		} else if (!StringUtil.isEmpty(businessId)) {
-			sql.append("where 1=1 ");
-		}
 
-		// Return only a specific business if selected
+		}
+		// Return only a specific business if selected - this can be combined with the above conditions
 		if (!StringUtil.isEmpty(businessId)) {
-			sql.append("and b.business_id = ? ");
+			sql.append("and b.business_id=? ");
 			params.add(businessId);
 		}
 
-		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
+		sql.append("order by coalesce(bm.status_flg, 1), b.create_dt"); //show primary business first, which is the 1st one created. REZDOX-275
+
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		return dbp.executeSelect(sql.toString(), params, new BusinessVO());
 	}
 
@@ -270,13 +281,8 @@ public class BusinessAction extends SBActionAdapter {
 		sql.append(")");
 		log.debug(sql);
 
-		// Get everything that is active or pending
-		List<Object> params = new ArrayList<>(businessIds.length);
-		for (String id : businessIds)
-			params.add(id);
-
-		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
-		return dbp.executeSelect(sql.toString(), params, new BusinessVO());
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		return dbp.executeSelect(sql.toString(), Arrays.asList((Object[]) businessIds), new BusinessVO());
 	}
 
 
@@ -287,14 +293,14 @@ public class BusinessAction extends SBActionAdapter {
 	 */
 	protected List<BusinessVO> retrievePendingBusinesses() {
 		// Use the base query, no additional filtering required
-		StringBuilder sql = getBaseBusinessSql();
+		String schema = getCustomSchema();
+		StringBuilder sql = getBaseBusinessSql(schema);
 
 		// Get everything in the system that is pending approval
-		List<Object> params = new ArrayList<>();
-		params.add(BusinessStatus.PENDING.getStatus());
+		List<Object> params = Arrays.asList(BusinessStatus.PENDING.getStatus());
 
 		// Get/return the data
-		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		return dbp.executeSelect(sql.toString(), params, new BusinessVO());
 	}
 
@@ -354,9 +360,8 @@ public class BusinessAction extends SBActionAdapter {
 			List<BusinessVO> memberBusiness = retrieveBusinesses(req);
 			req.removeAttribute(ATTR_GET_FOR_MEMBER);
 
-			if (memberBusiness.isEmpty()) {
+			if (memberBusiness.isEmpty())
 				return;
-			}
 		}
 
 		// Edit the business data
@@ -392,6 +397,9 @@ public class BusinessAction extends SBActionAdapter {
 				log.error("could not delete buisness", e);
 				msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 			}
+			//remove the connections cookie so it rebuilds after the redirect
+			CookieUtil.remove(req, ConnectionAction.CONNECTION_COOKIE);
+
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			sendRedirect(page.getFullPath(), msg, req);
 

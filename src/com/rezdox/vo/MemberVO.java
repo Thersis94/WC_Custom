@@ -326,4 +326,22 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	private void setInitials() {
 		setInitials(StringUtil.abbreviate(getFullName(), 2).toUpperCase());
 	}
+	
+	/**
+	 * Overwritten to add annocations - used in SharingAction
+	 */
+	@Override
+	@Column(name="city_nm")
+	public String getCity() {
+		return super.getCity();
+	}
+	
+	/**
+	 * Overwritten to add annocations - used in SharingAction
+	 */
+	@Override
+	@Column(name="state_cd")
+	public String getState() {
+		return super.getState();
+	}
 }

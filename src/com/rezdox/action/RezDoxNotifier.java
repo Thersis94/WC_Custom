@@ -69,7 +69,9 @@ public class RezDoxNotifier {
 		NEW_BUS_INVITE("Invite your customers to join RezDox, giving them visibility to the deals you offer."),
 		NEW_BUS_CONNECT("Connect with members.  Link the work you performed to their Home History Log."),
 		NEW_BUS_ONLINE("Keep an online digital footprint of the work you performed for your customers."),
-		NEW_BUS_REWARDS("Watch your reward points grow.");
+		NEW_BUS_REWARDS("Watch your reward points grow."),
+		SHARED_RESIDENCE("${senderName} shared their residence \"${residenceName}\" with you"),
+		SHARED_BUSINESS("${senderName} shared their business \"${businessName}\" with you");
 
 		private String msg;
 		private Message(String msg) {

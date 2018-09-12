@@ -33,7 +33,7 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 
 	private static final long serialVersionUID = -4817102241031112699L;
 
-	private static final String REPORT_TITLE = "Gap Analysis Report.pdf";
+	public static final String REPORT_TITLE = "Gap Analysis Report.pdf";
 	private GapTableVO table;
 	private SiteVO site;
 	private StringEncoder se;

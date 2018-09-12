@@ -22,6 +22,7 @@ import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.ProductVO;
 import com.biomed.smarttrak.vo.SectionVO;
+import com.biomed.smarttrak.action.AdminControllerAction.LinkType;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -98,7 +99,7 @@ public class CompanyAction extends SimpleActionAdapter {
 				page.setTitleName(vo.getCompanyName() + " | " + site.getSiteName());
 				putModuleData(vo);
 			}
-		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
+		} else if (req.hasParameter("amid")){
 			retrieveCompanies(req);
 		}
 	}
@@ -389,6 +390,10 @@ public class CompanyAction extends SimpleActionAdapter {
 			Node n = null;
 
 			if (StringUtil.isEmpty(attr.getSectionId())) {
+				if ("LINK".equals(attr.getAttributeTypeName()) || "ATTACH".equals(attr.getAttributeTypeName())) {
+					attr.setGroupName(LinkType.getFromName(attr.getTitleText()).getIcon());
+				}
+				
 				// Items that don't have sections are viewable by anyone.
 				addToAttributeMap(attrMap, (CompanyAttributeVO)o);
 			} else {

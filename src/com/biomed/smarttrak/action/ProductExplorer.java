@@ -69,7 +69,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 * The default list of excluded columns in the product explorer and its report
 	 * This is used when the user has not edited thier viewed columns during this session.
 	 */
-	private static final String DEFAULT_COLUMNS = "3|0|d";
+	private static final String DEFAULT_COLUMNS = "3|0|d|a";
 
 
 	private enum BuildType {
@@ -173,6 +173,7 @@ public class ProductExplorer extends SBActionAdapter {
 		SecurityController.isPeAuth(req);
 
 		putModuleData(retrieveProducts(req, false));
+
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
 			retrieveSavedQueries(req);
 	}
@@ -209,9 +210,7 @@ public class ProductExplorer extends SBActionAdapter {
 		for (String s : nodes.split(",")) {
 			Node n = t.findNode(s);
 			if (n == null || n.getDepthLevel() == 2) continue;
-			if (part.length() < 2) {
-				part.append("in ");
-			} else {
+			if (part.length() > 2) {
 				part.append(", ");
 			}
 			part.append(n.getNodeName());
@@ -251,17 +250,16 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void retrieveSavedQueries(ActionRequest req) throws ActionException {
+		UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 		StringBuilder sql = new StringBuilder(125);
-		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("SELECT * FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_EXPLORER_QUERY WHERE USER_ID = ? ");
+		log.debug(sql);
 
 		List<Map<String, String>> queries = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 			ps.setString(1, user.getUserId());
-
 			ResultSet rs = ps.executeQuery();
-
 			while (rs.next()) {
 				Map<String, String> entry = new HashMap<>();
 				entry.put("id", rs.getString("EXPLORER_QUERY_ID"));
@@ -292,15 +290,16 @@ public class ProductExplorer extends SBActionAdapter {
 
 		addFacetFields(req, qData);
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
+		sqp.setFacetLimit(1500); //set this high enough so we can get all the companies.  ~1050 as of 02.12.2018 -JM
 		SolrResponseVO vo = sqp.processQuery(qData);
 
 		// Check to see if all the results should be returned instead of the current page
-		if (getAll) {
+		if (getAll)
 			getRemainingDocuments(vo, sqp, qData);
-		}
 
 		if (!req.hasParameter("compare") && !req.hasParameter("textCompare"))
 			buildFilterList(req);
+
 		return vo;
 	}
 
@@ -312,13 +311,12 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @param qData
 	 */
 	private void getRemainingDocuments(SolrResponseVO vo, SolrQueryProcessor sqp, SolrActionVO qData) {
-		int totals = 0;
-		List<SolrDocument> docs = new ArrayList<>();
+		List<SolrDocument> docs = new ArrayList<>(Convert.formatInteger(""+vo.getTotalResponses()));
 		docs.addAll(vo.getResultDocuments());
+		qData.setNumberResponses(1000);
 
-		while (totals < vo.getTotalResponses()) {
-			totals += 100;
-			qData.setStartLocation(totals);
+		while (docs.size() < vo.getTotalResponses()) {
+			qData.setStartLocation(docs.size());
 			SolrResponseVO currentResponse = sqp.processQuery(qData);
 			docs.addAll(currentResponse.getResultDocuments());
 		}
@@ -483,6 +481,11 @@ public class ProductExplorer extends SBActionAdapter {
 		qData.setRoleACL(roles.getAccessControlList());
 		qData.setAclTypeNo(10);
 		qData.setStartLocation(start);
+		
+		if (StringUtil.isEmpty(qData.getOrganizationId())) {
+			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+			qData.setOrganizationId(site.getOrganizationId());
+		}
 
 		sa.includeRoleACL(req, qData);
 
@@ -523,6 +526,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unchecked")
 	private void getHierarchy(ActionRequest req) throws ActionException {
 		Set<String> allowedSections = getPopulatedHierarchies(req);
 
@@ -530,9 +534,10 @@ public class ProductExplorer extends SBActionAdapter {
 		sha.setAttributes(getAttributes());
 		sha.setDBConnection(getDBConnection());
 		sha.retrieve(req);
-		Tree t = (Tree) sha.getAttribute(Constants.MODULE_DATA);
+		ModuleVO mod = (ModuleVO) sha.getAttribute(Constants.MODULE_DATA);
+		List<Node> sections = (List<Node>) mod.getActionData();
 
-		putModuleData(filterTree(allowedSections, t.preorderList(true)));
+		putModuleData(filterTree(allowedSections, sections));
 	}
 
 	/**
@@ -695,23 +700,26 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unchecked")
 	protected void saveQuery(ActionRequest req) throws ActionException {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_EXPLORER_QUERY (EXPLORER_QUERY_ID, USER_ID, QUERY_NM, QUERY_TXT, CREATE_DT) ");
-		sql.append("VALUES(?,?,?,?,?)");
+		boolean isUpdate = req.hasParameter("queryId");
+		String sql = buildSaveQuery(isUpdate);
+		
 		Map<String, String> entry = new HashMap<>();
-		entry.put("id", new UUIDGenerator().getUUID());
+		if(isUpdate) entry.put("id", req.getParameter("queryId"));
+		else entry.put("id", new UUIDGenerator().getUUID());
 		entry.put("name", req.getParameter("queryName"));
 		entry.put("url", buildUrl(req));
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+		entry.put("isNew", isUpdate ? "false" : "true");
+		
+		int index = 1;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
-			ps.setString(1, entry.get("id"));
-			ps.setString(2, user.getUserId());
-			ps.setString(3, entry.get("name"));
-			ps.setString(4, entry.get("url"));
-			ps.setTimestamp(5, Convert.getCurrentTimestamp());
+			if(!isUpdate) ps.setString(index++, entry.get("id"));
+			ps.setString(index++, user.getUserId());
+			ps.setString(index++, entry.get("name"));
+			ps.setString(index++, entry.get("url"));
+			ps.setTimestamp(index++, Convert.getCurrentTimestamp());
+			if(isUpdate) ps.setString(index++, entry.get("id"));
 
 			ps.executeUpdate();
 		} catch (SQLException e) {
@@ -719,13 +727,57 @@ public class ProductExplorer extends SBActionAdapter {
 		}
 
 		super.putModuleData(entry);
-
+		storeSessionQuery(req, entry, isUpdate);
+	}
+	
+	/**
+	 * Handles storing the retrieved query data out to session
+	 * @param req
+	 * @param entry
+	 * @param isUpdate
+	 */
+	@SuppressWarnings("unchecked")
+	protected void storeSessionQuery(ActionRequest req, Map<String, String> entry, boolean isUpdate) {
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
 			req.getSession().setAttribute(SAVED_QUERIES, new ArrayList<Map<String, String>>());
-
-		((List<Map<String, String>>)req.getSession().getAttribute(SAVED_QUERIES)).add(entry);
+		
+		if(isUpdate) {// update the existing map entry
+			List<Map<String, String>> entryList = ((List<Map<String, String>>)req.getSession().getAttribute(SAVED_QUERIES));
+			Map<String, String> tempMap;
+			for (int i = 0; i < entryList.size(); i++) {
+				tempMap = entryList.get(i);
+				if(tempMap.containsValue(entry.get("id"))) {
+					entryList.remove(i);
+					entryList.add(i, entry);
+					break;
+				}
+			}
+		}else {//otherwise add additional entry
+			((List<Map<String, String>>)req.getSession().getAttribute(SAVED_QUERIES)).add(entry);
+		}
 	}
+	
+	/**
+	 * Builds the appropriate explorer scenario query for either insert or update
+	 * @param isUpdate
+	 * @return
+	 */
+	protected String buildSaveQuery(boolean isUpdate) {
+		StringBuilder sql = new StringBuilder(200);
 
+		if(isUpdate) {
+			sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+			sql.append("BIOMEDGPS_EXPLORER_QUERY SET USER_ID =?, QUERY_NM =?, QUERY_TXT =?, ");
+			sql.append("UPDATE_DT =? WHERE EXPLORER_QUERY_ID =? ");
+		}else {
+			sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+			sql.append("BIOMEDGPS_EXPLORER_QUERY (EXPLORER_QUERY_ID, USER_ID, QUERY_NM, QUERY_TXT, CREATE_DT) ");
+			sql.append("VALUES(?,?,?,?,?)");
+		}
+		
+		log.debug("Save query sql: " + sql);
+		return sql.toString();
+	}
 
 	/**
 	 * Build a url that can be used to reload a saved product set from solr.
@@ -748,7 +800,7 @@ public class ProductExplorer extends SBActionAdapter {
 				url.append("&").append(name).append("=").append(value);
 			}
 		}
-		url.append("&selNodes=").append(req.getParameter(SEL_NODES));
+		url.append("&selNodes=").append(StringUtil.checkVal(req.getParameter(SEL_NODES)));
 
 		return url.toString();
 	}
