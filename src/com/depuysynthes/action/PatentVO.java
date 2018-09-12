@@ -3,7 +3,9 @@ package com.depuysynthes.action;
 // Java 8
 import java.sql.ResultSet;
 
-// SMTBaseLibs
+//SMTBaseLibs
+import com.siliconmtn.annotations.DataType;
+import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.StringUtil;
 
@@ -12,7 +14,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
 
 /**
  * **************************************************************************
- * <b>Title</b>: PatentAction.PatentVO.java<p/>
+ * <b>Title</b>: PatentVO.java<p/>
  * <b>Description: Simple VO for Patent records coming from the database.</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2015<p/>
@@ -22,6 +24,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * @since Dec 4, 2015
  * Change Log:
  * 2018-04-02: DBargerhuff, DS-392, implementing patent mgmt data tool
+ * 2018-07-02: DBargerhuff, DS-464, restored support for bulk import.
  ***************************************************************************
  */
 public class PatentVO extends SBModuleVO {
@@ -90,6 +93,7 @@ public class PatentVO extends SBModuleVO {
 	/**
 	 * @param company the company to set
 	 */
+	@Importable(name = "Operating Company", type = DataType.STRING)
 	public void setCompany(String company) {
 		this.company = company;
 	}
@@ -104,6 +108,7 @@ public class PatentVO extends SBModuleVO {
 	/**
 	 * @param code the code to set
 	 */
+	@Importable(name = "Bar Code", type = DataType.STRING)
 	public void setCode(String code) {
 		this.code = code;
 	}
@@ -118,10 +123,11 @@ public class PatentVO extends SBModuleVO {
 	/**
 	 * @param item the item to set
 	 */
+	@Importable(name = "Item Number", type = DataType.STRING)
 	public void setItem(String item) {
 		this.item = item;
 	}
-
+	
 	/**
 	 * @return the desc
 	 */
@@ -132,6 +138,7 @@ public class PatentVO extends SBModuleVO {
 	/**
 	 * @param desc the desc to set
 	 */
+	@Importable(name = "Product Description", type = DataType.STRING)
 	public void setDesc(String desc) {
 		this.desc = desc;
 	}
@@ -146,6 +153,7 @@ public class PatentVO extends SBModuleVO {
 	/**
 	 * @param patents the patents to set
 	 */
+	@Importable(name = "Patents", type = DataType.STRING)
 	public void setPatents(String patents) {
 		this.patents = patents;
 	}
@@ -164,6 +172,7 @@ public class PatentVO extends SBModuleVO {
 	/**
 	 * @param redirectAddress the redirectAddress to set
 	 */
+	@Importable(name = "Redirect Address", type = DataType.STRING)
 	public void setRedirectAddress(String redirectAddress) {
 		this.redirectAddress = redirectAddress;
 	}
@@ -178,6 +187,7 @@ public class PatentVO extends SBModuleVO {
 	/**
 	 * @param redirectName the redirectName to set
 	 */
+	@Importable(name = "Redirect Name", type = DataType.STRING)
 	public void setRedirectName(String redirectName) {
 		this.redirectName = redirectName;
 	}
