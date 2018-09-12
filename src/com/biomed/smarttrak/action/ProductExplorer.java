@@ -253,7 +253,7 @@ public class ProductExplorer extends SBActionAdapter {
 		UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("SELECT * FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_EXPLORER_QUERY WHERE USER_ID = ? ");
+		sql.append("BIOMEDGPS_EXPLORER_QUERY WHERE USER_ID = ? order by lower(QUERY_NM) asc ");
 		log.debug(sql);
 
 		List<Map<String, String>> queries = new ArrayList<>();

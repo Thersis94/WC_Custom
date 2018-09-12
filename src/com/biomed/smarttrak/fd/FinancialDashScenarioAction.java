@@ -136,7 +136,7 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 				}
 			}
 		}
-		sql.append("order by scenario_nm ");
+		sql.append("order by lower(scenario_nm) asc ");
 		log.debug(sql);
 		
 		return sql.toString();
