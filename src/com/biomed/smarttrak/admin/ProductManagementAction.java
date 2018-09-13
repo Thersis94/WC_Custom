@@ -915,7 +915,7 @@ public class ProductManagementAction extends ManagementAction {
 	 */
 	private boolean checkDups(ProductAttributeTypeVO t) throws SQLException {
 		StringBuilder sql = new StringBuilder(125);
-		sql.append("select count(*) from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("select attribute_id from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_product_attribute where attribute_nm = ? and parent_id = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -924,8 +924,10 @@ public class ProductManagementAction extends ManagementAction {
 			
 			ResultSet rs = ps.executeQuery();
 			
-			if (rs.next())
-				return rs.getInt(1) == 0;
+			if (rs.next()) {
+				t.setAttributeId(rs.getString("attribute_id"));
+				return false;
+			}
 		}
 		
 		return true;
