@@ -13,6 +13,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 // WSLA Libs
@@ -22,8 +23,8 @@ import com.wsla.data.ticket.StatusCode;
  * <b>Title</b>: SelectLookupAction.java
  * <b>Project</b>: WC_Custom
  * <b>Description: </b> Provides a mechanism for looking up key/values for select lists.
- * Each type will return a collection of GenericVos, which will automatically be
- * available in a selectpicker
+ * Each type will return a collection of GenericVOs, which will automatically be
+ * available in a select picker
  * as listType
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
@@ -42,7 +43,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	public static final String SELECT_KEY = "listType";
 	
 	
-	private Map<String, String> keyMap = new HashMap<>(16);
+	private Map<String, GenericVO> keyMap = new HashMap<>(16);
 	
 	/**
 	 * 
@@ -61,10 +62,12 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Assigns the keys for the select type to method mapping
+	 * Assigns the keys for the select type to method mapping.  In the generic vo
+	 * the key is the method name.  The value is a boolean which indicates whether
+	 * or not the request object is needed in that method 
 	 */
 	private void assignKeys() {
-		keyMap.put("statusCode", "getStatusCodes");
+		keyMap.put("statusCode", new GenericVO("getStatusCodes", Boolean.FALSE));
 	}
 	
 	/*
@@ -77,8 +80,11 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		if (keyMap.containsKey(listType)) {
 			try {
-				Method method = this.getClass().getMethod(keyMap.get(listType));
-				this.putModuleData(method.invoke(method));
+				GenericVO vo = keyMap.get(listType);
+				Boolean useRequest = Convert.formatBoolean(vo.getValue());
+				Method method = this.getClass().getMethod(vo.getKey().toString());
+				if (useRequest) putModuleData(method.invoke(method, req));
+				else putModuleData(method.invoke(method));
 			} catch (Exception e) {
 				log.error("Unable to retrieve list: " + listType, e);
 			}
