@@ -28,7 +28,7 @@ import com.siliconmtn.http.filter.fileupload.Constants;
 public class PatentHistoryManager {
 
 	private static Logger log = Logger.getLogger(PatentHistoryManager.class);
-	private static final String PATENT_HISTORY_TABLE = "dpy_syn_patent_history";
+	static final String PATENT_HISTORY_TABLE = "dpy_syn_patent_history";
 	private SMTDBConnection dbConn;
 	private Map<String,Object> attributes;
 

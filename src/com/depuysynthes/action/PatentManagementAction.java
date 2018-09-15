@@ -14,11 +14,13 @@ import org.apache.log4j.Logger;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.admin.action.OrganizationAction;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -36,6 +38,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class PatentManagementAction extends SBActionAdapter {
 
 	private static Logger log = Logger.getLogger(PatentManagementAction.class.getName());
+	static final String PARAM_IMPORT_FILE = "importFile";
 	static final String PATENT_TABLE = "dpy_syn_patent";
 	private static final String PARAM_SEARCH_BARCODE = "searchBarcode";
 	private static final String PARAM_SEARCH_COMPANY = "searchCompany";
@@ -96,15 +99,13 @@ public class PatentManagementAction extends SBActionAdapter {
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		String patentId = StringUtil.checkVal(req.getParameter(PatentAction.PATENT_ID),null);
-		List<PatentVO> patents = new ArrayList<>();
 
-		// Return empty data is no patent ID specified and this is not a search query.
-		if (patentId == null && ! isSearch(req)) {
-			putModuleData(patents);
-			return;
+		// Retrieve patent data if there is a patentId or if this is a search.
+		List<PatentVO> patents = new ArrayList<>();
+		if (patentId != null || isSearch(req)) {
+			patents = retrievePatentData(req);
 		}
 
-		patents = retrievePatentData(req);
 		putModuleData(patents, patents.size(),true);
 	}
 
@@ -158,6 +159,19 @@ public class PatentManagementAction extends SBActionAdapter {
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
+		//save the Excel file if one was uploaded
+		if (req.getFile(PARAM_IMPORT_FILE) != null) {
+			processImportFile(req);
+		} else {
+			managePatents(req);
+		}
+	}
+
+	/**
+	 * Manage patent update
+	 * @param req
+	 */
+	private void managePatents(ActionRequest req) {
 		String errMsg = "Patent data updated successfully.";
 
 		// populate bean data from request
@@ -202,7 +216,6 @@ public class PatentManagementAction extends SBActionAdapter {
 		// redirect
 		sbUtil.adminRedirect(req, errMsg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
-
 
 	/**
 	 * Writes the patent record data (either insert or update). 
@@ -307,14 +320,51 @@ public class PatentManagementAction extends SBActionAdapter {
 
 	/**
 	 * Logs an activity record for the patent management operation.
-	 * @param patentId
-	 * @param activityType
-	 * @param profileId
+	 * @param pvo
 	 * @throws ActionException
 	 */
 	private void logHistory(PatentVO pvo) throws ActionException {
 		PatentHistoryManager paa = new PatentHistoryManager(attributes,dbConn);
 		paa.writePatentHistory(pvo);
+	}
+	
+	/**
+	 * Processes patent import file submitted via data tool
+	 * @param req
+	 */
+	private void processImportFile(ActionRequest req) {
+		/* Delegate the import file processing to the import utility */
+		PatentImportUtility util = new PatentImportUtility();
+		util.setDbConn(dbConn);
+		util.setCustomDbSchema((String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		util.setFilePartDataBean(req.getFile(PARAM_IMPORT_FILE));
+		util.setActionId(req.getParameter(SBActionAdapter.ACTION_ID));
+		util.setOrganizationId(req.getParameter(OrganizationAction.ORGANIZATION_ID));
+
+		// get user profile
+		UserDataVO admin = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		util.setImportProfileId(admin.getProfileId());
+
+		// import patents
+		util.importPatents();
+		
+		//return some stats to the administrator
+		super.adminRedirect(req, util.getResultMessage(), buildRedirect(util.getPatentCount()));
+
+	}
+
+
+	/**
+	 * Append extra parameters to the redirect url so we can 
+	 * display import count
+	 * @param req
+	 * @return
+	 */
+	private String buildRedirect(int importCnt) {
+		StringBuilder redirect = new StringBuilder(150);
+		redirect.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+		redirect.append("?importCnt=").append(importCnt);
+		return redirect.toString();
 	}
 	
 }
