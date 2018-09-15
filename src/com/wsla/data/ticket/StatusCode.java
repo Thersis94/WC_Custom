@@ -60,7 +60,7 @@ public enum StatusCode {
 	HARVEST_DENIED_SHIPPED ("Harvest Denied Shipped"),
 	HARVEST_APPROVED ("Harvest Approved"),
 	HARVEST_COMPLETE("Harvest Complete"),
-	CLOSED ("Closed");
+	CLOSED ("Ticket Closed");
 	
 	public final String codeName;
 	StatusCode(String codeName) { this.codeName = codeName; }
