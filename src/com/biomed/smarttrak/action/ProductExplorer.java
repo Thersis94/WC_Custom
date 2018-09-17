@@ -21,6 +21,7 @@ import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.exception.InvalidDataException;
@@ -33,10 +34,10 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO;
-import com.smt.sitebuilder.action.search.SolrQueryProcessor;
-import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
+import com.smt.sitebuilder.action.search.SolrQueryProcessor;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -64,6 +65,7 @@ public class ProductExplorer extends SBActionAdapter {
 	private static final int CONTAINS_SEARCH = 1;
 	private static final int BEGIN_SEARCH = 2;
 	private static final int EXACT_SEARCH = 3;
+	public static final String PE_STATE_COOKIE = "PEStateCookie";
 
 	/**
 	 * The default list of excluded columns in the product explorer and its report
@@ -172,12 +174,66 @@ public class ProductExplorer extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		SecurityController.isPeAuth(req);
 
+		//Fast fail on the populateTable request as that's a json call.  No Redirects.
+		if(!req.hasParameter("populateTable") && isRedirectRequest(req)) {
+			return;
+		}
+
 		putModuleData(retrieveProducts(req, false));
 
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
 			retrieveSavedQueries(req);
 	}
 
+	/**
+	 * Check the request to determine if we need to redirect.
+	 * @param req
+	 * @return
+	 */
+	private boolean isRedirectRequest(ActionRequest req) {
+
+		//Get the Cookie Value and set a base Url.
+		String cookieVal = CookieUtil.getValue(PE_STATE_COOKIE, req.getCookies());
+		String url = StringUtil.join(req.getRequestURL().toString(), "?");
+
+		//Check for reset as a baseline.  If cookie Redirect is chosen, will update.
+		boolean isRedirect = !StringUtil.isEmpty(cookieVal);
+
+		//Check if we need to append Cookie Value to the redirect request.
+		if(isRedirect) {
+			url = buildRedirectPath(url, cookieVal, SecurityController.isManageTool(req.getSession().getAttribute(Constants.SITE_DATA)));
+			CookieUtil.remove(req, PE_STATE_COOKIE);
+			super.sendRedirect(url, null, req);
+		}
+
+		return isRedirect;
+	}
+
+	/**
+	 * Build the Redirect path.  Checks for missing params if we're in the
+	 * manage tool that are required from that side (Essentially upgrades a
+	 * public formatted cookie to an manage valid cookie).
+	 * @param baseUrl
+	 * @param cookieVal
+	 * @param isManageTool
+	 * @return
+	 */
+	private String buildRedirectPath(String baseUrl, String cookieVal, boolean isManageTool) {
+		if(isManageTool) {
+			if(!cookieVal.contains("actionType")) {
+				cookieVal = StringUtil.join(cookieVal, "&actionType=tools");
+			}
+
+			if(!cookieVal.contains("facadeType")) {
+				cookieVal = StringUtil.join(cookieVal, "&facadeType=explorer&load=true");
+			}
+
+			if(!cookieVal.contains("load")) {
+				cookieVal = StringUtil.join(cookieVal, "load=true");
+			}
+		}
+		return StringUtil.join(baseUrl, cookieVal);
+	}
 
 	/**
 	 * Build a text representation of the filters applied to the search
