@@ -25,7 +25,7 @@ import com.wsla.data.provider.ProviderLocationVO;
  * @updates:
  ****************************************************************************/
 @Table(name="wsla_location_item_master")
-public class LocationItemMaster extends ProductVO {
+public class LocationItemMasterVO extends ProductVO {
 
 	/**
 	 * 
@@ -45,21 +45,21 @@ public class LocationItemMaster extends ProductVO {
 	/**
 	 * 
 	 */
-	public LocationItemMaster() {
+	public LocationItemMasterVO() {
 		super();
 	}
 
 	/**
 	 * @param req
 	 */
-	public LocationItemMaster(ActionRequest req) {
+	public LocationItemMasterVO(ActionRequest req) {
 		super(req);
 	}
 
 	/**
 	 * @param rs
 	 */
-	public LocationItemMaster(ResultSet rs) {
+	public LocationItemMasterVO(ResultSet rs) {
 		super(rs);
 	}
 

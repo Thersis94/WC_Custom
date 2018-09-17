@@ -45,6 +45,8 @@ public class TicketVO extends BeanDataVO {
 	
 	// Bean Sub-Element
 	private List<TicketDataVO> data = new ArrayList<>(32);
+	private List<TicketAssignmentVO> assignments = new ArrayList<>();
+	private List<TicketLedgerVO> timeline = new ArrayList<>();
 	
 	/**
 	 * 
@@ -139,6 +141,20 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the timeline
+	 */
+	public List<TicketLedgerVO> getTimeline() {
+		return timeline;
+	}
+
+	/**
+	 * @return the assignments
+	 */
+	public List<TicketAssignmentVO> getAssignments() {
+		return assignments;
+	}
+
+	/**
 	 * @param ticketId the ticketId to set
 	 */
 	public void setTicketId(String ticketId) {
@@ -215,6 +231,38 @@ public class TicketVO extends BeanDataVO {
 	public void addData(TicketDataVO ticketData) {
 		if (ticketData != null)
 			this.data.add(ticketData);
+	}
+
+	/**
+	 * @param assignments the assignments to set
+	 */
+	@BeanSubElement
+	public void setAssignments(List<TicketAssignmentVO> assignments) {
+		this.assignments = assignments;
+	}
+	
+	/**
+	 * 
+	 * @param assignment
+	 */
+	public void addAssignment(TicketAssignmentVO assignment) {
+		this.assignments.add(assignment);
+	}
+
+	/**
+	 * @param timeline the timeline to set
+	 */
+	@BeanSubElement
+	public void setTimeline(List<TicketLedgerVO> timeline) {
+		this.timeline = timeline;
+	}
+	
+	/**
+	 * 
+	 * @param entry
+	 */
+	public void addTimeline(TicketLedgerVO entry) {
+		this.timeline.add(entry);
 	}
 }
 

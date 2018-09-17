@@ -22,7 +22,7 @@ import com.siliconmtn.db.orm.Table;
  * @updates:
  ****************************************************************************/
 @Table(name="wsla_product_category_xr")
-public class ProductCategoryAssociation extends ProductCategoryVO {
+public class ProductCategoryAssociationVO extends ProductCategoryVO {
 
 	/**
 	 * 
@@ -36,21 +36,21 @@ public class ProductCategoryAssociation extends ProductCategoryVO {
 	/**
 	 * 
 	 */
-	public ProductCategoryAssociation() {
+	public ProductCategoryAssociationVO() {
 		super();
 	}
 
 	/**
 	 * @param req
 	 */
-	public ProductCategoryAssociation(ActionRequest req) {
+	public ProductCategoryAssociationVO(ActionRequest req) {
 		super(req);
 	}
 
 	/**
 	 * @param rs
 	 */
-	public ProductCategoryAssociation(ResultSet rs) {
+	public ProductCategoryAssociationVO(ResultSet rs) {
 		super(rs);
 	}
 

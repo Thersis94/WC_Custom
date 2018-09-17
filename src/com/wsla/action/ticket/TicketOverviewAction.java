@@ -1,5 +1,6 @@
 package com.wsla.action.ticket;
 
+// JDK 1.8.x
 import java.util.List;
 
 // SMT Base Libs 3.x

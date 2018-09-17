@@ -9,6 +9,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: WarrantyVO.java
@@ -32,8 +33,10 @@ public class WarrantyVO extends BeanDataVO {
 	
 	// Member Variables
 	private String warrantyId;
-	private String warrantyType;
+	private WarrantyType warrantyType;
+	private String providerId;
 	private String description;
+	private int requireApprovalFlag;
 	private int warrantyLength;
 	private Date createDate;
 	private Date updateDate;
@@ -71,7 +74,7 @@ public class WarrantyVO extends BeanDataVO {
 	 * @return the warrantyType
 	 */
 	@Column(name="warranty_type_cd")
-	public String getWarrantyType() {
+	public WarrantyType getWarrantyType() {
 		return warrantyType;
 	}
 
@@ -89,6 +92,22 @@ public class WarrantyVO extends BeanDataVO {
 	@Column(name="warranty_days_no")
 	public int getWarrantyLength() {
 		return warrantyLength;
+	}
+
+	/**
+	 * @return the providerId
+	 */
+	@Column(name="provider_id")
+	public String getProviderId() {
+		return providerId;
+	}
+
+	/**
+	 * @return the requireApprovalFlag
+	 */
+	@Column(name="require_approval_flg")
+	public int getRequireApprovalFlag() {
+		return requireApprovalFlag;
 	}
 
 	/**
@@ -117,8 +136,17 @@ public class WarrantyVO extends BeanDataVO {
 	/**
 	 * @param warrantyType the warrantyType to set
 	 */
-	public void setWarrantyType(String warrantyType) {
+	public void setWarrantyType(WarrantyType warrantyType) {
 		this.warrantyType = warrantyType;
+	}
+	
+	/**
+	 * @param warrantyType the warrantyType to set
+	 */
+	public void setWarrantyType(String strWarrantyType) {
+		if (StringUtil.checkVal(strWarrantyType).isEmpty()) return;
+		
+		this.warrantyType = WarrantyType.valueOf(strWarrantyType);
 	}
 
 	/**
@@ -147,6 +175,20 @@ public class WarrantyVO extends BeanDataVO {
 	 */
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	/**
+	 * @param providerId the providerId to set
+	 */
+	public void setProviderId(String providerId) {
+		this.providerId = providerId;
+	}
+
+	/**
+	 * @param requireApprovalFlag the requireApprovalFlag to set
+	 */
+	public void setRequireApprovalFlag(int requireApprovalFlag) {
+		this.requireApprovalFlag = requireApprovalFlag;
 	}
 
 }

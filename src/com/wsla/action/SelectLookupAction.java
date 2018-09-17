@@ -40,7 +40,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	/**
 	 * Key to be passed to utilize this action
 	 */
-	public static final String SELECT_KEY = "listType";
+	public static final String SELECT_KEY = "selectType";
 	
 	
 	private Map<String, GenericVO> keyMap = new HashMap<>(16);
@@ -75,16 +75,18 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
-	public void list(ActionRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String listType = req.getStringParameter(SELECT_KEY);
 		
+		// @TODO Add language conversion
 		if (keyMap.containsKey(listType)) {
 			try {
 				GenericVO vo = keyMap.get(listType);
 				Boolean useRequest = Convert.formatBoolean(vo.getValue());
 				Method method = this.getClass().getMethod(vo.getKey().toString());
-				if (useRequest) putModuleData(method.invoke(method, req));
-				else putModuleData(method.invoke(method));
+				if (useRequest) putModuleData(method.invoke(this.getClass().newInstance(), req));
+				else putModuleData(method.invoke(this.getClass().newInstance()));
+
 			} catch (Exception e) {
 				log.error("Unable to retrieve list: " + listType, e);
 			}
