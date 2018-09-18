@@ -39,6 +39,7 @@ public class UserVO extends BeanDataVO {
 	private String firstName;
 	private String lastName;
 	private String email;
+	private String locale;
 	private int activeFlag;
 	private Date createDate;
 	private Date updateDate;
@@ -113,6 +114,14 @@ public class UserVO extends BeanDataVO {
 	@Column(name="active_flg")
 	public int getActiveFlag() {
 		return activeFlag;
+	}
+
+	/**
+	 * @return the locale
+	 */
+	@Column(name="locale_txt")
+	public String getLocale() {
+		return locale;
 	}
 
 	/**
@@ -200,6 +209,13 @@ public class UserVO extends BeanDataVO {
 	@BeanSubElement
 	public void setProfile(UserDataVO profile) {
 		this.profile = profile;
+	}
+
+	/**
+	 * @param locale the locale to set
+	 */
+	public void setLocale(String locale) {
+		this.locale = locale;
 	}
 
 }
