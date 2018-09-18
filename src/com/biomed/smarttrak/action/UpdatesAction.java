@@ -193,6 +193,7 @@ public class UpdatesAction extends SBActionAdapter {
 	 * @param resp
 	 */
 	protected void sortFacets(List<Node> sections, SolrResponseVO resp) {
+		List<String> names = new ArrayList<>();
 		List<FacetField> facets = resp.getFacets();
 		int idx = 0;
 		FacetField fOld = null;
@@ -223,7 +224,8 @@ public class UpdatesAction extends SBActionAdapter {
 				/*Split to ensure matches are made against the entire facet name*/
 				String[] parts = f.getName().split("~");
 				String endName = parts[parts.length -1];
-				if (endName.equals(n.getNodeName())) {
+				if (endName.equals(n.getNodeName()) && !names.contains(f.getName())) {
+					names.add(f.getName());
 					fNew.add(f.getName(), f.getCount());
 					break;
 				}

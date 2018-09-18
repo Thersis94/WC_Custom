@@ -11,6 +11,7 @@ import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.UpdatesAction.UpdateType;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionRequest;
@@ -200,13 +201,16 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		}
 	}
 
+	public String getRelativeAdminDisplayLink() {
+		return buildDisplayLink("", true);
+	}
 	/**
 	 * Getter builds the display Link String without a concrete Domain.  This is
 	 * used on public and manage facing views.
 	 * @return
 	 */
 	public String getRelativeDisplayLink() {
-		return buildDisplayLink("");
+		return buildDisplayLink("", false);
 	}
 
 	/**
@@ -219,7 +223,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		if(sslFlg == 1) {
 			domain = "https://";
 		}
-		return buildDisplayLink(domain + siteAliasUrl);
+		return buildDisplayLink(domain + siteAliasUrl, false);
 	}
 
 	/**
@@ -228,7 +232,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @param domain
 	 * @return
 	 */
-	protected String buildDisplayLink(String domain) {
+	protected String buildDisplayLink(String domain, boolean isAdmin) {
 		String aTxt = "<a href=\"" + StringUtil.checkVal(domain);
 		String targetClassTxt = "\" target=\"_blank\" style=\"color:#008ec9;\">";
 		StringBuilder displayLink = new StringBuilder(200);
@@ -250,8 +254,11 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		}
 		SimpleDateFormat sdf = new SimpleDateFormat("MMM. dd, yyyy");
 		displayLink.append("&mdash; ").append(sdf.format(getPublishDt()));
-
-		return displayLink.toString();
+		if(isAdmin) {
+			return new BiomedLinkCheckerUtil(null, null).modifyRelativeLinks(displayLink.toString());
+		} else {
+			return displayLink.toString();
+		}
 	}
 	/**
 	 * @return the updateId

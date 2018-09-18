@@ -661,7 +661,7 @@ public class UpdatesAction extends ManagementAction {
 	 * @param u
 	 */
 	protected void deleteFromSolr(UpdateVO u) {
-		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes(), false)) {
+		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
 			sau.removeDocument(u.getUpdateId());
 		} catch (Exception e) {
 			log.error("Error Deleting from Solr.", e);
