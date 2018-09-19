@@ -916,10 +916,10 @@ public class ProductManagementAction extends ManagementAction {
 	private boolean checkDups(ProductAttributeTypeVO t) throws SQLException {
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("select attribute_id from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_product_attribute where attribute_nm = ? and parent_id = ? ");
+		sql.append("biomedgps_product_attribute where lower(attribute_nm) = ? and parent_id = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, t.getAttributeName());
+			ps.setString(1, StringUtil.checkVal(t.getAttributeName()).trim().toLowerCase());
 			ps.setString(2, t.getParentId());
 			
 			ResultSet rs = ps.executeQuery();
