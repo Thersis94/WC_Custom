@@ -76,6 +76,16 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	
 	/*
 	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		ActionInterface ai = loadActionByType(req.getStringParameter(SELECTOR_KEY, DEFAULT_TYPE));
+		ai.retrieve(req);
+	}
+	
+	/*
+	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override

@@ -10,6 +10,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
+import com.wsla.action.ticket.TicketOverviewAction;
 
 /****************************************************************************
  * <b>Title</b>: ServiceOrderFacadeAction.java
@@ -59,7 +60,17 @@ public class ServiceOrderFacadeAction extends FacadeActionAdapter {
 	 */
 	private void loadTypes() {
 		// Add the actions and there types here
-		// actionMap.put(DEFAULT_TYPE, SelectLookupAction.class);
+		actionMap.put(DEFAULT_TYPE, TicketOverviewAction.class);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		ActionInterface ai = loadActionByType(req.getStringParameter(SELECTOR_KEY, DEFAULT_TYPE));
+		ai.retrieve(req);
 	}
 
 	/*
@@ -68,10 +79,10 @@ public class ServiceOrderFacadeAction extends FacadeActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
+		// Set the action to use the simple admin view
 		ModuleVO module = (ModuleVO)attributes.get(AdminConstants.ADMIN_MODULE_DATA);
 		module.setSimpleAction(true);
-		ActionInterface ai = loadActionByType(req.getStringParameter(SELECTOR_KEY, DEFAULT_TYPE));
-		ai.list(req);
+		super.list(req);
 	}
 	
 	/*
