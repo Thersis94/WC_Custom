@@ -10,6 +10,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
+import com.wsla.action.admin.ProviderAction;
 
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
@@ -60,6 +61,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	 */
 	private void loadTypes() {
 		actionMap.put(DEFAULT_TYPE, SelectLookupAction.class);
+		actionMap.put("provider", ProviderAction.class);
 	}
 	
 	/*
@@ -72,6 +74,17 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		module.setSimpleAction(true);
 		ActionInterface ai = loadActionByType(req.getStringParameter(SELECTOR_KEY, DEFAULT_TYPE));
 		ai.list(req);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		if (! req.hasParameter("json")) return;
+		ActionInterface ai = loadActionByType(req.getStringParameter(SELECTOR_KEY, DEFAULT_TYPE));
+		ai.retrieve(req);
 	}
 	
 	/*
