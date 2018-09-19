@@ -150,7 +150,6 @@ public class ProviderVO extends BeanDataVO {
 	/**
 	 * @param locations the locations to set
 	 */
-	@BeanSubElement
 	public void setLocations(List<ProviderLocationVO> locations) {
 		this.locations = locations;
 	}
@@ -159,6 +158,7 @@ public class ProviderVO extends BeanDataVO {
 	 * 
 	 * @param location
 	 */
+	@BeanSubElement
 	public void addLocation(ProviderLocationVO location) {
 		if (location != null)
 			this.locations.add(location);
