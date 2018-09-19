@@ -1085,10 +1085,20 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * Add a non-inherited/generic method to define non-ambiguously the type
+	 * of Milestone we should be using.  Pass through to the Genericly derived
+	 * method.
+	 * @param milestone
+	 */
+	@BeanSubElement
+	public void addDBMilestone(SRTProjectMilestoneVO milestone) {
+	    addMilestone(milestone);
+	}
+
+	/**
 	 * Add a Milestone Record to the Milestones Map.
 	 * @param milestone - the milestone to be added
 	 */
-	@BeanSubElement
 	@Override
 	public void addMilestone(SRTProjectMilestoneVO milestone) {
 		if(milestone != null && !StringUtil.isEmpty(milestone.getMilestoneId())) {
