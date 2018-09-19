@@ -125,9 +125,6 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 				row = new HashMap<>();
 				row.put(ACCT_ID, acct.getAccountId());
 				row.put(ACCT_NM, acct.getAccountName());
-				row.put(ACCT_NM, acct.getAccountName());
-				row.put(ACCT_NM, acct.getAccountName());
-				row.put(ACCT_NM, acct.getAccountName());
 				if (showUsers) {
 					row.put(USER_ID, user.getUserId());
 					row.put(EMAIL,user.getEmailAddress());
