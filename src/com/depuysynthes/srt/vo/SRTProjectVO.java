@@ -61,13 +61,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String secondaryQualityEngineerId;
 	private String buyerId;
 	private String secondaryBuyerId;
-	private boolean makeFromScratch;
+	private Boolean makeFromScratch = Boolean.FALSE;
 	private String funcCheckOrderNo;
 	private String makeFromOrderNo;
 	private String mfgPOToVendor;
 	private String supplierId;
-	private boolean projectHold;
-	private boolean projectCancelled;
+	private Boolean projectHold = Boolean.FALSE;
+	private Boolean projectCancelled = Boolean.FALSE;
 	private String warehouseTrackingNo;
 	private String mfgDtChangeReason;
 	private String warehouseSalesOrderNo;
@@ -87,12 +87,12 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String secondaryBuyerNm;
 	private String requestorNm;
 	private String surgeonNm;
-	private int total;
+	private Integer total = Integer.valueOf(0);
 	private String distributorship;
 	private String supplierNm;
 
 	//Stores if there is a lock.
-	private boolean lockStatus;
+	private Boolean lockStatus = Boolean.FALSE;
 	private String lockedById;
 
 	private List<SRTMasterRecordVO> masterRecords;
@@ -640,8 +640,10 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 				.filter(m -> MilestoneTypeId.STATUS.equals(m.getMilestoneTypeId()))
 				.max(Comparator.comparing(SRTProjectMilestoneVO::getOrderBy));
 
-			if(opt.isPresent())
+			if(opt.isPresent()) {
 				statusId =  opt.get().getMilestoneId();
+				this.setProjectStatusTxt(opt.get().getMilestoneNm());
+			}
 		}
 
 		return statusId;

@@ -54,7 +54,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		ADDRESS_2("address2"), CITY("city"), STATE("state"),
 		ZIP("zipCode"), REQUEST_ADDRESS_ID("requestAddressId"), OP_CO_ID("opCoId"),
 		ATTACHMENT_1("attachment1"), ATTACHMENT_2("attachment2"),
-		ATTACHMENT_3("attachment3");
+		ATTACHMENT_3("attachment3"), SALES_ROSTER_ID("rosterId");
 
 		private String reqParam;
 		private RequestField(String reqParam) {
@@ -281,6 +281,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		fields.add("reason_for_request");
 		fields.add("estimated_roi");
 		fields.add("qty_no");
+		fields.add("roster_id");
 
 		//Build Request Update Query
 		StringBuilder sql = new StringBuilder(300);

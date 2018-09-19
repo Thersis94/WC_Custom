@@ -54,9 +54,9 @@ import com.smt.sitebuilder.data.vo.FormTransactionVO;
  * @since Feb 28, 2018
  ****************************************************************************/
 public class ProjectDataProcessor extends FormDataProcessor {
-
+	public static final String STATUS_CHANGED = "statusChanged";
 	public enum ProjectField {
-		PROJECT_NO("coProjectId"), PROJECT_NM("projectName"),
+		PROJECT_NM("projectName"),
 		PROJECT_TYPE("projectType"), PRIORITY("priority"),
 		HOSPITAL_PO_NO("hospitalPONo"), SPECIAL_INSTRUCTIONS("specialInstructions"),
 		ACTUAL_ROI("actualRoi"), SRT_CONTACT("srtContact"),
@@ -131,7 +131,6 @@ public class ProjectDataProcessor extends FormDataProcessor {
 				iter.remove();
 			}
 		}
-
 		log.info("Loading Project");
 		// Get the project data
 		SRTProjectVO project = new SRTProjectVO(req);
@@ -168,7 +167,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		sma.setDBConnection(dbConn);
 
 		//Retrieve list of Milestones from DB for Request.
-		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), null, null, false);
+		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), null, null, false, false);
 
 		//Map List of Milestones to Map of MilestoneId, MilestoneVO.
 		Map<String, SRTProjectMilestoneVO> mMap = milestones.stream().collect(Collectors.toMap(SRTProjectMilestoneVO::getMilestoneId, Function.identity()));
@@ -232,9 +231,14 @@ public class ProjectDataProcessor extends FormDataProcessor {
 			//Process Milestone Gates.
 			processMilestones(project);
 
-			//Check if status changed.  If so, update Project Record to reflect it.
+			/*
+			 * Check if status changed.  If so, update Project Record to reflect it
+			 * and store new Status on the req Attributes map to be forwarded to
+			 * user.
+			 */
 			if(!stat.equals(StringUtil.checkVal(project.getProjectStatus()))) {
 				dbp.save(project);
+				req.setAttribute(STATUS_CHANGED, project.getProjectStatusTxt());
 			}
 
 			/*

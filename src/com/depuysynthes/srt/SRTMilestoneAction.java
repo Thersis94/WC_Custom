@@ -77,12 +77,12 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 			String opCoId = SRTUtil.getOpCO(req);
 			MilestoneTypeId type = EnumUtil.safeValueOf(MilestoneTypeId.class, req.getParameter("milestoneTypeId"));
 
-			List<SRTProjectMilestoneVO> milestones = loadMilestoneData(opCoId, type, req.getParameter(MILESTONE_ID), req.hasParameter(MILESTONE_ID));
+			List<SRTProjectMilestoneVO> milestones = loadMilestoneData(opCoId, type, req.getParameter(MILESTONE_ID), req.hasParameter(MILESTONE_ID), false);
 
 			if(req.hasParameter(MILESTONE_ID)) {
-				req.setAttribute("parents", loadMilestoneData(opCoId, null, null, false));
+				req.setAttribute("parents", loadMilestoneData(opCoId, null, null, false, false));
 				req.setAttribute("fieldNames", ClassUtils.getComparableFieldNames(SRTProjectVO.class));
-				req.setAttribute("milestoneDates", loadMilestoneData(opCoId, MilestoneTypeId.DATE, null, false));
+				req.setAttribute("milestoneDates", loadMilestoneData(opCoId, MilestoneTypeId.DATE, null, false, false));
 				req.setAttribute("emailCampaigns", loadEmailCampaigns(opCoId));
 			}
 
@@ -122,9 +122,10 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * @param type
 	 * @param milestoneId
 	 * @param loadRules - Load Rules in addition to Milestone data.
+	 * @param activeOnly - Only load Active Milestones.
 	 */
-	public List<SRTProjectMilestoneVO> loadMilestoneData(String opCoId, MilestoneTypeId type, String milestoneId, boolean loadRules) {
-		List<SRTProjectMilestoneVO> milestones = loadMilestones(opCoId, type, milestoneId);
+	public List<SRTProjectMilestoneVO> loadMilestoneData(String opCoId, MilestoneTypeId type, String milestoneId, boolean loadRules, boolean activeOnly) {
+		List<SRTProjectMilestoneVO> milestones = loadMilestones(opCoId, type, milestoneId, activeOnly);
 
 		/*
 		 * If we are loading rules and milestones isn't empty, load Rules
@@ -180,13 +181,14 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * @param opCoId
 	 * @param type
 	 * @param milestoneId
+	 * @param activeOnly
 	 * @return
 	 */
-	private List<SRTProjectMilestoneVO> loadMilestones(String opCoId, MilestoneTypeId type, String milestoneId) {
+	private List<SRTProjectMilestoneVO> loadMilestones(String opCoId, MilestoneTypeId type, String milestoneId, boolean activeOnly) {
 		List<SRTProjectMilestoneVO> milestones = new ArrayList<>();
 		int i = 1;
 
-		try(PreparedStatement ps = dbConn.prepareStatement(loadMilestonesSql(type, !StringUtil.isEmpty(milestoneId)))) {
+		try(PreparedStatement ps = dbConn.prepareStatement(loadMilestonesSql(type, !StringUtil.isEmpty(milestoneId), activeOnly))) {
 			ps.setString(i++, opCoId);
 			if(!StringUtil.isEmpty(milestoneId)) {
 				ps.setString(i++, milestoneId);
@@ -212,9 +214,10 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * Build Milestone List Sql.
 	 * @param type
 	 * @param hasId
+	 * @param activeOnly
 	 * @return
 	 */
-	private String loadMilestonesSql(MilestoneTypeId type, boolean hasId) {
+	private String loadMilestonesSql(MilestoneTypeId type, boolean hasId, boolean activeOnly) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("DPY_SYN_SRT_MILESTONE ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("OP_CO_ID = ? ");
@@ -224,21 +227,53 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		if(type != null) {
 			sql.append("and MILESTONE_TYPE_ID = ? ");
 		}
-		sql.append("order by MILESTONE_TYPE_ID, PARENT_ID desc, MILESTONE_NM ");
+
+		/*
+		 * If we want active only, filter query and user OrderBY.  Otherwise
+		 * get everything using hierarchy ordering.
+		 */
+		if(activeOnly) {
+			sql.append("and ACTIVE_FLG = 1 ");
+			sql.append("order by MILESTONE_TYPE_ID, ORDER_BY ");
+		} else {
+			sql.append("order by MILESTONE_TYPE_ID, PARENT_ID desc, ORDER_BY, MILESTONE_NM");
+		}
 
 		return sql.toString();
 	}
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
+		if(req.getBooleanParameter("isDelete")) {
+			delete(req);
+		} else {
+			Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
-		//If we have a milestoneId on the request, save the Milestone.
-		SRTProjectMilestoneVO milestone = new SRTProjectMilestoneVO(req);
-		milestone.setRules(new PrefixBeanDataMapper<MilestoneRuleVO>(new MilestoneRuleVO()).populate(req.getParameterMap(), MILESTONE_RULE_PREFIX));
-		saveMilestone(milestone);
+			//If we have a milestoneId on the request, save the Milestone.
+			SRTProjectMilestoneVO milestone = new SRTProjectMilestoneVO(req);
+			milestone.setRules(new PrefixBeanDataMapper<MilestoneRuleVO>(new MilestoneRuleVO()).populate(req.getParameterMap(), MILESTONE_RULE_PREFIX));
+			saveMilestone(milestone);
 
-		sbUtil.moduleRedirect(req, msg, SrtAdmin.MILESTONE.getUrlPath());
+			sbUtil.moduleRedirect(req, msg, SrtAdmin.MILESTONE.getUrlPath());
+		}
+	}
+
+	@Override
+	public void delete(ActionRequest req) throws ActionException {
+		String milestoneId = req.getParameter(MILESTONE_ID);
+
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.DELETE_CLAUSE).append(getCustomSchema());
+		sql.append("dpy_syn_srt_milestone ").append(DBUtil.WHERE_CLAUSE);
+		sql.append("MILESTONE_ID = ?");
+
+		//Delete Milestones.  UI Prevents deleting of active records.
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, milestoneId);
+			ps.executeQuery();
+		} catch (SQLException e) {
+			log.error("Error Deleting Milestone.", e);
+		}
 	}
 
 	/**
@@ -298,6 +333,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 			int i = 1;
 			ps.setString(i++, milestone.getMilestoneNm());
 			ps.setString(i++, milestone.getOrganizationId());
+			ps.setInt(i++, milestone.getActiveFlg());
 			ps.setString(i++, StringUtil.checkVal(milestone.getParentId(), null));
 			ps.setString(i++, milestone.getMilestoneTypeId().name());
 			ps.setString(i++, milestone.getCampaignInstanceId());
@@ -318,14 +354,14 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 
 		if(isInsert) {
 			sql.append(DBUtil.INSERT_CLAUSE).append(getCustomSchema());
-			sql.append("DPY_SYN_SRT_MILESTONE (MILESTONE_NM, OP_CO_ID, ");
+			sql.append("DPY_SYN_SRT_MILESTONE (MILESTONE_NM, OP_CO_ID, ACTIVE_FLG, ");
 			sql.append("PARENT_ID, MILESTONE_TYPE_ID, CAMPAIGN_INSTANCE_ID, ");
 			sql.append("ORDER_BY, CREATE_DT, MILESTONE_ID) ");
-			sql.append("values (?,?,?,?,?,?,?,?)");
+			sql.append("values (?,?,?,?,?,?,?,?,?)");
 		} else {
 			sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema());
-			sql.append("DPY_SYN_SRT_MILESTONE set MILESTONE_NM = ?, ");
-			sql.append("OP_CO_ID = ?, PARENT_ID = ?, MILESTONE_TYPE_ID = ?, ");
+			sql.append("DPY_SYN_SRT_MILESTONE set MILESTONE_NM = ?, OP_CO_ID = ?, ");
+			sql.append("ACTIVE_FLG = ?, PARENT_ID = ?, MILESTONE_TYPE_ID = ?, ");
 			sql.append("CAMPAIGN_INSTANCE_ID = ?, ORDER_BY = ?, UPDATE_DT = ? ");
 			sql.append("where MILESTONE_ID = ?");
 		}
@@ -412,10 +448,10 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 		log.debug("MilestoneCount: " + oldMilestones.size());
 
 		//Remove current Milestones
-		flushMilestones(project.getProjectId());
+		flushMilestones(project);
 
 		//Load all Available Milestones for projects under this OpCo with rules.
-		List<SRTProjectMilestoneVO> milestones = loadMilestoneData(project.getOpCoId(), null, null, true);
+		List<SRTProjectMilestoneVO> milestones = loadMilestoneData(project.getOpCoId(), null, null, true, false);
 
 		//Sort Milestones into Proper Order.
 		milestones = orderMilestones(milestones);
@@ -531,15 +567,19 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Flush Milestones XRs by projecytId and Type.
-	 * @param projectId
+	 * Flush Milestones XRs projectId and milestones loaded on the Project.
+	 * Only Active Milestones will be flushed to prevent removing old archive
+	 * data.
+	 *
+	 * @param project
 	 * @param type
 	 * @param milestoneTypeIds
 	 */
-	private void flushMilestones(String projectId) {
+	private void flushMilestones(SRTProjectVO project) {
 		try(PreparedStatement ps = dbConn.prepareStatement(flushMilestoneProjectXRSql())) {
 			int i = 1;
-			ps.setString(i++, projectId);
+			ps.setString(i++, project.getProjectId());
+			ps.setString(i++, project.getOpCoId());
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			log.error("Could not flush existing Milestones.", e);
@@ -551,10 +591,19 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	private String flushMilestoneProjectXRSql() {
-		StringBuilder sql = new StringBuilder(300);
+		StringBuilder sql = new StringBuilder(400);
 		sql.append(DBUtil.DELETE_CLAUSE).append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
 		sql.append("DPY_SYN_SRT_PROJECT_MILESTONE_XR ").append(DBUtil.WHERE_CLAUSE);
-		sql.append("PROJECT_ID = ?");
+		sql.append("PROJECT_ID = ? ");
+
+		/*
+		 * Add Subquery to limit only active Milestones.  Inactive wont be
+		 * processed so can be ignored.
+		 */
+		sql.append("and MILESTONE_ID in (");
+		sql.append("select MILESTONE_ID from ").append(getCustomSchema());
+		sql.append("DPY_SYN_SRT_MILESTONE where op_co_id = ? and active_flg = 1");
+		sql.append(")");
 		return sql.toString();
 	}
 

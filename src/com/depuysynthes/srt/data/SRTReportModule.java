@@ -223,7 +223,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		SRTMilestoneAction sma = new SRTMilestoneAction();
 		sma.setAttributes(attributes);
 		sma.setDBConnection(getConnection());
-		return sma.loadMilestoneData(opCoId, null, null, false);
+		return sma.loadMilestoneData(opCoId, null, null, false, false);
 	}
 
 	/**
