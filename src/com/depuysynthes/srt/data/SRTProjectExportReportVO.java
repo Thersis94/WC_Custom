@@ -175,7 +175,7 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 	 * @param p
 	 */
 	private void buildProjectCells(Row row, SRTProjectVO p) {
-		row.createCell(colNo++).setCellValue(p.getProjectId());
+		//row.createCell(colNo++).setCellValue(p.getProjectId());
 		row.createCell(colNo++).setCellValue(p.getCoProjectId());
 		row.createCell(colNo++).setCellValue(p.getOpCoId());
 		row.createCell(colNo++).setCellValue(p.getProjectName());

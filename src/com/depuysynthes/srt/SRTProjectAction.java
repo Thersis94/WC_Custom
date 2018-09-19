@@ -122,7 +122,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		}
 
 		//Retrieve list of Milestones from DB for Request.
-		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), typeId, null, false);
+		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), typeId, null, false, true);
 		req.setAttribute("milestones", milestones);
 	}
 
@@ -145,6 +145,12 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 					//Release all Locks on save.
 					releaseLocks(req);
+
+					//Check if Status Changed.  If so, add a message to the response.
+					String statChange = (String)req.getAttribute(ProjectDataProcessor.STATUS_CHANGED);
+					if(!StringUtil.isEmpty(statChange)) {
+						this.putModuleData(StringUtil.join("Status has changed to ", statChange));
+					}
 				} else {
 					msg = "You do not own the lock on this record.  Save Rejected.";
 					throw new ActionException((String)msg);
