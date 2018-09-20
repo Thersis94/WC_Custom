@@ -151,6 +151,7 @@ public class PostcardEmailer {
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
 			mail.addCC("vplatt@mediaspace.com");
+			mail.addCC("dhaas@mediaspace.com");
 			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -248,6 +249,7 @@ public class PostcardEmailer {
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
 			mail.addCC("vplatt@mediaspace.com");
+			mail.addCC("dhaas@mediaspace.com");
 			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 
@@ -526,6 +528,7 @@ public class PostcardEmailer {
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
 			mail.addCC("vplatt@mediaspace.com");
+			mail.addCC("dhaas@mediaspace.com");
 			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 
 			for (PersonVO p : sem.getPeople()) {
