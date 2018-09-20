@@ -186,7 +186,7 @@ public class InventoryAction extends SimpleActionAdapter {
 		List<ResidenceVO> data = ra.listMyResidences(RezDoxUtils.getMemberId(req), null); //always get all of them
 
 		//add a placeholder for detached items if they exist.
-		if (getUnattachedCnt(req) > 0) {
+		if (!data.isEmpty() && getUnattachedCnt(req) > 0) {
 			ResidenceVO vo = new ResidenceVO();
 			vo.setResidenceId(EMPTY_RESID);
 			vo.setResidenceName("Other");
@@ -240,10 +240,10 @@ public class InventoryAction extends SimpleActionAdapter {
 		//load items that are shared but not private, or that are mine. -JM- 07.26.18 for Profile Sharing
 		sql.append("and ((mxr.status_flg=2 and a.privacy_flg != 1) or mxr.status_flg=1 or mxr.member_id is null)");
 
-		if (EMPTY_RESID.equals(residenceId)) {
+		if (EMPTY_RESID.equals(residenceId) || StringUtil.isEmpty(residenceId)) {
 			sql.append("and a.owner_member_id=? and a.residence_id is null ");
 			params.add(memberId);
-		} else if (!StringUtil.isEmpty(residenceId)) {
+		} else {
 			sql.append("and a.residence_id=? ");
 			params.add(residenceId);
 		}
@@ -261,7 +261,7 @@ public class InventoryAction extends SimpleActionAdapter {
 		if (params.isEmpty())
 			sql.append("and 1=0 ");
 
-		sql.append("order by a.item_nm");
+		sql.append(" order by a.item_nm");
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
