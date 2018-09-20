@@ -129,6 +129,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addRecipient("vplatt@mediaspace.com");
+			mail.addRecipient("dhaas@mediaspace.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
@@ -251,6 +252,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
 			mail.addCC("vplatt@mediaspace.com");
+			mail.addCC("dhaas@mediaspace.com");
 
 			for (PersonVO p : sem.getPeople()) { 
 				//add only the sales reps
@@ -431,6 +433,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
 			mail.addCC("vplatt@mediaspace.com");
+			mail.addCC("dhaas@mediaspace.com");
 
 			for (PersonVO p : sem.getPeople()) {
 				//Add only the sales rep
@@ -624,6 +627,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
 			mail.addCC("vplatt@mediaspace.com");
+			mail.addCC("dhaas@mediaspace.com");
 
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);
