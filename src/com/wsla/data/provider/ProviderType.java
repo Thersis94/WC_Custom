@@ -14,9 +14,10 @@ package com.wsla.data.provider;
  ****************************************************************************/
 
 public enum ProviderType {
-	OEM("Manufacturer"),
+	OEM ("Manufacturer"),
 	RETAILER ("Retail Store"),
-	WSLA("Warranty Service Latin America");
+	CAS ("Service Center"),
+	WSLA ("Warranty Service Latin America");
 	
 	public final String typeName;
 	ProviderType(String typeName) { this.typeName = typeName; }
