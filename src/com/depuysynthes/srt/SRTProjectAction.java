@@ -110,7 +110,9 @@ public class SRTProjectAction extends SimpleActionAdapter {
 					req.setAttribute("ownsLock", StringUtil.checkVal(manageLock(req, false)));
 				}
 			} else if(req.hasParameter(SRT_PROJECT_ID)) {
-				sbUtil.manualRedirect(req, req.getRequestURL().toString());
+				StringBuilder redirect = new StringBuilder(150);
+				redirect.append(req.getServletPath()).append("?msg=The selected project was not found or is inaccessible.  If you believe this to be a mistake please contact an Administrator.");
+				sbUtil.manualRedirect(req, redirect.toString());
 				return;
 			}
 
@@ -625,10 +627,10 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 */
 	private void buildWhereClause(StringBuilder sql, ActionRequest req, List<Object> vals, String statusType) {
 		sql.append(DBUtil.WHERE_1_CLAUSE).append(" and p.OP_CO_ID = ? ");
-		vals.add(SRTUtil.getRoster(req).getOpCoId());
+		vals.add(SRTUtil.getOpCO(req));
 
 		if(req.hasParameter(SRT_PROJECT_ID)) {
-			sql.append("and p.PROJECT_ID = ? or p.CO_PROJECT_ID = ? ");
+			sql.append("and (p.PROJECT_ID = ? or p.CO_PROJECT_ID = ?) ");
 			vals.add(req.getParameter(SRT_PROJECT_ID));
 			vals.add(req.getParameter(SRT_PROJECT_ID));
 		} else if(!StringUtil.isEmpty(statusType)) {

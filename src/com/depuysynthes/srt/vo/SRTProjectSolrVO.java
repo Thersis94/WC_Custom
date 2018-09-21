@@ -64,6 +64,10 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	private String mfgPoToVendor;
 	private String salesOrderFromWarehouse;
 	private String reasonForRequest;
+	private String makeFromOrderNo;
+	private int cancelled;
+	private int onHold;
+	private int fromSratch;
 
 	public SRTProjectSolrVO() {
 		super();
@@ -680,5 +684,69 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 */
 	public void addMakeFromPartNo(String makeFromPartNo) {
 		makeFromPartNos.add(makeFromPartNo);
+	}
+
+	/**
+	 * @return the cancelled
+	 */
+	@Column(name="project_cancelled_flg")
+	@SolrField(name="cancelledFlg_i")
+	public int getCancelledFlg() {
+		return cancelled;
+	}
+
+	/**
+	 * @return the onHold
+	 */
+	@Column(name="project_hold_flg")
+	@SolrField(name="holdFlg_i")
+	public int getOnHoldFlg() {
+		return onHold;
+	}
+
+	/**
+	 * @return the fromSratch
+	 */
+	@Column(name="make_from_scratch")
+	@SolrField(name="makeFromScratch_i")
+	public int getromSratch() {
+		return fromSratch;
+	}
+
+	/**
+	 * @param cancelled the cancelled to set.
+	 */
+	public void setCancelledFlg(int cancelled) {
+		this.cancelled = cancelled;
+	}
+
+	/**
+	 * @param onHold the onHold to set.
+	 */
+	public void setOnHoldFlg(int onHold) {
+		this.onHold = onHold;
+	}
+
+	/**
+	 * @param fromSratch the fromSratch to set.
+	 */
+	public void setFromSratch(int fromSratch) {
+		this.fromSratch = fromSratch;
+	}
+
+	/**
+	 * @return the makeFromOrderNo
+	 */
+	@Column(name="make_from_order_no")
+	@SolrField(name="makeFromOrderNo_s")
+	public String getMakeFromOrderNo() {
+		return makeFromOrderNo;
+	}
+
+	/**
+	 * @param makeFromOrderNo the makeFromOrderNo to set.
+	 */
+	public void setMakeFromOrderNo(String makeFromOrderNo) {
+		this.makeFromOrderNo = makeFromOrderNo;
 	}
 }

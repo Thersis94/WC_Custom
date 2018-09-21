@@ -166,6 +166,10 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 					p.addMakeFromPartNo(rs.getString("make_from_part_nos"));
 					p.addDirectShipEligible(rs.getString("direct_ship_eligible"));
 					p.addObsoleteFlags(rs.getString("obsolete_flg"));
+					p.setOnHoldFlg(rs.getInt("project_hold_flg"));
+					p.setCancelledFlg(rs.getInt("project_cancelled_flg"));
+					p.setMakeFromOrderNo(rs.getString("make_from_order_no"));
+					p.setFromSratch(rs.getInt("make_from_scratch"));
 					p.setSummary(p.toString());
 				}
 			}
@@ -217,6 +221,8 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 		sql.append("p.proj_type_id, p.priority_id, p.special_instructions, ");
 		sql.append("p.mfg_po_to_vendor, p.warehouse_tracking_no, r.reason_for_request, ");
 		sql.append("profile.first_nm, profile.last_nm, p.proj_stat_id, m.MILESTONE_ID, m.MILESTONE_DT, ");
+		sql.append("p.project_hold_flg, p.project_cancelled_flg, p.make_from_order_no, ");
+		sql.append("p.make_from_scratch, ");
 		sql.append("concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
 		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
 		sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm ");

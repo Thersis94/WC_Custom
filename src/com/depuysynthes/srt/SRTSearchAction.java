@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.srt.util.SRTUtil;
+import com.depuysynthes.srt.vo.SRTOpCoVO;
 import com.depuysynthes.srt.vo.SRTSolrUIVO;
 import com.depuysynthes.srt.vo.SRTSolrUIVO.SearchType;
 import com.ram.workflow.modules.EmailWFM;
@@ -70,9 +71,25 @@ public class SRTSearchAction extends SimpleActionAdapter {
 			searchSolr(req);
 		} else if(req.hasParameter("loadUIConfig")){
 			SearchType type = EnumUtil.safeValueOf(SearchType.class, req.getParameter("searchType", SearchType.PROJECT.toString()));
-			Map<String, SRTSolrUIVO> formData = loadUIData(type, SRTUtil.getOpCO(req));
+			Map<String, SRTSolrUIVO> formData = loadUIData(type, req.getParameter("opCoId"));
 			this.putModuleData(formData, formData.size(), false);
+		} else {
+			this.putModuleData(loadOpCos());
 		}
+	}
+
+	/**
+	 * Load All OpCos that have projects.
+	 * @return
+	 */
+	private List<SRTOpCoVO> loadOpCos() {
+		String custom = getCustomSchema();
+		StringBuilder sql = new StringBuilder();
+		sql.append(DBUtil.SELECT_CLAUSE).append("distinct o.*").append(DBUtil.FROM_CLAUSE);
+		sql.append(custom).append("dpy_syn_srt_project p ").append(DBUtil.INNER_JOIN);
+		sql.append(custom).append("dpy_syn_srt_op_co o on p.op_co_id = o.op_co_id");
+
+		return new DBProcessor(dbConn, custom).executeSelect(sql.toString(), null, new SRTOpCoVO());
 	}
 
 	/**
@@ -228,7 +245,6 @@ public class SRTSearchAction extends SimpleActionAdapter {
 			}
 		}
 
-		values.add("opCoId_s:" + SRTUtil.getOpCO(req));
 		req.setParameter("fq", values.toArray(new String [values.size()]), true);
 	}
 
