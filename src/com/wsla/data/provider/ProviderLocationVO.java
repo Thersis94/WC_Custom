@@ -37,6 +37,7 @@ public class ProviderLocationVO extends GeocodeLocation {
 	// Member Variables
 	private String providerId;
 	private String locationName;
+	private String storeNumber;
 	private int activeFlag;
 	private int defaultFlag;
 	private int manualGeocodeFlag;
@@ -117,6 +118,14 @@ public class ProviderLocationVO extends GeocodeLocation {
 	}
 
 	/**
+	 * @return the storeNumber
+	 */
+	@Column(name="store_no")
+	public String getStoreNumber() {
+		return storeNumber;
+	}
+
+	/**
 	 * @return the createDate
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
@@ -191,7 +200,6 @@ public class ProviderLocationVO extends GeocodeLocation {
 	/**
 	 * @param authorizedServiceProvider the authorizedServiceProvider to set
 	 */
-	@BeanSubElement
 	public void setAuthorizedServiceProviders(List<AuthorizedServiceProviderVO> authorizedServiceProviders) {
 		this.authorizedServiceProviders = authorizedServiceProviders;
 	}
@@ -200,8 +208,16 @@ public class ProviderLocationVO extends GeocodeLocation {
 	 * 
 	 * @param authorizedServiceProvider
 	 */
+	@BeanSubElement
 	public void addAuthorizedServiceProvider(AuthorizedServiceProviderVO authorizedServiceProvider) {
 		if (authorizedServiceProvider != null)
 			this.authorizedServiceProviders.add(authorizedServiceProvider);
+	}
+
+	/**
+	 * @param storeNumber the storeNumber to set
+	 */
+	public void setStoreNumber(String storeNumber) {
+		this.storeNumber = storeNumber;
 	}
 }

@@ -68,7 +68,7 @@ public class ProviderAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ProviderVO provider = new ProviderVO(req);
-		DBProcessor db = new DBProcessor(getDBConnection());
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
 			db.save(provider);
 		} catch (InvalidDataException | DatabaseException e) {
