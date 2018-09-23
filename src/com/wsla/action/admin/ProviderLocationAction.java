@@ -99,6 +99,7 @@ public class ProviderLocationAction extends SBActionAdapter {
 		
 		// Update the table data
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		log.info("Saving ..." + loc.getStoreNumber() + "|" + loc.getLocationName());
 		db.save(loc);
 	}
 	
@@ -110,7 +111,7 @@ public class ProviderLocationAction extends SBActionAdapter {
 	public void resetDefaultLocation(String providerId) {
 		
 		StringBuilder sql = new StringBuilder(64);
-		sql.append("udpate ").append(getCustomSchema()).append("wsla_provider_location ");
+		sql.append("update ").append(getCustomSchema()).append("wsla_provider_location ");
 		sql.append("set default_flg = 0 where provider_id = ");
 		sql.append(StringUtil.checkVal(providerId, true));
 		
