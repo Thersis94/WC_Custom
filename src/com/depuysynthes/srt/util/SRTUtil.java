@@ -11,10 +11,13 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.log4j.Logger;
 
+import com.depuysynthes.srt.vo.SRTOpCoVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.EncryptionException;
@@ -106,6 +109,23 @@ public class SRTUtil {
 			return r.getOpCoId();
 		}
 		return null;
+	}
+
+	/**
+	 * Helper method returns List of OpCo VOs in the system.  If we move to in
+	 * tool management, this should be migrated to an action.
+	 *
+	 * @param dbConn - Database Connection
+	 * @param schema - Custom DB Schema
+	 * @return - List of SRTOpCoVO's
+	 */
+	public static List<SRTOpCoVO> loadOpCos(SMTDBConnection dbConn, String schema) {
+		StringBuilder sql = new StringBuilder();
+		sql.append(DBUtil.SELECT_CLAUSE).append("distinct o.*").append(DBUtil.FROM_CLAUSE);
+		sql.append(schema).append("dpy_syn_srt_project p ").append(DBUtil.INNER_JOIN);
+		sql.append(schema).append("dpy_syn_srt_op_co o on p.op_co_id = o.op_co_id");
+
+		return new DBProcessor(dbConn, schema).executeSelect(sql.toString(), null, new SRTOpCoVO());
 	}
 
 	/**

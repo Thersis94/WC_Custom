@@ -70,8 +70,10 @@ public class SRTSearchAction extends SimpleActionAdapter {
 			searchSolr(req);
 		} else if(req.hasParameter("loadUIConfig")){
 			SearchType type = EnumUtil.safeValueOf(SearchType.class, req.getParameter("searchType", SearchType.PROJECT.toString()));
-			Map<String, SRTSolrUIVO> formData = loadUIData(type, SRTUtil.getOpCO(req));
+			Map<String, SRTSolrUIVO> formData = loadUIData(type, req.getParameter("opCoId"));
 			this.putModuleData(formData, formData.size(), false);
+		} else {
+			this.putModuleData(SRTUtil.loadOpCos(dbConn, getCustomSchema()));
 		}
 	}
 
@@ -228,7 +230,6 @@ public class SRTSearchAction extends SimpleActionAdapter {
 			}
 		}
 
-		values.add("opCoId_s:" + SRTUtil.getOpCO(req));
 		req.setParameter("fq", values.toArray(new String [values.size()]), true);
 	}
 
