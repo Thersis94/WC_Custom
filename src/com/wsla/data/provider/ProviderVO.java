@@ -28,7 +28,6 @@ import com.siliconmtn.db.orm.Table;
 @Table(name="wsla_provider")
 public class ProviderVO extends BeanDataVO {
 
-	
 	/**
 	 * 
 	 */
@@ -125,7 +124,7 @@ public class ProviderVO extends BeanDataVO {
 	public void setProviderType(ProviderType providerType) {
 		this.providerType = providerType;
 	}
-
+	
 	/**
 	 * @param providerName the providerName to set
 	 */
