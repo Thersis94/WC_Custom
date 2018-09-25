@@ -752,8 +752,12 @@ public class ProductExplorer extends SBActionAdapter {
 					break;
 				}
 			}
-		}else {//otherwise add additional entry
-			((List<Map<String, String>>)req.getSession().getAttribute(SAVED_QUERIES)).add(entry);
+		}else {
+			/*
+			 * Flush out SAVED_QUERIES.  Will re-load them on next call.  Query
+			 * will ensure proper ordering of newly added Query.
+			 */
+			req.getSession().removeAttribute(SAVED_QUERIES);
 		}
 	}
 	
