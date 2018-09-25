@@ -12,6 +12,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
+import com.wsla.action.admin.ProviderLocationUserAction;
 
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
@@ -64,6 +65,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(DEFAULT_TYPE, SelectLookupAction.class);
 		actionMap.put("provider", ProviderAction.class);
 		actionMap.put("providerLocation", ProviderLocationAction.class);
+		actionMap.put("providerLocationUser", ProviderLocationUserAction.class);
 	}
 	
 	/*
