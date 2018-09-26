@@ -216,7 +216,7 @@ public class HuddleUtils {
 	public enum SSOBusinessUnit {
 		Spine("Spine", "DSP","spine", "000942"),
 		Cmf("CMF","CMF","","001221"),
-		Codman("Codman Neuro","CDM","codman-neuro","000945"),
+		Cerenovus("Cerenovus","CDM","cerenovus","000945"),
 		Ethicon("Ethicon","ETH","ethicon","001220","001510"),
 		JointRecon("Joint Reconstruction","DJT","joint-reconstruction","000940"),
 		PowerTools("Power Tools","PWT", "", "001221"),
@@ -226,7 +226,7 @@ public class HuddleUtils {
 		DST("Trauma","DST","",""),
 		DC("CMF","DC","",""),
 		DPM("Sports Medicine","DPM","",""),
-		DCD("Codman Neuro","DCD","","");
+		DCD("Cerenovus","DCD","","");
 
 		private String name;
 		private String abbr;
