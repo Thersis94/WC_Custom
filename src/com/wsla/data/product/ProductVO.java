@@ -29,18 +29,15 @@ import com.wsla.data.provider.ProviderVO;
 @Table(name="wsla_product_master")
 public class ProductVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -737469551561460512L;
-	
+
 	// Member Variables
 	private String productId;
 	private String providerId;
 	private String customerProductId;
 	private String secCustomerProductId;
-	private String modelName;
-	private String modelNumber;
+	private String productName;
+	private String description;
 	private String firmware;
 	private Date discontinuedDate;
 	private Date supportEndDate;
@@ -48,12 +45,12 @@ public class ProductVO extends BeanDataVO {
 	private int setFlag;
 	private Date createDate;
 	private Date updateDate;
-	
+
 	// Bean Sub-Elements
 	private List<ProductCategoryVO> categories = new ArrayList<>();
 	private List<ProductSetVO> parts = new ArrayList<>();
 	private ProviderVO provider;
-	
+
 	/**
 	 * 
 	 */
@@ -108,19 +105,11 @@ public class ProductVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the modelName
+	 * @return the productName
 	 */
-	@Column(name="model_nm")
-	public String getModelName() {
-		return modelName;
-	}
-
-	/**
-	 * @return the modelNumber
-	 */
-	@Column(name="model_no_txt")
-	public String getModelNumber() {
-		return modelNumber;
+	@Column(name="product_nm")
+	public String getProductName() {
+		return productName;
 	}
 
 	/**
@@ -229,17 +218,10 @@ public class ProductVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param modelName the modelName to set
+	 * @param productName the productName to set
 	 */
-	public void setModelName(String modelName) {
-		this.modelName = modelName;
-	}
-
-	/**
-	 * @param modelNumber the modelNumber to set
-	 */
-	public void setModelNumber(String modelNumber) {
-		this.modelNumber = modelNumber;
+	public void setProductName(String productName) {
+		this.productName = productName;
 	}
 
 	/**
@@ -294,15 +276,15 @@ public class ProductVO extends BeanDataVO {
 	/**
 	 * @param categories the categories to set
 	 */
-	@BeanSubElement
 	public void setCategories(List<ProductCategoryVO> categories) {
 		this.categories = categories;
 	}
-	
+
 	/**
 	 * 
 	 * @param category
 	 */
+	@BeanSubElement
 	public void addCategory(ProductCategoryVO category) {
 		if(category != null)
 			categories.add(category);
@@ -311,15 +293,15 @@ public class ProductVO extends BeanDataVO {
 	/**
 	 * @param parts the parts to set
 	 */
-	@BeanSubElement
 	public void setParts(List<ProductSetVO> parts) {
 		this.parts = parts;
 	}
-	
+
 	/**
 	 * 
 	 * @param part
 	 */
+	@BeanSubElement
 	public void addPart(ProductSetVO part) {
 		if (part != null)
 			parts.add(part);
@@ -333,5 +315,12 @@ public class ProductVO extends BeanDataVO {
 		this.provider = provider;
 	}
 
-}
+	@Column(name="desc_txt")
+	public String getDescription() {
+		return description;
+	}
 
+	public void setDescription(String description) {
+		this.description = description;
+	}
+}
