@@ -63,6 +63,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addRecipient("vplatt@mediaspace.com");
+			mail.addRecipient("dhaas@mediaspace.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
@@ -145,6 +146,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addRecipient("vplatt@mediaspace.com");
+			mail.addRecipient("dhaas@mediaspace.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Stephanie.Balsley@hmktgroup.com");
@@ -293,6 +295,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addRecipient("vplatt@mediaspace.com");
+			mail.addRecipient("dhaas@mediaspace.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addCC("Devin.Carroll@umj3.com");
 			mail.addCC("Brianna.Victorio@umj3.com");
@@ -354,6 +357,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("kgeorge@mediaspace.com");
 			mail.addRecipient("krogalski@mediaspace.com");
 			mail.addRecipient("vplatt@mediaspace.com");
+			mail.addRecipient("dhaas@mediaspace.com");
 			mail.addCC("cmarcos1@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -402,6 +406,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addCC("kgeorge@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
 			mail.addCC("vplatt@mediaspace.com");
+			mail.addCC("dhaas@mediaspace.com");
 
 			MessageSender sender = new MessageSender(attributes,dbConn);
 			sender.sendMessage(mail);
