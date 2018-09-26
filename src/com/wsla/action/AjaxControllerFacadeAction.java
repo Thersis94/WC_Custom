@@ -12,6 +12,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
+import com.wsla.action.ticket.TicketAttributeAction;
 
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
@@ -35,6 +36,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	 * Default type if not passed
 	 */
 	public static final String DEFAULT_TYPE = "lookup";
+	
 	
 	/**
 	 * Request key utilized top determine widget to call
@@ -64,6 +66,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(DEFAULT_TYPE, SelectLookupAction.class);
 		actionMap.put("provider", ProviderAction.class);
 		actionMap.put("providerLocation", ProviderLocationAction.class);
+		actionMap.put(TicketAttributeAction.TICKET_ATTRRIBUTE_TYPE, TicketAttributeAction.class);
 	}
 	
 	/*
