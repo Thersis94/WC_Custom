@@ -13,6 +13,7 @@ import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.ticket.TicketAttributeAction;
+import com.wsla.action.admin.ProviderLocationUserAction;
 
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
@@ -66,6 +67,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put("providerLocation", ProviderLocationAction.class);
 		actionMap.put(TicketAttributeAction.TICKET_ATTRRIBUTE_TYPE, TicketAttributeAction.class);
 		actionMap.put("productMaster", ProductMasterAction.class);
+		actionMap.put("providerLocationUser", ProviderLocationUserAction.class);
 	}
 
 	/*

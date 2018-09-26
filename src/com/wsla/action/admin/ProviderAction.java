@@ -113,8 +113,8 @@ public class ProviderAction extends SBActionAdapter {
 
 		// Filter by search criteria
 		if (bst.hasSearch()) {
-			sql.append("and provider_nm like ? ");
-			params.add(bst.getLikeSearch());
+			sql.append("and lower(provider_nm) like ? ");
+			params.add(bst.getLikeSearch().toLowerCase());
 		}
 
 		// Filter by provider type

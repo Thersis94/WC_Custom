@@ -11,15 +11,19 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.gis.AbstractGeocoder;
 import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.GeocodeLocation;
+import com.siliconmtn.gis.MatchCode;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.action.ActionException;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.data.provider.ProviderLocationVO;
 
@@ -68,12 +72,46 @@ public class ProviderLocationAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+		boolean error = false;
 		try {
-			saveLocation(new ProviderLocationVO(req));
-		} catch (InvalidDataException | DatabaseException e) {
+			if (req.getBooleanParameter("mapLocation")) {
+				ProviderLocationVO loc = new ProviderLocationVO(req);
+				assignManualGeocode(loc);
+			} else { 
+				saveLocation(new ProviderLocationVO(req));
+			}
+		} catch (Exception e) {
+			error = true;
+			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 			log.error("unable to save provider location", e);
 		}
-
+		
+		this.putModuleData("", 0, false, (String)msg, error);
+	}
+	
+	/**
+	 * 
+	 * @param loc
+	 * @throws DatabaseException 
+	 */
+	public void assignManualGeocode(ProviderLocationVO loc) throws SQLException {
+		loc.setMatchCode(MatchCode.manual);
+		
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("update ").append(getCustomSchema()).append("wsla_provider_location ");
+		sql.append("set latitude_no=?,longitude_no=?,manual_geocode_flg=?,match_cd=? ");
+		sql.append("where location_id = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setDouble(1, loc.getLatitude());
+			ps.setDouble(2, loc.getLongitude());
+			ps.setInt(3, loc.getManualGeocodeFlag());
+			ps.setString(4, loc.getMatchCode().toString());
+			ps.setString(5, loc.getLocationId());
+			
+			ps.executeUpdate();
+		}
 	}
 	
 	/**
@@ -99,7 +137,6 @@ public class ProviderLocationAction extends SBActionAdapter {
 		
 		// Update the table data
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		log.info("Saving ..." + loc.getStoreNumber() + "|" + loc.getLocationName());
 		db.save(loc);
 	}
 	
