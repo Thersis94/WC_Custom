@@ -2,22 +2,27 @@ package com.wsla.action.admin;
 
 // JDK 1.8.x
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
-
+import com.wsla.data.provider.ProviderType;
 // WSLA Libs
 import com.wsla.data.provider.ProviderVO;
 
@@ -35,7 +40,7 @@ import com.wsla.data.provider.ProviderVO;
  ****************************************************************************/
 
 public class ProviderAction extends SBActionAdapter {
-	
+
 	/**
 	 * 
 	 */
@@ -49,7 +54,18 @@ public class ProviderAction extends SBActionAdapter {
 	public ProviderAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
+	/**
+	 * Overloaded constructor used for calling between actions.  Note default access modifier
+	 * @param attrs
+	 * @param conn
+	 */
+	public ProviderAction(Map<String, Object> attrs, SMTDBConnection conn) {
+		this();
+		this.setAttributes(attrs);
+		this.setDBConnection(conn);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -60,7 +76,7 @@ public class ProviderAction extends SBActionAdapter {
 		String providerTypeId = req.getParameter("providerTypeId");
 		setModuleData(getProviders(providerId, providerTypeId, new BSTableControlVO(req, ProviderVO.class)));
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
@@ -75,7 +91,7 @@ public class ProviderAction extends SBActionAdapter {
 			log.error("Unable to save provider infromation", e);
 		}
 	}
-	
+
 	/**
 	 * Gets a list of providers.  Since this list should be small (< 100)
 	 * assuming client side pagination and filtering 
@@ -84,32 +100,53 @@ public class ProviderAction extends SBActionAdapter {
 	 * @return
 	 */
 	public GridDataVO<ProviderVO> getProviders(String providerId, String providerType, BSTableControlVO bst) {
+		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(72);
-		sql.append("select * from ").append(getCustomSchema()).append("wsla_provider where 1=1 ");
+		sql.append("select * from ").append(schema).append("wsla_provider where 1=1 ");
 		List<Object> params = new ArrayList<>();
-		
+
 		// Filter by provider id
 		if (! StringUtil.checkVal(providerId).isEmpty()) {
 			sql.append("and provider_id = ? ");
 			params.add(providerId);
 		}
-		
+
 		// Filter by search criteria
 		if (bst.hasSearch()) {
 			sql.append("and provider_nm like ? ");
 			params.add(bst.getLikeSearch());
 		}
-		
+
 		// Filter by provider type
 		if (! StringUtil.isEmpty(providerType)) {
 			sql.append("and provider_type_id = ? ");
 			params.add(providerType);
 		}
-		
+
 		sql.append(bst.getSQLOrderBy("provider_nm",  "asc"));
-		
-		DBProcessor db = new DBProcessor(getDBConnection());
+		log.debug(sql);
+
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ProviderVO(), bst.getLimit(), bst.getOffset());
 	}
-}
 
+
+	/**
+	 * Generate a name-ordered list of providers for the given type.
+	 * Called from SelectLookupAction.
+	 * @return
+	 */
+	public List<GenericVO> getProviderOptions(ProviderType type) {
+		if (type == null) return Collections.emptyList();
+
+		String schema = getCustomSchema();
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select provider_id as key, provider_nm as value from ");
+		sql.append(schema).append("wsla_provider where provider_type_id=? ");
+		sql.append("order by provider_nm");
+		log.debug(sql);
+
+		DBProcessor db = new DBProcessor(getDBConnection(), schema); 
+		return db.executeSelect(sql.toString(), Arrays.asList(type.toString()), new GenericVO());
+	}
+}

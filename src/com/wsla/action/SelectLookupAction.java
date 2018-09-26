@@ -16,7 +16,8 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
-
+import com.wsla.action.admin.ProviderAction;
+import com.wsla.data.provider.ProviderType;
 // WSLA Libs
 import com.wsla.data.ticket.StatusCode;
 
@@ -42,16 +43,25 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Key to be passed to utilize this action
 	 */
 	public static final String SELECT_KEY = "selectType";
-	
-	
-	private Map<String, GenericVO> keyMap = new HashMap<>(16);
-	
+
+	private static Map<String, GenericVO> keyMap = new HashMap<>(16);
+
+	/**
+	 * Assigns the keys for the select type to method mapping.  In the generic vo
+	 * the key is the method name.  The value is a boolean which indicates whether
+	 * or not the request object is needed in that method 
+	 */
+	static {
+		keyMap.put("statusCode", new GenericVO("getStatusCodes", Boolean.FALSE));
+		keyMap.put("providerType", new GenericVO("getProviderTypes", Boolean.FALSE));
+		keyMap.put("oem", new GenericVO("getOEMs", Boolean.FALSE));
+	}
+
 	/**
 	 * 
 	 */
 	public SelectLookupAction() {
 		super();
-		assignKeys();
 	}
 
 	/**
@@ -59,19 +69,8 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public SelectLookupAction(ActionInitVO actionInit) {
 		super(actionInit);
-		assignKeys();
 	}
-	
-	/**
-	 * Assigns the keys for the select type to method mapping.  In the generic vo
-	 * the key is the method name.  The value is a boolean which indicates whether
-	 * or not the request object is needed in that method 
-	 */
-	private void assignKeys() {
-		keyMap.put("statusCode", new GenericVO("getStatusCodes", Boolean.FALSE));
-		keyMap.put("providerType", new GenericVO("getProviderTypes", Boolean.FALSE));
-	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
@@ -79,7 +78,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String listType = req.getStringParameter(SELECT_KEY);
-		
+
 		// @TODO Add language conversion
 		if (keyMap.containsKey(listType)) {
 			try {
@@ -94,7 +93,7 @@ public class SelectLookupAction extends SBActionAdapter {
 			}
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @return
@@ -103,10 +102,20 @@ public class SelectLookupAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select provider_type_id as key, type_cd as value from ");
 		sql.append(getCustomSchema()).append("wsla_provider_type order by type_cd");
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection()); 
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
+
+
+	/**
+	 * Load a list of OEMs from the ProviderAction
+	 * @return
+	 */
+	public List<GenericVO> getOEMs() {
+		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(ProviderType.OEM);
+	}
+
 
 	/**
 	 * Returns a list of status codes and their descriptions
@@ -114,16 +123,15 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getStatusCodes() {
 		List<GenericVO> data = new ArrayList<>(64);
-		
+
 		// Iterate the enum
 		for (StatusCode code : StatusCode.values()) {
 			data.add(new GenericVO(code.name(), code.codeName));
 		}
-		
+
 		// Sort the enum keys
 		Collections.sort(data);
-		
+
 		return data;
 	}
 }
-
