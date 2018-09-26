@@ -55,6 +55,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("statusCode", new GenericVO("getStatusCodes", Boolean.FALSE));
 		keyMap.put("providerType", new GenericVO("getProviderTypes", Boolean.FALSE));
 		keyMap.put("oem", new GenericVO("getOEMs", Boolean.FALSE));
+		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
 	}
 
 	/**
@@ -106,7 +107,19 @@ public class SelectLookupAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection()); 
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
-
+	
+	/**
+	 * Load a yes no list
+	 * @return
+	 */
+	public List<GenericVO> getYesNoLookup() {
+		List<GenericVO> yesNo = new ArrayList<>();
+		
+		yesNo.add(new GenericVO("1","Yes"));
+		yesNo.add(new GenericVO("0","No"));
+		
+		return yesNo;
+	}
 
 	/**
 	 * Load a list of OEMs from the ProviderAction
