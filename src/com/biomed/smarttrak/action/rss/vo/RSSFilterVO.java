@@ -1,9 +1,10 @@
 package com.biomed.smarttrak.action.rss.vo;
 
-import java.io.Serializable;
+import java.sql.ResultSet;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -19,7 +20,7 @@ import com.siliconmtn.db.orm.Table;
  * @since Apr 26, 2017
  ****************************************************************************/
 @Table(name="BIOMEDGPS_RSS_PARSER_FILTER")
-public class RSSFilterVO implements Serializable {
+public class RSSFilterVO extends BeanDataVO {
 
 	/**
 	 *
@@ -39,15 +40,14 @@ public class RSSFilterVO implements Serializable {
 
 	public RSSFilterVO(ActionRequest req) {
 		this();
-		setData(req);
+		populateData(req);
 	}
 
-	public void setData(ActionRequest req) {
-		filterId = req.getParameter("filterId");
-		filterNm = req.getParameter("filterNm");
-		typeCd = req.getParameter("typeCd");
-		filterExpression = req.getParameter("filterExpression");
+	public RSSFilterVO(ResultSet rs) {
+		this();
+		populateData(rs);
 	}
+
 	/**
 	 * @return the filterId
 	 */
