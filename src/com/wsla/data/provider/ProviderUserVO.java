@@ -2,14 +2,16 @@ package com.wsla.data.provider;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
-import java.util.Date;
+import java.util.Arrays;
+import java.util.List;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.security.PhoneVO;
+import com.siliconmtn.util.StringUtil;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -25,7 +27,7 @@ import com.wsla.data.ticket.UserVO;
  * @updates:
  ****************************************************************************/
 @Table(name="wsla_provider_user_xr")
-public class ProviderUserVO extends BeanDataVO {
+public class ProviderUserVO extends UserVO {
 
 	/**
 	 * 
@@ -35,16 +37,16 @@ public class ProviderUserVO extends BeanDataVO {
 	// Member Variables
 	private String providerUserId;
 	private String locationId;
-	private String userId;
 	private String departmentName;
 	private int primaryContactFlag;
-	private int activeFlag; 
-	private Date createDate;
-	private Date updateDate;
+	
+	// Convenience Variables
+	private String formattedPhoneNumbers;
+	private String workPhoneNumber;
+	private String mobilePhoneNumber;
 
 	// Bean Sub-Elements
 	private ProviderLocationVO location;
-	private UserVO user;
 	
 	/**
 	 * 
@@ -66,7 +68,15 @@ public class ProviderUserVO extends BeanDataVO {
 	public ProviderUserVO(ResultSet rs) {
 		super(rs);
 	}
-
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public String getFormattedPhoneNumbers() {
+		return formattedPhoneNumbers;
+	}
+	
 	/**
 	 * @return the providerUserId
 	 */
@@ -82,19 +92,11 @@ public class ProviderUserVO extends BeanDataVO {
 	public String getLocationId() {
 		return locationId;
 	}
-
-	/**
-	 * @return the userId
-	 */
-	@Column(name="user_id")
-	public String getUserId() {
-		return userId;
-	}
-
+	
 	/**
 	 * @return the departmentName
 	 */
-	@Column(name="department_nm")
+	@Column(name="dept_nm")
 	public String getDepartmentName() {
 		return departmentName;
 	}
@@ -108,27 +110,17 @@ public class ProviderUserVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the activeFlag
+	 * @return the workPhoneNumber
 	 */
-	@Column(name="active_flg")
-	public int getActiveFlag() {
-		return activeFlag;
+	public String getWorkPhoneNumber() {
+		return workPhoneNumber;
 	}
 
 	/**
-	 * @return the createDate
+	 * @return the mobilePhoneNumber
 	 */
-	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
-	public Date getCreateDate() {
-		return createDate;
-	}
-
-	/**
-	 * @return the updateDate
-	 */
-	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
-	public Date getUpdateDate() {
-		return updateDate;
+	public String getMobilePhoneNumber() {
+		return mobilePhoneNumber;
 	}
 
 	/**
@@ -136,13 +128,6 @@ public class ProviderUserVO extends BeanDataVO {
 	 */
 	public ProviderLocationVO getLocation() {
 		return location;
-	}
-
-	/**
-	 * @return the user
-	 */
-	public UserVO getUser() {
-		return user;
 	}
 
 	/**
@@ -158,14 +143,7 @@ public class ProviderUserVO extends BeanDataVO {
 	public void setLocationId(String locationId) {
 		this.locationId = locationId;
 	}
-
-	/**
-	 * @param userId the userId to set
-	 */
-	public void setUserId(String userId) {
-		this.userId = userId;
-	}
-
+	
 	/**
 	 * @param departmentName the departmentName to set
 	 */
@@ -181,27 +159,6 @@ public class ProviderUserVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param activeFlag the activeFlag to set
-	 */
-	public void setActiveFlag(int activeFlag) {
-		this.activeFlag = activeFlag;
-	}
-
-	/**
-	 * @param createDate the createDate to set
-	 */
-	public void setCreateDate(Date createDate) {
-		this.createDate = createDate;
-	}
-
-	/**
-	 * @param updateDate the updateDate to set
-	 */
-	public void setUpdateDate(Date updateDate) {
-		this.updateDate = updateDate;
-	}
-
-	/**
 	 * @param location the location to set
 	 */
 	@BeanSubElement
@@ -210,12 +167,44 @@ public class ProviderUserVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param user the user to set
+	 * 
+	 * @param formattedPhonenumbers
 	 */
-	@BeanSubElement
-	public void setUser(UserVO user) {
-		this.user = user;
+	public void setFormattedPhoneNumbers(String formattedPhoneNumbers) {
+		this.formattedPhoneNumbers = formattedPhoneNumbers;
 	}
 
+	/**
+	 * @param formattedPhoneNumbers the formattedPhoneNumbers to set
+	 */
+	public void setFormattedPhoneNumbers(List<PhoneVO> phoneNumbers, String sep) {
+		if (phoneNumbers == null) return; 
+
+		StringBuilder pn = new StringBuilder(32);
+		for (PhoneVO phone : getProfile().getPhoneNumbers()) {
+			if (! Arrays.asList("MOBILE", "WORK").contains(phone.getPhoneType())) continue;
+			
+			phone.setCountry(StringUtil.checkVal(getLocale()).substring(2));
+			
+			pn.append(StringUtil.capitalize(phone.getPhoneType(), true));
+			pn.append(": ").append(phone.getFormattedNumber()).append(sep);
+		}
+		
+		this.formattedPhoneNumbers =  pn.toString();
+	}
+
+	/**
+	 * @param workPhoneNumber the workPhoneNumber to set
+	 */
+	public void setWorkPhoneNumber(String workPhoneNumber) {
+		this.workPhoneNumber = workPhoneNumber;
+	}
+
+	/**
+	 * @param mobilePhoneNumber the mobilePhoneNumber to set
+	 */
+	public void setMobilePhoneNumber(String mobilePhoneNumber) {
+		this.mobilePhoneNumber = mobilePhoneNumber;
+	}
 }
 
