@@ -208,7 +208,7 @@ public class ProviderLocationUserAction extends SBActionAdapter {
 		UserLogin login = new UserLogin(getDBConnection(), getAttributes());
 		String authId = login.checkAuth(user.getEmail());
 		if (StringUtil.isEmpty(authId))
-			login.saveAuthRecord(null, user.getEmail(), RandomAlphaNumeric.generateRandom(10), 1);
+			authId = login.saveAuthRecord(null, user.getEmail(), RandomAlphaNumeric.generateRandom(10), 1);
 		
 		return authId;
 	}
