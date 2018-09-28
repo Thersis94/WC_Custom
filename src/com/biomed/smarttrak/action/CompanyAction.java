@@ -357,32 +357,32 @@ public class CompanyAction extends SimpleActionAdapter {
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append(DBUtil.SELECT_CLAUSE).append("xr.*, a.*, parent.ATTRIBUTE_NM as PARENT_NM, ");
 		// Build special Order By.
-		sql.append(DBUtil.CASE_CLAUSE);
+		sql.append(DBUtil.CASE);
 
 		//Add Over Overview Case
-		sql.append(DBUtil.WHEN_CLAUSE).append("lower(xr.title_txt) in('company overview', 'business overview') ");
-		sql.append(DBUtil.THEN_CLAUSE).append("1 ");
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) in('company overview', 'business overview') ");
+		sql.append(DBUtil.THEN).append("1 ");
 
 		//Add Funding Case
-		sql.append(DBUtil.WHEN_CLAUSE).append("lower(xr.title_txt) like '%funding%' and a.attribute_nm like '%GPS%' ");
-		sql.append(DBUtil.THEN_CLAUSE).append("5 ");
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%funding%' and a.attribute_nm like '%GPS%' ");
+		sql.append(DBUtil.THEN).append("5 ");
 
 		//Add Revenues/Earnings Case
-		sql.append(DBUtil.WHEN_CLAUSE).append("(lower(xr.title_txt) like '%revenues%' or lower(xr.title_txt) like '%earnings%')  and a.attribute_nm like '%GPS%' ");
-		sql.append(DBUtil.THEN_CLAUSE).append("10 ");
+		sql.append(DBUtil.WHEN).append("(lower(xr.title_txt) like '%revenues%' or lower(xr.title_txt) like '%earnings%')  and a.attribute_nm like '%GPS%' ");
+		sql.append(DBUtil.THEN).append("10 ");
 
 		//Add Recent Commentary Case
-		sql.append(DBUtil.WHEN_CLAUSE).append("lower(xr.title_txt) like '%recent%' or lower(xr.title_txt) like '%commentary%' ");
-		sql.append(DBUtil.THEN_CLAUSE).append("15 ");
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%recent%' or lower(xr.title_txt) like '%commentary%' ");
+		sql.append(DBUtil.THEN).append("15 ");
 
 		//Add Default Case
-		sql.append(DBUtil.ELSE_CLAUSE).append("100 ");
-		sql.append(DBUtil.END_CLAUSE).append("as PUBLIC_DISPLAY_ORDER_NO ");
+		sql.append(DBUtil.ELSE).append("100 ");
+		sql.append(DBUtil.END).append("as PUBLIC_DISPLAY_ORDER_NO ");
 		sql.append(DBUtil.FROM_CLAUSE);
 		sql.append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
-		sql.append(DBUtil.LEFT_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
-		sql.append(DBUtil.LEFT_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE parent ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE parent ");
 		sql.append("ON parent.ATTRIBUTE_ID = a.PARENT_ID ");
 		sql.append(DBUtil.WHERE_CLAUSE).append(" COMPANY_ID = ? and STATUS_NO in (");
 		if (AdminControllerAction.STAFF_ROLE_LEVEL == role.getRoleLevel()) {
