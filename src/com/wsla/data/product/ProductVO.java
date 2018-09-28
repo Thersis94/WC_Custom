@@ -43,6 +43,7 @@ public class ProductVO extends BeanDataVO {
 	private Date supportEndDate;
 	private int warrantyDays;
 	private int setFlag;
+	private int activeFlag;
 	private Date createDate;
 	private Date updateDate;
 
@@ -322,5 +323,14 @@ public class ProductVO extends BeanDataVO {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	@Column(name="active_flg")
+	public int getActiveFlag() {
+		return activeFlag;
+	}
+
+	public void setActiveFlag(int activeFlag) {
+		this.activeFlag = activeFlag;
 	}
 }
