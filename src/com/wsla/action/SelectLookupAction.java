@@ -55,7 +55,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("statusCode", new GenericVO("getStatusCodes", Boolean.FALSE));
 		keyMap.put("providerType", new GenericVO("getProviderTypes", Boolean.FALSE));
 		keyMap.put("oem", new GenericVO("getOEMs", Boolean.FALSE));
+		keyMap.put("attributeGroupCode", new GenericVO("getAttributeGroups", Boolean.FALSE));
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
+		
 	}
 
 	/**
@@ -78,6 +80,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		log.debug("look up ret called");
 		String listType = req.getStringParameter(SELECT_KEY);
 
 		// @TODO Add language conversion
@@ -92,7 +95,10 @@ public class SelectLookupAction extends SBActionAdapter {
 			} catch (Exception e) {
 				log.error("Unable to retrieve list: " + listType, e);
 			}
+		}else {
+			throw new ActionException("List type Not Found in KeyMap");
 		}
+		
 	}
 
 	/**
@@ -106,6 +112,23 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection()); 
 		return db.executeSelect(sql.toString(), null, new GenericVO());
+	}
+	
+	/**
+	 * selects the existing attribute groups
+	 * @return
+	 */
+	public List<GenericVO> getAttributeGroups(){
+		log.debug("#################################gettting groups ");
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select attribute_group_cd as key, group_nm as value from ");
+		sql.append(getCustomSchema()).append("wsla_attribute_group order by group_nm");
+	
+		DBProcessor db = new DBProcessor(getDBConnection());
+		List<GenericVO> data = db.executeSelect(sql.toString(), null, new GenericVO());
+				log.debug("##########################size " + data.size());
+		return data;
+		
 	}
 	
 	/**
