@@ -44,6 +44,7 @@ public class ProductVO extends BeanDataVO {
 	private int warrantyDays;
 	private int setFlag;
 	private int activeFlag;
+	private double msrpCostNo;
 	private Date createDate;
 	private Date updateDate;
 
@@ -332,5 +333,14 @@ public class ProductVO extends BeanDataVO {
 
 	public void setActiveFlag(int activeFlag) {
 		this.activeFlag = activeFlag;
+	}
+
+	@Column(name="msrp_cost_no")
+	public double getMsrpCostNo() {
+		return msrpCostNo;
+	}
+
+	public void setMsrpCostNo(double msrpCostNo) {
+		this.msrpCostNo = msrpCostNo;
 	}
 }

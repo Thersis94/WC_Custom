@@ -14,6 +14,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -52,7 +53,8 @@ public class ProductMasterAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String productId = req.getParameter("productId");
 		String providerId = req.getParameter("providerId");
-		setModuleData(getProducts(productId, providerId, new BSTableControlVO(req, ProductVO.class)));
+		Integer setFlag = req.hasParameter("setFlag") ? Convert.formatInteger(req.getParameter("setFlag")) : null;
+		setModuleData(getProducts(productId, providerId, setFlag, new BSTableControlVO(req, ProductVO.class)));
 	}
 
 
@@ -79,7 +81,7 @@ public class ProductMasterAction extends SBActionAdapter {
 	 * @param bst
 	 * @return
 	 */
-	public GridDataVO<ProductVO> getProducts(String productId, String providerId, BSTableControlVO bst) {
+	public GridDataVO<ProductVO> getProducts(String productId, String providerId, Integer setFlag, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select pm.*, p.provider_nm from ").append(schema).append("wsla_product_master pm ");
@@ -106,6 +108,11 @@ public class ProductMasterAction extends SBActionAdapter {
 		if (!StringUtil.isEmpty(providerId)) {
 			sql.append("and pm.provider_id=? ");
 			params.add(providerId);
+		}
+		
+		if (setFlag != null) {
+			sql.append("and pm.set_flg=? ");
+			params.add(setFlag);
 		}
 
 		sql.append(bst.getSQLOrderBy("pm.product_nm",  "asc"));
