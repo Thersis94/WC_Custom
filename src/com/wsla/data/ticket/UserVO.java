@@ -40,6 +40,9 @@ public class UserVO extends BeanDataVO {
 	private String lastName;
 	private String email;
 	private String locale;
+	private String roleId;
+	private String profileRoleId;
+	private String roleName;
 	private int activeFlag;
 	private Date createDate;
 	private Date updateDate;
@@ -122,6 +125,30 @@ public class UserVO extends BeanDataVO {
 	@Column(name="locale_txt")
 	public String getLocale() {
 		return locale;
+	}
+
+	/**
+	 * @return the roleId
+	 */
+	@Column(name="role_id", isReadOnly=true)
+	public String getRoleId() {
+		return roleId;
+	}
+
+	/**
+	 * @return the roleName
+	 */
+	@Column(name="role_nm", isReadOnly=true)
+	public String getRoleName() {
+		return roleName;
+	}
+
+	/**
+	 * @return the profileRoleId
+	 */
+	@Column(name="profile_role_id", isReadOnly=true)
+	public String getProfileRoleId() {
+		return profileRoleId;
 	}
 
 	/**
@@ -218,5 +245,26 @@ public class UserVO extends BeanDataVO {
 		this.locale = locale;
 	}
 
+	/**
+	 * @param roleId the roleId to set
+	 */
+	public void setRoleId(String roleId) {
+		this.roleId = roleId;
+	}
+
+	/**
+	 * @param roleName the roleName to set
+	 */
+	public void setRoleName(String roleName) {
+		this.roleName = roleName;
+	}
+
+	/**
+	 * @param profileRoleId the profileRoleId to set
+	 */
+	public void setProfileRoleId(String profileRoleId) {
+		this.profileRoleId = profileRoleId;
+	}
+	
 }
 

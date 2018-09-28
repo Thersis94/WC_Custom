@@ -3,6 +3,7 @@ package com.wsla.action;
 // JDK 1.8.x
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +17,8 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.data.provider.ProviderType;
 // WSLA Libs
@@ -57,7 +60,10 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("oem", new GenericVO("getOEMs", Boolean.FALSE));
 		keyMap.put("attributeGroupCode", new GenericVO("getAttributeGroups", Boolean.FALSE));
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
-		
+		keyMap.put("role", new GenericVO("getOrgRoles", Boolean.TRUE));
+		keyMap.put("locale", new GenericVO("getLocales", Boolean.FALSE));
+		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
+		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
 	}
 
 	/**
@@ -82,15 +88,19 @@ public class SelectLookupAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("look up ret called");
 		String listType = req.getStringParameter(SELECT_KEY);
-
+		
 		// @TODO Add language conversion
 		if (keyMap.containsKey(listType)) {
 			try {
 				GenericVO vo = keyMap.get(listType);
-				Boolean useRequest = Convert.formatBoolean(vo.getValue());
-				Method method = this.getClass().getMethod(vo.getKey().toString());
-				if (useRequest) putModuleData(method.invoke(this, req));
-				else putModuleData(method.invoke(this));
+				
+				if (Convert.formatBoolean(vo.getValue())) {
+					Method method = this.getClass().getMethod(vo.getKey().toString(), req.getClass());
+					putModuleData(method.invoke(this, req));
+				} else {
+					Method method = this.getClass().getMethod(vo.getKey().toString());
+					putModuleData(method.invoke(this));
+				}
 
 			} catch (Exception e) {
 				log.error("Unable to retrieve list: " + listType, e);
@@ -143,6 +153,22 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		return yesNo;
 	}
+	
+	/**
+	 * Returns the list of roles for the WSLA org
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getOrgRoles(ActionRequest req) {
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		
+		StringBuilder sql = new StringBuilder(64);
+		sql.append("select role_id as key, role_nm as value from role ");
+		sql.append("where organization_id = ? or role_id = '100' order by role_nm");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), Arrays.asList(site.getOrganizationId()), new GenericVO());
+	}
 
 	/**
 	 * Load a list of OEMs from the ProviderAction
@@ -169,5 +195,43 @@ public class SelectLookupAction extends SBActionAdapter {
 		Collections.sort(data);
 
 		return data;
+	}
+	
+	/**
+	 * Gets the supported locales for the app
+	 * @return
+	 */
+	public List<GenericVO> getLocales() {
+		List<GenericVO> data = new ArrayList<>(8);
+		data.add(new GenericVO("en_US", "US English"));
+		data.add(new GenericVO("es_MX", "MX Spanish"));
+		
+		return data;
+	}
+	
+	/**
+	 * Gets the supported genders for the app
+	 * @return
+	 */
+	public List<GenericVO> getGenders() {
+		List<GenericVO> data = new ArrayList<>(8);
+		data.add(new GenericVO("F", "Female"));
+		data.add(new GenericVO("M", "Male"));
+		
+		return data;
+	}
+	
+	/**
+	 * Retruns a list of user prefixes
+	 * @return
+	 */
+	public List<GenericVO> getPrefix() {
+		List<GenericVO> selectList = new ArrayList<>(8);
+        selectList.add(new GenericVO("Mr.", "Mr."));
+        selectList.add(new GenericVO("Mrs.", "Mrs."));
+        selectList.add(new GenericVO("Ms", "Ms."));
+        selectList.add(new GenericVO("Miss", "Miss"));
+		
+		return selectList;
 	}
 }
