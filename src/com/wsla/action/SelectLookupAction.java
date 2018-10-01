@@ -129,14 +129,14 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getAttributeGroups(){
-		log.debug("#################################gettting groups ");
+		log.debug("getting groups ");
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select attribute_group_cd as key, group_nm as value from ");
 		sql.append(getCustomSchema()).append("wsla_attribute_group order by group_nm");
 	
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<GenericVO> data = db.executeSelect(sql.toString(), null, new GenericVO());
-				log.debug("##########################size " + data.size());
+				log.debug("size " + data.size());
 		return data;
 		
 	}

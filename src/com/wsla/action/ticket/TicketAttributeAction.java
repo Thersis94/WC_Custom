@@ -93,7 +93,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		
 		// Filter by Group code
 		if (! StringUtil.isEmpty(attributeGroupCode)) {
-			sql.append("and attributeGroupCode = ? ");
+			sql.append("and g.attribute_group_cd = ? ");
 			params.add(attributeGroupCode);
 		}
 		
@@ -125,15 +125,28 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("ticket attribute build called. ");
 		TicketAttributeVO tvo = new TicketAttributeVO(req);
+		boolean isInsert = Convert.formatBoolean(req.getParameter("isInsert"));
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
-			db.save(tvo);
+			if(isInsert) {
+				db.insert(tvo);
+			}else {
+				String oldId = StringUtil.checkVal(req.getParameter("origAttributeCode"));
+				
+				if ( ! oldId.equals(tvo.getAttributeCode())) {
+					TicketAttributeVO old = new TicketAttributeVO();
+					old.setAttributeCode(oldId);
+					db.delete(old);
+					db.insert(tvo);
+				}else {
+					db.update(tvo);
+				}
+			}
+			
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save provider infromation", e);
 		}
-		
 	}
 
 }
