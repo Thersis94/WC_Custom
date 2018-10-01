@@ -59,6 +59,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("providerType", new GenericVO("getProviderTypes", Boolean.FALSE));
 		keyMap.put("oem", new GenericVO("getOEMs", Boolean.FALSE));
 		keyMap.put("attributeGroupCode", new GenericVO("getAttributeGroups", Boolean.FALSE));
+		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
 		keyMap.put("role", new GenericVO("getOrgRoles", Boolean.TRUE));
 		keyMap.put("locale", new GenericVO("getLocales", Boolean.FALSE));
@@ -171,14 +172,16 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Load a list of OEMs from the ProviderAction
+	 * Load a list of Providers from the ProviderAction.  Must pass in the 
+	 * ProviderType to determine which type to retrieve.  If providerType is not passed, 
+	 * default to OEM
 	 * @return
 	 */
-	public List<GenericVO> getOEMs() {
-		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(ProviderType.OEM);
+	public List<GenericVO> getProviders(ActionRequest req) {
+		ProviderType pt = ProviderType.valueOf(req.getStringParameter("providerType", ProviderType.OEM.toString()));
+		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt);
 	}
-
-
+	
 	/**
 	 * Returns a list of status codes and their descriptions
 	 * @return
