@@ -1,24 +1,31 @@
 package com.wsla.action.ticket;
 
 // JDK 1.8.x
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // SMT Base Libs 3.x
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.SiteVO;
+
 // WC Libs 3.x
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+
 // WSLA Libs
 import com.wsla.action.BasePortalAction;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.TicketAssignmentVO;
+import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
@@ -68,6 +75,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.info("Saving Tickets ....");
+		
 		if(StringUtil.isEmpty(req.getParameter("ticketId"))) {
 			try {
 				putModuleData(createTicket(req));
@@ -99,7 +107,7 @@ public class TicketOverviewAction extends BasePortalAction {
 		TicketLedgerVO ledger = addLedger(req, LedgerSummary.CALL_RECVD.summary);
 		
 		// Add Data Attributes
-		assignDataAttributes(ticket);
+		assignDataAttributes(ticket, ledger);
 		
 		return ticket;
 	}
@@ -127,9 +135,52 @@ public class TicketOverviewAction extends BasePortalAction {
 		db.save(tass);
 	}
 	
-	
-	public void assignDataAttributes(TicketVO vo) {
+	/**
+	 * Assigns
+	 * @param vo
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void assignDataAttributes(TicketVO vo, TicketLedgerVO ledger) 
+	throws InvalidDataException, DatabaseException {
+		Map<String, String> ids = getTicketDataIds(vo.getTicketId());
 		
+		for (TicketDataVO data : vo.getTicketData()) {
+			
+			// Assign the ticket id as it may or not be present when creating the 
+			// Data map
+			data.setTicketId(vo.getTicketId());
+			
+			// Add the ledger id
+			data.setLedgerEntryId(ledger.getLedgerEntryId());
+			
+			// Get the data entry id if empty and assign if it exists
+			if (StringUtil.isEmpty(data.getDataEntryId()) && ids.containsKey(data.getAttributeCode())) 
+				data.setDataEntryId(ids.get(data.getAttributeCode()));
+			
+			// Save the attribute data
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			db.save(data);
+		}
+	}
+	
+	/**
+	 * Gets a listing of the data entry ids to the attribute code.  Needed to ensure
+	 * the ticket data can be updated if it exists
+	 * @param ticketId
+	 * @return Map of attribute code as the key and the data entry id as the value
+	 */
+	private Map<String, String> getTicketDataIds(String ticketId) {
+		StringBuilder sql = new StringBuilder(64);
+		sql.append("select attribute_cd as key, data_entry_id as value from ");
+		sql.append(getCustomSchema()).append("wsla_ticket_data where ticketId = ?");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<GenericVO> data = db.executeSelect(sql.toString(), Arrays.asList(ticketId), new GenericVO());
+		Map<String, String> dataMap = new HashMap<>();
+		for(GenericVO ele : data) { dataMap.put((String)ele.getKey(), (String)ele.getValue()); }
+		
+		return dataMap;
 	}
 	
 	/**

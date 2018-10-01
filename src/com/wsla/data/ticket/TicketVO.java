@@ -85,7 +85,9 @@ public class TicketVO extends BeanDataVO {
 	
 	/**
 	 * Assigns any request parameters with the appropriate attribute prefix
-	 * to the ticket attribute collection
+	 * to the ticket attribute collection.  Note, on new ticket create, the ticketId 
+	 * will not be assigned as it does not exist in the req object.  Needs to be manually
+	 * added before the info is saved
 	 * @param req
 	 * @param ledger
 	 */
