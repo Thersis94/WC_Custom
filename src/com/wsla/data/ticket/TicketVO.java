@@ -3,6 +3,7 @@ package com.wsla.data.ticket;
 // JDK 1.8.x
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -10,6 +11,7 @@ import java.util.List;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 
@@ -33,6 +35,9 @@ public class TicketVO extends BeanDataVO {
 	 */
 	private static final long serialVersionUID = -288262467687670031L;
 	
+	
+	public static final String ATTRIBUTE_PREFIX = "attr_";
+	
 	// Member Variables
 	private String ticketId;
 	private String ticketIdText;
@@ -44,7 +49,7 @@ public class TicketVO extends BeanDataVO {
 	private Date updateDate;
 	
 	// Bean Sub-Element
-	private List<TicketDataVO> data = new ArrayList<>(32);
+	private List<TicketDataVO> ticketData = new ArrayList<>(32);
 	private List<TicketAssignmentVO> assignments = new ArrayList<>();
 	private List<TicketLedgerVO> timeline = new ArrayList<>();
 	
@@ -60,6 +65,15 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public TicketVO(ActionRequest req) {
 		super(req);
+		setAttributesFromReq(req, null);
+	}
+	
+	/**
+	 * @param req
+	 */
+	public TicketVO(ActionRequest req, TicketLedgerVO ledger) {
+		super(req);
+		setAttributesFromReq(req, ledger);
 	}
 
 	/**
@@ -67,6 +81,26 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public TicketVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Assigns any request parameters with the appropriate attribute prefix
+	 * to the ticket attribute collection
+	 * @param req
+	 * @param ledger
+	 */
+	protected void setAttributesFromReq(ActionRequest req, TicketLedgerVO ledger) {
+		List<String> names = Collections.list(req.getAttributeNames());
+		for(String name : names) {
+			if (StringUtil.checkVal(name).startsWith(ATTRIBUTE_PREFIX)) {
+				
+				TicketDataVO data = new TicketDataVO();
+				data.setTicketId(getTicketId());
+				data.setAttributeCode(name);
+				data.setValue(req.getParameter(name));
+				if (ledger != null) data.setLedgerEntryId(ledger.getLedgerEntryId());
+			}
+		}
 	}
 
 	/**
@@ -136,8 +170,8 @@ public class TicketVO extends BeanDataVO {
 	/**
 	 * @return the data
 	 */
-	public List<TicketDataVO> getData() {
-		return data;
+	public List<TicketDataVO> getTicketData() {
+		return ticketData;
 	}
 
 	/**
@@ -221,16 +255,16 @@ public class TicketVO extends BeanDataVO {
 	 * @param data the data to set
 	 */
 	@BeanSubElement
-	public void setData(List<TicketDataVO> data) {
-		this.data = data;
+	public void setTicketData(List<TicketDataVO> ticketData) {
+		this.ticketData = ticketData;
 	}
 
 	/**
 	 * @param data the data to set
 	 */
-	public void addData(TicketDataVO ticketData) {
+	public void addTicketData(TicketDataVO data) {
 		if (ticketData != null)
-			this.data.add(ticketData);
+			this.ticketData.add(data);
 	}
 
 	/**
