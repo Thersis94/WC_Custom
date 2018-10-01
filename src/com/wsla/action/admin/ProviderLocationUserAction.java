@@ -1,11 +1,10 @@
 package com.wsla.action.admin;
 
+// JDK 1.8.x
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-// JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 //SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -14,25 +13,17 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
-import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.SBUserRole;
-import com.smt.sitebuilder.security.SecurityController;
-import com.smt.sitebuilder.security.UserLogin;
+import com.wsla.action.BasePortalAction;
 import com.wsla.data.provider.ProviderUserVO;
-import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: ProviderLocationUserAction.java
@@ -47,7 +38,7 @@ import com.wsla.data.ticket.UserVO;
  * @updates:
  ****************************************************************************/
 
-public class ProviderLocationUserAction extends SBActionAdapter {
+public class ProviderLocationUserAction extends BasePortalAction {
 
 	/**
 	 * 
@@ -150,111 +141,25 @@ public class ProviderLocationUserAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		ProviderUserVO user = new ProviderUserVO(req);
+		UserDataVO profile = new UserDataVO(req);
+		user.setProfile(profile);
 		
 		try {
-			this.saveUser(req);
+			this.saveUser(site, user, true, false);
+			
+			// if the user is the default, reset the other defaults to not the default contact
+			if (user.getPrimaryContactFlag() == 1) updateDefaultContact(user);
+			
+			// Update / add the wsla provider user
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			db.save(user);
+			
 		} catch(Exception e) {
 			log.error("Unable to save provider user", e);
 			putModuleData("", 0, false, AdminConstants.KEY_ERROR_MESSAGE, true);
 		}
-	}
-	
-	/**
-	 * Saves the profile, role, user and provider user information
-	 * @param req
-	 * @throws DatabaseException
-	 * @throws InvalidDataException
-	 * @throws com.siliconmtn.db.util.DatabaseException
-	 */
-	public void saveUser(ActionRequest req) 
-	throws Exception {
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		ProviderUserVO user = new ProviderUserVO(req);
-		UserDataVO profile = new UserDataVO(req);
-		Map<String, Object> fieldMap = getProfileExtended(profile, user, pm);
-
-		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-
-		// Update / add the profile.  if new, allow communications to them
-		if (StringUtil.isEmpty(profile.getProfileId())) {
-			pm.updateProfile(profile, getDBConnection());
-		} else {
-			pm.updateProfilePartially(fieldMap, profile, getDBConnection());
-		}
-		
-		// Update / add the role
-		this.saveRole(req, site, profile, user.getActiveFlag() == 1);
-		
-		// Update / add the wsla user
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
-		db.save((UserVO) user);
-		
-		// Update / add the wsla provider user
-		db.save(user);
-		
-		// if the user is the default, reset the other defaults to not the default contact
-		if (user.getPrimaryContactFlag() == 1) updateDefaultContact(user);
-		
-	}
-	
-	/**
-	 * Adds the auth record for a new user.  Checks for the existence (in case 
-	 * there is a record for that user) 
-	 * @param user
-	 * @return
-	 * @throws DatabaseException
-	 */
-	public String addAuthenticationRecord(ProviderUserVO user) throws DatabaseException {
-		UserLogin login = new UserLogin(getDBConnection(), getAttributes());
-		String authId = login.checkAuth(user.getEmail());
-		if (StringUtil.isEmpty(authId))
-			authId = login.saveAuthRecord(null, user.getEmail(), RandomAlphaNumeric.generateRandom(10), 1);
-		
-		return authId;
-	}
-	
-	/**
-	 * Processes the extra data for the profile
-	 * @param profile
-	 * @param user
-	 * @return
-	 * @throws DatabaseException 
-	 */
-	protected Map<String, Object> getProfileExtended(UserDataVO profile, ProviderUserVO user, ProfileManager pm) 
-	throws DatabaseException {
-		profile.setCountryCode(user.getLocale().substring(3));
-		profile.setLanguage(user.getLocale().substring(0,2));
-		profile.setEmailAddress(user.getEmail());
-		profile.addPhone(new PhoneVO(PhoneVO.MOBILE_PHONE, user.getMobilePhoneNumber(), profile.getCountryCode()));
-		profile.addPhone(new PhoneVO(PhoneVO.WORK_PHONE, user.getWorkPhoneNumber(), profile.getCountryCode()));
-		profile.setAllowCommunication(1);
-		
-		// Check to see if the user already exists in the system
-		if (StringUtil.isEmpty(profile.getProfileId())) {
-			profile.setProfileId(pm.checkProfile(profile, getDBConnection()));
-		}
-		
-		// If the profile is new, go get a new record
-		if (StringUtil.isEmpty(profile.getAuthenticationId())) {
-			profile.setAuthenticationId(addAuthenticationRecord(user));
-		}
-		
-		// Set the fields to be updated
-		Map<String, Object> fieldMap = profile.getDataMap();
-		fieldMap.put("LANGUAGE_CD", profile.getLanguage());
-		fieldMap.remove("ADDRESS2_TXT");
-		fieldMap.remove("ADDRESS_TXT");
-		fieldMap.remove("BIRTH_YEAR_NO");
-		fieldMap.remove("CASS_VALIDATE_FLG");
-		fieldMap.remove("CITY_NM");
-		fieldMap.remove("LATITUDE_NO");
-		fieldMap.remove("LONGITUDE_NO");
-		fieldMap.remove("MAIN_PHONE_TXT");
-		fieldMap.remove("MIDDLE_NM");
-		fieldMap.remove("PASSWORD_TXT");
-		fieldMap.remove("VALID_ADDRESS_FLG");
-		
-		return fieldMap;
 	}
 	
 	/**
@@ -272,30 +177,6 @@ public class ProviderLocationUserAction extends SBActionAdapter {
 			ps.setString(2, user.getUserId());
 			ps.executeUpdate();
 		}
-	}
-	
-	/**
-	 * Updates or saves the profile role value for the user
-	 * @param req
-	 * @param site
-	 * @param profile
-	 * @param active
-	 * @throws DatabaseException
-	 */
-	protected void saveRole(ActionRequest req, SiteVO site, UserDataVO profile, boolean active) 
-	throws DatabaseException {
-
-		SBUserRole role = new SBUserRole();
-		role.setRoleName("");
-		role.setOrganizationId(site.getOrganizationId());
-		role.setSiteId(site.getSiteId());
-		role.setRoleId(req.getParameter("roleId"));
-		role.setProfileId(profile.getProfileId());
-		role.setProfileRoleId(req.getParameter("profileRoleId"));
-		role.setStatusId(active ? SecurityController.STATUS_ACTIVE : SecurityController.STATUS_DISABLED);
-		
-		ProfileRoleManager prm = new ProfileRoleManager();
-		prm.addRole(role, getDBConnection());
 	}
 }
 
