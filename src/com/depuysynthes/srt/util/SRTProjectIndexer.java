@@ -166,10 +166,6 @@ public class SRTProjectIndexer  extends SMTAbstractIndex {
 					p.addMakeFromPartNo(rs.getString("make_from_part_nos"));
 					p.addDirectShipEligible(rs.getString("direct_ship_eligible"));
 					p.addObsoleteFlags(rs.getString("obsolete_flg"));
-					p.setOnHoldFlg(rs.getInt("project_hold_flg"));
-					p.setCancelledFlg(rs.getInt("project_cancelled_flg"));
-					p.setMakeFromOrderNo(rs.getString("make_from_order_no"));
-					p.setFromSratch(rs.getInt("make_from_scratch"));
 					p.setSummary(p.toString());
 				}
 			}
