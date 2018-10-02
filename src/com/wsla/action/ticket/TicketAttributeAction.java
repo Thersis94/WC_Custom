@@ -134,6 +134,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 			}else {
 				String oldId = StringUtil.checkVal(req.getParameter("origAttributeCode"));
 				
+				log.debug("333333333333333 old id " + oldId + " new id " + tvo.getAttributeCode());
 				if ( ! oldId.equals(tvo.getAttributeCode())) {
 					TicketAttributeVO old = new TicketAttributeVO();
 					old.setAttributeCode(oldId);
