@@ -14,6 +14,8 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.SiteVO;
 
@@ -23,6 +25,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 // WSLA Libs
 import com.wsla.action.BasePortalAction;
+import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketDataVO;
@@ -97,14 +100,19 @@ public class TicketOverviewAction extends BasePortalAction {
 		
 		// Add the core information
 		TicketVO ticket = new TicketVO(req);
+		String slug = RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS);
+		ticket.setTicketIdText(slug.toUpperCase());
 		saveCoreTicket(ticket);
+		req.setParameter("ticketId", ticket.getTicketId());
 		
 		// Add User and assignment to the ticket
 		UserVO user = new UserVO(req);
+		if (user.getProfile() == null) user.setProfile(new UserDataVO(req));
 		this.saveUser(site, user, false, true);
+		ticket.addAssignment(manageTicketAssignment(user, ticket.getTicketId(), null, 0));
 
 		// Add an item to the ledger
-		TicketLedgerVO ledger = addLedger(req, LedgerSummary.CALL_RECVD.summary);
+		TicketLedgerVO ledger = addLedger(user.getUserId(), req, LedgerSummary.CALL_RECVD.summary);
 		
 		// Add Data Attributes
 		assignDataAttributes(ticket, ledger);
@@ -122,17 +130,20 @@ public class TicketOverviewAction extends BasePortalAction {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public void manageTicketAssignment(String tId, String uId, String lId, int owner) 
+	public TicketAssignmentVO manageTicketAssignment(UserVO user, String tId, String lId, int owner) 
 	throws InvalidDataException, DatabaseException {
 		
 		TicketAssignmentVO tass = new TicketAssignmentVO();
-		tass.setUserId(uId);
+		tass.setUserId(user.getUserId());
 		tass.setTicketId(tId);
 		tass.setOwnerFlag(owner);
 		tass.setLocationId(lId);
+		tass.setUser(user);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(tass);
+		
+		return tass;
 	}
 	
 	/**
@@ -144,7 +155,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	public void assignDataAttributes(TicketVO vo, TicketLedgerVO ledger) 
 	throws InvalidDataException, DatabaseException {
 		Map<String, String> ids = getTicketDataIds(vo.getTicketId());
-		
+
 		for (TicketDataVO data : vo.getTicketData()) {
 			
 			// Assign the ticket id as it may or not be present when creating the 
@@ -173,7 +184,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	private Map<String, String> getTicketDataIds(String ticketId) {
 		StringBuilder sql = new StringBuilder(64);
 		sql.append("select attribute_cd as key, data_entry_id as value from ");
-		sql.append(getCustomSchema()).append("wsla_ticket_data where ticketId = ?");
+		sql.append(getCustomSchema()).append("wsla_ticket_data where ticket_id = ?");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<GenericVO> data = db.executeSelect(sql.toString(), Arrays.asList(ticketId), new GenericVO());

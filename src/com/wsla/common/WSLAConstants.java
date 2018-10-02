@@ -22,5 +22,14 @@ public class WSLAConstants {
 		super();
 	}
 
+	/**
+	 * All ticket data attributes will be prefixed with this value
+	 */
+	public static final String ATTRIBUTE_PREFIX = "attr_";
+	
+	/**
+	 * Number of random chars for the ticket text 
+	 */
+	public static final int TICKET_RANDOM_CHARS = 8;
 }
 

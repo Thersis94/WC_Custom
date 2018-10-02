@@ -15,6 +15,9 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 
+// WSLA Libs
+import com.wsla.common.WSLAConstants;
+
 /****************************************************************************
  * <b>Title</b>: TicketVO.java
  * <b>Project</b>: WC_Custom
@@ -34,10 +37,7 @@ public class TicketVO extends BeanDataVO {
 	 * 
 	 */
 	private static final long serialVersionUID = -288262467687670031L;
-	
-	
-	public static final String ATTRIBUTE_PREFIX = "attr_";
-	
+		
 	// Member Variables
 	private String ticketId;
 	private String ticketIdText;
@@ -82,7 +82,7 @@ public class TicketVO extends BeanDataVO {
 	public TicketVO(ResultSet rs) {
 		super(rs);
 	}
-	
+
 	/**
 	 * Assigns any request parameters with the appropriate attribute prefix
 	 * to the ticket attribute collection.  Note, on new ticket create, the ticketId 
@@ -92,15 +92,16 @@ public class TicketVO extends BeanDataVO {
 	 * @param ledger
 	 */
 	protected void setAttributesFromReq(ActionRequest req, TicketLedgerVO ledger) {
-		List<String> names = Collections.list(req.getAttributeNames());
+		List<String> names = Collections.list(req.getParameterNames());
 		for(String name : names) {
-			if (StringUtil.checkVal(name).startsWith(ATTRIBUTE_PREFIX)) {
-				
+			if (StringUtil.checkVal(name).startsWith(WSLAConstants.ATTRIBUTE_PREFIX)) {
 				TicketDataVO data = new TicketDataVO();
 				data.setTicketId(getTicketId());
 				data.setAttributeCode(name);
 				data.setValue(req.getParameter(name));
 				if (ledger != null) data.setLedgerEntryId(ledger.getLedgerEntryId());
+				
+				addTicketData(data);
 			}
 		}
 	}
@@ -232,13 +233,6 @@ public class TicketVO extends BeanDataVO {
 		this.statusCode = statusCode;
 	}
 	
-	/**
-	 * @param statusCode the statusCode to set
-	 */
-	public void setStatusCode(String strStatusCode) {
-		this.statusCode = StatusCode.valueOf(strStatusCode);
-	}
-
 	/**
 	 * @param createDate the createDate to set
 	 */
