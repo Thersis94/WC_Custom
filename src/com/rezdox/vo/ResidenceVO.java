@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.rezdox.action.RezDoxUtils;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -315,11 +316,19 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	}
 
 	/**
-	 * returns a business-decision calculation of  lastSoldPrice + improvements (fractal)
+	 * returns a business-decision calculation of  zestimate + improvements (fractal math occurs in the SQL query)
 	 * @return
 	 */
 	public double getRealMarketValue() {
 		return Convert.formatDouble(getZestimateNo()) + getProjectsTotal();
+	}
+
+	/**
+	 * returns a business-decision calculation of  zestimate + improvements (fractal)
+	 * @return
+	 */
+	public double getRealMarketValueDashboard() {
+		return Convert.formatDouble(getZestimateNo()) + (RezDoxUtils.IMPROVEMENTS_VALUE_COEF*getProjectsTotal());
 	}
 
 	@Column(name="inventory_total", isReadOnly=true)

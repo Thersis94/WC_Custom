@@ -151,6 +151,8 @@ public class PostcardEmailer {
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
 			mail.addCC("vplatt@mediaspace.com");
+			mail.addCC("dhaas@mediaspace.com");
+			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -247,6 +249,8 @@ public class PostcardEmailer {
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
 			mail.addCC("vplatt@mediaspace.com");
+			mail.addCC("dhaas@mediaspace.com");
+			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 
 			mail.setSubject(subject.toString());
@@ -309,6 +313,7 @@ public class PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress()); //Coordinator
 			mail.addCC("Brittany.Neff@hmktgroup.com");
+			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 			mail.addCC("klemon1@its.jnj.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC(site.getAdminEmail());
@@ -470,6 +475,7 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addCC("Brittany.Neff@hmktgroup.com");
+			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.addCC("klemon1@ITS.JNJ.com");
@@ -522,6 +528,8 @@ public class PostcardEmailer {
 			mail.addCC("emcphail@mediaspace.com");
 			mail.addCC("krogalski@mediaspace.com");
 			mail.addCC("vplatt@mediaspace.com");
+			mail.addCC("dhaas@mediaspace.com");
+			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
@@ -646,6 +654,7 @@ public class PostcardEmailer {
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
+			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 
 			//Send Message
 			MessageSender mailer = new MessageSender(attributes,dbConn);
@@ -681,6 +690,7 @@ public class PostcardEmailer {
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
+			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);
@@ -715,6 +725,7 @@ public class PostcardEmailer {
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
+			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);
@@ -750,6 +761,7 @@ public class PostcardEmailer {
 			mail.addRecipient(site.getAdminEmail());
 			mail.addCC("klemon1@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
+			mail.addCC("Stephanie.Balsley@hmktgroup.com");
 
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);
