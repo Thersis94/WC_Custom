@@ -23,20 +23,15 @@ import com.siliconmtn.db.orm.Table;
 @Table(name="wsla_product_set")
 public class ProductSetVO extends ProductVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 816517778122169454L;
-	
+
 	// Member Variables
 	private String productSetId;
-	private String partId;
 	private String setId;
+	// Note productId here (partId) is inherited from the superclass.
 	private int quantity;
-	
-	/**
-	 * 
-	 */
+	private String note;
+
 	public ProductSetVO() {
 		super();
 	}
@@ -64,14 +59,6 @@ public class ProductSetVO extends ProductVO {
 	}
 
 	/**
-	 * @return the partId
-	 */
-	@Column(name="product_id")
-	public String getPartId() {
-		return partId;
-	}
-
-	/**
 	 * @return the setId
 	 */
 	@Column(name="set_id")
@@ -87,18 +74,16 @@ public class ProductSetVO extends ProductVO {
 		return quantity;
 	}
 
+	@Column(name="note_txt")
+	public String getNote() {
+		return note;
+	}
+
 	/**
 	 * @param productSetId the productSetId to set
 	 */
 	public void setProductSetId(String productSetId) {
 		this.productSetId = productSetId;
-	}
-
-	/**
-	 * @param partId the partId to set
-	 */
-	public void setPartId(String partId) {
-		this.partId = partId;
 	}
 
 	/**
@@ -115,5 +100,7 @@ public class ProductSetVO extends ProductVO {
 		this.quantity = quantity;
 	}
 
+	public void setNote(String note) {
+		this.note = note;
+	}
 }
-
