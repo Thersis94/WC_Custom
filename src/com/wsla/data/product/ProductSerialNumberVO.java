@@ -23,27 +23,24 @@ import com.siliconmtn.db.orm.Table;
  * @since Sep 15, 2018
  * @updates:
  ****************************************************************************/
-@Table(name="wsla_product_serial_number")
+@Table(name="wsla_product_serial")
 public class ProductSerialNumberVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 4781013861998724814L;
-	
+
 	// Member Variables
-	private String productSerialNumberId;
+	private String productSerialId;
 	private String productId;
 	private String serialNumber;
-	private String userId;
+	private int validatedFlag;
+	private String serialFilePath;
+	private String purchaseFilePath;
 	private Date createDate;
-	
+	private Date retailerDate;
+
 	// Bean Sub-Elements
 	private ProductVO product;
 
-	/**
-	 * 
-	 */
 	public ProductSerialNumberVO() {
 		super();
 	}
@@ -62,12 +59,13 @@ public class ProductSerialNumberVO extends BeanDataVO {
 		super(rs);
 	}
 
+
 	/**
-	 * @return the productSerialNumberId
+	 * @return the productSerialId
 	 */
-	@Column(name="product_serial_number_id", isPrimaryKey=true)
-	public String getProductSerialNumberId() {
-		return productSerialNumberId;
+	@Column(name="product_serial_id", isPrimaryKey=true)
+	public String getProductSerialId() {
+		return productSerialId;
 	}
 
 	/**
@@ -87,19 +85,31 @@ public class ProductSerialNumberVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the userId
-	 */
-	@Column(name="user_id")
-	public String getUserId() {
-		return userId;
-	}
-
-	/**
 	 * @return the createDate
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
 		return createDate;
+	}
+
+	@Column(name="validated_flg")
+	public int getValidatedFlag() {
+		return validatedFlag;
+	}
+
+	@Column(name="serial_file_pth")
+	public String getSerialFilePath() {
+		return serialFilePath;
+	}
+
+	@Column(name="purchase_file_pth")
+	public String getPurchaseFilePath() {
+		return purchaseFilePath;
+	}
+
+	@Column(name="retailer_dt")
+	public Date getRetailerDate() {
+		return retailerDate;
 	}
 
 	/**
@@ -110,10 +120,10 @@ public class ProductSerialNumberVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param productSerialNumberId the productSerialNumberId to set
+	 * @param productSerialId the productSerialId to set
 	 */
-	public void setProductSerialNumberId(String productSerialNumberId) {
-		this.productSerialNumberId = productSerialNumberId;
+	public void setProductSerialId(String productSerialId) {
+		this.productSerialId = productSerialId;
 	}
 
 	/**
@@ -131,17 +141,26 @@ public class ProductSerialNumberVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param userId the userId to set
-	 */
-	public void setUserId(String userId) {
-		this.userId = userId;
-	}
-
-	/**
 	 * @param createDate the createDate to set
 	 */
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
+	}
+
+	public void setValidatedFlag(int validatedFlag) {
+		this.validatedFlag = validatedFlag;
+	}
+
+	public void setSerialFilePath(String serialFilePath) {
+		this.serialFilePath = serialFilePath;
+	}
+
+	public void setPurchaseFilePath(String purchaseFilePath) {
+		this.purchaseFilePath = purchaseFilePath;
+	}
+
+	public void setRetailerDate(Date retailerDate) {
+		this.retailerDate = retailerDate;
 	}
 
 	/**
@@ -152,4 +171,3 @@ public class ProductSerialNumberVO extends BeanDataVO {
 		this.product = product;
 	}
 }
-
