@@ -52,7 +52,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("Ticket Attribute action Retrieve called.");
+		log.trace("Ticket Attribute action Retrieve called.");
 		String attributeCode = req.getParameter("attributeCode");
 		String attributeGroupCode = req.getParameter("attributeGroupCode");
 		boolean hasActiveFlag = false;
@@ -112,19 +112,11 @@ public class TicketAttributeAction  extends SBActionAdapter {
 
 	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void list(ActionRequest req) throws ActionException {
-		log.debug("Ticket Attribute action list called.");
-	}
-	
-	/*
-	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.trace("ticket attribute build called");
 		TicketAttributeVO tvo = new TicketAttributeVO(req);
 		boolean isInsert = Convert.formatBoolean(req.getParameter("isInsert"));
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -134,7 +126,6 @@ public class TicketAttributeAction  extends SBActionAdapter {
 			}else {
 				String oldId = StringUtil.checkVal(req.getParameter("origAttributeCode"));
 				
-				log.debug("333333333333333 old id " + oldId + " new id " + tvo.getAttributeCode());
 				if ( ! oldId.equals(tvo.getAttributeCode())) {
 					TicketAttributeVO old = new TicketAttributeVO();
 					old.setAttributeCode(oldId);

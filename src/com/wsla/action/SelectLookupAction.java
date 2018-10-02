@@ -136,7 +136,6 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getAttributeGroups(){
-		log.debug("getting groups ");
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select attribute_group_cd as key, group_nm as value from ");
 		sql.append(getCustomSchema()).append("wsla_attribute_group order by group_nm");
