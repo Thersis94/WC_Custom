@@ -54,6 +54,13 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 	private static final String HAS_FD = "HAS_FD";
 	private static final String HAS_GA = "HAS_GA";
 	private static final String HUBSPOT = "HUBSPOT";
+	private static final String ACCT_START = "ACCT_START";
+	private static final String ACCT_EXP = "ACCT_EXP";
+	private static final String ACCT_STAT = " ACCT_STA";
+	private static final String ACCT_TYPE = "ACCT_TYPE";
+	private static final String ACCT_CLASS = "ACCT_CLASS";
+	private static final String USER_LIC = "USER_LIC";
+	
 
 	/**
 	* Constructor
@@ -122,12 +129,18 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 					row.put(USER_ID, user.getUserId());
 					row.put(EMAIL,user.getEmailAddress());
 					row.put(FULL_NM, user.getFullName());
+					row.put(USER_LIC, user.getLicenseName());
 				}
 				row.put(HAS_FD, checkFlag(acct.getFdAuthFlg(),user.getFdAuthFlg())? "True":"");
 				row.put(HAS_GA, checkFlag(acct.getGaAuthFlg(),user.getGaAuthFlg())? "True":"");
 				// loop hierarchy.
 				addPermissions(row, acct.getPermissions());
 				row.put(HUBSPOT, buildHubSpot(user, acct));
+				row.put(ACCT_START, acct.getStartDate());
+				row.put(ACCT_EXP, acct.getExpirationDate());
+				row.put(ACCT_STAT, acct.getStatusName());
+				row.put(ACCT_TYPE, acct.getTypeName());
+				row.put(ACCT_CLASS, acct.getClassificationName());
 				rows.add(row);
 				
 				// Only build one row if we aren't showing user data
@@ -164,14 +177,21 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 			headerMap.put(USER_ID,"User ID");
 			headerMap.put(EMAIL,"Username");
 			headerMap.put(FULL_NM,"User Full Name");
+			headerMap.put(USER_LIC,"User License Type");
 		}
 		headerMap.put(HAS_FD,"Has FD");
+		headerMap.put(HAS_GA,"Has GA");
 		headerMap.put(HAS_GA,"Has GA");
 		// loop the first account's SmarttrakTree to get the hierarchy
 		if (! accounts.isEmpty()) {
 			addSectionColumnHeaders(headerMap,accounts.get(0).getPermissions());
 		}
 		headerMap.put(HUBSPOT, "HubSpot Load");
+		headerMap.put(ACCT_START,"Account Start Date");
+		headerMap.put(ACCT_EXP,"Account Expiration Date");
+		headerMap.put(ACCT_STAT,"Account Status");
+		headerMap.put(ACCT_TYPE,"Account Type");
+		headerMap.put(ACCT_CLASS,"Account Classification");
 		return headerMap;
 	}
 	
