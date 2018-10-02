@@ -65,7 +65,7 @@ public class USOrthoUserImport extends SRTUserImport {
 
 	protected StringBuilder buildSalesRosterQuery() {
 		StringBuilder sql = new StringBuilder(1000);
-		sql.append("select ");
+		sql.append("select distinct ");
 		sql.append("null as USER_NAME, ");
 		sql.append("sales_first_nm as first_nm, ");
 		sql.append("sales_last_nm as last_nm, ");
@@ -88,7 +88,7 @@ public class USOrthoUserImport extends SRTUserImport {
 		sql.append("'US_ORTHO' as OP_CO_ID, ");
 		sql.append("0 as is_admin, ");
 		sql.append("'US_ORTHO_REP' as ACCOUNT_NO, ");
-		sql.append("null as CO_ROSTER_ID, ");
+		sql.append("email_address_txt as CO_ROSTER_ID, ");
 		sql.append("'replace' as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.us_ortho_2014_2015 ");
 		return sql;
@@ -119,7 +119,7 @@ public class USOrthoUserImport extends SRTUserImport {
 		sql.append("opco as OP_CO_ID, ");
 		sql.append("1 as is_admin, ");
 		sql.append("'US_ORTHO_ADMIN' as ACCOUNT_NO, ");
-		sql.append("null as CO_ROSTER_ID, ");
+		sql.append("email_address_txt as CO_ROSTER_ID, ");
 		sql.append("null as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.us_ortho_team ");
 		return sql;

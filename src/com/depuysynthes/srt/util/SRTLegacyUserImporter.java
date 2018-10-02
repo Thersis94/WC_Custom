@@ -11,7 +11,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
  * <b>Description:</b> Standard SRT User Importer.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 3.3.1
  * @since Jun 18, 2018
@@ -127,7 +127,6 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 		sql.append("concat('SR_', r.id) as CO_ROSTER_ID, ");
 		sql.append("'replace' as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster r ");
-
 		return sql;
 	}
 
