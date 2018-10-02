@@ -60,6 +60,9 @@ public class HomeHistoryAction extends ProjectAction {
 		List<ResidenceVO> resList = loadResidenceList(req);
 		if (StringUtil.isEmpty(resId) && !resList.isEmpty()) {
 			resId = resList.get(0).getResidenceId();
+		} else {
+			//no residences - return
+			return;
 		}
 
 		//make sure session is loaded - this gets used by our <select> list loaders (MyResidences)

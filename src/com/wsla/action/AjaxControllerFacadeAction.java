@@ -10,6 +10,7 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.wsla.action.admin.ProductMasterAction;
+import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.ticket.TicketAttributeAction;
@@ -67,6 +68,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put("providerLocation", ProviderLocationAction.class);
 		actionMap.put(TicketAttributeAction.TICKET_ATTRRIBUTE_TYPE, TicketAttributeAction.class);
 		actionMap.put("productMaster", ProductMasterAction.class);
+		actionMap.put("productSet", ProductSetAction.class);
 		actionMap.put("providerLocationUser", ProviderLocationUserAction.class);
 	}
 

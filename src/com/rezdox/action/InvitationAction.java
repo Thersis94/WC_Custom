@@ -259,7 +259,7 @@ public class InvitationAction extends SBActionAdapter {
 	private List<InvitationVO> retrieveRewardInvites(String emailAddress) {
 		String schema = getCustomSchema();
 		StringBuilder sql = getBaseRetrieveSql(schema);
-		sql.append(DBUtil.WHERE_CLAUSE).append("lower(email_address_txt) = ?  ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("lower(email_address_txt) = ? and status_flg in (1,2)  ");
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		return dbp.executeSelect(sql.toString(), Arrays.asList(emailAddress.trim().toLowerCase()), new InvitationVO());
