@@ -122,7 +122,7 @@ public class ProductMasterAction extends SBActionAdapter {
 			sql.append("and pm.provider_id=? ");
 			params.add(providerId);
 		}
-		
+
 		if (setFlag != null) {
 			sql.append("and pm.set_flg=? ");
 			params.add(setFlag);

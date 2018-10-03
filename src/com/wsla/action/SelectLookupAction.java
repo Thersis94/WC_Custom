@@ -18,10 +18,12 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.action.admin.ProductMasterAction;
+import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.provider.ProviderType;
@@ -51,6 +53,8 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public static final String SELECT_KEY = "selectType";
 
+	private static final String PROVIDER_TYPE = "providerType";
+
 	private static Map<String, GenericVO> keyMap = new HashMap<>(16);
 
 	/**
@@ -60,8 +64,10 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	static {
 		keyMap.put("statusCode", new GenericVO("getStatusCodes", Boolean.FALSE));
-		keyMap.put("providerType", new GenericVO("getProviderTypes", Boolean.FALSE));
+		keyMap.put(PROVIDER_TYPE, new GenericVO("getProviderTypes", Boolean.FALSE));
 		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
+		keyMap.put("oem", new GenericVO("getOems", Boolean.TRUE));
+		keyMap.put("oemParts", new GenericVO("getProviderParts", Boolean.TRUE));
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
 		keyMap.put("role", new GenericVO("getOrgRoles", Boolean.TRUE));
 		keyMap.put("locale", new GenericVO("getLocales", Boolean.FALSE));
@@ -92,12 +98,12 @@ public class SelectLookupAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String listType = req.getStringParameter(SELECT_KEY);
-		
+
 		// @TODO Add language conversion
 		if (keyMap.containsKey(listType)) {
 			try {
 				GenericVO vo = keyMap.get(listType);
-				
+
 				if (Convert.formatBoolean(vo.getValue())) {
 					Method method = this.getClass().getMethod(vo.getKey().toString(), req.getClass());
 					putModuleData(method.invoke(this, req));
@@ -121,23 +127,23 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("select provider_type_id as key, type_cd as value from ");
 		sql.append(getCustomSchema()).append("wsla_provider_type order by type_cd");
 
-		DBProcessor db = new DBProcessor(getDBConnection()); 
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
-	
+
 	/**
 	 * Load a yes no list
 	 * @return
 	 */
 	public List<GenericVO> getYesNoLookup() {
 		List<GenericVO> yesNo = new ArrayList<>();
-		
+
 		yesNo.add(new GenericVO("1","Yes"));
 		yesNo.add(new GenericVO("0","No"));
-		
+
 		return yesNo;
 	}
-	
+
 	/**
 	 * Returns the list of roles for the WSLA org
 	 * @param req
@@ -145,11 +151,11 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getOrgRoles(ActionRequest req) {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-		
+
 		StringBuilder sql = new StringBuilder(64);
 		sql.append("select role_id as key, role_nm as value from role ");
 		sql.append("where organization_id = ? or role_id = '100' order by role_nm");
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), Arrays.asList(site.getOrganizationId()), new GenericVO());
 	}
@@ -161,10 +167,32 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getProviders(ActionRequest req) {
-		ProviderType pt = ProviderType.valueOf(req.getStringParameter("providerType", ProviderType.OEM.toString()));
+		ProviderType pt = EnumUtil.safeValueOf(ProviderType.class, req.getParameter(PROVIDER_TYPE), ProviderType.OEM);
 		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt);
 	}
-	
+
+
+	/**
+	 * return a list of OEMs - a specific type of providers.  Distinguished from 'getProvider' to avoid coupling in View logic.
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getOems(ActionRequest req) {
+		req.setParameter(PROVIDER_TYPE, ProviderType.OEM.toString());
+		return getProviders(req);
+	}
+
+
+	/**
+	 * load a list of PARTS tied to the given provider (likely an OEM)
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getProviderParts(ActionRequest req) {
+		return new ProductSetAction(getAttributes(), getDBConnection()).listPartsForProvider(req.getParameter("providerId"));
+	}
+
+
 	/**
 	 * Returns a list of status codes and their descriptions
 	 * @return
@@ -182,7 +210,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		return data;
 	}
-	
+
 	/**
 	 * Gets the supported locales for the app
 	 * @return
@@ -191,10 +219,10 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = new ArrayList<>(8);
 		data.add(new GenericVO("en_US", "US English"));
 		data.add(new GenericVO("es_MX", "MX Spanish"));
-		
+
 		return data;
 	}
-	
+
 	/**
 	 * Gets the supported genders for the app
 	 * @return
@@ -203,10 +231,10 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = new ArrayList<>(8);
 		data.add(new GenericVO("F", "Female"));
 		data.add(new GenericVO("M", "Male"));
-		
+
 		return data;
 	}
-	
+
 	/**
 	 * Gets the list of defects adds the 
 	 * @return
@@ -235,11 +263,11 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getPrefix() {
 		List<GenericVO> selectList = new ArrayList<>(8);
-        selectList.add(new GenericVO("Mr.", "Mr."));
-        selectList.add(new GenericVO("Mrs.", "Mrs."));
-        selectList.add(new GenericVO("Ms", "Ms."));
-        selectList.add(new GenericVO("Miss", "Miss"));
-		
+		selectList.add(new GenericVO("Mr.", "Mr."));
+		selectList.add(new GenericVO("Mrs.", "Mrs."));
+		selectList.add(new GenericVO("Ms", "Ms."));
+		selectList.add(new GenericVO("Miss", "Miss"));
+
 		return selectList;
 	}
 	
