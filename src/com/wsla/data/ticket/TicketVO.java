@@ -44,7 +44,10 @@ public class TicketVO extends BeanDataVO {
 	private String ticketName;
 	private String description;
 	private String warrantyProductId;
+	private String productCategoryId;
 	private StatusCode statusCode;
+	private int warrantyValidFlag;
+	private Date purchaseDate;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -178,6 +181,30 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the warrantyValidFlag
+	 */
+	@Column(name="warranty_valid_flg")
+	public int getWarrantyValidFlag() {
+		return warrantyValidFlag;
+	}
+
+	/**
+	 * @return the purchase_dt
+	 */
+	@Column(name="purchase_dt")
+	public Date getPurchaseDate() {
+		return purchaseDate;
+	}
+
+	/**
+	 * @return the productCategoryId
+	 */
+	@Column(name="product_category_id")
+	public String getProductCategoryId() {
+		return productCategoryId;
+	}
+
+	/**
 	 * @return the timeline
 	 */
 	public List<TicketLedgerVO> getTimeline() {
@@ -250,7 +277,6 @@ public class TicketVO extends BeanDataVO {
 	/**
 	 * @param data the data to set
 	 */
-	@BeanSubElement
 	public void setTicketData(List<TicketDataVO> ticketData) {
 		this.ticketData = ticketData;
 	}
@@ -258,6 +284,7 @@ public class TicketVO extends BeanDataVO {
 	/**
 	 * @param data the data to set
 	 */
+	@BeanSubElement
 	public void addTicketData(TicketDataVO data) {
 		if (ticketData != null)
 			this.ticketData.add(data);
@@ -266,7 +293,6 @@ public class TicketVO extends BeanDataVO {
 	/**
 	 * @param assignments the assignments to set
 	 */
-	@BeanSubElement
 	public void setAssignments(List<TicketAssignmentVO> assignments) {
 		this.assignments = assignments;
 	}
@@ -275,6 +301,7 @@ public class TicketVO extends BeanDataVO {
 	 * 
 	 * @param assignment
 	 */
+	@BeanSubElement
 	public void addAssignment(TicketAssignmentVO assignment) {
 		this.assignments.add(assignment);
 	}
@@ -293,6 +320,27 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void addTimeline(TicketLedgerVO entry) {
 		this.timeline.add(entry);
+	}
+
+	/**
+	 * @param warrantyValidFlag the warrantyValidFlag to set
+	 */
+	public void setWarrantyValidFlag(int warrantyValidFlag) {
+		this.warrantyValidFlag = warrantyValidFlag;
+	}
+
+	/**
+	 * @param productCategoryId the productCategoryId to set
+	 */
+	public void setProductCategoryId(String productCategoryId) {
+		this.productCategoryId = productCategoryId;
+	}
+
+	/**
+	 * @param purchaseDate the purchaseDate to set
+	 */
+	public void setPurchaseDate(Date purchaseDate) {
+		this.purchaseDate = purchaseDate;
 	}
 }
 

@@ -75,6 +75,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
 		keyMap.put("defect", new GenericVO("getDefects", Boolean.TRUE));
 		keyMap.put("product", new GenericVO("getProducts", Boolean.TRUE));
+		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
 	}
 
 	/**
@@ -178,8 +179,12 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getOems(ActionRequest req) {
-		req.setParameter(PROVIDER_TYPE, ProviderType.OEM.toString());
-		return getProviders(req);
+		if (req.hasParameter("productCategoryId")) {
+			return new ProviderAction(getAttributes(), getDBConnection()).getOEMsByProductCategory(req.getParameter("productCategoryId"));
+		} else {
+			req.setParameter(PROVIDER_TYPE, ProviderType.OEM.toString());
+			return getProviders(req);
+		}
 	}
 
 
@@ -290,5 +295,36 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 		
 		return data;
+	}
+	
+	/**
+	 * Default state is to receive the high level (parent) parent categories.
+	 * Passing in the productCategoryId will get all of the children for the provided category
+	 * passing in allLevels=true will get the entire list of categories
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getProductCategories(ActionRequest req) {
+		String productCategoryId = req.getStringParameter("productCategoryId", "");
+		List<Object> params = new ArrayList<>();
+		
+		boolean allLevels = req.getBooleanParameter("allLevels");
+		StringBuilder sql = new StringBuilder(196);
+		sql.append("select product_category_id as key, category_cd as value from ");
+		sql.append(getCustomSchema()).append("wsla_product_category ");
+		sql.append("where 1=1 ");
+		
+		if (! productCategoryId.isEmpty()) {
+			sql.append("and parent_id = ? ");
+			params.add(productCategoryId);
+		} else if (! allLevels) {
+			sql.append("and parent_id is null ");
+		}
+		
+		sql.append("order by category_cd ");
+		
+		// Execute and return
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), params, new GenericVO());
 	}
 }

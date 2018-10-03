@@ -48,7 +48,11 @@ public class ProductMasterAction extends SBActionAdapter {
 		this.attributes = attributes;
 		this.dbConn = dbConn;
 	}
-
+	
+	public ProductMasterAction() {
+		super();
+	}
+	
 	/**
 	 * 
 	 * @param actionInit

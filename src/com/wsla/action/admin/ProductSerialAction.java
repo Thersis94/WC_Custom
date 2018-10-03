@@ -2,7 +2,6 @@ package com.wsla.action.admin;
 
 // JDK 1.8.x
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,9 +18,11 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.product.ProductSerialNumberVO;
+import com.wsla.data.product.ProductWarrantyVO;
 
 /****************************************************************************
  * <b>Title</b>: ProductSerialAction.java
@@ -137,16 +138,24 @@ public class ProductSerialAction extends SBActionAdapter {
 	 * @param serialNo
 	 * @return a list of VOs (rows in the table)
 	 */
-	public List<ProductSerialNumberVO> getProductSerial(String productId, String serialNo) {
+	public List<ProductWarrantyVO> getProductSerial(String productId, String serialNo) {
 		if (StringUtil.isEmpty(productId) || StringUtil.isEmpty(serialNo))
 			return Collections.emptyList();
+		
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select * from wsla_product_serial a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("wsla_product_warranty b ");
+		sql.append("on a.product_serial_id = b.product_serial_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("wsla_warranty c on ");
+		sql.append("b.warranty_id = c.warranty_id ");
+		sql.append("where lower(serial_no_txt) = ? and product_id = ? ");		
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(serialNo.toLowerCase());
+		vals.add(productId);
+		log.info(sql.length() + "|" + sql);
 
-		String schema = getCustomSchema();
-		String sql = StringUtil.join(DBUtil.SELECT_FROM_STAR, schema, 
-				"wsla_product_serial where lower(serial_no_txt)=? and product_id=?");
-		log.debug(sql);
-
-		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSelect(sql, Arrays.asList(serialNo.toLowerCase(), productId), new ProductSerialNumberVO());
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), vals, new ProductWarrantyVO());
 	}
 }
