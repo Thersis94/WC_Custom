@@ -35,6 +35,9 @@ public class TicketAttributeVO extends BeanDataVO {
 	private String attributeGroupCode;
 	private String name;
 	private int activeFlag;
+	private String attributeGroupName;
+	private String scriptText;
+	private String noteText;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -147,6 +150,51 @@ public class TicketAttributeVO extends BeanDataVO {
 	 */
 	public void setAttributeGroupCode(String attributeGroupCode) {
 		this.attributeGroupCode = attributeGroupCode;
+	}
+
+	/**
+	 * @return the attributeGroupName
+	 */
+	@Column(name="group_nm", isReadOnly=true)
+	public String getAttributeGroupName() {
+		return attributeGroupName;
+	}
+
+	/**
+	 * @param attributeGroupName the attributeGroupName to set
+	 */
+	public void setAttributeGroupName(String attributeGroupName) {
+		this.attributeGroupName = attributeGroupName;
+	}
+
+	/**
+	 * @return the scriptText
+	 */
+	@Column(name="script_txt")
+	public String getScriptText() {
+		return scriptText;
+	}
+
+	/**
+	 * @param scriptText the scriptText to set
+	 */
+	public void setScriptText(String scriptText) {
+		this.scriptText = scriptText;
+	}
+
+	/**
+	 * @return the noteText
+	 */
+	@Column(name="note_txt")
+	public String getNoteText() {
+		return noteText;
+	}
+
+	/**
+	 * @param noteText the noteText to set
+	 */
+	public void setNoteText(String noteText) {
+		this.noteText = noteText;
 	}
 
 }

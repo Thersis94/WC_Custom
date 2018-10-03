@@ -9,15 +9,17 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.wsla.data.provider.ProviderVO;
 import com.wsla.data.ticket.TicketAttributeVO;
 
 /****************************************************************************
  * <b>Title</b>: TicketAttributeAction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO Put Something Here
+ * <b>Description: </b> Class for managing the ticket attributes related to service orders
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -50,26 +52,31 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("###########################Ticket Attribute action Retrieve called.");
+		log.debug("Ticket Attribute action Retrieve called.");
 		String attributeCode = req.getParameter("attributeCode");
 		String attributeGroupCode = req.getParameter("attributeGroupCode");
-		setModuleData(getAttributes(attributeCode, attributeGroupCode, new BSTableControlVO(req, TicketAttributeVO.class)));
+		boolean hasActiveFlag = req.hasParameter("activeFlag");
+		int activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
+		setModuleData(getAttributes(attributeCode, attributeGroupCode, activeFlag, hasActiveFlag, new BSTableControlVO(req, TicketAttributeVO.class)));
 		
 	}
 
 	
 	/**
+	 * @param hasActiveFlag 
 	 * @param providerId
 	 * @param providerTypeId
 	 * @param bsTableControlVO
 	 * @return
 	 */
-	private  GridDataVO<TicketAttributeVO>  getAttributes(String attributeCode, String attributeGroupCode, BSTableControlVO bst) {
+	private  GridDataVO<TicketAttributeVO>  getAttributes(String attributeCode, String attributeGroupCode, int activeFlag, boolean hasActiveFlag, BSTableControlVO bst) {
 		StringBuilder sql = new StringBuilder(72);
-		sql.append("select * from ").append(getCustomSchema()).append("wsla_ticket_attribute where 1=1 ");
+		sql.append("select * from ").append(getCustomSchema()).append("wsla_ticket_attribute a ");
+		sql.append("inner join ").append(getCustomSchema()).append("wsla_attribute_group g on a.attribute_group_cd = g.attribute_group_cd ");
+		sql.append("where 1=1 ");
 		List<Object> params = new ArrayList<>();
 		
-		// Filter by provider id
+		// Filter by attribute code
 		if (! StringUtil.checkVal(attributeCode).isEmpty()) {
 			sql.append("and attribute_cd = ? ");
 			params.add(attributeCode);
@@ -81,10 +88,16 @@ public class TicketAttributeAction  extends SBActionAdapter {
 			params.add(bst.getLikeSearch());
 		}
 		
-		// Filter by provider type
+		// Filter by Group code
 		if (! StringUtil.isEmpty(attributeGroupCode)) {
-			sql.append("and attributeGroupCode = ? ");
+			sql.append("and g.attribute_group_cd = ? ");
 			params.add(attributeGroupCode);
+		}
+		
+		// Filter by active flag
+		if (hasActiveFlag &&  activeFlag >= 0 && activeFlag < 2) {
+			sql.append("and active_flg = ? ");
+			params.add(activeFlag);
 		}
 		
 		sql.append(bst.getSQLOrderBy("attribute_nm",  "asc"));
@@ -96,11 +109,33 @@ public class TicketAttributeAction  extends SBActionAdapter {
 
 	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
-	public void list(ActionRequest req) throws ActionException {
-		log.debug("&&&&&&&&&&&&&&&&&&&&&Ticket Attribute action list called.");
+	public void build(ActionRequest req) throws ActionException {
+		log.debug("ticket attribute build called");
+		TicketAttributeVO tvo = new TicketAttributeVO(req);
+		boolean isInsert = Convert.formatBoolean(req.getParameter("isInsert"));
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			if(isInsert) {
+				db.insert(tvo);
+			}else {
+				String oldId = StringUtil.checkVal(req.getParameter("origAttributeCode"));
+				
+				if ( ! oldId.equals(tvo.getAttributeCode())) {
+					TicketAttributeVO old = new TicketAttributeVO();
+					old.setAttributeCode(oldId);
+					db.delete(old);
+					db.insert(tvo);
+				}else {
+					db.update(tvo);
+				}
+			}
+			
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Unable to save ticket attribute", e);
+		}
 	}
 
 }
