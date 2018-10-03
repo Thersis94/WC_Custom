@@ -33,8 +33,6 @@ public class ProductSerialNumberVO extends BeanDataVO {
 	private String productId;
 	private String serialNumber;
 	private int validatedFlag;
-	private String serialFilePath;
-	private String purchaseFilePath;
 	private Date createDate;
 	private Date retailerDate;
 
@@ -97,16 +95,6 @@ public class ProductSerialNumberVO extends BeanDataVO {
 		return validatedFlag;
 	}
 
-	@Column(name="serial_file_pth")
-	public String getSerialFilePath() {
-		return serialFilePath;
-	}
-
-	@Column(name="purchase_file_pth")
-	public String getPurchaseFilePath() {
-		return purchaseFilePath;
-	}
-
 	@Column(name="retailer_dt")
 	public Date getRetailerDate() {
 		return retailerDate;
@@ -149,14 +137,6 @@ public class ProductSerialNumberVO extends BeanDataVO {
 
 	public void setValidatedFlag(int validatedFlag) {
 		this.validatedFlag = validatedFlag;
-	}
-
-	public void setSerialFilePath(String serialFilePath) {
-		this.serialFilePath = serialFilePath;
-	}
-
-	public void setPurchaseFilePath(String purchaseFilePath) {
-		this.purchaseFilePath = purchaseFilePath;
 	}
 
 	public void setRetailerDate(Date retailerDate) {

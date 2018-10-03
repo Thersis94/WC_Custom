@@ -65,7 +65,7 @@ public class ProductSerialAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String productId = req.getParameter("productId");
-		
+
 		if (!StringUtil.isEmpty(productId) && req.hasParameter("serialNo")) {
 			//do serial# lookup for the ticket UI
 			setModuleData(getProductSerial(productId, req.getParameter("serialNo")));
@@ -107,7 +107,7 @@ public class ProductSerialAction extends SBActionAdapter {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select s.*, p.product_nm from ").append(schema).append("wsla_product_serial s ");
+		sql.append("select s.* from ").append(schema).append("wsla_product_serial s ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master p on s.product_id=p.product_id ");
 		sql.append("where 1=1 ");
 
