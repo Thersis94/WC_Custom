@@ -52,13 +52,10 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.trace("Ticket Attribute action Retrieve called.");
+		log.debug("Ticket Attribute action Retrieve called.");
 		String attributeCode = req.getParameter("attributeCode");
 		String attributeGroupCode = req.getParameter("attributeGroupCode");
-		boolean hasActiveFlag = false;
-		if(req.hasParameter("activeFlag")) {
-			hasActiveFlag = true;
-		}
+		boolean hasActiveFlag = req.hasParameter("activeFlag");
 		int activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
 		setModuleData(getAttributes(attributeCode, attributeGroupCode, activeFlag, hasActiveFlag, new BSTableControlVO(req, TicketAttributeVO.class)));
 		
@@ -116,7 +113,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.trace("ticket attribute build called");
+		log.debug("ticket attribute build called");
 		TicketAttributeVO tvo = new TicketAttributeVO(req);
 		boolean isInsert = Convert.formatBoolean(req.getParameter("isInsert"));
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -137,7 +134,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 			}
 			
 		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Unable to save provider infromation", e);
+			log.error("Unable to save ticket attribute", e);
 		}
 	}
 

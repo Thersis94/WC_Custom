@@ -64,7 +64,6 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("attributeGroupCode", new GenericVO("getAttributeGroups", Boolean.FALSE));
 		keyMap.put(PROVIDER_TYPE, new GenericVO("getProviderTypes", Boolean.FALSE));
 		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
-		keyMap.put("oem", new GenericVO("getOems", Boolean.TRUE));
 		keyMap.put("oemParts", new GenericVO("getProviderParts", Boolean.TRUE));
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
 		keyMap.put("role", new GenericVO("getOrgRoles", Boolean.TRUE));
@@ -140,10 +139,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("select attribute_group_cd as key, group_nm as value from ");
 		sql.append(getCustomSchema()).append("wsla_attribute_group order by group_nm");
 	
-		DBProcessor db = new DBProcessor(getDBConnection());
-		List<GenericVO> data = db.executeSelect(sql.toString(), null, new GenericVO());
-				log.debug("size " + data.size());
-		return data;
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), null, new GenericVO());
 		
 	}
 	
