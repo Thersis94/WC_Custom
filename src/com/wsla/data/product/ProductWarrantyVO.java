@@ -29,7 +29,7 @@ public class ProductWarrantyVO extends WarrantyVO {
 	 * 
 	 */
 	private static final long serialVersionUID = -4567698594237550575L;
-	
+
 	// Member Variables
 	private String productWarrantyId;
 	private String productSerialNumberId;
@@ -56,6 +56,13 @@ public class ProductWarrantyVO extends WarrantyVO {
 		super(rs);
 	}
 
+	public ProductWarrantyVO(String productSerialId, String warrantyId, Date expDate) {
+		this();
+		setProductSerialNumberId(productSerialId);
+		setWarrantyId(warrantyId);
+		setExpirationDate(expDate);
+	}
+
 	/**
 	 * @return the productWarrantyId
 	 */
@@ -63,7 +70,7 @@ public class ProductWarrantyVO extends WarrantyVO {
 	public String getProductWarrantyId() {
 		return productWarrantyId;
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.wsla.data.product.WarrantyVO#getWarrantyId()

@@ -6,6 +6,8 @@ import java.util.Date;
 
 // SMT Base Libs 3.x
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.annotations.DataType;
+import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
@@ -124,6 +126,7 @@ public class ProductSerialNumberVO extends BeanDataVO {
 	/**
 	 * @param serialNumber the serialNumber to set
 	 */
+	@Importable(name="Serial Number", type=DataType.STRING)
 	public void setSerialNumber(String serialNumber) {
 		this.serialNumber = serialNumber;
 	}
