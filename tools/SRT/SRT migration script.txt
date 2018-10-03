@@ -2,30 +2,49 @@ Core SRT Platform and Legacy Site Migration
 
 1.	Update DB connections in pgLoader Scripts, WC_Custom/scripts/srt/user_import_config.properties to be pointed to proper Locations
 	TODO - May Require Production Access.  Confer with James M.
-2.	Run Site Copy of Staging SRT into Production.  Ensure Change Site Id is set if necessary.  Will confirm week of launch on final ID.
-2.	Ensure db connection is pointed at proper location and run pgloader scripts with aabnp.load and customs.load found in WC_Custom/tools/SRT (>1 min)
+
+2.	Run Site Copy of Staging SRT into Production.  Ensure Change Site Id is set if necessary.  Will confirm week of launch on final ID. 
+	2:50
+
+3.	Verify Copy successful.(~2 min)
+	4:00
+
+4.	Ensure db connection is pointed at proper location and run pgloader scripts with aabnp.load and customs.load found in WC_Custom/tools/SRT (>1 min)
 		./pgloader aabnp.load
 		./pgloader customs.load
+	7:03 - Have a recurring seemingly random issue in program where connection resets mid copy.  Only known solution is delete dbo from server and re-run.
 
-3.	Run srt-migration.sql (~2-5min)
-
-5.	Verify Copy successful.(~2 min)
+5.	Run srt-migration.sql (~2-5min)
+	8:08 - Ensure script is run with proper user to ensure permissions/Ownership is correct.
 
 6.	Update WC_Custom/scripts/srt/user_import_config.properties (~2 min)
 	SiteId if different than new and ensure db connection is pointed at proper location.  Production is looking like it will expect DPY_SYN_42 unless things change.
 	Ensure emailSuffixDefault and opCoId properties are enabled under the US_SPINE Set.
+	8:57
 
 7.  Run WC_Custom/srt/com/depuysynthes/srt/util/SRTLegacyUserImporter to import users (Takes awhile ~25-30 min locally).
+	Start 18:09 - Ran into permission problems.  Had to grant ownership and permissions to all SRT* tables
+	End 1:44:20 - Will look at creating a user-import.sh so that this can be run on server avoiding VPN Data Round Trip.
+
+	While Running...
+		Verify SSO Info is correct
+		Verify Code has been pushed
+		Verify Login Module is correct.  DepuySSO Login Module did not copy. (Non cloneable)
 
 8.  Run srt-migration-part-2.sql to migrate SRT Data to Custom Tables. (2-5 min);
 	Note: DBeaver is not respecting transacted Queries right now.  Had to run as autocommit on latest Migration.
+	2:04:30 - DBeaver ran with transactions fine.  Believe previous issues to be related to Dev Environment.  Think time will come down if script can be run on server instead of in DBeaver.
 
 9.	Update and Run Solr Indexers with
 		customIndex_XX=com.depuysynthes.srt.util.SRTProjectIndexer
+	2:43:00
 
 10.	Add Billy as User to site and verify everything looks good.
+	2:30:00 - User lines at end of migration-2 script work with full backup.  Fail with Local stripped db.
 
-Total Migration Timeframe ~60 min
+Total Migration Timeframe ~60 min.
+Total Migration Actual - 2Hr 30Min
+	Believe can shave off 30 min by avoiding permission problems and having code pushed ahead of time. possible more by running code locally on servers.
 
 US Ortho Migration
 
