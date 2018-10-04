@@ -23,14 +23,14 @@ import com.siliconmtn.db.orm.Table;
  * @since Sep 15, 2018
  * @updates:
  ****************************************************************************/
-@Table(name="wsla_product_warrranty")
+@Table(name="wsla_product_warranty")
 public class ProductWarrantyVO extends WarrantyVO {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -4567698594237550575L;
-	
+
 	// Member Variables
 	private String productWarrantyId;
 	private String productSerialNumberId;
@@ -60,6 +60,13 @@ public class ProductWarrantyVO extends WarrantyVO {
 		super(rs);
 	}
 
+	public ProductWarrantyVO(String productSerialId, String warrantyId, Date expDate) {
+		this();
+		setProductSerialNumberId(productSerialId);
+		setWarrantyId(warrantyId);
+		setExpirationDate(expDate);
+	}
+
 	/**
 	 * @return the productWarrantyId
 	 */
@@ -67,7 +74,7 @@ public class ProductWarrantyVO extends WarrantyVO {
 	public String getProductWarrantyId() {
 		return productWarrantyId;
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.wsla.data.product.WarrantyVO#getWarrantyId()
@@ -81,7 +88,7 @@ public class ProductWarrantyVO extends WarrantyVO {
 	/**
 	 * @return the productSerialNumberId
 	 */
-	@Column(name="product_serial_number_id")
+	@Column(name="product_serial_id")
 	public String getProductSerialNumberId() {
 		return productSerialNumberId;
 	}

@@ -3,12 +3,14 @@ package com.wsla.action;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 
 // WC Libs
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
+import com.wsla.action.admin.BatchImport;
 import com.wsla.action.admin.DiagnosticAction;
 import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProductSerialAction;
@@ -17,6 +19,7 @@ import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.ticket.TicketAttributeAction;
 import com.wsla.action.admin.ProviderLocationUserAction;
+import com.wsla.action.admin.WarrantyAction;
 
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
@@ -74,6 +77,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put("productSerial", ProductSerialAction.class);
 		actionMap.put("providerLocationUser", ProviderLocationUserAction.class);
 		actionMap.put("diagnostics", DiagnosticAction.class);
+		actionMap.put("warranty", WarrantyAction.class);
 	}
 
 	/*
@@ -103,6 +107,18 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		loadActionByType(req.getParameter(SELECTOR_KEY, DEFAULT_TYPE)).build(req);
+		ActionInterface action = loadActionByType(req.getParameter(SELECTOR_KEY, DEFAULT_TYPE));
+		
+		if (req.hasParameter("isBatch") && BatchImport.class.isAssignableFrom(action.getClass())) {
+			log.debug("### BATCH TRANSACTION ###");
+			BatchImport ba = (BatchImport) action;
+			if (!req.getFiles().isEmpty()) { //if files were passed, ingest them.
+				ba.processImport(req);
+			} else { //return a template for user to populate
+				ba.getBatchTemplate(req, req.getStringParameter("fileName", "batch-file"));
+			}
+		} else {
+			action.build(req);
+		}
 	}
 }

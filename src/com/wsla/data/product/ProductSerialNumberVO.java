@@ -6,6 +6,8 @@ import java.util.Date;
 
 // SMT Base Libs 3.x
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.annotations.DataType;
+import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
@@ -33,13 +35,13 @@ public class ProductSerialNumberVO extends BeanDataVO {
 	private String productId;
 	private String serialNumber;
 	private int validatedFlag;
-	private String serialFilePath;
-	private String purchaseFilePath;
 	private Date createDate;
 	private Date retailerDate;
 
 	// Bean Sub-Elements
 	private ProductVO product;
+	private String warrantyName;
+	private String warrantyId;
 
 	public ProductSerialNumberVO() {
 		super();
@@ -97,16 +99,6 @@ public class ProductSerialNumberVO extends BeanDataVO {
 		return validatedFlag;
 	}
 
-	@Column(name="serial_file_pth")
-	public String getSerialFilePath() {
-		return serialFilePath;
-	}
-
-	@Column(name="purchase_file_pth")
-	public String getPurchaseFilePath() {
-		return purchaseFilePath;
-	}
-
 	@Column(name="retailer_dt")
 	public Date getRetailerDate() {
 		return retailerDate;
@@ -136,6 +128,7 @@ public class ProductSerialNumberVO extends BeanDataVO {
 	/**
 	 * @param serialNumber the serialNumber to set
 	 */
+	@Importable(name="Serial Number", type=DataType.STRING)
 	public void setSerialNumber(String serialNumber) {
 		this.serialNumber = serialNumber;
 	}
@@ -151,14 +144,6 @@ public class ProductSerialNumberVO extends BeanDataVO {
 		this.validatedFlag = validatedFlag;
 	}
 
-	public void setSerialFilePath(String serialFilePath) {
-		this.serialFilePath = serialFilePath;
-	}
-
-	public void setPurchaseFilePath(String purchaseFilePath) {
-		this.purchaseFilePath = purchaseFilePath;
-	}
-
 	public void setRetailerDate(Date retailerDate) {
 		this.retailerDate = retailerDate;
 	}
@@ -169,5 +154,22 @@ public class ProductSerialNumberVO extends BeanDataVO {
 	@BeanSubElement
 	public void setProduct(ProductVO product) {
 		this.product = product;
+	}
+
+	@Column(name="warranty_nm", isReadOnly=true)
+	public String getWarrantyName() {
+		return warrantyName;
+	}
+
+	public void setWarrantyName(String warrantyName) {
+		this.warrantyName = warrantyName;
+	}
+
+	public String getWarrantyId() {
+		return warrantyId;
+	}
+
+	public void setWarrantyId(String warrantyId) {
+		this.warrantyId = warrantyId;
 	}
 }

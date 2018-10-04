@@ -38,17 +38,8 @@ import com.wsla.data.product.ProductVO;
 
 public class ProductMasterAction extends SBActionAdapter {
 	
-	/**
-	 * Helper Method to initialize class
-	 * @param attributes
-	 * @param dbConn
-	 */
-	public ProductMasterAction(Map<String, Object> attributes, SMTDBConnection dbConn) {
-		super();
-		this.attributes = attributes;
-		this.dbConn = dbConn;
-	}
-	
+	public static final String REQ_PRODUCT_ID = "productId";
+
 	public ProductMasterAction() {
 		super();
 	}
@@ -61,6 +52,17 @@ public class ProductMasterAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	/**
+	 * Helper Method to initialize class
+	 * @param attributes
+	 * @param dbConn
+	 */
+	public ProductMasterAction(Map<String, Object> attributes, SMTDBConnection dbConn) {
+		this();
+		setAttributes(attributes);
+		setDBConnection(dbConn);
+	}
+
 
 	/*
 	 * (non-Javadoc)
@@ -68,7 +70,7 @@ public class ProductMasterAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String productId = req.getParameter("productId");
+		String productId = req.getParameter(REQ_PRODUCT_ID);
 		String providerId = req.getParameter("providerId");
 		Integer setFlag = req.hasParameter("setFlag") ? Convert.formatInteger(req.getParameter("setFlag")) : null;
 		setModuleData(getProducts(productId, providerId, setFlag, new BSTableControlVO(req, ProductVO.class)));
