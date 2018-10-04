@@ -19,6 +19,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -64,7 +65,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	static {
 		keyMap.put("statusCode", new GenericVO("getStatusCodes", Boolean.FALSE));
-		keyMap.put("oem", new GenericVO("getOEMs", Boolean.FALSE));
+		keyMap.put("oem", new GenericVO("getOems", Boolean.TRUE));
 		keyMap.put("attributeGroupCode", new GenericVO("getAttributeGroups", Boolean.FALSE));
 		keyMap.put(PROVIDER_TYPE, new GenericVO("getProviderTypes", Boolean.FALSE));
 		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
@@ -77,6 +78,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("defect", new GenericVO("getDefects", Boolean.TRUE));
 		keyMap.put("product", new GenericVO("getProducts", Boolean.TRUE));
 		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
+		keyMap.put("acRetailer", new GenericVO("getRetailerACList", Boolean.TRUE));
 	}
 
 	/**
@@ -99,7 +101,6 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("look up ret called");
 		String listType = req.getStringParameter(SELECT_KEY);
 
 		// @TODO Add language conversion
@@ -109,10 +110,10 @@ public class SelectLookupAction extends SBActionAdapter {
 
 				if (Convert.formatBoolean(vo.getValue())) {
 					Method method = this.getClass().getMethod(vo.getKey().toString(), req.getClass());
-					putModuleData(method.invoke(this, req));
+					setModuleData(method.invoke(this, req));
 				} else {
 					Method method = this.getClass().getMethod(vo.getKey().toString());
-					putModuleData(method.invoke(this));
+					setModuleData(method.invoke(this));
 				}
 
 			} catch (Exception e) {
@@ -216,6 +217,35 @@ public class SelectLookupAction extends SBActionAdapter {
 		return new ProductSetAction(getAttributes(), getDBConnection()).listPartsForProvider(req.getParameter("providerId"));
 	}
 
+	/**
+	 * Returns a list of matching provider locations for autocomplete
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getRetailerACList(ActionRequest req) {
+		StringBuilder term = new StringBuilder(16);
+		term.append("%").append(StringUtil.checkVal(req.getParameter("term")).toLowerCase()).append("%");
+		
+		StringBuilder sql = new StringBuilder(512);
+		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");
+		sql.append("|| coalesce(location_nm, '') || ' (' || coalesce(store_no, '') || ')  ' ");
+		sql.append("|| coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value ");
+		sql.append("from wsla_provider a ");
+		sql.append("inner join wsla_provider_location b on a.provider_id = b.provider_id ");
+		sql.append("where provider_type_id = 'RETAILER' ");
+		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
+		sql.append("or lower(city_nm) like ? or store_no like ?) ");
+		sql.append("order by provider_nm");
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(term);
+		vals.add(term);
+		vals.add(term);
+		vals.add(term);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), vals, new GenericVO());
+	}
 
 	/**
 	 * Returns a list of status codes and their descriptions
