@@ -15,6 +15,9 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 
+// WSLA Libs
+import com.wsla.common.WSLAConstants;
+
 /****************************************************************************
  * <b>Title</b>: TicketVO.java
  * <b>Project</b>: WC_Custom
@@ -34,17 +37,17 @@ public class TicketVO extends BeanDataVO {
 	 * 
 	 */
 	private static final long serialVersionUID = -288262467687670031L;
-	
-	
-	public static final String ATTRIBUTE_PREFIX = "attr_";
-	
+		
 	// Member Variables
 	private String ticketId;
 	private String ticketIdText;
 	private String ticketName;
 	private String description;
 	private String warrantyProductId;
+	private String productCategoryId;
 	private StatusCode statusCode;
+	private int warrantyValidFlag;
+	private Date purchaseDate;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -82,7 +85,7 @@ public class TicketVO extends BeanDataVO {
 	public TicketVO(ResultSet rs) {
 		super(rs);
 	}
-	
+
 	/**
 	 * Assigns any request parameters with the appropriate attribute prefix
 	 * to the ticket attribute collection.  Note, on new ticket create, the ticketId 
@@ -92,15 +95,16 @@ public class TicketVO extends BeanDataVO {
 	 * @param ledger
 	 */
 	protected void setAttributesFromReq(ActionRequest req, TicketLedgerVO ledger) {
-		List<String> names = Collections.list(req.getAttributeNames());
+		List<String> names = Collections.list(req.getParameterNames());
 		for(String name : names) {
-			if (StringUtil.checkVal(name).startsWith(ATTRIBUTE_PREFIX)) {
-				
+			if (StringUtil.checkVal(name).startsWith(WSLAConstants.ATTRIBUTE_PREFIX)) {
 				TicketDataVO data = new TicketDataVO();
 				data.setTicketId(getTicketId());
 				data.setAttributeCode(name);
 				data.setValue(req.getParameter(name));
 				if (ledger != null) data.setLedgerEntryId(ledger.getLedgerEntryId());
+				
+				addTicketData(data);
 			}
 		}
 	}
@@ -177,6 +181,30 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the warrantyValidFlag
+	 */
+	@Column(name="warranty_valid_flg")
+	public int getWarrantyValidFlag() {
+		return warrantyValidFlag;
+	}
+
+	/**
+	 * @return the purchase_dt
+	 */
+	@Column(name="purchase_dt")
+	public Date getPurchaseDate() {
+		return purchaseDate;
+	}
+
+	/**
+	 * @return the productCategoryId
+	 */
+	@Column(name="product_category_id")
+	public String getProductCategoryId() {
+		return productCategoryId;
+	}
+
+	/**
 	 * @return the timeline
 	 */
 	public List<TicketLedgerVO> getTimeline() {
@@ -233,13 +261,6 @@ public class TicketVO extends BeanDataVO {
 	}
 	
 	/**
-	 * @param statusCode the statusCode to set
-	 */
-	public void setStatusCode(String strStatusCode) {
-		this.statusCode = StatusCode.valueOf(strStatusCode);
-	}
-
-	/**
 	 * @param createDate the createDate to set
 	 */
 	public void setCreateDate(Date createDate) {
@@ -256,7 +277,6 @@ public class TicketVO extends BeanDataVO {
 	/**
 	 * @param data the data to set
 	 */
-	@BeanSubElement
 	public void setTicketData(List<TicketDataVO> ticketData) {
 		this.ticketData = ticketData;
 	}
@@ -264,6 +284,7 @@ public class TicketVO extends BeanDataVO {
 	/**
 	 * @param data the data to set
 	 */
+	@BeanSubElement
 	public void addTicketData(TicketDataVO data) {
 		if (ticketData != null)
 			this.ticketData.add(data);
@@ -272,7 +293,6 @@ public class TicketVO extends BeanDataVO {
 	/**
 	 * @param assignments the assignments to set
 	 */
-	@BeanSubElement
 	public void setAssignments(List<TicketAssignmentVO> assignments) {
 		this.assignments = assignments;
 	}
@@ -281,6 +301,7 @@ public class TicketVO extends BeanDataVO {
 	 * 
 	 * @param assignment
 	 */
+	@BeanSubElement
 	public void addAssignment(TicketAssignmentVO assignment) {
 		this.assignments.add(assignment);
 	}
@@ -299,6 +320,27 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void addTimeline(TicketLedgerVO entry) {
 		this.timeline.add(entry);
+	}
+
+	/**
+	 * @param warrantyValidFlag the warrantyValidFlag to set
+	 */
+	public void setWarrantyValidFlag(int warrantyValidFlag) {
+		this.warrantyValidFlag = warrantyValidFlag;
+	}
+
+	/**
+	 * @param productCategoryId the productCategoryId to set
+	 */
+	public void setProductCategoryId(String productCategoryId) {
+		this.productCategoryId = productCategoryId;
+	}
+
+	/**
+	 * @param purchaseDate the purchaseDate to set
+	 */
+	public void setPurchaseDate(Date purchaseDate) {
+		this.purchaseDate = purchaseDate;
 	}
 }
 

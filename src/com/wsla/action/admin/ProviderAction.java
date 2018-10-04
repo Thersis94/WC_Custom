@@ -13,6 +13,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -139,14 +140,38 @@ public class ProviderAction extends SBActionAdapter {
 	public List<GenericVO> getProviderOptions(ProviderType type) {
 		if (type == null) return Collections.emptyList();
 
-		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select provider_id as key, provider_nm as value from ");
-		sql.append(schema).append("wsla_provider where provider_type_id=? ");
+		sql.append(getCustomSchema()).append("wsla_provider where provider_type_id=? ");
 		sql.append("order by provider_nm");
 		log.debug(sql);
 
-		DBProcessor db = new DBProcessor(getDBConnection(), schema); 
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
 		return db.executeSelect(sql.toString(), Arrays.asList(type.toString()), new GenericVO());
 	}
+	
+	/**
+	 * Grabs a unique list of OEMs by the product category
+	 * @param productCategoryId
+	 * @return
+	 */
+	public List<GenericVO> getOEMsByProductCategory(String productCategoryId) {
+		List<Object> vals = new ArrayList<>();
+		vals.add(productCategoryId);
+		
+		StringBuilder sql = new StringBuilder(368);
+		sql.append("select a.provider_id as key, a.provider_nm as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_provider a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_product_master b on a.provider_id = b.provider_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_product_category_xr c on b.product_id = c.product_id ");
+		sql.append("where a.provider_type_id = 'OEM' and c.product_category_id = ? ");
+		sql.append("group by key, value ");
+		sql.append("order by a.provider_nm ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
+		return db.executeSelect(sql.toString(), vals, new GenericVO());
+	}
+	
 }

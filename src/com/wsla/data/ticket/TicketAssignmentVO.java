@@ -69,7 +69,7 @@ public class TicketAssignmentVO extends BeanDataVO {
 	/**
 	 * @return the ticketAssigmentId
 	 */
-	@Column(name="ticket_assig_id", isPrimaryKey=true)
+	@Column(name="ticket_assg_id", isPrimaryKey=true)
 	public String getTicketAssigmentId() {
 		return ticketAssigmentId;
 	}

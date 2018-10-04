@@ -3,6 +3,7 @@ package com.wsla.action.admin;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -12,6 +13,7 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
@@ -35,11 +37,26 @@ import com.wsla.data.product.ProductVO;
  ****************************************************************************/
 
 public class ProductMasterAction extends SBActionAdapter {
-
+	
+	/**
+	 * Helper Method to initialize class
+	 * @param attributes
+	 * @param dbConn
+	 */
+	public ProductMasterAction(Map<String, Object> attributes, SMTDBConnection dbConn) {
+		super();
+		this.attributes = attributes;
+		this.dbConn = dbConn;
+	}
+	
 	public ProductMasterAction() {
 		super();
 	}
-
+	
+	/**
+	 * 
+	 * @param actionInit
+	 */
 	public ProductMasterAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}

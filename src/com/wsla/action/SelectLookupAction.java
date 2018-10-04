@@ -13,15 +13,19 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProviderAction;
+import com.wsla.data.product.ProductVO;
 import com.wsla.data.provider.ProviderType;
 // WSLA Libs
 import com.wsla.data.ticket.StatusCode;
@@ -70,6 +74,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("locale", new GenericVO("getLocales", Boolean.FALSE));
 		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
 		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
+		keyMap.put("defect", new GenericVO("getDefects", Boolean.TRUE));
+		keyMap.put("product", new GenericVO("getProducts", Boolean.TRUE));
+		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
 	}
 
 	/**
@@ -191,8 +198,12 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getOems(ActionRequest req) {
-		req.setParameter(PROVIDER_TYPE, ProviderType.OEM.toString());
-		return getProviders(req);
+		if (req.hasParameter("productCategoryId")) {
+			return new ProviderAction(getAttributes(), getDBConnection()).getOEMsByProductCategory(req.getParameter("productCategoryId"));
+		} else {
+			req.setParameter(PROVIDER_TYPE, ProviderType.OEM.toString());
+			return getProviders(req);
+		}
 	}
 
 
@@ -249,6 +260,28 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Gets the list of defects adds the 
+	 * @return
+	 */
+	public List<GenericVO> getDefects(ActionRequest req) {
+		List<Object> params = new ArrayList<>();
+		
+		StringBuilder sql = new StringBuilder(64);
+		sql.append("select defect_cd as key, defect_nm as value from ");
+		sql.append(getCustomSchema()).append("wsla_defect where active_flg = 1 ");
+		sql.append("and (provider_id is null ");
+		if (req.hasParameter("providerId")) {
+			sql.append("or provider_id = ? ");
+			params.add(req.getParameter("providerId"));
+		}
+		
+		sql.append(") order by value");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), params, new GenericVO());
+	}
+	
+	/**
 	 * Retruns a list of user prefixes
 	 * @return
 	 */
@@ -260,5 +293,57 @@ public class SelectLookupAction extends SBActionAdapter {
 		selectList.add(new GenericVO("Miss", "Miss"));
 
 		return selectList;
+	}
+	
+	/**
+	 * Returns a list of user products
+	 * @return
+	 */
+	public List<GenericVO> getProducts(ActionRequest req) {
+		ProductMasterAction ai =  new ProductMasterAction(getAttributes(), getDBConnection());
+		BSTableControlVO bst = new BSTableControlVO(req, ProductVO.class);
+		bst.setLimit(1000);
+		bst.setOffset(0);
+		String providerId = req.getParameter("providerId");
+		int setFlag = req.getIntegerParameter("setFlag");
+		GridDataVO<ProductVO> products = ai.getProducts(null, providerId, setFlag, bst);
+		
+		List<GenericVO> data = new ArrayList<>(products.getTotal());
+		for (ProductVO product : products.getRowData()) {
+			data.add(new GenericVO(product.getProductId(), product.getProductName()	));
+		}
+		
+		return data;
+	}
+	
+	/**
+	 * Default state is to receive the high level (parent) parent categories.
+	 * Passing in the productCategoryId will get all of the children for the provided category
+	 * passing in allLevels=true will get the entire list of categories
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getProductCategories(ActionRequest req) {
+		String productCategoryId = req.getStringParameter("productCategoryId", "");
+		List<Object> params = new ArrayList<>();
+		
+		boolean allLevels = req.getBooleanParameter("allLevels");
+		StringBuilder sql = new StringBuilder(196);
+		sql.append("select product_category_id as key, category_cd as value from ");
+		sql.append(getCustomSchema()).append("wsla_product_category ");
+		sql.append("where 1=1 ");
+		
+		if (! productCategoryId.isEmpty()) {
+			sql.append("and parent_id = ? ");
+			params.add(productCategoryId);
+		} else if (! allLevels) {
+			sql.append("and parent_id is null ");
+		}
+		
+		sql.append("order by category_cd ");
+		
+		// Execute and return
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), params, new GenericVO());
 	}
 }
