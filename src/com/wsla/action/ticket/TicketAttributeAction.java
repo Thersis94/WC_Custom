@@ -14,6 +14,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.data.ticket.TicketAttributeACLVO;
 import com.wsla.data.ticket.TicketAttributeVO;
 
 /****************************************************************************
@@ -53,6 +54,15 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Ticket Attribute action Retrieve called.");
+		
+		//isolate and control flow for attribute ACL changes
+		if (req.hasParameter("ACLTable") || req.hasParameter("ACLChange")) {
+			
+			
+			setModuleData(processACL(req));
+			return;
+		}
+		
 		String attributeCode = req.getParameter("attributeCode");
 		String attributeGroupCode = req.getParameter("attributeGroupCode");
 		boolean hasActiveFlag = req.hasParameter("activeFlag");
@@ -62,6 +72,30 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	}
 
 	
+	/**
+	 * this method acts and the main control for changes to the acl
+	 * @param req
+	 * @return
+	 */
+	private Object processACL(ActionRequest req) {
+		
+		StringBuilder sql = new StringBuilder(259);
+		sql.append("select a.role_id, a.role_nm, b.* from core.role a ");
+		sql.append("left outer join ").append(getCustomSchema()).append("wsla_ticket_attribute_acl b ");
+		sql.append("on a.role_id = b.role_id and b.attribute_cd = ? where (organization_id is null or organization_id = 'WSLA' ) ");
+		sql.append("and a.role_id not in ('0','WSLA_PROSPECT','10') order by a.role_nm asc ");
+
+		List<Object> params = new ArrayList<>();
+		params.add(StringUtil.checkVal(req.getParameter("attributeCode")));
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		List<TicketAttributeACLVO> data = db.executeSelect(sql.toString(), params, new TicketAttributeACLVO());
+		log.debug("############ data size " + data.size());
+		
+		return data;
+	}
+
+
 	/**
 	 * @param hasActiveFlag 
 	 * @param providerId
@@ -118,21 +152,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		boolean isInsert = Convert.formatBoolean(req.getParameter("isInsert"));
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
-			if(isInsert) {
-				db.insert(tvo);
-			}else {
-				String oldId = StringUtil.checkVal(req.getParameter("origAttributeCode"));
-				
-				if ( ! oldId.equals(tvo.getAttributeCode())) {
-					TicketAttributeVO old = new TicketAttributeVO();
-					old.setAttributeCode(oldId);
-					db.delete(old);
-					db.insert(tvo);
-				}else {
-					db.update(tvo);
-				}
-			}
-			
+			db.save(tvo);
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save ticket attribute", e);
 		}
