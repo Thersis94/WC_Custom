@@ -3,6 +3,7 @@ package com.wsla.action.admin;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -12,6 +13,7 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
@@ -35,13 +37,30 @@ import com.wsla.data.product.ProductVO;
  ****************************************************************************/
 
 public class ProductMasterAction extends SBActionAdapter {
+	
+	public static final String REQ_PRODUCT_ID = "productId";
 
 	public ProductMasterAction() {
 		super();
 	}
-
+	
+	/**
+	 * 
+	 * @param actionInit
+	 */
 	public ProductMasterAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+
+	/**
+	 * Helper Method to initialize class
+	 * @param attributes
+	 * @param dbConn
+	 */
+	public ProductMasterAction(Map<String, Object> attributes, SMTDBConnection dbConn) {
+		this();
+		setAttributes(attributes);
+		setDBConnection(dbConn);
 	}
 
 
@@ -51,7 +70,7 @@ public class ProductMasterAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String productId = req.getParameter("productId");
+		String productId = req.getParameter(REQ_PRODUCT_ID);
 		String providerId = req.getParameter("providerId");
 		Integer setFlag = req.hasParameter("setFlag") ? Convert.formatInteger(req.getParameter("setFlag")) : null;
 		setModuleData(getProducts(productId, providerId, setFlag, new BSTableControlVO(req, ProductVO.class)));

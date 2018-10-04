@@ -86,6 +86,7 @@ public abstract class BatchImport extends SBActionAdapter {
 		Class<?> impClass = getBatchImportableClass();
 		List<FilePartDataBean> fileList = req.getFiles();
 		Map<Class<?>, Collection<Object>> beans;
+		int importCnt = 0;
 
 		// 99% of the time this loop has one file in it, but from a code standpoint we support multiple
 		for (FilePartDataBean fb : fileList ) {
@@ -107,7 +108,12 @@ public abstract class BatchImport extends SBActionAdapter {
 			// Save the beans through a DBProcessor batch query
 			// If this step fails use one or both of the above methods to clean-up your data prior to saving.
 			saveBatchImport(req, entries);
+			
+			importCnt += entries.size();
 		}
+		
+		//set some response data
+		putModuleData("success", importCnt, false);
 	}
 
 

@@ -6,6 +6,7 @@ import java.util.Date;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -22,7 +23,7 @@ import com.siliconmtn.db.orm.Table;
  * @since Sep 15, 2018
  * @updates:
  ****************************************************************************/
-@Table(name="wsla_product_warrranty")
+@Table(name="wsla_product_warranty")
 public class ProductWarrantyVO extends WarrantyVO {
 
 	/**
@@ -35,6 +36,9 @@ public class ProductWarrantyVO extends WarrantyVO {
 	private String productSerialNumberId;
 	private Date expirationDate;
 
+	// Bean Sub-elements
+	private ProductSerialNumberVO productSerialNumber = null;
+	
 	/**
 	 * 
 	 */
@@ -84,7 +88,7 @@ public class ProductWarrantyVO extends WarrantyVO {
 	/**
 	 * @return the productSerialNumberId
 	 */
-	@Column(name="product_serial_number_id")
+	@Column(name="product_serial_id")
 	public String getProductSerialNumberId() {
 		return productSerialNumberId;
 	}
@@ -95,6 +99,13 @@ public class ProductWarrantyVO extends WarrantyVO {
 	@Column(name="expiration_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getExpirationDate() {
 		return expirationDate;
+	}
+
+	/**
+	 * @return the productSerialNumber
+	 */
+	public ProductSerialNumberVO getProductSerialNumber() {
+		return productSerialNumber;
 	}
 
 	/**
@@ -116,6 +127,14 @@ public class ProductWarrantyVO extends WarrantyVO {
 	 */
 	public void setExpirationDate(Date expirationDate) {
 		this.expirationDate = expirationDate;
+	}
+
+	/**
+	 * @param productSerialNumber the productSerialNumber to set
+	 */
+	@BeanSubElement
+	public void setProductSerialNumber(ProductSerialNumberVO productSerialNumber) {
+		this.productSerialNumber = productSerialNumber;
 	}
 
 }

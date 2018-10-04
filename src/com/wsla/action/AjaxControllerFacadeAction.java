@@ -11,6 +11,7 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.wsla.action.admin.BatchImport;
+import com.wsla.action.admin.DiagnosticAction;
 import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProductSerialAction;
 import com.wsla.action.admin.ProductSetAction;
@@ -18,6 +19,7 @@ import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.ticket.TicketAttributeAction;
 import com.wsla.action.admin.ProviderLocationUserAction;
+import com.wsla.action.admin.WarrantyAction;
 
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
@@ -74,6 +76,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put("productSet", ProductSetAction.class);
 		actionMap.put("productSerial", ProductSerialAction.class);
 		actionMap.put("providerLocationUser", ProviderLocationUserAction.class);
+		actionMap.put("diagnostics", DiagnosticAction.class);
+		actionMap.put("warranty", WarrantyAction.class);
 	}
 
 	/*

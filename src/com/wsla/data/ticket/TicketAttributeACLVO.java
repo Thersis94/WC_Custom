@@ -35,6 +35,7 @@ public class TicketAttributeACLVO extends BeanDataVO {
 	private String attributeACLCode;
 	private String attributeCode;
 	private String roleId;
+	private String roleName;
 	private int readFlag;
 	private int writeFlag;
 	private Date createDate;
@@ -148,6 +149,21 @@ public class TicketAttributeACLVO extends BeanDataVO {
 	 */
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
+	}
+
+	/**
+	 * @return the roleName
+	 */
+	@Column(name="role_nm", isReadOnly=true)
+	public String getRoleName() {
+		return roleName;
+	}
+
+	/**
+	 * @param roleName the roleName to set
+	 */
+	public void setRoleName(String roleName) {
+		this.roleName = roleName;
 	}
 
 }

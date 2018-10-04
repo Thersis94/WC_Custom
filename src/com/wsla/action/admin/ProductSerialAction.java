@@ -25,10 +25,11 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
-
+import static com.wsla.action.admin.ProductMasterAction.REQ_PRODUCT_ID;
 
 /****************************************************************************
  * <b>Title</b>: ProductSerialAction.java
@@ -71,7 +72,7 @@ public class ProductSerialAction extends BatchImport {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String productId = req.getParameter("productId");
+		String productId = req.getParameter(REQ_PRODUCT_ID);
 
 		if (!StringUtil.isEmpty(productId) && req.hasParameter("serialNo")) {
 			//do serial# lookup for the ticket UI
@@ -114,13 +115,16 @@ public class ProductSerialAction extends BatchImport {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select s.* from ").append(schema).append("wsla_product_serial s ");
+		sql.append("select s.*, w.desc_txt as warranty_nm from ").append(schema).append("wsla_product_serial s ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master p on s.product_id=p.product_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_warranty pw on s.product_serial_id=pw.product_serial_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_warranty w on pw.warranty_id=w.warranty_id ");
 		sql.append("where 1=1 ");
 
 		// Filter by search criteria
 		if (bst.hasSearch()) {
 			sql.append("and (p.product_nm like ? or p.cust_product_id like ? or p.sec_cust_product_id like ? or s.serial_no_txt like ?) ");
+			params.add(bst.getLikeSearch());
 			params.add(bst.getLikeSearch());
 			params.add(bst.getLikeSearch());
 			params.add(bst.getLikeSearch());
@@ -144,17 +148,25 @@ public class ProductSerialAction extends BatchImport {
 	 * @param serialNo
 	 * @return a list of VOs (rows in the table)
 	 */
-	public List<ProductSerialNumberVO> getProductSerial(String productId, String serialNo) {
+	public List<ProductWarrantyVO> getProductSerial(String productId, String serialNo) {
 		if (StringUtil.isEmpty(productId) || StringUtil.isEmpty(serialNo))
 			return Collections.emptyList();
+		
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select * from wsla_product_serial a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("wsla_product_warranty b ");
+		sql.append("on a.product_serial_id = b.product_serial_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("wsla_warranty c on ");
+		sql.append("b.warranty_id = c.warranty_id ");
+		sql.append("where lower(serial_no_txt) = ? and product_id = ? ");		
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(serialNo.toLowerCase());
+		vals.add(productId);
+		log.info(sql.length() + "|" + sql);
 
-		String schema = getCustomSchema();
-		String sql = StringUtil.join(DBUtil.SELECT_FROM_STAR, schema, 
-				"wsla_product_serial where lower(serial_no_txt)=? and product_id=?");
-		log.debug(sql);
-
-		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSelect(sql, Arrays.asList(serialNo.toLowerCase(), productId), new ProductSerialNumberVO());
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), vals, new ProductWarrantyVO());
 	}
 
 
@@ -180,17 +192,19 @@ public class ProductSerialAction extends BatchImport {
 
 		// load this product's SKUs from the DB and store them as a Set for quick reference.
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		List<GenericVO> serialNos = db.executeSelect(sql, Arrays.asList(req.getParameter("productId")), new GenericVO());
+		List<GenericVO> serialNos = db.executeSelect(sql, Arrays.asList(req.getParameter(REQ_PRODUCT_ID)), new GenericVO());
 		Set<String> skus = new HashSet<>(serialNos.size());
 		for (GenericVO vo : serialNos)
-			skus.add(vo.getKey().toString());
+			skus.add(StringUtil.checkVal(vo.getKey()));
 
 		//remove items from the batch import which are already in the database
 		Iterator<? extends Object> iter = entries.iterator();
 		while (iter.hasNext()) {
 			ProductSerialNumberVO vo = (ProductSerialNumberVO) iter.next();
-			if (StringUtil.isEmpty(vo.getSerialNumber()) || skus.contains(vo.getSerialNumber().toLowerCase()))
+			if (StringUtil.isEmpty(vo.getSerialNumber()) || skus.contains(vo.getSerialNumber().toLowerCase())) {
 				iter.remove();
+				log.debug("omitting pre-existing or empty SKU: " + vo.getSerialNumber());
+			}
 		}
 	}
 
@@ -204,7 +218,7 @@ public class ProductSerialAction extends BatchImport {
 	protected void transposeBatchImport(ActionRequest req, ArrayList<? extends Object> entries)
 			throws ActionException {
 		//set the productId for all beans to the one passed on the request
-		String productId = req.getParameter("productId");
+		String productId = req.getParameter(REQ_PRODUCT_ID);
 		Date dt = Calendar.getInstance().getTime();
 		for (Object obj : entries) {
 			ProductSerialNumberVO vo = (ProductSerialNumberVO) obj;
@@ -216,7 +230,7 @@ public class ProductSerialAction extends BatchImport {
 
 
 	/**
-	 * Insert the records, then create warranty records for each
+	 * Insert the new serial# records, then create warranty records for each
 	 * (non-Javadoc)
 	 * @see com.wsla.action.admin.BatchImport#saveBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
 	 */
