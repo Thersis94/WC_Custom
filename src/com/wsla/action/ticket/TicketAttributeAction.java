@@ -79,8 +79,8 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 */
 	private Object processACL(ActionRequest req) {
 		
-		StringBuilder sql = new StringBuilder(259);
-		sql.append("select a.role_id, a.role_nm, b.* from core.role a ");
+		StringBuilder sql = new StringBuilder(365);
+		sql.append("select a.role_id, a.role_nm, b.ticket_attribute_acl_cd, b.attribute_cd, b.read_flg, b.write_flg, b.create_dt from core.role a ");
 		sql.append("left outer join ").append(getCustomSchema()).append("wsla_ticket_attribute_acl b ");
 		sql.append("on a.role_id = b.role_id and b.attribute_cd = ? where (organization_id is null or organization_id = 'WSLA' ) ");
 		sql.append("and a.role_id not in ('0','WSLA_PROSPECT','10') order by a.role_nm asc ");
@@ -89,10 +89,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		params.add(StringUtil.checkVal(req.getParameter("attributeCode")));
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
-		List<TicketAttributeACLVO> data = db.executeSelect(sql.toString(), params, new TicketAttributeACLVO());
-		log.debug("############ data size " + data.size());
-		
-		return data;
+		return db.executeSelect(sql.toString(), params, new TicketAttributeACLVO(), "role_id");
 	}
 
 
@@ -149,7 +146,6 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("ticket attribute build called");
 		TicketAttributeVO tvo = new TicketAttributeVO(req);
-		boolean isInsert = Convert.formatBoolean(req.getParameter("isInsert"));
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
 			db.save(tvo);
