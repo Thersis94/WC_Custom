@@ -8,6 +8,8 @@ import javax.servlet.http.HttpServletResponse;
 import com.biomed.smarttrak.admin.report.AccountCountReportVO;
 //WC custom
 import com.biomed.smarttrak.admin.report.AccountReportVO;
+import com.biomed.smarttrak.admin.report.AccountsPageViewReportAction;
+import com.biomed.smarttrak.admin.report.AccountsPageViewReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
@@ -25,6 +27,7 @@ import com.biomed.smarttrak.admin.report.UserPermissionsReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationDailyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationMonthlyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -55,6 +58,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 	public enum ReportType {
 		ACCOUNT_REPORT,
 		ACCOUNT_COUNTS,
+		ACCOUNT_PAGE_VIEWS,
 		ACTIVITY_LOG,
 		COMPANY_SEGMENTS,
 		USER_LIST,
@@ -102,6 +106,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case ACCOUNT_COUNTS:
 				rpt = generateCountsReport(req);
 				break;
+			case ACCOUNT_PAGE_VIEWS:
+				rpt = generateAccountPageViewsReport(req);
+				break;
 			case ACTIVITY_LOG:
 				rpt = generateActivityLogReport(req);
 				break;
@@ -144,7 +151,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 		HttpServletResponse resp = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
 		CookieUtil.add(resp, "reportLoadingCookie", "", "/", 0);
 	}
-	
+
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
@@ -209,6 +217,16 @@ public class ReportFacadeAction extends SBActionAdapter {
 		return rpt;
 	}
 
+	/**
+	 * @param req
+	 * @return
+	 */
+	private AbstractSBReportVO generateAccountPageViewsReport(ActionRequest req) throws ActionException {
+		log.debug("generateAccountPageViewReport...");
+		AccountsPageViewReportAction ara = ActionControllerFactoryImpl.loadAction(AccountsPageViewReportAction.class, this);
+		AccountsPageViewReportVO rpt = ara.buildReport(req);
+		return rpt;
+	}
 
 	/**
 	 * Generates the Account report.
