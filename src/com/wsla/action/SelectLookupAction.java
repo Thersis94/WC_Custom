@@ -188,8 +188,9 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getProviders(ActionRequest req) {
+		String search = req.getParameter("search");
 		ProviderType pt = EnumUtil.safeValueOf(ProviderType.class, req.getParameter(PROVIDER_TYPE), ProviderType.OEM);
-		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt);
+		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search);
 	}
 
 
@@ -224,7 +225,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getRetailerACList(ActionRequest req) {
 		StringBuilder term = new StringBuilder(16);
-		term.append("%").append(StringUtil.checkVal(req.getParameter("term")).toLowerCase()).append("%");
+		term.append("%").append(StringUtil.checkVal(req.getParameter("search")).toLowerCase()).append("%");
 		
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");

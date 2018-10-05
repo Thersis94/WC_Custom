@@ -68,7 +68,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.info("Listing Tickets ....");
+		log.debug("Listing Tickets ....");
 	}
 	
 	/*

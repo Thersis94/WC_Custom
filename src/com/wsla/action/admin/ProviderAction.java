@@ -2,7 +2,6 @@ package com.wsla.action.admin;
 
 // JDK 1.8.x
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +23,7 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.provider.ProviderType;
+
 // WSLA Libs
 import com.wsla.data.provider.ProviderVO;
 
@@ -137,17 +137,24 @@ public class ProviderAction extends SBActionAdapter {
 	 * Called from SelectLookupAction.
 	 * @return
 	 */
-	public List<GenericVO> getProviderOptions(ProviderType type) {
+	public List<GenericVO> getProviderOptions(ProviderType type, String search) {
 		if (type == null) return Collections.emptyList();
-
+		List<Object> vals = new ArrayList<>();
+		vals.add(type.toString());
+		
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select provider_id as key, provider_nm as value from ");
-		sql.append(getCustomSchema()).append("wsla_provider where provider_type_id=? ");
+		sql.append(getCustomSchema()).append("wsla_provider where provider_type_id= ? ");
+		
+		if (!StringUtil.isEmpty(search)) {
+			sql.append("and lower(provider_nm) like ? ");
+			vals.add("%" + search.toLowerCase() + "%");
+		}
+		
 		sql.append("order by provider_nm");
-		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
-		return db.executeSelect(sql.toString(), Arrays.asList(type.toString()), new GenericVO());
+		return db.executeSelect(sql.toString(),vals, new GenericVO());
 	}
 	
 	/**
