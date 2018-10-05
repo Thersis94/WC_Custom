@@ -11,10 +11,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
-import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.MarketAction;
+import com.biomed.smarttrak.util.ManagementActionUtil;
 import com.biomed.smarttrak.util.MarketIndexer;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeTypeVO;
@@ -867,6 +868,8 @@ public class MarketManagementAction extends ManagementAction {
 				return; // We don't want to send redirects after an order/indent update
 			} else if("createArchive".equals(buildAction)) {
 				createArchive(req);
+			} else if("bulkLinkUpdate".equals(buildAction)) {
+				ManagementActionUtil.bulkUpdateAttributeLinks(dbConn, getCustomSchema(), req);
 			}
 		} catch (Exception e) {
 			log.error("Error attempting to build: ", e);
@@ -883,7 +886,6 @@ public class MarketManagementAction extends ManagementAction {
 		redirectRequest(msg, buildAction, req);
 	}
 
-	
 	/**
 	 * Create a copy of the supplied market and archive it.
 	 * @param req

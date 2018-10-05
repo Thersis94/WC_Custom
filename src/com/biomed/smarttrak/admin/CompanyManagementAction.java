@@ -14,6 +14,7 @@ import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
+import com.biomed.smarttrak.util.ManagementActionUtil;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeTypeVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
@@ -24,7 +25,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
@@ -744,56 +744,6 @@ public class CompanyManagementAction extends ManagementAction {
 
 
 	/**
-	 * Handle Bulk update of link Status and AttributeId.
-	 * @param req
-	 */
-	private void bulkUpdateLinks(ActionRequest req) {
-		String[] companyAttributeIds = req.getParameterValues("companyAttributeIds");
-		String statusNo = req.getParameter("statusNo");
-		String attributeId = req.getParameter("attributeId");
-		boolean hasStatus = !StringUtil.isEmpty(statusNo);
-		boolean hasAttributeId = !StringUtil.isEmpty(attributeId);
-		try(PreparedStatement ps = dbConn.prepareStatement(bulkUpdateLinksSql(companyAttributeIds.length, hasStatus, hasAttributeId))) {
-			int i = 1;
-			if(hasStatus) {
-				ps.setString(i++, statusNo);
-			}
-			if(hasAttributeId) {
-				ps.setString(i++, attributeId);
-			}
-			for(String caId : companyAttributeIds) {
-				ps.setString(i++, caId);
-			}
-			ps.executeUpdate();
-		} catch (SQLException e) {
-			log.error("Error Processing Code", e);
-		}
-	}
-
-	/**
-	 * Build Bulk Update Query for Links
-	 * @param hasAttributeId 
-	 * @param hasStatus 
-	 * @return
-	 */
-	private String bulkUpdateLinksSql(int attrCount, boolean hasStatus, boolean hasAttributeId) {
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("update ").append(getCustomSchema()).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR ");
-		if(hasStatus && hasAttributeId) {
-			sql.append("set status_no = ?, attribute_id = ?");
-		} else if(hasAttributeId) {
-			sql.append("set attribute_id = ? ");
-		} else if(hasStatus) {
-			sql.append("set status_no = ? ");
-		}
-		sql.append(DBUtil.WHERE_CLAUSE).append("company_attribute_id in (");
-		DBUtil.preparedStatmentQuestion(attrCount, sql);
-		sql.append(')');
-		return sql.toString();
-	}
-
-
-	/**
 	 * Generate empty content with titles based of the ContentType enum that
 	 * have been selected by the user on company creation or on new 
 	 * section selection.
@@ -1111,7 +1061,7 @@ public class CompanyManagementAction extends ManagementAction {
 				// Content generation is called via ajax so no redirect is needed
 				return;
 			} else if("bulkLinkUpdate".equals(buildAction)) {
-				bulkUpdateLinks(req);
+				ManagementActionUtil.bulkUpdateAttributeLinks(dbConn, getCustomSchema(), req);
 			}
 		} catch (Exception e) {
 			log.error("Error attempting to build: ", e);
