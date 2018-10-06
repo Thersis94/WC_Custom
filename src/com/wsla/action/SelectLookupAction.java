@@ -115,17 +115,14 @@ public class SelectLookupAction extends SBActionAdapter {
 			throw new ActionException("List type Not Found in KeyMap");
 
 		// @TODO Add language conversion
-		if (keyMap.containsKey(listType)) {
-			try {
-				GenericVO vo = keyMap.get(listType);
-
-				if (Convert.formatBoolean(vo.getValue())) {
-					Method method = this.getClass().getMethod(vo.getKey().toString(), req.getClass());
-					setModuleData(method.invoke(this, req));
-				} else {
-					Method method = this.getClass().getMethod(vo.getKey().toString());
-					setModuleData(method.invoke(this));
-				}
+		try {
+			if (Convert.formatBoolean(vo.getValue())) {
+				Method method = this.getClass().getMethod(vo.getKey().toString(), req.getClass());
+				putModuleData(method.invoke(this, req));
+			} else {
+				Method method = this.getClass().getMethod(vo.getKey().toString());
+				putModuleData(method.invoke(this));
+			}
 
 		} catch (Exception e) {
 			log.error("Unable to retrieve list: " + listType, e);

@@ -22,6 +22,7 @@ import com.siliconmtn.util.StringUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
 
 // WSLA Libs
@@ -85,12 +86,42 @@ public class ProviderAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ProviderVO provider = new ProviderVO(req);
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		provider.addLocation(new ProviderLocationVO(req));
+		
 		try {
-			db.save(provider);
-		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Unable to save provider infromation", e);
+			if (req.hasParameter("ticketAddRetailer")) {
+				addTicketRetailer(provider);
+			} else {
+				saveProvider(provider);
+			}
+			
+			// return the provider data
+			putModuleData(provider);
+			
+		} catch(Exception e) {
+			putModuleData(provider, 0, false, e.getLocalizedMessage(), true);
 		}
+
+	}
+	
+	
+	/**
+	 * Adds a new retailer (if not present) and a location for that retailer.
+	 * This is used by the ticket creation process when the location the user 
+	 * purchased the equipment is not in the db.  This adds a provider and location
+	 * on the fly
+	 * @param provider
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void addTicketRetailer(ProviderVO provider)  throws InvalidDataException, DatabaseException {
+		log.info("Saving retailer");
+		//saveProvider(provider);
+	}
+	
+	public void saveProvider(ProviderVO provider) throws InvalidDataException, DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.save(provider);
 	}
 
 	/**
