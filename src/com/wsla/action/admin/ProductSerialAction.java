@@ -29,6 +29,8 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
+import com.wsla.data.product.WarrantyVO;
+
 import static com.wsla.action.admin.ProductMasterAction.REQ_PRODUCT_ID;
 
 /****************************************************************************
@@ -123,11 +125,11 @@ public class ProductSerialAction extends BatchImport {
 
 		// Filter by search criteria
 		if (bst.hasSearch()) {
-			sql.append("and (p.product_nm like ? or p.cust_product_id like ? or p.sec_cust_product_id like ? or s.serial_no_txt like ?) ");
-			params.add(bst.getLikeSearch());
-			params.add(bst.getLikeSearch());
-			params.add(bst.getLikeSearch());
-			params.add(bst.getLikeSearch());
+			sql.append("and (lower(p.product_nm) like ? or lower(p.cust_product_id) like ? or lower(p.sec_cust_product_id) like ? or lower(s.serial_no_txt) like ?) ");
+			params.add(bst.getLikeSearch().toLowerCase());
+			params.add(bst.getLikeSearch().toLowerCase());
+			params.add(bst.getLikeSearch().toLowerCase());
+			params.add(bst.getLikeSearch().toLowerCase());
 		}
 
 		// always filter by productId
@@ -151,7 +153,7 @@ public class ProductSerialAction extends BatchImport {
 	public List<ProductWarrantyVO> getProductSerial(String productId, String serialNo) {
 		if (StringUtil.isEmpty(productId) || StringUtil.isEmpty(serialNo))
 			return Collections.emptyList();
-		
+
 		StringBuilder sql = new StringBuilder(256);
 		sql.append("select * from wsla_product_serial a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("wsla_product_warranty b ");
@@ -159,7 +161,7 @@ public class ProductSerialAction extends BatchImport {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("wsla_warranty c on ");
 		sql.append("b.warranty_id = c.warranty_id ");
 		sql.append("where lower(serial_no_txt) = ? and product_id = ? ");		
-		
+
 		List<Object> vals = new ArrayList<>();
 		vals.add(serialNo.toLowerCase());
 		vals.add(productId);
@@ -254,11 +256,18 @@ public class ProductSerialAction extends BatchImport {
 	private void addProductWarranties(ActionRequest req, ArrayList<? extends Object> entries)
 			throws ActionException {
 		String warrantyId = req.getParameter("warrantyId");
-		Date dt = Calendar.getInstance().getTime();
+		if (StringUtil.isEmpty(warrantyId)) return;
+
+		//get the warranty, then calculate expiration date for the product based on the warrantyDays, from today.
+		Calendar today = Calendar.getInstance();
+		WarrantyVO warranty = new WarrantyAction(getAttributes(), getDBConnection()).getWarranty(warrantyId);
+		today.add(Calendar.DATE, warranty.getWarrantyLength()); //e.g. add 90 days to today.
+		Date expDate = today.getTime();
+
 		ArrayList<ProductWarrantyVO> data = new ArrayList<>(entries.size());
 		for (Object obj : entries) {
 			ProductSerialNumberVO vo = (ProductSerialNumberVO) obj;
-			data.add(new ProductWarrantyVO(vo.getProductSerialId(), warrantyId, dt));
+			data.add(new ProductWarrantyVO(vo.getProductSerialId(), warrantyId, expDate));
 		}
 		//push these through the same batch-insert logic
 		super.saveBatchImport(req, data);

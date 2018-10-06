@@ -2,9 +2,11 @@ package com.wsla.data.product;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.Date;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -22,16 +24,16 @@ import com.siliconmtn.db.orm.Table;
  * @updates:
  ****************************************************************************/
 @Table(name="wsla_product_category_xr")
-public class ProductCategoryAssociationVO extends ProductCategoryVO {
+public class ProductCategoryAssociationVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 2867788858242677240L;
-	
+
 	// Member Variables
 	private String categoryAssociationId;
 	private String productId;
+	private String productCategoryId;
+	private Date createDate;
+	private String categoryCode;
 
 	/**
 	 * 
@@ -54,6 +56,12 @@ public class ProductCategoryAssociationVO extends ProductCategoryVO {
 		super(rs);
 	}
 
+	public ProductCategoryAssociationVO(String productId, String categoryId) {
+		this();
+		setProductId(productId);
+		setProductCategoryId(categoryId);
+	}
+
 	/**
 	 * @return the categoryAssociationId
 	 */
@@ -70,6 +78,24 @@ public class ProductCategoryAssociationVO extends ProductCategoryVO {
 		return productId;
 	}
 
+	@Column(name="product_category_id")
+	public String getProductCategoryId() {
+		return productCategoryId;
+	}
+
+	/**
+	 * @return the categoryName from the product_category (parent) table
+	 */
+	@Column(name="category_cd", isReadOnly=true)
+	public String getCategoryCode() {
+		return categoryCode;
+	}
+
+	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
+	public Date getCreateDate() {
+		return createDate;
+	}
+
 	/**
 	 * @param categoryAssociationId the categoryAssociationId to set
 	 */
@@ -84,5 +110,15 @@ public class ProductCategoryAssociationVO extends ProductCategoryVO {
 		this.productId = productId;
 	}
 
-}
+	public void setProductCategoryId(String productCategoryId) {
+		this.productCategoryId = productCategoryId;
+	}
 
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	public void setCategoryCode(String categoryCode) {
+		this.categoryCode = categoryCode;
+	}
+}

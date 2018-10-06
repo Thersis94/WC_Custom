@@ -8,6 +8,8 @@ import java.util.List;
 
 // SMT Base Libs 3.x
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.annotations.DataType;
+import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
@@ -206,8 +208,17 @@ public class ProductVO extends BeanDataVO {
 	}
 
 	/**
+	 * @param productName the productName to set
+	 */
+	@Importable(name="Product Name")
+	public void setProductName(String productName) {
+		this.productName = productName;
+	}
+
+	/**
 	 * @param customerProductId the customerProductId to set
 	 */
+	@Importable(name="Primary SKU")
 	public void setCustomerProductId(String customerProductId) {
 		this.customerProductId = customerProductId;
 	}
@@ -215,41 +226,15 @@ public class ProductVO extends BeanDataVO {
 	/**
 	 * @param secCustomerProductId the secCustomerProductId to set
 	 */
+	@Importable(name="Aux. SKU")
 	public void setSecCustomerProductId(String secCustomerProductId) {
 		this.secCustomerProductId = secCustomerProductId;
 	}
 
 	/**
-	 * @param productName the productName to set
-	 */
-	public void setProductName(String productName) {
-		this.productName = productName;
-	}
-
-	/**
-	 * @param firmware the firmware to set
-	 */
-	public void setFirmware(String firmware) {
-		this.firmware = firmware;
-	}
-
-	/**
-	 * @param discontinuedDate the discontinuedDate to set
-	 */
-	public void setDiscontinuedDate(Date discontinuedDate) {
-		this.discontinuedDate = discontinuedDate;
-	}
-
-	/**
-	 * @param supportEndDate the supportEndDate to set
-	 */
-	public void setSupportEndDate(Date supportEndDate) {
-		this.supportEndDate = supportEndDate;
-	}
-
-	/**
 	 * @param warrantyDays the warrantyDays to set
 	 */
+	@Importable(name="Warranty (Days, from date of purchase)", type=DataType.INT)
 	public void setWarrantyDays(int warrantyDays) {
 		this.warrantyDays = warrantyDays;
 	}
@@ -257,8 +242,33 @@ public class ProductVO extends BeanDataVO {
 	/**
 	 * @param setFlag the setFlag to set
 	 */
+	@Importable(name="Complete Unit (a set)", type=DataType.INT)
 	public void setSetFlag(int setFlag) {
 		this.setFlag = setFlag;
+	}
+
+	/**
+	 * @param firmware the firmware to set
+	 */
+	@Importable(name="Firmware Rev.")
+	public void setFirmware(String firmware) {
+		this.firmware = firmware;
+	}
+
+	/**
+	 * @param discontinuedDate the discontinuedDate to set
+	 */
+	@Importable(name="Manuf. Discontinued (Date)", type=DataType.DATE)
+	public void setDiscontinuedDate(Date discontinuedDate) {
+		this.discontinuedDate = discontinuedDate;
+	}
+
+	/**
+	 * @param supportEndDate the supportEndDate to set
+	 */
+	@Importable(name="Manuf. Support Ended (Date)", type=DataType.DATE)
+	public void setSupportEndDate(Date supportEndDate) {
+		this.supportEndDate = supportEndDate;
 	}
 
 	/**
@@ -322,6 +332,7 @@ public class ProductVO extends BeanDataVO {
 		return description;
 	}
 
+	@Importable(name="Description")
 	public void setDescription(String description) {
 		this.description = description;
 	}
@@ -340,6 +351,7 @@ public class ProductVO extends BeanDataVO {
 		return msrpCostNo;
 	}
 
+	@Importable(name="MSRP Cost", type=DataType.DOUBLE_PRIMITIVE)
 	public void setMsrpCostNo(double msrpCostNo) {
 		this.msrpCostNo = msrpCostNo;
 	}

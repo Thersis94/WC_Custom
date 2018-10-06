@@ -80,6 +80,24 @@ public class ProductSetVO extends ProductVO {
 	}
 
 	/**
+	 * needed here for sorting to work
+	 * @return the customerProductId
+	 */
+	@Column(name="cust_product_id")
+	public String getCustomerProductId() {
+		return super.getCustomerProductId();
+	}
+
+	/**
+	 * needed here for sorting to work
+	 * @return the productName
+	 */
+	@Column(name="product_nm")
+	public String getProductName() {
+		return super.getProductName();
+	}
+
+	/**
 	 * @param productSetId the productSetId to set
 	 */
 	public void setProductSetId(String productSetId) {

@@ -151,15 +151,20 @@ public class WarrantyAction extends SBActionAdapter {
 	 * Return a id/name pairing of warranties - used for selectpickers via the SelectLookupAction
 	 * @return
 	 */
-	public List<GenericVO> listWarranties() {
+	public List<GenericVO> listWarranties(String providerId) {
+		List<Object> params = null;
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select warranty_id as key, desc_txt as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_warranty ");
+		if (!StringUtil.isEmpty(providerId)) {
+			sql.append("where provider_id=? ");
+			params = Arrays.asList(providerId);
+		}
 		sql.append("order by desc_txt");
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
-		return db.executeSelect(sql.toString(), null, new GenericVO());
+		return db.executeSelect(sql.toString(), params, new GenericVO());
 	}
 }
