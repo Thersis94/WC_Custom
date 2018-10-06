@@ -2,14 +2,21 @@ package com.wsla.action.admin;
 
 // JDK 1.8.x
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
@@ -18,8 +25,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-// WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.data.product.ProductCategoryAssociationVO;
 // WSLA Libs
 import com.wsla.data.product.ProductVO;
 
@@ -35,30 +41,31 @@ import com.wsla.data.product.ProductVO;
  * @since Sep 24, 2018
  * @updates:
  ****************************************************************************/
+public class ProductMasterAction extends BatchImport {
 
-public class ProductMasterAction extends SBActionAdapter {
-	
-	/**
-	 * Helper Method to initialize class
-	 * @param attributes
-	 * @param dbConn
-	 */
-	public ProductMasterAction(Map<String, Object> attributes, SMTDBConnection dbConn) {
-		super();
-		this.attributes = attributes;
-		this.dbConn = dbConn;
-	}
-	
+	public static final String REQ_PRODUCT_ID = "productId";
+
 	public ProductMasterAction() {
 		super();
 	}
-	
+
 	/**
 	 * 
 	 * @param actionInit
 	 */
 	public ProductMasterAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+
+	/**
+	 * Helper Method to initialize class
+	 * @param attributes
+	 * @param dbConn
+	 */
+	public ProductMasterAction(Map<String, Object> attributes, SMTDBConnection dbConn) {
+		this();
+		setAttributes(attributes);
+		setDBConnection(dbConn);
 	}
 
 
@@ -68,7 +75,7 @@ public class ProductMasterAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String productId = req.getParameter("productId");
+		String productId = req.getParameter(REQ_PRODUCT_ID);
 		String providerId = req.getParameter("providerId");
 		Integer setFlag = req.hasParameter("setFlag") ? Convert.formatInteger(req.getParameter("setFlag")) : null;
 		setModuleData(getProducts(productId, providerId, setFlag, new BSTableControlVO(req, ProductVO.class)));
@@ -114,11 +121,12 @@ public class ProductMasterAction extends SBActionAdapter {
 
 		// Filter by search criteria
 		if (bst.hasSearch()) {
-			sql.append("and (pm.product_nm like ? or pm.cust_product_id like ? or pm.sec_cust_product_id like ? or p.provider_nm like ?) ");
-			params.add(bst.getLikeSearch());
-			params.add(bst.getLikeSearch());
-			params.add(bst.getLikeSearch());
-			params.add(bst.getLikeSearch());
+			sql.append("and (lower(pm.product_nm) like ? or lower(pm.cust_product_id) like ? ");
+			sql.append("or lower(pm.sec_cust_product_id) like ? or lower(p.provider_nm) like ?) ");
+			params.add(bst.getLikeSearch().toLowerCase());
+			params.add(bst.getLikeSearch().toLowerCase());
+			params.add(bst.getLikeSearch().toLowerCase());
+			params.add(bst.getLikeSearch().toLowerCase());
 		}
 
 		// Filter by provider type
@@ -137,5 +145,102 @@ public class ProductMasterAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ProductVO(), bst.getLimit(), bst.getOffset());
+	}
+
+	/* (non-Javadoc)
+	 * @see com.wsla.action.admin.BatchImport#getBatchImportableClass()
+	 */
+	@Override
+	protected Class<?> getBatchImportableClass() {
+		return ProductVO.class;
+	}
+
+
+	/**
+	 * Remove any entries that are already in the system (compare to provider's other SKUs)
+	 * (non-Javadoc)
+	 * @see com.wsla.action.admin.BatchImport#validateBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
+	 */
+	@Override
+	protected void validateBatchImport(ActionRequest req,
+			ArrayList<? extends Object> entries) throws ActionException {
+		String sql = StringUtil.join("select lower(cust_product_id) as key from ", getCustomSchema(), 
+				"wsla_product_master where provider_id=?");
+
+		// load this product's SKUs from the DB and store them as a Set for quick reference.
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<GenericVO> skus = db.executeSelect(sql, Arrays.asList(req.getParameter("providerId")), new GenericVO());
+		Set<String> products = new HashSet<>(skus.size());
+		for (GenericVO vo : skus)
+			products.add(StringUtil.checkVal(vo.getKey()));
+
+		//remove items from the batch import which are already in the database
+		Iterator<? extends Object> iter = entries.iterator();
+		while (iter.hasNext()) {
+			ProductVO vo = (ProductVO) iter.next();
+			if (!StringUtil.isEmpty(vo.getCustomerProductId()) && products.contains(vo.getCustomerProductId().toLowerCase())) {
+				iter.remove();
+				log.debug("omitting pre-existing product: " + vo.getCustomerProductId());
+			}
+		}
+	}
+
+
+	/*
+	 * set additional values into the VOs from request params (oem, category, etc.)
+	 * (non-Javadoc)
+	 * @see com.wsla.action.admin.BatchImport#transposeBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
+	 */
+	@Override
+	protected void transposeBatchImport(ActionRequest req,
+			ArrayList<? extends Object> entries) throws ActionException {
+		//set the providerId for all beans to the one passed on the request
+		String providerId = req.getParameter("providerId");
+		Date dt = Calendar.getInstance().getTime();
+		for (Object obj : entries) {
+			ProductVO vo = (ProductVO) obj;
+			vo.setProviderId(providerId);
+			vo.setActiveFlag(1);
+			vo.setCreateDate(dt);
+		}
+	}
+
+
+	/*
+	 * save the products, then save their category_xr's
+	 * (non-Javadoc)
+	 * @see com.wsla.action.admin.BatchImport#saveBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
+	 */
+	@Override
+	protected void saveBatchImport(ActionRequest req,
+			ArrayList<? extends Object> entries) throws ActionException {
+		//save the product_master table
+		super.saveBatchImport(req, entries);
+
+		//save the product_category_xr table
+		if (req.hasParameter("categoryId"))
+			addProductCategories(req, entries, req.getParameter("categoryId"));
+
+		//possibly save the 2nd category
+		if (req.hasParameter("categoryId2"))
+			addProductCategories(req, entries, req.getParameter("categoryId2"));
+	}
+
+
+	/**
+	 * Creates a product_category record for each of the products saved
+	 * @param req
+	 * @param entries
+	 * @throws ActionException 
+	 */
+	private void addProductCategories(ActionRequest req, ArrayList<? extends Object> entries, 
+			String categoryId) throws ActionException {
+		ArrayList<ProductCategoryAssociationVO> data = new ArrayList<>(entries.size());
+		for (Object obj : entries) {
+			ProductVO vo = (ProductVO) obj;
+			data.add(new ProductCategoryAssociationVO(vo.getProductId(), categoryId));
+		}
+		//push these through the same batch-insert logic
+		super.saveBatchImport(req, data);
 	}
 }

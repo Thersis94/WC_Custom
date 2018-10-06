@@ -26,24 +26,19 @@ import com.siliconmtn.util.StringUtil;
 @Table(name="wsla_warranty")
 public class WarrantyVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -4567698594237550575L;
-	
+
 	// Member Variables
 	private String warrantyId;
 	private WarrantyType warrantyType;
 	private String providerId;
+	private String providerName;
 	private String description;
 	private int requireApprovalFlag;
 	private int warrantyLength;
 	private Date createDate;
 	private Date updateDate;
 
-	/**
-	 * 
-	 */
 	public WarrantyVO() {
 		super();
 	}
@@ -139,13 +134,13 @@ public class WarrantyVO extends BeanDataVO {
 	public void setWarrantyType(WarrantyType warrantyType) {
 		this.warrantyType = warrantyType;
 	}
-	
+
 	/**
 	 * @param warrantyType the warrantyType to set
 	 */
 	public void setWarrantyType(String strWarrantyType) {
 		if (StringUtil.checkVal(strWarrantyType).isEmpty()) return;
-		
+
 		this.warrantyType = WarrantyType.valueOf(strWarrantyType);
 	}
 
@@ -191,5 +186,12 @@ public class WarrantyVO extends BeanDataVO {
 		this.requireApprovalFlag = requireApprovalFlag;
 	}
 
-}
+	@Column(name="provider_nm", isReadOnly=true)
+	public String getProviderName() {
+		return providerName;
+	}
 
+	public void setProviderName(String providerName) {
+		this.providerName = providerName;
+	}
+}

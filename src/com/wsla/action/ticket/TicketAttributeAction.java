@@ -53,13 +53,11 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("Ticket Attribute action Retrieve called.");
+		log.debug("###############Ticket Attribute action Retrieve called.");
 		
 		//isolate and control flow for attribute ACL changes
-		if (req.hasParameter("ACLTable") || req.hasParameter("ACLChange")) {
-			
-			
-			setModuleData(processACL(req));
+		if (req.hasParameter("aclTable")) {
+			setModuleData(processAclTable(StringUtil.checkVal(req.getParameter("attributeCode"))));
 			return;
 		}
 		
@@ -77,26 +75,24 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private Object processACL(ActionRequest req) {
+	private Object processAclTable(String attributeCode) {
 		
-		StringBuilder sql = new StringBuilder(259);
-		sql.append("select a.role_id, a.role_nm, b.* from core.role a ");
+		StringBuilder sql = new StringBuilder(365);
+		sql.append("select a.role_id, a.role_nm, b.ticket_attribute_acl_cd, b.attribute_cd, b.read_flg, b.write_flg, b.create_dt from core.role a ");
 		sql.append("left outer join ").append(getCustomSchema()).append("wsla_ticket_attribute_acl b ");
 		sql.append("on a.role_id = b.role_id and b.attribute_cd = ? where (organization_id is null or organization_id = 'WSLA' ) ");
 		sql.append("and a.role_id not in ('0','WSLA_PROSPECT','10') order by a.role_nm asc ");
 
 		List<Object> params = new ArrayList<>();
-		params.add(StringUtil.checkVal(req.getParameter("attributeCode")));
+		params.add(attributeCode);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
-		List<TicketAttributeACLVO> data = db.executeSelect(sql.toString(), params, new TicketAttributeACLVO());
-		log.debug("############ data size " + data.size());
-		
-		return data;
+		return db.executeSelect(sql.toString(), params, new TicketAttributeACLVO(), "role_id");
 	}
 
 
 	/**
+	 * gets the list of attributes
 	 * @param hasActiveFlag 
 	 * @param providerId
 	 * @param providerTypeId
@@ -148,14 +144,71 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("ticket attribute build called");
+				
+		//isolate and control flow for attribute ACL changes
+		if (req.hasParameter("aclChange")) {
+			processAclChage(req);
+			return;
+		}
+
 		TicketAttributeVO tvo = new TicketAttributeVO(req);
-		boolean isInsert = Convert.formatBoolean(req.getParameter("isInsert"));
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
 			db.save(tvo);
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save ticket attribute", e);
 		}
+	}
+
+
+	/**
+	 * processes a change to the acl rules for a role
+	 * @param req
+	 * @return
+	 */
+	private void processAclChage(ActionRequest req) {
+		TicketAttributeACLVO tsVo = new TicketAttributeACLVO(req);
+		log.debug(tsVo);
+		
+		if("All".equals(tsVo.getRoleId())) {
+			processAllRoles(tsVo);
+			return;
+			
+		}
+		
+		//check to make sure there isnt already a relationship for this attribute and role
+		StringBuilder sb = new StringBuilder(110);
+		sb.append("delete from ").append(getCustomSchema()).append("wsla_ticket_attribute_acl where attribute_cd = ? and role_id = ? " );
+		List<String> fields = new ArrayList<>();
+		fields.add("attribute_cd");
+		fields.add("role_id");
+		
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		try {
+			int removedCount = db.executeSqlUpdate(sb.toString(), tsVo, fields);
+			log.debug("### removed " + removedCount + " number of records");
+		} catch (DatabaseException e1) {
+			log.error("could not delete old records",e1);
+		}
+		
+		//insert the new role attribute relationship.
+		try {
+			log.debug("##insert record "+ tsVo);
+			db.insert(tsVo);
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("could not insert new acl record",e);
+		}
+	}
+
+
+	/**
+	 * @param tsVo
+	 */
+	private void processAllRoles(TicketAttributeACLVO tsVo) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

@@ -9,6 +9,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ProductCategoryVO.java
@@ -27,16 +28,16 @@ import com.siliconmtn.db.orm.Table;
 @Table(name="wsla_product_category")
 public class ProductCategoryVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -9010122525350010581L;
-	
+
 	// Member Variables
-	private String productCategorCode;
+	private String productCategoryId;
 	private String parentId;
-	private String categoryName;
+	private String categoryCode;
+	private String groupCode;
 	private Date createDate;
+
+	private String parentCode;
 
 	/**
 	 * 
@@ -60,17 +61,17 @@ public class ProductCategoryVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the productCategorCode
+	 * @return the productCategoryId
 	 */
-	@Column(name="product_category_cd", isPrimaryKey=true)
-	public String getProductCategorCode() {
-		return productCategorCode;
+	@Column(name="product_category_id", isPrimaryKey=true)
+	public String getProductCategoryId() {
+		return productCategoryId;
 	}
 
 	/**
 	 * @return the parentId
 	 */
-	@Column(name="parentId")
+	@Column(name="parent_id")
 	public String getParentId() {
 		return parentId;
 	}
@@ -78,9 +79,14 @@ public class ProductCategoryVO extends BeanDataVO {
 	/**
 	 * @return the categoryName
 	 */
-	@Column(name="category_nm")
-	public String getCategoryName() {
-		return categoryName;
+	@Column(name="category_cd")
+	public String getCategoryCode() {
+		return categoryCode;
+	}
+
+	@Column(name="group_cd")
+	public String getGroupCode() {
+		return groupCode;
 	}
 
 	/**
@@ -91,25 +97,30 @@ public class ProductCategoryVO extends BeanDataVO {
 		return createDate;
 	}
 
+	@Column(name="parent_cd")
+	public String getParentCode() {
+		return parentCode;
+	}
+
 	/**
-	 * @param productCategorCode the productCategorCode to set
+	 * @param productCategorCode the productCategoryId to set
 	 */
-	public void setProductCategorCode(String productCategorCode) {
-		this.productCategorCode = productCategorCode;
+	public void setProductCategoryId(String productCategoryId) {
+		this.productCategoryId = productCategoryId;
 	}
 
 	/**
 	 * @param parentId the parentId to set
 	 */
 	public void setParentId(String parentId) {
-		this.parentId = parentId;
+		this.parentId = StringUtil.checkVal(parentId, null);
 	}
 
 	/**
-	 * @param categoryName the categoryName to set
+	 * @param categoryName the categoryCode to set
 	 */
-	public void setCategoryName(String categoryName) {
-		this.categoryName = categoryName;
+	public void setCategoryCode(String categoryCode) {
+		this.categoryCode = categoryCode;
 	}
 
 	/**
@@ -119,5 +130,11 @@ public class ProductCategoryVO extends BeanDataVO {
 		this.createDate = createDate;
 	}
 
-}
+	public void setGroupCode(String groupCode) {
+		this.groupCode = groupCode;
+	}
 
+	public void setParentCode(String parentCode) {
+		this.parentCode = parentCode;
+	}
+}

@@ -6,6 +6,7 @@ import java.util.Date;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -23,27 +24,27 @@ import com.siliconmtn.db.orm.Table;
  * @since Sep 15, 2018
  * @updates:
  ****************************************************************************/
-@Table(name="wsla_product_warrranty")
-public class ProductWarrantyVO extends WarrantyVO {
+@Table(name="wsla_product_warranty")
+public class ProductWarrantyVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -4567698594237550575L;
-	
+
 	// Member Variables
 	private String productWarrantyId;
-	private String productSerialNumberId;
+	private String productSerialId;
 	private Date expirationDate;
+	private String warrantyId;
+	private WarrantyVO warranty;
+	private Date createDate;
+	private Date updateDate;
 
-	// Bean Sub-elements
-	private ProductSerialNumberVO productSerialNumber = null;
-	
+
 	/**
 	 * 
 	 */
 	public ProductWarrantyVO() {
 		super();
+		warranty = new WarrantyVO();
 	}
 
 	/**
@@ -60,6 +61,13 @@ public class ProductWarrantyVO extends WarrantyVO {
 		super(rs);
 	}
 
+	public ProductWarrantyVO(String productSerialId, String warrantyId, Date expDate) {
+		this();
+		setProductSerialId(productSerialId);
+		warranty.setWarrantyId(warrantyId);
+		setExpirationDate(expDate);
+	}
+
 	/**
 	 * @return the productWarrantyId
 	 */
@@ -67,38 +75,42 @@ public class ProductWarrantyVO extends WarrantyVO {
 	public String getProductWarrantyId() {
 		return productWarrantyId;
 	}
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.wsla.data.product.WarrantyVO#getWarrantyId()
-	 */
-	@Override
+
 	@Column(name="warranty_id")
 	public String getWarrantyId() {
-		return super.getWarrantyId();
+		return warrantyId;
 	}
 
 	/**
-	 * @return the productSerialNumberId
+	 * @return the productSerialId
 	 */
-	@Column(name="product_serial_number_id")
-	public String getProductSerialNumberId() {
-		return productSerialNumberId;
+	@Column(name="product_serial_id")
+	public String getProductSerialId() {
+		return productSerialId;
 	}
 
 	/**
 	 * @return the expirationDate
 	 */
-	@Column(name="expiration_dt", isUpdateOnly=true, isAutoGen=true)
+	@Column(name="expiration_dt")
 	public Date getExpirationDate() {
 		return expirationDate;
 	}
 
 	/**
-	 * @return the productSerialNumber
+	 * @return the createDate
 	 */
-	public ProductSerialNumberVO getProductSerialNumber() {
-		return productSerialNumber;
+	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	/**
+	 * @return the updateDate
+	 */
+	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
+	public Date getUpdateDate() {
+		return updateDate;
 	}
 
 	/**
@@ -108,11 +120,15 @@ public class ProductWarrantyVO extends WarrantyVO {
 		this.productWarrantyId = productWarrantyId;
 	}
 
+	public void setWarrantyId(String warrantyId) {
+		this.warrantyId = warrantyId;
+	}
+
 	/**
-	 * @param productSerialNumberId the productSerialNumberId to set
+	 * @param productSerialNumberId the productSerialId to set
 	 */
-	public void setProductSerialNumberId(String productSerialNumberId) {
-		this.productSerialNumberId = productSerialNumberId;
+	public void setProductSerialId(String productSerialId) {
+		this.productSerialId = productSerialId;
 	}
 
 	/**
@@ -123,12 +139,25 @@ public class ProductWarrantyVO extends WarrantyVO {
 	}
 
 	/**
-	 * @param productSerialNumber the productSerialNumber to set
+	 * @param createDate the createDate to set
 	 */
-	@BeanSubElement
-	public void setProductSerialNumber(ProductSerialNumberVO productSerialNumber) {
-		this.productSerialNumber = productSerialNumber;
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
 	}
 
-}
+	/**
+	 * @param updateDate the updateDate to set
+	 */
+	public void setUpdateDate(Date updateDate) {
+		this.updateDate = updateDate;
+	}
 
+	public WarrantyVO getWarranty() {
+		return warranty;
+	}
+
+	@BeanSubElement
+	public void setWarranty(WarrantyVO warranty) {
+		this.warranty = warranty;
+	}
+}
