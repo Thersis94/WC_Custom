@@ -19,10 +19,13 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.wsla.action.admin.ProductCategoryAction;
 //WSLA Libs
+import static com.wsla.action.admin.ProductCategoryAction.PROD_CAT_ID;
 import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProviderAction;
@@ -56,7 +59,6 @@ public class SelectLookupAction extends SBActionAdapter {
 	public static final String SELECT_KEY = "selectType";
 
 	private static final String PROVIDER_TYPE = "providerType";
-	private static final String PROD_CAT_ID = "productCategoryId";
 	private static final String PROVIDER_ID = "providerId";
 
 	private static Map<String, GenericVO> keyMap = new HashMap<>(16);
@@ -80,9 +82,10 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
 		keyMap.put("defect", new GenericVO("getDefects", Boolean.TRUE));
 		keyMap.put("product", new GenericVO("getProducts", Boolean.TRUE));
-		keyMap.put("warranty", new GenericVO("getWarrantyList", Boolean.FALSE));
+		keyMap.put("warranty", new GenericVO("getWarrantyList", Boolean.TRUE));
 		keyMap.put("warrantyType", new GenericVO("getWarrantyTypeList", Boolean.FALSE));
 		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
+		keyMap.put("categoryGroup", new GenericVO("getCategoryGroups", Boolean.FALSE));
 	}
 
 	/**
@@ -322,11 +325,24 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Returns a list of warranties in the DB
 	 * @return
 	 */
-	public List<GenericVO> getWarrantyList() {
-		return new WarrantyAction(getAttributes(), getDBConnection()).listWarranties();
+	public List<GenericVO> getWarrantyList(ActionRequest req) {
+		String providerId = req.getParameter(PROVIDER_ID);
+
+		//possibly use productId to find providerId
+		if (req.hasParameter("productId")) {
+			String sql = StringUtil.join("select provider_id as key from ", getCustomSchema(), 
+					"wsla_product_master where product_id=?");
+			log.debug(sql);
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			List<GenericVO> data = db.executeSelect(sql, Arrays.asList(req.getParameter("productId")), new GenericVO());
+			if (data != null && !data.isEmpty())
+				providerId = StringUtil.checkVal(data.get(0).getKey());
+		}
+
+		return new WarrantyAction(getAttributes(), getDBConnection()).listWarranties(providerId);
 	}
-	
-	
+
+
 	/**
 	 * Returns a list of WarrantyType values - from the Enum
 	 * @return
@@ -347,26 +363,16 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getProductCategories(ActionRequest req) {
-		String productCategoryId = req.getStringParameter(PROD_CAT_ID, "");
-		List<Object> params = new ArrayList<>();
+		return new ProductCategoryAction(getAttributes(), getDBConnection()).getCategoryList(req);
+	}
 
-		boolean allLevels = req.getBooleanParameter("allLevels");
-		StringBuilder sql = new StringBuilder(196);
-		sql.append("select product_category_id as key, category_cd as value from ");
-		sql.append(getCustomSchema()).append("wsla_product_category ");
-		sql.append("where 1=1 ");
 
-		if (! productCategoryId.isEmpty()) {
-			sql.append("and parent_id = ? ");
-			params.add(productCategoryId);
-		} else if (! allLevels) {
-			sql.append("and parent_id is null ");
-		}
-
-		sql.append("order by category_cd ");
-
-		// Execute and return
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), params, new GenericVO());
+	/**
+	 * Return a distinct list of Group_CD values from the product_group table
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getCategoryGroups() {
+		return new ProductCategoryAction(getAttributes(), getDBConnection()).getGroupList();
 	}
 }
