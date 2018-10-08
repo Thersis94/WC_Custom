@@ -33,6 +33,9 @@ public class ProviderLocationVO extends GeocodeLocation {
 	 * 
 	 */
 	private static final long serialVersionUID = -923102909693893896L;
+	
+	
+	public static final String SINGLE_LINE_ADDRESS = "singleLineAddress";
 
 	// Member Variables
 	private String providerId;

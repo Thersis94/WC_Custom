@@ -18,6 +18,7 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
@@ -76,7 +77,9 @@ public class ProviderAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String providerId = req.getParameter("providerId");
 		String providerTypeId = req.getParameter("providerTypeId");
-		setModuleData(getProviders(providerId, providerTypeId, new BSTableControlVO(req, ProviderVO.class)));
+		String reviewFlag = req.getParameter("reviewFlag");
+		BSTableControlVO bst = new BSTableControlVO(req, ProviderVO.class);
+		setModuleData(getProviders(providerId, providerTypeId, reviewFlag, bst));
 	}
 
 	/*
@@ -92,6 +95,11 @@ public class ProviderAction extends SBActionAdapter {
 			if (req.hasParameter("ticketAddRetailer")) {
 				addTicketRetailer(provider);
 			} else {
+				// If provider needed to be reviewed and it is approved, change the review flag to 0
+				if (provider.getReviewFlag() == 1 && req.getBooleanParameter("reviewApproved")) {
+					provider.setReviewFlag(0);
+				}
+				
 				saveProvider(provider);
 			}
 			
@@ -115,10 +123,33 @@ public class ProviderAction extends SBActionAdapter {
 	 * @throws DatabaseException
 	 */
 	public void addTicketRetailer(ProviderVO provider)  throws InvalidDataException, DatabaseException {
-		log.info("Saving retailer");
-		//saveProvider(provider);
+		log.info("ID: " + provider.getProviderId());
+		boolean newProvider = false;
+		// If the provider id is missing, add a new provider.  Provider id assigned during add
+		if (StringUtil.isEmpty(provider.getProviderId())) {
+			newProvider = true;
+			provider.setReviewFlag(1);
+			saveProvider(provider);
+		}
+		
+		// Add the location
+		provider.getLocations().get(0).setProviderId(provider.getProviderId());
+		provider.getLocations().get(0).setActiveFlag(1);
+		provider.getLocations().get(0).setReviewFlag(1);
+		if (newProvider) provider.getLocations().get(0).setDefaultFlag(1);
+		
+		log.info("Adding provider loc: " + provider.getLocations().get(0));
+		// Save the location
+		ProviderLocationAction pla = new ProviderLocationAction(getAttributes(), getDBConnection());
+		pla.saveLocation(provider.getLocations().get(0));
 	}
 	
+	/**
+	 * Saves the provider supplied
+	 * @param provider
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
 	public void saveProvider(ProviderVO provider) throws InvalidDataException, DatabaseException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(provider);
@@ -131,7 +162,7 @@ public class ProviderAction extends SBActionAdapter {
 	 * @param providerId
 	 * @return
 	 */
-	public GridDataVO<ProviderVO> getProviders(String providerId, String providerType, BSTableControlVO bst) {
+	public GridDataVO<ProviderVO> getProviders(String providerId, String providerType, String reviewFlag, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(72);
 		sql.append("select * from ").append(schema).append("wsla_provider where 1=1 ");
@@ -153,6 +184,12 @@ public class ProviderAction extends SBActionAdapter {
 		if (! StringUtil.isEmpty(providerType)) {
 			sql.append("and provider_type_id = ? ");
 			params.add(providerType);
+		}
+		
+		// Filter by review flag
+		if (! StringUtil.isEmpty(reviewFlag)) {
+			sql.append("and review_flg = ? ");
+			params.add(Convert.formatInteger(reviewFlag, 0));
 		}
 
 		sql.append(bst.getSQLOrderBy("provider_nm",  "asc"));
