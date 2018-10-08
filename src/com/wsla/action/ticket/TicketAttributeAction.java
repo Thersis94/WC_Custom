@@ -53,7 +53,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("###############Ticket Attribute action Retrieve called.");
+		log.debug("Ticket Attribute action Retrieve called.");
 		
 		//isolate and control flow for attribute ACL changes
 		if (req.hasParameter("aclTable")) {
@@ -188,14 +188,12 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		
 		try {
 			int removedCount = db.executeSqlUpdate(sb.toString(), tsVo, fields);
-			log.debug("### removed " + removedCount + " number of records");
 		} catch (DatabaseException e1) {
 			log.error("could not delete old records",e1);
 		}
 		
 		//insert the new role attribute relationship.
 		try {
-			log.debug("##insert record "+ tsVo);
 			db.insert(tsVo);
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("could not insert new acl record",e);
