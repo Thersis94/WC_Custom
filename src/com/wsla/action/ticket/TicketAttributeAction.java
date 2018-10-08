@@ -170,7 +170,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		TicketAttributeACLVO tsVo = new TicketAttributeACLVO(req);
 		log.debug(tsVo);
 		
-		if("All".equals(tsVo.getRoleId())) {
+		if("read_ALL".equals(tsVo.getRoleId()) || "write_ALL".equals(tsVo.getRoleId()) ) {
 			processAllRoles(tsVo);
 			return;
 			
@@ -207,8 +207,28 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 * @param tsVo
 	 */
 	private void processAllRoles(TicketAttributeACLVO tsVo) {
-		// TODO Auto-generated method stub
+		//select all with the same attribute id use the select to build all the vos
+		@SuppressWarnings("unchecked")
+		List<TicketAttributeACLVO> data = (List<TicketAttributeACLVO>) processAclTable(tsVo.getAttributeCode());
 		
+		
+		//loop the vos and update the correct read or write flag
+		for(TicketAttributeACLVO d : data) {
+			//if its read all set all the read flags
+			if ("read_ALL".equals(tsVo.getRoleId())) {
+				d.setReadFlag(tsVo.getReadFlag());
+			}else {
+			//else is a write flag and set them all 
+				d.setWriteFlag(tsVo.getWriteFlag());
+			}
+			d.setAttributeCode(tsVo.getAttributeCode());
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			log.debug(d);
+			try {
+				db.save(d);
+			} catch (InvalidDataException | DatabaseException e) {
+				log.error("could not save attribute acl",e);
+			}
+		}
 	}
-
 }
