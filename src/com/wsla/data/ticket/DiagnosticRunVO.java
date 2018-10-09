@@ -3,6 +3,7 @@ package com.wsla.data.ticket;
 // JDK 1.8.x
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -12,6 +13,11 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.wsla.data.ticket.DiagnosticTicketVO.Outcome;
 
 /****************************************************************************
  * <b>Title</b>: DiagnosticRunVO.java
@@ -35,10 +41,10 @@ public class DiagnosticRunVO extends BeanDataVO {
 	
 	// Member Variables
 	private String diagnosticRunId;
-	private String ticketAssignmentID;
+	private String ticketAssignmentId;
 	private String ticketId;
 	private String dispositionedBy;
-	private String comments;
+	private String diagComments;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -57,6 +63,7 @@ public class DiagnosticRunVO extends BeanDataVO {
 	 */
 	public DiagnosticRunVO(ActionRequest req) {
 		super(req);
+		assignDiagnostics(req);
 	}
 
 	/**
@@ -64,6 +71,33 @@ public class DiagnosticRunVO extends BeanDataVO {
 	 */
 	public DiagnosticRunVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Since the diagnostics are in a grid of radio and checkboxes, we need to process 
+	 * the data a little bit differently from the request
+	 * @param req
+	 */
+	protected void assignDiagnostics(ActionRequest req) {
+		// Assign the user who is submitting the request		
+		dispositionedBy = ((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA)).getProfileId();
+		
+		// Since the runs will be insert only, assign the uuid so it can be 
+		// assigned to the dt 
+		this.setDiagnosticRunId(new UUIDGenerator().getUUID());
+		
+		// Loop the request and assign the diagnostics
+		for (String name : Collections.list(req.getParameterNames())) {
+			if (StringUtil.checkVal(name).startsWith("diag_") && ! StringUtil.checkVal(name).endsWith("_resolved")) {
+				DiagnosticTicketVO dtv = new DiagnosticTicketVO();
+				dtv.setDiagnosticTicketId(new UUIDGenerator().getUUID());
+				dtv.setDiagnosticRunId(diagnosticRunId);
+				dtv.setDiagnosticCode(name.substring(5));
+				dtv.setOutcome(Outcome.valueOf(req.getStringParameter(name, "NA")));
+				dtv.setIssueResolvedFlag(req.getIntegerParameter(name + "_resolved", 0));
+				this.addDiagnostic(dtv);
+			}
+		}
 	}
 
 	/**
@@ -78,8 +112,8 @@ public class DiagnosticRunVO extends BeanDataVO {
 	 * @return the ticketAssignmentID
 	 */
 	@Column(name="ticket_assig_id")
-	public String getTicketAssignmentID() {
-		return ticketAssignmentID;
+	public String getTicketAssignmentId() {
+		return ticketAssignmentId;
 	}
 
 	/**
@@ -102,8 +136,8 @@ public class DiagnosticRunVO extends BeanDataVO {
 	 * @return the comments
 	 */
 	@Column(name="diag_comment_txt")
-	public String getComments() {
-		return comments;
+	public String getDiagComments() {
+		return diagComments;
 	}
 
 	/**
@@ -139,8 +173,8 @@ public class DiagnosticRunVO extends BeanDataVO {
 	/**
 	 * @param ticketAssignmentID the ticketAssignmentID to set
 	 */
-	public void setTicketAssignmentID(String ticketAssignmentID) {
-		this.ticketAssignmentID = ticketAssignmentID;
+	public void setTicketAssignmentId(String ticketAssignmentId) {
+		this.ticketAssignmentId = ticketAssignmentId;
 	}
 
 	/**
@@ -160,8 +194,8 @@ public class DiagnosticRunVO extends BeanDataVO {
 	/**
 	 * @param comments the comments to set
 	 */
-	public void setComments(String comments) {
-		this.comments = comments;
+	public void setDiagComments(String diagComments) {
+		this.diagComments = diagComments;
 	}
 
 	/**

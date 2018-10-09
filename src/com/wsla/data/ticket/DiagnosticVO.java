@@ -31,9 +31,8 @@ public class DiagnosticVO extends BeanDataVO {
 	private static final long serialVersionUID = -1390238180460592469L;
 	
 	// Member Variables
-	private String diagnosticId;
+	private String diagnosticCode;
 	private String productCategoryId;
-	private String diagnosticName;
 	private String description;
 	private int serviceCenterFlag;
 	private int casFlag;
@@ -64,9 +63,9 @@ public class DiagnosticVO extends BeanDataVO {
 	/**
 	 * @return the diagnosticId
 	 */
-	@Column(name="diagnostic_id", isPrimaryKey=true)
-	public String getDiagnosticId() {
-		return diagnosticId;
+	@Column(name="diagnostic_cd", isPrimaryKey=true)
+	public String getDiagnosticCode() {
+		return diagnosticCode;
 	}
 
 	/**
@@ -75,14 +74,6 @@ public class DiagnosticVO extends BeanDataVO {
 	@Column(name="product_category_id")
 	public String getProductCategoryId() {
 		return productCategoryId;
-	}
-
-	/**
-	 * @return the diagnosticName
-	 */
-	@Column(name="diagnostic_nm")
-	public String getDiagnosticName() {
-		return diagnosticName;
 	}
 
 	/**
@@ -128,8 +119,8 @@ public class DiagnosticVO extends BeanDataVO {
 	/**
 	 * @param diagnosticId the diagnosticId to set
 	 */
-	public void setDiagnosticId(String diagnosticId) {
-		this.diagnosticId = diagnosticId;
+	public void setDiagnosticCode(String diagnosticCode) {
+		this.diagnosticCode = diagnosticCode;
 	}
 
 	/**
@@ -138,14 +129,7 @@ public class DiagnosticVO extends BeanDataVO {
 	public void setProductCategoryId(String productCategoryId) {
 		this.productCategoryId = productCategoryId;
 	}
-
-	/**
-	 * @param diagnosticName the diagnosticName to set
-	 */
-	public void setDiagnosticName(String diagnosticName) {
-		this.diagnosticName = diagnosticName;
-	}
-
+	
 	/**
 	 * @param description the description to set
 	 */

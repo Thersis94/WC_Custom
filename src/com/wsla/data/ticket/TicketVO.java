@@ -43,8 +43,9 @@ public class TicketVO extends BeanDataVO {
 	private String ticketIdText;
 	private String ticketName;
 	private String description;
-	private String warrantyProductId;
+	private String productWarrantyId;
 	private String productCategoryId;
+	private String productSerialId;
 	private StatusCode statusCode;
 	private int warrantyValidFlag;
 	private Date purchaseDate;
@@ -55,6 +56,7 @@ public class TicketVO extends BeanDataVO {
 	private List<TicketDataVO> ticketData = new ArrayList<>(32);
 	private List<TicketAssignmentVO> assignments = new ArrayList<>();
 	private List<TicketLedgerVO> timeline = new ArrayList<>();
+	private List<DiagnosticRunVO> diagnosticRun = new ArrayList<>();
 	
 	/**
 	 * 
@@ -144,9 +146,17 @@ public class TicketVO extends BeanDataVO {
 	/**
 	 * @return the warrantyProductId
 	 */
-	@Column(name="warranty_product_id")
-	public String getWarrantyProductId() {
-		return warrantyProductId;
+	@Column(name="product_warranty_id")
+	public String getProductWarrantyId() {
+		return StringUtil.isEmpty(productWarrantyId) ? null : productWarrantyId;
+	}
+
+	/**
+	 * @return the productSerialId
+	 */
+	@Column(name="product_serial_id")
+	public String getProductSerialId() {
+		return StringUtil.isEmpty(productSerialId) ? null : productSerialId;
 	}
 
 	/**
@@ -205,6 +215,13 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the diagnosticRun
+	 */
+	public List<DiagnosticRunVO> getDiagnosticRun() {
+		return diagnosticRun;
+	}
+
+	/**
 	 * @return the timeline
 	 */
 	public List<TicketLedgerVO> getTimeline() {
@@ -247,10 +264,10 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param warrantyProductId the warrantyProductId to set
+	 * @param productWarrantyId the productWarrantyId to set
 	 */
-	public void setWarrantyProductId(String warrantyProductId) {
-		this.warrantyProductId = warrantyProductId;
+	public void setProductWarrantyId(String productWarrantyId) {
+		this.productWarrantyId = productWarrantyId;
 	}
 
 	/**
@@ -341,6 +358,29 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setPurchaseDate(Date purchaseDate) {
 		this.purchaseDate = purchaseDate;
+	}
+
+	/**
+	 * @param diagnosticRun the diagnosticRun to set
+	 */
+	public void setDiagnosticRun(List<DiagnosticRunVO> diagnosticRun) {
+		this.diagnosticRun = diagnosticRun;
+	}
+	
+	/**
+	 * 
+	 * @param diag
+	 */
+	@BeanSubElement
+	public void addDiagnosticRun(DiagnosticRunVO diag) {
+		this.diagnosticRun.add(diag);
+	}
+
+	/**
+	 * @param productSerialId the productSerialId to set
+	 */
+	public void setProductSerialId(String productSerialId) {
+		this.productSerialId = productSerialId;
 	}
 }
 
