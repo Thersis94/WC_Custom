@@ -138,7 +138,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 		// Process the data
 		if (grids != null && grids.length > 0) {
-			putModuleData(loadAllGrids(grids, full, stacked, pt, Convert.formatBoolean(req.getParameter(LOAD_TABLE))));
+			putModuleData(loadAllGrids(grids, full, stacked, pt));
 		} else {
 			GridVO grid = loadSingleGrid(gridId, req);
 			
@@ -355,7 +355,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param pt
 	 * @return
 	 */
-	public Map<String, SMTChartIntfc> loadAllGrids(String[] grids, boolean full, boolean stacked, ProviderType pt, boolean loadTable) {
+	public Map<String, SMTChartIntfc> loadAllGrids(String[] grids, boolean full, boolean stacked, ProviderType pt) {
 		Map<String, SMTChartIntfc> data = new HashMap<>(24);
 		String schema = getAttribute(Constants.CUSTOM_DB_SCHEMA) + "";
 
@@ -390,6 +390,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			ChartType ct = ChartType.valueOf(items.get(id).get("type") + "");
 			String columns = StringUtil.checkVal(items.get(id).get("columns"));
 			int labelType = Convert.formatInteger(items.get(id).get("labelType"));
+			boolean loadTable = ct == ChartType.TABLE;
 
 			if (!loadTable) {
 				pruneColumns(grid);
