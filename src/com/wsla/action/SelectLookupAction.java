@@ -86,6 +86,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("warrantyType", new GenericVO("getWarrantyTypeList", Boolean.FALSE));
 		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
 		keyMap.put("acRetailer", new GenericVO("getRetailerACList", Boolean.TRUE));
+		keyMap.put("categoryGroup", new GenericVO("getCategoryGroups", Boolean.FALSE));
 	}
 
 	/**
