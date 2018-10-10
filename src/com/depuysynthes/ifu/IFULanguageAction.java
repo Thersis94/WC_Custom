@@ -54,7 +54,7 @@ public class IFULanguageAction extends SBActionAdapter {
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
-		String errMsg = "Language values deleted successfully.";
+		String errMsg = "Language values were deleted successfully.";
 		// delete all XR records based on language type
 		try (PreparedStatement ps = dbConn.prepareStatement(formatDeleteSql())) {
 			ps.setString(1, req.getParameter(PARAM_LANGUAGE));
@@ -205,7 +205,7 @@ public class IFULanguageAction extends SBActionAdapter {
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
-		String errMsg = "Language values updated successfully";
+		String errMsg = "Language values were updated successfully";
 		String lang = req.getParameter(PARAM_LANGUAGE);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(formatUpdateSql())) {
