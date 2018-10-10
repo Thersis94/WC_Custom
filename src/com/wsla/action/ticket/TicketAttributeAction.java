@@ -154,7 +154,9 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		TicketAttributeVO tvo = new TicketAttributeVO(req);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
-			db.save(tvo);
+			if (StringUtil.isEmpty(req.getParameter("origAttributeCode"))) db.insert(tvo);
+			else db.update(tvo);
+			
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save ticket attribute", e);
 		}

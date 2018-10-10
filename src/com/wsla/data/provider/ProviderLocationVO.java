@@ -33,6 +33,9 @@ public class ProviderLocationVO extends GeocodeLocation {
 	 * 
 	 */
 	private static final long serialVersionUID = -923102909693893896L;
+	
+	
+	public static final String SINGLE_LINE_ADDRESS = "singleLineAddress";
 
 	// Member Variables
 	private String providerId;
@@ -41,6 +44,7 @@ public class ProviderLocationVO extends GeocodeLocation {
 	private int activeFlag;
 	private int defaultFlag;
 	private int manualGeocodeFlag;
+	private int reviewFlag;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -140,7 +144,15 @@ public class ProviderLocationVO extends GeocodeLocation {
 	public Date getUpdateDate() {
 		return updateDate;
 	}
-	
+
+	/**
+	 * @return the reviewFlag
+	 */
+	@Column(name="review_flg")
+	public int getReviewFlag() {
+		return reviewFlag;
+	}
+
 	/**
 	 * @return the authorizedServiceProvider
 	 */
@@ -219,5 +231,12 @@ public class ProviderLocationVO extends GeocodeLocation {
 	 */
 	public void setStoreNumber(String storeNumber) {
 		this.storeNumber = storeNumber;
+	}
+
+	/**
+	 * @param reviewFlag the reviewFlag to set
+	 */
+	public void setReviewFlag(int reviewFlag) {
+		this.reviewFlag = reviewFlag;
 	}
 }
