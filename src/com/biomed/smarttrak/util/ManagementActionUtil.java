@@ -2,6 +2,7 @@ package com.biomed.smarttrak.util;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Map;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.log4j.Logger;
@@ -12,6 +13,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title:</b> ManagementActionUtil.java
@@ -27,9 +29,11 @@ import com.siliconmtn.util.StringUtil;
  * @since Oct 5, 2018
  ****************************************************************************/
 public class ManagementActionUtil {
-
-	private ManagementActionUtil() {
-		//Hide Default Constructor.
+	private SMTDBConnection dbConn;
+	private Map<String, Object> attributes;
+	public ManagementActionUtil(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		this.dbConn = dbConn;
+		this.attributes = attributes;
 	}
 
 	private static Logger log = Logger.getLogger(ManagementActionUtil.class);
@@ -41,10 +45,13 @@ public class ManagementActionUtil {
 	 * @param req - ActionRequest
 	 * @throws ActionException 
 	 */
-	public static void bulkUpdateAttributeLinks(SMTDBConnection dbConn, String schema, ActionRequest req) throws ActionException {
+	public void bulkUpdateAttributeLinks(ActionRequest req) throws ActionException {
 		String[] attributeIds = req.getParameterValues("attributeIds");
 		String statusNo = req.getParameter("statusNo");
 		String attributeId = req.getParameter("attributeId");
+		String actionType = req.getParameter(AdminControllerAction.ACTION_TYPE);
+		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+
 		boolean hasStatus = !StringUtil.isEmpty(statusNo);
 		boolean hasAttributeId = !StringUtil.isEmpty(attributeId);
 
@@ -52,7 +59,8 @@ public class ManagementActionUtil {
 			throw new ActionException("Missing Necessary Params to continue.");
 		}
 
-		try(PreparedStatement ps = dbConn.prepareStatement(bulkUpdateLinksSql(attributeIds.length, hasStatus, hasAttributeId, req.getParameter(AdminControllerAction.ACTION_TYPE), schema))) {
+		String sql = bulkUpdateLinksSql(attributeIds.length, hasStatus, hasAttributeId, actionType, schema);
+		try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
 			if(hasStatus) {
 				ps.setString(i++, statusNo);
@@ -81,7 +89,7 @@ public class ManagementActionUtil {
 	 * @return
 	 * @throws ActionException 
 	 */
-	private static String bulkUpdateLinksSql(int attrCount, boolean hasStatus, boolean hasAttributeId, String actionType, String schema) throws ActionException {
+	private String bulkUpdateLinksSql(int attrCount, boolean hasStatus, boolean hasAttributeId, String actionType, String schema) throws ActionException {
 		String tableNm = null;
 		String pkNm = null;
 		switch(actionType) {
@@ -98,7 +106,7 @@ public class ManagementActionUtil {
 				pkNm = "product_attribute_id";
 				break;
 			default:
-				log.error("Type not recognized.");
+				log.error(String.format("Type %s not recognized.", actionType));
 				break;
 		}
 		if(StringUtil.isEmpty(tableNm)) {

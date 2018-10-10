@@ -1061,7 +1061,7 @@ public class CompanyManagementAction extends ManagementAction {
 				// Content generation is called via ajax so no redirect is needed
 				return;
 			} else if("bulkLinkUpdate".equals(buildAction)) {
-				ManagementActionUtil.bulkUpdateAttributeLinks(dbConn, getCustomSchema(), req);
+				new ManagementActionUtil(dbConn, attributes).bulkUpdateAttributeLinks(req);
 			}
 		} catch (Exception e) {
 			log.error("Error attempting to build: ", e);
