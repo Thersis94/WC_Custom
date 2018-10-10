@@ -204,8 +204,6 @@ public class TicketAttributeAction  extends SBActionAdapter {
 			log.error("could not insert new acl record",e);
 		}
 		
-		log.debug("######" + tsVo.getAttributeACLCode());
-		
 		setModuleData(tsVo);
 	}
 

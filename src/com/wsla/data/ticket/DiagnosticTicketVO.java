@@ -21,7 +21,7 @@ import com.siliconmtn.db.orm.Table;
  * @since Oct 2, 2018
  * @updates:
  ****************************************************************************/
-@Table(name="wsla_disgnostic_xr")
+@Table(name="wsla_diagnostic_xr")
 public class DiagnosticTicketVO extends DiagnosticVO {
 	
 	/**
@@ -39,7 +39,6 @@ public class DiagnosticTicketVO extends DiagnosticVO {
 	// Member variables
 	private String diagnosticTicketId;
 	private String diagnosticRunId;
-	private String dispositionedById;
 	private Outcome outcome;
 	private int issueResolvedFlag;
 	/**
@@ -74,12 +73,12 @@ public class DiagnosticTicketVO extends DiagnosticVO {
 	/*
 	 * (non-Javadoc)
 	 * Added this to overwrite the primary key annotation in the base class
-	 * @see com.wsla.data.ticket.DiagnosticVO#getDiagnosticId()
+	 * @see com.wsla.data.ticket.DiagnosticVO#getDiagnosticCode()
 	 */
 	@Override
-	@Column(name="diagnostic_id")
-	public String getDiagnosticId() {
-		return super.getDiagnosticId();
+	@Column(name="diagnostic_cd")
+	public String getDiagnosticCode() {
+		return super.getDiagnosticCode();
 	}
 	
 	/**
@@ -89,15 +88,7 @@ public class DiagnosticTicketVO extends DiagnosticVO {
 	public String getDiagnosticRunId() {
 		return diagnosticRunId;
 	}
-
-	/**
-	 * @return the dispositionedById
-	 */
-	@Column(name="dispositioned_by_id")
-	public String getDispositionedById() {
-		return dispositionedById;
-	}
-
+	
 	/**
 	 * @return the outcome
 	 */
@@ -136,14 +127,7 @@ public class DiagnosticTicketVO extends DiagnosticVO {
 	public void setDiagnosticRunId(String diagnosticRunId) {
 		this.diagnosticRunId = diagnosticRunId;
 	}
-
-	/**
-	 * @param dispositionedById the dispositionedById to set
-	 */
-	public void setDispositionedById(String dispositionedById) {
-		this.dispositionedById = dispositionedById;
-	}
-
+	
 	/**
 	 * @param outcome the outcome to set
 	 */

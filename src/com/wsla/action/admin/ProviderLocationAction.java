@@ -6,6 +6,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.gis.AbstractGeocoder;
@@ -20,6 +21,7 @@ import java.sql.SQLException;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -56,6 +58,17 @@ public class ProviderLocationAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	/**
+	 * Overloaded constructor used for calling between actions.  Note default access modifier
+	 * @param attrs
+	 * @param conn
+	 */
+	public ProviderLocationAction(Map<String, Object> attrs, SMTDBConnection conn) {
+		this();
+		this.setAttributes(attrs);
+		this.setDBConnection(conn);
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -74,12 +87,18 @@ public class ProviderLocationAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		boolean error = false;
+		ProviderLocationVO loc = new ProviderLocationVO(req);
 		try {
 			if (req.getBooleanParameter("mapLocation")) {
-				ProviderLocationVO loc = new ProviderLocationVO(req);
+				
 				assignManualGeocode(loc);
 			} else { 
-				saveLocation(new ProviderLocationVO(req));
+				// If provider needed to be reviewed and it is approved, change the review flag to 0
+				if (loc.getReviewFlag() == 1 && req.getBooleanParameter("reviewApproved")) {
+					loc.setReviewFlag(0);
+				}
+				
+				saveLocation(loc);
 			}
 		} catch (Exception e) {
 			error = true;

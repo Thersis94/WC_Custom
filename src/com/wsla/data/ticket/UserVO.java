@@ -62,6 +62,7 @@ public class UserVO extends BeanDataVO {
 	 */
 	public UserVO(ActionRequest req) {
 		super(req);
+		this.setProfile(new UserDataVO(req));
 	}
 
 	/**
