@@ -353,7 +353,7 @@ public class CompanyAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void addAttributes(CompanyVO company, SmarttrakRoleVO role) {
-		StringBuilder sql = new StringBuilder(1000);
+		StringBuilder sql = new StringBuilder(1400);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append(DBUtil.SELECT_CLAUSE).append("xr.*, a.*, parent.ATTRIBUTE_NM as PARENT_NM, ");
 		// Build special Order By.
@@ -368,12 +368,28 @@ public class CompanyAction extends SimpleActionAdapter {
 		sql.append(DBUtil.THEN).append("5 ");
 
 		//Add Revenues/Earnings Case
-		sql.append(DBUtil.WHEN).append("(lower(xr.title_txt) like '%revenues%' or lower(xr.title_txt) like '%earnings%')  and a.attribute_nm like '%GPS%' ");
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%revenues%' or lower(xr.title_txt) like '%earnings%'");
 		sql.append(DBUtil.THEN).append("10 ");
 
 		//Add Recent Commentary Case
 		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%recent%' or lower(xr.title_txt) like '%commentary%' ");
 		sql.append(DBUtil.THEN).append("15 ");
+
+		//Add Technology Platform Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%technology platform%'");
+		sql.append(DBUtil.THEN).append("20 ");
+
+		//Add Product Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%product%'");
+		sql.append(DBUtil.THEN).append("25 ");
+
+		//Add Intellectual Property Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%intellectual property%'");
+		sql.append(DBUtil.THEN).append("30 ");
+
+		//Add Strategic Alliances Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%strategic alliances%'");
+		sql.append(DBUtil.THEN).append("35 ");
 
 		//Add Default Case
 		sql.append(DBUtil.ELSE).append("100 ");

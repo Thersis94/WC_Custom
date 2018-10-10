@@ -24,6 +24,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
@@ -561,8 +562,47 @@ public class CompanyManagementAction extends ManagementAction {
 	protected void addAttributes(CompanyVO company, String attributeType) throws ActionException {
 		List<Object> params = new ArrayList<>();
 		params.add(company.getCompanyId());
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
+		StringBuilder sql = new StringBuilder(1400);
+		sql.append(DBUtil.SELECT_CLAUSE).append("xr.*, a.*, ");
+		// Build special Order By.
+		sql.append(DBUtil.CASE);
+
+		//Add Over Overview Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) in('company overview', 'business overview') ");
+		sql.append(DBUtil.THEN).append("1 ");
+
+		//Add Funding Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%funding%' and a.attribute_nm like '%GPS%' ");
+		sql.append(DBUtil.THEN).append("5 ");
+
+		//Add Revenues/Earnings Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%revenues%' or lower(xr.title_txt) like '%earnings%'");
+		sql.append(DBUtil.THEN).append("10 ");
+
+		//Add Recent Commentary Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%recent%' or lower(xr.title_txt) like '%commentary%' ");
+		sql.append(DBUtil.THEN).append("15 ");
+
+		//Add Technology Platform Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%technology platform%'");
+		sql.append(DBUtil.THEN).append("20 ");
+
+		//Add Product Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%product%'");
+		sql.append(DBUtil.THEN).append("25 ");
+
+		//Add Intellectual Property Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%intellectual property%'");
+		sql.append(DBUtil.THEN).append("30 ");
+
+		//Add Strategic Alliances Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%strategic alliances%'");
+		sql.append(DBUtil.THEN).append("35 ");
+
+		//Add Default Case
+		sql.append(DBUtil.ELSE).append("100 ");
+		sql.append(DBUtil.END).append("as PUBLIC_DISPLAY_ORDER_NO ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("on a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append("WHERE COMPANY_ID = ? ");
@@ -570,7 +610,7 @@ public class CompanyManagementAction extends ManagementAction {
 			sql.append("and TYPE_NM = ? ");
 			params.add(attributeType);
 		}
-		sql.append("ORDER BY a.DISPLAY_ORDER_NO, xr.ORDER_NO ");
+		sql.append("ORDER BY a.DISPLAY_ORDER_NO, PUBLIC_DISPLAY_ORDER_NO, XR.TITLE_TXT");
 		log.debug(sql+"|"+company.getCompanyId()+"|"+attributeType);
 		DBProcessor db = new DBProcessor(dbConn);
 

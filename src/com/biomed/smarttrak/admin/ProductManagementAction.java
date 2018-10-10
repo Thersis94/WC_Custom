@@ -23,6 +23,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
@@ -842,8 +843,44 @@ public class ProductManagementAction extends ManagementAction {
 		List<Object> params = new ArrayList<>();
 		params.add(productId);
 		params.add(DETAILS_ID);
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
+		StringBuilder sql = new StringBuilder(1500);
+		sql.append(DBUtil.SELECT_CLAUSE).append("xr.*, a.*, ");
+		// Build special Order By.
+		sql.append(DBUtil.CASE);
+
+		//Add Over Overview Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%description%' ");
+		sql.append(DBUtil.THEN).append("1 ");
+
+		//Add Funding Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%indication%' ");
+		sql.append(DBUtil.THEN).append("5 ");
+
+		//Add Revenues/Earnings Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%clinical%' or lower(xr.title_txt) like '%update%'");
+		sql.append(DBUtil.THEN).append("10 ");
+
+		//Add Recent Commentary Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%regulatory%' or lower(xr.title_txt) like '%status%' ");
+		sql.append(DBUtil.THEN).append("15 ");
+
+		//Add Technology Platform Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%published%' or lower(xr.title_txt) like '%studies%' ");
+		sql.append(DBUtil.THEN).append("20 ");
+
+		//Add Product Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%reimbursement%'");
+		sql.append(DBUtil.THEN).append("25 ");
+
+		//Add Intellectual Property Case
+		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%sales%' or lower(xr.title_txt) like '%distribution%' ");
+		sql.append(DBUtil.THEN).append("30 ");
+
+		//Add Default Case
+		sql.append(DBUtil.ELSE).append("100 ");
+		sql.append(DBUtil.END).append("as PUBLIC_DISPLAY_ORDER_NO ");
+		sql.append(DBUtil.FROM_CLAUSE);
+		sql.append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append("WHERE PRODUCT_ID = ? AND xr.ATTRIBUTE_ID not in ( ");
@@ -855,7 +892,7 @@ public class ProductManagementAction extends ManagementAction {
 			sql.append("and TYPE_CD = ? ");
 			params.add(attributeType);
 		}
-		sql.append("ORDER BY xr.ORDER_NO ");
+		sql.append("ORDER BY PUBLIC_DISPLAY_ORDER_NO, XR.TITLE_TXT");
 		log.debug(sql+"|"+productId);
 		DBProcessor db = new DBProcessor(dbConn);
 
