@@ -145,7 +145,6 @@ public class IFULanguageAction extends SBActionAdapter {
 			throws ActionException {
 		// retrieve a Map of field values for the given languate type
 		
-		IFULanguageVO langVo = new IFULanguageVO();
 		List<IFULanguageVO> languages = new ArrayList<>();
 		ResultSet rs = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(formatRetrieveSql(req.hasParameter(PARAM_LANGUAGE)))) {
@@ -154,32 +153,7 @@ public class IFULanguageAction extends SBActionAdapter {
 				ps.setString(1, req.getParameter(PARAM_LANGUAGE));
 			
 			rs = ps.executeQuery();
-			String prevLang = null;
-			String currLang = null;
-			
-			while (rs.next()) {
-				currLang = rs.getString("ifu_language_field_parent_cd");
-				
-				if (! currLang.equals(prevLang)) {
-					// changed langs
-					if (prevLang != null) {
-						// if not first record, add the language VO to the languages Map
-						languages.add(langVo);
-					}
-					// initialize the language bean
-					langVo = new IFULanguageVO();
-					langVo.setLanguage(currLang);
-					langVo.setLanguageName(rs.getString("language_nm"));
-				}
-				
-				langVo.addField(rs.getString("ifu_language_field_id"), rs.getString("value_txt"));
-				prevLang = currLang;
-			}
-			
-			// pick up the last map
-			if (! langVo.getFieldMap().isEmpty()) {
-				languages.add(langVo);
-			}
+			processResults(rs,languages);
 			
 		} catch (Exception e) {
 			String errMsg = "Error retrieving language fields.";
@@ -198,8 +172,47 @@ public class IFULanguageAction extends SBActionAdapter {
 
 		return languages;
 	}
-	
-	
+
+
+	/**
+	 * Processes the result set.
+	 * @param rs
+	 * @param languages
+	 * @throws SQLException
+	 */
+	private void processResults(ResultSet rs, List<IFULanguageVO> languages) 
+			throws SQLException {
+		String prevLang = null;
+		String currLang = null;
+		IFULanguageVO langVo = null;
+		while (rs.next()) {
+			currLang = rs.getString("ifu_language_field_parent_cd");
+
+			if (! currLang.equals(prevLang)) {
+				// changed langs
+				if (prevLang != null) {
+					// if not first record, add the language VO to the languages Map
+					languages.add(langVo);
+				}
+				// initialize the language bean
+				langVo = new IFULanguageVO();
+				langVo.setLanguage(currLang);
+				langVo.setLanguageName(rs.getString("language_nm"));
+			}
+
+			langVo.addField(rs.getString("ifu_language_field_id"), rs.getString("value_txt"));
+			prevLang = currLang;
+		}
+
+		// pick up the last map
+		if (langVo != null && 
+				! langVo.getFieldMap().isEmpty()) {
+			languages.add(langVo);
+		}
+
+	}
+
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.action.ActionRequest)
 	 */
