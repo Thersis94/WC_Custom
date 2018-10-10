@@ -8,11 +8,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
-import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.ProductAction;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
+import com.biomed.smarttrak.util.ManagementActionUtil;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeTypeVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
@@ -1292,6 +1293,8 @@ public class ProductManagementAction extends ManagementAction {
 				updateOrder(req);
 				// We don't want to send redirects after an order update
 				return;
+			} else if("bulkLinkUpdate".equals(buildAction)) {
+				new ManagementActionUtil(dbConn, attributes).bulkUpdateAttributeLinks(req);
 			}
 		} catch (Exception e) {
 			log.error("Error attempting to build: ", e);
@@ -1309,7 +1312,6 @@ public class ProductManagementAction extends ManagementAction {
 		if (!Convert.formatBoolean(req.getParameter("json")))
 			redirectRequest(msg, buildAction, req);
 	}
-
 
 	/**
 	 * Determine what is being reordered and call the proper method.

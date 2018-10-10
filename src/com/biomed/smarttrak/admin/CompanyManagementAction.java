@@ -8,12 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
-import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.CompanyAction;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
+import com.biomed.smarttrak.util.ManagementActionUtil;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeTypeVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
@@ -1059,6 +1060,8 @@ public class CompanyManagementAction extends ManagementAction {
 				generateContent(req, req.getParameter(COMPANY_ID), req.getParameter("attributeId"));
 				// Content generation is called via ajax so no redirect is needed
 				return;
+			} else if("bulkLinkUpdate".equals(buildAction)) {
+				new ManagementActionUtil(dbConn, attributes).bulkUpdateAttributeLinks(req);
 			}
 		} catch (Exception e) {
 			log.error("Error attempting to build: ", e);
