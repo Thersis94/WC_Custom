@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 
 // SMTBaseLibs
@@ -12,8 +13,10 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
+
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
@@ -31,7 +34,6 @@ public class IFULanguageAction extends SBActionAdapter {
 
 	public static final String PARAM_LANGUAGE = "language";
 	private final String fieldPrefix = "FIELD-";
-	private final int maxFieldsNo = 13;
 	
 	/**
 	* Constructor
@@ -52,14 +54,19 @@ public class IFULanguageAction extends SBActionAdapter {
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
+		String errMsg = "Language values deleted successfully.";
 		// delete all XR records based on language type
 		try (PreparedStatement ps = dbConn.prepareStatement(formatDeleteSql())) {
 			ps.setString(1, req.getParameter(PARAM_LANGUAGE));
 			ps.executeUpdate();
 		} catch (SQLException sqle ) {
-			log.error("Error deleting language mapping, ", sqle);
-			throw new ActionException (sqle.getMessage());
+			errMsg = "Error deleting language fields.";
+			log.error(errMsg, sqle);
+			throw new ActionException (errMsg);
 		}
+		
+		// redirect
+		adminRedirect(req, errMsg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 
 	/* (non-Javadoc)
@@ -75,7 +82,7 @@ public class IFULanguageAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		List<IFULanguageVO> data = new ArrayList<>();
+		List<IFULanguageVO> data = null;
 
 		// if this is an 'add new language' operation,  return.
 		if (isAddLanguage(req))
@@ -140,12 +147,13 @@ public class IFULanguageAction extends SBActionAdapter {
 		
 		IFULanguageVO langVo = new IFULanguageVO();
 		List<IFULanguageVO> languages = new ArrayList<>();
+		ResultSet rs = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(formatRetrieveSql(req.hasParameter(PARAM_LANGUAGE)))) {
 			
 			if (req.hasParameter(PARAM_LANGUAGE))
 				ps.setString(1, req.getParameter(PARAM_LANGUAGE));
 			
-			ResultSet rs = ps.executeQuery();
+			rs = ps.executeQuery();
 			String prevLang = null;
 			String currLang = null;
 			
@@ -174,10 +182,20 @@ public class IFULanguageAction extends SBActionAdapter {
 			}
 			
 		} catch (Exception e) {
-			log.error("Error retrieving language map, ", e);
-			throw new ActionException(e.getMessage());
+			String errMsg = "Error retrieving language fields.";
+			log.error(errMsg, e);
+			throw new ActionException(errMsg);
+
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close(); 
+				} catch (Exception e) {
+					// empty by design
+				}
+			}
 		}
-		
+
 		return languages;
 	}
 	
@@ -187,26 +205,29 @@ public class IFULanguageAction extends SBActionAdapter {
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
-		String errMsg = null;
+		String errMsg = "Language values updated successfully";
 		String lang = req.getParameter(PARAM_LANGUAGE);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(formatUpdateSql())) {
 			dbConn.setAutoCommit(false);
 
-			// delete existing mapping.
+			// delete existing mappings.
 			this.delete(req);
 
-			// write new mapping
+			// batch the new mappings
+			Enumeration<String> enm = req.getParameterNames();
 			String fieldParam = null;
 			int idx = 0;
-			for (int i = 1; i <= maxFieldsNo; i++) {
-				fieldParam = fieldPrefix + i;
-				ps.setString(++idx, lang);
-				ps.setString(++idx, fieldParam);
-				ps.setString(++idx,req.getParameter(fieldParam));
-				ps.setTimestamp(++idx, Convert.getCurrentTimestamp());
-				ps.addBatch();
-				idx = 0;
+			while (enm.hasMoreElements()) {
+				fieldParam = enm.nextElement();
+				if (fieldParam.startsWith(fieldPrefix)) {
+					ps.setString(++idx, lang);
+					ps.setString(++idx, fieldParam);
+					ps.setString(++idx,req.getParameter(fieldParam));
+					ps.setTimestamp(++idx, Convert.getCurrentTimestamp());
+					ps.addBatch();
+					idx = 0;
+				}
 			}
 
 			ps.executeBatch();
@@ -231,6 +252,9 @@ public class IFULanguageAction extends SBActionAdapter {
 				log.error("Error resetting db connection autocommit, ", e2);
 			}
 		}
+		
+		// redirect
+		adminRedirect(req, errMsg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 	
 	/**
