@@ -114,7 +114,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		
 		// Filter by search criteria
 		if (bst.hasSearch()) {
-			sql.append("and attribute_nm like ? ");
+			sql.append("and lower(attribute_nm) like ? ");
 			params.add(bst.getLikeSearch());
 		}
 		
@@ -147,7 +147,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 				
 		//isolate and control flow for attribute ACL changes
 		if (req.hasParameter("aclChange")) {
-			processAclChage(req);
+			processAclChage(new TicketAttributeACLVO(req));
 			return;
 		}
 
@@ -166,8 +166,8 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private void processAclChage(ActionRequest req) {
-		TicketAttributeACLVO tsVo = new TicketAttributeACLVO(req);
+	private void processAclChage(TicketAttributeACLVO tsVo) {
+		
 		log.debug(tsVo);
 		
 		if("read_ALL".equals(tsVo.getRoleId()) || "write_ALL".equals(tsVo.getRoleId()) ) {
@@ -187,7 +187,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		
 		try {
-			int removedCount = db.executeSqlUpdate(sb.toString(), tsVo, fields);
+			db.executeSqlUpdate(sb.toString(), tsVo, fields);
 		} catch (DatabaseException e1) {
 			log.error("could not delete old records",e1);
 		}
@@ -198,6 +198,10 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("could not insert new acl record",e);
 		}
+		
+		log.debug("######" + tsVo.getAttributeACLCode());
+		
+		setModuleData(tsVo);
 	}
 
 
