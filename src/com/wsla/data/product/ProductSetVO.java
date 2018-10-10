@@ -83,6 +83,7 @@ public class ProductSetVO extends ProductVO {
 	 * needed here for sorting to work
 	 * @return the customerProductId
 	 */
+	@Override
 	@Column(name="cust_product_id")
 	public String getCustomerProductId() {
 		return super.getCustomerProductId();
@@ -92,6 +93,7 @@ public class ProductSetVO extends ProductVO {
 	 * needed here for sorting to work
 	 * @return the productName
 	 */
+	@Override
 	@Column(name="product_nm")
 	public String getProductName() {
 		return super.getProductName();
