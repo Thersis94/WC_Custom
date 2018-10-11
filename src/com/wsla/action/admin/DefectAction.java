@@ -13,6 +13,8 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -68,7 +70,7 @@ public class DefectAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("###### defects action retrieve");
+		log.debug("defects action retrieve");
 		
 		String providerId = req.getParameter("providerId");
 		boolean hasActiveFlag = req.hasParameter("activeFlag");
@@ -82,7 +84,21 @@ public class DefectAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("###### defects action build");
+		log.debug("defects action build");
+		
+		DefectVO dvo = new DefectVO(req);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+
+		try {
+			if(StringUtil.isEmpty(req.getParameter("origDefectCode"))) {
+				db.insert(dvo);
+			}else {
+				db.save(dvo);
+			}
+			
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Unable to save defect attribute", e);
+		}
 	}
 
 	/**
@@ -93,8 +109,6 @@ public class DefectAction extends SBActionAdapter {
 	 * @return
 	 */
 	public GridDataVO<DefectVO> getDefects(String providerId,  int activeFlag, boolean hasActiveFlag, BSTableControlVO bst) {
-		
-		
 		
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(72);
@@ -120,7 +134,7 @@ public class DefectAction extends SBActionAdapter {
 		}
 		
 		sql.append(bst.getSQLOrderBy("defect_nm",  "asc"));
-		log.debug("###############3"+sql);
+		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new DefectVO(), bst.getLimit(), bst.getOffset());

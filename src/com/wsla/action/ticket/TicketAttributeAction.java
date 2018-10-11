@@ -157,9 +157,10 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		try {
 			if(StringUtil.isEmpty(req.getParameter("origAttributeCode"))) {
 				db.insert(tvo);
+			}else {
+				db.save(tvo);
 			}
 			
-			db.save(tvo);
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save ticket attribute", e);
 		}

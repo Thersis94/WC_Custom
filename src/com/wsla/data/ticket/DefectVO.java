@@ -3,6 +3,7 @@ package com.wsla.data.ticket;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -39,10 +40,20 @@ public class DefectVO extends BeanDataVO {
 	public DefectVO() {
 		super();
 	}
-	
+	/**
+	 * @param req
+	 */
 	public DefectVO(ResultSet rs) {
 		super(rs);
 	}
+	
+	/**
+	 * @param req
+	 */
+	public DefectVO(ActionRequest req) {
+		super(req);
+	}
+
 
 	/**
 	 * @return the defectCode
