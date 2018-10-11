@@ -1,12 +1,15 @@
 package com.wsla.action.ticket;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.util.DatabaseException;
@@ -30,7 +33,7 @@ import com.wsla.data.ticket.TicketAttributeVO;
  * @updates:
  ****************************************************************************/
 public class TicketAttributeAction  extends SBActionAdapter {
-	public static final String TICKET_ATTRRIBUTE_TYPE = "ticketAttribute";
+	public static final String AJAX_KEY = "ticketAttribute";
 
 	/**
 	 * 
@@ -54,10 +57,14 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Ticket Attribute action Retrieve called.");
+		BSTableControlVO bst = new BSTableControlVO(req, TicketAttributeVO.class);
 		
 		//isolate and control flow for attribute ACL changes
 		if (req.hasParameter("aclTable")) {
 			setModuleData(processAclTable(StringUtil.checkVal(req.getParameter("attributeCode"))));
+			return;
+		} else if (req.hasParameter("callScript")) {
+			setModuleData(this.getAttributeScripts(bst));
 			return;
 		}
 		
@@ -65,10 +72,28 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		String attributeGroupCode = req.getParameter("attributeGroupCode");
 		boolean hasActiveFlag = req.hasParameter("activeFlag");
 		int activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
-		setModuleData(getAttributes(attributeCode, attributeGroupCode, activeFlag, hasActiveFlag, new BSTableControlVO(req, TicketAttributeVO.class)));
+		setModuleData(getAttributes(attributeCode, attributeGroupCode, activeFlag, hasActiveFlag, bst));
 		
 	}
 
+	/**
+	 * Loops the attributes and stores as a map for local storage for managing local
+	 * help files
+	 * @param bst
+	 * @return
+	 */
+	public Map<String, GenericVO> getAttributeScripts(BSTableControlVO bst) {
+		bst.setLimit(1000);
+		GridDataVO<TicketAttributeVO> data = this.getAttributes(null, null, 1, true, bst);
+		
+		Map<String, GenericVO> attrs = new HashMap<>(32);
+		for (TicketAttributeVO t : data.getRowData()) {
+			log.info(t);
+			attrs.put(t.getAttributeCode(), new GenericVO(t.getScriptText(), t.getNoteText()));
+		}
+		
+		return attrs;
+	}
 	
 	/**
 	 * this method acts and the main control for changes to the acl
@@ -131,7 +156,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		}
 		
 		sql.append(bst.getSQLOrderBy("attribute_nm",  "asc"));
-		
+		log.info(bst.getLimit());
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), params, new TicketAttributeVO(), bst.getLimit(), bst.getOffset());
 	}

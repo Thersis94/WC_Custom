@@ -21,7 +21,10 @@ import com.wsla.action.admin.ProductWarrantyAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.ticket.TicketAttributeAction;
+import com.wsla.action.ticket.TicketListAction;
+import com.wsla.action.ticket.TicketOverviewAction;
 import com.wsla.action.admin.ProviderLocationUserAction;
+import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.action.admin.WarrantyAction;
 
 /****************************************************************************
@@ -68,22 +71,25 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	}
 
 	/**
-	 * 
+	 * Loads the mapping to the various ajax calls
 	 */
 	private void loadTypes() {
 		actionMap.put(DEFAULT_TYPE, SelectLookupAction.class);
-		actionMap.put("provider", ProviderAction.class);
-		actionMap.put("providerLocation", ProviderLocationAction.class);
-		actionMap.put(TicketAttributeAction.TICKET_ATTRRIBUTE_TYPE, TicketAttributeAction.class);
+		actionMap.put(ProviderAction.AJAX_KEY, ProviderAction.class);
+		actionMap.put(ProviderLocationAction.AJAX_KEY, ProviderLocationAction.class);
+		actionMap.put(TicketAttributeAction.AJAX_KEY, TicketAttributeAction.class);
 		actionMap.put("productMaster", ProductMasterAction.class);
 		actionMap.put("productSet", ProductSetAction.class);
 		actionMap.put("productSerial", ProductSerialAction.class);
 		actionMap.put("productCategoryXR", ProductCategoryXRAction.class);
 		actionMap.put("productCategory", ProductCategoryAction.class);
 		actionMap.put("productWarranty", ProductWarrantyAction.class);
-		actionMap.put("providerLocationUser", ProviderLocationUserAction.class);
+		actionMap.put(ProviderLocationUserAction.AJAX_KEY, ProviderLocationUserAction.class);
 		actionMap.put("diagnostics", DiagnosticAction.class);
 		actionMap.put("warranty", WarrantyAction.class);
+		actionMap.put(TicketOverviewAction.AJAX_KEY, TicketOverviewAction.class);
+		actionMap.put(TicketListAction.AJAX_KEY, TicketListAction.class);
+		actionMap.put(StatusCodeAction.AJAX_KEY, StatusCodeAction.class);
 	}
 
 	/*
