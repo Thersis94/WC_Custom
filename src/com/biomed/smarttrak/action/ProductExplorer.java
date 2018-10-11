@@ -201,7 +201,8 @@ public class ProductExplorer extends SBActionAdapter {
 
 		//Check if we need to append Cookie Value to the redirect request.
 		if(isRedirect) {
-			url = buildRedirectPath(url, cookieVal, SecurityController.isManageTool(req.getSession().getAttribute(Constants.SITE_DATA)));
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			url = buildRedirectPath(url, cookieVal, SecurityController.isManageTool(site));
 			CookieUtil.remove(req, PE_STATE_COOKIE);
 			super.sendRedirect(url, null, req);
 		}
