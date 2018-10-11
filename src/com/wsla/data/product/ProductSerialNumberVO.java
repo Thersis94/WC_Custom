@@ -8,7 +8,6 @@ import java.util.Date;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.DataType;
 import com.siliconmtn.annotations.Importable;
-import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -26,16 +25,14 @@ import com.siliconmtn.db.orm.Table;
  * @updates:
  ****************************************************************************/
 @Table(name="wsla_product_serial")
-public class ProductSerialNumberVO extends BeanDataVO {
+public class ProductSerialNumberVO extends ProductVO {
 
 	private static final long serialVersionUID = 4781013861998724814L;
 
 	// Member Variables
 	private String productSerialId;
-	private String productId;
 	private String serialNumber;
 	private int validatedFlag;
-	private Date createDate;
 	private Date retailerDate;
 
 	// Bean Sub-Elements
@@ -74,8 +71,9 @@ public class ProductSerialNumberVO extends BeanDataVO {
 	 * @return the productId
 	 */
 	@Column(name="product_id")
+	@Override
 	public String getProductId() {
-		return productId;
+		return super.getProductId();
 	}
 
 	/**
@@ -89,9 +87,9 @@ public class ProductSerialNumberVO extends BeanDataVO {
 	/**
 	 * @return the createDate
 	 */
-	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
-	public Date getCreateDate() {
-		return createDate;
+	@Override
+	public Date getUpdateDate() {
+		return super.getUpdateDate();
 	}
 
 	@Column(name="validated_flg")
@@ -117,27 +115,13 @@ public class ProductSerialNumberVO extends BeanDataVO {
 	public void setProductSerialId(String productSerialId) {
 		this.productSerialId = productSerialId;
 	}
-
-	/**
-	 * @param productId the productId to set
-	 */
-	public void setProductId(String productId) {
-		this.productId = productId;
-	}
-
+	
 	/**
 	 * @param serialNumber the serialNumber to set
 	 */
 	@Importable(name="Serial Number", type=DataType.STRING)
 	public void setSerialNumber(String serialNumber) {
 		this.serialNumber = serialNumber;
-	}
-
-	/**
-	 * @param createDate the createDate to set
-	 */
-	public void setCreateDate(Date createDate) {
-		this.createDate = createDate;
 	}
 
 	public void setValidatedFlag(int validatedFlag) {
