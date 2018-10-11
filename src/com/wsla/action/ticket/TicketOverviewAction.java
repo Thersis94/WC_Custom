@@ -17,6 +17,8 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.SiteVO;
 
 // WC Libs 3.x
@@ -26,6 +28,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 // WSLA Libs
 import com.wsla.action.BasePortalAction;
 import com.wsla.common.WSLAConstants;
+import com.wsla.data.ticket.DiagnosticRunVO;
+import com.wsla.data.ticket.DiagnosticTicketVO;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketDataVO;
@@ -68,7 +72,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.info("Listing Tickets ....");
+		log.debug("Listing Tickets ....");
 	}
 	
 	/*
@@ -78,15 +82,47 @@ public class TicketOverviewAction extends BasePortalAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.info("Saving Tickets ....");
-		
-		if(StringUtil.isEmpty(req.getParameter("ticketId"))) {
-			try {
-				putModuleData(createTicket(req));
-			} catch(Exception e) {
-				log.error("Unable to create a ticket", e);
-				putModuleData("", 0, false, (String)getAttribute(AdminConstants.KEY_ERROR_MESSAGE), true);
+		TicketVO ticket = null;
+		try {
+			if(StringUtil.isEmpty(req.getParameter("ticketId"))) {
+				ticket = createTicket(req);
+			} else {
+				ticket = saveTicketCall(req);
 			}
+			
+			// Return the populated ticket
+			putModuleData(ticket);
+		} catch(Exception e) {
+			log.error("Unable to create / save a ticket", e);
+			putModuleData("", 0, false, (String)getAttribute(AdminConstants.KEY_ERROR_MESSAGE), true);
 		}
+	}
+	
+	
+	public TicketVO saveTicketCall(ActionRequest req) throws Exception {
+		log.debug("****** Saving ticket from call");
+		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		UserVO user = (UserVO)profile.getUserExtendedInfo();
+		TicketVO ticket = new TicketVO(req);
+		ticket.addDiagnosticRun(new DiagnosticRunVO(req));
+		
+		// Save the ticket core data
+		this.saveCoreTicket(ticket);
+
+		// Save the diagnostic info
+		this.saveDiagnosticRun(ticket.getDiagnosticRun().get(0));
+		
+		// Add an item to the ledger
+		TicketLedgerVO ledger = addLedger(user.getUserId(), req, LedgerSummary.CALL_RECVD.summary);
+		
+		// Save the extended data elements
+		assignDataAttributes(ticket, ledger);
+		
+		// Update the caller's user record and profile
+		UserVO caller = new UserVO(req);
+		updateWSLAUser(caller);
+		
+		return ticket;
 	}
 	
 	/**
@@ -118,6 +154,39 @@ public class TicketOverviewAction extends BasePortalAction {
 		assignDataAttributes(ticket, ledger);
 		
 		return ticket;
+	}
+	
+	/**
+	 * Once the user record exists on a ticket, update the user data
+	 * @param user
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 * @throws com.siliconmtn.exception.DatabaseException 
+	 */
+	public void updateWSLAUser(UserVO user) throws InvalidDataException, DatabaseException, com.siliconmtn.exception.DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.update(user);
+		
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		pm.updateProfile(user.getProfile(), getDBConnection());
+	}
+	
+	/**
+	 * Saves the diagnostic run along with the results from each diagnostic check
+	 * @param dr
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void saveDiagnosticRun(DiagnosticRunVO dr) throws InvalidDataException, DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		// insert the dr run
+		db.insert(dr);
+		
+		// Loop the actual diagnostics and store them
+		for (DiagnosticTicketVO diag : dr.getDiagnostics()) {
+			db.insert(diag);
+		}
 	}
 	
 	/**

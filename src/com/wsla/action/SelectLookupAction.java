@@ -85,6 +85,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("warranty", new GenericVO("getWarrantyList", Boolean.TRUE));
 		keyMap.put("warrantyType", new GenericVO("getWarrantyTypeList", Boolean.FALSE));
 		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
+		keyMap.put("acRetailer", new GenericVO("getRetailerACList", Boolean.TRUE));
 		keyMap.put("categoryGroup", new GenericVO("getCategoryGroups", Boolean.FALSE));
 	}
 
@@ -114,6 +115,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		if (vo == null)
 			throw new ActionException("List type Not Found in KeyMap");
 
+		// @TODO Add language conversion
 		try {
 			if (Convert.formatBoolean(vo.getValue())) {
 				Method method = this.getClass().getMethod(vo.getKey().toString(), req.getClass());
@@ -191,8 +193,9 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getProviders(ActionRequest req) {
+		String search = req.getParameter("search");
 		ProviderType pt = EnumUtil.safeValueOf(ProviderType.class, req.getParameter(PROVIDER_TYPE), ProviderType.OEM);
-		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt);
+		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search);
 	}
 
 
@@ -220,6 +223,35 @@ public class SelectLookupAction extends SBActionAdapter {
 		return new ProductSetAction(getAttributes(), getDBConnection()).listPartsForProvider(req.getParameter(PROVIDER_ID));
 	}
 
+	/**
+	 * Returns a list of matching provider locations for autocomplete
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getRetailerACList(ActionRequest req) {
+		StringBuilder term = new StringBuilder(16);
+		term.append("%").append(StringUtil.checkVal(req.getParameter("search")).toLowerCase()).append("%");
+		
+		StringBuilder sql = new StringBuilder(512);
+		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");
+		sql.append("|| coalesce(location_nm, '') || ' (' || coalesce(store_no, '') || ')  ' ");
+		sql.append("|| coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value ");
+		sql.append("from wsla_provider a ");
+		sql.append("inner join wsla_provider_location b on a.provider_id = b.provider_id ");
+		sql.append("where provider_type_id = 'RETAILER' ");
+		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
+		sql.append("or lower(city_nm) like ? or store_no like ?) ");
+		sql.append("order by provider_nm");
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(term);
+		vals.add(term);
+		vals.add(term);
+		vals.add(term);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), vals, new GenericVO());
+	}
 
 	/**
 	 * Returns a list of status codes and their descriptions

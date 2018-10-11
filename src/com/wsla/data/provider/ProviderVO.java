@@ -37,6 +37,7 @@ public class ProviderVO extends BeanDataVO {
 	private String providerId;
 	private ProviderType providerType;
 	private String providerName;
+	private int reviewFlag;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -105,6 +106,14 @@ public class ProviderVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the reviewFlag
+	 */
+	@Column(name="review_flg")
+	public int getReviewFlag() {
+		return reviewFlag;
+	}
+
+	/**
 	 * @return the locations
 	 */
 	public List<ProviderLocationVO> getLocations() {
@@ -161,6 +170,13 @@ public class ProviderVO extends BeanDataVO {
 	public void addLocation(ProviderLocationVO location) {
 		if (location != null)
 			this.locations.add(location);
+	}
+
+	/**
+	 * @param reviewFlag the reviewFlag to set
+	 */
+	public void setReviewFlag(int reviewFlag) {
+		this.reviewFlag = reviewFlag;
 	}
 
 }
