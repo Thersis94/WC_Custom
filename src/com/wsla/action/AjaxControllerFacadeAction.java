@@ -11,6 +11,7 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.wsla.action.admin.BatchImport;
+import com.wsla.action.admin.DefectAction;
 import com.wsla.action.admin.DiagnosticAction;
 import com.wsla.action.admin.ProductCategoryAction;
 import com.wsla.action.admin.ProductCategoryXRAction;
@@ -75,6 +76,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put("provider", ProviderAction.class);
 		actionMap.put("providerLocation", ProviderLocationAction.class);
 		actionMap.put(TicketAttributeAction.TICKET_ATTRRIBUTE_TYPE, TicketAttributeAction.class);
+		actionMap.put(DefectAction.DEFECTS_TYPE, DefectAction.class);
+		actionMap.put(DiagnosticAction.DIAGNOSTIC_TYPE , DiagnosticAction.class );
 		actionMap.put("productMaster", ProductMasterAction.class);
 		actionMap.put("productSet", ProductSetAction.class);
 		actionMap.put("productSerial", ProductSerialAction.class);
