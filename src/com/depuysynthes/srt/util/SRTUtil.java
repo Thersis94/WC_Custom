@@ -42,7 +42,7 @@ public class SRTUtil {
 	private static Logger log = Logger.getLogger(SRTUtil.class);
 
 	public static final String SRT_ORG_ID = "DPY_SYN";
-	public static final String PUBLIC_SITE_ID = "DPY_SYN_38";
+	public static final String PUBLIC_SITE_ID = "DPY_SYN_42";
 	public static final String OP_CO_ID = "opCoId";
 	public static final String ADMIN_PATH = "/manage";
 	public static final String REGISTRATION_GRP_ID = "38ae1841baf997aec0a80255c7bd6f31";
