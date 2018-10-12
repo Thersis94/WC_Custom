@@ -17,7 +17,6 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 
 // WSLA Libs
 import com.wsla.data.ticket.DiagnosticVO;
-import com.wsla.data.ticket.TicketAttributeVO;
 
 /****************************************************************************
  * <b>Title</b>: DiagnosticAction.java
