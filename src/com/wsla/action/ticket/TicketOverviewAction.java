@@ -51,7 +51,12 @@ import com.wsla.data.ticket.UserVO;
  ****************************************************************************/
 
 public class TicketOverviewAction extends BasePortalAction {
-
+	
+	/**
+	 * Key for the Ajax Controller to utilize when calling this class
+	 */
+	public static final String AJAX_KEY = "serviceOrder";
+		
 	/**
 	 * 
 	 */
@@ -72,9 +77,9 @@ public class TicketOverviewAction extends BasePortalAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("Listing Tickets ....");
+		
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
@@ -98,7 +103,13 @@ public class TicketOverviewAction extends BasePortalAction {
 		}
 	}
 	
-	
+	/**
+	 * Second pass at saving the ticket.  First pass saves the base info.  
+	 * This save gets the extended information as well
+	 * @param req
+	 * @return
+	 * @throws Exception
+	 */
 	public TicketVO saveTicketCall(ActionRequest req) throws Exception {
 		log.debug("****** Saving ticket from call");
 		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);

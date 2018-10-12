@@ -39,7 +39,11 @@ import com.wsla.data.provider.ProviderUserVO;
  ****************************************************************************/
 
 public class ProviderLocationUserAction extends BasePortalAction {
-
+	/**
+	 * Key for the Ajax Controller to utilize when calling this class
+	 */
+	public static final String AJAX_KEY = "providerLocationUser";
+	
 	/**
 	 * 
 	 */
