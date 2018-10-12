@@ -17,6 +17,9 @@ import com.siliconmtn.db.orm.Column;
 
 // WSLA Libs
 import com.wsla.common.WSLAConstants;
+import com.wsla.data.product.ProductSerialNumberVO;
+import com.wsla.data.provider.ProviderLocationVO;
+import com.wsla.data.provider.ProviderVO;
 
 /****************************************************************************
  * <b>Title</b>: TicketVO.java
@@ -41,22 +44,33 @@ public class TicketVO extends BeanDataVO {
 	// Member Variables
 	private String ticketId;
 	private String ticketIdText;
-	private String ticketName;
 	private String description;
 	private String productWarrantyId;
 	private String productCategoryId;
 	private String productSerialId;
+	private String lockedBy;
 	private StatusCode statusCode;
 	private int warrantyValidFlag;
 	private Date purchaseDate;
 	private Date createDate;
 	private Date updateDate;
+	private Date lockedDate;
+	
+	// Helper Variables
+	private String retailerId;
+	private String oemId;
+	private String userId;
+	private String statusName;
 	
 	// Bean Sub-Element
 	private List<TicketDataVO> ticketData = new ArrayList<>(32);
 	private List<TicketAssignmentVO> assignments = new ArrayList<>();
 	private List<TicketLedgerVO> timeline = new ArrayList<>();
 	private List<DiagnosticRunVO> diagnosticRun = new ArrayList<>();
+	private ProductSerialNumberVO productSerial = new ProductSerialNumberVO();
+	private ProviderLocationVO retailer;
+	private ProviderVO oem;
+	private UserVO originator;
 	
 	/**
 	 * 
@@ -125,14 +139,6 @@ public class TicketVO extends BeanDataVO {
 	@Column(name="ticket_no")
 	public String getTicketIdText() {
 		return ticketIdText;
-	}
-
-	/**
-	 * @return the ticketName
-	 */
-	@Column(name="ticket_nm")
-	public String getTicketName() {
-		return ticketName;
 	}
 
 	/**
@@ -215,6 +221,67 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the lockedBy
+	 */
+	@Column(name="locked_by_id")
+	public String getLockedBy() {
+		return lockedBy;
+	}
+
+	/**
+	 * @return the lockedDate
+	 */
+	@Column(name="locked_dt")
+	public Date getLockedDate() {
+		return lockedDate;
+	}
+
+	/**
+	 * @return the retailerId
+	 */
+	@Column(name="retailer_id")
+	public String getRetailerId() {
+		return retailerId;
+	}
+
+	/**
+	 * @return the oemId
+	 */
+	@Column(name="oem_id")
+	public String getOemId() {
+		return oemId;
+	}
+
+	/**
+	 * @return the userId
+	 */
+	@Column(name="originator_user_id")
+	public String getUserId() {
+		return userId;
+	}
+
+	/**
+	 * @return the retailer
+	 */
+	public ProviderLocationVO getRetailer() {
+		return retailer;
+	}
+
+	/**
+	 * @return the originator
+	 */
+	public UserVO getOriginator() {
+		return originator;
+	}
+
+	/**
+	 * @return the oem
+	 */
+	public ProviderVO getOem() {
+		return oem;
+	}
+
+	/**
 	 * @return the diagnosticRun
 	 */
 	public List<DiagnosticRunVO> getDiagnosticRun() {
@@ -236,6 +303,13 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the productSerial
+	 */
+	public ProductSerialNumberVO getProductSerial() {
+		return productSerial;
+	}
+
+	/**
 	 * @param ticketId the ticketId to set
 	 */
 	public void setTicketId(String ticketId) {
@@ -247,13 +321,6 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setTicketIdText(String ticketIdText) {
 		this.ticketIdText = ticketIdText;
-	}
-
-	/**
-	 * @param ticketName the ticketName to set
-	 */
-	public void setTicketName(String ticketName) {
-		this.ticketName = ticketName;
 	}
 
 	/**
@@ -326,7 +393,6 @@ public class TicketVO extends BeanDataVO {
 	/**
 	 * @param timeline the timeline to set
 	 */
-	@BeanSubElement
 	public void setTimeline(List<TicketLedgerVO> timeline) {
 		this.timeline = timeline;
 	}
@@ -335,6 +401,7 @@ public class TicketVO extends BeanDataVO {
 	 * 
 	 * @param entry
 	 */
+	@BeanSubElement
 	public void addTimeline(TicketLedgerVO entry) {
 		this.timeline.add(entry);
 	}
@@ -381,6 +448,88 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setProductSerialId(String productSerialId) {
 		this.productSerialId = productSerialId;
+	}
+
+	/**
+	 * @param productSerial the productSerial to set
+	 */
+	@BeanSubElement
+	public void setProductSerial(ProductSerialNumberVO productSerial) {
+		this.productSerial = productSerial;
+	}
+
+	/**
+	 * @param lockedBy the lockedBy to set
+	 */
+	public void setLockedBy(String lockedBy) {
+		this.lockedBy = lockedBy;
+	}
+
+	/**
+	 * @param lockedDate the lockedDate to set
+	 */
+	public void setLockedDate(Date lockedDate) {
+		this.lockedDate = lockedDate;
+	}
+
+	/**
+	 * @param retailerId the retailerId to set
+	 */
+	public void setRetailerId(String retailerId) {
+		this.retailerId = retailerId;
+	}
+
+	/**
+	 * @param oemId the oemId to set
+	 */
+	public void setOemId(String oemId) {
+		this.oemId = oemId;
+	}
+
+	/**
+	 * @param userId the userId to set
+	 */
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	/**
+	 * @param retailer the retailer to set
+	 */
+	@BeanSubElement
+	public void setRetailer(ProviderLocationVO retailer) {
+		this.retailer = retailer;
+	}
+
+	/**
+	 * @param oem the oem to set
+	 */
+	@BeanSubElement
+	public void setOem(ProviderVO oem) {
+		this.oem = oem;
+	}
+
+	/**
+	 * @param originator the originator to set
+	 */
+	@BeanSubElement
+	public void setOriginator(UserVO originator) {
+		this.originator = originator;
+	}
+
+	/**
+	 * @return the status_nm
+	 */
+	@Column(name="status_nm", isReadOnly=true)
+	public String getStatusName() {
+		return statusName;
+	}
+
+	/**
+	 * @param statusName the statusName to set
+	 */
+	public void setStatusName(String statusName) {
+		this.statusName = statusName;
 	}
 }
 

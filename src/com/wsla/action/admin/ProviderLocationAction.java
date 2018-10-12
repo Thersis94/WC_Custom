@@ -45,6 +45,11 @@ import com.wsla.data.provider.ProviderLocationVO;
 public class ProviderLocationAction extends SBActionAdapter {
 
 	/**
+	 * Key for the Ajax Controller to utilize when calling this class
+	 */
+	public static final String AJAX_KEY = "providerLocation";
+	
+	/**
 	 * 
 	 */
 	public ProviderLocationAction() {
