@@ -32,8 +32,6 @@ import com.siliconmtn.util.user.HumanNameIntfc;
 @Table(name="DPY_SYN_SRT_ROSTER")
 public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 
-	public enum Role {ADMIN, SALES_ROSTER, PUBLIC}
-
 	/**
 	 *
 	 */
@@ -74,8 +72,14 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 		setData(req);
 		BeanDataMapper.parseBean(this, req.getParameterMap());
 
+		//Ensure opCoId is populated correctly.
 		if(StringUtil.isEmpty(opCoId)) {
 			opCoId = SRTUtil.getOpCO(req);
+		}
+
+		//Ensure rosterEmailAddress is populated correctly.
+		if(StringUtil.isEmpty(rosterEmailAddress)) {
+			rosterEmailAddress = req.getParameter("emailAddress");
 		}
 	}
 
@@ -88,6 +92,11 @@ public class SRTRosterVO extends UserDataVO implements HumanNameIntfc {
 		super(rs);
 		setData(rs);
 		new DBProcessor(null).executePopulate(this, rs, null);
+
+		//Ensure rosterEmailAddress is populated correctly.
+		if(StringUtil.isEmpty(rosterEmailAddress)) {
+			rosterEmailAddress = super.emailAddress;
+		}
 	}
 
 	/**
