@@ -11,6 +11,7 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.wsla.action.admin.BatchImport;
+import com.wsla.action.admin.DefectAction;
 import com.wsla.action.admin.DiagnosticAction;
 import com.wsla.action.admin.ProductCategoryAction;
 import com.wsla.action.admin.ProductCategoryXRAction;
@@ -77,19 +78,20 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(DEFAULT_TYPE, SelectLookupAction.class);
 		actionMap.put(ProviderAction.AJAX_KEY, ProviderAction.class);
 		actionMap.put(ProviderLocationAction.AJAX_KEY, ProviderLocationAction.class);
+		actionMap.put(ProviderLocationUserAction.AJAX_KEY, ProviderLocationUserAction.class);
 		actionMap.put(TicketAttributeAction.AJAX_KEY, TicketAttributeAction.class);
+		actionMap.put(TicketOverviewAction.AJAX_KEY, TicketOverviewAction.class);
+		actionMap.put(TicketListAction.AJAX_KEY, TicketListAction.class);
+		actionMap.put(StatusCodeAction.AJAX_KEY, StatusCodeAction.class);
+		actionMap.put(DefectAction.DEFECTS_TYPE, DefectAction.class);
+		actionMap.put(DiagnosticAction.DIAGNOSTIC_TYPE , DiagnosticAction.class );
 		actionMap.put("productMaster", ProductMasterAction.class);
 		actionMap.put("productSet", ProductSetAction.class);
 		actionMap.put("productSerial", ProductSerialAction.class);
 		actionMap.put("productCategoryXR", ProductCategoryXRAction.class);
 		actionMap.put("productCategory", ProductCategoryAction.class);
 		actionMap.put("productWarranty", ProductWarrantyAction.class);
-		actionMap.put(ProviderLocationUserAction.AJAX_KEY, ProviderLocationUserAction.class);
-		actionMap.put("diagnostics", DiagnosticAction.class);
 		actionMap.put("warranty", WarrantyAction.class);
-		actionMap.put(TicketOverviewAction.AJAX_KEY, TicketOverviewAction.class);
-		actionMap.put(TicketListAction.AJAX_KEY, TicketListAction.class);
-		actionMap.put(StatusCodeAction.AJAX_KEY, StatusCodeAction.class);
 	}
 
 	/*

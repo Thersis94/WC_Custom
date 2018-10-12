@@ -139,8 +139,9 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		
 		// Filter by search criteria
 		if (bst.hasSearch()) {
-			sql.append("and attribute_nm like ? ");
-			params.add(bst.getLikeSearch());
+			sql.append("and lower(attribute_nm) like ? or lower(attribute_cd) like ? ");
+			params.add(bst.getLikeSearch().toLowerCase());
+			params.add(bst.getLikeSearch().toLowerCase());
 		}
 		
 		// Filter by Group code
@@ -172,18 +173,23 @@ public class TicketAttributeAction  extends SBActionAdapter {
 				
 		//isolate and control flow for attribute ACL changes
 		if (req.hasParameter("aclChange")) {
-			processAclChage(req);
+			processAclChage(new TicketAttributeACLVO(req));
 			return;
 		}
 
 		TicketAttributeVO tvo = new TicketAttributeVO(req);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+
 		try {
-			if (StringUtil.isEmpty(req.getParameter("origAttributeCode"))) db.insert(tvo);
-			else db.update(tvo);
+			if(StringUtil.isEmpty(req.getParameter("origAttributeCode"))) {
+				db.insert(tvo);
+			}else {
+				db.save(tvo);
+			}
 			
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save ticket attribute", e);
+			 putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
 	}
 
@@ -193,8 +199,8 @@ public class TicketAttributeAction  extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private void processAclChage(ActionRequest req) {
-		TicketAttributeACLVO tsVo = new TicketAttributeACLVO(req);
+	private void processAclChage(TicketAttributeACLVO tsVo) {
+		
 		log.debug(tsVo);
 		
 		if("read_ALL".equals(tsVo.getRoleId()) || "write_ALL".equals(tsVo.getRoleId()) ) {
@@ -214,7 +220,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		
 		try {
-			int removedCount = db.executeSqlUpdate(sb.toString(), tsVo, fields);
+			db.executeSqlUpdate(sb.toString(), tsVo, fields);
 		} catch (DatabaseException e1) {
 			log.error("could not delete old records",e1);
 		}
@@ -224,7 +230,10 @@ public class TicketAttributeAction  extends SBActionAdapter {
 			db.insert(tsVo);
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("could not insert new acl record",e);
+			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
+		
+		setModuleData(tsVo);
 	}
 
 
@@ -253,6 +262,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 				db.save(d);
 			} catch (InvalidDataException | DatabaseException e) {
 				log.error("could not save attribute acl",e);
+				putModuleData("", 0, false, e.getLocalizedMessage(), true);
 			}
 		}
 	}
