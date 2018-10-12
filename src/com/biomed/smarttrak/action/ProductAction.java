@@ -236,42 +236,7 @@ public class ProductAction extends SimpleActionAdapter {
 	protected void addAttributes(ProductVO product, int userLevel) throws ActionException {
 		StringBuilder sql = new StringBuilder(1500);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append(DBUtil.SELECT_CLAUSE).append("*, ");
-		// Build special Order By.
-		sql.append(DBUtil.CASE);
-
-		//Add Over Overview Case
-		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%description%' ");
-		sql.append(DBUtil.THEN).append("1 ");
-
-		//Add Funding Case
-		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%indication%' ");
-		sql.append(DBUtil.THEN).append("5 ");
-
-		//Add Revenues/Earnings Case
-		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%clinical%' or lower(xr.title_txt) like '%update%'");
-		sql.append(DBUtil.THEN).append("10 ");
-
-		//Add Recent Commentary Case
-		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%regulatory%' or lower(xr.title_txt) like '%status%' ");
-		sql.append(DBUtil.THEN).append("15 ");
-
-		//Add Technology Platform Case
-		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%published%' or lower(xr.title_txt) like '%studies%' ");
-		sql.append(DBUtil.THEN).append("20 ");
-
-		//Add Product Case
-		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%reimbursement%'");
-		sql.append(DBUtil.THEN).append("25 ");
-
-		//Add Intellectual Property Case
-		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%sales%' or lower(xr.title_txt) like '%distribution%' ");
-		sql.append(DBUtil.THEN).append("30 ");
-
-		//Add Default Case
-		sql.append(DBUtil.ELSE).append("100 ");
-		sql.append(DBUtil.END).append("as PUBLIC_DISPLAY_ORDER_NO ");
-		sql.append(DBUtil.FROM_CLAUSE);
+		sql.append(DBUtil.SELECT_FROM_STAR);
 		sql.append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
@@ -282,7 +247,7 @@ public class ProductAction extends SimpleActionAdapter {
 		// Detail attributes never have a status number but shouldn't be skipped.
 		sql.append("'").append(AdminControllerAction.Status.P).append("') or STATUS_NO is null) "); 
 
-		sql.append("ORDER BY PUBLIC_DISPLAY_ORDER_NO, XR.TITLE_TXT");
+		sql.append("ORDER BY XR.ORDER_NO, XR.TITLE_TXT");
 		log.debug(sql+"|"+product.getProductId());
 
 		List<Object> params = new ArrayList<>();

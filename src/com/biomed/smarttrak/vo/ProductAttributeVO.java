@@ -171,6 +171,29 @@ public class ProductAttributeVO {
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
 	
-	
+	/**
+	 * Helper method that determines proper orderNo value based on titleTxt
+	 * business rules.
+	 */
+	public void calulateOrderNo() {
+		int tOrderNo = 100;
+		String title = StringUtil.checkVal(titleText).toLowerCase();
+		if(title.contains("description")) {
+			tOrderNo = 1;
+		} else if(title.contains("indication")) {
+			tOrderNo = 5;
+		} else if(title.contains("clinical") || title.contains("update")) {
+			tOrderNo = 10;
+		} else if(title.contains("regulatory") || title.contains("status")) {
+			tOrderNo = 15;
+		} else if(title.contains("published") || title.contains("studies")) {
+			tOrderNo = 20;
+		} else if(title.contains("reimbursement")) {
+			tOrderNo = 25;
+		} else if(title.contains("sales") || title.contains("distribution")) {
+			tOrderNo = 30;
+		}
 
+		orderNo = tOrderNo;
+	}
 }
