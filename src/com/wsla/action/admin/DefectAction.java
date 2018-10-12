@@ -98,6 +98,7 @@ public class DefectAction extends SBActionAdapter {
 			
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save defect attribute", e);
+			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
 	}
 

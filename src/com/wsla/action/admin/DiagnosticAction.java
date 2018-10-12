@@ -8,6 +8,7 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 
@@ -16,6 +17,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 
 // WSLA Libs
 import com.wsla.data.ticket.DiagnosticVO;
+import com.wsla.data.ticket.TicketAttributeVO;
 
 /****************************************************************************
  * <b>Title</b>: DiagnosticAction.java
@@ -31,6 +33,7 @@ import com.wsla.data.ticket.DiagnosticVO;
  ****************************************************************************/
 
 public class DiagnosticAction extends SBActionAdapter {
+	public static final String DIAGNOSTIC_TYPE = "diagnostics";
 
 	/**
 	 * 
@@ -63,19 +66,25 @@ public class DiagnosticAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		BSTableControlVO bst = null;
+		
+		if(req.hasParameter("DiagnosticTable")) {
+			bst = new BSTableControlVO(req, DiagnosticVO.class);
+		}
 
 		int svcCtr = req.getIntegerParameter("serviceCenterFlag", 0);
 		int casFlag = req.getIntegerParameter("casFlag", 0);
-		putModuleData(getDiagnostics(svcCtr, casFlag));
+		putModuleData(getDiagnostics(svcCtr, casFlag, bst));
 	}
 	
 	/**
 	 * Gets a list of diagnostics
 	 * @param svcCtr
 	 * @param cas
+	 * @param bst 
 	 * @return
 	 */
-	public List<DiagnosticVO> getDiagnostics(int svcCtr, int cas) {
+	public List<DiagnosticVO> getDiagnostics(int svcCtr, int cas, BSTableControlVO bst) {
 		
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select * from ").append(getCustomSchema()).append("wsla_diagnostic ");

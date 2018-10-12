@@ -114,8 +114,9 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		
 		// Filter by search criteria
 		if (bst.hasSearch()) {
-			sql.append("and lower(attribute_nm) like ? ");
-			params.add(bst.getLikeSearch());
+			sql.append("and lower(attribute_nm) like ? or lower(attribute_cd) like ? ");
+			params.add(bst.getLikeSearch().toLowerCase());
+			params.add(bst.getLikeSearch().toLowerCase());
 		}
 		
 		// Filter by Group code
@@ -163,6 +164,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 			
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save ticket attribute", e);
+			 putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
 	}
 
@@ -203,6 +205,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 			db.insert(tsVo);
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("could not insert new acl record",e);
+			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
 		
 		setModuleData(tsVo);
@@ -234,6 +237,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 				db.save(d);
 			} catch (InvalidDataException | DatabaseException e) {
 				log.error("could not save attribute acl",e);
+				putModuleData("", 0, false, e.getLocalizedMessage(), true);
 			}
 		}
 	}
