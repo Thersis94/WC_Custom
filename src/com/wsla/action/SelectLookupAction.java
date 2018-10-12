@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +24,9 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.wsla.action.admin.ProductCategoryAction;
+
 //WSLA Libs
+import com.wsla.action.admin.ProductCategoryAction;
 import static com.wsla.action.admin.ProductCategoryAction.PROD_CAT_ID;
 import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProductSetAction;
@@ -265,12 +267,15 @@ public class SelectLookupAction extends SBActionAdapter {
 			data.add(new GenericVO(code.name(), code.codeName));
 		}
 
-		// Sort the enum keys
-		Collections.sort(data);
+		// Sort the enum keys using a comparator
+		Collections.sort(data, Comparator.comparing(
+			GenericVO::getValue, (s1, s2) -> {
+	            return ((String)s1).compareTo(((String)s2));
+	        })
+		);
 
 		return data;
 	}
-
 	/**
 	 * Gets the supported locales for the app
 	 * @return

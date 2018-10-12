@@ -32,13 +32,20 @@ public class TicketAssignmentVO extends BeanDataVO {
 	 */
 	private static final long serialVersionUID = -868583252567619404L;
 	
+	/**
+	 * Options for the type of Assignment
+	 */
+	public enum TypeCode {
+		CALLER, OEM, RETAILER, WATCHER;
+	}
+	
 	// Member Variables
 	private String ticketAssigmentId;
 	private String locationId;
 	private String userId;
 	private String ticketId;
 	private int ownerFlag;
-	private int actionableFlag;
+	private TypeCode typeCode;
 	private Date createDate;
 	
 	// Bean Sub-Elements
@@ -109,9 +116,9 @@ public class TicketAssignmentVO extends BeanDataVO {
 	/**
 	 * @return the actionableFlag
 	 */
-	@Column(name="actionable_flg")
-	public int getActionableFlag() {
-		return actionableFlag;
+	@Column(name="assg_type_cd")
+	public TypeCode getTypeCode() {
+		return typeCode;
 	}
 	
 	/**
@@ -174,10 +181,14 @@ public class TicketAssignmentVO extends BeanDataVO {
 	/**
 	 * @param actionableFlag the actionableFlag to set
 	 */
-	public void setActionableFlag(int actionableFlag) {
-		this.actionableFlag = actionableFlag;
+	public void setTypeCode(TypeCode typeCode) {
+		this.typeCode = typeCode;
 	}
 
+	/**
+	 * 
+	 * @param createDate
+	 */
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
 	}
