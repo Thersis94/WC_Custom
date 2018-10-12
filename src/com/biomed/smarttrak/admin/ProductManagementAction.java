@@ -23,6 +23,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
@@ -842,8 +843,10 @@ public class ProductManagementAction extends ManagementAction {
 		List<Object> params = new ArrayList<>();
 		params.add(productId);
 		params.add(DETAILS_ID);
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
+		StringBuilder sql = new StringBuilder(1500);
+		sql.append(DBUtil.SELECT_CLAUSE).append("xr.*, a.* ");
+		sql.append(DBUtil.FROM_CLAUSE);
+		sql.append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append("WHERE PRODUCT_ID = ? AND xr.ATTRIBUTE_ID not in ( ");
@@ -855,7 +858,7 @@ public class ProductManagementAction extends ManagementAction {
 			sql.append("and TYPE_CD = ? ");
 			params.add(attributeType);
 		}
-		sql.append("ORDER BY xr.ORDER_NO ");
+		sql.append("ORDER BY XR.ORDER_NO, XR.TITLE_TXT");
 		log.debug(sql+"|"+productId);
 		DBProcessor db = new DBProcessor(dbConn);
 
@@ -1099,6 +1102,7 @@ public class ProductManagementAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	protected void saveAttribute(ProductAttributeVO attr, DBProcessor db) throws ActionException {
+		attr.calulateOrderNo();
 		try {
 			if (StringUtil.isEmpty(attr.getProductAttributeId())) {
 				attr.setProductAttributeId(new UUIDGenerator().getUUID());

@@ -353,31 +353,9 @@ public class CompanyAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void addAttributes(CompanyVO company, SmarttrakRoleVO role) {
-		StringBuilder sql = new StringBuilder(1000);
+		StringBuilder sql = new StringBuilder(1400);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append(DBUtil.SELECT_CLAUSE).append("xr.*, a.*, parent.ATTRIBUTE_NM as PARENT_NM, ");
-		// Build special Order By.
-		sql.append(DBUtil.CASE);
-
-		//Add Over Overview Case
-		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) in('company overview', 'business overview') ");
-		sql.append(DBUtil.THEN).append("1 ");
-
-		//Add Funding Case
-		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%funding%' and a.attribute_nm like '%GPS%' ");
-		sql.append(DBUtil.THEN).append("5 ");
-
-		//Add Revenues/Earnings Case
-		sql.append(DBUtil.WHEN).append("(lower(xr.title_txt) like '%revenues%' or lower(xr.title_txt) like '%earnings%')  and a.attribute_nm like '%GPS%' ");
-		sql.append(DBUtil.THEN).append("10 ");
-
-		//Add Recent Commentary Case
-		sql.append(DBUtil.WHEN).append("lower(xr.title_txt) like '%recent%' or lower(xr.title_txt) like '%commentary%' ");
-		sql.append(DBUtil.THEN).append("15 ");
-
-		//Add Default Case
-		sql.append(DBUtil.ELSE).append("100 ");
-		sql.append(DBUtil.END).append("as PUBLIC_DISPLAY_ORDER_NO ");
+		sql.append(DBUtil.SELECT_CLAUSE).append("xr.*, a.*, parent.ATTRIBUTE_NM as PARENT_NM ");
 		sql.append(DBUtil.FROM_CLAUSE);
 		sql.append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
@@ -389,7 +367,7 @@ public class CompanyAction extends SimpleActionAdapter {
 			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
 		}
 		sql.append("'").append(AdminControllerAction.Status.P).append("') ");
-		sql.append(DBUtil.ORDER_BY).append("a.DISPLAY_ORDER_NO, PUBLIC_DISPLAY_ORDER_NO, XR.TITLE_TXT ");
+		sql.append(DBUtil.ORDER_BY).append("a.DISPLAY_ORDER_NO, xr.ORDER_NO, XR.TITLE_TXT ");
 		log.debug(sql+"|"+company.getCompanyId());
 
 		List<Object> params = new ArrayList<>();
