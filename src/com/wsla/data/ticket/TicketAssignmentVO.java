@@ -39,14 +39,22 @@ public class TicketAssignmentVO extends BeanDataVO {
 		CALLER, OEM, RETAILER, WATCHER;
 	}
 	
+	/**
+	 * Definition of who owns the product
+	 */
+	public enum ProductOwner {
+		END_USER, OEM, RETAILER, COURIER, WSLA;
+	}
+	
 	// Member Variables
-	private String ticketAssigmentId;
+	private String ticketAssignmentId;
 	private String locationId;
 	private String userId;
 	private String ticketId;
 	private int ownerFlag;
 	private TypeCode typeCode;
 	private Date createDate;
+	private Date updateDate;
 	
 	// Bean Sub-Elements
 	private ProviderLocationVO location;
@@ -74,11 +82,11 @@ public class TicketAssignmentVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the ticketAssigmentId
+	 * @return the ticketAssignmentId
 	 */
 	@Column(name="ticket_assg_id", isPrimaryKey=true)
-	public String getTicketAssigmentId() {
-		return ticketAssigmentId;
+	public String getTicketAssignmentId() {
+		return ticketAssignmentId;
 	}
 
 	/**
@@ -130,6 +138,14 @@ public class TicketAssignmentVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the updateDate
+	 */
+	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
+	public Date getUpdateDate() {
+		return updateDate;
+	}
+
+	/**
 	 * @return the location
 	 */
 	public ProviderLocationVO getLocation() {
@@ -144,10 +160,10 @@ public class TicketAssignmentVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param ticketAssigmentId the ticketAssigmentId to set
+	 * @param ticketAssignmentId the ticketAssigmentId to set
 	 */
-	public void setTicketAssigmentId(String ticketAssigmentId) {
-		this.ticketAssigmentId = ticketAssigmentId;
+	public void setTicketAssignmentId(String ticketAssignmentId) {
+		this.ticketAssignmentId = ticketAssignmentId;
 	}
 
 	/**
@@ -207,6 +223,13 @@ public class TicketAssignmentVO extends BeanDataVO {
 	@BeanSubElement
 	public void setUser(UserVO user) {
 		this.user = user;
+	}
+
+	/**
+	 * @param updateDate the updateDate to set
+	 */
+	public void setUpdateDate(Date updateDate) {
+		this.updateDate = updateDate;
 	}
 
 }

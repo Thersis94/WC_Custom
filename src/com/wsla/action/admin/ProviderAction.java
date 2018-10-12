@@ -235,7 +235,7 @@ public class ProviderAction extends SBActionAdapter {
 	 * @param productCategoryId
 	 * @return
 	 */
-	public List<GenericVO> getOEMsByProductCategory(String productCategoryId) {
+	public List<GenericVO> getOEMsByProductCategory(String productCategoryId, boolean incUnknown) {
 		List<Object> vals = new ArrayList<>();
 		vals.add(productCategoryId);
 		
@@ -248,7 +248,8 @@ public class ProviderAction extends SBActionAdapter {
 		sql.append("wsla_product_category_xr c on b.product_id = c.product_id ");
 		sql.append("where a.provider_type_id = 'OEM' and c.product_category_id = ? ");
 		sql.append("group by key, value ");
-		sql.append("order by a.provider_nm ");
+		if (incUnknown) sql.append("union select 'NOT_SUPPORTED', 'Manufacturer Not Supported' ");
+		sql.append("order by value ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
 		return db.executeSelect(sql.toString(), vals, new GenericVO());

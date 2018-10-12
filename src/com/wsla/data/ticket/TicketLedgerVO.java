@@ -37,6 +37,7 @@ public class TicketLedgerVO extends BeanDataVO {
 	private String dispositionBy;
 	private String ticketId;
 	private String summary;
+	private StatusCode statusCode;
 	private Date createDate;
 	
 	// Bean Sub-Elements
@@ -95,6 +96,14 @@ public class TicketLedgerVO extends BeanDataVO {
 	@Column(name="summary_txt")
 	public String getSummary() {
 		return summary;
+	}
+
+	/**
+	 * @return the statusCode
+	 */
+	@Column(name="status_cd")
+	public StatusCode getStatusCode() {
+		return statusCode;
 	}
 
 	/**
@@ -192,6 +201,13 @@ public class TicketLedgerVO extends BeanDataVO {
 	@BeanSubElement
 	public void setUser(UserVO user) {
 		this.user = user;
+	}
+
+	/**
+	 * @param statusCode the statusCode to set
+	 */
+	public void setStatusCode(StatusCode statusCode) {
+		this.statusCode = statusCode;
 	}
 
 }

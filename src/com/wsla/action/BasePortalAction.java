@@ -26,6 +26,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
+import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.UserVO;
 
@@ -66,11 +67,12 @@ public class BasePortalAction extends SBActionAdapter {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public TicketLedgerVO addLedger(String userId, ActionRequest req, String... summary) 
+	public TicketLedgerVO addLedger(String userId, ActionRequest req, StatusCode statusCode, String... summary) 
 	throws InvalidDataException, DatabaseException {
 		// Create the ledger and fill out the bean
 		TicketLedgerVO ledger = new TicketLedgerVO(req);
 		if (summary != null && summary.length > 0) ledger.setSummary(summary[0]);
+		ledger.setStatusCode(statusCode);
 		
 		// Add the user's profile id and user id
 		if (StringUtil.isEmpty(ledger.getDispositionBy())) {
