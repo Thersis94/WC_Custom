@@ -6,8 +6,6 @@ import java.util.Date;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.parser.BeanDataVO;
-import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -25,7 +23,7 @@ import com.siliconmtn.db.orm.Table;
  * @updates:
  ****************************************************************************/
 @Table(name="wsla_product_warranty")
-public class ProductWarrantyVO extends BeanDataVO {
+public class ProductWarrantyVO extends WarrantyVO {
 
 	private static final long serialVersionUID = -4567698594237550575L;
 
@@ -33,10 +31,6 @@ public class ProductWarrantyVO extends BeanDataVO {
 	private String productWarrantyId;
 	private String productSerialId;
 	private Date expirationDate;
-	private String warrantyId;
-	private WarrantyVO warranty;
-	private Date createDate;
-	private Date updateDate;
 
 
 	/**
@@ -44,7 +38,6 @@ public class ProductWarrantyVO extends BeanDataVO {
 	 */
 	public ProductWarrantyVO() {
 		super();
-		warranty = new WarrantyVO();
 	}
 
 	/**
@@ -64,7 +57,7 @@ public class ProductWarrantyVO extends BeanDataVO {
 	public ProductWarrantyVO(String productSerialId, String warrantyId, Date expDate) {
 		this();
 		setProductSerialId(productSerialId);
-		warranty.setWarrantyId(warrantyId);
+		setWarrantyId(warrantyId);
 		setExpirationDate(expDate);
 	}
 
@@ -76,9 +69,10 @@ public class ProductWarrantyVO extends BeanDataVO {
 		return productWarrantyId;
 	}
 
+	@Override
 	@Column(name="warranty_id")
 	public String getWarrantyId() {
-		return warrantyId;
+		return super.getWarrantyId();
 	}
 
 	/**
@@ -100,17 +94,19 @@ public class ProductWarrantyVO extends BeanDataVO {
 	/**
 	 * @return the createDate
 	 */
+	@Override
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
-		return createDate;
+		return super.getCreateDate();
 	}
 
 	/**
 	 * @return the updateDate
 	 */
+	@Override
 	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
-		return updateDate;
+		return super.getUpdateDate();
 	}
 
 	/**
@@ -118,10 +114,6 @@ public class ProductWarrantyVO extends BeanDataVO {
 	 */
 	public void setProductWarrantyId(String productWarrantyId) {
 		this.productWarrantyId = productWarrantyId;
-	}
-
-	public void setWarrantyId(String warrantyId) {
-		this.warrantyId = warrantyId;
 	}
 
 	/**
@@ -136,28 +128,5 @@ public class ProductWarrantyVO extends BeanDataVO {
 	 */
 	public void setExpirationDate(Date expirationDate) {
 		this.expirationDate = expirationDate;
-	}
-
-	/**
-	 * @param createDate the createDate to set
-	 */
-	public void setCreateDate(Date createDate) {
-		this.createDate = createDate;
-	}
-
-	/**
-	 * @param updateDate the updateDate to set
-	 */
-	public void setUpdateDate(Date updateDate) {
-		this.updateDate = updateDate;
-	}
-
-	public WarrantyVO getWarranty() {
-		return warranty;
-	}
-
-	@BeanSubElement
-	public void setWarranty(WarrantyVO warranty) {
-		this.warranty = warranty;
 	}
 }
