@@ -196,8 +196,9 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getProviders(ActionRequest req) {
 		String search = req.getParameter("search");
+		boolean incUnknown = req.getBooleanParameter("incUnknown");
 		ProviderType pt = EnumUtil.safeValueOf(ProviderType.class, req.getParameter(PROVIDER_TYPE), ProviderType.OEM);
-		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search);
+		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search, incUnknown);
 	}
 
 

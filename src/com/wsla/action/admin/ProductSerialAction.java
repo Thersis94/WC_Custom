@@ -1,5 +1,7 @@
 package com.wsla.action.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,11 +81,47 @@ public class ProductSerialAction extends BatchImport {
 		if (!StringUtil.isEmpty(productId) && req.hasParameter("serialNo")) {
 			//do serial# lookup for the ticket UI
 			setModuleData(getProductSerial(productId, req.getParameter("serialNo")));
+		} else if (req.getBooleanParameter("bulkSerial")) {
+			BSTableControlVO bst = new BSTableControlVO(req, ProductSerialNumberVO.class);
+			String pId = req.getParameter("providerId");
+			int valFlag = req.getIntegerParameter("validationFlag", 0);
+			setModuleData(getSerialsByOem(pId, valFlag, bst));
 		} else {
 			setModuleData(getSet(productId, new BSTableControlVO(req, ProductSerialNumberVO.class)));
 		}
 	}
 
+	/**
+	 * Gets a list of serial numbers for the given provider
+	 * @param providerId
+	 * @param valFlag
+	 * @param bst
+	 * @return
+	 */
+	public GridDataVO<ProductSerialNumberVO> getSerialsByOem(String providerId, int valFlag, BSTableControlVO bst ) {
+		StringBuilder sql = new StringBuilder(384);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
+		sql.append("wsla_provider p ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_product_master pm on p.provider_id = pm.provider_id");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_product_serial a on pm.product_id = a.product_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("wsla_product_warranty b ");
+		sql.append("on a.product_serial_id = b.product_serial_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("wsla_warranty c on ");
+		sql.append("b.warranty_id = c.warranty_id ");
+		sql.append("where p.provider_id = ? and validated_flg = ? ");
+		sql.append(bst.getSQLOrderBy("product_nm", "asc"));
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(providerId);
+		vals.add(valFlag);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSQLWithCount(sql.toString(), vals, new ProductSerialNumberVO(), bst);
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -96,11 +134,52 @@ public class ProductSerialAction extends BatchImport {
 		try {
 			if (req.hasParameter("isDelete")) {
 				db.delete(vo);
+			} else if (req.getBooleanParameter("bulkSerial")) {
+				String psId = req.getParameter("productSerialId");
+				String wId = req.getParameter("warrantyId");
+				int val = req.getIntegerParameter("validationFlag");
+				updateValidationFlag(psId, val, wId);
 			} else {
 				db.save(vo);
 			}
-		} catch (InvalidDataException | DatabaseException e) {
+		} catch (InvalidDataException | DatabaseException | SQLException e) {
 			log.error("Unable to save product serial", e);
+			putModuleData("", 0, false, e.getLocalizedMessage(), true);
+		}
+	}
+	
+	/**
+	 * 
+	 * @param psId
+	 * @param valFlag
+	 * @throws SQLException
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	public void updateValidationFlag(String psId, int valFlag, String warrantyId) 
+	throws SQLException, InvalidDataException, DatabaseException {
+		
+		// Update the serial value
+		StringBuilder sql = new StringBuilder(64);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema());
+		sql.append("wsla_product_serial set validated_flg = ? ");
+		sql.append("where product_serial_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, valFlag);
+			ps.setString(2, psId);
+			ps.executeUpdate();
+		}
+		
+		// Add the warranty assoc if the serial is valid
+		ProductWarrantyAction pwa = new ProductWarrantyAction(attributes, getDBConnection());
+		if (valFlag == 1 && ! pwa.hasProductWarranty(psId, warrantyId)) {
+			ProductWarrantyVO vo = new ProductWarrantyVO();
+			vo.setWarrantyId(warrantyId);
+			vo.setProductSerialId(psId);
+			
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			db.save(vo);
 		}
 	}
 
@@ -155,10 +234,13 @@ public class ProductSerialAction extends BatchImport {
 			return Collections.emptyList();
 
 		StringBuilder sql = new StringBuilder(256);
-		sql.append("select * from wsla_product_serial a ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("wsla_product_warranty b ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
+		sql.append("wsla_product_serial a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("wsla_product_warranty b ");
 		sql.append("on a.product_serial_id = b.product_serial_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("wsla_warranty c on ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("wsla_warranty c on ");
 		sql.append("b.warranty_id = c.warranty_id ");
 		sql.append("where lower(serial_no_txt) = ? and product_id = ? ");		
 

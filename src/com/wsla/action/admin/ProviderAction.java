@@ -210,7 +210,7 @@ public class ProviderAction extends SBActionAdapter {
 	 * Called from SelectLookupAction.
 	 * @return
 	 */
-	public List<GenericVO> getProviderOptions(ProviderType type, String search) {
+	public List<GenericVO> getProviderOptions(ProviderType type, String search, boolean incUnknown) {
 		if (type == null) return Collections.emptyList();
 		List<Object> vals = new ArrayList<>();
 		vals.add(type.toString());
@@ -224,6 +224,7 @@ public class ProviderAction extends SBActionAdapter {
 			vals.add("%" + search.toLowerCase() + "%");
 		}
 		
+		sql.append(incUnknown ? "" : " and provider_id != 'NOT_SUPPORTED' ");
 		sql.append("order by provider_nm");
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
