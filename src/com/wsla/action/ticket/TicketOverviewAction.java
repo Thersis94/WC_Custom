@@ -46,7 +46,8 @@ import com.wsla.data.ticket.UserVO;
 /****************************************************************************
  * <b>Title</b>: TicketOverviewAction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Manages the overview data for the service order ticket
+ * <b>Description: </b> Manages the the call center process for creating the 
+ * initial ticket information
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -59,7 +60,7 @@ import com.wsla.data.ticket.UserVO;
 public class TicketOverviewAction extends BasePortalAction {
 	
 	/**
-	 * Key for the Ajax Controller to utilize when calling this class
+	 * Key for the Facade / Ajax Controller to utilize when calling this class
 	 */
 	public static final String AJAX_KEY = "serviceOrder";
 	
@@ -80,15 +81,6 @@ public class TicketOverviewAction extends BasePortalAction {
 	 */
 	public TicketOverviewAction(ActionInitVO actionInit) {
 		super(actionInit);
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void retrieve(ActionRequest req) throws ActionException {
-		
 	}
 
 	/*

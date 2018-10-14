@@ -18,6 +18,7 @@ import com.siliconmtn.db.orm.Column;
 // WSLA Libs
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.product.ProductSerialNumberVO;
+import com.wsla.data.product.ProductWarrantyVO;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderVO;
 
@@ -40,6 +41,17 @@ public class TicketVO extends BeanDataVO {
 	 * 
 	 */
 	private static final long serialVersionUID = -288262467687670031L;
+	
+	/**
+	 * Stabding of the ticket in relation to how its progressing through the workflow
+	 */
+	public enum Standing {
+		GOOD("GREEN"), DELAYED("YELLOW"), CRITICAL("RED");
+		
+		public final String color;
+		public String getColor() {return color; }
+		Standing(String color) { this.color = color; }
+	}
 		
 	// Member Variables
 	private String ticketId;
@@ -50,6 +62,7 @@ public class TicketVO extends BeanDataVO {
 	private String productSerialId;
 	private String lockedBy;
 	private StatusCode statusCode;
+	private Standing standingCode = Standing.GOOD;
 	private int warrantyValidFlag;
 	private Date purchaseDate;
 	private Date createDate;
@@ -71,6 +84,7 @@ public class TicketVO extends BeanDataVO {
 	private ProviderLocationVO retailer;
 	private ProviderVO oem;
 	private UserVO originator;
+	private ProductWarrantyVO warranty;
 	
 	/**
 	 * 
@@ -261,6 +275,14 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the standingCode
+	 */
+	@Column(name="standing_cd")
+	public Standing getStandingCode() {
+		return standingCode;
+	}
+
+	/**
 	 * @return the retailer
 	 */
 	public ProviderLocationVO getRetailer() {
@@ -307,6 +329,13 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public ProductSerialNumberVO getProductSerial() {
 		return productSerial;
+	}
+
+	/**
+	 * @return the warranty
+	 */
+	public ProductWarrantyVO getWarranty() {
+		return warranty;
 	}
 
 	/**
@@ -530,6 +559,20 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setStatusName(String statusName) {
 		this.statusName = statusName;
+	}
+
+	/**
+	 * @param standingCode the standingCode to set
+	 */
+	public void setStandingCode(Standing standingCode) {
+		this.standingCode = standingCode;
+	}
+
+	/**
+	 * @param warranty the warranty to set
+	 */
+	public void setWarranty(ProductWarrantyVO warranty) {
+		this.warranty = warranty;
 	}
 }
 
