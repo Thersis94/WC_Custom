@@ -10,6 +10,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
+import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketOverviewAction;
 
 /****************************************************************************
@@ -61,6 +62,7 @@ public class ServiceOrderFacadeAction extends FacadeActionAdapter {
 	private void loadTypes() {
 		// Add the actions and there types here
 		actionMap.put(DEFAULT_TYPE, TicketOverviewAction.class);
+		actionMap.put(TicketEditAction.AJAX_KEY, TicketEditAction.class);
 	}
 	
 	/*

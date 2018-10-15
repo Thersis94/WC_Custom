@@ -159,6 +159,11 @@ public class ProductSerialNumberVO extends ProductVO {
 		this.warrantyName = warrantyName;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
+	@Column(name="warranty_id", isReadOnly=true)
 	public String getWarrantyId() {
 		return warrantyId;
 	}

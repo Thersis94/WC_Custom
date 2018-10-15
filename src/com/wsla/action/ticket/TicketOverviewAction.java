@@ -1,5 +1,7 @@
 package com.wsla.action.ticket;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 // JDK 1.8.x
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,10 +30,14 @@ import com.smt.sitebuilder.common.constants.Constants;
 // WSLA Libs
 import com.wsla.action.BasePortalAction;
 import com.wsla.common.WSLAConstants;
+import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.ticket.DiagnosticRunVO;
 import com.wsla.data.ticket.DiagnosticTicketVO;
 import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
+import com.wsla.data.ticket.TicketAssignmentVO.ProductOwner;
+import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
@@ -40,7 +46,8 @@ import com.wsla.data.ticket.UserVO;
 /****************************************************************************
  * <b>Title</b>: TicketOverviewAction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Manages the overview data for the service order ticket
+ * <b>Description: </b> Manages the the call center process for creating the 
+ * initial ticket information
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -53,9 +60,14 @@ import com.wsla.data.ticket.UserVO;
 public class TicketOverviewAction extends BasePortalAction {
 	
 	/**
-	 * Key for the Ajax Controller to utilize when calling this class
+	 * Key for the Facade / Ajax Controller to utilize when calling this class
 	 */
 	public static final String AJAX_KEY = "serviceOrder";
+	
+	/**
+	 * OEM Id that indicates the caller wanted service for a non-supported OEM
+	 */
+	public static final String OEM_NOT_SUPPORTED = "NOT_SUPPORTED";
 		
 	/**
 	 * 
@@ -70,15 +82,6 @@ public class TicketOverviewAction extends BasePortalAction {
 	public TicketOverviewAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void retrieve(ActionRequest req) throws ActionException {
-		
-	}
 
 	/*
 	 * (non-Javadoc)
@@ -86,7 +89,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info("Saving Tickets ....");
+
 		TicketVO ticket = null;
 		try {
 			if(StringUtil.isEmpty(req.getParameter("ticketId"))) {
@@ -117,6 +120,14 @@ public class TicketOverviewAction extends BasePortalAction {
 		TicketVO ticket = new TicketVO(req);
 		ticket.addDiagnosticRun(new DiagnosticRunVO(req));
 		
+		// Check the productSerial and add it if it is missing
+		if (StringUtil.isEmpty(req.getParameter("productSerialId"))) 
+			this.addProductSerialNumber(req, ticket);
+		
+		// If the user resolved the ticket during diagnostics, close the ticket
+		if (req.getIntegerParameter("attr_issueResolved", 0) == 1) 
+			ticket.setStatusCode(StatusCode.CLOSED);
+
 		// Save the ticket core data
 		this.saveCoreTicket(ticket);
 
@@ -124,7 +135,7 @@ public class TicketOverviewAction extends BasePortalAction {
 		this.saveDiagnosticRun(ticket.getDiagnosticRun().get(0));
 		
 		// Add an item to the ledger
-		TicketLedgerVO ledger = addLedger(user.getUserId(), req, LedgerSummary.CALL_RECVD.summary);
+		TicketLedgerVO ledger = addLedger(user.getUserId(), req, ticket.getStatusCode(), LedgerSummary.CALL_FINISHED.summary);
 		
 		// Save the extended data elements
 		assignDataAttributes(ticket, ledger);
@@ -132,10 +143,43 @@ public class TicketOverviewAction extends BasePortalAction {
 		// Update the caller's user record and profile
 		UserVO caller = new UserVO(req);
 		updateWSLAUser(caller);
+
+		// Add the assignments
+		String callerAssignmentId = req.getParameter("ticketAssignmentId");
+		String ownsTv = req.getParameter("attr_ownsProduct");
+		updateAllAssignments(ticket, callerAssignmentId, ownsTv, caller);
 		
 		return ticket;
 	}
 	
+	/**
+	 * When a serial number can't be located, this method adds a new serial
+	 * number as unvalidated and updates the product serial id on the ticket and 
+	 * changes the status to un
+	 * @param req
+	 * @param ticket
+	 * @return
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void addProductSerialNumber(ActionRequest req, TicketVO ticket) 
+	throws InvalidDataException, DatabaseException {
+		// Set the product data
+		ProductSerialNumberVO psn = new ProductSerialNumberVO();
+		psn.setProductId(req.getParameter("productId"));
+		psn.setSerialNumber(req.getParameter("serialNumber"));
+		psn.setValidatedFlag(0);
+		
+		// add the serial
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.insert(psn);
+		
+		// Update the ticket
+		ticket.setProductSerialId(psn.getProductSerialId());
+		ticket.setProductSerial(psn);
+		ticket.setStatusCode(StatusCode.UNLISTED_SERIAL_NO);
+	}
+
 	/**
 	 * Creates the base ticket information
 	 * @param req
@@ -149,6 +193,13 @@ public class TicketOverviewAction extends BasePortalAction {
 		TicketVO ticket = new TicketVO(req);
 		String slug = RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS);
 		ticket.setTicketIdText(slug.toUpperCase());
+		
+		// If the OEM is unsupported, close the ticket
+		if (OEM_NOT_SUPPORTED.equals(ticket.getOemId())) {
+			ticket.setStatusCode(StatusCode.CLOSED);
+		}
+		
+		// Save ticket core info
 		saveCoreTicket(ticket);
 		req.setParameter("ticketId", ticket.getTicketId());
 		
@@ -156,15 +207,37 @@ public class TicketOverviewAction extends BasePortalAction {
 		UserVO user = new UserVO(req);
 		if (user.getProfile() == null) user.setProfile(new UserDataVO(req));
 		this.saveUser(site, user, false, true);
-		ticket.addAssignment(manageTicketAssignment(user, ticket.getTicketId(), null, 0));
+		ticket.addAssignment(manageTicketAssignment(user, null, ticket.getTicketId(), null, 0, TypeCode.CALLER));
 
 		// Add an item to the ledger
-		TicketLedgerVO ledger = addLedger(user.getUserId(), req, LedgerSummary.CALL_RECVD.summary);
+		TicketLedgerVO ledger = addLedger(user.getUserId(), req, ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary);
 		
 		// Add Data Attributes
 		assignDataAttributes(ticket, ledger);
 		
+		// Update the ticket originator from the user
+		updateOriginator(user.getUserId(), ticket.getTicketId());
+		
 		return ticket;
+	}
+	
+	/**
+	 * Updates the originator id.  Needs to be done here in case the ticket stops at 
+	 * the overview screen
+	 * @param userId
+	 * @param ticketId
+	 * @throws SQLException
+	 */
+	public void updateOriginator(String userId, String ticketId) throws SQLException {
+		StringBuilder sql = new StringBuilder(40);
+		sql.append("update ").append(getCustomSchema()).append("wsla_ticket ");
+		sql.append("set originator_user_id = ? where ticket_id = ?");
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, userId);
+			ps.setString(2, ticketId);
+			ps.executeUpdate();
+		}
 	}
 	
 	/**
@@ -210,20 +283,54 @@ public class TicketOverviewAction extends BasePortalAction {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public TicketAssignmentVO manageTicketAssignment(UserVO user, String tId, String lId, int owner) 
+	public TicketAssignmentVO manageTicketAssignment(UserVO user, String asgnId, String tId, String lId, int owner, TypeCode typeCode) 
 	throws InvalidDataException, DatabaseException {
+		if (user == null) user = new UserVO();
 		
 		TicketAssignmentVO tass = new TicketAssignmentVO();
+		tass.setTicketAssignmentId(asgnId);
 		tass.setUserId(user.getUserId());
 		tass.setTicketId(tId);
 		tass.setOwnerFlag(owner);
 		tass.setLocationId(lId);
 		tass.setUser(user);
+		tass.setTypeCode(typeCode);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(tass);
 		
 		return tass;
+	}
+	
+	/**
+	 * Updates the assignments on the Ticket for Retailer and User (OEM if owned)
+	 * @param t
+	 * @param cai
+	 * @param ownsProduct
+	 * @param user
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void updateAllAssignments(TicketVO t, String cai, String ownsProduct, UserVO user) 
+	throws InvalidDataException, DatabaseException {
+		ProductOwner owner = ProductOwner.END_USER;
+		if (! StringUtil.isEmpty(ownsProduct)) owner = ProductOwner.valueOf(ownsProduct);
+		
+		// Assign the Retailer
+		int isOwned = ProductOwner.RETAILER.equals(owner) ? 1 : 0;
+		manageTicketAssignment(null, null, t.getTicketId(), t.getRetailerId(), isOwned, TypeCode.RETAILER);
+		
+		// Update the Assignment for the user if they own the product
+		isOwned = ProductOwner.END_USER.equals(owner) ? 1 : 0;
+		if (isOwned == 1) {
+			manageTicketAssignment(user, cai, t.getTicketId(), null, isOwned, TypeCode.CALLER);
+		}
+		
+		// Add the Assignment for the OEM if they own the product
+		isOwned = ProductOwner.OEM.equals(owner) ? 1 : 0;
+		if (isOwned == 1) {
+			manageTicketAssignment(null, null, t.getTicketId(), null, isOwned, TypeCode.OEM);
+		}
 	}
 	
 	/**

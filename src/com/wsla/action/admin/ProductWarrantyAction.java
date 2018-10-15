@@ -1,6 +1,10 @@
 package com.wsla.action.admin;
 
 // JDK 1.8.x
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +21,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.product.ProductWarrantyVO;
@@ -106,5 +111,30 @@ public class ProductWarrantyAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ProductWarrantyVO(), bst.getLimit(), bst.getOffset());
+	}
+	
+	/**
+	 * Checks to see if the serial number, warranty combo exists
+	 * @param productSerialId
+	 * @param warrantyId
+	 * @return
+	 * @throws SQLException 
+	 */
+	public boolean hasProductWarranty(String productSerialId, String warrantyId) throws SQLException {
+		StringBuilder sql = new StringBuilder(80);
+		sql.append("select product_serial_id as key, warranty_id as value from ");
+		sql.append(getCustomSchema()).append("wsla_product_warranty ");
+		sql.append("where product_serial_id = ? and warranty_id = ?");
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, productSerialId);
+			ps.setString(2, warrantyId);
+			
+			try(ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) return true;
+			}
+		}
+		
+		return false;
 	}
 }
