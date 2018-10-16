@@ -147,11 +147,6 @@ public class RSSFilterAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-
-		//Ensure that filterId isn't ADD.
-		if("ADD".equals(req.getParameter(FILTER_ID))) {
-			req.setParameter(FILTER_ID, "");
-		}
 		update(req);
 	}
 
