@@ -27,6 +27,7 @@ import com.siliconmtn.util.StringUtil;
 public class ProductAttributeVO {
 	
 	private String productAttributeId;
+	private String productAttributeGroupId;
 	private String attributeId;
 	private String attributeName;
 	private String productId;
@@ -37,6 +38,11 @@ public class ProductAttributeVO {
 	private String groupName;
 	private String statusNo;
 	private int orderNo;
+	private int hasArchives;
+
+	private Date createDt;
+	private Date updateDt;
+
 	
 	/**
 	 * Special comparator used in ordering the detail attributes
@@ -56,6 +62,7 @@ public class ProductAttributeVO {
 	
 	public void setData(ActionRequest req) {
 		productAttributeId = req.getParameter("productAttributeId");
+		productAttributeGroupId = req.getParameter("productAttributeGroupId");
 		productId = req.getParameter("productId");
 		attributeId = req.getParameter("attributeId");
 		valueText = req.getParameter("valueText");
@@ -72,6 +79,13 @@ public class ProductAttributeVO {
 	}
 	public void setProductAttributeId(String productAttributeId) {
 		this.productAttributeId = productAttributeId;
+	}
+	@Column(name="product_attribute_group_id")
+	public String getProductAttributeGroupId() {
+		return productAttributeGroupId;
+	}
+	public void setProductAttributeGroupId(String productAttributeGroupId) {
+		this.productAttributeGroupId = productAttributeGroupId;
 	}
 	@Column(name="product_id")
 	public String getProductId() {
@@ -163,13 +177,29 @@ public class ProductAttributeVO {
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
 	}
-	
 
-	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
+	/**
+	 * @return the hasArchives
+	 */
+	@Column(name="has_archives", isReadOnly=true)
+	public int getHasArchives() {
+		return hasArchives;
+	}
+
+	/**
+	 * @param hasArchives the hasArchives to set.
+	 */
+	public void setHasArchives(int hasArchives) {
+		this.hasArchives = hasArchives;
+	}
+
 	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
-	public Date getUpdateDate() {return null;}
+	public Date getUpdateDate() {return updateDt;}
+	public void setUpdateDate(Date updateDt) {this.updateDt = updateDt;}
+
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
-	public Date getCreateDate() {return null;}
+	public Date getCreateDate() {return createDt;}
+	public void setCreateDate(Date createDt) {this.createDt = createDt;}
 	
 	
 
