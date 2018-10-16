@@ -96,6 +96,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 */
 	private enum ContentType {
 		OVERVIEW("Company Overview", 1),
+		GPS_OVERVIEW("Overview", 1),
 		FUNDING("Funding", 2),
 		OUTLOOK("Revenues & Financial Outlook", 3),
 		COMMENTARY("Recent Commentary", 4),

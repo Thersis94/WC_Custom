@@ -67,8 +67,8 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		String memberId = member.getMemberId();
 
 		// Check if this is a new member. New members get a free residence or a free business.
-		int residenceCount = getResidenceUsage(memberId);
-		int businessCount = getBusinessUsage(memberId);
+		int residenceCount = getUsageQty(memberId, Group.HO);
+		int businessCount = getUsageQty(memberId, Group.BU);
 		req.setAttribute("newMember", residenceCount + businessCount == 0);
 		if ((boolean) req.getAttribute("newMember")) return;
 
@@ -210,6 +210,7 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		sql.append("rezdox_business_member_xr where member_id = ? and status_flg in (");
 		DBUtil.preparedStatmentQuestion(statuses.length, sql);
 		sql.append(")");
+		log.debug(sql);
 
 		int usageQty = 0;
 		int x=0;
