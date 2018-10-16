@@ -16,6 +16,8 @@ import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+
+// WC Libs
 import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.data.ticket.DiagnosticTicketVO.Outcome;
 
@@ -50,6 +52,7 @@ public class DiagnosticRunVO extends BeanDataVO {
 	
 	// Bean Sub-elements
 	private List<DiagnosticTicketVO> diagnostics = new ArrayList<>(16);
+	private UserVO dispositioned;
 	
 	/**
 	 * 
@@ -79,8 +82,9 @@ public class DiagnosticRunVO extends BeanDataVO {
 	 * @param req
 	 */
 	protected void assignDiagnostics(ActionRequest req) {
-		// Assign the user who is submitting the request		
-		dispositionedBy = ((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA)).getProfileId();
+		// Assign the user who is submitting the request
+		UserDataVO userData = ((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
+		dispositionedBy = ((UserVO)userData.getUserExtendedInfo()).getUserId();
 		
 		// Since the runs will be insert only, assign the uuid so it can be 
 		// assigned to the dt 
@@ -157,6 +161,13 @@ public class DiagnosticRunVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the dispositioned
+	 */
+	public UserVO getDispositioned() {
+		return dispositioned;
+	}
+
+	/**
 	 * @return the diagnostics
 	 */
 	public List<DiagnosticTicketVO> getDiagnostics() {
@@ -227,6 +238,14 @@ public class DiagnosticRunVO extends BeanDataVO {
 	public void addDiagnostic(DiagnosticTicketVO diagnostic) {
 		if (diagnostic != null)
 			diagnostics.add(diagnostic);
+	}
+	
+	/**
+	 * @param dispositioned the dispositioned to set
+	 */
+	@BeanSubElement
+	public void setDispositioned(UserVO dispositioned) {
+		this.dispositioned = dispositioned;
 	}
 }
 

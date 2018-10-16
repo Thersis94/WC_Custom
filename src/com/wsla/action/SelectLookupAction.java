@@ -351,7 +351,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		bst.setOffset(0);
 		String providerId = req.getParameter(PROVIDER_ID);
 		int setFlag = req.getIntegerParameter("setFlag");
-		GridDataVO<ProductVO> products = ai.getProducts(null, providerId, setFlag, bst);
+		GridDataVO<ProductVO> products = ai.getProducts(null, providerId, setFlag, null, bst);
 
 		List<GenericVO> data = new ArrayList<>(products.getTotal());
 		for (ProductVO product : products.getRowData()) {

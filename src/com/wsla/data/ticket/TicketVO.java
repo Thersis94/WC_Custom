@@ -85,6 +85,7 @@ public class TicketVO extends BeanDataVO {
 	private ProviderVO oem;
 	private UserVO originator;
 	private ProductWarrantyVO warranty;
+	private StatusCodeVO status;
 	
 	/**
 	 * 
@@ -339,6 +340,13 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the status
+	 */
+	public StatusCodeVO getStatus() {
+		return status;
+	}
+
+	/**
 	 * @param ticketId the ticketId to set
 	 */
 	public void setTicketId(String ticketId) {
@@ -573,6 +581,14 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setWarranty(ProductWarrantyVO warranty) {
 		this.warranty = warranty;
+	}
+
+	/**
+	 * @param status the status to set
+	 */
+	@BeanSubElement
+	public void setStatus(StatusCodeVO status) {
+		this.status = status;
 	}
 }
 
