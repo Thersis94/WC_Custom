@@ -88,6 +88,16 @@ public class ProductSerialNumberVO extends ProductVO {
 	 * @return the createDate
 	 */
 	@Override
+	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
+	public Date getCreateDate() {
+		return super.getCreateDate();
+	}
+
+	/**
+	 * @return the updateDate
+	 */
+	@Override
+	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
 		return super.getUpdateDate();
 	}
@@ -115,7 +125,7 @@ public class ProductSerialNumberVO extends ProductVO {
 	public void setProductSerialId(String productSerialId) {
 		this.productSerialId = productSerialId;
 	}
-	
+
 	/**
 	 * @param serialNumber the serialNumber to set
 	 */
@@ -149,6 +159,11 @@ public class ProductSerialNumberVO extends ProductVO {
 		this.warrantyName = warrantyName;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
+	@Column(name="warranty_id", isReadOnly=true)
 	public String getWarrantyId() {
 		return warrantyId;
 	}

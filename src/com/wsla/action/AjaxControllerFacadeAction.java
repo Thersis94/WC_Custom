@@ -22,6 +22,7 @@ import com.wsla.action.admin.ProductWarrantyAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.ticket.TicketAttributeAction;
+import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketListAction;
 import com.wsla.action.ticket.TicketOverviewAction;
 import com.wsla.action.admin.ProviderLocationUserAction;
@@ -80,7 +81,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(ProviderLocationAction.AJAX_KEY, ProviderLocationAction.class);
 		actionMap.put(ProviderLocationUserAction.AJAX_KEY, ProviderLocationUserAction.class);
 		actionMap.put(TicketAttributeAction.AJAX_KEY, TicketAttributeAction.class);
-		actionMap.put(TicketOverviewAction.AJAX_KEY, TicketOverviewAction.class);
+		actionMap.put(TicketOverviewAction.AJAX_KEY, ServiceOrderFacadeAction.class);
+		actionMap.put(TicketEditAction.AJAX_KEY, ServiceOrderFacadeAction.class);
 		actionMap.put(TicketListAction.AJAX_KEY, TicketListAction.class);
 		actionMap.put(StatusCodeAction.AJAX_KEY, StatusCodeAction.class);
 		actionMap.put(DefectAction.DEFECTS_TYPE, DefectAction.class);

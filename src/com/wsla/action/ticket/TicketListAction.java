@@ -250,17 +250,17 @@ public class TicketListAction extends SimpleActionAdapter {
 	public StringBuilder getBaseSql() {
 		StringBuilder base = new StringBuilder(768);
 		base.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket a ");
-		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_serial b ");
-		base.append("on a.product_serial_id = b.product_serial_id ");
-		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_master c ");
-		base.append("on b.product_id = c.product_id ");
-		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_status d ");
-		base.append("ON a.status_cd = d.status_cd ");
 		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_user e ");
 		base.append("on a.originator_user_id = e.user_id ");
-		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider f ");
+		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_product_serial b ");
+		base.append("on a.product_serial_id = b.product_serial_id ");
+		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_product_master c ");
+		base.append("on b.product_id = c.product_id ");
+		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_ticket_status d ");
+		base.append("ON a.status_cd = d.status_cd ");
+		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider f ");
 		base.append("on a.oem_id = f.provider_id ");
-		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location g ");
+		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider_location g ");
 		base.append("on a.retailer_id = g.location_id ");
 		base.append("where 1 = 1 ");
 		

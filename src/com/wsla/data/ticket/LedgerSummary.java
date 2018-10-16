@@ -15,7 +15,8 @@ package com.wsla.data.ticket;
 
 public enum LedgerSummary {
 	
-	CALL_RECVD ("A call was received");
+	CALL_RECVD ("A call was received"),
+	CALL_FINISHED ("Finished user call.  All data processed");
 	
 	public final String summary;
 	LedgerSummary(String summary) { this.summary = summary; }
