@@ -27,6 +27,7 @@ import com.siliconmtn.util.Convert;
 @Table(name="BIOMEDGPS_COMPANY_ATTRIBUTE_XR")
 public class CompanyAttributeVO implements NoteInterface  {
 	private String companyAttributeId;
+	private String companyAttributeGroupId;
 	private String companyId;
 	private String attributeId;
 	private String valueText;
@@ -38,9 +39,12 @@ public class CompanyAttributeVO implements NoteInterface  {
 	private List<NoteVO> notes;
 	private String statusNo;
 	private String sectionId;
-	
+
+	private int hasArchives;
 	private int orderNo;
 	private String attributeTypeName;
+	private Date createDt;
+	private Date updateDt;
 	
 	public CompanyAttributeVO() {
 		// Empty default constructor
@@ -54,6 +58,7 @@ public class CompanyAttributeVO implements NoteInterface  {
 	
 	public void setData(ActionRequest req) {
 		companyAttributeId = req.getParameter("companyAttributeId");
+		companyAttributeGroupId = req.getParameter("companyAttributeGroupId");
 		companyId = req.getParameter("companyId");
 		attributeId = req.getParameter("attributeId");
 		valueText = req.getParameter("valueText");
@@ -70,6 +75,13 @@ public class CompanyAttributeVO implements NoteInterface  {
 	}
 	public void setCompanyAttributeId(String companyAttributeId) {
 		this.companyAttributeId = companyAttributeId;
+	}
+	@Column(name="company_attribute_group_id")
+	public String getCompanyAttributeGroupId() {
+		return companyAttributeGroupId;
+	}
+	public void setCompanyAttributeGroupId(String companyAttributeGroupId) {
+		this.companyAttributeGroupId = companyAttributeGroupId;
 	}
 	@Column(name="company_id")
 	public String getCompanyId() {
@@ -106,7 +118,21 @@ public class CompanyAttributeVO implements NoteInterface  {
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
 	}
-	
+
+	/**
+	 * @return the hasArchives
+	 */
+	@Column(name="has_archives", isReadOnly=true)
+	public int getHasArchives() {
+		return hasArchives;
+	}
+
+	/**
+	 * @param hasArchives the hasArchives to set.
+	 */
+	public void setHasArchives(int hasArchives) {
+		this.hasArchives = hasArchives;
+	}
 
 	@Column(name="type_nm", isReadOnly=true)
 	public String getAttributeTypeName() {
@@ -127,14 +153,13 @@ public class CompanyAttributeVO implements NoteInterface  {
 		this.attributeName = attributeName;
 	}
 
-
-	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
 	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
-	public Date getUpdateDate() {return null;}
+	public Date getUpdateDate() {return updateDt;}
+	public void setUpdateDate(Date updateDt) {this.updateDt = updateDt;}
+
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
-	public Date getCreateDate() {return null;}
-
-
+	public Date getCreateDate() {return createDt;}
+	public void setCreateDate(Date createDt) {this.createDt = createDt;}
 	/* (non-Javadoc)
 	 * @see com.bmg.admin.vo.NoteEntityInterface#setNotes(java.util.List)
 	 */
