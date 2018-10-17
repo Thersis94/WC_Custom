@@ -366,11 +366,16 @@ public class LinkChecker extends CommandLineUtil {
 	 * @param vo
 	 */
 	private void checkRedirect(LinkVO vo) {
+		// Check to see if we have been redirected multiple times
+		// Any link with this many redirects is a failure and should stop being tested.
+		if (vo.getNumChecks() >= 10) return;
+			
 		if (isRedirect(vo.getOutcome()) && !StringUtil.isEmpty(vo.getRedirectUrl())) {
 			log.debug("got redirected to: " + vo.getRedirectUrl());
 			vo.setUrl(vo.getRedirectUrl());
 			vo.setRedirectUrl(null); //flush this or we're in a continuous loop
 			vo.setOutcome(0);
+			vo.setNumChecks(vo.getNumChecks()+1);
 			httpTest(vo);
 		}
 	}
