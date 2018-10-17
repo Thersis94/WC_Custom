@@ -29,6 +29,7 @@ public class LinkVO {
 	private String publicUrl;
 	private String redirectUrl;
 	private int reviewFlag;
+	private int numChecks;
 
 	public LinkVO(String section, String id, String html, String contentId) {
 		this.setSection(section);
@@ -197,5 +198,19 @@ public class LinkVO {
 
 	public void setRedirectUrl(String redirectUrl) {
 		this.redirectUrl = redirectUrl;
+	}
+
+	/**
+	 * @return the numChecks
+	 */
+	public int getNumChecks() {
+		return numChecks;
+	}
+
+	/**
+	 * @param numChecks the numChecks to set
+	 */
+	public void setNumChecks(int numChecks) {
+		this.numChecks = numChecks;
 	}
 }
