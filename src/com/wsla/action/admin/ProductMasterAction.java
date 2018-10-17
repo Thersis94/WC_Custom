@@ -77,8 +77,10 @@ public class ProductMasterAction extends BatchImport {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String productId = req.getParameter(REQ_PRODUCT_ID);
 		String providerId = req.getParameter("providerId");
+		Integer validatedFlag = req.getIntegerParameter("validatedFlag");
 		Integer setFlag = req.hasParameter("setFlag") ? Convert.formatInteger(req.getParameter("setFlag")) : null;
-		setModuleData(getProducts(productId, providerId, setFlag, new BSTableControlVO(req, ProductVO.class)));
+		BSTableControlVO bst = new BSTableControlVO(req, ProductVO.class);
+		setModuleData(getProducts(productId, providerId, setFlag, validatedFlag, bst));
 	}
 
 
@@ -92,8 +94,10 @@ public class ProductMasterAction extends BatchImport {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
 			db.save(product);
+			putModuleData(product);
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save product", e);
+			putModuleData(product, 0, false, e.getLocalizedMessage(), true);
 		}
 	}
 
@@ -105,7 +109,7 @@ public class ProductMasterAction extends BatchImport {
 	 * @param bst
 	 * @return
 	 */
-	public GridDataVO<ProductVO> getProducts(String productId, String providerId, Integer setFlag, BSTableControlVO bst) {
+	public GridDataVO<ProductVO> getProducts(String productId, String providerId, Integer setFlag, Integer vf, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select pm.*, p.provider_nm from ").append(schema).append("wsla_product_master pm ");
@@ -138,6 +142,11 @@ public class ProductMasterAction extends BatchImport {
 		if (setFlag != null) {
 			sql.append("and pm.set_flg=? ");
 			params.add(setFlag);
+		}
+		
+		if (vf != null) {
+			sql.append("and pm.validated_flg=? ");
+			params.add(vf);
 		}
 
 		sql.append(bst.getSQLOrderBy("pm.product_nm",  "asc"));

@@ -32,7 +32,6 @@ public class ProductSerialNumberVO extends ProductVO {
 	// Member Variables
 	private String productSerialId;
 	private String serialNumber;
-	private int validatedFlag;
 	private Date retailerDate;
 
 	// Bean Sub-Elements
@@ -102,11 +101,6 @@ public class ProductSerialNumberVO extends ProductVO {
 		return super.getUpdateDate();
 	}
 
-	@Column(name="validated_flg")
-	public int getValidatedFlag() {
-		return validatedFlag;
-	}
-
 	@Column(name="retailer_dt")
 	public Date getRetailerDate() {
 		return retailerDate;
@@ -132,10 +126,6 @@ public class ProductSerialNumberVO extends ProductVO {
 	@Importable(name="Serial Number", type=DataType.STRING)
 	public void setSerialNumber(String serialNumber) {
 		this.serialNumber = serialNumber;
-	}
-
-	public void setValidatedFlag(int validatedFlag) {
-		this.validatedFlag = validatedFlag;
 	}
 
 	public void setRetailerDate(Date retailerDate) {

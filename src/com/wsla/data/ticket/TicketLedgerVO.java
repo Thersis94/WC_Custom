@@ -2,6 +2,7 @@ package com.wsla.data.ticket;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -42,8 +43,9 @@ public class TicketLedgerVO extends BeanDataVO {
 	
 	// Bean Sub-Elements
 	private TicketVO ticket;
-	private List<TicketDataVO> data;
+	private List<TicketDataVO> data = new ArrayList<>();
 	private UserVO user;
+	private StatusCodeVO status;
 	
 	/**
 	 * 
@@ -136,6 +138,13 @@ public class TicketLedgerVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the status
+	 */
+	public StatusCodeVO getStatus() {
+		return status;
+	}
+
+	/**
 	 * @param ledgerEntryId the ledgerEntryId to set
 	 */
 	public void setLedgerEntryId(String ledgerEntryId) {
@@ -181,7 +190,6 @@ public class TicketLedgerVO extends BeanDataVO {
 	/**
 	 * @param data the data to set
 	 */
-	@BeanSubElement
 	public void setData(List<TicketDataVO> data) {
 		this.data = data;
 	}
@@ -190,6 +198,7 @@ public class TicketLedgerVO extends BeanDataVO {
 	 * Adds a data element to the ledger
 	 * @param ticketData
 	 */
+	@BeanSubElement
 	public void addData(TicketDataVO ticketData) {
 		if (ticketData != null)
 			data.add(ticketData);
@@ -208,6 +217,14 @@ public class TicketLedgerVO extends BeanDataVO {
 	 */
 	public void setStatusCode(StatusCode statusCode) {
 		this.statusCode = statusCode;
+	}
+
+	/**
+	 * @param status the status to set
+	 */
+	@BeanSubElement
+	public void setStatus(StatusCodeVO status) {
+		this.status = status;
 	}
 
 }
