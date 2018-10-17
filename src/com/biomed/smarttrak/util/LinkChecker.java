@@ -57,11 +57,11 @@ public class LinkChecker extends CommandLineUtil {
 	 * This enum is what we iterate when the script runs.
 	 */
 	enum Table {
-		COMPANY_ATTR_XR(COMPANIES,"select company_id, value_txt, company_attribute_id from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR where company_id = '9'"),
-		PROD_ATTR_XR(PRODUCTS,"select product_id, value_txt, product_attribute_id from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR where product_id = '9'"),
-		MKRT_ATTR_XR(MARKETS,"select market_id, value_txt, market_attribute_id from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR where market_id = '9'"),
-		ANALYSIS_ABS(ANALYSIS,"select insight_id, abstract_txt, 'Abstract' from custom.BIOMEDGPS_INSIGHT where insight_id = '9'"),
-		ANALYSIS_MAIN(ANALYSIS,"select insight_id, content_txt, 'Article' from custom.BIOMEDGPS_INSIGHT where insight_id = '9'");
+		COMPANY_ATTR_XR(COMPANIES,"select company_id, value_txt, company_attribute_id from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR"),
+		PROD_ATTR_XR(PRODUCTS,"select product_id, value_txt, product_attribute_id from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR"),
+		MKRT_ATTR_XR(MARKETS,"select market_id, value_txt, market_attribute_id from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR"),
+		ANALYSIS_ABS(ANALYSIS,"select insight_id, abstract_txt, 'Abstract' from custom.BIOMEDGPS_INSIGHT"),
+		ANALYSIS_MAIN(ANALYSIS,"select insight_id, content_txt, 'Article' from custom.BIOMEDGPS_INSIGHT");
 
 		String selectSql;
 		String section;
