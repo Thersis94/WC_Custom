@@ -2,7 +2,9 @@ package com.wsla.action.admin;
 
 // JDK 1.8.x
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +24,6 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
 
@@ -42,7 +43,7 @@ import com.wsla.data.provider.ProviderVO;
  * @updates:
  ****************************************************************************/
 
-public class ProviderAction extends SBActionAdapter {
+public class ProviderAction extends BatchImport {
 
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
@@ -231,6 +232,24 @@ public class ProviderAction extends SBActionAdapter {
 		return db.executeSelect(sql.toString(),vals, new GenericVO());
 	}
 	
+	/*
+	 * set additional values into the VOs from request params (oem, category, etc.)
+	 * (non-Javadoc)
+	 * @see com.wsla.action.admin.BatchImport#transposeBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
+	 */
+	@Override
+	protected void transposeBatchImport(ActionRequest req, ArrayList<? extends Object> entries) throws ActionException {
+		//set the providerId for all beans to the one passed on the request
+		String providerType = req.getParameter("providerType");
+		Date dt = Calendar.getInstance().getTime();
+		for (Object obj : entries) {
+			ProviderVO vo = (ProviderVO) obj;
+			vo.setProviderId(null);
+			vo.setProviderType(ProviderType.valueOf(providerType));
+			vo.setCreateDate(dt);
+		}
+	}
+	
 	/**
 	 * Grabs a unique list of OEMs by the product category
 	 * @param productCategoryId
@@ -254,6 +273,14 @@ public class ProviderAction extends SBActionAdapter {
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
 		return db.executeSelect(sql.toString(), vals, new GenericVO());
+	}
+
+	/* (non-Javadoc)
+	 * @see com.wsla.action.admin.BatchImport#getBatchImportableClass()
+	 */
+	@Override
+	protected Class<?> getBatchImportableClass() {
+		return ProviderVO.class;
 	}
 	
 }

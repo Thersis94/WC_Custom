@@ -8,6 +8,8 @@ import java.util.List;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.annotations.DataType;
+import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
@@ -137,6 +139,7 @@ public class ProviderVO extends BeanDataVO {
 	/**
 	 * @param providerName the providerName to set
 	 */
+	@Importable(name="Provider Name", type=DataType.STRING)
 	public void setProviderName(String providerName) {
 		this.providerName = providerName;
 	}
@@ -175,6 +178,7 @@ public class ProviderVO extends BeanDataVO {
 	/**
 	 * @param reviewFlag the reviewFlag to set
 	 */
+	@Importable(name="Review Flag", type=DataType.INT)
 	public void setReviewFlag(int reviewFlag) {
 		this.reviewFlag = reviewFlag;
 	}
