@@ -38,6 +38,7 @@ public class TicketCommentVO extends BeanDataVO {
 	private String userId;
 	private String comment;
 	private int priorityTicketFlag;
+	private boolean endUser;
 	private Date createDate;
 	
 	// Bean Sub-elements
@@ -113,6 +114,14 @@ public class TicketCommentVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the endUser
+	 */
+	@Column(name="end_user", isReadOnly=true)
+	public boolean isEndUser() {
+		return endUser;
+	}
+
+	/**
 	 * @return the createDate
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
@@ -182,6 +191,13 @@ public class TicketCommentVO extends BeanDataVO {
 	@BeanSubElement
 	public void setUser(UserVO user) {
 		this.user = user;
+	}
+
+	/**
+	 * @param endUser the endUser to set
+	 */
+	public void setEndUser(boolean endUser) {
+		this.endUser = endUser;
 	}
 
 }
