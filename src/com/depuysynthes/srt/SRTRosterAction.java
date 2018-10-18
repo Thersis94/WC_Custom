@@ -374,7 +374,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		callProfileManager(user, req, true);
 
 		//check & create profile_role if needed
-		saveProfileRole(site, user, false);
+		saveProfileRole(site.getSiteId(), user, false);
 
 		//save their registration data
 		saveRegistrationData(req, user);
@@ -395,7 +395,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 
 		SRTRosterVO user = new SRTRosterVO(req);
 		saveRecord(user, true); //De-Activates them from SRT.
-		saveProfileRole(site, user, true); //revoke website access
+		saveProfileRole(site.getSiteId(), user, true); //revoke website access
 		setupRedirect(req);
 	}
 
@@ -475,9 +475,9 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 * @param user
 	 * @throws ActionException
 	 */
-	protected void saveProfileRole(SiteVO site, SRTRosterVO user, boolean isDelete) throws ActionException {
+	public void saveProfileRole(String siteId, SRTRosterVO user, boolean isDelete) throws ActionException {
 		ProfileRoleManager prm = new ProfileRoleManager();
-		SBUserRole role = new SBUserRole(site.getSiteId());
+		SBUserRole role = new SBUserRole(siteId);
 		role.setStatusId(SecurityController.STATUS_ACTIVE);
 		role.setProfileId(user.getProfileId());
 
