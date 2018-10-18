@@ -97,12 +97,21 @@ public class TicketEditAction extends SBActionAdapter {
 	 */
 	public List<Node> getComments(String ticketId) throws SQLException {
 		
-		StringBuilder sql = new StringBuilder(128);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
-		sql.append("wsla_ticket_comment a ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_user b ");
-		sql.append("on a.user_id = b.user_id where ticket_id = ? ");
-		sql.append("order by priority_ticket_flg desc, a.create_dt desc ");
+		StringBuilder sql = new StringBuilder(416);
+		sql.append(DBUtil.SELECT_CLAUSE);
+		sql.append(" (coalesce(num_roles, 0) = 0) as end_user, * from ");
+		sql.append(getCustomSchema()).append("wsla_ticket_comment a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_user b ");
+		sql.append("on a.user_id = b.user_id ");
+		sql.append("left outer join ( ");
+		sql.append("select user_id, count(*) as num_roles from ");
+		sql.append(getCustomSchema()).append("wsla_user a ");
+		sql.append(DBUtil.INNER_JOIN).append("profile_role b ");
+		sql.append("on a.profile_id = b.profile_id ");
+		sql.append("group by user_id ");
+		sql.append(") as rc on b.user_id = rc.user_id ");
+		
+		sql.append("where ticket_id = ? order by priority_ticket_flg desc, a.create_dt desc ");
 		
 		List<Node> comments = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
