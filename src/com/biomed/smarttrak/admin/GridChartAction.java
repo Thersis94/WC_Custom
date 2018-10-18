@@ -31,8 +31,10 @@ import com.siliconmtn.util.StringUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
+import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /********************************************************************
  * <b>Title: </b>GridChartAction.java<br/>
@@ -66,6 +68,50 @@ public class GridChartAction extends SBActionAdapter {
 	 */
 	public GridChartAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void copy(ActionRequest req) throws ActionException {
+		Boolean isWizard = Convert.formatBoolean(req.getParameter(AdminConstants.IS_WIZARD));
+		Map<String, Object> replaceVals = ((Map)(attributes.get(RecordDuplicatorUtility.REPLACE_VALS)));
+
+		try {
+			if (!isWizard) {
+				dbConn.setAutoCommit(false);
+			}
+
+			//Check for ReplaceVals Map.
+			if(replaceVals == null) {
+				replaceVals = new HashMap<>();
+			}
+			String gridId = req.getParameter("gridId");
+			//Copy Grid
+			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "BIOMEDGPS_GRID", "GRID_ID", true);
+			rdu.setSchemaNm(getCustomSchema());
+			rdu.addWhereClause("GRID_ID", gridId);
+			replaceVals.put("GRID_ID", rdu.copy());
+
+			//Copy Grid Details
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, "BIOMEDGPS_GRID_DETAIL", "GRID_DETAIL_ID", true);
+			rdu.setSchemaNm(getCustomSchema());
+			rdu.addWhereListClause("FORM_ID");
+
+			replaceVals.put("GRID_DETAIL_ID", rdu.copy());
+
+			if (!isWizard) {
+				dbConn.commit();
+				dbConn.setAutoCommit(true);
+			}
+		} catch(Exception e) {
+			log.error("Copy Grid and Charts Failed", e);
+			try {
+				dbConn.rollback();
+			} catch (SQLException sqle) {
+				log.error("A Problem occured with the rollback.", sqle);
+			}
+			throw new ActionException(e);
+		}
 	}
 
 	/*
