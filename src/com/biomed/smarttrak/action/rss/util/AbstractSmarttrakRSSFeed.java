@@ -384,6 +384,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * @param useFilters
 	 */
 	protected void applyFilter(RSSArticleVO article, String feedGroupId, boolean useFilters) {
+		long start = System.currentTimeMillis();
 		Map<String, List<RSSFilterVO>> omitFilters = filters.get(FilterType.O);
 		RSSArticleFilterVO af = new RSSArticleFilterVO(article, feedGroupId);
 
@@ -409,6 +410,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 		}
 
 		article.addFilteredText(af);
+		log.info("filter Processing took " + (System.currentTimeMillis()-start) + "ms for feedGroupId: " + feedGroupId);
 	}
 
 
@@ -446,6 +448,8 @@ public abstract class AbstractSmarttrakRSSFeed {
 
 				// Null out FullArticleTxt to lessen memory overhead
 				af.setFullArticleTxt(null);
+				af.setFilterArticleTxt(null);
+				af.setFilterTitleTxt(null);
 				article.addFilteredText(af);
 				isOmitted = true;
 			}
@@ -492,6 +496,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 */
 	protected boolean checkMatch(RSSArticleFilterVO af, RSSFilterVO filter) {
 		boolean isMatch = false;
+		long start = System.currentTimeMillis();
 
 		String regex = new StringBuilder(filter.getFilterExpression().length() + 10)
 				.append("(?i)(").append(filter.getFilterExpression()).append(")").toString();
@@ -513,6 +518,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 		if (!isMatch && af.getFilterTitleTxt().contains(SPAN_CLASS_HIT)) {
 			isMatch = true;
 		}
+		log.info("Regex Processing took " + (System.currentTimeMillis()-start) + "ms for filter: " + filter.getFilterGroupXrId());
 
 		return isMatch;
 	}

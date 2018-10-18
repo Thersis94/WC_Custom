@@ -160,6 +160,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private void processArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Map<String, Set<String>> existsIds) {
+		long start = System.currentTimeMillis();
 		for (RSSArticleVO article : articles) {
 			for (RSSFeedGroupVO fg : f.getGroups()) {
 				if (!articleExists(article.getArticleGuid(), fg.getFeedGroupId(), existsIds)) {
@@ -171,6 +172,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 				storeArticle(article);
 			}
 		}
+		log.info("article Processing took " + (System.currentTimeMillis()-start) + "ms");
 	}
 
 
