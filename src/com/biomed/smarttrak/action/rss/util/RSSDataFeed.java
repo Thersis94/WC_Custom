@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
@@ -18,6 +17,7 @@ import com.biomed.smarttrak.action.rss.vo.SmarttrakRssEntityVO;
 import com.ernieyu.feedparser.Feed;
 import com.ernieyu.feedparser.FeedParser;
 import com.ernieyu.feedparser.FeedParserFactory;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 
@@ -131,7 +131,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	private void filterArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles) {
 		if (articles.isEmpty()) return;
 
-		Map<String, Set<String>> existsIds = getExistingArticles(buildArticleIdsList(articles), f.getRssEntityId());
+		Map<String, GenericVO> existsIds = getExistingArticles(buildArticleIdsList(articles), f.getRssEntityId());
 		articles.stream().forEach(a -> this.populateFeed(a, f));
 		processArticles(f, articles, existsIds);
 	}
@@ -159,11 +159,11 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param existsIds
 	 * @return
 	 */
-	private void processArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Map<String, Set<String>> existsIds) {
+	private void processArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Map<String, GenericVO> existsIds) {
 		long start = System.currentTimeMillis();
 		for (RSSArticleVO article : articles) {
 			for (RSSFeedGroupVO fg : f.getGroups()) {
-				if (!articleExists(article.getArticleGuid(), fg.getFeedGroupId(), existsIds)) {
+				if (!articleExists(article, fg.getFeedGroupId(), existsIds)) {
 					applyFilter(article, fg.getFeedGroupId(), Convert.formatBoolean(f.getUseFiltersNo()));
 				}
 			}
