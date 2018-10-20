@@ -89,9 +89,12 @@ public class ProductMasterAction extends BatchImport {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ProductVO product = new ProductVO(req);
+
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
+			
 			db.save(product);
+		
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save product", e);
 		}
