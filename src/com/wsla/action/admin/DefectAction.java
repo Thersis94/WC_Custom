@@ -39,6 +39,7 @@ import com.wsla.data.ticket.TicketAttributeVO;
 
 public class DefectAction extends SBActionAdapter {
 	public static final String DEFECTS_TYPE = "defects";
+	
 	/**
 	 * 
 	 */

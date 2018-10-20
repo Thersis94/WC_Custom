@@ -112,7 +112,7 @@ public class ProductSerialAction extends BatchImport {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_warranty c on ");
 		sql.append("b.warranty_id = c.warranty_id ");
-		sql.append("where p.provider_id = ? and validated_flg = ? ");
+		sql.append("where p.provider_id = ? and a.validated_flg = ? ");
 		sql.append(bst.getSQLOrderBy("product_nm", "asc"));
 		
 		List<Object> vals = new ArrayList<>();
@@ -181,6 +181,9 @@ public class ProductSerialAction extends BatchImport {
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 			db.save(vo);
 		}
+		
+		//TODO Check the ticket and update.  Need workflow in place for this
+		
 	}
 
 

@@ -46,6 +46,7 @@ public class ProductVO extends BeanDataVO {
 	private int warrantyDays;
 	private int setFlag;
 	private int activeFlag;
+	private int validatedFlag;
 	private double msrpCostNo;
 	private Date createDate;
 	private Date updateDate;
@@ -170,6 +171,14 @@ public class ProductVO extends BeanDataVO {
 	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
 		return updateDate;
+	}
+
+	/**
+	 * @return the validatedFlag
+	 */
+	@Column(name="validated_flg")
+	public int getValidatedFlag() {
+		return validatedFlag;
 	}
 
 	/**
@@ -354,5 +363,12 @@ public class ProductVO extends BeanDataVO {
 	@Importable(name="MSRP Cost", type=DataType.DOUBLE_PRIMITIVE)
 	public void setMsrpCostNo(double msrpCostNo) {
 		this.msrpCostNo = msrpCostNo;
+	}
+
+	/**
+	 * @param validatedFlag the validatedFlag to set
+	 */
+	public void setValidatedFlag(int validatedFlag) {
+		this.validatedFlag = validatedFlag;
 	}
 }
