@@ -33,6 +33,7 @@ public class DiagnosticVO extends BeanDataVO {
 	// Member Variables
 	private String diagnosticCode;
 	private String productCategoryId;
+	private String categoryCode;
 	private String description;
 	private int serviceCenterFlag;
 	private int casFlag;
@@ -75,6 +76,8 @@ public class DiagnosticVO extends BeanDataVO {
 	public String getProductCategoryId() {
 		return productCategoryId;
 	}
+	
+	
 
 	/**
 	 * @return the description
@@ -114,6 +117,21 @@ public class DiagnosticVO extends BeanDataVO {
 	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
 		return updateDate;
+	}
+
+	/**
+	 * @return the productCategoryCode
+	 */
+	@Column(name="category_cd", isReadOnly=true)
+	public String getCategoryCode() {
+		return categoryCode;
+	}
+
+	/**
+	 * @param productCategoryCode the productCategoryCode to set
+	 */
+	public void setCategoryCode(String categoryCode) {
+		this.categoryCode = categoryCode;
 	}
 
 	/**

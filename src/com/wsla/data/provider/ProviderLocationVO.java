@@ -8,6 +8,8 @@ import java.util.List;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.annotations.DataType;
+import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -170,6 +172,7 @@ public class ProviderLocationVO extends GeocodeLocation {
 	/**
 	 * @param locationName the locationName to set
 	 */
+	@Importable(name="Location Name", type=DataType.STRING)
 	public void setLocationName(String locationName) {
 		this.locationName = locationName;
 	}
@@ -177,6 +180,7 @@ public class ProviderLocationVO extends GeocodeLocation {
 	/**
 	 * @param activeFlag the activeFlag to set
 	 */
+	@Importable(name="Active ", type=DataType.INT)
 	public void setActiveFlag(int activeFlag) {
 		this.activeFlag = activeFlag;
 	}
@@ -184,6 +188,7 @@ public class ProviderLocationVO extends GeocodeLocation {
 	/**
 	 * @param defaultFlag the defaultFlag to set
 	 */
+	@Importable(name="Default", type=DataType.INT)
 	public void setDefaultFlag(int defaultFlag) {
 		this.defaultFlag = defaultFlag;
 	}
@@ -229,6 +234,7 @@ public class ProviderLocationVO extends GeocodeLocation {
 	/**
 	 * @param storeNumber the storeNumber to set
 	 */
+	@Importable(name="Store Number", type=DataType.STRING)
 	public void setStoreNumber(String storeNumber) {
 		this.storeNumber = storeNumber;
 	}
@@ -236,6 +242,7 @@ public class ProviderLocationVO extends GeocodeLocation {
 	/**
 	 * @param reviewFlag the reviewFlag to set
 	 */
+	@Importable(name="Review Flag", type=DataType.INT)
 	public void setReviewFlag(int reviewFlag) {
 		this.reviewFlag = reviewFlag;
 	}

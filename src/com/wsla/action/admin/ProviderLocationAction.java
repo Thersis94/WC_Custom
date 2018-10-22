@@ -20,11 +20,12 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 // JDK 1.8.x
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.data.provider.ProviderLocationVO;
@@ -42,7 +43,7 @@ import com.wsla.data.provider.ProviderLocationVO;
  * @updates:
  ****************************************************************************/
 
-public class ProviderLocationAction extends SBActionAdapter {
+public class ProviderLocationAction extends BatchImport {
 
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
@@ -205,6 +206,42 @@ public class ProviderLocationAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection());
 		
 		return db.executeSQLWithCount(sql.toString(), params, new ProviderLocationVO(), bst.getLimit(), bst.getOffset());
+	}
+
+	/* (non-Javadoc)
+	 * @see com.wsla.action.admin.BatchImport#getBatchImportableClass()
+	 */
+	@Override
+	protected Class<?> getBatchImportableClass() {
+		return ProviderLocationVO.class ;
+	}
+	
+	/*
+	 * set additional values into the VOs from request params (oem, category, etc.)
+	 * (non-Javadoc)
+	 * @see com.wsla.action.admin.BatchImport#transposeBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
+	 */
+	@Override
+	protected void transposeBatchImport(ActionRequest req, ArrayList<? extends Object> entries) throws ActionException {
+		//set the providerId for all beans to the one passed on the request
+		String provicerId = req.getParameter("providerId");
+		Date dt = Calendar.getInstance().getTime();
+		List <ProviderLocationVO> ivalidObjects = new ArrayList<>();
+		
+		
+		for (Object obj : entries) {
+			ProviderLocationVO vo = (ProviderLocationVO) obj;
+			//getting null data rows remove there here
+			if(StringUtil.isEmpty(vo.getAddress()) && StringUtil.isEmpty(vo.getLocationName())&& StringUtil.isEmpty(vo.getCity())) {
+				log.error("not a valid provider location object " + vo);
+				ivalidObjects.add(vo);
+				continue;
+			}
+			
+			vo.setProviderId(provicerId);
+			vo.setCreateDate(dt);
+		}
+		entries.removeAll(ivalidObjects);
 	}
 }
 
