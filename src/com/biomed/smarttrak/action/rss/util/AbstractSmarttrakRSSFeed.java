@@ -228,8 +228,31 @@ public abstract class AbstractSmarttrakRSSFeed {
 			String afId = uuid.getUUID();
 			List<Object> insertData = new ArrayList<>();
 			insertData.addAll(Arrays.asList(afId, af.getFeedGroupId(), af.getArticleStatus().name()));
-			insertData.addAll(Arrays.asList(a.getRssArticleId(), StringUtil.checkVal(af.getFilterTitleTxt(), "Untitled")));
-			insertData.addAll(Arrays.asList(StringUtil.checkVal(af.getFilterArticleTxt(), "No Article Available"), Convert.getCurrentTimestamp()));
+			insertData.add(a.getRssArticleId());
+
+			/*
+			 * If article was ommitted then no matches were found in title or article.
+			 * Otherwise check values individually to verify where match occurred.
+			 */
+			if(ArticleStatus.O.equals(af.getArticleStatus())) {
+				insertData.add(null);
+				insertData.add(null);
+			} else {
+				if(!af.getTitleTxt().equals(af.getFilterTitleTxt())) {
+					insertData.add(StringUtil.checkVal(af.getFilterTitleTxt(), "Untitled"));
+				} else {
+					insertData.add(null);
+				}
+
+				//Only write the Filtered Article Text if it's different.
+				if(!af.getArticleTxt().equals(af.getFilterArticleTxt())) {
+					insertData.addAll(Arrays.asList(StringUtil.checkVal(af.getFilterArticleTxt(), "No Article Available")));
+				} else {
+					insertData.add(null);
+				}
+			}
+
+			insertData.add(Convert.getCurrentTimestamp());
 			insertData.add(af.getMatchCount());
 			insertValues.put(afId, insertData);
 		}
