@@ -88,7 +88,6 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		
 		Map<String, GenericVO> attrs = new HashMap<>(32);
 		for (TicketAttributeVO t : data.getRowData()) {
-			log.info(t);
 			attrs.put(t.getAttributeCode(), new GenericVO(t.getScriptText(), t.getNoteText()));
 		}
 		
@@ -157,7 +156,7 @@ public class TicketAttributeAction  extends SBActionAdapter {
 		}
 		
 		sql.append(bst.getSQLOrderBy("attribute_nm",  "asc"));
-		log.info(bst.getLimit());
+		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), params, new TicketAttributeVO(), bst.getLimit(), bst.getOffset());
 	}

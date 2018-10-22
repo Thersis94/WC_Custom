@@ -12,6 +12,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: TicketLedgerVO.java
@@ -67,7 +68,19 @@ public class TicketLedgerVO extends BeanDataVO {
 	public TicketLedgerVO(ResultSet rs) {
 		super(rs);
 	}
-
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.siliconmtn.data.parser.BeanDataVO#populateData(java.sql.ResultSet)
+	 */
+	@Override
+	public void populateData(ResultSet rs) {
+		super.populateData(rs);
+		
+		if (user == null && ! StringUtil.isEmpty(dispositionBy)) {
+			user = new UserVO(rs);
+		}
+	}
 	/**
 	 * @return the ledgerEntryId
 	 */

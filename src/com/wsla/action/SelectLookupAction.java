@@ -74,6 +74,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("statusCode", new GenericVO("getStatusCodes", Boolean.FALSE));
 		keyMap.put("oem", new GenericVO("getOems", Boolean.TRUE));
 		keyMap.put("attributeGroupCode", new GenericVO("getAttributeGroups", Boolean.FALSE));
+		keyMap.put("attributes", new GenericVO("getAttributes", Boolean.TRUE));
 		keyMap.put(PROVIDER_TYPE, new GenericVO("getProviderTypes", Boolean.FALSE));
 		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
 		keyMap.put("oemParts", new GenericVO("getProviderParts", Boolean.TRUE));
@@ -157,6 +158,28 @@ public class SelectLookupAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getAttributes(ActionRequest req) {
+		List<Object> vals = new ArrayList<>();
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select attribute_cd as key, attribute_nm as value from ");
+		sql.append(getCustomSchema()).append("wsla_ticket_attribute where 1=1 ");
+		
+		if (req.hasParameter("groupCode")) {
+			sql.append("and attribute_group_cd = ? ");
+			vals.add(req.getParameter("groupCode"));
+		}
+		
+		sql.append("order by attribute_nm");
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), vals, new GenericVO());
 	}
 
 	/**

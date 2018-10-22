@@ -18,7 +18,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
-
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -27,8 +27,10 @@ import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
 import com.wsla.data.ticket.DiagnosticRunVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
+import com.wsla.data.ticket.TicketAttributeVO;
 import com.wsla.data.ticket.TicketCommentVO;
 import com.wsla.data.ticket.TicketDataVO;
+import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
 
@@ -54,6 +56,11 @@ public class TicketEditAction extends SBActionAdapter {
 	public static final String AJAX_KEY = "editServiceOrder";
 	
 	/**
+	 * key for the value of ticket id
+	 */
+	public static final String TICKET_ID = "ticketId";
+	
+	/**
 	 * 
 	 */
 	public TicketEditAction() {
@@ -74,12 +81,14 @@ public class TicketEditAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String ticketNumber = req.getParameter("ticketIdText");
-		
+		boolean json = req.getBooleanParameter("json");
 		try {
-			if (req.hasParameter("diagnostic")) {
-				putModuleData(getDiagnostics(req.getParameter("ticketId")));
-			} else if (req.hasParameter("comment")) {
-				putModuleData(getComments(req.getParameter("ticketId")));
+			if (json && req.hasParameter("diagnostic")) {
+				putModuleData(getDiagnostics(req.getParameter(TICKET_ID)));
+			} else if (json && req.hasParameter("comment")) {
+				putModuleData(getComments(req.getParameter(TICKET_ID)));
+			} else if (json && req.hasParameter("assets")) {
+				putModuleData(getExtendedData(req.getParameter(TICKET_ID), req.getParameter("groupCode")));
 			} else {
 				putModuleData(getCompleteTicket(ticketNumber));
 			}
@@ -171,7 +180,7 @@ public class TicketEditAction extends SBActionAdapter {
 		ticket.setWarranty(getWarranty(ticket.getProductWarrantyId()));
 		
 		// Get the extended data
-		ticket.setTicketData(getExtendedData(ticket.getTicketId()));
+		//ticket.setTicketData(getExtendedData(ticket.getTicketId(), null));
 		
 		// Get the assignments
 		ticket.setAssignments(getAssignments(ticket.getTicketId()));
@@ -230,19 +239,41 @@ public class TicketEditAction extends SBActionAdapter {
 	 * @param ticketId
 	 * @return
 	 */
-	public List<TicketDataVO> getExtendedData(String ticketId) {
+	public List<TicketDataVO> getExtendedData(String ticketId, String groupCode) {
+
 		StringBuilder sql = new StringBuilder(256);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
-		sql.append("wsla_ticket_data a ");
+		sql.append("select a.*, b.attribute_nm, c.group_nm, e.first_nm, e.last_nm, disposition_by_id from ");
+		sql.append(getCustomSchema()).append("wsla_ticket_data a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_attribute b on a.attribute_cd = b.attribute_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_attribute_group c ON c.attribute_group_cd = b.attribute_group_cd ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_ticket_ledger d on a.ledger_entry_id = d.ledger_entry_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_user e on d.disposition_by_id = e.user_id ");
 		sql.append("where a.ticket_id = ? ");
+		if (! StringUtil.isEmpty(groupCode)) sql.append("and b.attribute_group_cd = ? ");
 		sql.append("order by b.attribute_group_cd ");
 		
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), Arrays.asList(ticketId), new TicketDataVO());
+		List<TicketDataVO> data = new ArrayList<>();
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, ticketId);
+			if (! StringUtil.isEmpty(groupCode)) ps.setString(2, groupCode);
+			
+			try(ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					TicketDataVO tdv = new TicketDataVO(rs);
+					tdv.setAttribute(new TicketAttributeVO(rs));
+					tdv.setLedger(new TicketLedgerVO(rs));
+					data.add(tdv);
+				}
+			}
+		} catch(SQLException e) {
+			log.error("Unabel to get assets", e);
+		}
+
+		return data;
 	}
 	
 	/**
