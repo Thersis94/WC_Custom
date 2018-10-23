@@ -5,7 +5,9 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -151,6 +153,17 @@ public class TicketVO extends BeanDataVO {
 		}
 		
 		return new TicketAssignmentVO();
+	}
+	
+	/**
+	 * Helper method for the view.  JSTL can't pass param to getters, so I will return
+	 * the data as a map, which allows JSTL to select values
+	 * @return
+	 */
+	public Map<String, TicketDataVO> getTicketDataMap() {
+		Map<String, TicketDataVO> data = new HashMap<>();
+		for (TicketDataVO td : ticketData) data.put(td.getAttributeCode(), td);
+		return data;
 	}
 
 	/**

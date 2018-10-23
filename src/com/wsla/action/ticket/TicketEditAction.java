@@ -180,7 +180,7 @@ public class TicketEditAction extends SBActionAdapter {
 		ticket.setWarranty(getWarranty(ticket.getProductWarrantyId()));
 		
 		// Get the extended data
-		//ticket.setTicketData(getExtendedData(ticket.getTicketId(), null));
+		ticket.setTicketData(getExtendedData(ticket.getTicketId(), null));
 		
 		// Get the assignments
 		ticket.setAssignments(getAssignments(ticket.getTicketId()));
