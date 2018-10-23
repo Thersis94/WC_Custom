@@ -139,6 +139,19 @@ public class TicketVO extends BeanDataVO {
 			}
 		}
 	}
+	
+	/**
+	 * Helper method to return the assigned CAS
+	 * @return
+	 */
+	public TicketAssignmentVO getCas() {
+		
+		for (TicketAssignmentVO ta : assignments) {
+			if (TicketAssignmentVO.TypeCode.CAS.equals(ta.getTypeCode())) return ta;
+		}
+		
+		return new TicketAssignmentVO();
+	}
 
 	/**
 	 * @return the ticketId
