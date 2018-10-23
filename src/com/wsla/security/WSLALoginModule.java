@@ -8,12 +8,11 @@ import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.filter.fileupload.Constants;
-import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.security.DBLoginModule;
-
 // WC Custom Libs
 import com.wsla.data.ticket.UserVO;
 
@@ -29,50 +28,50 @@ import com.wsla.data.ticket.UserVO;
  * @version 3.0
  * @since Sep 18, 2018
  * @updates:
+ * 	10.23.18 - SQL join to the user's first primary location.  Changed overwritten method to support cookie logins.
  ****************************************************************************/
-
 public class WSLALoginModule extends DBLoginModule {
 
-	/**
-	 * 
-	 */
 	public WSLALoginModule() {
 		super();
 	}
 
-	/**
-	 * @param config
-	 */
 	public WSLALoginModule(Map<String, Object> config) {
 		super(config);
 	}
 
 	/*
+	 * Override loadUserData because it's called after both username/password 
+	 * logins as well as after cookie logins.
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.security.DBLoginModule#authenticateUser(java.lang.String, java.lang.String)
+	 * @see com.smt.sitebuilder.security.DBLoginModule#loadUserData(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public UserDataVO authenticateUser(String user, String pwd) throws AuthenticationException {
-		UserDataVO userData = super.authenticateUser(user, pwd);
-		userData.setUserExtendedInfo(getWSLAUser(userData.getProfileId()));
-		
-		return userData;
+	protected UserDataVO loadUserData(String profileId, String authenticationId) {
+		UserDataVO user = super.loadUserData(profileId, authenticationId);
+		if (user == null) return null; //same logic as superclass
+
+		user.setUserExtendedInfo(getWSLAUser(user.getProfileId()));
+		return user;
 	}
-	
+
 	/**
-	 * Retrieves the user from the WSLA tables
+	 * Get the user, and the first location they're tied to
 	 * @param profileId
 	 * @return
 	 */
 	protected UserVO getWSLAUser(String profileId) {
-		StringBuilder sql = new StringBuilder(128);
-		sql.append("select * from ").append(this.getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("wsla_user where profile_id = ?");
-		
-		DBProcessor db = new DBProcessor((Connection)getAttribute(GlobalConfig.KEY_DB_CONN));
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select u.*, locn.location_id from ").append(schema);
+		sql.append("wsla_user u ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("WSLA_PROVIDER_USER_XR locn on u.user_id=locn.user_id and locn.active_flg=1 ");
+		sql.append("where u.profile_id=? ");
+		sql.append("order by coalesce(locn.primary_contact_flg, -1) desc limit 1"); //favor any location where the user is a primary contact
+		log.debug(sql);
+
+		DBProcessor db = new DBProcessor((Connection)getAttribute(GlobalConfig.KEY_DB_CONN), schema);
 		List<UserVO> res = db.executeSelect(sql.toString(), Arrays.asList(profileId), new UserVO());
-		
-		return res.isEmpty() ? null : res.get(0);
+		return !res.isEmpty() ? res.get(0) : null;
 	}
 }
-

@@ -32,7 +32,7 @@ public class UserVO extends BeanDataVO {
 	 * 
 	 */
 	private static final long serialVersionUID = 4322911178471795899L;
-	
+
 	// Member Variables
 	private String userId;
 	private String profileId;
@@ -46,10 +46,13 @@ public class UserVO extends BeanDataVO {
 	private int activeFlag;
 	private Date createDate;
 	private Date updateDate;
-	
+
 	// Bean Sub-Elements
 	private UserDataVO profile;
-	
+
+	//locationId picked up at login for downstream pages to filter data with
+	private String locationId;
+
 	/**
 	 * 
 	 */
@@ -266,6 +269,15 @@ public class UserVO extends BeanDataVO {
 	public void setProfileRoleId(String profileRoleId) {
 		this.profileRoleId = profileRoleId;
 	}
-	
+
+	@Column(name="location_id", isReadOnly=true)
+	public String getLocationId() {
+		return locationId;
+	}
+
+	public void setLocationId(String locationId) {
+		this.locationId = locationId;
+	}
+
 }
 
