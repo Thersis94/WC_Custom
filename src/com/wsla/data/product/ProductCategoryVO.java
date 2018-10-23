@@ -34,6 +34,7 @@ public class ProductCategoryVO extends BeanDataVO {
 	private String productCategoryId;
 	private String parentId;
 	private String categoryCode;
+	private int activeFlag;
 	private String groupCode;
 	private Date createDate;
 
@@ -100,6 +101,21 @@ public class ProductCategoryVO extends BeanDataVO {
 	@Column(name="parent_cd")
 	public String getParentCode() {
 		return parentCode;
+	}
+
+	/**
+	 * @return the activeFlag
+	 */
+	@Column(name="active_flg")
+	public int getActiveFlag() {
+		return activeFlag;
+	}
+
+	/**
+	 * @param activeFlag the activeFlag to set
+	 */
+	public void setActiveFlag(int activeFlag) {
+		this.activeFlag = activeFlag;
 	}
 
 	/**

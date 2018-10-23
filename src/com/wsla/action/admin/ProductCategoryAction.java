@@ -64,7 +64,7 @@ public class ProductCategoryAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		setModuleData(getCategories(req.getParameter("groupCode"), new BSTableControlVO(req, ProductCategoryVO.class)));
+		setModuleData(getCategories(req.getParameter("groupCode"),req.getParameter("parentId"), new BSTableControlVO(req, ProductCategoryVO.class)));
 	}
 
 
@@ -94,7 +94,7 @@ public class ProductCategoryAction extends SBActionAdapter {
 	 * @param bst
 	 * @return
 	 */
-	public GridDataVO<ProductCategoryVO> getCategories(String groupCode, BSTableControlVO bst) {
+	public GridDataVO<ProductCategoryVO> getCategories(String groupCode, String parentId, BSTableControlVO bst) {
 
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
@@ -114,11 +114,22 @@ public class ProductCategoryAction extends SBActionAdapter {
 			params.add(groupCode);
 		}
 
+		if(!StringUtil.isEmpty(parentId)) {
+			sql.append("and c.parent_id = ? ");
+			params.add(parentId);
+		}else {
+			sql.append("and c.parent_id is null ");
+			
+		}
+
 		sql.append(bst.getSQLOrderBy("c.parent_id desc, c.category_cd",  "asc"));
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSQLWithCount(sql.toString(), params, new ProductCategoryVO(), bst.getLimit(), bst.getOffset());
+		GridDataVO<ProductCategoryVO> data = db.executeSQLWithCount(sql.toString(), params, new ProductCategoryVO(), bst.getLimit(), bst.getOffset());
+	
+		log.debug("data size " + data.getRowData().size());
+		return data;
 	}
 
 

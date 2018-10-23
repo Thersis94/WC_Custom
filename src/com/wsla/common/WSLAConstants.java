@@ -31,5 +31,11 @@ public class WSLAConstants {
 	 * Number of random chars for the ticket text 
 	 */
 	public static final int TICKET_RANDOM_CHARS = 8;
+	
+	/**
+	 * "References" email header suffix for tickets, to denote where the
+	 * reference came from in a chain of references. 
+	 */
+	public static final String TICKET_EMAIL_REFERENCE_SUFFIX = "@WSLA-Ticket";
 }
 
