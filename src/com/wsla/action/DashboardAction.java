@@ -133,7 +133,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql = new StringBuilder(164);
 		sql.append(DBUtil.SELECT_WITH_COUNT).append(DBUtil.FROM_CLAUSE);
 		sql.append(getCustomSchema()).append("wsla_ticket a ");
-		sql.append("inner join ").append(getCustomSchema()).append("wsla_ticket_status b ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_status b ");
 		sql.append("on a.status_cd = b.status_cd where b.role_id = ? ");
 		data.put("my-orders", db.executeSelect(sql.toString(), Arrays.asList(roleId), new SQLTotalVO()).get(0).getTotal());
 		
@@ -211,21 +211,25 @@ public class DashboardAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(800);
 		sql.append("select replace(newid(), '-', '') as chart_detail_id, ");
 		sql.append("'Closed' as label_nm, cast(count(*) as varchar(10)) as value ");
-		sql.append("from wsla_ticket where status_cd = 'CLOSED' and ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("wsla_ticket where status_cd = 'CLOSED' and ");
 		sql.append("create_dt > now() - interval '").append(numDays).append(" day' ");
 		sql.append(DBUtil.UNION);
 		sql.append("select replace(newid(), '-', ''), 'Good', cast(count(*) as varchar(10)) "); 
-		sql.append("from wsla_ticket where status_cd != 'CLOSED' and ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("wsla_ticket where status_cd != 'CLOSED' and ");
 		sql.append("standing_cd = 'GOOD' and create_dt > now() - interval '");
 		sql.append(numDays).append(" day' ");
 		sql.append(DBUtil.UNION);
 		sql.append("select replace(newid(), '-', ''), 'Critical', cast(count(*) as varchar(10)) "); 
-		sql.append("from wsla_ticket where status_cd != 'CLOSED' and ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("wsla_ticket where status_cd != 'CLOSED' and ");
 		sql.append("standing_cd = 'CRITICAL' and create_dt > now() - interval '");
 		sql.append(numDays).append(" day' ");
 		sql.append(DBUtil.UNION);
 		sql.append("select replace(newid(), '-', ''), 'Delayed', cast(count(*) as varchar(10)) "); 
-		sql.append("from wsla_ticket where status_cd != 'CLOSED' and ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("wsla_ticket where status_cd != 'CLOSED' and ");
 		sql.append("standing_cd = 'DELAYED' and create_dt > now() - interval '");
 		sql.append(numDays).append(" day' ");
 		
