@@ -42,6 +42,7 @@ public class TicketDataVO extends BeanDataVO {
 	
 	// Bean Sub-elements
 	private TicketAttributeVO attribute;
+	private TicketLedgerVO ledger;
 	
 	/**
 	 * 
@@ -123,9 +124,15 @@ public class TicketDataVO extends BeanDataVO {
 	/**
 	 * @return the attribute
 	 */
-	@BeanSubElement
 	public TicketAttributeVO getAttribute() {
 		return attribute;
+	}
+
+	/**
+	 * @return the ledger
+	 */
+	public TicketLedgerVO getLedger() {
+		return ledger;
 	}
 
 	/**
@@ -180,8 +187,17 @@ public class TicketDataVO extends BeanDataVO {
 	/**
 	 * @param attribute the attribute to set
 	 */
+	@BeanSubElement
 	public void setAttribute(TicketAttributeVO attribute) {
 		this.attribute = attribute;
+	}
+
+	/**
+	 * @param ledger the ledger to set
+	 */
+	@BeanSubElement
+	public void setLedger(TicketLedgerVO ledger) {
+		this.ledger = ledger;
 	}
 
 }
