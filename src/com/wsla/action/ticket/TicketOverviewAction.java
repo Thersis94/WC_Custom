@@ -1,8 +1,8 @@
 package com.wsla.action.ticket;
 
+// JDK 1.8.x
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-// JDK 1.8.x
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +14,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
@@ -75,6 +76,14 @@ public class TicketOverviewAction extends BasePortalAction {
 	public TicketOverviewAction() {
 		super();
 	}
+	
+	
+	public TicketOverviewAction(Map<String, Object> attributes, SMTDBConnection dbConn ) {
+		super();
+		
+		this.attributes = attributes;
+		this.dbConn = dbConn;
+	}
 
 	/**
 	 * @param actionInit
@@ -114,7 +123,6 @@ public class TicketOverviewAction extends BasePortalAction {
 	 * @throws Exception
 	 */
 	public TicketVO saveTicketCall(ActionRequest req) throws Exception {
-		log.debug("****** Saving ticket from call");
 		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		UserVO user = (UserVO)profile.getUserExtendedInfo();
 		TicketVO ticket = new TicketVO(req);

@@ -8,9 +8,11 @@ import com.siliconmtn.action.ActionRequest;
 
 //WC Libs
 import com.smt.sitebuilder.action.FacadeActionAdapter;
-
+import com.wsla.action.ticket.transaction.DiagnosticTransaction;
+import com.wsla.action.ticket.transaction.ProviderLocationTransaction;
 // WSLA libs
-import com.wsla.action.ticket.transaction.TicketAssetAction;
+import com.wsla.action.ticket.transaction.TicketAssetTransaction;
+import com.wsla.action.ticket.transaction.UserTransaction;
 
 /****************************************************************************
  * <b>Title</b>: TicketTransactionAction.java
@@ -56,7 +58,10 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 	 * Assigns the keys and classes for the facade
 	 */
 	public void assignActionMap() {
-		actionMap.put(TicketAssetAction.AJAX_KEY, TicketAssetAction.class);
+		actionMap.put(TicketAssetTransaction.AJAX_KEY, TicketAssetTransaction.class);
+		actionMap.put(UserTransaction.AJAX_KEY, UserTransaction.class);
+		actionMap.put(ProviderLocationTransaction.AJAX_KEY, ProviderLocationTransaction.class);
+		actionMap.put(DiagnosticTransaction.AJAX_KEY, DiagnosticTransaction.class);
 	}
 
 	/*
