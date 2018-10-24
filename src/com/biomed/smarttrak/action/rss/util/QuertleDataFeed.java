@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
+
 import javax.xml.namespace.QName;
 import javax.xml.ws.BindingProvider;
 import javax.xml.ws.handler.MessageContext;
@@ -18,7 +18,6 @@ import javax.xml.ws.handler.MessageContext;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
-
 import com.quertle.webservice.base.HitcountOption;
 import com.quertle.webservice.base.ResultAttributes;
 import com.quertle.webservice.base.SearchParams;
@@ -27,7 +26,7 @@ import com.quertle.webservice.base.SearchParams.PostFilters.Entry;
 import com.quertle.webservice.base.SearchWSImplementationsService;
 import com.quertle.webservice.base.SearchingSEI;
 import com.quertle.webservice.base.WSCheckFaultException;
-
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -127,7 +126,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private int processResults(List<ResultAttributes> results, String searchType) {
 		// Load existing Article Ids for Quertle.
-		Map<String, Set<String>> articleGuids = getExistingIds(searchType, results);
+		Map<String, GenericVO> articleGuids = getExistingIds(searchType, results);
 		log.info("found " + articleGuids.size() + " existing articles for type=" + searchType + " and loaded each one's feedGroupIds");
 
 		RSSArticleVO article;
@@ -163,9 +162,9 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param a
 	 * @param ids 
 	 */
-	private void applyFilters(RSSArticleVO a, Map<String, Set<String>> articleGuids) {
+	private void applyFilters(RSSArticleVO a, Map<String, GenericVO> articleGuids) {
 		for (RSSFeedGroupVO g : groups) {
-			if (! articleExists(a.getArticleGuid(), g.getFeedGroupId(), articleGuids)) {
+			if (! articleExists(a, g.getFeedGroupId(), articleGuids)) {
 				//Apply Matching Filters to article.
 				applyFilter(a, g.getFeedGroupId(), true);
 			}
@@ -230,7 +229,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param results
 	 * @return
 	 */
-	private Map<String, Set<String>> getExistingIds(String searchType, List<ResultAttributes> results) {
+	private Map<String, GenericVO> getExistingIds(String searchType, List<ResultAttributes> results) {
 		List<String> articleGuids = new ArrayList<>(results.size());
 		for (ResultAttributes resultAttrs : results) {
 			articleGuids.add(searchType + resultAttrs.getApplicationNumber());
