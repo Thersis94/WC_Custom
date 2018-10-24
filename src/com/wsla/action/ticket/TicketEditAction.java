@@ -17,6 +17,7 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
@@ -25,6 +26,7 @@ import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
+import com.wsla.data.ticket.DefectVO;
 import com.wsla.data.ticket.DiagnosticRunVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAttributeVO;
@@ -266,14 +268,37 @@ public class TicketEditAction extends SBActionAdapter {
 					TicketDataVO tdv = new TicketDataVO(rs);
 					tdv.setAttribute(new TicketAttributeVO(rs));
 					tdv.setLedger(new TicketLedgerVO(rs));
+					
+					if ("attr_unitDefect".equals(tdv.getAttributeCode())) {
+						tdv.setMetaValue(getDefectName(tdv.getValue()));
+					}
+					
 					data.add(tdv);
 				}
 			}
-		} catch(SQLException e) {
-			log.error("Unabel to get assets", e);
+		} catch(Exception e) {
+			log.error("Unable to get assets", e);
 		}
 
 		return data;
+	}
+	
+	/**
+	 * Gets the label for the defect
+	 * @param defectCode
+	 * @return
+	 * @throws InvalidDataException
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 */
+	public String getDefectName(String defectCode) throws InvalidDataException, 
+	com.siliconmtn.db.util.DatabaseException {
+		
+		DefectVO dvo = new DefectVO();
+		dvo.setDefectCode(defectCode);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.getByPrimaryKey(dvo);
+		return dvo.getDefectName();
 	}
 	
 	/**

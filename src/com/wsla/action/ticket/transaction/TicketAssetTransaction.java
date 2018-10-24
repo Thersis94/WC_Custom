@@ -18,7 +18,7 @@ import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
- * <b>Title</b>: TicketAssetAction.java
+ * <b>Title</b>: TicketAssetTransaction.java
  * <b>Project</b>: WC_Custom
  * <b>Description: </b> Micro changes to the asset feature
  * <b>Copyright:</b> Copyright (c) 2018
@@ -30,7 +30,7 @@ import com.wsla.data.ticket.UserVO;
  * @updates:
  ****************************************************************************/
 
-public class TicketAssetAction extends SBActionAdapter {
+public class TicketAssetTransaction extends SBActionAdapter {
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
 	 */
@@ -39,14 +39,14 @@ public class TicketAssetAction extends SBActionAdapter {
 	/**
 	 * 
 	 */
-	public TicketAssetAction() {
+	public TicketAssetTransaction() {
 		super();
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public TicketAssetAction(ActionInitVO actionInit) {
+	public TicketAssetTransaction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 
@@ -86,6 +86,8 @@ public class TicketAssetAction extends SBActionAdapter {
 		// Build the Ticket Data
 		TicketDataVO td = new TicketDataVO(req);
 		td.setLedgerEntryId(ledger.getLedgerEntryId());
+		td.setMetaValue(req.getParameter("fileName"));
+		
 		db.save(td);
 	}
 }

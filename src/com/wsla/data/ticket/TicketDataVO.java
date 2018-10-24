@@ -37,6 +37,8 @@ public class TicketDataVO extends BeanDataVO {
 	private String ticketId;
 	private String attributeCode;
 	private String value;
+	private String metaValue;
+	private String metaValue1;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -103,6 +105,22 @@ public class TicketDataVO extends BeanDataVO {
 	@Column(name="value_txt")
 	public String getValue() {
 		return value;
+	}
+
+	/**
+	 * @return the metaValue
+	 */
+	@Column(name="meta_value_txt")
+	public String getMetaValue() {
+		return metaValue;
+	}
+
+	/**
+	 * @return the metaValue1
+	 */
+	@Column(name="meta_value1_txt")
+	public String getMetaValue1() {
+		return metaValue1;
 	}
 
 	/**
@@ -198,6 +216,20 @@ public class TicketDataVO extends BeanDataVO {
 	@BeanSubElement
 	public void setLedger(TicketLedgerVO ledger) {
 		this.ledger = ledger;
+	}
+
+	/**
+	 * @param metaValue the metaValue to set
+	 */
+	public void setMetaValue(String metaValue) {
+		this.metaValue = metaValue;
+	}
+
+	/**
+	 * @param metaValue1 the metaValue1 to set
+	 */
+	public void setMetaValue1(String metaValue1) {
+		this.metaValue1 = metaValue1;
 	}
 
 }
