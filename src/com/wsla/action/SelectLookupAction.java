@@ -20,6 +20,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
@@ -76,6 +77,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("statusCode", new GenericVO("getStatusCodes", Boolean.FALSE));
 		keyMap.put("oem", new GenericVO("getOems", Boolean.TRUE));
 		keyMap.put("attributeGroupCode", new GenericVO("getAttributeGroups", Boolean.FALSE));
+		keyMap.put("attributes", new GenericVO("getAttributes", Boolean.TRUE));
 		keyMap.put(PROVIDER_TYPE, new GenericVO("getProviderTypes", Boolean.FALSE));
 		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
 		keyMap.put("oemParts", new GenericVO("getProviderParts", Boolean.TRUE));
@@ -160,6 +162,28 @@ public class SelectLookupAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getAttributes(ActionRequest req) {
+		List<Object> vals = new ArrayList<>();
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select attribute_cd as key, attribute_nm as value from ");
+		sql.append(getCustomSchema()).append("wsla_ticket_attribute where 1=1 ");
+		
+		if (req.hasParameter("groupCode")) {
+			sql.append("and attribute_group_cd = ? ");
+			vals.add(req.getParameter("groupCode"));
+		}
+		
+		sql.append("order by attribute_nm");
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), vals, new GenericVO());
 	}
 
 	/**
@@ -270,8 +294,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");
 		sql.append("|| coalesce(location_nm, '') || ' (' || coalesce(store_no, '') || ')  ' ");
 		sql.append("|| coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value ");
-		sql.append("from wsla_provider a ");
-		sql.append("inner join wsla_provider_location b on a.provider_id = b.provider_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_provider a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location b ");
+		sql.append("on a.provider_id = b.provider_id ");
 		sql.append("where provider_type_id = 'RETAILER' ");
 		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
 		sql.append("or lower(city_nm) like ? or store_no like ?) ");

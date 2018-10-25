@@ -10,7 +10,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
-//WC Custom
+// WSLA Libs
 import com.wsla.action.admin.BatchImport;
 import com.wsla.action.admin.DefectAction;
 import com.wsla.action.admin.DiagnosticAction;

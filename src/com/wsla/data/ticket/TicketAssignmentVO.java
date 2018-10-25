@@ -36,7 +36,7 @@ public class TicketAssignmentVO extends BeanDataVO {
 	 * Options for the type of Assignment
 	 */
 	public enum TypeCode {
-		CALLER, OEM, RETAILER, WATCHER;
+		CALLER, CAS, OEM, RETAILER, WATCHER;
 	}
 	
 	/**

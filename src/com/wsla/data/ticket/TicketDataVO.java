@@ -37,11 +37,14 @@ public class TicketDataVO extends BeanDataVO {
 	private String ticketId;
 	private String attributeCode;
 	private String value;
+	private String metaValue;
+	private String metaValue1;
 	private Date createDate;
 	private Date updateDate;
 	
 	// Bean Sub-elements
 	private TicketAttributeVO attribute;
+	private TicketLedgerVO ledger;
 	
 	/**
 	 * 
@@ -105,6 +108,22 @@ public class TicketDataVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the metaValue
+	 */
+	@Column(name="meta_value_txt")
+	public String getMetaValue() {
+		return metaValue;
+	}
+
+	/**
+	 * @return the metaValue1
+	 */
+	@Column(name="meta_value1_txt")
+	public String getMetaValue1() {
+		return metaValue1;
+	}
+
+	/**
 	 * @return the createDate
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
@@ -123,9 +142,15 @@ public class TicketDataVO extends BeanDataVO {
 	/**
 	 * @return the attribute
 	 */
-	@BeanSubElement
 	public TicketAttributeVO getAttribute() {
 		return attribute;
+	}
+
+	/**
+	 * @return the ledger
+	 */
+	public TicketLedgerVO getLedger() {
+		return ledger;
 	}
 
 	/**
@@ -180,8 +205,31 @@ public class TicketDataVO extends BeanDataVO {
 	/**
 	 * @param attribute the attribute to set
 	 */
+	@BeanSubElement
 	public void setAttribute(TicketAttributeVO attribute) {
 		this.attribute = attribute;
+	}
+
+	/**
+	 * @param ledger the ledger to set
+	 */
+	@BeanSubElement
+	public void setLedger(TicketLedgerVO ledger) {
+		this.ledger = ledger;
+	}
+
+	/**
+	 * @param metaValue the metaValue to set
+	 */
+	public void setMetaValue(String metaValue) {
+		this.metaValue = metaValue;
+	}
+
+	/**
+	 * @param metaValue1 the metaValue1 to set
+	 */
+	public void setMetaValue1(String metaValue1) {
+		this.metaValue1 = metaValue1;
 	}
 
 }

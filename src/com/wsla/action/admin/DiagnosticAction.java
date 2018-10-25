@@ -131,7 +131,7 @@ public class DiagnosticAction extends SBActionAdapter {
 	 */
 	private List<DiagnosticVO> getDiagnosticsList(int svcCtr, int casFlag, boolean hasCasFlag, boolean hasCallCenterFlag, String categoryCode, BSTableControlVO bst) {
 		GridDataVO<DiagnosticVO> data = getDiagnostics(svcCtr, casFlag,hasCasFlag, hasCallCenterFlag, categoryCode, bst );
-		log.debug("returning list of diagnostics " + data.getRowData().size());
+		
 		return data.getRowData();
 	}
 
@@ -177,15 +177,11 @@ public class DiagnosticAction extends SBActionAdapter {
 		}
 		
 		sql.append(bst.getSQLOrderBy("diagnostic_cd",  "asc"));
-		log.info(sql.toString());
+		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		GridDataVO<DiagnosticVO> data = db.executeSQLWithCount(sql.toString(), params, new DiagnosticVO(), bst.getLimit(), bst.getOffset());
 		if (data == null)log.debug("##### data null ");
-		log.debug("data size " + data.getRowData().size());
-		
-		for (DiagnosticVO d : data.getRowData()) {
-			log.debug(d);
-		}
+				
 		return data;
 	}
 
