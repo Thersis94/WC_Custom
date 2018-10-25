@@ -39,6 +39,9 @@ public class StatusCodeVO extends BeanDataVO {
 	private Date createDate;
 	private Date updateDate;
 	
+	// Helper Variables
+	private int daysInStatus;
+	
 	/**
 	 * 
 	 */
@@ -98,6 +101,14 @@ public class StatusCodeVO extends BeanDataVO {
 	@Column(name="role_nm", isReadOnly=true)
 	public String getRoleName() {
 		return roleName;
+	}
+
+	/**
+	 * @return the daysInStatus
+	 */
+	@Column(name="days_in_status", isReadOnly=true)
+	public int getDaysInStatus() {
+		return daysInStatus;
 	}
 
 	/**
@@ -163,6 +174,13 @@ public class StatusCodeVO extends BeanDataVO {
 	 */
 	public void setRoleName(String roleName) {
 		this.roleName = roleName;
+	}
+
+	/**
+	 * @param daysInStatus the daysInStatus to set
+	 */
+	public void setDaysInStatus(int daysInStatus) {
+		this.daysInStatus = daysInStatus;
 	}
 
 }
