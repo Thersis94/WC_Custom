@@ -6,13 +6,15 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 
-// WC Libs
+// WC Core
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
+//WC Custom
 import com.wsla.action.admin.BatchImport;
 import com.wsla.action.admin.DefectAction;
 import com.wsla.action.admin.DiagnosticAction;
+import com.wsla.action.admin.InventoryAction;
 import com.wsla.action.admin.ProductCategoryAction;
 import com.wsla.action.admin.ProductCategoryXRAction;
 import com.wsla.action.admin.ProductMasterAction;
@@ -45,7 +47,6 @@ import com.wsla.action.admin.WarrantyAction;
  * @since Sep 11, 2018
  * @updates:
  ****************************************************************************/
-
 public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 
 	/**
@@ -88,7 +89,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(TicketLedgerAction.AJAX_KEY, TicketLedgerAction.class);
 		actionMap.put(StatusCodeAction.AJAX_KEY, StatusCodeAction.class);
 		actionMap.put(DefectAction.DEFECTS_TYPE, DefectAction.class);
-		actionMap.put(DiagnosticAction.DIAGNOSTIC_TYPE , DiagnosticAction.class );
+		actionMap.put(DiagnosticAction.DIAGNOSTIC_TYPE , DiagnosticAction.class);
 		actionMap.put("productMaster", ProductMasterAction.class);
 		actionMap.put("productSet", ProductSetAction.class);
 		actionMap.put("productSerial", ProductSerialAction.class);
@@ -96,6 +97,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put("productCategory", ProductCategoryAction.class);
 		actionMap.put("productWarranty", ProductWarrantyAction.class);
 		actionMap.put("warranty", WarrantyAction.class);
+		actionMap.put("inventory", InventoryAction.class);
 	}
 
 	/*
@@ -126,7 +128,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ActionInterface action = loadActionByType(req.getParameter(SELECTOR_KEY, DEFAULT_TYPE));
-		
+
 		if (req.hasParameter("isBatch") && BatchImport.class.isAssignableFrom(action.getClass())) {
 			log.debug("### BATCH TRANSACTION ###");
 			BatchImport ba = (BatchImport) action;

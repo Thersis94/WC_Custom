@@ -2,8 +2,6 @@ package com.wsla.action.admin;
 
 // JDK 1.8.x
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -12,7 +10,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
@@ -122,23 +119,5 @@ public class ProductSetAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ProductSetVO(), bst.getLimit(), bst.getOffset());
-	}
-
-
-	/**
-	 * Generate a list of Parts (<ProductId, ProductNm> pairs) bound to the given provider (likely an OEM)
-	 * @param providerId
-	 * @return List<GenericVO> used to populate a selectpicker dropdown in the UI.  See SelectLookupAction reference.
-	 */
-	public List<GenericVO> listPartsForProvider(String providerId) {
-		if (StringUtil.isEmpty(providerId)) return Collections.emptyList();
-
-		String schema = getCustomSchema();
-		String sql = StringUtil.join("select product_id as key, product_nm as value from ", schema, 
-				"wsla_product_master where set_flg=0 and provider_id=? order by product_nm");
-		log.debug(sql + providerId);
-
-		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSelect(sql, Arrays.asList(providerId), new GenericVO());
 	}
 }
