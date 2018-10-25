@@ -23,6 +23,8 @@ import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
 import com.wsla.data.ticket.DiagnosticRunVO;
@@ -73,6 +75,9 @@ public class TicketEditAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		//if its the admintool do nothing at the moment
+		if(req.hasParameter("manMod")) {return;}
+		
 		String ticketNumber = req.getParameter("ticketIdText");
 		
 		try {
@@ -81,7 +86,9 @@ public class TicketEditAction extends SBActionAdapter {
 			} else if (req.hasParameter("comment")) {
 				putModuleData(getComments(req.getParameter("ticketId")));
 			} else {
-				putModuleData(getCompleteTicket(ticketNumber));
+				TicketVO ticket = getCompleteTicket(ticketNumber);
+				req.setAttribute("providerData", ticket.getOem());
+				putModuleData(ticket);
 			}
 		} catch (SQLException | DatabaseException e) {
 			log.error("Unable to retrieve ticket #: " + ticketNumber, e);
@@ -316,6 +323,20 @@ public class TicketEditAction extends SBActionAdapter {
 		} catch(Exception e) {
 			throw new SQLException("unable to save comment", e);
 		}
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		
+		// Set the action to use the simple admin view
+		ModuleVO module = (ModuleVO)attributes.get(AdminConstants.ADMIN_MODULE_DATA);
+		module.setSimpleAction(true);
+		super.list(req);
+
 	}
 }
 
