@@ -36,8 +36,11 @@ import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.WarrantyAction;
+<<<<<<< HEAD
 import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
+=======
 import com.wsla.action.ticket.TicketEditAction;
+>>>>>>> bc5a597cc35e05e723b326b830f40b702eb44cf9
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderType;
@@ -101,9 +104,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
 		keyMap.put("acRetailer", new GenericVO("getRetailerACList", Boolean.TRUE));
 		keyMap.put("categoryGroup", new GenericVO("getCategoryGroups", Boolean.FALSE));
+<<<<<<< HEAD
 		keyMap.put("acCas", new GenericVO("getClosestCas", Boolean.TRUE));
+=======
 		keyMap.put("ticketAssignment", new GenericVO("getTicketAssignments", Boolean.TRUE));
 		keyMap.put("scheduleTransferType", new GenericVO("getScheduleTransferTypes", Boolean.TRUE));
+>>>>>>> bc5a597cc35e05e723b326b830f40b702eb44cf9
 	}
 
 	/**

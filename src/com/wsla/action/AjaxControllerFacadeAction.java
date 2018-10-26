@@ -89,6 +89,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(TicketListAction.AJAX_KEY, TicketListAction.class);
 		actionMap.put(TicketLedgerAction.AJAX_KEY, TicketLedgerAction.class);
 		actionMap.put(StatusCodeAction.AJAX_KEY, StatusCodeAction.class);
+		actionMap.put("events", DefectAction.class);
 		actionMap.put(DefectAction.DEFECTS_TYPE, DefectAction.class);
 		actionMap.put(DiagnosticAction.DIAGNOSTIC_TYPE , DiagnosticAction.class );
 		actionMap.put("productMaster", ProductMasterAction.class);

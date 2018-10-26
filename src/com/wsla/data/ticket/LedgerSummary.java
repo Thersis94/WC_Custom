@@ -17,7 +17,8 @@ public enum LedgerSummary {
 	
 	CALL_RECVD ("A call was received"),
 	CALL_FINISHED ("Finished user call.  All data processed"),
-	ASSET_LOADED ("User loaded an asset to the service order");
+	ASSET_LOADED ("User loaded an asset to the service order"),
+	SCHEDULE_TRANSFER_COMPLETE ("Equipment was picked up or dropped off for the service order");
 	
 	public final String summary;
 	LedgerSummary(String summary) { this.summary = summary; }
