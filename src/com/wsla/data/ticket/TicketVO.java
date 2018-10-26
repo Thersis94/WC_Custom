@@ -80,6 +80,7 @@ public class TicketVO extends BeanDataVO {
 	// Bean Sub-Element
 	private List<TicketDataVO> ticketData = new ArrayList<>(32);
 	private List<TicketAssignmentVO> assignments = new ArrayList<>();
+	private List<TicketScheduleVO> schedule = new ArrayList<>();
 	private List<TicketLedgerVO> timeline = new ArrayList<>();
 	private List<DiagnosticRunVO> diagnosticRun = new ArrayList<>();
 	private ProductSerialNumberVO productSerial = new ProductSerialNumberVO();
@@ -352,6 +353,13 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the schedule
+	 */
+	public List<TicketScheduleVO> getSchedule() {
+		return schedule;
+	}
+
+	/**
 	 * @return the productSerial
 	 */
 	public ProductSerialNumberVO getProductSerial() {
@@ -451,6 +459,22 @@ public class TicketVO extends BeanDataVO {
 	@BeanSubElement
 	public void addAssignment(TicketAssignmentVO assignment) {
 		this.assignments.add(assignment);
+	}
+
+	/**
+	 * @param schedule the schedule to set
+	 */
+	public void setSchedule(List<TicketScheduleVO> schedule) {
+		this.schedule = schedule;
+	}
+
+	/**
+	 * 
+	 * @param schedule
+	 */
+	@BeanSubElement
+	public void addSchedule(TicketScheduleVO schedule) {
+		this.schedule.add(schedule);
 	}
 
 	/**

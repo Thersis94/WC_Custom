@@ -8,7 +8,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -19,6 +21,7 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
@@ -33,10 +36,15 @@ import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.WarrantyAction;
+import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketAssignmentVO;
+import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
+import com.wsla.data.ticket.TicketScheduleVO;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: SelectLookupAction.java
@@ -91,6 +99,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
 		keyMap.put("acRetailer", new GenericVO("getRetailerACList", Boolean.TRUE));
 		keyMap.put("categoryGroup", new GenericVO("getCategoryGroups", Boolean.FALSE));
+		keyMap.put("ticketAssignment", new GenericVO("getTicketAssignments", Boolean.TRUE));
+		keyMap.put("scheduleTransferType", new GenericVO("getScheduleTransferTypes", Boolean.TRUE));
 	}
 
 	/**
@@ -440,5 +450,47 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getCategoryGroups() {
 		return new ProductCategoryAction(getAttributes(), getDBConnection()).getGroupList();
+	}
+
+
+	/**
+	 * Return a list of ticket assignments for the given ticket
+	 * 
+	 * @param req
+	 * @return
+	 * @throws DatabaseException 
+	 */
+	public List<GenericVO> getTicketAssignments(ActionRequest req) throws DatabaseException {
+		String ticketId = req.getParameter("ticketId");
+		List<TicketAssignmentVO> assignments = new TicketEditAction(getAttributes(), getDBConnection()).getAssignments(ticketId);
+
+		List<GenericVO> data = new ArrayList<>();
+		for (TicketAssignmentVO assignment : assignments) {
+			String assignmentName = assignment.getTypeCode() == TypeCode.CALLER ? assignment.getUser().getFirstName() + ' ' + assignment.getUser().getLastName() : assignment.getLocation().getLocationName();
+			data.add(new GenericVO(assignment.getTicketAssignmentId(), assignmentName));
+		}
+		
+		return data;
+	}
+	
+	
+	/**
+	 * Return a list of ticket schedule transfer types
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getScheduleTransferTypes(ActionRequest req) {
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		Locale locale = StringUtil.isEmpty(user.getLocale()) ? site.getLocale() : new Locale(user.getLocale());
+		ResourceBundle bundle = ResourceBundle.getBundle("com.wsla.common.bundle.messages", locale); 
+		
+		List<GenericVO> data = new ArrayList<>();
+		for (TicketScheduleVO.TypeCode type : TicketScheduleVO.TypeCode.values()) {
+			data.add(new GenericVO(type.name(), bundle.getString("wsla.ticket.schedule." + type.name())));
+		}
+		
+		return data;
 	}
 }
