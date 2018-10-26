@@ -33,6 +33,7 @@ import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.WarrantyAction;
+import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderType;
@@ -80,6 +81,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
 		keyMap.put("oemParts", new GenericVO("getProviderParts", Boolean.TRUE));
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
+		keyMap.put("warrantyServiceTypeCode", new GenericVO("getServiceTypeCode", Boolean.FALSE));
 		keyMap.put("role", new GenericVO("getOrgRoles", Boolean.TRUE));
 		keyMap.put("locale", new GenericVO("getLocales", Boolean.FALSE));
 		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
@@ -195,6 +197,19 @@ public class SelectLookupAction extends SBActionAdapter {
 		yesNo.add(new GenericVO("0","No"));
 
 		return yesNo;
+	}
+	
+	/**
+	 * loads a list of the warranty service types
+	 * @return
+	 */
+	public List<GenericVO> getServiceTypeCode(){
+		List<GenericVO> types = new ArrayList<>();
+		for (ServiceTypeCode e : WarrantyAction.ServiceTypeCode.values()) {
+			types.add(new GenericVO(e.name(),e.getValue()));
+		}
+		
+		return types;
 	}
 
 	/**
