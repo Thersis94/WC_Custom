@@ -92,7 +92,9 @@ public class TicketEditAction extends SBActionAdapter {
 			} else if (json && req.hasParameter("assets")) {
 				putModuleData(getExtendedData(req.getParameter(TICKET_ID), req.getParameter("groupCode")));
 			} else {
-				putModuleData(getCompleteTicket(ticketNumber));
+				TicketVO ticket = getCompleteTicket(ticketNumber);
+				req.setAttribute("providerData", ticket.getOem());
+				putModuleData(ticket);
 			}
 		} catch (SQLException | DatabaseException e) {
 			log.error("Unable to retrieve ticket #: " + ticketNumber, e);
