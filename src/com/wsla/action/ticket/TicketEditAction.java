@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -88,12 +90,13 @@ public class TicketEditAction extends SBActionAdapter {
 			if (json && req.hasParameter("diagnostic")) {
 				putModuleData(getDiagnostics(req.getParameter(TICKET_ID)));
 			} else if (json && req.hasParameter("comment")) {
-				putModuleData(getComments(req.getParameter(TICKET_ID)));
+				putModuleData(getComments(req.getParameter(TICKET_ID), req.getBooleanParameter("isEndUser")));
 			} else if (json && req.hasParameter("assets")) {
 				putModuleData(getExtendedData(req.getParameter(TICKET_ID), req.getParameter("groupCode")));
 			} else {
 				TicketVO ticket = getCompleteTicket(ticketNumber);
 				req.setAttribute("providerData", ticket.getOem());
+				req.setAttribute("wsla.ticket.locale", ticket.getOriginator().getLocale());
 				putModuleData(ticket);
 			}
 		} catch (SQLException | DatabaseException e) {
@@ -108,7 +111,7 @@ public class TicketEditAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public List<Node> getComments(String ticketId) throws SQLException {
+	public List<Node> getComments(String ticketId, boolean endUserFilter) throws SQLException {
 		
 		StringBuilder sql = new StringBuilder(416);
 		sql.append(DBUtil.SELECT_CLAUSE);
@@ -123,8 +126,8 @@ public class TicketEditAction extends SBActionAdapter {
 		sql.append("on a.profile_id = b.profile_id ");
 		sql.append("group by user_id ");
 		sql.append(") as rc on b.user_id = rc.user_id ");
-		
-		sql.append("where ticket_id = ? order by priority_ticket_flg desc, a.create_dt desc ");
+		sql.append("where ticket_id = ? ");
+		sql.append("order by priority_ticket_flg desc, a.create_dt desc ");
 		
 		List<Node> comments = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -134,16 +137,27 @@ public class TicketEditAction extends SBActionAdapter {
 				while (rs.next()) {
 					TicketCommentVO tc = new TicketCommentVO(rs);
 					tc.setUser(new UserVO(rs));
-					Node n = new Node(tc.getTicketCommentId(), tc.getParentId());
-					n.setUserObject(tc);
-					
-					comments.add(n);
+					comments.add(new Node(tc.getTicketCommentId(), tc.getParentId(), tc));
 				}
 			}
 		}
 		
 		// Order the nodes using the tree class
 		Tree tree = new Tree(comments);
+		Node rootNode = tree.getRootNode();
+		Set<Node> remNodes = new HashSet<>(comments.size());
+
+		// If the display is for the user portal, filter out comments not submitted by 
+		// an end user
+		if (endUserFilter) {
+			for (Node n : rootNode.getChildren()) {
+				if (! ((TicketCommentVO)n.getUserObject()).isEndUser()) remNodes.add(n);
+			}
+			
+			for (Node n : remNodes) rootNode.getChildren().remove(n);
+			tree.setRootNode(rootNode);
+		}
+		
 		return tree.preorderList();
 	}
  	
@@ -163,7 +177,7 @@ public class TicketEditAction extends SBActionAdapter {
 		sql.append("wsla_provider c on a.oem_id = c.provider_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_status s on a.status_cd = s.status_cd ");
-		sql.append(DBUtil.INNER_JOIN).append("role r on s.role_id = r.role_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role r on s.role_id = r.role_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_provider_location d on a.retailer_id = d.location_id ");
 		sql.append("where ticket_no = ? ");
@@ -173,7 +187,7 @@ public class TicketEditAction extends SBActionAdapter {
 		List<TicketVO> tickets = db.executeSelect(sql.toString(), Arrays.asList(ticketIdText), new TicketVO());
 		if (tickets.isEmpty()) return new TicketVO();
 		TicketVO ticket = tickets.get(0);
-		
+
 		// Get the user's profile
 		ticket.getOriginator().setProfile(getProfile(ticket.getOriginator().getProfileId()));
 		
