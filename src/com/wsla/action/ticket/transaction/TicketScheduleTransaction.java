@@ -1,5 +1,8 @@
 package com.wsla.action.ticket.transaction;
 
+import java.util.Arrays;
+import java.util.List;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -62,7 +65,11 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
-			this.saveSchedule(req);
+			if (req.hasParameter(REQ_COMPLETE)) {
+				this.completeSchedule(req);
+			} else {
+				this.saveSchedule(req);
+			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save ticket schedule", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
@@ -70,9 +77,8 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Saves a ticket schedule record. This can happen when:
-	 *    - Equipment is scheduled for drop-off or pick-up
-	 *    - Completion of a scheduled pick-up or drop-off
+	 * Saves/edits a ticket schedule record when equipment is scheduled or
+	 * re-schedule for drop-off or pick-up.
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
@@ -82,25 +88,47 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 		// Get the DB Processor
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		
-		// Build the Ticket Schedule Data
+		// Build the Ticket Schedule data and save
 		TicketScheduleVO ts = new TicketScheduleVO(req);
-		
-		// Log a ledger entry when an equipment transfer takes place
-		if (req.hasParameter(REQ_COMPLETE)) {
-			// Get the WSLA User
-			UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
-			
-			// Add a ledger entry
-			TicketLedgerVO ledger = new TicketLedgerVO(req);
-			ledger.setDispositionBy(user.getUserId());
-			ledger.setSummary(LedgerSummary.SCHEDULE_TRANSFER_COMPLETE.summary);
-			db.save(ledger);
-
-			// Put the ledger entry onto the schedule record
-			ts.setLedgerEntryId(ledger.getLedgerEntryId());
-		}
-		
 		db.save(ts);
+	}
+	
+	/**
+	 * Handles completion of a scheduled pick-up or drop-off when the equipment
+	 * is transfered to another party. This also logs a ledger entry.
+	 * 
+	 * @param req
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	public void completeSchedule(ActionRequest req) throws InvalidDataException, DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		TicketScheduleVO ts = new TicketScheduleVO(req);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		
+		// Add a ledger entry
+		TicketLedgerVO ledger = new TicketLedgerVO(req);
+		ledger.setDispositionBy(user.getUserId());
+		ledger.setSummary(LedgerSummary.SCHEDULE_TRANSFER_COMPLETE.summary);
+		db.save(ledger);
+		ts.setLedgerEntryId(ledger.getLedgerEntryId());
+
+		// Create the SQL for updating the record
+		StringBuilder sql = new StringBuilder(110);
+		sql.append("update ").append(getCustomSchema()).append("wsla_ticket_schedule " );
+		sql.append("set signer_nm = ?, signature_txt = ?, product_validated_flg = ?, ");
+		sql.append("notes_txt = concat(notes_txt, ?), ledger_entry_id = ?, complete_dt = ?, ");
+		sql.append("update_dt = ? where ticket_schedule_id = ? ");
+		
+		// Set the fields we are updating from
+		List<String> fields = Arrays.asList("signer_nm", "signature_txt", "product_validated_flg", "notes_txt", "ledger_entry_id", "complete_dt", "update_dt", "ticket_schedule_id");
+
+		// Save the updates to the record
+		try {
+			db.executeSqlUpdate(sql.toString(), ts, fields);
+		} catch (DatabaseException e1) {
+			log.error("could not delete old records",e1);
+		}
 	}
 }
 
