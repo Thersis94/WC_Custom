@@ -17,6 +17,7 @@ public enum LedgerSummary {
 	
 	CALL_RECVD ("A call was received"),
 	CALL_FINISHED ("Finished user call.  All data processed"),
+	RAN_DIAGNOSTIC ("A diagnostic was performed"),
 	ASSET_LOADED ("User loaded an asset to the service order");
 	
 	public final String summary;

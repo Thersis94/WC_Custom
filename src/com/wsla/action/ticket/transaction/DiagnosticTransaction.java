@@ -4,6 +4,7 @@ package com.wsla.action.ticket.transaction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 
@@ -11,6 +12,9 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.action.ticket.TicketOverviewAction;
 import com.wsla.data.ticket.DiagnosticRunVO;
+import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.TicketLedgerVO;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: DiagnosticTransaction.java
@@ -69,6 +73,17 @@ public class DiagnosticTransaction extends SBActionAdapter {
 	 */
 	public void saveDiagnosticRun(ActionRequest req) 
 	throws InvalidDataException, DatabaseException {
+		
+		// Get the WSLA User
+		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		
+		// Add a ledger entry
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		TicketLedgerVO ledger = new TicketLedgerVO(req);
+		ledger.setDispositionBy(user.getUserId());
+		ledger.setSummary(LedgerSummary.RAN_DIAGNOSTIC.summary);
+		db.save(ledger);
+		
 		DiagnosticRunVO dr = new DiagnosticRunVO(req);
 		
 		TicketOverviewAction toa = new TicketOverviewAction(attributes, dbConn);
