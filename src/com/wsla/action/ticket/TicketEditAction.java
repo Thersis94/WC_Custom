@@ -360,9 +360,6 @@ public class TicketEditAction extends SBActionAdapter {
 		
 		sql.append("order by a.create_dt ");
 		
-		log.debug("Ticket Schedule SQL: " + sql);
-		log.debug(params);
-		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), params, new TicketScheduleVO());
 	}
