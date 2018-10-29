@@ -174,14 +174,14 @@ public abstract class AbstractSmarttrakRSSFeed {
 			if (!articleExists(article)) {
 				dbp.insert(article);
 				log.debug("created rss_article " + article.getArticleGuid());
+
+				// Save a list of filtered matches tied to the article
+				// only if the article is new. If we already saved this article
+				// it is not breaking news and doesn't to be filtered and put into feeds.
+				dbp.executeBatch(sql.toString(), buildArticleFilterVals(article));
 			} else {
 				log.info("Article Already Exists: " + article.getRssArticleId());
 			}
-
-			// Save a list of filtered matches tied to the article
-			// only if the article is new. If we already saved this article
-			// it is not breaking news and doesn't to be filtered and put into feeds.
-			dbp.executeBatch(sql.toString(), buildArticleFilterVals(article));
 
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Error Saving Articles", e);
