@@ -22,6 +22,7 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -90,7 +91,8 @@ public class TicketEditAction extends SBActionAdapter {
 			if (json && req.hasParameter("diagnostic")) {
 				putModuleData(getDiagnostics(req.getParameter(TICKET_ID)));
 			} else if (json && req.hasParameter("comment")) {
-				putModuleData(getComments(req.getParameter(TICKET_ID), req.getBooleanParameter("isEndUser")));
+				boolean isActivity = req.getBooleanParameter("activity");
+				putModuleData(getComments(req.getParameter(TICKET_ID), req.getBooleanParameter("isEndUser"), isActivity));
 			} else if (json && req.hasParameter("assets")) {
 				putModuleData(getExtendedData(req.getParameter(TICKET_ID), req.getParameter("groupCode")));
 			} else {
@@ -111,7 +113,7 @@ public class TicketEditAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public List<Node> getComments(String ticketId, boolean endUserFilter) throws SQLException {
+	public List<Node> getComments(String ticketId, boolean endUserFilter, boolean activity) throws SQLException {
 		
 		StringBuilder sql = new StringBuilder(416);
 		sql.append(DBUtil.SELECT_CLAUSE);
@@ -127,6 +129,10 @@ public class TicketEditAction extends SBActionAdapter {
 		sql.append("group by user_id ");
 		sql.append(") as rc on b.user_id = rc.user_id ");
 		sql.append("where ticket_id = ? ");
+		
+		if (activity) sql.append("and activity_type_cd != 'COMMENT' ");
+		sql.append("and activity_type_cd = 'COMMENT' ");
+		
 		sql.append("order by priority_ticket_flg desc, a.create_dt desc ");
 		
 		List<Node> comments = new ArrayList<>();
