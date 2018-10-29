@@ -41,6 +41,7 @@ public class ProviderVO extends BeanDataVO {
 	private String providerName;
 	private String iconPath;
 	private String cssPath;
+	private String domainUrl;
 	private int reviewFlag;
 	private Date createDate;
 	private Date updateDate;
@@ -213,6 +214,21 @@ public class ProviderVO extends BeanDataVO {
 	 */
 	public void setCssPath(String cssPath) {
 		this.cssPath = cssPath;
+	}
+
+	/**
+	 * @return the domainUrl
+	 */
+	@Column(name="domain_url")
+	public String getDomainUrl() {
+		return domainUrl;
+	}
+
+	/**
+	 * @param domainUrl the domainUrl to set
+	 */
+	public void setDomainUrl(String domainUrl) {
+		this.domainUrl = domainUrl;
 	}
 
 }
