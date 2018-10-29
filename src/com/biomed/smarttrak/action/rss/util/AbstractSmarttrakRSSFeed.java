@@ -173,7 +173,11 @@ public abstract class AbstractSmarttrakRSSFeed {
 	protected void storeArticle(RSSArticleVO article) {
 		long start = System.currentTimeMillis();
 		try {
-			//save the article itself
+			/*
+			 * This check is verifying the article is unique in the system.
+			 * Currently is preventing duplicates from aggregate feeds showing up
+			 * as newer articles.
+			 */
 			if (!articleExists(article)) {
 				DBProcessor dbp = new DBProcessor(dbConn, customDb);
 
