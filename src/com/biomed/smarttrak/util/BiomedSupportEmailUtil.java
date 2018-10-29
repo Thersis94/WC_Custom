@@ -431,7 +431,7 @@ public class BiomedSupportEmailUtil {
 
 		//Add Reporter unless this is an assignment email
 		if(!StringUtil.isEmpty(t.getReporterEmail()) && activity != ChangeType.ASSIGNMENT) {
-			admins.add(new EmailRecipientVO(t.getReporterId(), t.getReporterEmail(), EmailRecipientVO.TO));
+			pub.add(new EmailRecipientVO(t.getReporterId(), t.getReporterEmail(), EmailRecipientVO.TO));
 		}
 
 		String ccAddresses = (String) attributes.get("ccAddresses");
