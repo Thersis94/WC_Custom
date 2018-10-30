@@ -259,6 +259,7 @@ public class TicketEditAction extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_provider_location c on a.location_id = c.location_id ");
 		sql.append("where ticket_id = ? ");
+		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<TicketAssignmentVO> data = db.executeSelect(sql.toString(), Arrays.asList(ticketId), new TicketAssignmentVO());
@@ -359,6 +360,8 @@ public class TicketEditAction extends SBActionAdapter {
 		}
 		
 		sql.append("order by a.create_dt ");
+		
+		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), params, new TicketScheduleVO());

@@ -10,7 +10,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -34,11 +34,6 @@ import com.wsla.data.ticket.UserVO;
  ****************************************************************************/
 
 public class TicketScheduleTransaction extends SBActionAdapter {
-	/**
-	 * Key for the Ajax Controller to utilize when calling this class
-	 */
-	public static final String AJAX_KEY = "schedule";
-	
 	/**
 	 * Indicates that a scheduled item is being picked up or dropped off
 	 */
@@ -66,9 +61,9 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		try {
 			if (req.hasParameter(REQ_COMPLETE)) {
-				this.completeSchedule(req);
+				putModuleData(completeSchedule(req));
 			} else {
-				this.saveSchedule(req);
+				putModuleData(saveSchedule(req));
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save ticket schedule", e);
@@ -84,13 +79,16 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	public void saveSchedule(ActionRequest req) throws InvalidDataException, DatabaseException {
+	public TicketScheduleVO saveSchedule(ActionRequest req) throws InvalidDataException, DatabaseException {
 		// Get the DB Processor
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		
 		// Build the Ticket Schedule data and save
 		TicketScheduleVO ts = new TicketScheduleVO(req);
+		modifyNotes(ts);
 		db.save(ts);
+		
+		return ts;
 	}
 	
 	/**
@@ -101,9 +99,10 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	public void completeSchedule(ActionRequest req) throws InvalidDataException, DatabaseException {
+	public TicketScheduleVO completeSchedule(ActionRequest req) throws InvalidDataException, DatabaseException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		TicketScheduleVO ts = new TicketScheduleVO(req);
+		modifyNotes(ts);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		
 		// Add a ledger entry
@@ -117,8 +116,9 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(110);
 		sql.append("update ").append(getCustomSchema()).append("wsla_ticket_schedule " );
 		sql.append("set signer_nm = ?, signature_txt = ?, product_validated_flg = ?, ");
-		sql.append("notes_txt = concat(notes_txt, ?), ledger_entry_id = ?, complete_dt = ?, ");
-		sql.append("update_dt = ? where ticket_schedule_id = ? ");
+		sql.append("notes_txt = ?, ledger_entry_id = ?, complete_dt = ?, update_dt = ? ");
+		sql.append("where ticket_schedule_id = ? ");
+		log.debug(sql);
 		
 		// Set the fields we are updating from
 		List<String> fields = Arrays.asList("signer_nm", "signature_txt", "product_validated_flg", "notes_txt", "ledger_entry_id", "complete_dt", "update_dt", "ticket_schedule_id");
@@ -129,6 +129,40 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 		} catch (DatabaseException e1) {
 			log.error("could not delete old records",e1);
 		}
+		
+		return ts;
+	}
+	
+	/**
+	 * Modify notes per given requirements:
+	 * 	 - Store any/all notes in one field.
+	 * 	 - Notes are additive, can not be edited once saved.
+	 * 
+	 * @param ts
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	protected void modifyNotes(TicketScheduleVO ts) throws InvalidDataException, DatabaseException {
+		// Get previous notes (if any)
+		TicketScheduleVO prevTs = new TicketScheduleVO();
+		prevTs.setTicketScheduleId(ts.getTicketScheduleId());
+		if (!StringUtil.isEmpty(ts.getTicketScheduleId())) {
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			db.getByPrimaryKey(prevTs);
+		}
+
+		// Prepend previous notes if they exist
+		StringBuilder note = new StringBuilder(ts.getNotesText().length() + prevTs.getNotesText().length() + 1);
+		if (!StringUtil.isEmpty(prevTs.getNotesText())) {
+			note.append(prevTs.getNotesText()).append(StringUtil.isEmpty(ts.getNotesText()) ? "" : System.lineSeparator());
+		}
+		
+		// Append the new note
+		if (!StringUtil.isEmpty(ts.getNotesText())) {
+			note.append(ts.getNotesText());
+		}
+		
+		ts.setNotesText(note.toString());
 	}
 }
 
