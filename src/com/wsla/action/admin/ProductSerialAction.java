@@ -290,6 +290,7 @@ public class ProductSerialAction extends BatchImport {
 			if (StringUtil.isEmpty(vo.getSerialNumber()) || skus.contains(vo.getSerialNumber().toLowerCase())) {
 				iter.remove();
 				log.debug("omitting pre-existing or empty SKU: " + vo.getSerialNumber());
+				//TODO these records need at least a DB update to ensure they'are marked valid.
 			}
 		}
 	}

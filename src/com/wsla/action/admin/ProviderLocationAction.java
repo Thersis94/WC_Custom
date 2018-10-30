@@ -4,6 +4,7 @@ package com.wsla.action.admin;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -49,7 +50,7 @@ public class ProviderLocationAction extends BatchImport {
 	 * Key for the Ajax Controller to utilize when calling this class
 	 */
 	public static final String AJAX_KEY = "providerLocation";
-	
+
 	/**
 	 * 
 	 */
@@ -71,10 +72,10 @@ public class ProviderLocationAction extends BatchImport {
 	 */
 	public ProviderLocationAction(Map<String, Object> attrs, SMTDBConnection conn) {
 		this();
-		this.setAttributes(attrs);
-		this.setDBConnection(conn);
+		setAttributes(attrs);
+		setDBConnection(conn);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -84,7 +85,7 @@ public class ProviderLocationAction extends BatchImport {
 		BSTableControlVO bst = new BSTableControlVO(req, ProviderLocationVO.class);
 		setModuleData(getLocations(req.getParameter("providerId"), bst));
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
@@ -96,14 +97,14 @@ public class ProviderLocationAction extends BatchImport {
 		ProviderLocationVO loc = new ProviderLocationVO(req);
 		try {
 			if (req.getBooleanParameter("mapLocation")) {
-				
+
 				assignManualGeocode(loc);
 			} else { 
 				// If provider needed to be reviewed and it is approved, change the review flag to 0
 				if (loc.getReviewFlag() == 1 && req.getBooleanParameter("reviewApproved")) {
 					loc.setReviewFlag(0);
 				}
-				
+
 				saveLocation(loc);
 			}
 		} catch (Exception e) {
@@ -111,10 +112,10 @@ public class ProviderLocationAction extends BatchImport {
 			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 			log.error("unable to save provider location", e);
 		}
-		
+
 		this.putModuleData("", 0, false, (String)msg, error);
 	}
-	
+
 	/**
 	 * 
 	 * @param loc
@@ -122,23 +123,23 @@ public class ProviderLocationAction extends BatchImport {
 	 */
 	public void assignManualGeocode(ProviderLocationVO loc) throws SQLException {
 		loc.setMatchCode(MatchCode.manual);
-		
+
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("update ").append(getCustomSchema()).append("wsla_provider_location ");
 		sql.append("set latitude_no=?,longitude_no=?,manual_geocode_flg=?,match_cd=? ");
 		sql.append("where location_id = ?");
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setDouble(1, loc.getLatitude());
 			ps.setDouble(2, loc.getLongitude());
 			ps.setInt(3, loc.getManualGeocodeFlag());
 			ps.setString(4, loc.getMatchCode().toString());
 			ps.setString(5, loc.getLocationId());
-			
+
 			ps.executeUpdate();
 		}
 	}
-	
+
 	/**
 	 * Saves a provider location.  Geocodes the address if manual geocode is 0
 	 * @param loc
@@ -156,31 +157,31 @@ public class ProviderLocationAction extends BatchImport {
 			loc.setLongitude(gl.getLongitude());
 			loc.setMatchCode(gl.getMatchCode());
 		}
-		
+
 		// Check if default location, remove default flag from all other locations for that provider
 		if (loc.getDefaultFlag() == 1) resetDefaultLocation(loc.getProviderId());
-		
+
 		// Update the table data
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(loc);
 	}
-	
+
 	/**
 	 * When a location has been assigned as the default, update the other locations
 	 * for that provider to not default
 	 * @param providerId
 	 */
 	public void resetDefaultLocation(String providerId) {
-		
+
 		StringBuilder sql = new StringBuilder(64);
 		sql.append("update ").append(getCustomSchema()).append("wsla_provider_location ");
 		sql.append("set default_flg = 0 where provider_id = ");
 		sql.append(StringUtil.checkVal(providerId, true));
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.executeSQLCommand(sql.toString());
 	}
-	
+
 	/**
 	 * Retrieves a list of locations for a given provider
 	 * @param providerId
@@ -188,23 +189,38 @@ public class ProviderLocationAction extends BatchImport {
 	 * @return
 	 */
 	public GridDataVO<ProviderLocationVO> getLocations(String providerId, BSTableControlVO bst) {
-		List<Object> params = new ArrayList<>();
-		params.add(providerId);
-		
+		String schema = getCustomSchema();
+		String orderBy = null;
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select * from ").append(getCustomSchema()).append("wsla_provider_location ");
-		sql.append("where provider_id = ? ");
-		
+		List<Object> params = new ArrayList<>();
+
+		//if we don't have a providerId, join the provider table so we can grab the OEM names
+		if (StringUtil.isEmpty(providerId)) {
+			sql.append("select lcn.*, p.provider_nm from ").append(schema).append("wsla_provider_location lcn ");
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider p on lcn.provider_id=p.provider_id ");
+			orderBy = "p.provider_nm, lcn.location_nm";
+		} else {
+			sql.append("select lcn.* from ").append(schema).append("wsla_provider_location lcn ");
+			orderBy = "lcn.location_nm";
+		}
+		sql.append("where 1=1 ");
+
 		// Filter by search criteria
 		if (bst.hasSearch()) {
-			sql.append("and (location_nm like ? or store_no like ?) ");
+			sql.append("and (lcn.location_nm like ? or lcn.store_no like ?) ");
 			params.add(bst.getLikeSearch());
 			params.add(bst.getLikeSearch());
 		}
-		
-		sql.append(bst.getSQLOrderBy("location_nm",  "asc"));
-		DBProcessor db = new DBProcessor(getDBConnection());
-		
+		//filter by OEM
+		if (!StringUtil.isEmpty(providerId)) {
+			sql.append("and lcn.provider_id=? ");
+			params.add(providerId);
+		}
+
+		sql.append(bst.getSQLOrderBy(orderBy,  "asc"));
+		log.debug(sql);
+
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ProviderLocationVO(), bst.getLimit(), bst.getOffset());
 	}
 
@@ -215,7 +231,7 @@ public class ProviderLocationAction extends BatchImport {
 	protected Class<?> getBatchImportableClass() {
 		return ProviderLocationVO.class ;
 	}
-	
+
 	/*
 	 * set additional values into the VOs from request params (oem, category, etc.)
 	 * (non-Javadoc)
@@ -227,8 +243,7 @@ public class ProviderLocationAction extends BatchImport {
 		String provicerId = req.getParameter("providerId");
 		Date dt = Calendar.getInstance().getTime();
 		List <ProviderLocationVO> ivalidObjects = new ArrayList<>();
-		
-		
+
 		for (Object obj : entries) {
 			ProviderLocationVO vo = (ProviderLocationVO) obj;
 			//getting null data rows remove there here
@@ -237,11 +252,10 @@ public class ProviderLocationAction extends BatchImport {
 				ivalidObjects.add(vo);
 				continue;
 			}
-			
+
 			vo.setProviderId(provicerId);
 			vo.setCreateDate(dt);
 		}
 		entries.removeAll(ivalidObjects);
 	}
 }
-
