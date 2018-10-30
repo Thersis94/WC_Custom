@@ -10,6 +10,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.UserDataVO;
 
 /****************************************************************************
@@ -28,9 +29,6 @@ import com.siliconmtn.security.UserDataVO;
 @Table(name="wsla_user")
 public class UserVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 4322911178471795899L;
 
 	// Member Variables
@@ -50,8 +48,9 @@ public class UserVO extends BeanDataVO {
 	// Bean Sub-Elements
 	private UserDataVO profile;
 
-	//locationId picked up at login for downstream pages to filter data with
+	// Variables picked up at login for downstream usage ("My Location", "My Provider")
 	private String locationId;
+	private String providerId;
 
 	/**
 	 * 
@@ -65,7 +64,10 @@ public class UserVO extends BeanDataVO {
 	 */
 	public UserVO(ActionRequest req) {
 		super(req);
-		this.setProfile(new UserDataVO(req));
+		setProfile(new UserDataVO(req));
+		//make a special case for workPhone, which isn't supported by UserDataVO natively
+		if (req.hasParameter("workPhone"))
+			profile.addPhone(new PhoneVO(PhoneVO.WORK_PHONE, req.getParameter("workPhone"), profile.getCountryCode()));
 	}
 
 	/**
@@ -279,5 +281,12 @@ public class UserVO extends BeanDataVO {
 		this.locationId = locationId;
 	}
 
-}
+	@Column(name="provider_id", isReadOnly=true)
+	public String getProviderId() {
+		return providerId;
+	}
 
+	public void setProviderId(String providerId) {
+		this.providerId = providerId;
+	}
+}
