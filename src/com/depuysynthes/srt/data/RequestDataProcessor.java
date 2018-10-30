@@ -8,6 +8,7 @@ import java.util.Map;
 import com.depuysynthes.srt.SRTRequestAction;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTFileVO;
+import com.depuysynthes.srt.vo.SRTNoteVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
@@ -188,6 +189,8 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 			if(project != null) {
 				project.setRequestId(request.getRequestId());
 				new ProjectDataProcessor(dbConn, attributes, req).saveProjectRecord(project);
+
+				buildNote(project);
 			}
 
 		} catch(Exception e) {
@@ -204,6 +207,29 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 
 
 	/**
+	 * Build a Note containing the Request Description to preserve Original
+	 * Requestors Description.
+	 * @param project
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 * @throws InvalidDataException
+	 */
+	private void buildNote(SRTProjectVO project) throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
+		//Build a Note off the Request.
+		SRTNoteVO note = new SRTNoteVO(req);
+		SRTRosterVO roster = SRTUtil.getRoster(req);
+
+		//Set RosterData
+		note.setRosterId(roster.getRosterId());
+		note.setFirstName(roster.getFirstName());
+		note.setLastName(roster.getLastName());
+		note.setCreateDt(Convert.getCurrentTimestamp());
+		note.setNoteTxt(project.getProjectDesc());
+
+		new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).save(note);
+
+	}
+
+	/**
 	 * Build the Project Record for this request on inserts only.
 	 * @param request
 	 */
@@ -214,6 +240,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		if(p.getProjectName().length() > 100) {
 			p.setProjectName(p.getProjectName().substring(0, 100) + "...");
 		}
+		p.setProjectDesc(req.getParameter(RequestField.DESCRIPTION.getReqParam()));
 		p.setProjectType("NEW");
 		p.setProjectStatus("UNASSIGNED");
 		p.setPriority("STANDARD");
@@ -275,7 +302,6 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		//Prep Request Record Update Fields.
 		List<String> fields = new ArrayList<>();
 		fields.add("charge_to");
-		fields.add("request_desc");
 		fields.add("hospital_nm");
 		fields.add("surgeon_nm");
 		fields.add("reason_for_request");

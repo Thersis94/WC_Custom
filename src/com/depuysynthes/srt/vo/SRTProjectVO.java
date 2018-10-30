@@ -43,6 +43,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String opCoId;
 	private String coProjectId;
 	private String projectName;
+	private String projectDesc;
 	private String projectType;
 	private String projectTypeTxt;
 	private String priority;
@@ -65,6 +66,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String funcCheckOrderNo;
 	private String makeFromOrderNo;
 	private String mfgPOToVendor;
+	private String mfgOrderTypeId;
 	private String supplierId;
 	private Boolean projectHold = Boolean.FALSE;
 	private Boolean projectCancelled = Boolean.FALSE;
@@ -177,6 +179,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	@Column(name="PROJECT_NAME")
 	public String getProjectName() {
 		return projectName;
+	}
+
+	/**
+	 * @return the projectDesc
+	 */
+	@Column(name="PROJECT_DESC")
+	public String getProjectDesc() {
+		return projectDesc;
 	}
 
 	/**
@@ -437,6 +447,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @return the mfgOrderTypeId;
+	 */
+	@Column(name="MFG_ORDER_TYPE_ID")
+	public String getMfgOrderTypeId() {
+		return mfgOrderTypeId;
+	}
+	/**
 	 * @return the supplierId
 	 */
 	@Column(name="SUPPLIER_ID")
@@ -686,6 +703,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @param projectDesc the projectDesc to set.
+	 */
+	public void setProjectDesc(String projectDesc) {
+		this.projectDesc = projectDesc;
+	}
+
+	/**
 	 * @param projectType the projectType to set.
 	 */
 	public void setProjectType(String projectType) {
@@ -924,6 +948,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	 */
 	public void setMfgPOToVendor(String mfgPOToVendor) {
 		this.mfgPOToVendor = mfgPOToVendor;
+	}
+
+	/**
+	 * @param mfgOrderTypeId the mfgOrderTypeId to set.
+	 */
+	public void setMfgOrderTypeId(String mfgOrderTypeId) {
+		this.mfgOrderTypeId = mfgOrderTypeId;
 	}
 
 	/**

@@ -56,7 +56,7 @@ import com.smt.sitebuilder.data.vo.FormTransactionVO;
 public class ProjectDataProcessor extends FormDataProcessor {
 	public static final String STATUS_CHANGED = "statusChanged";
 	public enum ProjectField {
-		PROJECT_NM("projectName"),
+		PROJECT_NM("projectName"), PROJ_DESC("projectDesc"),
 		PROJECT_TYPE("projectType"), PRIORITY("priority"),
 		HOSPITAL_PO_NO("hospitalPONo"), SPECIAL_INSTRUCTIONS("specialInstructions"),
 		ACTUAL_ROI("actualRoi"), SRT_CONTACT("srtContact"),
@@ -69,7 +69,7 @@ public class ProjectDataProcessor extends FormDataProcessor {
 		MFG_PO_TO_VENDOR("mfgPOToVendor"), SUPPLIER("supplierId"),
 		ON_HOLD_FLG("projectHold"), CANCELLED_FLG("projectCancelled"),
 		TRACKING_NO("warehouseTrackingNo"), MFG_DATE_CHANGE_REASON("mfgDtChangeReason"),
-		SALES_ORDER_NO("warehouseSalesOrderNo");
+		SALES_ORDER_NO("warehouseSalesOrderNo"), MFG_ORDER_TYPE_ID("mfgOrderTypeId");
 
 		private String reqParam;
 		private ProjectField(String reqParam) {
@@ -129,6 +129,8 @@ public class ProjectDataProcessor extends FormDataProcessor {
 			if (param != null) {
 				req.setParameter(param.getReqParam(), StringUtil.checkVal(entry.getValue().getResponseText()).trim());
 				iter.remove();
+				if(log.isDebugEnabled())
+					log.debug("Setting " + param.name() + ":" + param.getReqParam() + " " + StringUtil.checkVal(entry.getValue().getResponseText()).trim());
 			}
 		}
 		log.info("Loading Project");
