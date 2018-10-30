@@ -131,10 +131,9 @@ public class TicketEditAction extends SBActionAdapter {
 		sql.append("where ticket_id = ? ");
 		
 		if (activity) sql.append("and activity_type_cd != 'COMMENT' ");
-		sql.append("and activity_type_cd = 'COMMENT' ");
-		
+		else sql.append("and activity_type_cd = 'COMMENT' ");
 		sql.append("order by priority_ticket_flg desc, a.create_dt desc ");
-		
+		log.info(sql);
 		List<Node> comments = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, ticketId);
@@ -364,36 +363,6 @@ public class TicketEditAction extends SBActionAdapter {
 		List<ProductSerialNumberVO> data = db.executeSelect(sql.toString(), Arrays.asList(id), new ProductSerialNumberVO());
 		
 		return data.isEmpty() ? null : data.get(0);
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void build(ActionRequest req) throws ActionException {
-		try {
-			if (req.getBooleanParameter("isComment")) {
-				addTicketComment(new TicketCommentVO(req));
-			}
-		} catch(Exception e) {
-			log.error("Unable to perform action", e);
-			putModuleData("", 0, false, e.getLocalizedMessage(), true);
-		}
-	}
-	
-	/**
-	 * 
-	 * @param comment
-	 * @throws SQLException
-	 */
-	public void addTicketComment(TicketCommentVO comment) throws SQLException {
-		try {
-			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-			db.save(comment);
-		} catch(Exception e) {
-			throw new SQLException("unable to save comment", e);
-		}
 	}
 }
 
