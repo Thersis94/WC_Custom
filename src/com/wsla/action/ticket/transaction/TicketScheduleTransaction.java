@@ -161,7 +161,7 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 		}
 
 		// Prepend previous notes if they exist
-		StringBuilder note = new StringBuilder(ts.getNotesText().length() + prevTs.getNotesText().length() + 1);
+		StringBuilder note = new StringBuilder(StringUtil.checkVal(ts.getNotesText()).length() + StringUtil.checkVal(prevTs.getNotesText()).length() + 1);
 		if (!StringUtil.isEmpty(prevTs.getNotesText())) {
 			note.append(prevTs.getNotesText()).append(StringUtil.isEmpty(ts.getNotesText()) ? "" : System.lineSeparator());
 		}
