@@ -33,6 +33,7 @@ import com.siliconmtn.workflow.data.WorkflowModuleVO;
 import com.siliconmtn.workflow.error.WorkflowModuleException;
 import com.siliconmtn.workflow.modules.AbstractWorkflowModule;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
 
@@ -85,35 +86,51 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	private AbstractSBReportVO buildReport(List<String> projectIds) throws SQLException, EncryptionException {
 
 		//Load Processing Data.
+		log.debug("loading Milestones");
 		List<SRTProjectMilestoneVO> milestones = loadMilestones();
+
+		log.debug("loading MR Attributes");
 		List<String> mrAttributes = loadMrAttributes();
+
+		log.debug("loading Lists");
 		Map<String, Map<String, String>> lists = loadLists();
 
+		log.debug("loading Projects");
 		//Get all projects contained in projectIds list.
 		Map<String, SRTProjectVO> projects = loadProjects(projectIds, milestones);
 
 		//Load MilestoneData on Projects.
+		log.debug("loading Milestones");
 		loadMilestoneData(projects);
 
+		log.debug("loading Master Record Data");
 		//Load Master Record Data on Projects.
 		loadMasterRecordData(projects, mrAttributes);
 
+		log.debug("Verifying Master Record Data");
 		//Ensure all Projects have a MasterRecord so that columns line up correctly.
 		checkMasterRecordData(projects, mrAttributes);
 
+		log.debug("Decrypting Users");
 		//Desrypt Name data on Project Records.
-		SRTUtil.decryptProjectData(new ArrayList<>(projects.values()), new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY)), null, null);
+		try(Connection dbConn = getConnection()) {
+			SRTUtil.decryptProjectData(new ArrayList<>(projects.values()), new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY)), ProfileManagerFactory.getInstance(attributes), dbConn);
+		}
 
+		log.debug("Replacing List Ids");
 		//Replace targeted columns with List Values.
 		updateListDataReferences(projects, lists);
 
+		log.debug("Building Report Data");
 		//Store projects in reportData for Header Formatting.
 		ProjectExportReportVO reportData = new ProjectExportReportVO(projects, mrAttributes, milestones);
 
+		log.debug("Building Report VO");
 		//Create new Report and set data.
 		AbstractSBReportVO report = new SRTProjectExportReportVO("Search Results Export.xls");
 		report.setData(reportData);
 
+		log.debug("Report Built");
 		//Return Report
 		return report;
 	}
@@ -196,6 +213,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		sql.append(DBUtil.WHERE_CLAUSE).append("l.organization_id = ? ");
 		sql.append("and list_nm like '%SRT%' ");
 		sql.append(DBUtil.ORDER_BY).append("list_id");
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 
@@ -208,7 +226,6 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	private void checkMasterRecordData(Map<String, SRTProjectVO> projects, List<String> mrAttributes) {
 		for(SRTProjectVO p : projects.values()) {
 			if(p.getMasterRecords().isEmpty()) {
-				log.debug("Generating Master Record for Project: " + p.getProjectId());
 				SRTMasterRecordVO mr = buildNewMR(null, mrAttributes);
 				mr.setTitleTxt("No Master Record on Project");
 				mr.setMasterRecordId("AUTO_GEN_ID");
@@ -282,6 +299,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		DBUtil.preparedStatmentQuestion(size, sql);
 		sql.append(") ");
 		sql.append(DBUtil.ORDER_BY).append(" x.project_id desc");
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 
@@ -296,7 +314,6 @@ public class SRTReportModule extends AbstractWorkflowModule {
 			for(String pId : projects.keySet()) {
 				ps.setString(i++, pId);
 			}
-			log.debug(ps.toString());
 			ResultSet rs = ps.executeQuery();
 			SRTMasterRecordVO mr = null;
 			while(rs.next()) {
@@ -351,6 +368,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		DBUtil.preparedStatmentQuestion(size, sql);
 		sql.append(")");
 		sql.append(DBUtil.ORDER_BY).append("x.project_id, m.master_record_id, a.attr_id");
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 
@@ -363,9 +381,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	private Map<String, SRTProjectVO> loadProjects(List<String> projectIds, List<SRTProjectMilestoneVO> milestones) {
 		Map<String, SRTProjectVO> projects = new LinkedHashMap<>();
 
-		String sql = getProjectSql(projectIds.size());
-		log.debug(sql);
-		try(PreparedStatement ps = getConnection().prepareStatement(sql)) {
+		try(PreparedStatement ps = getConnection().prepareStatement(getProjectSql(projectIds.size()))) {
 			int i = 1;
 			for(String projId : projectIds) {
 				ps.setString(i++, projId);
@@ -425,7 +441,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 */
 	private String getProjectSql(int projectCount) {
 		StringBuilder sql = new StringBuilder(2000);
-		sql.append("Select p.*, r.*, a.*, u.*, pr.*, ");
+		sql.append("Select p.*, r.*, a.*, u.region, u.area, u.profile_id, u.roster_id, ");
 		sql.append("concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
 		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
 		sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm, ");
@@ -434,7 +450,6 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("dpy_syn_srt_project p ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("dpy_syn_srt_request r on p.request_id = r.request_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("dpy_syn_srt_roster u on r.roster_id = u.roster_id ");
-		sql.append(DBUtil.INNER_JOIN).append("profile pr on u.profile_id = pr.profile_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("dpy_syn_srt_request_address a on r.request_id = a.request_id ");
 
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("dpy_syn_srt_roster eng on p.engineer_id = eng.roster_id ");
@@ -449,6 +464,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		sql.append(DBUtil.WHERE_CLAUSE).append("p.project_id in (");
 		DBUtil.preparedStatmentQuestion(projectCount, sql);
 		sql.append(") ").append(DBUtil.ORDER_BY).append("p.project_id");
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 
