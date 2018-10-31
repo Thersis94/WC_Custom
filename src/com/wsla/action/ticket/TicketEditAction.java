@@ -373,7 +373,7 @@ public class TicketEditAction extends SBActionAdapter {
 	 * @param schedules
 	 * @param assignments
 	 */
-	private void populateScheduleAssignments (List<TicketScheduleVO> schedules, List<TicketAssignmentVO> assignments) {
+	public void populateScheduleAssignments (List<TicketScheduleVO> schedules, List<TicketAssignmentVO> assignments) {
 		for (TicketScheduleVO schedule : schedules) {
 			for (TicketAssignmentVO assignment : assignments) {
 				if (assignment.getTicketAssignmentId().equals(schedule.getLocationSourceId())) {

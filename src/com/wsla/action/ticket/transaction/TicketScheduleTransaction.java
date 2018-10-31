@@ -13,9 +13,10 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
-
+import com.wsla.action.ticket.TicketEditAction;
 // WSLA Libs
 import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketScheduleVO;
 import com.wsla.data.ticket.UserVO;
@@ -60,12 +61,20 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
-			if (req.hasParameter(REQ_COMPLETE)) {
-				putModuleData(completeSchedule(req));
-			} else {
-				putModuleData(saveSchedule(req));
-			}
-		} catch (InvalidDataException | DatabaseException e) {
+			TicketScheduleVO ts;
+			
+			if (req.hasParameter(REQ_COMPLETE))
+				ts = completeSchedule(req);
+			else
+				ts = saveSchedule(req);
+
+			TicketEditAction tea = new TicketEditAction(getAttributes(), getDBConnection());
+			List<TicketScheduleVO> tsList = tea.getSchedule(null, ts.getTicketScheduleId());
+			List<TicketAssignmentVO> taList = tea.getAssignments(ts.getTicketId());
+			tea.populateScheduleAssignments(tsList, taList);
+			putModuleData(tsList.get(0));
+			
+		} catch (InvalidDataException | DatabaseException | com.siliconmtn.exception.DatabaseException e) {
 			log.error("Unable to save ticket schedule", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
