@@ -21,6 +21,7 @@ import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
+import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.ram.workflow.modules.EmailWFM;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.InvalidDataException;
@@ -188,10 +189,13 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 */
 	private String loadListsSql() {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append(DBUtil.SELECT_FROM_STAR).append("list l ");
+		sql.append(DBUtil.SELECT_CLAUSE).append("l.list_id, d.label_txt, d.value_txt ");
+		sql.append(DBUtil.FROM_CLAUSE).append("list l ");
 		sql.append(DBUtil.INNER_JOIN).append("list_data d ");
 		sql.append("on l.list_id = d.list_id ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("l.organization_id = ?");
+		sql.append(DBUtil.WHERE_CLAUSE).append("l.organization_id = ? ");
+		sql.append("and list_nm like '%SRT%' ");
+		sql.append(DBUtil.ORDER_BY).append("list_id");
 		return sql.toString();
 	}
 
@@ -385,6 +389,8 @@ public class SRTReportModule extends AbstractWorkflowModule {
 				//Set Address on Request.
 				r.setRequestAddress(new SRTRequestAddressVO(rs));
 
+				r.setRequestor(new SRTRosterVO(rs));
+
 				//Set Request on Project.
 				project.setRequest(r);
 
@@ -419,7 +425,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 	 */
 	private String getProjectSql(int projectCount) {
 		StringBuilder sql = new StringBuilder(2000);
-		sql.append("Select p.*, r.*, a.*, ");
+		sql.append("Select p.*, r.*, a.*, u.*, pr.*, ");
 		sql.append("concat(ep.first_nm, ' ', ep.last_nm) as engineer_nm, ");
 		sql.append("concat(dp.first_nm, ' ', dp.last_nm) as designer_nm, ");
 		sql.append("concat(qp.first_nm, ' ', qp.last_nm) as quality_engineer_nm, ");
