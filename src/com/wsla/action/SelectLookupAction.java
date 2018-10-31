@@ -36,11 +36,13 @@ import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.admin.WarrantyAction;
+import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: SelectLookupAction.java
@@ -94,7 +96,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
 		keyMap.put("acRetailer", new GenericVO("getRetailerACList", Boolean.TRUE));
 		keyMap.put("categoryGroup", new GenericVO("getCategoryGroups", Boolean.FALSE));
-		keyMap.put("acCas", new GenericVO("getClosestCas", Boolean.TRUE));
+		keyMap.put("acCas", new GenericVO("getAcCas", Boolean.TRUE));
+		keyMap.put("closestCas", new GenericVO("getClosestCas", Boolean.TRUE));
 		keyMap.put("inventorySuppliers", new GenericVO("getInventorySuppliers", Boolean.TRUE));
 	}
 
@@ -314,11 +317,24 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Returns a list of matching provider locations for autocomplete
+	 * Gets the list of the closest cas
 	 * @param req
 	 * @return
 	 */
 	public List<GenericVO> getClosestCas(ActionRequest req) {
+		String ticketId = req.getParameter("ticketId");
+		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		
+		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), attributes);
+		return csa.getUserSelectionList(ticketId, user.getLocale());
+	}
+	
+	/**
+	 * Returns a list of matching provider locations for autocomplete
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getAcCas(ActionRequest req) {
 		StringBuilder term = new StringBuilder(16);
 		term.append("%").append(StringUtil.checkVal(req.getParameter("search")).toLowerCase()).append("%");
 		

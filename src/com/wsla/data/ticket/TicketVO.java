@@ -56,6 +56,13 @@ public class TicketVO extends BeanDataVO {
 		public String getColor() {return color; }
 		Standing(String color) { this.color = color; }
 	}
+	
+	/**
+	 * Definition of who has possession the product
+	 */
+	public enum UnitLocation {
+		CALLER, OEM, RETAILER, COURIER, WSLA, CAS;
+	}
 		
 	// Member Variables
 	private String ticketId;
@@ -67,6 +74,7 @@ public class TicketVO extends BeanDataVO {
 	private String lockedBy;
 	private StatusCode statusCode;
 	private Standing standingCode = Standing.GOOD;
+	private UnitLocation unitLocation = UnitLocation.CALLER;
 	private int warrantyValidFlag;
 	private Date purchaseDate;
 	private Date createDate;
@@ -322,6 +330,14 @@ public class TicketVO extends BeanDataVO {
 	@Column(name="standing_cd")
 	public Standing getStandingCode() {
 		return standingCode;
+	}
+
+	/**
+	 * @return the unitLocation
+	 */
+	@Column(name="unit_location_cd")
+	public UnitLocation getUnitLocation() {
+		return unitLocation;
 	}
 
 	/**
@@ -630,6 +646,13 @@ public class TicketVO extends BeanDataVO {
 	@BeanSubElement
 	public void setStatus(StatusCodeVO status) {
 		this.status = status;
+	}
+
+	/**
+	 * @param unitLocation the unitLocation to set
+	 */
+	public void setUnitLocation(UnitLocation unitLocation) {
+		this.unitLocation = unitLocation;
 	}
 }
 
