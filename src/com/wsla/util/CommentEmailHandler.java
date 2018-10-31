@@ -19,7 +19,7 @@ import com.siliconmtn.io.mail.pop3.EmailHandlerInterface;
 import com.smt.sitebuilder.common.constants.Constants;
 
 // WC_Custom
-import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.action.ticket.transaction.TicketCommentTransaction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.TicketCommentVO;
 
@@ -48,9 +48,9 @@ public class CommentEmailHandler implements EmailHandlerInterface {
 		attributes.put(Constants.CUSTOM_DB_SCHEMA, schema + '.');
 		
 		// Setup the action for saving the comments
-		TicketEditAction tea = new TicketEditAction();
-		tea.setDBConnection(new SMTDBConnection(dbConn));
-		tea.setAttributes(attributes);
+		TicketCommentTransaction tct = new TicketCommentTransaction();
+		tct.setDBConnection(new SMTDBConnection(dbConn));
+		tct.setAttributes(attributes);
 		
 		// Parse the comments from the emails and save them
 		for (EmailMessageVO email : emails) {
@@ -60,7 +60,7 @@ public class CommentEmailHandler implements EmailHandlerInterface {
 			comment.setPriorityTicketFlag(0);
 			comment.setEndUser(true);
 			
-			tea.addTicketComment(comment);
+			tct.addTicketComment(comment, null);
 		}
 	}
 

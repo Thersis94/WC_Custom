@@ -13,6 +13,8 @@ import java.util.Map;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.DateDiff;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
@@ -153,6 +155,19 @@ public class TicketVO extends BeanDataVO {
 		}
 		
 		return new TicketAssignmentVO();
+	}
+	
+	/**
+	 * Returns the difference between 2 dates
+	 * @return
+	 */
+	public DateDiff getAge() {
+		DateDiff diff = null;
+		try {
+			diff = new DateDiff(createDate, new Date());
+		} catch (InvalidDataException e) { /* Nothing to DO */ }
+		
+		return diff;
 	}
 	
 	/**

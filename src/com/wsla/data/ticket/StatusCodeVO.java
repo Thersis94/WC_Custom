@@ -25,6 +25,10 @@ import com.siliconmtn.db.orm.Table;
 @Table(name="wsla_ticket_status")
 public class StatusCodeVO extends BeanDataVO {
 
+	public enum Group {
+		PROCESSING, DELIVERY, DIAGNOSIS, REPAIR, PICKUP, COMPLETE
+	}
+	
 	/**
 	 * 
 	 */
@@ -32,6 +36,7 @@ public class StatusCodeVO extends BeanDataVO {
 
 	// Member Variables
 	private String statusCode;
+	private Group groupStatusCode;
 	private String statusName;
 	private String roleId;
 	private String roleName;
@@ -181,6 +186,21 @@ public class StatusCodeVO extends BeanDataVO {
 	 */
 	public void setDaysInStatus(int daysInStatus) {
 		this.daysInStatus = daysInStatus;
+	}
+
+	/**
+	 * @return the groupStatusCode
+	 */
+	@Column(name="group_status_cd")
+	public Group getGroupStatusCode() {
+		return groupStatusCode;
+	}
+
+	/**
+	 * @param groupStatusCode the groupStatusCode to set
+	 */
+	public void setGroupStatusCode(Group groupStatusCode) {
+		this.groupStatusCode = groupStatusCode;
 	}
 
 }

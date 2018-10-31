@@ -94,6 +94,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
 		keyMap.put("acRetailer", new GenericVO("getRetailerACList", Boolean.TRUE));
 		keyMap.put("categoryGroup", new GenericVO("getCategoryGroups", Boolean.FALSE));
+		keyMap.put("acCas", new GenericVO("getClosestCas", Boolean.TRUE));
 		keyMap.put("inventorySuppliers", new GenericVO("getInventorySuppliers", Boolean.TRUE));
 	}
 
@@ -308,6 +309,37 @@ public class SelectLookupAction extends SBActionAdapter {
 		vals.add(term);
 		vals.add(term);
 
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), vals, new GenericVO());
+	}
+	
+	/**
+	 * Returns a list of matching provider locations for autocomplete
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getClosestCas(ActionRequest req) {
+		StringBuilder term = new StringBuilder(16);
+		term.append("%").append(StringUtil.checkVal(req.getParameter("search")).toLowerCase()).append("%");
+		
+		StringBuilder sql = new StringBuilder(512);
+		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");
+		sql.append("|| coalesce(location_nm, '') || ' (' || coalesce(store_no, '') || ')  ' ");
+		sql.append("|| coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_provider a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location b ");
+		sql.append("on a.provider_id = b.provider_id ");
+		sql.append("where provider_type_id = 'CAS' ");
+		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
+		sql.append("or lower(city_nm) like ? or store_no like ?) ");
+		sql.append("order by provider_nm");
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(term);
+		vals.add(term);
+		vals.add(term);
+		vals.add(term);
+		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), vals, new GenericVO());
 	}
