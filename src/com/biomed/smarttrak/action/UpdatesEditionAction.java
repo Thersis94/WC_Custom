@@ -327,7 +327,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 	protected void adjustContentLinks(List<UpdateVO> updates, ActionRequest req) {
 		if(!req.hasParameter("modifyLinks")) return; //only perform modification if requested
 		
-		SiteVO siteData = (SiteVO)getAttribute(Constants.SITE_DATA);
+		SiteVO siteData = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		BiomedLinkCheckerUtil linkUtil = new BiomedLinkCheckerUtil(dbConn, siteData);
 		
 		//update the appropriate links

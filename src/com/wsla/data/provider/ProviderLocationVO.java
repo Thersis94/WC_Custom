@@ -31,12 +31,7 @@ import com.siliconmtn.gis.GeocodeLocation;
 @Table(name="wsla_provider_location")
 public class ProviderLocationVO extends GeocodeLocation {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -923102909693893896L;
-	
-	
 	public static final String SINGLE_LINE_ADDRESS = "singleLineAddress";
 
 	// Member Variables
@@ -49,10 +44,12 @@ public class ProviderLocationVO extends GeocodeLocation {
 	private int reviewFlag;
 	private Date createDate;
 	private Date updateDate;
-	
+
+	private String providerName;
+
 	// Bean Sub-Elements
-	List<AuthorizedServiceProviderVO> authorizedServiceProviders = new ArrayList<>();
-	
+	private List<AuthorizedServiceProviderVO> authorizedServiceProviders = new ArrayList<>();
+
 	/**
 	 * 
 	 */
@@ -161,7 +158,7 @@ public class ProviderLocationVO extends GeocodeLocation {
 	public List<AuthorizedServiceProviderVO> getAuthorizedServiceProviders() {
 		return authorizedServiceProviders;
 	}
-	
+
 	/**
 	 * @param providerId the providerId to set
 	 */
@@ -245,5 +242,14 @@ public class ProviderLocationVO extends GeocodeLocation {
 	@Importable(name="Review Flag", type=DataType.INT)
 	public void setReviewFlag(int reviewFlag) {
 		this.reviewFlag = reviewFlag;
+	}
+
+	@Column(name="provider_nm", isReadOnly=true)
+	public String getProviderName() {
+		return providerName;
+	}
+
+	public void setProviderName(String providerName) {
+		this.providerName = providerName;
 	}
 }

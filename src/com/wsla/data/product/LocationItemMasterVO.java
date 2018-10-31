@@ -2,7 +2,6 @@ package com.wsla.data.product;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
-import java.util.Date;
 
 // SMT Base Libs 3.x
 import com.siliconmtn.action.ActionRequest;
@@ -27,21 +26,17 @@ import com.wsla.data.provider.ProviderLocationVO;
 @Table(name="wsla_location_item_master")
 public class LocationItemMasterVO extends ProductVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1757453128482996982L;
-	
+
 	// Member Variables
 	private String itemMasterId;
 	private String locationId;
 	private int quantityOnHand;
 	private int parValue;
-	private Date placedInventoryDate;
-		
+
 	// Bean Sub-Elements
 	ProviderLocationVO location;
-	
+
 	/**
 	 * 
 	 */
@@ -70,7 +65,7 @@ public class LocationItemMasterVO extends ProductVO {
 	public String getItemMasterId() {
 		return itemMasterId;
 	}
-	
+
 	/**
 	 * Override this field so there is only one PK on this bean
 	 */
@@ -102,14 +97,6 @@ public class LocationItemMasterVO extends ProductVO {
 	@Column(name="desired_qnty_no")
 	public int getParValue() {
 		return parValue;
-	}
-
-	/**
-	 * @return the placedInventoryDate
-	 */
-	@Column(name="purchase_dt")
-	public Date getPlacedInventoryDate() {
-		return placedInventoryDate;
 	}
 
 	/**
@@ -148,19 +135,10 @@ public class LocationItemMasterVO extends ProductVO {
 	}
 
 	/**
-	 * @param placedInventoryDate the placedInventoryDate to set
-	 */
-	public void setPlacedInventoryDate(Date placedInventoryDate) {
-		this.placedInventoryDate = placedInventoryDate;
-	}
-
-	/**
 	 * @param location the location to set
 	 */
 	@BeanSubElement
 	public void setLocation(ProviderLocationVO location) {
 		this.location = location;
 	}
-
 }
-

@@ -26,7 +26,9 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.data.product.ProductCategoryAssociationVO;
+
 // WSLA Libs
+import static com.wsla.action.admin.ProviderAction.REQ_PROVIDER_ID;
 import com.wsla.data.product.ProductVO;
 
 /****************************************************************************
@@ -76,7 +78,7 @@ public class ProductMasterAction extends BatchImport {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String productId = req.getParameter(REQ_PRODUCT_ID);
-		String providerId = req.getParameter("providerId");
+		String providerId = req.getParameter(REQ_PROVIDER_ID);
 		Integer validatedFlag = req.getIntegerParameter("validatedFlag");
 		Integer setFlag = req.hasParameter("setFlag") ? Convert.formatInteger(req.getParameter("setFlag")) : null;
 		BSTableControlVO bst = new BSTableControlVO(req, ProductVO.class);
@@ -94,9 +96,9 @@ public class ProductMasterAction extends BatchImport {
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
-			
+
 			db.save(product);
-		
+
 			putModuleData(product);
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save product", e);
@@ -112,7 +114,8 @@ public class ProductMasterAction extends BatchImport {
 	 * @param bst
 	 * @return
 	 */
-	public GridDataVO<ProductVO> getProducts(String productId, String providerId, Integer setFlag, Integer vf, BSTableControlVO bst) {
+	public GridDataVO<ProductVO> getProducts(String productId, String providerId, 
+			Integer setFlag, Integer validatedFlag, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select pm.*, p.provider_nm from ").append(schema).append("wsla_product_master pm ");
@@ -120,36 +123,37 @@ public class ProductMasterAction extends BatchImport {
 		sql.append("where 1=1 ");
 		List<Object> params = new ArrayList<>();
 
-		// Filter by provider id
-		if (! StringUtil.checkVal(productId).isEmpty()) {
-			sql.append("and pm.product_id=? ");
-			params.add(productId);
-		}
-
 		// Filter by search criteria
-		if (bst.hasSearch()) {
+		String term = bst.getLikeSearch().toLowerCase();
+		if (!StringUtil.isEmpty(term)) {
 			sql.append("and (lower(pm.product_nm) like ? or lower(pm.cust_product_id) like ? ");
 			sql.append("or lower(pm.sec_cust_product_id) like ? or lower(p.provider_nm) like ?) ");
-			params.add(bst.getLikeSearch().toLowerCase());
-			params.add(bst.getLikeSearch().toLowerCase());
-			params.add(bst.getLikeSearch().toLowerCase());
-			params.add(bst.getLikeSearch().toLowerCase());
-		}
-
-		// Filter by provider type
-		if (!StringUtil.isEmpty(providerId)) {
-			sql.append("and pm.provider_id=? ");
-			params.add(providerId);
+			params.add(term);
+			params.add(term);
+			params.add(term);
+			params.add(term);
 		}
 
 		if (setFlag != null) {
 			sql.append("and pm.set_flg=? ");
 			params.add(setFlag);
 		}
-		
-		if (vf != null) {
+
+		if (validatedFlag != null) {
 			sql.append("and pm.validated_flg=? ");
-			params.add(vf);
+			params.add(validatedFlag);
+		}
+
+		// Filter by providerId
+		if (!StringUtil.isEmpty(providerId)) {
+			sql.append("and pm.provider_id=? ");
+			params.add(providerId);
+		}
+
+		// Filter by productId
+		if (!StringUtil.isEmpty(productId)) {
+			sql.append("and pm.product_id=? ");
+			params.add(productId);
 		}
 
 		sql.append(bst.getSQLOrderBy("pm.product_nm",  "asc"));
@@ -157,6 +161,41 @@ public class ProductMasterAction extends BatchImport {
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ProductVO(), bst.getLimit(), bst.getOffset());
+	}
+
+
+	/**
+	 * Generate a list of Parts (<ProductId, ProductNm> pairs) bound to the given provider (likely an OEM)
+	 * @param providerId
+	 * @return List<GenericVO> used to populate a selectpicker dropdown in the UI.  See SelectLookupAction reference.
+	 */
+	public List<GenericVO> listProducts(String providerId, Integer activeFlg, Integer setFlg) {
+		List<Object> params = new ArrayList<>();
+		String schema = getCustomSchema();
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select product_id as key, product_nm as value from ").append(schema);
+		sql.append("wsla_product_master where 1=1 ");
+
+		if (activeFlg != null) {
+			sql.append("and active_flg=? ");
+			params.add(activeFlg);
+		}
+
+		if (setFlg != null) {
+			sql.append("and set_flg=? ");
+			params.add(setFlg);
+		}
+
+		if (!StringUtil.isEmpty(providerId)) {
+			sql.append("and provider_id=? ");
+			params.add(providerId);
+		}
+
+		sql.append(" order by product_nm");
+		log.debug(sql);
+
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		return db.executeSelect(sql.toString(), params, new GenericVO());
 	}
 
 	/* (non-Javadoc)
@@ -181,7 +220,7 @@ public class ProductMasterAction extends BatchImport {
 
 		// load this product's SKUs from the DB and store them as a Set for quick reference.
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		List<GenericVO> skus = db.executeSelect(sql, Arrays.asList(req.getParameter("providerId")), new GenericVO());
+		List<GenericVO> skus = db.executeSelect(sql, Arrays.asList(req.getParameter(REQ_PROVIDER_ID)), new GenericVO());
 		Set<String> products = new HashSet<>(skus.size());
 		for (GenericVO vo : skus)
 			products.add(StringUtil.checkVal(vo.getKey()));
@@ -207,7 +246,7 @@ public class ProductMasterAction extends BatchImport {
 	protected void transposeBatchImport(ActionRequest req,
 			ArrayList<? extends Object> entries) throws ActionException {
 		//set the providerId for all beans to the one passed on the request
-		String providerId = req.getParameter("providerId");
+		String providerId = req.getParameter(REQ_PROVIDER_ID);
 		Date dt = Calendar.getInstance().getTime();
 		for (Object obj : entries) {
 			ProductVO vo = (ProductVO) obj;
