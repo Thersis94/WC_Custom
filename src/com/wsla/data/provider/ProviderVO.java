@@ -39,6 +39,9 @@ public class ProviderVO extends BeanDataVO {
 	private String providerId;
 	private ProviderType providerType;
 	private String providerName;
+	private String iconPath;
+	private String cssPath;
+	private String domainUrl;
 	private int reviewFlag;
 	private Date createDate;
 	private Date updateDate;
@@ -116,6 +119,22 @@ public class ProviderVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the iconPath
+	 */
+	@Column(name="logo_img_path")
+	public String getIconPath() {
+		return iconPath;
+	}
+
+	/**
+	 * @return the cssPath
+	 */
+	@Column(name="theme_css_path")
+	public String getCssPath() {
+		return cssPath;
+	}
+
+	/**
 	 * @return the locations
 	 */
 	public List<ProviderLocationVO> getLocations() {
@@ -181,6 +200,35 @@ public class ProviderVO extends BeanDataVO {
 	@Importable(name="Review Flag", type=DataType.INT)
 	public void setReviewFlag(int reviewFlag) {
 		this.reviewFlag = reviewFlag;
+	}
+
+	/**
+	 * @param iconPath the iconPath to set
+	 */
+	public void setIconPath(String iconPath) {
+		this.iconPath = iconPath;
+	}
+
+	/**
+	 * @param cssPath the cssPath to set
+	 */
+	public void setCssPath(String cssPath) {
+		this.cssPath = cssPath;
+	}
+
+	/**
+	 * @return the domainUrl
+	 */
+	@Column(name="domain_url")
+	public String getDomainUrl() {
+		return domainUrl;
+	}
+
+	/**
+	 * @param domainUrl the domainUrl to set
+	 */
+	public void setDomainUrl(String domainUrl) {
+		this.domainUrl = domainUrl;
 	}
 
 }
