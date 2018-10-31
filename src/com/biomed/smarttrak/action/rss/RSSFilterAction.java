@@ -225,7 +225,7 @@ public class RSSFilterAction extends SBActionAdapter {
 			updateFilterParser(fv);
 			saveFilterGroupXRs(fv, req.getParameterValues("feedFilterGroupXrId"));
 		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Error Processing Code", e);
+			log.error("Error Saving Filters", e);
 		}
 	}
 

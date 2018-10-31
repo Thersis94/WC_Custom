@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -523,44 +525,149 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Adds one or more companies to the FD data for a given section/region/year
+	 * Adds one or more companies to the FD data for a given section and region.
+	 * Adds Revenue Records
 	 * 
 	 * @param req
 	 * @throws ActionException 
 	 */
 	protected void updateData(ActionRequest req) throws ActionException {
 		log.debug("Add companies to FD base data");
+		boolean recordAdded = false;
+
+		//Load all Writable Years
+		List<Integer> years = loadYears();
+
+		//Create List of Writable CountryTypes.
+		List<CountryType> countryTypes = Arrays.asList(CountryType.EU, CountryType.ROW, CountryType.US);
+
+		//Convert CompanyIds from req to List.
+		List<String> companyIds = Arrays.asList(req.getParameterValues("companyId[]"));
+
+		//Load Data for Existing RevenueRecords.
+		Map<String, EnumMap<CountryType, List<Integer>>> existingRecords = loadExistingRevenues(req.getParameter(REQ_SECTION_ID), companyIds);
 
 		// Get applicable data off the request
 		FinancialDashRevenueVO revenueVO = new FinancialDashRevenueVO(req);
-		FinancialDashVO dashVO = new FinancialDashVO();
-		dashVO.addCountryType(StringUtil.checkVal(req.getParameter("regionCd")));
-
-		// Get the values to iterate over... we need to add a record for every company selected,
-		// and also for every region. If WW was selected, we need to add a separate record for each region.
-		List<String> companyIds = Arrays.asList(req.getParameterValues("companyId[]"));
-		List<CountryType> countryTypes = dashVO.getCountryTypes();
-
-		// Get all of the years to iterate over
-		FinancialDashColumnSet columnSet = new FinancialDashColumnSet(req);
-		int startYear = columnSet.getCalendarYear();
-		int endYear = startYear - (getDataYears(columnSet.getDisplayType(), columnSet.getCalendarYear()) - 1); // Only need to add for what is visible in the dashboard
 
 		// Add the records for every company selected
 		for (String companyId : companyIds) {
 			revenueVO.setCompanyId(companyId);
 
+			//Get years for a company.
+			EnumMap<CountryType, List<Integer>> regionYears = existingRecords.get(companyId);
+
 			// Add for every region selected
 			for (CountryType countryType : countryTypes) {
 				revenueVO.setRegionCd(countryType.toString());
+				List<Integer> existingYears = null;
 
-				// Add for every year visible in the view
-				for (int year = startYear; year > endYear; year--) {
-					revenueVO.setYearNo(year);
-					addRevenueRecord(revenueVO);
+				//Attempt to get Years for a Region.  If absent, company doesn't exist.
+				if(regionYears != null)
+					existingYears = regionYears.get(countryType);
+
+				// Iterate all possible years.
+				for(int yr : years) {
+
+					//Check the Existing Years and add a Revenue Record if it doesn't exist in the existingYears.
+					if(existingYears == null || !existingYears.contains(yr)) {
+						revenueVO.setYearNo(yr);
+						revenueVO.setRegionCd(countryType.toString());
+						addRevenueRecord(revenueVO);
+						revenueVO.setRevenueId(null);
+						recordAdded = true;
+					}
 				}
 			}
 		}
+
+		//If no records were added, all passed companies were already added.
+		if(!recordAdded) {
+			putModuleData("No Records Added");
+		}
+	}
+
+	/**
+	 * Load all years from Financial Dashboard Revenues.
+	 * @return
+	 */
+	private List<Integer> loadYears() {
+		List<Integer> years = new ArrayList<>();
+
+		//Build Lookup Sql
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select distinct yrs.year_no from custom.biomedgps_fd_revenue yrs order by year_no;");
+
+		//Query for all Years in the Revenue Table.
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+
+			while(rs.next()) {
+				years.add(rs.getInt("year_no"));
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+		return years;
+	}
+
+	/**
+	 * Load any existing Records in the system for the given Section and companies.
+	 * 
+	 * @param regionCd
+	 * @param sectionId
+	 * @param companyIds
+	 * @return - Map of <CompanyId, List<YearsCompanyIsRegisteredFor>>
+	 */
+	private Map<String, EnumMap<CountryType, List<Integer>>> loadExistingRevenues(String sectionId, List<String> companyIds) {
+		Map<String, EnumMap<CountryType, List<Integer>>> existingRevenues = new HashMap<>();
+
+		//Build Lookup Sql
+		StringBuilder sql = new StringBuilder(300);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("biomedgps_fd_revenue ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" section_id = ? and company_id in (");
+		DBUtil.preparedStatmentQuestion(companyIds.size(), sql);
+		sql.append(")");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			int i = 1;
+			ps.setString(i++, sectionId);
+			for(String companyId : companyIds) {
+				ps.setString(i++, companyId);
+			}
+
+			ResultSet rs = ps.executeQuery();
+
+			while(rs.next()) {
+				String companyId = rs.getString("company_id");
+				CountryType regionCd = EnumUtil.safeValueOf(CountryType.class, rs.getString("region_cd"));
+
+				EnumMap<CountryType, List<Integer>> regionYears;
+				List<Integer> years;
+
+				//Get the regionYears Map
+				if(existingRevenues.containsKey(companyId)) {
+					regionYears = existingRevenues.get(companyId);
+				} else {
+					regionYears = new EnumMap<>(CountryType.class);
+				}
+
+				//Load Years List
+				if(regionYears.containsKey(regionCd)) {
+					years = regionYears.get(regionCd);
+				} else {
+					years = new ArrayList<>();
+				}
+
+				//Populate List and update Maps.
+				years.add(rs.getInt("year_no"));
+				regionYears.put(regionCd, years);
+				existingRevenues.put(companyId, regionYears);
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+		return existingRevenues;
 	}
 
 	/**

@@ -253,7 +253,7 @@ public class ProductExplorer extends SBActionAdapter {
 		UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("SELECT * FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_EXPLORER_QUERY WHERE USER_ID = ? ");
+		sql.append("BIOMEDGPS_EXPLORER_QUERY WHERE USER_ID = ? order by lower(QUERY_NM) asc ");
 		log.debug(sql);
 
 		List<Map<String, String>> queries = new ArrayList<>();
@@ -752,8 +752,12 @@ public class ProductExplorer extends SBActionAdapter {
 					break;
 				}
 			}
-		}else {//otherwise add additional entry
-			((List<Map<String, String>>)req.getSession().getAttribute(SAVED_QUERIES)).add(entry);
+		}else {
+			/*
+			 * Flush out SAVED_QUERIES.  Will re-load them on next call.  Query
+			 * will ensure proper ordering of newly added Query.
+			 */
+			req.getSession().removeAttribute(SAVED_QUERIES);
 		}
 	}
 	

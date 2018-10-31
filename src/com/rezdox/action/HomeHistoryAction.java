@@ -56,13 +56,14 @@ public class HomeHistoryAction extends ProjectAction {
 		String resId = StringUtil.checkVal(req.getParameter(ResidenceAction.RESIDENCE_ID), 
 				(String)req.getSession().getAttribute(ResidenceAction.RESIDENCE_ID));
 
-		//load a list of residences.  If there's only one, then choose the 1st as the default if one wasn't provided.
+		//load a list of residences.
 		List<ResidenceVO> resList = loadResidenceList(req);
-		if (StringUtil.isEmpty(resId) && !resList.isEmpty()) {
-			resId = resList.get(0).getResidenceId();
-		}
 
-		//make sure session is loaded - this gets used by our <select> list loaders (MyResidences)
+		//If only wasn't given and we have options, choose the 1st as the default
+		if (StringUtil.isEmpty(resId) && !resList.isEmpty())
+			resId = resList.get(0).getResidenceId();
+
+		//make sure session is populated - this gets used by our <select> list loaders (MyResidences)
 		if (!resId.equals(req.getSession().getAttribute(ResidenceAction.RESIDENCE_ID)))
 			req.getSession().setAttribute(ResidenceAction.RESIDENCE_ID, resId);
 

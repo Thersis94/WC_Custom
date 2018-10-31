@@ -188,6 +188,11 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 		// init acctUsersVO, add acct vo and this user.
 		AccountUsersVO acct = new AccountUsersVO();
 		acct.setAccountId(rs.getString("account_id"));
+		acct.setTypeId(rs.getString("type_id"));
+		acct.setStartDate(rs.getDate("start_dt"));
+		acct.setExpirationDate(rs.getDate("expiration_dt"));
+		acct.setClassificationId(rs.getInt("classification_id"));
+		acct.setStatusNo(rs.getString("status_no"));
 		acct.setAccountName(rs.getString("account_nm"));
 		// use Convert util in case of nulls.
 		acct.setFdAuthFlg(Convert.formatInteger(rs.getInt("acct_fd_auth_flg")));
@@ -210,6 +215,7 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 			user.setLastName(se.decrypt(rs.getString("last_nm")));
 			user.setEmailAddress(se.decrypt(rs.getString("email_address_txt")));
 			user.setUserId(rs.getString("user_id"));
+			user.setLicenseType(rs.getString("status_cd"));
 			// use Convert util in case of nulls.
 			user.setGaAuthFlg(Convert.formatInteger(rs.getInt("ga_auth_flg")));
 			user.setFdAuthFlg(Convert.formatInteger(rs.getInt("fd_auth_flg")));
@@ -227,7 +233,8 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(350);
 		sql.append("select ac.account_id, ac.account_nm, ac.fd_auth_flg as acct_fd_auth_flg, ");
-		sql.append("ac.ga_auth_flg as acct_ga_auth_flg, ");
+		sql.append("ac.ga_auth_flg as acct_ga_auth_flg, ac.start_dt, ac.expiration_dt, ");
+		sql.append("ac.status_no, ac.classification_id, ac.type_id, us.status_cd, ");
 		sql.append("us.profile_id, us.user_id, us.fd_auth_flg, us.ga_auth_flg, ");
 		sql.append("pf.first_nm, pf.last_nm, pf.email_address_txt ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
