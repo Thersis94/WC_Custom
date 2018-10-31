@@ -151,7 +151,6 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 		} else {
 			buildProjectDataRow(sheet, p, null);
 		}
-		
 	}
 
 	/**
@@ -179,6 +178,7 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 		row.createCell(colNo++).setCellValue(p.getCoProjectId());
 		row.createCell(colNo++).setCellValue(p.getOpCoId());
 		row.createCell(colNo++).setCellValue(p.getProjectName());
+		row.createCell(colNo++).setCellValue(p.getProjectDesc());
 		row.createCell(colNo++).setCellValue(p.getProjectType());
 		row.createCell(colNo++).setCellValue(p.getPriority());
 		row.createCell(colNo++).setCellValue(p.getHospitalPONo());
@@ -215,6 +215,9 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 		row.createCell(colNo++).setCellValue(r.getRequestId());
 		row.createCell(colNo++).setCellValue(r.getHospitalName());
 		row.createCell(colNo++).setCellValue(r.getSurgeonNm());
+		row.createCell(colNo++).setCellValue(r.getRequstorNm());
+		row.createCell(colNo++).setCellValue(r.getRequestor().getArea());
+		row.createCell(colNo++).setCellValue(r.getRequestor().getRegion());
 		row.createCell(colNo++).setCellValue(r.getDescription());
 		row.createCell(colNo++).setCellValue(r.getReqTerritoryId());
 		row.createCell(colNo++).setCellValue(r.getEstimatedRoiDbl());
@@ -222,7 +225,7 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 		row.createCell(colNo++).setCellValue(r.getReason());
 		row.createCell(colNo++).setCellValue(r.getReasonTxt());
 		row.createCell(colNo++).setCellValue(r.getChargeTo());
-		row.createCell(colNo++).setCellValue(r.getCreateDt());
+		row.createCell(colNo++).setCellValue(Convert.formatDate(r.getCreateDt()));
 		buildAddressCells(row, r.getRequestAddress());
 	}
 
