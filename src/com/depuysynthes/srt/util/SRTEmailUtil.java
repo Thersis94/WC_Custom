@@ -5,12 +5,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.depuysynthes.srt.SRTMilestoneAction;
+import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
@@ -21,6 +24,7 @@ import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -37,6 +41,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Mar 10, 2017
  ****************************************************************************/
 public class SRTEmailUtil {
+	private static final int EMAIL_DELIVERY_DT_OFFSET = 14;
 	private Logger log;
 	private EmailCampaignBuilderUtil ecbu;
 	private SMTDBConnection dbConn = null;
@@ -62,6 +67,15 @@ public class SRTEmailUtil {
 	 */
 	public void sendEmail(String projectId, String campaignInstanceId) {
 		SRTProjectVO project = loadProject(projectId);
+
+		SRTMilestoneAction sma = new SRTMilestoneAction();
+		sma.setAttributes(attributes);
+		sma.setDBConnection(dbConn);
+
+		//Populate Milestones.
+		sma.populateMilestones(Arrays.asList(project));
+
+		//Build and Send Emails.
 		sendEmails(project, campaignInstanceId);
 	}
 
@@ -153,7 +167,6 @@ public class SRTEmailUtil {
 	 * Builds Email Config map from Project Record
 	 * (contains Request and Requestor Profile data).
 	 * 
-	 * TODO - Need params that should be available to Email.
 	 * @param p
 	 * @return
 	 */
@@ -165,7 +178,7 @@ public class SRTEmailUtil {
 		config.put("lastName", StringUtil.checkVal(roster.getLastName()));
 		config.put("requestorNm", roster.getFullName());
 		config.put("engineeringContact", StringUtil.checkVal(roster.getEngineeringContact(), "SRT Admin"));
-		config.put("engineeringEmail", StringUtil.checkVal("TODO - Email Placeholder", "srtgroupma@its.jnj.com"));
+		config.put("engineeringEmail", StringUtil.checkVal(null, "srtgroupma@its.jnj.com"));
 		config.put("projectStartDt", p.getCreateDt());
 		config.put("surgeonNm", req.getSurgeonNm());
 		config.put("quantity", req.getQtyNo());
@@ -175,11 +188,22 @@ public class SRTEmailUtil {
 		config.put("expectedSurgDt", StringUtil.checkVal(p.getSurgDt(), "No Surgery Date Provided"));
 		config.put("chargedTo", req.getChargeTo());
 
-		config.put("partNo", StringUtil.checkVal(p.getMasterRecords().get(0).getPartNo(), "Your Parts"));
+		if(!p.getMasterRecords().isEmpty()) {
+			config.put("partNo", StringUtil.checkVal(p.getMasterRecords().get(0).getPartNo(), "Your requested part"));
+		} else {
+			config.put("partNo", "Your requested part");
+		}
 		config.put("projectNm", p.getProjectName());
 		config.put("projectDesc", p.getProjectName());
-		config.put("origMfgDelivDt", p.getDeliveryDt());
+		SRTProjectMilestoneVO origDelivDt = p.getMilestone("ORIG_MFG_DEL_DT");
+		Calendar c = Calendar.getInstance();
+		if(origDelivDt != null && origDelivDt.getMilestoneDt() != null) {
+			c.setTime(origDelivDt.getMilestoneDt());
+		}
 
+		//Add 14 days to date per requirements.
+		c.add(Calendar.DATE, EMAIL_DELIVERY_DT_OFFSET);
+		config.put("origMfgDelivDt", Convert.formatDate(c.getTime()));
 		return config;
 	}
 }
