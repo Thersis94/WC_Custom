@@ -1,6 +1,7 @@
 package com.wsla.action.ticket.transaction;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 // SMT Base Libs
@@ -10,6 +11,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -146,6 +148,7 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 	 * Modify notes per given requirements:
 	 * 	 - Store any/all notes in one field.
 	 * 	 - Notes are additive, can not be edited once saved.
+	 *   - Date and time should be added to note.
 	 * 
 	 * @param ts
 	 * @throws DatabaseException 
@@ -159,16 +162,19 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 			db.getByPrimaryKey(prevTs);
 		}
+		
+		String newNotes = StringUtil.checkVal(ts.getNotesText());
+		String prevNotes = StringUtil.checkVal(prevTs.getNotesText());
 
 		// Prepend previous notes if they exist
-		StringBuilder note = new StringBuilder(StringUtil.checkVal(ts.getNotesText()).length() + StringUtil.checkVal(prevTs.getNotesText()).length() + 1);
-		if (!StringUtil.isEmpty(prevTs.getNotesText())) {
-			note.append(prevTs.getNotesText()).append(StringUtil.isEmpty(ts.getNotesText()) ? "" : System.lineSeparator());
+		StringBuilder note = new StringBuilder(newNotes.length() + prevNotes.length() + 1);
+		if (!StringUtil.isEmpty(prevNotes)) {
+			note.append(prevNotes).append(StringUtil.isEmpty(newNotes) ? "" : StringUtil.join(System.lineSeparator(), "-----", System.lineSeparator()));
 		}
 		
 		// Append the new note
-		if (!StringUtil.isEmpty(ts.getNotesText())) {
-			note.append(ts.getNotesText());
+		if (!StringUtil.isEmpty(newNotes)) {
+			note.append(StringUtil.join(Convert.formatDate(new Date(), Convert.DATETIME_DASH_PATTERN), ":", System.lineSeparator(), newNotes));
 		}
 		
 		ts.setNotesText(note.toString());
