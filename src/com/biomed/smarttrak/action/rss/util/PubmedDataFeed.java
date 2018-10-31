@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
+
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -24,7 +24,7 @@ import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFilterTerm;
-
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 
@@ -169,7 +169,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param results
 	 */
 	protected void processArticleList(String feedGroupId, PubMedSearchResultVO vo) {
-		Map<String, Set<String>> existsIds = getExistingArticles(vo.getIdList(), props.getProperty(PUBMED_ENTITY_ID));
+		Map<String, GenericVO> existsIds = getExistingArticles(vo.getIdList(), props.getProperty(PUBMED_ENTITY_ID));
 
 		//Retrieve Articles from Search.
 		List<RSSArticleVO> results = retrieveArticles(vo);
@@ -180,7 +180,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 
 		log.info("retrieved " + results.size() + " articles from vendor");
 		for (RSSArticleVO article : results) {
-			if (!super.articleExists(article.getArticleGuid(), vo.getReqTerm().getFilterGroupId(), existsIds)) {
+			if (!super.articleExists(article, vo.getReqTerm().getFilterGroupId(), existsIds)) {
 				log.debug("Saving article " + article.getArticleGuid() + " from term group " + vo.getReqTerm().getFilterGroupId());
 				article.setArticleUrl(props.getProperty(PUBMED_ARTICLE_URL) + article.getArticleGuid());
 				article.setRssEntityId(props.getProperty(PUBMED_ENTITY_ID));

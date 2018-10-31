@@ -151,6 +151,7 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 	 * properties.
 	 */
 	private void flushOldFilteredArticles() {
+
 		int maxKeepDays = Integer.parseInt(props.getProperty("maxKeepDays", Integer.toString(MAX_KEEP_DAYS)));
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("delete from ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_rss_filtered_article ");
@@ -158,6 +159,7 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setInt(1, maxKeepDays);
+			log.info(String.format("Flushing Articles older than %d days", maxKeepDays));
 			int numDeleted = ps.executeUpdate();
 			log.info(String.format("Flushed %d unused filtered articles older than %d days", numDeleted, maxKeepDays));
 		} catch (SQLException e) {
