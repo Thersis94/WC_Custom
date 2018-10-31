@@ -158,10 +158,28 @@ public class SRTEmailUtil {
 	 * @return
 	 */
 	protected Map<String, Object> buildEmailProps(SRTProjectVO p) {
-		SRTRosterVO roster = p.getRequest().getRequestor();
+		SRTRequestVO req = p.getRequest();
+		SRTRosterVO roster = req.getRequestor();
 		Map<String, Object> config = new HashMap<>();
 		config.put("firstName", StringUtil.checkVal(roster.getFirstName()));
 		config.put("lastName", StringUtil.checkVal(roster.getLastName()));
+		config.put("requestorNm", roster.getFullName());
+		config.put("engineeringContact", StringUtil.checkVal(roster.getEngineeringContact(), "SRT Admin"));
+		config.put("engineeringEmail", StringUtil.checkVal("TODO - Email Placeholder", "srtgroupma@its.jnj.com"));
+		config.put("projectStartDt", p.getCreateDt());
+		config.put("surgeonNm", req.getSurgeonNm());
+		config.put("quantity", req.getQtyNo());
+		config.put("reason", req.getReason());
+		config.put("reqDesc", req.getDescription());
+		config.put("priority", p.getPriority());
+		config.put("expectedSurgDt", StringUtil.checkVal(p.getSurgDt(), "No Surgery Date Provided"));
+		config.put("chargedTo", req.getChargeTo());
+
+		config.put("partNo", StringUtil.checkVal(p.getMasterRecords().get(0).getPartNo(), "Your Parts"));
+		config.put("projectNm", p.getProjectName());
+		config.put("projectDesc", p.getProjectName());
+		config.put("origMfgDelivDt", p.getDeliveryDt());
+
 		return config;
 	}
 }

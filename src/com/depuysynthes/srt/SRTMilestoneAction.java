@@ -385,7 +385,7 @@ public class SRTMilestoneAction extends SimpleActionAdapter {
 				ps.setString(i++, r.getMilestoneId());
 				ps.setString(i++, r.getFieldNm());
 				ps.setString(i++, r.getOperandType().name());
-				ps.setString(i++, r.getFieldVal());
+				ps.setString(i++, StringUtil.checkVal(r.getFieldVal(), null));
 				ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 				ps.setString(i++, uuid.getUUID());
 				ps.addBatch();
