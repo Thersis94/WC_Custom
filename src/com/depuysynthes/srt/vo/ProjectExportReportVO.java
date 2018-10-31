@@ -50,6 +50,7 @@ public class ProjectExportReportVO {
 			WAREHOUSE_TRACKING("Warehouse Tracking No"),
 			MFG_DT_CHANGE_REASON("Manufacturing Date Change Reason"),
 			WAREHOUSE_SALES_NO("Warehouse Sales No"),
+			MFG_ORDER_TYPE_ID("Mfg. Order Type Id"),
 
 			//REQUEST Values
 			REQUEST_ID("Request Id"),

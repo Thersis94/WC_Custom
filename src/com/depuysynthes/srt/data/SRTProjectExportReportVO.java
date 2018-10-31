@@ -204,6 +204,7 @@ public class SRTProjectExportReportVO extends AbstractSBReportVO {
 		row.createCell(colNo++).setCellValue(p.getWarehouseTrackingNo());
 		row.createCell(colNo++).setCellValue(p.getMfgDtChangeReason());
 		row.createCell(colNo++).setCellValue(p.getWarehouseSalesOrderNo());
+		row.createCell(colNo++).setCellValue(p.getMfgOrderTypeId());
 	}
 
 	/**

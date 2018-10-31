@@ -151,6 +151,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 				p.setProjectType(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_TYPE)).get(p.getProjectType()));
 				p.setSupplierId(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_VENDOR)).get(p.getSupplierId()));
 				p.setProjectStatus(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_STATUS)).get(p.getProjectStatus()));
+				p.setMfgOrderTypeId(lists.get(SRTUtil.getListId(opCoId, SRTList.PROJ_MFG_ORDER_TYPE)).get(p.getMfgOrderTypeId()));
 
 				//Update Request Data Values
 				SRTRequestVO r = p.getRequest();
