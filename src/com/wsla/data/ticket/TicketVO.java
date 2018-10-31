@@ -12,11 +12,10 @@ import java.util.Map;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
-import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
-
+import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 // WSLA Libs
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.product.ProductSerialNumberVO;
@@ -39,22 +38,19 @@ import com.wsla.data.provider.ProviderVO;
 @Table(name="wsla_ticket")
 public class TicketVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -288262467687670031L;
-	
+
 	/**
-	 * Stabding of the ticket in relation to how its progressing through the workflow
+	 * Standing of the ticket in relation to how its progressing through the workflow
 	 */
 	public enum Standing {
 		GOOD("GREEN"), DELAYED("YELLOW"), CRITICAL("RED");
-		
-		public final String color;
+
+		private String color;
+		private Standing(String color) { this.color = color; }
 		public String getColor() {return color; }
-		Standing(String color) { this.color = color; }
 	}
-		
+
 	// Member Variables
 	private String ticketId;
 	private String ticketIdText;
@@ -70,13 +66,13 @@ public class TicketVO extends BeanDataVO {
 	private Date createDate;
 	private Date updateDate;
 	private Date lockedDate;
-	
+
 	// Helper Variables
 	private String retailerId;
 	private String oemId;
 	private String userId;
 	private String statusName;
-	
+
 	// Bean Sub-Element
 	private List<TicketDataVO> ticketData = new ArrayList<>(32);
 	private List<TicketAssignmentVO> assignments = new ArrayList<>();
@@ -88,7 +84,7 @@ public class TicketVO extends BeanDataVO {
 	private UserVO originator;
 	private ProductWarrantyVO warranty;
 	private StatusCodeVO status;
-	
+
 	/**
 	 * 
 	 */
@@ -103,7 +99,7 @@ public class TicketVO extends BeanDataVO {
 		super(req);
 		setAttributesFromReq(req, null);
 	}
-	
+
 	/**
 	 * @param req
 	 */
@@ -136,25 +132,25 @@ public class TicketVO extends BeanDataVO {
 				data.setAttributeCode(name);
 				data.setValue(req.getParameter(name));
 				if (ledger != null) data.setLedgerEntryId(ledger.getLedgerEntryId());
-				
+
 				addTicketData(data);
 			}
 		}
 	}
-	
+
 	/**
 	 * Helper method to return the assigned CAS
 	 * @return
 	 */
 	public TicketAssignmentVO getCas() {
-		
+
 		for (TicketAssignmentVO ta : assignments) {
 			if (TicketAssignmentVO.TypeCode.CAS.equals(ta.getTypeCode())) return ta;
 		}
-		
+
 		return new TicketAssignmentVO();
 	}
-	
+
 	/**
 	 * Helper method for the view.  JSTL can't pass param to getters, so I will return
 	 * the data as a map, which allows JSTL to select values
@@ -406,7 +402,7 @@ public class TicketVO extends BeanDataVO {
 	public void setStatusCode(StatusCode statusCode) {
 		this.statusCode = statusCode;
 	}
-	
+
 	/**
 	 * @param createDate the createDate to set
 	 */
@@ -443,7 +439,7 @@ public class TicketVO extends BeanDataVO {
 	public void setAssignments(List<TicketAssignmentVO> assignments) {
 		this.assignments = assignments;
 	}
-	
+
 	/**
 	 * 
 	 * @param assignment
@@ -459,7 +455,7 @@ public class TicketVO extends BeanDataVO {
 	public void setTimeline(List<TicketLedgerVO> timeline) {
 		this.timeline = timeline;
 	}
-	
+
 	/**
 	 * 
 	 * @param entry
@@ -496,7 +492,7 @@ public class TicketVO extends BeanDataVO {
 	public void setDiagnosticRun(List<DiagnosticRunVO> diagnosticRun) {
 		this.diagnosticRun = diagnosticRun;
 	}
-	
+
 	/**
 	 * 
 	 * @param diag
@@ -617,4 +613,3 @@ public class TicketVO extends BeanDataVO {
 		this.status = status;
 	}
 }
-
