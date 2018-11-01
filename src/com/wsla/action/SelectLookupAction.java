@@ -1,5 +1,9 @@
 package com.wsla.action;
 
+import static com.wsla.action.admin.ProductCategoryAction.PROD_CAT_ID;
+import static com.wsla.action.admin.ProductMasterAction.REQ_PRODUCT_ID;
+import static com.wsla.action.admin.ProviderAction.REQ_PROVIDER_ID;
+
 // JDK 1.8.x
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -28,18 +32,18 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-
+import com.wsla.action.admin.InventoryAction;
 //WSLA Libs
 import com.wsla.action.admin.ProductCategoryAction;
-import static com.wsla.action.admin.ProductCategoryAction.PROD_CAT_ID;
 import com.wsla.action.admin.ProductMasterAction;
-import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProviderAction;
+import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
+import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
@@ -62,7 +66,6 @@ import com.wsla.data.ticket.UserVO;
  * @since Sep 11, 2018
  * @updates:
  ****************************************************************************/
-
 public class SelectLookupAction extends SBActionAdapter {
 
 	/**
@@ -71,7 +74,6 @@ public class SelectLookupAction extends SBActionAdapter {
 	public static final String SELECT_KEY = "selectType";
 
 	private static final String PROVIDER_TYPE = "providerType";
-	private static final String PROVIDER_ID = "providerId";
 
 	private static Map<String, GenericVO> keyMap = new HashMap<>(16);
 
@@ -88,6 +90,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put(PROVIDER_TYPE, new GenericVO("getProviderTypes", Boolean.FALSE));
 		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
 		keyMap.put("oemParts", new GenericVO("getProviderParts", Boolean.TRUE));
+		keyMap.put("providerLocations", new GenericVO("getProviderLocations", Boolean.TRUE));
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
 		keyMap.put("warrantyServiceTypeCode", new GenericVO("getServiceTypeCode", Boolean.FALSE));
 		keyMap.put("role", new GenericVO("getOrgRoles", Boolean.TRUE));
@@ -104,6 +107,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("acCas", new GenericVO("getClosestCas", Boolean.TRUE));
 		keyMap.put("ticketAssignment", new GenericVO("getTicketAssignments", Boolean.TRUE));
 		keyMap.put("scheduleTransferType", new GenericVO("getScheduleTransferTypes", Boolean.TRUE));
+		keyMap.put("inventorySuppliers", new GenericVO("getInventorySuppliers", Boolean.TRUE));
 	}
 
 	/**
@@ -132,7 +136,6 @@ public class SelectLookupAction extends SBActionAdapter {
 		if (vo == null)
 			throw new ActionException("List type Not Found in KeyMap");
 
-		// @TODO Add language conversion
 		try {
 			if (Convert.formatBoolean(vo.getValue())) {
 				Method method = this.getClass().getMethod(vo.getKey().toString(), req.getClass());
@@ -262,7 +265,7 @@ public class SelectLookupAction extends SBActionAdapter {
 			boolean incUnknown = req.getBooleanParameter("incUnknown");
 			return new ProviderAction(getAttributes(), getDBConnection())
 					.getOEMsByProductCategory(req.getParameter(PROD_CAT_ID), incUnknown);
-			
+
 		} else {
 			req.setParameter(PROVIDER_TYPE, ProviderType.OEM.toString());
 			return getProviders(req);
@@ -276,7 +279,32 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getProviderParts(ActionRequest req) {
-		return new ProductSetAction(getAttributes(), getDBConnection()).listPartsForProvider(req.getParameter(PROVIDER_ID));
+		ProductMasterAction pa = new ProductMasterAction(getAttributes(), getDBConnection());
+		return pa.listProducts(req.getParameter(REQ_PROVIDER_ID), null, Integer.valueOf(0));
+	}
+
+	/**
+	 * List all provider locations
+	 * Optional: pass providerId on the request for a subset of data.
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getProviderLocations(ActionRequest req) {
+		BSTableControlVO bst = new BSTableControlVO(req, ProviderLocationVO.class);
+		bst.setLimit(100000); //get them all
+		ProviderLocationAction pla = new ProviderLocationAction(getAttributes(), getDBConnection());
+		GridDataVO<ProviderLocationVO> locations = pla.getLocations(req.getParameter(REQ_PROVIDER_ID), bst);
+
+		//turn the locations into relevant <locationId,locationName> pairs (GenericVO)
+		String name;
+		List<GenericVO> data = new ArrayList<>(locations.getRowData().size());
+		for (ProviderLocationVO vo : locations.getRowData()) {
+			name = StringUtil.join(vo.getProviderName(), ": ", vo.getLocationName(), " ", vo.getStoreNumber());
+			data.add(new GenericVO(vo.getLocationId(), name));
+		}
+
+		log.debug("loaded " + data.size() + " provider locations");
+		return data;
 	}
 
 	/**
@@ -287,7 +315,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getRetailerACList(ActionRequest req) {
 		StringBuilder term = new StringBuilder(16);
 		term.append("%").append(StringUtil.checkVal(req.getParameter("search")).toLowerCase()).append("%");
-		
+
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");
 		sql.append("|| coalesce(location_nm, '') || ' (' || coalesce(store_no, '') || ')  ' ");
@@ -299,13 +327,13 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
 		sql.append("or lower(city_nm) like ? or store_no like ?) ");
 		sql.append("order by provider_nm");
-		
+
 		List<Object> vals = new ArrayList<>();
 		vals.add(term);
 		vals.add(term);
 		vals.add(term);
 		vals.add(term);
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), vals, new GenericVO());
 	}
@@ -370,10 +398,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		// Sort the enum keys using a comparator
 		Collections.sort(data, Comparator.comparing(
-			GenericVO::getValue, (s1, s2) -> {
-	            return ((String)s1).compareTo(((String)s2));
-	        })
-		);
+				GenericVO::getValue, (s1, s2) -> ((String)s1).compareTo((String)s2)));
 
 		return data;
 	}
@@ -412,9 +437,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("select defect_cd as key, defect_nm as value from ");
 		sql.append(getCustomSchema()).append("wsla_defect where active_flg = 1 ");
 		sql.append("and (provider_id is null ");
-		if (req.hasParameter(PROVIDER_ID)) {
+		if (req.hasParameter(REQ_PROVIDER_ID)) {
 			sql.append("or provider_id = ? ");
-			params.add(req.getParameter(PROVIDER_ID));
+			params.add(req.getParameter(REQ_PROVIDER_ID));
 		}
 
 		sql.append(") order by value");
@@ -446,7 +471,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		BSTableControlVO bst = new BSTableControlVO(req, ProductVO.class);
 		bst.setLimit(1000);
 		bst.setOffset(0);
-		String providerId = req.getParameter(PROVIDER_ID);
+		String providerId = req.getParameter(REQ_PROVIDER_ID);
 		int setFlag = req.getIntegerParameter("setFlag");
 		GridDataVO<ProductVO> products = ai.getProducts(null, providerId, setFlag, null, bst);
 
@@ -464,15 +489,15 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getWarrantyList(ActionRequest req) {
-		String providerId = req.getParameter(PROVIDER_ID);
+		String providerId = req.getParameter(REQ_PROVIDER_ID);
 
 		//possibly use productId to find providerId
-		if (req.hasParameter("productId")) {
+		if (req.hasParameter(REQ_PRODUCT_ID)) {
 			String sql = StringUtil.join("select provider_id as key from ", getCustomSchema(), 
 					"wsla_product_master where product_id=?");
 			log.debug(sql);
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-			List<GenericVO> data = db.executeSelect(sql, Arrays.asList(req.getParameter("productId")), new GenericVO());
+			List<GenericVO> data = db.executeSelect(sql, Arrays.asList(req.getParameter(REQ_PRODUCT_ID)), new GenericVO());
 			if (data != null && !data.isEmpty())
 				providerId = StringUtil.checkVal(data.get(0).getKey());
 		}
@@ -554,5 +579,15 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 		
 		return data;
+}
+	/**
+	 * Return a list of provider locations who have inventory (records).
+	 * Optionally - inventory for a specific productId or custProductId (case insensitive)
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getInventorySuppliers(ActionRequest req) {
+		String partId = req.getParameter(REQ_PRODUCT_ID, req.getParameter("custProductId"));
+		return new InventoryAction(getAttributes(), getDBConnection()).listInvetorySuppliers(partId);
 	}
 }

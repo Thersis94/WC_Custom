@@ -1,5 +1,8 @@
 package com.wsla.action.ticket.transaction;
 
+// JDK 1.8.x
+import java.sql.SQLException;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -7,87 +10,88 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.wsla.action.ticket.TicketOverviewAction;
-import com.wsla.data.ticket.DiagnosticRunVO;
 import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.TicketCommentVO;
+import com.wsla.data.ticket.TicketCommentVO.ActivityType;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
- * <b>Title</b>: DiagnosticTransaction.java
+ * <b>Title</b>: TicketCommentTransaction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Manages adding a new diagnostic on the ticket
+ * <b>Description: </b> Adds a comment / activity to a ticket
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
  * @author James Camire
  * @version 3.0
- * @since Oct 24, 2018
+ * @since Oct 29, 2018
  * @updates:
  ****************************************************************************/
 
-public class DiagnosticTransaction extends SBActionAdapter {
-
+public class TicketCommentTransaction extends SBActionAdapter {
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
 	 */
-	public static final String AJAX_KEY = "diagnostic";
+	public static final String AJAX_KEY = "activity";
 	
 	/**
 	 * 
 	 */
-	public DiagnosticTransaction() {
+	public TicketCommentTransaction() {
 		super();
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public DiagnosticTransaction(ActionInitVO actionInit) {
+	public TicketCommentTransaction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		// Get the WSLA User
+		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		TicketLedgerVO ledger = new TicketLedgerVO(req);
+		ledger.setDispositionBy(user.getUserId());
+		
 		try {
-			this.saveDiagnosticRun(req);
-		} catch (Exception e) {
-			log.error("Unable to save asset", e);
+			addTicketComment(new TicketCommentVO(req), ledger);
+		} catch(Exception e) {
+			log.error("Unable to perform action", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
 	}
-
+	
 	/**
-	 * Stores the user information
-	 * @param req
-	 * @return
-	 * @throws InvalidDataException
-	 * @throws DatabaseException
-	 * @throws com.siliconmtn.exception.DatabaseException
+	 * 
+	 * @param comment
+	 * @throws SQLException
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
 	 */
-	public void saveDiagnosticRun(ActionRequest req) 
+	public void addTicketComment(TicketCommentVO comment, TicketLedgerVO ledger) 
 	throws InvalidDataException, DatabaseException {
-		
-		// Get the WSLA User
-		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		// Get the DB Processor
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		
 		// Add a ledger entry
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		TicketLedgerVO ledger = new TicketLedgerVO(req);
-		ledger.setDispositionBy(user.getUserId());
-		ledger.setSummary(LedgerSummary.RAN_DIAGNOSTIC.summary);
-		db.save(ledger);
+		if (ledger != null && ! ActivityType.COMMENT.equals(comment.getActivityType())) {
+			ledger.setSummary(LedgerSummary.ACTIVITY_ADDED.summary + ": " + comment.getComment());
+			db.save(ledger);
+		}
 		
-		DiagnosticRunVO dr = new DiagnosticRunVO(req);
-		
-		TicketOverviewAction toa = new TicketOverviewAction(attributes, dbConn);
-		toa.saveDiagnosticRun(dr);
+		// Add the activity / comment to the DB
+		if (StringUtil.isEmpty(comment.getParentId())) comment.setParentId(null);
+		db.save(comment);
 	}
 }
 

@@ -25,6 +25,14 @@ import com.siliconmtn.db.orm.Table;
  ****************************************************************************/
 @Table(name="wsla_ticket_comment")
 public class TicketCommentVO extends BeanDataVO {
+	
+	public enum ActivityType {
+		COMMENT("Ticket Comment"), EMAIL("Email Activity"), PHONE("Phone Call Activity");
+		
+		private String typeName;
+		private ActivityType(String typeName) { this.typeName = typeName; }
+		public String getTypeName() { return typeName; }
+	}
 
 	/**
 	 * 
@@ -37,6 +45,8 @@ public class TicketCommentVO extends BeanDataVO {
 	private String parentId;
 	private String userId;
 	private String comment;
+	private String recipientName;
+	private ActivityType activityType;
 	private int priorityTicketFlag;
 	private boolean endUser;
 	private Date createDate;
@@ -111,6 +121,22 @@ public class TicketCommentVO extends BeanDataVO {
 	@Column(name="priority_ticket_flg")
 	public int getPriorityTicketFlag() {
 		return priorityTicketFlag;
+	}
+
+	/**
+	 * @return the recipientName
+	 */
+	@Column(name="recipient_nm")
+	public String getRecipientName() {
+		return recipientName;
+	}
+
+	/**
+	 * @return the activityType
+	 */
+	@Column(name="activity_type_cd")
+	public ActivityType getActivityType() {
+		return activityType;
 	}
 
 	/**
@@ -198,6 +224,20 @@ public class TicketCommentVO extends BeanDataVO {
 	 */
 	public void setEndUser(boolean endUser) {
 		this.endUser = endUser;
+	}
+
+	/**
+	 * @param recipientName the recipientName to set
+	 */
+	public void setRecipientName(String recipientName) {
+		this.recipientName = recipientName;
+	}
+
+	/**
+	 * @param activityType the activityType to set
+	 */
+	public void setActivityType(ActivityType activityType) {
+		this.activityType = activityType;
 	}
 
 }

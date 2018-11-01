@@ -44,6 +44,8 @@ import com.wsla.data.provider.ProviderVO;
  ****************************************************************************/
 
 public class ProviderAction extends BatchImport {
+	
+	public static final String REQ_PROVIDER_ID = "providerId";
 
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
@@ -81,7 +83,7 @@ public class ProviderAction extends BatchImport {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String providerId = req.getParameter("providerId");
+		String providerId = req.getParameter(REQ_PROVIDER_ID);
 		String providerTypeId = req.getParameter("providerTypeId");
 		String reviewFlag = req.getParameter("reviewFlag");
 		BSTableControlVO bst = new BSTableControlVO(req, ProviderVO.class);
@@ -171,7 +173,7 @@ public class ProviderAction extends BatchImport {
 	public GridDataVO<ProviderVO> getProviders(String providerId, String providerType, String reviewFlag, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(72);
-		sql.append("select * from ").append(schema).append("wsla_provider where 1=1 ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("wsla_provider where 1=1 ");
 		List<Object> params = new ArrayList<>();
 
 		// Filter by provider id

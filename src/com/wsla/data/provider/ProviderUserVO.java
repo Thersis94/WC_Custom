@@ -29,17 +29,13 @@ import com.wsla.data.ticket.UserVO;
 @Table(name="wsla_provider_user_xr")
 public class ProviderUserVO extends UserVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 8202735555518602640L;
-	
+
 	// Member Variables
 	private String providerUserId;
-	private String locationId;
 	private String departmentName;
 	private int primaryContactFlag;
-	
+
 	// Convenience Variables
 	private String formattedPhoneNumbers;
 	private String workPhoneNumber;
@@ -47,10 +43,8 @@ public class ProviderUserVO extends UserVO {
 
 	// Bean Sub-Elements
 	private ProviderLocationVO location;
-	
-	/**
-	 * 
-	 */
+
+
 	public ProviderUserVO() {
 		super();
 	}
@@ -68,7 +62,7 @@ public class ProviderUserVO extends UserVO {
 	public ProviderUserVO(ResultSet rs) {
 		super(rs);
 	}
-	
+
 	/**
 	 * 
 	 * @return
@@ -76,7 +70,7 @@ public class ProviderUserVO extends UserVO {
 	public String getFormattedPhoneNumbers() {
 		return formattedPhoneNumbers;
 	}
-	
+
 	/**
 	 * @return the providerUserId
 	 */
@@ -88,11 +82,12 @@ public class ProviderUserVO extends UserVO {
 	/**
 	 * @return the locationId
 	 */
+	@Override
 	@Column(name="location_id")
 	public String getLocationId() {
-		return locationId;
+		return super.getLocationId();
 	}
-	
+
 	/**
 	 * @return the departmentName
 	 */
@@ -138,13 +133,6 @@ public class ProviderUserVO extends UserVO {
 	}
 
 	/**
-	 * @param locationId the locationId to set
-	 */
-	public void setLocationId(String locationId) {
-		this.locationId = locationId;
-	}
-	
-	/**
 	 * @param departmentName the departmentName to set
 	 */
 	public void setDepartmentName(String departmentName) {
@@ -180,16 +168,16 @@ public class ProviderUserVO extends UserVO {
 	public void setFormattedPhoneNumbers(List<PhoneVO> phoneNumbers, String sep) {
 		if (phoneNumbers == null) return; 
 
-		StringBuilder pn = new StringBuilder(32);
+		StringBuilder pn = new StringBuilder(100);
 		for (PhoneVO phone : getProfile().getPhoneNumbers()) {
 			if (! Arrays.asList("MOBILE", "WORK").contains(phone.getPhoneType())) continue;
-			
+
 			phone.setCountry(StringUtil.checkVal(getLocale()).substring(2));
-			
+
 			pn.append(StringUtil.capitalize(phone.getPhoneType(), true));
 			pn.append(": ").append(phone.getFormattedNumber()).append(sep);
 		}
-		
+
 		this.formattedPhoneNumbers =  pn.toString();
 	}
 
@@ -207,4 +195,3 @@ public class ProviderUserVO extends UserVO {
 		this.mobilePhoneNumber = mobilePhoneNumber;
 	}
 }
-
